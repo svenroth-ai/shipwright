@@ -1,39 +1,37 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-07-27-triage-defer-review-followup"
+run_id: "iterate-2026-07-27-review-floor-not-chained"
 phase: "iterate"
-reason: "iterate: post-merge review follow-up for the triage defer surface"
-timestamp: "2026-07-27T20:12:58.249412+00:00"
+reason: "ensure-current pre-merge refresh"
+timestamp: "2026-07-27T19:47:53.112213+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-07-27 20:12:58 UTC
+> Auto-generated 2026-07-27 19:47:53 UTC
 
 ## Session Info
 
-- **Session ID**: 8a66b2f1-81e9-4505-8591-b94928ca02f6
-- **Timestamp**: 2026-07-27 20:12:58 UTC
-- **Reason**: iterate: post-merge review follow-up for the triage defer surface
+- **Session ID**: d25b0a7e-0ae6-43cf-9f0d-0888374ebaee
+- **Timestamp**: 2026-07-27 19:47:53 UTC
+- **Reason**: ensure-current pre-merge refresh
 
 ## Last Iterate
 
-- **Run ID**: iterate-2026-07-27-triage-defer-review-followup
-- **Date**: 2026-07-27T20:12:50.735006Z
+- **Run ID**: iterate-2026-07-27-review-floor-not-chained
+- **Date**: 2026-07-27T19:47:47.266963Z
 - **Type**: change
-- **Complexity**: small
-- **Branch**: iterate/triage-defer-review-followup
-- **ADR**: iterate-2026-07-27-triage-defer-review-followup
+- **Complexity**: medium
+- **Branch**: iterate/review-floor-not-chained
+- **ADR**: iterate-2026-07-27-review-floor-not-chained
 - **Tests passed**: True
-- **Spec**: .shipwright/planning/iterate/2026-07-27-triage-defer-review-followup.md
+- **Spec**: .shipwright/planning/iterate/2026-07-27-review-floor-not-chained.md
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/triage-defer-review-followup
-- **Run ID**: iterate-2026-07-27-triage-defer-review-followup
-- **Spec**: .shipwright/planning/iterate/2026-07-27-triage-defer-review-followup.md
-- **Complexity**: small
-- **External Review Marker**: missing
+- **Branch**: iterate/review-floor-not-chained
+- **Spec**: .shipwright/planning/iterate/2026-07-27-review-floor-not-chained.md
+- **External Review Marker**: completed (external_review_state.json @ 2026-07-27T19:36:06)
 
 ### Mandatory replay on Resume
 
@@ -51,8 +49,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/triage-defer-review-followup
-- **Last Commit**: 156f9235 chore(triage): sweep 6 outbox append(s) into branch
+- **Branch**: iterate/review-floor-not-chained
+- **Last Commit**: 1f74845e Merge remote-tracking branch 'origin/main' into iterate/review-floor-not-chained
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -68,17 +66,17 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 | Event | Type | Source | Date |
 |-------|------|--------|------|
-| evt-d36b91d1 | grade_snapshot | — | 2026-07-27 |
-| evt-76142a43 | work_completed | iterate (iterate: post-merge review follow-up for the triage defer surface) | 2026-07-27 |
-| evt-950798de | grade_snapshot | — | 2026-07-27 |
-| evt-36d0f887 | work_completed | iterate (iterate: raise the PR-review diff cap, cut at a file boundary, name what went unreviewed) | 2026-07-27 |
-| evt-ad7b51e0 | grade_snapshot | — | 2026-07-27 |
+| evt-b1a81042 | grade_snapshot | — | 2026-07-27 |
+| evt-301cc5e3 | grade_snapshot | — | 2026-07-27 |
+| evt-d33730ea | grade_snapshot | — | 2026-07-27 |
+| evt-2acd6fdb | grade_snapshot | — | 2026-07-27 |
+| evt-43b5a915 | grade_snapshot | — | 2026-07-27 |
 
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 383
-- **Last iterate**: change — iterate: post-merge review follow-up for the triage defer surface (2026-07-27)
+- **Total work events**: 386
+- **Last iterate**: change — iterate: the code review becomes a floor, not a chain (2026-07-27)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
 ## Recent Decisions

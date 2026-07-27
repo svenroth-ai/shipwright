@@ -1,14 +1,14 @@
 # Triage Inbox
 
-> Auto-generated 2026-07-27T20:12:58.249412Z. Items waiting for triage decision.
+> Auto-generated 2026-07-27T19:47:53.112213Z. Items waiting for triage decision.
 > Promote via WebUI Triage tab (when v1b lands) or `shared/scripts/tools/triage_promote.py --id <id> --task-ref EXT:<ref>`.
 
 ## Status summary
 
 - Total: 430
-- Triage: 23 | Promoted: 1 | Dismissed: 405 | Snoozed: 1
+- Triage: 21 | Promoted: 1 | Dismissed: 407 | Snoozed: 1
 
-## Top 23 items (severity-sorted)
+## Top 21 items (severity-sorted)
 
 ### Source: analysis (1 item)
 
@@ -83,23 +83,13 @@
   - The tail of campaign step S2, not a new campaign - file it now so it is not lost between "S2 merged" and "somebody noti…
   - Promote: `triage_promote.py --id trg-8bf97fd4 --task-ref EXT:<ref>`
 
-### Source: manual (7 items)
-
-<a id="trg-51f8e2a1"></a>
-- **deferring a triage finding does not yet defer it - make the third decision mean what it says** `id=trg-51f8e2a1 | severity=high | kind=improvement → P1/engineering`
-  - Post-merge review of PR #444 found the CLI defer subcommand records the decision correctly but almost nothing downstrea…
-  - Promote: `triage_promote.py --id trg-51f8e2a1 --task-ref EXT:<ref>`
+### Source: manual (6 items)
 
 <a id="trg-2ca796f3"></a>
 - **Release aggregator can write the same version twice on a re-run** `id=trg-2ca796f3 | severity=high | kind=bug → P1/engineering`
   - aggregate_changelog.py is the writer the release path actually invokes (changelog SKILL.md Step 4). _insert_section alw…
   - Evidence: `.shipwright/planning/iterate/iterate-2026-07-27-changelog-writer-preserve-history.md`
   - Promote: `triage_promote.py --id trg-2ca796f3 --task-ref EXT:<ref>`
-
-<a id="trg-93ceb2b0"></a>
-- **a triage decision can be silently lost and the command still reports success** `id=trg-93ceb2b0 | severity=medium | kind=bug → P2/engineering`
-  - Found by adversarial review of PR #444; pre-existing, shared by all three decisions (promote, dismiss, defer), not intr…
-  - Promote: `triage_promote.py --id trg-93ceb2b0 --task-ref EXT:<ref>`
 
 <a id="trg-9862202d"></a>
 - **host checks part 2 follow-up: require the checks that currently gate nothing** `id=trg-9862202d | severity=medium | kind=improvement → P2/engineering`
@@ -115,6 +105,11 @@
 - **A successful atomic-write retry is silent, so degrading contention is unobservable** `id=trg-0a294ef3 | severity=medium | kind=improvement → P2/engineering`
   - shared/scripts/lib/atomic_write.py retries a Windows sharing violation on both the write and the read side. A retry tha…
   - Promote: `triage_promote.py --id trg-0a294ef3 --task-ref EXT:<ref>`
+
+<a id="trg-cc640142"></a>
+- **Iterate PRs touching regenerated artifacts livelock against auto-merge on a busy default branch** `id=trg-cc640142 | severity=medium | kind=improvement → P2/engineering`
+  - An iterate PR that touches regenerated artifacts cannot reliably auto-merge while the default branch is busy. Observed…
+  - Promote: `triage_promote.py --id trg-cc640142 --task-ref EXT:<ref>`
 
 <a id="trg-c6e75011"></a>
 - **shipwright-security tests write an untracked .shipwright/ dir into the repo tree** `id=trg-c6e75011 | severity=low | kind=bug → P3/engineering`
@@ -146,7 +141,7 @@
   - Evidence: `.shipwright/planning/iterate/2026-07-27-project-granularity-basis.md`
   - Promote: `triage_promote.py --id trg-1d7d91d0 --task-ref EXT:<ref>`
 
-### Source: req3-phase2-walk (5 items)
+### Source: req3-phase2-walk (4 items)
 
 <a id="trg-b95ab887"></a>
 - **REQ3.06 [CAMPAIGN AUTONOM] Enforcement-Liste abarbeiten: Checks bauen fuer prompt-only (mechanisable) - Monorepo** `id=trg-b95ab887 | severity=high | kind=improvement → P1/engineering`
@@ -159,12 +154,6 @@
   - OWNS: everything under the workflows directory, the shipped workflow templates, and the must-pass-check derivation help…
   - Evidence: `.shipwright/planning/campaigns/2026-07-23-req3-ac-evidence-ledger-mono.md`
   - Promote: `triage_promote.py --id trg-c7e5835b --task-ref EXT:<ref>`
-
-<a id="trg-12b4cf3f"></a>
-- **test phase: make the run record tell the truth (supersedes trg-0516e85e, stamping moved out)** `id=trg-12b4cf3f | severity=high | kind=improvement → P1/engineering`
-  - OWNS: the test plugin, the test-phase validator branch, and the browser-test result reader. Does NOT own artifact stamp…
-  - Evidence: `.shipwright/planning/campaigns/2026-07-23-req3-ac-evidence-ledger-mono.md`
-  - Promote: `triage_promote.py --id trg-12b4cf3f --task-ref EXT:<ref>`
 
 <a id="trg-e9e5188e"></a>
 - **requirement write-back loop: design and build both need the same missing mechanism (supersedes trg-35785118, trg-ed419f…** `id=trg-e9e5188e | severity=high | kind=improvement → P1/engineering`

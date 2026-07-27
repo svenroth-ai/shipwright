@@ -1,11 +1,11 @@
 # Project Activity Dashboard
-> Updated: 2026-07-27 20:12 UTC | Session: 8a66b2f1-81e9-4505-8591-b94928ca02f6 | Run: iterate-2026-07-27-triage-defer-review-followup
+> Updated: 2026-07-27 19:47 UTC | Session: d25b0a7e-0ae6-43cf-9f0d-0888374ebaee | Run: iterate-2026-07-27-review-floor-not-chained
 
-## Recent Changes (383 iterations)
+## Recent Changes (386 iterations)
 
 | Type | Description | Tests | Commit | FRs | Date |
 |------|-------------|-------|--------|-----|------|
-| change | iterate: post-merge review follow-up for the triage defer surface | 0/0 |  | FR-01.14 | 2026-07-27 |
+| change | iterate: the code review becomes a floor, not a chain | 0/0 |  | compliance | 2026-07-27 |
 | change | iterate: raise the PR-review diff cap, cut at a file boundary, name what went unreviewed | 0/0 |  | FR-01.17 | 2026-07-27 |
 | change | iterate: an audit that checked nothing is not recorded | 0/0 |  | compliance | 2026-07-27 |
 | change | iterate: refuse a multi-root pytest session instead of failing 21 unrelated tests | 0/0 |  | tooling | 2026-07-27 |
@@ -14,12 +14,14 @@
 | change | iterate: the phase canon asks whether the handoff belongs to this run | 0/0 |  | FR-01.01 | 2026-07-27 |
 | change | iterate: bounded sharing-violation retry on both sides of the atomic-write boundary | 0/0 |  | FR-01.01, FR-01.09 | 2026-07-27 |
 | change | iterate: the merge state is a vocabulary, not a BLOCKED flag | 0/0 |  | FR-01.11 | 2026-07-27 |
+| change | iterate: handoff tally and gate honesty | 0/0 |  | FR-01.01 | 2026-07-27 |
 | change | iterate: inherited failures and coverage gaps are recorded as inherited | 0/0 |  | FR-01.13 | 2026-07-27 |
 | change | iterate: the four Step-9 gates become code, closing trg-88f721be (3 of 3) | 0/0 |  | tooling | 2026-07-27 |
 | change | iterate: reviewer verdicts recorded, disagreement is its own outcome (1 of 3) | 0/0 |  | FR-01.03 | 2026-07-27 |
 | change | iterate: section dependencies are declarable, so the numbering is checkable (2 of 3) | 0/0 |  | tooling | 2026-07-27 |
 | change | iterate: name the blocker instead of reporting a weaker signal | 0/0 |  | FR-01.03, FR-01.11 | 2026-07-27 |
 | change | iterate: the derived requirements catalogue announces itself | 0/0 |  | FR-01.13 | 2026-07-27 |
+| change | security-coverage-manifest | 10083/10083 |  | FR-01.07 | 2026-07-27 |
 | change | iterate: the review gate stops being bypassable (fail-closed + fork review) | 0/0 |  | infra | 2026-07-27 |
 | change | iterate: phase-gate override leaves evidence; handoff renders phase status | 0/0 |  | FR-01.01 | 2026-07-27 |
 | change | iterate: requirement granularity guidance + advisory I6 check + the Basis-assumed template contradiction | 0/0 |  | compliance | 2026-07-27 |
@@ -29,6 +31,7 @@
 | change | iterate: hosting rollback uses the target ref, polls liveness to the target's deadline, gates on stored-data drift, and halts loudly when the way back fails | 0/0 |  | FR-01.08 | 2026-07-27 |
 | change | iterate: compliance evidence discloses when the cross-check last ran | 0/0 |  | FR-01.10 | 2026-07-27 |
 | bug | iterate: changelog writer preserves the history it read | 0/0 |  | FR-01.09 | 2026-07-27 |
+| change | iterate: the test phase's record tells the truth about the run (trg-12b4cf3f) | +79 new, 6978/6978 |  | FR-01.06 | 2026-07-27 |
 | change | iterate: REQ-3 Phase 2 content round - all 18 requirements walked or minted | 0/0 |  | FR-01.01, FR-01.02, FR-01.03 | 2026-07-26 |
 | feature | REQ-3 Phase 1: shared requirement-elicitation method (grilling + domain-modeling) + CONTEXT.md format + FR-01.16 mint | 4946/4961 |  |  | 2026-07-23 |
 | bug | design verifier C1 skips projects that never ran the design phase | 26/26 |  | compliance | 2026-07-23 |
@@ -390,7 +393,7 @@
 | change | post-adoption framework cleanup (Sub-1A through 1D) | 225/225 | 3db485b | FR-01.01, FR-01.02, FR-01.03 | 2026-05-02 |
 
 ## Test Status
-Last run: 2026-07-27 | Unit: 5873/5885 | Integration: 422/422 | E2E: 122/122 | Smoke: not_run | (iterate)
+Last run: 2026-07-27 | Unit: 6378/6378 | Integration: 422/422 | Smoke: not_run | (iterate)
 
 ## Pipeline
 

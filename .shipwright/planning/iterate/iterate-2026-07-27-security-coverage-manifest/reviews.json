@@ -1,0 +1,157 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-07-27-security-coverage-manifest",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-07-27T11:47:40.047433+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 10,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "Security",
+          "file": null,
+          "line": null,
+          "finding": "Silent dropping of default secret scanning rules. Gitleaks requires exactly one `[extend]` block. By switching the generated config to use `extend.path = \"<project-config>\"` and dropping `extend.useDefault = true` (to avoid gitleaks aborting), the plugin shifts the responsibility of including default rules entirely to the project's `.gitleaks.toml`. If the project file was authored simply to provide an `[allowlist]` and forgot to include `[extend] useDefault = true`, all default secret scanning signatures will be silently disabled in the local run.",
+          "suggestion": "Parse",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "build_coverage()` derives `degraded` only from `scan_errors`, but the acceptance criterion defines `degraded` as “the tool ran but produced no parseable output.” A command can exit successfully yet emit malformed/empty SARIF/JSON, and a command can fail before a parser is invoked. Neither condition is reliably represented by a generic scan-error channel. Conversely, a zero-finding valid report must remain `covered`, not `degraded`.",
+          "suggestion": "Have each scan leg produce a small normalized execution result at the scanner boundary: requested, invoked, executable available, exit status, output-present, parse-succeeded, and parse-error detail. Keep `build_coverage()` pure, but derive it from these normalized leg results rather than capabilities plus a generic error list. Add tests for valid zero findings, malformed output with exit 0, non-zero exit with output, and a tool disappearing between capability probe and invocation.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "The proposed unconditional `prompt_injection` coverage row is not grounded in an identified scanner/backend capability. The plan says it “cannot be missing,” but does not define which tool checks it, what a `covered` status means, or how its findings are classified. A row marked `covered` without an actual executed check would create precisely the false-clean signal this change is intended to prevent.",
+          "suggestion": "Do not introduce a synthetic class unless there is a concrete scanner leg and a defined finding mapping for it. Build the class universe from the canonical OSS class map plus explicitly advertised backend classes. If prompt-injection scanning exists elsewhere, model it as a real capability with an explicit requested/executed/parser outcome; otherwise leave it out of this manifest.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "The Gitleaks approach assumes that a generated config containing `[extend] path = ...` plus Shipwright exclusions preserves the project’s rules and allowlist while also applying Shipwright exclusions. That depends on the exact merge/override semantics of the installed Gitleaks version—particularly for `[allowlist]`, rule arrays, and nested configuration. If the generated configuration replaces rather than merges a project allowlist, local and host scan behavior will still diverge, potentially in the opposite direction.",
+          "suggestion": "Add an integration test using the pinned Gitleaks binary/version, not just a rendered-TOML unit test. The fixture should contain custom rules and allowlist entries in `.gitleaks.toml`, include a Shipwright exclusion, and prove that both sets of intended behavior apply under the generated `--config`. Confirm the supported Gitleaks version and document the expected extension semantics. If exclusion merging is not supported as assumed, the design needs adjustment rather than attempting to reproduce Gitleaks merging locally.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "security",
+          "file": null,
+          "line": null,
+          "finding": "“Escape Windows backslashes” is insufficient for safely serializing an arbitrary absolute path into a TOML basic string. Repository paths may contain quotes, control characters, or platform-specific forms that require escaping. A malformed generated config can either fail the scan or cause it to use unintended configuration.",
+          "suggestion": "Use a tested TOML string serializer or implement complete TOML basic-string escaping for backslash, quote, newline, tab, carriage return, and other control characters. Add path-rendering tests for spaces, quotes, backslashes, Unicode, and repository paths containing characters that require escaping. Ensure temporary config files are created with restrictive permissions and reliably removed, consistent with existing temp-file handling.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "Comparison correctness relies on `finding_class()` being stable for every persisted finding, but the plan does not define the mapping contract for existing sidecar formats, multiple source schemas, or findings with absent/unknown source/rule metadata. A finding classified differently after a parser or source-name change can appear as resolved/new even when it persists. The `source:rule:file:line` key also treats line movement as a resolution/new pair, which can inflate counts during ordinary edits.",
+          "suggestion": "Define and test a version-tolerant finding-class mapping for every supported producer/source and explicitly preserve the raw source metadata needed to classify historical sidecars. Keep unknown findings `unclassified` as proposed, but report their count prominently enough that comparison totals cannot be mistaken for complete results. Confirm that line-sensitive fingerprinting is an intentional inherited triage contract; if it is, document that comparison is “location-based” and add a moved-line test so the behavior is explicit.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "Adding `coverage` is additive at the JSON level, but the affected-boundaries table identifies existing consumers—including workflow `jq`, shared scripts, cache input, historical archives, and possibly schema validators—that may assume known keys, a particular sidecar shape, or complete finding records. The plan mentions round-tripping cache input but does not explicitly cover old-cache behavior, malformed coverage, or every existing consumer.",
+          "suggestion": "Audit and test each named reader against: no `coverage` (pre-feature cache/history), valid coverage, empty coverage, and malformed/unknown-status coverage. Readers should treat absent or invalid coverage as unknown/incomplete rather than raising or implying complete coverage. Validate generated manifests before writing them so only the closed status vocabulary reaches downstream consumers.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The scope-gate behavior is underspecified operationally. The plan says findings outside the selected scope are recorded as `deferred`, but does not identify the persistence location, schema/state transition, deduplication behavior, or how a later run reopens or distinguishes deferred findings. It also introduces a non-interactive default of critical+high, which is a policy choice that can conflict with the requirement to ask the operator before remediation.",
+          "suggestion": "Name the existing accepted-findings/triage state that will store `deferred`, define its identifier and lifecycle, and add tests for repeated scans so the new aggregate action unit and deferred records do not duplicate. Make non-interactive behavior explicitly opt-in or clearly distinguish it as “no remediation performed; recommended scope is critical+high” unless an existing automation contract authorizes remediation without an operator answer.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "The aggregate triage key `security-scan:{repo}` needs a precise, stable repository identity. Using a display name, relative path, symlinked path, or basename can collide across worktrees/nested repositories or create duplicate cards for the same repository when invoked from different directories.",
+          "suggestion": "Define `{repo}` as a canonical target-root identity—preferably a normalized resolved repository root, or an existing repository ID if the triage protocol has one—and use that same identity for scan history, action-unit deduplication, and launch payloads. Add tests for two repositories with the same basename and for scans launched from different working directories.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "The modularization rationale is generally reasonable because of the anti-ratchet constraint, but the plan is internally inconsistent: it says “five new modules,” then lists eight library modules plus a CLI. `scan_history.py` and `sarif_outputs.py` are unrelated extractions, and `security_card.py`/`security_triage_emit.py` may be separable only if they have genuinely distinct reusable contracts. This makes the change harder to review than necessary.",
+          "suggestion": "Reconcile the module inventory and state which extractions are strictly required to keep each baselined file below its current limit. Keep the feature modules focused on coverage, Gitleaks config, comparison, and triage; only retain unrelated extractions where they are necessary to satisfy the bloat gate. Avoid adding the compare CLI unless there is an identified operator or test entry point that requires it.  Overall, the core design is sound: additive coverage data, fail-closed historical comparison, and Gitleaks extension rather than hand-merging are the right directions. The main implementation risks are accurately detecting parse degradation, validating actual Gitleaks extend semantics, and making classification/scope state stable across existing sidecars and repeated runs.",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-07-27T11:47:40.297256+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[gemini] Here is the architectural review of the proposed implementation approach.\n\n### Findings\n\n- **Category:** Security\n- **Severity:** High\n- **Finding:** Silent dropping of default secret scanning rules. Gitleaks requires exactly one `[extend]` block. By switching the generated config to use `extend.path = \"<project-config>\"` and dropping `extend.useDefault = true` (to avoid gitleaks aborting), the plugin shifts the responsibility of including default rules entirely to the project's `.gitleaks.toml`. If the project file was authored simply to provide an `[allowlist]` and forgot to include `[extend] useDefault = true`, **all default secret scanning signatures will be silently disabled** in the local run.\n- **Suggestion:** Parse\n\n[openai] 1. **Category:** edge-case  \n   **Severity:** high  \n   **Finding:** `build_coverage()` derives `degraded` only from `scan_errors`, but the acceptance criterion defines `degraded` as “the tool ran but produced no parseable output.” A command can exit successfully yet emit malformed/empty SARIF/JSON, and a command can fail before a parser is invoked. Neither condition is reliably represented by a generic scan-error channel. Conversely, a zero-finding valid report must remain `covered`, not `degraded`.  \n   **Suggestion:** Have each scan leg produce a small normalized execution result at the scanner boundary: requested, invoked, executable available, exit status, output-present, parse-succeeded, and parse-error detail. Keep `build_coverage()` pure, but derive it from these normalized leg results rather than capabilities plus a generic error list. Add tests for valid zero findings, malformed output with exit 0, non-zero exit with output, and a tool disappearing between capability probe and invocation.\n\n2. **Category:** approach  \n   **Severity:** high  \n   **Finding:** The proposed unconditional `prompt_injection` coverage row is not grounded in an identified scanner/backend capability. The plan says it “cannot be missing,” but does not define which tool checks it, what a `covered` status means, or how its findings are classified. A row marked `covered` without an actual executed check would create precisely the false-clean signal this change is intended to prevent.  \n   **Suggestion:** Do not introduce a synthetic class unless there is a concrete scanner leg and a defined finding mapping for it. Build the class universe from the canonical OSS class map plus explicitly advertised backend classes. If prompt-injection scanning exists elsewhere, model it as a real capability with an explicit requested/executed/parser outcome; otherwise leave it out of this manifest.\n\n3. **Category:** risk  \n   **Severity:** high  \n   **Finding:** The Gitleaks approach assumes […truncated]"
+    },
+    "code": {
+      "review_type": "code",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-07-27T11:47:40.785752+00:00",
+      "disposition": "internal code-reviewer subagent not invoked: this session carries an explicit operator instruction not to call the Agent tool unless requested. Substituted by six rounds of the external code cascade on the PR head (converged to no findings) plus the Step 7 self-review.",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-07-27T11:47:41.058533+00:00",
+      "disposition": "doubt-reviewer is an Agent-tool subagent and Advisory per iteration-reviews.md; not invoked for the same operator instruction as the code pass.",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": "openrouter",
+      "completed_at": "2026-07-27T11:47:40.528403+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "unstructured",
+      "raw_excerpt": "[gemini] . `cumulative==total` (2==2) -> continue.\n        - medium: count=0, cumulative=2. `count==0` -> continue.\n        - low: count=0. continue.\n        - info: count=0. continue.\n        Result: `options=[\"everything (2)\"]`. Correct.\n\n        Counts: `{\"high\": 1, \"low\": 1}` -> total=2\n        - critical: count=0 -> continue\n        - high: count=1, cumulative=1. `1 != 0` and `1 != 2`. `options.append(\"high and above (1)\")`.\n        - medium: count=0 -> continue\n        - low: count=1, cum\n\n[openai] No concrete defects found in the provided diff.\n\nThe implementation appears to satisfy the stated acceptance criteria: it derives and persists coverage manifests, renders incomplete/unknown coverage safely, extends project gitleaks configuration without combining `useDefault` and `path`, gates comparisons on mutually covered classes, and emits the severity/scope triage card alongside existing per-finding triage items. The tests include meaningful producer-to-consumer round trips, malformed-artifact handling, real-binary gitleaks coverage, comparison regressions, and card emission verification.\n\nOverall assessment: ship-as-is."
+    }
+  }
+}

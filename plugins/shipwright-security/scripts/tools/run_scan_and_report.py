@@ -26,9 +26,7 @@ import argparse
 import io
 import json
 import os
-import re
 import sys
-import uuid
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -62,6 +60,9 @@ except ImportError as exc:  # pragma: no cover - import safety
 
 from atomic_write import durable_atomic_write  # noqa: E402
 from redact import redact_findings  # noqa: E402
+from scan_coverage import build_coverage  # noqa: E402
+from scan_history import HISTORY_DIRNAME, new_scan_id, prune_history  # noqa: E402
+from security_triage_emit import emit_findings_to_triage  # noqa: E402
 
 import generate_security_report as gsr  # noqa: E402
 
@@ -90,28 +91,15 @@ def _fix_windows_encoding() -> None:
 
 REPORTS_DIR = ".shipwright/securityreports"  # relative to project_root
 LEGACY_REPORTS_DIRNAME = "securityreports"   # pre-iterate-3 location, only used for upgrade notice
-HISTORY_DIRNAME = "history"
 LATEST_MD = "latest.md"
 LATEST_JSON = "latest.json"
 GITIGNORE_ENTRY = "/.shipwright/"            # ignore the whole hidden dir, future-proof
 LEGACY_GITIGNORE_ENTRIES = {"/securityreports/", "securityreports/"}  # accepted as "present" during migration
-RETAIN_PAIRS = 20
-
-# Strict filename pattern for archived scans. User-added or malformed files
-# in history/ that don't match are NEVER pruned — they stay where the user
-# put them.
-SCAN_FILENAME_RE = re.compile(r"^scan-(\d{8}-\d{6}-[0-9a-f]{6})\.(md|json)$")
 
 
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
-
-
-def _new_scan_id(now: datetime) -> str:
-    """``scan-YYYYMMDD-HHMMSS-{6 hex}`` — second-grain + uuid for collision-safety."""
-    ts = now.strftime("%Y%m%d-%H%M%S")
-    return f"scan-{ts}-{uuid.uuid4().hex[:6]}"
 
 
 def _atomic_write(path: Path, text: str) -> None:
@@ -152,30 +140,6 @@ def _ensure_gitignore_entry(project_root: Path) -> str:
     return "added"
 
 
-def _list_archived_scans(history_dir: Path) -> list[tuple[str, list[Path]]]:
-    """Return list of (scan_id_stem, [files]) ordered newest-first.
-
-    Only files matching SCAN_FILENAME_RE are considered — manual / malformed
-    files in the directory are ignored.
-    """
-    if not history_dir.exists():
-        return []
-
-    by_stem: dict[str, list[Path]] = {}
-    for child in history_dir.iterdir():
-        if not child.is_file():
-            continue
-        m = SCAN_FILENAME_RE.match(child.name)
-        if not m:
-            continue
-        stem = f"scan-{m.group(1)}"
-        by_stem.setdefault(stem, []).append(child)
-
-    # Newest stem first (lexicographic sort works because YYYYMMDD-HHMMSS stems
-    # are monotonic).
-    return sorted(by_stem.items(), key=lambda kv: kv[0], reverse=True)
-
-
 def _emit_legacy_dir_notice(project_root: Path) -> bool:
     """Print a one-time stderr notice if the project has a stale legacy
     ``securityreports/`` directory but no new ``.shipwright/securityreports/``.
@@ -197,21 +161,6 @@ def _emit_legacy_dir_notice(project_root: Path) -> bool:
     return False
 
 
-def _prune_history(history_dir: Path, retain: int = RETAIN_PAIRS) -> int:
-    """Delete archived scans beyond the retain limit; return count removed."""
-    grouped = _list_archived_scans(history_dir)
-    to_delete = grouped[retain:]
-    removed = 0
-    for _stem, files in to_delete:
-        for f in files:
-            try:
-                f.unlink()
-                removed += 1
-            except OSError:
-                pass
-    return removed
-
-
 # ---------------------------------------------------------------------------
 # Main flow
 # ---------------------------------------------------------------------------
@@ -220,9 +169,10 @@ def _prune_history(history_dir: Path, retain: int = RETAIN_PAIRS) -> int:
 def _build_md_with_scan_id(
     findings: list[dict[str, Any]], repo: str, scan_id: str,
     scan_errors: list[dict[str, Any]] | None = None,
+    coverage: list[dict[str, Any]] | None = None,
 ) -> str:
     """Build the human-readable Markdown report with an HTML-comment scan_id header."""
-    body = gsr.generate_standard_report(findings, repo, scan_errors)
+    body = gsr.generate_standard_report(findings, repo, scan_errors, coverage)
     # Embed scan_id as the first line so latest.md ↔ latest.json correlate
     return f"<!-- scan_id: {scan_id} -->\n{body}"
 
@@ -230,8 +180,9 @@ def _build_md_with_scan_id(
 def _build_json_with_scan_id(
     findings: list[dict[str, Any]], repo: str, scan_id: str,
     scan_errors: list[dict[str, Any]] | None = None,
+    coverage: list[dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
-    payload = gsr.build_json_sidecar(findings, repo, scan_errors)
+    payload = gsr.build_json_sidecar(findings, repo, scan_errors, coverage)
     payload["scan_id"] = scan_id
     return payload
 
@@ -269,14 +220,24 @@ def run(*, project_root: Path, repo: str = "unknown", full_evidence: bool = Fals
     raw_errors = getattr(backend, "scan_errors", [])
     scan_errors = list(raw_errors) if isinstance(raw_errors, list) else []
 
+    # Coverage manifest: which classes this machine could actually check. A
+    # crashed tool already fails the run; an absent one used to be invisible,
+    # so a one-tool machine produced a report that read clean everywhere.
+    raw_caps = getattr(backend, "capabilities", None)
+    coverage = build_coverage(
+        available=raw_caps if isinstance(raw_caps, (set, frozenset, list, tuple)) else (),
+        scan_errors=scan_errors,
+    )
+
     # Default-on redaction unless explicitly opted out
     findings = redact_findings(raw_findings, full_evidence=full_evidence)
 
     now = datetime.now(timezone.utc)
-    scan_id = _new_scan_id(now)
+    scan_id = new_scan_id(now)
 
-    md_text = _build_md_with_scan_id(findings, repo, scan_id, scan_errors)
-    json_payload = _build_json_with_scan_id(findings, repo, scan_id, scan_errors)
+    md_text = _build_md_with_scan_id(findings, repo, scan_id, scan_errors, coverage)
+    json_payload = _build_json_with_scan_id(
+        findings, repo, scan_id, scan_errors, coverage)
     json_text = json.dumps(json_payload, ensure_ascii=False, indent=2) + "\n"
 
     reports_dir = project_root / REPORTS_DIR
@@ -292,9 +253,13 @@ def run(*, project_root: Path, repo: str = "unknown", full_evidence: bool = Fals
     _atomic_write(history_dir / f"{scan_id}.md", md_text)
     _atomic_write(history_dir / f"{scan_id}.json", json_text)
 
-    removed = _prune_history(history_dir)
+    removed = prune_history(history_dir)
 
     gitignore_status = _ensure_gitignore_entry(project_root)
+
+    # Mirror the REDACTED findings into triage. Best-effort — a triage failure
+    # never blocks the report already on disk.
+    emit_findings_to_triage(project_root, findings)
 
     summary = structured_success(data={
         "command": "run_scan_and_report",
@@ -302,6 +267,7 @@ def run(*, project_root: Path, repo: str = "unknown", full_evidence: bool = Fals
         "findings_count": len(findings),
         "degraded": bool(scan_errors),
         "scan_errors": scan_errors,
+        "coverage": coverage,
         "report_md": str(reports_dir / LATEST_MD),
         "report_json": str(reports_dir / LATEST_JSON),
         "history_pruned": removed,

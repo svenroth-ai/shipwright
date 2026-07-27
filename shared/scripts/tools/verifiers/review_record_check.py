@@ -49,6 +49,17 @@ CHECK_NAME = "review record (all five review types closed)"
 #: written; they are simply not blocked for lacking one.
 ENFORCED_COMPLEXITIES = ("small", "medium", "large")
 
+#: Complexities where a code review must actually have HAPPENED, not merely been
+#: answered. The phase matrix says Full Code Review "always" from medium up; at
+#: small it is conditional on risk flags, so a small run with neither review is
+#: compliant and must not be blocked.
+FLOORED_COMPLEXITIES = ("medium", "large")
+
+#: The pair that can carry the code-review pass. `doubt` is deliberately absent:
+#: it is Stage-3, conditional and advisory by design, so requiring it would
+#: block runs the contract says may skip it.
+_CODE_REVIEW_TYPES = ("code", "external_code")
+
 _TOOL = "shared/scripts/tools/record_review_pass.py"
 
 
@@ -60,7 +71,10 @@ def _remediation(run_id: str, outstanding: list[str]) -> str:
         f"for one that did not: `--status not_run|not_applicable --disposition "
         f"\"<the rule that applies>\"`. To close all "
         f"{len(outstanding)} at once: `uv run {_TOOL} close-missing --run-id "
-        f"{run_id} --status not_run --disposition \"<reason>\"`."
+        f"{run_id} --status not_run --disposition \"<reason>\"`. "
+        "NOTE at medium+: closing BOTH `code` and `external_code` without "
+        "having run either does not satisfy the gate — one of the two must "
+        "actually have happened."
     )
 
 
@@ -105,11 +119,60 @@ def check_review_record(project_root: Path, run_id: str, commit_hash: str = "") 
             f"{', '.join(outstanding)} — {_remediation(run_id, outstanding)}",
         )
 
+    floor = _code_review_floor(record, complexity, run_id)
+    if floor is not None:
+        return floor
+
     committed = _committed_check(project_root, run_id, commit_hash)
     if committed is not None:
         return committed
 
     return CheckResult(CHECK_NAME, True, "all five review types are recorded")
+
+
+def _code_review_floor(
+    record: dict, complexity: str, run_id: str,
+) -> CheckResult | None:
+    """At medium+, at least one code review must have actually run.
+
+    Answering every type is bookkeeping; this asks whether a review HAPPENED.
+    Without it the record could read `not_run` across the board — dispositions
+    and all — and the gate still returned green, so a medium+ iterate could ship
+    with no code review of any kind.
+
+    ``not_applicable`` deliberately does NOT satisfy the floor. If it did, the
+    gate would be satisfiable by re-labelling, which is the same
+    substance-versus-bookkeeping failure it exists to close. An individual type
+    may still be `not_applicable`; both of them cannot be.
+
+    Runs AFTER the pending check so an unanswered type keeps reporting as
+    unanswered — the two failures need different repairs ("record the pass" vs
+    "run a review"), and the more specific message has to win.
+    """
+    if complexity not in FLOORED_COMPLEXITIES:
+        return None
+
+    reviews = record.get("reviews", {}) or {}
+    ran = [
+        t for t in _CODE_REVIEW_TYPES
+        if str((reviews.get(t) or {}).get("status", "")) == "completed"
+    ]
+    if ran:
+        return None
+
+    return CheckResult(
+        CHECK_NAME, False,
+        f"no code review ran for this {complexity} iterate: both `code` and "
+        "`external_code` are closed without having happened. Every review type "
+        "being answered is bookkeeping — at medium+ the phase matrix requires a "
+        "code review to actually take place. Run ONE of them and record it: the "
+        "internal cascade (`spec-reviewer` → `code-reviewer` → `doubt-reviewer`) "
+        "or the external one (`external_review.py --mode code`), then "
+        f"`record_review_pass.py record --run-id {run_id} --review-type "
+        "{code|external_code} --status completed …`. The two are independent "
+        "routes, not a chain: if the internal reviewer cannot run, the external "
+        "one carries the pass rather than lapsing with it.",
+    )
 
 
 def _committed_check(project_root: Path, run_id: str, commit_hash: str) -> CheckResult | None:

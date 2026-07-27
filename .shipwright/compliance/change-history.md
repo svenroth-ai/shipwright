@@ -1,16 +1,16 @@
 # Commit Change Log
 
-Generated: 2026-07-27T20:12:50.912171+00:00
-Source-State: run=iterate-2026-07-27-triage-defer-review-followup
+Generated: 2026-07-27T19:47:47.363461+00:00
+Source-State: run=iterate-2026-07-27-review-floor-not-chained
 Consistency-audit: never run
-Total commits: 1236
+Total commits: 1241
 
 ## Commit Distribution
 
 ```mermaid
 pie title Commit Types
-    "fix" : 358
-    "feat" : 346
+    "fix" : 361
+    "feat" : 348
     "chore" : 256
     "docs" : 148
     "refactor" : 76
@@ -22,10 +22,13 @@ pie title Commit Types
 
 ## Changes by Type
 
-### Fixes (fix) — 358 commits
+### Fixes (fix) — 361 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-07-27 | iterate | the code review becomes a floor, not a chain | 6c897be7cd34 |
+| 2026-07-27 | security | the test suite stops leaking a triage store into the plugin dir (#474) | 6ba177083769 |
+| 2026-07-27 | run | report against what will exist, and assert only what you can prove (#468) | 3c13001aafeb |
 | 2026-07-27 | iterate | the merge state is a vocabulary, not a BLOCKED flag (#473) | 159953eec378 |
 | 2026-07-27 | shared | a multi-root pytest session names its own cause (#469) | bd7121b79d53 |
 | 2026-07-27 | compliance | an audit that checked nothing is not recorded (#466) | 968578b9de35 |
@@ -385,10 +388,12 @@ pie title Commit Types
 | 2026-03-21 | — | rename skill folders for clean slash commands | 5a8d77658fab |
 | 2026-03-20 | — | update README attribution to svenroth.ai | dd5de7f7d6ab |
 
-### Features (feat) — 346 commits
+### Features (feat) — 348 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-07-27 | security | a scan records what it did not check (part 1/2) (#455) | 8154e1bcaf2b |
+| 2026-07-27 | test | per-journey coverage, durable warning follow-ups, retry-passes (FR-01.06) (#446) | fbf93d01b55b |
 | 2026-07-27 | shared | the requirement-impact declaration, one mechanism for two phases (#463) | 26dfefa7286e |
 | 2026-07-27 | adopt | what the codebase arrived with is recorded as inherited (2/2) (#460) | 97b9878ed5b2 |
 | 2026-07-27 | adopt | the derived requirements catalogue announces itself (1/2) (#454) | d02f97141669 |
@@ -740,7 +745,7 @@ pie title Commit Types
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
-| 2026-07-27 | triage | sweep 6 outbox append(s) into branch | 156f923515a6 |
+| 2026-07-27 | triage | sweep 4 outbox append(s) into branch | 425b637b9a73 |
 | 2026-07-27 | triage | follow-up card for requiring the checks that gate nothing | 7387b2796960 |
 | 2026-07-26 | review | default external-review GPT model to gpt-5.6-terra (#435) | 8d750a5fc7af |
 | 2026-07-24 | security | stage full compliance write-set in Step 7.5 finalizer (#434) | 5da96ebe8561 |
@@ -1307,7 +1312,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 1236 |
+| Total commits | 1241 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 1236 |
+| Human-authored commits | 1241 |
 

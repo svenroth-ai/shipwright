@@ -142,4 +142,11 @@ def test_a_phase_the_orchestrator_completed_is_reported_as_finished(dispatched_r
 
     assert f"| {dispatch['phase']} | — | done | yes |" in out
     assert "- **Interrupted**: none — no phase is mid-flight" in out
-    assert "- **Finished**: 1 of" in out
+    assert "- **Finished**: 1 of 7" in out       # against `pipeline`, not task count
+
+    # `advance_pointer` has now parked the pointer on the SUCCESSOR with attempt
+    # reset to 0. That is the most common state a person returns to, and calling
+    # it a live dispatch is exactly the false statement this block exists to
+    # remove (iterate-2026-07-27-handoff-tally-and-gate-honesty, R2).
+    assert "Currently dispatched" not in out
+    assert "— pointed at, not yet dispatched" in out

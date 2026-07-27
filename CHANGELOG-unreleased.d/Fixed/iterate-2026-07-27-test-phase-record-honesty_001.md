@@ -1,0 +1,1 @@
+A browser test that failed and then passed on a retry is now recorded as a pass and counted separately, so a test that has needed a retry for weeks becomes visible before it fails for good. Each test also counts once however many attempts it took — retries previously inflated the total and marked a retried-and-passed test as failed, turning a green run red.

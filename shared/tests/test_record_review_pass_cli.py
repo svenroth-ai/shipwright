@@ -204,18 +204,17 @@ def test_a_generic_disposition_is_rejected(project):
     assert "disposition" in output
 
 
-def test_close_missing_unblocks_a_run_that_predates_the_record(project):
-    """AC10 — a run already past its review phases when this landed must be one
-    command away from finalizing, not trapped."""
+def test_close_missing_closes_every_outstanding_type(project):
+    """AC10 — a run past its review phases is one command from a COMPLETE record.
+    NARROWED at medium+ by the code-review floor: writing the record no longer
+    greens the gate — see `test_record_review_pass_cli_floor.py`."""
     assert check_review_record(project, RUN_ID).ok is False
-
     code, output = run_tool(project, "close-missing", "--status", "not_run",
                             "--disposition", "predates the per-run review record")
-
     assert code == 0, output
     assert set(json.loads(output)["closed"]) == {
         "self", "plan", "code", "doubt", "external_code"}
-    assert check_review_record(project, RUN_ID).ok
+    assert check_review_record(project, RUN_ID).detail.count("unanswered") == 0
 
 
 def test_close_missing_leaves_already_recorded_types_alone(project, tmp_path):
