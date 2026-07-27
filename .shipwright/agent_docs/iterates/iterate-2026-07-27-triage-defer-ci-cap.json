@@ -1,0 +1,10 @@
+{
+  "run_id": "iterate-2026-07-27-triage-defer-ci-cap",
+  "date": "2026-07-27T08:30:49.435429Z",
+  "type": "feature",
+  "complexity": "medium",
+  "branch": "iterate/triage-defer-ci-cap",
+  "spec": ".shipwright/planning/iterate/2026-07-27-triage-defer-ci-cap.md",
+  "tests_passed": true,
+  "adr": "iterate-2026-07-27-triage-defer-ci-cap"
+}

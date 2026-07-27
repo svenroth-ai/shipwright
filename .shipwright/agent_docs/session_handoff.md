@@ -1,39 +1,39 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-07-27-plan-phase-gates"
+run_id: "iterate-2026-07-27-triage-defer-ci-cap"
 phase: "iterate"
 reason: "ensure-current pre-merge refresh"
-timestamp: "2026-07-27T08:43:16.422767+00:00"
+timestamp: "2026-07-27T08:30:58.021874+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-07-27 08:43:16 UTC
+> Auto-generated 2026-07-27 08:30:58 UTC
 
 ## Session Info
 
-- **Session ID**: 1ea85a9d-f698-4336-8e01-ea2f4e2ae714
-- **Timestamp**: 2026-07-27 08:43:16 UTC
+- **Session ID**: 8a66b2f1-81e9-4505-8591-b94928ca02f6
+- **Timestamp**: 2026-07-27 08:30:58 UTC
 - **Reason**: ensure-current pre-merge refresh
 
 ## Last Iterate
 
-- **Run ID**: iterate-2026-07-27-plan-phase-gates
-- **Date**: 2026-07-27T08:43:10.255493Z
-- **Type**: change
+- **Run ID**: iterate-2026-07-27-triage-defer-ci-cap
+- **Date**: 2026-07-27T08:30:49.435429Z
+- **Type**: feature
 - **Complexity**: medium
-- **Branch**: iterate/plan-phase-gates
-- **ADR**: iterate-2026-07-27-plan-phase-gates
+- **Branch**: iterate/triage-defer-ci-cap
+- **ADR**: iterate-2026-07-27-triage-defer-ci-cap
 - **Tests passed**: True
-- **Spec**: .shipwright/planning/iterate/2026-07-27-plan-phase-gates.md
+- **Spec**: .shipwright/planning/iterate/2026-07-27-triage-defer-ci-cap.md
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/plan-phase-gates
-- **Run ID**: `iterate-2026-07-27-plan-phase-gates`
-- **Spec**: .shipwright/planning/iterate/2026-07-27-plan-phase-gates.md
+- **Branch**: iterate/triage-defer-ci-cap
+- **Run ID**: iterate-2026-07-27-triage-defer-ci-cap
+- **Spec**: .shipwright/planning/iterate/2026-07-27-triage-defer-ci-cap.md
 - **Complexity**: medium
-- **External Review Marker**: stale (predates spec (2026-07-27T07:17:11))
+- **External Review Marker**: stale (predates spec (2026-07-27T07:19:14))
 
 ### Mandatory replay on Resume
 
@@ -52,8 +52,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/plan-phase-gates
-- **Last Commit**: dac19c82 Merge remote-tracking branch 'origin/main' into iterate/plan-phase-gates
+- **Branch**: iterate/triage-defer-ci-cap
+- **Last Commit**: 5a48e306 Merge remote-tracking branch 'origin/main' into iterate/triage-defer-ci-cap
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
