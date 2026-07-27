@@ -245,7 +245,7 @@
   },
   "source_state": {
     "run_id": "iterate-2026-07-27-checks-that-gate-nothing",
-    "commit": "04a9383add90bf7af04435e301f3ec27eaa7e882",
-    "dirty": true
+    "commit": "091b252990c7ab296369266d00beabf4952ecc69",
+    "dirty": false
   }
 }
