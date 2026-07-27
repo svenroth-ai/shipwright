@@ -1,16 +1,16 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-07-23-req3-phase2-content-mono",
+    "run_id": "iterate-2026-07-27-project-granularity-basis",
     "date": "2026-07-27",
     "unit": {
       "status": "passed",
-      "passed": 9891,
-      "total": 9891
+      "passed": 7349,
+      "total": 7349
     },
     "integration": {
       "status": "passed",
-      "passed": 417,
-      "total": 417
+      "passed": 418,
+      "total": 418
     },
     "pgtap": {
       "status": "not_run",
@@ -30,70 +30,161 @@
     "smoke": {
       "status": "not_run"
     },
-    "degraded": [],
+    "degraded": [
+      {
+        "condition": "external code review - one provider returned no usable findings",
+        "detail": "Gemini 3.1 Pro's --mode code reply degraded into unterminated reasoning and produced no findings. GPT-5.6 returned 3, all accepted and fixed. Recorded rather than counted as a clean second pass."
+      },
+      {
+        "condition": "internal code-reviewer / doubt-reviewer subagents not invoked",
+        "detail": "This session carries a standing instruction not to use the Agent tool unless the user asks for it. Both passes were performed inline by the orchestrator and recorded in reviews.json with dispositions naming the substitution; the independent pass is the external code review."
+      }
+    ],
     "surface_verification": {
       "surface": "cli",
-      "runner": "uv run pytest integration-tests/test_requirements_catalog_contract.py integration-tests/test_requirements_catalog_parsers.py integration-tests/test_fr_table_shape_convergence.py -q",
+      "runner": "uv run --with pytest pytest plugins/shipwright-compliance/tests/test_audit_group_i_criteria.py plugins/shipwright-compliance/tests/test_group_i_criteria_roundtrip.py -q",
       "exit_code": 0,
-      "tests_run": 23,
-      "evidence_path": "C:\\01_Development\\shipwright\\.worktrees\\req3-phase2-content-mono\\.shipwright\\runs\\iterate-2026-07-23-req3-phase2-content-mono\\surface_verification.log",
-      "timestamp": "2026-07-26T23:23:54.302Z",
-      "attempts": 1
+      "tests_run": 15,
+      "evidence_path": ".shipwright/runs/iterate-2026-07-27-project-granularity-basis/surface_verification.json"
     },
     "test_completeness": {
       "status": "complete",
       "behaviors": [
         {
-          "behavior": "the catalog carries 18 requirements, each with its own id, anchor, priority, basis and layers cell",
+          "behavior": "a heading-form FR block with bullets reads as having criteria",
           "disposition": "tested",
-          "evidence": "test_requirements_catalog_contract.py::test_all_requirements_survive_with_unchanged_ids and ::test_every_requirement_has_an_explicit_anchor PASSED"
+          "evidence": "test_group_i_criteria.py::test_heading_form_counts PASSED"
         },
         {
-          "behavior": "both production parsers read the changed catalog and agree on the same id set",
+          "behavior": "a bold-label FR block with checkboxes reads as having criteria",
           "disposition": "tested",
-          "evidence": "test_requirements_catalog_parsers.py::test_the_fr_table_reader_still_sees_every_requirement and ::test_the_heading_parser_sees_the_same_set PASSED"
+          "evidence": "test_group_i_criteria.py::test_bold_label_form_counts PASSED"
         },
         {
-          "behavior": "every requirement keeps a resolving deep link from the traceability matrix",
+          "behavior": "a block whose only content is a TBD-class placeholder counts as zero criteria",
           "disposition": "tested",
-          "evidence": "test_requirements_catalog_contract.py::test_every_rtm_deep_link_resolves_end_to_end PASSED after regenerating the matrix"
+          "evidence": "test_group_i_criteria.py::test_tbd_placeholder_is_no_criteria, ::test_bold_label_placeholder_is_no_criteria, ::test_placeholder_variants_are_not_criteria PASSED"
         },
         {
-          "behavior": "no criterion sentence carries a run id, a decision-record number, a path or a source filename",
+          "behavior": "an FR with no criteria block anywhere is reported",
           "disposition": "tested",
-          "evidence": "test_requirements_catalog_contract.py forbidden-token scan over every (E) line PASSED"
+          "evidence": "test_group_i_criteria.py::test_missing_block_reported PASSED"
         },
         {
-          "behavior": "the newly minted requirement carries its decided basis and layers, pinned per requirement rather than in aggregate",
+          "behavior": "an FR table row is never mistaken for a criteria anchor",
           "disposition": "tested",
-          "evidence": "test_fr_table_shape_convergence.py::test_every_live_requirement_carries_its_decided_basis and ::test_the_migration_did_not_change_any_required_layers PASSED"
+          "evidence": "test_group_i_criteria.py::test_table_row_is_not_an_anchor PASSED"
         },
         {
-          "behavior": "the elicitation module keeps every section and load-bearing sentence the catalog cites",
+          "behavior": "a heading that merely MENTIONS an FR id does not supply its criteria (false-green guard)",
           "disposition": "tested",
-          "evidence": "test_requirement_elicitation_refs.py + test_requirement_elicitation_rigor.py PASSED (28 cases)"
+          "evidence": "test_group_i_criteria.py::test_heading_merely_mentioning_the_id_is_not_an_anchor PASSED - reproduced the defect found by external code review, then fixed"
         },
         {
-          "behavior": "the glossary stays within its size ceiling and carries no legacy artifact path",
+          "behavior": "the tightened anchor still admits every heading form the producers emit",
           "disposition": "tested",
-          "evidence": "test_bloat_defense_artifacts.py::test_glossary_under_loc_limit and test_artifact_path_canon.py PASSED"
+          "evidence": "test_group_i_criteria.py::test_anchor_accepts_the_shapes_producers_emit PASSED"
         },
         {
-          "behavior": "the acceptance criteria say what is true of the product",
+          "behavior": "a block terminates at EOF, at a same-or-higher heading, but not at a deeper subheading",
+          "disposition": "tested",
+          "evidence": "test_group_i_criteria.py::test_block_ends_at_eof, ::test_sibling_heading_does_not_donate_criteria, ::test_deeper_subheading_stays_inside_the_block PASSED"
+        },
+        {
+          "behavior": "id matching is boundary-anchored so FR-01.02 is not satisfied by FR-01.029",
+          "disposition": "tested",
+          "evidence": "test_group_i_criteria.py::test_id_match_is_boundary_anchored PASSED"
+        },
+        {
+          "behavior": "the same FR id in two specs is judged per file, so one cannot mask the other",
+          "disposition": "tested",
+          "evidence": "test_group_i_criteria_roundtrip.py::test_same_id_in_two_specs_is_judged_per_file PASSED"
+        },
+        {
+          "behavior": "an unreadable spec reports its rows as missing rather than raising",
+          "disposition": "tested",
+          "evidence": "test_group_i_criteria_roundtrip.py::test_unreadable_spec_reports_missing_not_crash PASSED"
+        },
+        {
+          "behavior": "the literal /shipwright-project template block parses as criteria",
+          "disposition": "tested",
+          "evidence": "test_group_i_criteria_roundtrip.py::test_project_template_round_trips PASSED"
+        },
+        {
+          "behavior": "adopt's real emitted spec parses - mined criteria yes, TBD fallback no",
+          "disposition": "tested",
+          "evidence": "test_group_i_criteria_roundtrip.py::test_adopt_emission_round_trips PASSED"
+        },
+        {
+          "behavior": "this repo's own 18 requirements all read as elaborated",
+          "disposition": "tested",
+          "evidence": "test_group_i_criteria_roundtrip.py::test_this_repos_own_catalogue_is_fully_elaborated PASSED; confirmed end-to-end by running group_i.run() live against the repo -> I6 pass"
+        },
+        {
+          "behavior": "I6 is registered, reports the gap, and is advisory - never flips any_fail",
+          "disposition": "tested",
+          "evidence": "test_audit_group_i_criteria.py::test_i6_is_registered, ::test_i6_reports_the_requirement_without_criteria, ::test_i6_never_fails, ::test_i6_does_not_change_the_group_verdict PASSED"
+        },
+        {
+          "behavior": "I6 skips when the scan found no rows, rather than claiming a pass over an empty set",
+          "disposition": "tested",
+          "evidence": "test_audit_group_i_criteria.py::test_i6_skips_without_rows PASSED; integration-tests/test_requirements_corpus_false_verdicts.py::test_fv2_group_i_skips_every_check_on_empty PASSED"
+        },
+        {
+          "behavior": "retired requirements are not reported as missing criteria",
+          "disposition": "tested",
+          "evidence": "test_audit_group_i_criteria.py::test_retired_rows_excluded PASSED"
+        },
+        {
+          "behavior": "the pure move keeps FrRow / scan_specs / scan_fr_rows reachable from group_i",
+          "disposition": "tested",
+          "evidence": "test_audit_group_i_criteria.py::test_moved_row_scanner_still_reachable_from_group_i PASSED; the three pre-existing test_audit_group_i*.py files pass unchanged"
+        },
+        {
+          "behavior": "the moved _scan_one_spec still resolves for the requirements-corpus registry",
+          "disposition": "tested",
+          "evidence": "integration-tests/ 418 passed after repointing the registry module+source"
+        },
+        {
+          "behavior": "all six surfaces that instruct on Basis state the same qualified rule",
+          "disposition": "tested",
+          "evidence": "test_requirement_granularity_and_basis.py::test_every_surface_qualifies_assumed PASSED (6 params); vacuity probe: 0 occurrences at HEAD in every file"
+        },
+        {
+          "behavior": "each situation row in the elicitation table names the settlement, not only the prose above it",
+          "disposition": "tested",
+          "evidence": "test_requirement_granularity_and_basis.py::test_every_situation_row_names_the_settlement PASSED (2 params)"
+        },
+        {
+          "behavior": "the generation template seeds no bare `assumed` row",
+          "disposition": "tested",
+          "evidence": "test_requirement_granularity_and_basis.py::test_generation_template_seeds_no_bare_assumed_row PASSED; vacuity probe: 4 such rows existed at HEAD"
+        },
+        {
+          "behavior": "fr-authoring.md 3a exists, states the granularity test, and keeps the judgement human",
+          "disposition": "tested",
+          "evidence": "test_requirement_granularity_and_basis.py::test_fr_authoring_carries_the_granularity_section, ::test_granularity_section_keeps_the_judgement_human PASSED"
+        },
+        {
+          "behavior": "the granularity rule is cited from every doc an author reads, and the two granularities are distinguished",
+          "disposition": "tested",
+          "evidence": "test_requirement_granularity_and_basis.py::test_granularity_rule_is_cited (3 params), ::test_split_heuristics_distinguishes_the_two_granularities PASSED"
+        },
+        {
+          "behavior": "whether a requirement is TOO BROAD, as opposed to merely having no criteria",
           "disposition": "untestable",
-          "reason_code": "requires-manual-visual-judgment",
-          "reason": "whether a sentence in business language faithfully describes a mechanism is a reading judgement, not an oracle. This is the round's own finding, recorded as FR-01.16 criterion 9 and as campaign decision D7: an LLM may adjudicate a mechanically raised flag, never raise one. Each criterion instead carries an enforcement classification in the AC evidence ledger, and the criteria that CAN be pinned are enumerated above."
+          "evidence": "reason_code: requires-manual-visual-judgment - deciding that a capability names several capabilities at once is reading comprehension against no oracle. This is why I6 is advisory and why fr-authoring.md 3a states the judgement stays human; the check reports only the observable signal (zero criteria)."
         }
       ],
       "counts": {
-        "testable": 7,
-        "tested": 7,
+        "testable": 24,
+        "tested": 24,
         "untestable": 1,
         "untested_testable": 0
       },
       "enumeration_basis": {
-        "acs": 8,
-        "covered_acs": 8
+        "acs": 2,
+        "covered_acs": 2
       }
     }
   },

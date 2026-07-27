@@ -100,6 +100,51 @@ it does not need a second home in the requirements table.
 
 ---
 
+## 3a. How big is one requirement?
+
+§3 asks *does this deserve a row?* This asks the opposite question about the row
+you decided to write: **is it one capability, or several wearing one name?**
+
+> **The granularity test:** can you enumerate acceptance criteria that **a
+> single delivery** would satisfy? If you cannot, the requirement is too broad
+> and gets divided.
+
+Being **unable to enumerate what would settle it** is the signal — it is what
+naming several capabilities at once feels like from the inside. You reach for
+criteria, and each one you write turns out to be about a different piece of the
+thing; or the list refuses to end; or every criterion is so general that
+satisfying it would not tell you the work was done.
+
+This is a different granularity from the one in
+`plugins/shipwright-project/skills/project/references/split-heuristics.md`. That
+file sizes the **planning unit** — how much work goes into one split so a plan
+stays tractable. This sizes **one row in the table**. A split holds many
+requirements; getting one right says nothing about the other.
+
+**Signs a requirement names more than one capability**
+
+- its description joins two capabilities with *and*, and only one half has
+  criteria (the negative-space pass in `shared/requirement-elicitation.md` §8.1
+  finds this reliably);
+- its criteria cannot be satisfied by one delivery — some would land in a later
+  round, so the row can never honestly be called done;
+- it has **no criteria at all**, and attempts to write them keep sliding off.
+
+**The judgement stays human.** No check can decide whether a capability is too
+broad; that requires reading it. What is observable is the last sign above —
+zero criteria — and the compliance audit reports it as **`I6`, advisory** (§7).
+Treat an I6 hit as a prompt to apply this test, not as a verdict that the row is
+wrong: a requirement can legitimately be waiting for its criteria, and one with
+criteria can still be far too broad.
+
+**This rule was written from a failure.** A requirement in Shipwright's own
+catalogue carried a single acceptance criterion for an entire delivery phase,
+and nobody noticed for months. Nothing was broken, nothing was flagged, and the
+row read as finished — which is exactly what an over-broad requirement looks
+like until someone tries to build against it.
+
+---
+
 ## 4. Numbering and grouping
 
 **ID scheme — `FR-{group}.{NN}`.** The group is the planning split; `NN` is the
@@ -160,13 +205,43 @@ One value, from a closed set. **A value outside it is a hard audit failure**
 | `code` | it was read from source |
 | `observed` | it was seen in the running application |
 | `tests` | it was derived from existing tests |
-| `assumed` | **nobody has confirmed it — it needs checking** |
+| `assumed` | **nobody has confirmed it — and what would settle it is named** |
 | `other` | a genuine special case; write `other: <reason>` |
 
 `assumed` is the one that earns its keep. Reach for it whenever you are
 tempted to guess: if an interviewee could not recall *why* a limit is 90 and
 you wrote down a plausible number, that requirement's basis is `assumed`, not
 `interview`. Recording the guess as a guess is the whole point.
+
+**`assumed` is never bare.** It is available only together with **what would
+settle it** — who to ask, or what to try. The reason is that the value has two
+very different uses that look identical on the page: an honest *we cannot know
+this yet*, and a silent *nobody asked*. Naming the settlement separates them,
+and it is what turns the guess into scheduled work instead of a permanent one.
+
+**Where the settlement is written: an acceptance criterion, not this cell.**
+The `Basis` column takes one bare value from the vocabulary above and nothing
+else — `assumed — ask the product owner` is a **malformed** cell that fails
+audit `I5`, exactly as `code (auth.ts)` does. So the cell stays `assumed`, and
+the requirement carries a criterion naming what would settle it:
+
+```
+| FR-01.05 | Auth | Login rate limit | Should | The system SHOULD limit
+  repeated failed sign-ins. | assumed | unit |
+
+- [ ] Confirm the threshold with the product owner before build — 5/minute is
+      a placeholder nobody has approved.
+```
+
+That is the same place `shared/requirement-elicitation.md` §8 already records
+every other kind of gap, so there is one home for "what is still open" rather
+than two.
+
+**When `assumed` is available at all depends on whether the person who knows is
+reachable** — `requirement-elicitation.md` §8 is the binding rule, and it
+divides by phase: not for a new project while someone can answer, yes for an
+adopted codebase where the decision was made years ago. The ban targets silent
+assuming, never honest not-knowing.
 
 Known values take **no qualifier** — write `code`, never `code (auth.ts)`.
 `other` never blocks; a bare `other` is only nagged for its missing reason. A
@@ -259,6 +334,7 @@ document.
 | `I3` | an FR that only describes a change to another FR — a fold candidate | advisory |
 | `I4` | the same FR ID used twice in one split, or reuse of a retired number | fails the audit |
 | `I5` | a `Basis` value outside the §4a vocabulary, or a blank cell in a table that declares the column | fails the audit |
+| `I6` | an FR with no acceptance criteria at all (§3a) | advisory |
 
 **Advisory** means the finding is reported with its count and IDs but does not
 change the audit's verdict or exit code — an existing spec can carry historical
@@ -274,6 +350,14 @@ advisory: an escape hatch that blocks is not one.
 
 `I1` reports `skip` on a spec shape with no Name column — the §5 fence has
 nothing to examine there, and reporting `pass` would be a false green.
+
+`I6` is advisory for a different reason than `I1`–`I3`. It is not a prose
+heuristic that legacy specs will trip: whether a row has criteria is objective,
+and the check reads the acceptance-criteria shapes both generators actually
+emit. It stays advisory because the rule behind it (§3a — too broad gets
+divided) is a judgement a person makes; zero criteria is the observable signal
+that the judgement is *owed*, not the verdict. A signal that reddened CI would
+be read as the verdict.
 
 Not linted, deliberately: §5.3 (name length) and §5.4 (one capability per FR)
 need editorial judgement, and a wrong automated verdict would be worse than
