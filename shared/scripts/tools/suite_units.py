@@ -31,6 +31,13 @@ DEFAULT_TIMEOUT_SECONDS = 1800
 _OPT_IN = ("this runner is opt-in; F0 falls back to the project's own test command "
            "(references/F0.md).")
 
+#: Unit-outcome vocabulary. Here rather than in the runner because two modules need
+#: it - `run_test_suite.classify()` PRODUCES it, `suite_report` RENDERS it - and this
+#: is the leaf both already import (a copy in the renderer could silently diverge).
+PASS = "pass"
+TEST_FAILURE = "test_failure"
+INFRA = "infra"
+
 
 class SuiteConfigError(RuntimeError):
     """The ``suite`` config is absent, malformed, or not runnable - never swallowed."""
