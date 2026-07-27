@@ -34,6 +34,7 @@ Consistency-audit: never run
 | Event | Source | Type | FRs | Tests | Commit | Date |
 |-------|--------|------|-----|-------|--------|------|
 | <a id="evt-92094b2e"></a>bounded sharing-violation retry on both sides of the atomic-write boundary | iterate | change | [FR-01.01](#rtm-fr-0101), [FR-01.09](#rtm-fr-0109) | — | — | 2026-07-27 |
+| <a id="evt-aea234e3"></a>refuse a multi-root pytest session instead of failing 21 unrelated tests | iterate | change |  | — | — | 2026-07-27 |
 | <a id="evt-36d0f887"></a>raise the PR-review diff cap, cut at a file boundary, name what went unreviewed | iterate | change | [FR-01.17](#rtm-fr-0117) | — | — | 2026-07-27 |
 | <a id="evt-e3d8f519"></a>an audit that checked nothing is not recorded | iterate | change |  | — | — | 2026-07-27 |
 | <a id="evt-e0b8fd18"></a>the phase canon asks whether the handoff belongs to this run | iterate | change | [FR-01.01](#rtm-fr-0101) | — | — | 2026-07-27 |
@@ -420,7 +421,7 @@ Consistency-audit: never run
 |--------|-------|
 | Total splits built | 0 |
 | Build sections | 0 |
-| Iterate changes | 380 |
+| Iterate changes | 381 |
 | Requirements total | 18 |
 | Requirements verified | 17/18 |
 | Must-have verified | 14/14 |
