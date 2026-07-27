@@ -1,126 +1,85 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-07-27-run-unit-parallel-race",
+    "run_id": "iterate-2026-07-27-audit-empty-run-not-recorded",
     "date": "2026-07-27",
     "unit": {
       "status": "passed",
-      "passed": 6007,
-      "total": 6007
+      "passed": 7052,
+      "total": 7052,
+      "note": "shipwright-compliance 1509 + shared/tests 5543 (-m 'not slow and not cross_plugin'); 13 skipped"
     },
     "integration": {
       "status": "passed",
-      "passed": 1,
-      "total": 1
+      "passed": 422,
+      "total": 422
     },
     "pgtap": {
-      "status": "skipped",
+      "status": "not_run",
       "passed": 0,
       "total": 0
     },
     "e2e": {
-      "status": "passed",
-      "passed": 6,
-      "total": 6
+      "status": "not_run",
+      "passed": 0,
+      "total": 0
     },
     "design_fidelity": {
-      "status": "skipped",
+      "status": "not_run",
       "passed": 0,
       "total": 0
     },
     "smoke": {
-      "status": "skipped"
+      "status": "not_run"
     },
-    "degraded": [
-      "external code review single-sourced: gemini returned an empty reply (status=degraded); only openai answered (verdict=revise). Its two findings were both accepted and fixed.",
-      "the real-OS Windows fidelity test (test_real_windows_reader_does_not_lose_the_write) is skipped on Linux CI by platform gate; the injected-failure tests cover the same logic on every platform."
-    ],
+    "degraded": [],
     "surface_verification": {
       "surface": "cli",
-      "runner": "uv run --with pytest --with pytest-mock pytest plugins/shipwright-changelog/tests/test_integration.py -q -p no:cacheprovider",
+      "runner": "uv run --directory plugins/shipwright-compliance pytest tests/test_run_audit_records_run.py -q",
       "exit_code": 0,
-      "tests_run": 6,
-      "evidence_path": "C:\\01_Development\\shipwright\\.worktrees\\run-unit-parallel-race\\.shipwright\\runs\\iterate-2026-07-27-run-unit-parallel-race\\surface_verification.log",
-      "timestamp": "2026-07-27T17:30:22.911Z",
+      "tests_run": 5,
+      "evidence_path": "C:\\01_Development\\shipwright\\.worktrees\\audit-empty-run-not-recorded\\.shipwright\\runs\\iterate-2026-07-27-audit-empty-run-not-recorded\\surface_verification.log",
+      "timestamp": "2026-07-27T16:39:58.287Z",
       "attempts": 1
     },
     "test_completeness": {
       "status": "complete",
       "behaviors": [
         {
-          "behavior": "AC1 a write retries past a transient holder and lands",
+          "behavior": "a run that executed no audit group is not recorded at all",
           "disposition": "tested",
-          "evidence": "shared/tests/test_atomic_write_windows_retry.py::test_replace_retries_while_a_reader_holds_the_destination PASSED; real-OS: test_real_windows_reader_does_not_lose_the_write PASSED"
+          "evidence": "test_run_audit_records_run.py::test_a_run_that_executed_no_group_is_not_recorded PASSED (asserts groups_run==[], recorded False, reason no_group_ran, no config written)"
         },
         {
-          "behavior": "AC2 a write held past the budget raises, never silently drops",
+          "behavior": "an empty run does not displace an earlier real record",
           "disposition": "tested",
-          "evidence": "test_replace_gives_up_loudly_when_the_handle_never_closes PASSED"
+          "evidence": "test_run_audit_records_run.py::test_an_empty_run_does_not_displace_an_earlier_real_one PASSED (a real 39-check run survives a following --only ZZZ verbatim)"
         },
         {
-          "behavior": "AC3 no .tmp debris on the failure path (best-effort on Windows)",
+          "behavior": "a real run is still recorded exactly as before (no regression)",
           "disposition": "tested",
-          "evidence": "test_replace_gives_up_loudly_when_the_handle_never_closes PASSED (asserts no *.tmp and prior content intact)"
+          "evidence": "test_run_audit_records_run.py::test_a_full_run_is_recorded_in_tracked_state + ::test_a_partial_run_is_recorded_as_partial + ::test_recording_does_not_disturb_an_existing_config PASSED"
         },
         {
-          "behavior": "AC4 POSIX behaviour unchanged - PermissionError propagates at once",
-          "disposition": "tested",
-          "evidence": "test_posix_never_retries PASSED"
+          "behavior": "the operator is told on stderr that nothing ran and nothing was recorded",
+          "disposition": "untestable",
+          "reason_code": "covered-by-existing-test",
+          "reason": "the branch itself is pinned by test_a_run_that_executed_no_group_is_not_recorded, which asserts the recorded:False / reason:no_group_ran payload the warning is printed from. Asserting the console wording would pin phrasing, not behaviour."
         },
         {
-          "behavior": "AC5 winerror 5 is ambiguous, so a genuine denial is retried too",
+          "behavior": "the recording branch is measurable, not just exercised: each arm (empty run, real run, recorder failure, recorder raising) runs in-process",
           "disposition": "tested",
-          "evidence": "test_a_genuine_denial_is_retried_too_because_winerror_5_is_ambiguous PASSED; probed: read-only + directory destinations both winerror 5"
-        },
-        {
-          "behavior": "AC6 shipwright-run stays green under 12-way self-contention",
-          "disposition": "tested",
-          "evidence": "12-copy contention harness, 96 samples, 0 failures (pre-fix 1/48); F0 suite GREEN, 18/18 units"
-        },
-        {
-          "behavior": "AC7 the retry never outlives the configured budget",
-          "disposition": "tested",
-          "evidence": "test_retry_never_outlives_the_configured_budget PASSED"
-        },
-        {
-          "behavior": "AC8 neither fix nor tests depend on patching os.name",
-          "disposition": "tested",
-          "evidence": "test_no_test_here_forces_the_platform_by_patching_os_name PASSED (source drift guard over all three atomic-write test modules)"
-        },
-        {
-          "behavior": "AC9 a read survives a writer's in-flight replace (delete-pending)",
-          "disposition": "tested",
-          "evidence": "test_read_retries_while_a_writer_is_mid_replace PASSED"
-        },
-        {
-          "behavior": "AC9 an unreadable file raises rather than degrading to ''",
-          "disposition": "tested",
-          "evidence": "test_read_gives_up_loudly_rather_than_inventing_an_empty_config PASSED"
-        },
-        {
-          "behavior": "the read budget stays longer than the write budget",
-          "disposition": "tested",
-          "evidence": "test_the_read_budget_is_longer_than_the_write_budget PASSED"
-        },
-        {
-          "behavior": "an unlisted winerror is re-raised on the first attempt",
-          "disposition": "tested",
-          "evidence": "test_a_winerror_outside_the_transient_set_is_not_retried PASSED"
-        },
-        {
-          "behavior": "a changelog refusal message survives a non-ASCII project path",
-          "disposition": "tested",
-          "evidence": "plugins/shipwright-changelog/tests/test_integration.py::test_refusal_message_survives_a_non_ascii_project_path PASSED (F0.5 cli surface, tests_run=6)"
+          "evidence": "test_run_audit_records_run.py::TestRecordingBranchInProcess (4 tests) PASSED; diff-cover 10.3.0 vs origin/main reports run_audit.py 100%, 0 of 9 changed lines missing (was 0%)"
         }
       ],
       "counts": {
-        "testable": 13,
-        "tested": 13,
-        "untestable": 0,
+        "testable": 4,
+        "tested": 4,
+        "untestable": 1,
         "untested_testable": 0
       },
       "enumeration_basis": {
-        "acs": 9,
-        "covered_acs": 9
+        "acs": 2,
+        "covered_acs": 2
       }
     }
   },
@@ -129,10 +88,5 @@
     "measured_tier": "repo",
     "source": "combined coverage.xml (all plugins + shared + integration)",
     "measured_at": "2026-07-04T00:00:00Z"
-  },
-  "source_state": {
-    "run_id": "iterate-2026-07-27-run-unit-parallel-race",
-    "commit": "cc18dbeaa8db7af1dc28ab49abe5ec2420fc7306",
-    "dirty": true
   }
 }
