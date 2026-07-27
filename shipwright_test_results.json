@@ -173,7 +173,8 @@
         {
           "behavior": "whether a requirement is TOO BROAD, as opposed to merely having no criteria",
           "disposition": "untestable",
-          "evidence": "reason_code: requires-manual-visual-judgment - deciding that a capability names several capabilities at once is reading comprehension against no oracle. This is why I6 is advisory and why fr-authoring.md 3a states the judgement stays human; the check reports only the observable signal (zero criteria)."
+          "evidence": "Deciding that a capability names several capabilities at once is reading comprehension against no oracle. This is why I6 is advisory and why fr-authoring.md 3a states the judgement stays human; the check reports only the observable signal (zero criteria).",
+          "reason_code": "requires-manual-visual-judgment"
         }
       ],
       "counts": {
