@@ -226,3 +226,19 @@ the two `.github/workflows/**` files by hand; that is a human gate, not a defect
    review findings are in shipwright#437.
 3. **`ADVISORY_CONTEXTS` stays empty.** Do not pre-fill it. Pre-emptive silencing
    is exactly how a gate becomes decorative — the thing this card is about.
+4. **After the merge, sync the plugin cache.** Four plugin-side files changed
+   (`check_ci_gate_coverage.py`, `automerge_readiness.py`,
+   `check_required_checks.py`, `required_checks_drift.py`). The marketplace clone
+   `reset --hard origin/main`, so this only works once this PR is on `main` —
+   running it before then is a no-op that reads like a completed sync.
+   ```bash
+   bash scripts/update-marketplace.sh
+   uv run scripts/check_plugin_cache_sync.py --strict
+   ```
+5. **`check_no_silent_revert` (#477) needs a fix of its own.** It evaluates each
+   integration merge independently against HEAD, so on a branch that integrated
+   `main` more than once it reports two non-reverts: content `main` ITSELF
+   deleted in a later commit, and any line edited in place (the comparison is
+   whole-line). Four such findings were cleared here via `declared_removals`,
+   each carrying its proof. A gate whose escape hatch is used routinely is on its
+   way to being decorative — the same defect class this card exists for.
