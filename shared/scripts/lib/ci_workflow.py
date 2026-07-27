@@ -34,7 +34,13 @@ from __future__ import annotations
 WORKFLOW_PATH = ".github/workflows/ci.yml"
 
 # Where the rendered Claude-Review workflow lives in a target repository.
+# Two files, because the review is two-stage (FR-01.17): stage 1 runs on every
+# PR including forks and holds no credentials; stage 2 is triggered by its
+# completion, holds the API key, reads stage 1's artifact as data, and posts the
+# verdict. Both must be scaffolded — stage 1 alone would prepare a review that
+# nothing ever runs, and stage 2 alone would never be triggered.
 CLAUDE_REVIEW_WORKFLOW_PATH = ".github/workflows/claude-review.yml"
+CLAUDE_REVIEW_RUN_WORKFLOW_PATH = ".github/workflows/claude-review-run.yml"
 
 # ---------------------------------------------------------------------------
 # Template paths in the shipwright monorepo
@@ -52,8 +58,11 @@ TEMPLATE_BY_PROFILE: dict[str, str] = {
     "python-plugin-monorepo": "shared/templates/github-actions/ci-python-plugin-monorepo.yml.template",
 }
 
-# Single profile-agnostic Claude-Review template.
+# Profile-agnostic Claude-Review templates — stage 1 and stage 2 (FR-01.17).
 CLAUDE_REVIEW_TEMPLATE_PATH = "shared/templates/github-actions/claude-review.yml.template"
+CLAUDE_REVIEW_RUN_TEMPLATE_PATH = (
+    "shared/templates/github-actions/claude-review-run.yml.template"
+)
 
 # ---------------------------------------------------------------------------
 # Convention-lock invariants

@@ -318,13 +318,13 @@ class TestClaudeReviewTemplate:
         assert isinstance(permissions, dict), (
             "claude-review template: permissions must be a mapping."
         )
-        # contents:read for checkout, pull-requests:write to post the
-        # review comment.
+        # Stage 1 runs on fork PRs and posts nothing, so it holds no write scope.
         assert permissions.get("contents") == "read", (
             "claude-review template: permissions.contents != 'read' — "
             "actions/checkout@v4 needs this."
         )
-        assert permissions.get("pull-requests") == "write", (
-            "claude-review template: permissions.pull-requests != 'write' "
-            "— review comment cannot be posted without it."
+        writes = [k for k, v in permissions.items() if str(v) == "write"]
+        assert not writes, (
+            f"claude-review template (stage 1) must hold no write scope; found "
+            f"{writes}. Posting belongs to stage 2 — FR-01.17 (E)5."
         )

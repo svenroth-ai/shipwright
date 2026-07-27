@@ -1,0 +1,1 @@
+PR review now runs on pull requests from forks. Previously the reviewer was skipped there because GitHub withholds credentials from fork runs — and a skipped job counts as a passing required check, so those changes satisfied the gate unreviewed.

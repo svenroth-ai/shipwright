@@ -36,11 +36,13 @@ _HELPER = load_shared_module(
 
 CLAUDE_REVIEW_TEMPLATE_PATH: str = _CI_WORKFLOW.CLAUDE_REVIEW_TEMPLATE_PATH
 CLAUDE_REVIEW_WORKFLOW_PATH: str = _CI_WORKFLOW.CLAUDE_REVIEW_WORKFLOW_PATH
+CLAUDE_REVIEW_RUN_TEMPLATE_PATH: str = _CI_WORKFLOW.CLAUDE_REVIEW_RUN_TEMPLATE_PATH
+CLAUDE_REVIEW_RUN_WORKFLOW_PATH: str = _CI_WORKFLOW.CLAUDE_REVIEW_RUN_WORKFLOW_PATH
 ScaffoldResult = _HELPER.ScaffoldResult
 
 
 def scaffold_claude_review_workflow(project_root: Path) -> ScaffoldResult:
-    """Write the Claude-Review workflow into ``project_root``.
+    """Write the Claude-Review stage-1 workflow into ``project_root``.
 
     Returns a structured result so the adopt handoff banner can render
     the "installed" vs "preserved" line without re-checking the
@@ -52,6 +54,25 @@ def scaffold_claude_review_workflow(project_root: Path) -> ScaffoldResult:
     """
     target = project_root / CLAUDE_REVIEW_WORKFLOW_PATH
     template = _REPO_ROOT / CLAUDE_REVIEW_TEMPLATE_PATH
+    return _HELPER.copy_template_if_absent(
+        template_path=template,
+        target_path=target,
+    )
+
+
+def scaffold_claude_review_run_workflow(project_root: Path) -> ScaffoldResult:
+    """Write the Claude-Review stage-2 workflow into ``project_root``.
+
+    Stage 2 is the half that holds the API key and posts the verdict. It is
+    scaffolded as its own file because `workflow_run` workflows are triggered
+    by a completed run rather than by the pull request, and only fire from the
+    default branch. Same idempotency semantics as stage 1.
+
+    Both stages must land: stage 1 alone prepares a review nothing runs, and
+    stage 2 alone is never triggered.
+    """
+    target = project_root / CLAUDE_REVIEW_RUN_WORKFLOW_PATH
+    template = _REPO_ROOT / CLAUDE_REVIEW_RUN_TEMPLATE_PATH
     return _HELPER.copy_template_if_absent(
         template_path=template,
         target_path=target,
