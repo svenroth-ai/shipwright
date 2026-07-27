@@ -15,6 +15,7 @@ from pathlib import Path
 
 import pytest
 
+from scripts.audit import run_audit
 from scripts.lib.audit_disclosure import CONFIG_FILE, LAST_AUDIT_KEY
 
 PLUGIN_ROOT = Path(__file__).resolve().parents[1]
@@ -85,6 +86,76 @@ def test_an_empty_run_does_not_displace_an_earlier_real_one(audited_project: Pat
 
     _run(audited_project, "--only", "ZZZ")
     assert _recorded(audited_project) == before
+
+
+class TestRecordingBranchInProcess:
+    """The same three outcomes, driven in-process rather than as a subprocess.
+
+    The subprocess tests above prove the wiring end to end, but coverage cannot
+    follow into a child process — the recording branch measured 0% and the
+    diff-coverage gate was right to say so. Calling ``main()`` directly exercises
+    each arm where it can be seen, and is faster besides.
+    """
+
+    def test_an_empty_run_records_nothing_and_says_so(
+        self, audited_project: Path, capsys,
+    ):
+        code = run_audit.main(
+            ["--project-root", str(audited_project), "--only", "ZZZ"],
+        )
+        captured = capsys.readouterr()
+        assert code in (0, 1)
+
+        payload = json.loads(captured.out)
+        assert payload["last_audit_recorded"] == {
+            "recorded": False, "reason": "no_group_ran",
+        }
+        assert "no audit group ran" in captured.err
+        assert "ZZZ" in captured.err
+        assert not (audited_project / CONFIG_FILE).exists()
+
+    def test_a_real_run_takes_the_recording_arm(
+        self, audited_project: Path, capsys,
+    ):
+        code = run_audit.main(["--project-root", str(audited_project)])
+        payload = json.loads(capsys.readouterr().out)
+        assert code in (0, 1)
+        assert payload["last_audit_recorded"]["recorded"] is True
+        assert _recorded(audited_project)["scope"] == "full"
+
+    def test_an_exploding_recorder_never_changes_the_verdict(
+        self, audited_project: Path, capsys, monkeypatch,
+    ):
+        """The defensive arm: bookkeeping may fail in ways the recorder does not
+        anticipate, and the audit's answer to "is this project consistent?" must
+        survive all of them."""
+        def boom(*_args, **_kwargs):
+            raise RuntimeError("recorder exploded")
+
+        monkeypatch.setattr(run_audit, "record_audit_run", boom)
+
+        code = run_audit.main(["--project-root", str(audited_project)])
+        captured = capsys.readouterr()
+
+        payload = json.loads(captured.out)
+        assert code in (0, 1)
+        assert payload["last_audit_recorded"]["recorded"] is False
+        assert "recorder exploded" in payload["last_audit_recorded"]["reason"]
+        assert "could not be recorded" in captured.err
+
+    def test_a_failed_recording_warns_without_changing_the_verdict(
+        self, audited_project: Path, capsys,
+    ):
+        """Fail-soft, but never silent — the durability half has to be visible."""
+        (audited_project / CONFIG_FILE).mkdir()  # a directory where a file belongs
+
+        code = run_audit.main(["--project-root", str(audited_project)])
+        captured = capsys.readouterr()
+
+        payload = json.loads(captured.out)
+        assert code in (0, 1)  # the audit's own verdict is unchanged
+        assert payload["last_audit_recorded"]["recorded"] is False
+        assert "could not be recorded" in captured.err
 
 
 def test_recording_does_not_disturb_an_existing_config(audited_project: Path):

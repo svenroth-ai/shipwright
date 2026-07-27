@@ -4,9 +4,9 @@
     "date": "2026-07-27",
     "unit": {
       "status": "passed",
-      "passed": 7048,
-      "total": 7048,
-      "note": "shipwright-compliance 1505 + shared/tests 5543 (-m 'not slow and not cross_plugin'); 13 skipped"
+      "passed": 7052,
+      "total": 7052,
+      "note": "shipwright-compliance 1509 + shared/tests 5543 (-m 'not slow and not cross_plugin'); 13 skipped"
     },
     "integration": {
       "status": "passed",
@@ -64,11 +64,16 @@
           "disposition": "untestable",
           "reason_code": "covered-by-existing-test",
           "reason": "the branch itself is pinned by test_a_run_that_executed_no_group_is_not_recorded, which asserts the recorded:False / reason:no_group_ran payload the warning is printed from. Asserting the console wording would pin phrasing, not behaviour."
+        },
+        {
+          "behavior": "the recording branch is measurable, not just exercised: each arm (empty run, real run, recorder failure, recorder raising) runs in-process",
+          "disposition": "tested",
+          "evidence": "test_run_audit_records_run.py::TestRecordingBranchInProcess (4 tests) PASSED; diff-cover 10.3.0 vs origin/main reports run_audit.py 100%, 0 of 9 changed lines missing (was 0%)"
         }
       ],
       "counts": {
-        "testable": 3,
-        "tested": 3,
+        "testable": 4,
+        "tested": 4,
         "untestable": 1,
         "untested_testable": 0
       },
