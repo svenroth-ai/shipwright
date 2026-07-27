@@ -42,7 +42,16 @@ KNOWN_WORKFLOWS: tuple[str, ...] = (
     "security.yml",
     "codeql.yml",
     "claude-review.yml",
+    "claude-review-run.yml",
 )
+
+# Workflows whose Required-Check is a commit status POSTED by a job, not a job
+# check name (the two-stage review, FR-01.17). Deriving job names here would
+# name a check branch protection can never match, and the `pull_request`-trigger
+# test would call stage 2 dormant when it is working exactly as designed.
+POSTED_STATUS_CONTEXTS: dict[str, str] = {
+    "claude-review-run.yml": "Claude Code Review",
+}
 
 # Placeholders the template carries.
 PROFILE_PLACEHOLDER = "{PROFILE}"
@@ -179,6 +188,18 @@ def workflow_report(project_root: Path, workflow_rel: str) -> dict | None:
             "conditional": [],
             "dormant": None,
             "parse_error": True,
+        }
+    posted = POSTED_STATUS_CONTEXTS.get(workflow_rel)
+    if posted is not None:
+        # The gate is the status this workflow posts, not the names of the jobs
+        # that post it. Not dormant: it is triggered by the stage-1 run rather
+        # than by the pull request, which is the design, not a misconfiguration.
+        return {
+            "workflow": workflow_rel,
+            "checks": [posted],
+            "conditional": [],
+            "dormant": False,
+            "parse_error": False,
         }
     expanded = _expand_jobs(parsed)
     return {

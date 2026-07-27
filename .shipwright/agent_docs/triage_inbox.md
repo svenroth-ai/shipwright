@@ -1,14 +1,14 @@
 # Triage Inbox
 
-> Auto-generated 2026-07-27T08:15:35.551577Z. Items waiting for triage decision.
+> Auto-generated 2026-07-27T06:59:45.100902Z. Items waiting for triage decision.
 > Promote via WebUI Triage tab (when v1b lands) or `shared/scripts/tools/triage_promote.py --id <id> --task-ref EXT:<ref>`.
 
 ## Status summary
 
-- Total: 413
-- Triage: 24 | Promoted: 1 | Dismissed: 387 | Snoozed: 1
+- Total: 412
+- Triage: 23 | Promoted: 1 | Dismissed: 387 | Snoozed: 1
 
-## Top 24 items (severity-sorted)
+## Top 23 items (severity-sorted)
 
 ### Source: analysis (1 item)
 
@@ -79,7 +79,7 @@
   - Phase 3, AUTONOME Kampagne. Sub-Iterates: Evidenzkette (CI regeneriert Manifest, muss matchen), AC-Identitaet, Manifest…
   - Promote: `triage_promote.py --id trg-7085d783 --task-ref EXT:<ref>`
 
-### Source: req3-phase2-walk (16 items)
+### Source: req3-phase2-walk (15 items)
 
 <a id="trg-74b945bc"></a>
 - **CRITICAL - going back to a previous version does not use the version you ask for, and reports success** `id=trg-74b945bc | severity=critical | kind=bug → P0/engineering`
@@ -92,12 +92,6 @@
   - OWNS: the changelog plugin. Independently executable. Supersedes trg-7ad0849b (title only, so the severity is visible w…
   - Evidence: `.shipwright/planning/campaigns/2026-07-23-req3-ac-evidence-ledger-mono.md`
   - Promote: `triage_promote.py --id trg-6690d175 --task-ref EXT:<ref>`
-
-<a id="trg-b95ab887"></a>
-- **REQ3.06 [CAMPAIGN AUTONOM] Enforcement-Liste abarbeiten: Checks bauen fuer prompt-only (mechanisable) - Monorepo** `id=trg-b95ab887 | severity=high | kind=improvement → P1/engineering`
-  - AUTONOME Kampagne. Der Anker, der die Enforcement-Liste des AC-Nachweis-Registers abarbeitet - das Register IST die Arb…
-  - Evidence: `.shipwright/planning/campaigns/2026-07-23-req3-ac-evidence-ledger-mono.md`
-  - Promote: `triage_promote.py --id trg-b95ab887 --task-ref EXT:<ref>`
 
 <a id="trg-c7e5835b"></a>
 - **host checks: gates that gate nothing, plus the verdict label (supersedes trg-2f9865fb)** `id=trg-c7e5835b | severity=high | kind=improvement → P1/engineering`

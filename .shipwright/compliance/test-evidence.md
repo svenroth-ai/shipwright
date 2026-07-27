@@ -1,6 +1,6 @@
 # Test Evidence Report
 
-Generated: 2026-07-27T08:15:28.293471+00:00
+Generated: 2026-07-27T06:59:39.392372+00:00
 
 ## Summary
 
@@ -14,7 +14,7 @@ Generated: 2026-07-27T08:15:28.293471+00:00
 
 | # | Event | Source | Layer | New Tests | Suite Total | Result | Date |
 |---|-------|--------|-------|-----------|-------------|--------|------|
-| 1 | adopt announces its derived catalogue and records inherited failures as inherited | [iterate](traceability-matrix.md#evt-f41a75f5) | — | +0 | — | — | 2026-07-27 |
+| 1 | the review gate stops being bypassable (fail-closed + fork review) | [iterate](traceability-matrix.md#evt-78684181) | — | +0 | — | — | 2026-07-27 |
 | 2 | REQ-3 Phase 2 content round - all 18 requirements walked or minted | [iterate](traceability-matrix.md#evt-ea7203ec) | — | +0 | — | — | 2026-07-26 |
 | 3 | Requirement gathering now follows one shared, thorough interview method across the project, adopt and iterate steps, and a new requirement records that guarantee. | [iterate](traceability-matrix.md#evt-11304ded) | unit | +0 | 4946/4961 | PASS (15 skipped) | 2026-07-23 |
 | 4 | The automated design check no longer flags a false problem for projects that were adopted into Shipwright and never went through the design/mockup step. | [iterate](traceability-matrix.md#evt-a8a0f759) | unit | +0 | 26/26 | PASS | 2026-07-23 |
