@@ -40,7 +40,7 @@ Execute these steps **in order**. Do NOT skip steps.
    - `shadcn-project-conventions.md` — Card/Button project conventions (Shipwright Enhancement)
    - `shadcn-block-patterns.md` — Index first, then ONLY the matching category section(s)
    - `mockup-to-shadcn-mapping.md` — translation table for mockup HTML → shadcn/ui
-7. **Source-of-truth priority** (when sources conflict): Spec > Architecture > Chrome > Mockup > shadcn Rules > Screenshot
+7. **Source-of-truth priority** (rendering conflicts ONLY): Spec > Architecture > Chrome > Mockup > shadcn Rules > Screenshot. **STOP instead when mockup and section description contradict each other about what the screen or flow *does*** (a step in one and absent in the other, a different path through the product) — applying the ladder there silently discards a design a human judged against real use. Report it quoting both sides and let a person decide; the expected resolution is that the requirement is corrected to match the mockup. In autonomous mode this is a **section failure with a reason**, never a coin-flip you resolve yourself. Full rule: `{plugin_root}/skills/build/references/requirement-writeback.md`.
 8. Read `{project_root}/shipwright_build_config.json` for existing config
 5. Run setup script:
 ```bash
@@ -276,7 +276,7 @@ first failed retry.
 
 Run through this 5-point checklist. For each: pass or fail with 1-sentence explanation.
 
-1. **Spec Compliance**: Does code implement what section spec requires? No extra features (YAGNI)?
+1. **Spec Compliance**: Does code implement what section spec requires? No extra features (YAGNI)? — **Carve-out:** a shared file the section had to touch to function is not a YAGNI violation when the change is the smallest one needed AND recorded as an attributed extra (Step 15a). "Nothing outside the section" forbids unrequested extra work, not the work the section needs to run.
 2. **Error Handling**: API routes have try/catch? External calls handle failures? No unhandled null?
 3. **Security Basics**: No raw user input in SQL/HTML? No hardcoded secrets? Auth checks on protected routes?
 4. **Test Quality**: Tests assert outcomes not internals? Happy-path + error-path per feature?
@@ -423,9 +423,8 @@ uv run "{shared_root}/scripts/tools/record_event.py" \
   --deduplicate-by-commit
 ```
 
-Where `{comma_separated_FRs}` is the list of FRs from the section spec. If the section spec does not reference specific FRs, use the split-level FR range.
-
-If this step fails: log WARNING but do not block — the event can be re-recorded later. The dashboard (Fix 2) has a config fallback that covers missing events.
+Where `{comma_separated_FRs}` is the list of FRs from the section spec. If the section spec does not reference specific FRs, use the split-level FR range. If this step fails: log WARNING but do not block — the event can be re-recorded later. The dashboard (Fix 2) has a config fallback that covers missing events.
+**Then declare the section's requirement impact** — read `{plugin_root}/skills/build/references/requirement-writeback.md` and run both, after the commit, with `--run-id "{SHIPWRIGHT_SESSION_ID}" --scope "{section_name}" --base-ref HEAD^ --head-ref HEAD`: (1) `record_requirement_impact.py --phase build` — `--impact none --reason "..."` normally, or `--impact modify --fr FR-XX.YY --contradiction "{who decided, what}"` when a person resolved a contradiction (refused unless a `.shipwright/planning/**/spec.md` was actually edited, so a claimed correction that never happened cannot be recorded); one `--extra "{path}={why this section needed it}"` per shared touch. (2) `check_section_file_attribution.py --section-file "{section_file}"` — a non-zero exit lists changed files neither in the section's `## Files to Create/Modify` block nor attributed extras; add the missing `--extra` entries with real reasons or drop the out-of-scope change, never proceed with it unexplained.
 
 ## Output
 

@@ -50,6 +50,29 @@ so Option B parses it identically regardless of how it was produced:
 - Verify `.shipwright/designs/visual-guidelines.md` exists and contains: Colors, Typography, Spacing
 - If uncovered FRs or missing guidelines → fix before proceeding to Spec Backflow
 
+**Requirement Write-Back Gate** (blocks Option A — non-zero exit means STOP):
+
+```bash
+uv run "{shared_root}/scripts/tools/check_design_round_declarations.py"   --project-root "$(pwd)" --run-id "{SHIPWRIGHT_SESSION_ID}"
+```
+
+Every feedback round processed in this run MUST have a requirement-impact
+declaration. The checker discovers the rounds from the
+`design-feedback-round{N}.md` files this phase consumed (or pass `--round` per
+scope explicitly) and looks each one up by **this** run id — a declaration
+recorded under a different run does **not** count, so a `round-1` from an earlier
+design run can never satisfy this one.
+
+| Exit | Meaning |
+|---|---|
+| `0` | every round declared (or there were no feedback rounds at all) |
+| `1` | `undeclared` lists the silent rounds — go back and run Option B step 7 for each |
+| `2` | a declaration file is damaged — repair it; this is NOT the same as missing |
+
+Deciding a round was appearance-only is a fine answer; saying nothing is not. A
+design phase is not complete while a round is silent about what it did to the
+requirements.
+
 1. **Spec Backflow (full)**:
 
    | Artifact | What to update |
@@ -110,20 +133,89 @@ Where `{shared_root}` = `{plugin_root}/../../shared`.
 ## Option B — Process Feedback
 
 1. Find the latest `.shipwright/designs/design-feedback-round*.md` file (highest round number)
+
+   **Snapshot this round's requirement baseline FIRST — before revising anything:**
+
+   ```bash
+   uv run "{shared_root}/scripts/tools/record_requirement_impact.py"      --project-root "$(pwd)" --run-id "{SHIPWRIGHT_SESSION_ID}"      --phase design --scope "round-{N}" --snapshot-baseline
+   ```
+
+   This is what makes "the requirement was corrected **by this round**"
+   checkable. A build section gets that boundary from its commit; a design round
+   has none, so it captures one. It is also the round registry the Option-A gate
+   reads — a round that snapshots cannot then be invisible to finalization.
+
 2. Parse it: identify screens with status **CHANGES** or **REJECTED**
 3. Identify **global changes** (changes that affect multiple screens — e.g. color shifts, icon style changes, nav label renames). Apply these to ALL screens, not just flagged ones.
 4. Revise only flagged screens — use the snippet assembly process from Step 4
-5. **Spec Backflow (partial)**:
+5. **Behaviour-vs-appearance read (per round — REQUIRED).** Before backflow, go
+   through this round's feedback and decide, item by item, whether it changed
+   **what a screen or flow does** or only **how it looks**. Behaviour is: a step
+   added or removed, an option introduced, a path through the product reordered,
+   a rule about when something appears or is allowed. Appearance is: colour,
+   spacing, type, iconography, copy tone, layout that leaves the same steps in
+   the same order.
+
+   > This judgement is a **human read** and has no deterministic check — that is
+   > why it is stated as a rule rather than a script. What *is* checked is that
+   > you declared an answer (Step 7) and that a behaviour answer actually reached
+   > the requirement.
+
+6. **Spec Backflow (partial)**:
 
    | Artifact | What to update | Condition |
    |----------|---------------|-----------|
+   | `.shipwright/planning/*/spec.md` Section 5 (Functional Requirements) | **Substance** — correct the FR's description and acceptance criteria to say what the flow now does. Append `- (E) Given … when … then …` lines for behaviour this round introduced, and correct any AC the round contradicted | **If Step 5 found behaviour changes** |
    | `.shipwright/designs/visual-guidelines.md` | Color values, token changes | If global design changes were made |
    | `.shipwright/designs/design-manifest.md` | Screen titles (if renamed), status → `revised-rN` | Always |
    | `.shipwright/designs/index.html` | Regenerate screens array with updated data | Always |
    | `.shipwright/agent_docs/decision_log.md` | New design decisions (DR-NNN format) | If non-trivial decisions |
 
-6. Print review instructions again (same banner as Step 8)
-7. → **Loop back** to the AskUserQuestion (same 3 options)
+   > **This is the row that did not exist.** Backflow historically wrote back
+   > *pointers* only — which screen stands for which requirement, and
+   > cross-reference tags. Nothing wrote back substance, so a round that added an
+   > option or reordered a path left the requirement describing the older intent.
+   > Design is where flows are rightly rethought; what is learned here has to
+   > reach the requirements instead of living only in the mockup.
+
+7. **Declare the round's requirement impact (REQUIRED — blocks Option A):**
+
+   ```bash
+   # behaviour changed → the requirement was corrected in step 6
+   uv run "{shared_root}/scripts/tools/record_requirement_impact.py" \
+     --project-root "$(pwd)" --run-id "{SHIPWRIGHT_SESSION_ID}" \
+     --phase design --scope "round-{N}" \
+     --impact modify --fr FR-XX.YY --worktree
+
+   # appearance only → one line saying so
+   uv run "{shared_root}/scripts/tools/record_requirement_impact.py" \
+     --project-root "$(pwd)" --run-id "{SHIPWRIGHT_SESSION_ID}" \
+     --phase design --scope "round-{N}" \
+     --impact none --reason "{one line: what the round changed, and why it is appearance}" \
+     --worktree
+   ```
+
+   The command compares against **this round's baseline** (step 1), so an
+   `add`/`modify`/`remove` declaration is refused unless a
+   `.shipwright/planning/**/spec.md` genuinely differs from what it said when
+   the round started; `none` is refused without a reason. **Read the printed
+   `error` key** rather than assuming what a non-zero exit means:
+
+   | `error` | What to do |
+   |---|---|
+   | `requirement_impact_no_spec_touched` | The write-back in step 6 did not actually happen. Correct the requirement — do not re-word the declaration. |
+   | `requirement_impact_none_requires_reason` | Add a one-line `--reason`. |
+   | `requirement_impact_requires_fr` / `_malformed_fr` | Name the real FR id(s). |
+   | `requirement_impact_evidence_unusable` | The comparison boundary was wrong (bad ref, or `--worktree` combined with a range). |
+   | `requirement_impact_no_baseline` | Step 1's snapshot was skipped — take it, then re-declare. |
+
+   > **Why the baseline matters.** Without it the check was satisfiable for free.
+   > Nothing in the pipeline commits before the build phase, so every `spec.md`
+   > the project phase wrote is untracked — a plain "what is uncommitted?" diff
+   > lists them all, and *any* `modify` passed on a spec nobody had edited.
+
+8. Print review instructions again (same banner as Step 8)
+9. → **Loop back** to the AskUserQuestion (same 3 options)
 
 ## Option C — Pause
 
@@ -157,13 +249,17 @@ Design decisions are logged to `.shipwright/agent_docs/decision_log.md` using th
   │   [User exports feedback to .shipwright/designs/]
   │
   ├─[B]─→ Read feedback file
+  │        Snapshot this round's requirement baseline
   │        Revise CHANGES/REJECTED screens
-  │        Spec Backflow (partial)
+  │        Behaviour-vs-appearance read
+  │        Spec Backflow (partial) — incl. FR SUBSTANCE when behaviour changed
+  │        Declare the round's requirement impact
   │        Regenerate index.html
   │        Print review instructions
   │        → AskUserQuestion again (loop)
   │
-  ├─[A]─→ Spec Backflow (full)
+  ├─[A]─→ FR-Coverage Gate + Requirement Write-Back Gate
+  │        Spec Backflow (full)
   │        Write session handoff
   │        → Done, ready for /shipwright-plan
   │
