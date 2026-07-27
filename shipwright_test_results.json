@@ -1,16 +1,16 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-07-27-phase-gate-override-evidence",
+    "run_id": "iterate-2026-07-27-project-granularity-basis",
     "date": "2026-07-27",
     "unit": {
       "status": "passed",
-      "passed": 5450,
-      "total": 5450
+      "passed": 7349,
+      "total": 7349
     },
     "integration": {
       "status": "passed",
-      "passed": 421,
-      "total": 421
+      "passed": 418,
+      "total": 418
     },
     "pgtap": {
       "status": "not_run",
@@ -32,222 +32,160 @@
     },
     "degraded": [
       {
-        "condition": "classifier_risk_flag_false_positive",
-        "detail": "classify_complexity.py reported touches_auth from a keyword match on the prose word 'authoritative'. Recomputed from the diff with risk_detectors.py over all 27 changed files: no path contains 'auth'; cross_component, touches_io_boundary, touches_ci_supplychain and touches_build are all False. Flag overridden to none; complexity stays medium (history prior, n=20)."
+        "condition": "external code review - one provider returned no usable findings",
+        "detail": "Gemini 3.1 Pro's --mode code reply degraded into unterminated reasoning and produced no findings. GPT-5.6 returned 3, all accepted and fixed. Recorded rather than counted as a clean second pass."
       },
       {
-        "condition": "external_code_review_leg_degraded",
-        "detail": "external_review.py --mode code: the gemini leg returned a degenerate, unterminated generation with no findings and no verdict. Recorded as degraded, not as a pass. The gpt leg succeeded with 2 findings, both disposed in .shipwright/planning/iterate/iterate-2026-07-27-phase-gate-override-evidence/external-code-review.md."
-      },
-      {
-        "condition": "subagent_review_passes_not_run",
-        "detail": "review types 'code' and 'doubt' closed not_run via record_review_pass.py with dispositions naming the session operating rule that bars spawning subagents unless requested. Substituted: external_code (gpt, 2 findings) + a recorded 7-point self-review + an empirical red-check showing 14 of 23 item-1 tests fail against pre-change code."
+        "condition": "internal code-reviewer / doubt-reviewer subagents not invoked",
+        "detail": "This session carries a standing instruction not to use the Agent tool unless the user asks for it. Both passes were performed inline by the orchestrator and recorded in reviews.json with dispositions naming the substitution; the independent pass is the external code review."
       }
     ],
     "surface_verification": {
       "surface": "cli",
-      "runner": "C:/01_Development/shipwright/.worktrees/phase-gate-override-evidence/.venv/Scripts/python.exe -m pytest plugins/shipwright-run/tests/test_update_step_force_reason_cli.py integration-tests/test_handoff_reads_real_loop_state.py -q",
+      "runner": "uv run --with pytest pytest plugins/shipwright-compliance/tests/test_audit_group_i_criteria.py plugins/shipwright-compliance/tests/test_group_i_criteria_roundtrip.py -q",
       "exit_code": 0,
-      "tests_run": 8,
-      "evidence_path": "C:\\01_Development\\shipwright\\.worktrees\\phase-gate-override-evidence\\.shipwright\\runs\\iterate-2026-07-27-phase-gate-override-evidence\\surface_verification.log",
-      "timestamp": "2026-07-27T07:55:51.281Z",
-      "attempts": 1
+      "tests_run": 15,
+      "evidence_path": ".shipwright/runs/iterate-2026-07-27-project-granularity-basis/surface_verification.json"
     },
     "test_completeness": {
       "status": "complete",
       "behaviors": [
         {
-          "behavior": "the phase gate runs even when the completion is forced",
+          "behavior": "a heading-form FR block with bullets reads as having criteria",
           "disposition": "tested",
-          "evidence": "test_validation_override_record.py::test_force_still_runs_the_phase_gate PASSED"
+          "evidence": "test_group_i_criteria.py::test_heading_form_counts PASSED"
         },
         {
-          "behavior": "a forced completion records the step, time, reason and the ask-level findings verbatim",
+          "behavior": "a bold-label FR block with checkboxes reads as having criteria",
           "disposition": "tested",
-          "evidence": "test_validation_override_record.py::test_a_waved_through_completion_is_recorded_with_what_and_why PASSED"
+          "evidence": "test_group_i_criteria.py::test_bold_label_form_counts PASSED"
         },
         {
-          "behavior": "a clean unforced completion records no override, so the presence of a record is itself the signal",
+          "behavior": "a block whose only content is a TBD-class placeholder counts as zero criteria",
           "disposition": "tested",
-          "evidence": "test_validation_override_record.py::test_a_clean_completion_records_no_override PASSED"
+          "evidence": "test_group_i_criteria.py::test_tbd_placeholder_is_no_criteria, ::test_bold_label_placeholder_is_no_criteria, ::test_placeholder_variants_are_not_criteria PASSED"
         },
         {
-          "behavior": "force over a clean gate records waived=false / gate_result=pass, not a waiver",
+          "behavior": "an FR with no criteria block anywhere is reported",
           "disposition": "tested",
-          "evidence": "test_validation_override_record.py::test_force_over_a_clean_gate_records_a_pass_not_a_waiver PASSED"
+          "evidence": "test_group_i_criteria.py::test_missing_block_reported PASSED"
         },
         {
-          "behavior": "the override record survives the real config writer to on-disk JSON and a later unrelated write",
+          "behavior": "an FR table row is never mistaken for a criteria anchor",
           "disposition": "tested",
-          "evidence": "test_validation_override_record.py::test_the_record_survives_the_real_config_writer PASSED"
+          "evidence": "test_group_i_criteria.py::test_table_row_is_not_an_anchor PASSED"
         },
         {
-          "behavior": "ask-level issues without force still pause the run into needs_validation",
+          "behavior": "a heading that merely MENTIONS an FR id does not supply its criteria (false-green guard)",
           "disposition": "tested",
-          "evidence": "test_validation_override_record.py::test_ask_issues_without_force_still_pause_the_run PASSED"
+          "evidence": "test_group_i_criteria.py::test_heading_merely_mentioning_the_id_is_not_an_anchor PASSED - reproduced the defect found by external code review, then fixed"
         },
         {
-          "behavior": "a forced retry after a pause clears the stale validation_issues",
+          "behavior": "the tightened anchor still admits every heading form the producers emit",
           "disposition": "tested",
-          "evidence": "test_validation_override_record.py::test_a_forced_retry_clears_the_stale_pause_issues PASSED"
+          "evidence": "test_group_i_criteria.py::test_anchor_accepts_the_shapes_producers_emit PASSED"
         },
         {
-          "behavior": "a blank or absent reason is refused before the gate runs or anything is written",
+          "behavior": "a block terminates at EOF, at a same-or-higher heading, but not at a deeper subheading",
           "disposition": "tested",
-          "evidence": "test_validation_override_record.py::test_force_without_a_reason_is_refused_before_anything_is_written (4 params: None, empty, spaces, tab+newline) PASSED"
+          "evidence": "test_group_i_criteria.py::test_block_ends_at_eof, ::test_sibling_heading_does_not_donate_criteria, ::test_deeper_subheading_stays_inside_the_block PASSED"
         },
         {
-          "behavior": "the CLI refuses --force without a non-blank --force-reason",
+          "behavior": "id matching is boundary-anchored so FR-01.02 is not satisfied by FR-01.029",
           "disposition": "tested",
-          "evidence": "test_update_step_force_reason_cli.py::test_force_without_a_reason_is_refused and ::test_a_whitespace_only_reason_is_refused_too PASSED"
+          "evidence": "test_group_i_criteria.py::test_id_match_is_boundary_anchored PASSED"
         },
         {
-          "behavior": "a reason given on the command line reaches the durable record unchanged",
+          "behavior": "the same FR id in two specs is judged per file, so one cannot mask the other",
           "disposition": "tested",
-          "evidence": "test_update_step_force_reason_cli.py::test_a_reason_given_on_the_command_line_reaches_the_record PASSED"
+          "evidence": "test_group_i_criteria_roundtrip.py::test_same_id_in_two_specs_is_judged_per_file PASSED"
         },
         {
-          "behavior": "--force-reason is advertised in update-step --help",
+          "behavior": "an unreadable spec reports its rows as missing rather than raising",
           "disposition": "tested",
-          "evidence": "test_update_step_force_reason_cli.py::test_the_flag_is_advertised_in_help PASSED"
+          "evidence": "test_group_i_criteria_roundtrip.py::test_unreadable_spec_reports_missing_not_crash PASSED"
         },
         {
-          "behavior": "a standalone invocation skips the gate and records nothing, and needs no reason",
+          "behavior": "the literal /shipwright-project template block parses as criteria",
           "disposition": "tested",
-          "evidence": "test_validation_override_record.py::test_standalone_skips_the_gate_and_records_nothing PASSED"
+          "evidence": "test_group_i_criteria_roundtrip.py::test_project_template_round_trips PASSED"
         },
         {
-          "behavior": "a validator that raises does not wedge the forced path; the crash is recorded as overridden",
+          "behavior": "adopt's real emitted spec parses - mined criteria yes, TBD fallback no",
           "disposition": "tested",
-          "evidence": "test_validation_override_record.py::test_a_crashing_validator_does_not_wedge_the_force_path PASSED"
+          "evidence": "test_group_i_criteria_roundtrip.py::test_adopt_emission_round_trips PASSED"
         },
         {
-          "behavior": "a validator that raises pauses the unforced path fail-closed with a readable reason",
+          "behavior": "this repo's own 18 requirements all read as elaborated",
           "disposition": "tested",
-          "evidence": "test_validation_override_record.py::test_a_crashing_validator_pauses_the_unforced_path PASSED"
+          "evidence": "test_group_i_criteria_roundtrip.py::test_this_repos_own_catalogue_is_fully_elaborated PASSED; confirmed end-to-end by running group_i.run() live against the repo -> I6 pass"
         },
         {
-          "behavior": "inform-level notes are recorded on the forced path too (they used to be dropped)",
+          "behavior": "I6 is registered, reports the gap, and is advisory - never flips any_fail",
           "disposition": "tested",
-          "evidence": "test_validation_override_record.py::test_inform_notes_are_recorded_on_the_forced_path_too PASSED"
+          "evidence": "test_audit_group_i_criteria.py::test_i6_is_registered, ::test_i6_reports_the_requirement_without_criteria, ::test_i6_never_fails, ::test_i6_does_not_change_the_group_verdict PASSED"
         },
         {
-          "behavior": "the opt-in Phase-Quality critical gate keeps its semantics and is overridable + recorded",
+          "behavior": "I6 skips when the scan found no rows, rather than claiming a pass over an empty set",
           "disposition": "tested",
-          "evidence": "test_validation_override_record.py::test_critical_gate_failures_are_overridable_and_recorded PASSED"
+          "evidence": "test_audit_group_i_criteria.py::test_i6_skips_without_rows PASSED; integration-tests/test_requirements_corpus_false_verdicts.py::test_fv2_group_i_skips_every_check_on_empty PASSED"
         },
         {
-          "behavior": "override retention is capped and every eviction is counted, never silent",
+          "behavior": "retired requirements are not reported as missing criteria",
           "disposition": "tested",
-          "evidence": "test_validation_override_record.py::test_override_retention_is_capped_and_the_drop_is_counted PASSED"
+          "evidence": "test_audit_group_i_criteria.py::test_retired_rows_excluded PASSED"
         },
         {
-          "behavior": "the lazy validate_phase import keeps the phase_validators.validate_phase patch target intercepting",
+          "behavior": "the pure move keeps FrRow / scan_specs / scan_fr_rows reachable from group_i",
           "disposition": "tested",
-          "evidence": "test_validation_override_record.py::test_the_validate_phase_patch_target_still_intercepts PASSED"
+          "evidence": "test_audit_group_i_criteria.py::test_moved_row_scanner_still_reachable_from_group_i PASSED; the three pre-existing test_audit_group_i*.py files pass unchanged"
         },
         {
-          "behavior": "the handoff names and tallies the finished phases (done + skipped only)",
+          "behavior": "the moved _scan_one_spec still resolves for the requirements-corpus registry",
           "disposition": "tested",
-          "evidence": "test_handoff_pipeline_phases.py::test_finished_phases_are_named_and_tallied PASSED"
+          "evidence": "integration-tests/ 418 passed after repointing the registry module+source"
         },
         {
-          "behavior": "the handoff names the interrupted phase",
+          "behavior": "all six surfaces that instruct on Basis state the same qualified rule",
           "disposition": "tested",
-          "evidence": "test_handoff_pipeline_phases.py::test_the_interrupted_phase_is_named_as_interrupted PASSED"
+          "evidence": "test_requirement_granularity_and_basis.py::test_every_surface_qualifies_assumed PASSED (6 params); vacuity probe: 0 occurrences at HEAD in every file"
         },
         {
-          "behavior": "a phase that merely started is not counted as finished, and the document says so in words",
+          "behavior": "each situation row in the elicitation table names the settlement, not only the prose above it",
           "disposition": "tested",
-          "evidence": "test_handoff_pipeline_phases.py::test_a_phase_that_merely_started_does_not_count_as_finished PASSED"
+          "evidence": "test_requirement_granularity_and_basis.py::test_every_situation_row_names_the_settlement PASSED (2 params)"
         },
         {
-          "behavior": "a run with nothing mid-flight says so rather than rendering an empty slot",
+          "behavior": "the generation template seeds no bare `assumed` row",
           "disposition": "tested",
-          "evidence": "test_handoff_pipeline_phases.py::test_a_run_with_nothing_mid_flight_says_so PASSED"
+          "evidence": "test_requirement_granularity_and_basis.py::test_generation_template_seeds_no_bare_assumed_row PASSED; vacuity probe: 4 such rows existed at HEAD"
         },
         {
-          "behavior": "a failed phase is terminal but not counted as finished",
+          "behavior": "fr-authoring.md 3a exists, states the granularity test, and keeps the judgement human",
           "disposition": "tested",
-          "evidence": "test_handoff_pipeline_phases.py::test_a_failed_phase_is_not_counted_as_finished_either PASSED"
+          "evidence": "test_requirement_granularity_and_basis.py::test_fr_authoring_carries_the_granularity_section, ::test_granularity_section_keeps_the_judgement_human PASSED"
         },
         {
-          "behavior": "the loop's dispatch pointer, attempt and loop status are rendered",
+          "behavior": "the granularity rule is cited from every doc an author reads, and the two granularities are distinguished",
           "disposition": "tested",
-          "evidence": "test_handoff_pipeline_phases.py::test_the_dispatch_pointer_is_rendered PASSED"
+          "evidence": "test_requirement_granularity_and_basis.py::test_granularity_rule_is_cited (3 params), ::test_split_heuristics_distinguishes_the_two_granularities PASSED"
         },
         {
-          "behavior": "a pointer naming no known phase task renders as stale instead of asserting a phase",
-          "disposition": "tested",
-          "evidence": "test_handoff_pipeline_phases.py::test_a_pointer_naming_no_known_task_is_labelled_stale PASSED"
-        },
-        {
-          "behavior": "a non-numeric attempt is omitted rather than printed",
-          "disposition": "tested",
-          "evidence": "test_handoff_pipeline_phases.py::test_a_non_numeric_attempt_is_omitted_rather_than_printed PASSED"
-        },
-        {
-          "behavior": "absent, corrupt or non-object loop state degrades to the table alone without raising",
-          "disposition": "tested",
-          "evidence": "test_handoff_pipeline_phases.py::test_no_loop_state_still_renders_the_phase_table, ::test_corrupt_loop_state_degrades_without_crashing, ::test_a_loop_state_that_is_not_an_object_is_ignored PASSED"
-        },
-        {
-          "behavior": "multiple in_progress tasks are all named",
-          "disposition": "tested",
-          "evidence": "test_handoff_pipeline_phases.py::test_multiple_in_progress_tasks_are_all_named PASSED"
-        },
-        {
-          "behavior": "pipe characters and newlines in producer data cannot break the markdown table",
-          "disposition": "tested",
-          "evidence": "test_handoff_pipeline_phases.py::test_markdown_delimiters_in_producer_data_cannot_break_the_table PASSED"
-        },
-        {
-          "behavior": "non-mapping phase_tasks rows are skipped rather than crashing the render",
-          "disposition": "tested",
-          "evidence": "test_handoff_pipeline_phases.py::test_non_mapping_rows_are_skipped PASSED"
-        },
-        {
-          "behavior": "a config without phase_tasks renders no block at all, with no placeholder rows",
-          "disposition": "tested",
-          "evidence": "test_handoff_pipeline_phases.py::test_a_config_without_phase_tasks_renders_nothing and ::test_a_legacy_project_handoff_gains_no_pipeline_block PASSED"
-        },
-        {
-          "behavior": "the block renders above the legacy checkpoint in the real generated handoff",
-          "disposition": "tested",
-          "evidence": "test_handoff_pipeline_phases.py::test_generate_handoff_renders_the_block_above_the_legacy_checkpoint PASSED"
-        },
-        {
-          "behavior": "the shared consumer and the run plugin agree on the loop-state path (drift guard)",
-          "disposition": "tested",
-          "evidence": "test_handoff_reads_real_loop_state.py::test_the_consumer_and_the_producer_agree_on_the_loop_state_path PASSED"
-        },
-        {
-          "behavior": "FINISHED_STATUSES is a subset of the schema's declared PhaseTaskStatus enum (drift guard)",
-          "disposition": "tested",
-          "evidence": "test_handoff_pipeline_phases.py::test_finished_statuses_match_the_run_config_schema PASSED"
-        },
-        {
-          "behavior": "the renderer reads loop state the real orchestrator wrote, not a hand-written fixture",
-          "disposition": "tested",
-          "evidence": "test_handoff_reads_real_loop_state.py::test_the_renderer_reads_the_loop_state_the_orchestrator_wrote PASSED"
-        },
-        {
-          "behavior": "a phase completed through the real lifecycle flips from interrupted to finished",
-          "disposition": "tested",
-          "evidence": "test_handoff_reads_real_loop_state.py::test_a_phase_the_orchestrator_completed_is_reported_as_finished PASSED"
-        },
-        {
-          "behavior": "docs (hooks-and-pipeline.md, guide.md, constitution.md) describe the new override contract",
+          "behavior": "whether a requirement is TOO BROAD, as opposed to merely having no criteria",
           "disposition": "untestable",
-          "evidence": "prose accuracy: reviewed by hand against the diff; no executable assertion can judge whether the wording is right",
+          "evidence": "Deciding that a capability names several capabilities at once is reading comprehension against no oracle. This is why I6 is advisory and why fr-authoring.md 3a states the judgement stays human; the check reports only the observable signal (zero criteria).",
           "reason_code": "requires-manual-visual-judgment"
         }
       ],
       "counts": {
-        "testable": 36,
-        "tested": 36,
+        "testable": 24,
+        "tested": 24,
         "untestable": 1,
         "untested_testable": 0
+      },
+      "enumeration_basis": {
+        "acs": 2,
+        "covered_acs": 2
       }
     }
   },
