@@ -191,9 +191,12 @@ Where `{shared_root}` = `{plugin_root}/../../shared`.
    uv run "{shared_root}/scripts/tools/record_requirement_impact.py" \
      --project-root "$(pwd)" --run-id "{SHIPWRIGHT_SESSION_ID}" \
      --phase design --scope "round-{N}" \
-     --impact none --reason "{one line: what the round changed, and why it is appearance}" \
+     --impact none --reason "<your own one line: what the round changed, and why it is appearance>" \
      --worktree
    ```
+
+   Everything in `<angle brackets>` is a string you write, not a template
+   variable something expands for you.
 
    The command compares against **this round's baseline** (step 1), so an
    `add`/`modify`/`remove` declaration is refused unless a

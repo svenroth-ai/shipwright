@@ -28,10 +28,23 @@ ITERATION_MODE = DESIGN_SKILL / "references" / "iteration-mode.md"
 #: The recorder the design round must call. Renaming it without updating the
 #: prompt would leave a rule that reads fine and does nothing.
 RECORDER = "record_requirement_impact.py"
+#: The gate Option A must run.
+GATE = "check_design_round_declarations.py"
+
+#: Every script the prompts tell the phase to invoke, and where it must live.
+#: Asserting only that the NAME appears in the markdown would pass against a
+#: script that does not exist — the prompt would read fine and fail at runtime
+#: with a non-zero exit and no useful error. Both directions are pinned: the
+#: name is in the prompt (below) AND the file is on disk (here).
+REFERENCED_SCRIPTS = (
+    Path("shared") / "scripts" / "tools" / RECORDER,
+    Path("shared") / "scripts" / "tools" / GATE,
+)
 
 
 def _read(path: Path) -> str:
-    assert path.is_file(), f"missing runtime prompt: {path}"
+    if not path.is_file():
+        pytest.fail(f"missing runtime prompt: {path}")
     return path.read_text(encoding="utf-8")
 
 
@@ -39,11 +52,27 @@ def _section(text: str, heading: str) -> str:
     """The body under ``heading`` up to the next same-or-higher-level heading."""
     match = re.search(rf"^(#{{2,3}})\s*{re.escape(heading)}.*$", text,
                       re.MULTILINE | re.IGNORECASE)
-    assert match, f"heading not found: {heading}"
+    if not match:
+        pytest.fail(
+            f"heading {heading!r} not found in the prompt — it was renamed or "
+            "removed, so every rule pinned inside it is now unchecked"
+        )
     level = len(match.group(1))
     rest = text[match.end():]
     nxt = re.search(rf"^#{{1,{level}}}\s", rest, re.MULTILINE)
     return rest[: nxt.start()] if nxt else rest
+
+
+@pytest.mark.parametrize("script", REFERENCED_SCRIPTS, ids=lambda p: p.name)
+def test_every_script_the_prompt_names_actually_exists(script):
+    """A prompt naming a script that does not exist reads fine and does nothing."""
+    resolved = REPO_ROOT / script
+    if not resolved.is_file():
+        pytest.fail(
+            f"{script.as_posix()} is referenced by the design prompts but is not "
+            "on disk. Merge the shared-mechanism PR first — these prompts call "
+            "tools that land there."
+        )
 
 
 # --------------------------------------------------------------------------
@@ -111,9 +140,15 @@ def test_write_back_gate_documents_its_exit_codes():
 
 
 def test_write_back_gate_rejects_a_declaration_from_another_run():
+    """Anchored on the flag that carries the identity, not on a prose phrase.
+
+    The concept under protection is cross-run isolation; `--run-id` is the
+    stable token that implements it, so a rewording of the surrounding sentence
+    does not silently un-pin the rule.
+    """
     body = _section(_read(REVIEW_LOOP), "Option A — Finalize")
+    assert "--run-id" in body
     assert "run id" in body.lower()
-    assert "does **not** count" in body or "does not count" in body
 
 
 def test_flow_diagram_shows_the_declaration_step():
