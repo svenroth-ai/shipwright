@@ -1,14 +1,14 @@
 # Triage Inbox
 
-> Auto-generated 2026-07-27T15:50:19.371756Z. Items waiting for triage decision.
+> Auto-generated 2026-07-27T17:16:26.682171Z. Items waiting for triage decision.
 > Promote via WebUI Triage tab (when v1b lands) or `shared/scripts/tools/triage_promote.py --id <id> --task-ref EXT:<ref>`.
 
 ## Status summary
 
-- Total: 422
-- Triage: 21 | Promoted: 1 | Dismissed: 399 | Snoozed: 1
+- Total: 423
+- Triage: 19 | Promoted: 1 | Dismissed: 402 | Snoozed: 1
 
-## Top 21 items (severity-sorted)
+## Top 19 items (severity-sorted)
 
 ### Source: analysis (1 item)
 
@@ -99,7 +99,13 @@
   - The tail of campaign step S2, not a new campaign - file it now so it is not lost between "S2 merged" and "somebody noti…
   - Promote: `triage_promote.py --id trg-8bf97fd4 --task-ref EXT:<ref>`
 
-### Source: manual (1 item)
+### Source: manual (2 items)
+
+<a id="trg-2ca796f3"></a>
+- **Release aggregator can write the same version twice on a re-run** `id=trg-2ca796f3 | severity=high | kind=bug → P1/engineering`
+  - aggregate_changelog.py is the writer the release path actually invokes (changelog SKILL.md Step 4). _insert_section alw…
+  - Evidence: `.shipwright/planning/iterate/iterate-2026-07-27-changelog-writer-preserve-history.md`
+  - Promote: `triage_promote.py --id trg-2ca796f3 --task-ref EXT:<ref>`
 
 <a id="trg-efca9de7"></a>
 - **shared/tests and integration-tests fail 21 tests when run in one pytest session** `id=trg-efca9de7 | severity=medium | kind=bug → P2/engineering`
@@ -131,13 +137,7 @@
   - Evidence: `.shipwright/planning/iterate/2026-07-27-project-granularity-basis.md`
   - Promote: `triage_promote.py --id trg-1d7d91d0 --task-ref EXT:<ref>`
 
-### Source: req3-phase2-walk (8 items)
-
-<a id="trg-6690d175"></a>
-- **CRITICAL - release-note writer destroys an existing history file it does not recognise** `id=trg-6690d175 | severity=critical | kind=bug → P0/engineering`
-  - OWNS: the changelog plugin. Independently executable. Supersedes trg-7ad0849b (title only, so the severity is visible w…
-  - Evidence: `.shipwright/planning/campaigns/2026-07-23-req3-ac-evidence-ledger-mono.md`
-  - Promote: `triage_promote.py --id trg-6690d175 --task-ref EXT:<ref>`
+### Source: req3-phase2-walk (5 items)
 
 <a id="trg-b95ab887"></a>
 - **REQ3.06 [CAMPAIGN AUTONOM] Enforcement-Liste abarbeiten: Checks bauen fuer prompt-only (mechanisable) - Monorepo** `id=trg-b95ab887 | severity=high | kind=improvement → P1/engineering`
@@ -151,23 +151,11 @@
   - Evidence: `.shipwright/planning/campaigns/2026-07-23-req3-ac-evidence-ledger-mono.md`
   - Promote: `triage_promote.py --id trg-c7e5835b --task-ref EXT:<ref>`
 
-<a id="trg-15a43b6b"></a>
-- **security phase: coverage, one register, comparable runs, ask the scope (supersedes trg-9305ff98)** `id=trg-15a43b6b | severity=high | kind=improvement → P1/engineering`
-  - OWNS: the security plugin's scanner wiring, its report generator and the presentation of security findings to the opera…
-  - Evidence: `.shipwright/planning/campaigns/2026-07-23-req3-ac-evidence-ledger-mono.md`
-  - Promote: `triage_promote.py --id trg-15a43b6b --task-ref EXT:<ref>`
-
 <a id="trg-12b4cf3f"></a>
 - **test phase: make the run record tell the truth (supersedes trg-0516e85e, stamping moved out)** `id=trg-12b4cf3f | severity=high | kind=improvement → P1/engineering`
   - OWNS: the test plugin, the test-phase validator branch, and the browser-test result reader. Does NOT own artifact stamp…
   - Evidence: `.shipwright/planning/campaigns/2026-07-23-req3-ac-evidence-ledger-mono.md`
   - Promote: `triage_promote.py --id trg-12b4cf3f --task-ref EXT:<ref>`
-
-<a id="trg-88f721be"></a>
-- **plan phase: disagreement between reviewers is averaged away, and section order cannot be checked** `id=trg-88f721be | severity=high | kind=improvement → P1/engineering`
-  - Per-plugin work unit from the FR-01.03 scenario pass, plus the gaps the earlier walk had already recorded. (1) Two inde…
-  - Evidence: `.shipwright/planning/campaigns/2026-07-23-req3-ac-evidence-ledger-mono.md`
-  - Promote: `triage_promote.py --id trg-88f721be --task-ref EXT:<ref>`
 
 <a id="trg-e9e5188e"></a>
 - **requirement write-back loop: design and build both need the same missing mechanism (supersedes trg-35785118, trg-ed419f…** `id=trg-e9e5188e | severity=high | kind=improvement → P1/engineering`
