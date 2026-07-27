@@ -1,8 +1,8 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-07-27-changelog-writer-preserve-history"
+run_id: "iterate-2026-07-27-security-coverage-manifest"
 phase: "iterate"
-reason: "ensure-current pre-merge refresh"
+reason: "F11 refresh before push"
 timestamp: "2026-07-27T14:35:23.623868+00:00"
 ---
 
@@ -12,9 +12,9 @@ timestamp: "2026-07-27T14:35:23.623868+00:00"
 
 ## Session Info
 
-- **Session ID**: 
+- **Session ID**: 871b1865-c6ae-4724-a105-dc987ddca125
 - **Timestamp**: 2026-07-27 14:35:23 UTC
-- **Reason**: ensure-current pre-merge refresh
+- **Reason**: F11 refresh before push
 
 ## Last Iterate
 
@@ -29,11 +29,8 @@ timestamp: "2026-07-27T14:35:23.623868+00:00"
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/changelog-writer-preserve-history
-- **Run ID**: `iterate-2026-07-27-changelog-writer-preserve-history`
-- **Spec**: .shipwright/planning/iterate/iterate-2026-07-27-changelog-writer-preserve-history.md
-- **Complexity**: medium (classifier: `estimate=medium`, `prior_source=history`,
-- **External Review Marker**: completed (external_review_state.json @ 2026-07-27T11:28:16)
+- **Branch**: iterate/security-coverage-manifest-part1
+- **External Review Marker**: completed (external_review_state.json @ 2026-07-27T11:47:40)
 
 ### Mandatory replay on Resume
 
@@ -51,8 +48,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/changelog-writer-preserve-history
-- **Last Commit**: 386190d3 Merge remote-tracking branch 'origin/main' into iterate/changelog-writer-preserve-history
+- **Branch**: iterate/security-coverage-manifest-part1
+- **Last Commit**: 998de37d Merge remote-tracking branch 'origin/main' into iterate/security-coverage-manifest-part1
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -77,7 +74,7 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 374
+- **Total work events**: 375
 - **Last iterate**: change — iterate: inherited failures and coverage gaps are recorded as inherited (2026-07-27)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 

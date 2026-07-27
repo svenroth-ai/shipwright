@@ -9,9 +9,9 @@ Total commits: 1230
 
 ```mermaid
 pie title Commit Types
-    "fix" : 351
-    "feat" : 345
-    "chore" : 259
+    "fix" : 352
+    "feat" : 346
+    "chore" : 257
     "docs" : 147
     "refactor" : 76
     "test" : 31
@@ -22,12 +22,13 @@ pie title Commit Types
 
 ## Changes by Type
 
-### Fixes (fix) — 351 commits
+### Fixes (fix) — 352 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-07-27 | security | stop two tests writing triage.jsonl into the source tree | f93808b4573c |
+| 2026-07-27 | changelog | the release-note writer preserves the history it read (#452) | 97392eeacfa2 |
 | 2026-07-27 | deploy | rollback uses the version it was given, and stops overclaiming the rest (#441) | ce149b07dd04 |
-| 2026-07-27 | changelog | the release-note writer preserves the history it read (#trg-6690d175) | 5c97df256ce6 |
 | 2026-07-27 | run | an override overrides the verdict, never the check (#438) | f6179f6e1ed5 |
 | 2026-07-27 | ci | the PR review gate stops being bypassable (#437) | ec0c7055046f |
 | 2026-07-23 | deps | bump pyasn1 0.6.3 -> 0.6.4 (CVE-2026-59885, CVE-2026-59886) (#432) | 9ffbae764acd |
@@ -378,7 +379,7 @@ pie title Commit Types
 | 2026-03-21 | — | rename skill folders for clean slash commands | 5a8d77658fab |
 | 2026-03-20 | — | update README attribution to svenroth.ai | dd5de7f7d6ab |
 
-### Features (feat) — 345 commits
+### Features (feat) — 346 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
@@ -390,6 +391,7 @@ pie title Commit Types
 | 2026-07-27 | plan | let a section name what it presupposes, so the order can be checked (#457) | 8a93f586a126 |
 | 2026-07-27 | plan | record which way each reviewer came down, and notice disagreement (#456) | d30ee9688d16 |
 | 2026-07-27 | shared | one reader for the accepted-baseline failures list (FR-01.06) (#453) | f918954ffcdf |
+| 2026-07-27 | security | a scan records what it did not check | 1d677943a741 |
 | 2026-07-27 | iterate | the F0 race warning becomes a tracked follow-up that outlives the run (#439) | ed0b0a346a12 |
 | 2026-07-27 | compliance | produced artifacts name the state they describe (FR-01.10) (#448) | e869a02b60fb |
 | 2026-07-27 | triage | defer from the terminal; cap the failing-check detail (#444) | 631e08055ebc |
@@ -728,15 +730,13 @@ pie title Commit Types
 | 2026-03-20 | — | Task 02 — project templates (CLAUDE.md, agent_docs, CI) | c3a6d2f53bd3 |
 | 2026-03-20 | — | Task 01 — monorepo scaffolding + supabase-nextjs stack profile | 990a138a4690 |
 
-### Chores (chore) — 259 commits
+### Chores (chore) — 257 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
-| 2026-07-27 | churn | regenerate derived snapshots after main merge | bd021a33a030 |
-| 2026-07-27 | churn | regenerate derived snapshots after main merge | 7d944f0e4d67 |
-| 2026-07-27 | churn | regenerate derived snapshots after main merge | 7265b3d63ea4 |
-| 2026-07-27 | churn | regenerate derived snapshots after main merge | 71017bcd0692 |
-| 2026-07-27 | triage | sweep 60 outbox append(s) into branch | f47d2fd8b38c |
+| 2026-07-27 | churn | regenerate derived snapshots after main merge | 1667bb9d18be |
+| 2026-07-27 | churn | regenerate derived snapshots after main merge | c5c136ab7780 |
+| 2026-07-27 | churn | regenerate derived snapshots after main merge | 018d83588f18 |
 | 2026-07-26 | review | default external-review GPT model to gpt-5.6-terra (#435) | 8d750a5fc7af |
 | 2026-07-24 | security | stage full compliance write-set in Step 7.5 finalizer (#434) | 5da96ebe8561 |
 | 2026-07-23 | compliance | refresh after security scan (#433) | 2b644805fb7d |
