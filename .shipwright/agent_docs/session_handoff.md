@@ -1,39 +1,39 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-07-27-handoff-tally-and-gate-honesty"
+run_id: "iterate-2026-07-27-pytest-root-composition"
 phase: "iterate"
 reason: "ensure-current pre-merge refresh"
-timestamp: "2026-07-27T17:16:26.682171+00:00"
+timestamp: "2026-07-27T17:38:49.456380+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-07-27 17:16:26 UTC
+> Auto-generated 2026-07-27 17:38:49 UTC
 
 ## Session Info
 
-- **Session ID**: a7fa3da4-74bf-406f-b92b-f309691d90f9
-- **Timestamp**: 2026-07-27 17:16:26 UTC
+- **Session ID**: 2a2ccc95-e7ec-4ca6-bcdb-601ae9e9b002
+- **Timestamp**: 2026-07-27 17:38:49 UTC
 - **Reason**: ensure-current pre-merge refresh
 
 ## Last Iterate
 
-- **Run ID**: iterate-2026-07-27-pr-review-diff-cap
-- **Date**: 2026-07-27T17:16:20.650164Z
-- **Type**: change
+- **Run ID**: iterate-2026-07-27-run-unit-parallel-race
+- **Date**: 2026-07-27T17:38:43.705219Z
+- **Type**: bug
 - **Complexity**: medium
-- **Branch**: iterate/pr-review-diff-cap
-- **ADR**: iterate-2026-07-27-pr-review-diff-cap
+- **Branch**: iterate/run-unit-parallel-race
+- **ADR**: iterate-2026-07-27-run-unit-parallel-race
 - **Tests passed**: True
-- **Spec**: .shipwright/planning/iterate/2026-07-27-pr-review-diff-cap.md
+- **Spec**: .shipwright/planning/iterate/iterate-2026-07-27-run-unit-parallel-race.md
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/handoff-tally-and-gate-honesty
-- **Run ID**: iterate-2026-07-27-handoff-tally-and-gate-honesty
-- **Spec**: .shipwright/planning/iterate/iterate-2026-07-27-handoff-tally-and-gate-honesty.md
+- **Branch**: iterate/pytest-root-composition
+- **Run ID**: `iterate-2026-07-27-pytest-root-composition`
+- **Spec**: .shipwright/planning/iterate/iterate-2026-07-27-pytest-root-composition.md
 - **Complexity**: medium
-- **External Review Marker**: completed (external_review_state.json @ 2026-07-27T16:51:42)
+- **External Review Marker**: completed (external_review_state.json @ 2026-07-27T17:10:30)
 
 ### Mandatory replay on Resume
 
@@ -51,8 +51,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/handoff-tally-and-gate-honesty
-- **Last Commit**: bb13c2f5 Merge remote-tracking branch 'origin/main' into iterate/handoff-tally-and-gate-honesty
+- **Branch**: iterate/pytest-root-composition
+- **Last Commit**: 4942819e Merge remote-tracking branch 'origin/main' into iterate/pytest-root-composition
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -70,14 +70,14 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 |-------|------|--------|------|
 | evt-950798de | grade_snapshot | — | 2026-07-27 |
 | evt-36d0f887 | work_completed | iterate (iterate: raise the PR-review diff cap, cut at a file boundary, name what went unreviewed) | 2026-07-27 |
-| evt-a5ff7d12 | grade_snapshot | — | 2026-07-27 |
-| evt-e0b8fd18 | work_completed | iterate (iterate: the phase canon asks whether the handoff belongs to this run) | 2026-07-27 |
-| evt-68bfe147 | grade_snapshot | — | 2026-07-27 |
+| evt-ad7b51e0 | grade_snapshot | — | 2026-07-27 |
+| evt-e3d8f519 | work_completed | iterate (iterate: an audit that checked nothing is not recorded) | 2026-07-27 |
+| evt-024abc36 | grade_snapshot | — | 2026-07-27 |
 
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 379
+- **Total work events**: 381
 - **Last iterate**: change — iterate: raise the PR-review diff cap, cut at a file boundary, name what went unreviewed (2026-07-27)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 

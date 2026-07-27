@@ -1,0 +1,10 @@
+{
+  "run_id": "iterate-2026-07-27-audit-empty-run-not-recorded",
+  "date": "2026-07-27T16:41:08.661081Z",
+  "type": "change",
+  "complexity": "small",
+  "branch": "iterate/audit-empty-run-not-recorded",
+  "spec": ".shipwright/planning/iterate/iterate-2026-07-27-disclose-audit-last-run.md",
+  "tests_passed": true,
+  "adr": "iterate-2026-07-27-audit-empty-run-not-recorded"
+}

@@ -1,0 +1,1 @@
+A pytest session that spans more than one test root is refused up front, naming the roots that collided and the supported per-root commands, instead of failing 21 tests deep inside another root's suite.
