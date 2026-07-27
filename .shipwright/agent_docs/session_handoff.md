@@ -1,39 +1,39 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-07-27-triage-defer-ci-cap"
+run_id: "iterate-2026-07-27-security-coverage-manifest"
 phase: "iterate"
-reason: "ensure-current pre-merge refresh"
-timestamp: "2026-07-27T08:30:58.021874+00:00"
+reason: "F11 refresh: integrate main after review rounds"
+timestamp: "2026-07-27T08:43:59.717363+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-07-27 08:30:58 UTC
+> Auto-generated 2026-07-27 08:43:59 UTC
 
 ## Session Info
 
-- **Session ID**: 8a66b2f1-81e9-4505-8591-b94928ca02f6
-- **Timestamp**: 2026-07-27 08:30:58 UTC
-- **Reason**: ensure-current pre-merge refresh
+- **Session ID**: 871b1865-c6ae-4724-a105-dc987ddca125
+- **Timestamp**: 2026-07-27 08:43:59 UTC
+- **Reason**: F11 refresh: integrate main after review rounds
 
 ## Last Iterate
 
-- **Run ID**: iterate-2026-07-27-triage-defer-ci-cap
-- **Date**: 2026-07-27T08:30:49.435429Z
-- **Type**: feature
+- **Run ID**: iterate-2026-07-27-security-coverage-manifest
+- **Date**: 2026-07-27T08:43:53.791362Z
+- **Type**: change
 - **Complexity**: medium
-- **Branch**: iterate/triage-defer-ci-cap
-- **ADR**: iterate-2026-07-27-triage-defer-ci-cap
+- **Branch**: iterate/security-coverage-manifest
+- **ADR**: iterate-2026-07-27-security-coverage-manifest
 - **Tests passed**: True
-- **Spec**: .shipwright/planning/iterate/2026-07-27-triage-defer-ci-cap.md
+- **Spec**: .shipwright/planning/iterate/2026-07-27-security-coverage-manifest.md
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/triage-defer-ci-cap
-- **Run ID**: iterate-2026-07-27-triage-defer-ci-cap
-- **Spec**: .shipwright/planning/iterate/2026-07-27-triage-defer-ci-cap.md
+- **Branch**: iterate/security-coverage-manifest
+- **Run ID**: iterate-2026-07-27-security-coverage-manifest
+- **Spec**: .shipwright/planning/iterate/2026-07-27-security-coverage-manifest.md
 - **Complexity**: medium
-- **External Review Marker**: stale (predates spec (2026-07-27T07:19:14))
+- **External Review Marker**: stale (predates spec (2026-07-27T08:20:04))
 
 ### Mandatory replay on Resume
 
@@ -52,8 +52,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/triage-defer-ci-cap
-- **Last Commit**: 5a48e306 Merge remote-tracking branch 'origin/main' into iterate/triage-defer-ci-cap
+- **Branch**: iterate/security-coverage-manifest
+- **Last Commit**: b9085ce9 Merge remote-tracking branch 'origin/main' into iterate/security-coverage-manifest
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -78,7 +78,7 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 363
+- **Total work events**: 364
 - **Last iterate**: change — iterate: the review gate stops being bypassable (fail-closed + fork review) (2026-07-27)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
