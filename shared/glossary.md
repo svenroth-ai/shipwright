@@ -188,8 +188,11 @@
   iterate setup. Related: Producer, Consumer, Worktree-Isolation,
   Anti-Ratchet (the Outbox is NOT a ratchet of the tracked log — it is a
   staging buffer, drained exactly-once via `merge=union` + dedup).
-- **Defer (Snooze)** — the third triage decision beside promote and dismiss.
-  Written **only** by the Command Center; `triage_cli.py` has none.
+- **Defer (Snooze)** — the third triage decision beside promote and dismiss:
+  decided, but deliberately not now. Stored as `snoozed`, writable from both
+  surfaces (`triage_cli.py defer <id> --reason …` and the Command Center),
+  and shown by the CLI listing in its own section — deferred is not the same
+  as gone. Neither surface can un-defer.
 - **Machine-Churn (triage)** — a dismissal a Producer set on itself
   (`MACHINE_DISMISSERS` **and** an exact `MACHINE_REASONS` token, so a human
   dismissal reusing a token survives). The only thing compaction may drop.

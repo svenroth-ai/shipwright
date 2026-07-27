@@ -1,0 +1,1 @@
+`triage_cli.py defer <id> --reason <reason>` — the third decision on a triage finding (real work, deliberately not now) can now be made from the terminal, not only from the Command Center. `triage_cli.py list` shows deferred entries in their own section with their reason instead of hiding them; `list --json` is unchanged and still returns open items only.
