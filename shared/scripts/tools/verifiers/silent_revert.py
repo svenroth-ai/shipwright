@@ -42,10 +42,17 @@ work with no way to proceed. The declaration is the answer.
 
 from __future__ import annotations
 
+import sys
 from pathlib import Path
 
-from .common import CheckResult, Severity
-from .git_helpers import _run_git
+_SCRIPTS_ROOT = Path(__file__).resolve().parents[2]
+if str(_SCRIPTS_ROOT) not in sys.path:
+    sys.path.insert(0, str(_SCRIPTS_ROOT))
+
+from lib.churn_merge import CHURN_ALLOWLIST  # noqa: E402
+
+from .common import CheckResult, Severity  # noqa: E402
+from .git_helpers import _run_git  # noqa: E402
 
 _NAME = "no silent revert of merged work"
 
@@ -143,6 +150,13 @@ def dropped_lines(project_root, default_branch: str, head: str = "HEAD",
                 problems.append(f"cannot diff {base[:8]}..{p2[:8]}")
             continue
         for path in (p.strip() for p in out.splitlines() if p.strip()):
+            if path in CHURN_ALLOWLIST:
+                # Derived artifacts are REGENERATED from the merged tree, not
+                # merged line-by-line — that is what CHURN_ALLOWLIST marks. Their
+                # content legitimately changes wholesale on every integration, so
+                # comparing them here flags all eleven of them on every single
+                # iterate. Caught by running this check against its own branch.
+                continue
             theirs = _file_lines(root, p2, path)
             if theirs is None:
                 continue  # they deleted it too — not this branch's doing

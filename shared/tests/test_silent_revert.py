@@ -286,3 +286,34 @@ def test_no_default_branch_is_a_visible_skip_not_a_pass(tmp_path):
 def test_a_non_git_tree_skips(tmp_path):
     result = check_no_silent_revert(tmp_path, default_branch="main")
     assert result.severity == "skipped"
+
+
+def test_derived_churn_artifacts_are_excluded(tmp_path):
+    """Found by running this check against its own branch: all eleven files it
+    flagged were CHURN_ALLOWLIST artifacts and none was authored content.
+
+    Those files are regenerated from the merged tree rather than merged line by
+    line, so their content legitimately changes wholesale at every integration.
+    Comparing them would fire on every iterate — a gate nobody would keep.
+    """
+    from lib.churn_merge import CHURN_ALLOWLIST
+
+    churn = "shipwright_test_results.json"
+    assert churn in CHURN_ALLOWLIST
+
+    root = _repo(tmp_path)
+    (root / churn).write_text('{"a": 1}\n', encoding="utf-8")
+    _git(root, "add", "-A")
+    _git(root, "commit", "-qm", "add a derived artifact")
+    _fork(root)
+    _write(root, "alpha\nbravo\ncharlie\nBRANCH LINE\n", "our work")
+    # Main regenerates the derived artifact...
+    _git(root, "checkout", "-q", "main")
+    (root / churn).write_text('{"a": 2, "regenerated": true}\n', encoding="utf-8")
+    _git(root, "add", "-A")
+    _git(root, "commit", "-qm", "main regenerates it")
+    _git(root, "checkout", "-q", "work")
+    # ...and we take ours wholesale, exactly as the churn resolver does.
+    _git(root, "merge", "-q", "main", "-s", "ours", "-m", "merge main (ours)")
+
+    assert dropped_lines(root, "main", "HEAD") == {}
