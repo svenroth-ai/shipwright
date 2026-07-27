@@ -1,17 +1,16 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-07-27-rollback-uses-target-ref",
+    "run_id": "iterate-2026-07-27-plan-verdict-record",
     "date": "2026-07-27",
     "unit": {
       "status": "passed",
-      "passed": 8980,
-      "total": 9000,
-      "skipped": 20
+      "passed": 5282,
+      "total": 5282
     },
     "integration": {
       "status": "passed",
-      "passed": 418,
-      "total": 418
+      "passed": 422,
+      "total": 422
     },
     "pgtap": {
       "status": "not_run",
@@ -20,8 +19,8 @@
     },
     "e2e": {
       "status": "passed",
-      "passed": 12,
-      "total": 12
+      "passed": 86,
+      "total": 86
     },
     "design_fidelity": {
       "status": "not_run",
@@ -32,232 +31,154 @@
       "status": "not_run"
     },
     "degraded": [
-      "external code-review cascade: the gemini-3.1-pro-preview leg returned a truncated reasoning fragment instead of a finding list. The run is not marked degraded by the tool (2/2 legs returned), but the leg is recorded here as content-degraded; the one concrete observation it reached before cutting off (_check_health reused the full request timeout) was fixed.",
-      "internal code-reviewer and doubt-reviewer subagents were NOT spawned: an operator standing instruction for this session forbids calling the Agent tool unless explicitly requested. Both are closed as not_run with that disposition in the review record; the external cascade + the 8-point self-review carried the review load."
+      {
+        "condition": "risk_flag_false_positive",
+        "detail": "classify_complexity flagged touches_auth from message prose; risk_detectors.py is diff-authoritative and no auth path is touched."
+      }
     ],
     "surface_verification": {
       "surface": "cli",
-      "runner": "uv run pytest plugins/shipwright-deploy/tests -v",
+      "runner": "uv run --extra dev pytest shared/tests/test_review_verdict.py shared/tests/test_review_state_gate.py shared/tests/test_verifiers_plan_w5.py -v",
       "exit_code": 0,
-      "tests_run": 102,
-      "evidence_path": ".shipwright/runs/iterate-2026-07-27-rollback-uses-target-ref/surface_verification.json",
-      "timestamp": "2026-07-27T00:00:00Z",
-      "attempts": 1
+      "tests_run": 86,
+      "evidence_path": "C:\\01_Development\\shipwright\\.worktrees\\plan-verdict-record\\.shipwright\\runs\\iterate-2026-07-27-plan-verdict-record\\surface_verification.log",
+      "timestamp": "2026-07-27T11:45:42.886Z"
     },
     "test_completeness": {
       "status": "complete",
       "behaviors": [
         {
-          "behavior": "the ref is pinned via editproject, and pinned before update",
+          "behavior": "verdict read from one purported sentinel line, exactly once, and last",
           "disposition": "tested",
-          "evidence": "test_rollback.py::test_target_ref_is_sent_to_the_host_before_the_update PASSED"
+          "evidence": "shared/tests/test_review_verdict.py \u2014 14 tests incl. ::test_two_sentinel_lines_are_unknown, ::test_a_malformed_sentinel_before_a_valid_one_is_unknown PASSED"
         },
         {
-          "behavior": "a failed pin never issues the update",
+          "behavior": "a reviewer discussing the sentinel mid-prose still gets its verdict read",
           "disposition": "tested",
-          "evidence": "test_rollback.py::test_pin_failure_never_issues_the_update_and_never_reports_success PASSED"
+          "evidence": "::test_a_reviewer_discussing_the_sentinel_still_gets_its_verdict_read PASSED (case taken from a real reviewer reply)"
         },
         {
-          "behavior": "no report claims a rollback that did not complete",
+          "behavior": "an injected mid-prose verdict cannot outrank the real one",
           "disposition": "tested",
-          "evidence": "test_rollback.py::test_report_never_claims_a_rollback_that_did_not_complete PASSED"
+          "evidence": "::test_an_injected_verdict_cannot_outrank_the_real_one, ::test_a_sentinel_line_with_trailing_prose_before_a_valid_one_is_unknown PASSED"
         },
         {
-          "behavior": "editproject carries the full project object, only branch replaced",
+          "behavior": "decoration is a closed set \u2014 heading marker and trailing punctuation are out",
           "disposition": "tested",
-          "evidence": "test_rollback.py::test_pin_sends_the_full_project_object_with_only_the_branch_replaced PASSED"
+          "evidence": "::test_sentinel_survives_ordinary_markdown (5 cases), ::test_decoration_outside_the_documented_set_is_unknown (4 cases) PASSED"
         },
         {
-          "behavior": "an unreadable current config refuses instead of writing",
+          "behavior": "a truncated reply yields unknown",
           "disposition": "tested",
-          "evidence": "test_rollback.py::test_unreadable_project_config_refuses_instead_of_writing PASSED"
+          "evidence": "::test_a_truncated_reply_is_unknown PASSED (from a real truncated review)"
         },
         {
-          "behavior": "a read-back agreeing with the request reports confirmed",
+          "behavior": "a verdict is never inferred from prose",
           "disposition": "tested",
-          "evidence": "test_rollback.py::test_readback_confirming_the_ref_reports_confirmed PASSED"
+          "evidence": "::test_verdict_is_never_inferred_from_prose PASSED"
         },
         {
-          "behavior": "a read-back disagreeing is a failure, not a warning",
+          "behavior": "a provider that errored is unavailable, not unknown",
           "disposition": "tested",
-          "evidence": "test_rollback.py::test_readback_returning_a_different_ref_is_a_failure PASSED"
+          "evidence": "::test_non_success_is_unavailable_not_unknown PASSED"
         },
         {
-          "behavior": "an unavailable read-back downgrades to unconfirmed and says why",
+          "behavior": "approve-vs-reject is a contradiction; differences of degree are not",
           "disposition": "tested",
-          "evidence": "test_rollback.py::test_unavailable_readback_downgrades_the_claim_and_says_why PASSED"
+          "evidence": "::test_approve_versus_reject_is_a_contradiction, ::test_differences_of_degree_are_not_contradictions (5 cases) PASSED"
         },
         {
-          "behavior": "a raw URLError downgrades rather than escaping unreported",
+          "behavior": "the comparison is symmetric",
           "disposition": "tested",
-          "evidence": "test_rollback.py::test_a_raw_transport_failure_also_downgrades_rather_than_escaping PASSED"
+          "evidence": "::test_comparison_is_symmetric PASSED (25 pairs)"
         },
         {
-          "behavior": "a parse bug propagates, never masked as an unavailable endpoint",
+          "behavior": "one silent reviewer must be decided; neither answering is left to the degraded gate",
           "disposition": "tested",
-          "evidence": "test_rollback.py::test_readback_parse_bug_is_not_swallowed_as_unavailable PASSED"
+          "evidence": "::test_only_one_reviewer_answering_must_be_decided_not_defaulted, ::test_neither_reviewer_answering_is_left_to_the_degraded_gate PASSED"
         },
         {
-          "behavior": "refs/heads/x and x compare as the same ref",
+          "behavior": "the empty-diff short-circuit stays inert and keeps the block's shape",
           "disposition": "tested",
-          "evidence": "test_rollback.py::test_refs_heads_prefix_compares_canonically PASSED"
+          "evidence": "::test_the_empty_diff_short_circuit_is_inert PASSED"
         },
         {
-          "behavior": "an update failure names the changed config and the previous ref",
+          "behavior": "the marker carries verdicts, the derived contradiction and a schema version",
           "disposition": "tested",
-          "evidence": "test_rollback.py::test_update_failure_reports_the_changed_configuration_and_the_previous_ref PASSED"
+          "evidence": "test_review_state_gate.py::test_verdicts_round_trip_through_the_marker PASSED"
         },
         {
-          "behavior": "an invalid ref is rejected before any hosting call",
+          "behavior": "the disagreement is recomputed on read, not trusted from the stored block",
           "disposition": "tested",
-          "evidence": "test_rollback.py::test_invalid_ref_forms_are_rejected_before_any_host_call PASSED (5 cases)"
+          "evidence": "::test_the_disagreement_is_recomputed_not_trusted, ::test_a_stored_contradiction_cannot_invent_one_either PASSED"
         },
         {
-          "behavior": "the clone strategy reports stopping, never restoring",
+          "behavior": "an unreadable verdict, an incomplete pair, and unknown reviewer names all block",
           "disposition": "tested",
-          "evidence": "test_rollback_clone.py::test_clone_strategy_reports_stopping_not_restoring PASSED"
+          "evidence": "::test_an_unreadable_verdict_blocks, ::test_an_incomplete_verdict_pair_blocks, ::test_verdicts_from_reviewers_that_never_ran_do_not_satisfy_the_gate PASSED"
         },
         {
-          "behavior": "a clone stop failure halts and names the state",
+          "behavior": "a completed review where neither reviewer answered blocks",
           "disposition": "tested",
-          "evidence": "test_rollback_clone.py::test_clone_stop_failure_halts_and_names_the_state PASSED"
+          "evidence": "::test_a_completed_review_where_neither_reviewer_answered_blocks, ::test_neither_answering_still_asks_for_no_resolution PASSED"
         },
         {
-          "behavior": "a refusal makes no claim about what is running",
+          "behavior": "a recorded resolution clears the block; whitespace does not",
           "disposition": "tested",
-          "evidence": "test_rollback_clone.py::test_a_refusal_says_the_target_was_not_touched PASSED"
+          "evidence": "::test_recorded_resolution_clears_the_block, ::test_whitespace_is_not_a_resolution PASSED"
         },
         {
-          "behavior": "CLI argument validation still refuses with the refusal exit code",
+          "behavior": "bad / duplicate / unknown-reviewer verdict CLI args are rejected, not coerced",
           "disposition": "tested",
-          "evidence": "test_rollback_clone.py::test_git_strategy_requires_target_ref, ::test_clone_strategy_requires_clone_name PASSED"
+          "evidence": "::test_a_bad_verdict_word_is_rejected_not_coerced, ::test_malformed_verdict_pair_is_rejected, ::test_an_unknown_reviewer_name_is_rejected, ::test_the_same_reviewer_twice_is_rejected_not_overwritten PASSED"
         },
         {
-          "behavior": "drift: no migrations added since the ref is clean",
+          "behavior": "a completed review with no verdicts is legacy \u2014 W5 warns, the in-session reading blocks",
           "disposition": "tested",
-          "evidence": "test_data_drift.py::test_no_new_migrations_is_clean PASSED"
+          "evidence": "::test_a_completed_review_with_no_verdicts_is_legacy_not_ok, ::test_omitting_the_verdict_flags_is_legacy_not_a_pass, test_verifiers_plan_w5.py::test_a_marker_predating_verdicts_warns_rather_than_failing, test_workflow_checks.py::test_w5_warns_when_a_completed_review_recorded_no_verdicts PASSED"
         },
         {
-          "behavior": "drift: a committed migration added since the ref is drift",
+          "behavior": "skip branches unchanged and need no verdicts",
           "disposition": "tested",
-          "evidence": "test_data_drift.py::test_a_committed_migration_added_since_the_ref_is_drift PASSED"
+          "evidence": "test_verifiers_plan_w5.py::test_skip_handling_is_unchanged (4 cases), test_review_state_gate.py::test_a_skip_needs_no_verdicts PASSED"
         },
         {
-          "behavior": "drift: an uncommitted migration also counts as drift",
+          "behavior": "W5 fails an undecided disagreement and names the remedy",
           "disposition": "tested",
-          "evidence": "test_data_drift.py::test_an_uncommitted_migration_still_counts_as_drift PASSED"
+          "evidence": "test_verifiers_plan_w5.py::test_an_unresolved_contradiction_fails, ::test_a_stored_block_claiming_agreement_cannot_override_the_verdicts, test_workflow_checks.py::test_w5_fails_an_undecided_reviewer_disagreement PASSED"
         },
         {
-          "behavior": "drift: an unresolvable ref is unknown, never clean",
+          "behavior": "the resume gate sends an undecided disagreement back to Step 5",
           "disposition": "tested",
-          "evidence": "test_data_drift.py::test_an_unresolvable_ref_is_unknown_not_clean PASSED"
+          "evidence": "plugins/shipwright-plan/tests/test_setup_planning_session.py PASSED (resume-step branches)"
         },
         {
-          "behavior": "drift: a project without migrations is not-applicable",
+          "behavior": "reviewer prompts carry the sentinel instruction",
           "disposition": "tested",
-          "evidence": "test_data_drift.py::test_a_project_without_migrations_is_not_applicable PASSED"
+          "evidence": "plugins/shipwright-plan/tests/test_prompts.py PASSED; four live review runs received it"
         },
         {
-          "behavior": "drift: a non-git directory is unknown",
-          "disposition": "tested",
-          "evidence": "test_data_drift.py::test_a_non_git_directory_is_unknown PASSED"
+          "behavior": "the inline fallback prompt carries the same verdict instruction",
+          "disposition": "untestable",
+          "reason_code": "covered-by-existing-test",
+          "reason": "default_review_prompts is exercised through test_external_review_cli.py's prompt-absent path; the instruction is a constant appended to it with no branch of its own."
         },
         {
-          "behavior": "drift: no project root reports not-checked, never clean",
-          "disposition": "tested",
-          "evidence": "test_data_drift.py::test_no_project_root_reports_not_checked_rather_than_clean PASSED"
-        },
-        {
-          "behavior": "drift: a custom migrations directory is honoured",
-          "disposition": "tested",
-          "evidence": "test_data_drift.py::test_a_migrations_dir_outside_the_default_is_honoured PASSED"
-        },
-        {
-          "behavior": "ref validation accepts and rejects per slash-separated component",
-          "disposition": "tested",
-          "evidence": "test_data_drift.py::test_valid_refs_are_accepted (5), ::test_dangerous_or_malformed_refs_are_rejected (20) PASSED"
-        },
-        {
-          "behavior": "a shell-metacharacter ref never reaches a git subprocess",
-          "disposition": "tested",
-          "evidence": "test_data_drift.py::test_a_shell_metacharacter_ref_never_reaches_git PASSED"
-        },
-        {
-          "behavior": "the gate refuses and names the target's declared data strategy",
-          "disposition": "tested",
-          "evidence": "test_data_drift.py::test_drift_refuses_and_names_the_targets_strategy PASSED"
-        },
-        {
-          "behavior": "--ack-data-drift lifts the refusal",
-          "disposition": "tested",
-          "evidence": "test_data_drift.py::test_acknowledging_the_drift_lifts_the_refusal + E2E ::test_acknowledging_the_drift_proceeds PASSED"
-        },
-        {
-          "behavior": "a none-app-only target skips the stored-data question entirely",
-          "disposition": "tested",
-          "evidence": "test_data_drift.py::test_a_target_whose_data_never_moves_skips_the_question PASSED"
-        },
-        {
-          "behavior": "an undeclared data strategy still refuses and says it is undeclared",
-          "disposition": "tested",
-          "evidence": "test_data_drift.py::test_an_undeclared_strategy_still_refuses_and_says_it_is_undeclared PASSED"
-        },
-        {
-          "behavior": "liveness: with no deadline exactly one request is made",
-          "disposition": "tested",
-          "evidence": "test_smoke_test.py::test_without_a_deadline_exactly_one_request_is_made PASSED"
-        },
-        {
-          "behavior": "liveness: a slow start is waited out, not called a failed release",
-          "disposition": "tested",
-          "evidence": "test_smoke_test.py::test_a_slow_start_is_waited_out_rather_than_called_a_failed_release PASSED"
-        },
-        {
-          "behavior": "liveness: an exhausted deadline fails and records the evidence",
-          "disposition": "tested",
-          "evidence": "test_smoke_test.py::test_an_exhausted_deadline_fails_and_records_the_evidence PASSED"
-        },
-        {
-          "behavior": "liveness: the deadline is never bounded by the request timeout",
-          "disposition": "tested",
-          "evidence": "test_smoke_test.py::test_the_deadline_is_not_overshot_by_a_long_request_timeout, ::test_a_deadline_shorter_than_one_request_still_asks_exactly_once PASSED"
-        },
-        {
-          "behavior": "liveness: the health probe counts against the same deadline",
-          "disposition": "tested",
-          "evidence": "test_smoke_test.py::test_the_health_probe_counts_against_the_same_deadline PASSED"
-        },
-        {
-          "behavior": "liveness: nonsensical durations are rejected as usage errors",
-          "disposition": "tested",
-          "evidence": "test_smoke_test.py::test_nonsensical_durations_are_rejected PASSED (4 cases)"
-        },
-        {
-          "behavior": "profile: the three REAL shipped profiles round-trip into a policy; explicit flags override per field; malformed input is rejected",
-          "disposition": "tested",
-          "evidence": "shared/tests/test_deploy_profile.py 17 PASSED, incl. a guard that fails if the profile glob matches nothing"
-        },
-        {
-          "behavior": "client: getprojects matches on context in a list and raises when none matches; set_vcs_ref preserves every field incl. non-scalars and drops a stale session/envName",
-          "disposition": "tested",
-          "evidence": "test_jelastic_client.py::test_get_vcs_project_picks_the_matching_context_from_a_list, ::test_get_vcs_project_raises_when_no_context_matches, ::test_set_vcs_ref_sends_every_field_back_with_only_branch_replaced, ::test_set_vcs_ref_never_forwards_a_stale_session_or_envname PASSED"
-        },
-        {
-          "behavior": "end to end: profile file -> reader -> CLI subprocess -> real HTTP -> recorded request sequence, from an unrelated cwd, with the token absent from stdout/stderr",
-          "disposition": "tested",
-          "evidence": "test_rollback_e2e_cli.py 8 PASSED + test_smoke_e2e_cli.py 4 PASSED (real HTTP stub, real temp git repo, real subprocesses, no mocking)",
-          "category": "integration"
+          "behavior": "a live provider emits a parseable sentinel",
+          "disposition": "untestable",
+          "reason_code": "requires-external-nondeterministic-service",
+          "reason": "Needs a real LLM call. Probed four times against live OpenRouter responses during this work; the parser itself is pinned deterministically above."
         }
       ],
       "counts": {
-        "testable": 40,
-        "tested": 40,
-        "untestable": 0,
+        "testable": 22,
+        "tested": 22,
+        "untestable": 2,
         "untested_testable": 0
       },
       "enumeration_basis": {
-        "acs": 15,
-        "covered_acs": 15
+        "acs": 6,
+        "covered_acs": 6
       }
     }
   },
