@@ -35,6 +35,7 @@ from external_review_config import (  # noqa: E402
     get_external_review_status,
     load_review_config,
 )
+from review_marker import STATE_BLOCK, evaluate_review_state  # noqa: E402
 
 
 SESSION_STATE_FILE = "shipwright_plan_session.json"
@@ -44,12 +45,35 @@ E2E_PLAN_FILE = "claude-plan-e2e.md"
 REVIEW_STATE_FILE = "external_review_state.json"
 
 
+def read_review_state(planning_dir: Path) -> tuple[bool, bool, str]:
+    """``(marker_exists, clear_to_proceed, reason)`` for the review gate.
+
+    Delegates the judgement to ``review_marker.evaluate_review_state`` — the
+    same function ``W5`` and the in-session Step 6 gate use — so a resumed
+    session applies exactly the rule the other two apply. A marker that
+    records a reviewer disagreement nobody decided sends the session back to
+    Step 5 just as a missing marker does.
+    """
+    path = planning_dir / REVIEW_STATE_FILE
+    if not path.exists():
+        return False, False, "no marker"
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except (json.JSONDecodeError, OSError) as exc:
+        return True, False, f"marker unreadable: {exc}"
+    state, reason = evaluate_review_state(data)
+    # Only a hard block sends a resumed session back to Step 5. A marker
+    # written before verdicts existed (STATE_LEGACY) must not force every
+    # pre-existing planning session to re-run its review.
+    return True, state != STATE_BLOCK, reason
+
+
 def detect_state(planning_dir: Path) -> dict:
     """Detect planning session state from file existence."""
     interview_exists = (planning_dir / INTERVIEW_FILE).exists()
     plan_exists = (planning_dir / PLAN_FILE).exists()
     e2e_exists = (planning_dir / E2E_PLAN_FILE).exists()
-    review_state_exists = (planning_dir / REVIEW_STATE_FILE).exists()
+    review_state_exists, review_state_ok, review_state_reason = read_review_state(planning_dir)
 
     # Parse sections from plan if it exists
     sections_declared = []
@@ -64,11 +88,13 @@ def detect_state(planning_dir: Path) -> dict:
             sections_written = [s for s in sections_declared if s not in sections_missing]
 
     # Determine resume step.
-    # Step 5 (external review) must complete and write REVIEW_STATE_FILE before
-    # any later step can be resumed. This gate prevents silent-skip of review:
-    # if plan.md exists but the marker is missing (e.g. mid-Step-5 abort, or a
-    # pre-gate planning session), force re-entry at Step 5.
-    if plan_exists and not review_state_exists:
+    # Step 5 (external review) must complete and write a REVIEW_STATE_FILE that
+    # is clear to proceed past, before any later step can be resumed. This gate
+    # prevents silent-skip of review: if plan.md exists but the marker is
+    # missing (mid-Step-5 abort, or a pre-gate planning session) — or it exists
+    # but records a reviewer disagreement nobody decided — force re-entry at
+    # Step 5.
+    if plan_exists and not review_state_ok:
         resume_step = 5  # External review gate
     elif plan_exists and sections_declared and not sections_missing:
         resume_step = 8  # E2E or completion
@@ -86,6 +112,8 @@ def detect_state(planning_dir: Path) -> dict:
         "plan_exists": plan_exists,
         "e2e_exists": e2e_exists,
         "review_state_exists": review_state_exists,
+        "review_state_ok": review_state_ok,
+        "review_state_reason": review_state_reason,
         "sections_declared": sections_declared,
         "sections_written": sections_written,
         "sections_missing": sections_missing,

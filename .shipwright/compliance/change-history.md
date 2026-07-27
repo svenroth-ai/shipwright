@@ -1,16 +1,16 @@
 # Commit Change Log
 
-Generated: 2026-07-27T11:48:13.536938+00:00
-Source-State: run=iterate-2026-07-27-security-coverage-manifest
-Total commits: 1216
+Generated: 2026-07-27T12:14:28.287189+00:00
+Source-State: run=iterate-2026-07-27-plan-section-deps
+Total commits: 1220
 
 ## Commit Distribution
 
 ```mermaid
 pie title Commit Types
     "fix" : 350
-    "feat" : 337
-    "chore" : 254
+    "feat" : 340
+    "chore" : 255
     "docs" : 147
     "refactor" : 76
     "test" : 31
@@ -376,10 +376,13 @@ pie title Commit Types
 | 2026-03-21 | — | rename skill folders for clean slash commands | 5a8d77658fab |
 | 2026-03-20 | — | update README attribution to svenroth.ai | dd5de7f7d6ab |
 
-### Features (feat) — 337 commits
+### Features (feat) — 340 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-07-27 | plan | let a section name what it presupposes, so the order can be checked | bdb4fcca3e74 |
+| 2026-07-27 | plan | record which way each reviewer came down, and notice disagreement (#456) | d30ee9688d16 |
+| 2026-07-27 | shared | one reader for the accepted-baseline failures list (FR-01.06) (#453) | f918954ffcdf |
 | 2026-07-27 | iterate | the F0 race warning becomes a tracked follow-up that outlives the run (#439) | ed0b0a346a12 |
 | 2026-07-27 | compliance | produced artifacts name the state they describe (FR-01.10) (#448) | e869a02b60fb |
 | 2026-07-27 | triage | defer from the terminal; cap the failing-check detail (#444) | 631e08055ebc |
@@ -718,10 +721,11 @@ pie title Commit Types
 | 2026-03-20 | — | Task 02 — project templates (CLAUDE.md, agent_docs, CI) | c3a6d2f53bd3 |
 | 2026-03-20 | — | Task 01 — monorepo scaffolding + supabase-nextjs stack profile | 990a138a4690 |
 
-### Chores (chore) — 254 commits
+### Chores (chore) — 255 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-07-27 | triage | sweep 9 outbox append(s) into branch | 137e4e5f7dd1 |
 | 2026-07-26 | review | default external-review GPT model to gpt-5.6-terra (#435) | 8d750a5fc7af |
 | 2026-07-24 | security | stage full compliance write-set in Step 7.5 finalizer (#434) | 5da96ebe8561 |
 | 2026-07-23 | compliance | refresh after security scan (#433) | 2b644805fb7d |
@@ -1286,7 +1290,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 1216 |
+| Total commits | 1220 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 1216 |
+| Human-authored commits | 1220 |
 
