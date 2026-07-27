@@ -35,7 +35,51 @@ normally. **External review rejected it, correctly** (gemini `reject`, openai
   permissions, PR merged by another route) leaves the artifacts frozen with
   nobody notified.
 
-## Chosen: stamp at release, plus a manual refresh
+## CHOSEN (2026-07-28): the server-side refresh, with a bot credential
+
+Decided after weighing the alternative below. The operator's objection to a
+release cadence is the one that settles it: **stale artifacts are not visible at
+the moment they mislead you.** You discover the discrepancy by tripping over it.
+
+Note first what no design can promise: main moves between generation and merge,
+so "always current" is unreachable (external review, openai #3). The real axis is
+**window size** and **whether the window is visible**. This plan shortens the
+window to one CI run and makes it self-declaring.
+
+- **Trigger:** a workflow on `push: main`, so it does not depend on any session
+  staying open — the objection that killed the F12 variant, and the one that
+  matters once the merge queue lands.
+- **Credential:** a bot token in repo secrets. This is the *only* way the required
+  checks run on the refresh PR at all; `GITHUB_TOKEN`-created PRs never trigger
+  them. Fine-grained PAT scoped to this repo (Contents + Pull requests, read/write)
+  is the quick form; a GitHub App is the more rigorous one for an org-owned repo
+  (no personal tie, short-lived tokens) and is the upgrade path.
+- **Race safety:** a `concurrency` group serialises refresh runs, plus
+  `--force-with-lease` and a re-check of the target main SHA before arming
+  auto-merge (external review, openai #2 — deterministic output does NOT make
+  last-writer-wins safe; the *older* writer can arrive last).
+- **Loop guard:** the refresh PR's own merge pushes to main, so the workflow must
+  skip triggers authored by the bot — otherwise it regenerates forever.
+- **Checks:** the six required checks run normally on the refresh PR. Nobody waits
+  on them; auto-merge handles it. Skipping them by path filter was considered and
+  rejected: it would create a path-shaped hole in the gates that a human could
+  also walk through.
+
+### Provenance stamp — independent of cadence, do it regardless
+
+The artifacts already carry a header line, and it currently states the wrong
+thing:
+
+    Source-State: run=iterate-2026-07-27-review-floor-not-chained
+
+That names the run that last wrote the file *from a branch* — precisely the value
+that is wrong by construction. Replacing it with the main SHA the derivation was
+taken from, plus the distance from current main, makes staleness visible **on the
+face of the artifact** instead of something discovered through a discrepancy.
+This is the operator's actual concern, and it is cheap: the mechanism exists, it
+just reports the wrong thing.
+
+## Alternative, not chosen: stamp at release only
 
 The release phase already regenerates these files — `update_compliance.py
 --phase <name>` fires after every completed phase, including `changelog`. It
@@ -63,21 +107,43 @@ release cadence is too slow.
 
 ## Acceptance criteria
 
-- **AC-1** — a release commit contains the derived snapshots regenerated from the
-  release branch's own tree.
-- **AC-2** — the manual refresh command produces the same result as the release
-  path (one producer, no second implementation).
-- **AC-3** — a no-op refresh (nothing drifted) commits nothing.
-- **AC-4** — both paths work in an adopted repo with no secret and no ruleset
-  change; `/shipwright-adopt` needs to scaffold nothing new.
-- **AC-5** — `docs/guide.md` and `docs/hooks-and-pipeline.md` state the cadence,
-  so "stale between releases" is documented rather than discovered.
+- **AC-1** — after a push to main, the refresh runs and main's derived snapshots
+  match a regeneration from the SHA the refresh was taken from. Stated as
+  eventual consistency with a named base, NOT as "main is always current" — the
+  latter is unachievable and the original wording claimed it (openai #1).
+- **AC-2** — two pushes in quick succession produce ONE refresh PR, not two, and
+  the surviving content derives from the NEWER main. A `concurrency` group plus
+  `--force-with-lease`; a lease failure re-fetches and regenerates rather than
+  overwriting.
+- **AC-3** — the refresh branch is reset to the triggering main SHA before
+  regeneration, so its own prior refresh commit never feeds the generators.
+- **AC-4** — a no-op refresh (nothing drifted) opens no PR and leaves no branch
+  churn.
+- **AC-5** — the bot's own merge does not trigger another refresh.
+- **AC-6** — every derived artifact states the main SHA it was derived from and
+  how far behind it is, so staleness is legible without running an audit.
+- **AC-7** — a refresh that cannot run is recorded and visible (a triage item
+  naming the main SHA), never silently skipped (openai #4).
+- **AC-8** — `docs/guide.md` and `docs/hooks-and-pipeline.md` state the mechanism,
+  the credential it needs, and the residual window.
 
-## If freshness between releases is later required
+## Operator prerequisite
 
-Then the correct build is the one gemini prescribed, and it should be built as
-such rather than approximated client-side: a bot App/PAT, a workflow on
-`push: main`, a `concurrency` group to serialise refreshes, and an actor guard so
-the bot's own merges do not re-trigger it. That is a deliberate trade — one
-credential for continuous freshness — and it is a decision to take when the
-cadence actually hurts, not before.
+The token cannot be created by the agent. Before this iterate can be finished:
+
+1. Create a **fine-grained PAT** scoped to `svenroth-ai/shipwright` with
+   *Contents: read/write* and *Pull requests: read/write*.
+2. Store it as the repository secret `SHIPWRIGHT_REFRESH_TOKEN`.
+
+Only the refresh workflow references it, and workflow files are Tier-3a
+(pr-review-gated), so a change that redirects the credential cannot merge
+unreviewed. A GitHub App is the stronger form and can replace the PAT later
+without touching the workflow's logic.
+
+## Alternative, not chosen: stamp at release only
+
+Zero credentials, and it survives every review objection — but the window is days,
+and the operator's objection stands: a stale artifact misleads silently at the
+moment you rely on it. Kept here because it remains the correct fallback for any
+repo unwilling to hold a credential, and because the release path should commit
+the refreshed files regardless.
