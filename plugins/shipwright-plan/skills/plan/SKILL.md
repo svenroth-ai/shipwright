@@ -68,12 +68,9 @@ with Step 1.
 See [research-protocol.md](references/research-protocol.md) for detailed guidance.
 
 **Goal:** Understand the codebase, existing patterns, and technical landscape.
-
-**Actions:**
-1. Read the spec file thoroughly
-2. If existing codebase: explore structure, read key files, understand patterns
-3. If new project: review similar codebases, best practices
-4. Use web search for unfamiliar technologies or patterns
+Read the spec thoroughly; explore an existing codebase's structure and
+patterns, or review comparable ones for a new project; web-search unfamiliar
+technologies.
 
 **Checkpoint:** Mental model formed. No file written — research informs all subsequent steps.
 
@@ -141,14 +138,12 @@ SECTION_MANIFEST format.
 
 ## Step 5: External LLM Review (Default + Fallback)
 
-See [step-5-external-review.md](references/step-5-external-review.md)
-for the full branch logic, and [external-review.md](references/external-review.md)
-for the underlying protocol.
+Full branch logic: [step-5-external-review.md](references/step-5-external-review.md);
+underlying protocol: [external-review.md](references/external-review.md).
 
-**This step is NOT optional.** One of three branches must run to
-completion, and the marker file
-`{planning_dir}/external_review_state.json` must be written. Step 6
-is gated on that marker.
+**This step is NOT optional.** One of three branches must run to completion,
+and `{planning_dir}/external_review_state.json` must be written. Step 6 is
+gated on that marker.
 
 Read `external_review_status` from the session report (First Actions
 > F). Branch on its value:
@@ -219,7 +214,11 @@ uv run --project {plugin_root} {plugin_root}/scripts/checks/check-sections.py \
   --planning-dir "{planning_dir}"
 ```
 
-Verify all sections declared in SECTION_MANIFEST have corresponding files.
+Verifies two things: every section declared in SECTION_MANIFEST has a file,
+and the numbering agrees with the dependencies each section declares
+(`03-api: 01-auth, 02-database`). A prerequisite numbered after the section
+that needs it lands in `order_errors` and exits non-zero. Format:
+[section-index.md](references/section-index.md).
 
 ---
 
@@ -255,7 +254,7 @@ decomposition, not user-facing).
 4. E2E test plan exists (if enabled)
 5. Section Quality Gate (description + ≥2 implementation steps + test strategy)
 6. FR Coverage Check (every FR assigned to ≥1 section)
-7. Dependency Order (sections after their dependencies in SECTION_MANIFEST)
+7. Dependency Order (every declared dependency numbered before the section naming it)
 
 **Phase complete:** set `SHIPWRIGHT_RUN_ID`, run
 `write-plan-config.py --status complete`, fire `record_event.py`,

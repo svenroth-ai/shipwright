@@ -1,66 +1,67 @@
 """Section file operations for /shipwright-plan.
 
-Handles parsing SECTION_MANIFEST from plan.md and tracking section completion.
+Parsing lives in ``shared/scripts/lib/plan_manifest.py`` — one implementation
+shared with the plan phase verifier, so the plugin's own gate and the
+verifier's view cannot drift. This module keeps the file-system side (which
+sections exist on disk, which declared ones are still missing) and the
+``SectionManifestResult`` shape its callers already read.
 """
 
-import re
+import sys
 from dataclasses import dataclass, field
 from pathlib import Path
 
+# parents[0]=lib, [1]=scripts, [2]=shipwright-plan, [3]=plugins, [4]=repo root.
+# Appended, not inserted at 0: a library module must not shadow the importing
+# plugin's own top-level modules (ADR-045).
+_SHARED_LIB = Path(__file__).resolve().parents[4] / "shared" / "scripts" / "lib"
+if str(_SHARED_LIB) not in sys.path:
+    sys.path.append(str(_SHARED_LIB))
 
-SECTION_MANIFEST_PATTERN = re.compile(
-    r"<!--\s*SECTION_MANIFEST\s*\n(.*?)END_MANIFEST\s*-->",
-    re.DOTALL,
+from plan_manifest import (  # noqa: E402
+    SECTION_NAME_RE as SECTION_NAME_PATTERN,
+    SectionEntry,
+    parse_manifest,
+    validate_dependency_order,
 )
-SECTION_NAME_PATTERN = re.compile(r"^\d{2}-[a-z0-9]+(?:-[a-z0-9]+)*$")
+
+__all__ = [
+    "SECTION_NAME_PATTERN",
+    "SectionEntry",
+    "SectionManifestResult",
+    "get_missing_sections",
+    "get_section_files",
+    "get_sections_dir",
+    "parse_section_manifest",
+    "validate_dependency_order",
+]
 
 
 @dataclass
 class SectionManifestResult:
-    """Result of parsing SECTION_MANIFEST."""
+    """Result of parsing SECTION_MANIFEST.
+
+    ``sections`` and ``errors`` are unchanged; ``dependencies`` and ``entries``
+    are additive so existing readers keep working untouched.
+    """
 
     is_valid: bool
     sections: list[str] = field(default_factory=list)
     errors: list[str] = field(default_factory=list)
+    dependencies: dict[str, list[str]] = field(default_factory=dict)
+    entries: list[SectionEntry] = field(default_factory=list)
 
 
 def parse_section_manifest(plan_path: Path) -> SectionManifestResult:
     """Parse SECTION_MANIFEST block from plan.md."""
-    if not plan_path.exists():
-        return SectionManifestResult(is_valid=False, errors=[f"Plan not found: {plan_path}"])
-
-    content = plan_path.read_text(encoding="utf-8")
-    match = SECTION_MANIFEST_PATTERN.search(content)
-
-    if not match:
-        return SectionManifestResult(
-            is_valid=False,
-            errors=["No SECTION_MANIFEST block found in plan.md"],
-        )
-
-    block = match.group(1).strip()
-    if not block:
-        return SectionManifestResult(is_valid=False, errors=["SECTION_MANIFEST block is empty"])
-
-    sections = []
-    errors = []
-
-    for line in block.splitlines():
-        line = line.strip()
-        if not line:
-            continue
-        if not SECTION_NAME_PATTERN.match(line):
-            errors.append(f"Invalid section name: '{line}'")
-        else:
-            sections.append(line)
-
-    if errors:
-        return SectionManifestResult(is_valid=False, sections=sections, errors=errors)
-
-    if not sections:
-        return SectionManifestResult(is_valid=False, errors=["No valid sections found"])
-
-    return SectionManifestResult(is_valid=True, sections=sections)
+    parsed = parse_manifest(plan_path)
+    return SectionManifestResult(
+        is_valid=parsed.is_valid,
+        sections=parsed.sections,
+        errors=parsed.errors,
+        dependencies=parsed.dependencies,
+        entries=parsed.entries,
+    )
 
 
 def get_sections_dir(planning_dir: Path) -> Path:

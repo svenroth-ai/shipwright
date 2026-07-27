@@ -1,44 +1,42 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-07-27-rollback-uses-target-ref"
+run_id: "iterate-2026-07-27-plan-section-deps"
 phase: "iterate"
-reason: "auto re-refresh (round 43): origin/main moved"
-timestamp: "2026-07-27T09:08:48.846142+00:00"
+reason: "iterate: section dependencies are declarable, so the numbering is checkable (2 of 3)"
+timestamp: "2026-07-27T12:14:34.040370+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-07-27 09:08:48 UTC
+> Auto-generated 2026-07-27 12:14:34 UTC
 
 ## Session Info
 
-- **Session ID**: 13f13377-3431-4445-b501-bc754d78d6d3
-- **Timestamp**: 2026-07-27 09:08:48 UTC
-- **Reason**: auto re-refresh (round 43): origin/main moved
+- **Session ID**: 1ea85a9d-f698-4336-8e01-ea2f4e2ae714
+- **Timestamp**: 2026-07-27 12:14:34 UTC
+- **Reason**: iterate: section dependencies are declarable, so the numbering is checkable (2 of 3)
 
 ## Last Iterate
 
-- **Run ID**: iterate-2026-07-27-artifact-state-stamping
-- **Date**: 2026-07-27T09:08:42.675204Z
-- **Type**: feature
+- **Run ID**: iterate-2026-07-27-plan-section-deps
+- **Date**: 2026-07-27T12:14:28.199191Z
+- **Type**: change
 - **Complexity**: medium
-- **Branch**: iterate/artifact-state-stamping
-- **ADR**: iterate-2026-07-27-artifact-state-stamping
+- **Branch**: iterate/plan-section-deps
+- **ADR**: iterate-2026-07-27-plan-section-deps
 - **Tests passed**: True
-- **Spec**: .shipwright/planning/iterate/2026-07-27-artifact-state-stamping.md
+- **Spec**: .shipwright/planning/iterate/2026-07-27-plan-section-deps.md
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/rollback-uses-target-ref
-- **Run ID**: iterate-2026-07-27-rollback-uses-target-ref
-- **Spec**: .shipwright/planning/iterate/iterate-2026-07-27-rollback-uses-target-ref.md
-- **Complexity**: medium
-- **External Review Marker**: stale (predates spec (2026-07-27T07:16:58))
+- **Branch**: iterate/plan-section-deps
+- **Run ID**: `iterate-2026-07-27-plan-section-deps`
+- **Spec**: .shipwright/planning/iterate/2026-07-27-plan-section-deps.md
+- **External Review Marker**: completed (external_review_state.json @ 2026-07-27T12:04:57)
 
 ### Mandatory replay on Resume
 
 Before dispatching to the handoff's Remaining phase, run these if missing:
-- Step 4 — External LLM Review (marker missing/stale)
 - Finalization (F0–F11) after all mandatory phases pass
 
 ## Legacy build state
@@ -52,8 +50,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/rollback-uses-target-ref
-- **Last Commit**: 1711fc06 Merge remote-tracking branch 'origin/main' into iterate/rollback-uses-target-ref
+- **Branch**: iterate/plan-section-deps
+- **Last Commit**: 137e4e5f chore(triage): sweep 9 outbox append(s) into branch
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -69,17 +67,17 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 | Event | Type | Source | Date |
 |-------|------|--------|------|
+| evt-8039a18b | grade_snapshot | — | 2026-07-27 |
+| evt-8cab1d1d | work_completed | iterate (iterate: section dependencies are declarable, so the numbering is checkable (2 of 3)) | 2026-07-27 |
 | evt-64bc7af0 | grade_snapshot | — | 2026-07-27 |
 | evt-19f53577 | grade_snapshot | — | 2026-07-27 |
 | evt-78684181 | work_completed | iterate (iterate: the review gate stops being bypassable (fail-closed + fork review)) | 2026-07-27 |
-| evt-c880344a | grade_snapshot | — | 2026-07-27 |
-| evt-4794dcc1 | work_completed | iterate (iterate: phase-gate override leaves evidence; handoff renders phase status) | 2026-07-27 |
 
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 366
-- **Last iterate**: change — iterate: the review gate stops being bypassable (fail-closed + fork review) (2026-07-27)
+- **Total work events**: 367
+- **Last iterate**: change — iterate: section dependencies are declarable, so the numbering is checkable (2 of 3) (2026-07-27)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
 ## Recent Decisions
