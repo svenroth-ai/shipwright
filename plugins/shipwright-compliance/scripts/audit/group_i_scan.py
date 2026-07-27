@@ -245,7 +245,8 @@ def basis_tally(rows, classify) -> tuple[list[str], list[str]]:
             blocking.append(f"{row.id} ({row.basis!r}: {verdict.note})")
         elif verdict.kind == "empty":
             blocking.append(
-                f"{row.id} (empty — write `assumed` if nobody has confirmed it)"
+                f"{row.id} (empty — write `assumed` if nobody has confirmed it, "
+                f"and name what would settle it in an acceptance criterion)"
             )
         elif verdict.kind == "other":
             advisory.append(
