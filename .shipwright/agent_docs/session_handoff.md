@@ -1,43 +1,44 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-07-27-pr-review-diff-cap"
+run_id: "iterate-2026-07-27-c3-phase-content-key"
 phase: "iterate"
-reason: "iterate: raise the PR-review diff cap, cut at a file boundary, name what went unreviewed"
-timestamp: "2026-07-27T17:16:26.682171+00:00"
+reason: "ensure-current pre-merge refresh"
+timestamp: "2026-07-27T16:36:23.078641+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-07-27 17:16:26 UTC
+> Auto-generated 2026-07-27 16:36:23 UTC
 
 ## Session Info
 
-- **Session ID**: 1ea85a9d-f698-4336-8e01-ea2f4e2ae714
-- **Timestamp**: 2026-07-27 17:16:26 UTC
-- **Reason**: iterate: raise the PR-review diff cap, cut at a file boundary, name what went unreviewed
+- **Session ID**: 537acd2e-45f2-4a62-8eba-dc5e3fa65db8
+- **Timestamp**: 2026-07-27 16:36:23 UTC
+- **Reason**: ensure-current pre-merge refresh
 
 ## Last Iterate
 
-- **Run ID**: iterate-2026-07-27-pr-review-diff-cap
-- **Date**: 2026-07-27T17:16:20.650164Z
+- **Run ID**: iterate-2026-07-27-c3-phase-content-key
+- **Date**: 2026-07-27T16:36:15.112994Z
 - **Type**: change
 - **Complexity**: medium
-- **Branch**: iterate/pr-review-diff-cap
-- **ADR**: iterate-2026-07-27-pr-review-diff-cap
+- **Branch**: iterate/c3-phase-content-key
+- **ADR**: iterate-2026-07-27-c3-phase-content-key
 - **Tests passed**: True
-- **Spec**: .shipwright/planning/iterate/2026-07-27-pr-review-diff-cap.md
+- **Spec**: .shipwright/planning/iterate/iterate-2026-07-27-c3-phase-content-key.md
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/pr-review-diff-cap
-- **Run ID**: `iterate-2026-07-27-pr-review-diff-cap`
-- **Spec**: .shipwright/planning/iterate/2026-07-27-pr-review-diff-cap.md
-- **Complexity**: medium (`prior_source: history`, n=20; scope keyword said `trivial`)
-- **External Review Marker**: stale (predates spec (2026-07-27T16:40:17))
+- **Branch**: iterate/c3-phase-content-key
+- **Run ID**: iterate-2026-07-27-c3-phase-content-key
+- **Spec**: .shipwright/planning/iterate/iterate-2026-07-27-c3-phase-content-key.md
+- **Complexity**: medium
+- **External Review Marker**: stale (predates spec (2026-07-27T16:16:32))
 
 ### Mandatory replay on Resume
 
 Before dispatching to the handoff's Remaining phase, run these if missing:
+- Step 4 — External LLM Review (marker missing/stale)
 - Finalization (F0–F11) after all mandatory phases pass
 
 ## Legacy build state
@@ -51,8 +52,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/pr-review-diff-cap
-- **Last Commit**: 2806e73d Merge remote-tracking branch 'origin/main' into iterate/pr-review-diff-cap
+- **Branch**: iterate/c3-phase-content-key
+- **Last Commit**: f1b549b2 Merge remote-tracking branch 'origin/main' into iterate/c3-phase-content-key
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -68,17 +69,17 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 | Event | Type | Source | Date |
 |-------|------|--------|------|
-| evt-950798de | grade_snapshot | — | 2026-07-27 |
-| evt-36d0f887 | work_completed | iterate (iterate: raise the PR-review diff cap, cut at a file boundary, name what went unreviewed) | 2026-07-27 |
 | evt-76f1beff | grade_snapshot | — | 2026-07-27 |
 | evt-90ce4f39 | work_completed | iterate (iterate: document the delivery watch in the guide) | 2026-07-27 |
 | evt-cf1bab8b | work_completed | iterate (iterate: requirement write-back loop — design rounds and build sections declare their requirement impact) | 2026-07-27 |
+| evt-a5ff7d12 | grade_snapshot | — | 2026-07-27 |
+| evt-e0b8fd18 | work_completed | iterate (iterate: the phase canon asks whether the handoff belongs to this run) | 2026-07-27 |
 
 ## Recovery
 
 - **Pipeline**: 1 phases completed
 - **Total work events**: 377
-- **Last iterate**: change — iterate: raise the PR-review diff cap, cut at a file boundary, name what went unreviewed (2026-07-27)
+- **Last iterate**: change — iterate: document the delivery watch in the guide (2026-07-27)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
 ## Recent Decisions

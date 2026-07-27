@@ -1,7 +1,7 @@
 # Test Evidence Report
 
-Generated: 2026-07-27T17:16:20.738164+00:00
-Source-State: run=iterate-2026-07-27-pr-review-diff-cap
+Generated: 2026-07-27T16:36:15.546432+00:00
+Source-State: run=iterate-2026-07-27-c3-phase-content-key
 Consistency-audit: never run
 
 ## Summary
@@ -16,9 +16,9 @@ Consistency-audit: never run
 
 | # | Event | Source | Layer | New Tests | Suite Total | Result | Date |
 |---|-------|--------|-------|-----------|-------------|--------|------|
-| 1 | raise the PR-review diff cap, cut at a file boundary, name what went unreviewed | [iterate](traceability-matrix.md#evt-36d0f887) | — | +0 | — | — | 2026-07-27 |
-| 2 | document the delivery watch in the guide | [iterate](traceability-matrix.md#evt-90ce4f39) | — | +0 | — | — | 2026-07-27 |
-| 3 | requirement write-back loop — design rounds and build sections declare their requirement impact | [iterate](traceability-matrix.md#evt-cf1bab8b) | — | +0 | — | — | 2026-07-27 |
+| 1 | document the delivery watch in the guide | [iterate](traceability-matrix.md#evt-90ce4f39) | — | +0 | — | — | 2026-07-27 |
+| 2 | requirement write-back loop — design rounds and build sections declare their requirement impact | [iterate](traceability-matrix.md#evt-cf1bab8b) | — | +0 | — | — | 2026-07-27 |
+| 3 | the phase canon asks whether the handoff belongs to this run | [iterate](traceability-matrix.md#evt-e0b8fd18) | — | +0 | — | — | 2026-07-27 |
 | 4 | inherited failures and coverage gaps are recorded as inherited | [iterate](traceability-matrix.md#evt-f2747703) | — | +0 | — | — | 2026-07-27 |
 | 5 | the four Step-9 gates become code, closing trg-88f721be (3 of 3) | [iterate](traceability-matrix.md#evt-f540a880) | — | +0 | — | — | 2026-07-27 |
 | 6 | reviewer verdicts recorded, disagreement is its own outcome (1 of 3) | [iterate](traceability-matrix.md#evt-5ecd7d7e) | — | +0 | — | — | 2026-07-27 |
