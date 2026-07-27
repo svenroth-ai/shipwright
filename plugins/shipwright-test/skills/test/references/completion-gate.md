@@ -9,6 +9,7 @@ Before marking the test phase complete, ALL test layers must have an explicit re
 | pgTAP tests | `pass`, `fail`, or `skipped: {reason}` |
 | Smoke test | `pass`, `fail`, or `skipped: {reason}` |
 | E2E tests | `pass`, `fail`, or `skipped: {reason}` |
+| Journey coverage | `covered`, `gaps`, `no_specs`, or `undetermined: {diagnostic}` |
 | Consistency | `pass`, `warning`, or `skipped: {reason}` |
 | Design fidelity | `pass`, `fail`, or `skipped: {reason}` |
 | Performance | `pass`, `warning` (gate=warn), `fail` (gate=block), or `skipped: {reason}` |
@@ -17,6 +18,16 @@ If any layer has NO result (was never executed and has no skip reason):
 - **Do NOT mark test phase as complete**
 - Print warning: "Test layer {layer} has no result. Run it or document skip reason."
 - Set phase status to `incomplete`
+
+**A failing layer must also carry the known-vs-genuine split.** Where
+`shipwright_known_failures.json` exists, a `fail` result states how many
+failures are known-and-accepted and how many are genuine. `fail` on its own —
+one red number covering both — is not an explicit result: it is the shape that
+made the audit and this phase disagree about the same run.
+
+**A flaky result is a `pass`.** A test that failed and then passed on retry
+does not make the E2E layer `fail`; it is counted separately (`e2e.flaky`) and
+reported as such.
 
 Valid skip reasons:
 - `skipped: no testing.integration config in profile` (Integration)

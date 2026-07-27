@@ -1,35 +1,39 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-07-27-no-silent-revert"
+run_id: "iterate-2026-07-27-handoff-tally-and-gate-honesty"
 phase: "iterate"
-reason: "iterate: a branch may not quietly revert merged work"
-timestamp: "2026-07-27T19:44:57.242943+00:00"
+reason: "ensure-current pre-merge refresh"
+timestamp: "2026-07-27T18:46:12.605534+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-07-27 19:44:57 UTC
+> Auto-generated 2026-07-27 18:46:12 UTC
 
 ## Session Info
 
-- **Session ID**: 9058f47a-25f4-4469-b517-e3b5c91347e0
-- **Timestamp**: 2026-07-27 19:44:57 UTC
-- **Reason**: iterate: a branch may not quietly revert merged work
+- **Session ID**: a7fa3da4-74bf-406f-b92b-f309691d90f9
+- **Timestamp**: 2026-07-27 18:46:12 UTC
+- **Reason**: ensure-current pre-merge refresh
 
 ## Last Iterate
 
-- **Run ID**: iterate-2026-07-27-no-silent-revert
-- **Date**: 2026-07-27T19:44:50.959310Z
-- **Type**: feature
-- **Complexity**: small
-- **Branch**: iterate/no-silent-revert
-- **ADR**: iterate-2026-07-27-no-silent-revert
+- **Run ID**: iterate-2026-07-27-run-unit-parallel-race
+- **Date**: 2026-07-27T17:38:43.705219Z
+- **Type**: bug
+- **Complexity**: medium
+- **Branch**: iterate/run-unit-parallel-race
+- **ADR**: iterate-2026-07-27-run-unit-parallel-race
 - **Tests passed**: True
+- **Spec**: .shipwright/planning/iterate/iterate-2026-07-27-run-unit-parallel-race.md
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/no-silent-revert
-- **External Review Marker**: skipped_config_disabled (external_review_state.json @ 2026-07-27T19:43:50)
+- **Branch**: iterate/handoff-tally-and-gate-honesty
+- **Run ID**: iterate-2026-07-27-handoff-tally-and-gate-honesty
+- **Spec**: .shipwright/planning/iterate/iterate-2026-07-27-handoff-tally-and-gate-honesty.md
+- **Complexity**: medium
+- **External Review Marker**: completed (external_review_state.json @ 2026-07-27T16:51:42)
 
 ### Mandatory replay on Resume
 
@@ -47,8 +51,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/no-silent-revert
-- **Last Commit**: aa539d68 chore(triage): sweep 5 outbox append(s) into branch
+- **Branch**: iterate/handoff-tally-and-gate-honesty
+- **Last Commit**: 594ebec4 Merge remote-tracking branch 'origin/main' into iterate/handoff-tally-and-gate-honesty
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -64,17 +68,17 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 | Event | Type | Source | Date |
 |-------|------|--------|------|
-| evt-2ec0e4c0 | grade_snapshot | — | 2026-07-27 |
-| evt-afcb8629 | work_completed | iterate (iterate: a branch may not quietly revert merged work) | 2026-07-27 |
+| evt-b1a81042 | grade_snapshot | — | 2026-07-27 |
+| evt-301cc5e3 | grade_snapshot | — | 2026-07-27 |
+| evt-d33730ea | grade_snapshot | — | 2026-07-27 |
+| evt-2acd6fdb | grade_snapshot | — | 2026-07-27 |
 | evt-950798de | grade_snapshot | — | 2026-07-27 |
-| evt-36d0f887 | work_completed | iterate (iterate: raise the PR-review diff cap, cut at a file boundary, name what went unreviewed) | 2026-07-27 |
-| evt-ad7b51e0 | grade_snapshot | — | 2026-07-27 |
 
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 383
-- **Last iterate**: change — iterate: a branch may not quietly revert merged work (2026-07-27)
+- **Total work events**: 384
+- **Last iterate**: change — iterate: raise the PR-review diff cap, cut at a file boundary, name what went unreviewed (2026-07-27)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
 ## Recent Decisions

@@ -165,6 +165,7 @@ def update_step(
     if status == "complete":
         ask_issues: list[dict[str, Any]] = []
         inform_issues: list[dict[str, Any]] = []
+        gate_checked = True
 
         # Phase validation gate (skip for standalone — no interactive user, so
         # there is nobody to override and nothing was overridden). Reads project
@@ -177,7 +178,7 @@ def update_step(
 
             # ALWAYS runs — including under force. That is the fix: an override
             # must not erase the finding it overrode.
-            ask_issues, inform_issues = run_phase_gate(project_root, step)
+            ask_issues, inform_issues, gate_checked = run_phase_gate(project_root, step)
 
             # Ask-level issues without an override: pause for a user decision
             # (persist under lock).
@@ -197,16 +198,42 @@ def update_step(
 
         with run_config_lock(project_root):
             config = _load_or_bootstrap(project_root, step)
-            # Clears the pause issues from an earlier unforced attempt, so a
-            # completed step never carries findings that imply it is still stuck.
-            # What the gate said on THIS attempt is preserved by the override
-            # record below.
-            config.pop("validation_issues", None)
+            # Clear BOTH halves of an earlier unforced attempt's pause, so a
+            # completed step never carries state implying it is still stuck. The
+            # findings alone were not enough: `status` stayed "needs_validation"
+            # while `completed_steps` and `current_step` had moved on, and that
+            # key is what update_build_dashboard and resolve_next_dispatch read.
+            # The terminal assignment below still overrides this when the
+            # pipeline is finished.
+            # Clear only THIS step's pause — both halves of it, together.
+            #
+            # `needs_validation` has a second producer: phase_task_lifecycle
+            # writes it to mean "deploy completed while other phase tasks are
+            # still non-terminal", and resolve_next_dispatch branches on it. The
+            # two are mode-disjoint at the CLI (the drivability guard), but
+            # update_step() has no such guard, so lifting that pause here would be
+            # the halt-a-healthy-run failure the guard exists to prevent.
+            #
+            # The issues are filtered by the SAME predicate as the status. An
+            # earlier version popped every issue while lifting only a matching
+            # pause, which left a run parked in `needs_validation` with nothing
+            # left on disk to say why — the dashboard then rendered a paused run
+            # with no reason.
+            issues = config.get("validation_issues") or []
+            mine = [i for i in issues if isinstance(i, dict) and i.get("step") == step]
+            theirs = [i for i in issues if i not in mine]
+            if theirs:
+                config["validation_issues"] = theirs
+            else:
+                config.pop("validation_issues", None)
+            if mine and config.get("status") == "needs_validation":
+                config["status"] = "in_progress"
             record_inform_notes(config, step, inform_issues)
             if force and not is_standalone:
                 record_validation_override(
                     config, step, reason=force_reason,
                     ask_issues=ask_issues, inform_issues=inform_issues,
+                    checked=gate_checked,
                 )
 
             completed = config.get("completed_steps", [])

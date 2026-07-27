@@ -1,0 +1,18 @@
+{
+  "success": true,
+  "provider": "openrouter",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviews": {
+    "openai": {
+      "status": "success",
+      "feedback": "No concrete defects found in this diff.\n\nThe change correctly distinguishes boolean layer-level `skipped: true` from integer skipped-test counts, and delegates count arithmetic to the shared `genuine_failure_count` logic so skipped tests do not create false warning follow-ups. The added tests exercise the prior failure modes: integer skip counts being treated as a skipped layer, fully skipped count-bearing runs, mixed skips plus a real residual failure, and explicit `failed: 0` overriding an ambiguous aggregate gap.\n\nNo security or caller-compatibility regression is evident from the changed code. Ship-as-is.",
+      "via": "openrouter"
+    },
+    "gemini": {
+      "status": "success",
+      "feedback": "```routine\n        def _layer(results: dict, name: str) -> dict:\n            block = results.get(name)\n            if not isinstance(block, dict):\n                return {}\n            if block.get(\"skipped\") is True:\n                return {}\n            return block\n        ```\n        The old one was:\n        ```python\n        if not isinstance(block, dict) or block.get(\"skipped\"):\n            return {}\n        ```\n        If previous payload was `{\"skipped\": 2}`, `2` is truthy, so it returned `{}`.\n        Now `2 is True` evaluates to `False`, so it returns the block. This fixes the stated bug.\n\n        What about `layer.get(\"failed\")`",
+      "via": "openrouter"
+    }
+  }
+}

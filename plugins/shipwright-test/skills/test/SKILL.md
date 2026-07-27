@@ -21,7 +21,7 @@ Profile-aware test execution across all test layers.
 | Step 1.5: Run Integration Tests | [step-1.5-integration-tests](references/step-1.5-integration-tests.md) |
 | Step 1.6: Run pgTAP Database Tests | [step-1.6-pgtap-tests](references/step-1.6-pgtap-tests.md) |
 | Step 2: Run Smoke Test | [step-2-smoke-test](references/step-2-smoke-test.md) |
-| Step 2.5: Generate E2E Specs from Plan | [step-2.5-e2e-spec-generation](references/step-2.5-e2e-spec-generation.md) |
+| Step 2.5: Generate E2E Specs from Plan + per-journey coverage | [step-2.5-e2e-spec-generation](references/step-2.5-e2e-spec-generation.md) |
 | Step 3: Run Playwright E2E | [step-3-playwright-e2e](references/step-3-playwright-e2e.md) |
 | Step 3.5: E2E Results Verification | [step-3.5-e2e-verification](references/step-3.5-e2e-verification.md) |
 | Step 3.6: Cross-Page UI Consistency Check | [step-3.6-ui-consistency](references/step-3.6-ui-consistency.md) |
@@ -154,12 +154,16 @@ The smoke-test script is shared (`{shared_root}/scripts/smoke_test.py`), not a
 project file. On failure: diagnose, autonomous fix, retry, then ASK after 2.
 Full body: see [step-2-smoke-test](references/step-2-smoke-test.md).
 
-## Step 2.5: Generate E2E Specs from Plan (if missing)
+## Step 2.5: Generate E2E Specs from Plan + check coverage per journey
 
-Skip if `e2e/` already has `.spec.ts` files, or profile has no UI. Otherwise
-scan `.shipwright/planning/` for `claude-plan-e2e.md` and generate
-`e2e/flows/*.spec.ts`, `e2e/pages/*.page.ts`, `e2e/fixtures/*`, and
-`e2e/fixtures/auth.setup.ts`. Full body and structure: see
+**Coverage is checked per journey, always** — `journey_coverage.py` reports each
+planned journey as covered or uncovered, so a journey added to the plan after
+the first spec exists no longer goes unreported. Greenfield gaps block;
+brownfield gaps file a follow-up routed to `/shipwright-adopt`. *Generation* is
+still skipped when `e2e/` already has `.spec.ts` files (and entirely when the
+profile has no UI); otherwise scan `.shipwright/planning/` for
+`claude-plan-e2e.md` and generate `e2e/flows/*.spec.ts`, `e2e/pages/*.page.ts`,
+`e2e/fixtures/*`, and `e2e/fixtures/auth.setup.ts`. Full body and structure: see
 [step-2.5-e2e-spec-generation](references/step-2.5-e2e-spec-generation.md).
 
 ## Step 3: Run Playwright E2E (if applicable)
@@ -175,8 +179,10 @@ Full body: see [step-3-playwright-e2e](references/step-3-playwright-e2e.md).
 
 Read `e2e-results.json` (Playwright authoritative). Filter to the `chromium`
 project (exclude `setup`). Reconcile `shipwright_test_results.json.e2e` with
-Playwright's `expected + unexpected + skipped`, write an
-`e2e_verification_note` if divergent, and verify `playwright-report/index.html`.
+Playwright's `expected + unexpected + flaky + skipped`, carry `flaky` +
+`flaky_tests` into the record, write an `e2e_verification_note` if divergent,
+and verify `playwright-report/index.html`. Counting is per test, not per
+attempt: a test that only passed on retry is a pass, counted separately.
 Full body: see [step-3.5-e2e-verification](references/step-3.5-e2e-verification.md).
 
 ## Step 3.6: Cross-Page UI Consistency Check (if applicable)
@@ -236,9 +242,14 @@ Full body: see [step-4-security](references/step-4-security.md).
 
 ## Step 5: Report Results
 
-Print the SHIPWRIGHT-TEST RESULTS summary (unit / integration / pgTAP / smoke /
-e2e / consistency / design fidelity / performance / security / overall) and the
-preview banner when the profile has UI. Capture learnings into
+First run `warning_followups.py` over the finished record so every non-blocking
+layer leaves a tracked follow-up (Step 5.0) — browser tests, consistency and
+fidelity now do what the performance budget always did. Then print the
+SHIPWRIGHT-TEST RESULTS summary (unit / integration / pgTAP / smoke / e2e /
+journeys / consistency / design fidelity / performance / security / overall) and
+the preview banner when the profile has UI. Failures declared in
+`shipwright_known_failures.json` — the same list the audit phase reads — are
+reported as known-and-accepted, separately from genuine failures. Capture learnings into
 `conventions.md#Learnings`. Record `test_run` + `phase_completed` events,
 update build dashboard, write canon-marker handoff, append `phase_history`,
 then mark the test step complete via the orchestrator.
