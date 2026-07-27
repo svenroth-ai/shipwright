@@ -150,13 +150,13 @@ the host workflow already does. With no project file present, the generated
 config uses the gitleaks built-in ruleset. Never emit both `extend.useDefault`
 and `extend.path` — gitleaks aborts on that.
 
-**Coverage manifest — name what was NOT checked.** A tool that crashes already
-fails the run; a tool that was never installed used to be invisible, so a
-machine with one scanner produced a report that read clean for every class.
-Every scan now records one row per weakness class (`covered`, `degraded`,
-`not_requested`, `not_available`) into `findings.json` and the report sidecar.
-Report the unchecked classes to the user alongside the findings — they are not
-clean, they are unexamined.
+**Coverage manifest — name what was NOT checked.** A crashing tool already fails
+the run; one that was never installed used to be invisible, so a machine with one
+scanner read clean for every class. Every scan records a row per weakness class
+(`covered`, `degraded`, `not_requested`, `not_available`) into `findings.json` and
+the sidecar. A class whose tool ran under a ruleset known to be ineffective (a
+project `.gitleaks.toml` bringing no rules) is `degraded`, never `covered`. Report the
+unchecked AND degraded classes with the findings — nothing reliable examined them.
 
 **For Aikido backend:**
 

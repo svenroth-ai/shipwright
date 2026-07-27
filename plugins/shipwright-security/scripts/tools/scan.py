@@ -99,7 +99,7 @@ except ImportError as _e:
 
 # Coverage manifest — what this run looked at. DERIVED from the backend's
 # capabilities, so no backend (or mock) can forget it; see scan_coverage.
-from gitleaks_config import class_notes as gitleaks_class_notes  # noqa: E402
+from gitleaks_config import class_degradations as gitleaks_degradations  # noqa: E402
 from coverage_sanitize import sanitize_coverage  # noqa: E402
 from scan_coverage import build_coverage  # noqa: E402
 
@@ -353,7 +353,7 @@ def main() -> int:
             else (),
             requested=scan_types,
             scan_errors=scan_errors,
-            class_notes=gitleaks_class_notes(str(target)),
+            class_degradations=gitleaks_degradations(str(target)),
         )
 
     config = build_config(

@@ -17,8 +17,10 @@ the caller already holds, so no backend has to remember to populate anything:
 Each row is ``{"class", "tool", "status", "detail"}`` with ``status`` drawn from
 the closed vocabulary :data:`COVERAGE_STATUSES`:
 
-    covered        the class was scanned and produced parseable output
-    degraded       the tool ran but produced no parseable output (see scan_errors)
+    covered        the class was scanned and its result can be trusted
+    degraded       the tool ran but its result CANNOT be trusted — no
+                   parseable output (see scan_errors), or a configured
+                   ruleset known to be ineffective
     not_requested  the caller scoped this class out (``--scan-types``)
     not_available  the check could not run here — locally, the tool is not on PATH
 
@@ -138,7 +140,7 @@ def build_coverage(
     requested: Iterable[str] | None = None,
     scan_errors: Iterable[dict[str, Any]] | None = None,
     class_tools: dict[str, str] | None = None,
-    class_notes: dict[str, str] | None = None,
+    class_degradations: dict[str, str] | None = None,
 ) -> list[dict[str, Any]]:
     """Derive the coverage manifest for one scan.
 
@@ -147,10 +149,11 @@ def build_coverage(
         requested: the caller's ``--scan-types`` filter, or ``None`` for "all".
         scan_errors: degraded-leg markers recorded by the backend.
         class_tools: class -> tool map override (defaults to the OSS map).
-        class_notes: caveats to attach to a class that DID run — e.g. a project
-            gitleaks config that leaves the secret scan with no rules. Such a
-            class is technically covered but examined almost nothing, and the
-            operator has to be told; a note never downgrades a real status.
+        class_degradations: ``class -> reason`` for a class whose tool RAN but
+            whose result cannot be trusted — e.g. a project gitleaks config that
+            leaves the secret scan with no effective rules. Such a class is
+            forced to ``degraded``, never left ``covered`` with a footnote: a
+            result that cannot be trusted is not a clean class.
 
     Status precedence is ``degraded`` > ``not_requested`` > ``not_available`` >
     ``covered``. ``degraded`` wins outright because a recorded marker is hard
@@ -163,6 +166,11 @@ def build_coverage(
     requested_set = None if requested is None else {str(c) for c in requested}
     degraded = _degraded_by_class(
         scan_errors, {v: k for k, v in tools.items()})
+    # A configured-but-ineffective ruleset degrades the class just as a fataled
+    # leg does; an explicit scan_errors marker still wins, since it is evidence
+    # about this specific invocation.
+    for cls, reason in (class_degradations or {}).items():
+        degraded.setdefault(cls, reason)
 
     # The three local classes first, then any extra capability a backend offers.
     classes = list(CLASS_ORDER) + sorted(available_set - set(CLASS_ORDER))
@@ -183,9 +191,6 @@ def build_coverage(
             )
         else:
             status, detail = "covered", None
-        note = (class_notes or {}).get(cls)
-        if note:
-            detail = f"{detail} | {note}" if detail else note
         rows.append(
             {"class": cls, "tool": tool, "status": status, "detail": detail}
         )

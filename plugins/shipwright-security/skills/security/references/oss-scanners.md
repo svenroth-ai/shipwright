@@ -121,7 +121,7 @@ Every scan now writes a `coverage` array into `findings.json` and the
 | Status | Meaning |
 |---|---|
 | `covered` | scanned to completion; findings for this class are trustworthy |
-| `degraded` | the tool ran but produced no parseable output (also in `scan_errors`; fails the run) |
+| `degraded` | the tool ran but its result cannot be trusted — no parseable output (also in `scan_errors`; fails the run), or a configured ruleset known to be ineffective |
 | `not_requested` | the caller excluded the class via `--scan-types` |
 | `not_available` | the check could not run here — locally, the tool is not on PATH |
 
@@ -183,9 +183,12 @@ to the project's file. A `.gitleaks.toml` written purely to hold an
 `[allowlist]`, with no `[extend] useDefault = true` and no rules of its own,
 therefore scans with almost nothing. The host workflow already behaves that way
 (same file, no `--config`), so extending does not create the hole — it inherits
-one that was already there on the host path. `gitleaks_config.class_notes()`
-detects it and annotates the `secrets` coverage row, so the report says the
-class was examined with no rules instead of reporting it clean.
+one that was already there on the host path. `gitleaks_config.class_degradations()`
+detects it and marks the `secrets` coverage row **`degraded`** — not `covered`
+with a footnote. That distinction is the whole point: a `covered` row left
+`is_complete()` true, so the report showed no banner and the card said "every
+class was checked" while the detail beside it said the scan looked for almost
+nothing. A class whose result cannot be trusted is not a clean class.
 
 `/shipwright-adopt` scaffolds a starting `.gitleaks.toml` that DOES set
 `useDefault = true`; see `shared/templates/github-actions/gitleaks.toml.template`.

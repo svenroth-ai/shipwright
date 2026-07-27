@@ -173,14 +173,21 @@ def project_config_warning(target: str) -> str | None:
     )
 
 
-def class_notes(target: str) -> dict[str, str]:
-    """``{"secrets": <caveat>}`` for ``scan_coverage.build_coverage``, or ``{}``.
+def class_degradations(target: str) -> dict[str, str]:
+    """``{"secrets": <reason>}`` for ``scan_coverage.build_coverage``, or ``{}``.
 
-    One call site per scan entry point, so the caveat cannot be wired into one
+    A DEGRADATION, not a footnote. The secret scan ran, but under a ruleset known
+    to be ineffective, so its result cannot be trusted — and a class whose result
+    cannot be trusted must not be reported `covered`. Annotating a `covered` row
+    with a caveat was the bug: `is_complete()` stayed true, the report showed no
+    banner, and the card said "every class was checked" while the detail beside
+    it said the scan looked for almost nothing.
+
+    One call site per scan entry point, so the signal cannot be wired into one
     report and forgotten in the other.
     """
-    warning = project_config_warning(target)
-    return {"secrets": warning} if warning else {}
+    reason = project_config_warning(target)
+    return {"secrets": reason} if reason else {}
 
 
 def render_config(

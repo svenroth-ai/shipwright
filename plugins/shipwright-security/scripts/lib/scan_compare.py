@@ -29,8 +29,10 @@ _LIB_DIR = Path(__file__).resolve().parent
 if str(_LIB_DIR) not in sys.path:
     sys.path.insert(0, str(_LIB_DIR))
 
+from coverage_sanitize import sanitize_coverage  # noqa: E402
 from scan_coverage import (  # noqa: E402
     CLASS_ORDER,
+    class_label,
     covered_classes,
     finding_class,
 )
@@ -66,10 +68,12 @@ def _findings(sidecar: Any) -> list[dict[str, Any]]:
 
 
 def _coverage(sidecar: Any) -> list[dict[str, Any]]:
+    """The sidecar's manifest, SANITIZED — the same boundary the report generator
+    and the cache re-read apply. Both sidecars here are caller-selected files, and
+    their class labels reach ``render_comparison``'s markdown."""
     if not isinstance(sidecar, dict):
         return []
-    raw = sidecar.get("coverage")
-    return [r for r in raw if isinstance(r, dict)] if isinstance(raw, list) else []
+    return sanitize_coverage(sidecar.get("coverage"))
 
 
 def _classes_in(coverage: list[dict[str, Any]]) -> list[str]:
@@ -205,7 +209,8 @@ def render_comparison(result: dict[str, Any]) -> list[str]:
             "",
         ])
         for entry in not_comparable:
-            lines.append(f"- **{entry.get('class')}** — {entry.get('reason')}")
+            lines.append(
+                f"- **{class_label(entry.get('class'))}** — {entry.get('reason')}")
     if not result.get("coverage_known", False):
         lines.extend([
             "",

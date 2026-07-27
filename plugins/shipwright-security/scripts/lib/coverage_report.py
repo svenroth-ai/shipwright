@@ -56,14 +56,30 @@ def coverage_banner(coverage: list[dict[str, Any]] | None) -> list[str]:
     if is_complete(rows):
         return []
     unchecked = unchecked_classes(rows)
-    if not unchecked:
-        # Only degraded rows — the degraded banner already carries that story.
+    # Degraded classes are named HERE too. A leg can degrade without a
+    # scan_errors marker — a project gitleaks config with no effective rules
+    # runs fine and finds almost nothing — so relying on the degraded banner
+    # (which renders from scan_errors) would leave that case with a changed
+    # status and no warning anywhere.
+    degraded = [
+        str(r["class"]) for r in rows
+        if r.get("status") == "degraded" and r.get("class")
+    ]
+    parts = []
+    if unchecked:
+        parts.append(
+            "did not look for: "
+            + ", ".join(class_label(c) for c in unchecked))
+    if degraded:
+        parts.append(
+            "could not trust the result for: "
+            + ", ".join(class_label(c) for c in degraded))
+    if not parts:
         return []
-    names = ", ".join(class_label(c) for c in unchecked)
     return [
-        f"> ⚠️ **Incomplete Coverage** — this scan did not look for: {names}. "
-        "Those classes read as clean below only because nothing looked at "
-        "them. See the Coverage table.",
+        f"> ⚠️ **Incomplete Coverage** — this scan {'; and '.join(parts)}. "
+        "Those classes read as clean below only because nothing reliable "
+        "looked at them. See the Coverage table.",
         "",
     ]
 

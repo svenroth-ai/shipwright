@@ -182,11 +182,14 @@ class TestFingerprintIsLocationBased:
 
 @pytest.mark.covers("FR-01.07")
 class TestGitleaksCaveatReachesTheManifest:
-    def test_allowlist_only_project_config_annotates_the_secrets_row(
+    def test_allowlist_only_project_config_degrades_the_secrets_row(
         self, tmp_path: Path
     ) -> None:
         """End-to-end: an allowlist-only .gitleaks.toml leaves the secret scan
-        with almost no rules, and the manifest has to say so."""
+        with almost no rules. That class must NOT come back `covered` — a result
+        that cannot be trusted is not a clean class, and a `covered` row with a
+        caveat left is_complete() true and the card saying "every class was
+        checked"."""
         (tmp_path / ".gitleaks.toml").write_text(
             "[allowlist]\npaths = ['x']\n", encoding="utf-8")
 
@@ -205,6 +208,7 @@ class TestGitleaksCaveatReachesTheManifest:
             ]):
                 scan_cli.main()
         rows = {r["class"]: r for r in json.loads(out.read_text(encoding="utf-8"))["coverage"]}
-        assert rows["secrets"]["status"] == "covered"
+        assert rows["secrets"]["status"] == "degraded"
         assert "useDefault" in (rows["secrets"]["detail"] or "")
+        assert rows["sast"]["status"] == "covered"
         assert rows["sast"]["detail"] is None

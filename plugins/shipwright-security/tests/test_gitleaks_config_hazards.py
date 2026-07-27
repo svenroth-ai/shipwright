@@ -28,7 +28,7 @@ sys.path.insert(0, str(PLUGIN_ROOT / "scripts" / "lib"))
 
 from gitleaks_config import (  # noqa: E402
     PROJECT_CONFIG_NAME,
-    class_notes,
+    class_degradations,
     inspect_project_config,
     project_config_warning,
     render_config,
@@ -95,12 +95,12 @@ class TestProjectConfigWarning:
     def test_no_project_config_is_silent(self, tmp_path: Path) -> None:
         assert project_config_warning(str(tmp_path)) is None
 
-    def test_class_notes_targets_the_secrets_class(self, tmp_path: Path) -> None:
+    def test_degradations_target_the_secrets_class(self, tmp_path: Path) -> None:
         _write(tmp_path, "[allowlist]\npaths = ['x']\n")
-        assert set(class_notes(str(tmp_path))) == {"secrets"}
+        assert set(class_degradations(str(tmp_path))) == {"secrets"}
 
-    def test_class_notes_empty_when_nothing_to_say(self, tmp_path: Path) -> None:
-        assert class_notes(str(tmp_path)) == {}
+    def test_no_degradation_when_nothing_to_say(self, tmp_path: Path) -> None:
+        assert class_degradations(str(tmp_path)) == {}
 
 
 @pytest.mark.covers("FR-01.07")

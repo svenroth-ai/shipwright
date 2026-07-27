@@ -4,8 +4,8 @@
     "date": "2026-07-27",
     "unit": {
       "status": "passed",
-      "passed": 9720,
-      "total": 9720
+      "passed": 9730,
+      "total": 9730
     },
     "integration": {
       "status": "passed",
@@ -248,11 +248,26 @@
           "behavior": "with_prompt_injection_row tolerates non-dict rows instead of raising AttributeError",
           "disposition": "tested",
           "evidence": "test_coverage_untrusted_manifest.py::TestWithPromptInjectionRowTolerance (2) PASSED"
+        },
+        {
+          "behavior": "An ineffective project gitleaks ruleset forces the secrets class to `degraded`, never `covered` with a footnote",
+          "disposition": "tested",
+          "evidence": "test_ineffective_ruleset_is_not_clean.py::TestStatusIsForced (4) PASSED"
+        },
+        {
+          "behavior": "That degradation reaches every surface: report banner, card all-clear, and comparability",
+          "disposition": "tested",
+          "evidence": "test_ineffective_ruleset_is_not_clean.py::TestEverySurfaceAgrees (4) + ::TestEndToEndThroughTheScanCli PASSED"
+        },
+        {
+          "behavior": "The comparison reader applies the same untrusted-manifest boundary and renders class labels safely",
+          "disposition": "tested",
+          "evidence": "test_ineffective_ruleset_is_not_clean.py::TestComparisonRendersLabelsSafely PASSED"
         }
       ],
       "counts": {
-        "testable": 40,
-        "tested": 40,
+        "testable": 43,
+        "tested": 43,
         "untestable": 1,
         "untested_testable": 0
       },
