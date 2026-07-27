@@ -73,32 +73,32 @@
         {
           "behavior": "The security gate prints a labelled verdict, not a bare count",
           "disposition": "tested",
-          "evidence": "test_checks_that_gate.py::test_verdict_is_labelled_not_a_bare_count PASSED"
+          "evidence": "test_security_gate_verdict.py::test_verdict_is_labelled_not_a_bare_count PASSED"
         },
         {
           "behavior": "Every severity is counted across findings.json AND prompt_risks.json",
           "disposition": "tested",
-          "evidence": "test_checks_that_gate.py::test_every_severity_is_counted_across_both_scan_outputs PASSED; behavioral probe of the extracted step body over 3 fixtures"
+          "evidence": "test_security_gate_verdict.py::test_every_severity_is_counted_across_both_scan_outputs PASSED; behavioral probe of the extracted step body over 3 fixtures"
         },
         {
           "behavior": "The severity breakdown reaches the job summary",
           "disposition": "tested",
-          "evidence": "test_checks_that_gate.py::test_breakdown_reaches_the_job_summary PASSED"
+          "evidence": "test_security_gate_verdict.py::test_breakdown_reaches_the_job_summary PASSED"
         },
         {
           "behavior": "Reporting can never fail the gate when GITHUB_STEP_SUMMARY is unset",
           "disposition": "tested",
-          "evidence": "test_checks_that_gate.py::test_reporting_cannot_fail_the_gate PASSED; shipwright-compliance A5.8 behavioral probe 19 passed"
+          "evidence": "test_security_gate_verdict.py::test_reporting_cannot_fail_the_gate PASSED; shipwright-compliance A5.8 behavioral probe 19 passed"
         },
         {
           "behavior": "A PASS with open high findings is annotated",
           "disposition": "tested",
-          "evidence": "test_checks_that_gate.py::test_passing_with_open_high_findings_is_said_out_loud PASSED"
+          "evidence": "test_security_gate_verdict.py::test_passing_with_open_high_findings_is_said_out_loud PASSED"
         },
         {
           "behavior": "The security gate still blocks on critical only",
           "disposition": "tested",
-          "evidence": "test_checks_that_gate.py::test_the_gate_itself_still_blocks_on_critical_only PASSED; behavioral probe: prompt-critical -> exit 1"
+          "evidence": "test_security_gate_verdict.py::test_the_gate_itself_still_blocks_on_critical_only PASSED; behavioral probe: prompt-critical -> exit 1"
         },
         {
           "behavior": "Drift is reported in both directions; advisory contexts suppress",
@@ -190,17 +190,22 @@
           "behavior": "A non-GitHub or malformed origin remote is refused, not guessed at",
           "disposition": "tested",
           "evidence": "test_check_required_checks_io.py::test_a_non_github_remote_is_refused_not_guessed_at (3 params) + test_github_remotes_resolve_to_owner_name (4 params) + test_missing_origin_is_refused + test_git_itself_failing_is_a_controlled_error PASSED"
+        },
+        {
+          "behavior": "The sweep verifier does not hand its own $CI flag to its subject",
+          "disposition": "tested",
+          "evidence": "test_checks_that_gate.py::test_the_sweep_verifier_does_not_hand_its_own_ci_flag_to_its_subject PASSED; mutation-probed (dropping env= turns it RED). Both gates re-run under CI=true: verify_sweep_delivery_surface 8/8, verify_contract_surface PASS."
         }
       ],
       "counts": {
-        "testable": 29,
-        "tested": 29,
+        "testable": 30,
+        "tested": 30,
         "untestable": 1,
         "untested_testable": 0
       },
       "enumeration_basis": {
-        "acs": 30,
-        "covered_acs": 30
+        "acs": 31,
+        "covered_acs": 31
       }
     },
     "ci_supplychain_ack": {

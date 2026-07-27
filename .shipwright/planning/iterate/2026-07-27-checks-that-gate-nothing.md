@@ -98,6 +98,20 @@ missing/hanging producing a traceback instead of the documented exit 2.
 4. No tests covered the producer's host I/O or its exit codes — the two bugs above
    passed all 12 original tests. 17 added.
 
+**And the gate itself went red in Actions — 8/8 locally, 2/8 in CI, same commit.**
+The most important finding of the run, and it could only come from CI. This spec
+said "verified green locally first"; the previous session verified it, I did not
+re-run it, and I wired it anyway. `sweep_outbox_to_branch` deliberately refuses
+to auto-commit when `$CI` is set (`ci_without_optin`) — a correct production
+guard, since a CI job must never commit to a branch on its own. The verifier's
+fixture models an OPERATOR'S machine, so its child process inheriting `$CI` made
+the subject skip itself and the checks read that skip as six delivery failures.
+The guard is untouched; the verifier now scrubs `CI` from the child environment,
+and both gates were re-run under `CI=true` (sweep 8/8, contract PASS). Pinned by
+`test_the_sweep_verifier_does_not_hand_its_own_ci_flag_to_its_subject`, which is
+mutation-probed. **The rule this run wrote down and then broke: green locally is
+not green in the environment the gate runs in.**
+
 **CI's own PR-Review gate → `CHANGES_REQUESTED`,** on the pushed branch, after
 everything above was green. `resolve_repo` used `url.rsplit("github.com", 1)[-1]`,
 and `rsplit` on a string that does not contain the separator returns the WHOLE

@@ -22,7 +22,7 @@ gates nothing reads as protection while providing none.**
 
 from __future__ import annotations
 
-import re
+import ast
 from pathlib import Path
 
 import pytest
@@ -158,6 +158,36 @@ def test_a_verifier_named_only_in_a_comment_is_still_an_orphan() -> None:
     assert "scripts/verify_contract_surface.py" in executed
 
 
+def test_the_sweep_verifier_does_not_hand_its_own_ci_flag_to_its_subject() -> None:
+    """A gate must not be reddened by the environment it is a gate in.
+
+    `sweep_outbox_to_branch` refuses to auto-commit when `$CI` is set
+    (`ci_without_optin`) — a real guard, and correct: a CI job must never commit
+    to a branch on its own. But this verifier's fixture models an OPERATOR'S
+    machine, so a child that inherits `$CI` makes the subject skip itself and the
+    checks read the guard as six delivery failures. Caught the first time the
+    step ran in Actions: 8/8 locally, 2/8 in CI, on the same commit.
+    """
+    path = _REPO_ROOT / "scripts" / "verify_sweep_delivery_surface.py"
+    src = path.read_text(encoding="utf-8")
+    assert 'k != "CI"' in src, (
+        "the verifier no longer scrubs $CI from the child environment — it will "
+        "pass locally and fail in CI for a reason that is not a defect"
+    )
+    # Read the call, not the text: a regex over source stops at the first ')'
+    # and would pass on a call that builds the scrubbed env and never uses it.
+    setup_calls = [
+        node for node in ast.walk(ast.parse(src))
+        if isinstance(node, ast.Call)
+        and "_SETUP" in {n.id for n in ast.walk(node) if isinstance(n, ast.Name)}
+    ]
+    assert setup_calls, "no subprocess call driving _SETUP found"
+    assert any(kw.arg == "env" for call in setup_calls for kw in call.keywords), (
+        "the scrubbed environment is built but never passed to the setup "
+        "subprocess, so the child still inherits $CI"
+    )
+
+
 def test_the_gate_guard_can_see_the_surface_gates() -> None:
     """The loose-gate guard must recognise these steps, or it cannot defend them.
 
@@ -193,102 +223,3 @@ def test_the_gate_guard_can_see_the_surface_gates() -> None:
         f"not notice them being loosened. Keep the `(gate)` name suffix, or "
         f"register the command in GATE_COMMANDS."
     )
-
-
-# ---------------------------------------------------------------------------
-# Item 4 — the security verdict says what it covers
-# ---------------------------------------------------------------------------
-
-
-@pytest.fixture(scope="module")
-def critical_gate_run() -> str:
-    data = yaml.safe_load(_SECURITY.read_text(encoding="utf-8"))
-    for job in data["jobs"].values():
-        for step in job.get("steps") or []:
-            if step.get("id") == "shipwright-critical-gate":
-                return step.get("run", "")
-    raise AssertionError(
-        "security.yml has no step with id 'shipwright-critical-gate' — the "
-        "compliance A5 audit locates the gate by that id (lib/security_workflow.py)"
-    )
-
-
-def test_verdict_is_labelled_not_a_bare_count(critical_gate_run: str) -> None:
-    """`Critical findings: 0` reads as 'secure'. Name the gate and its verdict."""
-    assert "critical-gate" in critical_gate_run
-    assert "PASS" in critical_gate_run and "FAIL" in critical_gate_run, (
-        "the gate prints no verdict word — a reader has to infer pass/fail from "
-        "a number whose scope they cannot see"
-    )
-
-
-def test_every_severity_is_counted_across_both_scan_outputs(critical_gate_run: str) -> None:
-    """A prompt-injection high is still a high.
-
-    The blocking total already spans `findings.json` + `prompt_risks.json`.
-    Counting the breakdown from `findings.json` alone printed `0 high` while an
-    open prompt-injection high sat unmentioned — the exact understatement this
-    block exists to remove, reintroduced one line below the fix.
-    """
-    run = critical_gate_run
-    helper = re.search(r"count_sev\(\)\s*\{(.*?)\n\s*\}", run, re.DOTALL)
-    assert helper, "no count_sev helper — severities are counted ad hoc"
-    body = helper.group(1)
-    assert "findings.json" in body and "prompt_risks.json" in body, (
-        "the severity count consults only one scan output"
-    )
-    for severity in ("high", "medium", "low"):
-        assert f"{severity}=$(count_sev {severity})" in run, (
-            f"{severity} is not counted through the both-sources helper"
-        )
-
-
-def test_breakdown_reaches_the_job_summary(critical_gate_run: str) -> None:
-    """Step logs are one click deep; the summary is the page people read."""
-    assert "GITHUB_STEP_SUMMARY" in critical_gate_run
-    assert "| severity |" in critical_gate_run, "no severity table in the summary"
-
-
-def test_reporting_cannot_fail_the_gate(critical_gate_run: str) -> None:
-    """The breakdown is a log line; it must never be able to block a merge.
-
-    The step runs under `set -e`, so appending to an unset `GITHUB_STEP_SUMMARY`
-    redirects to an empty filename and exits 1 — a security gate failing over a
-    cosmetic sink. The A5.8 behavioral probe executes this body outside Actions
-    and caught exactly that.
-    """
-    assert 'if [ -n "${GITHUB_STEP_SUMMARY:-}" ]' in critical_gate_run, (
-        "the job-summary write is unguarded — outside GitHub Actions the gate "
-        "dies on a clean scan"
-    )
-
-
-def test_passing_with_open_high_findings_is_said_out_loud(critical_gate_run: str) -> None:
-    assert "::warning::" in critical_gate_run, (
-        "a PASS with open high findings emits no warning annotation — the "
-        "run reads as clean in the checks list"
-    )
-
-
-def test_the_gate_itself_still_blocks_on_critical_only(critical_gate_run: str) -> None:
-    """The change was reporting-only. Pin that it did not move the gate.
-
-    Blocking on critical alone is the deliberate posture; making the report
-    honest must not quietly turn highs into merge blockers (nor stop criticals
-    from blocking).
-    """
-    assert re.search(r'total=\$\(\(critical \+ prompt_critical\)\)', critical_gate_run), (
-        "the blocking total is no longer critical + prompt-critical"
-    )
-    # `\n\s*fi` — a bare `fi` also occurs inside the word "findings" one line in.
-    blocking = re.search(
-        r'if \[ "\$total" -gt 0 \]; then(.*?)\n\s*fi\b', critical_gate_run, re.DOTALL
-    )
-    assert blocking and "exit 1" in blocking.group(1), (
-        "criticals no longer fail the step — the gate stopped gating"
-    )
-    for severity in ("high", "medium", "low"):
-        assert not re.search(rf'\[ "\${severity}" -gt 0 \][^\n]*\n[^\n]*exit 1', critical_gate_run), (
-            f"{severity} findings now block the merge. That may be right, but it "
-            f"is a posture change and belongs in an ADR, not in a reporting fix."
-        )
