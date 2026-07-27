@@ -80,7 +80,11 @@ def seed_project(root: Path, run_id: str, commit_hash: str, adr: str = "ADR-999"
         "## [Unreleased]\n\n### Fixed\n- Something ([ADR-999])\n"
     )
 
-    (root / ".shipwright" / "agent_docs" / "session_handoff.md").write_text("fresh")
+    # A canon marker naming THIS run — what F5b writes on a happy path. Was the
+    # literal "fresh", which passed the old mtime check while naming no run.
+    (root / ".shipwright" / "agent_docs" / "session_handoff.md").write_text(
+        f'---\ncanon_generated: true\nrun_id: "{run_id}"\n---\n\n# Session Handoff\n'
+    )
 
     (root / ".shipwright" / "agent_docs" / "build_dashboard.md").write_text(
         f"# Build Dashboard\nrun_id: {run_id}\n"
@@ -451,36 +455,30 @@ def test_changelog_drop_file_for_other_run_id_does_not_satisfy(tmp_path):
 # check_session_handoff_fresh
 # ──────────────────────────────────────────────────────────────────────
 
-def test_session_handoff_passes_when_file_is_fresh(tmp_path):
-    proj = tmp_path / "webui"
-    proj.mkdir()
-    (proj / ".shipwright" / "agent_docs").mkdir(parents=True, exist_ok=True)
-    (proj / ".shipwright" / "agent_docs" / "session_handoff.md").write_text("fresh content")
-    # max_age default is 600s, the file was just written
-    result = check_session_handoff_fresh(proj)
-    assert result.ok is True
+# Freshness means "names this run", not "written recently" — mtime fired on any
+# run that waited on CI (iterate-2026-07-27-name-the-blocker). Behaviour lives in
+# `test_handoff_freshness.py`; HERE we pin the `iterate_checks` re-export.
 
-
-def test_session_handoff_warns_when_file_is_stale(tmp_path):
+def test_session_handoff_fresh_keys_on_the_run_it_names(tmp_path):
     proj = tmp_path / "webui"
     proj.mkdir()
     (proj / ".shipwright" / "agent_docs").mkdir(parents=True, exist_ok=True)
     handoff = proj / ".shipwright" / "agent_docs" / "session_handoff.md"
-    handoff.write_text("old")
-    # Force mtime to 2 hours ago
-    import os
-    import time
-    old_time = time.time() - 7200
-    os.utime(handoff, (old_time, old_time))
-    result = check_session_handoff_fresh(proj, max_age_seconds=600)
-    assert result.ok is False
+    marker = '---\ncanon_generated: true\nrun_id: "%s"\n---\n\n# Session Handoff\n'
+
+    handoff.write_text(marker % "iterate-x")
+    assert check_session_handoff_fresh(proj, "iterate-x").ok is True
+
+    handoff.write_text(marker % "iterate-previous")
+    stale = check_session_handoff_fresh(proj, "iterate-x")
+    assert stale.ok is False and "iterate-previous" in stale.detail
 
 
 def test_session_handoff_missing_is_a_warning(tmp_path):
     proj = tmp_path / "webui"
     proj.mkdir()
     (proj / ".shipwright" / "agent_docs").mkdir(parents=True, exist_ok=True)
-    result = check_session_handoff_fresh(proj)
+    result = check_session_handoff_fresh(proj, "iterate-x")
     assert result.ok is False
 
 
@@ -553,7 +551,9 @@ def test_run_all_checks_green_under_drop_directory_model(tmp_path):
     (proj / ".shipwright" / "agent_docs" / "decision_log.md").write_text(
         "### ADR-999: Test\n"
     )
-    (proj / ".shipwright" / "agent_docs" / "session_handoff.md").write_text("fresh")
+    (proj / ".shipwright" / "agent_docs" / "session_handoff.md").write_text(
+        '---\ncanon_generated: true\nrun_id: "iterate-foo"\n---\n\n# Session Handoff\n'
+    )
 
     results = run_all_checks(proj, run_id="iterate-foo", commit_hash="abcd1234")
     failures = [r for r in results if not r.ok]

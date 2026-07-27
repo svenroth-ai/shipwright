@@ -1,0 +1,1 @@
+A pull request that is not merging now says why. The delivery watch reports the conversations still unresolved, the required checks that never reported, and the code host's own verdict that the merge is blocked, instead of only how long it waited — and anything it could not check is reported as unchecked rather than counted as clear.

@@ -23,9 +23,10 @@ Phase-own checks:
 - ``check_fr_orphans_in_plan`` — every ``FR-XX.YY`` mentioned in
   ``plan.md`` or ``sections/*.md`` must exist in the parent spec.md
   for the split. ERROR. Adapted from shipwright-check Group C2.
-- ``check_section_dependency_order`` (from ``plan_gate_checks``) — every
-  dependency a section declares in ``SECTION_MANIFEST`` is numbered before
-  the section naming it. ERROR.
+The four Step-9 gates come from ``plan_gate_checks``: dependency order,
+requirement coverage, section→requirement trace, and section quality. All
+four were listed in ``SKILL.md`` as verification gates and existed only as
+instructions until they moved there.
 - ``check_section_id_validity`` — section names match the zero-padded
   numeric prefix convention (``^\\d{2}-[a-z0-9-]+$``), are unique, and
   form a gap-free sequence starting at 01. ERROR. Adapted from
@@ -55,7 +56,10 @@ from .common import (
 )
 from .plan_gate_checks import (
     PLANNING_DIRNAME,
+    check_fr_coverage_in_sections,
     check_section_dependency_order,
+    check_section_quality,
+    check_section_traces_to_requirement,
     find_planning_split_dirs as _find_planning_split_dirs,
 )
 
@@ -249,6 +253,9 @@ def run_plan_checks(
     results.append(check_fr_orphans_in_plan(project_root))
     results.append(check_section_id_validity(project_root))
     results.append(check_section_dependency_order(project_root))
+    results.append(check_fr_coverage_in_sections(project_root))
+    results.append(check_section_traces_to_requirement(project_root))
+    results.append(check_section_quality(project_root))
 
     # Canon (C5 skipped by policy)
     results.append(check_c1_phase_event_recorded(project_root, "plan"))
@@ -275,7 +282,10 @@ def run_all_checks(project_root: Path, run_id: str = "") -> list[CheckResult]:
 __all__ = [
     "PLANNING_DIRNAME",
     "Severity",
+    "check_fr_coverage_in_sections",
     "check_section_dependency_order",
+    "check_section_quality",
+    "check_section_traces_to_requirement",
     "check_fr_orphans_in_plan",
     "check_plan_config_status_complete",
     "check_section_files_match_manifest",

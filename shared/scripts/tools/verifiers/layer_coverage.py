@@ -6,6 +6,10 @@
 * ``cross_layer_coverage`` — a behaviour-changed FR (spec/AC/FR delta, NOT source-file
   inference) must have an executed-passing tagged test at every ``required_layer`` (R1); a
   pure refactor triggers nothing; an undeterminable FR mapping WARNs, never silently passes.
+  Behaviour change is read from the FR row AND from the requirement's own acceptance
+  criteria (``_layer_coverage_ac``) — folding a criterion into an existing requirement is
+  the authoring pattern ``shared/fr-authoring.md`` §3 recommends, and the row alone could
+  never see it.
 
 Both are RECOMPUTED from git + freshly-regenerated base/head manifests
 (``_layer_coverage_regen``), never from a self-reported ledger or the committed artifact —
@@ -40,8 +44,9 @@ if str(_SCRIPTS_ROOT) not in sys.path:
 
 from lib.iterate_entry import find_entry_by_run_id  # noqa: E402
 
+from ._layer_coverage_ac import changed_criteria_ids  # noqa: E402
 from ._layer_coverage_core import CrossLayerVerdict, evaluate_cross_layer  # noqa: E402
-from ._layer_coverage_regen import regenerate_base_head  # noqa: E402
+from ._layer_coverage_regen import _merge_base, regenerate_base_head  # noqa: E402
 from ._layer_coverage_removal import RemovalVerdict, evaluate_removal  # noqa: E402
 from .common import CheckResult, Severity  # noqa: E402
 from .git_helpers import _run_git  # noqa: E402
@@ -178,7 +183,20 @@ def check_cross_layer_coverage(project_root: Path, run_id: str, commit_hash: str
         if regen is None:
             return _infra_result(name, complexity, "git unavailable / no base ref / collector unavailable")
         base, head, _renames = regen
-        verdict = evaluate_cross_layer(base, head)
+        # Behaviour change is the union of a changed FR ROW and changed ACCEPTANCE
+        # CRITERIA. Folding a criterion into an existing requirement — the pattern
+        # fr-authoring.md §3 recommends — leaves the row identical, so the row alone
+        # made the encouraged case permanently undeterminable. The criteria are read
+        # from the two spec checkouts via `spec_path`; the manifest is not touched.
+        ac_changed, ac_error = changed_criteria_ids(
+            project_root, _merge_base(project_root, commit_hash), commit_hash, base, head,
+        )
+        if ac_error:
+            # A spec that cannot be read is an infrastructure gap, NOT "no criteria
+            # changed" — the latter would be a false green precisely when the gate
+            # is least able to see.
+            return _infra_result(name, complexity, ac_error)
+        verdict = evaluate_cross_layer(base, head, ac_changed)
     except Exception as exc:  # noqa: BLE001 — surface as ERROR at medium+, never a silent crash
         return _infra_result(name, complexity, f"regeneration error: {type(exc).__name__}")
     return _cross_layer_result(name, verdict)
@@ -188,9 +206,10 @@ def _cross_layer_result(name: str, verdict: CrossLayerVerdict) -> CheckResult:
     if verdict.could_not_determine:
         return CheckResult(
             name, False,
-            "spec changed but no FR-row-level behaviour change was determinable (an AC-prose "
-            "edit under an unchanged FR row, or no parseable active FR) — could-not-determine, "
-            "a visible WARN for a human to adjudicate, never a silent pass",
+            "the spec changed, but neither any FR row nor any requirement's acceptance "
+            "criteria changed — so the edit landed outside every requirement (an abstract, "
+            "a quality requirement, prose between sections), or no active FR parsed. "
+            "could-not-determine: a visible WARN for a human to adjudicate, never a silent pass",
             severity=Severity.WARNING.value, strict_exempt=True,
         )
     if not verdict.changed_keys:

@@ -28,6 +28,8 @@ Each section file should be self-contained for /shipwright-build:
 ```markdown
 # Section: 01-auth
 
+Requirements: FR-01.02, FR-01.05
+
 ## Overview
 What this section implements.
 
@@ -47,6 +49,26 @@ What this section implements.
 ## Verification
 How to verify this section is complete.
 ```
+
+**Four parts are gated** — `check-plan-gates.py --gate sections` fails without
+them, and so does the plan phase verifier:
+
+| Part | Rule | Why |
+|---|---|---|
+| `Requirements:` line | names ≥1 live requirement id from the split's `spec.md` | a plan may not quietly add work nobody asked for, and every requirement has to land somewhere. This one field is read for both directions — prose mentions do NOT count, so an id named in an example or a rationale is never mistaken for coverage |
+| `## Overview` | non-empty | the section says what it is for |
+| `## Implementation Steps` | ≥2 list items | one step is a title, not a plan |
+| `## Tests First` | non-empty | the section says how it will be tested |
+
+The headings above are the ones to write. `Purpose`/`Description`/`Goal`,
+`Implementation`/`Steps`, and `Test Strategy`/`Tests`/`Testing` are also
+accepted so a hand-written section is not failed on wording.
+
+Cross-section dependencies go in **two** places and they mean different
+things: the `SECTION_MANIFEST` line (`03-api: 01-auth`) is the machine-checked
+build order, and `## Prerequisites` is the prose a builder reads. Only
+sections of this plan belong in the manifest declaration — see
+[section-index.md](section-index.md).
 
 ## SubagentStop Hook (non-blocking fallback)
 
