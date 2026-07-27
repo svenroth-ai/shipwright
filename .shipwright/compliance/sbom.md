@@ -11,7 +11,7 @@ Consistency-audit: never run
 | Runtime dependencies | 6 (deduplicated) |
 | Dev dependencies | 5 |
 | Total packages | 11 |
-| Licenses resolved | 11 / 11 |
+| Licenses resolved | 9 / 11 |
 | Unique licenses | 3 (Apache-2.0, MIT, PSFL) |
 | Copyleft licenses | 0 |
 
@@ -19,9 +19,10 @@ Consistency-audit: never run
 
 ```mermaid
 pie title License Distribution (all 11 packages)
-    "MIT" : 6
-    "Apache-2.0" : 4
+    "MIT" : 5
+    "Apache-2.0" : 3
     "PSFL" : 1
+    "unknown" : 2
 ```
 
 ## Runtime Dependencies
@@ -39,13 +40,13 @@ pie title License Distribution (all 11 packages)
 
 | Package | Version | License |
 |---------|---------|---------|
-| diff-cover | 10.3.0 | Apache-2.0 |
+| diff-cover | 10.3.0 | - |
 | pytest | 9.0.3 | MIT |
 | pytest | 9.1.1 | MIT |
-| pytest-cov | 7.1.0 | MIT |
+| pytest-cov | 7.1.0 | - |
 | pytest-mock | 3.15.1 | MIT |
 
 ## License Compliance
 
-No license concerns: all 11 packages resolved (0 unknown, 0 copyleft).
+**2 dependency(ies) could not be resolved in this scan** - license unverified; verify before distribution.
 

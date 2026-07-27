@@ -1,8 +1,8 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-07-27-disclose-audit-last-run"
+run_id: "iterate-2026-07-27-security-coverage-manifest"
 phase: "iterate"
-reason: "ensure-current pre-merge refresh"
+reason: "F11 refresh: integrate main"
 timestamp: "2026-07-27T12:14:34.040370+00:00"
 ---
 
@@ -12,9 +12,9 @@ timestamp: "2026-07-27T12:14:34.040370+00:00"
 
 ## Session Info
 
-- **Session ID**: 184abbf4-c486-4d5b-b89a-1dc21aebc3e1
+- **Session ID**: 871b1865-c6ae-4724-a105-dc987ddca125
 - **Timestamp**: 2026-07-27 12:14:34 UTC
-- **Reason**: ensure-current pre-merge refresh
+- **Reason**: F11 refresh: integrate main
 
 ## Last Iterate
 
@@ -29,11 +29,8 @@ timestamp: "2026-07-27T12:14:34.040370+00:00"
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/disclose-audit-last-run
-- **Run ID**: iterate-2026-07-27-disclose-audit-last-run
-- **Spec**: .shipwright/planning/iterate/iterate-2026-07-27-disclose-audit-last-run.md
-- **Complexity**: medium · **change_type:** change · **spec_impact:** modify (fr-01.10 gains one (e) ac)
-- **External Review Marker**: stale (predates spec (2026-07-27T07:51:33))
+- **Branch**: iterate/security-coverage-manifest-part1
+- **External Review Marker**: completed (external_review_state.json @ 2026-07-27T11:47:40)
 
 ### Mandatory replay on Resume
 
@@ -51,8 +48,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/disclose-audit-last-run
-- **Last Commit**: 3a56ec2e Merge remote-tracking branch 'origin/main' into iterate/disclose-audit-last-run
+- **Branch**: iterate/security-coverage-manifest-part1
+- **Last Commit**: ec704f06 Merge remote-tracking branch 'origin/main' into iterate/security-coverage-manifest-part1
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -77,7 +74,7 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 369
+- **Total work events**: 370
 - **Last iterate**: change — iterate: reviewer verdicts recorded, disagreement is its own outcome (1 of 3) (2026-07-27)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
