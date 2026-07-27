@@ -35,11 +35,6 @@ timestamp: "2026-07-27T09:42:02.446209+00:00"
 - **Complexity**: medium · **change_type:** change · **spec_impact:** modify (fr-01.10 gains one (e) ac)
 - **External Review Marker**: stale (predates spec (2026-07-27T07:51:33))
 
-### Mandatory replay on Resume
-
-Before dispatching to the handoff's Remaining phase, run these if missing:
-- Finalization (F0–F11) after all mandatory phases pass
-
 ## Legacy build state
 
 - **Phase**: design
@@ -52,8 +47,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 ## Git State
 
 - **Branch**: iterate/disclose-audit-last-run
-- **Last Commit**: e7bde204 Merge remote-tracking branch 'origin/main' into iterate/disclose-audit-last-run
-- **Uncommitted Changes**: Yes
+- **Last Commit**: 4a3fbd58 Merge remote-tracking branch 'origin/main' into iterate/disclose-audit-last-run
+- **Uncommitted Changes**: None
 
 ## Config Files to Read
 

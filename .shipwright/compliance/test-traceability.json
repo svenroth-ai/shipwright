@@ -2,7 +2,7 @@
   "schema_version": 3,
   "collector_version": "test_links/1.0.0",
   "generated_at": "2026-07-27T09:08:42.773123+00:00",
-  "source_commit": "e7bde204f1a59f8bf4d691155dce8e16408fc8fd",
+  "source_commit": "4a3fbd58240aba26796e27724dc27768978e3082",
   "spec_hash": "sha256:858eefc712471c7e1f5539c1a808aab1a9995d5a01585bf8fc9206a3d4f1387b",
   "requirements": {
     "01::FR-01.01": {

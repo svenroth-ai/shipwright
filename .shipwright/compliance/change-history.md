@@ -3,7 +3,7 @@
 Generated: 2026-07-27T09:08:42.773123+00:00
 Source-State: run=iterate-2026-07-27-artifact-state-stamping
 Consistency-audit: never run
-Total commits: 1220
+Total commits: 1223
 
 ## Commit Distribution
 
@@ -11,9 +11,9 @@ Total commits: 1220
 pie title Commit Types
     "fix" : 350
     "feat" : 337
-    "chore" : 259
+    "chore" : 260
     "docs" : 147
-    "refactor" : 75
+    "refactor" : 77
     "test" : 31
     "ci" : 11
     "other" : 9
@@ -719,10 +719,11 @@ pie title Commit Types
 | 2026-03-20 | — | Task 02 — project templates (CLAUDE.md, agent_docs, CI) | c3a6d2f53bd3 |
 | 2026-03-20 | — | Task 01 — monorepo scaffolding + supabase-nextjs stack profile | 990a138a4690 |
 
-### Chores (chore) — 259 commits
+### Chores (chore) — 260 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-07-27 | churn | regenerate derived snapshots after main merge | 7767182e335c |
 | 2026-07-27 | churn | regenerate derived snapshots after main merge | be20c47ff43a |
 | 2026-07-27 | churn | regenerate derived snapshots after main merge | 9a1c085a0aec |
 | 2026-07-27 | iterate | refresh the F0.5 evidence to the delivered runner | 7ee0d916c105 |
@@ -1135,10 +1136,12 @@ pie title Commit Types
 | 2026-03-21 | — | expand README with pipeline diagram, architecture, and quality gates | 377dc2141b3d |
 | 2026-03-20 | — | add README.md for GitHub repo | 853c8f930132 |
 
-### Refactoring (refactor) — 75 commits
+### Refactoring (refactor) — 77 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-07-27 | compliance | split the ComplianceData aggregate out of _types | 514a1c7754a5 |
+| 2026-07-27 | shared | split git resolution out of source_state (300-LOC compliance) (#451) | 3cdca5cfc884 |
 | 2026-07-21 | adopt | route the eight scaffolders through one guarded shared/ loader (FR-01.13) (#423) | 736fc8d1712c |
 | 2026-07-20 | requirements | one catalog, stated once in plain language (campaign S6) (#414) | be2561caccd3 |
 | 2026-07-20 | requirements | one FR-table shape from both generators (campaign S5) (#413) | 5eef5076242c |
@@ -1291,7 +1294,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 1220 |
+| Total commits | 1223 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 1220 |
+| Human-authored commits | 1223 |
 

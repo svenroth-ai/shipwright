@@ -30,7 +30,7 @@ _Grade = importance-weighted average over the measurable dimensions (n/a exclude
 
 ## 🛡️ CI Security (fail-closed gate)
 
-Latest scan: **2026-07-27** · source `security.yml#30254925611` · critical-gate **✅ PASS**
+Latest scan: **2026-07-27** · source `security.yml#30255422237` · critical-gate **✅ PASS**
 
 | Severity | Count |
 |----------|-------|
@@ -63,7 +63,7 @@ _Ingested from CI `findings.json` (public-safe: severity counts + gate verdict o
 | Iterate tests passing | 53/72 testable changes tested | WARN | 19 testable change(s) without tests — see test-evidence.md |
 | Dependencies | 11 packages | INFO |  |
 | Copyleft risk | 0 | PASS |  |
-| Triage open | 24 open | WARN | 24 actionable item(s) — see ../agent_docs/triage_inbox.md |
+| Triage open | 23 open | WARN | 23 actionable item(s) — see ../agent_docs/triage_inbox.md |
 | Bloat over-limit (grandfathered) | 126 | INFO |  |
 | Bloat in allowlist | 159 entries | INFO |  |
 | Bloat ratchet delta | +0 lines | PASS |  |
