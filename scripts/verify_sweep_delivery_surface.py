@@ -24,6 +24,7 @@ action.
 from __future__ import annotations
 
 import json
+import os
 import subprocess
 import sys
 import tempfile
@@ -123,11 +124,19 @@ def main() -> int:
         dirty = git(work, "status", "--porcelain", "--", TRIAGE).stdout.strip()
         check(dirty.startswith("M"), "fixture: the append is undelivered drift on main (M triage.jsonl)")
 
+        # The fixture models an OPERATOR'S MACHINE, so the child must not inherit
+        # this process's `$CI`. `sweep_outbox_to_branch` deliberately refuses to
+        # auto-commit under CI (`ci_without_optin`) — a real guard, and correct:
+        # a CI job must never commit to a branch on its own. But inheriting it
+        # here makes the subject skip itself, and the checks below then read the
+        # guard as six delivery failures. Observed the first time this script ran
+        # inside Actions: 8/8 locally, 2/8 in CI, same commit.
+        env = {k: v for k, v in os.environ.items() if k != "CI"}
         proc = subprocess.run(
             [sys.executable, str(_SETUP), "--project-root", str(work),
              "--slug", "surface-check", "--run-id", "surface-check"],
             capture_output=True, text=True, encoding="utf-8", errors="replace",
-            cwd=str(work),
+            cwd=str(work), env=env,
         )
         print(f"\n  setup exit={proc.returncode}")
         if proc.returncode != 0:

@@ -249,6 +249,22 @@ jobs:
         # shared/scripts/tools/check_ci_gate_coverage.py.
         run: uv run shared/scripts/tools/check_ci_gate_coverage.py --project-root .
 
+      - name: Contract surface (gate)
+        # The per-producer unit gates pin the shape the code WOULD emit. This
+        # drives the real command a consumer runs (`grade.py --format json`,
+        # `analyze_codebase.py`) against a real repo and parses the real bytes —
+        # the only check that catches a wrapper, a custom encoder or a changed
+        # CLI flag altering the output while every unit gate stays green.
+        # It existed and was referenced by no workflow: it ran nowhere and gated
+        # nothing. Wired here so it BLOCKS.
+        run: uv run scripts/verify_contract_surface.py
+
+      - name: Sweep delivery surface (gate)
+        # Same shape, same fix: the end-to-end proof that an operator's dismiss
+        # survives the outbox sweep to origin rather than being quarantined.
+        # Also referenced by nothing until now.
+        run: uv run scripts/verify_sweep_delivery_surface.py
+
   # WebUI client + server checks moved to
   # https://github.com/svenroth-ai/shipwright-webui/blob/main/.github/workflows/ci.yml
   # when the WebUI was extracted into its own repo (v0.4.0, 2026-04-24).

@@ -62,14 +62,30 @@ def test_known_workflows_match_convention_modules() -> None:
 
 
 def test_posted_status_contexts_name_known_workflows() -> None:
-    """A posted-status entry for a file the doc never inspects is dead config.
+    """A posted-status entry for a file nothing ever inspects is dead config.
 
-    Reverse drift guard: every key in POSTED_STATUS_CONTEXTS must be a workflow
-    KNOWN_WORKFLOWS actually visits, else its context silently never appears in
-    the table and adopters require a check nothing posts.
+    Reverse drift guard. Two consumers read this map, at deliberately different
+    scopes, and an entry is live if EITHER visits it:
+
+    - ``gather_required_checks`` renders adopt's AUTOMERGE_SETUP.md and visits
+      ``KNOWN_WORKFLOWS`` — the five workflows ``/shipwright-adopt`` scaffolds
+      into a target repo.
+    - ``required_checks_drift.all_workflow_check_names`` polices a repo's OWN
+      must-pass configuration and enumerates every file in
+      ``.github/workflows/``.
+
+    Restricting this to ``KNOWN_WORKFLOWS`` (as it did while adopt was the only
+    consumer) would forbid teaching the drift producer about `pr-review-run.yml`,
+    whose `PR Review` context is a posted commit status here for exactly the
+    reason `Claude Code Review` is one in an adopted repo — and deriving job
+    names for it instead would name a check branch protection can never match.
+    A typo'd key still fails: it is in neither set.
     """
-    unknown = set(ar.POSTED_STATUS_CONTEXTS) - set(ar.KNOWN_WORKFLOWS)
-    assert not unknown, f"posted-status entries for uninspected workflows: {unknown}"
+    visited = set(ar.KNOWN_WORKFLOWS) | {
+        p.name for p in (REPO_ROOT / ".github" / "workflows").glob("*.y*ml")
+    }
+    unknown = set(ar.POSTED_STATUS_CONTEXTS) - visited
+    assert not unknown, f"posted-status entries no consumer inspects: {unknown}"
 
 
 # ---------------------------------------------------------------------------

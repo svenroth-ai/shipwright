@@ -254,7 +254,56 @@ jobs:
             prompt_critical=$(jq '[.findings[]? | select(.severity == "critical")] | length' prompt_risks.json)
           fi
           total=$((critical + prompt_critical))
-          echo "Critical findings: $total"
+
+          # Label the verdict where a human first reads it. This gate blocks on
+          # CRITICAL only, so a bare "Critical findings: 0" reads as "security is
+          # fine" while dozens of high findings sit unmentioned in findings.json.
+          # The compliance evidence page already carries the honest form (gate
+          # badge beside a severity breakdown, ci_security.render_ci_security);
+          # the workflow step did not. Nothing is computed here that the scan did
+          # not already produce — this only says out loud what the gate covers
+          # and, just as importantly, what it does not.
+          # Count each severity across BOTH scan outputs, exactly as the blocking
+          # total does. Reading the breakdown from findings.json alone would
+          # print "0 high" while an open prompt-injection high sat unmentioned —
+          # the very understatement this block exists to remove.
+          count_sev() {
+            local sev="$1" n m
+            n=$(jq --arg s "$sev" '[.findings[]? | select(.severity == $s)] | length' findings.json)
+            m=0
+            if [ -f prompt_risks.json ]; then
+              m=$(jq --arg s "$sev" '[.findings[]? | select(.severity == $s)] | length' prompt_risks.json)
+            fi
+            echo $((n + m))
+          }
+          high=$(count_sev high)
+          medium=$(count_sev medium)
+          low=$(count_sev low)
+          verdict=$([ "$total" -gt 0 ] && echo FAIL || echo PASS)
+          echo "critical-gate $verdict — $total critical (blocking), $high high, $medium medium, $low low"
+          # Guarded: reporting must never be able to fail the gate. `set -e` is on,
+          # so appending to an unset GITHUB_STEP_SUMMARY redirects to an empty
+          # filename and exits 1 — a merge-blocking security gate dying over a
+          # cosmetic sink. Not hypothetical: the A5.8 behavioral probe executes this
+          # very body outside Actions, and it went red on a CLEAN fixture.
+          if [ -n "${GITHUB_STEP_SUMMARY:-}" ]; then
+            {
+              echo "### Shipwright Security Scan"
+              echo ""
+              echo "**critical-gate $verdict** — this gate blocks on \`critical\` only."
+              echo ""
+              echo "| severity | open | blocks merge |"
+              echo "|---|---:|---|"
+              echo "| critical | $total | yes |"
+              echo "| high | $high | no |"
+              echo "| medium | $medium | no |"
+              echo "| low | $low | no |"
+            } >> "$GITHUB_STEP_SUMMARY"
+          fi
+          if [ "$high" -gt 0 ] && [ "$total" -eq 0 ]; then
+            echo "::warning::critical-gate PASS with $high open high finding(s) — passing means no CRITICAL, not no findings."
+          fi
+
           if [ "$total" -gt 0 ]; then
             echo "::error::Found $total critical security findings — blocking merge"
             exit 1

@@ -1,135 +1,239 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-07-27-no-silent-revert",
+    "run_id": "iterate-2026-07-27-checks-that-gate-nothing",
     "date": "2026-07-27",
     "unit": {
       "status": "passed",
-      "passed": 5868,
-      "total": 5884,
-      "skipped": 16
+      "passed": 5040,
+      "total": 5056
     },
     "integration": {
-      "status": "not_run",
+      "status": "passed",
+      "passed": 418,
+      "total": 418
+    },
+    "pgtap": {
+      "status": "skipped",
       "passed": 0,
       "total": 0
     },
     "e2e": {
-      "status": "not_run",
-      "passed": 0,
-      "total": 0
-    },
-    "smoke": {
-      "status": "not_run"
-    },
-    "pgtap": {
-      "status": "not_run",
+      "status": "skipped",
       "passed": 0,
       "total": 0
     },
     "design_fidelity": {
-      "status": "not_run",
+      "status": "skipped",
       "passed": 0,
       "total": 0
     },
+    "smoke": {
+      "status": "skipped"
+    },
+    "degraded": [],
     "surface_verification": {
-      "surface": "cli",
-      "runner": "uv run pytest shared/tests/test_silent_revert.py shared/tests/test_verify_iterate_finalization.py -v",
+      "surface": "none",
+      "tests_run": 0,
       "exit_code": 0,
-      "tests_run": 109,
-      "evidence_path": "C:\\01_Development\\shipwright\\.worktrees\\no-silent-revert\\.shipwright\\runs\\iterate-2026-07-27-no-silent-revert\\surface_verification.log",
-      "timestamp": "2026-07-27T19:33:19.315Z",
-      "attempts": 1
+      "justification": "No user-facing surface exists in this diff: two CI workflow steps, one out-of-band operator CLI, tests and docs. This repo ships no web or CLI product surface an E2E run could drive. The equivalent production-time proof was run instead: both newly-wired gates executed green locally before being made blocking, the security gate body was executed over three fixture shapes outside Actions, and the drift producer was run against the live repository."
     },
     "test_completeness": {
       "status": "complete",
       "behaviors": [
         {
-          "behavior": "a branch that integrated main and then dropped main's new content is caught",
+          "behavior": "Both surface verifiers run in ci.yml required job",
           "disposition": "tested",
-          "evidence": "test_silent_revert.py::test_the_463_shape_is_caught PASSED; replayed on REAL repo history (1 file, 24 lines flagged)"
+          "evidence": "test_checks_that_gate.py::test_surface_verifier_runs_in_the_required_job PASSED (2 params)"
         },
         {
-          "behavior": "a clean union integration drops nothing",
+          "behavior": "Neither surface gate is loosened by continue-on-error or pipe-pipe-true",
           "disposition": "tested",
-          "evidence": "test_silent_revert.py::test_a_clean_integration_drops_nothing PASSED; real-history probe: 0 files, 0.0s"
+          "evidence": "test_checks_that_gate.py::test_surface_verifier_is_a_hard_gate PASSED; mutation-probed (planted continue-on-error -> RED)"
         },
         {
-          "behavior": "a branch that has not integrated yet is never accused (BEHIND is not a revert)",
+          "behavior": "A gate step naming a missing script fails",
           "disposition": "tested",
-          "evidence": "test_silent_revert.py::test_a_branch_that_never_integrated_is_not_accused PASSED"
+          "evidence": "test_checks_that_gate.py::test_gated_script_exists PASSED"
         },
         {
-          "behavior": "editing a line that predates the fork is not a drop",
+          "behavior": "A new scripts/verify_*_surface.py wired to nothing fails the build",
           "disposition": "tested",
-          "evidence": "test_silent_revert.py::test_editing_a_line_that_existed_before_is_not_a_drop PASSED"
+          "evidence": "test_checks_that_gate.py::test_every_surface_verifier_is_wired_to_some_workflow PASSED; probed with a real orphan file -> RED"
         },
         {
-          "behavior": "overwriting a line main itself changed is reported, and settled by a declaration",
+          "behavior": "Only executable run: lines count as wiring; a comment mention does not",
           "disposition": "tested",
-          "evidence": "test_silent_revert.py::test_overwriting_a_line_main_itself_changed_IS_reported PASSED"
+          "evidence": "test_checks_that_gate.py::test_a_verifier_named_only_in_a_comment_is_still_an_orphan PASSED"
         },
         {
-          "behavior": "deleting a file after taking their work is reported",
+          "behavior": "The CI-gate guard classifies (gate)-suffixed steps as gates",
           "disposition": "tested",
-          "evidence": "test_silent_revert.py::test_deleting_a_file_after_taking_their_work_is_reported PASSED"
+          "evidence": "test_checks_that_gate.py::test_the_gate_guard_can_see_the_surface_gates PASSED; probed by removing the keyword -> guard exited 0 on a loosened gate"
         },
         {
-          "behavior": "a deletion with no integration is out of scope and not flagged",
+          "behavior": "The security gate prints a labelled verdict, not a bare count",
           "disposition": "tested",
-          "evidence": "test_silent_revert.py::test_a_branch_that_never_integrated_is_not_this_checks_business PASSED"
+          "evidence": "test_security_gate_verdict.py::test_verdict_is_labelled_not_a_bare_count PASSED"
         },
         {
-          "behavior": "blank and whitespace-only lines are ignored",
+          "behavior": "Every severity is counted across findings.json AND prompt_risks.json",
           "disposition": "tested",
-          "evidence": "test_silent_revert.py::test_blank_and_whitespace_lines_are_ignored PASSED"
+          "evidence": "test_security_gate_verdict.py::test_every_severity_is_counted_across_both_scan_outputs PASSED; behavioral probe of the extracted step body over 3 fixtures"
         },
         {
-          "behavior": "the check blocks and names both the file and the lines being lost",
+          "behavior": "The severity breakdown reaches the job summary",
           "disposition": "tested",
-          "evidence": "test_silent_revert.py::test_the_check_blocks_and_names_the_file PASSED"
+          "evidence": "test_security_gate_verdict.py::test_breakdown_reaches_the_job_summary PASSED"
         },
         {
-          "behavior": "a declared removal with a reason passes",
+          "behavior": "Reporting can never fail the gate when GITHUB_STEP_SUMMARY is unset",
           "disposition": "tested",
-          "evidence": "test_silent_revert.py::test_a_declared_removal_passes PASSED"
+          "evidence": "test_security_gate_verdict.py::test_reporting_cannot_fail_the_gate PASSED; shipwright-compliance A5.8 behavioral probe 19 passed"
         },
         {
-          "behavior": "a declaration without a reason, or for another file, does not count",
+          "behavior": "A PASS with open high findings is annotated",
           "disposition": "tested",
-          "evidence": "test_silent_revert.py::test_a_declaration_without_a_reason_does_not_count PASSED; test_silent_revert.py::test_a_declaration_for_another_file_does_not_cover_this_one PASSED"
+          "evidence": "test_security_gate_verdict.py::test_passing_with_open_high_findings_is_said_out_loud PASSED"
         },
         {
-          "behavior": "an unresolvable default branch or non-git tree is a visible skip, never a pass",
+          "behavior": "The security gate still blocks on critical only",
           "disposition": "tested",
-          "evidence": "test_silent_revert.py::test_no_default_branch_is_a_visible_skip_not_a_pass PASSED; test_silent_revert.py::test_a_non_git_tree_skips PASSED"
+          "evidence": "test_security_gate_verdict.py::test_the_gate_itself_still_blocks_on_critical_only PASSED; behavioral probe: prompt-critical -> exit 1"
         },
         {
-          "behavior": "a clean branch passes",
+          "behavior": "Drift is reported in both directions; advisory contexts suppress",
           "disposition": "tested",
-          "evidence": "test_silent_revert.py::test_a_clean_branch_passes PASSED"
+          "evidence": "test_required_checks_drift.py::test_a_check_nobody_requires_is_unenforced / test_a_required_check_nothing_produces_is_phantom / test_both_directions_are_reported_together / test_advisory_contexts_are_not_drift PASSED"
+        },
+        {
+          "behavior": "Blank and whitespace-only names create no drift",
+          "disposition": "tested",
+          "evidence": "test_required_checks_drift.py::test_whitespace_and_blanks_do_not_create_phantom_drift PASSED"
+        },
+        {
+          "behavior": "The dedup key is stable and divergence-specific",
+          "disposition": "tested",
+          "evidence": "test_required_checks_drift.py::test_dedup_key_is_stable_and_divergence_specific PASSED"
+        },
+        {
+          "behavior": "Enumeration covers every workflow, not the five adopt scaffolds",
+          "disposition": "tested",
+          "evidence": "test_required_checks_drift.py::test_enumeration_covers_every_workflow_not_just_adopts_five PASSED"
+        },
+        {
+          "behavior": "A workflow that cannot run on a pull request is not derived",
+          "disposition": "tested",
+          "evidence": "test_required_checks_drift.py::test_a_workflow_that_cannot_run_on_a_pr_is_not_derived + test_the_monorepos_manual_launch_gate_is_not_reported_as_drift PASSED"
+        },
+        {
+          "behavior": "One unparseable workflow does not sink enumeration",
+          "disposition": "tested",
+          "evidence": "test_required_checks_drift.py::test_enumeration_skips_an_unparseable_workflow PASSED"
+        },
+        {
+          "behavior": "An empty derived set never reads as in-sync",
+          "disposition": "tested",
+          "evidence": "test_required_checks_drift.py::test_empty_derived_never_reads_as_in_sync + test_enumeration_survives_a_repo_with_no_workflows PASSED"
+        },
+        {
+          "behavior": "gh missing or hanging is a controlled error, not a traceback",
+          "disposition": "tested",
+          "evidence": "test_check_required_checks_io.py::test_missing_gh_binary_is_a_controlled_error / test_gh_timeout_is_a_controlled_error / test_missing_gh_exits_2_without_a_traceback PASSED"
+        },
+        {
+          "behavior": "The HTTP status is recovered so 404 is distinguished from 403",
+          "disposition": "tested",
+          "evidence": "test_check_required_checks_io.py::test_http_status_is_carried_off_stderr + test_a_failure_with_no_http_code_carries_no_status PASSED"
+        },
+        {
+          "behavior": "A repo that requires nothing reads as an empty set, not as unreadable",
+          "disposition": "tested",
+          "evidence": "test_check_required_checks_cli.py::test_a_repo_that_requires_nothing_reads_as_empty_not_unreadable + test_empty_configured_set_makes_every_check_unenforced PASSED"
+        },
+        {
+          "behavior": "Contexts come from rulesets and classic protection, unioned",
+          "disposition": "tested",
+          "evidence": "test_check_required_checks_cli.py::test_contexts_come_from_rulesets / test_classic_branch_protection_is_still_read / test_both_mechanisms_union PASSED"
+        },
+        {
+          "behavior": "Neither source readable raises; one readable source is enough",
+          "disposition": "tested",
+          "evidence": "test_check_required_checks_cli.py::test_neither_mechanism_readable_raises / test_one_mechanism_unreadable_does_not_sink_the_other / test_unparseable_response_is_not_read_as_empty PASSED"
+        },
+        {
+          "behavior": "The policy is read for the named branch, not always main",
+          "disposition": "tested",
+          "evidence": "test_check_required_checks_cli.py::test_the_policy_is_read_for_the_named_branch PASSED"
+        },
+        {
+          "behavior": "An unreachable repo exits 2 before any policy lookup",
+          "disposition": "tested",
+          "evidence": "test_check_required_checks_cli.py::test_unreachable_repo_exits_2_before_any_policy_lookup PASSED"
+        },
+        {
+          "behavior": "In-sync exits 0 filing nothing; drift files exactly one item keyed repo-at-branch",
+          "disposition": "tested",
+          "evidence": "test_check_required_checks_cli.py::test_in_sync_repo_exits_0_and_files_nothing + test_drift_files_one_item_keyed_on_repo_and_branch PASSED"
+        },
+        {
+          "behavior": "The posted-status registry rejects a key no consumer visits",
+          "disposition": "tested",
+          "evidence": "test_automerge_readiness.py::test_posted_status_contexts_name_known_workflows PASSED; probed with typo keys"
+        },
+        {
+          "behavior": "The live GitHub ruleset read returns the real must-pass set for this repo",
+          "disposition": "untestable",
+          "reason_code": "requires-external-nondeterministic-service",
+          "reason": "the real GitHub API cannot be a hermetic test; exercised live at every stage instead, and every decision taken on its response is covered by the mocked host-IO rows above"
+        },
+        {
+          "behavior": "A non-GitHub or malformed origin remote is refused, not guessed at",
+          "disposition": "tested",
+          "evidence": "test_check_required_checks_io.py::test_a_non_github_remote_is_refused_not_guessed_at (3 params) + test_github_remotes_resolve_to_owner_name (4 params) + test_missing_origin_is_refused + test_git_itself_failing_is_a_controlled_error PASSED"
+        },
+        {
+          "behavior": "The sweep verifier does not hand its own $CI flag to its subject",
+          "disposition": "tested",
+          "evidence": "test_checks_that_gate.py::test_the_sweep_verifier_does_not_hand_its_own_ci_flag_to_its_subject PASSED; mutation-probed (dropping env= turns it RED). Both gates re-run under CI=true: verify_sweep_delivery_surface 8/8, verify_contract_surface PASS."
         }
       ],
       "counts": {
-        "testable": 13,
-        "tested": 13,
-        "untestable": 0,
+        "testable": 30,
+        "tested": 30,
+        "untestable": 1,
         "untested_testable": 0
       },
       "enumeration_basis": {
-        "acs": 5,
-        "covered_acs": 5
+        "acs": 31,
+        "covered_acs": 31
       }
     },
-    "degraded": [
-      "Review passes 'code' and 'doubt' recorded not_run: subagent review is disabled for this session by operator configuration. External code review ran instead (4 findings, all addressed) alongside two empirical probes on real repository history.",
-      "'plan' recorded not_run: external plan review is a medium+ phase and this run is small.",
-      "External code review delivered 1 of 2 legs: the Gemini leg returned an empty reply and was recorded status=degraded by the classifier shipped in #473. The GPT leg delivered a complete review whose four findings drove the final implementation.",
-      "The FIRST implementation of this check was invalidated by its own probe before shipping: walking every merge in history reported 889 files for a demonstrably clean merge and took over ten minutes. Scoped to the branch's own merges (<default>..HEAD) it reports 0 files in 0.0s for that same merge."
-    ],
+    "ci_supplychain_ack": {
+      "run_id": "iterate-2026-07-27-checks-that-gate-nothing",
+      "paths_fingerprint": "dfd5ba38e9cb554cd5aeb2094f44763a650a892d5a333cc49377760cd378ec88",
+      "consistent_with": "iterate-2026-07-27-review-gate-failclosed-fork",
+      "statement": "Adds two run: steps invoking in-repo scripts to ci.yml and edits one run: body in security.yml. No action, permission, secret, trigger or external dependency changes, so the pinning posture is untouched: GitHub-owned actions stay on mutable tags, third-party stay SHA-pinned. The trust boundary only tightens - two verifiers that ran nowhere now block, and the security gate reports the severities it does not block on instead of implying it found none.",
+      "ci_paths": [
+        ".github/workflows/ci.yml",
+        ".github/workflows/security.yml"
+      ]
+    },
     "declared_removals": [
       {
         "path": ".shipwright/planning/iterate/2026-07-27-review-floor-not-chained.md",
-        "reason": "Superseded, not reverted. #478 merged a first attempt at the bloat fix whose section 8b argued the pre-existing crossing was 'not this change's to fix'. The gate then blocked again, because it fires on the file being over its ceiling at all, not on it having grown — so that argument was the rationalization the Iron Law names, and the full split replaced it. Section 8b now records both the first attempt and why it was insufficient; restoring the superseded lines verbatim would make the section contradict itself. Branch: iterate/split-review-cli-tests."
+        "reason": "Not a removal by this branch \u2014 a false positive in check_no_silent_revert (shipped today, #477). It asks each integration merge independently whether HEAD still carries what that merge's main side had, so content main ITSELF deleted in a LATER commit reads as dropped. This branch merged main four times across exactly such a rewrite: cf6d326b brought this text, f7eee6f4 replaced it, and this branch carries f7eee6f4's version. Proof: the flagged lines are absent from current origin/main too, and `git diff origin/main HEAD -- <path>` is EMPTY for every path listed."
+      },
+      {
+        "path": ".shipwright/planning/iterate/iterate-2026-07-27-project-granularity-basis/reviews.json",
+        "reason": "Not a removal by this branch \u2014 a false positive in check_no_silent_revert (shipped today, #477). It asks each integration merge independently whether HEAD still carries what that merge's main side had, so content main ITSELF deleted in a LATER commit reads as dropped. This branch merged main four times across exactly such a rewrite: cf6d326b brought this text, f7eee6f4 replaced it, and this branch carries f7eee6f4's version. Proof: the flagged lines are absent from current origin/main too, and `git diff origin/main HEAD -- <path>` is EMPTY for every path listed."
+      },
+      {
+        "path": "shared/tests/test_record_review_pass_cli.py",
+        "reason": "Not a removal by this branch \u2014 a false positive in check_no_silent_revert (shipped today, #477). It asks each integration merge independently whether HEAD still carries what that merge's main side had, so content main ITSELF deleted in a LATER commit reads as dropped. This branch merged main four times across exactly such a rewrite: cf6d326b brought this text, f7eee6f4 replaced it, and this branch carries f7eee6f4's version. Proof: the flagged lines are absent from current origin/main too, and `git diff origin/main HEAD -- <path>` is EMPTY for every path listed."
+      },
+      {
+        "path": "docs/hooks-and-pipeline.md",
+        "reason": "Nothing was removed: this run EDITED one table row in place (the triage.outbox.jsonl producer row) to add check_required_checks.py, and check_no_silent_revert compares whole lines, so an edited line always reads as the old line dropped. Verified character-for-character: this row minus the one sentence this run added equals origin/main's row EXACTLY, so every producer main added (suite_race_triage, warning_followups, journey_coverage) and its 'F0 and F1 run' edit are carried verbatim."
       }
     ]
   },
@@ -138,5 +242,10 @@
     "measured_tier": "repo",
     "source": "combined coverage.xml (all plugins + shared + integration)",
     "measured_at": "2026-07-04T00:00:00Z"
+  },
+  "source_state": {
+    "run_id": "iterate-2026-07-27-checks-that-gate-nothing",
+    "commit": "091b252990c7ab296369266d00beabf4952ecc69",
+    "dirty": false
   }
 }
