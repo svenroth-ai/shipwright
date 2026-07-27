@@ -1,14 +1,14 @@
 # Triage Inbox
 
-> Auto-generated 2026-07-27T12:14:34.040370Z. Items waiting for triage decision.
+> Auto-generated 2026-07-27T14:35:23.623868Z. Items waiting for triage decision.
 > Promote via WebUI Triage tab (when v1b lands) or `shared/scripts/tools/triage_promote.py --id <id> --task-ref EXT:<ref>`.
 
 ## Status summary
 
-- Total: 418
-- Triage: 20 | Promoted: 1 | Dismissed: 396 | Snoozed: 1
+- Total: 421
+- Triage: 22 | Promoted: 1 | Dismissed: 397 | Snoozed: 1
 
-## Top 20 items (severity-sorted)
+## Top 22 items (severity-sorted)
 
 ### Source: analysis (1 item)
 
@@ -32,6 +32,22 @@
     ```
   - Promote: `triage_promote.py --id trg-554786d0 --task-ref EXT:<ref>`
 
+### Source: f0-suite (1 item)
+
+<a id="trg-7a4c0da7"></a>
+- **[f0] shipwright-run failed in parallel and passed alone - race or flaky test** `id=trg-7a4c0da7 | severity=high | kind=bug → P1/engineering`
+  - shipwright-run: red in parallel (rc 1), GREEN alone (rc 0). It is NOT xdist-allowlisted, so this is inter-unit pollutio…
+  - Launch payload (copy into a new Claude session):
+    ```text
+    /shipwright-iterate --type bug
+    
+    Context: F0 suite card f0-race:shipwright-run. The test unit shipwright-run failed while the units ran side by side and passed when re-run alone, so the gate stayed green and nothing else recorded it.
+    Reproduce alone (expect GREEN): cd plugins/shipwright-run && uv run --with pytest --with pytest-mock pytest tests -q -p no:cacheprovider
+    Reproduce in parallel (expect intermittent RED): uv run shared/scripts/tools/run_test_suite.py --project-root 'C:\01_Development\shipwright\.worktrees\adopt-derived-catalogue'
+    Establish whether it is a race between units or an unreliable test, fix the cause, and close this card. Never weaken or delete the test to make it pass.
+    ```
+  - Promote: `triage_promote.py --id trg-7a4c0da7 --task-ref EXT:<ref>`
+
 ### Source: github (1 item)
 
 <a id="trg-2b5ca5f5"></a>
@@ -48,12 +64,18 @@
     ```
   - Promote: `triage_promote.py --id trg-2b5ca5f5 --task-ref EXT:<ref>`
 
-### Source: iterate (2 items)
+### Source: iterate (3 items)
 
 <a id="trg-a6616bbe"></a>
 - **Three finalization/delivery checks report a weaker signal than they can compute** `id=trg-a6616bbe | severity=medium | kind=improvement → P2/engineering`
   - Three checks in the finalization / delivery path each already hold the information needed to name a cause, but report a…
   - Promote: `triage_promote.py --id trg-a6616bbe --task-ref EXT:<ref>`
+
+<a id="trg-bd4e75a9"></a>
+- **Phase-canon C3 handoff freshness still keys on mtime** `id=trg-bd4e75a9 | severity=low | kind=improvement → P3/engineering`
+  - The F11 iterate freshness check moved off filesystem mtime to a content key in iterate-2026-07-27-name-the-blocker (it…
+  - Evidence: `shared/scripts/tools/verifiers/common.py`
+  - Promote: `triage_promote.py --id trg-bd4e75a9 --task-ref EXT:<ref>`
 
 <a id="trg-d1e466aa"></a>
 - **Retire the write-once v1 run-config fields (current_step / completed_steps)** `id=trg-d1e466aa | severity=low | kind=improvement → P3/engineering`
@@ -66,6 +88,13 @@
 - **S2b: converge the requirement-discovery filter semantics (~10 call-site decisions)** `id=trg-8bf97fd4 | severity=medium | kind=improvement → P2/engineering`
   - The tail of campaign step S2, not a new campaign - file it now so it is not lost between "S2 merged" and "somebody noti…
   - Promote: `triage_promote.py --id trg-8bf97fd4 --task-ref EXT:<ref>`
+
+### Source: manual (1 item)
+
+<a id="trg-efca9de7"></a>
+- **shared/tests and integration-tests fail 21 tests when run in one pytest session** `id=trg-efca9de7 | severity=medium | kind=bug → P2/engineering`
+  - Running 'uv run pytest shared/tests integration-tests -m "not slow and not cross_plugin"' as a SINGLE invocation fails…
+  - Promote: `triage_promote.py --id trg-efca9de7 --task-ref EXT:<ref>`
 
 ### Source: req3-campaign (3 items)
 
@@ -92,7 +121,7 @@
   - Evidence: `.shipwright/planning/iterate/2026-07-27-project-granularity-basis.md`
   - Promote: `triage_promote.py --id trg-1d7d91d0 --task-ref EXT:<ref>`
 
-### Source: req3-phase2-walk (10 items)
+### Source: req3-phase2-walk (9 items)
 
 <a id="trg-6690d175"></a>
 - **CRITICAL - release-note writer destroys an existing history file it does not recognise** `id=trg-6690d175 | severity=critical | kind=bug → P0/engineering`
@@ -147,10 +176,4 @@
   - Phase 4, interaktiv, Follow-up nach der Kampagne. OWNS: die Elicitation-Oberflaeche von PROJECT, das geteilte Grill-Mod…
   - Evidence: `.shipwright/planning/campaigns/2026-07-23-req3-ac-evidence-ledger-mono.md`
   - Promote: `triage_promote.py --id trg-e9fa7c49 --task-ref EXT:<ref>`
-
-<a id="trg-a1fd8125"></a>
-- **compliance: disclose when the cross-check last ran (supersedes trg-bee08d80, stamping moved out)** `id=trg-a1fd8125 | severity=medium | kind=improvement → P2/engineering`
-  - OWNS: the compliance dashboard and report renderers. Does NOT own artifact stamping — that moved to its own card so it…
-  - Evidence: `.shipwright/planning/campaigns/2026-07-23-req3-ac-evidence-ledger-mono.md`
-  - Promote: `triage_promote.py --id trg-a1fd8125 --task-ref EXT:<ref>`
 

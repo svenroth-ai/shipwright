@@ -25,7 +25,7 @@
     {
       "path": "plugins/shipwright-adopt/scripts/lib/artifact_writer.py",
       "limit": 300,
-      "current": 690,
+      "current": 590,
       "state": "grandfathered",
       "adr": null
     },

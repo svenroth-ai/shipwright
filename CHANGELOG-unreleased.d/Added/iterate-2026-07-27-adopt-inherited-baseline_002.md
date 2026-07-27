@@ -1,0 +1,1 @@
+/shipwright-adopt leaves a tracked follow-up asking you to work through the derived requirements with a person, following the shared questioning method — and one follow-up per inherited coverage gap, so a brownfield gap becomes visible work instead of a blocked run.

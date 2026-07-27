@@ -1,7 +1,10 @@
 """The one reader for ``shipwright_known_failures.json``.
 
-The file is a hand-maintained declaration: *these failures predate onboarding
-and are accepted, do not count them as new regressions.*
+The file is a declaration: *these failures predate onboarding and are accepted,
+do not count them as new regressions.* ``/shipwright-adopt`` **seeds** it at
+onboarding (Step E.18) so a brownfield repo starts with one instead of a
+missing file that reads as "nothing was inherited"; it is hand-maintained from
+there.
 
 It used to be read by exactly one component — the compliance audit — so an
 onboarded project got its inherited failures excused by the audit and reported

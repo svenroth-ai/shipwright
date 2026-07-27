@@ -223,7 +223,7 @@ def test_write_spec_has_fr_ids(tmp_path: Path) -> None:
         {"fr_id": "FR-01.01", "label": "Dashboard", "description": "User views active projects", "source_file": "src/app/dashboard/page.tsx"},
         {"fr_id": "FR-01.02", "label": "Login", "description": "User logs in", "source_file": "src/app/login/page.tsx"},
     ]
-    path = write_spec(
+    spec, _summary = write_spec(  # [spec.md, derived-catalogue.json]
         tmp_path,
         project_name="Demo", split_name="01-adopted",
         product_description="Demo app.",
@@ -231,7 +231,7 @@ def test_write_spec_has_fr_ids(tmp_path: Path) -> None:
         qr_items=["CI pipeline must pass"],
         constraints=["Node 22.x"],
     )
-    content = path.read_text(encoding="utf-8")
+    content = spec.read_text(encoding="utf-8")
     assert "FR-01.01" in content
     assert "FR-01.02" in content
     assert re.search(r"\bFR-\d+\.\d+\b", content)
