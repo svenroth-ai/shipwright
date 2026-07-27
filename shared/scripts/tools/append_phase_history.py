@@ -53,7 +53,7 @@ _SCRIPTS_ROOT = Path(__file__).resolve().parent.parent
 if str(_SCRIPTS_ROOT) not in sys.path:
     sys.path.insert(0, str(_SCRIPTS_ROOT))
 
-from lib.atomic_write import durable_atomic_write  # noqa: E402
+from lib.atomic_write import durable_atomic_write, durable_read_text  # noqa: E402
 from lib.file_lock import LockTimeout, file_lock  # noqa: E402
 
 
@@ -81,7 +81,9 @@ def append_history(
         )
 
     try:
-        data = json.loads(path.read_text(encoding="utf-8"))
+        # durable_read_text: a concurrent writer's os.replace can leave the
+        # entry delete-pending, so a plain open() fails on Windows.
+        data = json.loads(durable_read_text(path))
     except json.JSONDecodeError as exc:
         raise ValueError(f"malformed {RUN_CONFIG_NAME}: {exc}") from exc
 
