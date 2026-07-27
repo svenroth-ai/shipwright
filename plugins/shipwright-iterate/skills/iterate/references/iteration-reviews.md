@@ -174,22 +174,63 @@ roles are not cascaded to external LLM providers.
 
 ## External Code-Review Cascade (medium+, default on)
 
-After the in-process `code-reviewer` subagent finishes (when it fired —
-see "When to Spawn" above), cascade an external LLM review of the same
-diff against the iterate spec. This is a second-opinion gate that mirrors
-the existing mini-plan-review Branch A/B/C interactive opt-out flow.
+Cascade an external LLM review of the diff against the iterate spec. This is a
+second-opinion gate that mirrors the existing mini-plan-review Branch A/B/C
+interactive opt-out flow.
 
 ### Trigger Rule
 
-Cascade fires **iff the internal `code-reviewer` subagent fired in this
-run** — same gate as the trigger above. No new threshold:
+The cascade fires on **its own** conditions — the same thresholds as the
+internal reviewer, evaluated independently:
 
 - Diff > 100 lines, OR
 - security-sensitive files touched, OR
 - complexity = medium+
 
-For trivial/small iterates the cascade does NOT run, even if API keys are
-present. Self-review is the only review for those.
+A trivial/small iterate that meets **none** of the three — no risk flag, no
+security-sensitive file, diff under 100 lines — does NOT run the cascade, even
+if API keys are present. Self-review is the only review for those.
+
+Note that this is an exemption for *quiet* small runs, not for small runs as
+such: a small iterate that touches auth or ships a 200-line diff satisfies a
+threshold above and the cascade **does** fire. That mirrors the internal
+reviewer's own rule ("When Self-Review is Sufficient" — small **and** no risk
+flags **and** under 100 lines), which is what makes the two routes genuinely
+symmetric rather than merely both present.
+
+**It is NOT conditional on the internal `code-reviewer` having fired.** It used
+to be — the rule read *"fires iff the internal subagent fired in this run"* —
+and that wired the two reviews in series behind a single point of failure: if
+the internal pass could not run for any reason (tool unavailable, session
+policy, a crash, or simply not being invoked), the external pass was excused
+along with it and a medium+ iterate could finish with **no code review at all**.
+
+That was not theoretical bookkeeping. Of the 27 review records in this repo when
+the rule was changed, **15 recorded `code = not_run` and ran the external review
+anyway** — every agent overrode the rule, because following it would obviously
+have been wrong. A rule that is universally routed around is evidence about the
+rule. The two reviews are now independent routes to the same guarantee.
+
+### When the internal reviewer cannot run — escalate, never lapse
+
+If the internal cascade cannot be run in this session, the responsibility moves
+**outward**, it does not disappear:
+
+1. the external review becomes **mandatory** and carries the pass — record it
+   `--review-type external_code --status completed`;
+2. record `code` as `not_run` with a disposition naming *why* the internal pass
+   could not run. Do **not** record it `completed` "by substitution": that
+   claims the pass the contract describes ran, and it did not;
+3. in campaign mode the same escalation is what ADR-029 already specifies —
+   the runner has no `Agent` tool, so the cascade is delegated to the
+   orchestrator. This section is its standalone-mode counterpart, which was
+   missing.
+
+**This is enforced, not merely instructed.** At medium+ the F11 verifier
+`check_review_record` fails the run unless at least one of `code` /
+`external_code` is `completed`. `not_applicable` on both does not satisfy it —
+otherwise the gate would be passable by re-labelling. See
+`shared/scripts/tools/verifiers/review_record_check.py`.
 
 For build (per-section opt-in, default off) see
 `{build_plugin_root}/skills/build/SKILL.md` Step 6c.

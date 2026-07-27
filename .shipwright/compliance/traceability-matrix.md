@@ -1,7 +1,7 @@
 # Requirements Traceability Matrix
 
-Generated: 2026-07-27T17:38:43.791837+00:00
-Source-State: run=iterate-2026-07-27-run-unit-parallel-race
+Generated: 2026-07-27T19:47:47.363461+00:00
+Source-State: run=iterate-2026-07-27-review-floor-not-chained
 Consistency-audit: never run
 
 ## Requirements Coverage
@@ -33,6 +33,7 @@ Consistency-audit: never run
 
 | Event | Source | Type | FRs | Tests | Commit | Date |
 |-------|--------|------|-----|-------|--------|------|
+| <a id="evt-53ba0065"></a>the code review becomes a floor, not a chain | iterate | change |  | — | — | 2026-07-27 |
 | <a id="evt-92094b2e"></a>bounded sharing-violation retry on both sides of the atomic-write boundary | iterate | change | [FR-01.01](#rtm-fr-0101), [FR-01.09](#rtm-fr-0109) | — | — | 2026-07-27 |
 | <a id="evt-aea234e3"></a>refuse a multi-root pytest session instead of failing 21 unrelated tests | iterate | change |  | — | — | 2026-07-27 |
 | <a id="evt-36d0f887"></a>raise the PR-review diff cap, cut at a file boundary, name what went unreviewed | iterate | change | [FR-01.17](#rtm-fr-0117) | — | — | 2026-07-27 |
@@ -422,7 +423,7 @@ Consistency-audit: never run
 |--------|-------|
 | Total splits built | 0 |
 | Build sections | 0 |
-| Iterate changes | 382 |
+| Iterate changes | 383 |
 | Requirements total | 18 |
 | Requirements verified | 17/18 |
 | Must-have verified | 14/14 |
