@@ -71,6 +71,7 @@ from .integration_coverage import (  # noqa: E402, F401 — re-exported surface
     _is_cross_component,
     check_integration_coverage,
 )
+from .derived_snapshot_gate import check_no_derived_snapshots_committed  # noqa: E402, F401
 # The two enforcing traceability F11 gates (TT5) + the extracted migration check,
 # re-exported from their historical home (`iterate_checks`).
 from ._migration_check import check_migration_quarantine_empty  # noqa: E402, F401
@@ -398,9 +399,23 @@ def check_build_dashboard_has_run_id(
                 name, True,
                 f"commit={short_sha} present (run_id={run_id} not embedded)",
             )
+    # Since iterate-2026-07-27-derived-snapshots-off-branch the dashboard is a
+    # DERIVED view that an iterate no longer commits: when the branch is behind,
+    # `integrate` restores it to mainline before merging, so mainline's marker is
+    # the expected content. The run's landing signal moved to the F5c per-run entry
+    # — a collision-free path that DOES ship — so treat "dashboard lacks the marker
+    # but the entry has it" as skipped, not as a finding. Verified end-to-end: with
+    # a behind branch this check otherwise warns on every single iterate, and a
+    # by-design warning is how a gate teaches people to stop reading warnings.
+    if any(e.get("run_id") == run_id for e in read_iterate_entries(project_root)):
+        return CheckResult(
+            name, None,
+            f"dashboard is mainline-derived; run_id={run_id} evidenced by the F5c entry",
+            severity=Severity.SKIPPED.value,
+        )
     return CheckResult(
         name, False,
-        f"run_id={run_id} not found in build_dashboard.md",
+        f"run_id={run_id} in neither build_dashboard.md nor the F5c entry store",
         severity=Severity.WARNING.value,
     )
 
@@ -629,24 +644,28 @@ def check_test_completeness_ledger(project_root: Path, run_id: str) -> CheckResu
             severity=Severity.SKIPPED.value,
         )
 
-    results_path = project_root / "shipwright_test_results.json"
-    if not results_path.exists():
-        return CheckResult(
-            name, False,
-            "shipwright_test_results.json missing — F5 did not write the "
-            "test_completeness ledger",
-        )
-    try:
-        results = json.loads(results_path.read_text(encoding="utf-8"))
-    except (json.JSONDecodeError, OSError, UnicodeDecodeError) as exc:
-        return CheckResult(name, False, f"shipwright_test_results.json malformed: {exc}")
-    if not isinstance(results, dict):
-        return CheckResult(
-            name, False, "shipwright_test_results.json is not a JSON object",
-        )
-
-    iterate_latest = results.get("iterate_latest", {})
-    block = iterate_latest.get("test_completeness") if isinstance(iterate_latest, dict) else None
+    # Prefer the PER-RUN entry: `restore_derived_to_head` resets the shared results
+    # file before this check runs on a behind branch, wiping this run's ledger and
+    # failing a run that did everything right. Shared file = legacy fallback.
+    block = entry.get("test_completeness")
+    if not isinstance(block, dict):
+        results_path = project_root / "shipwright_test_results.json"
+        if not results_path.exists():
+            return CheckResult(
+                name, False,
+                "no test_completeness in the F5c entry and no "
+                "shipwright_test_results.json — F5 did not write the ledger",
+            )
+        try:
+            results = json.loads(results_path.read_text(encoding="utf-8"))
+        except (json.JSONDecodeError, OSError, UnicodeDecodeError) as exc:
+            return CheckResult(name, False, f"shipwright_test_results.json malformed: {exc}")
+        if not isinstance(results, dict):
+            return CheckResult(
+                name, False, "shipwright_test_results.json is not a JSON object",
+            )
+        iterate_latest = results.get("iterate_latest", {})
+        block = iterate_latest.get("test_completeness") if isinstance(iterate_latest, dict) else None
     if not isinstance(block, dict):
         return CheckResult(
             name, False,
@@ -1035,6 +1054,7 @@ def run_all_checks(
         check_cross_layer_coverage(project_root, run_id, commit_hash),
         check_agent_doc_budget(project_root, run_id, commit_hash),
         check_agent_doc_shape(project_root, run_id, commit_hash),
+        check_no_derived_snapshots_committed(project_root, run_id, commit_hash),
     ]
 
 
