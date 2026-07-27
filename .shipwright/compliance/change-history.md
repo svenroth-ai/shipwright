@@ -3,18 +3,18 @@
 Generated: 2026-07-27T09:08:42.773123+00:00
 Source-State: run=iterate-2026-07-27-artifact-state-stamping
 Consistency-audit: never run
-Total commits: 1218
+Total commits: 1220
 
 ## Commit Distribution
 
 ```mermaid
 pie title Commit Types
-    "fix" : 349
+    "fix" : 350
     "feat" : 337
     "chore" : 259
     "docs" : 147
     "refactor" : 75
-    "test" : 30
+    "test" : 31
     "ci" : 11
     "other" : 9
     "build" : 1
@@ -22,10 +22,11 @@ pie title Commit Types
 
 ## Changes by Type
 
-### Fixes (fix) — 349 commits
+### Fixes (fix) — 350 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-07-27 | compliance | compose the audit disclosure onto the shared provenance block | fc1a21671a32 |
 | 2026-07-27 | run | an override overrides the verdict, never the check (#438) | f6179f6e1ed5 |
 | 2026-07-27 | ci | the PR review gate stops being bypassable (#437) | ec0c7055046f |
 | 2026-07-23 | deps | bump pyasn1 0.6.3 -> 0.6.4 (CVE-2026-59885, CVE-2026-59886) (#432) | 9ffbae764acd |
@@ -1214,10 +1215,11 @@ pie title Commit Types
 | 2026-03-30 | env | consolidate plugin env vars into single .env.local | 4a9267b522fb |
 | 2026-03-28 | — | unify decision log to shared ADR format across all phases | 2851babbbcfa |
 
-### Tests (test) — 30 commits
+### Tests (test) — 31 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-07-27 | shared | split the source-state suite along its three seams (#449) | ecade7e6225e |
 | 2026-07-22 | traceability | normalize an inline dynamic import to clear a benign prompt-scan finding (#426) | 4a0b6d025cb7 |
 | 2026-07-19 | requirements | golden corpus freezing discovery + parser behaviour, bugs included (#403) | 76d97ec06fe6 |
 | 2026-07-08 | run | single-session E2E integration + cross-surface capstone (SS7) (#352) | aa385b3dcd02 |
@@ -1289,7 +1291,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 1218 |
+| Total commits | 1220 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 1218 |
+| Human-authored commits | 1220 |
 
