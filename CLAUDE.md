@@ -141,6 +141,47 @@ cd plugins/shipwright-build && uv run pytest tests/ -v
 uv run pytest integration-tests/ -v
 ```
 
+**One test root per pytest process — this is a hard rule, not a preference.**
+The repo has several test roots (`integration-tests`, `shared/tests`,
+`shared/scripts/tests`, `shared/scripts/tools/tests`, and each
+`plugins/*/tests`), and each needs the top-level names `scripts` / `lib` /
+`tools` to resolve to a *different* directory. Those directories are regular
+packages, so Python caches whichever is imported first and never re-resolves
+it — the second root in a shared process silently gets the first root's
+modules. No `sys.path` ordering fixes this (ADR-044, the `cross_plugin`
+marker).
+
+Combining roots used to fail 21 tests deep inside
+`integration-tests/test_shared_contracts_*` with
+`ModuleNotFoundError: No module named 'scripts.lib.data_collector'`, naming
+files the change under test never touched. The root `conftest.py` now
+refuses such a session up front instead
+(iterate-2026-07-27-pytest-root-composition).
+
+Two cases the root guard does not cover, by construction: a session rooted
+in a plugin directory (`cd plugins/<name> && pytest …`) never loads the repo
+root `conftest.py` at all — the capture check in
+`shared/contracts/compliance.py` is the net there; and `shared/tests` +
+`shared/scripts/tests` collide while pytest imports their conftests (both
+are `tests.conftest`), so that pair fails earlier with pytest's own
+`ImportPathMismatchError`. Both are loud; neither is the silent
+wrong-modules failure the guard exists to prevent.
+
+```bash
+# WRONG — refused with exit 4
+uv run pytest shared/tests integration-tests
+
+# RIGHT — one process per root; for junit evidence keep one file per root
+uv run pytest shared/tests      --junitxml=.shipwright/runs/<run_id>/junit-shared.xml
+uv run pytest integration-tests --junitxml=.shipwright/runs/<run_id>/junit-integration.xml
+```
+
+One pytest process cannot emit a junit.xml spanning roots. If a single
+evidence artifact is wanted, merge the per-root files afterwards — the same
+shape as `shared/scripts/tools/combine_coverage.py`, which already folds
+per-root coverage data into one `coverage.xml`. No junit merger exists yet;
+it was left out of scope here rather than declared impossible.
+
 ## Context
 - **Guide**: docs/guide.md (primary user-facing documentation)
 - **Hooks & Pipeline**: docs/hooks-and-pipeline.md (context loading, hooks registry, between-phase actions)
