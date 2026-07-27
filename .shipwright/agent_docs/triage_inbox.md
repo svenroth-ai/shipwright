@@ -1,14 +1,14 @@
 # Triage Inbox
 
-> Auto-generated 2026-07-27T08:23:12.722139Z. Items waiting for triage decision.
+> Auto-generated 2026-07-27T09:08:48.846142Z. Items waiting for triage decision.
 > Promote via WebUI Triage tab (when v1b lands) or `shared/scripts/tools/triage_promote.py --id <id> --task-ref EXT:<ref>`.
 
 ## Status summary
 
-- Total: 416
-- Triage: 25 | Promoted: 1 | Dismissed: 389 | Snoozed: 1
+- Total: 415
+- Triage: 24 | Promoted: 1 | Dismissed: 389 | Snoozed: 1
 
-## Top 25 items (severity-sorted)
+## Top 24 items (severity-sorted)
 
 ### Source: analysis (1 item)
 
@@ -19,18 +19,18 @@
 
 ### Source: compliance (1 item)
 
-<a id="trg-554786d0"></a>
-- **Compliance: 4 open finding(s)** `id=trg-554786d0 | severity=high | kind=compliance → P1/compliance`
-  - 4 open compliance finding(s): D/D1, D/D3, H/H1, H/H2  - D/D1: Spec FR coverage in events — uncovered FRs — Must: FR-01.…
+<a id="trg-62316d55"></a>
+- **Compliance: 3 open finding(s)** `id=trg-62316d55 | severity=high | kind=compliance → P1/compliance`
+  - 3 open compliance finding(s): D/D1, D/D3, H/H1  - D/D1: Spec FR coverage in events — uncovered FRs — Must: FR-01.17; Sh…
   - Launch payload (copy into a new Claude session):
     ```text
     /shipwright-compliance
     
-    Context: 4 open compliance finding(s): D/D1, D/D3, H/H1, H/H2.
+    Context: 3 open compliance finding(s): D/D1, D/D3, H/H1.
     Dashboard: .shipwright/compliance/dashboard.md
     Each finding + hint is listed in this item's detail.
     ```
-  - Promote: `triage_promote.py --id trg-554786d0 --task-ref EXT:<ref>`
+  - Promote: `triage_promote.py --id trg-62316d55 --task-ref EXT:<ref>`
 
 ### Source: github (1 item)
 
@@ -87,7 +87,7 @@
   - Evidence: `.shipwright/planning/iterate/2026-07-27-project-granularity-basis.md`
   - Promote: `triage_promote.py --id trg-1d7d91d0 --task-ref EXT:<ref>`
 
-### Source: req3-phase2-walk (16 items)
+### Source: req3-phase2-walk (15 items)
 
 <a id="trg-74b945bc"></a>
 - **CRITICAL - going back to a previous version does not use the version you ask for, and reports success** `id=trg-74b945bc | severity=critical | kind=bug → P0/engineering`
@@ -166,12 +166,6 @@
   - Phase 4, interaktiv, Follow-up nach der Kampagne. OWNS: die Elicitation-Oberflaeche von PROJECT, das geteilte Grill-Mod…
   - Evidence: `.shipwright/planning/campaigns/2026-07-23-req3-ac-evidence-ledger-mono.md`
   - Promote: `triage_promote.py --id trg-e9fa7c49 --task-ref EXT:<ref>`
-
-<a id="trg-813d2305"></a>
-- **triage inbox: the terminal cannot defer, and a failing check's own text is uncapped** `id=trg-813d2305 | severity=medium | kind=improvement → P2/engineering`
-  - OWNS: the triage command-line surface and the code-host action-unit mappers (shared/scripts/tools/triage_cli.py, triage…
-  - Evidence: `.shipwright/planning/campaigns/2026-07-23-req3-ac-evidence-ledger-mono.md`
-  - Promote: `triage_promote.py --id trg-813d2305 --task-ref EXT:<ref>`
 
 <a id="trg-a1fd8125"></a>
 - **compliance: disclose when the cross-check last ran (supersedes trg-bee08d80, stamping moved out)** `id=trg-a1fd8125 | severity=medium | kind=improvement → P2/engineering`

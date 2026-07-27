@@ -1,39 +1,39 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-07-27-rollback-uses-target-ref"
+run_id: "iterate-2026-07-27-artifact-state-stamping"
 phase: "iterate"
-reason: "F11 re-refresh: origin/main moved again"
-timestamp: "2026-07-27T08:30:58.021874+00:00"
+reason: "ensure-current pre-merge refresh"
+timestamp: "2026-07-27T09:08:48.846142+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-07-27 08:30:58 UTC
+> Auto-generated 2026-07-27 09:08:48 UTC
 
 ## Session Info
 
-- **Session ID**: 13f13377-3431-4445-b501-bc754d78d6d3
-- **Timestamp**: 2026-07-27 08:30:58 UTC
-- **Reason**: F11 re-refresh: origin/main moved again
+- **Session ID**: 821e1007-5fc9-403d-9122-21e7ce9dc8e5
+- **Timestamp**: 2026-07-27 09:08:48 UTC
+- **Reason**: ensure-current pre-merge refresh
 
 ## Last Iterate
 
-- **Run ID**: iterate-2026-07-27-triage-defer-ci-cap
-- **Date**: 2026-07-27T08:30:49.435429Z
+- **Run ID**: iterate-2026-07-27-artifact-state-stamping
+- **Date**: 2026-07-27T09:08:42.675204Z
 - **Type**: feature
 - **Complexity**: medium
-- **Branch**: iterate/triage-defer-ci-cap
-- **ADR**: iterate-2026-07-27-triage-defer-ci-cap
+- **Branch**: iterate/artifact-state-stamping
+- **ADR**: iterate-2026-07-27-artifact-state-stamping
 - **Tests passed**: True
-- **Spec**: .shipwright/planning/iterate/2026-07-27-triage-defer-ci-cap.md
+- **Spec**: .shipwright/planning/iterate/2026-07-27-artifact-state-stamping.md
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/rollback-uses-target-ref
-- **Run ID**: iterate-2026-07-27-rollback-uses-target-ref
-- **Spec**: .shipwright/planning/iterate/iterate-2026-07-27-rollback-uses-target-ref.md
+- **Branch**: iterate/artifact-state-stamping
+- **Run ID**: iterate-2026-07-27-artifact-state-stamping
+- **Spec**: .shipwright/planning/iterate/2026-07-27-artifact-state-stamping.md
 - **Complexity**: medium
-- **External Review Marker**: stale (predates spec (2026-07-27T07:16:58))
+- **External Review Marker**: stale (predates spec (2026-07-27T07:17:44))
 
 ### Mandatory replay on Resume
 
@@ -52,8 +52,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/rollback-uses-target-ref
-- **Last Commit**: f2acdc53 Merge remote-tracking branch 'origin/main' into iterate/rollback-uses-target-ref
+- **Branch**: iterate/artifact-state-stamping
+- **Last Commit**: 83bec3aa Merge remote-tracking branch 'origin/main' into iterate/artifact-state-stamping
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
