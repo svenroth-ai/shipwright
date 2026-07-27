@@ -1,0 +1,257 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-07-27-name-the-blocker",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-07-27T12:36:59.508980+00:00",
+      "disposition": null,
+      "recorded_by": "orchestrator",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 17,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "Edge Case",
+          "file": null,
+          "line": null,
+          "finding": "Digesting only lines that begin with bullet markers (`- (E)`, `- [ ]`, etc.) will silently miss modifications to multi-line acceptance criteria, nested sub-lists, and alternate list markers (like ``). If an author changes a crucial detail on line 2 of an existing bullet, the digest will not change, resulting in a false \"could-not-determine\" or a bypassed gate.",
+          "suggestion": "Instead of strict line-prefix matching, extract the full text block triggered by the bullet marker until the next blank line or non-indented block. Alternatively, use a lightweight Markdown AST (if a dependency already exists in the boundary) to extract the actual list items, preserving their full multi-line text.  ### 2. GraphQL Pagination for Review Threads",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "Edge Case",
+          "file": null,
+          "line": null,
+          "finding": "The `gh api graphql` query for `reviewThreads` will require a `first: N` pagination argument. On heavily reviewed PRs, older unresolved threads can fall off the first page of results. If the fetch doesn't paginate, the watcher will incorrectly assume 0 unresolved threads and report a false \"unknown blockers\".",
+          "suggestion": "Ensure the GraphQL query includes `hasNextPage` and loops, or set a high upper bound (e.g., `first: 100`) and explicitly map a truncated response (`pageInfo.hasNextPage == true`) to an `{\"unknown\": true, \"reason\": \"too_many_threads\"}` verdict rather than silently ignoring hidden unresolved threads.  ### 3. Git Command Error Handling for New/Deleted Files",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "Approach / Risk",
+          "file": null,
+          "line": null,
+          "finding": "The plan states `spec_texts_at` will yield `\"\"` if a path is absent on that side (e.g., a newly created spec file). However, `git show <sha>:<path>` exits with code 128 (`fatal: path ... exists on disk, but not in ...`) when targeting a file that doesn't exist in that specific commit.",
+          "suggestion": "Ensure the `subprocess.run` call uses `check=False` and catches/suppresses Git's `stderr`. Explicitly translate the exit code 128 to the `\"\"` string so the wrapper doesn't crash the entire finalization gate.  ### 4. Branch Ruleset API Permissions",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "Missing Dependency",
+          "file": null,
+          "line": null,
+          "finding": "TheREST endpoint `GET /repos/.../rules/branches/<b>` sometimes requires elevated permissions depending on the organization's ruleset configuration. The standard CI `GITHUB_TOKEN` might lack the required scope to read branch rules.",
+          "suggestion": "Wrap the ruleset API call in a `try/catch` specifically looking for `403 Forbidden` / `404 Not Found`. If the token lacks permission, degrade gracefully to `{\"unknown\": true, \"reason\": \"insufficient_permissions\"}` rather than crashing the watcher.  ### 5. `git show` Subprocess Injection",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "Security",
+          "file": null,
+          "line": null,
+          "finding": "dynamically constructing `git show <sha>:<path>` can be vulnerable to argument injection if `path` or `sha` contains unexpected characters. While `spec_path` is sourced from a frozen schema, handling git paths via subprocess requires strict hygiene.",
+          "suggestion": "Execute the command explicitly as a list of strings (`[\"git\", \"show\", f\"{sha}:{path}\"]`) with `shell=False`. Ensure no user input can prepend flags (like `--`) to the SHA or path variables.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The review-thread GraphQL probe must handle pagination. A PR with more than the first page of review threads could have an unresolved thread outside the returned `nodes`, causing the watcher to report no thread blocker when one exists.",
+          "suggestion": "Query `reviewThreads(first: N)` with `pageInfo { hasNextPage endCursor }` and paginate to completion, or explicitly return `blockers.unknown` if a complete thread set cannot be obtained. Add a fixture with an unresolved thread on a later page.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "Required-check discovery through `GET /repos/{owner}/{repo}/rules/branches/{branch}` needs a defined compatibility and authorization policy. Branches can contain `/` and must be URL-encoded; repositories may use classic branch protection, rulesets, both, or neither; and API availability/permissions can differ for fork PRs or token types. A successful probe on PR #439 does not establish this contract across watcher users.",
+          "suggestion": "URL-encode the branch path segment and treat 401/403/404, unsupported rule shapes, and unavailable required-check data as an explicit unknown blocker source—not as “there are no missing required checks.” Add fixtures for no rules, rules without required-status-check rules, inaccessible rules, and slash-containing branch names. Confirm whether existing configuration already identifies required contexts before adding a second source of truth.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "An unresolved review thread is useful diagnostic information, but it is not universally a merge blocker: GitHub only enforces conversation resolution when the repository/ruleset requires it. Labeling every unresolved thread under `blocked_by` can overstate the cause in repositories where threads are advisory.",
+          "suggestion": "Report it as `unresolved_review_threads` and reserve a stronger “blocking” assertion for cases corroborated by `mergeStateStatus == BLOCKED` or by a rule explicitly requiring conversation resolution. Preserve enough detail for operators to see the distinction.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The final probe combines data with different consistency points: the saved PR rollup may be from an earlier poll, while review threads and branch rules are fetched at timeout. A newly reported check or just-resolved thread can produce stale or contradictory detail.",
+          "suggestion": "Make the blocker payload explicitly diagnostic/snapshot-based, including the observed `mergeStateStatus` and probe timestamp. If practical, refresh the PR view once at final probing time; otherwise avoid claims that require a fully consistent snapshot and use `unknown` when sources materially disagree.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "“Skip when no `run_id` was supplied” weakens the existing handoff check on any invocation path that has not yet been wired to pass a run ID. The former mtime-based check ran regardless of that parameter, so this could silently turn warnings into skips.",
+          "suggestion": "Inventory every `iterate_checks`/F11 invocation and pass the authoritative current run ID through each finalization path before deleting the mtime logic. If a run ID is genuinely unavailable in a supported path, emit a visible “cannot evaluate: no run ID” advisory rather than a silent skip, unless that path is explicitly outside finalization semantics.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "Accepting a handoff when “the body does” name the current run is underspecified and can create false passes. A stale handoff may mention the current run in prose, a list of prior runs, or a copied command while its canonical frontmatter identifies a different run.",
+          "suggestion": "Define one exact canonical body marker/field if body fallback is required, and require an exact parsed value rather than substring matching. If frontmatter and the body marker disagree, fail with a named mismatch. Test whitespace, multiple run IDs, and a stale frontmatter value with an incidental current-run mention.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "Moving `parse_canon_frontmatter()` from a hook into `shared/scripts/lib` changes runtime import assumptions. Hooks are commonly launched directly from arbitrary working directories and may not have the repository’s Python module path configured, even if verifier tests do.",
+          "suggestion": "Verify the stop hook’s actual launcher establishes `sys.path`/package imports correctly, and add an integration test that invokes the hook through its production entry point from a non-repository current directory. Keep parser behavior byte-for-byte compatible, including malformed frontmatter handling and duplicate keys.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "The acceptance-criteria digest parser is too narrowly specified for a gate that can become HARD in post-rollout repositories. Splitting only on exact `### FR-XX.YY` headings and recognizing only single-line `- (E)`, `- [ ]`, and `- [x]` bullets risks missing valid existing authoring forms—multiline bullets, nested text, criterion sections with different heading levels, numbered lists, or FR IDs outside that exact shape. A missed criterion edit would incorrectly avoid required-layer validation.",
+          "suggestion": "Reuse an existing specification/FR parser if one exists; otherwise define and test the grammar against the repository’s actual `spec.md` conventions and `shared/fr-authoring.md`. Digest complete criterion list items including continuation lines, distinguish the acceptance-criteria subsection from unrelated bullets, and add corpus fixtures for all supported forms.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "commit_exists()` alone does not safely distinguish “path absent” from failure to read the historical file. `git show <sha>:<path>` can fail because of a shallow/missing base object, repository errors, malformed paths, or command failures—not only because a new spec file is absent. Treating all such failures as `\"\"` could falsely conclude no AC changed and suppress a coverage warning.",
+          "suggestion": "Distinguish a verified absent path from git execution/object-read failures. For unavailable base/head content, retain `could_not_determine` with an infrastructure reason rather than returning an empty document. Add tests for shallow-history/missing-base behavior, an absent path on one side, and a failed git invocation.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "AC-change detection needs to account for paths and requirement IDs from both the base and head manifests. Reading only current `spec_path` values misses renamed/moved spec files, deleted requirements, or a requirement whose source path changed as part of the same change.",
+          "suggestion": "Build the comparison input from the union of base and head requirement identities and `spec_path`s, then classify additions, removals, and path changes explicitly. Preserve the current conservative `could_not_determine` result where identity mapping cannot be established.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "“Two provider `finish_reason` readers” does not clearly cover the three stated provider surfaces. OpenAI/OpenRouter commonly expose `choices[].finish_reason`; Gemini commonly exposes `candidates[].finishReason`; responses can also have multiple candidates, missing reasons, or streaming-specific terminal metadata. Checking the wrong candidate or only one shape can still mark an empty/truncated delivered reply as success.",
+          "suggestion": "Make the classifier operate on the actual selected response content and its corresponding terminal reason for each adapter. Add fixtures for OpenAI, OpenRouter, and Gemini success, blank output, `length`, `MAX_TOKENS`, absent finish reason, and multiple candidates. Missing finish reason should remain neutral unless the provider contract says otherwise.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "security",
+          "file": null,
+          "line": null,
+          "finding": "This change consumes additional untrusted external strings—GitHub API fields, git-derived paths, and provider response metadata—and plans to surface failure reasons in watcher/review output. Careless command construction or unbounded/raw error reporting could permit misleading log output, option/path interpretation, or leakage of provider response content.",
+          "suggestion": "Use argument-array subprocess calls only (never shell interpolation), pass GraphQL values as variables, validate `spec_path` as a repository-relative path, and use `--` where applicable. Bound and sanitize externally sourced error/reason text before including it in JSON/log output; report provider truncation as a normalized reason rather than echoing model content.  Overall, the core direction is sound: it preserves terminal watcher semantics, avoids unnecessary schema churn, and replaces unreliable signals with evidence already available at the relevant boundary. The main work needed before implementation is to make the new external/history reads conservative under incomplete data and to make the AC parser robust enough for a potentially HARD gate.",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-07-27T11:55:00.326211+00:00",
+      "disposition": null,
+      "recorded_by": "orchestrator",
+      "parse_status": "structured",
+      "raw_excerpt": "[gemini] Here is the review of the implementation approach. \n\n### 1. Markdown Parsing for Acceptance Criteria\n- **Category:** Edge Case\n- **Severity:** High\n- **Finding:** Digesting *only* lines that begin with bullet markers (`- (E)`, `- [ ]`, etc.) will silently miss modifications to multi-line acceptance criteria, nested sub-lists, and alternate list markers (like `*`). If an author changes a crucial detail on line 2 of an existing bullet, the digest will not change, resulting in a false \"could-not-determine\" or a bypassed gate. \n- **Suggestion:** Instead of strict line-prefix matching, extract the full text block triggered by the bullet marker until the next blank line or non-indented block. Alternatively, use a lightweight Markdown AST (if a dependency already exists in the boundary) to extract the actual list items, preserving their full multi-line text.\n\n### 2. GraphQL Pagination for Review Threads\n- **Category:** Edge Case\n- **Severity:** Medium\n- **Finding:** The `gh api graphql` query for `reviewThreads` will require a `first: N` pagination argument. On heavily reviewed PRs, older unresolved threads can fall off the first page of results. If the fetch doesn't paginate, the watcher will incorrectly assume 0 unresolved threads and report a false \"unknown blockers\".\n- **Suggestion:** Ensure the GraphQL query includes `hasNextPage` and loops, or set a high upper bound (e.g., `first: 100`) and explicitly map a truncated response (`pageInfo.hasNextPage == true`) to an `{\"unknown\": true, \"reason\": \"too_many_threads\"}` verdict rather than silently ignoring hidden unresolved threads.\n\n### 3. Git Command Error Handling for New/Deleted Files\n- **Category:** Approach / Risk\n- **Severity:** Medium\n- **Finding:** The plan states `spec_texts_at` will yield `\"\"` if a path is absent on that side (e.g., a newly created spec file). However, `git show <sha>:<path>` exits with code 128 (`fatal: path ... exists on disk, but not in ...`) when targeting a file that doesn't ex […truncated]\n\n[openai] 1. **Category:** edge-case  \n   **Severity:** high  \n   **Finding:** The review-thread GraphQL probe must handle pagination. A PR with more than the first page of review threads could have an unresolved thread outside the returned `nodes`, causing the watcher to report no thread blocker when one exists.  \n   **Suggestion:** Query `reviewThreads(first: N)` with `pageInfo { hasNextPage endCursor }` and paginate to completion, or explicitly return `blockers.unknown` if a complete thread set cannot be obtained. Add a fixture with an unresolved thread on a later page.\n\n2. **Category:** dependency  \n   **Severity:** medium  \n   **Finding:** Required-check discovery through `GET /repos/{owner}/{repo}/rules/branches/{branch}` needs a defined compatibility and authorization policy. Branches can contain `/` and must be URL-encoded; repositories may use classic branch protection, rulesets, both, or neither; and API availability/permissions can differ for fork PRs or token types. A successful probe on PR #439 does not establish this contract across watcher users.  \n   **Suggestion:** URL-encode the branch path segment and treat 401/403/404, unsupported rule shapes, and unavailable required-check data as an explicit unknown blocker source—not as “there are no missing required checks.” Add fixtures for no rules, rules without required-status-check rules, inaccessible rules, and slash-containing branch names. Confirm whether existing configuration already identifies required contexts before adding a second source of truth.\n\n3. **Category:** approach  \n   **Severity:** medium  \n   **Finding:** An unresolved review thread is useful diagnostic information, but it is not universally a merge blocker: GitHub only enforces conversation resolution when the repository/ruleset requires it. Labeling every unresolved thread under `blocked_by` can overstate the cause in repositories where threads are advisory.  \n   **Suggestion:** Report it as `unresolved_review_threads` and reser […truncated]"
+    },
+    "code": {
+      "review_type": "code",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-07-27T12:36:59.637277+00:00",
+      "disposition": "Subagent review passes are disabled for this session by operator configuration (the harness forbids launching the Agent tool unless explicitly requested). The spec-compliance and quality pass was carried by the Step 7 self-review plus a full external code review on the merge-base diff (external_code, 4 findings, all answered). Whether these passes should run in autonomous iterates is an open operator policy decision, deliberately not decided here.",
+      "recorded_by": "orchestrator",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-07-27T12:37:08.985506+00:00",
+      "disposition": "Same rule as the code pass: subagent review is disabled for this session by operator configuration. The adversarial function was carried out of band — the external plan review (17 findings) and the external code review (4 findings) were both run and every finding is answered in the mini-plan dispositions or in this run's fixes, and three of the five empirical probes contradicted the implementation and changed it.",
+      "recorded_by": "orchestrator",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 4,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "bug",
+          "file": "shared/scripts/lib/pr_blockers.py:119-129",
+          "line": null,
+          "finding": "_required_contexts()` returns as soon as it finds the first `required_status_checks` rule. A branch can have multiple matching rulesets, each contributing required contexts; contexts from later rules are ignored. A required check from one of those later rules that never reports will therefore not be named, violating AC (A).",
+          "suggestion": "Accumulate and de-duplicate contexts from every `required_status_checks` rule in the returned rules list, rather than returning from inside the loop.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "spec",
+          "file": "shared/scripts/lib/pr_blockers.py:168-173",
+          "line": null,
+          "finding": "An absent or host-`UNKNOWN` `mergeStateStatus` is represented as `merge_state_status: \"\"`/`\"UNKNOWN\"` with no `unknown` entry. If threads and rules happen to be readable and clean, `_render_pending()` reports “no blocker found” and “most likely still queued,” although the code host’s merge verdict is unavailable/unknown. This conflicts with AC (A)’s requirement to state that blockers are unknown when the watcher genuinely cannot determine them.",
+          "suggestion": "Add an `unknown` cause for a missing or `UNKNOWN` merge-state value, e.g. `{\"source\": \"merge_state_status\", \"reason\": \"code host merge state is unknown\"}`, and add coverage for that response state.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "spec",
+          "file": "shared/scripts/tools/verifiers/_layer_coverage_ac.py:48-71",
+          "line": null,
+          "finding": "Despite claiming that “Only criteria count,” `_criteria()` treats every Markdown bullet anywhere between one `### FR-...` heading and the next FR heading as an acceptance criterion. A bullet-list implementation note, rationale, migration instruction, or nested list in another subsection of an FR will change the digest and be treated as a behavior change. In repositories with explicit layers this can incorrectly create a HARD cross-layer gate for non-AC prose, contrary to AC (D)/(E).",
+          "suggestion": "Parse only the explicitly designated acceptance-criteria block(s) for each FR, with clear section boundaries, rather than accepting arbitrary bullets throughout the entire FR section. Add tests with non-AC bullet lists under an FR and with headings following the AC block.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "regression",
+          "file": "shared/scripts/tools/verifiers/handoff_freshness.py",
+          "line": 79,
+          "finding": "The re-exported `check_session_handoff_fresh` API removed the existing `max_age_seconds` keyword argument. Any caller outside the shown diff still using `check_session_handoff_fresh(root, max_age_seconds=...)` now raises `TypeError` instead of returning a warning/pass result. The surrounding comment in `iterate_checks.py` explicitly intends external callers to continue resolving the check from the same import site.",
+          "suggestion": "Preserve the former keyword as an ignored, deprecated compatibility parameter while requiring/using `run_id` for the new content-based decision, or update every supported caller in the repository contract before removing it.  Overall assessment: ship-with-fixes. The main behavior is substantially implemented and well covered on happy paths, but multi-ruleset required checks, unknown host merge state, and over-broad AC parsing leave concrete acceptance-criterion cases incorrectly diagnosed.",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-07-27T12:34:09.658245+00:00",
+      "disposition": null,
+      "recorded_by": "orchestrator",
+      "parse_status": "partial",
+      "raw_excerpt": "[gemini] <no review returned: provider returned an empty reply>\n\n[openai] - Category: bug  \n- Severity: medium  \n- File: `shared/scripts/lib/pr_blockers.py:119-129`  \n- Finding: `_required_contexts()` returns as soon as it finds the first `required_status_checks` rule. A branch can have multiple matching rulesets, each contributing required contexts; contexts from later rules are ignored. A required check from one of those later rules that never reports will therefore not be named, violating AC (A).  \n- Suggestion: Accumulate and de-duplicate contexts from every `required_status_checks` rule in the returned rules list, rather than returning from inside the loop.\n\n- Category: spec  \n- Severity: medium  \n- File: `shared/scripts/lib/pr_blockers.py:168-173`  \n- Finding: An absent or host-`UNKNOWN` `mergeStateStatus` is represented as `merge_state_status: \"\"`/`\"UNKNOWN\"` with no `unknown` entry. If threads and rules happen to be readable and clean, `_render_pending()` reports “no blocker found” and “most likely still queued,” although the code host’s merge verdict is unavailable/unknown. This conflicts with AC (A)’s requirement to state that blockers are unknown when the watcher genuinely cannot determine them.  \n- Suggestion: Add an `unknown` cause for a missing or `UNKNOWN` merge-state value, e.g. `{\"source\": \"merge_state_status\", \"reason\": \"code host merge state is unknown\"}`, and add coverage for that response state.\n\n- Category: spec  \n- Severity: medium  \n- File: `shared/scripts/tools/verifiers/_layer_coverage_ac.py:48-71`  \n- Finding: Despite claiming that “Only criteria count,” `_criteria()` treats every Markdown bullet anywhere between one `### FR-...` heading and the next FR heading as an acceptance criterion. A bullet-list implementation note, rationale, migration instruction, or nested list in another subsection of an FR will change the digest and be treated as a behavior change. In repositories with explicit layers this can incorrectly create a HARD cross-layer gate for non-AC prose, contrary to AC (D)/(E).  \n- Sugges […truncated]"
+    }
+  }
+}

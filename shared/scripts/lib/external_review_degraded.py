@@ -33,6 +33,68 @@ _BANNER = (
 )
 
 
+# --- Is this reply actually a review? (iterate-2026-07-27-name-the-blocker) ---
+#
+# A leg used to be recorded ``success`` whenever the HTTP call returned. On one
+# observed run the Gemini leg came back with an unfinished internal monologue
+# while the transport reported success, so the gate counted a review that had not
+# happened. Only two signals are used, and both are stated by the provider
+# itself — an empty answer, and a declared truncation. No prose heuristic decides
+# whether text "reads like a review": that would eventually reject a real one.
+
+#: ``finish_reason`` values that mean the model was cut off mid-answer.
+_TRUNCATED_FINISH_REASONS = frozenset({"length", "max_tokens", "maxtokens"})
+
+
+def _normalize_finish_reason(raw: object) -> str:
+    """Lower-cased bare reason. Handles a plain string and google-genai's enum,
+    whose ``str()`` renders as ``FinishReason.MAX_TOKENS``."""
+    if raw is None:
+        return ""
+    name = getattr(raw, "name", None)
+    text = name if isinstance(name, str) else str(raw)
+    return text.rsplit(".", 1)[-1].strip().lower()
+
+
+def openai_finish_reason(response: object) -> str:
+    """``choices[0].finish_reason`` (OpenAI / OpenRouter), or ``""``."""
+    try:
+        return str(response.choices[0].finish_reason or "")  # type: ignore[attr-defined]
+    except Exception:  # noqa: BLE001 — an unreadable reason is simply unknown
+        return ""
+
+
+def gemini_finish_reason(response: object) -> str:
+    """``candidates[0].finish_reason`` (Gemini direct), or ``""``."""
+    try:
+        raw = response.candidates[0].finish_reason  # type: ignore[attr-defined]
+    except Exception:  # noqa: BLE001 — an unreadable reason is simply unknown
+        return ""
+    if raw is None:
+        return ""
+    name = getattr(raw, "name", None)
+    return name if isinstance(name, str) else str(raw)
+
+
+def classify_reply(text: str | None, finish_reason: object, *, via: str) -> dict:
+    """Shape one provider leg's outcome: ``success`` or ``degraded`` + a reason.
+
+    A degraded leg still carries whatever text arrived — a human reading the run
+    should see the partial answer, not just be told it was discarded. An absent
+    or unrecognised ``finish_reason`` is neutral: missing metadata is not
+    evidence of truncation.
+    """
+    base = {"feedback": text, "via": via}
+    if not (text or "").strip():
+        return {**base, "status": "degraded", "reason": "provider returned an empty reply"}
+    if _normalize_finish_reason(finish_reason) in _TRUNCATED_FINISH_REASONS:
+        return {
+            **base, "status": "degraded",
+            "reason": f"provider reported the reply was cut off (finish_reason={finish_reason})",
+        }
+    return {**base, "status": "success"}
+
+
 def count_succeeded(reviews: dict) -> int:
     """Number of reviews whose status is ``success``."""
     return sum(1 for r in reviews.values() if r.get("status") == "success")

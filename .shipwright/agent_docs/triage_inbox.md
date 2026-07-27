@@ -1,14 +1,14 @@
 # Triage Inbox
 
-> Auto-generated 2026-07-27T12:43:55.872393Z. Items waiting for triage decision.
+> Auto-generated 2026-07-27T12:52:40.120480Z. Items waiting for triage decision.
 > Promote via WebUI Triage tab (when v1b lands) or `shared/scripts/tools/triage_promote.py --id <id> --task-ref EXT:<ref>`.
 
 ## Status summary
 
-- Total: 419
-- Triage: 21 | Promoted: 1 | Dismissed: 396 | Snoozed: 1
+- Total: 420
+- Triage: 22 | Promoted: 1 | Dismissed: 396 | Snoozed: 1
 
-## Top 21 items (severity-sorted)
+## Top 22 items (severity-sorted)
 
 ### Source: analysis (1 item)
 
@@ -48,12 +48,18 @@
     ```
   - Promote: `triage_promote.py --id trg-2b5ca5f5 --task-ref EXT:<ref>`
 
-### Source: iterate (2 items)
+### Source: iterate (3 items)
 
 <a id="trg-a6616bbe"></a>
 - **Three finalization/delivery checks report a weaker signal than they can compute** `id=trg-a6616bbe | severity=medium | kind=improvement → P2/engineering`
   - Three checks in the finalization / delivery path each already hold the information needed to name a cause, but report a…
   - Promote: `triage_promote.py --id trg-a6616bbe --task-ref EXT:<ref>`
+
+<a id="trg-bd4e75a9"></a>
+- **Phase-canon C3 handoff freshness still keys on mtime** `id=trg-bd4e75a9 | severity=low | kind=improvement → P3/engineering`
+  - The F11 iterate freshness check moved off filesystem mtime to a content key in iterate-2026-07-27-name-the-blocker (it…
+  - Evidence: `shared/scripts/tools/verifiers/common.py`
+  - Promote: `triage_promote.py --id trg-bd4e75a9 --task-ref EXT:<ref>`
 
 <a id="trg-d1e466aa"></a>
 - **Retire the write-once v1 run-config fields (current_step / completed_steps)** `id=trg-d1e466aa | severity=low | kind=improvement → P3/engineering`

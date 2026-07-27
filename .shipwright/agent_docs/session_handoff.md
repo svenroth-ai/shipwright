@@ -1,42 +1,44 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-07-27-plan-step9-gates"
+run_id: "iterate-2026-07-27-name-the-blocker"
 phase: "iterate"
-reason: "ensure-current pre-merge refresh"
-timestamp: "2026-07-27T12:43:55.872393+00:00"
+reason: "F11 refresh before arming auto-merge"
+timestamp: "2026-07-27T12:52:40.120480+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-07-27 12:43:55 UTC
+> Auto-generated 2026-07-27 12:52:40 UTC
 
 ## Session Info
 
-- **Session ID**: 1ea85a9d-f698-4336-8e01-ea2f4e2ae714
-- **Timestamp**: 2026-07-27 12:43:55 UTC
-- **Reason**: ensure-current pre-merge refresh
+- **Session ID**: 9058f47a-25f4-4469-b517-e3b5c91347e0
+- **Timestamp**: 2026-07-27 12:52:40 UTC
+- **Reason**: F11 refresh before arming auto-merge
 
 ## Last Iterate
 
-- **Run ID**: iterate-2026-07-27-plan-step9-gates
-- **Date**: 2026-07-27T12:43:49.872175Z
+- **Run ID**: iterate-2026-07-27-name-the-blocker
+- **Date**: 2026-07-27T12:52:34.425553Z
 - **Type**: change
 - **Complexity**: medium
-- **Branch**: iterate/plan-step9-gates
-- **ADR**: iterate-2026-07-27-plan-step9-gates
+- **Branch**: iterate/name-the-blocker
+- **ADR**: iterate-2026-07-27-name-the-blocker
 - **Tests passed**: True
-- **Spec**: .shipwright/planning/iterate/2026-07-27-plan-step9-gates.md
+- **Spec**: .shipwright/planning/iterate/iterate-2026-07-27-name-the-blocker.md
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/plan-step9-gates
-- **Run ID**: `iterate-2026-07-27-plan-step9-gates`
-- **Spec**: .shipwright/planning/iterate/2026-07-27-plan-step9-gates.md
-- **External Review Marker**: completed (external_review_state.json @ 2026-07-27T12:35:15)
+- **Branch**: iterate/name-the-blocker
+- **Run ID**: iterate-2026-07-27-name-the-blocker
+- **Spec**: .shipwright/planning/iterate/iterate-2026-07-27-name-the-blocker.md
+- **Complexity**: medium
+- **External Review Marker**: stale (predates spec (2026-07-27T11:55:00))
 
 ### Mandatory replay on Resume
 
 Before dispatching to the handoff's Remaining phase, run these if missing:
+- Step 4 — External LLM Review (marker missing/stale)
 - Finalization (F0–F11) after all mandatory phases pass
 
 ## Legacy build state
@@ -50,8 +52,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/plan-step9-gates
-- **Last Commit**: 6d5f1c9b Merge remote-tracking branch 'origin/main' into iterate/plan-step9-gates
+- **Branch**: iterate/name-the-blocker
+- **Last Commit**: ece650cb Merge remote-tracking branch 'origin/main' into iterate/name-the-blocker
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -76,7 +78,7 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 370
+- **Total work events**: 371
 - **Last iterate**: change — iterate: the four Step-9 gates become code, closing trg-88f721be (3 of 3) (2026-07-27)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
