@@ -217,7 +217,25 @@
         ".github/workflows/ci.yml",
         ".github/workflows/security.yml"
       ]
-    }
+    },
+    "declared_removals": [
+      {
+        "path": ".shipwright/planning/iterate/2026-07-27-review-floor-not-chained.md",
+        "reason": "Not a removal by this branch \u2014 a false positive in check_no_silent_revert (shipped today, #477). It asks each integration merge independently whether HEAD still carries what that merge's main side had, so content main ITSELF deleted in a LATER commit reads as dropped. This branch merged main four times across exactly such a rewrite: cf6d326b brought this text, f7eee6f4 replaced it, and this branch carries f7eee6f4's version. Proof: the flagged lines are absent from current origin/main too, and `git diff origin/main HEAD -- <path>` is EMPTY for every path listed."
+      },
+      {
+        "path": ".shipwright/planning/iterate/iterate-2026-07-27-project-granularity-basis/reviews.json",
+        "reason": "Not a removal by this branch \u2014 a false positive in check_no_silent_revert (shipped today, #477). It asks each integration merge independently whether HEAD still carries what that merge's main side had, so content main ITSELF deleted in a LATER commit reads as dropped. This branch merged main four times across exactly such a rewrite: cf6d326b brought this text, f7eee6f4 replaced it, and this branch carries f7eee6f4's version. Proof: the flagged lines are absent from current origin/main too, and `git diff origin/main HEAD -- <path>` is EMPTY for every path listed."
+      },
+      {
+        "path": "shared/tests/test_record_review_pass_cli.py",
+        "reason": "Not a removal by this branch \u2014 a false positive in check_no_silent_revert (shipped today, #477). It asks each integration merge independently whether HEAD still carries what that merge's main side had, so content main ITSELF deleted in a LATER commit reads as dropped. This branch merged main four times across exactly such a rewrite: cf6d326b brought this text, f7eee6f4 replaced it, and this branch carries f7eee6f4's version. Proof: the flagged lines are absent from current origin/main too, and `git diff origin/main HEAD -- <path>` is EMPTY for every path listed."
+      },
+      {
+        "path": "docs/hooks-and-pipeline.md",
+        "reason": "Nothing was removed: this run EDITED one table row in place (the triage.outbox.jsonl producer row) to add check_required_checks.py, and check_no_silent_revert compares whole lines, so an edited line always reads as the old line dropped. Verified character-for-character: this row minus the one sentence this run added equals origin/main's row EXACTLY, so every producer main added (suite_race_triage, warning_followups, journey_coverage) and its 'F0 and F1 run' edit are carried verbatim."
+      }
+    ]
   },
   "coverage": {
     "total": 80.2,
