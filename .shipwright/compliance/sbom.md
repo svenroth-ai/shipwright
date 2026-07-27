@@ -1,7 +1,7 @@
 # Software Bill of Materials (SBOM)
 
-Generated: 2026-07-27T12:52:34.514984+00:00 (dependency versions resolved from uv.lock)
-Source-State: run=iterate-2026-07-27-name-the-blocker
+Generated: 2026-07-27T16:51:16.606875+00:00 (dependency versions resolved from uv.lock)
+Source-State: run=iterate-2026-07-27-handoff-tally-and-gate-honesty
 Consistency-audit: never run
 
 ## Summary

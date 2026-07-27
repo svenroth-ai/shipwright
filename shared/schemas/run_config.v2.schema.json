@@ -113,7 +113,10 @@
             "type": "boolean",
             "description": "true = the gate found ask-level issues and they were overridden. false = force was used but the gate was clean, so nothing was actually waived."
           },
-          "gate_result": { "enum": ["pass", "fail"] },
+          "gate_result": {
+            "enum": ["pass", "fail", "not_checked"],
+            "description": "pass = a phase validator ran and found nothing. fail = it found ask-level issues (see overridden_issues). not_checked = NO phase validator exists for this step (e.g. `security`, which has no _VALIDATORS entry), so nothing was established — recording that as `pass` would mint a claim that a gate had been satisfied where none exists. The flag reflects the PHASE VALIDATOR only; the opt-in Phase-Quality critical gate is not counted by it, so `not_checked` means 'no phase validator ran', not 'no check of any kind ran'."
+          },
           "overridden_issues": {
             "type": "array",
             "description": "The ask-level findings, verbatim, that this override went ahead over."

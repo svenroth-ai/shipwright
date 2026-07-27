@@ -197,6 +197,15 @@ real producers rather than hand-written fixtures.
 
 ## Design
 
+> **Superseded in part — see ADR-113 §Decision and ADR-114.** This section was written
+> before the external plan review and was not reconciled afterwards. Three details below
+> did not ship as described: the renderers landed as TWO modules (`handoff_pipeline.py` +
+> `handoff_iterate.py`, not one `handoff_progress.py`); the moved iterate renderer got NO
+> compatibility alias (the symbol is private and had no external callers); and retention
+> is **200**, not 50 (external review O6 — a small silent cap discards the only durable
+> 'passed vs waved through' evidence). Recorded rather than rewritten, so the stale plan
+> and its correction both stay visible.
+
 ### Item 1
 
 New `plugins/shipwright-run/scripts/lib/orchestrator_pkg/validation_record.py`

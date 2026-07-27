@@ -1,232 +1,274 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-07-27-adopt-inherited-baseline",
+    "run_id": "iterate-2026-07-27-handoff-tally-and-gate-honesty",
     "date": "2026-07-27",
     "unit": {
       "status": "passed",
-      "passed": 591,
-      "total": 591
+      "passed": 5977,
+      "total": 5977
     },
     "integration": {
       "status": "passed",
-      "passed": 418,
-      "total": 418
+      "passed": 422,
+      "total": 422
     },
     "pgtap": {
-      "status": "skipped",
+      "status": "not_run",
       "passed": 0,
       "total": 0
     },
     "e2e": {
-      "status": "passed",
-      "passed": 62,
-      "total": 62
+      "status": "not_run",
+      "passed": 0,
+      "total": 0
     },
     "design_fidelity": {
-      "status": "skipped",
+      "status": "not_run",
       "passed": 0,
       "total": 0
     },
     "smoke": {
-      "status": "skipped"
+      "status": "not_run"
     },
     "degraded": [
       {
-        "condition": "interview_and_approval_gate_skipped",
-        "reason": "--autonomous against a complete, self-contained brief (trg-1aa5a8ab)."
+        "condition": "external_code_review_leg_degraded",
+        "detail": "external_review.py --mode code: the gemini leg was cut off by the provider (finish_reason=length) with one finding broken off mid-sentence; on inspection the wording it was questioning reads correctly. Recorded as degraded, not as a pass. Second consecutive run where this leg failed. The gpt leg succeeded (verdict: revise, 2 findings, both accepted)."
       },
       {
-        "condition": "internal_code_reviewer_and_doubt_reviewer_subagents_not_dispatched",
-        "reason": "session rule forbids spawning subagents unless requested; covered by two external CODE rounds on this diff (7 findings, all fixed) plus 8 probes. Both types closed explicitly in reviews.json."
-      },
-      {
-        "condition": "external_code_review_gemini_leg_degraded_in_both_rounds",
-        "reason": "the gemini leg returned leaked scratchpad instead of a verdict in BOTH rounds (verdict 'unavailable'), so each round is a ONE-model pass. The tool's own contradiction check flags requires_resolution for exactly this reason; recorded rather than presented as a clean two-model pass."
-      },
-      {
-        "condition": "pr1_guide_md_documentation_never_shipped",
-        "reason": "#454's docs/guide.md edit was a str.replace against text absent from that branch's base, so it silently did nothing and only the sibling doc was asserted. Both halves are documented in this PR instead. My error, recorded rather than quietly patched."
-      },
-      {
-        "condition": "card_split_from_trg_1aa5a8ab",
-        "reason": "PR 2 of 2, after #454. Split so the Tier-3 review gate can read each half."
+        "condition": "public_predicate_reverted_for_bloat_baseline",
+        "detail": "Stage-2 code review asked for a public `has_validator()` on phase_validators.py instead of importing the private _VALIDATORS. Correct in principle, but that file is grandfathered at 495 LOC and the 13-line addition ratcheted its bloat baseline; cutting unrelated lines to make room would game the metric. Reverted to the private import with the reason recorded in code. The coupling is covered by test_run_phase_gate_reports_whether_a_validator_existed."
       }
     ],
     "surface_verification": {
       "surface": "cli",
-      "runner": "uv run --directory plugins/shipwright-adopt --extra dev pytest tests/test_record_inherited_baseline.py tests/test_inherited_baseline.py tests/test_inherited_baseline_input.py tests/test_validate_adoption_soft_checks.py -q",
+      "runner": "C:/01_Development/shipwright/.worktrees/handoff-tally-and-gate-honesty/.venv/Scripts/python.exe -m pytest plugins/shipwright-run/tests/test_validation_record_honesty.py integration-tests/test_handoff_reads_real_loop_state.py -q",
       "exit_code": 0,
-      "tests_run": 62,
-      "evidence_path": ".shipwright/runs/iterate-2026-07-27-adopt-inherited-baseline/surface_verification.json",
-      "timestamp": "2026-07-27T14:31:17.556Z"
+      "tests_run": 20,
+      "evidence_path": "C:\\01_Development\\shipwright\\.worktrees\\handoff-tally-and-gate-honesty\\.shipwright\\runs\\iterate-2026-07-27-handoff-tally-and-gate-honesty\\surface_verification.log",
+      "timestamp": "2026-07-27T16:48:42.899Z",
+      "attempts": 1
     },
     "test_completeness": {
       "status": "complete",
       "behaviors": [
         {
-          "behavior": "the register carries the two keys the shared reader parses",
+          "behavior": "the finished tally denominates against the pipeline, not against tasks planned so far",
           "disposition": "tested",
-          "evidence": "test_inherited_baseline.py::test_register_carries_the_two_keys_the_audit_phase_reads PASSED"
+          "evidence": "test_handoff_pipeline_tally.py::test_the_tally_counts_against_the_pipeline_not_against_planned_tasks PASSED"
         },
         {
-          "behavior": "the REAL shared reader (load_accepted_baseline) reads back what adopt wrote",
+          "behavior": "the block states that phase tasks are planned incrementally",
           "disposition": "tested",
-          "evidence": "test_inherited_baseline_input.py::test_the_shared_reader_reads_back_what_adopt_wrote PASSED (subprocess, own interpreter, ADR-045)",
-          "category": "integration"
+          "evidence": "test_handoff_pipeline_tally.py::test_the_block_says_phase_tasks_are_planned_incrementally PASSED"
         },
         {
-          "behavior": "an unobserved register never reads as forgiveness; present != baseline_observed",
+          "behavior": "a config with no pipeline key falls back to the task count",
           "disposition": "tested",
-          "evidence": "test_inherited_baseline_input.py::test_an_unobserved_register_reads_as_zero_baseline_not_as_forgiveness PASSED",
-          "category": "integration"
+          "evidence": "test_handoff_pipeline_tally.py::test_a_missing_pipeline_key_falls_back_to_the_task_count PASSED"
         },
         {
-          "behavior": "unobserved says so rather than claiming clean",
+          "behavior": "split expansion is counted: plan+build repeat once per frozen split",
           "disposition": "tested",
-          "evidence": "test_inherited_baseline.py::test_an_unobserved_baseline_says_so_rather_than_claiming_clean PASSED"
+          "evidence": "test_handoff_pipeline_tally.py::test_a_multi_split_run_counts_every_planned_task PASSED"
         },
         {
-          "behavior": "coverage gaps never feed baseline_failure_count",
+          "behavior": "a 3-split run with every split built does not read as 100 percent complete",
           "disposition": "tested",
-          "evidence": "test_inherited_baseline.py::test_gaps_never_feed_the_number_that_excuses_failures PASSED"
+          "evidence": "test_handoff_pipeline_tally.py::test_a_split_run_with_every_split_built_is_not_reported_complete PASSED"
         },
         {
-          "behavior": "untested requirements are inherited gaps; both tag origins count as coverage",
+          "behavior": "a legacy phase present as a task but absent from pipeline (security) is counted",
           "disposition": "tested",
-          "evidence": "test_inherited_baseline.py::test_a_requirement_with_no_tagged_test_is_an_inherited_gap and ::test_both_tag_origins_count_as_coverage PASSED"
+          "evidence": "test_handoff_pipeline_tally.py::test_a_legacy_off_pipeline_phase_is_counted PASSED"
         },
         {
-          "behavior": "a tag naming an unknown FR is not coverage",
+          "behavior": "a malformed splits_frozen value falls back instead of crashing",
           "disposition": "tested",
-          "evidence": "test_inherited_baseline.py::test_a_tag_pointing_at_an_unknown_requirement_is_not_coverage PASSED"
+          "evidence": "test_handoff_pipeline_tally.py::test_a_bad_splits_frozen_value_falls_back_instead_of_crashing PASSED"
         },
         {
-          "behavior": "an observed red baseline lands as inherited failures",
+          "behavior": "the finished list carries the split, so a phase is never finished and interrupted at once",
           "disposition": "tested",
-          "evidence": "test_inherited_baseline.py::test_an_observed_red_baseline_is_recorded_as_inherited and e2e test_record_inherited_baseline.py::test_an_observed_red_baseline_lands_as_inherited_failures PASSED"
+          "evidence": "test_handoff_pipeline_tally.py::test_the_finished_list_carries_the_split PASSED"
         },
         {
-          "behavior": "an observed green baseline is distinguishable from no run at all",
+          "behavior": "a failed phase is named in its own bullet instead of appearing in none",
           "disposition": "tested",
-          "evidence": "test_inherited_baseline.py::test_an_observed_green_baseline_is_observed_and_empty PASSED"
+          "evidence": "test_handoff_pipeline_tally.py::test_a_failed_phase_is_named_in_its_own_bullet PASSED"
         },
         {
-          "behavior": "a failure list without provenance, malformed or self-inconsistent is rejected",
+          "behavior": "failed and interrupted are reported separately",
           "disposition": "tested",
-          "evidence": "test_inherited_baseline_input.py::test_a_failure_list_without_provenance_is_rejected and ::test_a_malformed_payload_is_rejected_rather_than_read_as_empty (5 cases) PASSED"
+          "evidence": "test_handoff_pipeline_tally.py::test_failed_and_interrupted_are_reported_separately PASSED"
         },
         {
-          "behavior": "source and command must be real strings, not str()-coerced",
+          "behavior": "a pointer parked on a successor with attempt 0 renders as next up, not dispatched",
           "disposition": "tested",
-          "evidence": "test_inherited_baseline_input.py::test_source_and_command_must_be_real_strings PASSED (4 cases)"
+          "evidence": "test_handoff_pipeline_pointer.py::test_attempt_zero_is_next_up_not_currently_dispatched PASSED"
         },
         {
-          "behavior": "the source label has a length ceiling",
+          "behavior": "a real dispatch is still called dispatched",
           "disposition": "tested",
-          "evidence": "test_inherited_baseline_input.py::test_a_source_label_has_a_ceiling PASSED"
+          "evidence": "test_handoff_pipeline_pointer.py::test_a_real_dispatch_is_still_called_dispatched PASSED"
         },
         {
-          "behavior": "a declared count of the wrong type (bool, float, str, negative) is rejected",
+          "behavior": "an in_progress task is dispatched whatever the attempt counter says",
           "disposition": "tested",
-          "evidence": "test_inherited_baseline.py::test_a_declared_count_of_the_wrong_type_is_rejected PASSED (5 cases)"
+          "evidence": "test_handoff_pipeline_pointer.py::test_an_in_progress_task_is_dispatched_whatever_the_counter_says PASSED"
         },
         {
-          "behavior": "only the five reader fields are copied from a failure",
+          "behavior": "a terminal task under the pointer is not called dispatched",
           "disposition": "tested",
-          "evidence": "test_inherited_baseline_input.py::test_only_the_fields_the_audit_phase_reads_are_copied PASSED"
+          "evidence": "test_handoff_pipeline_pointer.py::test_a_terminal_task_under_the_pointer_is_not_called_dispatched PASSED"
         },
         {
-          "behavior": "the command never reaches the committed register",
+          "behavior": "a failed task under the pointer is not called dispatched",
           "disposition": "tested",
-          "evidence": "test_inherited_baseline.py::test_the_command_never_reaches_the_committed_register PASSED"
+          "evidence": "test_handoff_pipeline_pointer.py::test_a_failed_task_under_the_pointer_is_not_called_dispatched PASSED"
         },
         {
-          "behavior": "each non-empty gap class leaves a card; an empty class leaves none",
+          "behavior": "a recovered task keeps its attempt counter but is not called dispatched",
           "disposition": "tested",
-          "evidence": "test_inherited_baseline.py::test_each_non_empty_gap_class_leaves_a_follow_up and ::test_an_empty_gap_class_leaves_nothing_behind PASSED"
+          "evidence": "test_handoff_pipeline_pointer.py::test_a_recovered_task_is_not_called_dispatched_despite_its_attempt PASSED"
         },
         {
-          "behavior": "gap cards read as inherited absence, not as breakage",
+          "behavior": "a backlog task with attempts is not called dispatched",
           "disposition": "tested",
-          "evidence": "test_inherited_baseline.py::test_gap_cards_describe_the_gap_without_pointing_at_a_failure PASSED"
+          "evidence": "test_handoff_pipeline_pointer.py::test_a_backlog_task_with_attempts_is_not_called_dispatched PASSED"
         },
         {
-          "behavior": "dedup keys do not vary with the count",
+          "behavior": "a missing attempt is treated as not dispatched",
           "disposition": "tested",
-          "evidence": "test_inherited_baseline.py::test_gap_card_dedup_keys_do_not_vary_with_the_count PASSED"
+          "evidence": "test_handoff_pipeline_pointer.py::test_a_missing_attempt_is_treated_as_not_dispatched PASSED"
         },
         {
-          "behavior": "onboarding files exactly one confirmation card; a re-adopt duplicates nothing",
+          "behavior": "an unhashable status does not raise, and the Stop hook does not silently skip the handoff",
           "disposition": "tested",
-          "evidence": "test_record_inherited_baseline.py::test_onboarding_leaves_exactly_one_confirmation_follow_up and ::test_a_re_adopt_duplicates_nothing PASSED"
+          "evidence": "test_handoff_pipeline_pointer.py::test_an_unhashable_status_does_not_raise PASSED"
         },
         {
-          "behavior": "no card when every requirement was already confirmed",
+          "behavior": "an unreadable status renders unknown in BOTH the status and the finished cell",
           "disposition": "tested",
-          "evidence": "test_derived_catalogue_doc.py::test_no_card_when_every_requirement_was_confirmed_by_a_person PASSED"
+          "evidence": "test_handoff_pipeline_pointer.py::test_a_none_status_renders_as_unknown PASSED"
         },
         {
-          "behavior": "no card is filed when the register cannot be written",
+          "behavior": "the drift guard fails when the schema declares a status the renderer does not classify",
           "disposition": "tested",
-          "evidence": "test_record_inherited_baseline.py::test_no_card_is_filed_when_the_register_cannot_be_written PASSED",
-          "category": "integration"
+          "evidence": "test_handoff_pipeline_pointer.py::test_the_drift_guard_fails_on_an_unclassified_new_status PASSED"
         },
         {
-          "behavior": "a clean repo records a register and crashes on nothing",
+          "behavior": "a forced retry clears the needs_validation status it caused",
           "disposition": "tested",
-          "evidence": "test_inherited_baseline.py::test_a_clean_repo_has_empty_gaps_not_a_crash and test_record_inherited_baseline.py::test_a_clean_repo_records_a_register_and_no_gap_cards PASSED"
+          "evidence": "test_validation_record_honesty.py::test_a_forced_retry_clears_the_needs_validation_status PASSED"
         },
         {
-          "behavior": "a missing or corrupt prerequisite stops the step, naming what to re-run",
+          "behavior": "the terminal pipeline-complete status still wins over the pause reset",
           "disposition": "tested",
-          "evidence": "test_record_inherited_baseline.py::test_a_missing_catalogue_stops_the_step_and_names_the_step_that_writes_it and ::test_a_corrupt_upstream_artifact_stops_rather_than_inventing_gaps PASSED"
+          "evidence": "test_validation_record_honesty.py::test_the_pipeline_complete_status_still_wins PASSED"
         },
         {
-          "behavior": "a forged catalogue cannot suppress the follow-up",
+          "behavior": "an unpaused completion does not invent a status change",
           "disposition": "tested",
-          "evidence": "test_record_inherited_baseline.py::test_a_catalogue_that_lies_about_confirmation_stops_the_step and ::test_a_catalogue_claiming_confirmation_without_an_interview_stops_the_step PASSED"
+          "evidence": "test_validation_record_honesty.py::test_an_unpaused_completion_does_not_invent_a_status_change PASSED"
         },
         {
-          "behavior": "--dry-run touches nothing",
+          "behavior": "a pause set by phase_task_lifecycle (not by this step) is not lifted",
           "disposition": "tested",
-          "evidence": "test_record_inherited_baseline.py::test_dry_run_touches_nothing PASSED"
+          "evidence": "test_validation_record_honesty.py::test_a_lifecycle_set_pause_is_not_lifted PASSED"
         },
         {
-          "behavior": "a missing register hard-blocks the handover, naming Step E.18",
+          "behavior": "another step's pause is neither lifted nor stripped of its findings",
           "disposition": "tested",
-          "evidence": "test_validate_adoption_soft_checks.py::test_a_missing_honesty_artifact_blocks_the_handover (2 cases) and ::test_the_error_names_the_step_that_writes_the_missing_file PASSED"
+          "evidence": "test_validation_record_honesty.py::test_another_steps_pause_is_neither_lifted_nor_erased PASSED"
         },
         {
-          "behavior": "the commit body names the follow-up card and the register",
+          "behavior": "a step with no validator records gate_result not_checked, never pass",
           "disposition": "tested",
-          "evidence": "test_adopt_commit_template.py::test_the_body_reports_how_many_requirements_are_unconfirmed and ::test_the_body_names_the_inherited_baseline_register PASSED"
+          "evidence": "test_validation_record_honesty.py::test_a_step_with_no_validator_records_not_checked PASSED"
         },
         {
-          "behavior": "Step H reference names the register, the card and read_summary",
+          "behavior": "a step with a validator still records pass",
           "disposition": "tested",
-          "evidence": "test_skill_references_link.py::test_step_h_reference_tells_the_agent_where_the_count_comes_from PASSED"
+          "evidence": "test_validation_record_honesty.py::test_a_step_with_a_validator_still_records_pass PASSED"
         },
         {
-          "behavior": "the new step reference is registered and linked from the Kern",
+          "behavior": "run_phase_gate reports whether a validator existed at all",
           "disposition": "tested",
-          "evidence": "test_skill_references_link.py::test_every_expected_step_reference_exists_and_is_linked PASSED"
+          "evidence": "test_validation_record_honesty.py::test_run_phase_gate_reports_whether_a_validator_existed PASSED"
         },
         {
-          "behavior": "the Step H handoff BANNER renders these counts on screen",
+          "behavior": "a critical-gate crash appends to the real findings instead of replacing them",
+          "disposition": "tested",
+          "evidence": "test_validation_record_honesty.py::test_a_critical_gate_crash_keeps_the_real_findings PASSED"
+        },
+        {
+          "behavior": "a validate_phase crash still yields exactly one gate-error issue",
+          "disposition": "tested",
+          "evidence": "test_validation_record_honesty.py::test_a_validate_phase_crash_still_yields_a_single_gate_error PASSED"
+        },
+        {
+          "behavior": "a gate crash writes its traceback to stderr while the record stays compact",
+          "disposition": "tested",
+          "evidence": "test_validation_record_honesty.py::test_a_gate_crash_writes_its_traceback_to_stderr PASSED"
+        },
+        {
+          "behavior": "inform notes do not duplicate across a forced retry",
+          "disposition": "tested",
+          "evidence": "test_validation_record_honesty.py::test_inform_notes_do_not_duplicate_across_a_forced_retry PASSED"
+        },
+        {
+          "behavior": "a distinct finding from the same step (another split) survives dedup",
+          "disposition": "tested",
+          "evidence": "test_validation_record_honesty.py::test_a_distinct_finding_from_the_same_step_survives PASSED"
+        },
+        {
+          "behavior": "notes for other steps survive",
+          "disposition": "tested",
+          "evidence": "test_validation_record_honesty.py::test_notes_for_other_steps_survive PASSED"
+        },
+        {
+          "behavior": "--force with a non-complete status is not refused",
+          "disposition": "tested",
+          "evidence": "test_validation_record_honesty.py::test_force_with_a_non_complete_status_is_not_refused PASSED"
+        },
+        {
+          "behavior": "a driven single_session run stays inert instead of erroring",
+          "disposition": "tested",
+          "evidence": "test_validation_record_honesty.py::test_a_driven_run_stays_inert_instead_of_erroring PASSED"
+        },
+        {
+          "behavior": "a reasonless forced completion is still refused",
+          "disposition": "tested",
+          "evidence": "test_validation_record_honesty.py::test_a_reasonless_forced_completion_is_still_refused PASSED"
+        },
+        {
+          "behavior": "the renderer still reads loop state the real orchestrator wrote",
+          "disposition": "tested",
+          "evidence": "test_handoff_reads_real_loop_state.py::test_the_renderer_reads_the_loop_state_the_orchestrator_wrote PASSED"
+        },
+        {
+          "behavior": "after a real apply the pointer reads as next up, not as a live dispatch",
+          "disposition": "tested",
+          "evidence": "test_handoff_reads_real_loop_state.py::test_a_phase_the_orchestrator_completed_is_reported_as_finished PASSED"
+        },
+        {
+          "behavior": "the shared consumer and the run plugin still agree on the loop-state path",
+          "disposition": "tested",
+          "evidence": "test_handoff_reads_real_loop_state.py::test_the_consumer_and_the_producer_agree_on_the_loop_state_path PASSED"
+        },
+        {
+          "behavior": "docs (hooks-and-pipeline.md) describe the corrected force-reason and tally rules",
           "disposition": "untestable",
-          "reason_code": "covered-by-existing-test",
-          "reason": "prompt-rendered text, not code. The mechanical parts are tested: the commit body naming both artifacts, and the drift test pinning what the Step H reference must name."
+          "evidence": "prose accuracy \u2014 reviewed by hand against the diff; no executable assertion can judge whether the wording is right",
+          "reason_code": "requires-manual-visual-judgment"
         }
       ],
       "counts": {
-        "testable": 29,
-        "tested": 29,
+        "testable": 41,
+        "tested": 41,
         "untestable": 1,
         "untested_testable": 0
-      },
-      "enumeration_basis": {
-        "acs": 9,
-        "covered_acs": 9
       }
     }
   },

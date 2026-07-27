@@ -1,16 +1,16 @@
 # Commit Change Log
 
-Generated: 2026-07-27T12:52:34.514984+00:00
-Source-State: run=iterate-2026-07-27-name-the-blocker
+Generated: 2026-07-27T16:51:16.606875+00:00
+Source-State: run=iterate-2026-07-27-handoff-tally-and-gate-honesty
 Consistency-audit: never run
-Total commits: 1223
+Total commits: 1225
 
 ## Commit Distribution
 
 ```mermaid
 pie title Commit Types
     "fix" : 350
-    "feat" : 343
+    "feat" : 345
     "chore" : 255
     "docs" : 147
     "refactor" : 76
@@ -377,11 +377,13 @@ pie title Commit Types
 | 2026-03-21 | — | rename skill folders for clean slash commands | 5a8d77658fab |
 | 2026-03-20 | — | update README attribution to svenroth.ai | dd5de7f7d6ab |
 
-### Features (feat) — 343 commits
+### Features (feat) — 345 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
-| 2026-07-27 | iterate | name the blocker instead of reporting a weaker signal | df4622d8045e |
+| 2026-07-27 | adopt | what the codebase arrived with is recorded as inherited (2/2) (#460) | 97b9878ed5b2 |
+| 2026-07-27 | adopt | the derived requirements catalogue announces itself (1/2) (#454) | d02f97141669 |
+| 2026-07-27 | iterate | name the blocker instead of reporting a weaker signal (#459) | 0e7e2b74a6ac |
 | 2026-07-27 | plan | the Step-9 gates stop being instructions (#458) | d03bdb12f05c |
 | 2026-07-27 | compliance | evidence documents disclose when the cross-check last ran (#443) | d769da83a84b |
 | 2026-07-27 | plan | let a section name what it presupposes, so the order can be checked (#457) | 8a93f586a126 |
@@ -729,7 +731,7 @@ pie title Commit Types
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
-| 2026-07-27 | triage | sweep 8 outbox append(s) into branch | 16b59dee9909 |
+| 2026-07-27 | triage | sweep 3 outbox append(s) into branch | c896f8f2500e |
 | 2026-07-26 | review | default external-review GPT model to gpt-5.6-terra (#435) | 8d750a5fc7af |
 | 2026-07-24 | security | stage full compliance write-set in Step 7.5 finalizer (#434) | 5da96ebe8561 |
 | 2026-07-23 | compliance | refresh after security scan (#433) | 2b644805fb7d |
@@ -1294,7 +1296,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 1223 |
+| Total commits | 1225 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 1223 |
+| Human-authored commits | 1225 |
 
