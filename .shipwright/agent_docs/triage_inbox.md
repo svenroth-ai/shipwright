@@ -1,14 +1,14 @@
 # Triage Inbox
 
-> Auto-generated 2026-07-27T08:23:12.722139Z. Items waiting for triage decision.
+> Auto-generated 2026-07-27T08:17:34.267156Z. Items waiting for triage decision.
 > Promote via WebUI Triage tab (when v1b lands) or `shared/scripts/tools/triage_promote.py --id <id> --task-ref EXT:<ref>`.
 
 ## Status summary
 
-- Total: 414
-- Triage: 24 | Promoted: 1 | Dismissed: 388 | Snoozed: 1
+- Total: 415
+- Triage: 25 | Promoted: 1 | Dismissed: 388 | Snoozed: 1
 
-## Top 24 items (severity-sorted)
+## Top 25 items (severity-sorted)
 
 ### Source: analysis (1 item)
 
@@ -78,6 +78,14 @@
 - **REQ3.04 [CAMPAIGN AUTONOM] Mechanik - Monorepo** `id=trg-7085d783 | severity=medium | kind=improvement → P2/engineering`
   - Phase 3, AUTONOME Kampagne. Sub-Iterates: Evidenzkette (CI regeneriert Manifest, muss matchen), AC-Identitaet, Manifest…
   - Promote: `triage_promote.py --id trg-7085d783 --task-ref EXT:<ref>`
+
+### Source: req3-granularity-round (1 item)
+
+<a id="trg-1d7d91d0"></a>
+- **Spec-coherence check S5 is blind to the converged acceptance-criteria shape** `id=trg-1d7d91d0 | severity=medium | kind=bug → P2/engineering`
+  - check_s5_fr_coherence reports every requirement in this repo's own catalogue as missing both description and acceptance…
+  - Evidence: `.shipwright/planning/iterate/2026-07-27-project-granularity-basis.md`
+  - Promote: `triage_promote.py --id trg-1d7d91d0 --task-ref EXT:<ref>`
 
 ### Source: req3-phase2-walk (16 items)
 
