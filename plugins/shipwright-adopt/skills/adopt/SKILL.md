@@ -57,21 +57,19 @@ corresponding step fires.
 
 ### Step A.0 — Bloat Baseline (must run first)
 
-Generate `shipwright_bloat_baseline.json` BEFORE any other artifact
-write, so the Stop-Gate hook has a baseline on the first Stop event:
+Generate `shipwright_bloat_baseline.json` BEFORE any other artifact write, so
+the Stop-Gate hook has a baseline on the first Stop event:
 
 ```bash
 uv run "${CLAUDE_PLUGIN_ROOT}/scripts/lib/baseline_generator.py" \
   --project-root <cwd>
 ```
 
-Full procedure → [references/step-a-preflight.md](references/step-a-preflight.md).
-
 ### Step A — Pre-flight
 
-Run `setup_adopt.py`. Halt on `ok=false`. Ask via `AskUserQuestion`
-about nested projects (default: Exclude) and existing artifacts
-(default: Continue — preservation is on by default):
+Run `setup_adopt.py`. Halt on `ok=false`. Ask via `AskUserQuestion` about nested
+projects (default: Exclude) and existing artifacts (default: Continue —
+preservation is on by default):
 
 ```bash
 uv run "${CLAUDE_PLUGIN_ROOT}/scripts/checks/setup_adopt.py" \
@@ -97,36 +95,31 @@ Full procedure → [references/step-b-codebase-analysis.md](references/step-b-co
 
 ### Step B.5 — Playwright Route-Discovery (Layer 1.5, optional)
 
-Gated on web-capable language + at least one of (`commands.dev` set,
-non-generic profile, multi-service detected). Three branches:
-matched-profile, generic+multi-service, single-service fallback.
-
-Multi-service awareness: `playwright_setup` and `route_crawler` must
-pivot into the primary frontend service dir. API mocking
-(`SHIPWRIGHT_CRAWL_MOCK_API`) passes GETs through, stubs only writes.
+Gated on web-capable language + one of (`commands.dev` set, non-generic
+profile, multi-service detected); three branches (matched-profile,
+generic+multi-service, single-service fallback). `playwright_setup` /
+`route_crawler` pivot into the primary frontend service dir; API mocking
+(`SHIPWRIGHT_CRAWL_MOCK_API`) passes GETs through and stubs only writes.
 
 Full procedure → [references/step-b5-route-discovery.md](references/step-b5-route-discovery.md).
 Crawl-vs-AST fallback rules → [references/feature-inference.md](references/feature-inference.md).
 
 ### Step B.8 — Semantic Enrichment (Layer 2, inline)
 
-Read snapshot + routes + sample files (README, top route files, domain
-files, top-5 commit bodies, crawl screenshots). Write
-`.shipwright/adopt/enrichment.json` (strict schema). Code > Prose;
-don't invent; ASCII box-drawing for diagrams; no marketing copy.
-
-`generate_adoption_artifacts.py` validates the schema strictly and
-fails loud on malformed `enrichment.json`. Missing file → deterministic
-minimal fallback with `_fallback: true` marker.
+Read snapshot + routes + sample files (README, top route files, domain files,
+top-5 commit bodies, crawl screenshots). Write `.shipwright/adopt/enrichment.json`
+(strict schema). Code > Prose; don't invent; ASCII box-drawing for diagrams; no
+marketing copy. `generate_adoption_artifacts.py` validates strictly and fails
+loud on a malformed file; a missing one → deterministic minimal fallback with a
+`_fallback: true` marker.
 
 Full procedure → [references/step-b8-semantic-enrichment.md](references/step-b8-semantic-enrichment.md).
 
 ### Step C — Interview (AskUserQuestion, only when Layer 1 is unsure)
 
-One question per turn; ask only when the answer cannot be inferred
-from Layer 1. Examples: low profile confidence, scope ambiguity,
-nested-project policy, missing test/build commands. Also present
-`enrichment.product_description` for user edit.
+One question per turn; ask only when the answer cannot be inferred from Layer 1
+(low profile confidence, scope ambiguity, nested-project policy, missing
+test/build commands). Also present `enrichment.product_description` for edit.
 
 **Brief pre-fill (K2d, optional).** With `--brief`, run the shared intake FIRST;
 skip prompts it pre-fills (`product_description` → `enrichment.product_description`),
@@ -140,9 +133,7 @@ When-to-ask-vs-infer → [references/interview-protocol.md](references/interview
 
 ### Step D — Dry-Run Branch (if `--dry-run`)
 
-Skip Steps E–H. Invoke `dry_run_reporter.plan_standard_writes(...)`
-and exit 0.
-
+Skip Steps E–H. Invoke `dry_run_reporter.plan_standard_writes(...)` and exit 0.
 Full procedure → [references/step-d-dry-run.md](references/step-d-dry-run.md).
 
 ### Step E — Artifact Generation
@@ -153,20 +144,14 @@ uv run "${CLAUDE_PLUGIN_ROOT}/scripts/tools/generate_adoption_artifacts.py" \
   [--scope <full_app|library|cli>] [--profile <name>] [--split-name <name>]
 ```
 
-Writes in order: `CLAUDE.md`, agent_docs, planning spec, six configs
-(`shipwright_run_config.json` LAST), events.jsonl, baseline E2E spec,
-visual frontend docs (Tier 5), prior-art harvest, sibling-test ACs,
-TODO/FIXME inventory, see-also cross-links, security CI scaffold,
-CI workflow scaffold (profile-aware), CodeQL workflow scaffold
-(profile-aware), Claude-Review workflow scaffold, and `AUTOMERGE_SETUP.md`
-(branch-protection / auto-merge guide — written LAST, after every workflow
-scaffold, so its Required-Check job-name list is derived from the real
-deployed workflow files).
-
-Vite DX templates are offer-only — NEVER auto-applied. Existing
-`vite.config.ts` is NEVER overwritten. Features merge unions AST +
-crawl by route key. Gitignore awareness surfaces `majority_gitignored`
-warnings.
+Writes, in order: `CLAUDE.md` · agent_docs · planning spec (with the
+**derived-and-unconfirmed provenance block**) · `.shipwright/adopt/derived-catalogue.json`
+· six configs (`shipwright_run_config.json` LAST) · events.jsonl · baseline E2E
+spec · visual docs (Tier 5) · prior-art harvest · sibling-test ACs · TODO/FIXME
+inventory · cross-links · security / CI / CodeQL / Claude-Review scaffolds ·
+`AUTOMERGE_SETUP.md` (LAST — its Required-Check names are parsed from the
+workflow files just written). Vite DX templates are offer-only, never
+auto-applied; existing configs are never overwritten.
 
 Full procedure → [references/step-e-artifact-generation.md](references/step-e-artifact-generation.md).
 Template slot mapping → [references/artifact-templates.md](references/artifact-templates.md).
@@ -174,13 +159,12 @@ Nested-project policy → [references/nested-project-policy.md](references/neste
 
 ### Step E.5 — Env Scaffold (`.env.local`)
 
-After the artifact generator returns, adopt MUST scaffold
-`<project_root>/.env.local` via `shared/scripts/validate_env.py::init_env_file(
-project_root, "all", profile_dir, include_framework=True)` (result in
-`results["env_local"]`). Idempotent (never overwrites; preserves user content);
-`.gitignore` enforced FIRST (on failure → `action: skipped`, writes nothing);
-comment-prefixed entries only. Keys = profile `required_env_vars[...]` + framework
-`OPENROUTER_API_KEY` / `GEMINI_API_KEY` / `OPENAI_API_KEY`.
+After the artifact generator returns, adopt MUST scaffold `<project_root>/.env.local`
+via `shared/scripts/validate_env.py::init_env_file(project_root, "all", profile_dir,
+include_framework=True)` (result in `results["env_local"]`). Idempotent (never
+overwrites); `.gitignore` enforced FIRST (on failure → `action: skipped`, writes
+nothing); comment-prefixed entries only. Keys = profile `required_env_vars[...]`
++ framework `OPENROUTER_API_KEY` / `GEMINI_API_KEY` / `OPENAI_API_KEY`.
 
 Full procedure → [references/step-e5-env-scaffold.md](references/step-e5-env-scaffold.md).
 
@@ -192,11 +176,10 @@ uv run "${CLAUDE_PLUGIN_ROOT}/../../shared/scripts/lib/gitignore_canon.py" \
 ```
 
 Merges the canonical `.shipwright/` artifact-ignore block (SSoT:
-`shared/templates/shipwright-gitignore.template`) into the project's
-`.gitignore`. **Idempotent + additive** — line-level merge inside a managed
-BEGIN/END block (never duplicates), so re-running self-heals an already-adopted
-repo (transient artifacts ignored; canonical SDLC-doc homes stay tracked). JSON
-output: `{action, path, added, already_present, total_canonical}`.
+`shared/templates/shipwright-gitignore.template`) into the project's `.gitignore`.
+**Idempotent + additive** — a line-level merge inside a managed BEGIN/END block,
+so re-running self-heals an already-adopted repo (transient artifacts ignored,
+canonical SDLC-doc homes stay tracked).
 
 Full procedure → [references/step-e-artifact-generation.md](references/step-e-artifact-generation.md) (Step E.6 section).
 
@@ -207,16 +190,16 @@ uv run "${CLAUDE_PLUGIN_ROOT}/../../shared/scripts/tools/scaffold_triage_inbox.p
   --project-root <project_root> --json
 ```
 
-Idempotent — writes `.shipwright/triage.jsonl` (schema header; the **tracked**
-SSoT backlog, re-included by the Step E.6 canonical block so it ships in the Step
-H commit), `.shipwright/agent_docs/triage_inbox.md` (empty skeleton), and updates
-`.gitignore` for the `.lock` + GC `.bak` only. Result in `results["triage_inbox"]`.
+Idempotent — writes `.shipwright/triage.jsonl` (the **tracked** SSoT backlog,
+re-included by the E.6 canonical block so it ships in the Step H commit),
+`.shipwright/agent_docs/triage_inbox.md`, and ignores only the `.lock` + GC
+`.bak`. Result in `results["triage_inbox"]`. Step E.17 files into it.
 
 Full procedure → [references/step-e16-triage-inbox.md](references/step-e16-triage-inbox.md).
 
 ### Step E.17 — Traceability Baseline (before compliance seeding)
 
-Establish the requirement→test traceability baseline (TT7) — runs after Step E, BEFORE
+Establish the requirement→test traceability baseline (TT7) — after Step E, BEFORE
 Step F (whose collector emits the manifest from the tags this writes):
 
 ```bash
@@ -227,8 +210,8 @@ uv run "${CLAUDE_PLUGIN_ROOT}/scripts/tools/seed_traceability_baseline.py" \
 Scaffolds the `@FR` convention into `.claude/rules/`, runs the TT6 backfill (advisory
 split-match only — never `--repo-follows-split-convention`), takes a **repo-wide** skip
 inventory, and files orphan/skip candidates as tracked triage. Zero-test repos backfill
-clean (no false gate). An ambiguous FR is asked via `AskUserQuestion` interactively, or
-resolved from `--decisions` unattended (the tool never stalls).
+clean. An ambiguous FR is asked via `AskUserQuestion`, or resolved from `--decisions`
+unattended (the tool never stalls).
 
 Full procedure → [references/step-e17-traceability-baseline.md](references/step-e17-traceability-baseline.md).
 
@@ -239,31 +222,29 @@ uv run "${CLAUDE_PLUGIN_ROOT}/scripts/tools/seed_adopt_compliance.py" \
   --project-root <cwd>
 ```
 
-Populates SBOM, change-history, traceability-matrix, test-evidence,
-dashboard.
-
+Populates SBOM, change-history, traceability-matrix, test-evidence, dashboard.
 Full procedure → [references/step-f-compliance-seeding.md](references/step-f-compliance-seeding.md).
 
 ### Step G — Layer-3 Review
 
-Run `review_runner.run_review(...)` from
-`scripts/lib/review_runner.py`. Writes `.shipwright/adopt/review.md`.
-Without API key: `status: skipped, reason: no_api_key` (acceptable).
-HIGH/MAJOR findings about hallucinations → AskUserQuestion: fix /
-accept with caveat / abort.
+Run `review_runner.run_review(...)` from `scripts/lib/review_runner.py`. Writes
+`.shipwright/adopt/review.md`. Without an API key: `status: skipped, reason:
+no_api_key` (acceptable). HIGH/MAJOR hallucination findings → AskUserQuestion:
+fix / accept with caveat / abort.
 
 Full procedure → [references/step-g-layer3-review.md](references/step-g-layer3-review.md).
 
 ### Step H — Validate, Commit, Handoff
 
-Validate via `validate_adoption.py` — hard-stop on `errors[]`, surface
-`warnings[]` in handoff. If validation passes, build the commit message
-via `lib.adopt_commit_template.build_adopt_commit_message` (Run-ID
-regex enforced by the helper). Print the handoff banner — the
-"Edit .env.local" block derives the list from
-`results["env_local"]["missing_keys"]` (NOT hardcoded; the merge of
-profile `required_env_vars` and framework keys), and renders whenever
-`missing_keys` is non-empty (independent of `action`).
+Validate via `validate_adoption.py` — hard-stop on `errors[]` (which now
+include the derived-catalogue artifact), surface `warnings[]`. Build the commit
+message via `lib.adopt_commit_template.build_adopt_commit_message`;
+`unconfirmed_fr_count` is **required** and read from
+`.shipwright/adopt/derived-catalogue.json`. The handoff banner reports how
+many requirements are derived-and-unconfirmed and names the follow-up, and
+derives the "Edit .env.local" list from `results["env_local"]["missing_keys"]`
+(profile `required_env_vars` + framework keys; NOT hardcoded), rendering
+whenever it is non-empty.
 
 Full procedure → [references/step-h-validate-commit-handoff.md](references/step-h-validate-commit-handoff.md).
 

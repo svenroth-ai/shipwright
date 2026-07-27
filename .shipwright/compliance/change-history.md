@@ -1,8 +1,8 @@
 # Commit Change Log
 
-Generated: 2026-07-27T09:08:42.773123+00:00
-Source-State: run=iterate-2026-07-27-artifact-state-stamping
-Total commits: 1215
+Generated: 2026-07-27T11:51:38.463108+00:00
+Source-State: run=iterate-2026-07-27-adopt-derived-catalogue
+Total commits: 1216
 
 ## Commit Distribution
 
@@ -10,7 +10,7 @@ Total commits: 1215
 pie title Commit Types
     "fix" : 349
     "feat" : 337
-    "chore" : 254
+    "chore" : 255
     "docs" : 147
     "refactor" : 76
     "test" : 31
@@ -379,8 +379,8 @@ pie title Commit Types
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-07-27 | iterate | the F0 race warning becomes a tracked follow-up that outlives the run (#439) | ed0b0a346a12 |
 | 2026-07-27 | compliance | produced artifacts name the state they describe (FR-01.10) (#448) | e869a02b60fb |
-| 2026-07-27 | iterate | the F0 race warning becomes a tracked follow-up that outlives the run | a52775f9fd8d |
 | 2026-07-27 | triage | defer from the terminal; cap the failing-check detail (#444) | 631e08055ebc |
 | 2026-07-27 | project | give requirements a size rule, and stop the templates contradicting the basis rule (#442) | af72103d0e7a |
 | 2026-07-27 | spec | REQ-3 Phase 2 — every requirement now states what it guarantees (#436) | 28491e1c9631 |
@@ -717,10 +717,11 @@ pie title Commit Types
 | 2026-03-20 | — | Task 02 — project templates (CLAUDE.md, agent_docs, CI) | c3a6d2f53bd3 |
 | 2026-03-20 | — | Task 01 — monorepo scaffolding + supabase-nextjs stack profile | 990a138a4690 |
 
-### Chores (chore) — 254 commits
+### Chores (chore) — 255 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-07-27 | triage | sweep 6 outbox append(s) into branch | b654dedd4549 |
 | 2026-07-26 | review | default external-review GPT model to gpt-5.6-terra (#435) | 8d750a5fc7af |
 | 2026-07-24 | security | stage full compliance write-set in Step 7.5 finalizer (#434) | 5da96ebe8561 |
 | 2026-07-23 | compliance | refresh after security scan (#433) | 2b644805fb7d |
@@ -1285,7 +1286,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 1215 |
+| Total commits | 1216 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 1215 |
+| Human-authored commits | 1216 |
 

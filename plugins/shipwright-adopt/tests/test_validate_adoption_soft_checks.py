@@ -12,6 +12,8 @@ import json
 from pathlib import Path
 
 from checks.validate_adoption import validate
+from lib.derived_catalogue import summarize
+from lib.derived_catalogue_doc import to_document, write_summary
 
 
 def _make_minimum_valid(root: Path, *, decision_log_body: str | None = None) -> None:
@@ -37,6 +39,14 @@ def _make_minimum_valid(root: Path, *, decision_log_body: str | None = None) -> 
     (root / "shipwright_events.jsonl").write_text(
         json.dumps({"type": "adopted"}) + "\n", encoding="utf-8"
     )
+    # The honesty artifact (trg-1aa5a8ab): what onboarding derived and nobody
+    # confirmed. Built through the REAL writer — a hand-rolled stub would be a
+    # fixture the production reader rejects, and the test would then be asserting
+    # against something adopt never emits (external code review).
+    (root / ".shipwright" / "adopt").mkdir(parents=True, exist_ok=True)
+    write_summary(root, summarize(
+        [{"fr_id": "FR-01.01", "label": "Sign in", "source_file": "src/auth.ts"}],
+        split_name="01-adopted"))
     (root / ".claude").mkdir(exist_ok=True)
     (root / ".claude" / "settings.json").write_text(
         json.dumps({"hooks": {"UserPromptSubmit": [{"command": "uv run suggest_iterate.py"}]}}),
@@ -97,3 +107,65 @@ def test_no_snapshot_does_not_crash(tmp_path: Path) -> None:
     assert result["errors"] == []
     # No "historical" warning since we have no commit count to compare against
     assert not any("historical" in w for w in result["warnings"])
+
+
+# ---------------------------------------------------------------------------
+# The honesty artifacts are HARD requirements (trg-1aa5a8ab)
+# ---------------------------------------------------------------------------
+
+
+def test_a_missing_honesty_artifact_blocks_the_handover(tmp_path: Path) -> None:
+    """Errors, not warnings, and Step H hard-stops on errors.
+
+    Without them the handover presents a derived catalogue as if someone had
+    confirmed it, and an inherited red suite as this project's own failure.
+    A warning would be surfaced and then walked past — which is how both gaps
+    survived to be found years later.
+    """
+    rel = ".shipwright/adopt/derived-catalogue.json"
+    _make_minimum_valid(tmp_path)
+    (tmp_path / rel).unlink()
+    result = validate(tmp_path)
+    assert any(rel in e for e in result["errors"]), result
+
+
+def test_the_error_names_the_step_that_writes_the_missing_file(tmp_path: Path) -> None:
+    """A repo adopted before this rule existed will fail re-validation. That is
+    correct — it genuinely lacks the artifacts — so the message must say what to
+    run rather than only that something is absent."""
+    _make_minimum_valid(tmp_path)
+    (tmp_path / ".shipwright" / "adopt" / "derived-catalogue.json").unlink()
+    (errmsg,) = [e for e in validate(tmp_path)["errors"] if "derived-catalogue" in e]
+    assert "generate_adoption_artifacts.py" in errmsg
+
+
+def test_a_catalogue_that_contradicts_itself_blocks_the_handover(tmp_path: Path) -> None:
+    """Present is not the same as trustworthy. The count in this file is what the
+    adoption commit publishes, so a forged document must not pass the one gate
+    meant to stop it."""
+    _make_minimum_valid(tmp_path)
+    doc = to_document(summarize(
+        [{"fr_id": "FR-01.01", "label": "x", "source_file": "a.ts"}],
+        split_name="01-adopted"))
+    doc["unconfirmed"] = 0                      # a lie the entries do not support
+    (tmp_path / ".shipwright" / "adopt" / "derived-catalogue.json").write_text(
+        json.dumps(doc), encoding="utf-8")
+
+    (err,) = [e for e in validate(tmp_path)["errors"] if "derived-catalogue" in e]
+    assert "unusable" in err and "contradicts itself" in err
+
+
+def test_a_catalogue_claiming_unearned_confirmation_blocks_the_handover(
+    tmp_path: Path,
+) -> None:
+    _make_minimum_valid(tmp_path)
+    doc = to_document(summarize(
+        [{"fr_id": "FR-01.01", "label": "x", "source_file": "a.ts"}],
+        split_name="01-adopted"))
+    doc["requirements"][0]["confirmed"] = True
+    doc["confirmed"], doc["unconfirmed"] = 1, 0   # counts kept self-consistent
+    (tmp_path / ".shipwright" / "adopt" / "derived-catalogue.json").write_text(
+        json.dumps(doc), encoding="utf-8")
+
+    (err,) = [e for e in validate(tmp_path)["errors"] if "derived-catalogue" in e]
+    assert "contradicts `basis`" in err

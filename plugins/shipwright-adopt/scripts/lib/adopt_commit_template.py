@@ -52,6 +52,7 @@ def build_adopt_commit_message(
     profile: str,
     scope: str,
     inferred_fr_count: int,
+    unconfirmed_fr_count: int,
 ) -> str:
     """Return the full commit message Step H should pass to ``git commit -m``.
 
@@ -62,6 +63,13 @@ def build_adopt_commit_message(
         scope: Adoption scope (e.g., ``full_app``, ``library``, ``cli``).
         inferred_fr_count: Number of FRs the adopt enrichment inferred
             from the existing codebase.
+        unconfirmed_fr_count: How many of those no person has confirmed —
+            read from ``.shipwright/adopt/derived-catalogue.json``.
+            **Required, deliberately** (trg-1aa5a8ab): the commit that hands a
+            repository over is the most-read record of what onboarding produced,
+            and a keyword with a default would let the count fall silently out of
+            it. A caller that has not looked up the number cannot build the
+            message at all.
 
     Returns:
         Multi-line conventional-commit string ending with the
@@ -74,6 +82,10 @@ def build_adopt_commit_message(
         "\n"
         f"Adopted via /shipwright-adopt using profile={profile}, scope={scope}.\n"
         f"Inferred {inferred_fr_count} functional requirements from existing codebase.\n"
+        f"{unconfirmed_fr_count} of them are DERIVED AND UNCONFIRMED — no person has\n"
+        "agreed they describe this product. Work through them with someone who\n"
+        "knows it, following shared/requirement-elicitation.md; counts in\n"
+        ".shipwright/adopt/derived-catalogue.json.\n"
         "Seeded compliance artifacts (SBOM, change-history, RTM skeleton).\n"
         "Test evidence starts collecting from next /shipwright-test run.\n"
         "\n"

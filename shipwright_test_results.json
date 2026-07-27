@@ -1,215 +1,215 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-07-27-f0-race-triage",
+    "run_id": "iterate-2026-07-27-adopt-derived-catalogue",
     "date": "2026-07-27",
     "unit": {
       "status": "passed",
-      "passed": 9512,
-      "total": 9534,
-      "skipped": 22
+      "passed": 526,
+      "total": 526
     },
     "integration": {
       "status": "passed",
-      "passed": 419,
-      "total": 419,
-      "skipped": 0
+      "passed": 418,
+      "total": 418
     },
     "pgtap": {
-      "status": "not_run",
+      "status": "skipped",
       "passed": 0,
       "total": 0
     },
     "e2e": {
-      "status": "not_run",
-      "passed": 0,
-      "total": 0
+      "status": "passed",
+      "passed": 72,
+      "total": 72
     },
     "design_fidelity": {
-      "status": "not_run",
+      "status": "skipped",
       "passed": 0,
       "total": 0
     },
     "smoke": {
-      "status": "not_run"
+      "status": "skipped"
     },
     "degraded": [
-      "classify_complexity risk flag touches_auth is a PROSE false positive - the taxonomy matches the literal 'session' in 'outlives the session'. The diff-driven risk_detectors predicates, which are authoritative, return no flag. Overridden.",
-      "External CODE review: the Gemini leg returned a degraded reply (an unfinished internal monologue, not a review) although transport reported success; recorded as parse_status=partial. The OpenAI leg returned 4 findings, all dispositioned and fixed. The PLAN review round had both legs healthy.",
-      "Review passes 'code' and 'doubt' did not run: a session directive forbids spawning subagents. Both are closed explicitly in the review record naming that rule, and substituted (external code review on the same diff; six negative-control probes for the adversarial role)."
+      {
+        "condition": "interview_and_approval_gate_skipped",
+        "reason": "--autonomous against a complete, self-contained brief (trg-1aa5a8ab)."
+      },
+      {
+        "condition": "internal_code_reviewer_and_doubt_reviewer_subagents_not_dispatched",
+        "reason": "session rule forbids spawning subagents unless requested; covered by the external CODE review on this split diff (4 findings, all fixed) plus 10 empirical probes. Both types closed explicitly in reviews.json."
+      },
+      {
+        "condition": "card_split_from_trg_1aa5a8ab",
+        "reason": "PR 1 of 2. The inherited-baseline register, Step E.18 and the confirmation follow-up ship next: a validator demanding a file no step writes would break every adopt run between the merges. Split so the Tier-3 review gate can actually READ each half (~33k / ~26k tokens vs 51.5k combined, which failed closed on truncation)."
+      }
     ],
     "surface_verification": {
       "surface": "cli",
-      "runner": "uv run --with pytest --with pytest-mock pytest integration-tests/test_f0_race_followup_e2e.py shared/scripts/tools/tests/test_suite_race_cli.py -q --color=no -p no:cacheprovider",
+      "runner": "uv run --directory plugins/shipwright-adopt --extra dev pytest tests/test_spec_document.py tests/test_derived_catalogue.py tests/test_derived_catalogue_doc.py tests/test_validate_adoption_soft_checks.py tests/test_adopt_pipeline_subprocess.py -q",
       "exit_code": 0,
-      "tests_run": 11,
-      "evidence_path": "C:\\01_Development\\shipwright\\.worktrees\\f0-race-triage\\.shipwright\\runs\\iterate-2026-07-27-f0-race-triage\\surface_verification.log",
-      "timestamp": "2026-07-27T07:59:42.087Z",
-      "attempts": 1
+      "tests_run": 72,
+      "evidence_path": ".shipwright/runs/iterate-2026-07-27-adopt-derived-catalogue/surface_verification.json",
+      "timestamp": "2026-07-27T11:49:07.300Z"
     },
     "test_completeness": {
       "status": "complete",
       "behaviors": [
         {
-          "behavior": "a confirmed race writes a tracked entry with the agreed source/severity/kind/dedup key/runId/commit/suiteId",
+          "behavior": "spec.md carries the derived-and-unconfirmed block naming the count",
           "disposition": "tested",
-          "evidence": "test_suite_race_triage.py::test_a_confirmed_race_is_written_to_the_tracked_store PASSED"
+          "evidence": "test_spec_document.py::test_the_spec_says_the_catalogue_is_derived_and_unconfirmed PASSED"
         },
         {
-          "behavior": "the entry lands in the tracked store, never the gitignored outbox",
+          "behavior": "the block changes no FR-table reader view of the rows",
           "disposition": "tested",
-          "evidence": "test_suite_race_triage.py::test_a_confirmed_race_is_written_to_the_tracked_store PASSED (asserts the outbox is absent)"
+          "evidence": "test_derived_catalogue.py::test_the_reader_sees_the_same_rows_with_and_without_the_banner PASSED"
         },
         {
-          "behavior": "the store is resolved from --project-root, not the cwd",
+          "behavior": "the block interpolates no free text, so a pipe cannot reach it",
           "disposition": "tested",
-          "evidence": "test_suite_race_triage.py::test_the_store_is_resolved_from_the_passed_root_not_the_cwd PASSED"
+          "evidence": "test_derived_catalogue.py::test_banner_interpolates_no_free_text PASSED"
         },
         {
-          "behavior": "a repeat sighting reuses the open card and still surfaces the handle",
+          "behavior": "all-derived / partly confirmed / fully confirmed each render differently",
           "disposition": "tested",
-          "evidence": "test_suite_race_triage.py::test_a_second_sighting_reuses_the_open_entry_instead_of_spamming PASSED"
+          "evidence": "test_derived_catalogue.py::test_a_partly_confirmed_catalogue_does_not_claim_nobody_confirmed_it PASSED (+2 variants)"
         },
         {
-          "behavior": "a card the operator closed does NOT suppress a fresh one",
+          "behavior": "no banner variant emits a table row",
           "disposition": "tested",
-          "evidence": "test_suite_race_triage.py::test_a_race_after_the_operator_closed_the_card_opens_a_fresh_one PASSED"
+          "evidence": "test_derived_catalogue.py::test_no_banner_variant_emits_a_table_row PASSED (3 variants)"
         },
         {
-          "behavior": "two units racing get one card each",
+          "behavior": "the JSON is schema-versioned and lists every derived row",
           "disposition": "tested",
-          "evidence": "test_suite_race_triage.py::test_two_units_racing_get_one_entry_each PASSED"
+          "evidence": "test_derived_catalogue_doc.py::test_document_is_schema_versioned_and_carries_every_row PASSED"
         },
         {
-          "behavior": "only the test-failure to green-alone class is filed (infra retry, rc 5, hang, red-both-ways, plain green)",
+          "behavior": "the JSON describes the table actually rendered",
           "disposition": "tested",
-          "evidence": "test_suite_race_triage.py::test_only_a_confirmed_race_is_filed PASSED (5 parametrized cases)"
+          "evidence": "test_derived_catalogue.py::test_json_summary_matches_the_table_the_reader_actually_parses PASSED"
         },
         {
-          "behavior": "...and that holds through the CLI, not only the predicate",
+          "behavior": "a zero-detection repo placeholder row is counted, not reported as 0",
           "disposition": "tested",
-          "evidence": "test_suite_race_cli.py::test_an_infra_retry_is_not_filed_end_to_end PASSED"
+          "evidence": "test_spec_document.py::test_a_zero_detection_repo_still_agrees PASSED"
         },
         {
-          "behavior": "captured test output never reaches the published log",
+          "behavior": "nothing adopt derives counts as confirmed; an interview basis does",
           "disposition": "tested",
-          "evidence": "test_suite_race_triage.py::test_captured_output_never_reaches_the_tracked_log PASSED"
+          "evidence": "test_derived_catalogue.py::test_nothing_adopt_derives_today_counts_as_confirmed PASSED"
         },
         {
-          "behavior": "control characters stripped; title capped after formatting",
+          "behavior": "an explicitly declared vocabulary Basis survives re-rendering",
           "disposition": "tested",
-          "evidence": "test_suite_race_triage.py::test_control_characters_and_length_are_neutralised and ::test_the_title_is_capped_after_formatting PASSED"
+          "evidence": "test_spec_table.py::test_an_explicitly_declared_basis_survives_re_rendering PASSED"
         },
         {
-          "behavior": "the dedup key is identity and is never truncated (no prefix collision)",
+          "behavior": "a declared Basis outside the vocabulary is ignored, never emitted",
           "disposition": "tested",
-          "evidence": "test_suite_race_triage.py::test_the_dedup_key_is_identity_and_is_never_truncated PASSED"
+          "evidence": "test_spec_table.py::test_a_declared_basis_outside_the_vocabulary_is_ignored_not_passed_through PASSED (5 cases)"
         },
         {
-          "behavior": "reproduce commands are never truncated",
+          "behavior": "every emitted Basis passes the audit vocabulary",
           "disposition": "tested",
-          "evidence": "test_suite_race_triage.py::test_the_reproduce_commands_are_never_truncated PASSED"
+          "evidence": "test_derived_catalogue.py::test_every_emitted_basis_passes_the_audit_vocabulary PASSED"
         },
         {
-          "behavior": "commands are shell-quoted and carry the unit's directory",
+          "behavior": "a truthy string is not confirmation",
           "disposition": "tested",
-          "evidence": "test_suite_report.py::test_a_command_is_shell_quoted_and_carries_the_units_directory PASSED"
+          "evidence": "test_derived_catalogue_doc.py::test_a_truthy_string_is_not_confirmation PASSED"
         },
         {
-          "behavior": "the alone-run command is the argv the runner actually re-ran",
+          "behavior": "confirmation cannot be claimed without an interview basis, either direction",
           "disposition": "tested",
-          "evidence": "test_suite_race_triage.py::test_the_launch_payload_reproduces_both_sides_with_the_real_command PASSED"
+          "evidence": "test_derived_catalogue_doc.py::test_confirmation_cannot_be_claimed_without_an_interview_basis and ::test_an_interview_row_claiming_to_be_unconfirmed_is_also_rejected PASSED"
         },
         {
-          "behavior": "the parallel command names the real root and run id, not a hard-coded dot",
+          "behavior": "a malformed or self-contradicting document is rejected",
           "disposition": "tested",
-          "evidence": "test_suite_report.py::test_the_parallel_command_names_the_root_and_the_run and test_suite_race_cli.py::test_the_recorded_parallel_command_targets_the_run_root PASSED"
+          "evidence": "test_derived_catalogue_doc.py::test_a_malformed_catalogue_is_rejected (7 cases) and ::test_a_document_that_contradicts_its_own_entries_is_rejected PASSED"
         },
         {
-          "behavior": "the card states the cause is undetermined and that it is never auto-closed",
+          "behavior": "a declared total, by_basis or name that is missing or wrong is rejected",
           "disposition": "tested",
-          "evidence": "test_suite_race_triage.py::test_the_card_says_what_was_measured_and_claims_no_cause PASSED"
+          "evidence": "test_derived_catalogue_doc.py::test_a_document_missing_a_declared_total_is_rejected (4 cases), ::test_a_wrong_by_basis_tally_is_rejected, ::test_a_row_without_a_name_is_rejected PASSED"
         },
         {
-          "behavior": "an append failure or unimportable triage API is reported, never raised",
+          "behavior": "an interview-backed document still round-trips",
           "disposition": "tested",
-          "evidence": "test_suite_race_triage.py::test_an_append_failure_is_reported_not_raised and ::test_an_unimportable_triage_api_is_reported_not_raised PASSED"
+          "evidence": "test_derived_catalogue_doc.py::test_an_interview_backed_document_round_trips PASSED"
         },
         {
-          "behavior": "a read-back failure after a successful append still counts as recorded",
+          "behavior": "read_summary round-trips and applies the fail-closed checks",
           "disposition": "tested",
-          "evidence": "test_suite_race_triage.py::test_a_read_back_failure_after_a_successful_append_is_still_recorded PASSED"
+          "evidence": "test_derived_catalogue_doc.py::test_read_summary_round_trips_what_write_summary_wrote, ::test_read_summary_applies_the_fail_closed_checks, ::test_read_summary_fails_closed_on_missing_or_unreadable (3 cases) PASSED",
+          "category": "integration"
         },
         {
-          "behavior": "only this producer's OPEN entries resolve a handle",
+          "behavior": "the commit body reports the unconfirmed count and points at the method",
           "disposition": "tested",
-          "evidence": "test_suite_race_triage.py::test_only_this_producers_open_entries_resolve_a_handle PASSED"
+          "evidence": "test_adopt_commit_template.py::test_the_body_reports_how_many_requirements_are_unconfirmed PASSED"
         },
         {
-          "behavior": "the console names the handle, and shouts when the record was lost",
+          "behavior": "the count cannot be silently omitted from the handover",
           "disposition": "tested",
-          "evidence": "test_suite_report.py::test_the_console_names_the_durable_handle and ::test_the_console_shouts_when_the_record_was_lost PASSED"
+          "evidence": "test_adopt_commit_template.py::test_the_count_cannot_be_omitted PASSED"
         },
         {
-          "behavior": "an infra retry keeps its own note and gets no handle; no retries renders nothing",
+          "behavior": "a missing artifact hard-blocks the handover, naming its step",
           "disposition": "tested",
-          "evidence": "test_suite_report.py::test_an_infra_retry_keeps_its_own_note_and_no_handle and ::test_no_retries_renders_nothing PASSED"
+          "evidence": "test_validate_adoption_soft_checks.py::test_a_missing_honesty_artifact_blocks_the_handover PASSED"
         },
         {
-          "behavior": "the summary table and a red unit's captured output still print (the reporting move is behaviour-preserving)",
+          "behavior": "a forged or self-contradicting catalogue blocks the handover at validation",
           "disposition": "tested",
-          "evidence": "test_suite_report.py::test_the_summary_table_tags_every_outcome_and_flags_a_retry, ::test_a_failing_units_captured_output_IS_shown_on_the_console, test_suite_race_cli.py::test_the_summary_still_prints_after_the_refactor PASSED"
+          "evidence": "test_validate_adoption_soft_checks.py::test_a_catalogue_that_contradicts_itself_blocks_the_handover and ::test_a_catalogue_claiming_unearned_confirmation_blocks_the_handover PASSED",
+          "category": "integration"
         },
         {
-          "behavior": "a green suite plus a lost record exits 3",
+          "behavior": "Step H reference names the artifact, the kwarg, the method and read_summary",
           "disposition": "tested",
-          "evidence": "test_suite_race_cli.py::test_a_green_run_that_could_not_record_the_race_exits_three PASSED"
+          "evidence": "test_skill_references_link.py::test_step_h_reference_tells_the_agent_where_the_count_comes_from PASSED"
         },
         {
-          "behavior": "a red suite plus a lost record keeps exit 1 and is still shouted about",
+          "behavior": "effective_features is the one answer to which rows exist, non-aliasing",
           "disposition": "tested",
-          "evidence": "test_suite_race_cli.py::test_a_red_run_keeps_its_own_exit_code PASSED"
+          "evidence": "test_spec_table.py::test_effective_features_synthesizes_the_placeholder_for_a_zero_detection_repo PASSED (3 cases)"
         },
         {
-          "behavior": "a red sibling unit never skips the recording",
+          "behavior": "both files are written together, spec first, idempotently",
           "disposition": "tested",
-          "evidence": "test_suite_race_cli.py::test_a_red_sibling_never_skips_the_recording PASSED"
+          "evidence": "test_spec_document.py::test_both_files_are_written_spec_first and ::test_a_re_run_overwrites_both_in_place PASSED"
         },
         {
-          "behavior": "a clean run writes nothing and keeps exit 0; a config error still exits 2",
+          "behavior": "summarize survives lib bound to another plugin (ADR-045)",
           "disposition": "tested",
-          "evidence": "test_suite_race_cli.py::test_a_clean_run_writes_nothing_and_keeps_exit_zero and ::test_a_config_error_still_exits_two_without_touching_the_store PASSED"
+          "evidence": "test_derived_catalogue.py::test_summarize_works_when_lib_belongs_to_another_plugin PASSED (subprocess, hostile binding)",
+          "category": "integration"
         },
         {
-          "behavior": "--run-id is optional and its absence is a null field, not a placeholder",
+          "behavior": "the wired-up generator writes both artifacts and they agree",
           "disposition": "tested",
-          "evidence": "test_suite_race_cli.py::test_run_id_is_optional_and_its_absence_is_recorded_as_absent PASSED"
+          "evidence": "test_adopt_pipeline_subprocess.py::test_full_pipeline_e2e_via_subprocess PASSED; F0.5 cli exit_code 0, tests_run 72",
+          "category": "integration"
         },
         {
-          "behavior": "commit resolution on a non-repo root or with git missing yields no commit and no error",
-          "disposition": "tested",
-          "evidence": "test_suite_race_triage.py::test_commit_resolution_on_a_non_repo_root_yields_no_commit and ::test_a_missing_git_binary_yields_no_commit PASSED"
-        },
-        {
-          "behavior": "operator-facing strings stay ASCII in the two NEW modules",
-          "disposition": "tested",
-          "evidence": "test_suite_units.py::test_operator_facing_strings_are_ascii_only PASSED (extended to suite_report + suite_race_triage)"
-        },
-        {
-          "behavior": "the whole production path works against a real flaky unit over three consecutive runs, including the card surviving a later CLEAN parallel run",
-          "disposition": "tested",
-          "category": "integration",
-          "evidence": "integration-tests/test_f0_race_followup_e2e.py::test_the_runner_records_a_real_race_and_never_auto_closes_it PASSED - drives the real CLI as a subprocess, nothing stubbed"
+          "behavior": "the Step H handoff BANNER renders these counts on screen",
+          "disposition": "untestable",
+          "reason_code": "covered-by-existing-test",
+          "reason": "prompt-rendered text, not code. What is mechanical is tested: the required unconfirmed_fr_count kwarg, and the drift test pinning that Step H reads via read_summary."
         }
       ],
       "counts": {
-        "testable": 30,
-        "tested": 30,
-        "untestable": 0,
+        "testable": 27,
+        "tested": 27,
+        "untestable": 1,
         "untested_testable": 0
       },
       "enumeration_basis": {
-        "acs": 14,
-        "covered_acs": 14
+        "acs": 7,
+        "covered_acs": 7
       }
     }
   },

@@ -1,7 +1,7 @@
 # Software Bill of Materials (SBOM)
 
-Generated: 2026-07-27T09:08:42.773123+00:00 (dependency versions resolved from uv.lock)
-Source-State: run=iterate-2026-07-27-artifact-state-stamping
+Generated: 2026-07-27T11:51:38.463108+00:00 (dependency versions resolved from uv.lock)
+Source-State: run=iterate-2026-07-27-adopt-derived-catalogue
 
 ## Summary
 
@@ -10,7 +10,7 @@ Source-State: run=iterate-2026-07-27-artifact-state-stamping
 | Runtime dependencies | 6 (deduplicated) |
 | Dev dependencies | 5 |
 | Total packages | 11 |
-| Licenses resolved | 6 / 11 |
+| Licenses resolved | 9 / 11 |
 | Unique licenses | 3 (Apache-2.0, MIT, PSFL) |
 | Copyleft licenses | 0 |
 
@@ -18,10 +18,10 @@ Source-State: run=iterate-2026-07-27-artifact-state-stamping
 
 ```mermaid
 pie title License Distribution (all 11 packages)
+    "MIT" : 5
     "Apache-2.0" : 3
-    "MIT" : 2
     "PSFL" : 1
-    "unknown" : 5
+    "unknown" : 2
 ```
 
 ## Runtime Dependencies
@@ -40,12 +40,12 @@ pie title License Distribution (all 11 packages)
 | Package | Version | License |
 |---------|---------|---------|
 | diff-cover | 10.3.0 | - |
-| pytest | 9.0.3 | - |
-| pytest | 9.1.1 | - |
+| pytest | 9.0.3 | MIT |
+| pytest | 9.1.1 | MIT |
 | pytest-cov | 7.1.0 | - |
-| pytest-mock | 3.15.1 | - |
+| pytest-mock | 3.15.1 | MIT |
 
 ## License Compliance
 
-**5 dependency(ies) could not be resolved in this scan** - license unverified; verify before distribution.
+**2 dependency(ies) could not be resolved in this scan** - license unverified; verify before distribution.
 

@@ -1,0 +1,10 @@
+{
+  "run_id": "iterate-2026-07-27-adopt-derived-catalogue",
+  "date": "2026-07-27T11:51:38.364103Z",
+  "type": "feature",
+  "complexity": "medium",
+  "branch": "iterate/adopt-derived-catalogue",
+  "spec": ".shipwright/planning/iterate/2026-07-27-adopt-derived-catalogue.md",
+  "tests_passed": true,
+  "adr": "iterate-2026-07-27-adopt-derived-catalogue"
+}
