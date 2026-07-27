@@ -26,7 +26,7 @@ CATALOG = REPO_ROOT / ".shipwright" / "planning" / "01-adopted" / "spec.md"
 
 #: The ids the catalog carries. S6 must not lose or renumber one; a later iterate
 #: may append the next free number (FR-01.16 was minted 2026-07-23, REQ-3 Ph1).
-EXPECTED_IDS = tuple(f"FR-01.{n:02d}" for n in range(1, 17))
+EXPECTED_IDS = tuple(f"FR-01.{n:02d}" for n in range(1, 19))
 
 #: ONE sys.path root for the whole module, so every shared module here is
 #: reachable under exactly one identity (`lib.<name>`). Inserting both
@@ -65,7 +65,11 @@ def test_the_fr_table_reader_still_sees_every_requirement():
     assert [r.priority for r in rows] == [
         "Must", "Must", "Must", "Should", "Must", "Must", "Must", "Should",
         "Must", "Must", "Must", "May", "Must", "Must", "Must", "Must",
-    ], "priorities must survive the merge unchanged (FR-01.16 = Must)"
+        "Must", "Should",
+    ], (
+        "priorities must survive the merge unchanged (FR-01.16/.17 = Must; "
+        "FR-01.18 = Should — the pipeline is complete without the grader)"
+    )
 
 
 def test_the_heading_parser_sees_the_same_set():
@@ -130,10 +134,10 @@ def test_the_fr_heading_coherence_report_is_knowingly_wrong_here():
     from lib.spec_parser import parse_fr_headings  # noqa: PLC0415
 
     headings = parse_fr_headings(CATALOG.read_text(encoding="utf-8"))
-    assert len(headings) == 16
+    assert len(headings) == 18
     missing_both = [h.id for h in headings
                     if not h.has_description() and not h.has_acceptance()]
-    assert len(missing_both) == 16, (
+    assert len(missing_both) == 18, (
         "the FR-coherence reading of THIS catalog changed. If the catalog or the "
         "check was fixed, that is good — update this test, the note in "
         "docs/migrations/requirements-catalog-merge.md, and the Honest-limits "

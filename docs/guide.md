@@ -1565,6 +1565,16 @@ The **constitution** (`shared/constitution.md`) defines behavioral boundaries fo
 - Log deviating decisions in `.shipwright/agent_docs/decision_log.md`.
 - Keep files under **300 lines (source / tests) / 400 lines (runtime-prompts: `SKILL.md`, `CLAUDE.md`, plugin agents, shared prompts)**, split if larger. The bloat anti-ratchet hook hard-blocks commits that grow an allowlisted entry past its frozen `current`; new crossings are advisory and surfaced by the Group H detective audit post-merge. Exceptions go through `.shipwright/planning/adr/_template-bloat-exception.md` with mandatory Ousterhout / YAGNI / Chesterton-Fence / Re-Review-Date / Incident-Reference fields. Allowlist / Ratchet / Anti-Ratchet vocabulary lives in `shared/glossary.md`.
 - Fix the code, not the test -- never weaken assertions to pass.
+- Review before done, in stages: spec-compliance first (a mismatch blocks the rest and is fixed before quality review), then code quality, then -- for changes touching risky ground (stored-data migrations, concurrency, anything hard to undo) -- an adversarial pass that tries to disprove the change. Every finding is fixed, or recorded with the reason it was declined.
+- When frontend files change, verify the running UI in a real browser (console errors + a screenshot) before calling the work done -- a missing browser setup is to fix, not grounds to skip the check.
+- Test every acceptance criterion at the layer that can actually falsify it: a promise about what a user can do needs an end-to-end test, one about a calculation a unit test, one about who may read a row a database test, one about reachability a smoke test. Testing one layer too low looks like coverage and proves nothing. A criterion with no test is unfinished work -- blocking in a planned project, a tracked follow-up in an adopted one.
+- Read state from where it is authoritative, not from the copy nearest to hand. The triage log, the plugin cache and the compliance snapshots are kept per tree or per clone, so a worktree's copy can be behind `main`, ahead of what anyone else sees, or both. When you report such state, say which tree you read it from.
+
+> **The enforcement table in the constitution is a seed, not the register.** Four
+> hooks are named against roughly forty rules, which invites the reader to assume
+> the rulebook is enforced when most of it is instruction only. Until the
+> constitution enforcement register lands (REQ-3 Phase 3), treat every rule not
+> named in that table as instruction-only.
 
 **ASK FIRST (require user confirmation):**
 - Destructive database operations (`DROP TABLE`, `DROP COLUMN`, `TRUNCATE`).

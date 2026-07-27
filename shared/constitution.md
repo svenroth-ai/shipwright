@@ -49,9 +49,12 @@
 - Validate input at system boundaries (API routes, external data, user input)
 - Create a NEW commit after fixing pre-commit issues (the previous commit didn't happen)
 - Run self-review checklist before committing: spec compliance, error handling, security, test quality, naming
+- Review before done, in stages: spec-compliance **first** (does the code do what the spec says — a mismatch blocks the rest and is fixed before quality review), then code quality, then — for changes touching risky ground (stored-data migrations, concurrency, anything hard to undo) — an adversarial pass that tries to disprove the change. Every finding is fixed or recorded with the reason it was declined, never left merely raised. (Build Step 6 `spec-reviewer`→`code-reviewer`→`doubt-reviewer` and iterate's review-record are two implementations of this one discipline.)
+- When frontend files change, verify the running UI in a real browser (console errors + a screenshot) before calling the work done — a missing browser setup is to fix, not grounds to skip the check
 - Log decisions that deviate from spec in `.shipwright/agent_docs/decision_log.md`
 - Update compliance incrementally after each pipeline phase
 - Keep files under 300 lines (Source/Tests) / 400 lines (Runtime-Prompts: SKILL.md, CLAUDE.md, plugin agents, shared prompts). Hard CI block on Anti-Ratchet (existing baseline entry growing past `current`); new crossings advisory. Exception path: `.shipwright/planning/adr/_template-bloat-exception.md` (mandatory Ousterhout / YAGNI / Chesterton-Fence / Re-Review-Date / Incident-Reference fields). See `shared/glossary.md` for Allowlist / Ratchet / Anti-Ratchet vocabulary.
+- Test every acceptance criterion at the layer that can actually falsify it: a promise about what a user can do needs an end-to-end test, a promise about a calculation needs a unit test, a promise about who may read a row needs a database test, a promise that the app is reachable needs a smoke test. Testing one layer too low looks like coverage and proves nothing. A criterion with no test is unfinished work, not a coverage percentage — in a project built from a plan it blocks completion; in an adopted (brownfield) one the inherited gap becomes a tracked follow-up rather than a silent absence. (The layer set and which layers block are the Test Layer Boundaries table below.)
 - Fix the code, not the test — never weaken assertions to make tests pass
 - Never weaken RLS policies to make integration tests pass — fix the test or auth context instead
 - Service-role client is for test setup/teardown ONLY — never use it for test assertions
@@ -61,6 +64,7 @@
 - Verify after non-trivial edits — run `tsc --noEmit` (TypeScript) or project linter before reporting success
 - Re-read files before editing in long sessions (10+ messages) — do not trust cached content after auto-compaction
 - State explicitly when search results may be truncated — never silently work with incomplete data
+- Read state from where it is authoritative, not from the copy nearest to hand. Several things Shipwright tracks are kept **per tree or per clone** — the triage log, the plugin cache, the compliance snapshots — so the copy inside a worktree can be behind what `main` knows, ahead of what anyone else can see, or both at once. Two observed failures of this, both in one round: an item dismissed on `main` still read as open inside a worktree (reported to the operator as live work, when the Command Center showed it closed), and items filed inside a worktree stayed invisible in the Command Center until the PR merged. When you report such state, say which tree you read it from
 
 ## ASK FIRST (require user confirmation)
 
@@ -160,3 +164,15 @@ These rules are also enforced by hooks (see `docs/hooks-and-pipeline.md`):
 | `check_file_size.py` | Warns if file exceeds size limit |
 
 The constitution documents the complete set of rules. Hooks provide a programmatic safety net for the most critical subset.
+
+**This table is a seed, not the register.** Four hooks are named here against
+roughly forty rules, which invites the reader to assume the rulebook is enforced
+when most of it is instruction only. The honest position: a rule may be enforced
+by a hook, by a phase validator, by a test, or by nothing but this document —
+and which of those holds must be *declared per rule*, not inferred. The
+**constitution enforcement register** (`shared/config/gate_catalog.json` +
+generated doc + doc-sync drift test is the working pattern to copy) makes that
+declaration mandatory: a rule added here without a register entry fails CI.
+Design: `.shipwright/planning/campaigns/2026-07-24-req3-constitution-enforcement-register-DESIGN.md`
+(REQ-3 Phase 3). Until it lands, treat every rule not named in the table above as
+instruction-only.

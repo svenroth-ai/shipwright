@@ -141,7 +141,8 @@ def test_module_lists_the_coverage_dimensions():
     start = body.index("## 8. The coverage checklist")
     end = body.index("## 9.", start)
     section = body[start:end].lower()
-    for dimension in ("purpose", "boundaries", "failure", "glossary", "rationale", "out of scope"):
+    for dimension in ("outcome", "purpose", "boundaries", "failure", "glossary",
+                      "rationale", "out of scope"):
         assert dimension in section, f"§8 coverage checklist is missing the {dimension!r} dimension"
     assert "basis: assumed" in section, (
         "the §8 stop-condition must route an unanswered dimension to `Basis: assumed`"

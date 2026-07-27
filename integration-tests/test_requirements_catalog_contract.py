@@ -33,7 +33,7 @@ RTM = REPO_ROOT / ".shipwright" / "compliance" / "traceability-matrix.md"
 
 #: The ids the catalog carries. S6 must not lose or renumber one; a later iterate
 #: may append the next free number (FR-01.16 was minted 2026-07-23, REQ-3 Ph1).
-EXPECTED_IDS = tuple(f"FR-01.{n:02d}" for n in range(1, 17))
+EXPECTED_IDS = tuple(f"FR-01.{n:02d}" for n in range(1, 19))
 
 _EXPLICIT_ANCHOR = re.compile(r'<a\s+id="([^"]+)"\s*>')
 _RTM_FR_LINK = re.compile(r"\[(FR-[\d.]+)\]\(([^)]*spec\.md#[^)]+)\)")
@@ -85,10 +85,64 @@ def _requirement_text(text: str) -> list[tuple[str, str]]:
 
 def test_all_requirements_survive_with_unchanged_ids(catalog):
     """The merge is a merge, not a rewrite: no original id lost or renumbered.
-    New ids are only ever appended at the next free number (FR-01.16, REQ-3)."""
+    New ids are only ever appended at the next free number (FR-01.16, FR-01.17
+    and FR-01.18, all REQ-3)."""
     found = tuple(m.group(1) for m in
                   (_TABLE_ROW.match(ln) for ln in catalog.splitlines()) if m)
     assert found == EXPECTED_IDS
+
+
+def _criteria_sentences(text: str) -> list[tuple[str, str]]:
+    """(FR-id, full criterion) with continuation lines joined.
+
+    ``_requirement_text`` deliberately yields ONE line per criterion — enough for
+    the forbidden-token scan, which is a per-token check. A shape check is not:
+    the clause it looks for routinely sits on the second or third line, so
+    reading line-by-line would flag almost every criterion in the catalog.
+    """
+    out: list[tuple[str, str]] = []
+    current = "?"
+    buf: list[str] | None = None
+    for line in text.splitlines():
+        heading = re.match(r"^###\s+(FR-\d+\.\d+)\b", line)
+        if heading:
+            current = heading.group(1)
+        if _CRITERION.match(line):
+            if buf:
+                out.append((buf[0], buf[1]))
+            buf = [current, line.strip()]
+        elif buf is not None and line.startswith("  ") and line.strip():
+            buf[1] += " " + line.strip()
+        elif buf is not None:
+            out.append((buf[0], buf[1]))
+            buf = None
+    if buf:
+        out.append((buf[0], buf[1]))
+    return out
+
+
+def test_every_criterion_is_assertion_shaped(catalog):
+    """`- (E) Given ... when ... then ...` — the `when` clause is not optional.
+
+    `fr-authoring.md` states the shape and nothing checked it. An external
+    review of the REQ-3 Phase-2 head found four criteria written
+    `Given ... then ...`, with no observable trigger between the precondition
+    and the promise — one in `.02`, two in `.04`, one in `.08`, all inherited
+    from earlier walks. A criterion with no trigger cannot say *when* it must
+    hold, which is the half a test binds to.
+
+    Pinned here rather than left to the next reader, because the finding came
+    from a model reading prose: a mechanical shape is exactly the thing that
+    should never need one.
+    """
+    missing = [
+        (fr, sentence[:70])
+        for fr, sentence in _criteria_sentences(catalog)
+        if not re.search(r"\bwhen\b", sentence, re.IGNORECASE)
+    ]
+    assert missing == [], (
+        f"criteria without a `when` clause (not assertion-shaped): {missing}"
+    )
 
 
 def test_the_catalog_path_is_covered_by_a_registered_artifact_migration():
@@ -144,7 +198,7 @@ def test_every_requirement_has_an_explicit_anchor(catalog):
     """
     anchors = _EXPLICIT_ANCHOR.findall(catalog)
     fr_anchors = [a for a in anchors if a.startswith("fr-")]
-    assert fr_anchors == [f"fr-01{n:02d}" for n in range(1, 17)]
+    assert fr_anchors == [f"fr-01{n:02d}" for n in range(1, 19)]
     assert len(set(anchors)) == len(anchors), "duplicate anchor id"
 
 
