@@ -1,18 +1,17 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-07-27-f0-race-triage",
+    "run_id": "iterate-2026-07-27-rollback-uses-target-ref",
     "date": "2026-07-27",
     "unit": {
       "status": "passed",
-      "passed": 9512,
-      "total": 9534,
-      "skipped": 22
+      "passed": 8980,
+      "total": 9000,
+      "skipped": 20
     },
     "integration": {
       "status": "passed",
-      "passed": 419,
-      "total": 419,
-      "skipped": 0
+      "passed": 418,
+      "total": 418
     },
     "pgtap": {
       "status": "not_run",
@@ -20,9 +19,9 @@
       "total": 0
     },
     "e2e": {
-      "status": "not_run",
-      "passed": 0,
-      "total": 0
+      "status": "passed",
+      "passed": 12,
+      "total": 12
     },
     "design_fidelity": {
       "status": "not_run",
@@ -33,183 +32,232 @@
       "status": "not_run"
     },
     "degraded": [
-      "classify_complexity risk flag touches_auth is a PROSE false positive - the taxonomy matches the literal 'session' in 'outlives the session'. The diff-driven risk_detectors predicates, which are authoritative, return no flag. Overridden.",
-      "External CODE review: the Gemini leg returned a degraded reply (an unfinished internal monologue, not a review) although transport reported success; recorded as parse_status=partial. The OpenAI leg returned 4 findings, all dispositioned and fixed. The PLAN review round had both legs healthy.",
-      "Review passes 'code' and 'doubt' did not run: a session directive forbids spawning subagents. Both are closed explicitly in the review record naming that rule, and substituted (external code review on the same diff; six negative-control probes for the adversarial role)."
+      "external code-review cascade: the gemini-3.1-pro-preview leg returned a truncated reasoning fragment instead of a finding list. The run is not marked degraded by the tool (2/2 legs returned), but the leg is recorded here as content-degraded; the one concrete observation it reached before cutting off (_check_health reused the full request timeout) was fixed.",
+      "internal code-reviewer and doubt-reviewer subagents were NOT spawned: an operator standing instruction for this session forbids calling the Agent tool unless explicitly requested. Both are closed as not_run with that disposition in the review record; the external cascade + the 8-point self-review carried the review load."
     ],
     "surface_verification": {
       "surface": "cli",
-      "runner": "uv run --with pytest --with pytest-mock pytest integration-tests/test_f0_race_followup_e2e.py shared/scripts/tools/tests/test_suite_race_cli.py -q --color=no -p no:cacheprovider",
+      "runner": "uv run pytest plugins/shipwright-deploy/tests -v",
       "exit_code": 0,
-      "tests_run": 11,
-      "evidence_path": "C:\\01_Development\\shipwright\\.worktrees\\f0-race-triage\\.shipwright\\runs\\iterate-2026-07-27-f0-race-triage\\surface_verification.log",
-      "timestamp": "2026-07-27T07:59:42.087Z",
+      "tests_run": 102,
+      "evidence_path": ".shipwright/runs/iterate-2026-07-27-rollback-uses-target-ref/surface_verification.json",
+      "timestamp": "2026-07-27T00:00:00Z",
       "attempts": 1
     },
     "test_completeness": {
       "status": "complete",
       "behaviors": [
         {
-          "behavior": "a confirmed race writes a tracked entry with the agreed source/severity/kind/dedup key/runId/commit/suiteId",
+          "behavior": "the ref is pinned via editproject, and pinned before update",
           "disposition": "tested",
-          "evidence": "test_suite_race_triage.py::test_a_confirmed_race_is_written_to_the_tracked_store PASSED"
+          "evidence": "test_rollback.py::test_target_ref_is_sent_to_the_host_before_the_update PASSED"
         },
         {
-          "behavior": "the entry lands in the tracked store, never the gitignored outbox",
+          "behavior": "a failed pin never issues the update",
           "disposition": "tested",
-          "evidence": "test_suite_race_triage.py::test_a_confirmed_race_is_written_to_the_tracked_store PASSED (asserts the outbox is absent)"
+          "evidence": "test_rollback.py::test_pin_failure_never_issues_the_update_and_never_reports_success PASSED"
         },
         {
-          "behavior": "the store is resolved from --project-root, not the cwd",
+          "behavior": "no report claims a rollback that did not complete",
           "disposition": "tested",
-          "evidence": "test_suite_race_triage.py::test_the_store_is_resolved_from_the_passed_root_not_the_cwd PASSED"
+          "evidence": "test_rollback.py::test_report_never_claims_a_rollback_that_did_not_complete PASSED"
         },
         {
-          "behavior": "a repeat sighting reuses the open card and still surfaces the handle",
+          "behavior": "editproject carries the full project object, only branch replaced",
           "disposition": "tested",
-          "evidence": "test_suite_race_triage.py::test_a_second_sighting_reuses_the_open_entry_instead_of_spamming PASSED"
+          "evidence": "test_rollback.py::test_pin_sends_the_full_project_object_with_only_the_branch_replaced PASSED"
         },
         {
-          "behavior": "a card the operator closed does NOT suppress a fresh one",
+          "behavior": "an unreadable current config refuses instead of writing",
           "disposition": "tested",
-          "evidence": "test_suite_race_triage.py::test_a_race_after_the_operator_closed_the_card_opens_a_fresh_one PASSED"
+          "evidence": "test_rollback.py::test_unreadable_project_config_refuses_instead_of_writing PASSED"
         },
         {
-          "behavior": "two units racing get one card each",
+          "behavior": "a read-back agreeing with the request reports confirmed",
           "disposition": "tested",
-          "evidence": "test_suite_race_triage.py::test_two_units_racing_get_one_entry_each PASSED"
+          "evidence": "test_rollback.py::test_readback_confirming_the_ref_reports_confirmed PASSED"
         },
         {
-          "behavior": "only the test-failure to green-alone class is filed (infra retry, rc 5, hang, red-both-ways, plain green)",
+          "behavior": "a read-back disagreeing is a failure, not a warning",
           "disposition": "tested",
-          "evidence": "test_suite_race_triage.py::test_only_a_confirmed_race_is_filed PASSED (5 parametrized cases)"
+          "evidence": "test_rollback.py::test_readback_returning_a_different_ref_is_a_failure PASSED"
         },
         {
-          "behavior": "...and that holds through the CLI, not only the predicate",
+          "behavior": "an unavailable read-back downgrades to unconfirmed and says why",
           "disposition": "tested",
-          "evidence": "test_suite_race_cli.py::test_an_infra_retry_is_not_filed_end_to_end PASSED"
+          "evidence": "test_rollback.py::test_unavailable_readback_downgrades_the_claim_and_says_why PASSED"
         },
         {
-          "behavior": "captured test output never reaches the published log",
+          "behavior": "a raw URLError downgrades rather than escaping unreported",
           "disposition": "tested",
-          "evidence": "test_suite_race_triage.py::test_captured_output_never_reaches_the_tracked_log PASSED"
+          "evidence": "test_rollback.py::test_a_raw_transport_failure_also_downgrades_rather_than_escaping PASSED"
         },
         {
-          "behavior": "control characters stripped; title capped after formatting",
+          "behavior": "a parse bug propagates, never masked as an unavailable endpoint",
           "disposition": "tested",
-          "evidence": "test_suite_race_triage.py::test_control_characters_and_length_are_neutralised and ::test_the_title_is_capped_after_formatting PASSED"
+          "evidence": "test_rollback.py::test_readback_parse_bug_is_not_swallowed_as_unavailable PASSED"
         },
         {
-          "behavior": "the dedup key is identity and is never truncated (no prefix collision)",
+          "behavior": "refs/heads/x and x compare as the same ref",
           "disposition": "tested",
-          "evidence": "test_suite_race_triage.py::test_the_dedup_key_is_identity_and_is_never_truncated PASSED"
+          "evidence": "test_rollback.py::test_refs_heads_prefix_compares_canonically PASSED"
         },
         {
-          "behavior": "reproduce commands are never truncated",
+          "behavior": "an update failure names the changed config and the previous ref",
           "disposition": "tested",
-          "evidence": "test_suite_race_triage.py::test_the_reproduce_commands_are_never_truncated PASSED"
+          "evidence": "test_rollback.py::test_update_failure_reports_the_changed_configuration_and_the_previous_ref PASSED"
         },
         {
-          "behavior": "commands are shell-quoted and carry the unit's directory",
+          "behavior": "an invalid ref is rejected before any hosting call",
           "disposition": "tested",
-          "evidence": "test_suite_report.py::test_a_command_is_shell_quoted_and_carries_the_units_directory PASSED"
+          "evidence": "test_rollback.py::test_invalid_ref_forms_are_rejected_before_any_host_call PASSED (5 cases)"
         },
         {
-          "behavior": "the alone-run command is the argv the runner actually re-ran",
+          "behavior": "the clone strategy reports stopping, never restoring",
           "disposition": "tested",
-          "evidence": "test_suite_race_triage.py::test_the_launch_payload_reproduces_both_sides_with_the_real_command PASSED"
+          "evidence": "test_rollback_clone.py::test_clone_strategy_reports_stopping_not_restoring PASSED"
         },
         {
-          "behavior": "the parallel command names the real root and run id, not a hard-coded dot",
+          "behavior": "a clone stop failure halts and names the state",
           "disposition": "tested",
-          "evidence": "test_suite_report.py::test_the_parallel_command_names_the_root_and_the_run and test_suite_race_cli.py::test_the_recorded_parallel_command_targets_the_run_root PASSED"
+          "evidence": "test_rollback_clone.py::test_clone_stop_failure_halts_and_names_the_state PASSED"
         },
         {
-          "behavior": "the card states the cause is undetermined and that it is never auto-closed",
+          "behavior": "a refusal makes no claim about what is running",
           "disposition": "tested",
-          "evidence": "test_suite_race_triage.py::test_the_card_says_what_was_measured_and_claims_no_cause PASSED"
+          "evidence": "test_rollback_clone.py::test_a_refusal_says_the_target_was_not_touched PASSED"
         },
         {
-          "behavior": "an append failure or unimportable triage API is reported, never raised",
+          "behavior": "CLI argument validation still refuses with the refusal exit code",
           "disposition": "tested",
-          "evidence": "test_suite_race_triage.py::test_an_append_failure_is_reported_not_raised and ::test_an_unimportable_triage_api_is_reported_not_raised PASSED"
+          "evidence": "test_rollback_clone.py::test_git_strategy_requires_target_ref, ::test_clone_strategy_requires_clone_name PASSED"
         },
         {
-          "behavior": "a read-back failure after a successful append still counts as recorded",
+          "behavior": "drift: no migrations added since the ref is clean",
           "disposition": "tested",
-          "evidence": "test_suite_race_triage.py::test_a_read_back_failure_after_a_successful_append_is_still_recorded PASSED"
+          "evidence": "test_data_drift.py::test_no_new_migrations_is_clean PASSED"
         },
         {
-          "behavior": "only this producer's OPEN entries resolve a handle",
+          "behavior": "drift: a committed migration added since the ref is drift",
           "disposition": "tested",
-          "evidence": "test_suite_race_triage.py::test_only_this_producers_open_entries_resolve_a_handle PASSED"
+          "evidence": "test_data_drift.py::test_a_committed_migration_added_since_the_ref_is_drift PASSED"
         },
         {
-          "behavior": "the console names the handle, and shouts when the record was lost",
+          "behavior": "drift: an uncommitted migration also counts as drift",
           "disposition": "tested",
-          "evidence": "test_suite_report.py::test_the_console_names_the_durable_handle and ::test_the_console_shouts_when_the_record_was_lost PASSED"
+          "evidence": "test_data_drift.py::test_an_uncommitted_migration_still_counts_as_drift PASSED"
         },
         {
-          "behavior": "an infra retry keeps its own note and gets no handle; no retries renders nothing",
+          "behavior": "drift: an unresolvable ref is unknown, never clean",
           "disposition": "tested",
-          "evidence": "test_suite_report.py::test_an_infra_retry_keeps_its_own_note_and_no_handle and ::test_no_retries_renders_nothing PASSED"
+          "evidence": "test_data_drift.py::test_an_unresolvable_ref_is_unknown_not_clean PASSED"
         },
         {
-          "behavior": "the summary table and a red unit's captured output still print (the reporting move is behaviour-preserving)",
+          "behavior": "drift: a project without migrations is not-applicable",
           "disposition": "tested",
-          "evidence": "test_suite_report.py::test_the_summary_table_tags_every_outcome_and_flags_a_retry, ::test_a_failing_units_captured_output_IS_shown_on_the_console, test_suite_race_cli.py::test_the_summary_still_prints_after_the_refactor PASSED"
+          "evidence": "test_data_drift.py::test_a_project_without_migrations_is_not_applicable PASSED"
         },
         {
-          "behavior": "a green suite plus a lost record exits 3",
+          "behavior": "drift: a non-git directory is unknown",
           "disposition": "tested",
-          "evidence": "test_suite_race_cli.py::test_a_green_run_that_could_not_record_the_race_exits_three PASSED"
+          "evidence": "test_data_drift.py::test_a_non_git_directory_is_unknown PASSED"
         },
         {
-          "behavior": "a red suite plus a lost record keeps exit 1 and is still shouted about",
+          "behavior": "drift: no project root reports not-checked, never clean",
           "disposition": "tested",
-          "evidence": "test_suite_race_cli.py::test_a_red_run_keeps_its_own_exit_code PASSED"
+          "evidence": "test_data_drift.py::test_no_project_root_reports_not_checked_rather_than_clean PASSED"
         },
         {
-          "behavior": "a red sibling unit never skips the recording",
+          "behavior": "drift: a custom migrations directory is honoured",
           "disposition": "tested",
-          "evidence": "test_suite_race_cli.py::test_a_red_sibling_never_skips_the_recording PASSED"
+          "evidence": "test_data_drift.py::test_a_migrations_dir_outside_the_default_is_honoured PASSED"
         },
         {
-          "behavior": "a clean run writes nothing and keeps exit 0; a config error still exits 2",
+          "behavior": "ref validation accepts and rejects per slash-separated component",
           "disposition": "tested",
-          "evidence": "test_suite_race_cli.py::test_a_clean_run_writes_nothing_and_keeps_exit_zero and ::test_a_config_error_still_exits_two_without_touching_the_store PASSED"
+          "evidence": "test_data_drift.py::test_valid_refs_are_accepted (5), ::test_dangerous_or_malformed_refs_are_rejected (20) PASSED"
         },
         {
-          "behavior": "--run-id is optional and its absence is a null field, not a placeholder",
+          "behavior": "a shell-metacharacter ref never reaches a git subprocess",
           "disposition": "tested",
-          "evidence": "test_suite_race_cli.py::test_run_id_is_optional_and_its_absence_is_recorded_as_absent PASSED"
+          "evidence": "test_data_drift.py::test_a_shell_metacharacter_ref_never_reaches_git PASSED"
         },
         {
-          "behavior": "commit resolution on a non-repo root or with git missing yields no commit and no error",
+          "behavior": "the gate refuses and names the target's declared data strategy",
           "disposition": "tested",
-          "evidence": "test_suite_race_triage.py::test_commit_resolution_on_a_non_repo_root_yields_no_commit and ::test_a_missing_git_binary_yields_no_commit PASSED"
+          "evidence": "test_data_drift.py::test_drift_refuses_and_names_the_targets_strategy PASSED"
         },
         {
-          "behavior": "operator-facing strings stay ASCII in the two NEW modules",
+          "behavior": "--ack-data-drift lifts the refusal",
           "disposition": "tested",
-          "evidence": "test_suite_units.py::test_operator_facing_strings_are_ascii_only PASSED (extended to suite_report + suite_race_triage)"
+          "evidence": "test_data_drift.py::test_acknowledging_the_drift_lifts_the_refusal + E2E ::test_acknowledging_the_drift_proceeds PASSED"
         },
         {
-          "behavior": "the whole production path works against a real flaky unit over three consecutive runs, including the card surviving a later CLEAN parallel run",
+          "behavior": "a none-app-only target skips the stored-data question entirely",
           "disposition": "tested",
-          "category": "integration",
-          "evidence": "integration-tests/test_f0_race_followup_e2e.py::test_the_runner_records_a_real_race_and_never_auto_closes_it PASSED - drives the real CLI as a subprocess, nothing stubbed"
+          "evidence": "test_data_drift.py::test_a_target_whose_data_never_moves_skips_the_question PASSED"
+        },
+        {
+          "behavior": "an undeclared data strategy still refuses and says it is undeclared",
+          "disposition": "tested",
+          "evidence": "test_data_drift.py::test_an_undeclared_strategy_still_refuses_and_says_it_is_undeclared PASSED"
+        },
+        {
+          "behavior": "liveness: with no deadline exactly one request is made",
+          "disposition": "tested",
+          "evidence": "test_smoke_test.py::test_without_a_deadline_exactly_one_request_is_made PASSED"
+        },
+        {
+          "behavior": "liveness: a slow start is waited out, not called a failed release",
+          "disposition": "tested",
+          "evidence": "test_smoke_test.py::test_a_slow_start_is_waited_out_rather_than_called_a_failed_release PASSED"
+        },
+        {
+          "behavior": "liveness: an exhausted deadline fails and records the evidence",
+          "disposition": "tested",
+          "evidence": "test_smoke_test.py::test_an_exhausted_deadline_fails_and_records_the_evidence PASSED"
+        },
+        {
+          "behavior": "liveness: the deadline is never bounded by the request timeout",
+          "disposition": "tested",
+          "evidence": "test_smoke_test.py::test_the_deadline_is_not_overshot_by_a_long_request_timeout, ::test_a_deadline_shorter_than_one_request_still_asks_exactly_once PASSED"
+        },
+        {
+          "behavior": "liveness: the health probe counts against the same deadline",
+          "disposition": "tested",
+          "evidence": "test_smoke_test.py::test_the_health_probe_counts_against_the_same_deadline PASSED"
+        },
+        {
+          "behavior": "liveness: nonsensical durations are rejected as usage errors",
+          "disposition": "tested",
+          "evidence": "test_smoke_test.py::test_nonsensical_durations_are_rejected PASSED (4 cases)"
+        },
+        {
+          "behavior": "profile: the three REAL shipped profiles round-trip into a policy; explicit flags override per field; malformed input is rejected",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_deploy_profile.py 17 PASSED, incl. a guard that fails if the profile glob matches nothing"
+        },
+        {
+          "behavior": "client: getprojects matches on context in a list and raises when none matches; set_vcs_ref preserves every field incl. non-scalars and drops a stale session/envName",
+          "disposition": "tested",
+          "evidence": "test_jelastic_client.py::test_get_vcs_project_picks_the_matching_context_from_a_list, ::test_get_vcs_project_raises_when_no_context_matches, ::test_set_vcs_ref_sends_every_field_back_with_only_branch_replaced, ::test_set_vcs_ref_never_forwards_a_stale_session_or_envname PASSED"
+        },
+        {
+          "behavior": "end to end: profile file -> reader -> CLI subprocess -> real HTTP -> recorded request sequence, from an unrelated cwd, with the token absent from stdout/stderr",
+          "disposition": "tested",
+          "evidence": "test_rollback_e2e_cli.py 8 PASSED + test_smoke_e2e_cli.py 4 PASSED (real HTTP stub, real temp git repo, real subprocesses, no mocking)",
+          "category": "integration"
         }
       ],
       "counts": {
-        "testable": 30,
-        "tested": 30,
+        "testable": 40,
+        "tested": 40,
         "untestable": 0,
         "untested_testable": 0
       },
       "enumeration_basis": {
-        "acs": 14,
-        "covered_acs": 14
+        "acs": 15,
+        "covered_acs": 15
       }
     }
   },

@@ -102,6 +102,65 @@ class JelasticClient:
             nodes=nodes_config,
         )
 
+    def vcs_update(self, env_name: str, context: str = "ROOT") -> dict:
+        """Pull and deploy whatever ref the VCS project is currently pinned to.
+
+        This endpoint takes NO ref of its own — the ref lives on the VCS project
+        (see ``set_vcs_ref``). Calling it without pinning first re-deploys the
+        branch head, which is what made rollback silently redeploy the bad code.
+        """
+        return self._call(
+            "environment/vcs/rest/update",
+            envName=env_name,
+            context=context,
+        )
+
+    def get_vcs_project(self, env_name: str, context: str = "ROOT") -> dict:
+        """Return the VCS project registered for ``context``.
+
+        ``getprojects`` answers with a list (an environment may carry several
+        contexts), so the caller must never assume a single object. The response
+        envelope key is not pinned by the Infomaniak docs we have, so we take the
+        first list-of-objects in the body and match on ``context``.
+
+        Raises ``JelasticError`` when no project matches — an unreadable current
+        config must fail loudly, because callers merge into it.
+        """
+        body = self._call("environment/vcs/rest/getprojects", envName=env_name)
+        for value in body.values():
+            if not isinstance(value, list):
+                continue
+            for project in value:
+                if isinstance(project, dict) and project.get("context") == context:
+                    return project
+        raise JelasticError(
+            f"no VCS project for context {context!r} on {env_name} "
+            f"(response keys: {sorted(body)})"
+        )
+
+    def set_vcs_ref(self, env_name: str, project: dict, ref: str) -> dict:
+        """Pin the VCS project to ``ref``, preserving every other field.
+
+        ``editproject`` may be PUT-shaped, so a sparse ``{envName, context,
+        branch}`` write risks clearing the repository URL and credentials.
+        Callers pass the project object read back from ``get_vcs_project`` and
+        this replaces only ``branch``.
+
+        Non-scalar fields are JSON-encoded rather than dropped — form encoding
+        cannot carry them as-is, and dropping one would be the very sparse write
+        this exists to avoid. That matches how the rest of this client passes
+        structured params (``env``, ``nodes``, ``vars``).
+        """
+        params = {}
+        for key, value in project.items():
+            if key in ("session", "envName"):
+                continue
+            params[key] = (
+                value if isinstance(value, (str, int, float, bool)) else json.dumps(value)
+            )
+        params["branch"] = ref
+        return self._call("environment/vcs/rest/editproject", envName=env_name, **params)
+
     def deploy_from_git(
         self,
         env_name: str,
@@ -115,11 +174,7 @@ class JelasticClient:
         """
         # Try update first (project may already exist)
         try:
-            return self._call(
-                "environment/vcs/rest/update",
-                envName=env_name,
-                context=context,
-            )
+            return self.vcs_update(env_name, context)
         except JelasticError:
             # Project doesn't exist — create it
             self._call(
@@ -130,11 +185,7 @@ class JelasticClient:
                 url=repo_url,
                 branch=branch,
             )
-            return self._call(
-                "environment/vcs/rest/update",
-                envName=env_name,
-                context=context,
-            )
+            return self.vcs_update(env_name, context)
 
     def clone_env(self, env_name: str, clone_name: str) -> dict:
         """Clone an environment (for backup/rollback)."""
