@@ -985,19 +985,38 @@ Every layer must report an explicit result (`pass`, `fail`, or `skipped: {reason
 **What it produces:**
 
 - A table of findings with severity, type, rule, file, and line number
+- A **coverage manifest** naming every class of weakness and whether it was actually checked
 - A classification summary (auto-fixable / agent-fixable / needs-review / informational)
 - A Markdown security report written to the project root
+- One `security-scan:{repo}` triage card carrying the per-severity split and the scope question
 - `shipwright_security_config.json` with scan results (consumed by `/shipwright-compliance`)
 
 **How it works:**
 
 1. Detects and selects the scanner backend (OSS or Aikido). If neither is configured, prints setup instructions and stops.
 2. Runs the scan -- locally via CLI tools (OSS) or via API call (Aikido).
-3. In pipeline mode, classifies each finding into four categories: auto-fixable (e.g., dependency updates with known patches), agent-fixable (e.g., hardcoded credentials), needs-review (architecture issues), and informational (low-severity best practices).
-4. Auto-fixable issues are patched directly, then tests are re-run to verify the fix.
-5. Agent-fixable issues are handed to a `security-fixer` subagent with full context (file, line, CWE, remediation hint). Each finding gets up to 3 fix attempts.
-6. Needs-review findings are presented to you with options to fix, decline, or defer.
-7. Generates a Markdown report summarizing all findings and their remediation status (fixed, declined, deferred, open).
+3. Records what it could not check. A tool that crashes already fails the run; a tool that was never installed used to be invisible, so a machine with one scanner produced a report that read clean for every class. Each class is now marked checked, failed, not requested, or not available -- and the report says the unchecked ones are unexamined, not clean.
+4. **Asks how far to go before fixing anything.** It states the counts per severity ("2 critical, 3 high, 17 below") and offers the real tiers, so the tool never silently decides that the less severe findings do not matter. Non-interactive runs default to critical and high and say so in the report.
+5. In pipeline mode, classifies each finding within that scope into four categories: auto-fixable (e.g., dependency updates with known patches), agent-fixable (e.g., hardcoded credentials), needs-review (architecture issues), and informational (low-severity best practices).
+6. Auto-fixable issues are patched directly, then tests are re-run to verify the fix.
+7. Agent-fixable issues are handed to a `security-fixer` subagent with full context (file, line, CWE, remediation hint). Each finding gets up to 3 fix attempts.
+8. Needs-review findings are presented to you with options to fix, decline, or defer.
+9. Generates a Markdown report summarizing all findings and their remediation status (fixed, declined, deferred, open). Findings outside the chosen scope are recorded as deferred, never dropped.
+
+**Accepted findings, answered once per repository.** A repository's own
+`.gitleaks.toml` (secrets) and `.trivyignore.yaml` (dependencies) are the single
+register of what it has consciously accepted. The local scan **extends** those
+files rather than substituting its own, so it reaches the same verdict as the
+scan running on the code host -- previously the two could disagree because only
+the host read the project's file.
+
+**Comparing two scans.** `compare_scans.py --project-root .` reports what was
+fixed, what is new and what is still open -- but only for the classes both runs
+actually checked. If a scanner was uninstalled between Monday and Tuesday, its
+findings disappear from the output; that is not the same as fixed, and the
+comparison says so instead of claiming credit. Nothing per-finding is stored:
+the answer is derived from the two scan records each time, so the coverage check
+is always applied.
 
 **Usage:** Always standalone (security is no longer a pipeline phase; see banner above). Runs when any scanner backend is available. With OSS tools installed, it works without any cloud account. With Aikido, the standalone commands (`issues`, `summary`, `report`, `repos`) work against any connected repository.
 

@@ -88,18 +88,20 @@ except ImportError as _e:
 
 
 try:
-    from sarif_writer import to_sarif  # type: ignore
+    from sarif_outputs import write_sarif_outputs as _write_sarif_outputs  # type: ignore
     _SARIF_IMPORT_ERROR: str | None = None
 except ImportError as _e:
     _SARIF_IMPORT_ERROR = str(_e)
 
-    def to_sarif(findings, source):  # type: ignore[misc]
+    def _write_sarif_outputs(findings, sarif_dir):  # type: ignore[misc]
         raise RuntimeError(f"sarif_writer unavailable: {_SARIF_IMPORT_ERROR}")
 
 
-# Scanners with a known SARIF capability — emit one .sarif file per source
-# even on clean scans so `upload-sarif` doesn't fail on an empty directory.
-_SARIF_DEFAULT_SOURCES = ("semgrep", "trivy", "gitleaks")
+# Coverage manifest — what this run actually looked at. Derived from the
+# backend's capabilities rather than populated by it, so no backend (or test
+# mock) can forget to report it. See scan_coverage for the status vocabulary.
+from gitleaks_config import class_notes as gitleaks_class_notes  # noqa: E402
+from scan_coverage import build_coverage  # noqa: E402
 
 
 SCAN_TYPE_ALIASES = {
@@ -144,6 +146,7 @@ def build_config(
     repo: str,
     scanner: str,
     scan_errors: list[dict[str, Any]] | None = None,
+    coverage: list[dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
     """Build a shipwright_security_config.json compatible dict.
 
@@ -151,6 +154,13 @@ def build_config(
     A non-empty list sets ``degraded: true`` so the CI critical-gate (which
     reads this file via jq) can fail closed even when ``findings`` is empty —
     a scanner that fataled must not read as a clean 0-findings scan.
+
+    ``coverage`` is the complementary channel for the tool that was never there
+    at all: one row per weakness class saying whether it was checked. A crashed
+    tool already fails the run; an absent one used to be invisible, so a machine
+    with one scanner produced a report that read clean for every class. This
+    field is what a downstream gate (and ``scan_compare``) reads to know what
+    the run can honestly claim. Additive — existing readers are unaffected.
     """
     errors = list(scan_errors or [])
     severity_counts = Counter(f.get("severity", "unknown") for f in findings)
@@ -162,6 +172,7 @@ def build_config(
         "by_severity": {sev: severity_counts.get(sev, 0) for sev in SEVERITY_ORDER},
         "degraded": bool(errors),
         "scan_errors": errors,
+        "coverage": list(coverage or []),
         "remediation": {
             "fixed": 0,
             "declined": 0,
@@ -176,32 +187,6 @@ def count_above_threshold(findings: list[dict[str, Any]], fail_on: set[str]) -> 
     if not fail_on:
         return 0
     return sum(1 for f in findings if f.get("severity", "").lower() in fail_on)
-
-
-def _write_sarif_outputs(findings: list[dict[str, Any]], sarif_dir: Path) -> None:
-    """Write one SARIF 2.1.0 file per scanner source.
-
-    Always writes a placeholder for every source in `_SARIF_DEFAULT_SOURCES`
-    (semgrep, trivy, gitleaks) — even on clean scans — so that
-    `github/codeql-action/upload-sarif@v3` doesn't fail on an empty directory.
-    Additional sources discovered in `findings` get their own file too.
-    """
-    sarif_dir.mkdir(parents=True, exist_ok=True)
-
-    by_source: dict[str, list[dict[str, Any]]] = {s: [] for s in _SARIF_DEFAULT_SOURCES}
-    for f in findings:
-        if not isinstance(f, dict):
-            continue
-        src = (f.get("source") or "unknown").strip().lower() or "unknown"
-        by_source.setdefault(src, []).append(f)
-
-    for source, group in by_source.items():
-        doc = to_sarif(group, source=source)
-        out_path = sarif_dir / f"{source}.sarif"
-        out_path.write_text(
-            json.dumps(doc, indent=2, ensure_ascii=False),
-            encoding="utf-8",
-        )
 
 
 def main() -> int:
@@ -291,6 +276,7 @@ def main() -> int:
     backend_name = args.backend
     backend_capabilities: set[str] | None = None
     scan_errors: list[dict[str, Any]] = []
+    coverage: list[dict[str, Any]] = []
 
     if cache_path and cache_path.exists():
         try:
@@ -315,6 +301,10 @@ def main() -> int:
         if isinstance(cached, dict):
             cached_errors = cached.get("scan_errors")
             scan_errors = list(cached_errors) if isinstance(cached_errors, list) else []
+            # Same round-trip for the coverage manifest: a re-read must not
+            # silently forget which classes the cached scan actually covered.
+            cached_coverage = cached.get("coverage")
+            coverage = list(cached_coverage) if isinstance(cached_coverage, list) else []
     else:
         try:
             backend = get_backend(args.backend)
@@ -357,9 +347,18 @@ def main() -> int:
         # Degraded-leg markers (empty for backends/mocks that never set them).
         raw_errors = getattr(backend, "scan_errors", [])
         scan_errors = list(raw_errors) if isinstance(raw_errors, list) else []
+        coverage = build_coverage(
+            available=backend_capabilities
+            if isinstance(backend_capabilities, (set, frozenset, list, tuple))
+            else (),
+            requested=scan_types,
+            scan_errors=scan_errors,
+            class_notes=gitleaks_class_notes(str(target)),
+        )
 
     config = build_config(
-        findings, repo=args.repo, scanner=backend_name, scan_errors=scan_errors,
+        findings, repo=args.repo, scanner=backend_name,
+        scan_errors=scan_errors, coverage=coverage,
     )
 
     if args.sarif_dir:
@@ -394,6 +393,7 @@ def main() -> int:
                 "degraded": config["degraded"],
                 "scan_errors": scan_errors,
                 "backend": backend_name,
+                "coverage": coverage,
                 "scan_types": scan_types or (
                     sorted(backend_capabilities) if backend_capabilities else None
                 ),

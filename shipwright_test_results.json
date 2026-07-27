@@ -1,16 +1,16 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-07-23-req3-phase2-content-mono",
+    "run_id": "iterate-2026-07-27-security-coverage-manifest",
     "date": "2026-07-27",
     "unit": {
       "status": "passed",
-      "passed": 9891,
-      "total": 9891
+      "passed": 9687,
+      "total": 9687
     },
     "integration": {
       "status": "passed",
-      "passed": 417,
-      "total": 417
+      "passed": 420,
+      "total": 420
     },
     "pgtap": {
       "status": "not_run",
@@ -33,67 +33,182 @@
     "degraded": [],
     "surface_verification": {
       "surface": "cli",
-      "runner": "uv run pytest integration-tests/test_requirements_catalog_contract.py integration-tests/test_requirements_catalog_parsers.py integration-tests/test_fr_table_shape_convergence.py -q",
+      "runner": "uv run --directory plugins/shipwright-security --extra dev pytest tests/ -v",
       "exit_code": 0,
-      "tests_run": 23,
-      "evidence_path": "C:\\01_Development\\shipwright\\.worktrees\\req3-phase2-content-mono\\.shipwright\\runs\\iterate-2026-07-23-req3-phase2-content-mono\\surface_verification.log",
-      "timestamp": "2026-07-26T23:23:54.302Z",
+      "tests_run": 615,
+      "evidence_path": "C:\\01_Development\\shipwright\\.worktrees\\security-coverage-manifest\\.shipwright\\runs\\iterate-2026-07-27-security-coverage-manifest\\surface_verification.log",
+      "timestamp": "2026-07-27T08:24:41.209Z",
       "attempts": 1
     },
     "test_completeness": {
       "status": "complete",
       "behaviors": [
         {
-          "behavior": "the catalog carries 18 requirements, each with its own id, anchor, priority, basis and layers cell",
+          "behavior": "One coverage row per weakness class, closed status vocabulary",
           "disposition": "tested",
-          "evidence": "test_requirements_catalog_contract.py::test_all_requirements_survive_with_unchanged_ids and ::test_every_requirement_has_an_explicit_anchor PASSED"
+          "evidence": "test_scan_coverage.py::TestBuildCoverage (9) PASSED"
         },
         {
-          "behavior": "both production parsers read the changed catalog and agree on the same id set",
+          "behavior": "Status precedence degraded > not_requested > not_available > covered",
           "disposition": "tested",
-          "evidence": "test_requirements_catalog_parsers.py::test_the_fr_table_reader_still_sees_every_requirement and ::test_the_heading_parser_sees_the_same_set PASSED"
+          "evidence": "test_scan_coverage.py::test_degraded_leg_beats_every_other_status, ::test_not_requested_beats_not_available PASSED"
         },
         {
-          "behavior": "every requirement keeps a resolving deep link from the traceability matrix",
+          "behavior": "A backend capability outside the OSS tool map still gets a row",
           "disposition": "tested",
-          "evidence": "test_requirements_catalog_contract.py::test_every_rtm_deep_link_resolves_end_to_end PASSED after regenerating the matrix"
+          "evidence": "test_scan_coverage.py::test_capability_outside_the_oss_tool_map_still_gets_a_row PASSED"
         },
         {
-          "behavior": "no criterion sentence carries a run id, a decision-record number, a path or a source filename",
+          "behavior": "Prompt-injection row added only when it carries information",
           "disposition": "tested",
-          "evidence": "test_requirements_catalog_contract.py forbidden-token scan over every (E) line PASSED"
+          "evidence": "test_scan_coverage.py::TestPromptInjectionRow (5) PASSED"
         },
         {
-          "behavior": "the newly minted requirement carries its decided basis and layers, pinned per requirement rather than in aggregate",
+          "behavior": "An empty or absent manifest is never 'complete'",
           "disposition": "tested",
-          "evidence": "test_fr_table_shape_convergence.py::test_every_live_requirement_carries_its_decided_basis and ::test_the_migration_did_not_change_any_required_layers PASSED"
+          "evidence": "test_scan_coverage.py::TestIsComplete (2), test_coverage_consumer_tolerance.py::test_unknown_status_never_reads_as_complete PASSED"
         },
         {
-          "behavior": "the elicitation module keeps every section and load-bearing sentence the catalog cites",
+          "behavior": "findings.json carries coverage; the --input-from-cache re-read keeps it",
           "disposition": "tested",
-          "evidence": "test_requirement_elicitation_refs.py + test_requirement_elicitation_rigor.py PASSED (28 cases)"
+          "evidence": "test_coverage_wiring.py::TestScanCliWritesCoverage (4) PASSED"
         },
         {
-          "behavior": "the glossary stays within its size ceiling and carries no legacy artifact path",
+          "behavior": "Report renders the coverage banner and table, PR mode included",
           "disposition": "tested",
-          "evidence": "test_bloat_defense_artifacts.py::test_glossary_under_loc_limit and test_artifact_path_canon.py PASSED"
+          "evidence": "test_coverage_wiring.py::TestReportRendersCoverage (5) PASSED"
         },
         {
-          "behavior": "the acceptance criteria say what is true of the product",
+          "behavior": "'Coverage not reported' stays distinct from 'Incomplete Coverage'",
+          "disposition": "tested",
+          "evidence": "test_coverage_consumer_tolerance.py::test_report_from_a_pre_feature_sidecar_says_coverage_not_reported PASSED"
+        },
+        {
+          "behavior": "Sidecar gains coverage while schema_version stays 1",
+          "disposition": "tested",
+          "evidence": "test_coverage_wiring.py::test_sidecar_carries_coverage_and_keeps_schema_version_1 PASSED"
+        },
+        {
+          "behavior": "The local gitleaks config extends the project's own .gitleaks.toml",
+          "disposition": "tested",
+          "evidence": "test_gitleaks_config.py::TestRenderConfig (8) + ::TestRunGitleaksWiring (2) PASSED"
+        },
+        {
+          "behavior": "extend.useDefault and extend.path are never both emitted",
+          "disposition": "tested",
+          "evidence": "test_gitleaks_config.py::test_usedefault_and_path_are_never_both_emitted PASSED"
+        },
+        {
+          "behavior": "The extend path is absolute even when the scanned target is relative",
+          "disposition": "tested",
+          "evidence": "test_gitleaks_config.py::test_relative_target_still_yields_an_absolute_path PASSED"
+        },
+        {
+          "behavior": "Full TOML basic-string escaping of the extend path",
+          "disposition": "tested",
+          "evidence": "test_gitleaks_config_hazards.py::TestTomlPathSerialization (9) PASSED"
+        },
+        {
+          "behavior": "A rule-less project gitleaks config is named, not silently obeyed",
+          "disposition": "tested",
+          "evidence": "test_gitleaks_config_hazards.py::TestInspectProjectConfig (6) + ::TestProjectConfigWarning (7), test_coverage_consumer_tolerance.py::TestGitleaksCaveatReachesTheManifest PASSED"
+        },
+        {
+          "behavior": "The real gitleaks binary honours the extend: default rules still fire, the project allowlist applies, the shipwright exclusions survive",
+          "disposition": "tested",
+          "evidence": "test_gitleaks_extend_smoke.py (2) — real-binary test. Executes in CI, where .github/workflows/ci.yml installs gitleaks 8.21.2, and HARD-FAILS there if the binary is absent (skip_or_fail_on_missing_binary). SKIPPED on this machine: no scanner binary is installed here, which is the exact condition AC-1 exists to surface."
+        },
+        {
+          "behavior": "Comparison computes resolved/new/persisting only over classes both runs covered",
+          "disposition": "tested",
+          "evidence": "test_scan_compare.py::TestComparableGround (5) PASSED"
+        },
+        {
+          "behavior": "Losing or gaining a tool between runs claims nothing fixed or new",
+          "disposition": "tested",
+          "evidence": "test_coverage_comparison_wiring.py::TestWrapperRoundTrip (4) PASSED"
+        },
+        {
+          "behavior": "No stored per-finding outcome; compare_scans does not mutate its inputs",
+          "disposition": "tested",
+          "evidence": "test_scan_compare.py::TestNoStoredOutcome (2) PASSED"
+        },
+        {
+          "behavior": "Unclassifiable findings are counted, never resolved, and surfaced in the render",
+          "disposition": "tested",
+          "evidence": "test_scan_compare.py::test_unclassifiable_findings_are_counted_not_resolved, test_coverage_consumer_tolerance.py::test_unclassified_count_is_surfaced_in_the_rendered_output PASSED"
+        },
+        {
+          "behavior": "Location-based fingerprint: a moved finding reads as resolved+new",
+          "disposition": "tested",
+          "evidence": "test_coverage_consumer_tolerance.py::TestFingerprintIsLocationBased PASSED"
+        },
+        {
+          "behavior": "compare_scans.py CLI renders a comparison and exits 2 with no prior scan",
+          "disposition": "tested",
+          "evidence": "test_coverage_comparison_wiring.py::TestCompareCli (3) PASSED"
+        },
+        {
+          "behavior": "The card carries per-severity counts and asks how far to go",
+          "disposition": "tested",
+          "evidence": "test_security_card.py (19) PASSED + shared/tests/test_security_scan_card.py (8) PASSED"
+        },
+        {
+          "behavior": "Scope options are concrete, ordered most-severe-first, and never a fake tier",
+          "disposition": "tested",
+          "evidence": "test_security_card_scope.py (6) PASSED"
+        },
+        {
+          "behavior": "The card names unchecked classes; a degraded leg never reads as all-clear",
+          "disposition": "tested",
+          "evidence": "test_security_card_hygiene.py::TestDegradedIsNotReassuring (3) PASSED"
+        },
+        {
+          "behavior": "Caller-supplied repo/report_path cannot open a new instruction line in the payload",
+          "disposition": "tested",
+          "evidence": "test_security_card_hygiene.py::TestPayloadInjectionSurface (6) PASSED"
+        },
+        {
+          "behavior": "The card carries no raw finding strings (inbox hygiene)",
+          "disposition": "tested",
+          "evidence": "test_security_card.py::test_card_carries_no_raw_finding_strings PASSED"
+        },
+        {
+          "behavior": "One card per repo; it coexists with the per-finding enumeration",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_security_scan_card.py::test_card_is_deduped_across_repeat_scans, ::test_card_coexists_with_the_per_finding_enumeration PASSED"
+        },
+        {
+          "behavior": "degraded is derived from what happened to the leg, not the exit code alone",
+          "disposition": "tested",
+          "evidence": "test_coverage_consumer_tolerance.py::TestDegradedDerivation (4) PASSED"
+        },
+        {
+          "behavior": "Pre-feature artifacts (no coverage key) are tolerated by every named reader",
+          "disposition": "tested",
+          "evidence": "test_coverage_consumer_tolerance.py::TestPreFeatureArtifacts (7) PASSED"
+        },
+        {
+          "behavior": "No baselined file exceeds its recorded bloat `current`",
+          "disposition": "tested",
+          "evidence": "shared/scripts/hooks/anti_ratchet_check.py --worktree exits 0; the four shrunk files' baselines were re-synced to their final measured sizes"
+        },
+        {
+          "behavior": "The SKILL.md Step 2.5 scope gate is actually followed at the point of work",
           "disposition": "untestable",
-          "reason_code": "requires-manual-visual-judgment",
-          "reason": "whether a sentence in business language faithfully describes a mechanism is a reading judgement, not an oracle. This is the round's own finding, recorded as FR-01.16 criterion 9 and as campaign decision D7: an LLM may adjudicate a mechanically raised flag, never raise one. Each criterion instead carries an enforcement classification in the AC evidence ledger, and the criteria that CAN be pinned are enumerated above."
+          "reason_code": "requires-interactive-tty",
+          "reason": "A prompt-level instruction to the executing agent plus an AskUserQuestion round-trip with a human. The machine-checkable half — the card telling it to ask, with the counts — is covered by the card behaviors above."
         }
       ],
       "counts": {
-        "testable": 7,
-        "tested": 7,
+        "testable": 30,
+        "tested": 30,
         "untestable": 1,
         "untested_testable": 0
       },
       "enumeration_basis": {
-        "acs": 8,
-        "covered_acs": 8
+        "acs": 7,
+        "covered_acs": 7
       }
     }
   },

@@ -1,0 +1,1 @@
+New `compare_scans.py` reports what a security scan fixed since the previous run — but only for the classes both runs actually checked. A finding that disappeared because its scanner was uninstalled is listed as not-comparable instead of being counted as fixed.

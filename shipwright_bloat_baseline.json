@@ -410,14 +410,14 @@
     {
       "path": "plugins/shipwright-security/scripts/lib/oss_backend.py",
       "limit": 300,
-      "current": 542,
+      "current": 509,
       "state": "exception",
       "adr": "ADR-097"
     },
     {
       "path": "plugins/shipwright-security/scripts/tools/generate_security_report.py",
       "limit": 300,
-      "current": 665,
+      "current": 609,
       "state": "grandfathered",
       "adr": null
     },
@@ -431,7 +431,7 @@
     {
       "path": "plugins/shipwright-security/scripts/tools/run_scan_and_report.py",
       "limit": 300,
-      "current": 334,
+      "current": 308,
       "state": "grandfathered",
       "adr": null
     },

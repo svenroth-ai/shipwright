@@ -1,0 +1,1 @@
+Before fixing anything, `/shipwright-security` states how many findings there are at each severity and asks how far to go — everything, or only the most severe tiers — instead of silently deciding that the less severe findings do not matter. The triage card the operator picks up carries the same counts and the same question.

@@ -17,10 +17,12 @@ Security scanning with automated remediation. Pluggable scanner backend:
 
 Security runs **out-of-band** — it is not a pipeline phase. `/shipwright-run` does NOT invoke security automatically (decoupled in iterate `sec-report-and-orchestrator-decouple`, 2026-04).
 
-Two activation paths:
-
-- **Manual / local:** invoke `/shipwright-security` ad hoc, typically after `/shipwright-test`.
-- **CI / GitHub Actions:** the active scanner chain lives at [`.github/workflows/security.yml`](../../../../.github/workflows/security.yml). It ships dormant — only `workflow_dispatch` is enabled out of the box. The `pull_request` and weekly `schedule` triggers are commented out and activated deliberately at Phase B / Go-Live. SARIF uploads, PR comments, fork-PR guards, and the critical-findings gate are fully wired.
+Two activation paths: **manual / local** (invoke `/shipwright-security` ad hoc,
+typically after `/shipwright-test`) and **CI / GitHub Actions** — the active
+scanner chain at [`.github/workflows/security.yml`](../../../../.github/workflows/security.yml),
+which ships dormant (only `workflow_dispatch`; the `pull_request` and weekly
+`schedule` triggers are activated deliberately at Phase B / Go-Live). SARIF
+uploads, PR comments, fork-PR guards and the critical-findings gate are wired.
 
 Pipeline state machine, hooks, and config files do not auto-insert a security phase. `runConditions.securityEnabled` exists for diagnostic purposes only and gates nothing.
 
@@ -110,12 +112,9 @@ uv run "${SHIPWRIGHT_PLUGIN_ROOT}/../../shared/scripts/tools/get_phase_context.p
   --phase-task-id <phaseTaskId-from-context>
 ```
 
-The tool prints structured JSON with `runId`, `phase`, `splitId`, `prerequisites`,
-`runConditions`, and a `skill_artifacts_to_read` list. Read those artifacts
-before proceeding so this phase session has full context for what came before.
-
-If NO `phaseTaskId` was handed to you, this is a standalone invocation —
-continue with Step 1 below as normal.
+It prints `runId`, `phase`, `splitId`, `prerequisites`, `runConditions` and a
+`skill_artifacts_to_read` list — read those artifacts before proceeding. With
+NO `phaseTaskId`, this is a standalone invocation: continue with Step 1.
 
 ---
 
@@ -133,30 +132,31 @@ backend = get_backend()
 findings = backend.scan(target_dir)
 ```
 
-Each scanner gets a per-tool exclusion list:
-
-- **Semgrep** — empty plugin list. Semgrep ships its own `.semgrepignore`
-  (covers `node_modules`, `build`, `dist`, `vendor`, `.venv`, `.tox`,
-  `.npm`, `.yarn`, …) and respects the project `.gitignore` for untracked
-  files. The project gitignore is the source of truth.
-- **Trivy** and **Gitleaks** — same conservative cross-language build/dep
-  list (Python `.venv` / `__pycache__` / `.tox` / `.mypy_cache` /
-  `.ruff_cache`, JS `node_modules` / `.next`, polyglot `target` / `bin` /
-  `obj` / `vendor` / `.gradle` / `.terraform` / `.direnv`, generic
-  `dist` / `build` / `.git` / `.cache`, coverage `coverage` / `htmlcov`).
-  Both tools ignore `.gitignore` natively, so the plugin keeps a minimum
-  list to prevent Trivy crawling `node_modules` and Gitleaks blowing up
-  on third-party history.
-
-`.shipwright/` is **no longer** in any list — projects decide via
-`.gitignore` (Semgrep) or `SHIPWRIGHT_SCAN_EXCLUDES` (Trivy/Gitleaks).
-See `references/oss-scanners.md` for the full per-scanner truth table,
-the migration notice, and known edge cases (symlinks, nested gitignore,
-tracked-files-in-gitignored-paths).
+Each scanner gets a per-tool exclusion list: Semgrep an empty one (it ships
+`.semgrepignore` and honours the project `.gitignore`), Trivy and Gitleaks a
+shared conservative build/dependency list because neither reads `.gitignore`.
+`.shipwright/` is **no longer** excluded — projects decide via `.gitignore`
+(Semgrep) or `SHIPWRIGHT_SCAN_EXCLUDES` (Trivy/Gitleaks). Full truth table,
+migration notice and edge cases: `references/oss-scanners.md`.
 
 - Semgrep: `semgrep scan --json --config auto {target}` (env extras add `--exclude` flags)
 - Trivy: `trivy fs --format json --scanners vuln --skip-dirs <each-default> {target}`
-- Gitleaks: `gitleaks detect --report-format json -s {target} --report-path <temp-json-report> --config <temp-toml-with-allowlist>` — report goes to a temp FILE the plugin reads back (gitleaks has no stdout-report mode; `--report-path -` writes a literal file named `-`, not stdout)
+- Gitleaks: `gitleaks detect --report-format json -s {target} --report-path <temp-json-report> --config <generated-toml>` — report goes to a temp FILE the plugin reads back (gitleaks has no stdout-report mode; `--report-path -` writes a literal file named `-`, not stdout)
+
+**Accepted findings are answered once per repository.** When the scanned root
+has a `.gitleaks.toml`, the generated config **extends** it (`[extend] path`)
+instead of replacing it, so the local scan honours the same accepted findings
+the host workflow already does. With no project file present, the generated
+config uses the gitleaks built-in ruleset. Never emit both `extend.useDefault`
+and `extend.path` — gitleaks aborts on that.
+
+**Coverage manifest — name what was NOT checked.** A tool that crashes already
+fails the run; a tool that was never installed used to be invisible, so a
+machine with one scanner produced a report that read clean for every class.
+Every scan now records one row per weakness class (`covered`, `degraded`,
+`not_requested`, `not_available`) into `findings.json` and the report sidecar.
+Report the unchecked classes to the user alongside the findings — they are not
+clean, they are unexamined.
 
 **For Aikido backend:**
 
@@ -189,14 +189,42 @@ Each finding is automatically classified by `aikido_client.py`:
 | `needs-review` | Architecture issues, business logic flaws | User interview |
 | `informational` | Low-severity, best practices | Log only |
 
-Show classification summary:
+Show the classification summary — `Findings: 12 total` with the per-class
+counts (auto-fixable → fixed automatically, agent-fixable → subagent,
+needs-review → asked, informational → logged).
+
+---
+
+## Step 2.5: Scope Gate — state the counts, ask how far to go (MANDATORY)
+
+**Never start fixing without asking how far to go.** Deciding silently that the
+low-severity findings do not matter is the tool making the user's call for them.
+This runs in BOTH modes, and whether you were launched from a triage card or
+invoked directly — a card's launch payload carries the same instruction.
+
+Before Step 3, print the per-severity counts and what was not checked, then ask
+via **AskUserQuestion**:
+
 ```
-Findings: 12 total
-  auto-fixable:    3  (will fix automatically)
-  agent-fixable:   4  (security-fixer subagent)
-  needs-review:    2  (will ask you)
-  informational:   3  (logged only)
+Security scan: 22 findings.
+  critical: 2   high: 3   medium: 10   low: 7   info: 0
+  Not checked: Vulnerable dependencies (SCA), Leaked secrets
+  (those classes are not clean — nothing looked at them)
+
+How far should I go?
 ```
+
+Offer only tiers that actually contain findings, each with its real count —
+**Everything (22)**, **Critical and above (2)**, **High and above (5)** — and
+never a tier that is just "everything" under another name.
+
+Skip the question ONLY when non-interactive (`CI`, `SHIPWRIGHT_NON_INTERACTIVE`,
+or no TTY) — there is nobody to ask. Then use **critical and high** and record it
+as *"no operator answer was available; scope defaulted to critical and high"* —
+never as a judgement that the rest did not matter. Carry the scope into Steps 3-5:
+findings outside it get `_remediation_status: "deferred"` and land in the
+`remediation.deferred` count of `shipwright_security_config.json` (Step 7), so the
+next scan sees them again — never `fixed`, never silently dropped.
 
 ---
 
@@ -220,16 +248,11 @@ For each `agent-fixable` finding, invoke the `security-fixer` subagent:
 
 ```
 Agent: security-fixer
-Input: {
-  "severity": "high",
-  "type": "sast",
+Input: {"severity": "high", "type": "sast", "cwe": "CWE-798",
   "rule": "python.lang.security.hardcoded-credentials",
-  "cwe": "CWE-798",
-  "file": "scripts/api.py",
-  "line": 42,
+  "file": "scripts/api.py", "line": 42,
   "description": "Hardcoded API key",
-  "remediation_hint": "Move to environment variable"
-}
+  "remediation_hint": "Move to environment variable"}
 ```
 
 Process the subagent's response:
@@ -280,7 +303,17 @@ Output:
 
 The wrapper redacts secret evidence by default (Gitleaks `match`/`secret`/`commit`/`author`/`email` fields; high-entropy strings in `description` / `remediation_hint`). Use `--full-evidence` to retain raw values for explicit local debugging — refused when `CI` env is set.
 
-After the wrapper exits, read `{project_root}/.shipwright/securityreports/latest.json` for the structured scan summary (total_findings, by_severity, by_source, risk_level).
+After the wrapper exits, read `{project_root}/.shipwright/securityreports/latest.json` for the structured scan summary (total_findings, by_severity, by_source, risk_level, **coverage**). The wrapper also emits ONE `security-scan:{repo}` triage card carrying the severity split, the unchecked classes, and the scope question.
+
+**Compare against the previous scan (optional):**
+
+```bash
+uv run "{plugin_root}/scripts/tools/compare_scans.py" --project-root {project_root}
+```
+
+Reports fixed / new / still-open **only for classes both runs covered**; a class the
+later run did not check is listed as not-comparable, because a finding that vanished
+when its tool was uninstalled was never fixed. Exit 2 = no previous scan yet.
 
 **Migration note:** projects from before this iterate may have a `securityreports/` directory at project root. The wrapper detects it and emits a one-time stderr notice on the first run pointing at the new location; the old folder is gitignored, stale, and safe to delete (or `git mv securityreports .shipwright/` if you want to preserve archived scans).
 
@@ -297,22 +330,16 @@ Write results to `shipwright_security_config.json` in the project root:
 
 ```json
 {
-  "scan_date": "2026-03-26T10:00:00Z",
-  "repo": "svenroth-ai/claude-skills",
-  "scanner": "aikido",
+  "scan_date": "2026-03-26T10:00:00Z", "repo": "owner/name", "scanner": "aikido",
   "total_findings": 12,
   "by_severity": {"critical": 1, "high": 3, "medium": 5, "low": 3},
-  "remediation": {
-    "fixed": 5,
-    "declined": 1,
-    "deferred": 2,
-    "open": 4
-  },
-  "findings": [...],
-  "session_id": "..."
+  "coverage": [{"class": "sast", "tool": "semgrep", "status": "covered", "detail": null}],
+  "remediation": {"fixed": 5, "declined": 1, "deferred": 2, "open": 4},
+  "findings": [], "session_id": "..."
 }
 ```
 
+Findings outside the Step 2.5 scope are `deferred`, not `open` and not dropped.
 This config is consumed by `/shipwright-compliance` for traceability.
 
 ---
@@ -334,21 +361,15 @@ uv run "{plugin_root}/scripts/tools/finalize_security_compliance.py" \
   --scan-id "${scan_id}"
 ```
 
-Helper output is structured JSON:
+Output is structured JSON: `{"committed": true, "reason", "commit_sha",
+"regenerated"}`, or `committed: false` with the reason — compliance unchanged,
+standalone mode, or a CI / non-interactive environment.
 
-```json
-{"committed": true,  "reason": "...", "commit_sha": "...", "regenerated": [...]}
-{"committed": false, "reason": "compliance unchanged after security scan — no diff to commit"}
-{"committed": false, "reason": "standalone mode (no shipwright_project_config.json) — pipeline-only step"}
-{"committed": false, "reason": "CI / non-interactive env detected — step skipped"}
-```
-
-**Skip Step 7.5 entirely** (the helper does this internally — listed
-here for operator awareness) when any of:
-
-- `shipwright_project_config.json` absent → standalone mode (Step 8 hands off to `/shipwright-iterate` for the fix commits)
-- `os.environ.get("CI")` truthy → CI workflows don't drive interactive commits
-- `os.environ.get("SHIPWRIGHT_NON_INTERACTIVE")` truthy
+**Skip Step 7.5 entirely** (the helper does this internally — listed here for
+operator awareness) when `shipwright_project_config.json` is absent (standalone
+— Step 8 hands off to `/shipwright-iterate` for the fix commits), or when `CI`
+/ `SHIPWRIGHT_NON_INTERACTIVE` is truthy (those don't drive interactive
+commits).
 
 When `committed=true`, the new commit's body carries
 `Run-ID: security-<scan_id>` so the audit recognizes it as the new
@@ -361,62 +382,47 @@ compliance drift produces no commit.
 
 After Step 6 completes for the OSS backend in standalone mode, offer the user a one-question handoff into `/shipwright-iterate` so they can work through fixes.
 
-**Skip Step 8 entirely if any of:**
-- `total_findings == 0` in `.shipwright/securityreports/latest.json`
-- `os.environ.get("CI")` is set (any truthy value)
-- `os.environ.get("SHIPWRIGHT_NON_INTERACTIVE")` is set
-- `sys.stdin.isatty()` returns False
-- Pipeline mode is active (`shipwright_project_config.json` exists in project root) — the remediation loop in Steps 2-5 already handled it
+**Skip Step 8 entirely if any of:** `total_findings == 0`; `CI` or
+`SHIPWRIGHT_NON_INTERACTIVE` is set; no TTY; or pipeline mode is active
+(`shipwright_project_config.json` exists — Steps 2.5-5 already handled it).
 
 **Pre-flight check:** verify `shipwright_run_config.json` exists in `project_root`.
 - If missing → print: `"To fix these findings, open /shipwright-iterate in a Shipwright-managed project and point it at .shipwright/securityreports/latest.md"`, then exit 0.
 - If present → proceed.
 
-**Ask the user via AskUserQuestion:**
+**Ask the user via AskUserQuestion** — this is standalone mode's Step 2.5, so
+state the split and the coverage, and make the options the scope:
 
-> Scan complete: {total_findings} findings ({by_severity summary}).
-> Start an iterate to work through fixes?
+> Scan complete: {total} findings — critical {n}, high {n}, medium {n}, low {n}, info {n}.
+> Not checked: {unchecked classes, or "nothing — all classes checked"}.
+> Start an iterate to work through fixes, and how far should it go?
 >
-> - **YES** — start `/shipwright-iterate` (the report path is passed as context)
+> - **Everything ({total})** — start `/shipwright-iterate` over all findings
+> - **{worst} and above ({n})** — start `/shipwright-iterate` over that tier only
 > - **NO** — done, just the report
 
-**On YES:** invoke the `/shipwright-iterate` skill with this generic brief (no scanner prose interpolated, no prompt-injection surface):
+**On the two YES options:** invoke the `/shipwright-iterate` skill with this generic brief (no scanner prose interpolated, no prompt-injection surface), appending the chosen scope:
 
 > Review and fix security findings from the most recent scan.
 > Report: `.shipwright/securityreports/latest.md` (machine-readable sidecar: `.shipwright/securityreports/latest.json`).
+> Scope: {the tier the user chose}.
 > Work through findings with the user — pick what to fix, what to suppress, what to defer. Favor small iterate scopes (one rule-family or one fix category per iterate) to keep review tight.
 
 **Failure handling:** if the `/shipwright-iterate` invocation raises or exits non-zero, print the same brief verbatim to the terminal, log the error to stderr, and exit 0. The report (`.shipwright/securityreports/latest.*`) remains written regardless of handoff success.
 
 ---
 
-## Standalone Mode Commands
+## Standalone Mode Commands (Aikido)
 
-When used outside a Shipwright pipeline, these commands work directly:
+Outside a Shipwright pipeline these work directly. All are
+`uv run --project {plugin_root} {plugin_root}/scripts/lib/aikido_client.py <cmd>`:
 
-### `issues` — List Issues
-```bash
-uv run --project {plugin_root} {plugin_root}/scripts/lib/aikido_client.py issues [--repo owner/repo] [--severity critical,high] [--status open] [--type sast]
-```
-Format output as Markdown table.
-
-### `repos` — List Connected Repos
-```bash
-uv run --project {plugin_root} {plugin_root}/scripts/lib/aikido_client.py repos
-```
-Format as bulleted list.
-
-### `summary` — Dashboard
-```bash
-uv run --project {plugin_root} {plugin_root}/scripts/lib/aikido_client.py summary [--repo owner/repo]
-```
-Format as ASCII dashboard with severity bars.
-
-### `report` — Generate Report
-```bash
-uv run --project {plugin_root} {plugin_root}/scripts/lib/aikido_client.py report --repo owner/repo [--output path.md]
-```
-Write Markdown report to working directory.
+| `<cmd>` | Options | Present as |
+|---|---|---|
+| `issues` | `[--repo owner/repo] [--severity critical,high] [--status open] [--type sast]` | Markdown table |
+| `repos` | — | bulleted list |
+| `summary` | `[--repo owner/repo]` | ASCII dashboard with severity bars |
+| `report` | `--repo owner/repo [--output path.md]` | Markdown report on disk |
 
 ---
 
@@ -435,15 +441,9 @@ Write Markdown report to working directory.
 
 ## Backend Details
 
-### Aikido (Cloud SaaS)
-- **Base URL:** `https://app.aikido.dev/api`
-- **Auth:** OAuth 2.0 Client Credentials → `POST /oauth/token`
-- **Issues:** `GET /issues/export` with filter params
-- **Repos:** `GET /code-repos`
-- **Docs:** See `references/aikido-api.md`
-
-### OSS (Local CLI Tools)
-- **Semgrep:** SAST scanner, auto-updating rules
-- **Trivy:** SCA scanner, auto-updating vulnerability DB
-- **Gitleaks:** Secrets detector
-- **Docs:** See `references/oss-scanners.md`
+- **Aikido (Cloud SaaS)** — OAuth 2.0 client-credentials against
+  `app.aikido.dev/api`. Endpoints, auth flow and response schema:
+  `references/aikido-api.md`.
+- **OSS (local CLI)** — Semgrep (SAST), Trivy (SCA), Gitleaks (secrets), each
+  with auto-updating rules. Install, exclusions and edge cases:
+  `references/oss-scanners.md`.

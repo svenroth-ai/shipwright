@@ -1,0 +1,1 @@
+A repository now has a single accepted-findings answer for leaked secrets. The local secret scan extends the project's own `.gitleaks.toml` instead of substituting a generated one, so it reaches the same verdict as the scan running on the code host.

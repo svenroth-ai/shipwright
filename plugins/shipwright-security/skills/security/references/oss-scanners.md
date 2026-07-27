@@ -78,9 +78,11 @@ When `/shipwright-security` runs with the OSS backend:
 
 1. **Detection:** Checks which tools are on PATH
 2. **Scan:** Runs each available tool against the project directory
-3. **Normalize:** Converts tool-specific JSON output to the standard finding schema
-4. **Classify:** Each finding is classified as auto-fixable, agent-fixable, needs-review, or informational
-5. **Remediate:** Same pipeline as Aikido — auto-fix dependencies, agent-fix code issues, user review for the rest
+3. **Record coverage:** Writes one row per weakness class saying whether it was
+   checked — see [Coverage manifest](#coverage-manifest--what-was-not-checked)
+4. **Normalize:** Converts tool-specific JSON output to the standard finding schema
+5. **Classify:** Each finding is classified as auto-fixable, agent-fixable, needs-review, or informational
+6. **Remediate:** Same pipeline as Aikido — auto-fix dependencies, agent-fix code issues, user review for the rest
 
 ### CLI Commands Used
 
@@ -97,6 +99,104 @@ trivy fs --format json --scanners vuln --skip-dirs .venv --skip-dirs node_module
 # stdout (gitleaks report.Write → os.Create), so the plugin must read the file.
 gitleaks detect --report-format json -s {target_dir} --report-path {temp_json_report} --config {generated_toml}
 ```
+
+## Coverage manifest — what was NOT checked
+
+A tool that **crashes** was always surfaced: it records a `scan_errors` marker,
+`findings.json` gets `degraded: true`, and the run fails closed. A tool that was
+**never installed** used to be invisible — the backend simply skipped its class,
+so a machine with only Semgrep produced a report that read clean for vulnerable
+dependencies and leaked secrets alike.
+
+Every scan now writes a `coverage` array into `findings.json` and the
+`latest.json` sidecar — one row per weakness class:
+
+```json
+{"class": "secrets", "tool": "gitleaks", "status": "not_available",
+ "detail": "gitleaks is not installed on this machine"}
+```
+
+`status` comes from a closed vocabulary:
+
+| Status | Meaning |
+|---|---|
+| `covered` | scanned to completion; findings for this class are trustworthy |
+| `degraded` | the tool ran but produced no parseable output (also in `scan_errors`; fails the run) |
+| `not_requested` | the caller excluded the class via `--scan-types` |
+| `not_available` | the check could not run here — locally, the tool is not on PATH |
+
+An **empty or absent** manifest means "coverage was not reported", never
+"everything was covered": the report renders *Coverage not reported* rather
+than a clean pass, and a comparison refuses to call anything fixed. That state
+is deliberately distinct from *Incomplete Coverage* (a manifest that exists and
+names a gap) — which is why nothing synthesizes a row onto an empty manifest
+just to have one.
+
+The manifest is derived from `(capabilities, scan_types, scan_errors)` by
+`scan_coverage.build_coverage()` — a pure function, not a channel each backend
+populates, so no backend or test mock can forget to report it. A class a backend
+offers that has no local tool (Aikido's `iac`) still gets a row, with
+`tool: null`. The prompt-injection scan gets one too: it cannot be "missing",
+but omitting the class from a report reads as clean, so it is named either way.
+
+**Comparing two scans.** `compare_scans.py` reports fixed / new / still-open
+**only for classes both runs covered**; anything else is listed as
+not-comparable with the reason. A finding that vanished because its tool was
+uninstalled was never fixed. Nothing per-finding is stored — the answer is
+derived from the two sidecars every time, so the coverage gate can never go
+stale:
+
+```bash
+uv run scripts/tools/compare_scans.py --project-root .   # exit 2 = no previous scan
+```
+
+## Accepted findings — one answer per repository
+
+Gitleaks auto-loads `.gitleaks.toml` from the scan root when no `--config` is
+given, which is exactly what the host workflow does. The plugin must pass
+`--config` (it is the only way to give gitleaks path exclusions), so it used to
+**replace** the project's file: the same repository yielded different results
+depending on which path asked.
+
+The generated config now **extends** the project's file when one exists:
+
+```toml
+[extend]
+path = "/abs/path/to/.gitleaks.toml"
+```
+
+Two rules follow from that:
+
+- **Never emit both `extend.useDefault` and `extend.path`** — gitleaks aborts on
+  a config that sets both, which would break every local secret scan.
+- **In extend mode the plugin drops its own placeholder allowlist.** With a
+  project file present, that file is the repository's answer; an extra
+  plugin-side allowlist would leave the local scan quietly *more* permissive
+  than the host — the same divergence this removes. With no project file, the
+  previous generated config (`useDefault` + the `cafebabe:deadbeef` placeholder
+  defence) is unchanged.
+
+**A project config with no rules is reported, not silently obeyed.** Because
+`extend.useDefault` and `extend.path` cannot both be set, extending means the
+plugin can no longer force the built-in ruleset on — responsibility for it moves
+to the project's file. A `.gitleaks.toml` written purely to hold an
+`[allowlist]`, with no `[extend] useDefault = true` and no rules of its own,
+therefore scans with almost nothing. The host workflow already behaves that way
+(same file, no `--config`), so extending does not create the hole — it inherits
+one that was already there on the host path. `gitleaks_config.class_notes()`
+detects it and annotates the `secrets` coverage row, so the report says the
+class was examined with no rules instead of reporting it clean.
+
+`/shipwright-adopt` scaffolds a starting `.gitleaks.toml` that DOES set
+`useDefault = true`; see `shared/templates/github-actions/gitleaks.toml.template`.
+The SCA equivalent is `.trivyignore.yaml` at the same root, passed via
+`--ignorefile`.
+
+The extend semantics themselves are proven against the real binary in
+`tests/test_gitleaks_extend_smoke.py` (default rules still fire, the project's
+allowlist applies, the shipwright exclusions survive) rather than assumed from
+the rendered TOML — CI installs gitleaks 8.21.2, and that test hard-fails there
+if the binary is missing.
 
 ## Scanner-Exclusion Contract
 
