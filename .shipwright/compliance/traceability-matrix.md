@@ -1,6 +1,6 @@
 # Requirements Traceability Matrix
 
-Generated: 2026-07-27T08:12:42.718426+00:00
+Generated: 2026-07-27T08:15:28.293471+00:00
 
 ## Requirements Coverage
 
@@ -18,7 +18,7 @@ Generated: 2026-07-27T08:12:42.718426+00:00
 | [FR-01.10](../../.shipwright/planning/01-adopted/spec.md#fr-0110)<a id="rtm-fr-0110"></a> | Produce audit-ready evidence — which requirement is covered by which test, what changed when, and what the project depends on — and run an on-demand cross-check that reports where that evidence disagrees with reality. | Must | [evt-e3d2949e](#evt-e3d2949e), [evt-ca7b7d64](#evt-ca7b7d64), [evt-30338dac](#evt-30338dac), [evt-a3888caf](#evt-a3888caf) +24 | 225/225 → 6230/6242 | 2026-07-23 ([iter](#evt-3a175bfa)) | ⚠️ needs re-verification | FAIL → [trg-4d5b6a56](../agent_docs/triage_inbox.md#trg-4d5b6a56), FAIL → [trg-8bf97fd4](../agent_docs/triage_inbox.md#trg-8bf97fd4), FAIL → [trg-a1fd8125](../agent_docs/triage_inbox.md#trg-a1fd8125) | MISSING | — | — |
 | [FR-01.11](../../.shipwright/planning/01-adopted/spec.md#fr-0111)<a id="rtm-fr-0111"></a> | Handle an ongoing change at the depth it deserves: detect what kind of change it is and how big, then scale from a quick fix to a fully specified feature with plans, reviews and tests. Every feature or change records whether it adds, modifies, removes or leaves the requirements untouched, and that record is enforced before the change can be finished. | Must | [evt-e3d2949e](#evt-e3d2949e), [evt-6c637864](#evt-6c637864), [evt-baaf4b0e](#evt-baaf4b0e), [evt-ca7b7d64](#evt-ca7b7d64) +20 | 225/225 → 54/54 | 2026-07-14 ([iter](#evt-5dc16a45)) | ⚠️ needs re-verification | FAIL → [trg-10597d50](../agent_docs/triage_inbox.md#trg-10597d50) | MISSING | MISSING | — |
 | [FR-01.12](../../.shipwright/planning/01-adopted/spec.md#fr-0112)<a id="rtm-fr-0112"></a> | Start the project locally and hand back the address to open in a browser. | May | [evt-e3d2949e](#evt-e3d2949e), [evt-ca7b7d64](#evt-ca7b7d64), [evt-ddb23fe7](#evt-ddb23fe7), [evt-ea7203ec](#evt-ea7203ec) | 225/225 → 13/13 | 2026-05-03 ([iter](#evt-ca7b7d64)) | ⚠️ needs re-verification | COVERED | — | — | MISSING |
-| [FR-01.13](../../.shipwright/planning/01-adopted/spec.md#fr-0113)<a id="rtm-fr-0113"></a> | Bring an existing codebase under Shipwright: read what is already there, write the starting guidance, derive an initial requirements catalog and compliance evidence, and lay down a baseline end-to-end test. | Must | [evt-e3d2949e](#evt-e3d2949e), [evt-273bbb54](#evt-273bbb54), [evt-b0b9c422](#evt-b0b9c422), [evt-aab7ddbd](#evt-aab7ddbd) +10 | 225/225 → 5/5 | 2026-07-20 ([iter](#evt-e9bfacd4)) | ⚠️ needs re-verification | FAIL → [trg-1aa5a8ab](../agent_docs/triage_inbox.md#trg-1aa5a8ab) | MISSING | — | — |
+| [FR-01.13](../../.shipwright/planning/01-adopted/spec.md#fr-0113)<a id="rtm-fr-0113"></a> | Bring an existing codebase under Shipwright: read what is already there, write the starting guidance, derive an initial requirements catalog and compliance evidence, and lay down a baseline end-to-end test. | Must | [evt-e3d2949e](#evt-e3d2949e), [evt-273bbb54](#evt-273bbb54), [evt-b0b9c422](#evt-b0b9c422), [evt-aab7ddbd](#evt-aab7ddbd) +11 | 225/225 → 5/5 | 2026-07-20 ([iter](#evt-e9bfacd4)) | ⚠️ needs re-verification | FAIL → [trg-1aa5a8ab](../agent_docs/triage_inbox.md#trg-1aa5a8ab) | MISSING | — | — |
 | [FR-01.14](../../.shipwright/planning/01-adopted/spec.md#fr-0114)<a id="rtm-fr-0114"></a> | Collect findings from local checks and from the code host's automated scans into one per-project Triage Inbox the operator works through — each finding recorded once, and each one taken into work, deferred or dismissed — so the actual task list stays curated instead of flooded. | Must | [evt-3f488ddc](#evt-3f488ddc), [evt-32f2f1f4](#evt-32f2f1f4), [evt-84dbdf5e](#evt-84dbdf5e), [evt-e14e5f26](#evt-e14e5f26) +7 | 1642/1649 → 3629/3641 | 2026-07-03 ([iter](#evt-5755f932)) | ⚠️ needs re-verification | FAIL → [trg-813d2305](../agent_docs/triage_inbox.md#trg-813d2305) | MISSING | — | — |
 | [FR-01.15](../../.shipwright/planning/01-adopted/spec.md#fr-0115)<a id="rtm-fr-0115"></a> | Every payload this repository hands to a different repository is a versioned output contract: its shape is published alongside it, the capability producing it states that it has an outside consumer, and a gate compares what is emitted against the shape last published — read from a state the proposed change cannot rewrite — and fails until the version has been raised to match the kind of change. So a shape change can never reach a consumer silently. | Must | [evt-6a61ac10](#evt-6a61ac10), [evt-ea7203ec](#evt-ea7203ec) | 6452/6452 | 2026-07-21 ([iter](#evt-6a61ac10)) | ⚠️ needs re-verification | FAIL → [trg-c7e5835b](../agent_docs/triage_inbox.md#trg-c7e5835b) | — | — | MISSING |
 | [FR-01.16](../../.shipwright/planning/01-adopted/spec.md#fr-0116)<a id="rtm-fr-0116"></a> | Elicit requirements through one shared, rigorous method wherever they are gathered — a new project, an adopted codebase, or an ongoing change: ask one question at a time, each with a recommended answer, look facts up in the code instead of asking, challenge wording against the project's own glossary, and stress-test with concrete edge cases. Capture the project's domain vocabulary and the reason behind each hard-to-reverse choice as they surface. No requirement is treated as settled until every dimension of its context is either answered or explicitly marked as an unconfirmed assumption. | Must | [evt-ea7203ec](#evt-ea7203ec) | — | — | ⚠️ needs re-verification | FAIL → [trg-e9fa7c49](../agent_docs/triage_inbox.md#trg-e9fa7c49) | MISSING | — | — |
@@ -31,6 +31,7 @@ Generated: 2026-07-27T08:12:42.718426+00:00
 
 | Event | Source | Type | FRs | Tests | Commit | Date |
 |-------|--------|------|-----|-------|--------|------|
+| <a id="evt-f41a75f5"></a>adopt announces its derived catalogue and records inherited failures as inherited | iterate | change | [FR-01.13](#rtm-fr-0113) | — | — | 2026-07-27 |
 | <a id="evt-9ad5050b"></a>requirement granularity guidance + advisory I6 check + the Basis-assumed template contradiction | iterate | change |  | — | — | 2026-07-27 |
 | <a id="evt-4794dcc1"></a>Overriding a phase gate now runs the check anyway and records what it found plus the reason given, and the session handoff states which phases are finished and which one was interrupted. | iterate | change | [FR-01.01](#rtm-fr-0101) | — | — | 2026-07-27 |
 | <a id="evt-78684181"></a>the review gate stops being bypassable (fail-closed + fork review) | iterate | change |  | — | — | 2026-07-27 |
@@ -400,7 +401,7 @@ Generated: 2026-07-27T08:12:42.718426+00:00
 |--------|-------|
 | Total splits built | 0 |
 | Build sections | 0 |
-| Iterate changes | 362 |
+| Iterate changes | 363 |
 | Requirements total | 18 |
 | Requirements verified | 16/18 |
 | Must-have verified | 13/14 |
@@ -426,7 +427,7 @@ Generated: 2026-07-27T08:12:42.718426+00:00
 - [FR-01.10](../../.shipwright/planning/01-adopted/spec.md) (Must): behavior changed without a later test run — behavior last touched by `evt-ea7203ec` (2026-07-26)
 - [FR-01.11](../../.shipwright/planning/01-adopted/spec.md) (Must): behavior changed without a later test run — behavior last touched by `evt-ea7203ec` (2026-07-26)
 - [FR-01.12](../../.shipwright/planning/01-adopted/spec.md) (May): behavior changed without a later test run — behavior last touched by `evt-ea7203ec` (2026-07-26)
-- [FR-01.13](../../.shipwright/planning/01-adopted/spec.md) (Must): behavior changed without a later test run — behavior last touched by `evt-ea7203ec` (2026-07-26)
+- [FR-01.13](../../.shipwright/planning/01-adopted/spec.md) (Must): behavior changed without a later test run — behavior last touched by `evt-f41a75f5` (2026-07-27)
 - [FR-01.14](../../.shipwright/planning/01-adopted/spec.md) (Must): behavior changed without a later test run — behavior last touched by `evt-ea7203ec` (2026-07-26)
 - [FR-01.15](../../.shipwright/planning/01-adopted/spec.md) (Must): behavior changed without a later test run — behavior last touched by `evt-ea7203ec` (2026-07-26)
 - [FR-01.16](../../.shipwright/planning/01-adopted/spec.md) (Must): behavior changed without a later test run — behavior last touched by `evt-ea7203ec` (2026-07-26)

@@ -1,6 +1,6 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-07-27-project-granularity-basis"
+run_id: "iterate-2026-07-27-adopt-derived-catalogue-honesty"
 phase: "iterate"
 reason: "ensure-current pre-merge refresh"
 timestamp: "2026-07-27T08:17:34.267156+00:00"
@@ -12,29 +12,33 @@ timestamp: "2026-07-27T08:17:34.267156+00:00"
 
 ## Session Info
 
-- **Session ID**: d25b0a7e-0ae6-43cf-9f0d-0888374ebaee
+- **Session ID**: 98053cc9-0f7c-4be8-b1cc-8b5d8b25d84b
 - **Timestamp**: 2026-07-27 08:17:34 UTC
 - **Reason**: ensure-current pre-merge refresh
 
 ## Last Iterate
 
-- **Run ID**: iterate-2026-07-27-project-granularity-basis
-- **Date**: 2026-07-27T08:12:42.596562Z
-- **Type**: change
+- **Run ID**: iterate-2026-07-27-adopt-derived-catalogue-honesty
+- **Date**: 2026-07-27T08:15:28.167766Z
+- **Type**: feature
 - **Complexity**: medium
-- **Branch**: iterate/req3-project-granularity-basis
-- **ADR**: iterate-2026-07-27-project-granularity-basis
+- **Branch**: iterate/adopt-derived-catalogue-honesty
+- **ADR**: iterate-2026-07-27-adopt-derived-catalogue-honesty
 - **Tests passed**: True
-- **Spec**: .shipwright/planning/iterate/2026-07-27-project-granularity-basis.md
+- **Spec**: .shipwright/planning/iterate/2026-07-27-adopt-derived-catalogue-honesty.md
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/req3-project-granularity-basis
-- **External Review Marker**: completed (external_review_state.json @ 2026-07-27T07:53:44)
+- **Branch**: iterate/adopt-derived-catalogue-honesty
+- **Run ID**: iterate-2026-07-27-adopt-derived-catalogue-honesty
+- **Spec**: .shipwright/planning/iterate/2026-07-27-adopt-derived-catalogue-honesty.md
+- **Complexity**: medium
+- **External Review Marker**: stale (predates spec (2026-07-27T07:13:55))
 
 ### Mandatory replay on Resume
 
 Before dispatching to the handoff's Remaining phase, run these if missing:
+- Step 4 — External LLM Review (marker missing/stale)
 - Finalization (F0–F11) after all mandatory phases pass
 
 ## Legacy build state
@@ -48,8 +52,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/req3-project-granularity-basis
-- **Last Commit**: 7b531953 Merge remote-tracking branch 'origin/main' into iterate/req3-project-granularity-basis
+- **Branch**: iterate/adopt-derived-catalogue-honesty
+- **Last Commit**: fcddc5ce Merge remote-tracking branch 'origin/main' into iterate/adopt-derived-catalogue-honesty
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -74,7 +78,7 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 362
+- **Total work events**: 363
 - **Last iterate**: change — iterate: the review gate stops being bypassable (fail-closed + fork review) (2026-07-27)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
