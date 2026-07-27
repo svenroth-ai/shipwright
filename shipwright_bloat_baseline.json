@@ -690,7 +690,7 @@
     {
       "path": "shared/scripts/tools/generate_session_handoff.py",
       "limit": 300,
-      "current": 669,
+      "current": 569,
       "state": "grandfathered",
       "adr": null
     },

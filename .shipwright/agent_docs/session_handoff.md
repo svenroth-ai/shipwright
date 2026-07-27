@@ -1,44 +1,40 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-07-27-security-coverage-manifest"
+run_id: "iterate-2026-07-27-project-granularity-basis"
 phase: "iterate"
-reason: "iterate: security scan coverage manifest, accepted-findings parity, coverage-gated comparison, severity split at the point of work"
-timestamp: "2026-07-27T08:43:59.717363+00:00"
+reason: "ensure-current pre-merge refresh"
+timestamp: "2026-07-27T08:17:34.267156+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-07-27 08:43:59 UTC
+> Auto-generated 2026-07-27 08:17:34 UTC
 
 ## Session Info
 
-- **Session ID**: 871b1865-c6ae-4724-a105-dc987ddca125
-- **Timestamp**: 2026-07-27 08:43:59 UTC
-- **Reason**: iterate: security scan coverage manifest, accepted-findings parity, coverage-gated comparison, severity split at the point of work
+- **Session ID**: d25b0a7e-0ae6-43cf-9f0d-0888374ebaee
+- **Timestamp**: 2026-07-27 08:17:34 UTC
+- **Reason**: ensure-current pre-merge refresh
 
 ## Last Iterate
 
-- **Run ID**: iterate-2026-07-27-security-coverage-manifest
-- **Date**: 2026-07-27T08:43:53.791362Z
+- **Run ID**: iterate-2026-07-27-project-granularity-basis
+- **Date**: 2026-07-27T08:12:42.596562Z
 - **Type**: change
 - **Complexity**: medium
-- **Branch**: iterate/security-coverage-manifest
-- **ADR**: iterate-2026-07-27-security-coverage-manifest
+- **Branch**: iterate/req3-project-granularity-basis
+- **ADR**: iterate-2026-07-27-project-granularity-basis
 - **Tests passed**: True
-- **Spec**: .shipwright/planning/iterate/2026-07-27-security-coverage-manifest.md
+- **Spec**: .shipwright/planning/iterate/2026-07-27-project-granularity-basis.md
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/security-coverage-manifest
-- **Run ID**: iterate-2026-07-27-security-coverage-manifest
-- **Spec**: .shipwright/planning/iterate/2026-07-27-security-coverage-manifest.md
-- **Complexity**: medium
-- **External Review Marker**: stale (predates spec (2026-07-27T08:20:04))
+- **Branch**: iterate/req3-project-granularity-basis
+- **External Review Marker**: completed (external_review_state.json @ 2026-07-27T07:53:44)
 
 ### Mandatory replay on Resume
 
 Before dispatching to the handoff's Remaining phase, run these if missing:
-- Step 4 — External LLM Review (marker missing/stale)
 - Finalization (F0–F11) after all mandatory phases pass
 
 ## Legacy build state
@@ -52,8 +48,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/security-coverage-manifest
-- **Last Commit**: 73ead296 chore(triage): sweep 60 outbox append(s) into branch
+- **Branch**: iterate/req3-project-granularity-basis
+- **Last Commit**: 7b531953 Merge remote-tracking branch 'origin/main' into iterate/req3-project-granularity-basis
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -69,17 +65,17 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 | Event | Type | Source | Date |
 |-------|------|--------|------|
-| evt-70b6d56e | grade_snapshot | — | 2026-07-27 |
-| evt-a39a5e95 | work_completed | iterate (security-coverage-manifest) | 2026-07-27 |
-| evt-2055af94 | grade_snapshot | — | 2026-07-26 |
-| evt-ea7203ec | work_completed | iterate (iterate: REQ-3 Phase 2 content round - all 18 requirements walked or minted) | 2026-07-26 |
-| evt-6ff6084f | grade_snapshot | — | 2026-07-26 |
+| evt-64bc7af0 | grade_snapshot | — | 2026-07-27 |
+| evt-19f53577 | grade_snapshot | — | 2026-07-27 |
+| evt-78684181 | work_completed | iterate (iterate: the review gate stops being bypassable (fail-closed + fork review)) | 2026-07-27 |
+| evt-c880344a | grade_snapshot | — | 2026-07-27 |
+| evt-4794dcc1 | work_completed | iterate (iterate: phase-gate override leaves evidence; handoff renders phase status) | 2026-07-27 |
 
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 360
-- **Last iterate**: change — security-coverage-manifest (2026-07-27)
+- **Total work events**: 362
+- **Last iterate**: change — iterate: the review gate stops being bypassable (fail-closed + fork review) (2026-07-27)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
 ## Recent Decisions

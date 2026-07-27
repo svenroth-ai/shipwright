@@ -32,9 +32,20 @@ uncomment its `pull_request:` trigger block. Commit, open a throwaway PR, and
 confirm the check appears and goes green. (`security.yml` activation also has
 `docs/security-ci-setup.md` if your repo has it.)
 
-`claude-review.yml` already fires on PRs; it is **advisory** (it posts a review
-comment and never fails the check) and needs an `ANTHROPIC_API_KEY` repo secret
-to produce output. Requiring it just guarantees the review ran.
+The review is **two workflows, and both must be present**.
+`claude-review.yml` (stage 1) already fires on PRs, holds no credentials, and
+saves the change as an artifact. `claude-review-run.yml` (stage 2) is triggered
+by stage 1 finishing, reads that artifact, and posts the verdict. The split is
+what lets a pull request from a fork be reviewed at all: GitHub withholds
+secrets from fork runs, so a single-stage reviewer simply never ran on them —
+and a job that is skipped counts to GitHub as a **passing** required check.
+
+Stage 2 needs an `ANTHROPIC_API_KEY` repo secret. It **fails closed**: a change
+too large to review in one pass, a reviewer that crashes, and output that will
+not parse each leave the gate red rather than green. The required check to add
+in step 3 is **`Claude Code Review`** — a commit status posted by stage 2, not a
+job name. If stage 2 never reports, that status is absent, and an absent
+required check blocks the merge. Silence counts as not passing.
 
 ## 3. Configure branch protection (GitHub UI)
 

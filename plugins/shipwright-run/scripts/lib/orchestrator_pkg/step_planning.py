@@ -20,10 +20,11 @@ from .build_progress import get_build_progress
 from .config_factory import build_pipeline
 from .config_io import load_run_config, save_run_config
 from .constants import PIPELINE_STEPS
-from .critical_gates import (
-    _collect_critical_gate_issues,
-    _enforce_critical_gates_enabled,
-    _read_latest_phase_quality_finding,
+from .validation_record import (
+    normalise_override_reason,
+    record_inform_notes,
+    record_validation_override,
+    run_phase_gate,
 )
 
 # ``run_config_store`` is a top-level module in this plugin's scripts/lib;
@@ -121,13 +122,30 @@ def _read_standalone_flag(project_root: Path) -> bool:
     return config.get("standalone", False)
 
 
-def update_step(project_root: Path, step: str, status: str, *, force: bool = False) -> dict[str, Any]:
+def update_step(
+    project_root: Path,
+    step: str,
+    status: str,
+    *,
+    force: bool = False,
+    force_reason: str | None = None,
+) -> dict[str, Any]:
     """Update a pipeline step's status.
 
-    On completion, runs phase validation first (unless force=True or standalone).
-    If validation returns ask-level issues, sets status to "needs_validation"
-    and returns without marking complete. The caller (SKILL.md) should then
-    ask the user and re-call with force=True if the user approves.
+    On completion, runs phase validation first (unless standalone). If validation
+    returns ask-level issues, sets status to "needs_validation" and returns
+    without marking complete. The caller (SKILL.md) should then ask the user and
+    re-call with force=True — plus ``force_reason`` — if the user approves.
+
+    **``force`` overrides the VERDICT, never the CHECK** (FR-01.01). The gate runs
+    either way; what force changes is that ask-level findings no longer pause the
+    run. What the gate said, and the reason the person gave for going ahead, are
+    written to ``validation_overrides[]`` so that afterwards "passed its checks"
+    and "was waved through" can still be told apart. Before this, force skipped
+    ``validate_phase`` entirely and the two were indistinguishable.
+
+    ``force_reason`` is mandatory whenever ``force`` completes a non-standalone
+    step; a blank one raises ``ValueError`` before anything is read or written.
 
     On completion, also triggers incremental compliance update.
 
@@ -145,30 +163,28 @@ def update_step(project_root: Path, step: str, status: str, *, force: bool = Fal
     is_standalone = _read_standalone_flag(project_root)
 
     if status == "complete":
+        ask_issues: list[dict[str, Any]] = []
         inform_issues: list[dict[str, Any]] = []
 
-        # Phase validation gate (skip for standalone — no interactive user).
-        # Reads project artifacts, not the run config, so it runs unlocked.
-        if not force and not is_standalone:
-            from phase_validators import validate_phase
-            valid, issues = validate_phase(step, project_root)
-            ask_issues = [i for i in issues if i["severity"] == "ask"]
-            inform_issues = [i for i in issues if i["severity"] == "inform"]
+        # Phase validation gate (skip for standalone — no interactive user, so
+        # there is nobody to override and nothing was overridden). Reads project
+        # artifacts, not the run config, so it runs unlocked.
+        if not is_standalone:
+            # Refuse a reasonless override BEFORE running or writing anything, so
+            # a malformed call cannot half-complete a phase.
+            if force:
+                force_reason = normalise_override_reason(force_reason)
 
-            # Phase-Quality critical-gate (plan § 4.4) — opt-in via
-            # SHIPWRIGHT_ENFORCE_CRITICAL_GATES=1. Default OFF. Pulls the
-            # most recent per-phase finding JSON written by the Stop hook
-            # and promotes any W5/W6/W7 FAIL into an ask-level issue.
-            if not force and _enforce_critical_gates_enabled():
-                finding = _read_latest_phase_quality_finding(project_root, step)
-                if finding:
-                    ask_issues.extend(_collect_critical_gate_issues(finding))
+            # ALWAYS runs — including under force. That is the fix: an override
+            # must not erase the finding it overrode.
+            ask_issues, inform_issues = run_phase_gate(project_root, step)
 
-            # Ask-level issues: pause for user decision (persist under lock).
-            if ask_issues:
+            # Ask-level issues without an override: pause for a user decision
+            # (persist under lock).
+            if ask_issues and not force:
                 with run_config_lock(project_root):
                     config = _load_or_bootstrap(project_root, step)
-                    _record_inform_notes(config, step, inform_issues)
+                    record_inform_notes(config, step, inform_issues)
                     config["current_step"] = step
                     config["status"] = "needs_validation"
                     config["validation_issues"] = [{"step": step, **i} for i in ask_issues]
@@ -181,8 +197,17 @@ def update_step(project_root: Path, step: str, status: str, *, force: bool = Fal
 
         with run_config_lock(project_root):
             config = _load_or_bootstrap(project_root, step)
+            # Clears the pause issues from an earlier unforced attempt, so a
+            # completed step never carries findings that imply it is still stuck.
+            # What the gate said on THIS attempt is preserved by the override
+            # record below.
             config.pop("validation_issues", None)
-            _record_inform_notes(config, step, inform_issues)
+            record_inform_notes(config, step, inform_issues)
+            if force and not is_standalone:
+                record_validation_override(
+                    config, step, reason=force_reason,
+                    ask_issues=ask_issues, inform_issues=inform_issues,
+                )
 
             completed = config.get("completed_steps", [])
             if step not in completed:
@@ -223,14 +248,6 @@ def update_step(project_root: Path, step: str, status: str, *, force: bool = Fal
             config["status"] = "failed"
         save_run_config(project_root, config)
         return config
-
-
-def _record_inform_notes(config: dict[str, Any], step: str, inform_issues: list[dict[str, Any]]) -> None:
-    """Append inform-level validation notes (non-blocking) to the config in place."""
-    if inform_issues:
-        notes = config.get("validation_notes", [])
-        notes.extend({"step": step, **i} for i in inform_issues)
-        config["validation_notes"] = notes
 
 
 def _record_compliance_result(

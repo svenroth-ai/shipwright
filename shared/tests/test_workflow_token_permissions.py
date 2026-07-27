@@ -40,7 +40,13 @@ def _writes(perms) -> list[str]:
 
 # Workflows hardened to a read-only top-level token. security.yml is excluded
 # on purpose (see module docstring + the dedicated test below).
-_READ_ONLY_TOP = ["ci.yml", "codeql.yml", "bloat-check.yml", "pr-review.yml"]
+_READ_ONLY_TOP = [
+    "ci.yml",
+    "codeql.yml",
+    "bloat-check.yml",
+    "pr-review.yml",
+    "pr-review-run.yml",
+]
 
 
 @pytest.mark.parametrize("name", _READ_ONLY_TOP)
@@ -68,24 +74,40 @@ def test_bloat_check_job_widens_to_pr_write() -> None:
     )
 
 
-def test_pr_review_only_review_job_widens() -> None:
-    jobs = _load("pr-review.yml").get("jobs") or {}
+def test_pr_review_stage1_holds_no_write_scope() -> None:
+    """Stage 1 runs on fork PRs with attacker-influenced input (FR-01.17).
+
+    It prepares an artifact and decides a tier — it posts nothing, so no job in
+    it may hold a write scope. The verdict belongs to stage 2, which never runs
+    contributor code.
+    """
+    for jname, job in (_load("pr-review.yml").get("jobs") or {}).items():
+        assert not _writes(job.get("permissions")), (
+            f"pr-review stage 1 job {jname!r} holds write scope "
+            f"{_writes(job.get('permissions'))} — stage 1 posts nothing."
+        )
+
+
+def test_pr_review_run_only_posting_job_widens() -> None:
+    """Stage 2 posts the required `PR Review` status and the review comment."""
+    jobs = _load("pr-review-run.yml").get("jobs") or {}
     review = jobs.get("review") or {}
     rperms = review.get("permissions") or {}
+    assert rperms.get("statuses") == "write", (
+        "the `PR Review` context is a commit status posted by this job — "
+        "without statuses:write nothing ever satisfies the required check"
+    )
     assert rperms.get("pull-requests") == "write", (
-        "pr-review `review` job must widen to pull-requests:write to post the review"
+        "FR-01.17 (E)4 — the verdict and its reasons are written onto the PR"
     )
     assert rperms.get("contents") == "read", (
         "job-level block REPLACES top-level — review must re-declare contents:read"
     )
-    # The non-posting jobs must NOT carry any write scope (they inherit the
-    # read-only top-level, or declare their own read-only block).
-    for jname in ("decide", "selftest"):
-        job = jobs.get(jname)
-        if job is None:
-            continue  # selftest exists only in the webui variant
+    for jname, job in jobs.items():
+        if jname == "review":
+            continue
         assert not _writes(job.get("permissions")), (
-            f"pr-review `{jname}` job must not hold any write scope"
+            f"pr-review-run `{jname}` job must not hold any write scope"
         )
 
 

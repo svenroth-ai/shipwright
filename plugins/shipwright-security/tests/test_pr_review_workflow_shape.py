@@ -1,10 +1,26 @@
-"""Snapshot test for .github/workflows/pr-review.yml invariants (B4.5 Tier-3).
+"""Snapshot test for the two-stage Tier-3 PR review workflows (B4.5, FR-01.17).
 
-Text-regex based (no PyYAML dep) — guards the tier contract that Branch
-Protection relies on: the required status check is the `PR Review` job, the
-tier filter lives in a `decide` job, and only Tier-3 PRs reach the OpenRouter
-custom script. A drift here could silently auto-merge an unreviewed external or
+Text-regex based (no PyYAML dep) — guards the tier contract Branch Protection
+relies on. A drift here could silently auto-merge an unreviewed external or
 sensitive-path PR (Failure Mode "Tier-Logik falsch" in the B4.5 spec).
+
+**The shape changed in iterate-2026-07-27-review-gate-failclosed-fork.** It used
+to be one workflow whose `PR Review` job was the required check, guarded by
+``head.repo.full_name == github.repository`` so it never ran on a fork. That
+guard was the hole: a guarded job is SKIPPED on fork PRs, `review` was skipped
+through ``needs:``, and GitHub scores a skipped job as a **successful** required
+check — so a fork PR satisfied the gate having been reviewed by nobody.
+
+Now:
+  * stage 1 (`pr-review.yml`) runs on every PR including forks, holds NO secret,
+    decides the tier, and uploads the diff as an artifact;
+  * stage 2 (`pr-review-run.yml`) is triggered by stage 1 completing, holds the
+    credentials, never checks out the PR head, and posts the required
+    ``PR Review`` context as a COMMIT STATUS.
+
+The required check is therefore a posted status, not a job name — which is what
+makes it fail closed: if stage 2 never reports, the context is absent, and an
+absent required context is `pending`, which blocks.
 """
 
 from __future__ import annotations
@@ -15,88 +31,158 @@ from pathlib import Path
 import pytest
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
-WORKFLOW_PATH = REPO_ROOT / ".github" / "workflows" / "pr-review.yml"
+STAGE1_PATH = REPO_ROOT / ".github" / "workflows" / "pr-review.yml"
+STAGE2_PATH = REPO_ROOT / ".github" / "workflows" / "pr-review-run.yml"
+
+
+def _read(path: Path) -> str:
+    assert path.exists(), f"missing workflow: {path}"
+    return path.read_text(encoding="utf-8")
 
 
 @pytest.fixture(scope="module")
-def workflow_text() -> str:
-    assert WORKFLOW_PATH.exists(), f"missing workflow: {WORKFLOW_PATH}"
-    return WORKFLOW_PATH.read_text(encoding="utf-8")
+def stage1() -> str:
+    return _read(STAGE1_PATH)
+
+
+@pytest.fixture(scope="module")
+def stage2() -> str:
+    return _read(STAGE2_PATH)
+
+
+@pytest.fixture(scope="module")
+def both() -> str:
+    return _read(STAGE1_PATH) + "\n" + _read(STAGE2_PATH)
 
 
 # ---------------------------------------------------------------------------
-# Trigger + concurrency
+# Triggers
 # ---------------------------------------------------------------------------
 
 class TestTriggers:
 
-    def test_pull_request_trigger_active(self, workflow_text):
+    def test_pull_request_trigger_active(self, stage1):
         active = any(
             line.lstrip().startswith("pull_request:") and not line.lstrip().startswith("#")
-            for line in workflow_text.splitlines()
+            for line in stage1.splitlines()
         )
-        assert active, "pr-review.yml must run on pull_request"
+        assert active, "stage 1 must run on pull_request"
 
-    def test_labeled_event_type_present(self, workflow_text):
+    def test_labeled_event_type_present(self, stage1):
         # A `needs-review` / `skip-pr-review` label added AFTER open must re-trigger.
-        assert "labeled" in workflow_text, "workflow must trigger on the 'labeled' event type"
+        assert "labeled" in stage1, "workflow must trigger on the 'labeled' event type"
+
+    def test_stage2_is_chained_to_stage1(self, stage2):
+        assert "workflow_run:" in stage2, "stage 2 must trigger on workflow_run"
+        assert '"PR Review Prepare"' in stage2, (
+            "stage 2's workflow_run filter must name stage 1 exactly — a renamed "
+            "stage 1 would silently never trigger the review"
+        )
 
 
 # ---------------------------------------------------------------------------
-# Fork-PR guard + decide-job tier logic
+# Stage 1 — tier logic, no credentials, no fork guard
 # ---------------------------------------------------------------------------
 
-class TestDecideJob:
+class TestStage1:
 
-    def test_fork_pr_guard_present(self, workflow_text):
-        assert (
-            "github.event.pull_request.head.repo.full_name == github.repository"
-            in workflow_text
-        ), "fork-PR guard (head.repo.full_name == github.repository) missing"
+    def test_fork_guard_absent(self, stage1):
+        """The guard that made the gate skip — and skip means pass."""
+        # Only `if:` expressions count; the file's own comments explain the
+        # history and legitimately mention the old expression.
+        conditions = [
+            ln for ln in stage1.splitlines()
+            if ln.lstrip().startswith("if:") and not ln.lstrip().startswith("#")
+        ]
+        assert not any("head.repo.full_name" in ln for ln in conditions), (
+            "fork-PR guard is back — a guarded job is SKIPPED on fork PRs and "
+            "GitHub scores a skipped job as a PASSING required check"
+        )
 
-    def test_skip_label_rule(self, workflow_text):
-        assert "skip-pr-review" in workflow_text, "skip-pr-review label override missing"
+    def test_holds_no_secret(self, stage1):
+        assert "secrets." not in stage1, (
+            "stage 1 runs on fork PRs; credentials belong to stage 2 "
+            "(FR-01.17 (E)5 — an untrusted change is never handed the keys)"
+        )
 
-    def test_needs_review_label_rule(self, workflow_text):
-        assert "needs-review" in workflow_text, "needs-review label override missing"
+    def test_uploads_the_diff_artifact(self, stage1):
+        assert "upload-artifact" in stage1
+        assert "pr-review-request" in stage1
 
-    def test_sensitive_paths_rule(self, workflow_text):
-        # The decide job must classify hooks/skills/agents + workflows as sensitive.
-        assert "hooks" in workflow_text and "skills" in workflow_text and "agents" in workflow_text, \
-            "sensitive-path tier rule (hooks/skills/agents) missing"
-        assert ".github/workflows/" in workflow_text, \
-            "sensitive-path tier rule (.github/workflows/) missing"
+    def test_carries_no_policy(self, stage1):
+        """Policy here is policy the reviewee can edit.
 
-    def test_external_author_rule(self, workflow_text):
-        # External = not Sven and not dependabot.
-        assert "svroch" in workflow_text, "external-author tier rule must reference the maintainer login"
-        assert re.search(r"needs_review=true", workflow_text), \
-            "decide job must be able to emit needs_review=true"
+        `pull_request` runs this file FROM THE PR HEAD. A tier or waiver rule
+        living here reads as enforcement while being entirely under the
+        contributor's control — worse than no rule, because it looks like one.
+        The tier decision lives in stage 2, which runs from the default branch.
+        """
+        assert "skip-pr-review" not in stage1, \
+            "waiver rule must live in stage 2 (default-branch code)"
+        assert "svroch" not in stage1, \
+            "author-tier rule must live in stage 2 (default-branch code)"
 
 
 # ---------------------------------------------------------------------------
-# Review job — required check name + gating
+# Stage 2 — the verdict, and the rules that keep a credentialed run safe
 # ---------------------------------------------------------------------------
 
-class TestReviewJob:
+class TestStage2:
 
-    def test_job_name_is_pr_review(self, workflow_text):
-        # Branch Protection's required check matches the job NAME exactly.
-        assert re.search(r"^\s*name:\s*PR Review\s*$", workflow_text, re.MULTILINE), \
-            "review job name must be exactly 'PR Review' (Branch-Protection required check)"
+    def test_posts_the_required_context_as_a_status(self, stage2):
+        assert 'context="PR Review"' in stage2, (
+            "stage 2 must post the required `PR Review` context as a commit "
+            "status — it is the sole producer, and an absent status blocks"
+        )
+        assert "statuses: write" in stage2, "posting the status needs statuses:write"
 
-    def test_needs_decide_with_gate(self, workflow_text):
-        assert re.search(r"^\s*needs:\s*decide\b", workflow_text, re.MULTILINE), \
-            "review job must declare `needs: decide`"
-        assert "needs.decide.outputs.needs_review == 'true'" in workflow_text, \
-            "review job must gate on needs.decide.outputs.needs_review == 'true'"
+    def test_never_checks_out_the_pr_head(self, stage2):
+        """The pwn-request rule: read the diff, never run the contributor's code."""
+        for m in re.finditer(r"uses:\s*actions/checkout@\S+([\s\S]{0,200})", stage2):
+            tail = m.group(1)
+            block = tail.split("- name:")[0].split("- uses:")[0]
+            assert "ref:" not in block, (
+                "stage 2 holds secrets — it must check out the base repo only, "
+                "never a ref derived from the pull request"
+            )
 
-    def test_calls_custom_script_not_third_party_action(self, workflow_text):
-        assert "plugins/shipwright-security/scripts/tools/pr_review.py" in workflow_text, \
+    def test_identity_comes_from_the_trusted_event(self, stage2):
+        assert "github.event.workflow_run.head_sha" in stage2, (
+            "the head SHA must come from the trusted workflow_run event, never "
+            "from the downloaded artifact — a forged artifact must not be able "
+            "to redirect a verdict onto another PR"
+        )
+
+    def test_calls_custom_script_not_third_party_action(self, stage2):
+        assert "plugins/shipwright-security/scripts/tools/pr_review.py" in stage2, \
             "review job must invoke the custom pr_review.py script"
-        # No marketplace LLM-review action (OpenRouter-only, control-our-own-code).
-        assert "anthropics/claude-code-action" not in workflow_text, \
+        assert "anthropics/claude-code-action" not in stage2, \
             "must NOT use a 3rd-party Claude action (B4.5 OpenRouter decision)"
+
+    def test_tier_is_decided_here_from_api_data(self, stage2):
+        """The tier rules must run in default-branch code, on trusted input."""
+        assert "skip-pr-review" in stage2, "waiver rule must be evaluated here"
+        assert "needs-review" in stage2, "needs-review override must be here"
+        assert "svroch" in stage2, "external-author rule must be here"
+        assert ".github/workflows/" in stage2, "sensitive-path rule must be here"
+        assert re.search(r'gh api "repos/\$REPO/pulls/\$PR_NUMBER"', stage2), \
+            "labels/author must be read from the API, not from stage 1"
+        assert "/files" in stage2, \
+            "changed paths must be read from the API, not from stage 1"
+
+    def test_waiver_cannot_cover_a_change_to_the_checks(self, stage2):
+        """FR-01.17 (E)7 — whoever unlocks a door does not decide it may be."""
+        assert "sensitive" in stage2, (
+            "the skip-pr-review waiver must be qualified by the sensitive-path "
+            "classification, so a PR editing the checks cannot waive its review"
+        )
+
+    def test_does_not_review_the_artifact(self, stage2):
+        """A contributor controls stage 1, so its artifact cannot be the input."""
+        assert "pr-review-request" not in stage2, (
+            "stage 2 must not consume stage 1's artifact — a fork could upload "
+            "a benign diff and collect a green status for different code"
+        )
 
 
 # ---------------------------------------------------------------------------
@@ -105,21 +191,20 @@ class TestReviewJob:
 
 class TestSecrets:
 
-    def test_openrouter_secret_used(self, workflow_text):
-        assert "secrets.OPENROUTER_API_KEY" in workflow_text, \
+    def test_openrouter_secret_used(self, stage2):
+        assert "secrets.OPENROUTER_API_KEY" in stage2, \
             "review job must read OPENROUTER_API_KEY from secrets"
 
-    def test_no_anthropic_key(self, workflow_text):
-        assert "ANTHROPIC_API_KEY" not in workflow_text, \
+    def test_no_anthropic_key(self, both):
+        assert "ANTHROPIC_API_KEY" not in both, \
             "OpenRouter is the single provider — no ANTHROPIC_API_KEY"
 
-    def test_no_literal_key(self, workflow_text):
-        # No hardcoded OpenRouter/sk- key literal — must come from secrets.
-        assert not re.search(r"sk-or-v1-[A-Za-z0-9]{8,}", workflow_text), \
+    def test_no_literal_key(self, both):
+        assert not re.search(r"sk-or-v1-[A-Za-z0-9]{8,}", both), \
             "hardcoded OpenRouter key literal found — use secrets.OPENROUTER_API_KEY"
 
-    def test_model_env_override(self, workflow_text):
-        assert "SHIPWRIGHT_PR_REVIEW_MODEL" in workflow_text, \
+    def test_model_env_override(self, stage2):
+        assert "SHIPWRIGHT_PR_REVIEW_MODEL" in stage2, \
             "model must be selectable via SHIPWRIGHT_PR_REVIEW_MODEL env"
 
 
@@ -129,20 +214,23 @@ class TestSecrets:
 
 class TestHardening:
 
-    def test_third_party_actions_sha_pinned(self, workflow_text):
-        # setup-uv is third-party → must be pinned to a 40-char commit SHA.
-        for m in re.finditer(r"uses:\s*astral-sh/setup-uv@(\S+)", workflow_text):
+    @pytest.mark.parametrize("path", [STAGE1_PATH, STAGE2_PATH])
+    def test_third_party_actions_sha_pinned(self, path):
+        text = _read(path)
+        for m in re.finditer(r"uses:\s*astral-sh/setup-uv@(\S+)", text):
             assert re.fullmatch(r"[0-9a-f]{40}", m.group(1)), \
                 f"astral-sh/setup-uv must be SHA-pinned, got {m.group(1)!r}"
 
-    def test_no_direct_github_context_in_run_body(self, workflow_text):
+    @pytest.mark.parametrize("path", [STAGE1_PATH, STAGE2_PATH])
+    def test_no_direct_github_context_in_run_body(self, path):
         # run-shell-injection guard: never interpolate ${{ github.* }} directly
         # inside a `run:` shell body — hoist into env first. Tracks the run-block
         # by indentation so the legitimate `${{ github.* }}` in `env:` blocks is
         # not flagged (only deeper-indented run-block lines count).
+        text = _read(path)
         offenders = []
         run_indent = None
-        for line in workflow_text.splitlines():
+        for line in text.splitlines():
             if not line.strip():
                 continue
             indent = len(line) - len(line.lstrip())
