@@ -801,6 +801,12 @@ If a session start finds a legacy top-level `planning/` directory, the drift det
 - Generates multi-screen user flows and a review viewer (`.shipwright/designs/index.html`) with built-in feedback collection
 - Enters a review loop: you review in the browser, export feedback, and Shipwright applies changes iteratively until you finalize
 
+**Feedback that changes what a flow *does* is written back into the requirement.** Design is where flows are rightly rethought, so each round is classified: did the feedback change **behaviour** (a step added, an option removed, a path reordered), or only **appearance** (colour, spacing, type, layout that leaves the same steps in the same order)?
+
+Behaviour means the requirement it belongs to is corrected — description and acceptance criteria — before the design can be approved. Every round then records a one-line **requirement-impact declaration**. Declaring "appearance only" is a perfectly good answer; saying nothing is not, and finalizing is blocked while any round stays silent.
+
+A round claiming it changed a requirement is refused unless a requirements file genuinely differs from what it said when that round started — each round takes a snapshot before it revises anything, which is what makes "this round corrected it" checkable rather than merely asserted. Judging behaviour-versus-appearance is a human read; the declaration and the check are not.
+
 **Standalone usage.** Yes. `/shipwright-design` works independently as long as specs exist. You can also iterate on individual screens or process feedback files at any time. The review viewer at `.shipwright/designs/index.html` is your primary tool for reviewing and providing feedback.
 
 ---
@@ -889,6 +895,15 @@ If a session start finds a legacy top-level `planning/` directory, the drift det
 - Applies accepted review fixes, re-runs tests to confirm no regressions
 - Commits with Conventional Commits format (e.g., `feat(auth): implement magic link authentication`)
 - Logs decisions, updates the build dashboard, and checks context pressure -- if the context window is getting full, it saves progress and stops cleanly so you can resume in a fresh session
+
+**When the mockup and the section description disagree, building stops.** A section is held to two rules — implement exactly what it specified, and never ignore the mockup — and when the two contradict each other, neither can be satisfied, so whichever one the builder happened to follow would win silently. Instead the phase stops and puts the contradiction to you, quoting both sides. The expected resolution is that **the requirement is corrected to match the mockup**, because the mockup is the thing a person looked at and judged against real use; you can decide otherwise, and either way the decision is recorded. Spotting the contradiction is a human read — comparing prose against rendered markup has no automatic check — but the record of who decided, and the correction actually reaching the spec, are both verified.
+
+**A section may touch shared code when it genuinely needs to.** "Nothing outside the section's scope" is aimed at unrequested extra work; read literally it would make a section that cannot function without a shared helper unbuildable. So:
+
+- the change is allowed, provided it is the **smallest** one the section needs;
+- it must be **recorded as belonging to that section**, with a reason;
+- after the section commit, `/shipwright-build` checks that every file the section changed, created **or deleted** is either in its own file list or recorded as an attributed extra;
+- a section that records no declaration at all fails the same check.
 
 **Standalone usage.** Yes. Run `/shipwright-build @sections/01-auth.md` for any section file. When used standalone, you manage the section order yourself. When used within the pipeline, the orchestrator feeds sections in dependency order and handles split transitions automatically.
 ### 4.6 Testing -- /shipwright-test
