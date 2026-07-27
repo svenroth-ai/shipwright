@@ -1,39 +1,39 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-07-27-adopt-derived-catalogue-honesty"
+run_id: "iterate-2026-07-27-triage-defer-ci-cap"
 phase: "iterate"
-reason: "iterate: adopt announces its derived catalogue and records inherited failures as inherited"
-timestamp: "2026-07-27T09:05:09.892071+00:00"
+reason: "ensure-current pre-merge refresh"
+timestamp: "2026-07-27T08:30:58.021874+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-07-27 09:05:09 UTC
+> Auto-generated 2026-07-27 08:30:58 UTC
 
 ## Session Info
 
-- **Session ID**: 98053cc9-0f7c-4be8-b1cc-8b5d8b25d84b
-- **Timestamp**: 2026-07-27 09:05:09 UTC
-- **Reason**: iterate: adopt announces its derived catalogue and records inherited failures as inherited
+- **Session ID**: 8a66b2f1-81e9-4505-8591-b94928ca02f6
+- **Timestamp**: 2026-07-27 08:30:58 UTC
+- **Reason**: ensure-current pre-merge refresh
 
 ## Last Iterate
 
-- **Run ID**: iterate-2026-07-27-adopt-derived-catalogue-honesty
-- **Date**: 2026-07-27T08:15:28.167766Z
+- **Run ID**: iterate-2026-07-27-triage-defer-ci-cap
+- **Date**: 2026-07-27T08:30:49.435429Z
 - **Type**: feature
 - **Complexity**: medium
-- **Branch**: iterate/adopt-derived-catalogue-honesty
-- **ADR**: iterate-2026-07-27-adopt-derived-catalogue-honesty
+- **Branch**: iterate/triage-defer-ci-cap
+- **ADR**: iterate-2026-07-27-triage-defer-ci-cap
 - **Tests passed**: True
-- **Spec**: .shipwright/planning/iterate/2026-07-27-adopt-derived-catalogue-honesty.md
+- **Spec**: .shipwright/planning/iterate/2026-07-27-triage-defer-ci-cap.md
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/adopt-derived-catalogue-honesty
-- **Run ID**: iterate-2026-07-27-adopt-derived-catalogue-honesty
-- **Spec**: .shipwright/planning/iterate/2026-07-27-adopt-derived-catalogue-honesty.md
+- **Branch**: iterate/triage-defer-ci-cap
+- **Run ID**: iterate-2026-07-27-triage-defer-ci-cap
+- **Spec**: .shipwright/planning/iterate/2026-07-27-triage-defer-ci-cap.md
 - **Complexity**: medium
-- **External Review Marker**: stale (predates spec (2026-07-27T07:13:55))
+- **External Review Marker**: stale (predates spec (2026-07-27T07:19:14))
 
 ### Mandatory replay on Resume
 
@@ -52,8 +52,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/adopt-derived-catalogue-honesty
-- **Last Commit**: a9ec98ab fix(adopt): resolve spec_table by path so summarize survives a foreign `lib` binding
+- **Branch**: iterate/triage-defer-ci-cap
+- **Last Commit**: 5a48e306 Merge remote-tracking branch 'origin/main' into iterate/triage-defer-ci-cap
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -69,11 +69,11 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 | Event | Type | Source | Date |
 |-------|------|--------|------|
-| evt-d7ca71ba | grade_snapshot | — | 2026-07-27 |
 | evt-64bc7af0 | grade_snapshot | — | 2026-07-27 |
 | evt-19f53577 | grade_snapshot | — | 2026-07-27 |
 | evt-78684181 | work_completed | iterate (iterate: the review gate stops being bypassable (fail-closed + fork review)) | 2026-07-27 |
 | evt-c880344a | grade_snapshot | — | 2026-07-27 |
+| evt-4794dcc1 | work_completed | iterate (iterate: phase-gate override leaves evidence; handoff renders phase status) | 2026-07-27 |
 
 ## Recovery
 
