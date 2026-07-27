@@ -50,6 +50,7 @@ from .agent_doc_shape_check import check_agent_doc_shape  # noqa: E402,F401 — 
 from .common import CheckResult, Severity  # noqa: E402
 from .git_helpers import _commit_changed_paths, _git_available, _run_git  # noqa: E402
 from .handoff_freshness import check_session_handoff_fresh  # noqa: E402, F401 — re-exported
+from .silent_revert import check_silent_revert_for_run  # noqa: E402, F401 — re-exported
 # ADR / decision-log integrity checks live in their own module (bloat
 # extraction); re-imported here so run_all_checks + the verify_iterate_finalization
 # wrapper + the tests keep resolving them from iterate_checks.
@@ -1052,6 +1053,7 @@ def run_all_checks(
         check_ci_supplychain_ack(project_root, run_id, commit_hash),
         check_removal_coverage(project_root, run_id, commit_hash),
         check_cross_layer_coverage(project_root, run_id, commit_hash),
+        check_silent_revert_for_run(project_root),
         check_agent_doc_budget(project_root, run_id, commit_hash),
         check_agent_doc_shape(project_root, run_id, commit_hash),
         check_no_derived_snapshots_committed(project_root, run_id, commit_hash),

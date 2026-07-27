@@ -1,0 +1,66 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-07-27-review-floor-not-chained",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-07-27T19:36:18.743723+00:00",
+      "disposition": "7-point checklist inline. Spec compliance: all three decided changes present (decouple, escalate, floor) plus the operator-ruled AC10 narrowing. Error handling: the floor runs after the pending check so the more specific failure wins; unknown complexity skips, pinned by test. Security: no new inputs. Test quality: the floor is measured against the real 27-record corpus, not asserted. YAGNI: no bypass flag added. Boundaries: gate verdict + the runtime prompt changed together, since either alone leaves the contradiction.",
+      "recorded_by": "orchestrator",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": "openrouter: gpt-5.6-terra (gemini degraded)",
+      "completed_at": "2026-07-27T19:36:06.479964+00:00",
+      "disposition": "external_review.py --mode iterate. Two findings, both addressed: (1) unknown-complexity fail-open - pinned by a test documenting that the sibling check_iterate_history_has_run_id closes it, rather than changing long-standing skip behaviour; (2) ledger under-reported large/trivial coverage - tests existed, ledger corrected. Gemini degraded (reply cut off), so this is a single-reviewer pass.",
+      "recorded_by": "orchestrator",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "code": {
+      "review_type": "code",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-07-27T19:36:18.851100+00:00",
+      "disposition": "The internal subagent cascade did not run: this session carries a standing directive not to use the Agent tool unless the user asks. Recorded not_run per the escalation rule this very iterate introduces - 'completed' must mean the contract's pass ran. The independent review that carried it is recorded under external_code.",
+      "recorded_by": "orchestrator",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-07-27T19:36:18.978051+00:00",
+      "disposition": "The internal subagent cascade did not run: this session carries a standing directive not to use the Agent tool unless the user asks. Recorded not_run per the escalation rule this very iterate introduces - 'completed' must mean the contract's pass ran. The independent review that carried it is recorded under external_code.",
+      "recorded_by": "orchestrator",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": "openrouter: gpt-5.6-terra (gemini degraded)",
+      "completed_at": "2026-07-27T19:36:06.614202+00:00",
+      "disposition": "external_review.py --mode code, two rounds. Round 1 verdict REVISE: the decoupled trigger contradicted the unchanged blanket small/trivial exemption - a small run with a risk flag satisfied both 'fires' and 'does not fire'. Fixed by making the exemption conditional, plus a drift test pinning it. Round 2 on the fixed head: APPROVE, ship-as-is. Gemini degraded both rounds; its one low finding (a test comment wording nit) declined - the comment explains why the raw text is read instead of the normalised one, which is the useful information.",
+      "recorded_by": "orchestrator",
+      "parse_status": null,
+      "raw_excerpt": null
+    }
+  }
+}

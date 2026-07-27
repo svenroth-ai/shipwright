@@ -1,19 +1,19 @@
 # Commit Change Log
 
-Generated: 2026-07-27T17:38:43.791837+00:00
-Source-State: run=iterate-2026-07-27-run-unit-parallel-race
+Generated: 2026-07-27T19:47:47.363461+00:00
+Source-State: run=iterate-2026-07-27-review-floor-not-chained
 Consistency-audit: never run
-Total commits: 1248
+Total commits: 1247
 
 ## Commit Distribution
 
 ```mermaid
 pie title Commit Types
-    "fix" : 359
-    "feat" : 347
-    "chore" : 266
+    "fix" : 362
+    "feat" : 349
+    "chore" : 259
     "docs" : 148
-    "refactor" : 76
+    "refactor" : 77
     "test" : 31
     "ci" : 11
     "other" : 9
@@ -22,17 +22,20 @@ pie title Commit Types
 
 ## Changes by Type
 
-### Fixes (fix) — 359 commits
+### Fixes (fix) — 362 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-07-27 | iterate | exclude derived churn artifacts from the silent-revert check | 7044abcb92aa |
+| 2026-07-27 | iterate | the code review becomes a floor, not a chain (#476) | 7c116c035480 |
+| 2026-07-27 | security | the test suite stops leaking a triage store into the plugin dir (#474) | 6ba177083769 |
+| 2026-07-27 | run | report against what will exist, and assert only what you can prove (#468) | 3c13001aafeb |
 | 2026-07-27 | iterate | the merge state is a vocabulary, not a BLOCKED flag (#473) | 159953eec378 |
 | 2026-07-27 | shared | a multi-root pytest session names its own cause (#469) | bd7121b79d53 |
 | 2026-07-27 | compliance | an audit that checked nothing is not recorded (#466) | 968578b9de35 |
 | 2026-07-27 | shared | a reader and a writer stop defeating each other on Windows (#471) | 0b4c9b8b4ae6 |
 | 2026-07-27 | security | the PR reviewer stops being defeated by the size of the change (#470) | 17ca76d7f413 |
 | 2026-07-27 | iterate | the phase canon asks whether the handoff belongs to this run (#467) | 3c82d6332678 |
-| 2026-07-27 | run | report against what will exist, and assert only what you can prove | d762b1fd48e2 |
 | 2026-07-27 | security | the PR reviewer stops reviewing its own prior reviews (#461) | 273e3ef7ab56 |
 | 2026-07-27 | changelog | the release-note writer preserves the history it read (#452) | 97392eeacfa2 |
 | 2026-07-27 | deploy | rollback uses the version it was given, and stops overclaiming the rest (#441) | ce149b07dd04 |
@@ -386,10 +389,12 @@ pie title Commit Types
 | 2026-03-21 | — | rename skill folders for clean slash commands | 5a8d77658fab |
 | 2026-03-20 | — | update README attribution to svenroth.ai | dd5de7f7d6ab |
 
-### Features (feat) — 347 commits
+### Features (feat) — 349 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-07-27 | security | a scan records what it did not check (part 1/2) (#455) | 8154e1bcaf2b |
+| 2026-07-27 | iterate | a branch may not quietly revert work that merged while it was open | 6ff78bf45a41 |
 | 2026-07-27 | test | per-journey coverage, durable warning follow-ups, retry-passes (FR-01.06) (#446) | fbf93d01b55b |
 | 2026-07-27 | shared | the requirement-impact declaration, one mechanism for two phases (#463) | 26dfefa7286e |
 | 2026-07-27 | adopt | what the codebase arrived with is recorded as inherited (2/2) (#460) | 97b9878ed5b2 |
@@ -738,22 +743,15 @@ pie title Commit Types
 | 2026-03-20 | — | Task 02 — project templates (CLAUDE.md, agent_docs, CI) | c3a6d2f53bd3 |
 | 2026-03-20 | — | Task 01 — monorepo scaffolding + supabase-nextjs stack profile | 990a138a4690 |
 
-### Chores (chore) — 266 commits
+### Chores (chore) — 259 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
-| 2026-07-27 | churn | background append after main merge | 4911ad69c004 |
-| 2026-07-27 | churn | regenerate derived snapshots after main merge | b2134716521a |
-| 2026-07-27 | churn | background append after main merge | fa1a887042e2 |
-| 2026-07-27 | churn | regenerate derived snapshots after main merge | d4540f2deedb |
-| 2026-07-27 | churn | background append after main merge | 06b31afc32ae |
+| 2026-07-27 | churn | regenerate derived snapshots after main merge | 735bf2085cbb |
+| 2026-07-27 | churn | regenerate derived snapshots after main merge | a9378c116c78 |
+| 2026-07-27 | churn | regenerate derived snapshots after main merge | b68bbf21c3f3 |
+| 2026-07-27 | triage | sweep 5 outbox append(s) into branch | aa539d682089 |
 | 2026-07-27 | triage | follow-up card for requiring the checks that gate nothing | 7387b2796960 |
-| 2026-07-27 | churn | regenerate derived snapshots after main merge | dfa304b52094 |
-| 2026-07-27 | churn | background append after main merge | 536258c834d8 |
-| 2026-07-27 | churn | regenerate derived snapshots after main merge | b867c6ec28e6 |
-| 2026-07-27 | churn | background grade_snapshot append after main merge | 9b79a6cef5f8 |
-| 2026-07-27 | churn | regenerate derived snapshots after main merge | a8cd07b651b8 |
-| 2026-07-27 | triage | sweep 3 outbox append(s) into branch | c896f8f2500e |
 | 2026-07-26 | review | default external-review GPT model to gpt-5.6-terra (#435) | 8d750a5fc7af |
 | 2026-07-24 | security | stage full compliance write-set in Step 7.5 finalizer (#434) | 5da96ebe8561 |
 | 2026-07-23 | compliance | refresh after security scan (#433) | 2b644805fb7d |
@@ -1162,10 +1160,11 @@ pie title Commit Types
 | 2026-03-21 | — | expand README with pipeline diagram, architecture, and quality gates | 377dc2141b3d |
 | 2026-03-20 | — | add README.md for GitHub repo | 853c8f930132 |
 
-### Refactoring (refactor) — 76 commits
+### Refactoring (refactor) — 77 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-07-27 | test | split the close-missing floor cases out of the CLI test file (#478) | cf6d326b5011 |
 | 2026-07-27 | shared | split git resolution out of source_state (300-LOC compliance) (#451) | 3cdca5cfc884 |
 | 2026-07-21 | adopt | route the eight scaffolders through one guarded shared/ loader (FR-01.13) (#423) | 736fc8d1712c |
 | 2026-07-20 | requirements | one catalog, stated once in plain language (campaign S6) (#414) | be2561caccd3 |
@@ -1319,7 +1318,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 1248 |
+| Total commits | 1247 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 1248 |
+| Human-authored commits | 1247 |
 

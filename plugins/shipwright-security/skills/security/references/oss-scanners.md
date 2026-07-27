@@ -98,6 +98,59 @@ trivy fs --format json --scanners vuln --skip-dirs .venv --skip-dirs node_module
 gitleaks detect --report-format json -s {target_dir} --report-path {temp_json_report} --config {generated_toml}
 ```
 
+## Coverage manifest — what was NOT checked
+
+A tool that **crashes** was always surfaced: it records a `scan_errors` marker,
+`findings.json` gets `degraded: true`, and the run fails closed. A tool that was
+**never installed** used to be invisible — the backend simply skipped its class,
+so a machine with only Semgrep produced a report that read clean for vulnerable
+dependencies and leaked secrets alike.
+
+Every scan now writes a `coverage` array into `findings.json` and the
+`latest.json` sidecar — one row per weakness class:
+
+```json
+{"class": "secrets", "tool": "gitleaks", "status": "not_available",
+ "detail": "gitleaks is not installed on this machine"}
+```
+
+`status` comes from a closed vocabulary:
+
+| Status | Meaning |
+|---|---|
+| `covered` | scanned to completion; findings for this class are trustworthy |
+| `degraded` | the tool ran but its result cannot be trusted — no parseable output (also in `scan_errors`; fails the run) |
+| `not_requested` | the caller excluded the class via `--scan-types` |
+| `not_available` | the check could not run here — locally, the tool is not on PATH |
+
+The vocabulary is CLOSED, and a manifest read back from a file is coerced into
+it: a row whose status is absent or unrecognized becomes `degraded` with the
+original recorded in `detail`. These rows get re-emitted (`scan.py
+--input-from-cache` writes a fresh `findings.json` from them), so an invalid
+status must never be laundered into a new artifact that a CI `jq` gate or the
+WebUI is entitled to treat as well-formed.
+
+An **empty or absent** manifest means "coverage was not reported", never
+"everything was covered": the report renders *Coverage not reported* rather than
+a clean pass. That state is deliberately distinct from *Incomplete Coverage* (a
+manifest that exists and names a gap) — which is why nothing synthesizes a row
+onto an empty manifest just to have one.
+
+The manifest is derived from `(capabilities, scan_types, scan_errors)` by
+`scan_coverage.build_coverage()` — a pure function, not a channel each backend
+populates, so no backend or test mock can forget to report it. A class a backend
+offers that has no local tool (Aikido's `iac`) still gets a row, with
+`tool: null`. The prompt-injection scan gets one too: it cannot be "missing", but
+omitting the class from a report reads as clean, so it is named either way — and
+only when its output was actually READ, not merely because `--prompt-risks` was
+passed.
+
+**The manifest is untrusted on the way back in.** `--input` and
+`--input-from-cache` both take it from a caller-supplied file, and its labels
+reach a Markdown report AND (in a later change) a triage payload an agent
+executes. `coverage_sanitize` normalizes it at the boundary; `class_label` is the
+single chokepoint that renders it.
+
 ## Scanner-Exclusion Contract
 
 The plugin no longer maintains a single global exclusion list. Each scanner

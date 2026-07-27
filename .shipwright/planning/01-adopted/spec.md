@@ -396,6 +396,12 @@ _Where the work detail lives_ at the end of this document.
   are reported, then that check is reported as having failed and the run does
   not report success — a check that did not run is never counted as a clean
   result.
+- (E) Given a machine that has only some of the checks available, when results
+  are reported, then the report names the kinds of weakness that were not
+  looked for at all, and says they are unexamined rather than clean — so a
+  scan run with one check available never reads as a clean result for every
+  kind. A report that cannot say what it examined states that too, rather than
+  implying everything was.
 - (E) Given no scanner is available at all, when the phase starts, then it stops
   with setup instructions rather than reporting that nothing was found.
 - (E) Given a finding that exposes a leaked secret, when the report is written,
@@ -676,6 +682,12 @@ _Where the work detail lives_ at the end of this document.
   reason is named in words. A state the host reports that is not recognised is
   reported as not understood rather than as nothing being wrong.
   (iterate-2026-07-27-merge-state-vocabulary)
+- (E) Given a change was brought up to date with work that finished while it was
+  open, when it is checked before being handed over, then anything that arrived
+  in that work and is no longer present is reported and the hand-over refused —
+  so bringing a change up to date cannot quietly undo someone else's finished
+  work. Removing it on purpose stays allowed, but must be stated with a reason.
+  (iterate-2026-07-27-no-silent-revert)
 - (E) Given the record of a change is checked for describing the run that is
   finishing, when that check runs, then it is decided by whether the record
   names that run, and never by how recently the file was written — so a run that

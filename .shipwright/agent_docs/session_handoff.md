@@ -1,44 +1,36 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-07-27-handoff-tally-and-gate-honesty"
+run_id: "iterate-2026-07-27-no-silent-revert"
 phase: "iterate"
-reason: "ensure-current pre-merge refresh"
-timestamp: "2026-07-27T18:46:12.605534+00:00"
+reason: "PR #477 BEHIND: refresh"
+timestamp: "2026-07-27T19:47:53.112213+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-07-27 18:46:12 UTC
+> Auto-generated 2026-07-27 19:47:53 UTC
 
 ## Session Info
 
-- **Session ID**: a7fa3da4-74bf-406f-b92b-f309691d90f9
-- **Timestamp**: 2026-07-27 18:46:12 UTC
-- **Reason**: ensure-current pre-merge refresh
+- **Session ID**: 9058f47a-25f4-4469-b517-e3b5c91347e0
+- **Timestamp**: 2026-07-27 19:47:53 UTC
+- **Reason**: PR #477 BEHIND: refresh
 
 ## Last Iterate
 
-- **Run ID**: iterate-2026-07-27-run-unit-parallel-race
-- **Date**: 2026-07-27T17:38:43.705219Z
-- **Type**: bug
+- **Run ID**: iterate-2026-07-27-review-floor-not-chained
+- **Date**: 2026-07-27T19:47:47.266963Z
+- **Type**: change
 - **Complexity**: medium
-- **Branch**: iterate/run-unit-parallel-race
-- **ADR**: iterate-2026-07-27-run-unit-parallel-race
+- **Branch**: iterate/review-floor-not-chained
+- **ADR**: iterate-2026-07-27-review-floor-not-chained
 - **Tests passed**: True
-- **Spec**: .shipwright/planning/iterate/iterate-2026-07-27-run-unit-parallel-race.md
+- **Spec**: .shipwright/planning/iterate/2026-07-27-review-floor-not-chained.md
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/handoff-tally-and-gate-honesty
-- **Run ID**: iterate-2026-07-27-handoff-tally-and-gate-honesty
-- **Spec**: .shipwright/planning/iterate/iterate-2026-07-27-handoff-tally-and-gate-honesty.md
-- **Complexity**: medium
-- **External Review Marker**: completed (external_review_state.json @ 2026-07-27T16:51:42)
-
-### Mandatory replay on Resume
-
-Before dispatching to the handoff's Remaining phase, run these if missing:
-- Finalization (F0–F11) after all mandatory phases pass
+- **Branch**: iterate/no-silent-revert
+- **External Review Marker**: skipped_config_disabled (external_review_state.json @ 2026-07-27T19:43:50)
 
 ## Legacy build state
 
@@ -51,9 +43,9 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/handoff-tally-and-gate-honesty
-- **Last Commit**: 594ebec4 Merge remote-tracking branch 'origin/main' into iterate/handoff-tally-and-gate-honesty
-- **Uncommitted Changes**: Yes
+- **Branch**: iterate/no-silent-revert
+- **Last Commit**: 5d5fca61 Merge remote-tracking branch 'origin/main' into iterate/no-silent-revert
+- **Uncommitted Changes**: None
 
 ## Config Files to Read
 
@@ -72,13 +64,13 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 | evt-301cc5e3 | grade_snapshot | — | 2026-07-27 |
 | evt-d33730ea | grade_snapshot | — | 2026-07-27 |
 | evt-2acd6fdb | grade_snapshot | — | 2026-07-27 |
-| evt-950798de | grade_snapshot | — | 2026-07-27 |
+| evt-43b5a915 | grade_snapshot | — | 2026-07-27 |
 
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 384
-- **Last iterate**: change — iterate: raise the PR-review diff cap, cut at a file boundary, name what went unreviewed (2026-07-27)
+- **Total work events**: 387
+- **Last iterate**: change — iterate: the code review becomes a floor, not a chain (2026-07-27)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
 ## Recent Decisions

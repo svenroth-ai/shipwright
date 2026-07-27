@@ -288,6 +288,26 @@ or merges stale (Group-E staleness noise). The contract:
   `integrate_main`) BEFORE arming auto-merge: if the branch is behind
   `origin/<default>` it merges + regenerates first (clean no-op if current), so the
   PR always arms from a current, already-regenerated tree.
+- **The integration is verified, not just performed
+  (iterate-2026-07-27-no-silent-revert).** Requiring branches to be current is what
+  *forces* the integration — it does not make the resolution correct, and a
+  resolution taken in favour of one side discards the other's. PR #463 rewrote this
+  very file from a stale base (10 insertions, **83 deletions**), silently reverting
+  documentation from four already-merged PRs. Every guard let it through for a
+  defensible reason: `ensure_current` correctly refuses a **non-churn** conflict and
+  hands to a human (that is where the wholesale take happens); the `PR Review` LLM
+  gate saw the whole diff and returned **SUCCESS**; `Anti-ratchet` only ever asks
+  whether a file GREW; and the squash-merge flattened the branch, leaving no trace
+  to audit. The F11 check `verifiers/silent_revert.check_no_silent_revert` now asks
+  the decidable question directly: for each merge **this branch** performed of the
+  default branch, what did the merged-in side gain over the common ancestor — and is
+  any of it missing from the branch's tree? Scoped to `<default>..HEAD`, so a merge
+  that landed months ago is not re-litigated (walking the full history flagged 889
+  files on a *clean* merge and took ten minutes — measured, not assumed). A branch
+  that has not integrated yet is `BEHIND`, not a revert, and is never accused.
+  Removal stays legal, it just has to be said out loud:
+  `iterate_latest.declared_removals[{path, reason}]` — a reason-less entry does not
+  count.
 - **Autonomous campaign** sets `SHIPWRIGHT_ITERATE_AUTOMERGE=0` so sub-iterate F11
   does NOT arm; the orchestrator runs **interleaved-serial** (campaign-mode.md) —
   build one sub-iterate → PR → CI-green → MERGE → build the next off fresh
@@ -1990,6 +2010,7 @@ plan SKILL completes
 | `shipwright_plan_session.json` | /shipwright-plan | /shipwright-plan (session resume state) |
 | `external_review_state.json` | /shipwright-plan Step 5b, /shipwright-iterate (medium+) — via `mark-review-state.py`, now carrying per-reviewer `verdicts` + derived `contradiction` (`marker_schema: 2`) | /shipwright-plan Step 6 gate (`check-plan-gates.py --gate review`), `setup-planning-session.py` resume gate, compliance `W5`, evidence collector — all three via `evaluate_review_state` |
 | `shipwright_security_config.json` | /shipwright-security | /shipwright-security, compliance (scan results) |
+| `findings.json` / `.shipwright/securityreports/latest.json` (+ `history/scan-*.json`) | /shipwright-security (`scan.py`, `run_scan_and_report.py`) | `generate_security_report.py`, `security.yml` critical-gate (jq), `shared/scripts/security_findings.py` (artifact ingest). **Iterate-2026-07-27 (`security-coverage-manifest`):** all three gained an additive `coverage` array — one row per weakness class with `status ∈ {covered, degraded, not_requested, not_available}`, derived by `scan_coverage.build_coverage()` from `(capabilities, scan_types, scan_errors)`. It is the counterpart to `scan_errors`: a tool that CRASHES already sets `degraded: true` and fails the run, but a tool that was never installed was invisible, so a one-scanner machine produced a report that read clean for every class. An empty/absent array means "coverage not reported" and renders as unknown, never as a clean pass. `schema_version` stays `1` (additive per the sidecar's own contract). A manifest read back from a caller-supplied file is sanitized at the boundary (`coverage_sanitize`), since its labels reach an operator-facing report. Turning incomplete coverage into a CI verdict is deliberately NOT wired here — that belongs to the workflow step. |
 
 ---
 

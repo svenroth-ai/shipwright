@@ -1,18 +1,14 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-07-27-handoff-tally-and-gate-honesty",
+    "run_id": "iterate-2026-07-27-no-silent-revert",
     "date": "2026-07-27",
     "unit": {
       "status": "passed",
-      "passed": 5977,
-      "total": 5977
+      "passed": 5868,
+      "total": 5884,
+      "skipped": 16
     },
     "integration": {
-      "status": "passed",
-      "passed": 422,
-      "total": 422
-    },
-    "pgtap": {
       "status": "not_run",
       "passed": 0,
       "total": 0
@@ -22,255 +18,120 @@
       "passed": 0,
       "total": 0
     },
+    "smoke": {
+      "status": "not_run"
+    },
+    "pgtap": {
+      "status": "not_run",
+      "passed": 0,
+      "total": 0
+    },
     "design_fidelity": {
       "status": "not_run",
       "passed": 0,
       "total": 0
     },
-    "smoke": {
-      "status": "not_run"
-    },
-    "degraded": [
-      {
-        "condition": "external_code_review_leg_degraded",
-        "detail": "external_review.py --mode code: the gemini leg was cut off by the provider (finish_reason=length) with one finding broken off mid-sentence; on inspection the wording it was questioning reads correctly. Recorded as degraded, not as a pass. Second consecutive run where this leg failed. The gpt leg succeeded (verdict: revise, 2 findings, both accepted)."
-      },
-      {
-        "condition": "public_predicate_reverted_for_bloat_baseline",
-        "detail": "Stage-2 code review asked for a public `has_validator()` on phase_validators.py instead of importing the private _VALIDATORS. Correct in principle, but that file is grandfathered at 495 LOC and the 13-line addition ratcheted its bloat baseline; cutting unrelated lines to make room would game the metric. Reverted to the private import with the reason recorded in code. The coupling is covered by test_run_phase_gate_reports_whether_a_validator_existed."
-      }
-    ],
     "surface_verification": {
       "surface": "cli",
-      "runner": "C:/01_Development/shipwright/.worktrees/handoff-tally-and-gate-honesty/.venv/Scripts/python.exe -m pytest plugins/shipwright-run/tests/test_validation_record_honesty.py integration-tests/test_handoff_reads_real_loop_state.py -q",
+      "runner": "uv run pytest shared/tests/test_silent_revert.py shared/tests/test_verify_iterate_finalization.py -v",
       "exit_code": 0,
-      "tests_run": 20,
-      "evidence_path": "C:\\01_Development\\shipwright\\.worktrees\\handoff-tally-and-gate-honesty\\.shipwright\\runs\\iterate-2026-07-27-handoff-tally-and-gate-honesty\\surface_verification.log",
-      "timestamp": "2026-07-27T16:48:42.899Z",
+      "tests_run": 109,
+      "evidence_path": "C:\\01_Development\\shipwright\\.worktrees\\no-silent-revert\\.shipwright\\runs\\iterate-2026-07-27-no-silent-revert\\surface_verification.log",
+      "timestamp": "2026-07-27T19:33:19.315Z",
       "attempts": 1
     },
     "test_completeness": {
       "status": "complete",
       "behaviors": [
         {
-          "behavior": "the finished tally denominates against the pipeline, not against tasks planned so far",
+          "behavior": "a branch that integrated main and then dropped main's new content is caught",
           "disposition": "tested",
-          "evidence": "test_handoff_pipeline_tally.py::test_the_tally_counts_against_the_pipeline_not_against_planned_tasks PASSED"
+          "evidence": "test_silent_revert.py::test_the_463_shape_is_caught PASSED; replayed on REAL repo history (1 file, 24 lines flagged)"
         },
         {
-          "behavior": "the block states that phase tasks are planned incrementally",
+          "behavior": "a clean union integration drops nothing",
           "disposition": "tested",
-          "evidence": "test_handoff_pipeline_tally.py::test_the_block_says_phase_tasks_are_planned_incrementally PASSED"
+          "evidence": "test_silent_revert.py::test_a_clean_integration_drops_nothing PASSED; real-history probe: 0 files, 0.0s"
         },
         {
-          "behavior": "a config with no pipeline key falls back to the task count",
+          "behavior": "a branch that has not integrated yet is never accused (BEHIND is not a revert)",
           "disposition": "tested",
-          "evidence": "test_handoff_pipeline_tally.py::test_a_missing_pipeline_key_falls_back_to_the_task_count PASSED"
+          "evidence": "test_silent_revert.py::test_a_branch_that_never_integrated_is_not_accused PASSED"
         },
         {
-          "behavior": "split expansion is counted: plan+build repeat once per frozen split",
+          "behavior": "editing a line that predates the fork is not a drop",
           "disposition": "tested",
-          "evidence": "test_handoff_pipeline_tally.py::test_a_multi_split_run_counts_every_planned_task PASSED"
+          "evidence": "test_silent_revert.py::test_editing_a_line_that_existed_before_is_not_a_drop PASSED"
         },
         {
-          "behavior": "a 3-split run with every split built does not read as 100 percent complete",
+          "behavior": "overwriting a line main itself changed is reported, and settled by a declaration",
           "disposition": "tested",
-          "evidence": "test_handoff_pipeline_tally.py::test_a_split_run_with_every_split_built_is_not_reported_complete PASSED"
+          "evidence": "test_silent_revert.py::test_overwriting_a_line_main_itself_changed_IS_reported PASSED"
         },
         {
-          "behavior": "a legacy phase present as a task but absent from pipeline (security) is counted",
+          "behavior": "deleting a file after taking their work is reported",
           "disposition": "tested",
-          "evidence": "test_handoff_pipeline_tally.py::test_a_legacy_off_pipeline_phase_is_counted PASSED"
+          "evidence": "test_silent_revert.py::test_deleting_a_file_after_taking_their_work_is_reported PASSED"
         },
         {
-          "behavior": "a malformed splits_frozen value falls back instead of crashing",
+          "behavior": "a deletion with no integration is out of scope and not flagged",
           "disposition": "tested",
-          "evidence": "test_handoff_pipeline_tally.py::test_a_bad_splits_frozen_value_falls_back_instead_of_crashing PASSED"
+          "evidence": "test_silent_revert.py::test_a_branch_that_never_integrated_is_not_this_checks_business PASSED"
         },
         {
-          "behavior": "the finished list carries the split, so a phase is never finished and interrupted at once",
+          "behavior": "blank and whitespace-only lines are ignored",
           "disposition": "tested",
-          "evidence": "test_handoff_pipeline_tally.py::test_the_finished_list_carries_the_split PASSED"
+          "evidence": "test_silent_revert.py::test_blank_and_whitespace_lines_are_ignored PASSED"
         },
         {
-          "behavior": "a failed phase is named in its own bullet instead of appearing in none",
+          "behavior": "the check blocks and names both the file and the lines being lost",
           "disposition": "tested",
-          "evidence": "test_handoff_pipeline_tally.py::test_a_failed_phase_is_named_in_its_own_bullet PASSED"
+          "evidence": "test_silent_revert.py::test_the_check_blocks_and_names_the_file PASSED"
         },
         {
-          "behavior": "failed and interrupted are reported separately",
+          "behavior": "a declared removal with a reason passes",
           "disposition": "tested",
-          "evidence": "test_handoff_pipeline_tally.py::test_failed_and_interrupted_are_reported_separately PASSED"
+          "evidence": "test_silent_revert.py::test_a_declared_removal_passes PASSED"
         },
         {
-          "behavior": "a pointer parked on a successor with attempt 0 renders as next up, not dispatched",
+          "behavior": "a declaration without a reason, or for another file, does not count",
           "disposition": "tested",
-          "evidence": "test_handoff_pipeline_pointer.py::test_attempt_zero_is_next_up_not_currently_dispatched PASSED"
+          "evidence": "test_silent_revert.py::test_a_declaration_without_a_reason_does_not_count PASSED; test_silent_revert.py::test_a_declaration_for_another_file_does_not_cover_this_one PASSED"
         },
         {
-          "behavior": "a real dispatch is still called dispatched",
+          "behavior": "an unresolvable default branch or non-git tree is a visible skip, never a pass",
           "disposition": "tested",
-          "evidence": "test_handoff_pipeline_pointer.py::test_a_real_dispatch_is_still_called_dispatched PASSED"
+          "evidence": "test_silent_revert.py::test_no_default_branch_is_a_visible_skip_not_a_pass PASSED; test_silent_revert.py::test_a_non_git_tree_skips PASSED"
         },
         {
-          "behavior": "an in_progress task is dispatched whatever the attempt counter says",
+          "behavior": "a clean branch passes",
           "disposition": "tested",
-          "evidence": "test_handoff_pipeline_pointer.py::test_an_in_progress_task_is_dispatched_whatever_the_counter_says PASSED"
-        },
-        {
-          "behavior": "a terminal task under the pointer is not called dispatched",
-          "disposition": "tested",
-          "evidence": "test_handoff_pipeline_pointer.py::test_a_terminal_task_under_the_pointer_is_not_called_dispatched PASSED"
-        },
-        {
-          "behavior": "a failed task under the pointer is not called dispatched",
-          "disposition": "tested",
-          "evidence": "test_handoff_pipeline_pointer.py::test_a_failed_task_under_the_pointer_is_not_called_dispatched PASSED"
-        },
-        {
-          "behavior": "a recovered task keeps its attempt counter but is not called dispatched",
-          "disposition": "tested",
-          "evidence": "test_handoff_pipeline_pointer.py::test_a_recovered_task_is_not_called_dispatched_despite_its_attempt PASSED"
-        },
-        {
-          "behavior": "a backlog task with attempts is not called dispatched",
-          "disposition": "tested",
-          "evidence": "test_handoff_pipeline_pointer.py::test_a_backlog_task_with_attempts_is_not_called_dispatched PASSED"
-        },
-        {
-          "behavior": "a missing attempt is treated as not dispatched",
-          "disposition": "tested",
-          "evidence": "test_handoff_pipeline_pointer.py::test_a_missing_attempt_is_treated_as_not_dispatched PASSED"
-        },
-        {
-          "behavior": "an unhashable status does not raise, and the Stop hook does not silently skip the handoff",
-          "disposition": "tested",
-          "evidence": "test_handoff_pipeline_pointer.py::test_an_unhashable_status_does_not_raise PASSED"
-        },
-        {
-          "behavior": "an unreadable status renders unknown in BOTH the status and the finished cell",
-          "disposition": "tested",
-          "evidence": "test_handoff_pipeline_pointer.py::test_a_none_status_renders_as_unknown PASSED"
-        },
-        {
-          "behavior": "the drift guard fails when the schema declares a status the renderer does not classify",
-          "disposition": "tested",
-          "evidence": "test_handoff_pipeline_pointer.py::test_the_drift_guard_fails_on_an_unclassified_new_status PASSED"
-        },
-        {
-          "behavior": "a forced retry clears the needs_validation status it caused",
-          "disposition": "tested",
-          "evidence": "test_validation_record_honesty.py::test_a_forced_retry_clears_the_needs_validation_status PASSED"
-        },
-        {
-          "behavior": "the terminal pipeline-complete status still wins over the pause reset",
-          "disposition": "tested",
-          "evidence": "test_validation_record_honesty.py::test_the_pipeline_complete_status_still_wins PASSED"
-        },
-        {
-          "behavior": "an unpaused completion does not invent a status change",
-          "disposition": "tested",
-          "evidence": "test_validation_record_honesty.py::test_an_unpaused_completion_does_not_invent_a_status_change PASSED"
-        },
-        {
-          "behavior": "a pause set by phase_task_lifecycle (not by this step) is not lifted",
-          "disposition": "tested",
-          "evidence": "test_validation_record_honesty.py::test_a_lifecycle_set_pause_is_not_lifted PASSED"
-        },
-        {
-          "behavior": "another step's pause is neither lifted nor stripped of its findings",
-          "disposition": "tested",
-          "evidence": "test_validation_record_honesty.py::test_another_steps_pause_is_neither_lifted_nor_erased PASSED"
-        },
-        {
-          "behavior": "a step with no validator records gate_result not_checked, never pass",
-          "disposition": "tested",
-          "evidence": "test_validation_record_honesty.py::test_a_step_with_no_validator_records_not_checked PASSED"
-        },
-        {
-          "behavior": "a step with a validator still records pass",
-          "disposition": "tested",
-          "evidence": "test_validation_record_honesty.py::test_a_step_with_a_validator_still_records_pass PASSED"
-        },
-        {
-          "behavior": "run_phase_gate reports whether a validator existed at all",
-          "disposition": "tested",
-          "evidence": "test_validation_record_honesty.py::test_run_phase_gate_reports_whether_a_validator_existed PASSED"
-        },
-        {
-          "behavior": "a critical-gate crash appends to the real findings instead of replacing them",
-          "disposition": "tested",
-          "evidence": "test_validation_record_honesty.py::test_a_critical_gate_crash_keeps_the_real_findings PASSED"
-        },
-        {
-          "behavior": "a validate_phase crash still yields exactly one gate-error issue",
-          "disposition": "tested",
-          "evidence": "test_validation_record_honesty.py::test_a_validate_phase_crash_still_yields_a_single_gate_error PASSED"
-        },
-        {
-          "behavior": "a gate crash writes its traceback to stderr while the record stays compact",
-          "disposition": "tested",
-          "evidence": "test_validation_record_honesty.py::test_a_gate_crash_writes_its_traceback_to_stderr PASSED"
-        },
-        {
-          "behavior": "inform notes do not duplicate across a forced retry",
-          "disposition": "tested",
-          "evidence": "test_validation_record_honesty.py::test_inform_notes_do_not_duplicate_across_a_forced_retry PASSED"
-        },
-        {
-          "behavior": "a distinct finding from the same step (another split) survives dedup",
-          "disposition": "tested",
-          "evidence": "test_validation_record_honesty.py::test_a_distinct_finding_from_the_same_step_survives PASSED"
-        },
-        {
-          "behavior": "notes for other steps survive",
-          "disposition": "tested",
-          "evidence": "test_validation_record_honesty.py::test_notes_for_other_steps_survive PASSED"
-        },
-        {
-          "behavior": "--force with a non-complete status is not refused",
-          "disposition": "tested",
-          "evidence": "test_validation_record_honesty.py::test_force_with_a_non_complete_status_is_not_refused PASSED"
-        },
-        {
-          "behavior": "a driven single_session run stays inert instead of erroring",
-          "disposition": "tested",
-          "evidence": "test_validation_record_honesty.py::test_a_driven_run_stays_inert_instead_of_erroring PASSED"
-        },
-        {
-          "behavior": "a reasonless forced completion is still refused",
-          "disposition": "tested",
-          "evidence": "test_validation_record_honesty.py::test_a_reasonless_forced_completion_is_still_refused PASSED"
-        },
-        {
-          "behavior": "the renderer still reads loop state the real orchestrator wrote",
-          "disposition": "tested",
-          "evidence": "test_handoff_reads_real_loop_state.py::test_the_renderer_reads_the_loop_state_the_orchestrator_wrote PASSED"
-        },
-        {
-          "behavior": "after a real apply the pointer reads as next up, not as a live dispatch",
-          "disposition": "tested",
-          "evidence": "test_handoff_reads_real_loop_state.py::test_a_phase_the_orchestrator_completed_is_reported_as_finished PASSED"
-        },
-        {
-          "behavior": "the shared consumer and the run plugin still agree on the loop-state path",
-          "disposition": "tested",
-          "evidence": "test_handoff_reads_real_loop_state.py::test_the_consumer_and_the_producer_agree_on_the_loop_state_path PASSED"
-        },
-        {
-          "behavior": "docs (hooks-and-pipeline.md) describe the corrected force-reason and tally rules",
-          "disposition": "untestable",
-          "evidence": "prose accuracy \u2014 reviewed by hand against the diff; no executable assertion can judge whether the wording is right",
-          "reason_code": "requires-manual-visual-judgment"
+          "evidence": "test_silent_revert.py::test_a_clean_branch_passes PASSED"
         }
       ],
       "counts": {
-        "testable": 41,
-        "tested": 41,
-        "untestable": 1,
+        "testable": 13,
+        "tested": 13,
+        "untestable": 0,
         "untested_testable": 0
+      },
+      "enumeration_basis": {
+        "acs": 5,
+        "covered_acs": 5
       }
-    }
+    },
+    "degraded": [
+      "Review passes 'code' and 'doubt' recorded not_run: subagent review is disabled for this session by operator configuration. External code review ran instead (4 findings, all addressed) alongside two empirical probes on real repository history.",
+      "'plan' recorded not_run: external plan review is a medium+ phase and this run is small.",
+      "External code review delivered 1 of 2 legs: the Gemini leg returned an empty reply and was recorded status=degraded by the classifier shipped in #473. The GPT leg delivered a complete review whose four findings drove the final implementation.",
+      "The FIRST implementation of this check was invalidated by its own probe before shipping: walking every merge in history reported 889 files for a demonstrably clean merge and took over ten minutes. Scoped to the branch's own merges (<default>..HEAD) it reports 0 files in 0.0s for that same merge."
+    ],
+    "declared_removals": [
+      {
+        "path": ".shipwright/planning/iterate/2026-07-27-review-floor-not-chained.md",
+        "reason": "Superseded, not reverted. #478 merged a first attempt at the bloat fix whose section 8b argued the pre-existing crossing was 'not this change's to fix'. The gate then blocked again, because it fires on the file being over its ceiling at all, not on it having grown — so that argument was the rationalization the Iron Law names, and the full split replaced it. Section 8b now records both the first attempt and why it was insufficient; restoring the superseded lines verbatim would make the section contradict itself. Branch: iterate/split-review-cli-tests."
+      }
+    ]
   },
   "coverage": {
     "total": 80.2,
