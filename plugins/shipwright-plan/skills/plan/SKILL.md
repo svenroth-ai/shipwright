@@ -181,18 +181,15 @@ compliance `W5` ask, through one shared evaluator.
 
 ## Step 6: Section Splitting
 
-**Gate:** Read `{planning_dir}/external_review_state.json`. If missing,
-STOP — Step 5 was not completed. Return to Step 5 and pick the
-appropriate branch. If present, proceed.
+**Gate:** Read `{planning_dir}/external_review_state.json`. If it is missing, or
+records a state not clear to proceed past (see Step 5b), STOP — return to Step 5,
+pick the appropriate branch or record the decision, then re-enter here.
 
 See [section-splitting.md](references/section-splitting.md) for protocol.
 
 **Goal:** Split plan into self-contained section files for /shipwright-build.
-
-**Actions:**
-1. Parse SECTION_MANIFEST from plan.md
-2. Generate section tasks
-3. For each section: spawn section-writer subagent OR write directly
+Parse SECTION_MANIFEST from plan.md, generate section tasks, then for each
+section spawn the section-writer subagent or write it directly.
 
 **Batch approach (recommended for 3+ sections):**
 ```bash
