@@ -142,7 +142,12 @@ If no boundaries touched: write `n/a` with one-line justification.}
        does not, the FR belongs in a different split). `Basis` is ONE value
        from `interview` / `code` / `observed` / `tests` / `assumed` /
        `other: <reason>`; anything else is a hard audit failure, and a blank
-       cell fails too — use `assumed` when nobody has confirmed it.
+       cell fails too — use `assumed` when nobody has confirmed it, and
+       **name what would settle it** (who to ask, or what to try) as an
+       acceptance criterion on that requirement. The settlement never goes in
+       the cell itself: `assumed — ask the PO` is malformed and fails audit
+       `I5`. With the operator present, an unanswered-but-answerable question
+       is unasked rather than unknowable — see `shared/fr-authoring.md` §4a.
      - **`Layers` — read this before you type it. It can hard-abort this
        iterate.** Two forms, and the choice is binding:
        - `unit, e2e` **(bare) is a declaration.** Compliance treats it as

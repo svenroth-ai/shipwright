@@ -46,7 +46,7 @@ _SHARED_LIB = Path(__file__).resolve().parents[4] / "shared" / "scripts" / "lib"
 if str(_SHARED_LIB) not in sys.path:
     sys.path.insert(0, str(_SHARED_LIB))
 
-from atomic_write import durable_atomic_write  # noqa: E402
+from atomic_write import durable_atomic_write, durable_read_text  # noqa: E402
 from file_lock import LockTimeout, file_lock  # noqa: E402
 
 RUN_CONFIG_NAME = "shipwright_run_config.json"
@@ -66,6 +66,11 @@ __all__ = [
     "lock_path",
     "run_config_lock",
     "atomic_write_json",
+    # Re-exported so run-config READERS resolve it through the one module that
+    # already owns the shared-lib sys.path insert. Importing `atomic_write`
+    # directly from a sibling would depend on this module having been imported
+    # first — an ordering a linter may silently reshuffle (ADR-045).
+    "durable_read_text",
 ]
 
 

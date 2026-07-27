@@ -26,6 +26,7 @@ except ImportError:  # pragma: no cover - triage helper always available in prac
 from ._bloat_dashboard_rows import bloat_rows_events_mode, bloat_rows_legacy_mode  # B3
 from ._control_block import latest_tests_row, render_consistency_audit, render_control_block  # AR-01/02/03
 from ._dashboard_sections import external_review_evidence, project_velocity, render_date
+from ._provenance import provenance_lines
 from ._traceability import iterate_test_coverage, render_traced_row  # BP-1: informational FR-tag row + test-coverage credit
 from .ci_security import render_ci_security  # AR-10: CI security ingest
 if TYPE_CHECKING:
@@ -38,14 +39,13 @@ _COPYLEFT_LICENSES = {"GPL", "LGPL", "AGPL", "MPL-2.0", "GPL-2.0", "GPL-3.0", "A
 def _is_adopted(run_config: dict) -> bool:
     """True when the project was onboarded via /shipwright-adopt.
 
-    The empirically correct signal is the presence of the `adoption`
-    object (carrying `adopted_at`, `commit_at_adoption`, ...). The
-    artifact-polish plan originally suggested checking `scope`, but
-    `scope` carries values like `"library"` / `"full_app"` — orthogonal
-    to adoption status (Iterate B.1, 2026-05-21).
+    Delegates to `project_facts`, which owns the signal and its rationale —
+    the test phase routes journey-coverage gaps on the same fact, and one fact
+    answered two ways is how components end up disagreeing about a project.
     """
-    adoption = run_config.get("adoption")
-    return isinstance(adoption, dict) and bool(adoption)
+    from project_facts import is_adopted_run_config  # noqa: PLC0415
+
+    return is_adopted_run_config(run_config)
 
 
 _SIGNAL_SEVERITIES = frozenset({"critical", "high", "medium", "low"})
@@ -90,7 +90,7 @@ def generate(data: ComplianceData) -> str:
     lines = [
         "# Compliance Dashboard",
         "",
-        f"Generated: {data.timestamp}",
+        *provenance_lines(data),
         f"Profile: {profile}",
         f"Scope: {scope}",
         "",
@@ -110,7 +110,7 @@ def generate(data: ComplianceData) -> str:
         lines.extend(_quality_indicators_legacy(data))
 
     lines.extend(external_review_evidence(data))
-    lines.extend(render_consistency_audit(data.project_root))  # AR-03: inline audit
+    lines.extend(render_consistency_audit(data.project_root, as_of=data.timestamp))  # AR-03
 
     # Compliance artifacts
     artifact_rows = [

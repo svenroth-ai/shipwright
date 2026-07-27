@@ -81,6 +81,19 @@ Exit codes:
 - `2` — `--project-root` missing.
 - `3` — iterate-12 import-gate trip. See `audit-report.md → "Import Gate Error"` for the drift detail.
 
+## Step 2b: Refresh the Evidence Documents
+
+```bash
+uv run "{plugin_root}/scripts/tools/update_compliance.py" \
+  --project-root "$(pwd)" --phase compliance
+```
+
+The audit records that it ran (`shipwright_compliance_config.json` → `last_audit`),
+and every evidence document discloses that date on its `Generated:` line. Without
+this step those documents keep reporting the *previous* answer — often "never
+run" — right at the moment the operator asked for the check. Run it after **every**
+audit, including a failing one. It regenerates documents only; it commits nothing.
+
 ## Step 3: Present Results
 
 Parse the JSON stdout (`report.any_fail`, `findings`, `fixes_applied`, `groups_run`, `groups_skipped`).
@@ -157,7 +170,8 @@ comes from B7 (commit-on-default-branch ↔ event match) and Group G
 
 All nine detective groups (A–I) are wired — the seven Plan-v7 groups
 (A–G), Group H (bloat-policy audit, Campaign A.review) and Group I
-(requirement hygiene vs `shared/fr-authoring.md`; I1–I3 advisory, I4 fails). The
+(requirement hygiene vs `shared/fr-authoring.md`; I1–I3 and I6 advisory,
+I4/I5 fail). The
 post-Plan-v7 A5 follow-up (CI security workflow integrity) is live. A5 ships in the Group A
 rollup via a composite registry handler that merges A2/A3/A4 (group_a)
 and A5 (group_a5) findings.

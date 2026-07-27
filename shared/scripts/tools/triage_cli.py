@@ -1,18 +1,21 @@
 #!/usr/bin/env python3
 """Triage Inbox CLI — operate on `.shipwright/triage.jsonl` from the shell.
 
-iterate-2026-05-20-triage-launch-surface — the monorepo / CLI surface for
-the launch-surface redesign. CLI = first-class operation interface; the
-shipwright-webui Triage tab (Iterate B) is a thin wrapper over the same
-library helpers (``triage_promote.promote`` / ``triage_promote.dismiss``).
+CLI = first-class operation interface; the shipwright-webui Triage tab is a
+thin wrapper over the same library helpers (``triage_promote.promote`` /
+``.dismiss`` / ``.defer``), so all three decisions the requirement promises
+can be made from either surface.
 
-Subcommands (positional ``<id>`` for promote/dismiss):
+Subcommands (positional ``<id>`` for the three decisions):
 
-  list [--json]                         list open triage items (--json = a
-                                        machine-readable contract for the WebUI;
-                                        adds pendingDelivery for outbox-only items)
+  list [--json]                         list open items, then any deferred
+                                        ones in their own section (--json = a
+                                        machine-readable contract for the WebUI:
+                                        OPEN items only, each with
+                                        pendingDelivery for outbox-only items)
   promote <id> --task-ref EXT:<ref>     promote → backlog task
   dismiss <id> --reason <reason>        dismiss (false-positive / won't-fix)
+  defer   <id> --reason <reason>        defer (decided, but not now)
 
 Fix-now flow:
   - operators open ``.shipwright/agent_docs/triage_inbox.md`` (or run
@@ -40,58 +43,10 @@ from triage import (  # noqa: E402
     _triage_path,
     read_all_items,
 )
-from lib.tty_sanitize import strip_control_chars as _strip_control_chars  # noqa: E402
-from tools.triage_promote import dismiss, promote  # noqa: E402
+from lib.triage_render import format_deferred, format_item  # noqa: E402
+from tools.triage_promote import defer, dismiss, promote  # noqa: E402
 
 _BY_LABEL = "cli"
-
-
-# ---------------------------------------------------------------------------
-# Rendering
-# ---------------------------------------------------------------------------
-
-def _fence_opener(payload: str) -> str:
-    """Pick a fence opener long enough to contain ``payload``."""
-    longest = 0
-    run = 0
-    for ch in payload:
-        if ch == "`":
-            run += 1
-            if run > longest:
-                longest = run
-        else:
-            run = 0
-    return "`" * max(3, longest + 1)
-
-
-def _format_item(item: dict) -> str:
-    item_id = item.get("id", "")
-    severity = item.get("severity", "")
-    kind = item.get("kind", "")
-    # F31 (SECURITY): strip terminal control chars from the title — the list
-    # view prints straight to a TTY, and the title can carry an attacker-
-    # influenceable GitHub workflow name / branch with embedded ESC/BEL.
-    # launchPayload was already stripped below; the title was not.
-    title = _strip_control_chars(str(item.get("title", "")))
-    source = item.get("source", "")
-    dedup_key = item.get("dedupKey") or ""
-    payload = item.get("launchPayload")
-    lines = [
-        f"- {item_id}  severity={severity} kind={kind} source={source}"
-        + (f" dedupKey={dedup_key}" if dedup_key else ""),
-        f"  title: {title}",
-    ]
-    if isinstance(payload, str) and payload.strip():
-        clean = _strip_control_chars(payload)
-        fence = _fence_opener(clean)
-        lines.append("  launch payload (copy into a new Claude session):")
-        lines.append(f"  {fence}text")
-        for line in clean.splitlines():
-            lines.append(f"  {line}")
-        lines.append(f"  {fence}")
-    elif source == "github":
-        lines.append("  [!] no launch payload — producer bug; please report")
-    return "\n".join(lines)
 
 
 def _ensure_utf8_stdout() -> None:
@@ -99,7 +54,7 @@ def _ensure_utf8_stdout() -> None:
 
     On Windows ``sys.stdout`` defaults to the legacy codepage (cp1252), so
     writing ``ensure_ascii=False`` JSON — or a stripped-but-non-ASCII human
-    line (`_strip_control_chars` deliberately keeps >= 0xA0) — crashed with
+    line (`triage_render.safe_display` deliberately keeps >= 0xA0) — crashed with
     ``UnicodeEncodeError`` for any item title/detail carrying emoji/CJK/umlauts
     (iterate-2026-06-10-triage-cli-json-utf8; found by the webui
     pending-delivery-badge boundary probe). ``list --json`` is a machine
@@ -117,7 +72,8 @@ def _ensure_utf8_stdout() -> None:
 def _cmd_list(args: argparse.Namespace) -> int:
     _ensure_utf8_stdout()
     project_root = Path(args.project_root)
-    items = [it for it in read_all_items(project_root) if it.get("status") == "triage"]
+    resolved = read_all_items(project_root)
+    items = [it for it in resolved if it.get("status") == "triage"]
     if getattr(args, "json", False):
         # Machine-readable contract for the WebUI live-view (trg-e2a0ebb3): the
         # SAME unioned open items, plus `pendingDelivery` = the item lives ONLY
@@ -135,9 +91,18 @@ def _cmd_list(args: argparse.Namespace) -> int:
         return 0
     if not items:
         sys.stdout.write("No open triage items.\n")
-        return 0
     for item in items:
-        sys.stdout.write(_format_item(item) + "\n\n")
+        sys.stdout.write(format_item(item) + "\n\n")
+    # The third decision is not a disappearance: a deferred item is still
+    # here, still undone, and told apart from an open one at a glance. Header
+    # only when there is something under it.
+    deferred = [it for it in resolved if it.get("status") == "snoozed"]
+    if deferred:
+        sys.stdout.write(
+            f"Deferred — decided, revisit later ({len(deferred)}):\n"
+        )
+        for item in deferred:
+            sys.stdout.write(format_deferred(item) + "\n\n")
     return 0
 
 
@@ -171,11 +136,15 @@ def _cmd_promote(args: argparse.Namespace) -> int:
     return 0
 
 
-def _cmd_dismiss(args: argparse.Namespace) -> int:
-    project_root = Path(args.project_root)
+def _status_flip(decide, args: argparse.Namespace, verb: str) -> int:
+    """Shared dispatch for the two decisions that need only a reason.
+
+    Promote is not routed through here — it also takes a task reference and
+    reports the task it was linked to.
+    """
     try:
-        result = dismiss(
-            project_root,
+        result = decide(
+            Path(args.project_root),
             item_id=args.item_id,
             reason=args.reason,
             by=_BY_LABEL,
@@ -190,8 +159,16 @@ def _cmd_dismiss(args: argparse.Namespace) -> int:
         sys.stderr.write(f"error: triage store not initialised: {exc}\n")
         return 2
 
-    sys.stderr.write(f"dismissed {result['id']} (reason: {result['reason']})\n")
+    sys.stderr.write(f"{verb} {result['id']} (reason: {result['reason']})\n")
     return 0
+
+
+def _cmd_dismiss(args: argparse.Namespace) -> int:
+    return _status_flip(dismiss, args, "dismissed")
+
+
+def _cmd_defer(args: argparse.Namespace) -> int:
+    return _status_flip(defer, args, "deferred")
 
 
 # ---------------------------------------------------------------------------
@@ -246,6 +223,18 @@ def _build_parser() -> argparse.ArgumentParser:
         help="rationale for dismissal (required)",
     )
     p_dismiss.set_defaults(func=_cmd_dismiss)
+
+    p_defer = sub.add_parser(
+        "defer", help="defer a triage item (decided, but deliberately not now)",
+    )
+    p_defer.add_argument(
+        "item_id", help="triage item id (e.g. trg-abc12345)",
+    )
+    p_defer.add_argument(
+        "--reason", required=True,
+        help="rationale for deferring (required)",
+    )
+    p_defer.set_defaults(func=_cmd_defer)
 
     return parser
 

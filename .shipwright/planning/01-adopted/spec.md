@@ -17,7 +17,7 @@ Shipwright is an AI-powered SDLC framework built on Claude Code. It is structure
 | FR-01.05 | Adopted | /shipwright-build | Must | Turn one planned section into working code that does what the section specified and matches its design mockup — one section at a time, on its own branch. The engineering discipline it works under — test-first, code review, safe conventional commits — is the framework's, applied here rather than owned here. | code | unit (inferred) |
 | FR-01.06 | Adopted | /shipwright-test | Must | Run the project's tests at every level it has — unit, integration, database, end-to-end and smoke — and produce one record in which each level carries an explicit outcome or a stated reason it did not run. Compare the built screens back to their mockups, hold the project to the performance budgets it declared, and report which of the declared pairs of code that write and read the same stored format appear to have no test covering them. | code | unit (inferred) |
 | FR-01.07 | Adopted | /shipwright-security | Must | Scan the project with several independent checks — flaws in the code, unsafe dependencies, leaked secrets, and attempts to hijack the assistant's own instructions — and report everything they find in one shape, publishing it to the code host's security surface as well. Inside a project the framework already manages, it drives the fixes through to completion; pointed at any other repository it reports what it found and offers to hand the findings over to be worked through. A finding the project formally accepts is recorded in a register kept with the project, so it stays visible instead of quietly disappearing. | code | unit (inferred) |
-| FR-01.08 | Adopted | /shipwright-deploy | Should | Release the project to a configured hosting target and prove it is actually alive before calling it done, treating no answer as a failed release. Every supported target carries a written record of its way back to the previous working state and of what that does about stored data that has already moved on. Jelastic (Infomaniak) is shipped; Vercel and a container-on-a-server target are documented as stubs. | code | unit (inferred) |
+| FR-01.08 | Adopted | /shipwright-deploy | Should | Release the project to a configured hosting target and prove it is actually alive before calling it done — asking repeatedly until a deadline the target itself sets, so a slow start is not mistaken for a failed release, and treating no answer by then as a failed one. The way back to a previous version puts back the version that was asked for, refuses when stored data has already moved past it, and — if it fails part-way — says plainly that nothing is confirmed running and stops. Every supported target carries a written record of its way back and of what that does about stored data that has already moved on. Jelastic (Infomaniak) is shipped; Vercel and a container-on-a-server target are documented as stubs. | code | unit (inferred) |
 | FR-01.09 | Adopted | /shipwright-changelog | Must | Turn the commit history into a release note a human can read, tag the release, and open the release pull request. | code | unit (inferred) |
 | FR-01.10 | Adopted | /shipwright-compliance | Must | Produce audit-ready evidence — which requirement is covered by which test, what changed when, and what the project depends on — and run an on-demand cross-check that reports where that evidence disagrees with reality. | code | unit (inferred) |
 | FR-01.11 | Adopted | /shipwright-iterate | Must | Handle an ongoing change at the depth it deserves: detect what kind of change it is and how big, then scale from a quick fix to a fully specified feature with plans, reviews and tests. Every feature or change records whether it adds, modifies, removes or leaves the requirements untouched, and that record is enforced before the change can be finished. | code | unit (inferred) |
@@ -85,6 +85,14 @@ _Where the work detail lives_ at the end of this document.
   only mode, when any command tries to advance that run, then it is refused with
   a one-line instruction for how to migrate it, and is never silently
   reinterpreted. The run still opens for reading, so past runs stay inspectable.
+- (E) Given a phase's completion checks ask whether the handover note a person
+  reads on returning is current, when that is decided, then it is decided by
+  whether the note says it belongs to the run being checked — not by how
+  recently the file was written, so a run that spent a long time waiting is
+  never reported as stale. A phase whose work never produces such a note is
+  named as out of scope rather than reported as failing, and a check that cannot
+  reach an answer says which part it could not read instead of passing.
+  (iterate-2026-07-27-c3-phase-content-key)
 
 <a id="fr-0102"></a>
 ### FR-01.02 — /shipwright-project
@@ -182,6 +190,14 @@ _Where the work detail lives_ at the end of this document.
   finished, then each finding has been either folded into the plan or recorded
   with the reason it was rejected — a review whose findings were only counted has
   not been done.
+- (E) Given the two outside reviewers reached opposite conclusions about the
+  plan as a whole — one endorsing it, the other saying the approach is wrong —
+  when the review step ends, then that disagreement is recorded as its own
+  outcome and put to the person to decide, and dividing the plan into sections
+  refuses to begin until their decision is on record. The same holds when one
+  reviewer's conclusion could not be read at all, or when only one of the two
+  answered: neither is agreement. Two independent reviewers exist so that
+  disagreement is noticed, which a single count of findings cannot show.
 - (E) Given a project with a user interface, when the plan is declared finished,
   then it names the end-to-end journeys that must work, so the test phase has
   something concrete to verify the build against.
@@ -199,6 +215,12 @@ _Where the work detail lives_ at the end of this document.
 - (E) Given design decisions taken during planning that go beyond what the
   chosen technology stack already settles, when the plan is written, then each
   is recorded in the project's decision log with its reasoning.
+- (E) Given one of the outside reviewers answers but does not actually deliver a
+  review — nothing at all, or an answer the provider itself reports as cut off
+  mid-sentence — when the review step reports its result, then that reviewer is
+  recorded as having failed, with the reason, rather than as having reviewed.
+  If neither reviewer delivered, the step fails loudly instead of passing.
+  (iterate-2026-07-27-name-the-blocker)
 
 <a id="fr-0104"></a>
 ### FR-01.04 — /shipwright-design
@@ -306,6 +328,28 @@ _Where the work detail lives_ at the end of this document.
 - (E) Given a project with no browser tests yet and a plan describing user
   journeys, when the test phase runs, then runnable tests are written from those
   journeys instead of the whole browser layer being skipped for want of them.
+- (E) Given a plan describing several user journeys and browser tests that
+  already exist for some of them, when the test phase runs, then each journey is
+  reported individually as covered or not — a journey added to the plan later is
+  never passed over because some other journey has a test. On a project built
+  from scratch an uncovered journey stops the phase; on a project onboarded from
+  an existing codebase it is recorded as a follow-up for onboarding instead.
+  Whether a test genuinely exercises its journey is offered as an indication,
+  never as proof.
+- (E) Given a check that reports a failure without stopping the run, when the
+  session ends, then a tracked follow-up remains — so a suite that has been
+  failing for weeks is distinguishable from one that started failing today.
+- (E) Given a project that declared which failures predate its onboarding, when
+  the test phase reports, then those are reported as known and accepted,
+  separately from genuine failures, and the run is not called failing on their
+  account — the same list the audit phase reads, so the two never describe one
+  run differently. A declared list that cannot be read excuses nothing, and says
+  so.
+- (E) Given a test that failed and then passed when tried again, when results
+  are recorded, then it counts as a pass and stops nothing, and is reported
+  separately as having needed a retry — so a test that has needed one for weeks
+  becomes visible before it fails for good. Each test counts once however many
+  attempts it took.
 - (E) Given a project whose screens were designed as mockups first, when the test
   phase runs, then each screen is compared back to its mockup and every
   divergence is named — and a screen that matched before and diverges now is
@@ -406,12 +450,28 @@ _Where the work detail lives_ at the end of this document.
 - (E) Given the operation has completed, when it is checked, then the running
   application is contacted to prove it is actually alive, and a failure to
   answer is treated as a failed release rather than a finished one.
+- (E) Given an application that takes a while to start, when it is checked, then
+  it is asked repeatedly until it answers or until a deadline passes, and how
+  long to keep asking is the hosting target's own setting rather than a fixed
+  wait — so a slow start is not mistaken for a failed release. Asking once and
+  giving up is not enough. When no deadline is configured, it is asked once.
 - (E) Given a release that has failed, when that is established, then the
   previously working version is put back without a person having to intervene —
   the way back is part of releasing, not a separate procedure somebody has to
-  know about. *(Stated as the requirement; it does not hold today — the
-  automatic version revert reports success while fetching the current state.
-  Tracked as a critical open defect.)*
+  know about.
+- (E) Given a return to a named previous version, when it runs, then that
+  version is what is sent to the hosting target, and success is reported only
+  when the target has been asked to run it and did not object — never for a
+  version the request never carried. Where the target can be asked which
+  version it is now on, the answer is reported: a version it confirms, a
+  version it cannot confirm (said in those words), or a disagreement, which is
+  a failure.
+- (E) Given stored data has already moved past the version being returned to,
+  when the return is requested, then it is refused and says so — naming what
+  has moved on and what this target does about data — rather than putting the
+  older code in front of a shape it does not know. Proceeding regardless is a
+  deliberate, separately expressed decision. Being unable to tell whether the
+  data has moved on is refused the same way.
 - (E) Given a change to stored data applied along the way, when its own checks
   report a mismatch afterwards, then the same return-to-previous-state path is
   offered, and choosing to continue regardless requires a written record naming
@@ -436,6 +496,12 @@ _Where the work detail lives_ at the end of this document.
 - (E) Given the way back to the previous state is attempted, when it does not
   succeed, then that is reported as a failure of the way back itself — never
   swallowed, and never reported as if the previous state had been restored.
+- (E) Given the way back has failed after it began changing the hosting target,
+  when it reports, then it states plainly that neither the new nor the previous
+  version is confirmed running, what was last attempted and what that found, and
+  what had already been changed — and it stops there rather than carrying on
+  unattended. This is told apart from a refusal made before the target was
+  contacted, which changes nothing and says so.
 - (E) Given a return to a previous version, when it completes, then what came
   back is the running code — stored data that has already moved forward stays
   where it is, and how that is handled is answered by the target's own written
@@ -465,6 +531,12 @@ _Where the work detail lives_ at the end of this document.
 - (E) Given release notes are added to the existing history, when the file is
   written, then the new release-note section goes above the most recent released one and
   the document's title and older entries are left intact.
+- (E) Given a version already present in the history — an earlier attempt
+  having stopped before that version was marked — when its release note is
+  written again, then that version's section is replaced rather than added a
+  second time, so one version appears exactly once; and where the existing
+  history cannot be extended safely, writing stops and says why rather than
+  overwriting what it could not interpret.
 - (E) Given entries written the older way, straight into the pending release-note section,
   when a release is assembled, then each one is named back to the operator
   rather than being folded in silently.
@@ -487,10 +559,25 @@ _Where the work detail lives_ at the end of this document.
 - (E) Given an evidence document, when it no longer matches the state it was
   produced from — hand-edited, or only partly regenerated — then it is reported
   as no longer valid instead of continuing to count as evidence.
+- (E) Given an evidence document or a recorded test run, when it is produced, then it
+  names the change it was built from — not merely when it was written — so a reader
+  can tell evidence built from a known point in the project's history apart from
+  evidence whose origin is unstated. For an evidence document that is the most recent
+  completed change recorded in the project's own history at the time it was rendered;
+  for a recorded test run it is the code version the tests were measured against,
+  read from the project rather than asserted by whoever wrote the record. Where it
+  cannot be established, the artifact says so instead of showing a plausible-looking
+  value.
 - (E) Given a completed change that says it affects behaviour but names no
   requirement and gives no reason for naming none, when the cross-check audit
   runs, then it is reported together with a suggested command to fix it, without
   failing the audit.
+- (E) Given the cross-check runs only when someone asks for it — it is on demand
+  by design, with no schedule behind it — when any evidence document is read,
+  then that document states when the cross-check last happened, or states that it
+  never has, so a reader can judge how much the evidence is worth instead of
+  assuming it was checked. A cross-check restricted to part of the project says
+  so, and the answer survives a fresh copy of the project.
 - (E) Given the evidence is read as a record of the project, when it is relied
   on, then it covers only what the project actually recorded — a change that
   recorded nothing about the requirement it touched does not appear, so the
@@ -577,6 +664,30 @@ _Where the work detail lives_ at the end of this document.
   any pass is left unanswered — so "nothing shown" always means "genuinely did
   not run" and never "nobody wrote it down". A finished review cannot afterwards
   be quietly restated. (iterate-2026-07-21-review-record)
+- (E) Given a finished change is waiting on the code host to merge it, when it
+  has not merged, then the report names what is holding it up — conversations
+  still unresolved, required checks that never reported, the host's own verdict
+  that the merge is blocked — rather than only how long it waited. Anything that
+  could not be checked is said to be unchecked, never counted as clear.
+  (iterate-2026-07-27-name-the-blocker)
+- (E) Given the code host states a reason a change cannot be merged — it
+  conflicts with what it is merging into, it is still a draft, its base has
+  moved on, or the host itself refuses it — when the wait is reported, then that
+  reason is named in words. A state the host reports that is not recognised is
+  reported as not understood rather than as nothing being wrong.
+  (iterate-2026-07-27-merge-state-vocabulary)
+- (E) Given the record of a change is checked for describing the run that is
+  finishing, when that check runs, then it is decided by whether the record
+  names that run, and never by how recently the file was written — so a run that
+  spends a long time waiting is not reported as out of date.
+  (iterate-2026-07-27-name-the-blocker)
+- (E) Given a change is recorded by adding a criterion to a requirement that
+  already exists — the way this project asks such changes to be recorded — when
+  it is checked for being tested at the levels that requirement demands, then it
+  is resolved to that requirement and checked, instead of being reported as
+  impossible to determine. A change to the requirements that touches no
+  requirement at all is still reported as undetermined for a person to settle,
+  never passed in silence. (iterate-2026-07-27-name-the-blocker)
 
 <a id="fr-0112"></a>
 ### FR-01.12 — /shipwright-preview
@@ -713,6 +824,15 @@ _Where the work detail lives_ at the end of this document.
   is produced, then it states how many it is not showing rather than presenting
   its excerpt as the whole, and lower-severity entries are set aside rather than
   dropped.
+- (E) Given the pre-commit test gate finds a test unit that fails when the units
+  run side by side but passes when run on its own, when it lets the run continue —
+  because the on-its-own result is the trustworthy one and stopping would block the
+  work for no reason — then the gate records that unit in the Triage Inbox itself,
+  so the observation survives the session that made it instead of scrolling past in
+  a message; the entry says the cause is undetermined rather than guessing between a
+  clash between simultaneous runs and an unreliable test, it is not closed by the
+  next run that happens to look clean, and if it cannot be recorded at all the run
+  is stopped rather than reported as passing.
 - (E) Given the Triage Inbox is taken as a plan, when it is read, then it is
   explicitly not one: it collects findings and records decisions, it does not
   schedule work, set priorities by itself, or fix anything — the work list it

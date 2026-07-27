@@ -40,6 +40,14 @@ Output (JSON):
         "reviews": {
             "gemini": { "status": "success|error|skipped", "feedback": "..." },
             "openai": { "status": "success|error|skipped", "feedback": "..." }
+        },
+        // Both reviewers' verdicts, read from the SHIPWRIGHT_VERDICT sentinel,
+        // plus the deterministic comparison. Present on every exit path.
+        "verdicts":  { "gemini": "approve", "openai": "reject" },
+        "statuses":  { "gemini": "success", "openai": "success" },
+        "contradiction": {
+            "detected": true, "comparable": true,
+            "requires_resolution": true, "reason": "..."
         }
     }
 
@@ -69,12 +77,14 @@ from env import load_shipwright_env  # type: ignore[import-not-found]
 load_shipwright_env()
 
 from external_review_config import load_review_config, resolve_model  # noqa: E402
-from external_review_degraded import finalize_review_output  # noqa: E402
+from external_review_degraded import classify_reply, finalize_review_output, gemini_finish_reason, openai_finish_reason  # noqa: E402
 from external_review_prompts import (  # noqa: E402
+    default_review_prompts,
     load_code_review_prompts,
     load_iterate_review_prompts,
     load_plan_review_prompts,
 )
+from review_verdict import summarize_reviews  # noqa: E402
 
 
 OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1"
@@ -147,7 +157,7 @@ def review_with_openrouter(
             max_tokens=4096,
         )
 
-        return {"status": "success", "feedback": response.choices[0].message.content, "via": "openrouter"}
+        return classify_reply(response.choices[0].message.content, openai_finish_reason(response), via="openrouter")
 
     except ImportError:
         return {"status": "error", "reason": "openai package not installed"}
@@ -180,7 +190,7 @@ def review_with_gemini(
             ),
         )
 
-        return {"status": "success", "feedback": response.text, "via": "direct"}
+        return classify_reply(response.text, gemini_finish_reason(response), via="direct")
 
     except ImportError:
         return {"status": "error", "reason": "google-genai package not installed"}
@@ -216,7 +226,7 @@ def review_with_openai(
             max_completion_tokens=4096,
         )
 
-        return {"status": "success", "feedback": response.choices[0].message.content, "via": "direct"}
+        return classify_reply(response.choices[0].message.content, openai_finish_reason(response), via="direct")
 
     except ImportError:
         return {"status": "error", "reason": "openai package not installed"}
@@ -322,15 +332,19 @@ def main() -> int:
     # Code-mode short-circuit: empty diff → no provider call. The LLM cannot
     # review what isn't there, and many providers reject empty inputs.
     if args.mode == "code" and not primary_text.strip():
+        empty_reviews = {
+            "gemini": {"status": "skipped", "reason": "empty diff"},
+            "openai": {"status": "skipped", "reason": "empty diff"},
+        }
         print(json.dumps({
             "success": True,
             "skipped": "empty_diff",
             "provider": "none",
             "degraded": False,
-            "reviews": {
-                "gemini": {"status": "skipped", "reason": "empty diff"},
-                "openai": {"status": "skipped", "reason": "empty diff"},
-            },
+            "reviews": empty_reviews,
+            # Same shape on every exit path so a consumer never has to guard
+            # for the block's absence.
+            **summarize_reviews(empty_reviews),
         }, indent=2))
         return 0
 
@@ -344,43 +358,9 @@ def main() -> int:
     else:
         system_prompt, user_prompt = load_plan_review_prompts(args.plugin_root)
 
-    if not system_prompt:
-        if args.mode == "iterate":
-            system_prompt = (
-                "You are a senior software architect reviewing an implementation approach "
-                "for a single change to an existing application."
-            )
-        elif args.mode == "code":
-            system_prompt = (
-                "You are a senior software engineer auditing a code change against its "
-                "specification. Focus on real defects (correctness, security, regressions, "
-                "spec gaps, edge cases). Skip style and naming nits."
-            )
-        else:
-            system_prompt = "You are a senior software architect reviewing an implementation plan."
-    if not user_prompt:
-        if args.mode == "iterate":
-            user_prompt = (
-                "Review this implementation approach for a change to an existing application.\n\n"
-                "## Change Specification:\n{SPEC}\n\n## Implementation Approach:\n{PLAN}\n\n"
-                "Focus on: approach soundness, risks to existing functionality, "
-                "missing dependencies, edge cases, and security concerns."
-            )
-        elif args.mode == "code":
-            user_prompt = (
-                "Review this code change against its specification.\n\n"
-                "## Specification:\n{SPEC}\n\n## Code Diff:\n```diff\n{DIFF}\n```\n\n"
-                "Identify concrete defects: spec gaps, correctness bugs, security issues, "
-                "test quality, regressions, and unhandled edge cases. "
-                "Skip style and naming nits."
-            )
-        else:
-            user_prompt = (
-                "Review this implementation plan for a project.\n\n"
-                "## Spec:\n{SPEC}\n\n## Plan:\n{PLAN}\n\n"
-                "Identify: security issues, performance concerns, architecture problems, "
-                "missing features, and edge cases not handled."
-            )
+    default_system, default_user = default_review_prompts(args.mode)
+    system_prompt = system_prompt or default_system
+    user_prompt = user_prompt or default_user
 
     provider = detect_provider()
     reviews: dict[str, dict] = {}
@@ -422,6 +402,10 @@ def main() -> int:
 
     # Degraded-gate: keys present but 0 reviews succeeded → fail loud (never a silent no-op).
     output, exit_code = finalize_review_output(provider, reviews)
+    # Two reviewers exist so disagreement gets noticed; carry both verdicts and
+    # the derived contradiction alongside the full texts rather than letting a
+    # downstream finding count average them away.
+    output.update(summarize_reviews(reviews))
     print(json.dumps(output, indent=2))
     return exit_code
 

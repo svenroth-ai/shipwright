@@ -95,6 +95,41 @@
     },
     "validation_issues": { "type": "array" },
     "validation_notes": { "type": "array" },
+    "validation_overrides": {
+      "type": "array",
+      "description": "Append-log of phase completions that went ahead despite (or over) the phase gate. Written by orchestrator_pkg/validation_record.py. A step that completed with a clean gate and no override writes NO entry, so the presence of a record is itself the signal (FR-01.01).",
+      "items": {
+        "type": "object",
+        "required": ["step", "at", "reason", "waived", "gate_result", "overridden_issues"],
+        "properties": {
+          "step": { "$ref": "#/$defs/Phase" },
+          "at": { "type": "string", "format": "date-time" },
+          "reason": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Why the person decided to go ahead. Never blank — normalise_override_reason() refuses an empty or whitespace-only reason before anything is written."
+          },
+          "waived": {
+            "type": "boolean",
+            "description": "true = the gate found ask-level issues and they were overridden. false = force was used but the gate was clean, so nothing was actually waived."
+          },
+          "gate_result": {
+            "enum": ["pass", "fail", "not_checked"],
+            "description": "pass = a phase validator ran and found nothing. fail = it found ask-level issues (see overridden_issues). not_checked = NO phase validator exists for this step (e.g. `security`, which has no _VALIDATORS entry), so nothing was established — recording that as `pass` would mint a claim that a gate had been satisfied where none exists. The flag reflects the PHASE VALIDATOR only; the opt-in Phase-Quality critical gate is not counted by it, so `not_checked` means 'no phase validator ran', not 'no check of any kind ran'."
+          },
+          "overridden_issues": {
+            "type": "array",
+            "description": "The ask-level findings, verbatim, that this override went ahead over."
+          },
+          "inform_count": { "type": "integer", "minimum": 0 }
+        }
+      }
+    },
+    "validation_overrides_dropped": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Count of validation_overrides entries evicted by retention (MAX_VALIDATION_OVERRIDES). Present only once something was dropped — so truncation is never silent."
+    },
     "last_compliance_update": { "type": "object" }
   },
   "$defs": {

@@ -1,12 +1,35 @@
 # Project Activity Dashboard
-> Updated: 2026-07-27 19:37 UTC | Session: 99609ad4-4e4b-47ca-a23f-ccfc53ee7516 | Run: iterate-2026-07-27-checks-that-gate-nothing
+> Updated: 2026-07-27 18:46 UTC | Session: a7fa3da4-74bf-406f-b92b-f309691d90f9 | Run: iterate-2026-07-27-handoff-tally-and-gate-honesty
 
-## Recent Changes (361 iterations)
+## Recent Changes (384 iterations)
 
 | Type | Description | Tests | Commit | FRs | Date |
 |------|-------------|-------|--------|-----|------|
-| change | iterate: checks that run, report, and gate nothing (trg-c7e5835b items 3-5) | 0/0 |  | FR-01.17 | 2026-07-27 |
+| change | iterate: raise the PR-review diff cap, cut at a file boundary, name what went unreviewed | 0/0 |  | FR-01.17 | 2026-07-27 |
+| change | iterate: an audit that checked nothing is not recorded | 0/0 |  | compliance | 2026-07-27 |
+| change | iterate: refuse a multi-root pytest session instead of failing 21 unrelated tests | 0/0 |  | tooling | 2026-07-27 |
+| change | iterate: document the delivery watch in the guide | 0/0 |  | docs | 2026-07-27 |
+| change | iterate: requirement write-back loop — design rounds and build sections declare their requirement impact | 0/0 |  | FR-01.04, FR-01.05 | 2026-07-27 |
+| change | iterate: the phase canon asks whether the handoff belongs to this run | 0/0 |  | FR-01.01 | 2026-07-27 |
+| change | iterate: bounded sharing-violation retry on both sides of the atomic-write boundary | 0/0 |  | FR-01.01, FR-01.09 | 2026-07-27 |
+| change | iterate: the merge state is a vocabulary, not a BLOCKED flag | 0/0 |  | FR-01.11 | 2026-07-27 |
+| change | iterate: handoff tally and gate honesty | 0/0 |  | FR-01.01 | 2026-07-27 |
+| change | iterate: inherited failures and coverage gaps are recorded as inherited | 0/0 |  | FR-01.13 | 2026-07-27 |
+| change | iterate: the four Step-9 gates become code, closing trg-88f721be (3 of 3) | 0/0 |  | tooling | 2026-07-27 |
+| change | iterate: reviewer verdicts recorded, disagreement is its own outcome (1 of 3) | 0/0 |  | FR-01.03 | 2026-07-27 |
+| change | iterate: section dependencies are declarable, so the numbering is checkable (2 of 3) | 0/0 |  | tooling | 2026-07-27 |
+| change | iterate: name the blocker instead of reporting a weaker signal | 0/0 |  | FR-01.03, FR-01.11 | 2026-07-27 |
+| change | iterate: the derived requirements catalogue announces itself | 0/0 |  | FR-01.13 | 2026-07-27 |
 | change | iterate: the review gate stops being bypassable (fail-closed + fork review) | 0/0 |  | infra | 2026-07-27 |
+| change | iterate: phase-gate override leaves evidence; handoff renders phase status | 0/0 |  | FR-01.01 | 2026-07-27 |
+| change | iterate: requirement granularity guidance + advisory I6 check + the Basis-assumed template contradiction | 0/0 |  | compliance | 2026-07-27 |
+| change | iterate: triage defer from the terminal + failing-check detail cap | 0/0 |  | FR-01.14 | 2026-07-27 |
+| change | iterate: stamp produced artifacts with the state they describe (FR-01.10) | 0/0 |  | FR-01.10 | 2026-07-27 |
+| change | The F0 suite runner files its own triage entry for a unit red in parallel and green alone, never auto-closes it, and exits 3 if the observation could not be recorded. | 0/0 |  | FR-01.14 | 2026-07-27 |
+| change | iterate: hosting rollback uses the target ref, polls liveness to the target's deadline, gates on stored-data drift, and halts loudly when the way back fails | 0/0 |  | FR-01.08 | 2026-07-27 |
+| change | iterate: compliance evidence discloses when the cross-check last ran | 0/0 |  | FR-01.10 | 2026-07-27 |
+| bug | iterate: changelog writer preserves the history it read | 0/0 |  | FR-01.09 | 2026-07-27 |
+| change | iterate: the test phase's record tells the truth about the run (trg-12b4cf3f) | +79 new, 6978/6978 |  | FR-01.06 | 2026-07-27 |
 | change | iterate: REQ-3 Phase 2 content round - all 18 requirements walked or minted | 0/0 |  | FR-01.01, FR-01.02, FR-01.03 | 2026-07-26 |
 | feature | REQ-3 Phase 1: shared requirement-elicitation method (grilling + domain-modeling) + CONTEXT.md format + FR-01.16 mint | 4946/4961 |  |  | 2026-07-23 |
 | bug | design verifier C1 skips projects that never ran the design phase | 26/26 |  | compliance | 2026-07-23 |
@@ -368,7 +391,7 @@
 | change | post-adoption framework cleanup (Sub-1A through 1D) | 225/225 | 3db485b | FR-01.01, FR-01.02, FR-01.03 | 2026-05-02 |
 
 ## Test Status
-Last run: 2026-07-27 | Unit: 5040/5056 | Integration: 418/418 | Smoke: skipped | (iterate)
+Last run: 2026-07-27 | Unit: 5977/5977 | Integration: 422/422 | Smoke: not_run | (iterate)
 
 ## Pipeline
 

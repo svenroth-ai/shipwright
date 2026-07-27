@@ -20,11 +20,12 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from .._audit_disclosure_render import freshness_note
 from ._common import CONFIG_FILES, collect_configs
+from ._compliance_data import ComplianceData
 from ._license_const import NOT_INSTALLED, UNKNOWN_LICENSE
 from ._types import (
     CommitEntry,
-    ComplianceData,
     DecisionEntry,
     DependencyInfo,
     ExternalReviewState,
@@ -44,6 +45,8 @@ from .change_history import (
     collect_events,
     collect_git_history,
     latest_event_timestamp,
+    latest_work_event,
+    run_id_of,
 )
 from .dashboard import (
     _sections_from_data,
@@ -100,6 +103,10 @@ def collect_all(project_root: Path) -> ComplianceData:
     # and whether any version was resolved from a uv.lock.
     dependencies, deps_deduped, deps_lock_resolved = _collect_dependency_rows(project_root)
 
+    # One event, resolved once, feeding BOTH provenance header lines below.
+    latest_event = latest_work_event(work_events)
+    timestamp = latest_event.timestamp if latest_event is not None else "(no events)"
+
     return ComplianceData(
         project_root=project_root,
         # Event-sourced
@@ -130,7 +137,16 @@ def collect_all(project_root: Path) -> ComplianceData:
         # Pin to the most recent event's timestamp so two runs against the
         # same events.jsonl produce byte-identical output. Falls back to a
         # stable literal when no events have been recorded yet.
-        timestamp=latest_event_timestamp(work_events),
+        timestamp=timestamp,
+        # The run whose state the rendered documents describe — read off the SAME
+        # event object as `timestamp` above, so a document's two provenance lines
+        # cannot name two different events (card trg-4d5b6a56, FR-01.10).
+        run_id=run_id_of(latest_event),
+        # The third provenance line (card trg-a1fd8125): when the on-demand
+        # cross-check last ran. Aged against the SAME pinned reference as the
+        # timestamp above, so the disclosure inherits that byte-stability
+        # instead of re-introducing wall-clock drift.
+        audit_freshness_note=freshness_note(project_root, as_of=timestamp),
     )
 
 
@@ -173,6 +189,8 @@ __all__ = [
     "collect_test_results",
     "collect_undeclared_by_workspace",
     "latest_event_timestamp",
+    "latest_work_event",
+    "run_id_of",
     # Helpers re-exported for backwards compat (test imports)
     "_apply_amendments",
     "_read_event_log",

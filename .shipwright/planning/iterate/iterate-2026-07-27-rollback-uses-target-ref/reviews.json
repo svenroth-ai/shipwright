@@ -1,0 +1,239 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-07-27-rollback-uses-target-ref",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-07-27T07:50:58.422891+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 15,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "Risk",
+          "file": "plugins/shipwright-deploy/scripts/lib/jelastic_client.py",
+          "line": null,
+          "finding": "Calling `environment/vcs/rest/editproject` with only `envName`, `context`, and `branch` assumes the endpoint behaves like a PATCH request. Many update endpoints in legacy hosting APIs (like Jelastic's) behave like PUT operations. If `editproject` requires the full object, sending a sparse payload could wipe out the existing repository URL, authentication credentials, and auto-update settings.",
+          "suggestion": "Fetch the existing project configuration first using `environment/vcs/rest/getprojects`. Update the `branch` property on that retrieved object locally, then send the full, modified object back to `editproject`.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "Security",
+          "file": "plugins/shipwright-deploy/scripts/lib/data_drift.py",
+          "line": null,
+          "finding": "The `--target-ref` parameter is user-supplied and will be passed to local command-line Git plumbing for the data-drift check. If the string is injected into a shell=True subprocess call, or improperly escaped, it poses a command injection risk (e.g. `--target-ref 'HEAD; rm -rf /'`).",
+          "suggestion": "Ensure the Git data-drift check uses subprocess.run with a rigid array of arguments and shell=False. Additionally, validate target_ref against a strict regex for valid Git ref names before processing.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "Reducibility",
+          "file": "plugins/shipwright-deploy/scripts/lib/data_drift.py",
+          "line": null,
+          "finding": "Creating an 85-line data_drift.py script to check for new migration files is an over-production for a capability Git natively computes.",
+          "suggestion": "Do not create a new file or complex state logic. Inline a single list-based subprocess call directly in rollback.py using `git diff --diff-filter=A --name-only <target_ref> HEAD -- <migrations_dir>`. If the command yields output, data has drifted.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "Dependency",
+          "file": "shared/profiles/deploy/jelastic.json",
+          "line": null,
+          "finding": "The current Jelastic API token may only be scoped to trigger vcs/update. Interacting with vcs/getprojects and vcs/editproject often requires elevated permissions or a different API scope in the token provisioning.",
+          "suggestion": "Verify the minimum needed permissions for the Jelastic token used by this environment. If new scopes are required, document the prerequisite token updates required for existing deployments in FR-01.08.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "Edge Case",
+          "file": "plugins/shipwright-deploy/scripts/lib/jelastic_client.py",
+          "line": null,
+          "finding": "The getprojects read-back will likely return an array of all mapped repositories/contexts for that environment, not a single branch string.",
+          "suggestion": "Ensure get_vcs_ref includes parsing logic to iterate through the returned list and match on the specific context (e.g. \"ROOT\") to extract the correct branch, rather than assuming a single-object response.  Overall assessment: the logical orchestration (halting on drift, pinning the ref, failing-closed, and honest reporting) is extremely well-reasoned and thoroughly addresses the false-success problem. By guarding against destructive API overwrites and aggressively reducing the Git drift logic, this plan will yield a highly robust, safe, and maintainable rollback mechanism.  === gpt-5.6-terra ===",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "dependency",
+          "file": "plugins/shipwright-deploy/scripts/lib/jelastic_client.py",
+          "line": null,
+          "finding": "The core Jelastic API contract is still unverified, and the proposed editproject call may not be sufficient for all accepted target_ref values. branch=<ref> commonly supports branch names, but the CLI accepts a generic target ref such as a tag (v1.2.3) or SHA. Also, editproject/getprojects may require a project identifier or return multiple projects for an environment/context; choosing or editing the wrong project would be worse than a failed rollback.",
+          "suggestion": "Validate the exact request/response contracts against a disposable Jelastic environment or an authoritative vendor example. Define supported target-ref forms explicitly and reject unsupported forms before any hosting mutation. Make get_vcs_ref select the exact project deterministically using the project/context identifier, and define canonical comparison rules (main vs refs/heads/main).",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "risk",
+          "file": "plugins/shipwright-deploy/scripts/lib/rollback.py",
+          "line": null,
+          "finding": "Pinning the project ref mutates persistent VCS-project configuration before deployment. If editproject succeeds but vcs/update fails, the running application may remain on the old release while the project is now configured to deploy the requested rollback ref on the next automatic update/restart. The plan reports and halts, but does not account for this changed configuration state.",
+          "suggestion": "Read and record the prior configured ref before pinning. On update failure, report both the running-state uncertainty and the VCS-project configuration state. Decide explicitly whether to restore the old configured ref; if automatic restoration is intentionally avoided because \"stop\" forbids further mutations, state that clearly and give the operator the exact corrective action.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "approach",
+          "file": "plugins/shipwright-deploy/scripts/lib/rollback.py",
+          "line": null,
+          "finding": "\"On any failure, neither version is confirmed running\" is too broad and can be misleading. A data-drift refusal occurs before any hosting call and says nothing new about the live environment. A failed ref-pin likewise leaves the prior deployment potentially still running. A read-back mismatch may positively identify another configured ref, but does not necessarily identify the running application version.",
+          "suggestion": "Model failure phases separately: preflight refusal, pin failure, update failure, verification mismatch, and clone-stop outcome. Use precise wording such as \"the running version was not verified by this rollback\". Reserve exit code 3 and the AC9 halt state for failures after a rollback operation has begun; retain ordinary failure code 1 for validation, profile, git-resolution, and data-drift refusals.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": "plugins/shipwright-deploy/scripts/lib/data_drift.py",
+          "line": null,
+          "finding": "The data-drift design does not specify how rollback.py determines the repository root and migration directories in real invocation. It also needs a defined policy for dirty worktrees, untracked migration files, deleted/renamed migrations, nested migration directories, and a target ref that is not available locally.",
+          "suggestion": "Wire the gate to explicit repository and migration-directory inputs rather than implicit current-directory behavior. Use Git commands without a shell. For a safety gate, untracked migration files should normally count as drift. Keep unresolved target refs as a refusal, and make --ack-data-drift semantics explicit.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "dependency",
+          "file": "shared/profiles/deploy-profile.schema.json",
+          "line": null,
+          "finding": "The profile change is underspecified relative to AC7. AC7 requires timeout to come from the selected profile, and the proposed SmokePolicy/schema changes are not described. There is no stated behavior for malformed profiles, missing policy fields, or a combination of explicit flags and profile-derived values.",
+          "suggestion": "Define field-level precedence: each explicit CLI option overrides only its corresponding profile field, with documented defaults for omitted fields. Return source metadata per effective value, or make deadline_source accurately describe mixed CLI/profile input.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": "shared/scripts/smoke_test.py",
+          "line": null,
+          "finding": "A monotonic polling loop alone does not guarantee the requested deadline. A single HTTP request using a timeout longer than the remaining deadline can run past max_wait; similarly, sleeping a full poll interval can overshoot the deadline. Boundary values such as max_wait=0, a negative value, or an interval of zero are not addressed.",
+          "suggestion": "Validate all duration inputs as non-negative, with a positive polling interval when polling is enabled. Before each request, compute remaining time and cap the per-request timeout to it; cap the sleep to the remaining time as well. Ensure waited_ms is measured consistently. Capture the final request exception/status in the evidence payload.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "risk",
+          "file": "plugins/shipwright-deploy/scripts/lib/rollback.py",
+          "line": null,
+          "finding": "Treating every read-back failure as a successful but unconfirmed rollback can hide meaningful operational failures, especially authentication/authorization errors or a malformed getprojects integration.",
+          "suggestion": "Include a structured verification_error/verification_reason and last_attempted value. Catch only expected read-back transport/API failures for the best-effort downgrade; do not broadly catch programming errors or response-parsing failures. Distinguish \"verification endpoint unavailable\" from \"read-back did not contain a matching project/ref\".",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "risk",
+          "file": "shared/scripts/deploy_profile.py",
+          "line": null,
+          "finding": "The proposed bare import of deploy_profile creates a runtime packaging/path dependency that is not covered in the plan. A plugin-local CLI launched from a different working directory will not automatically have shared/scripts on sys.path.",
+          "suggestion": "Follow the repository's existing executable/bootstrap convention and test imports through each actual CLI entrypoint, not merely unit-test imports. Add an import smoke test that runs both smoke_test.py and rollback.py from their normal invocation locations.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "security",
+          "file": "plugins/shipwright-deploy/scripts/lib/rollback.py",
+          "line": null,
+          "finding": "The new path from --target-ref to both Git and Jelastic API parameters increases the impact of unsafe command construction or overly verbose API error reporting.",
+          "suggestion": "Invoke Git with argument lists and -- path separators; never interpolate target_ref, repository paths, or migration names into shell strings. Keep the Jelastic token and authorization headers out of exceptions and stdout JSON.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "dependency",
+          "file": ".shipwright/planning/iterate/iterate-2026-07-27-rollback-uses-target-ref.md",
+          "line": null,
+          "finding": "The stated verification command does not run the newly described unit suites test_rollback.py and test_data_drift.py, even though those tests contain the primary proof that the ref is sent before update. The claimed subprocess E2E test also needs a defined fake/injected Jelastic transport; a local HTTP liveness server and temporary Git repository do not by themselves observe Jelastic client calls.",
+          "suggestion": "Include the rollback and data-drift test files in the required runner command. For CLI E2E coverage, introduce a minimal supported client endpoint override or test transport that records editproject, update, and getprojects requests across the subprocess boundary. Assert ordering, no-update-on-pin-failure, the exact exit-code split, and valid JSON-only stdout.  Overall: the sequence of drift gate -> pin -> update -> graded verification is directionally sound and directly fixes the false-success defect. The main work needed is to validate the Jelastic project/ref contract, account for partial mutation when update fails, and make the new profile, runtime-import, and test-transport dependencies explicit.",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter (gemini-3.1-pro-preview + gpt-5.6-terra)",
+      "completed_at": "2026-07-27T07:16:58.528180+00:00",
+      "disposition": null,
+      "recorded_by": "external-prose",
+      "parse_status": "structured",
+      "raw_excerpt": "External plan review (openrouter): gemini-3.1-pro-preview + gpt-5.6-terra.\nreviews_succeeded=2, degraded=false, mode=iterate.\n\n=== gemini-3.1-pro-preview ===\n\n- Category: Risk\n- Severity: High\n- File:line: plugins/shipwright-deploy/scripts/lib/jelastic_client.py\n- Finding: Calling `environment/vcs/rest/editproject` with only `envName`, `context`, and `branch` assumes the endpoint behaves like a PATCH request. Many update endpoints in legacy hosting APIs (like Jelastic's) behave like PUT operations. If `editproject` requires the full object, sending a sparse payload could wipe out the existing repository URL, authentication credentials, and auto-update settings.\n- Suggestion: Fetch the existing project configuration first using `environment/vcs/rest/getprojects`. Update the `branch` property on that retrieved object locally, then send the full, modified object back to `editproject`.\n\n- Category: Security\n- Severity: Medium\n- File:line: plugins/shipwright-deploy/scripts/lib/data_drift.py\n- Finding: The `--target-ref` parameter is user-supplied and will be passed to local command-line Git plumbing for the data-drift check. If the string is injected into a shell=True subprocess call, or improperly escaped, it poses a command injection risk (e.g. `--target-ref 'HEAD; rm -rf /'`).\n- Suggestion: Ensure the Git data-drift check uses subprocess.run with a rigid array of arguments and shell=False. Additionally, validate target_ref against a strict regex for valid Git ref names before processing.\n\n- Category: Reducibility\n- Severity: Medium\n- File:line: plugins/shipwright-deploy/scripts/lib/data_drift.py\n- Finding: Creating an 85-line data_drift.py script to check for new migration files is an over-production for a capability Git natively computes.\n- Suggestion: Do not create a new file or complex state logic. Inline a single list-based subprocess call directly in rollback.py using `git diff --diff-filter=A --name-only <target_ref> HEAD -- <migrations_dir>`. If the command yields output, data has drifted.\n\n- Category: Dependency\n- Severity: Low\n- File:line: shared/profiles/deploy/jelastic.json\n- Finding: The current Jelastic API token may only be scoped to trigger vcs/update. Interacting with vcs/getprojects and vcs/editproject often requires elevated permissions or a different API scope in the token provisioning.\n- Suggestion: Verify the minimum needed permissions for the Jelastic token used by this environment. If new scopes are required, document the prerequisite token updates required for existing deployments in FR-01.08.\n\n- Category: Edge Case\n- Severity: Low\n- File:line: plugins/shipwright-deploy/scripts/lib/jelastic_client.py\n- Finding: The getprojects read-back will likely return an array of all mapped repositories/contexts for that environment, not a single branch string.\n- Suggestion: Ensure get_vcs_ref includes parsing logic to iterate through the returned list and match on the specific context (e.g. \"ROOT\") to extract the correct branch, rather than assuming a single-object response.\n\nOverall assessment: the logical orchestration (halting on drift, pinning the ref, failing-closed, and honest reporting) is extremely well-reasoned and thoroughly addresses the false-success problem. By guarding against destructive API overwrites and aggressively reducing the Git drift logic, this plan will yield a highly robust, safe, and maintainable rollback mechanism.\n\n=== gpt-5.6-terra ===\n\n- Category: dependency\n- Severity: high\n- File:line: plugins/shipwright-deploy/scripts/lib/jelastic_client.py\n- Finding: The core Jelastic API contract is still unverified, and the proposed editproject call may not be sufficient for all accepted target_ref values. branch=<ref> commonly supports branch names, but the CLI accepts a generic target ref such as a tag (v1.2.3) or SHA. Also, editproject/getprojects may require a project identifier or return multiple projects for an environment/context; choosing or editing the wrong project would be  […truncated]"
+    },
+    "code": {
+      "review_type": "code",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-07-27T07:57:38.096181+00:00",
+      "disposition": "Operator standing instruction for this session: do not call the Agent tool unless explicitly requested. The internal code-reviewer is a Claude subagent, so it was not spawned. The equivalent coverage ran as the external code-review cascade (2 providers on the same diff, 4 findings, all accepted-and-fixed) plus the 8-point self-review.",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-07-27T07:57:38.238370+00:00",
+      "disposition": "Same operator standing instruction: doubt-reviewer is a Claude subagent and was not spawned. Per iteration-reviews.md the doubt pass is conditional and advisory-must-address, not a hard gate; its disprove-biased role was partially served by the external cascade, which did disprove four claims in the diff.",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 4,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "spec",
+          "file": "plugins/shipwright-deploy/scripts/lib/rollback.py:70-73",
+          "line": null,
+          "finding": "The stored-data drift gate always runs, even when the selected target profile declares `data_rollback_strategy == \"none-app-only\"`. The adopted design explicitly limits this gate to targets whose strategy is not `none-app-only`; currently such targets can be refused due to an unresolvable local ref or local migration differences despite their profile declaring that app-only rollback is safe.",
+          "suggestion": "Determine `data_rollback_strategy` before calling `data_drift.detect`, and bypass the drift check for `none-app-only` profiles (returning an explicit not-applicable/not-checked report if desired). Add a rollback test using a `none-app-only` profile and a deliberately unresolvable ref/local migration drift.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "security",
+          "file": "plugins/shipwright-deploy/scripts/lib/data_drift.py:28-36",
+          "line": null,
+          "finding": "is_valid_ref` does not actually enforce valid Git ref names as required by AC13. For example, `@`, `foo/.hidden`, and `foo.lock/bar` pass this validation even though `git check-ref-format` rejects them. These values can therefore reach both Git and `editproject`, violating the requirement that invalid refs be rejected before any Git or hosting call.",
+          "suggestion": "Use `git check-ref-format` (with an argument array and `--`) as the authoritative validation, or fully implement Git’s component-level ref rules. Add tests for invalid component forms such as `@`, `.hidden`, and `foo.lock/bar`.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "spec",
+          "file": "plugins/shipwright-deploy/scripts/lib/rollback.py:92-97",
+          "line": null,
+          "finding": "Read-back transport failures represented as `urllib.error.URLError` are not downgraded to `ref_verified: \"unconfirmed\"` as AC3 requires. `_hosting_errors()` includes only `HostingError` and optionally `JelasticError`; a direct `URLError` from `get_vcs_project` escapes from `_verify_ref`, producing no structured rollback report instead of a successful-but-unconfirmed result with `verification_error`.",
+          "suggestion": "Include `urllib.error.URLError` in the narrowly caught hosting/read-back error tuple, while continuing to let programming errors propagate. Add a test where the second `get_vcs_project` call raises `URLError`.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "spec",
+          "file": "shared/scripts/smoke_test.py",
+          "line": 124,
+          "finding": "The final probe timeout is not capped to the remaining deadline. `max(1, int(min(timeout, remaining)))` grants a one-second request timeout whenever less than one second remains, so it can exceed the remaining deadline; with `max_wait=0`, it still performs a request permitted to run for one second. This directly conflicts with AC14’s requirement that each request timeout be capped to remaining time.",
+          "suggestion": "Pass the remaining duration directly as a positive float timeout (and do not start another probe when no time remains), e.g. `min(timeout, remaining)`, with a deadline-expired check before probing. Update the test to assert the actual request timeout/deadline behavior rather than allowing a forced one-second overrun.  Overall assessment: ship-with-fixes. The core pin → update flow is implemented and substantially better tested, but the profile-controlled drift behavior and deadline cap do not meet explicit acceptance criteria, and ref validation is incomplete.",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter (gemini-3.1-pro-preview + gpt-5.6-terra)",
+      "completed_at": "2026-07-27T07:57:27.866631+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "partial",
+      "raw_excerpt": "[gemini] `_probe`, `timeout` can be `0`? No, because `attempt_timeout = max(1, ...)` ensures it's at least 1.\nSo it's fine.\n\nWait, check `_check_health` in `smoke_test.py`:\n```python\ndef _check_health(url: str, health_path: str, timeout: int) -> dict:\n```\nIn `run_smoke_test`:\n```python\n    if health_path and result[\"success\"]:\n        result[\"health_check\"] = _check_health(url, health_path, timeout)\n```\nWait! Here `timeout` is the original `timeout`, not `attempt_timeout`. So if `timeout` was 3\n\n[openai] - Category: spec\n- Severity: high\n- File: `plugins/shipwright-deploy/scripts/lib/rollback.py:70-73`\n- Finding: The stored-data drift gate always runs, even when the selected target profile declares `data_rollback_strategy == \"none-app-only\"`. The adopted design explicitly limits this gate to targets whose strategy is not `none-app-only`; currently such targets can be refused due to an unresolvable local ref or local migration differences despite their profile declaring that app-only rollback is safe.\n- Suggestion: Determine `data_rollback_strategy` before calling `data_drift.detect`, and bypass the drift check for `none-app-only` profiles (returning an explicit not-applicable/not-checked report if desired). Add a rollback test using a `none-app-only` profile and a deliberately unresolvable ref/local migration drift.\n\n- Category: security\n- Severity: medium\n- File: `plugins/shipwright-deploy/scripts/lib/data_drift.py:28-36`\n- Finding: `is_valid_ref` does not actually enforce valid Git ref names as required by AC13. For example, `@`, `foo/.hidden`, and `foo.lock/bar` pass this validation even though `git check-ref-format` rejects them. These values can therefore reach both Git and `editproject`, violating the requirement that invalid refs be rejected before any Git or hosting call.\n- Suggestion: Use `git check-ref-format` (with an argument array and `--`) as the authoritative validation, or fully implement Git’s component-level ref rules. Add tests for invalid component forms such as `@`, `.hidden`, and `foo.lock/bar`.\n\n- Category: spec\n- Severity: medium\n- File: `plugins/shipwright-deploy/scripts/lib/rollback.py:92-97`\n- Finding: Read-back transport failures represented as `urllib.error.URLError` are not downgraded to `ref_verified: \"unconfirmed\"` as AC3 requires. `_hosting_errors()` includes only `HostingError` and optionally `JelasticError`; a direct `URLError` from `get_vcs_project` escapes from `_verify_ref`, producing no structured rollback report i […truncated]"
+    }
+  }
+}

@@ -65,7 +65,11 @@ from pathlib import Path
 _THIS_FILE = Path(__file__).resolve()
 # shared/contracts/compliance.py -> shared/ -> repo_root/
 _REPO_ROOT = _THIS_FILE.parent.parent.parent
-_COMPLIANCE_PLUGIN_ROOT = _REPO_ROOT / "plugins" / "shipwright-compliance"
+# Resolved, not merely joined: the capture check below compares it against
+# `Path(module.__file__).resolve().parents`. If any component were a symlink
+# or a Windows junction, an unresolved join would never match and a
+# perfectly healthy process would be refused.
+_COMPLIANCE_PLUGIN_ROOT = (_REPO_ROOT / "plugins" / "shipwright-compliance").resolve()
 
 if not _COMPLIANCE_PLUGIN_ROOT.is_dir():  # pragma: no cover — defensive
     raise ImportError(
@@ -74,10 +78,77 @@ if not _COMPLIANCE_PLUGIN_ROOT.is_dir():  # pragma: no cover — defensive
         "contract must be updated to match."
     )
 
-# Insert ahead of any conflicting `scripts` packages from sibling plugins.
 _plugin_root_str = str(_COMPLIANCE_PLUGIN_ROOT)
 if _plugin_root_str not in sys.path:
     sys.path.insert(0, _plugin_root_str)
+
+
+# ---------------------------------------------------------------------------
+# Capture check.
+#
+# The prepend above is necessary but NOT sufficient, and it is worth being
+# precise about why. `scripts` is a namespace package, so its `__path__`
+# does re-resolve when sys.path changes. `scripts.lib` and `scripts.tools`
+# are NOT: every plugin ships `scripts/lib/__init__.py`, and so does
+# `shared/scripts`, which makes them REGULAR packages -- pinned to one
+# directory and cached in `sys.modules` on first touch. A regular
+# sub-package never re-resolves against sys.path, so once some other tree
+# has claimed the name, this contract cannot reach its own modules however
+# it reorders sys.path.
+#
+# That happens most easily under pytest: `shared/tests/__init__.py` exists
+# while `shared/__init__.py` does not, so prepend import mode puts
+# `<repo>/shared` on sys.path and `shared/scripts` becomes top-level
+# `scripts`. A single guarded `from scripts.lib.<x> import ...` in a shared
+# test then caches `scripts.lib` -> `shared/scripts/lib` even when that
+# import FAILED, and every later consumer of this contract dies on
+# `No module named 'scripts.lib.data_collector'` -- an error that names the
+# compliance plugin, the one component that is not at fault.
+#
+# Say so instead. The repo-root conftest refuses multi-root pytest sessions
+# up front; this covers every other process, where no conftest runs.
+# ---------------------------------------------------------------------------
+
+def _refuse_if_captured() -> None:
+    """Raise a NAMED error if this contract's packages are already taken.
+
+    `scripts` itself is checked first. Today every `scripts` directory in
+    this repo is a namespace package (no `__init__.py`), so it has
+    `__file__ = None` and is skipped -- namespace packages DO re-resolve
+    after the prepend and are fine. But if any tree ever gains
+    `scripts/__init__.py` it becomes a regular package that pins the
+    parent, and the failure would look identical while checks on the
+    children stayed silent.
+
+    `scripts.audit` is included because the compliance plugin's audit
+    package is also regular, and `update_compliance` imports it lazily at
+    call time -- a capture there survives this module's import and only
+    detonates later, inside a generator.
+    """
+    for name in ("scripts", "scripts.lib", "scripts.tools", "scripts.audit"):
+        captured = sys.modules.get(name)
+        file = getattr(captured, "__file__", None)
+        if captured is None or file is None:
+            continue
+        owner = Path(file).resolve().parent
+        if _COMPLIANCE_PLUGIN_ROOT in Path(file).resolve().parents:
+            continue
+        raise ImportError(
+            f"shared.contracts.compliance: `{name}` is already bound to "
+            f"{owner}, which is outside the shipwright-compliance plugin at "
+            f"{_COMPLIANCE_PLUGIN_ROOT}.\n"
+            f"`{name}` is a regular package, so it was cached in sys.modules "
+            "on first import and will not re-resolve -- prepending the plugin "
+            "root to sys.path (which this module already did) cannot undo it.\n"
+            "Cause: another tree in this repo claimed the top-level `scripts` "
+            "name earlier in this process. Under pytest that means the session "
+            "spans more than one test root; run one root per pytest process "
+            "(see the repo-root conftest.py and ADR-044). Otherwise, import "
+            "this contract before anything else touches `scripts.*`."
+        )
+
+
+_refuse_if_captured()
 
 
 # ---------------------------------------------------------------------------

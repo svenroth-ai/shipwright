@@ -1,0 +1,1 @@
+shipwright-security: the Tier-3 `PR Review` gate now reviews diffs up to 1,000,000 characters (was 200,000) and cuts an over-cap diff at a `diff --git` file boundary, so the reviewer never receives a file cut mid-hunk. The limit is characters, not tokens: a full cap is roughly 250k input tokens against the review model's 1M-token context.

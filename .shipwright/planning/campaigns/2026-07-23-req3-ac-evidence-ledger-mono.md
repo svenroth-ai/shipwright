@@ -341,7 +341,7 @@ the `.11` walk.
 | 3 | could-not-run is recorded as not-run, never as passed | `enforced, partly tested` | timeout → `success: False` (`test_runner:116`, untested); `lighthouse_unavailable` → skip-with-reason (tested). Mirror of FR-01.07's identical criterion |
 | 4 | results from outside the pipeline are refused | `enforced, untested` | `_validate_test:281` — unique provenance guard, **nothing pins it** (the orchestrator suite mocks `validate_phase` out entirely) |
 | 5 | recorded browser-test numbers are the tool's own | `prompt-only (mechanisable)` | step-3.5 instructs the reconciliation; no code compares the record to the runner's report. Trivially mechanisable |
-| 6 | a project with no browser tests gets them written from the plan's journeys | `prompt-only (mechanisable)` | the **true half** of the journey promise — step-2.5 does exactly this. The missing half (per-journey coverage once *any* test file exists) → **`trg-30fc1fc6`** |
+| 6 | a project with no browser tests gets them written from the plan's journeys | `prompt-only (mechanisable)` | the **true half** of the journey promise — step-2.5 does exactly this. The missing half **SHIPPED** as criterion 14 (`journey_coverage.py`, iterate-2026-07-27-test-phase-record-honesty) |
 | 7 | screens compared back to mockups; regression ≠ never-checked | `enforced` + `prompt-only (mechanisable)` | structural compare tested; the Resolved/Regression/Persistent/Unchecked triage is agent judgement against the build report |
 | 8 | cross-page outliers reported, grouped by cause | `enforced` | majority-wins, 6 categories, tested |
 | 9 | declared performance budgets measured, overage quantified, warn-or-stop is the project's choice | `enforced` | `evaluate_gate` + budgets LH 85 / LCP 2500 ms / 250 KB gz; tested |
@@ -355,11 +355,28 @@ the `.11` walk.
 here because the backfill track must not go looking for a test that pins a
 promise the product does not make:
 
-| Was | Why it left | Card |
+| Was | Why it left | Card | Outcome |
+|---|---|---|---|
+| the record names the code version it describes | `_validate_test` checks existence + not-standalone, never freshness — a leftover record from an earlier commit passes. No true half to keep; live criterion 4 already states the enforced part | `trg-737d0449` → `trg-4d5b6a56` | still open — artifact stamping is built once, campaign-wide |
+| every journey the plan describes has a test | step-2.5 skips wholesale once **any** spec file exists, so a later-added journey goes uncovered. **True half kept** as live criterion 6 | `trg-30fc1fc6` → `trg-12b4cf3f` | **SHIPPED** → criterion 14 |
+| a non-blocking failure leaves a follow-up | true only for performance (`_emit_failures_to_triage`); e2e, consistency and fidelity warnings evaporate. **True half kept** — folded into live criterion 9 | `trg-3a4466e5` → `trg-12b4cf3f` | **SHIPPED** → criterion 15 |
+
+**Minted on delivery (iterate-2026-07-27-test-phase-record-honesty).** The
+standing rule — *a negative-space gap is a triage item, never a criterion; mint
+the criterion when it ships* — fires here for the first time on `.06`. Four
+criteria join the catalog because the product now makes those promises:
+
+| # | Criterion | Enforcement |
 |---|---|---|
-| the record names the code version it describes | `_validate_test` checks existence + not-standalone, never freshness — a leftover record from an earlier commit passes. No true half to keep; live criterion 4 already states the enforced part | `trg-737d0449` |
-| every journey the plan describes has a test | step-2.5 skips wholesale once **any** spec file exists, so a later-added journey goes uncovered. **True half kept** as live criterion 6 | `trg-30fc1fc6` |
-| a non-blocking failure leaves a follow-up | true only for performance (`_emit_failures_to_triage`); e2e, consistency and fidelity warnings evaporate. **True half kept** — folded into live criterion 9 | `trg-3a4466e5` |
+| 14 | per-journey coverage; greenfield blocks, brownfield files a follow-up; the match is an indication, not proof | `enforced, tested` | `journey_coverage.py` + `journey_plan.py`; 17 unit + 5 wired-path tests |
+| 15 | a non-blocking failure still leaves a tracked follow-up | `enforced, tested` | `warning_followups.py` extends the performance producer's pattern to e2e / consistency / fidelity. Dedup on the finding, **not** the commit — external review caught that copying `match_commit=True` would file a fresh item per commit |
+| 16 | declared pre-onboarding failures are reported as known-and-accepted, separately from genuine ones, through the **same reader the audit uses** | `enforced, tested` | `shared/scripts/known_failures.py`; the audit collector delegates to it, pinned by a parity test. Closes the "two truths about one run" defect directly |
+| 17 | a retry-pass counts as a pass, is counted separately, and each test counts once however many attempts it took | `enforced, tested` | `playwright_runner.classify_test` reads Playwright's per-test verdict; the old per-attempt walk both inflated `total` and marked retried-and-passed tests failed |
+
+Criterion 5's `prompt-only` mechanism is unchanged, but its arithmetic is
+corrected: the documented reconciliation total was `expected + unexpected +
+skipped`, which cannot balance on any run that had a retry. It now includes
+`flaky`.
 
 **Overclaim removed (the day-1 criterion).** It promised the phase "flags every
 pair of code that writes and reads a stored format with no test proving a value
@@ -868,6 +885,15 @@ this: tests are written for the paths that work.
 2. interrupted run, note written but unmarked → a second run **extends or
    replaces** that version's section instead of appending a duplicate. Cheap to
    check: one version appears once. Both on `trg-6690d175`.
+
+**Addendum 2026-07-27 — fixed in `iterate-2026-07-27-changelog-writer-preserve-history`.**
+Criterion 6 is now `enforced, tested`; `trg-6690d175` is closed. One premise above
+was **wrong**: "Two preserve the file" — only *one* does. Branch 2 (marker
+present, no released section yet) keeps `content[:idx]` and discards `rest`, so
+it erases every pending `[Unreleased]` bullet; it read as safe because the test
+that covers it uses an *empty* `[Unreleased]`, where there is nothing to lose.
+`update_changelog` now splices into the text it read and never rebuilds, so the
+losing branches no longer exist as a class.
 
 **Glossary:** `Drop file`, `Version bump` — both cross-checked against the
 existing `Section` entry, which already carries the release-note overload and is

@@ -139,6 +139,62 @@ def _validate_events(project_root: Path) -> list[str]:
 # only drift.
 
 
+#: Artifacts that make the handed-over repository honest about itself
+#: (FR-01.13, trg-1aa5a8ab). Hard errors, not warnings — without them Step H
+#: hands over a derived catalogue that reads as confirmed. Each message names
+#: the step that writes the file, so an older adopted repo re-validating is
+#: told what to run rather than merely that something is missing.
+#:
+_HONESTY_ARTIFACTS = (
+    (".shipwright/adopt/derived-catalogue.json",
+     "Step E (generate_adoption_artifacts.py)"),
+    ("shipwright_known_failures.json",
+     "Step E.18 (record_inherited_baseline.py)"),
+)
+
+
+def _derived_catalogue_doc():
+    """adopt's ``derived_catalogue_doc``, loaded BY FILE LOCATION under a sentinel
+    so no ambiguous ``lib`` package is ever bound (ADR-045) — same shape as
+    ``_discovery`` / ``_jsonl_records`` above."""
+    mod = sys.modules.get("_shipwright_adopt_derived_catalogue_doc")
+    if mod is None:
+        import importlib.util
+        lib = Path(__file__).resolve().parent.parent / "lib"
+        if str(lib) not in sys.path:
+            sys.path.insert(0, str(lib))
+        path = lib / "derived_catalogue_doc.py"
+        spec = importlib.util.spec_from_file_location(
+            "_shipwright_adopt_derived_catalogue_doc", path)
+        sys.modules["_shipwright_adopt_derived_catalogue_doc"] = mod = (
+            importlib.util.module_from_spec(spec))
+        spec.loader.exec_module(mod)
+    return mod
+
+
+def _validate_honesty_artifacts(project_root: Path) -> list[str]:
+    errors = [
+        f"missing: {rel} — written by {step}; re-run it"
+        for rel, step in _HONESTY_ARTIFACTS
+        if not (project_root / rel).exists()
+    ]
+    if errors:
+        return errors
+    # Present is not the same as trustworthy. The count in this file is what the
+    # handover publishes, so validation PARSES it through the fail-closed reader
+    # rather than checking it exists — otherwise a forged or half-written
+    # catalogue sails past the one gate meant to stop it (external code review).
+    dcd = _derived_catalogue_doc()
+    try:
+        dcd.read_summary(project_root)
+    except dcd.CatalogueDocumentError as exc:
+        errors.append(
+            f"unusable: {_HONESTY_ARTIFACTS[0][0]} — {exc}; "
+            "re-run Step E (generate_adoption_artifacts.py)"
+        )
+    return errors
+
+
 def _validate_review(project_root: Path) -> list[str]:
     review = project_root / ".shipwright" / "adopt" / "review.md"
     if not review.exists():
@@ -199,6 +255,7 @@ def validate(project_root: Path) -> dict:
     errors.extend(_validate_spec(project_root))
     errors.extend(_validate_events(project_root))
     errors.extend(_validate_review(project_root))
+    errors.extend(_validate_honesty_artifacts(project_root))
 
     warnings: list[str] = []
     warnings.extend(_soft_check_decision_log_density(project_root))

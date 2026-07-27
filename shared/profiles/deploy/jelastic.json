@@ -62,5 +62,11 @@
     "operator_interface": "cli",
     "manual_procedure_reference": "/shipwright-deploy --rollback (lists backup clones, prompts for confirmation, restores from selected clone)",
     "data_rollback_strategy": "down-migration"
-  }
+  },
+  "known_gaps": [
+    "The DEV git-tag-revert path pins the ref via environment/vcs/rest/editproject and reads it back via environment/vcs/rest/getprojects. Neither endpoint is covered by the Infomaniak reference this profile was written from, so both are documented-not-live-verified. The design is fail-closed: the client raises on any non-zero result, so a wrong endpoint or parameter name is reported as a failed rollback, never as a false success. The first real rollback against a live environment either works or returns a precise API error.",
+    "The API token may need broader scope for editproject / getprojects than for vcs/update alone. If a rollback returns an authorization error, widen the token before assuming the endpoint is wrong.",
+    "branch=<ref> is how the VCS project carries a ref. Whether a tag or a commit SHA is accepted there (as opposed to a branch name) is unverified against a live environment; the rollback CLI validates ref *shape* only.",
+    "Rolling the application back does not roll stored data back. The rollback refuses when migrations exist that the target ref does not know, and names this profile's down-migration strategy — but running the down-migrations remains an operator action."
+  ]
 }

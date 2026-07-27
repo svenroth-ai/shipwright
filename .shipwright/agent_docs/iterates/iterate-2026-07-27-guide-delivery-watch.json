@@ -1,0 +1,10 @@
+{
+  "run_id": "iterate-2026-07-27-guide-delivery-watch",
+  "date": "2026-07-27T15:50:13.019923Z",
+  "type": "change",
+  "complexity": "trivial",
+  "branch": "iterate/guide-delivery-watch",
+  "spec": "",
+  "tests_passed": true,
+  "adr": "iterate-2026-07-27-guide-delivery-watch"
+}

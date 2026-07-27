@@ -17,12 +17,19 @@ If no DEV URL and app not running: skip with note.
 **Note:** The smoke test script is a **shared plugin script** (`{shared_root}/scripts/smoke_test.py`),
 not a project file. Do NOT search for smoke test files in the project directory.
 
+**One attempt by default.** Without `--max-wait` the check asks once, which is
+right for a dev server that is already up. When the app is still booting, give
+it a deadline instead of a bigger single timeout — `--poll-interval 2
+--max-wait 30` re-asks until it answers. The result carries `attempts` and
+`waited_ms`, so "it never came up" is evidence rather than an impression.
+
 **If smoke test fails (any reason) — diagnose before skipping:**
 1. **Diagnose:** Read error output, identify root cause
 2. **Attempt autonomous fix** based on diagnosis. Examples:
    - Connection refused -> check if dev server is running, start/restart it
    - HTTP error (non-200) -> check app logs, report to user (real app bug)
-   - Timeout -> increase timeout, retry
+   - Timeout -> re-run with `--poll-interval` + `--max-wait` (a slow start is
+     not a dead app); only raise `--timeout` if a single request is genuinely slow
    - Process hung -> kill stale process, restart
 3. **Retry** smoke test after fix
 4. After 2 failed fix attempts: **ASK user** how to proceed

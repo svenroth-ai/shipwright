@@ -15,6 +15,7 @@ Submodule layout:
     config_factory    — build_pipeline + create_config
     compliance_runner — run_compliance_update (subprocess wrapper)
     critical_gates    — Phase-Quality W5/W6/W7 critical-gate helpers
+    validation_record — run the phase gate + record what it found and any override
     build_progress    — get_build_progress
     step_planning     — get_next_step + update_step
     router            — F2 phase-lifecycle subcommand dispatcher

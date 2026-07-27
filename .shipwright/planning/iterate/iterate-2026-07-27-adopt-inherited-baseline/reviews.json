@@ -1,0 +1,66 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-07-27-adopt-inherited-baseline",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-07-27T14:33:45.024832+00:00",
+      "disposition": null,
+      "recorded_by": "orchestrator 7-point: AC1-AC9 mapped to ledger rows; verified PR1's guide.md edit never landed (silent str.replace no-op) and repaired both halves here; diff confined to plugins/shipwright-adopt + one shared docstring the change makes false + the two docs CLAUDE.md mandates",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": "openrouter",
+      "completed_at": "2026-07-27T14:33:44.814641+00:00",
+      "disposition": null,
+      "recorded_by": "external_review.py --mode iterate on the combined card (12 findings, 11 accepted, 1 declined on evidence); this PR carries the inherited-baseline half",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "code": {
+      "review_type": "code",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-07-27T14:33:45.123586+00:00",
+      "disposition": "Session rule forbids spawning subagents unless the user requests it. Covered by two external CODE rounds on this diff (7 findings, all fixed).",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-07-27T14:33:45.219743+00:00",
+      "disposition": "Same session rule. Adversarial function covered by 8 probes, 5 of which overturned something — three of them the same privacy boundary closed one layer at a time. No migration/concurrency/irreversible-op trigger applies.",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": "openrouter",
+      "completed_at": "2026-07-27T14:33:44.921747+00:00",
+      "disposition": null,
+      "recorded_by": "external_review.py --mode code, TWO rounds on this split diff: round 1 (5 findings: raw command persisted as baseline_source [high, security], untyped declared count, tests codifying the wrong provenance, plus committed test residue) and round 2 on the fix (2 further: str()-coerced source/command reopening the same boundary, cards filed before the register write). ALL accepted and fixed. gemini leg degraded in BOTH rounds (leaked scratchpad, verdict unavailable) so each round is a one-model pass; the tool flags contradiction.requires_resolution for that reason",
+      "parse_status": null,
+      "raw_excerpt": null
+    }
+  }
+}

@@ -1,0 +1,18 @@
+{
+  "success": true,
+  "provider": "openrouter",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviews": {
+    "gemini": {
+      "status": "success",
+      "feedback": " spaces so nothing runs together.\" - from docstring of `strip_control_chars_inline`.\n\nWait! Look at `format_item(item: dict) -> str:`\nIt formats the fields. But wait! There is a BUG here:\nIn `triage_render.py`:\n```python\n    item_id = safe_display(item.get(\"id\", \"\"))\n    severity = safe_display(item.get(\"severity\", \"\"))\n    kind = safe_display(item.get(\"kind\", \"\"))\n    title = safe_display(item.get(\"title\", \"\"))\n    source = safe_display(item.get(\"source\", \"\"))\n    dedup_key = safe_display(item.get(\"dedupKey\") or \"\")\n",
+      "via": "openrouter"
+    },
+    "openai": {
+      "status": "success",
+      "feedback": "- Category: test  \n- Severity: low  \n- File: `shared/tests/test_github_triage_detail_cap.py:58-113`  \n- Finding: AC-8 explicitly requires the cap boundary behavior for both failing-check and proposed-change entries, including that an exactly-1024-character detail is unchanged. The boundary test exercises only `ci_action_unit`; the proposed-change test covers only an ordinary short detail and a grossly oversized detail. A regression changing `pr_ci_action_unit` to truncate at `>= _DETAIL_MAX_LEN` would still pass all added tests.  \n- Suggestion: Add proposed-change boundary cases for detail lengths 1023, 1024, and 1025, asserting that only the 1025 case is ellipsized/truncated.\n\nOverall assessment: ship-with-fixes. The implementation appears to satisfy the functional acceptance criteria, including shared CLI dispatch, reason validation, deferred human listing, JSON open-only behavior, terminal sanitization, and detail capping; the remaining issue is a concrete missing boundary test for one explicitly required mapper.",
+      "via": "openrouter"
+    }
+  }
+}

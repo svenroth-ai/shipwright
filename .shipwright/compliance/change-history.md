@@ -1,18 +1,20 @@
 # Commit Change Log
 
-Generated: 2026-07-27T19:36:56.452047+00:00
-Total commits: 1209
+Generated: 2026-07-27T17:38:43.791837+00:00
+Source-State: run=iterate-2026-07-27-run-unit-parallel-race
+Consistency-audit: never run
+Total commits: 1248
 
 ## Commit Distribution
 
 ```mermaid
 pie title Commit Types
-    "fix" : 348
-    "feat" : 333
-    "chore" : 255
-    "docs" : 147
-    "refactor" : 75
-    "test" : 30
+    "fix" : 359
+    "feat" : 347
+    "chore" : 266
+    "docs" : 148
+    "refactor" : 76
+    "test" : 31
     "ci" : 11
     "other" : 9
     "build" : 1
@@ -20,10 +22,21 @@ pie title Commit Types
 
 ## Changes by Type
 
-### Fixes (fix) — 348 commits
+### Fixes (fix) — 359 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-07-27 | iterate | the merge state is a vocabulary, not a BLOCKED flag (#473) | 159953eec378 |
+| 2026-07-27 | shared | a multi-root pytest session names its own cause (#469) | bd7121b79d53 |
+| 2026-07-27 | compliance | an audit that checked nothing is not recorded (#466) | 968578b9de35 |
+| 2026-07-27 | shared | a reader and a writer stop defeating each other on Windows (#471) | 0b4c9b8b4ae6 |
+| 2026-07-27 | security | the PR reviewer stops being defeated by the size of the change (#470) | 17ca76d7f413 |
+| 2026-07-27 | iterate | the phase canon asks whether the handoff belongs to this run (#467) | 3c82d6332678 |
+| 2026-07-27 | run | report against what will exist, and assert only what you can prove | d762b1fd48e2 |
+| 2026-07-27 | security | the PR reviewer stops reviewing its own prior reviews (#461) | 273e3ef7ab56 |
+| 2026-07-27 | changelog | the release-note writer preserves the history it read (#452) | 97392eeacfa2 |
+| 2026-07-27 | deploy | rollback uses the version it was given, and stops overclaiming the rest (#441) | ce149b07dd04 |
+| 2026-07-27 | run | an override overrides the verdict, never the check (#438) | f6179f6e1ed5 |
 | 2026-07-27 | ci | the PR review gate stops being bypassable (#437) | ec0c7055046f |
 | 2026-07-23 | deps | bump pyasn1 0.6.3 -> 0.6.4 (CVE-2026-59885, CVE-2026-59886) (#432) | 9ffbae764acd |
 | 2026-07-23 | compliance | design verifier C1 skips projects that never ran the design phase (#429) | c841751a7a8e |
@@ -373,10 +386,24 @@ pie title Commit Types
 | 2026-03-21 | — | rename skill folders for clean slash commands | 5a8d77658fab |
 | 2026-03-20 | — | update README attribution to svenroth.ai | dd5de7f7d6ab |
 
-### Features (feat) — 333 commits
+### Features (feat) — 347 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-07-27 | test | per-journey coverage, durable warning follow-ups, retry-passes (FR-01.06) (#446) | fbf93d01b55b |
+| 2026-07-27 | shared | the requirement-impact declaration, one mechanism for two phases (#463) | 26dfefa7286e |
+| 2026-07-27 | adopt | what the codebase arrived with is recorded as inherited (2/2) (#460) | 97b9878ed5b2 |
+| 2026-07-27 | adopt | the derived requirements catalogue announces itself (1/2) (#454) | d02f97141669 |
+| 2026-07-27 | iterate | name the blocker instead of reporting a weaker signal (#459) | 0e7e2b74a6ac |
+| 2026-07-27 | plan | the Step-9 gates stop being instructions (#458) | d03bdb12f05c |
+| 2026-07-27 | compliance | evidence documents disclose when the cross-check last ran (#443) | d769da83a84b |
+| 2026-07-27 | plan | let a section name what it presupposes, so the order can be checked (#457) | 8a93f586a126 |
+| 2026-07-27 | plan | record which way each reviewer came down, and notice disagreement (#456) | d30ee9688d16 |
+| 2026-07-27 | shared | one reader for the accepted-baseline failures list (FR-01.06) (#453) | f918954ffcdf |
+| 2026-07-27 | iterate | the F0 race warning becomes a tracked follow-up that outlives the run (#439) | ed0b0a346a12 |
+| 2026-07-27 | compliance | produced artifacts name the state they describe (FR-01.10) (#448) | e869a02b60fb |
+| 2026-07-27 | triage | defer from the terminal; cap the failing-check detail (#444) | 631e08055ebc |
+| 2026-07-27 | project | give requirements a size rule, and stop the templates contradicting the basis rule (#442) | af72103d0e7a |
 | 2026-07-27 | spec | REQ-3 Phase 2 — every requirement now states what it guarantees (#436) | 28491e1c9631 |
 | 2026-07-23 | shared | shared requirement-elicitation method + FR-01.16 (REQ-3 Phase 1) (#431) | 601fafe55276 |
 | 2026-07-23 | compliance | track skipped tests as a first-class field; key D4 on genuine failures (FR-01.10) (#430) | 355681bdcd4e |
@@ -711,11 +738,22 @@ pie title Commit Types
 | 2026-03-20 | — | Task 02 — project templates (CLAUDE.md, agent_docs, CI) | c3a6d2f53bd3 |
 | 2026-03-20 | — | Task 01 — monorepo scaffolding + supabase-nextjs stack profile | 990a138a4690 |
 
-### Chores (chore) — 255 commits
+### Chores (chore) — 266 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
-| 2026-07-27 | triage | sweep 1 outbox append(s) into branch | 554a1f0211cc |
+| 2026-07-27 | churn | background append after main merge | 4911ad69c004 |
+| 2026-07-27 | churn | regenerate derived snapshots after main merge | b2134716521a |
+| 2026-07-27 | churn | background append after main merge | fa1a887042e2 |
+| 2026-07-27 | churn | regenerate derived snapshots after main merge | d4540f2deedb |
+| 2026-07-27 | churn | background append after main merge | 06b31afc32ae |
+| 2026-07-27 | triage | follow-up card for requiring the checks that gate nothing | 7387b2796960 |
+| 2026-07-27 | churn | regenerate derived snapshots after main merge | dfa304b52094 |
+| 2026-07-27 | churn | background append after main merge | 536258c834d8 |
+| 2026-07-27 | churn | regenerate derived snapshots after main merge | b867c6ec28e6 |
+| 2026-07-27 | churn | background grade_snapshot append after main merge | 9b79a6cef5f8 |
+| 2026-07-27 | churn | regenerate derived snapshots after main merge | a8cd07b651b8 |
+| 2026-07-27 | triage | sweep 3 outbox append(s) into branch | c896f8f2500e |
 | 2026-07-26 | review | default external-review GPT model to gpt-5.6-terra (#435) | 8d750a5fc7af |
 | 2026-07-24 | security | stage full compliance write-set in Step 7.5 finalizer (#434) | 5da96ebe8561 |
 | 2026-07-23 | compliance | refresh after security scan (#433) | 2b644805fb7d |
@@ -971,10 +1009,11 @@ pie title Commit Types
 | 2026-03-28 | — | add shipwright-run uv.lock | ef1cc1ad180c |
 | 2026-03-20 | — | initial commit with spec and task list | 07ca9c1de51c |
 
-### Documentation (docs) — 147 commits
+### Documentation (docs) — 148 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-07-27 | guide | the finalization walkthrough ends at delivery, not at arming (#462) | eea6e1643388 |
 | 2026-07-27 | campaign | correct the revert attribution in the REQ-3 ledger | ff8825879571 |
 | 2026-07-21 | security | document operator-run converge for adopted repos (#420) | d9aa64b32f99 |
 | 2026-07-09 | constitution | require plain-language questions to the user (#354) | f879a73a4903 |
@@ -1123,10 +1162,11 @@ pie title Commit Types
 | 2026-03-21 | — | expand README with pipeline diagram, architecture, and quality gates | 377dc2141b3d |
 | 2026-03-20 | — | add README.md for GitHub repo | 853c8f930132 |
 
-### Refactoring (refactor) — 75 commits
+### Refactoring (refactor) — 76 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-07-27 | shared | split git resolution out of source_state (300-LOC compliance) (#451) | 3cdca5cfc884 |
 | 2026-07-21 | adopt | route the eight scaffolders through one guarded shared/ loader (FR-01.13) (#423) | 736fc8d1712c |
 | 2026-07-20 | requirements | one catalog, stated once in plain language (campaign S6) (#414) | be2561caccd3 |
 | 2026-07-20 | requirements | one FR-table shape from both generators (campaign S5) (#413) | 5eef5076242c |
@@ -1203,10 +1243,11 @@ pie title Commit Types
 | 2026-03-30 | env | consolidate plugin env vars into single .env.local | 4a9267b522fb |
 | 2026-03-28 | — | unify decision log to shared ADR format across all phases | 2851babbbcfa |
 
-### Tests (test) — 30 commits
+### Tests (test) — 31 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-07-27 | shared | split the source-state suite along its three seams (#449) | ecade7e6225e |
 | 2026-07-22 | traceability | normalize an inline dynamic import to clear a benign prompt-scan finding (#426) | 4a0b6d025cb7 |
 | 2026-07-19 | requirements | golden corpus freezing discovery + parser behaviour, bugs included (#403) | 76d97ec06fe6 |
 | 2026-07-08 | run | single-session E2E integration + cross-surface capstone (SS7) (#352) | aa385b3dcd02 |
@@ -1278,7 +1319,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 1209 |
+| Total commits | 1248 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 1209 |
+| Human-authored commits | 1248 |
 

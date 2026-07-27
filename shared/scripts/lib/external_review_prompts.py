@@ -81,3 +81,64 @@ def load_code_review_prompts(
         _load(root, "code_reviewer", "system"),
         _load(root, "code_reviewer", "user"),
     )
+
+
+# ---------------------------------------------------------------------------
+# Inline fallbacks — used when a prompt directory is missing entirely.
+#
+# These live here rather than inline in external_review.py so the defaults sit
+# beside the loaders they back up (and so the CLI stays under its size
+# baseline). Each carries the same VERDICT_INSTRUCTION as the on-disk prompt:
+# the verdict is what makes two reviewers comparable, so a run that fell back
+# to a default prompt must not silently lose it.
+# ---------------------------------------------------------------------------
+
+VERDICT_INSTRUCTION = (
+    "\n\nEnd your reply with exactly one line, and nothing after it:\n"
+    "SHIPWRIGHT_VERDICT: approve|revise|reject\n"
+    "Use `approve` when the work is sound and any findings are refinements, "
+    "`revise` when it works but needs specific changes first, and `reject` "
+    "when the approach itself is wrong. Write the line exactly once — do not "
+    "repeat or quote it elsewhere in your reply."
+)
+
+_DEFAULT_SYSTEM = {
+    "iterate": (
+        "You are a senior software architect reviewing an implementation approach "
+        "for a single change to an existing application."
+    ),
+    "code": (
+        "You are a senior software engineer auditing a code change against its "
+        "specification. Focus on real defects (correctness, security, regressions, "
+        "spec gaps, edge cases). Skip style and naming nits."
+    ),
+    "plan": "You are a senior software architect reviewing an implementation plan.",
+}
+
+_DEFAULT_USER = {
+    "iterate": (
+        "Review this implementation approach for a change to an existing application.\n\n"
+        "## Change Specification:\n{SPEC}\n\n## Implementation Approach:\n{PLAN}\n\n"
+        "Focus on: approach soundness, risks to existing functionality, "
+        "missing dependencies, edge cases, and security concerns."
+    ),
+    "code": (
+        "Review this code change against its specification.\n\n"
+        "## Specification:\n{SPEC}\n\n## Code Diff:\n```diff\n{DIFF}\n```\n\n"
+        "Identify concrete defects: spec gaps, correctness bugs, security issues, "
+        "test quality, regressions, and unhandled edge cases. "
+        "Skip style and naming nits."
+    ),
+    "plan": (
+        "Review this implementation plan for a project.\n\n"
+        "## Spec:\n{SPEC}\n\n## Plan:\n{PLAN}\n\n"
+        "Identify: security issues, performance concerns, architecture problems, "
+        "missing features, and edge cases not handled."
+    ),
+}
+
+
+def default_review_prompts(mode: str) -> tuple[str, str]:
+    """Inline (system, user) fallbacks for ``mode`` (plan | iterate | code)."""
+    key = mode if mode in _DEFAULT_SYSTEM else "plan"
+    return _DEFAULT_SYSTEM[key] + VERDICT_INSTRUCTION, _DEFAULT_USER[key]
