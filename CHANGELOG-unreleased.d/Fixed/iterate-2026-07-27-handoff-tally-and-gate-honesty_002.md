@@ -1,0 +1,1 @@
+The handoff no longer calls a phase "Currently dispatched" without evidence — a pointer resting on a not-yet-started successor now reads "Next up", a recovered task is not reported as in flight because its attempt counter survived recovery, and a finished or failed task under the pointer is labelled terminal instead of live

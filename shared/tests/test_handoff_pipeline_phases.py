@@ -69,7 +69,10 @@ def test_finished_phases_are_named_and_tallied(tmp_project):
 
     assert "## Pipeline Phases" in out
     # done + skipped = 3 of 5. The in_progress build is NOT among them.
-    assert "- **Finished**: 3 of 5 (project, design, plan)" in out
+    # Split-bearing entries carry their split — bare phase names made `build`
+    # read as finished AND interrupted at once in a multi-split run
+    # (iterate-2026-07-27-handoff-tally-and-gate-honesty, R5).
+    assert "- **Finished**: 3 of 5 (project, design, plan (split 01-core))" in out
     assert "build" not in out.split("- **Finished**")[1].split("\n")[0]
 
 
@@ -105,9 +108,17 @@ def test_a_failed_phase_is_not_counted_as_finished_either(tmp_project):
 
 
 def test_finished_statuses_match_the_run_config_schema():
-    """Drift guard: the status vocabulary is owned by phase_task_lifecycle and
-    declared in the shared schema. A new terminal status added there must not
-    leave this renderer silently miscounting."""
+    """Guards ONE direction only: that `FINISHED_STATUSES` never names a status
+    the schema does not declare (a rename or removal of `done` / `skipped`).
+
+    It does NOT catch a status ADDED to the schema — a subset assertion stays
+    green while the renderer silently classifies the newcomer as not-finished.
+    That direction is guarded by
+    `test_handoff_pipeline_pointer.py::test_the_drift_guard_fails_on_an_unclassified_new_status`,
+    which pins the full vocabulary. This docstring used to claim the added-status
+    direction, which was the exact class of false confidence it exists to prevent
+    (iterate-2026-07-27-handoff-tally-and-gate-honesty, R6).
+    """
     schema = json.loads(
         (REPO_ROOT / "shared" / "schemas" / "run_config.v2.schema.json")
         .read_text(encoding="utf-8"),
