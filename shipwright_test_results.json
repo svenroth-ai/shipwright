@@ -1,16 +1,16 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-07-27-security-coverage-manifest",
+    "run_id": "iterate-2026-07-27-review-floor-not-chained",
     "date": "2026-07-27",
     "unit": {
       "status": "passed",
-      "passed": 9663,
-      "total": 9663
+      "passed": 6378,
+      "total": 6378
     },
     "integration": {
       "status": "passed",
-      "passed": 420,
-      "total": 420
+      "passed": 422,
+      "total": 422
     },
     "pgtap": {
       "status": "not_run",
@@ -30,155 +30,138 @@
     "smoke": {
       "status": "not_run"
     },
-    "degraded": [],
+    "degraded": [
+      {
+        "condition": "external review - gemini degraded on all three calls",
+        "detail": "Gemini 3.1 Pro's replies were cut off (finish_reason=length) for the plan review and both code-review rounds, so every external pass here is single-reviewer (GPT-5.6). Recorded rather than counted as a two-provider pass."
+      },
+      {
+        "condition": "internal code-reviewer / doubt-reviewer subagents not invoked",
+        "detail": "Standing session directive not to use the Agent tool unless the user asks. Recorded as not_run per the escalation rule this iterate introduces - the external review carries the pass and is recorded under external_code."
+      }
+    ],
+    "surface_verification": {
+      "surface": "cli",
+      "runner": "uv run --with pytest pytest shared/tests/test_review_record_floor.py shared/tests/test_review_cascade_decoupled.py shared/tests/test_record_review_pass_cli.py -q",
+      "exit_code": 0,
+      "tests_run": 44,
+      "evidence_path": ".shipwright/runs/iterate-2026-07-27-review-floor-not-chained/surface_verification.json"
+    },
     "test_completeness": {
       "status": "complete",
       "behaviors": [
         {
-          "behavior": "One coverage row per weakness class, closed status vocabulary",
+          "behavior": "medium with neither code nor external_code completed is BLOCKED",
           "disposition": "tested",
-          "evidence": "test_scan_coverage.py::TestBuildCoverage (9) PASSED"
+          "evidence": "shared/tests/test_review_record_floor.py::test_medium_blocks_when_neither_ran PASSED"
         },
         {
-          "behavior": "Status precedence degraded > not_requested > not_available > covered",
+          "behavior": "external_code alone satisfies the floor (the substitution path, 15 of 27 historical runs)",
           "disposition": "tested",
-          "evidence": "test_scan_coverage.py::test_degraded_leg_beats_every_other_status, ::test_not_requested_beats_not_available PASSED"
+          "evidence": "shared/tests/test_review_record_floor.py::test_external_alone_satisfies_the_floor PASSED"
         },
         {
-          "behavior": "A backend capability outside the OSS tool map still gets a row",
+          "behavior": "code alone satisfies the floor",
           "disposition": "tested",
-          "evidence": "test_scan_coverage.py::test_capability_outside_the_oss_tool_map_still_gets_a_row PASSED"
+          "evidence": "shared/tests/test_review_record_floor.py::test_internal_alone_satisfies_the_floor PASSED"
         },
         {
-          "behavior": "Prompt-injection row added only when it carries information",
+          "behavior": "not_applicable on both does NOT satisfy the floor (no bypass by relabelling)",
           "disposition": "tested",
-          "evidence": "test_scan_coverage.py::TestPromptInjectionRow (5) PASSED"
+          "evidence": "shared/tests/test_review_record_floor.py::test_not_applicable_does_not_satisfy_the_floor PASSED"
         },
         {
-          "behavior": "An empty or absent manifest is never 'complete'",
+          "behavior": "large is floored too - not an equality check on 'medium'",
           "disposition": "tested",
-          "evidence": "test_scan_coverage.py::TestIsComplete (2), test_coverage_consumer_tolerance.py::test_unknown_status_never_reads_as_complete PASSED"
+          "evidence": "shared/tests/test_review_record_floor.py::test_large_is_floored_too PASSED"
         },
         {
-          "behavior": "findings.json carries coverage; the --input-from-cache re-read keeps it",
+          "behavior": "small is NOT floored - the one historical zero-review run was small and correct",
           "disposition": "tested",
-          "evidence": "test_coverage_wiring.py::TestScanCliWritesCoverage (4) PASSED"
+          "evidence": "shared/tests/test_review_record_floor.py::test_small_is_not_floored PASSED"
         },
         {
-          "behavior": "Report renders the coverage banner and table, PR mode included",
+          "behavior": "trivial skips the gate entirely",
           "disposition": "tested",
-          "evidence": "test_coverage_wiring.py::TestReportRendersCoverage (5) PASSED"
+          "evidence": "shared/tests/test_review_record_floor.py::test_trivial_is_skipped_entirely PASSED"
         },
         {
-          "behavior": "'Coverage not reported' stays distinct from 'Incomplete Coverage'",
+          "behavior": "unknown complexity skips, and the missing entry is caught by the sibling check_iterate_history_has_run_id",
           "disposition": "tested",
-          "evidence": "test_coverage_consumer_tolerance.py::test_report_from_a_pre_feature_sidecar_says_coverage_not_reported PASSED"
+          "evidence": "shared/tests/test_review_record_floor.py::test_unknown_complexity_skips_the_gate_and_is_caught_elsewhere PASSED"
         },
         {
-          "behavior": "Sidecar gains coverage while schema_version stays 1",
+          "behavior": "an unanswered type still reports as unanswered, not as a floor failure",
           "disposition": "tested",
-          "evidence": "test_coverage_wiring.py::test_sidecar_carries_coverage_and_keeps_schema_version_1 PASSED"
+          "evidence": "shared/tests/test_review_record_floor.py::test_pending_still_reported_first PASSED"
         },
         {
-          "behavior": "--input coverage is authoritative; a pre-feature input never inherits the local config's manifest",
+          "behavior": "the two medium+ shapes observed in this repo still pass",
           "disposition": "tested",
-          "evidence": "test_coverage_false_claims.py::TestInputCoverageIsAuthoritative (3) PASSED"
+          "evidence": "shared/tests/test_review_record_floor.py::test_historical_shapes_still_pass PASSED (2 params); measured against the real 27-record corpus before building"
         },
         {
-          "behavior": "The prompt-injection row reads `covered` only when the prompt-risks file exists AND parses",
+          "behavior": "the trigger rule no longer chains external to internal",
           "disposition": "tested",
-          "evidence": "test_coverage_false_claims.py::TestPromptInjectionRowNeedsRealOutput (4) PASSED"
+          "evidence": "shared/tests/test_review_cascade_decoupled.py::test_trigger_is_not_conditional_on_internal PASSED"
         },
         {
-          "behavior": "Every coverage table cell is escaped — the manifest is read back from an untrusted file",
+          "behavior": "the trigger states its own thresholds",
           "disposition": "tested",
-          "evidence": "test_coverage_false_claims.py::TestCoverageCellsAreEscaped (3) PASSED"
+          "evidence": "shared/tests/test_review_cascade_decoupled.py::test_trigger_states_its_own_conditions PASSED"
         },
         {
-          "behavior": "A non-dict findings artifact degrades to [] instead of crashing the report",
+          "behavior": "the small/trivial exemption is conditional, not blanket (the contradiction the decoupling exposed)",
           "disposition": "tested",
-          "evidence": "test_coverage_false_claims.py::test_wrong_shape_prompt_risks_file_is_not_covered PASSED (pre-existing AttributeError in load_findings_from_file, surfaced here)"
+          "evidence": "shared/tests/test_review_cascade_decoupled.py::test_small_exemption_does_not_contradict_the_thresholds PASSED - found by external code review, verdict REVISE, re-reviewed APPROVE after the fix"
         },
         {
-          "behavior": "A file-sourced manifest is sanitized at the boundary (non-dict rows dropped, control chars flattened, values capped)",
+          "behavior": "the escalation rule is stated (responsibility moves outward, never lapses)",
           "disposition": "tested",
-          "evidence": "test_coverage_untrusted_manifest.py::TestSanitizeCoverage (10) PASSED"
+          "evidence": "shared/tests/test_review_cascade_decoupled.py::test_escalation_is_stated PASSED"
         },
         {
-          "behavior": "Every sanitized status is inside the closed vocabulary; an unrecognized one coerces to degraded with the original in detail",
+          "behavior": "recording a substituted pass as 'completed' is forbidden in the prose",
           "disposition": "tested",
-          "evidence": "test_coverage_untrusted_manifest.py::test_out_of_vocabulary_status_is_coerced_but_still_visible, ::test_every_sanitized_status_is_in_the_closed_vocabulary PASSED"
+          "evidence": "shared/tests/test_review_cascade_decoupled.py::test_substitution_bookkeeping_is_forbidden PASSED"
         },
         {
-          "behavior": "coverage_sanitize's duplicated vocabulary cannot drift from scan_coverage.COVERAGE_STATUSES",
+          "behavior": "the prose names the enforcing gate, so the two cannot drift apart",
           "disposition": "tested",
-          "evidence": "test_coverage_untrusted_manifest.py::test_the_vocabulary_matches_scan_coverage PASSED"
+          "evidence": "shared/tests/test_review_cascade_decoupled.py::test_doc_names_the_enforcing_gate PASSED"
         },
         {
-          "behavior": "class_label is the single chokepoint and flattens an unknown, possibly-hostile class id",
+          "behavior": "close-missing still writes a COMPLETE record in one command",
           "disposition": "tested",
-          "evidence": "test_coverage_untrusted_manifest.py::TestClassLabelChokepoint (3) PASSED"
+          "evidence": "shared/tests/test_record_review_pass_cli.py::test_close_missing_closes_every_outstanding_type PASSED"
         },
         {
-          "behavior": "A hostile manifest cannot add an instruction line to the report banner",
+          "behavior": "close-missing no longer green-lights a medium+ run (AC10 narrowing, operator-ruled)",
           "disposition": "tested",
-          "evidence": "test_coverage_untrusted_manifest.py::TestHostileManifestCannotReachTheOperator (2) PASSED"
+          "evidence": "shared/tests/test_record_review_pass_cli.py::test_close_missing_does_not_satisfy_the_floor_at_medium PASSED"
         },
         {
-          "behavior": "with_prompt_injection_row tolerates non-dict rows instead of raising",
+          "behavior": "close-missing still unblocks a small run",
           "disposition": "tested",
-          "evidence": "test_coverage_untrusted_manifest.py::TestWithPromptInjectionRowTolerance (2) PASSED"
+          "evidence": "shared/tests/test_record_review_pass_cli.py::test_close_missing_still_unblocks_a_small_run PASSED"
         },
         {
-          "behavior": "degraded is derived from what happened to the leg, not the exit code alone",
-          "disposition": "tested",
-          "evidence": "test_coverage_consumer_tolerance.py::TestDegradedDerivation (4) PASSED"
-        },
-        {
-          "behavior": "Pre-feature artifacts (no coverage key) are tolerated by every named reader",
-          "disposition": "tested",
-          "evidence": "test_coverage_consumer_tolerance.py::TestPreFeatureArtifacts (6) PASSED"
-        },
-        {
-          "behavior": "A caller-overridden class_tools map also attributes degraded legs",
-          "disposition": "tested",
-          "evidence": "scan_coverage._degraded_by_class inverts the effective map; test_scan_coverage.py::test_degraded_leg_beats_every_other_status PASSED"
-        },
-        {
-          "behavior": "No baselined file exceeds its recorded bloat `current`",
-          "disposition": "tested",
-          "evidence": "anti_ratchet_check.py --worktree exits 0; the four shrunk files' baselines re-synced to their measured sizes, guarded against the ORIGINAL values"
-        },
-        {
-          "behavior": "No test writes .shipwright/ into the plugin source tree; a test that does fails loudly instead of leaving an untracked file",
-          "disposition": "tested",
-          "evidence": "conftest.py::_no_source_tree_pollution (autouse). Verified by a throwaway probe that deliberately writes into the plugin root: pytest exits 1 with the actionable message and the tree is restored. Full suite then runs clean."
-        },
-        {
-          "behavior": "A case-variant capability ('SAST') does not produce a second row alongside the 'sast' one CLASS_ORDER already emits",
-          "disposition": "tested",
-          "evidence": "test_scan_coverage.py::test_a_case_variant_capability_does_not_duplicate_a_class + ::test_a_case_variant_requested_type_still_matches PASSED. Verified the test FAILS with the case-fold reverted ('Left contains one more item: SAST'), so it pins the fix."
+          "behavior": "whether a given diff DESERVES more review than the floor requires",
+          "disposition": "untestable",
+          "evidence": "reason_code is a separate key below; judging sufficiency of review depth against a diff is reading comprehension with no oracle. The floor asserts that a review happened, never that it was good enough - which is why it is a floor and not a verdict.",
+          "reason_code": "requires-manual-visual-judgment"
         }
       ],
       "counts": {
-        "testable": 25,
-        "tested": 25,
-        "untestable": 0,
+        "testable": 19,
+        "tested": 19,
+        "untestable": 1,
         "untested_testable": 0
       },
       "enumeration_basis": {
-        "acs": 5,
-        "covered_acs": 5
+        "acs": 3,
+        "covered_acs": 3
       }
-    },
-    "surface_verification": {
-      "surface": "cli",
-      "runner": "uv run --directory plugins/shipwright-security --extra dev pytest tests/ -v",
-      "exit_code": 0,
-      "tests_run": 549,
-      "evidence_path": "C:\\01_Development\\shipwright\\.worktrees\\security-coverage-manifest\\.shipwright\\runs\\iterate-2026-07-27-security-coverage-manifest\\surface_verification.log",
-      "timestamp": "2026-07-27T11:47:22.375Z",
-      "attempts": 1
     }
   },
   "coverage": {
