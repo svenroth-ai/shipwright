@@ -125,6 +125,12 @@
       "'plan' recorded not_run: external plan review is a medium+ phase and this run is small.",
       "External code review delivered 1 of 2 legs: the Gemini leg returned an empty reply and was recorded status=degraded by the classifier shipped in #473. The GPT leg delivered a complete review whose four findings drove the final implementation.",
       "The FIRST implementation of this check was invalidated by its own probe before shipping: walking every merge in history reported 889 files for a demonstrably clean merge and took over ten minutes. Scoped to the branch's own merges (<default>..HEAD) it reports 0 files in 0.0s for that same merge."
+    ],
+    "declared_removals": [
+      {
+        "path": ".shipwright/planning/iterate/2026-07-27-review-floor-not-chained.md",
+        "reason": "Superseded, not reverted. #478 merged a first attempt at the bloat fix whose section 8b argued the pre-existing crossing was 'not this change's to fix'. The gate then blocked again, because it fires on the file being over its ceiling at all, not on it having grown — so that argument was the rationalization the Iron Law names, and the full split replaced it. Section 8b now records both the first attempt and why it was insufficient; restoring the superseded lines verbatim would make the section contradict itself. Branch: iterate/split-review-cli-tests."
+      }
     ]
   },
   "coverage": {
