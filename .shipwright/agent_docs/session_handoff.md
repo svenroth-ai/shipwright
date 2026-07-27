@@ -1,44 +1,43 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-07-27-phase-gate-override-evidence"
+run_id: "iterate-2026-07-27-disclose-audit-last-run"
 phase: "iterate"
 reason: "ensure-current pre-merge refresh"
-timestamp: "2026-07-27T08:00:38.431567+00:00"
+timestamp: "2026-07-27T08:29:48.705481+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-07-27 08:00:38 UTC
+> Auto-generated 2026-07-27 08:29:48 UTC
 
 ## Session Info
 
-- **Session ID**: a7fa3da4-74bf-406f-b92b-f309691d90f9
-- **Timestamp**: 2026-07-27 08:00:38 UTC
+- **Session ID**: 184abbf4-c486-4d5b-b89a-1dc21aebc3e1
+- **Timestamp**: 2026-07-27 08:29:48 UTC
 - **Reason**: ensure-current pre-merge refresh
 
 ## Last Iterate
 
-- **Run ID**: iterate-2026-07-27-phase-gate-override-evidence
-- **Date**: 2026-07-27T08:00:31.564002Z
+- **Run ID**: iterate-2026-07-27-disclose-audit-last-run
+- **Date**: 2026-07-27T08:29:42.533033Z
 - **Type**: change
 - **Complexity**: medium
-- **Branch**: iterate/phase-gate-override-evidence
-- **ADR**: iterate-2026-07-27-phase-gate-override-evidence
+- **Branch**: iterate/disclose-audit-last-run
+- **ADR**: iterate-2026-07-27-disclose-audit-last-run
 - **Tests passed**: True
-- **Spec**: .shipwright/planning/iterate/iterate-2026-07-27-phase-gate-override-evidence.md
+- **Spec**: .shipwright/planning/iterate/iterate-2026-07-27-disclose-audit-last-run.md
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/phase-gate-override-evidence
-- **Run ID**: iterate-2026-07-27-phase-gate-override-evidence
-- **Spec**: .shipwright/planning/iterate/iterate-2026-07-27-phase-gate-override-evidence.md
-- **Complexity**: medium
-- **External Review Marker**: stale (predates spec (2026-07-27T07:13:19))
+- **Branch**: iterate/disclose-audit-last-run
+- **Run ID**: iterate-2026-07-27-disclose-audit-last-run
+- **Spec**: .shipwright/planning/iterate/iterate-2026-07-27-disclose-audit-last-run.md
+- **Complexity**: medium · **change_type:** change · **spec_impact:** modify (fr-01.10 gains one (e) ac)
+- **External Review Marker**: stale (predates spec (2026-07-27T07:51:33))
 
 ### Mandatory replay on Resume
 
 Before dispatching to the handoff's Remaining phase, run these if missing:
-- Step 4 — External LLM Review (marker missing/stale)
 - Finalization (F0–F11) after all mandatory phases pass
 
 ## Legacy build state
@@ -52,8 +51,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/phase-gate-override-evidence
-- **Last Commit**: 9750f08e Merge remote-tracking branch 'origin/main' into iterate/phase-gate-override-evidence
+- **Branch**: iterate/disclose-audit-last-run
+- **Last Commit**: 496a530a Merge remote-tracking branch 'origin/main' into iterate/disclose-audit-last-run
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -69,16 +68,16 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 | Event | Type | Source | Date |
 |-------|------|--------|------|
+| evt-64bc7af0 | grade_snapshot | — | 2026-07-27 |
 | evt-19f53577 | grade_snapshot | — | 2026-07-27 |
 | evt-78684181 | work_completed | iterate (iterate: the review gate stops being bypassable (fail-closed + fork review)) | 2026-07-27 |
 | evt-c880344a | grade_snapshot | — | 2026-07-27 |
 | evt-4794dcc1 | work_completed | iterate (iterate: phase-gate override leaves evidence; handoff renders phase status) | 2026-07-27 |
-| evt-2055af94 | grade_snapshot | — | 2026-07-26 |
 
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 361
+- **Total work events**: 362
 - **Last iterate**: change — iterate: the review gate stops being bypassable (fail-closed + fork review) (2026-07-27)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
