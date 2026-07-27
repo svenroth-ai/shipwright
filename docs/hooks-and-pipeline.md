@@ -1860,7 +1860,7 @@ plan SKILL completes
 | `shipwright_run_config.json` | orchestrator.py | All phases (resume), dashboard, validators |
 | `shipwright_project_config.json` | /shipwright-project | Orchestrator (splits), compliance (requirements), validators |
 | `shipwright_build_config.json` | /shipwright-build, update_section_state.py | Orchestrator (progress), dashboard, compliance, validators |
-| `shipwright_test_results.json` | test-runner subagent | Compliance (test evidence), validators |
+| `shipwright_test_results.json` | test-runner subagent (full record); `record_coverage_total.py` (`coverage` block only); `stamp_test_results.py` (`source_state` block only — invoked as the last step of test Step 5 and iterate F5) | Compliance (test evidence), validators |
 | `shipwright_compliance_config.json` | update_compliance.py | Compliance (phases_covered) |
 | `shipwright_plan_config.json` | /shipwright-plan | Build (section references) |
 | `shipwright_project_session.json` | /shipwright-project | /shipwright-project (session resume state) |

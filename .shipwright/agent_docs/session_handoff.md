@@ -1,39 +1,39 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-07-27-plan-phase-gates"
+run_id: "iterate-2026-07-27-artifact-state-stamping"
 phase: "iterate"
 reason: "ensure-current pre-merge refresh"
-timestamp: "2026-07-27T08:43:16.422767+00:00"
+timestamp: "2026-07-27T09:08:48.846142+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-07-27 08:43:16 UTC
+> Auto-generated 2026-07-27 09:08:48 UTC
 
 ## Session Info
 
-- **Session ID**: 1ea85a9d-f698-4336-8e01-ea2f4e2ae714
-- **Timestamp**: 2026-07-27 08:43:16 UTC
+- **Session ID**: 821e1007-5fc9-403d-9122-21e7ce9dc8e5
+- **Timestamp**: 2026-07-27 09:08:48 UTC
 - **Reason**: ensure-current pre-merge refresh
 
 ## Last Iterate
 
-- **Run ID**: iterate-2026-07-27-plan-phase-gates
-- **Date**: 2026-07-27T08:43:10.255493Z
-- **Type**: change
+- **Run ID**: iterate-2026-07-27-artifact-state-stamping
+- **Date**: 2026-07-27T09:08:42.675204Z
+- **Type**: feature
 - **Complexity**: medium
-- **Branch**: iterate/plan-phase-gates
-- **ADR**: iterate-2026-07-27-plan-phase-gates
+- **Branch**: iterate/artifact-state-stamping
+- **ADR**: iterate-2026-07-27-artifact-state-stamping
 - **Tests passed**: True
-- **Spec**: .shipwright/planning/iterate/2026-07-27-plan-phase-gates.md
+- **Spec**: .shipwright/planning/iterate/2026-07-27-artifact-state-stamping.md
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/plan-phase-gates
-- **Run ID**: `iterate-2026-07-27-plan-phase-gates`
-- **Spec**: .shipwright/planning/iterate/2026-07-27-plan-phase-gates.md
+- **Branch**: iterate/artifact-state-stamping
+- **Run ID**: iterate-2026-07-27-artifact-state-stamping
+- **Spec**: .shipwright/planning/iterate/2026-07-27-artifact-state-stamping.md
 - **Complexity**: medium
-- **External Review Marker**: stale (predates spec (2026-07-27T07:17:11))
+- **External Review Marker**: stale (predates spec (2026-07-27T07:17:44))
 
 ### Mandatory replay on Resume
 
@@ -52,8 +52,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/plan-phase-gates
-- **Last Commit**: 8bddbf86 Merge remote-tracking branch 'origin/main' into iterate/plan-phase-gates
+- **Branch**: iterate/artifact-state-stamping
+- **Last Commit**: 83bec3aa Merge remote-tracking branch 'origin/main' into iterate/artifact-state-stamping
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read

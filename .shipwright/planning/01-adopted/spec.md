@@ -495,6 +495,15 @@ _Where the work detail lives_ at the end of this document.
 - (E) Given an evidence document, when it no longer matches the state it was
   produced from — hand-edited, or only partly regenerated — then it is reported
   as no longer valid instead of continuing to count as evidence.
+- (E) Given an evidence document or a recorded test run, when it is produced, then it
+  names the change it was built from — not merely when it was written — so a reader
+  can tell evidence built from a known point in the project's history apart from
+  evidence whose origin is unstated. For an evidence document that is the most recent
+  completed change recorded in the project's own history at the time it was rendered;
+  for a recorded test run it is the code version the tests were measured against,
+  read from the project rather than asserted by whoever wrote the record. Where it
+  cannot be established, the artifact says so instead of showing a plausible-looking
+  value.
 - (E) Given a completed change that says it affects behaviour but names no
   requirement and gives no reason for naming none, when the cross-check audit
   runs, then it is reported together with a suggested command to fix it, without
