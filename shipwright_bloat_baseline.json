@@ -417,7 +417,7 @@
     {
       "path": "plugins/shipwright-security/scripts/tools/generate_security_report.py",
       "limit": 300,
-      "current": 665,
+      "current": 647,
       "state": "grandfathered",
       "adr": null
     },
@@ -431,21 +431,21 @@
     {
       "path": "plugins/shipwright-security/scripts/tools/run_scan_and_report.py",
       "limit": 300,
-      "current": 334,
+      "current": 300,
       "state": "grandfathered",
       "adr": null
     },
     {
       "path": "plugins/shipwright-security/scripts/tools/scan.py",
       "limit": 300,
-      "current": 431,
+      "current": 425,
       "state": "grandfathered",
       "adr": null
     },
     {
       "path": "plugins/shipwright-security/skills/security/SKILL.md",
       "limit": 400,
-      "current": 449,
+      "current": 434,
       "state": "grandfathered",
       "adr": null
     },

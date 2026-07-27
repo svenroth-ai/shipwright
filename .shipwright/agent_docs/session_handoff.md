@@ -1,44 +1,43 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-07-27-rollback-uses-target-ref"
+run_id: "iterate-2026-07-27-security-coverage-manifest"
 phase: "iterate"
-reason: "auto re-refresh (round 43): origin/main moved"
-timestamp: "2026-07-27T09:08:48.846142+00:00"
+reason: "iterate: a security scan records what it did not check"
+timestamp: "2026-07-27T11:48:20.486720+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-07-27 09:08:48 UTC
+> Auto-generated 2026-07-27 11:48:20 UTC
 
 ## Session Info
 
-- **Session ID**: 13f13377-3431-4445-b501-bc754d78d6d3
-- **Timestamp**: 2026-07-27 09:08:48 UTC
-- **Reason**: auto re-refresh (round 43): origin/main moved
+- **Session ID**: 871b1865-c6ae-4724-a105-dc987ddca125
+- **Timestamp**: 2026-07-27 11:48:20 UTC
+- **Reason**: iterate: a security scan records what it did not check
 
 ## Last Iterate
 
-- **Run ID**: iterate-2026-07-27-artifact-state-stamping
-- **Date**: 2026-07-27T09:08:42.675204Z
-- **Type**: feature
+- **Run ID**: iterate-2026-07-27-security-coverage-manifest
+- **Date**: 2026-07-27T11:48:13.397870Z
+- **Type**: change
 - **Complexity**: medium
-- **Branch**: iterate/artifact-state-stamping
-- **ADR**: iterate-2026-07-27-artifact-state-stamping
+- **Branch**: iterate/security-coverage-manifest
+- **ADR**: iterate-2026-07-27-security-coverage-manifest
 - **Tests passed**: True
-- **Spec**: .shipwright/planning/iterate/2026-07-27-artifact-state-stamping.md
+- **Spec**: .shipwright/planning/iterate/2026-07-27-security-coverage-manifest.md
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/rollback-uses-target-ref
-- **Run ID**: iterate-2026-07-27-rollback-uses-target-ref
-- **Spec**: .shipwright/planning/iterate/iterate-2026-07-27-rollback-uses-target-ref.md
+- **Branch**: iterate/security-coverage-manifest
+- **Run ID**: iterate-2026-07-27-security-coverage-manifest
+- **Spec**: .shipwright/planning/iterate/2026-07-27-security-coverage-manifest.md
 - **Complexity**: medium
-- **External Review Marker**: stale (predates spec (2026-07-27T07:16:58))
+- **External Review Marker**: completed (external_review_state.json @ 2026-07-27T11:47:40)
 
 ### Mandatory replay on Resume
 
 Before dispatching to the handoff's Remaining phase, run these if missing:
-- Step 4 — External LLM Review (marker missing/stale)
 - Finalization (F0–F11) after all mandatory phases pass
 
 ## Legacy build state
@@ -52,8 +51,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/rollback-uses-target-ref
-- **Last Commit**: 1711fc06 Merge remote-tracking branch 'origin/main' into iterate/rollback-uses-target-ref
+- **Branch**: iterate/security-coverage-manifest
+- **Last Commit**: ce149b07 fix(deploy): rollback uses the version it was given, and stops overclaiming the rest (#441)
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -69,17 +68,17 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 | Event | Type | Source | Date |
 |-------|------|--------|------|
+| evt-36951d9d | grade_snapshot | — | 2026-07-27 |
+| evt-51c2bffd | work_completed | iterate (security-coverage-manifest) | 2026-07-27 |
 | evt-64bc7af0 | grade_snapshot | — | 2026-07-27 |
 | evt-19f53577 | grade_snapshot | — | 2026-07-27 |
 | evt-78684181 | work_completed | iterate (iterate: the review gate stops being bypassable (fail-closed + fork review)) | 2026-07-27 |
-| evt-c880344a | grade_snapshot | — | 2026-07-27 |
-| evt-4794dcc1 | work_completed | iterate (iterate: phase-gate override leaves evidence; handoff renders phase status) | 2026-07-27 |
 
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 366
-- **Last iterate**: change — iterate: the review gate stops being bypassable (fail-closed + fork review) (2026-07-27)
+- **Total work events**: 367
+- **Last iterate**: change — security-coverage-manifest (2026-07-27)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
 ## Recent Decisions

@@ -5,10 +5,10 @@
 
 ## Status summary
 
-- Total: 416
-- Triage: 23 | Promoted: 1 | Dismissed: 391 | Snoozed: 1
+- Total: 415
+- Triage: 24 | Promoted: 1 | Dismissed: 389 | Snoozed: 1
 
-## Top 23 items (severity-sorted)
+## Top 24 items (severity-sorted)
 
 ### Source: analysis (1 item)
 
@@ -19,18 +19,18 @@
 
 ### Source: compliance (1 item)
 
-<a id="trg-554786d0"></a>
-- **Compliance: 4 open finding(s)** `id=trg-554786d0 | severity=high | kind=compliance → P1/compliance`
-  - 4 open compliance finding(s): D/D1, D/D3, H/H1, H/H2  - D/D1: Spec FR coverage in events — uncovered FRs — Must: FR-01.…
+<a id="trg-62316d55"></a>
+- **Compliance: 3 open finding(s)** `id=trg-62316d55 | severity=high | kind=compliance → P1/compliance`
+  - 3 open compliance finding(s): D/D1, D/D3, H/H1  - D/D1: Spec FR coverage in events — uncovered FRs — Must: FR-01.17; Sh…
   - Launch payload (copy into a new Claude session):
     ```text
     /shipwright-compliance
     
-    Context: 4 open compliance finding(s): D/D1, D/D3, H/H1, H/H2.
+    Context: 3 open compliance finding(s): D/D1, D/D3, H/H1.
     Dashboard: .shipwright/compliance/dashboard.md
     Each finding + hint is listed in this item's detail.
     ```
-  - Promote: `triage_promote.py --id trg-554786d0 --task-ref EXT:<ref>`
+  - Promote: `triage_promote.py --id trg-62316d55 --task-ref EXT:<ref>`
 
 ### Source: github (1 item)
 
@@ -87,7 +87,7 @@
   - Evidence: `.shipwright/planning/iterate/2026-07-27-project-granularity-basis.md`
   - Promote: `triage_promote.py --id trg-1d7d91d0 --task-ref EXT:<ref>`
 
-### Source: req3-phase2-walk (14 items)
+### Source: req3-phase2-walk (15 items)
 
 <a id="trg-74b945bc"></a>
 - **CRITICAL - going back to a previous version does not use the version you ask for, and reports success** `id=trg-74b945bc | severity=critical | kind=bug → P0/engineering`
@@ -142,6 +142,12 @@
   - OWNS: the test plugin, the test-phase validator branch, and the browser-test result reader. Does NOT own artifact stamp…
   - Evidence: `.shipwright/planning/campaigns/2026-07-23-req3-ac-evidence-ledger-mono.md`
   - Promote: `triage_promote.py --id trg-12b4cf3f --task-ref EXT:<ref>`
+
+<a id="trg-4d5b6a56"></a>
+- **stamp produced artifacts with the state they describe (extracted so it is built once)** `id=trg-4d5b6a56 | severity=high | kind=improvement → P1/engineering`
+  - OWNS: the stamping helper plus its two call sites — the test-results writer and the compliance document renderers. Extr…
+  - Evidence: `.shipwright/planning/campaigns/2026-07-23-req3-ac-evidence-ledger-mono.md`
+  - Promote: `triage_promote.py --id trg-4d5b6a56 --task-ref EXT:<ref>`
 
 <a id="trg-88f721be"></a>
 - **plan phase: disagreement between reviewers is averaged away, and section order cannot be checked** `id=trg-88f721be | severity=high | kind=improvement → P1/engineering`

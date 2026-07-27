@@ -1,17 +1,16 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-07-27-rollback-uses-target-ref",
+    "run_id": "iterate-2026-07-27-security-coverage-manifest",
     "date": "2026-07-27",
     "unit": {
       "status": "passed",
-      "passed": 8980,
-      "total": 9000,
-      "skipped": 20
+      "passed": 9663,
+      "total": 9663
     },
     "integration": {
       "status": "passed",
-      "passed": 418,
-      "total": 418
+      "passed": 420,
+      "total": 420
     },
     "pgtap": {
       "status": "not_run",
@@ -19,9 +18,9 @@
       "total": 0
     },
     "e2e": {
-      "status": "passed",
-      "passed": 12,
-      "total": 12
+      "status": "not_run",
+      "passed": 0,
+      "total": 0
     },
     "design_fidelity": {
       "status": "not_run",
@@ -31,234 +30,145 @@
     "smoke": {
       "status": "not_run"
     },
-    "degraded": [
-      "external code-review cascade: the gemini-3.1-pro-preview leg returned a truncated reasoning fragment instead of a finding list. The run is not marked degraded by the tool (2/2 legs returned), but the leg is recorded here as content-degraded; the one concrete observation it reached before cutting off (_check_health reused the full request timeout) was fixed.",
-      "internal code-reviewer and doubt-reviewer subagents were NOT spawned: an operator standing instruction for this session forbids calling the Agent tool unless explicitly requested. Both are closed as not_run with that disposition in the review record; the external cascade + the 8-point self-review carried the review load."
-    ],
-    "surface_verification": {
-      "surface": "cli",
-      "runner": "uv run pytest plugins/shipwright-deploy/tests -v",
-      "exit_code": 0,
-      "tests_run": 102,
-      "evidence_path": ".shipwright/runs/iterate-2026-07-27-rollback-uses-target-ref/surface_verification.json",
-      "timestamp": "2026-07-27T00:00:00Z",
-      "attempts": 1
-    },
+    "degraded": [],
     "test_completeness": {
       "status": "complete",
       "behaviors": [
         {
-          "behavior": "the ref is pinned via editproject, and pinned before update",
+          "behavior": "One coverage row per weakness class, closed status vocabulary",
           "disposition": "tested",
-          "evidence": "test_rollback.py::test_target_ref_is_sent_to_the_host_before_the_update PASSED"
+          "evidence": "test_scan_coverage.py::TestBuildCoverage (9) PASSED"
         },
         {
-          "behavior": "a failed pin never issues the update",
+          "behavior": "Status precedence degraded > not_requested > not_available > covered",
           "disposition": "tested",
-          "evidence": "test_rollback.py::test_pin_failure_never_issues_the_update_and_never_reports_success PASSED"
+          "evidence": "test_scan_coverage.py::test_degraded_leg_beats_every_other_status, ::test_not_requested_beats_not_available PASSED"
         },
         {
-          "behavior": "no report claims a rollback that did not complete",
+          "behavior": "A backend capability outside the OSS tool map still gets a row",
           "disposition": "tested",
-          "evidence": "test_rollback.py::test_report_never_claims_a_rollback_that_did_not_complete PASSED"
+          "evidence": "test_scan_coverage.py::test_capability_outside_the_oss_tool_map_still_gets_a_row PASSED"
         },
         {
-          "behavior": "editproject carries the full project object, only branch replaced",
+          "behavior": "Prompt-injection row added only when it carries information",
           "disposition": "tested",
-          "evidence": "test_rollback.py::test_pin_sends_the_full_project_object_with_only_the_branch_replaced PASSED"
+          "evidence": "test_scan_coverage.py::TestPromptInjectionRow (5) PASSED"
         },
         {
-          "behavior": "an unreadable current config refuses instead of writing",
+          "behavior": "An empty or absent manifest is never 'complete'",
           "disposition": "tested",
-          "evidence": "test_rollback.py::test_unreadable_project_config_refuses_instead_of_writing PASSED"
+          "evidence": "test_scan_coverage.py::TestIsComplete (2), test_coverage_consumer_tolerance.py::test_unknown_status_never_reads_as_complete PASSED"
         },
         {
-          "behavior": "a read-back agreeing with the request reports confirmed",
+          "behavior": "findings.json carries coverage; the --input-from-cache re-read keeps it",
           "disposition": "tested",
-          "evidence": "test_rollback.py::test_readback_confirming_the_ref_reports_confirmed PASSED"
+          "evidence": "test_coverage_wiring.py::TestScanCliWritesCoverage (4) PASSED"
         },
         {
-          "behavior": "a read-back disagreeing is a failure, not a warning",
+          "behavior": "Report renders the coverage banner and table, PR mode included",
           "disposition": "tested",
-          "evidence": "test_rollback.py::test_readback_returning_a_different_ref_is_a_failure PASSED"
+          "evidence": "test_coverage_wiring.py::TestReportRendersCoverage (5) PASSED"
         },
         {
-          "behavior": "an unavailable read-back downgrades to unconfirmed and says why",
+          "behavior": "'Coverage not reported' stays distinct from 'Incomplete Coverage'",
           "disposition": "tested",
-          "evidence": "test_rollback.py::test_unavailable_readback_downgrades_the_claim_and_says_why PASSED"
+          "evidence": "test_coverage_consumer_tolerance.py::test_report_from_a_pre_feature_sidecar_says_coverage_not_reported PASSED"
         },
         {
-          "behavior": "a raw URLError downgrades rather than escaping unreported",
+          "behavior": "Sidecar gains coverage while schema_version stays 1",
           "disposition": "tested",
-          "evidence": "test_rollback.py::test_a_raw_transport_failure_also_downgrades_rather_than_escaping PASSED"
+          "evidence": "test_coverage_wiring.py::test_sidecar_carries_coverage_and_keeps_schema_version_1 PASSED"
         },
         {
-          "behavior": "a parse bug propagates, never masked as an unavailable endpoint",
+          "behavior": "--input coverage is authoritative; a pre-feature input never inherits the local config's manifest",
           "disposition": "tested",
-          "evidence": "test_rollback.py::test_readback_parse_bug_is_not_swallowed_as_unavailable PASSED"
+          "evidence": "test_coverage_false_claims.py::TestInputCoverageIsAuthoritative (3) PASSED"
         },
         {
-          "behavior": "refs/heads/x and x compare as the same ref",
+          "behavior": "The prompt-injection row reads `covered` only when the prompt-risks file exists AND parses",
           "disposition": "tested",
-          "evidence": "test_rollback.py::test_refs_heads_prefix_compares_canonically PASSED"
+          "evidence": "test_coverage_false_claims.py::TestPromptInjectionRowNeedsRealOutput (4) PASSED"
         },
         {
-          "behavior": "an update failure names the changed config and the previous ref",
+          "behavior": "Every coverage table cell is escaped — the manifest is read back from an untrusted file",
           "disposition": "tested",
-          "evidence": "test_rollback.py::test_update_failure_reports_the_changed_configuration_and_the_previous_ref PASSED"
+          "evidence": "test_coverage_false_claims.py::TestCoverageCellsAreEscaped (3) PASSED"
         },
         {
-          "behavior": "an invalid ref is rejected before any hosting call",
+          "behavior": "A non-dict findings artifact degrades to [] instead of crashing the report",
           "disposition": "tested",
-          "evidence": "test_rollback.py::test_invalid_ref_forms_are_rejected_before_any_host_call PASSED (5 cases)"
+          "evidence": "test_coverage_false_claims.py::test_wrong_shape_prompt_risks_file_is_not_covered PASSED (pre-existing AttributeError in load_findings_from_file, surfaced here)"
         },
         {
-          "behavior": "the clone strategy reports stopping, never restoring",
+          "behavior": "A file-sourced manifest is sanitized at the boundary (non-dict rows dropped, control chars flattened, values capped)",
           "disposition": "tested",
-          "evidence": "test_rollback_clone.py::test_clone_strategy_reports_stopping_not_restoring PASSED"
+          "evidence": "test_coverage_untrusted_manifest.py::TestSanitizeCoverage (10) PASSED"
         },
         {
-          "behavior": "a clone stop failure halts and names the state",
+          "behavior": "Every sanitized status is inside the closed vocabulary; an unrecognized one coerces to degraded with the original in detail",
           "disposition": "tested",
-          "evidence": "test_rollback_clone.py::test_clone_stop_failure_halts_and_names_the_state PASSED"
+          "evidence": "test_coverage_untrusted_manifest.py::test_out_of_vocabulary_status_is_coerced_but_still_visible, ::test_every_sanitized_status_is_in_the_closed_vocabulary PASSED"
         },
         {
-          "behavior": "a refusal makes no claim about what is running",
+          "behavior": "coverage_sanitize's duplicated vocabulary cannot drift from scan_coverage.COVERAGE_STATUSES",
           "disposition": "tested",
-          "evidence": "test_rollback_clone.py::test_a_refusal_says_the_target_was_not_touched PASSED"
+          "evidence": "test_coverage_untrusted_manifest.py::test_the_vocabulary_matches_scan_coverage PASSED"
         },
         {
-          "behavior": "CLI argument validation still refuses with the refusal exit code",
+          "behavior": "class_label is the single chokepoint and flattens an unknown, possibly-hostile class id",
           "disposition": "tested",
-          "evidence": "test_rollback_clone.py::test_git_strategy_requires_target_ref, ::test_clone_strategy_requires_clone_name PASSED"
+          "evidence": "test_coverage_untrusted_manifest.py::TestClassLabelChokepoint (3) PASSED"
         },
         {
-          "behavior": "drift: no migrations added since the ref is clean",
+          "behavior": "A hostile manifest cannot add an instruction line to the report banner",
           "disposition": "tested",
-          "evidence": "test_data_drift.py::test_no_new_migrations_is_clean PASSED"
+          "evidence": "test_coverage_untrusted_manifest.py::TestHostileManifestCannotReachTheOperator (2) PASSED"
         },
         {
-          "behavior": "drift: a committed migration added since the ref is drift",
+          "behavior": "with_prompt_injection_row tolerates non-dict rows instead of raising",
           "disposition": "tested",
-          "evidence": "test_data_drift.py::test_a_committed_migration_added_since_the_ref_is_drift PASSED"
+          "evidence": "test_coverage_untrusted_manifest.py::TestWithPromptInjectionRowTolerance (2) PASSED"
         },
         {
-          "behavior": "drift: an uncommitted migration also counts as drift",
+          "behavior": "degraded is derived from what happened to the leg, not the exit code alone",
           "disposition": "tested",
-          "evidence": "test_data_drift.py::test_an_uncommitted_migration_still_counts_as_drift PASSED"
+          "evidence": "test_coverage_consumer_tolerance.py::TestDegradedDerivation (4) PASSED"
         },
         {
-          "behavior": "drift: an unresolvable ref is unknown, never clean",
+          "behavior": "Pre-feature artifacts (no coverage key) are tolerated by every named reader",
           "disposition": "tested",
-          "evidence": "test_data_drift.py::test_an_unresolvable_ref_is_unknown_not_clean PASSED"
+          "evidence": "test_coverage_consumer_tolerance.py::TestPreFeatureArtifacts (6) PASSED"
         },
         {
-          "behavior": "drift: a project without migrations is not-applicable",
+          "behavior": "A caller-overridden class_tools map also attributes degraded legs",
           "disposition": "tested",
-          "evidence": "test_data_drift.py::test_a_project_without_migrations_is_not_applicable PASSED"
+          "evidence": "scan_coverage._degraded_by_class inverts the effective map; test_scan_coverage.py::test_degraded_leg_beats_every_other_status PASSED"
         },
         {
-          "behavior": "drift: a non-git directory is unknown",
+          "behavior": "No baselined file exceeds its recorded bloat `current`",
           "disposition": "tested",
-          "evidence": "test_data_drift.py::test_a_non_git_directory_is_unknown PASSED"
-        },
-        {
-          "behavior": "drift: no project root reports not-checked, never clean",
-          "disposition": "tested",
-          "evidence": "test_data_drift.py::test_no_project_root_reports_not_checked_rather_than_clean PASSED"
-        },
-        {
-          "behavior": "drift: a custom migrations directory is honoured",
-          "disposition": "tested",
-          "evidence": "test_data_drift.py::test_a_migrations_dir_outside_the_default_is_honoured PASSED"
-        },
-        {
-          "behavior": "ref validation accepts and rejects per slash-separated component",
-          "disposition": "tested",
-          "evidence": "test_data_drift.py::test_valid_refs_are_accepted (5), ::test_dangerous_or_malformed_refs_are_rejected (20) PASSED"
-        },
-        {
-          "behavior": "a shell-metacharacter ref never reaches a git subprocess",
-          "disposition": "tested",
-          "evidence": "test_data_drift.py::test_a_shell_metacharacter_ref_never_reaches_git PASSED"
-        },
-        {
-          "behavior": "the gate refuses and names the target's declared data strategy",
-          "disposition": "tested",
-          "evidence": "test_data_drift.py::test_drift_refuses_and_names_the_targets_strategy PASSED"
-        },
-        {
-          "behavior": "--ack-data-drift lifts the refusal",
-          "disposition": "tested",
-          "evidence": "test_data_drift.py::test_acknowledging_the_drift_lifts_the_refusal + E2E ::test_acknowledging_the_drift_proceeds PASSED"
-        },
-        {
-          "behavior": "a none-app-only target skips the stored-data question entirely",
-          "disposition": "tested",
-          "evidence": "test_data_drift.py::test_a_target_whose_data_never_moves_skips_the_question PASSED"
-        },
-        {
-          "behavior": "an undeclared data strategy still refuses and says it is undeclared",
-          "disposition": "tested",
-          "evidence": "test_data_drift.py::test_an_undeclared_strategy_still_refuses_and_says_it_is_undeclared PASSED"
-        },
-        {
-          "behavior": "liveness: with no deadline exactly one request is made",
-          "disposition": "tested",
-          "evidence": "test_smoke_test.py::test_without_a_deadline_exactly_one_request_is_made PASSED"
-        },
-        {
-          "behavior": "liveness: a slow start is waited out, not called a failed release",
-          "disposition": "tested",
-          "evidence": "test_smoke_test.py::test_a_slow_start_is_waited_out_rather_than_called_a_failed_release PASSED"
-        },
-        {
-          "behavior": "liveness: an exhausted deadline fails and records the evidence",
-          "disposition": "tested",
-          "evidence": "test_smoke_test.py::test_an_exhausted_deadline_fails_and_records_the_evidence PASSED"
-        },
-        {
-          "behavior": "liveness: the deadline is never bounded by the request timeout",
-          "disposition": "tested",
-          "evidence": "test_smoke_test.py::test_the_deadline_is_not_overshot_by_a_long_request_timeout, ::test_a_deadline_shorter_than_one_request_still_asks_exactly_once PASSED"
-        },
-        {
-          "behavior": "liveness: the health probe counts against the same deadline",
-          "disposition": "tested",
-          "evidence": "test_smoke_test.py::test_the_health_probe_counts_against_the_same_deadline PASSED"
-        },
-        {
-          "behavior": "liveness: nonsensical durations are rejected as usage errors",
-          "disposition": "tested",
-          "evidence": "test_smoke_test.py::test_nonsensical_durations_are_rejected PASSED (4 cases)"
-        },
-        {
-          "behavior": "profile: the three REAL shipped profiles round-trip into a policy; explicit flags override per field; malformed input is rejected",
-          "disposition": "tested",
-          "evidence": "shared/tests/test_deploy_profile.py 17 PASSED, incl. a guard that fails if the profile glob matches nothing"
-        },
-        {
-          "behavior": "client: getprojects matches on context in a list and raises when none matches; set_vcs_ref preserves every field incl. non-scalars and drops a stale session/envName",
-          "disposition": "tested",
-          "evidence": "test_jelastic_client.py::test_get_vcs_project_picks_the_matching_context_from_a_list, ::test_get_vcs_project_raises_when_no_context_matches, ::test_set_vcs_ref_sends_every_field_back_with_only_branch_replaced, ::test_set_vcs_ref_never_forwards_a_stale_session_or_envname PASSED"
-        },
-        {
-          "behavior": "end to end: profile file -> reader -> CLI subprocess -> real HTTP -> recorded request sequence, from an unrelated cwd, with the token absent from stdout/stderr",
-          "disposition": "tested",
-          "evidence": "test_rollback_e2e_cli.py 8 PASSED + test_smoke_e2e_cli.py 4 PASSED (real HTTP stub, real temp git repo, real subprocesses, no mocking)",
-          "category": "integration"
+          "evidence": "anti_ratchet_check.py --worktree exits 0; the four shrunk files' baselines re-synced to their measured sizes, guarded against the ORIGINAL values"
         }
       ],
       "counts": {
-        "testable": 40,
-        "tested": 40,
+        "testable": 23,
+        "tested": 23,
         "untestable": 0,
         "untested_testable": 0
       },
       "enumeration_basis": {
-        "acs": 15,
-        "covered_acs": 15
+        "acs": 5,
+        "covered_acs": 5
       }
+    },
+    "surface_verification": {
+      "surface": "cli",
+      "runner": "uv run --directory plugins/shipwright-security --extra dev pytest tests/ -v",
+      "exit_code": 0,
+      "tests_run": 549,
+      "evidence_path": "C:\\01_Development\\shipwright\\.worktrees\\security-coverage-manifest\\.shipwright\\runs\\iterate-2026-07-27-security-coverage-manifest\\surface_verification.log",
+      "timestamp": "2026-07-27T11:47:22.375Z",
+      "attempts": 1
     }
   },
   "coverage": {
