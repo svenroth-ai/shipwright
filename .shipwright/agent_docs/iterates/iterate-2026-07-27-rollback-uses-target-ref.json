@@ -1,0 +1,10 @@
+{
+  "run_id": "iterate-2026-07-27-rollback-uses-target-ref",
+  "date": "2026-07-27T08:23:06.376669Z",
+  "type": "bug",
+  "complexity": "medium",
+  "branch": "iterate/rollback-uses-target-ref",
+  "spec": ".shipwright/planning/iterate/iterate-2026-07-27-rollback-uses-target-ref.md",
+  "tests_passed": true,
+  "adr": "iterate-2026-07-27-rollback-uses-target-ref"
+}
