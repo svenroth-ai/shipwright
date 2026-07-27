@@ -69,12 +69,16 @@ def test_clone_strategy_requires_clone_name():
     assert completed.returncode == rollback.EXIT_REFUSED
 
 
-def test_a_refusal_says_the_target_was_not_touched(client):
-    """AC9 — a pre-flight refusal must make no claim about what is running."""
+def test_a_refusal_says_the_target_was_not_touched():
+    """AC9 — a pre-flight refusal must make no claim about what is running.
+
+    No `client` fixture: this drives the CLI as a subprocess, so an in-process
+    stubbed client would be invisible to it either way. The refusal happens at
+    argument validation, before any client is constructed.
+    """
     completed, output = _run("--env-name", "test-env", "--strategy", "git")
 
     assert output["mutated"] is False
     assert output["halt"] is False
     assert "nothing on the hosting target was changed" in output["operator_message"].lower()
     assert completed.returncode != rollback.EXIT_HALT
-    del client
