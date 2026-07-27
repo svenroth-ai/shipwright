@@ -1,39 +1,39 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-07-27-pr-review-diff-cap"
+run_id: "iterate-2026-07-27-run-unit-parallel-race"
 phase: "iterate"
 reason: "ensure-current pre-merge refresh"
-timestamp: "2026-07-27T17:16:26.682171+00:00"
+timestamp: "2026-07-27T17:38:49.456380+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-07-27 17:16:26 UTC
+> Auto-generated 2026-07-27 17:38:49 UTC
 
 ## Session Info
 
-- **Session ID**: 1ea85a9d-f698-4336-8e01-ea2f4e2ae714
-- **Timestamp**: 2026-07-27 17:16:26 UTC
+- **Session ID**: 9eda9cad-b9b8-45ff-acd4-2ab5efe17ff6
+- **Timestamp**: 2026-07-27 17:38:49 UTC
 - **Reason**: ensure-current pre-merge refresh
 
 ## Last Iterate
 
-- **Run ID**: iterate-2026-07-27-pr-review-diff-cap
-- **Date**: 2026-07-27T17:16:20.650164Z
-- **Type**: change
+- **Run ID**: iterate-2026-07-27-run-unit-parallel-race
+- **Date**: 2026-07-27T17:38:43.705219Z
+- **Type**: bug
 - **Complexity**: medium
-- **Branch**: iterate/pr-review-diff-cap
-- **ADR**: iterate-2026-07-27-pr-review-diff-cap
+- **Branch**: iterate/run-unit-parallel-race
+- **ADR**: iterate-2026-07-27-run-unit-parallel-race
 - **Tests passed**: True
-- **Spec**: .shipwright/planning/iterate/2026-07-27-pr-review-diff-cap.md
+- **Spec**: .shipwright/planning/iterate/iterate-2026-07-27-run-unit-parallel-race.md
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/pr-review-diff-cap
-- **Run ID**: `iterate-2026-07-27-pr-review-diff-cap`
-- **Spec**: .shipwright/planning/iterate/2026-07-27-pr-review-diff-cap.md
-- **Complexity**: medium (`prior_source: history`, n=20; scope keyword said `trivial`)
-- **External Review Marker**: stale (predates spec (2026-07-27T16:40:17))
+- **Branch**: iterate/run-unit-parallel-race
+- **Run ID**: `iterate-2026-07-27-run-unit-parallel-race`
+- **Spec**: .shipwright/planning/iterate/iterate-2026-07-27-run-unit-parallel-race.md
+- **Complexity**: medium (`prior_source: history`, n=20)
+- **External Review Marker**: missing
 
 ### Mandatory replay on Resume
 
@@ -51,8 +51,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/pr-review-diff-cap
-- **Last Commit**: 7a6f37b7 Merge remote-tracking branch 'origin/main' into iterate/pr-review-diff-cap
+- **Branch**: iterate/run-unit-parallel-race
+- **Last Commit**: ba02f7b9 Merge remote-tracking branch 'origin/main' into iterate/run-unit-parallel-race
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -77,7 +77,7 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 378
+- **Total work events**: 379
 - **Last iterate**: change — iterate: raise the PR-review diff cap, cut at a file boundary, name what went unreviewed (2026-07-27)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 

@@ -1,0 +1,10 @@
+{
+  "run_id": "iterate-2026-07-27-run-unit-parallel-race",
+  "date": "2026-07-27T17:38:43.705219Z",
+  "type": "bug",
+  "complexity": "medium",
+  "branch": "iterate/run-unit-parallel-race",
+  "spec": ".shipwright/planning/iterate/iterate-2026-07-27-run-unit-parallel-race.md",
+  "tests_passed": true,
+  "adr": "iterate-2026-07-27-run-unit-parallel-race"
+}

@@ -1,0 +1,1 @@
+The release CLI reports why it stopped instead of crashing the caller. On a pipe the child picked the locale codec (cp1252 on Windows) while every reader decodes UTF-8, so one non-ASCII character in a refusal message — or merely a project under a non-ASCII path — killed the caller's reader thread and turned the explanation into `stderr = None`.

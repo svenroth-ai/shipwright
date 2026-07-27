@@ -1,152 +1,126 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-07-27-pr-review-diff-cap",
+    "run_id": "iterate-2026-07-27-run-unit-parallel-race",
     "date": "2026-07-27",
     "unit": {
       "status": "passed",
-      "passed": 6261,
-      "total": 6261
+      "passed": 6007,
+      "total": 6007
     },
     "integration": {
       "status": "passed",
-      "passed": 422,
-      "total": 422
+      "passed": 1,
+      "total": 1
     },
     "pgtap": {
-      "status": "not_run",
+      "status": "skipped",
       "passed": 0,
       "total": 0
     },
     "e2e": {
       "status": "passed",
-      "passed": 41,
-      "total": 41
+      "passed": 6,
+      "total": 6
     },
     "design_fidelity": {
-      "status": "not_run",
+      "status": "skipped",
       "passed": 0,
       "total": 0
     },
     "smoke": {
-      "status": "not_run"
+      "status": "skipped"
     },
+    "degraded": [
+      "external code review single-sourced: gemini returned an empty reply (status=degraded); only openai answered (verdict=revise). Its two findings were both accepted and fixed.",
+      "the real-OS Windows fidelity test (test_real_windows_reader_does_not_lose_the_write) is skipped on Linux CI by platform gate; the injected-failure tests cover the same logic on every platform."
+    ],
     "surface_verification": {
       "surface": "cli",
-      "runner": "uv run pytest plugins/shipwright-security/tests/test_pr_review_script.py plugins/shipwright-security/tests/test_pr_review_truncation.py -q",
+      "runner": "uv run --with pytest --with pytest-mock pytest plugins/shipwright-changelog/tests/test_integration.py -q -p no:cacheprovider",
       "exit_code": 0,
-      "tests_run": 41,
-      "evidence_path": "C:\\01_Development\\shipwright\\.worktrees\\pr-review-diff-cap\\.shipwright\\runs\\iterate-2026-07-27-pr-review-diff-cap\\surface_verification.log",
-      "timestamp": "2026-07-27T17:11:54.637Z"
+      "tests_run": 6,
+      "evidence_path": "C:\\01_Development\\shipwright\\.worktrees\\run-unit-parallel-race\\.shipwright\\runs\\iterate-2026-07-27-run-unit-parallel-race\\surface_verification.log",
+      "timestamp": "2026-07-27T17:30:22.911Z",
+      "attempts": 1
     },
     "test_completeness": {
       "status": "complete",
       "behaviors": [
         {
-          "behavior": "the cap still covers the largest real diff measured (467,591 chars, PR #447)",
+          "behavior": "AC1 a write retries past a transient holder and lands",
           "disposition": "tested",
-          "evidence": "test_pr_review_truncation.py::test_the_cap_still_covers_the_largest_real_diff_measured PASSED \u2014 the only test that fails if the cap is lowered back"
+          "evidence": "shared/tests/test_atomic_write_windows_retry.py::test_replace_retries_while_a_reader_holds_the_destination PASSED; real-OS: test_real_windows_reader_does_not_lose_the_write PASSED"
         },
         {
-          "behavior": "a diff under the cap is returned untouched",
+          "behavior": "AC2 a write held past the budget raises, never silently drops",
           "disposition": "tested",
-          "evidence": "::test_a_diff_under_the_cap_is_untouched, ::test_exactly_at_the_cap_is_not_truncated PASSED"
+          "evidence": "test_replace_gives_up_loudly_when_the_handle_never_closes PASSED"
         },
         {
-          "behavior": "every section kept in the reviewed diff is whole",
+          "behavior": "AC3 no .tmp debris on the failure path (best-effort on Windows)",
           "disposition": "tested",
-          "evidence": "::test_every_kept_section_is_whole_and_the_rest_are_named PASSED"
+          "evidence": "test_replace_gives_up_loudly_when_the_handle_never_closes PASSED (asserts no *.tmp and prior content intact)"
         },
         {
-          "behavior": "an over-budget section is skipped; later fitting sections are still reviewed",
+          "behavior": "AC4 POSIX behaviour unchanged - PermissionError propagates at once",
           "disposition": "tested",
-          "evidence": "::test_a_huge_file_is_omitted_while_a_small_neighbour_is_reviewed_whole PASSED"
+          "evidence": "test_posix_never_retries PASSED"
         },
         {
-          "behavior": "a file is supplied in part only when no whole section fits",
+          "behavior": "AC5 winerror 5 is ambiguous, so a genuine denial is retried too",
           "disposition": "tested",
-          "evidence": "::test_only_when_no_section_fits_is_one_supplied_in_part PASSED"
+          "evidence": "test_a_genuine_denial_is_retried_too_because_winerror_5_is_ambiguous PASSED; probed: read-only + directory destinations both winerror 5"
         },
         {
-          "behavior": "at most one section is ever partial",
+          "behavior": "AC6 shipwright-run stays green under 12-way self-contention",
           "disposition": "tested",
-          "evidence": "::test_at_most_one_section_is_ever_partial PASSED"
+          "evidence": "12-copy contention harness, 96 samples, 0 failures (pre-fix 1/48); F0 suite GREEN, 18/18 units"
         },
         {
-          "behavior": "a diff with no parseable header still fails closed and invents no paths",
+          "behavior": "AC7 the retry never outlives the configured budget",
           "disposition": "tested",
-          "evidence": "::test_a_diff_with_no_parseable_header_still_fails_closed PASSED"
+          "evidence": "test_retry_never_outlives_the_configured_budget PASSED"
         },
         {
-          "behavior": "an oversized preamble still respects the cap",
+          "behavior": "AC8 neither fix nor tests depend on patching os.name",
           "disposition": "tested",
-          "evidence": "::test_an_oversized_preamble_still_respects_the_cap PASSED"
+          "evidence": "test_no_test_here_forces_the_platform_by_patching_os_name PASSED (source drift guard over all three atomic-write test modules)"
         },
         {
-          "behavior": "the reviewed diff never exceeds the cap for any input",
+          "behavior": "AC9 a read survives a writer's in-flight replace (delete-pending)",
           "disposition": "tested",
-          "evidence": "::test_the_reviewed_diff_never_exceeds_the_cap PASSED (4 cap sizes)"
+          "evidence": "test_read_retries_while_a_writer_is_mid_replace PASSED"
         },
         {
-          "behavior": "an omission whose path cannot be parsed is counted, not silently dropped",
+          "behavior": "AC9 an unreadable file raises rather than degrading to ''",
           "disposition": "tested",
-          "evidence": "::test_an_omission_whose_path_cannot_be_parsed_is_counted_not_dropped PASSED"
+          "evidence": "test_read_gives_up_loudly_rather_than_inventing_an_empty_config PASSED"
         },
         {
-          "behavior": "a partially included file whose own header is unparseable is disclosed too",
+          "behavior": "the read budget stays longer than the write budget",
           "disposition": "tested",
-          "evidence": "::test_a_partial_file_whose_own_header_is_unparseable_is_still_disclosed PASSED \u2014 regression from the external code review"
+          "evidence": "test_the_read_budget_is_longer_than_the_write_budget PASSED"
         },
         {
-          "behavior": "a rename reports both ends when omitted",
+          "behavior": "an unlisted winerror is re-raised on the first attempt",
           "disposition": "tested",
-          "evidence": "::test_a_rename_reports_both_ends_when_omitted PASSED"
+          "evidence": "test_a_winerror_outside_the_transient_set_is_not_retried PASSED"
         },
         {
-          "behavior": "a non-positive cap is rejected",
+          "behavior": "a changelog refusal message survives a non-ASCII project path",
           "disposition": "tested",
-          "evidence": "::test_a_non_positive_cap_is_rejected PASSED"
-        },
-        {
-          "behavior": "the PR comment names omitted and partially included files separately",
-          "disposition": "tested",
-          "evidence": "test_pr_review_lib.py::test_the_comment_names_what_went_unreviewed PASSED"
-        },
-        {
-          "behavior": "files that could not be named are disclosed to humans rather than hidden",
-          "disposition": "tested",
-          "evidence": "::test_files_that_could_not_be_named_are_disclosed_not_hidden, ::test_no_parseable_header_says_so_rather_than_implying_nothing_was_lost PASSED"
-        },
-        {
-          "behavior": "the model is told what it is not seeing, bounded and labelled untrusted",
-          "disposition": "tested",
-          "evidence": "::test_the_model_is_told_which_files_the_cap_left_out, ::test_the_model_is_told_the_file_names_are_untrusted, ::test_model_facing_names_are_bounded_and_sanitised, ::test_unnameable_omissions_reach_the_model_too PASSED"
-        },
-        {
-          "behavior": "a hostile PR-controlled path cannot break out of the comment or of stderr",
-          "disposition": "tested",
-          "evidence": "::test_a_hostile_path_cannot_break_out_of_the_comment, test_pr_review_script.py::test_an_oversized_diff_names_the_unreviewed_file_in_every_sink PASSED (ANSI escape in a path)"
-        },
-        {
-          "behavior": "the tuple-to-record contract change fails loudly at a stale call site",
-          "disposition": "tested",
-          "evidence": "test_pr_review_lib.py::test_the_record_cannot_be_unpacked_like_the_old_tuple PASSED"
-        },
-        {
-          "behavior": "a live OpenRouter review of a ~1M-character diff",
-          "disposition": "untestable",
-          "reason_code": "requires-external-nondeterministic-service",
-          "reason": "Needs a real provider call on a real oversized PR. The size arithmetic is pinned deterministically above, and the provider's context limit was probed live (context_length=1000000). The live leg is what the gate itself exercises in CI."
+          "evidence": "plugins/shipwright-changelog/tests/test_integration.py::test_refusal_message_survives_a_non_ascii_project_path PASSED (F0.5 cli surface, tests_run=6)"
         }
       ],
       "counts": {
-        "testable": 18,
-        "tested": 18,
-        "untestable": 1,
+        "testable": 13,
+        "tested": 13,
+        "untestable": 0,
         "untested_testable": 0
       },
       "enumeration_basis": {
-        "acs": 7,
-        "covered_acs": 7
+        "acs": 9,
+        "covered_acs": 9
       }
     }
   },
@@ -157,8 +131,8 @@
     "measured_at": "2026-07-04T00:00:00Z"
   },
   "source_state": {
-    "run_id": "iterate-2026-07-27-requirement-writeback-loop",
-    "commit": "c30d6ce169253104aec50fe4b822012563fd8e13",
+    "run_id": "iterate-2026-07-27-run-unit-parallel-race",
+    "commit": "cc18dbeaa8db7af1dc28ab49abe5ec2420fc7306",
     "dirty": true
   }
 }
