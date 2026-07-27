@@ -1,0 +1,149 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-07-27-pr-review-diff-cap",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-07-27T17:01:13.624426+00:00",
+      "disposition": null,
+      "recorded_by": "iterate-step-7",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 7,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "Edge-Case",
+          "file": null,
+          "line": null,
+          "finding": "The algorithm's fallback condition for AC6 (\"if not one section fit\") is ambiguous and could incorrectly drop the partial file if later small sections fit.",
+          "suggestion": "If a first large section exceeds the limit but a subsequent small section does fit, the `partial` fallback (AC6) will technically be bypassed because \"one section fit\" (the small one). This results in the first large section being entirely `omitted` rather than `partial`, missing the value described in D3. Explicitly evaluate the first section for the fallback: if `len(preamble) + len(sections[0]) > max_chars`, make `sections[0]` `partial` and truncate immediately, putting",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The fallback/skip rules are underspecified for mixed-size sections. The normal walk skips an oversized section and can include smaller later sections, but the AC6 fallback says to partially include the “first section” only when no section fits. It does not explicitly state how to classify all other sections in that fallback, or how to handle an over-cap first section followed by a fitting later section. This can yield inconsistent `omitted` versus `partial` reporting.",
+          "suggestion": "Define the classification invariant precisely: every section is exactly one of fully included, omitted, or partial; at most one section is partial; and all non-included, non-partial sections are omitted. Add tests for (a) an over-cap first file followed by a small fitting file, (b) a nearly cap-sized preamble with multiple sections, and (c) fallback partial inclusion plus subsequent omitted files.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "The stated tests do not explicitly verify the AC3 model-facing path. The proposed script test verifies non-zero exit and the human comment, while the library test verifies comment rendering; neither necessarily proves that `build_pr_meta` carries correctly labelled, bounded `omitted` and `partial` lists into the actual LLM request.",
+          "suggestion": "Add a focused `build_pr_meta` unit test or an end-to-end mocked LLM-request assertion that verifies both lists reach the model metadata, retain their distinct labels, and obey the 30-path bound.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The plan relies on `_section_paths()` for explanatory filenames but does not commit to testing Git’s difficult path forms. A rename test alone does not cover quoted `diff --git` headers, spaces, tabs, non-ASCII names, escaped quotes/backslashes, deletions, or names containing both old and new rename paths. Since AC3 promises affected-file names, silently misparsed paths would make the explanation misleading even though the authoritative incomplete signal remains safe.",
+          "suggestion": "Add parser tests using actual Git-style quoted headers and rename/delete forms, and specify whether a rename is reported as the new path, both paths, or a normalized `old → new` representation. If parsing cannot reliably identify a header’s path, retain fail-closed behavior and emit the same “affected files could not be identified” explanation rather than a potentially incorrect path list.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "security",
+          "file": null,
+          "line": null,
+          "finding": "“Code-formatted” PR-controlled paths are not, by themselves, a sufficient injection defense for either Markdown comments or the LLM prompt. Git filenames can contain Markdown-relevant characters and control-like content; more importantly, an LLM can still interpret imperative text inside a code-formatted filename. Adding up to 30 paths to model metadata expands this existing untrusted-input surface.",
+          "suggestion": "Normalize or escape control characters and Markdown delimiters before rendering comments, preferably using a canonical quoted/JSON-like representation. In the model prompt, put filenames in a clearly delimited data field and explicitly instruct the model that paths are untrusted identifiers, never instructions. Test filenames containing backticks, newlines/escaped newlines, and instruction-like text.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "The new `ReviewedDiff` record is sound, but the plan inconsistently describes the API change as a “2-tuple → 3-tuple” return-arity change even though it is actually a tuple-to-record contract change. This can lead implementers to preserve positional unpacking or miss consumers outside the named tests.",
+          "suggestion": "Treat this as a type/API migration: globally search for imports and positional unpacking of `truncate_diff`, update all consumers to named fields, and adjust the plan wording. A static type check or focused import/usage search should be part of validation.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "max_chars` is a required lower-layer parameter but its valid domain is not stated. A zero or negative value makes AC6’s non-empty partial-diff guarantee impossible and can produce confusing classifications in direct unit use.",
+          "suggestion": "Validate `max_chars > 0` at `truncate_diff_at_boundary` entry and raise a clear `ValueError`; add one small test. The production wrapper always supplies a valid constant, but this makes the utility contract unambiguous.  Overall, the core design is sound: it preserves fail-closed gating independently of parser success, centralizes section parsing, and provides useful transparency for truncated reviews. The implementation should be revised to make mixed-section classification deterministic and to verify/secure the newly added model-facing filename metadata.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-07-27T16:39:40.256840+00:00",
+      "disposition": null,
+      "recorded_by": "iterate-step-3.5",
+      "parse_status": "structured",
+      "raw_excerpt": "[gemini] **Category:** Edge-Case\n**Severity:** Medium\n**Finding:** The algorithm's fallback condition for AC6 (\"if not one section fit\") is ambiguous and could incorrectly drop the partial file if later small sections fit.\n**Suggestion:** If a first large section exceeds the limit but a subsequent small section *does* fit, the `partial` fallback (AC6) will technically be bypassed because \"one section fit\" (the small one). This results in the first large section being entirely `omitted` rather than `partial`, missing the value described in D3. Explicitly evaluate the first section for the fallback: if `len(preamble) + len(sections[0]) > max_chars`, make `sections[0]` `partial` and truncate immediately, putting\n\n[openai] 1. **Category:** edge-case  \n   **Severity:** medium  \n   **Finding:** The fallback/skip rules are underspecified for mixed-size sections. The normal walk skips an oversized section and can include smaller later sections, but the AC6 fallback says to partially include the “first section” only when no section fits. It does not explicitly state how to classify all other sections in that fallback, or how to handle an over-cap first section followed by a fitting later section. This can yield inconsistent `omitted` versus `partial` reporting.  \n   **Suggestion:** Define the classification invariant precisely: every section is exactly one of fully included, omitted, or partial; at most one section is partial; and all non-included, non-partial sections are omitted. Add tests for (a) an over-cap first file followed by a small fitting file, (b) a nearly cap-sized preamble with multiple sections, and (c) fallback partial inclusion plus subsequent omitted files.\n\n2. **Category:** dependency  \n   **Severity:** medium  \n   **Finding:** The stated tests do not explicitly verify the AC3 model-facing path. The proposed script test verifies non-zero exit and the human comment, while the library test verifies comment rendering; neither necessarily proves that `build_pr_meta` carries correctly labelled, bounded `omitted` and `partial` lists into the actual LLM request.  \n   **Suggestion:** Add a focused `build_pr_meta` unit test or an end-to-end mocked LLM-request assertion that verifies both lists reach the model metadata, retain their distinct labels, and obey the 30-path bound.\n\n3. **Category:** edge-case  \n   **Severity:** medium  \n   **Finding:** The plan relies on `_section_paths()` for explanatory filenames but does not commit to testing Git’s difficult path forms. A rename test alone does not cover quoted `diff --git` headers, spaces, tabs, non-ASCII names, escaped quotes/backslashes, deletions, or names containing both old and new rename paths. Since AC3 promises […truncated]"
+    },
+    "code": {
+      "review_type": "code",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-07-27T17:01:31.426432+00:00",
+      "disposition": "Not run: this session carries a standing instruction not to invoke the Agent tool unless the user asks for it, and the internal code reviewer is a subagent. Substituted, not skipped: the external code review (GPT + Gemini via external_review.py --mode code) ran against the full diff and returned two medium findings, both real bugs, both fixed with regression tests (unparseable partial-section header, unsanitised stderr sink). Recorded as not_run rather than completed so the record never claims a pass that did not happen.",
+      "recorded_by": "iterate-step-8",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-07-27T17:01:31.553432+00:00",
+      "disposition": "Not run: this session carries a standing instruction not to invoke the Agent tool unless the user asks for it, and the internal doubt reviewer is a subagent. Substituted, not skipped: the external code review (GPT + Gemini via external_review.py --mode code) ran against the full diff and returned two medium findings, both real bugs, both fixed with regression tests (unparseable partial-section header, unsanitised stderr sink). Recorded as not_run rather than completed so the record never claims a pass that did not happen.",
+      "recorded_by": "iterate-step-8",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 2,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "bug",
+          "file": "plugins/shipwright-security/scripts/lib/pr_review_diff_filter.py:224-229",
+          "line": null,
+          "finding": "In the `not kept`/partial-file branch, `unidentified` is calculated only from `sections[1:]`. If the first oversized section has an unparseable path header (for example, a Git-quoted path), it is supplied partially but contributes neither `partial` nor `unidentified`. The resulting comment/meta can incorrectly say that there were “no parseable file headers,” despite a boundary being found, and fails to disclose the unidentifiable partially included file as required by AC3/AC6.",
+          "suggestion": "Determine whether `_section_paths(sections[0])` returned a path; if it did not, increment `unidentified` for the partially included first section as well. Add a test for a single oversized quoted-header section and assert `unidentified == 1`.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "security",
+          "file": "plugins/shipwright-security/scripts/tools/pr_review.py:282-286",
+          "line": null,
+          "finding": "The new stderr message joins `reviewed.omitted` and `reviewed.partial` directly from PR-controlled diff paths without applying `safe_path` or equivalent sanitization. A raw Git path can contain terminal escape/control characters, allowing terminal/log injection when CI logs are viewed; this bypasses the sanitizer applied to comment and model-meta rendering.",
+          "suggestion": "Sanitize each path before joining it for stderr output, using the shared `safe_path` helper (or move this formatting into the sanitized rendering helper). Add a test containing an escape character in a parseable path and assert it is not emitted raw.  Overall assessment: ship-with-fixes. The boundary-aware truncation and authoritative fail-closed behavior largely implement the requested design, but the unidentifiable partial-section accounting and raw stderr sink need correction first. SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-07-27T16:59:23.065240+00:00",
+      "disposition": null,
+      "recorded_by": "iterate-step-8",
+      "parse_status": "partial",
+      "raw_excerpt": "[gemini] <no review returned: provider returned an empty reply>\n\n[openai] - Category: bug  \n  Severity: medium  \n  File: `plugins/shipwright-security/scripts/lib/pr_review_diff_filter.py:224-229`  \n  Finding: In the `not kept`/partial-file branch, `unidentified` is calculated only from `sections[1:]`. If the first oversized section has an unparseable path header (for example, a Git-quoted path), it is supplied partially but contributes neither `partial` nor `unidentified`. The resulting comment/meta can incorrectly say that there were “no parseable file headers,” despite a boundary being found, and fails to disclose the unidentifiable partially included file as required by AC3/AC6.  \n  Suggestion: Determine whether `_section_paths(sections[0])` returned a path; if it did not, increment `unidentified` for the partially included first section as well. Add a test for a single oversized quoted-header section and assert `unidentified == 1`.\n\n- Category: security  \n  Severity: medium  \n  File: `plugins/shipwright-security/scripts/tools/pr_review.py:282-286`  \n  Finding: The new stderr message joins `reviewed.omitted` and `reviewed.partial` directly from PR-controlled diff paths without applying `safe_path` or equivalent sanitization. A raw Git path can contain terminal escape/control characters, allowing terminal/log injection when CI logs are viewed; this bypasses the sanitizer applied to comment and model-meta rendering.  \n  Suggestion: Sanitize each path before joining it for stderr output, using the shared `safe_path` helper (or move this formatting into the sanitized rendering helper). Add a test containing an escape character in a parseable path and assert it is not emitted raw.\n\nOverall assessment: ship-with-fixes. The boundary-aware truncation and authoritative fail-closed behavior largely implement the requested design, but the unidentifiable partial-section accounting and raw stderr sink need correction first.  \nSHIPWRIGHT_VERDICT: revise"
+    }
+  }
+}

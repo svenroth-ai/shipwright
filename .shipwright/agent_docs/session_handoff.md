@@ -1,39 +1,39 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-07-27-handoff-tally-and-gate-honesty"
+run_id: "iterate-2026-07-27-pr-review-diff-cap"
 phase: "iterate"
 reason: "ensure-current pre-merge refresh"
-timestamp: "2026-07-27T16:51:22.659338+00:00"
+timestamp: "2026-07-27T17:16:26.682171+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-07-27 16:51:22 UTC
+> Auto-generated 2026-07-27 17:16:26 UTC
 
 ## Session Info
 
-- **Session ID**: a7fa3da4-74bf-406f-b92b-f309691d90f9
-- **Timestamp**: 2026-07-27 16:51:22 UTC
+- **Session ID**: 1ea85a9d-f698-4336-8e01-ea2f4e2ae714
+- **Timestamp**: 2026-07-27 17:16:26 UTC
 - **Reason**: ensure-current pre-merge refresh
 
 ## Last Iterate
 
-- **Run ID**: iterate-2026-07-27-handoff-tally-and-gate-honesty
-- **Date**: 2026-07-27T16:51:16.505525Z
-- **Type**: bug
+- **Run ID**: iterate-2026-07-27-pr-review-diff-cap
+- **Date**: 2026-07-27T17:16:20.650164Z
+- **Type**: change
 - **Complexity**: medium
-- **Branch**: iterate/handoff-tally-and-gate-honesty
-- **ADR**: iterate-2026-07-27-handoff-tally-and-gate-honesty
+- **Branch**: iterate/pr-review-diff-cap
+- **ADR**: iterate-2026-07-27-pr-review-diff-cap
 - **Tests passed**: True
-- **Spec**: .shipwright/planning/iterate/iterate-2026-07-27-handoff-tally-and-gate-honesty.md
+- **Spec**: .shipwright/planning/iterate/2026-07-27-pr-review-diff-cap.md
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/handoff-tally-and-gate-honesty
-- **Run ID**: iterate-2026-07-27-handoff-tally-and-gate-honesty
-- **Spec**: .shipwright/planning/iterate/iterate-2026-07-27-handoff-tally-and-gate-honesty.md
-- **Complexity**: medium
-- **External Review Marker**: completed (external_review_state.json @ 2026-07-27T16:51:42)
+- **Branch**: iterate/pr-review-diff-cap
+- **Run ID**: `iterate-2026-07-27-pr-review-diff-cap`
+- **Spec**: .shipwright/planning/iterate/2026-07-27-pr-review-diff-cap.md
+- **Complexity**: medium (`prior_source: history`, n=20; scope keyword said `trivial`)
+- **External Review Marker**: stale (predates spec (2026-07-27T16:40:17))
 
 ### Mandatory replay on Resume
 
@@ -51,8 +51,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/handoff-tally-and-gate-honesty
-- **Last Commit**: 594e248a Merge remote-tracking branch 'origin/main' into iterate/handoff-tally-and-gate-honesty
+- **Branch**: iterate/pr-review-diff-cap
+- **Last Commit**: 7a6f37b7 Merge remote-tracking branch 'origin/main' into iterate/pr-review-diff-cap
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -68,17 +68,17 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 | Event | Type | Source | Date |
 |-------|------|--------|------|
+| evt-950798de | grade_snapshot | — | 2026-07-27 |
+| evt-36d0f887 | work_completed | iterate (iterate: raise the PR-review diff cap, cut at a file boundary, name what went unreviewed) | 2026-07-27 |
 | evt-76f1beff | grade_snapshot | — | 2026-07-27 |
 | evt-90ce4f39 | work_completed | iterate (iterate: document the delivery watch in the guide) | 2026-07-27 |
 | evt-cf1bab8b | work_completed | iterate (iterate: requirement write-back loop — design rounds and build sections declare their requirement impact) | 2026-07-27 |
-| evt-d95d0486 | grade_snapshot | — | 2026-07-27 |
-| evt-67df62f3 | work_completed | iterate (iterate: handoff tally and gate honesty) | 2026-07-27 |
 
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 377
-- **Last iterate**: change — iterate: document the delivery watch in the guide (2026-07-27)
+- **Total work events**: 378
+- **Last iterate**: change — iterate: raise the PR-review diff cap, cut at a file boundary, name what went unreviewed (2026-07-27)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
 ## Recent Decisions

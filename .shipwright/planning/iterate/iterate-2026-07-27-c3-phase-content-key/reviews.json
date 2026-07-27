@@ -1,0 +1,66 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-07-27-c3-phase-content-key",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-07-27T16:16:24.079497+00:00",
+      "disposition": null,
+      "recorded_by": "orchestrator",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": "openrouter",
+      "completed_at": "2026-07-27T16:16:32.070174+00:00",
+      "disposition": null,
+      "recorded_by": "external_review.py",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "code": {
+      "review_type": "code",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-07-27T16:16:39.854335+00:00",
+      "disposition": "Internal code-reviewer subagent not spawned: this session runs under a standing operator instruction not to invoke the Agent tool. Code-review coverage was provided instead by external_review.py --mode code over 3 rounds (2 providers), which found and closed 2 real defects (ANSI/control-char leakage into operator output; is_file() collapsing unreadable into missing); final verdict openai=approve, plus the orchestrator Self-Review in the iterate spec.",
+      "recorded_by": "orchestrator",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-07-27T16:16:49.077809+00:00",
+      "disposition": "Doubt-reviewer subagent not spawned: this session runs under a standing operator instruction not to invoke the Agent tool. Advisory pass per the iterate Override Classes; the adversarial function was partly served by the external code review, which returned 'revise' twice on real defects before approving.",
+      "recorded_by": "orchestrator",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": "openrouter",
+      "completed_at": "2026-07-27T16:16:32.185598+00:00",
+      "disposition": null,
+      "recorded_by": "external_review.py",
+      "parse_status": null,
+      "raw_excerpt": null
+    }
+  }
+}
