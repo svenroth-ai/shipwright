@@ -92,6 +92,19 @@ class TestBuildCoverage:
         assert iac["status"] == "covered"
         assert iac["tool"] is None
 
+    def test_a_case_variant_capability_does_not_duplicate_a_class(self) -> None:
+        """A backend advertising 'SAST' must not add a second row alongside the
+        'sast' one CLASS_ORDER already emits — two rows for one logical class
+        would let the manifest disagree with itself about what was checked."""
+        coverage = build_coverage(available={"SAST", "sca", "secrets"})
+        classes = [r["class"] for r in coverage]
+        assert classes == list(CLASS_ORDER), classes
+        assert _status_of(coverage, "sast") == "covered"
+
+    def test_a_case_variant_requested_type_still_matches(self) -> None:
+        coverage = build_coverage(available={"sast"}, requested=["SAST"])
+        assert _status_of(coverage, "sast") == "covered"
+
     def test_every_status_is_in_the_closed_vocabulary(self) -> None:
         coverage = build_coverage(
             available={"sast"},

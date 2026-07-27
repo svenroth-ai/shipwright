@@ -59,7 +59,9 @@ def list_archived_scans(history_dir: Path) -> list[tuple[str, list[Path]]]:
 def previous_scan_json(history_dir: Path, exclude_scan_id: str | None = None) -> Path | None:
     """Newest archived ``*.json`` sidecar, skipping ``exclude_scan_id``.
 
-    This is the "previous run" a comparison is drawn against.
+    This is the "previous run" a comparison is drawn against. Deliberately has
+    no caller in this half — the run-to-run comparison that consumes it lands in
+    Part 2; it lives here because the archive it reads is this module's.
     """
     for stem, files in list_archived_scans(history_dir):
         if exclude_scan_id is not None and stem == exclude_scan_id:

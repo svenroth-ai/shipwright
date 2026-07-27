@@ -31,9 +31,11 @@ _CONTROL_CHARS = re.compile(r"[\x00-\x1f\x7f]+")
 TEXT_CAP = 160
 DETAIL_CAP = 400
 
-# Mirrors scan_coverage.COVERAGE_STATUSES. Duplicated rather than imported to
-# keep this leaf module import-free (scan_coverage imports IT); the pair is
-# pinned by test_the_vocabulary_matches_scan_coverage.
+# Mirrors scan_coverage.COVERAGE_STATUSES. Duplicated rather than imported
+# because the dependency runs the other way — scan_coverage imports THIS module,
+# so importing back would cycle. The pair is pinned by
+# tests/test_coverage_untrusted_manifest.py::TestSanitizeCoverage
+# ::test_the_vocabulary_matches_scan_coverage.
 VALID_STATUSES: frozenset[str] = frozenset(
     {"covered", "degraded", "not_requested", "not_available"})
 

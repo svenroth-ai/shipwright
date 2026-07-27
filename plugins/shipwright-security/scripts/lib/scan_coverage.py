@@ -39,7 +39,7 @@ from typing import Any, Iterable
 
 # A manifest read back from a caller-supplied artifact is UNTRUSTED — see
 # coverage_sanitize for why, and for the boundary where it is normalized.
-from coverage_sanitize import safe_text, sanitize_coverage  # noqa: F401
+from coverage_sanitize import DETAIL_CAP, safe_text, sanitize_coverage  # noqa: F401
 
 # Weakness class -> the local CLI tool that provides it. Classes a backend
 # offers that are not in this map (Aikido's ``iac``) still get a row, with
@@ -130,7 +130,9 @@ def _degraded_by_class(
             continue
         reason = str(err.get("reason", "unknown"))
         detail = str(err.get("detail", "")).strip()
-        out[cls] = f"{reason}: {detail}"[:300] if detail else reason
+        # Same cap the sanitizer applies on the way back in, so a row does not
+        # change length just by being written and re-read.
+        out[cls] = f"{reason}: {detail}"[:DETAIL_CAP] if detail else reason
     return out
 
 
@@ -156,12 +158,17 @@ def build_coverage(
     would lose the failure.
     """
     tools = SCAN_CLASS_TOOLS if class_tools is None else class_tools
-    available_set = {str(c) for c in available}
-    requested_set = None if requested is None else {str(c) for c in requested}
+    # Case-folded on intake: a backend advertising 'SAST' must not produce a
+    # second row alongside the 'sast' one CLASS_ORDER already emits.
+    available_set = {str(c).strip().lower() for c in available}
+    requested_set = (
+        None if requested is None else {str(c).strip().lower() for c in requested})
     degraded = _degraded_by_class(
         scan_errors, {v: k for k, v in tools.items()})
 
-    # The three local classes first, then any extra capability a backend offers.
+    # CLASS_ORDER first so the three local classes always precede any
+    # backend-specific extra (Aikido's `iac`); the subtraction keeps a local
+    # class from appearing twice.
     classes = list(CLASS_ORDER) + sorted(available_set - set(CLASS_ORDER))
 
     rows: list[dict[str, Any]] = []

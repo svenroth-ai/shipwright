@@ -153,11 +153,16 @@
           "behavior": "No test writes .shipwright/ into the plugin source tree; a test that does fails loudly instead of leaving an untracked file",
           "disposition": "tested",
           "evidence": "conftest.py::_no_source_tree_pollution (autouse). Verified by a throwaway probe that deliberately writes into the plugin root: pytest exits 1 with the actionable message and the tree is restored. Full suite then runs clean."
+        },
+        {
+          "behavior": "A case-variant capability ('SAST') does not produce a second row alongside the 'sast' one CLASS_ORDER already emits",
+          "disposition": "tested",
+          "evidence": "test_scan_coverage.py::test_a_case_variant_capability_does_not_duplicate_a_class + ::test_a_case_variant_requested_type_still_matches PASSED. Verified the test FAILS with the case-fold reverted ('Left contains one more item: SAST'), so it pins the fix."
         }
       ],
       "counts": {
-        "testable": 24,
-        "tested": 24,
+        "testable": 25,
+        "tested": 25,
         "untestable": 0,
         "untested_testable": 0
       },

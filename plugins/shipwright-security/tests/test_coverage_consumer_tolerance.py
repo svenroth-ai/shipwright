@@ -84,7 +84,7 @@ class TestPreFeatureArtifacts:
             "generate_security_report.py", "--project-root", str(tmp_path),
             "--input", str(old), "--output", str(md),
         ]):
-            gsr.main()
+            assert gsr.main() == 0
         body = md.read_text(encoding="utf-8")
         assert "Coverage not reported" in body
         assert "Incomplete Coverage" not in body
@@ -137,6 +137,8 @@ class TestDegradedDerivation:
         errors: list[dict] = []
         _run_gitleaks(str(tmp_path), errors)
         assert [e["reason"] for e in errors] == ["missing_binary"]
-        row = build_coverage(available=set(), scan_errors=errors)[2]
-        assert row["class"] == "secrets"
+        # Looked up by class, not by index: an index silently starts testing
+        # a different row the moment CLASS_ORDER gains an entry.
+        coverage = build_coverage(available=set(), scan_errors=errors)
+        row = next(r for r in coverage if r["class"] == "secrets")
         assert row["status"] == "degraded"
