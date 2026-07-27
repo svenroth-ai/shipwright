@@ -1,10 +1,11 @@
 # Project Activity Dashboard
-> Updated: 2026-07-27 09:08 UTC | Session: 13f13377-3431-4445-b501-bc754d78d6d3 | Run: iterate-2026-07-27-rollback-uses-target-ref
+> Updated: 2026-07-27 11:51 UTC | Session: 98053cc9-0f7c-4be8-b1cc-8b5d8b25d84b | Run: iterate-2026-07-27-adopt-derived-catalogue
 
-## Recent Changes (366 iterations)
+## Recent Changes (367 iterations)
 
 | Type | Description | Tests | Commit | FRs | Date |
 |------|-------------|-------|--------|-----|------|
+| change | iterate: the derived requirements catalogue announces itself | 0/0 |  | FR-01.13 | 2026-07-27 |
 | change | iterate: the review gate stops being bypassable (fail-closed + fork review) | 0/0 |  | infra | 2026-07-27 |
 | change | iterate: phase-gate override leaves evidence; handoff renders phase status | 0/0 |  | FR-01.01 | 2026-07-27 |
 | change | iterate: requirement granularity guidance + advisory I6 check + the Basis-assumed template contradiction | 0/0 |  | compliance | 2026-07-27 |
@@ -373,7 +374,7 @@
 | change | post-adoption framework cleanup (Sub-1A through 1D) | 225/225 | 3db485b | FR-01.01, FR-01.02, FR-01.03 | 2026-05-02 |
 
 ## Test Status
-Last run: 2026-07-27 | Unit: 8980/9000 | Integration: 418/418 | E2E: 12/12 | Smoke: not_run | (iterate)
+Last run: 2026-07-27 | Unit: 526/526 | Integration: 418/418 | E2E: 72/72 | Smoke: skipped | (iterate)
 
 ## Pipeline
 

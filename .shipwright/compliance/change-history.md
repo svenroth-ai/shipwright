@@ -1,18 +1,18 @@
 # Commit Change Log
 
-Generated: 2026-07-27T09:08:42.773123+00:00
-Source-State: run=iterate-2026-07-27-artifact-state-stamping
-Total commits: 1222
+Generated: 2026-07-27T11:51:38.463108+00:00
+Source-State: run=iterate-2026-07-27-adopt-derived-catalogue
+Total commits: 1218
 
 ## Commit Distribution
 
 ```mermaid
 pie title Commit Types
     "fix" : 350
-    "feat" : 337
-    "chore" : 259
+    "feat" : 338
+    "chore" : 255
     "docs" : 147
-    "refactor" : 77
+    "refactor" : 76
     "test" : 31
     "ci" : 11
     "other" : 9
@@ -25,7 +25,7 @@ pie title Commit Types
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
-| 2026-07-27 | deploy | rollback uses the version it was given, and stops overclaiming the rest | 3d137f2cc6e9 |
+| 2026-07-27 | deploy | rollback uses the version it was given, and stops overclaiming the rest (#441) | ce149b07dd04 |
 | 2026-07-27 | run | an override overrides the verdict, never the check (#438) | f6179f6e1ed5 |
 | 2026-07-27 | ci | the PR review gate stops being bypassable (#437) | ec0c7055046f |
 | 2026-07-23 | deps | bump pyasn1 0.6.3 -> 0.6.4 (CVE-2026-59885, CVE-2026-59886) (#432) | 9ffbae764acd |
@@ -376,10 +376,11 @@ pie title Commit Types
 | 2026-03-21 | — | rename skill folders for clean slash commands | 5a8d77658fab |
 | 2026-03-20 | — | update README attribution to svenroth.ai | dd5de7f7d6ab |
 
-### Features (feat) — 337 commits
+### Features (feat) — 338 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-07-27 | adopt | the derived requirements catalogue announces itself | 59a34b0747f4 |
 | 2026-07-27 | iterate | the F0 race warning becomes a tracked follow-up that outlives the run (#439) | ed0b0a346a12 |
 | 2026-07-27 | compliance | produced artifacts name the state they describe (FR-01.10) (#448) | e869a02b60fb |
 | 2026-07-27 | triage | defer from the terminal; cap the failing-check detail (#444) | 631e08055ebc |
@@ -718,15 +719,11 @@ pie title Commit Types
 | 2026-03-20 | — | Task 02 — project templates (CLAUDE.md, agent_docs, CI) | c3a6d2f53bd3 |
 | 2026-03-20 | — | Task 01 — monorepo scaffolding + supabase-nextjs stack profile | 990a138a4690 |
 
-### Chores (chore) — 259 commits
+### Chores (chore) — 255 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
-| 2026-07-27 | churn | regenerate derived snapshots after main merge | 72919d572fd5 |
-| 2026-07-27 | churn | regenerate derived snapshots after main merge | e552af18cbb9 |
-| 2026-07-27 | churn | regenerate derived snapshots after main merge | 1de337630e7e |
-| 2026-07-27 | churn | regenerate derived snapshots after main merge | ec929a5a7774 |
-| 2026-07-27 | triage | sweep 60 outbox append(s) into branch | b08af221e910 |
+| 2026-07-27 | triage | sweep 6 outbox append(s) into branch | b654dedd4549 |
 | 2026-07-26 | review | default external-review GPT model to gpt-5.6-terra (#435) | 8d750a5fc7af |
 | 2026-07-24 | security | stage full compliance write-set in Step 7.5 finalizer (#434) | 5da96ebe8561 |
 | 2026-07-23 | compliance | refresh after security scan (#433) | 2b644805fb7d |
@@ -1134,12 +1131,11 @@ pie title Commit Types
 | 2026-03-21 | — | expand README with pipeline diagram, architecture, and quality gates | 377dc2141b3d |
 | 2026-03-20 | — | add README.md for GitHub repo | 853c8f930132 |
 
-### Refactoring (refactor) — 77 commits
+### Refactoring (refactor) — 76 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
 | 2026-07-27 | shared | split git resolution out of source_state (300-LOC compliance) (#451) | 3cdca5cfc884 |
-| 2026-07-27 | deploy | address the PR-review observations on the rollback fix | a61e1978dd40 |
 | 2026-07-21 | adopt | route the eight scaffolders through one guarded shared/ loader (FR-01.13) (#423) | 736fc8d1712c |
 | 2026-07-20 | requirements | one catalog, stated once in plain language (campaign S6) (#414) | be2561caccd3 |
 | 2026-07-20 | requirements | one FR-table shape from both generators (campaign S5) (#413) | 5eef5076242c |
@@ -1292,7 +1288,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 1222 |
+| Total commits | 1218 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 1222 |
+| Human-authored commits | 1218 |
 

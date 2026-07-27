@@ -406,7 +406,7 @@ Source-State: run=iterate-2026-07-27-adopt-derived-catalogue
 |--------|-------|
 | Total splits built | 0 |
 | Build sections | 0 |
-| Iterate changes | 366 |
+| Iterate changes | 367 |
 | Requirements total | 18 |
 | Requirements verified | 16/18 |
 | Must-have verified | 13/14 |
