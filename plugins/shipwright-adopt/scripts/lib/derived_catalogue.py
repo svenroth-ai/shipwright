@@ -183,12 +183,15 @@ def render_provenance_banner(catalogue: DerivedCatalogue) -> str:
     tally = ", ".join(f"{count} {basis}" for basis, count in catalogue.by_basis.items())
 
     if unconfirmed == 0:
+        all_confirmed = (
+            f"> All **{n}** were worked through with someone who knows the product "
+            f"(`Basis: interview`), so measurements against them describe the "
+            "product rather than a catalogue nobody checked."
+        )
         return "\n".join([
             "> **These requirements have been confirmed with a person.**",
             ">",
-            f"> All **{n}** were worked through with someone who knows the product "
-            f"(`Basis: interview`), so measurements against them describe the "
-            "product rather than a catalogue nobody checked.",
+            all_confirmed,
             ">",
             f"> - How each row was established is its `Basis` cell ({tally}).",
             f"> - Machine-readable copy: `{SUMMARY_REL}`.",
@@ -216,19 +219,30 @@ def render_provenance_banner(catalogue: DerivedCatalogue) -> str:
             "Reading the code is a start; it is not enough on its own."
         )
 
+    # Each multi-fragment line is joined OUTSIDE the list literal. Adjacent
+    # string literals inside a list are implicitly concatenated, so a missing
+    # comma silently merges two entries into one instead of failing — CodeQL
+    # `py/implicit-string-concatenation-in-list` flags exactly that shape, and in
+    # a block whose whole job is to state counts precisely it is worth avoiding.
+    caveat = (
+        "> Until they are confirmed, anything measured against them — "
+        "traceability, coverage, drift — describes *this catalogue*, not the "
+        "product. Treat the numbers accordingly."
+    )
+    next_step = (
+        "> - **Next step:** work through the unconfirmed ones with someone who "
+        f"knows the product, following `{ELICITATION_DOC}`."
+    )
     return "\n".join([
         headline,
         ">",
         body,
         ">",
-        "> Until they are confirmed, anything measured against them — "
-        "traceability, coverage, drift — describes *this catalogue*, not the "
-        "product. Treat the numbers accordingly.",
+        caveat,
         ">",
         f"> - How each row was derived is its `Basis` cell ({tally}).",
         f"> - Machine-readable copy: `{SUMMARY_REL}`.",
-        f"> - **Next step:** work through the unconfirmed ones with someone who "
-        f"knows the product, following `{ELICITATION_DOC}`.",
+        next_step,
     ])
 
 
