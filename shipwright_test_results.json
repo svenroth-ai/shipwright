@@ -1,181 +1,128 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-07-27-pytest-root-composition",
+    "run_id": "iterate-2026-07-27-merge-state-vocabulary",
     "date": "2026-07-27",
     "unit": {
       "status": "passed",
-      "passed": 6643,
-      "total": 6655,
-      "skipped": 12
+      "passed": 5560,
+      "total": 5576,
+      "skipped": 16
     },
     "integration": {
-      "status": "passed",
-      "passed": 422,
-      "total": 422,
-      "skipped": 0
+      "status": "not_run",
+      "passed": 0,
+      "total": 0
     },
     "e2e": {
       "status": "not_run",
-      "reason": "library/plugin monorepo \u2014 no web surface in this diff"
+      "passed": 0,
+      "total": 0
     },
     "smoke": {
-      "status": "not_run",
-      "reason": "no server surface"
+      "status": "not_run"
     },
     "pgtap": {
       "status": "not_run",
-      "reason": "no database"
+      "passed": 0,
+      "total": 0
     },
     "design_fidelity": {
       "status": "not_run",
-      "reason": "no UI in this diff"
+      "passed": 0,
+      "total": 0
     },
     "surface_verification": {
       "surface": "cli",
-      "tests_run": 35,
+      "runner": "uv run pytest shared/tests/test_pr_blockers.py shared/tests/test_pr_blockers_merge_state.py shared/tests/test_watch_pr_delivery.py -v",
       "exit_code": 0,
-      "runner": "uv run pytest shared/tests/test_pytest_root_guard.py shared/tests/test_pytest_root_discovery.py shared/tests/test_contract_namespace_capture.py -q"
+      "tests_run": 55,
+      "evidence_path": "C:\\01_Development\\shipwright\\.worktrees\\merge-state-vocabulary\\.shipwright\\runs\\iterate-2026-07-27-merge-state-vocabulary\\surface_verification.log",
+      "timestamp": "2026-07-27T16:31:47.006Z",
+      "attempts": 1
     },
     "test_completeness": {
       "status": "complete",
       "behaviors": [
         {
-          "behavior": "Two-root session is refused before collection",
+          "behavior": "a conflicted branch (DIRTY) is named as a cause and asserted blocking",
           "disposition": "tested",
-          "evidence": "shared/tests/test_pytest_root_guard.py::test_multi_root_session_is_refused"
+          "evidence": "test_pr_blockers_merge_state.py::test_a_conflicted_branch_is_named PASSED"
         },
         {
-          "behavior": "Refusal precedes the import errors it replaces",
+          "behavior": "an out-of-date branch (BEHIND) is named without claiming it blocks",
           "disposition": "tested",
-          "evidence": "shared/tests/test_pytest_root_guard.py::test_refusal_is_not_a_collection_or_assertion_error"
+          "evidence": "test_pr_blockers_merge_state.py::test_an_out_of_date_branch_is_named_but_not_asserted_blocking PASSED"
         },
         {
-          "behavior": "Refusal names every colliding root",
+          "behavior": "a draft is named and blocking; BLOCKED keeps naming itself",
           "disposition": "tested",
-          "evidence": "shared/tests/test_pytest_root_guard.py::test_refusal_message_names_both_roots"
+          "evidence": "test_pr_blockers_merge_state.py::test_a_draft_is_named_and_blocking PASSED; test_pr_blockers_merge_state.py::test_blocked_keeps_naming_itself_and_blocking PASSED"
         },
         {
-          "behavior": "Refusal gives a command for every root, not just the first two",
+          "behavior": "UNSTABLE is named without claiming it blocks",
           "disposition": "tested",
-          "evidence": "shared/tests/test_pytest_root_guard.py::test_refusal_message_gives_supported_command"
+          "evidence": "test_pr_blockers_merge_state.py::test_unstable_is_named_without_claiming_it_blocks PASSED"
         },
         {
-          "behavior": "Single-root session still collects clean",
+          "behavior": "a mergeable state (CLEAN / HAS_HOOKS) names nothing and reports nothing unknown",
           "disposition": "tested",
-          "evidence": "shared/tests/test_pytest_root_guard.py::test_single_root_session_is_untouched"
+          "evidence": "test_pr_blockers_merge_state.py::test_a_mergeable_state_names_nothing PASSED"
         },
         {
-          "behavior": "Single-root session still executes green",
+          "behavior": "a merge state not in the closed vocabulary is unknown, never fine",
           "disposition": "tested",
-          "evidence": "shared/tests/test_pytest_root_guard.py::test_single_root_session_still_executes_green"
+          "evidence": "test_pr_blockers_merge_state.py::test_an_unrecognised_state_is_unknown_not_clean PASSED"
         },
         {
-          "behavior": "Two-root session launched from a subdirectory is refused",
+          "behavior": "an absent or UNKNOWN state stays unknown",
           "disposition": "tested",
-          "evidence": "shared/tests/test_pytest_root_guard.py::test_multi_root_is_refused_from_a_subdirectory"
+          "evidence": "test_pr_blockers_merge_state.py::test_unknown_and_absent_states_stay_unknown PASSED"
         },
         {
-          "behavior": "A no-positional-argument session is not refused",
+          "behavior": "the merge-state cause composes with thread and required-check causes",
           "disposition": "tested",
-          "evidence": "shared/tests/test_pytest_root_guard.py::test_no_argument_session_is_not_refused"
+          "evidence": "test_pr_blockers_merge_state.py::test_the_merge_state_cause_composes_with_the_others PASSED"
         },
         {
-          "behavior": "Collected items are judged as well as the arguments",
+          "behavior": "the operator line names the observed state, not a fixed BLOCKED phrase",
           "disposition": "tested",
-          "evidence": "shared/tests/test_pytest_root_guard.py::test_collected_items_are_judged_as_well_as_the_arguments"
+          "evidence": "test_pr_blockers_merge_state.py::test_the_observed_state_is_rendered_not_a_fixed_phrase PASSED"
         },
         {
-          "behavior": "A conftest-name-colliding pair still fails loudly",
+          "behavior": "a conflicted PR is not described as 'still queued'",
           "disposition": "tested",
-          "evidence": "shared/tests/test_pytest_root_guard.py::test_conftest_colliding_pair_still_fails_loudly"
+          "evidence": "test_pr_blockers_merge_state.py::test_the_rendered_line_names_a_conflict_instead_of_a_queue PASSED"
         },
         {
-          "behavior": "`pytest .` inside one root is not refused",
+          "behavior": "a real unresolved-thread cause still renders as a count, not a raw path list",
           "disposition": "tested",
-          "evidence": "shared/tests/test_pytest_root_guard.py::test_dot_inside_a_root_is_not_refused"
+          "evidence": "test_pr_blockers_merge_state.py::test_a_real_thread_cause_still_renders_as_a_count PASSED — reproduced red against the pre-fix branch order"
         },
         {
-          "behavior": "Parent-path argument spanning roots is refused",
+          "behavior": "control characters from host-supplied strings never reach the operator line or the JSON",
           "disposition": "tested",
-          "evidence": "shared/tests/test_pytest_root_discovery.py::test_parent_path_spanning_roots_is_refused"
+          "evidence": "test_pr_blockers_merge_state.py::test_control_characters_from_the_host_never_reach_the_line PASSED"
         },
         {
-          "behavior": "`::` selector is split off before matching",
+          "behavior": "the gh shells stay wired: the GraphQL query is complete and the branch is URL-encoded",
           "disposition": "tested",
-          "evidence": "shared/tests/test_pytest_root_discovery.py::test_node_id_selector_is_stripped"
-        },
-        {
-          "behavior": "Relative args resolve against the invocation dir",
-          "disposition": "tested",
-          "evidence": "shared/tests/test_pytest_root_discovery.py::test_relative_args_resolve_against_the_invocation_dir"
-        },
-        {
-          "behavior": "Vendored tests under .venv/node_modules are not roots",
-          "disposition": "tested",
-          "evidence": "shared/tests/test_pytest_root_discovery.py::test_skip_dirs_keep_vendored_tests_out_of_discovery"
-        },
-        {
-          "behavior": "Discovery prunes rather than post-filters",
-          "disposition": "tested",
-          "evidence": "shared/tests/test_pytest_root_discovery.py::test_discovery_does_not_descend_into_skipped_dirs"
-        },
-        {
-          "behavior": "Nested fixture tests dirs are not separate roots",
-          "disposition": "tested",
-          "evidence": "shared/tests/test_pytest_root_discovery.py::test_fixture_tests_dirs_are_not_roots"
-        },
-        {
-          "behavior": "Every CI root survives alone",
-          "disposition": "tested",
-          "evidence": "shared/tests/test_pytest_root_discovery.py::test_every_ci_root_survives_alone"
-        },
-        {
-          "behavior": "Collected-items backstop maps files to their roots",
-          "disposition": "tested",
-          "evidence": "shared/tests/test_pytest_root_discovery.py::test_roots_containing_maps_collected_files_to_their_roots"
-        },
-        {
-          "behavior": "Captured scripts.lib raises a named ImportError, not ModuleNotFoundError",
-          "disposition": "tested",
-          "evidence": "shared/tests/test_contract_namespace_capture.py::test_captured_scripts_lib_raises_named_importerror"
-        },
-        {
-          "behavior": "Capture error does not blame the compliance plugin",
-          "disposition": "tested",
-          "evidence": "shared/tests/test_contract_namespace_capture.py::test_capture_error_does_not_blame_the_compliance_plugin"
-        },
-        {
-          "behavior": "Capture error states sys.path order cannot fix it",
-          "disposition": "tested",
-          "evidence": "shared/tests/test_contract_namespace_capture.py::test_capture_error_explains_that_syspath_order_cannot_fix_it"
-        },
-        {
-          "behavior": "Uncaptured process imports the contract normally",
-          "disposition": "tested",
-          "evidence": "shared/tests/test_contract_namespace_capture.py::test_clean_process_imports_contract_normally"
-        },
-        {
-          "behavior": "shared/scripts/tools docstring no longer asserts a false ordering rule",
-          "disposition": "tested",
-          "evidence": "shared/tests/test_contract_namespace_capture.py::test_tools_init_docstring_has_no_false_ordering_claim"
+          "evidence": "test_pr_blockers.py::test_fetch_review_threads_builds_a_complete_query PASSED; ::test_fetch_branch_rules_url_encodes_the_branch PASSED"
         }
       ],
       "counts": {
-        "total": 24,
-        "tested": 24,
+        "testable": 13,
+        "tested": 13,
         "untestable": 0,
         "untested_testable": 0
+      },
+      "enumeration_basis": {
+        "acs": 5,
+        "covered_acs": 5
       }
     },
     "degraded": [
-      {
-        "condition": "classifier_risk_flag_false_positive",
-        "detail": "classify_complexity returned risk_flag 'touches_auth' from message PROSE; risk_detectors.py is diff-authoritative and the diff touches no auth path. Overridden; mandatory review ran regardless."
-      },
-      {
-        "condition": "external_review_partial",
-        "detail": "external_review.py: gemini returned finish_reason=length (truncated) on BOTH the code and iterate passes, so only openai answered. Compensated by three opus subagent reviews (spec/code/doubt)."
-      }
+      "Review passes 'code' and 'doubt' recorded not_run: subagent review is disabled for this session by operator configuration. A full external code review ran instead and found a real regression (both legs independently), which was fixed and pinned by a test proven red against the pre-fix code.",
+      "'plan' recorded not_run: external plan review is a medium+ phase and this run is small. The design came from a reproduced failure on PR #462 plus GitHub's documented MergeStateStatus enum, not from speculation."
     ]
   },
   "coverage": {

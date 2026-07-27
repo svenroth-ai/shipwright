@@ -1,7 +1,7 @@
 # Project Activity Dashboard
-> Updated: 2026-07-27 17:38 UTC | Session: 2a2ccc95-e7ec-4ca6-bcdb-601ae9e9b002 | Run: iterate-2026-07-27-pytest-root-composition
+> Updated: 2026-07-27 18:26 UTC | Session: 9058f47a-25f4-4469-b517-e3b5c91347e0 | Run: iterate-2026-07-27-merge-state-vocabulary
 
-## Recent Changes (381 iterations)
+## Recent Changes (382 iterations)
 
 | Type | Description | Tests | Commit | FRs | Date |
 |------|-------------|-------|--------|-----|------|
@@ -12,6 +12,7 @@
 | change | iterate: requirement write-back loop — design rounds and build sections declare their requirement impact | 0/0 |  | FR-01.04, FR-01.05 | 2026-07-27 |
 | change | iterate: the phase canon asks whether the handoff belongs to this run | 0/0 |  | FR-01.01 | 2026-07-27 |
 | change | iterate: bounded sharing-violation retry on both sides of the atomic-write boundary | 0/0 |  | FR-01.01, FR-01.09 | 2026-07-27 |
+| change | iterate: the merge state is a vocabulary, not a BLOCKED flag | 0/0 |  | FR-01.11 | 2026-07-27 |
 | change | iterate: inherited failures and coverage gaps are recorded as inherited | 0/0 |  | FR-01.13 | 2026-07-27 |
 | change | iterate: the four Step-9 gates become code, closing trg-88f721be (3 of 3) | 0/0 |  | tooling | 2026-07-27 |
 | change | iterate: reviewer verdicts recorded, disagreement is its own outcome (1 of 3) | 0/0 |  | FR-01.03 | 2026-07-27 |
@@ -388,7 +389,7 @@
 | change | post-adoption framework cleanup (Sub-1A through 1D) | 225/225 | 3db485b | FR-01.01, FR-01.02, FR-01.03 | 2026-05-02 |
 
 ## Test Status
-Last run: 2026-07-27 | Unit: 6643/6655 | Integration: 422/422 | Smoke: not_run | (iterate)
+Last run: 2026-07-27 | Unit: 5560/5576 | Smoke: not_run | (iterate)
 
 ## Pipeline
 
