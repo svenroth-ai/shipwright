@@ -1,18 +1,18 @@
 # Commit Change Log
 
-Generated: 2026-07-27T16:51:16.606875+00:00
-Source-State: run=iterate-2026-07-27-handoff-tally-and-gate-honesty
+Generated: 2026-07-27T15:50:13.106639+00:00
+Source-State: run=iterate-2026-07-27-guide-delivery-watch
 Consistency-audit: never run
-Total commits: 1225
+Total commits: 1227
 
 ## Commit Distribution
 
 ```mermaid
 pie title Commit Types
-    "fix" : 350
+    "fix" : 351
     "feat" : 345
     "chore" : 255
-    "docs" : 147
+    "docs" : 148
     "refactor" : 76
     "test" : 31
     "ci" : 11
@@ -22,10 +22,11 @@ pie title Commit Types
 
 ## Changes by Type
 
-### Fixes (fix) — 350 commits
+### Fixes (fix) — 351 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-07-27 | changelog | the release-note writer preserves the history it read (#452) | 97392eeacfa2 |
 | 2026-07-27 | deploy | rollback uses the version it was given, and stops overclaiming the rest (#441) | ce149b07dd04 |
 | 2026-07-27 | run | an override overrides the verdict, never the check (#438) | f6179f6e1ed5 |
 | 2026-07-27 | ci | the PR review gate stops being bypassable (#437) | ec0c7055046f |
@@ -731,7 +732,7 @@ pie title Commit Types
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
-| 2026-07-27 | triage | sweep 3 outbox append(s) into branch | c896f8f2500e |
+| 2026-07-27 | triage | sweep 3 outbox append(s) into branch | 54319a446fec |
 | 2026-07-26 | review | default external-review GPT model to gpt-5.6-terra (#435) | 8d750a5fc7af |
 | 2026-07-24 | security | stage full compliance write-set in Step 7.5 finalizer (#434) | 5da96ebe8561 |
 | 2026-07-23 | compliance | refresh after security scan (#433) | 2b644805fb7d |
@@ -987,10 +988,11 @@ pie title Commit Types
 | 2026-03-28 | — | add shipwright-run uv.lock | ef1cc1ad180c |
 | 2026-03-20 | — | initial commit with spec and task list | 07ca9c1de51c |
 
-### Documentation (docs) — 147 commits
+### Documentation (docs) — 148 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-07-27 | guide | the finalization walkthrough ends at delivery, not at arming | bd85c4efb740 |
 | 2026-07-27 | campaign | correct the revert attribution in the REQ-3 ledger | ff8825879571 |
 | 2026-07-21 | security | document operator-run converge for adopted repos (#420) | d9aa64b32f99 |
 | 2026-07-09 | constitution | require plain-language questions to the user (#354) | f879a73a4903 |
@@ -1296,7 +1298,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 1225 |
+| Total commits | 1227 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 1225 |
+| Human-authored commits | 1227 |
 
