@@ -203,13 +203,15 @@ class TestFilterGeneratedPaths:
     def test_filtering_lets_a_big_diff_fit_under_cap(self):
         # The whole point: a diff that WOULD truncate fits once generated noise
         # is dropped, so the review runs instead of failing closed.
+        # The fixture is sized FROM the cap: hard-coding a line count silently
+        # stops exercising the over-cap path the day the cap is raised.
+        filler = "+x\n" * ((L.MAX_DIFF_CHARS // 3) + 1_000)
         big_generated = _section(
-            ".shipwright/compliance/test-evidence.md", body="@@ -1 +1 @@\n" + "+x\n" * 120_000)
+            ".shipwright/compliance/test-evidence.md", body="@@ -1 +1 @@\n" + filler)
         small_source = _section("shared/real.py")
         diff = big_generated + small_source
         assert len(diff) > L.MAX_DIFF_CHARS
         filtered, excluded = L.filter_generated_paths(diff)
         assert len(filtered) < L.MAX_DIFF_CHARS
-        _, truncated = L.truncate_diff(filtered)
-        assert truncated is False
+        assert L.truncate_diff(filtered).incomplete is False
         assert excluded == [".shipwright/compliance/test-evidence.md"]

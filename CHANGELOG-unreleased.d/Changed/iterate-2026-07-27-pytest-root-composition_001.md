@@ -1,0 +1,1 @@
+`shared.contracts.compliance` names the namespace capture that broke it - which module was taken, by which directory, and why sys.path order cannot undo it - rather than raising `ModuleNotFoundError: No module named 'scripts.lib.data_collector'` against the one component not at fault.

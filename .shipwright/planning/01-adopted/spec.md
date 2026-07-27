@@ -85,6 +85,14 @@ _Where the work detail lives_ at the end of this document.
   only mode, when any command tries to advance that run, then it is refused with
   a one-line instruction for how to migrate it, and is never silently
   reinterpreted. The run still opens for reading, so past runs stay inspectable.
+- (E) Given a phase's completion checks ask whether the handover note a person
+  reads on returning is current, when that is decided, then it is decided by
+  whether the note says it belongs to the run being checked — not by how
+  recently the file was written, so a run that spent a long time waiting is
+  never reported as stale. A phase whose work never produces such a note is
+  named as out of scope rather than reported as failing, and a check that cannot
+  reach an answer says which part it could not read instead of passing.
+  (iterate-2026-07-27-c3-phase-content-key)
 
 <a id="fr-0102"></a>
 ### FR-01.02 — /shipwright-project
@@ -640,6 +648,12 @@ _Where the work detail lives_ at the end of this document.
   that the merge is blocked — rather than only how long it waited. Anything that
   could not be checked is said to be unchecked, never counted as clear.
   (iterate-2026-07-27-name-the-blocker)
+- (E) Given the code host states a reason a change cannot be merged — it
+  conflicts with what it is merging into, it is still a draft, its base has
+  moved on, or the host itself refuses it — when the wait is reported, then that
+  reason is named in words. A state the host reports that is not recognised is
+  reported as not understood rather than as nothing being wrong.
+  (iterate-2026-07-27-merge-state-vocabulary)
 - (E) Given the record of a change is checked for describing the run that is
   finishing, when that check runs, then it is decided by whether the record
   names that run, and never by how recently the file was written — so a run that

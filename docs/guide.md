@@ -2036,7 +2036,7 @@ Shipwright ships a **pipeline-wide finalization verifier** that runs after every
 |------|-----------|----------|
 | **C1** | `phase_completed` event exists in `shipwright_events.jsonl` for the phase | ERROR |
 | **C2** | `.shipwright/agent_docs/build_dashboard.md` mentions the phase | WARNING |
-| **C3** | `.shipwright/agent_docs/session_handoff.md` is fresh (canon-marker frontmatter) | WARNING |
+| **C3** | `.shipwright/agent_docs/session_handoff.md` canon-marker frontmatter names the run being verified | WARNING |
 | **C4** | `.shipwright/agent_docs/decision_log.md` has an ADR referencing the phase | ERROR (decision-taking phases only) |
 | **C5** | `CHANGELOG.md [Unreleased]` has a bullet under the right category | ERROR (user-facing phases only) |
 
