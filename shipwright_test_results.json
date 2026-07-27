@@ -4,8 +4,8 @@
     "date": "2026-07-27",
     "unit": {
       "status": "passed",
-      "passed": 556,
-      "total": 556
+      "passed": 569,
+      "total": 569
     },
     "integration": {
       "status": "passed",
@@ -19,8 +19,8 @@
     },
     "e2e": {
       "status": "passed",
-      "passed": 24,
-      "total": 24
+      "passed": 25,
+      "total": 25
     },
     "design_fidelity": {
       "status": "skipped",
@@ -38,15 +38,23 @@
       {
         "condition": "internal_code_reviewer_and_doubt_reviewer_subagents_not_dispatched",
         "reason": "session rule forbids spawning subagents unless the user requests it. Covered by the external CODE review over the staged diff (2 models, 4 findings: 3 fixed, 1 declined on verified evidence) plus 9 empirical probes; both review types closed explicitly in reviews.json with a disposition, never left pending."
+      },
+      {
+        "condition": "external_code_review_gemini_leg_returned_no_finding",
+        "reason": "round-3 fresh review on the pushed head: the gemini leg returned leaked scratchpad text instead of a verdict. The gpt leg succeeded and produced 3 findings (2 fixed, 1 declined on verified evidence), so the round is not a clean two-model pass and is recorded as such."
+      },
+      {
+        "condition": "f0_flake_observed_once",
+        "reason": "first full F0 re-run was RED on shipwright-run::test_three_process_writers_no_truncation_no_lost_update; passes in isolation and this diff touches neither shipwright-run nor run-config locking — a three-process writer test flaking under 18-unit parallel load. Re-run GREEN 18/18."
       }
     ],
     "surface_verification": {
       "surface": "cli",
       "runner": "uv run --directory plugins/shipwright-adopt --extra dev pytest tests/test_record_inherited_baseline.py tests/test_spec_document.py tests/test_adopt_pipeline_subprocess.py -q",
       "exit_code": 0,
-      "tests_run": 24,
+      "tests_run": 25,
       "evidence_path": ".shipwright/runs/iterate-2026-07-27-adopt-derived-catalogue-honesty/surface_verification.json",
-      "timestamp": "2026-07-27T08:07:48.856Z"
+      "timestamp": "2026-07-27T08:32:18.438Z"
     },
     "test_completeness": {
       "status": "complete",
@@ -243,11 +251,31 @@
           "disposition": "untestable",
           "reason_code": "covered-by-existing-test",
           "reason": "the banner is prompt-rendered text, not code. What IS mechanical is tested: the commit builder required unconfirmed_fr_count kwarg, and the drift test pinning that the Step H reference doc names the artifact to read and the follow-up to cite."
+        },
+        {
+          "behavior": "confirmation cannot be claimed without an interview basis (either direction)",
+          "disposition": "tested",
+          "evidence": "test_derived_catalogue_doc.py::test_confirmation_cannot_be_claimed_without_an_interview_basis and ::test_an_interview_row_claiming_to_be_unconfirmed_is_also_rejected PASSED; end-to-end test_record_inherited_baseline.py::test_a_catalogue_claiming_confirmation_without_an_interview_stops_the_step PASSED"
+        },
+        {
+          "behavior": "a row without a basis is rejected, and an interview-backed document still round-trips",
+          "disposition": "tested",
+          "evidence": "test_derived_catalogue_doc.py::test_a_row_without_a_basis_is_rejected and ::test_an_interview_backed_document_round_trips PASSED"
+        },
+        {
+          "behavior": "the provenance block states what is true of THIS catalogue: all-derived, partly confirmed, fully confirmed",
+          "disposition": "tested",
+          "evidence": "test_derived_catalogue.py::test_a_partly_confirmed_catalogue_does_not_claim_nobody_confirmed_it, ::test_a_fully_confirmed_catalogue_says_so_and_asks_for_nothing, ::test_an_all_derived_catalogue_still_says_nobody PASSED"
+        },
+        {
+          "behavior": "no banner variant emits a table row",
+          "disposition": "tested",
+          "evidence": "test_derived_catalogue.py::test_no_banner_variant_emits_a_table_row PASSED (3 variants)"
         }
       ],
       "counts": {
-        "testable": 37,
-        "tested": 37,
+        "testable": 41,
+        "tested": 41,
         "untestable": 1,
         "untested_testable": 0
       },

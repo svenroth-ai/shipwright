@@ -155,8 +155,21 @@ Boundary Probe + round-trip tests are therefore **mandatory**, not advisory.
      rejected a fixture **in this iterate** that sliced `requirements` to one row
      while leaving `total: 3`. The guard's first catch was its own author's.
   9. **F0.5 surface run** (`cli`, real executables, cwd = project_root):
-     `exit_code 0`, `tests_run 24` — the E.18 CLI, the spec/summary contract, and
+     `exit_code 0`, `tests_run 25` — the E.18 CLI, the spec/summary contract, and
      the full adopt-pipeline subprocess.
+  10. *Is `confirmed` safe once it must be a real boolean?* **No** — a
+      count-consistent document setting every row to `{"basis": "code",
+      "confirmed": true}` still passed and suppressed the follow-up. Found by the
+      round-3 fresh review that the CI gate's fail-closed forced. **Fixed:**
+      `confirmed` must equal `basis in CONFIRMED_BASES`, checked in both
+      directions.
+  11. *Is the provenance block true for every catalogue?* **No** — it said
+      "nobody has confirmed them yet" unconditionally, which is false the moment
+      the elicitation follow-up lands its first answer. **Fixed:** three variants
+      rendered from the counts; all three re-checked for table-shaped lines.
+  12. *Did the `write_spec` return-type change break an unshown caller?* Repo-wide
+      grep → only `generate_adoption_artifacts` and two test modules, all updated
+      → **finding declined on evidence.**
 
 - **Test Completeness Ledger** — 0 untested-testable.
 
@@ -199,16 +212,23 @@ Boundary Probe + round-trip tests are therefore **mandatory**, not advisory.
   | 35 | Step H's reference doc names the artifact, the kwarg and the follow-up | tested | `test_skill_references_link::test_step_h_reference_tells_the_agent_where_the_count_comes_from` PASSED |
   | 36 | the wired-up generator writes both artifacts and they agree | tested | `test_adopt_pipeline_subprocess` (real CLI) + `test_spec_document` PASSED; F0.5 `tests_run 24, exit 0` |
   | 37 | `effective_features` is the one answer to "which rows exist", and does not alias its input | tested | `test_spec_table::test_effective_features_*` (3 cases) PASSED |
-  | 38 | the Step H handoff *banner* renders these counts | untestable | `covered-by-existing-test` — the banner is prompt-rendered text, not code; what IS mechanical (the required kwarg, the doc naming the source) is rows 12 and 35. Stated as a limitation, not hidden. |
+  | 38 | confirmation cannot be claimed without an interview basis (either direction) | tested | `test_derived_catalogue_doc::test_confirmation_cannot_be_claimed_without_an_interview_basis`, `::test_an_interview_row_claiming_to_be_unconfirmed_is_also_rejected`, e2e `test_record_inherited_baseline::test_a_catalogue_claiming_confirmation_without_an_interview_stops_the_step` PASSED |
+  | 39 | a row without a basis is rejected; an interview-backed document still round-trips | tested | `test_derived_catalogue_doc::test_a_row_without_a_basis_is_rejected`, `::test_an_interview_backed_document_round_trips` PASSED |
+  | 40 | the provenance block states what is true of THIS catalogue (all-derived / partly confirmed / fully confirmed) | tested | `test_derived_catalogue::test_a_partly_confirmed_catalogue_does_not_claim_nobody_confirmed_it`, `::test_a_fully_confirmed_catalogue_says_so_and_asks_for_nothing`, `::test_an_all_derived_catalogue_still_says_nobody` PASSED |
+  | 41 | no banner variant emits a table row | tested | `test_derived_catalogue::test_no_banner_variant_emits_a_table_row` PASSED (3 variants) |
+  | 42 | the Step H handoff *banner* renders these counts | untestable | `covered-by-existing-test` — the banner is prompt-rendered text, not code; what IS mechanical (the required kwarg, the doc naming the source) is rows 12 and 35. Stated as a limitation, not hidden. |
 
 - **Confidence-pattern check.**
-  *Asymptote (depth):* yes — twice. A first pass looked complete before probe 6
-  (the dataclass loader) and again before probe 7 (the ratchet); each found a
-  blocker. A third pass after the external code review found the
-  `bool("false")` hole. So one more probe was run each time rather than
-  declaring confidence — probe 8 is the last, and it caught a defect in this
-  iterate's own fixtures.
-  *Coverage (breadth):* 38 behaviors enumerated, 37 `tested`, 1 `untestable`
+  *Asymptote (depth):* yes — **four times**, and the last one is the instructive
+  one. The run looked complete before probe 6 (the dataclass loader), before
+  probe 7 (the bloat ratchet), and before the round-2 review found the
+  `bool("false")` hole. It then looked complete again — and the CI review gate
+  failing **closed** on diff truncation forced a fresh full-context review, which
+  found that fixing `bool("false")` had not actually closed the hole: a
+  count-consistent `{"basis": "code", "confirmed": true}` still passed. The
+  pattern to take seriously is that each "surely now" was wrong, including after
+  a clean two-model review.
+  *Coverage (breadth):* 42 behaviors enumerated, 41 `tested`, 1 `untestable`
   with a closed-vocabulary reason, **0 untested-testable**. 8 acceptance
   criteria, all covered.
   *Integration composition:* `cross_component` does **not** fire — the diff
@@ -221,7 +241,7 @@ Boundary Probe + round-trip tests are therefore **mandatory**, not advisory.
 
 - **Surface:** `cli`
 - **Runner command:** `uv run --directory plugins/shipwright-adopt --extra dev pytest tests/test_record_inherited_baseline.py tests/test_spec_document.py tests/test_adopt_pipeline_subprocess.py -q`
-- **Result:** `exit_code 0`, `tests_run 24`
+- **Result:** `exit_code 0`, `tests_run 25`
 - **Evidence path:** `.shipwright/runs/iterate-2026-07-27-adopt-derived-catalogue-honesty/surface_verification.json`
 - **Justification (if surface=none):** n/a — real executables drive the new E.18
   CLI and the full adopt artifact pipeline as subprocesses against temp repos.

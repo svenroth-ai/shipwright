@@ -162,3 +162,45 @@ def test_the_card_states_its_count_as_of_onboarding() -> None:
     assert "at onboarding" in card["title"]
     assert "as of\nonboarding" in card["detail"] or "as of onboarding" in card["detail"]
     assert SUMMARY_REL in card["detail"]
+
+
+def test_confirmation_cannot_be_claimed_without_an_interview_basis() -> None:
+    """External code review, round 3 — the same hole as the truthy string, one
+    level deeper. Requiring a real boolean is not enough on its own: a
+    count-consistent document could set every row to `basis: code, confirmed:
+    true` and pass, suppressing the follow-up. Confirmation is not an independent
+    fact; it IS `basis in CONFIRMED_BASES`."""
+    doc = to_document(summarize(FEATURES, split_name="01-adopted"))
+    doc["requirements"][0]["confirmed"] = True
+    doc["confirmed"], doc["unconfirmed"] = 1, 2   # counts kept self-consistent
+    with pytest.raises(CatalogueDocumentError, match="contradicts `basis`"):
+        catalogue_from_document(doc)
+
+
+def test_an_interview_row_claiming_to_be_unconfirmed_is_also_rejected() -> None:
+    """The rule bites in both directions — a lie about provenance is a lie
+    whichever way it leans, and only a symmetric check makes the field derivable
+    rather than assertable."""
+    doc = to_document(summarize(
+        [{"fr_id": "FR-01.01", "label": "x", "basis": "interview"}],
+        split_name="01-adopted"))
+    doc["requirements"][0]["confirmed"] = False
+    doc["confirmed"], doc["unconfirmed"] = 0, 1
+    with pytest.raises(CatalogueDocumentError, match="contradicts `basis`"):
+        catalogue_from_document(doc)
+
+
+def test_a_row_without_a_basis_is_rejected() -> None:
+    doc = to_document(summarize(FEATURES, split_name="01-adopted"))
+    doc["requirements"][0]["basis"] = "  "
+    with pytest.raises(CatalogueDocumentError, match="non-empty string"):
+        catalogue_from_document(doc)
+
+
+def test_an_interview_backed_document_round_trips() -> None:
+    """The rule must not block the state it exists to make reachable."""
+    cat = summarize([{"fr_id": "FR-01.01", "label": "x", "basis": "interview"}],
+                    split_name="01-adopted")
+    back = catalogue_from_document(to_document(cat))
+    assert back == cat
+    assert back.confirmed == 1

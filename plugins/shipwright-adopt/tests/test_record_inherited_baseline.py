@@ -260,3 +260,21 @@ def test_a_catalogue_that_lies_about_confirmation_stops_the_step(tmp_path: Path)
     assert proc.returncode != 0
     assert "not a usable catalogue" in proc.stderr
     assert not (tmp_path / ".shipwright" / "triage.jsonl").exists()
+
+
+def test_a_catalogue_claiming_confirmation_without_an_interview_stops_the_step(
+    tmp_path: Path,
+) -> None:
+    """End to end for the round-3 finding: a count-consistent catalogue that
+    marks code-derived rows confirmed must not be able to suppress the
+    follow-up. Nothing is written and no card is filed."""
+    doc = _catalogue_of(1)
+    doc["requirements"][0] = {**doc["requirements"][0], "confirmed": True}
+    doc["confirmed"], doc["unconfirmed"] = 1, 0
+    _seed(tmp_path, catalogue=doc)
+
+    proc = _run(tmp_path)
+    assert proc.returncode != 0
+    assert "contradicts `basis`" in proc.stderr
+    assert not (tmp_path / "shipwright_known_failures.json").exists()
+    assert not (tmp_path / ".shipwright" / "triage.jsonl").exists()

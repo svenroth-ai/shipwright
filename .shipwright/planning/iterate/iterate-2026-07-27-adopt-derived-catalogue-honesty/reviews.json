@@ -56,9 +56,9 @@
       "findings_count": 0,
       "findings": [],
       "provider": "openrouter",
-      "completed_at": "2026-07-27T07:58:11.429986+00:00",
+      "completed_at": "2026-07-27T08:33:07.096117+00:00",
       "disposition": null,
-      "recorded_by": "external_review.py --mode code (gemini-3.1-pro-preview + gpt-5.6-terra); 3 findings accepted + fixed, 1 verified-false",
+      "recorded_by": "external_review.py --mode code, TWO rounds: (1) staged diff pre-fix, (2) FRESH on the pushed head after the CI gate failed closed on truncation. Round 3 found 2 real defects (confirmed-vs-basis integrity: high; banner claiming nobody-confirmed when rows are confirmed: medium), both fixed with tests; 1 declined on verified evidence; gemini leg degraded (leaked scratchpad, no finding)",
       "parse_status": null,
       "raw_excerpt": null
     }

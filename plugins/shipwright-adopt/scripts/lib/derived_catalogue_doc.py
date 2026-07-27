@@ -21,9 +21,15 @@ from pathlib import Path
 from typing import Any
 
 try:  # tool context: lib/ is on sys.path
-    from derived_catalogue import SUMMARY_REL, DerivedCatalogue, DerivedRequirement
+    from derived_catalogue import (
+        CONFIRMED_BASES,
+        SUMMARY_REL,
+        DerivedCatalogue,
+        DerivedRequirement,
+    )
 except ImportError:  # test / package context: scripts/ on sys.path
     from lib.derived_catalogue import (  # type: ignore[no-redef]
+        CONFIRMED_BASES,
         SUMMARY_REL,
         DerivedCatalogue,
         DerivedRequirement,
@@ -69,10 +75,19 @@ def catalogue_from_document(doc: dict[str, Any]) -> DerivedCatalogue:
     How Step E.18 reads what Step E wrote, without re-deriving anything from the
     features — one derivation, one answer.
 
-    ``confirmed`` must be a real boolean. A lenient read would make
-    ``bool("false")`` true, and a malformed or hand-edited document could then
-    report zero unconfirmed requirements and suppress the follow-up this whole
-    mechanism exists to guarantee (external code review, high).
+    Two rules, both closing the same hole one level apart — a document that
+    claims confirmation nobody gave, thereby suppressing the follow-up this whole
+    mechanism exists to guarantee. Both were found by external code review, and
+    the second only after the first was fixed:
+
+    * ``confirmed`` must be a real boolean. A lenient read makes
+      ``bool("false")`` true.
+    * ``confirmed`` must **agree with** ``basis``. Requiring a boolean is not
+      enough on its own: a count-consistent document could set every row to
+      ``{"basis": "code", "confirmed": true}`` and pass. Confirmation is not an
+      independent fact — it is exactly ``basis in CONFIRMED_BASES``, so a row
+      asserting otherwise (in either direction) is rejected. No row can claim a
+      person agreed without saying that person is the source.
 
     Counts are recomputed from the entries, which are the ground truth; a stated
     ``total`` / ``unconfirmed`` that disagrees with them is **rejected** rather
@@ -99,10 +114,21 @@ def catalogue_from_document(doc: dict[str, Any]) -> DerivedCatalogue:
                 "a truthy string here would mark an unconfirmed requirement as "
                 "confirmed and silence the follow-up"
             )
+        basis = raw.get("basis")
+        if not isinstance(basis, str) or not basis.strip():
+            raise CatalogueDocumentError(f"{fr_id}: `basis` must be a non-empty string")
+        basis = basis.strip()
+        if confirmed != (basis in CONFIRMED_BASES):
+            raise CatalogueDocumentError(
+                f"{fr_id}: `confirmed`={confirmed} contradicts `basis`={basis!r} — "
+                f"confirmation is not an independent fact, it is exactly "
+                f"`basis in {sorted(CONFIRMED_BASES)}`. A row cannot claim a person "
+                f"agreed without naming that person as the source."
+            )
         rows.append(DerivedRequirement(
             fr_id=fr_id,
             name=str(raw.get("name") or ""),
-            basis=str(raw.get("basis") or ""),
+            basis=basis,
             confirmed=confirmed,
         ))
 

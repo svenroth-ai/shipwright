@@ -30,6 +30,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "scripts"))
 
 from lib.derived_catalogue import (  # noqa: E402
     CONFIRMATION_DEDUP_KEY,
+    ELICITATION_DOC,
     SUMMARY_REL,
     render_provenance_banner,
     summarize,
@@ -195,3 +196,42 @@ def test_every_emitted_basis_passes_the_audit_vocabulary(features) -> None:
     expressed as a qualifier on the cell."""
     for req in summarize(features, split_name="01-adopted").requirements:
         assert classify(req.basis).kind == "known", req.basis
+
+
+# --------------------------------------------------------------------------- #
+# The banner states what is true of THIS catalogue (external code review, round 3)
+# --------------------------------------------------------------------------- #
+
+_INTERVIEWED = {"fr_id": "FR-01.09", "label": "Checkout", "basis": "interview"}
+
+
+def test_a_partly_confirmed_catalogue_does_not_claim_nobody_confirmed_it() -> None:
+    """The block's whole job is honesty, so it must not keep saying "nobody" once
+    the elicitation follow-up starts landing answers."""
+    banner = render_provenance_banner(
+        summarize([*FEATURES, _INTERVIEWED], split_name="01-adopted"))
+    assert "nobody has confirmed" not in banner
+    assert "3 of these 4 requirements" in banner
+    assert "**1** have been worked through with a person" in banner
+    assert CONFIRMATION_DEDUP_KEY in banner
+
+
+def test_a_fully_confirmed_catalogue_says_so_and_asks_for_nothing() -> None:
+    """No unconfirmed rows means no follow-up is filed, so the block must not
+    point at a card that does not exist."""
+    banner = render_provenance_banner(summarize([_INTERVIEWED], split_name="01-adopted"))
+    assert "have been confirmed with a person" in banner
+    assert "unconfirmed" not in banner
+    assert CONFIRMATION_DEDUP_KEY not in banner
+    assert ELICITATION_DOC not in banner
+
+
+def test_an_all_derived_catalogue_still_says_nobody() -> None:
+    banner = render_provenance_banner(summarize(FEATURES, split_name="01-adopted"))
+    assert "nobody has confirmed them yet" in banner
+
+
+@pytest.mark.parametrize("features", [FEATURES, [*FEATURES, _INTERVIEWED], [_INTERVIEWED]])
+def test_no_banner_variant_emits_a_table_row(features) -> None:
+    banner = render_provenance_banner(summarize(features, split_name="01-adopted"))
+    assert not [ln for ln in banner.splitlines() if ln.strip().startswith("|")]

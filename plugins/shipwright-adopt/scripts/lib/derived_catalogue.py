@@ -139,17 +139,56 @@ def render_provenance_banner(catalogue: DerivedCatalogue) -> str:
     the column map for every row beneath it. Keeping detected text out entirely is
     why a pipe in a repo's code comments cannot reach this block — stronger than
     escaping it afterwards, because there is nothing to escape.
+
+    **It states what is true of THIS catalogue, not a fixed sentence.** A block
+    whose whole job is honesty must not say "nobody has confirmed them" once some
+    rows are ``Basis: interview`` — which is reachable the moment the elicitation
+    follow-up starts landing answers. Three cases, and only the first says
+    "nobody" (external code review).
     """
-    n, unconfirmed = catalogue.total, catalogue.unconfirmed
+    n, confirmed, unconfirmed = (
+        catalogue.total, catalogue.confirmed, catalogue.unconfirmed,
+    )
     tally = ", ".join(f"{count} {basis}" for basis, count in catalogue.by_basis.items())
-    lines = [
-        "> **These requirements were derived by reading the code — nobody has "
-        "confirmed them yet.**",
+
+    if unconfirmed == 0:
+        return "\n".join([
+            "> **These requirements have been confirmed with a person.**",
+            ">",
+            f"> All **{n}** were worked through with someone who knows the product "
+            f"(`Basis: interview`), so measurements against them describe the "
+            "product rather than a catalogue nobody checked.",
+            ">",
+            f"> - How each row was established is its `Basis` cell ({tally}).",
+            f"> - Machine-readable copy: `{SUMMARY_REL}`.",
+        ])
+
+    if confirmed:
+        headline = (
+            f"> **{unconfirmed} of these {n} requirements were derived by reading "
+            "the code and are still unconfirmed.**"
+        )
+        body = (
+            f"> **{confirmed}** have been worked through with a person; the other "
+            f"**{unconfirmed}** were read out of this codebase and nobody has "
+            "agreed they describe what the software is actually for."
+        )
+    else:
+        headline = (
+            "> **These requirements were derived by reading the code — nobody has "
+            "confirmed them yet.**"
+        )
+        body = (
+            f"> `/shipwright-adopt` derived **{n}** requirement(s) from this "
+            f"codebase, of which **{unconfirmed} are unconfirmed**: no person has "
+            "agreed that they describe what this software is actually for. "
+            "Reading the code is a start; it is not enough on its own."
+        )
+
+    return "\n".join([
+        headline,
         ">",
-        f"> `/shipwright-adopt` derived **{n}** requirement(s) from this codebase, "
-        f"of which **{unconfirmed} are unconfirmed**: no person has agreed that "
-        "they describe what this software is actually for. Reading the code is a "
-        "start; it is not enough on its own.",
+        body,
         ">",
         "> Until they are confirmed, anything measured against them — "
         "traceability, coverage, drift — describes *this catalogue*, not the "
@@ -157,11 +196,10 @@ def render_provenance_banner(catalogue: DerivedCatalogue) -> str:
         ">",
         f"> - How each row was derived is its `Basis` cell ({tally}).",
         f"> - Machine-readable copy: `{SUMMARY_REL}`.",
-        f"> - **Next step:** work through them with someone who knows the product, "
-        f"following `{ELICITATION_DOC}`. Onboarding filed the follow-up in the "
-        f"Triage Inbox as `{CONFIRMATION_DEDUP_KEY}`.",
-    ]
-    return "\n".join(lines)
+        f"> - **Next step:** work through the unconfirmed ones with someone who "
+        f"knows the product, following `{ELICITATION_DOC}`. Onboarding filed the "
+        f"follow-up in the Triage Inbox as `{CONFIRMATION_DEDUP_KEY}`.",
+    ])
 
 
 def confirmation_triage(

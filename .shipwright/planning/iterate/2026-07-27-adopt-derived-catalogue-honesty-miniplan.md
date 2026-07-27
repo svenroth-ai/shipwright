@@ -143,3 +143,27 @@ split the same way. Nothing was grandfathered.
 **The new self-consistency guard immediately caught a fixture in this very
 iterate** — a test built a 1-row catalogue while leaving `total: 3` in place.
 That is the check doing its job on the first thing it looked at.
+
+---
+
+## External CODE review — round 3 (fresh, on the pushed head)
+
+The CI `PR Review` gate failed **closed** on diff truncation (~51k input tokens,
+`truncated=True`) — the designed behaviour for a large diff, not a finding. The
+protocol is a fresh review by full-context models on the CURRENT head, then the
+`skip-pr-review` override. That review found two real defects the earlier passes
+had not, so the fail-closed gate earned its keep.
+
+| # | From | Sev | Finding | Disposition |
+|---|---|---|---|---|
+| R1 | gpt | **high** | `catalogue_from_document` trusted each row's `confirmed` INDEPENDENTLY of its `basis`. Requiring a real boolean (round 2) was not enough: a count-consistent document setting every row to `{"basis": "code", "confirmed": true}` passed validation and suppressed the confirmation follow-up | **Accepted — the same hole one level deeper, and it would have shipped.** Confirmation is not an independent fact; it is exactly `basis in CONFIRMED_BASES`. The reader now rejects any row where the two disagree, **in both directions** (an `interview` row claiming to be unconfirmed is equally a lie), and requires a non-empty `basis`. Unit + end-to-end CLI tests. |
+| R2 | gpt | med | `render_provenance_banner` always said "nobody has confirmed them yet" — false the moment any row is `Basis: interview`, which is exactly the state the follow-up exists to produce | **Accepted.** A block whose whole job is honesty must not carry a fixed sentence. Three variants now render from the counts: all-derived ("nobody"), partly confirmed (states both numbers), fully confirmed (says so, and points at no card, because none is filed). All three re-checked for table-shaped lines. |
+| R3 | gpt | med | `write_spec` changed from `Path` to `list[Path]`; an unshown caller could break | **Declined — verified.** Repo-wide grep for `write_spec`: the only callers of adopt's are `generate_adoption_artifacts` and two test modules, all updated in this diff. (`_write_spec` in shipwright-test is an unrelated local helper.) |
+| R4 | gemini | — | returned leaked scratchpad text, no finding | no action; recorded as a degraded leg of this round rather than counted as a clean pass |
+
+**Also observed and reported honestly:** the first full F0 re-run came back RED on
+`shipwright-run::test_three_process_writers_no_truncation_no_lost_update`. It
+passes in isolation and this diff touches neither `shipwright-run` nor run-config
+locking — a three-process writer test flaking under 18-unit parallel load. The
+re-run was GREEN 18/18. Recorded rather than quietly re-run.
+
