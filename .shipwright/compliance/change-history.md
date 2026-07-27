@@ -1,15 +1,15 @@
 # Commit Change Log
 
 Generated: 2026-07-27T08:15:28.293471+00:00
-Total commits: 1215
+Total commits: 1217
 
 ## Commit Distribution
 
 ```mermaid
 pie title Commit Types
-    "fix" : 350
+    "fix" : 351
     "feat" : 335
-    "chore" : 257
+    "chore" : 258
     "docs" : 147
     "refactor" : 75
     "test" : 30
@@ -20,10 +20,11 @@ pie title Commit Types
 
 ## Changes by Type
 
-### Fixes (fix) — 350 commits
+### Fixes (fix) — 351 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-07-27 | adopt | resolve spec_table by path so summarize survives a foreign `lib` binding | a9ec98ab5ecd |
 | 2026-07-27 | adopt | confirmation must be derivable from Basis, and the block must say what is true | 808631ca1f6b |
 | 2026-07-27 | run | an override overrides the verdict, never the check (#438) | f6179f6e1ed5 |
 | 2026-07-27 | ci | the PR review gate stops being bypassable (#437) | ec0c7055046f |
@@ -715,10 +716,11 @@ pie title Commit Types
 | 2026-03-20 | — | Task 02 — project templates (CLAUDE.md, agent_docs, CI) | c3a6d2f53bd3 |
 | 2026-03-20 | — | Task 01 — monorepo scaffolding + supabase-nextjs stack profile | 990a138a4690 |
 
-### Chores (chore) — 257 commits
+### Chores (chore) — 258 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-07-27 | churn | regenerate derived snapshots after main merge | ba62421997e0 |
 | 2026-07-27 | iterate | refresh handoff + compliance snapshots after the review-fix commit | 0a3a4ff56c92 |
 | 2026-07-27 | churn | regenerate derived snapshots after main merge | 26dbefaf4718 |
 | 2026-07-27 | triage | sweep 60 outbox append(s) into branch | 5ecc38b377b6 |
@@ -1284,7 +1286,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 1215 |
+| Total commits | 1217 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 1215 |
+| Human-authored commits | 1217 |
 

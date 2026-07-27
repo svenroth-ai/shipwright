@@ -2,7 +2,7 @@
   "schema_version": 3,
   "collector_version": "test_links/1.0.0",
   "generated_at": "2026-07-27T08:15:28.293471+00:00",
-  "source_commit": "fcddc5ce7b5410b2b6c4718214b0fc4f9fec5406",
+  "source_commit": "a9ec98ab5ecdb1f28829fab21200e6cc86101b31",
   "spec_hash": "sha256:9fef40ba86b2921c64574c47ef7733d3d0f0f233706a2746078bb891a46f3b18",
   "requirements": {
     "01::FR-01.01": {
@@ -2313,6 +2313,7 @@
     "plugins/shipwright-adopt/tests/test_derived_catalogue.py::test_no_banner_variant_emits_a_table_row",
     "plugins/shipwright-adopt/tests/test_derived_catalogue.py::test_nothing_adopt_derives_today_counts_as_confirmed",
     "plugins/shipwright-adopt/tests/test_derived_catalogue.py::test_round_trip_survives_pipes_in_detected_text",
+    "plugins/shipwright-adopt/tests/test_derived_catalogue.py::test_summarize_works_when_lib_belongs_to_another_plugin",
     "plugins/shipwright-adopt/tests/test_derived_catalogue.py::test_the_reader_sees_the_same_rows_with_and_without_the_banner",
     "plugins/shipwright-adopt/tests/test_derived_catalogue.py::test_zero_detection_round_trip_agrees_too",
     "plugins/shipwright-adopt/tests/test_derived_catalogue_doc.py::test_a_document_that_contradicts_its_own_entries_is_rejected",

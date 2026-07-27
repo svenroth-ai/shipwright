@@ -28,7 +28,7 @@ _Grade = importance-weighted average over the measurable dimensions (n/a exclude
 
 ## 🛡️ CI Security (fail-closed gate)
 
-Latest scan: **2026-07-27** · source `security.yml#30250691809` · critical-gate **✅ PASS**
+Latest scan: **2026-07-27** · source `security.yml#30251854917` · critical-gate **✅ PASS**
 
 | Severity | Count |
 |----------|-------|
