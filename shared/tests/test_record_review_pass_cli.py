@@ -205,55 +205,16 @@ def test_a_generic_disposition_is_rejected(project):
 
 
 def test_close_missing_closes_every_outstanding_type(project):
-    """AC10 — a run already past its review phases must be one command away from
-    a COMPLETE record, not trapped in a half-written one.
-
-    NARROWED by the medium+ code-review floor: closing every type still writes
-    the record in one command, but at medium+ that no longer makes the gate
-    green, because a record in which nothing was reviewed is exactly what the
-    floor exists to catch. The migration this escape hatch was built for is
-    over — 27 records exist and all 25 medium+ runs already satisfy the floor —
-    so nothing real is trapped by the narrowing. See
-    `test_close_missing_does_not_satisfy_the_floor_at_medium` for the other half.
-    """
+    """AC10 — a run past its review phases is one command from a COMPLETE record.
+    NARROWED at medium+ by the code-review floor: writing the record no longer
+    greens the gate — see `test_record_review_pass_cli_floor.py`."""
     assert check_review_record(project, RUN_ID).ok is False
-
     code, output = run_tool(project, "close-missing", "--status", "not_run",
                             "--disposition", "predates the per-run review record")
-
     assert code == 0, output
     assert set(json.loads(output)["closed"]) == {
         "self", "plan", "code", "doubt", "external_code"}
-    # The record is now COMPLETE — no type is left unanswered.
     assert check_review_record(project, RUN_ID).detail.count("unanswered") == 0
-
-
-def test_close_missing_does_not_satisfy_the_floor_at_medium(project):
-    """Closing everything as not_run must NOT green-light a medium+ run.
-
-    The `project` fixture is medium. Before the floor, this command was a
-    one-line route from 'no reviews at all' to a passing F11 — the hole the
-    floor closes.
-    """
-    run_tool(project, "close-missing", "--status", "not_run",
-             "--disposition", "predates the per-run review record")
-
-    result = check_review_record(project, RUN_ID)
-    assert result.ok is False
-    assert "no code review ran" in result.detail
-
-
-def test_close_missing_still_unblocks_a_small_run(project):
-    """At small the escape hatch is untouched — the floor is medium+ only."""
-    entry = project / ".shipwright" / "agent_docs" / "iterates" / f"{RUN_ID}.json"
-    data = json.loads(entry.read_text(encoding="utf-8"))
-    data["complexity"] = "small"
-    entry.write_text(json.dumps(data), encoding="utf-8")
-
-    code, _ = run_tool(project, "close-missing", "--status", "not_run",
-                       "--disposition", "predates the per-run review record")
-    assert code == 0
-    assert check_review_record(project, RUN_ID).ok
 
 
 def test_close_missing_leaves_already_recorded_types_alone(project, tmp_path):
