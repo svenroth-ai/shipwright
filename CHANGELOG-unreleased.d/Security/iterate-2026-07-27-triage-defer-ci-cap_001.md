@@ -1,0 +1,1 @@
+Single-line fields in the triage listing are now sanitized with an inline variant that also removes newlines and tabs. The shared sanitizer deliberately preserves them for multi-line launch payloads, so a stored title or reason containing a newline could previously render as an extra, forged-looking entry row.

@@ -1,100 +1,68 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-07-23-req3-phase2-content-mono",
+    "run_id": "iterate-2026-07-27-triage-defer-ci-cap",
     "date": "2026-07-27",
-    "unit": {
-      "status": "passed",
-      "passed": 9891,
-      "total": 9891
-    },
-    "integration": {
-      "status": "passed",
-      "passed": 417,
-      "total": 417
-    },
-    "pgtap": {
-      "status": "not_run",
-      "passed": 0,
-      "total": 0
-    },
-    "e2e": {
-      "status": "not_run",
-      "passed": 0,
-      "total": 0
-    },
-    "design_fidelity": {
-      "status": "not_run",
-      "passed": 0,
-      "total": 0
-    },
-    "smoke": {
-      "status": "not_run"
-    },
-    "degraded": [],
+    "unit": { "status": "passed", "passed": 4991, "total": 4991 },
+    "integration": { "status": "passed", "passed": 418, "total": 418 },
+    "pgtap": { "status": "not_run", "passed": 0, "total": 0 },
+    "e2e": { "status": "passed", "passed": 87, "total": 87 },
+    "design_fidelity": { "status": "not_run", "passed": 0, "total": 0 },
+    "smoke": { "status": "not_run" },
+    "degraded": [
+      {
+        "condition": "code-reviewer / doubt-reviewer subagents not spawned",
+        "detail": "This session carries a standing instruction not to invoke the Agent tool unless the user asks for it. The Stage-2 quality read was performed inline (recorded as the `self` pass, 8/8) and the independent adversarial pass by the external cascade (external_review.py --mode code, GPT+Gemini, two rounds on the real diff), which found and drove the fix of a terminal output-spoofing defect. Both rows are closed `not_run` in reviews.json with that disposition rather than left pending."
+      },
+      {
+        "condition": "one external code-review reply came back truncated",
+        "detail": "Round 2 Gemini returned 523 chars, cut off just after quoting format_item's field block and saying 'there is a BUG here' without naming it. Recorded as truncated rather than as a pass; the quoted block was hand-inspected and one real issue (a display-sanitized value deciding a control-flow branch) was found and fixed."
+      },
+      {
+        "condition": "shared/tests and integration-tests do not compose in ONE pytest session",
+        "detail": "Running both roots in a single invocation fails 21 integration tests (test_shared_contracts_consumers_behavior.py and neighbours). Reproduced on a CLEAN base with this run's changes stashed, so it is pre-existing and unrelated: CI and CLAUDE.md both invoke the two roots separately, and each is green on its own (4991 and 418). Recorded rather than silently worked around."
+      }
+    ],
     "surface_verification": {
       "surface": "cli",
-      "runner": "uv run pytest integration-tests/test_requirements_catalog_contract.py integration-tests/test_requirements_catalog_parsers.py integration-tests/test_fr_table_shape_convergence.py -q",
+      "runner": "uv run pytest shared/tests/test_triage_defer.py shared/tests/test_github_triage_detail_cap.py shared/tests/test_triage_cli.py shared/tests/test_triage_cli_json.py shared/tests/test_github_triage_pr_ci.py -v",
       "exit_code": 0,
-      "tests_run": 23,
-      "evidence_path": "C:\\01_Development\\shipwright\\.worktrees\\req3-phase2-content-mono\\.shipwright\\runs\\iterate-2026-07-23-req3-phase2-content-mono\\surface_verification.log",
-      "timestamp": "2026-07-26T23:23:54.302Z",
-      "attempts": 1
+      "tests_run": 87,
+      "evidence_path": ".shipwright/runs/iterate-2026-07-27-triage-defer-ci-cap/surface_verification.json",
+      "timestamp": "2026-07-27T09:59:00.000Z"
     },
     "test_completeness": {
       "status": "complete",
       "behaviors": [
-        {
-          "behavior": "the catalog carries 18 requirements, each with its own id, anchor, priority, basis and layers cell",
-          "disposition": "tested",
-          "evidence": "test_requirements_catalog_contract.py::test_all_requirements_survive_with_unchanged_ids and ::test_every_requirement_has_an_explicit_anchor PASSED"
-        },
-        {
-          "behavior": "both production parsers read the changed catalog and agree on the same id set",
-          "disposition": "tested",
-          "evidence": "test_requirements_catalog_parsers.py::test_the_fr_table_reader_still_sees_every_requirement and ::test_the_heading_parser_sees_the_same_set PASSED"
-        },
-        {
-          "behavior": "every requirement keeps a resolving deep link from the traceability matrix",
-          "disposition": "tested",
-          "evidence": "test_requirements_catalog_contract.py::test_every_rtm_deep_link_resolves_end_to_end PASSED after regenerating the matrix"
-        },
-        {
-          "behavior": "no criterion sentence carries a run id, a decision-record number, a path or a source filename",
-          "disposition": "tested",
-          "evidence": "test_requirements_catalog_contract.py forbidden-token scan over every (E) line PASSED"
-        },
-        {
-          "behavior": "the newly minted requirement carries its decided basis and layers, pinned per requirement rather than in aggregate",
-          "disposition": "tested",
-          "evidence": "test_fr_table_shape_convergence.py::test_every_live_requirement_carries_its_decided_basis and ::test_the_migration_did_not_change_any_required_layers PASSED"
-        },
-        {
-          "behavior": "the elicitation module keeps every section and load-bearing sentence the catalog cites",
-          "disposition": "tested",
-          "evidence": "test_requirement_elicitation_refs.py + test_requirement_elicitation_rigor.py PASSED (28 cases)"
-        },
-        {
-          "behavior": "the glossary stays within its size ceiling and carries no legacy artifact path",
-          "disposition": "tested",
-          "evidence": "test_bloat_defense_artifacts.py::test_glossary_under_loc_limit and test_artifact_path_canon.py PASSED"
-        },
-        {
-          "behavior": "the acceptance criteria say what is true of the product",
-          "disposition": "untestable",
-          "reason_code": "requires-manual-visual-judgment",
-          "reason": "whether a sentence in business language faithfully describes a mechanism is a reading judgement, not an oracle. This is the round's own finding, recorded as FR-01.16 criterion 9 and as campaign decision D7: an LLM may adjudicate a mechanically raised flag, never raise one. Each criterion instead carries an enforcement classification in the AC evidence ledger, and the criteria that CAN be pinned are enumerated above."
-        }
+        { "behavior": "defer() records snoozed, the reason and the actor", "disposition": "tested", "evidence": "test_triage_defer.py::test_defer_records_the_decision_and_its_reason PASSED" },
+        { "behavior": "defer() refuses an empty / whitespace / tab reason and writes nothing", "disposition": "tested", "evidence": "test_triage_defer.py::test_defer_refuses_a_reason_that_says_nothing[3 cases] PASSED" },
+        { "behavior": "defer() refuses control characters in the reason", "disposition": "tested", "evidence": "test_triage_defer.py::test_defer_refuses_control_characters_in_the_reason PASSED" },
+        { "behavior": "defer() refuses an already-decided item (dismissed / snoozed / promoted)", "disposition": "tested", "evidence": "test_triage_defer.py::test_defer_refuses_an_already_decided_item[3 cases] PASSED" },
+        { "behavior": "defer() raises KeyError on an unknown id", "disposition": "tested", "evidence": "test_triage_defer.py::test_defer_unknown_id_raises_key_error PASSED" },
+        { "behavior": "defer() raises FileNotFoundError when no store exists", "disposition": "tested", "evidence": "test_triage_defer.py::test_defer_without_a_store_raises_file_not_found PASSED" },
+        { "behavior": "dismiss() is unchanged by the shared _decide_from_triage extraction", "disposition": "tested", "evidence": "test_triage_defer.py::test_dismiss_is_unchanged_by_the_shared_extraction PASSED" },
+        { "behavior": "promote() is unchanged by the _require_store extraction", "disposition": "untestable", "reason_code": "covered-by-existing-test", "reason": "shared/tests/test_triage_promote.py (38 tests) already covers promote's store-missing, unknown-id, state and sanitization paths; it was not modified and passes against the refactor." },
+        { "behavior": "CLI defer happy path records the actor as cli", "disposition": "tested", "evidence": "test_triage_defer.py::test_cli_defer_records_the_operator_as_the_actor PASSED" },
+        { "behavior": "CLI defer refuses without a real reason and writes nothing", "disposition": "tested", "evidence": "test_triage_defer.py::test_cli_defer_refuses_and_writes_nothing_without_a_real_reason[2 cases] PASSED" },
+        { "behavior": "CLI defer and dismiss both exit 2 on an unknown id and leave the store byte-unchanged", "disposition": "tested", "evidence": "test_triage_defer.py::test_cli_leaves_the_store_untouched_when_it_refuses[2 cases] PASSED" },
+        { "behavior": "CLI defer exits 2 on an already-decided item", "disposition": "tested", "evidence": "test_triage_defer.py::test_cli_defer_refuses_an_already_decided_item PASSED" },
+        { "behavior": "the listing shows deferred entries in their own section, with the reason, after the open ones", "disposition": "tested", "evidence": "test_triage_defer.py::test_list_shows_deferred_in_its_own_section_with_the_reason PASSED" },
+        { "behavior": "no deferred header when nothing is deferred", "disposition": "tested", "evidence": "test_triage_defer.py::test_list_says_nothing_about_deferral_when_there_is_none PASSED" },
+        { "behavior": "deferred-only still reports 'No open triage items'", "disposition": "tested", "evidence": "test_triage_defer.py::test_list_with_only_deferred_items_still_reports_no_open_work PASSED" },
+        { "behavior": "a Command-Center deferral with no reason renders '(no reason recorded)', never None", "disposition": "tested", "evidence": "test_triage_defer.py::test_list_renders_a_deferral_the_command_center_left_reasonless PASSED" },
+        { "behavior": "ESC / BEL in a deferred entry's fields never reach the terminal", "disposition": "tested", "evidence": "test_triage_defer.py::test_list_keeps_control_characters_out_of_the_deferred_section PASSED" },
+        { "behavior": "a stored newline cannot forge a listing row, open or deferred", "disposition": "tested", "evidence": "test_triage_defer.py::test_a_stored_newline_cannot_forge_a_listing_row[2 cases] PASSED" },
+        { "behavior": "list --json stays open-only, with pendingDelivery, while an item is deferred", "disposition": "tested", "evidence": "test_triage_defer.py::test_list_json_stays_open_only_when_an_item_is_deferred PASSED" },
+        { "behavior": "the failing-check detail is capped whichever untrusted field grows", "disposition": "tested", "evidence": "test_github_triage_detail_cap.py::test_failing_check_detail_is_capped_whatever_grows[3 cases] PASSED" },
+        { "behavior": "the failing-check detail is capped at the same length as its proposed-change sibling", "disposition": "tested", "evidence": "test_github_triage_detail_cap.py::test_failing_check_cap_matches_the_proposed_change_cap PASSED" },
+        { "behavior": "capping the detail leaves the existing 160-char title cap alone", "disposition": "tested", "evidence": "test_github_triage_detail_cap.py::test_capping_the_detail_leaves_the_title_cap_alone PASSED" },
+        { "behavior": "failing-check cap boundary: 1023 and 1024 pass through, 1025 truncates", "disposition": "tested", "evidence": "test_github_triage_detail_cap.py::test_failing_check_detail_boundary[3 cases] PASSED" },
+        { "behavior": "proposed-change cap boundary: the same three lengths", "disposition": "tested", "evidence": "test_github_triage_detail_cap.py::test_proposed_change_detail_boundary[3 cases] PASSED" },
+        { "behavior": "an ordinary failing-check detail is byte-unchanged", "disposition": "tested", "evidence": "test_github_triage_detail_cap.py::test_an_ordinary_failing_check_detail_is_untouched PASSED" },
+        { "behavior": "an ordinary proposed-change detail is byte-unchanged", "disposition": "tested", "evidence": "test_github_triage_detail_cap.py::test_an_ordinary_proposed_change_detail_is_untouched PASSED" },
+        { "behavior": "the three documents no longer say the terminal cannot defer", "disposition": "tested", "evidence": "test_triage_defer.py::test_the_documents_no_longer_say_the_terminal_cannot_defer PASSED" }
       ],
-      "counts": {
-        "testable": 7,
-        "tested": 7,
-        "untestable": 1,
-        "untested_testable": 0
-      },
-      "enumeration_basis": {
-        "acs": 8,
-        "covered_acs": 8
-      }
+      "counts": { "testable": 27, "tested": 26, "untestable": 1, "untested_testable": 0 },
+      "enumeration_basis": { "acs": 10, "covered_acs": 10 }
     }
   },
   "coverage": {

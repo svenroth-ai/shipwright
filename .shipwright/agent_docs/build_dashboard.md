@@ -1,10 +1,11 @@
 # Project Activity Dashboard
-> Updated: 2026-07-26 23:36 UTC | Session: 170bb5a6-5652-4115-abe3-004f2d2a8ed9 | Run: iterate-2026-07-23-req3-phase2-content-mono
+> Updated: 2026-07-27 08:30 UTC | Session: 8a66b2f1-81e9-4505-8591-b94928ca02f6 | Run: iterate-2026-07-27-triage-defer-ci-cap
 
-## Recent Changes (359 iterations)
+## Recent Changes (360 iterations)
 
 | Type | Description | Tests | Commit | FRs | Date |
 |------|-------------|-------|--------|-----|------|
+| change | iterate: triage defer from the terminal + failing-check detail cap | 0/0 |  | FR-01.14 | 2026-07-27 |
 | change | iterate: REQ-3 Phase 2 content round - all 18 requirements walked or minted | 0/0 |  | FR-01.01, FR-01.02, FR-01.03 | 2026-07-26 |
 | feature | REQ-3 Phase 1: shared requirement-elicitation method (grilling + domain-modeling) + CONTEXT.md format + FR-01.16 mint | 4946/4961 |  |  | 2026-07-23 |
 | bug | design verifier C1 skips projects that never ran the design phase | 26/26 |  | compliance | 2026-07-23 |
@@ -366,7 +367,7 @@
 | change | post-adoption framework cleanup (Sub-1A through 1D) | 225/225 | 3db485b | FR-01.01, FR-01.02, FR-01.03 | 2026-05-02 |
 
 ## Test Status
-Last run: 2026-07-27 | Unit: 9891/9891 | Integration: 417/417 | Smoke: not_run | (iterate)
+Last run: 2026-07-27 | Unit: 4991/4991 | Integration: 418/418 | E2E: 87/87 | Smoke: not_run | (iterate)
 
 ## Pipeline
 

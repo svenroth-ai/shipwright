@@ -19,8 +19,21 @@ from .severity import (
     workflow_page_url,
 )
 
-# Length cap for the gh-pr-ci detail line (mirror of producer's artifact cap).
-_PR_CI_DETAIL_MAX_LEN = 1024
+# Length cap for a detail line built from text the project does not control —
+# a workflow name, a branch, the title whoever opened a PR wrote. Mirrors
+# producer's `_ARTIFACT_DETAIL_MAX_LEN`. This is a CROWDING guard, not an
+# escaping one: terminal control characters are stripped separately, at
+# display, on both operator surfaces. Without it one entry can grow without
+# limit and push the rest out of a view that shows a capped number of items.
+_DETAIL_MAX_LEN = 1024
+
+
+def _cap_detail(detail: str) -> str:
+    """Truncate only what exceeds the cap; a detail of exactly the cap length
+    is passed through untouched. The ellipsis marks where the cut happened."""
+    if len(detail) <= _DETAIL_MAX_LEN:
+        return detail
+    return detail[: _DETAIL_MAX_LEN - 1] + "…"
 
 # Workflow-run conclusions that count as a failure worth triaging.
 _FAILED_CONCLUSIONS = frozenset({"failure", "startup_failure", "timed_out"})
@@ -106,7 +119,7 @@ def ci_action_unit(run: dict, *, owner_repo: str | None) -> dict | None:
     page_url = workflow_page_url(owner_repo, workflow_id)
     run_url = run.get("html_url") or ""
     title = f"[ci] {name} failing on {branch}"
-    detail = (
+    detail = _cap_detail(
         f"Workflow '{name}' last concluded '{conclusion}' on "
         f"{branch}@{head_sha[:7]} | latest run: {run_url}"
     )
@@ -185,12 +198,10 @@ def pr_ci_action_unit(pr_info: dict, *, owner_repo: str | None) -> dict | None:
     )
     count = len(failing)
     heading = f"[pr-ci] PR #{number} has {count} failing check(s) on {branch}"
-    detail = (
+    detail = _cap_detail(
         f"PR #{number} \"{title}\" on {branch} | failing checks: "
         f"{checks_str} | {url}"
     )
-    if len(detail) > _PR_CI_DETAIL_MAX_LEN:
-        detail = detail[: _PR_CI_DETAIL_MAX_LEN - 1] + "…"
     payload = (
         f"/shipwright-iterate --type bug\n"
         f"\n"

@@ -1,0 +1,44 @@
+{
+  "items": [
+    {
+      "name": "Spec Compliance",
+      "verdict": "pass",
+      "note": "AC-1..AC-9 each map to at least one assertion; nothing outside the card's two decided gaps was implemented. Detail in self_review.md."
+    },
+    {
+      "name": "Error Handling",
+      "verdict": "pass",
+      "note": "defer raises the same three exception types as dismiss and _status_flip maps all three to the exit-2 arm dismiss already used; every rejection path asserts the store is byte-unchanged."
+    },
+    {
+      "name": "Security Basics",
+      "verdict": "pass",
+      "note": "Fixed during review: scalar fields reused the payload sanitizer, which keeps \\n by design, so a stored reason could forge listing rows. Now strip_control_chars_inline, a sibling in tty_sanitize.py so the policy cannot fork."
+    },
+    {
+      "name": "Test Quality",
+      "verdict": "pass",
+      "note": "Outcome assertions (resolved item, stored bytes, exit code, stdout); CLI cases run the real script as a subprocess; no skips, no loosened assertions; cap padding measured from a probe, not a magic number."
+    },
+    {
+      "name": "Performance Basics",
+      "verdict": "pass",
+      "note": "_cmd_list still makes one pass over the resolved items; _cap_detail is an O(1) length check."
+    },
+    {
+      "name": "Naming & Structure",
+      "verdict": "pass",
+      "note": "Two extractions, both forced by the 300-line budget: lib/triage_render.py and _decide_from_triage/_require_store. Every touched file inside budget (249/298/92/220/133/275)."
+    },
+    {
+      "name": "Affected Boundaries",
+      "verdict": "pass",
+      "note": "Three, all in the spec. list --json is pinned byte-for-byte by a WebUI fixture and stays open-only, asserted with a deferred item present. No new stored format: snoozed was already in triage.STATUSES."
+    },
+    {
+      "name": "Test Hygiene Probe",
+      "verdict": "pass",
+      "note": "No pytest.skip, no environment-conditional assertion, no xfail; both new files are self-contained under tmp_path and cross no plugin boundary."
+    }
+  ]
+}
