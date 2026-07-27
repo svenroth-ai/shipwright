@@ -263,11 +263,13 @@ If environment doesn't exist yet: create it first via `create-env`.
 ```bash
 uv run "{shared_root}/scripts/smoke_test.py" \
   --url "https://{env_name}.jpc.infomaniak.com" \
-  --timeout 30 \
-  --health-path "/api/health"
+  --profile "{shared_root}/profiles/deploy/jelastic.json"
 ```
 
-Wait up to 60 seconds for the deployment to become ready (poll every 5s).
+The **profile owns the deadline**: keep asking every `poll_interval_seconds`
+until the app answers or `max_wait_seconds` passes. A slow start-up is not a
+failed release — read `attempts` / `waited_ms` before concluding anything.
+Without `--profile` it makes a single attempt.
 
 ---
 
@@ -348,23 +350,35 @@ If none: skip.
 
 ### Smoke Test Failed → Rollback
 
-**DEV:** Git-based rollback
+**DEV:** git-based. Passing `--project-root` + `--profile` is what arms the
+stored-data check and names the target's data-rollback strategy.
 ```bash
 uv run "{plugin_root}/scripts/lib/rollback.py" \
-  --env-name "{env_name}" \
-  --strategy git \
-  --target-ref "{last_known_good_tag}"
+  --env-name "{env_name}" --strategy git --target-ref "{last_known_good_tag}" \
+  --project-root "$(pwd)" --profile "{shared_root}/profiles/deploy/jelastic.json"
 ```
 
-**PROD:** Restore from clone
+**PROD:** stop the failed env so the backup clone can take over.
 ```bash
 uv run "{plugin_root}/scripts/lib/rollback.py" \
-  --env-name "{env_name}" \
-  --strategy clone \
-  --clone-name "{prod_env}-backup"
+  --env-name "{env_name}" --strategy clone --clone-name "{prod_env}-backup"
 ```
 
-Log rollback in `.shipwright/agent_docs/decision_log.md`.
+**Read the exit code — it is the instruction.** Full field table in
+[rollback-strategy.md](references/rollback-strategy.md).
+
+| Exit | Meaning | What you do |
+|---|---|---|
+| `0` | rolled back (`ref_verified` says whether the target confirmed it) | log it, report it; if `unconfirmed`, say so |
+| `1` | refused before contacting the host — nothing there changed | fix the reason, re-run. Never claim a rollback happened |
+| `3` | **started and did not finish** | print `operator_message` verbatim and **STOP**. Do not retry, do not redeploy, do not continue unattended |
+
+A `1` from the stored-data gate means migrations exist that the older code does
+not know. Do not pass `--ack-data-drift` on the agent's own judgement — that is
+an ASK-FIRST decision about data, so put it to the user.
+
+Log every rollback in `.shipwright/agent_docs/decision_log.md`, including a
+halted one — an unfinished rollback is the entry that matters most.
 
 ```
 ================================================================================
@@ -372,7 +386,7 @@ SHIPWRIGHT-DEPLOY: FAILED → ROLLED BACK
 ================================================================================
 Target:     {DEV | PROD}
 Error:      {smoke test error}
-Rollback:   {git revert to {tag} | restored from clone}
+Rollback:   {ref {tag}, {confirmed|unconfirmed} | stopped, clone not yet active}
 Action:     Fix the issue and re-deploy
 ================================================================================
 ```
@@ -385,8 +399,9 @@ When invoked with `--rollback`:
 1. List available backup clones
 2. Present to user for selection
 3. Require explicit confirmation
-4. Restore from selected clone
-5. Run smoke test on restored environment
+4. Stop the failed environment (this does **not** restore anything — `restored`
+   is false and the remaining steps are stated)
+5. Run smoke test on the environment that is now serving
 
 ---
 
@@ -397,34 +412,14 @@ feature of one. Three patterns apply universally; their mechanics are
 target-specific. The Jelastic flow above is one reference implementation —
 the same discipline applies to any target Shipwright would call shipped.
 
-### Pattern 1 — Revertable Deploys
+| Pattern | The property (mechanics are target-specific) |
+|---|---|
+| **1 — Revertable Deploys** | A deploy is not complete until its rollback is operable, and the rollback must actually put the requested version back. Application-tier and data-tier are separate concerns: `rollback.data_rollback_strategy` says what each target does about stored data that has already moved on. |
+| **2 — Provenance Recorded** | Every deploy *and every rollback* leaves an auditable record before the next change touches the target — `phase_completed` events, a `phase_history` entry, and for rollbacks an ADR naming the cause. The why-it-happened outlives the on-call shift. |
+| **3 — Procedure Documented** | Both paths — automatic (smoke-test-fail) and manual — must be runnable from the documentation alone. Manual rollback needs explicit confirmation; automatic rollback announces itself. A silent rollback is the failure mode worse than the failure that caused it — and a rollback that *reports* success it did not achieve is worse still. |
 
-Every deploy has a documented path back to the previous working state. The
-mechanics are target-specific — git-tag revert (DEV-typical), environment-
-clone restore (Jelastic PROD), atomic deploy-ID promote (Vercel), image-tag
-rollback (Docker Compose, Kubernetes) — but the property is universal: a
-deploy is not complete until its rollback is operable. **Application-tier**
-and **data-tier** rollback are separate concerns; the schema's
-`rollback.data_rollback_strategy` field captures how each target handles
-DB-schema-vs-app-code drift.
-
-### Pattern 2 — Provenance Recorded
-
-Every deploy and every rollback leaves an auditable record before the next
-change touches the same target. Pipeline-side: `phase_completed` events in
-`shipwright_events.jsonl`, an entry in `phase_history`, and — for rollbacks
-— an ADR in `decision_log.md` with the failure cause. Target-side: deploy
-IDs, clone names, image-tag history, or whatever the platform exposes via
-`vercel inspect` / `getenvinfo` / registry API. The why-it-happened
-outlives the on-call shift.
-
-### Pattern 3 — Procedure Documented
-
-Both rollback paths — automatic (smoke-test-fail) and manual
-(operator-initiated) — must be runnable from the documentation alone.
-Manual rollback requires explicit confirmation; automatic rollback logs
-its trigger and announces itself in the deploy output. A silent rollback
-is the failure mode worse than the failure that caused it.
+Full per-target mapping and the conformance checks:
+[rollback-discipline.md](references/rollback-discipline.md).
 
 ### How discipline becomes target
 

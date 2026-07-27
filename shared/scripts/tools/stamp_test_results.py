@@ -60,8 +60,9 @@ for _p in (str(_SCRIPTS_ROOT.parent), str(_SCRIPTS_ROOT)):
 
 from lib.atomic_write import durable_atomic_write  # noqa: E402
 from source_state import (  # noqa: E402
-    BLOCK_KEY, SHORT_SHA_LEN, UNKNOWN_RUN, resolve_git_state, safe_run_id, to_block,
+    BLOCK_KEY, SHORT_SHA_LEN, UNKNOWN_RUN, safe_run_id, to_block,
 )
+from source_state_git import resolve_git_state  # noqa: E402
 
 RESULTS_REL = "shipwright_test_results.json"
 RUN_CONFIG_REL = "shipwright_run_config.json"

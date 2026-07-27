@@ -1,0 +1,1 @@
+**Rollback refuses when your stored data has already moved on.** If database migrations exist that the older version does not know about, the rollback stops before touching the hosting target, names the migrations and what that target's profile says about data, and asks — rather than restoring code into a schema it was never written for. `--ack-data-drift` proceeds deliberately.
