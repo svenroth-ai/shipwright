@@ -1,8 +1,8 @@
 {
   "schema_version": 3,
   "collector_version": "test_links/1.0.0",
-  "generated_at": "2026-07-27T15:50:13.106639+00:00",
-  "source_commit": "622a2e31bcf3f5eb3d5de717f2f75deed79dee50",
+  "generated_at": "2026-07-27T16:41:08.768595+00:00",
+  "source_commit": "3822b0bb9fd6003df707e3d7ed8fb0450e283c68",
   "spec_hash": "sha256:fbdf735e5b413ea42c3f72c189c55c5f959b6d6779fd2d55d40b5c46b06b821b",
   "requirements": {
     "01::FR-01.01": {
@@ -4275,6 +4275,8 @@
     "plugins/shipwright-compliance/tests/test_rtm_reconciled_column.py::test_unreconciled_fr_listed",
     "plugins/shipwright-compliance/tests/test_run_audit_records_run.py::test_a_full_run_is_recorded_in_tracked_state",
     "plugins/shipwright-compliance/tests/test_run_audit_records_run.py::test_a_partial_run_is_recorded_as_partial",
+    "plugins/shipwright-compliance/tests/test_run_audit_records_run.py::test_a_run_that_executed_no_group_is_not_recorded",
+    "plugins/shipwright-compliance/tests/test_run_audit_records_run.py::test_an_empty_run_does_not_displace_an_earlier_real_one",
     "plugins/shipwright-compliance/tests/test_run_audit_records_run.py::test_recording_does_not_disturb_an_existing_config",
     "plugins/shipwright-compliance/tests/test_sbom_generator.py::test_auto_resolve_when_workspace_clean",
     "plugins/shipwright-compliance/tests/test_sbom_generator.py::test_cluster_auto_resolves_when_all_members_clean",

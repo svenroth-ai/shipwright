@@ -1,34 +1,35 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-07-27-guide-delivery-watch"
+run_id: "iterate-2026-07-27-audit-empty-run-not-recorded"
 phase: "iterate"
-reason: "unblock #462: base moved, DIRTY"
-timestamp: "2026-07-27T15:50:19.371756+00:00"
+reason: "iterate: an audit that checked nothing is not recorded"
+timestamp: "2026-07-27T16:41:15.217949+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-07-27 15:50:19 UTC
+> Auto-generated 2026-07-27 16:41:15 UTC
 
 ## Session Info
 
-- **Session ID**: 9058f47a-25f4-4469-b517-e3b5c91347e0
-- **Timestamp**: 2026-07-27 15:50:19 UTC
-- **Reason**: unblock #462: base moved, DIRTY
+- **Session ID**: 184abbf4-c486-4d5b-b89a-1dc21aebc3e1
+- **Timestamp**: 2026-07-27 16:41:15 UTC
+- **Reason**: iterate: an audit that checked nothing is not recorded
 
 ## Last Iterate
 
-- **Run ID**: iterate-2026-07-27-guide-delivery-watch
-- **Date**: 2026-07-27T15:50:13.019923Z
+- **Run ID**: iterate-2026-07-27-audit-empty-run-not-recorded
+- **Date**: 2026-07-27T16:41:08.661081Z
 - **Type**: change
-- **Complexity**: trivial
-- **Branch**: iterate/guide-delivery-watch
-- **ADR**: iterate-2026-07-27-guide-delivery-watch
+- **Complexity**: small
+- **Branch**: iterate/audit-empty-run-not-recorded
+- **ADR**: iterate-2026-07-27-audit-empty-run-not-recorded
 - **Tests passed**: True
+- **Spec**: .shipwright/planning/iterate/iterate-2026-07-27-disclose-audit-last-run.md
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/guide-delivery-watch
+- **Branch**: iterate/audit-empty-run-not-recorded
 - **External Review Marker**: missing
 
 ### Mandatory replay on Resume
@@ -47,8 +48,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/guide-delivery-watch
-- **Last Commit**: 622a2e31 Merge remote-tracking branch 'origin/main' into iterate/guide-delivery-watch
+- **Branch**: iterate/audit-empty-run-not-recorded
+- **Last Commit**: 3822b0bb chore(triage): sweep 4 outbox append(s) into branch
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -64,17 +65,17 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 | Event | Type | Source | Date |
 |-------|------|--------|------|
+| evt-ad7b51e0 | grade_snapshot | — | 2026-07-27 |
+| evt-e3d8f519 | work_completed | iterate (iterate: an audit that checked nothing is not recorded) | 2026-07-27 |
 | evt-76f1beff | grade_snapshot | — | 2026-07-27 |
 | evt-90ce4f39 | work_completed | iterate (iterate: document the delivery watch in the guide) | 2026-07-27 |
 | evt-942e3e04 | grade_snapshot | — | 2026-07-27 |
-| evt-f2747703 | work_completed | iterate (iterate: inherited failures and coverage gaps are recorded as inherited) | 2026-07-27 |
-| evt-38795ac5 | grade_snapshot | — | 2026-07-27 |
 
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 375
-- **Last iterate**: change — iterate: document the delivery watch in the guide (2026-07-27)
+- **Total work events**: 376
+- **Last iterate**: change — iterate: an audit that checked nothing is not recorded (2026-07-27)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
 ## Recent Decisions

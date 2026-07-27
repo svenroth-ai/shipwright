@@ -79,25 +79,40 @@ def main(argv: list[str] | None = None) -> int:
     # run is recorded as partial and can never be read as a full check.
     # Best-effort by contract: this exit code answers "is the project
     # consistent?", and bookkeeping must never change that answer.
-    try:
-        recorded = record_audit_run(
-            project_root,
-            statuses=[f.status for f in report.findings],
-            any_fail=bool(report.any_fail),
-            scope=",".join(only) if only else SCOPE_FULL,
-        )
-    except Exception as exc:  # noqa: BLE001 — never change the audit's verdict
-        recorded = {"recorded": False, "reason": str(exc)}
-    if not recorded.get("recorded"):
-        # Loud, but not fatal. A silent failure here leaves every compliance
-        # document claiming the audit never ran, indefinitely — the operator has
-        # to know the durability half did not happen.
+    if not report.groups_run:
+        # Nothing ran, so nothing was checked — usually a typo'd --only, whose
+        # unknown letters land in groups_skipped. Storing this would freshen
+        # every document's disclosure on the strength of an empty run AND write
+        # `verdict: pass` to describe it, displacing a real earlier record. A
+        # stored record has to keep meaning "this audit checked something".
+        recorded = {"recorded": False, "reason": "no_group_ran"}
+        requested = ", ".join(letter for letter, _ in report.groups_skipped)
         print(
-            "run_audit: WARNING — the run completed but could not be recorded "
-            f"({recorded.get('reason')}); compliance documents will not disclose "
-            "it. Fix the config and re-run.",
+            "run_audit: WARNING — no audit group ran"
+            f"{f' (requested: {requested})' if requested else ''}, so nothing "
+            "was checked and nothing was recorded. Check --only.",
             file=sys.stderr,
         )
+    else:
+        try:
+            recorded = record_audit_run(
+                project_root,
+                statuses=[f.status for f in report.findings],
+                any_fail=bool(report.any_fail),
+                scope=",".join(only) if only else SCOPE_FULL,
+            )
+        except Exception as exc:  # noqa: BLE001 — never change the audit's verdict
+            recorded = {"recorded": False, "reason": str(exc)}
+        if not recorded.get("recorded"):
+            # Loud, but not fatal. A silent failure here leaves every compliance
+            # document claiming the audit never ran, indefinitely — the operator
+            # has to know the durability half did not happen.
+            print(
+                "run_audit: WARNING — the run completed but could not be "
+                f"recorded ({recorded.get('reason')}); compliance documents "
+                "will not disclose it. Fix the config and re-run.",
+                file=sys.stderr,
+            )
 
     payload = report.to_dict()
     payload["last_audit_recorded"] = recorded

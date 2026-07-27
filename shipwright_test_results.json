@@ -1,14 +1,19 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-07-27-guide-delivery-watch",
+    "run_id": "iterate-2026-07-27-audit-empty-run-not-recorded",
     "date": "2026-07-27",
     "unit": {
       "status": "passed",
-      "passed": 5545,
-      "total": 5561,
-      "skipped": 16
+      "passed": 7048,
+      "total": 7048,
+      "note": "shipwright-compliance 1505 + shared/tests 5543 (-m 'not slow and not cross_plugin'); 13 skipped"
     },
     "integration": {
+      "status": "passed",
+      "passed": 422,
+      "total": 422
+    },
+    "pgtap": {
       "status": "not_run",
       "passed": 0,
       "total": 0
@@ -18,36 +23,60 @@
       "passed": 0,
       "total": 0
     },
-    "smoke": {
-      "status": "not_run"
-    },
-    "pgtap": {
-      "status": "not_run",
-      "passed": 0,
-      "total": 0
-    },
     "design_fidelity": {
       "status": "not_run",
       "passed": 0,
       "total": 0
     },
+    "smoke": {
+      "status": "not_run"
+    },
+    "degraded": [],
     "surface_verification": {
-      "surface": "none",
-      "runner": "",
+      "surface": "cli",
+      "runner": "uv run --directory plugins/shipwright-compliance pytest tests/test_run_audit_records_run.py -q",
       "exit_code": 0,
-      "tests_run": 0,
-      "evidence_path": "",
-      "timestamp": "2026-07-27T15:49:23.924Z",
-      "attempts": 0,
-      "justification": "Documentation only: the change edits two prose passages in docs/guide.md and touches no executable code, so there is no behaviour surface to drive. The behaviour being documented (the F11 delivery watch) was verified end-to-end against the live GitHub API in iterate-2026-07-27-name-the-blocker, which shipped it. The internal anchor added here was resolved against the document's own headings."
+      "tests_run": 5,
+      "evidence_path": "C:\\01_Development\\shipwright\\.worktrees\\audit-empty-run-not-recorded\\.shipwright\\runs\\iterate-2026-07-27-audit-empty-run-not-recorded\\surface_verification.log",
+      "timestamp": "2026-07-27T16:39:58.287Z",
+      "attempts": 1
     },
     "test_completeness": {
-      "status": "n/a",
-      "justification": "Trivial complexity, documentation only: the change edits two prose passages in docs/guide.md and introduces no executable behaviour to enumerate. The behaviour it describes was enumerated and tested in iterate-2026-07-27-name-the-blocker, which shipped it."
-    },
-    "degraded": [
-      "Complexity OVERRIDDEN from the classifier's 'medium' to 'trivial'. The estimate came solely from the history fall-through (prior_source=history, median of the last 20 runs); the classifier's own scope-keyword estimate and safety floor both said trivial, and it reported zero risk flags. The diff is two prose passages in docs/guide.md with no code touched, so the medium ceremony (mini-plan, approval gate, external review, confidence calibration) would have been process applied to nothing."
-    ]
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "a run that executed no audit group is not recorded at all",
+          "disposition": "tested",
+          "evidence": "test_run_audit_records_run.py::test_a_run_that_executed_no_group_is_not_recorded PASSED (asserts groups_run==[], recorded False, reason no_group_ran, no config written)"
+        },
+        {
+          "behavior": "an empty run does not displace an earlier real record",
+          "disposition": "tested",
+          "evidence": "test_run_audit_records_run.py::test_an_empty_run_does_not_displace_an_earlier_real_one PASSED (a real 39-check run survives a following --only ZZZ verbatim)"
+        },
+        {
+          "behavior": "a real run is still recorded exactly as before (no regression)",
+          "disposition": "tested",
+          "evidence": "test_run_audit_records_run.py::test_a_full_run_is_recorded_in_tracked_state + ::test_a_partial_run_is_recorded_as_partial + ::test_recording_does_not_disturb_an_existing_config PASSED"
+        },
+        {
+          "behavior": "the operator is told on stderr that nothing ran and nothing was recorded",
+          "disposition": "untestable",
+          "reason_code": "covered-by-existing-test",
+          "reason": "the branch itself is pinned by test_a_run_that_executed_no_group_is_not_recorded, which asserts the recorded:False / reason:no_group_ran payload the warning is printed from. Asserting the console wording would pin phrasing, not behaviour."
+        }
+      ],
+      "counts": {
+        "testable": 3,
+        "tested": 3,
+        "untestable": 1,
+        "untested_testable": 0
+      },
+      "enumeration_basis": {
+        "acs": 2,
+        "covered_acs": 2
+      }
+    }
   },
   "coverage": {
     "total": 80.2,

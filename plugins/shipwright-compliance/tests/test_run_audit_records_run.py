@@ -62,6 +62,31 @@ def test_a_partial_run_is_recorded_as_partial(audited_project: Path):
     assert _recorded(audited_project)["scope"] == "A"
 
 
+def test_a_run_that_executed_no_group_is_not_recorded(audited_project: Path):
+    """A typo'd ``--only`` checked nothing — it must not be stored as a PASS.
+
+    An unknown group letter lands in ``groups_skipped`` and ``groups_run`` stays
+    empty. Recording that would freshen every document's disclosure on the
+    strength of a run that verified nothing, and would store ``verdict: pass``
+    to say so. The stored record has to keep meaning "this audit checked
+    something".
+    """
+    payload = _run(audited_project, "--only", "ZZZ")
+    assert payload["groups_run"] == []
+    assert payload["last_audit_recorded"]["recorded"] is False
+    assert payload["last_audit_recorded"]["reason"] == "no_group_ran"
+    assert not (audited_project / CONFIG_FILE).exists()
+
+
+def test_an_empty_run_does_not_displace_an_earlier_real_one(audited_project: Path):
+    """The previous answer survives — it is still the last real cross-check."""
+    _run(audited_project)
+    before = _recorded(audited_project)
+
+    _run(audited_project, "--only", "ZZZ")
+    assert _recorded(audited_project) == before
+
+
 def test_recording_does_not_disturb_an_existing_config(audited_project: Path):
     (audited_project / CONFIG_FILE).write_text(
         json.dumps({"enforcement": {"rtm_coverage_min": 0.7}}, indent=2) + "\n",
