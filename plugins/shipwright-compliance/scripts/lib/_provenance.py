@@ -35,7 +35,7 @@ if TYPE_CHECKING:
 
 
 def provenance_lines(data: ComplianceData, *, generated_suffix: str = "") -> list[str]:
-    """The provenance header block, currently ``[Generated:…, Source-State:…]``.
+    """The provenance header block: ``[Generated:…, Source-State:…, Consistency-audit:…]``.
 
     Deterministic: both values come from the event log, never from the clock, so two
     renders against the same ``events.jsonl`` are byte-identical and the tracked
@@ -46,13 +46,21 @@ def provenance_lines(data: ComplianceData, *, generated_suffix: str = "") -> lis
     guessed — see ``source_state.banner_line``.
 
     **Callers must splat this, never destructure it.** The list length is not part of
-    the contract: card ``trg-a1fd8125`` plans a third line here ("when did the
-    cross-check last run"), and a caller that unpacked two names would raise at render
-    time the moment it lands. ``generated_suffix`` exists so the one document that
-    annotates its own ``Generated:`` line (the SBOM) can do so without unpacking.
+    the contract — card ``trg-a1fd8125`` landed the third line ("when did the
+    cross-check last run"), and a caller that unpacked two names would have raised at
+    render time. ``generated_suffix`` exists so the one document that annotates its own
+    ``Generated:`` line (the SBOM) can do so without unpacking.
+
+    The third line answers what a timestamp and a run id together still cannot: whether
+    anything ever checked that the state named here matches reality. It is omitted only
+    for a directly-constructed :class:`ComplianceData` (tests, fixtures), never for a
+    collected one — ``collect_all`` always resolves it, and "never run" is an answer.
     """
     generated = f"Generated: {data.timestamp}{generated_suffix}"
-    return [generated, banner_line(SourceState(run_id=data.run_id))]
+    lines = [generated, banner_line(SourceState(run_id=data.run_id))]
+    if data.audit_freshness_note:
+        lines.append(data.audit_freshness_note)
+    return lines
 
 
 # Re-exported so the Group E staleness normaliser reaches the banner's ONE owning
