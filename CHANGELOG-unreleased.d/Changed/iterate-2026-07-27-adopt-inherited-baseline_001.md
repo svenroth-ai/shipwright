@@ -1,0 +1,1 @@
+A baseline test run that was never made is recorded as *not measured* rather than as zero failures, and the command that produced an observed run is used as evidence but never written into the committed register.

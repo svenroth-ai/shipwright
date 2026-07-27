@@ -38,7 +38,12 @@ PHASE_REPORTS = {
     "project": ["rtm", "test_links", "dashboard"],
     "design": ["dashboard"],
     "plan": ["rtm", "test_links", "dashboard"],
-    "compliance": ["dashboard"],
+    # An audit run changes the freshness disclosure carried by EVERY evidence
+    # document (lib/audit_disclosure.py), not just the dashboard's section — so
+    # the /shipwright-compliance flow regenerates all five. Without this the
+    # documents keep saying "never run" until some later phase happens to touch
+    # them, which is the exact lag this disclosure exists to remove.
+    "compliance": ["rtm", "test_evidence", "change_history", "sbom", "dashboard"],
     "build": ["rtm", "test_evidence", "test_links", "change_history", "sbom", "dashboard"],
     "test": ["test_evidence", "test_links", "dashboard"],
     "deploy": ["dashboard"],

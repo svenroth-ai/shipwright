@@ -1,0 +1,10 @@
+{
+  "run_id": "iterate-2026-07-27-adopt-inherited-baseline",
+  "date": "2026-07-27T14:35:17.611324Z",
+  "type": "feature",
+  "complexity": "medium",
+  "branch": "iterate/adopt-inherited-baseline",
+  "spec": ".shipwright/planning/iterate/2026-07-27-adopt-inherited-baseline.md",
+  "tests_passed": true,
+  "adr": "iterate-2026-07-27-adopt-inherited-baseline"
+}

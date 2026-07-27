@@ -16,7 +16,6 @@ from __future__ import annotations
 
 import json
 import os
-import re
 import subprocess
 import sys
 from pathlib import Path
@@ -26,6 +25,7 @@ if str(_SCRIPTS_ROOT) not in sys.path:
     sys.path.insert(0, str(_SCRIPTS_ROOT))
 
 # Canonical greenfield/foreign predicate — single SSoT every hook shares.
+from lib.canon_frontmatter import parse_canon_frontmatter  # noqa: E402
 from lib.project_root import is_shipwright_project, resolve_project_root  # noqa: E402
 
 
@@ -48,35 +48,11 @@ _RUNTIME_SUBDIR = "runtime"
 # env var, the stop hook MUST NOT regenerate the file — doing so
 # would clobber the canon handoff with a generic "session end" one
 # and the iterate 12 verifier would lose the C3 artifact.
-_CANON_FRONTMATTER_RE = re.compile(
-    r"\A---\s*\n(.*?)\n---\s*\n",
-    re.DOTALL,
-)
-_CANON_FIELD_RE = re.compile(
-    r'^(?P<key>[a-z_]+):\s*"?(?P<value>[^"\n]*?)"?\s*$',
-)
-
-
-def _parse_canon_frontmatter(content: str) -> dict[str, str] | None:
-    """Return the parsed canon frontmatter dict, or None.
-
-    Only returns a dict if the top-of-file block is present AND it
-    contains ``canon_generated: true``. Anything else (no frontmatter,
-    manual YAML for other purposes, malformed) is treated as "no canon
-    marker — regenerate as normal".
-    """
-    m = _CANON_FRONTMATTER_RE.match(content)
-    if not m:
-        return None
-    block = m.group(1)
-    parsed: dict[str, str] = {}
-    for line in block.splitlines():
-        fm = _CANON_FIELD_RE.match(line)
-        if fm:
-            parsed[fm.group("key")] = fm.group("value")
-    if parsed.get("canon_generated", "").lower() != "true":
-        return None
-    return parsed
+# The parser moved to ``lib.canon_frontmatter`` in
+# iterate-2026-07-27-name-the-blocker, when the F11 freshness verifier became a
+# second reader of the same block. Re-exported under the old private name so
+# this module's existing callers and tests are unaffected.
+_parse_canon_frontmatter = parse_canon_frontmatter
 
 
 def _should_skip_regeneration(handoff_path: Path) -> tuple[bool, str]:

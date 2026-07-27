@@ -1,39 +1,39 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-07-27-changelog-writer-preserve-history"
+run_id: "iterate-2026-07-27-adopt-inherited-baseline"
 phase: "iterate"
-reason: "ensure-current pre-merge refresh"
-timestamp: "2026-07-27T12:14:34.040370+00:00"
+reason: "iterate: inherited failures and coverage gaps are recorded as inherited"
+timestamp: "2026-07-27T14:35:23.623868+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-07-27 12:14:34 UTC
+> Auto-generated 2026-07-27 14:35:23 UTC
 
 ## Session Info
 
-- **Session ID**: 
-- **Timestamp**: 2026-07-27 12:14:34 UTC
-- **Reason**: ensure-current pre-merge refresh
+- **Session ID**: 98053cc9-0f7c-4be8-b1cc-8b5d8b25d84b
+- **Timestamp**: 2026-07-27 14:35:23 UTC
+- **Reason**: iterate: inherited failures and coverage gaps are recorded as inherited
 
 ## Last Iterate
 
-- **Run ID**: iterate-2026-07-27-plan-section-deps
-- **Date**: 2026-07-27T12:14:28.199191Z
-- **Type**: change
+- **Run ID**: iterate-2026-07-27-adopt-inherited-baseline
+- **Date**: 2026-07-27T14:35:17.611324Z
+- **Type**: feature
 - **Complexity**: medium
-- **Branch**: iterate/plan-section-deps
-- **ADR**: iterate-2026-07-27-plan-section-deps
+- **Branch**: iterate/adopt-inherited-baseline
+- **ADR**: iterate-2026-07-27-adopt-inherited-baseline
 - **Tests passed**: True
-- **Spec**: .shipwright/planning/iterate/2026-07-27-plan-section-deps.md
+- **Spec**: .shipwright/planning/iterate/2026-07-27-adopt-inherited-baseline.md
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/changelog-writer-preserve-history
-- **Run ID**: `iterate-2026-07-27-changelog-writer-preserve-history`
-- **Spec**: .shipwright/planning/iterate/iterate-2026-07-27-changelog-writer-preserve-history.md
-- **Complexity**: medium (classifier: `estimate=medium`, `prior_source=history`,
-- **External Review Marker**: completed (external_review_state.json @ 2026-07-27T11:28:16)
+- **Branch**: iterate/adopt-inherited-baseline
+- **Run ID**: iterate-2026-07-27-adopt-inherited-baseline
+- **Spec**: .shipwright/planning/iterate/2026-07-27-adopt-inherited-baseline.md
+- **Complexity**: medium
+- **External Review Marker**: completed (external_review_state.json @ 2026-07-27T14:33:44)
 
 ### Mandatory replay on Resume
 
@@ -51,8 +51,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/changelog-writer-preserve-history
-- **Last Commit**: 138da358 Merge remote-tracking branch 'origin/main' into iterate/changelog-writer-preserve-history
+- **Branch**: iterate/adopt-inherited-baseline
+- **Last Commit**: 8396a0f8 chore(triage): sweep 1 outbox append(s) into branch
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -68,17 +68,17 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 | Event | Type | Source | Date |
 |-------|------|--------|------|
+| evt-942e3e04 | grade_snapshot | — | 2026-07-27 |
+| evt-f2747703 | work_completed | iterate (iterate: inherited failures and coverage gaps are recorded as inherited) | 2026-07-27 |
+| evt-38795ac5 | grade_snapshot | — | 2026-07-27 |
+| evt-f540a880 | work_completed | iterate (iterate: the four Step-9 gates become code, closing trg-88f721be (3 of 3)) | 2026-07-27 |
 | evt-0b2bb01b | grade_snapshot | — | 2026-07-27 |
-| evt-5ecd7d7e | work_completed | iterate (iterate: reviewer verdicts recorded, disagreement is its own outcome (1 of 3)) | 2026-07-27 |
-| evt-8039a18b | grade_snapshot | — | 2026-07-27 |
-| evt-8cab1d1d | work_completed | iterate (iterate: section dependencies are declarable, so the numbering is checkable (2 of 3)) | 2026-07-27 |
-| evt-64bc7af0 | grade_snapshot | — | 2026-07-27 |
 
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 369
-- **Last iterate**: change — iterate: reviewer verdicts recorded, disagreement is its own outcome (1 of 3) (2026-07-27)
+- **Total work events**: 373
+- **Last iterate**: change — iterate: inherited failures and coverage gaps are recorded as inherited (2026-07-27)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
 ## Recent Decisions

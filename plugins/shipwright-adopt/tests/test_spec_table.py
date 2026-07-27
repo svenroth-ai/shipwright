@@ -21,7 +21,7 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "scripts"))
 
-from lib.spec_table import basis_for, render_fr_table  # noqa: E402
+from lib.spec_table import basis_for, effective_features, render_fr_table  # noqa: E402
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(REPO_ROOT / "shared" / "scripts" / "lib"))
@@ -63,6 +63,53 @@ def test_a_placeholder_source_file_is_not_evidence(placeholder: str) -> None:
     """
     assert basis_for({"source_file": placeholder, "url": "https://x/a"}) == "observed"
     assert basis_for({"source_file": placeholder}) == "assumed"
+
+
+def test_an_explicitly_declared_basis_survives_re_rendering() -> None:
+    """A requirement someone actually confirmed must not be re-derived back down
+    to `code` the next time the table is written. Adopt cannot produce
+    `interview` today — nothing interviews a human at onboarding — but the
+    elicitation follow-up onboarding files is what supplies them later, and the
+    renderer must not discard the answer when it arrives (trg-1aa5a8ab).
+    """
+    assert basis_for({"basis": "interview", "source_file": "src/auth.ts"}) == "interview"
+    assert basis_for({"basis": "tests", "url": "https://x/a"}) == "tests"
+
+
+@pytest.mark.parametrize("junk", ["confirmed", "code (auth.ts)", "", "  ", None])
+def test_a_declared_basis_outside_the_vocabulary_is_ignored_not_passed_through(junk) -> None:
+    """A value outside the closed set is a HARD audit failure (`I5`), so the
+    producer falls back to detection rather than manufacturing one. Note
+    `code (auth.ts)`: a known value carrying a qualifier is malformed too."""
+    assert basis_for({"basis": junk, "source_file": "src/auth.ts"}) == "code"
+
+
+# ---------------------------------------------------------------------------
+# effective_features — one answer to "which rows exist"
+# ---------------------------------------------------------------------------
+
+
+def test_effective_features_passes_real_features_through() -> None:
+    features = [{"fr_id": "FR-01.01", "label": "x"}]
+    assert effective_features(features) == features
+
+
+def test_effective_features_does_not_alias_its_input() -> None:
+    """The rows are copied, so a consumer annotating one cannot mutate the
+    caller's feature list under the renderer's feet."""
+    features = [{"fr_id": "FR-01.01", "label": "x"}]
+    effective_features(features)[0]["label"] = "mutated"
+    assert features[0]["label"] == "x"
+
+
+def test_effective_features_synthesizes_the_placeholder_for_a_zero_detection_repo() -> None:
+    """`render_fr_table` and `derived_catalogue.summarize` both read this, which
+    is what stops the reported count from describing a different table than the
+    one rendered."""
+    rows = effective_features([])
+    assert len(rows) == 1
+    assert rows[0]["fr_id"] == "FR-01.01"
+    assert rows[0]["_placeholder"] is True
 
 
 # ---------------------------------------------------------------------------

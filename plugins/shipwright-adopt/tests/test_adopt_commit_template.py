@@ -36,6 +36,7 @@ def test_template_includes_run_id_trailer(tmp_path):
         profile="python-cli",
         scope="full_app",
         inferred_fr_count=12,
+        unconfirmed_fr_count=12,
     )
     assert RUN_ID_REGEX.search(msg), (
         f"Run-ID trailer missing or malformed.\n---\n{msg}\n---"
@@ -51,6 +52,7 @@ def test_template_subject_unchanged():
         profile="python-cli",
         scope="full_app",
         inferred_fr_count=5,
+        unconfirmed_fr_count=5,
     )
     first_line = msg.splitlines()[0]
     assert first_line == "chore(shipwright): adopt repository into Shipwright SDLC"
@@ -65,6 +67,7 @@ def test_run_id_format_derives_from_repo_name():
         profile="python-cli",
         scope="full_app",
         inferred_fr_count=5,
+        unconfirmed_fr_count=5,
     )
     # The Run-ID segment after the date is the kebab-cased lowercase basename.
     match = RUN_ID_REGEX.search(msg)
@@ -83,6 +86,7 @@ def test_run_id_handles_whitespace_and_specials_in_repo_name():
         profile="python-cli",
         scope="full_app",
         inferred_fr_count=5,
+        unconfirmed_fr_count=5,
     )
     match = RUN_ID_REGEX.search(msg)
     assert match is not None, (
@@ -99,6 +103,7 @@ def test_template_includes_profile_and_scope_in_body():
         profile="python-cli",
         scope="full_app",
         inferred_fr_count=12,
+        unconfirmed_fr_count=12,
     )
     assert "profile=python-cli" in msg
     assert "scope=full_app" in msg
@@ -120,11 +125,60 @@ def test_template_is_deterministic_for_same_date(monkeypatch):
         profile="python-cli",
         scope="full_app",
         inferred_fr_count=5,
+        unconfirmed_fr_count=5,
     )
     b = build_adopt_commit_message(
         project_root=Path("/tmp/repo"),
         profile="python-cli",
         scope="full_app",
         inferred_fr_count=5,
+        unconfirmed_fr_count=5,
     )
     assert a == b
+
+
+# ---------------------------------------------------------------------------
+# The handover states how many requirements nobody has confirmed (trg-1aa5a8ab)
+# ---------------------------------------------------------------------------
+
+
+def test_the_body_reports_how_many_requirements_are_unconfirmed():
+    """The commit that hands a repository over is the most-read record of what
+    onboarding produced. A catalogue nobody has confirmed must not reach that
+    record looking like one somebody did."""
+    from lib.adopt_commit_template import build_adopt_commit_message
+
+    msg = build_adopt_commit_message(
+        project_root=Path("/tmp/repo"), profile="python-cli", scope="full_app",
+        inferred_fr_count=12, unconfirmed_fr_count=11,
+    )
+    assert "11 of them are DERIVED AND UNCONFIRMED" in msg
+    assert "adopt-derived-catalogue-confirmation" in msg
+    assert ".shipwright/adopt/derived-catalogue.json" in msg
+
+
+def test_the_body_names_the_inherited_baseline_register():
+    """The other half of the same honesty: what arrived broken or untested is
+    recorded as inherited, and the commit says where."""
+    from lib.adopt_commit_template import build_adopt_commit_message
+
+    msg = build_adopt_commit_message(
+        project_root=Path("/tmp/repo"), profile="python-cli", scope="full_app",
+        inferred_fr_count=1, unconfirmed_fr_count=1,
+    )
+    assert "shipwright_known_failures.json" in msg
+
+
+def test_the_count_cannot_be_omitted():
+    """Required keyword, deliberately. A default would let the number fall out
+    of the handover the first time a caller forgot to look it up — which is
+    exactly how the original omission survived unnoticed."""
+    import pytest
+
+    from lib.adopt_commit_template import build_adopt_commit_message
+
+    with pytest.raises(TypeError):
+        build_adopt_commit_message(
+            project_root=Path("/tmp/repo"), profile="python-cli",
+            scope="full_app", inferred_fr_count=1,
+        )

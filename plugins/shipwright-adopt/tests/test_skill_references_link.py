@@ -39,6 +39,7 @@ EXPECTED_STEP_REFERENCES = {
     "step-e-artifact-generation.md",
     "step-e5-env-scaffold.md",
     "step-e16-triage-inbox.md",
+    "step-e18-inherited-baseline.md",
     "step-f-compliance-seeding.md",
     "step-g-layer3-review.md",
     "step-h-validate-commit-handoff.md",
@@ -157,4 +158,37 @@ def test_kern_skill_md_under_300_loc() -> None:
     assert loc <= 300, (
         f"Kern SKILL.md is {loc} LOC, must be <= 300 after split. "
         f"Move more content into references/."
+    )
+
+
+# ---------------------------------------------------------------------------
+# The handover names what it must (trg-1aa5a8ab)
+# ---------------------------------------------------------------------------
+
+
+def test_step_h_reference_tells_the_agent_where_the_count_comes_from() -> None:
+    """Step H is prompt-executed, so its reference doc IS the wiring.
+
+    The commit-message builder enforces the count mechanically (a required
+    keyword), but nothing else tells the agent WHERE to read it or which
+    follow-up to name in the banner. An external review flagged exactly this
+    gap — "add a kwarg" is not the same as "the handover obtains the number" —
+    so the instruction is pinned here rather than left to prose that can drift.
+    """
+    doc = (REFERENCES_DIR / "step-h-validate-commit-handoff.md").read_text(encoding="utf-8")
+    assert "derived-catalogue.json" in doc, "Step H must name the artifact it reads"
+    assert "unconfirmed_fr_count" in doc, "Step H must pass the count to the commit builder"
+    assert "requirement-elicitation.md" in doc, (
+        "the banner must point at the method that resolves the unconfirmed catalogue"
+    )
+    assert "shipwright_known_failures.json" in doc, (
+        "the banner must surface what the codebase arrived with, as inherited"
+    )
+    assert "adopt-derived-catalogue-confirmation" in doc, (
+        "the banner must name the follow-up that resolves the unconfirmed catalogue"
+    )
+    assert "read_summary" in doc, (
+        "Step H must read the catalogue through the fail-closed reader — a bare "
+        "json.loads at the handover skips every integrity check at the one place "
+        "the count is published"
     )

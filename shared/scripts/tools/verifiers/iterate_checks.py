@@ -22,7 +22,6 @@ from __future__ import annotations
 import json
 import re
 import sys
-import time
 from pathlib import Path
 
 _SCRIPTS_ROOT = Path(__file__).resolve().parents[2]
@@ -50,6 +49,7 @@ from .agent_doc_budget_check import check_agent_doc_budget  # noqa: E402,F401 �
 from .agent_doc_shape_check import check_agent_doc_shape  # noqa: E402,F401 — re-exported
 from .common import CheckResult, Severity  # noqa: E402
 from .git_helpers import _commit_changed_paths, _git_available, _run_git  # noqa: E402
+from .handoff_freshness import check_session_handoff_fresh  # noqa: E402, F401 — re-exported
 # ADR / decision-log integrity checks live in their own module (bloat
 # extraction); re-imported here so run_all_checks + the verify_iterate_finalization
 # wrapper + the tests keep resolving them from iterate_checks.
@@ -349,32 +349,10 @@ def check_changelog_unreleased(
     return CheckResult(name, True, f"{bullet_count} bullets in [Unreleased]")
 
 
-def check_session_handoff_fresh(
-    project_root: Path,
-    max_age_seconds: int = 600,
-) -> CheckResult:
-    """F11 check — ``session_handoff.md`` was regenerated recently.
-
-    Warning-level because handoff is advisory, not load-bearing.
-    """
-    name = "session_handoff.md fresh"
-    handoff = project_root / ".shipwright" / "agent_docs" / "session_handoff.md"
-    if not handoff.exists():
-        return CheckResult(
-            name,
-            False,
-            "session_handoff.md missing",
-            severity=Severity.WARNING.value,
-        )
-    age = time.time() - handoff.stat().st_mtime
-    if age <= max_age_seconds:
-        return CheckResult(name, True, f"mtime age {int(age)}s")
-    return CheckResult(
-        name,
-        False,
-        f"stale: mtime age {int(age)}s > {max_age_seconds}s",
-        severity=Severity.WARNING.value,
-    )
+# ``check_session_handoff_fresh`` moved to ``verifiers/handoff_freshness.py`` in
+# iterate-2026-07-27-name-the-blocker and stopped keying on filesystem mtime —
+# it now asks whether the handoff NAMES this run. Re-imported above so
+# ``run_all_checks`` and any external caller keep the same import site.
 
 
 # ---------------------------------------------------------------------------
@@ -1040,7 +1018,7 @@ def run_all_checks(
         ),
         check_adr_in_iterate_history(project_root, run_id),
         check_changelog_unreleased(project_root, run_id=run_id),
-        check_session_handoff_fresh(project_root),
+        check_session_handoff_fresh(project_root, run_id),
         check_build_dashboard_has_run_id(project_root, run_id, commit_hash=commit_hash or None),
         check_surface_verification(project_root, run_id),
         check_test_completeness_ledger(project_root, run_id),

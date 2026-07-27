@@ -451,13 +451,13 @@ def generate(
         changelog_link=changelog_link,
     ):
         results["written"].append(str(p))
-    p = write_spec(
-        project_root,
-        project_name=project_name, split_name=split_name,
-        product_description=product_description,
-        features=merged_features, qr_items=qr, constraints=constraints,
-    )
-    results["written"].append(str(p))
+    # Two paths: the spec + the derived/unconfirmed summary of its own FR table.
+    for p in write_spec(
+        project_root, project_name=project_name, split_name=split_name,
+        product_description=product_description, features=merged_features,
+        qr_items=qr, constraints=constraints,
+    ):
+        results["written"].append(str(p))
 
     # Configs (run_config LAST — see config_writer.write_all)
     for p in write_all(

@@ -77,7 +77,7 @@ from env import load_shipwright_env  # type: ignore[import-not-found]
 load_shipwright_env()
 
 from external_review_config import load_review_config, resolve_model  # noqa: E402
-from external_review_degraded import finalize_review_output  # noqa: E402
+from external_review_degraded import classify_reply, finalize_review_output, gemini_finish_reason, openai_finish_reason  # noqa: E402
 from external_review_prompts import (  # noqa: E402
     default_review_prompts,
     load_code_review_prompts,
@@ -157,7 +157,7 @@ def review_with_openrouter(
             max_tokens=4096,
         )
 
-        return {"status": "success", "feedback": response.choices[0].message.content, "via": "openrouter"}
+        return classify_reply(response.choices[0].message.content, openai_finish_reason(response), via="openrouter")
 
     except ImportError:
         return {"status": "error", "reason": "openai package not installed"}
@@ -190,7 +190,7 @@ def review_with_gemini(
             ),
         )
 
-        return {"status": "success", "feedback": response.text, "via": "direct"}
+        return classify_reply(response.text, gemini_finish_reason(response), via="direct")
 
     except ImportError:
         return {"status": "error", "reason": "google-genai package not installed"}
@@ -226,7 +226,7 @@ def review_with_openai(
             max_completion_tokens=4096,
         )
 
-        return {"status": "success", "feedback": response.choices[0].message.content, "via": "direct"}
+        return classify_reply(response.choices[0].message.content, openai_finish_reason(response), via="direct")
 
     except ImportError:
         return {"status": "error", "reason": "openai package not installed"}
