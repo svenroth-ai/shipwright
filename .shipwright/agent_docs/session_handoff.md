@@ -1,8 +1,8 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-07-27-pytest-root-composition"
+run_id: "iterate-2026-07-27-merge-state-vocabulary"
 phase: "iterate"
-reason: "ensure-current pre-merge refresh"
+reason: "regenerate derived snapshots after main merge"
 timestamp: "2026-07-27T17:38:49.456380+00:00"
 ---
 
@@ -12,9 +12,9 @@ timestamp: "2026-07-27T17:38:49.456380+00:00"
 
 ## Session Info
 
-- **Session ID**: 2a2ccc95-e7ec-4ca6-bcdb-601ae9e9b002
+- **Session ID**: 9058f47a-25f4-4469-b517-e3b5c91347e0
 - **Timestamp**: 2026-07-27 17:38:49 UTC
-- **Reason**: ensure-current pre-merge refresh
+- **Reason**: regenerate derived snapshots after main merge
 
 ## Last Iterate
 
@@ -29,11 +29,8 @@ timestamp: "2026-07-27T17:38:49.456380+00:00"
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/pytest-root-composition
-- **Run ID**: `iterate-2026-07-27-pytest-root-composition`
-- **Spec**: .shipwright/planning/iterate/iterate-2026-07-27-pytest-root-composition.md
-- **Complexity**: medium
-- **External Review Marker**: completed (external_review_state.json @ 2026-07-27T17:10:30)
+- **Branch**: iterate/merge-state-vocabulary
+- **External Review Marker**: skipped_config_disabled (external_review_state.json @ 2026-07-27T16:41:37)
 
 ### Mandatory replay on Resume
 
@@ -51,8 +48,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/pytest-root-composition
-- **Last Commit**: 4942819e Merge remote-tracking branch 'origin/main' into iterate/pytest-root-composition
+- **Branch**: iterate/merge-state-vocabulary
+- **Last Commit**: eadfdeb6 Merge remote-tracking branch 'origin/main' into iterate/merge-state-vocabulary
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -77,7 +74,7 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 381
+- **Total work events**: 382
 - **Last iterate**: change — iterate: raise the PR-review diff cap, cut at a file boundary, name what went unreviewed (2026-07-27)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
