@@ -3,17 +3,17 @@
 Generated: 2026-07-27T19:47:47.363461+00:00
 Source-State: run=iterate-2026-07-27-review-floor-not-chained
 Consistency-audit: never run
-Total commits: 1244
+Total commits: 1247
 
 ## Commit Distribution
 
 ```mermaid
 pie title Commit Types
     "fix" : 362
-    "feat" : 348
-    "chore" : 258
+    "feat" : 349
+    "chore" : 259
     "docs" : 148
-    "refactor" : 76
+    "refactor" : 77
     "test" : 31
     "ci" : 11
     "other" : 9
@@ -26,9 +26,9 @@ pie title Commit Types
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-07-27 | iterate | exclude derived churn artifacts from the silent-revert check | 7044abcb92aa |
 | 2026-07-27 | iterate | the code review becomes a floor, not a chain (#476) | 7c116c035480 |
 | 2026-07-27 | security | the test suite stops leaking a triage store into the plugin dir (#474) | 6ba177083769 |
-| 2026-07-27 | ci | three checks that ran, reported, and gated nothing | bd1c2eb47705 |
 | 2026-07-27 | run | report against what will exist, and assert only what you can prove (#468) | 3c13001aafeb |
 | 2026-07-27 | iterate | the merge state is a vocabulary, not a BLOCKED flag (#473) | 159953eec378 |
 | 2026-07-27 | shared | a multi-root pytest session names its own cause (#469) | bd7121b79d53 |
@@ -389,11 +389,12 @@ pie title Commit Types
 | 2026-03-21 | — | rename skill folders for clean slash commands | 5a8d77658fab |
 | 2026-03-20 | — | update README attribution to svenroth.ai | dd5de7f7d6ab |
 
-### Features (feat) — 348 commits
+### Features (feat) — 349 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
 | 2026-07-27 | security | a scan records what it did not check (part 1/2) (#455) | 8154e1bcaf2b |
+| 2026-07-27 | iterate | a branch may not quietly revert work that merged while it was open | 6ff78bf45a41 |
 | 2026-07-27 | test | per-journey coverage, durable warning follow-ups, retry-passes (FR-01.06) (#446) | fbf93d01b55b |
 | 2026-07-27 | shared | the requirement-impact declaration, one mechanism for two phases (#463) | 26dfefa7286e |
 | 2026-07-27 | adopt | what the codebase arrived with is recorded as inherited (2/2) (#460) | 97b9878ed5b2 |
@@ -742,14 +743,15 @@ pie title Commit Types
 | 2026-03-20 | — | Task 02 — project templates (CLAUDE.md, agent_docs, CI) | c3a6d2f53bd3 |
 | 2026-03-20 | — | Task 01 — monorepo scaffolding + supabase-nextjs stack profile | 990a138a4690 |
 
-### Chores (chore) — 258 commits
+### Chores (chore) — 259 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
-| 2026-07-27 | churn | regenerate derived snapshots after main merge | 5e6b46e2c140 |
-| 2026-07-27 | churn | regenerate derived snapshots after main merge | 6fdd45f6d37f |
+| 2026-07-27 | churn | regenerate derived snapshots after main merge | 735bf2085cbb |
+| 2026-07-27 | churn | regenerate derived snapshots after main merge | a9378c116c78 |
+| 2026-07-27 | churn | regenerate derived snapshots after main merge | b68bbf21c3f3 |
+| 2026-07-27 | triage | sweep 5 outbox append(s) into branch | aa539d682089 |
 | 2026-07-27 | triage | follow-up card for requiring the checks that gate nothing | 7387b2796960 |
-| 2026-07-27 | triage | sweep 1 outbox append(s) into branch | 554a1f0211cc |
 | 2026-07-26 | review | default external-review GPT model to gpt-5.6-terra (#435) | 8d750a5fc7af |
 | 2026-07-24 | security | stage full compliance write-set in Step 7.5 finalizer (#434) | 5da96ebe8561 |
 | 2026-07-23 | compliance | refresh after security scan (#433) | 2b644805fb7d |
@@ -1158,10 +1160,11 @@ pie title Commit Types
 | 2026-03-21 | — | expand README with pipeline diagram, architecture, and quality gates | 377dc2141b3d |
 | 2026-03-20 | — | add README.md for GitHub repo | 853c8f930132 |
 
-### Refactoring (refactor) — 76 commits
+### Refactoring (refactor) — 77 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-07-27 | test | split the close-missing floor cases out of the CLI test file (#478) | cf6d326b5011 |
 | 2026-07-27 | shared | split git resolution out of source_state (300-LOC compliance) (#451) | 3cdca5cfc884 |
 | 2026-07-21 | adopt | route the eight scaffolders through one guarded shared/ loader (FR-01.13) (#423) | 736fc8d1712c |
 | 2026-07-20 | requirements | one catalog, stated once in plain language (campaign S6) (#414) | be2561caccd3 |
@@ -1315,7 +1318,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 1244 |
+| Total commits | 1247 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 1244 |
+| Human-authored commits | 1247 |
 

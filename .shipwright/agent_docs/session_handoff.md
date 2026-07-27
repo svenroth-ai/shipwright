@@ -1,20 +1,20 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-07-27-checks-that-gate-nothing"
+run_id: "iterate-2026-07-27-no-silent-revert"
 phase: "iterate"
-reason: "merge origin/main reconciliation"
-timestamp: "2026-07-27T20:10:39.859419+00:00"
+reason: "PR #477 BEHIND: refresh"
+timestamp: "2026-07-27T19:47:53.112213+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-07-27 20:10:39 UTC
+> Auto-generated 2026-07-27 19:47:53 UTC
 
 ## Session Info
 
-- **Session ID**: 99609ad4-4e4b-47ca-a23f-ccfc53ee7516
-- **Timestamp**: 2026-07-27 20:10:39 UTC
-- **Reason**: merge origin/main reconciliation
+- **Session ID**: 9058f47a-25f4-4469-b517-e3b5c91347e0
+- **Timestamp**: 2026-07-27 19:47:53 UTC
+- **Reason**: PR #477 BEHIND: refresh
 
 ## Last Iterate
 
@@ -29,15 +29,8 @@ timestamp: "2026-07-27T20:10:39.859419+00:00"
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/checks-that-gate-nothing
-- **Run ID**: iterate-2026-07-27-checks-that-gate-nothing
-- **Spec**: .shipwright/planning/iterate/2026-07-27-checks-that-gate-nothing.md
-- **External Review Marker**: stale (predates spec (2026-07-27T19:22:03))
-
-### Mandatory replay on Resume
-
-Before dispatching to the handoff's Remaining phase, run these if missing:
-- Finalization (F0–F11) after all mandatory phases pass
+- **Branch**: iterate/no-silent-revert
+- **External Review Marker**: skipped_config_disabled (external_review_state.json @ 2026-07-27T19:43:50)
 
 ## Legacy build state
 
@@ -50,9 +43,9 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/checks-that-gate-nothing
-- **Last Commit**: fba7495c Merge remote-tracking branch 'origin/main' into iterate/checks-that-gate-nothing
-- **Uncommitted Changes**: Yes
+- **Branch**: iterate/no-silent-revert
+- **Last Commit**: 5d5fca61 Merge remote-tracking branch 'origin/main' into iterate/no-silent-revert
+- **Uncommitted Changes**: None
 
 ## Config Files to Read
 
@@ -67,11 +60,11 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 | Event | Type | Source | Date |
 |-------|------|--------|------|
-| evt-61ab1c8b | grade_snapshot | — | 2026-07-27 |
-| evt-10f83f9f | grade_snapshot | — | 2026-07-27 |
 | evt-b1a81042 | grade_snapshot | — | 2026-07-27 |
 | evt-301cc5e3 | grade_snapshot | — | 2026-07-27 |
 | evt-d33730ea | grade_snapshot | — | 2026-07-27 |
+| evt-2acd6fdb | grade_snapshot | — | 2026-07-27 |
+| evt-43b5a915 | grade_snapshot | — | 2026-07-27 |
 
 ## Recovery
 

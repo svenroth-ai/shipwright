@@ -1,6 +1,6 @@
 # Triage Inbox
 
-> Auto-generated 2026-07-27T20:10:39.859419Z. Items waiting for triage decision.
+> Auto-generated 2026-07-27T20:05:26.992212Z. Items waiting for triage decision.
 > Promote via WebUI Triage tab (when v1b lands) or `shared/scripts/tools/triage_promote.py --id <id> --task-ref EXT:<ref>`.
 
 ## Status summary
@@ -17,7 +17,7 @@
   - Scope the Shipwright marketplace correctly instead of enabling all ~14 plugins at user scope (they currently load /ship…
   - Promote: `triage_promote.py --id trg-57317128 --task-ref EXT:<ref>`
 
-### Source: compliance (2 items)
+### Source: compliance (1 item)
 
 <a id="trg-a5b167f4"></a>
 - **Compliance: 5 open finding(s)** `id=trg-a5b167f4 | severity=high | kind=compliance → P1/compliance`
@@ -31,19 +31,6 @@
     Each finding + hint is listed in this item's detail.
     ```
   - Promote: `triage_promote.py --id trg-a5b167f4 --task-ref EXT:<ref>`
-
-<a id="trg-b1b635be"></a>
-- **Compliance: 3 open finding(s)** `id=trg-b1b635be | severity=high | kind=compliance → P1/compliance`
-  - 3 open compliance finding(s): D/D1, D/D3, H/H1  - D/D1: Spec FR coverage in events — uncovered FRs — Must: FR-01.17; Sh…
-  - Launch payload (copy into a new Claude session):
-    ```text
-    /shipwright-compliance
-    
-    Context: 3 open compliance finding(s): D/D1, D/D3, H/H1.
-    Dashboard: .shipwright/compliance/dashboard.md
-    Each finding + hint is listed in this item's detail.
-    ```
-  - Promote: `triage_promote.py --id trg-b1b635be --task-ref EXT:<ref>`
 
 ### Source: github (2 items)
 
@@ -96,7 +83,12 @@
   - The tail of campaign step S2, not a new campaign - file it now so it is not lost between "S2 merged" and "somebody noti…
   - Promote: `triage_promote.py --id trg-8bf97fd4 --task-ref EXT:<ref>`
 
-### Source: manual (6 items)
+### Source: manual (7 items)
+
+<a id="trg-51f8e2a1"></a>
+- **deferring a triage finding does not yet defer it - make the third decision mean what it says** `id=trg-51f8e2a1 | severity=high | kind=improvement → P1/engineering`
+  - Post-merge review of PR #444 found the CLI defer subcommand records the decision correctly but almost nothing downstrea…
+  - Promote: `triage_promote.py --id trg-51f8e2a1 --task-ref EXT:<ref>`
 
 <a id="trg-2ca796f3"></a>
 - **Release aggregator can write the same version twice on a re-run** `id=trg-2ca796f3 | severity=high | kind=bug → P1/engineering`
