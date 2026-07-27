@@ -1576,13 +1576,27 @@ because the diff was too large to fit: *"diff was truncated — failing closed
 the current head, then the skip label. Running that review found something
 neither the round nor its author was looking for:
 
-**This branch silently reverted a change that had merged on `main` two commits
-earlier**, and deleted the test that would have caught it. `#435` had set the
-external-review GPT model to `gpt-5.6-terra`; this branch carried
-`gpt-5.6-terra-pro` in **both** the shipping config and `llm_review.DEFAULT_MODELS`
-— and `test_default_models_match_shipping_config`, whose own docstring records
-that those two sources had already drifted apart twice, was **removed** in the
-same range. A drift test deleted in the change that would have tripped it.
+**The commit about to be merged reverted a change that had landed on `main`
+mid-round**, and dropped the test that guarded it. `#435` had switched the
+external-review GPT model `gpt-5.6-terra-pro` → `gpt-5.6-terra` in **both** the
+shipping config and `llm_review.DEFAULT_MODELS`, and added
+`test_default_models_match_shipping_config` binding the two together — all in one
+commit. The consolidated commit undid all three.
+
+**Corrected attribution (2026-07-27).** The first version of this paragraph
+blamed "the branch". It was wrong, and the correction is the more useful finding:
+the branch forked at `#431`, **before** `#435`, never touched any of those three
+files, and `#435` is not an ancestor of it. The revert was produced by
+**`git reset --soft origin/main`** — the step that consolidates a run's commits
+into one for the F11 verifier. A soft reset moves the branch pointer to the new
+base but leaves the **working tree untouched**, so every file the new base
+changed since the fork silently becomes a revert inside the consolidated commit:
+no replay, no conflict, nothing in the commit message.
+
+The diagnosis trap is worth as much as the defect. `git log <branch> -- <file>`
+shows **nothing** — correctly, because no commit of the run ever touched it —
+which reads as "inherited" and is not. Check ancestry
+(`git merge-base --is-ancestor`) before attributing a revert to a branch.
 
 Nothing about it touches REQ-3. It would have merged, unremarked, inside a
 1983-line requirements diff. All three files were restored from `origin/main`
