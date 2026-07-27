@@ -1,0 +1,10 @@
+{
+  "run_id": "iterate-2026-07-27-pytest-root-composition",
+  "date": "2026-07-27T17:19:50.695876Z",
+  "type": "bug",
+  "complexity": "medium",
+  "branch": "iterate/pytest-root-composition",
+  "spec": ".shipwright/planning/iterate/iterate-2026-07-27-pytest-root-composition.md",
+  "tests_passed": true,
+  "adr": "iterate-2026-07-27-pytest-root-composition"
+}

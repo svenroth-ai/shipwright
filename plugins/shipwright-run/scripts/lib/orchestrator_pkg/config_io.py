@@ -26,7 +26,7 @@ from .constants import (
 
 # ``run_config_store`` is a top-level module in this plugin's scripts/lib;
 # importing ``.constants`` above already put that dir on sys.path.
-from run_config_store import atomic_write_json  # noqa: E402
+from run_config_store import atomic_write_json, durable_read_text  # noqa: E402
 
 
 def load_run_config(project_root: Path, *, migrate: bool = True) -> dict[str, Any]:
@@ -44,7 +44,10 @@ def load_run_config(project_root: Path, *, migrate: bool = True) -> dict[str, An
     if not path.exists():
         return {}  # Valid: first run, no config yet
     try:
-        config = json.loads(path.read_text(encoding="utf-8"))
+        # durable_read_text, not path.read_text: this read is deliberately
+        # UNLOCKED, so a concurrent writer's os.replace can leave the entry
+        # delete-pending and the open fails with PermissionError on Windows.
+        config = json.loads(durable_read_text(path))
     except json.JSONDecodeError as exc:
         print(json.dumps({
             "warning": "Corrupt orchestrator config",

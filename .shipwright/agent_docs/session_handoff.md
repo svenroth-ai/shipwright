@@ -1,39 +1,39 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-07-27-changelog-aggregator-idempotency"
+run_id: "iterate-2026-07-27-pytest-root-composition"
 phase: "iterate"
 reason: "ensure-current pre-merge refresh"
-timestamp: "2026-07-27T17:36:39.636234+00:00"
+timestamp: "2026-07-27T17:38:49.456380+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-07-27 17:36:39 UTC
+> Auto-generated 2026-07-27 17:38:49 UTC
 
 ## Session Info
 
-- **Session ID**: 8a0611d4-b05d-411a-a42a-cc448bc145a7
-- **Timestamp**: 2026-07-27 17:36:39 UTC
+- **Session ID**: 2a2ccc95-e7ec-4ca6-bcdb-601ae9e9b002
+- **Timestamp**: 2026-07-27 17:38:49 UTC
 - **Reason**: ensure-current pre-merge refresh
 
 ## Last Iterate
 
-- **Run ID**: iterate-2026-07-27-changelog-aggregator-idempotency
-- **Date**: 2026-07-27T17:36:33.244347Z
-- **Type**: change
+- **Run ID**: iterate-2026-07-27-run-unit-parallel-race
+- **Date**: 2026-07-27T17:38:43.705219Z
+- **Type**: bug
 - **Complexity**: medium
-- **Branch**: iterate/changelog-aggregator-idempotency
-- **ADR**: iterate-2026-07-27-changelog-aggregator-idempotency
+- **Branch**: iterate/run-unit-parallel-race
+- **ADR**: iterate-2026-07-27-run-unit-parallel-race
 - **Tests passed**: True
-- **Spec**: .shipwright/planning/iterate/iterate-2026-07-27-changelog-aggregator-idempotency.md
+- **Spec**: .shipwright/planning/iterate/iterate-2026-07-27-run-unit-parallel-race.md
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/changelog-aggregator-idempotency
-- **Run ID**: `iterate-2026-07-27-changelog-aggregator-idempotency`
-- **Spec**: .shipwright/planning/iterate/iterate-2026-07-27-changelog-aggregator-idempotency.md
-- **Complexity**: medium (classifier: `estimate=medium`, `prior_source=history`,
-- **External Review Marker**: stale (predates spec (2026-07-27T16:31:40))
+- **Branch**: iterate/pytest-root-composition
+- **Run ID**: `iterate-2026-07-27-pytest-root-composition`
+- **Spec**: .shipwright/planning/iterate/iterate-2026-07-27-pytest-root-composition.md
+- **Complexity**: medium
+- **External Review Marker**: completed (external_review_state.json @ 2026-07-27T17:10:30)
 
 ### Mandatory replay on Resume
 
@@ -51,8 +51,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/changelog-aggregator-idempotency
-- **Last Commit**: 5e75c9a8 Merge remote-tracking branch 'origin/main' into iterate/changelog-aggregator-idempotency
+- **Branch**: iterate/pytest-root-composition
+- **Last Commit**: 4942819e Merge remote-tracking branch 'origin/main' into iterate/pytest-root-composition
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -70,14 +70,14 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 |-------|------|--------|------|
 | evt-950798de | grade_snapshot | — | 2026-07-27 |
 | evt-36d0f887 | work_completed | iterate (iterate: raise the PR-review diff cap, cut at a file boundary, name what went unreviewed) | 2026-07-27 |
-| evt-8c3f8301 | grade_snapshot | — | 2026-07-27 |
-| evt-101fccaa | work_completed | iterate (iterate: the release aggregator writes a version once, or says why not) | 2026-07-27 |
-| evt-76f1beff | grade_snapshot | — | 2026-07-27 |
+| evt-ad7b51e0 | grade_snapshot | — | 2026-07-27 |
+| evt-e3d8f519 | work_completed | iterate (iterate: an audit that checked nothing is not recorded) | 2026-07-27 |
+| evt-024abc36 | grade_snapshot | — | 2026-07-27 |
 
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 379
+- **Total work events**: 381
 - **Last iterate**: change — iterate: raise the PR-review diff cap, cut at a file boundary, name what went unreviewed (2026-07-27)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 

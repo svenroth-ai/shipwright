@@ -1,17 +1,17 @@
 # Commit Change Log
 
-Generated: 2026-07-27T17:36:33.332091+00:00
-Source-State: run=iterate-2026-07-27-changelog-aggregator-idempotency
+Generated: 2026-07-27T17:38:43.791837+00:00
+Source-State: run=iterate-2026-07-27-run-unit-parallel-race
 Consistency-audit: never run
-Total commits: 1232
+Total commits: 1236
 
 ## Commit Distribution
 
 ```mermaid
 pie title Commit Types
-    "fix" : 355
+    "fix" : 358
     "feat" : 346
-    "chore" : 255
+    "chore" : 256
     "docs" : 148
     "refactor" : 76
     "test" : 31
@@ -22,12 +22,15 @@ pie title Commit Types
 
 ## Changes by Type
 
-### Fixes (fix) — 355 commits
+### Fixes (fix) — 358 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
-| 2026-07-27 | changelog | the release aggregator writes a version once, or says why not | 0d71803c32cd |
+| 2026-07-27 | compliance | an audit that checked nothing is not recorded (#466) | 968578b9de35 |
+| 2026-07-27 | shared | a reader and a writer stop defeating each other on Windows (#471) | 0b4c9b8b4ae6 |
 | 2026-07-27 | security | the PR reviewer stops being defeated by the size of the change (#470) | 17ca76d7f413 |
+| 2026-07-27 | shared | keep the always-loaded docs inside their entry budget | 025372ea57b0 |
+| 2026-07-27 | shared | a multi-root pytest session names its own cause | 23c0e4283413 |
 | 2026-07-27 | iterate | the phase canon asks whether the handoff belongs to this run (#467) | 3c82d6332678 |
 | 2026-07-27 | security | the PR reviewer stops reviewing its own prior reviews (#461) | 273e3ef7ab56 |
 | 2026-07-27 | changelog | the release-note writer preserves the history it read (#452) | 97392eeacfa2 |
@@ -733,11 +736,12 @@ pie title Commit Types
 | 2026-03-20 | — | Task 02 — project templates (CLAUDE.md, agent_docs, CI) | c3a6d2f53bd3 |
 | 2026-03-20 | — | Task 01 — monorepo scaffolding + supabase-nextjs stack profile | 990a138a4690 |
 
-### Chores (chore) — 255 commits
+### Chores (chore) — 256 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
-| 2026-07-27 | triage | sweep 4 outbox append(s) into branch | 0c6941fcf4d8 |
+| 2026-07-27 | churn | regenerate derived snapshots after main merge | ab951fd7ad24 |
+| 2026-07-27 | triage | sweep 4 outbox append(s) into branch | d8009de13ccc |
 | 2026-07-26 | review | default external-review GPT model to gpt-5.6-terra (#435) | 8d750a5fc7af |
 | 2026-07-24 | security | stage full compliance write-set in Step 7.5 finalizer (#434) | 5da96ebe8561 |
 | 2026-07-23 | compliance | refresh after security scan (#433) | 2b644805fb7d |
@@ -1303,7 +1307,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 1232 |
+| Total commits | 1236 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 1232 |
+| Human-authored commits | 1236 |
 

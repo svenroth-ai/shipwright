@@ -241,6 +241,17 @@ def update_changelog(
 
 # CLI interface
 if __name__ == "__main__":
+    # Emit UTF-8 whatever the pipe's locale is. On a pipe Python picks the
+    # LOCALE codec (cp1252 on Windows) while every reader here decodes utf-8, so
+    # one non-ASCII character became an undecodable byte, subprocess's reader
+    # thread died and the caller got stderr=None — a crash instead of the reason
+    # the release stopped. The child is the right place: these refusal messages
+    # interpolate operator data (a CHANGELOG path, a version), so a project
+    # under a non-ASCII path re-breaks any fix that only sterilises literals.
+    for _stream in (sys.stdout, sys.stderr):
+        if hasattr(_stream, "reconfigure"):  # a plain pipe/console always does
+            _stream.reconfigure(encoding="utf-8", errors="backslashreplace")
+
     if len(sys.argv) < 2:
         print("Usage: changelog.py <command> [args]")
         sys.exit(1)

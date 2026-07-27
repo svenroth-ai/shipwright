@@ -118,6 +118,57 @@ def test_generate_preserves_existing_history(tmp_path):
 
 
 @pytest.mark.integration
+def test_refusal_message_survives_a_non_ascii_project_path(tmp_path):
+    """A refusal message must reach whoever spawned the CLI, intact.
+
+    On a pipe the child picks the LOCALE codec (cp1252 on Windows) while every
+    reader here decodes utf-8, so a non-ASCII character became an undecodable
+    byte: `subprocess`'s reader thread died and the caller got `stderr = None`
+    — a crash instead of the reason the release stopped.
+
+    The project directory is deliberately non-ASCII. The message interpolates
+    the CHANGELOG path, so this is what distinguishes a real fix (the child
+    emits utf-8) from sterilising the literals: an ASCII-only `tmp_path` would
+    make the test certify a property of the fixture rather than of the code.
+    """
+    project = tmp_path / "Müller-Projekt"
+    project.mkdir()
+    changelog = project / "CHANGELOG.md"
+    changelog.write_text(
+        "# Changelog\n\n"
+        "## [1.1.0] - 2026-07-27\n\n### Fixed\n- a\n\n"
+        "## [1.1.0] - 2026-07-27\n\n### Fixed\n- b\n",
+        encoding="utf-8",
+    )
+    commits_file = project / "commits.json"
+    commits_file.write_text(json.dumps([
+        {"type": "fix", "scope": None, "description": "x", "breaking": False},
+    ]), encoding="utf-8")
+
+    argv = [sys.executable, str(SCRIPTS / "lib" / "changelog.py"), "generate",
+            "--version", "1.1.0", "--commits-json", str(commits_file),
+            "--changelog-path", str(changelog), "--date", "2026-07-27"]
+
+    # Exactly how every caller in this repo reads a child: utf-8, no errors=.
+    result = subprocess.run(argv, capture_output=True, text=True,
+                            encoding="utf-8")
+    assert result.returncode == 1
+    assert result.stderr is not None, (
+        "the child emitted bytes the caller could not decode as utf-8, so the "
+        "reader thread died and the refusal message was replaced by None"
+    )
+    assert "2 sections" in result.stderr
+    assert "Müller-Projekt" in result.stderr, "the path must survive intact"
+
+    # stdout carries the same message and is read the same way (json.loads).
+    assert json.loads(result.stdout)["success"] is False
+
+    # And the bytes really are utf-8, not merely decodable by luck.
+    raw = subprocess.run(argv, capture_output=True)
+    raw.stderr.decode("utf-8")  # raises UnicodeDecodeError if the codec slipped
+
+
+@pytest.mark.integration
 def test_generate_refuses_ambiguous_file_and_leaves_it_untouched(tmp_path):
     """The CLI must stop and say why, not overwrite what it cannot interpret.
 

@@ -1,0 +1,85 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-07-27-run-unit-parallel-race",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-07-27T17:11:08.602205+00:00",
+      "disposition": null,
+      "recorded_by": "iterate-orchestrator",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-07-27T17:10:54.513739+00:00",
+      "disposition": "BUG path at medium: the mini-plan is the F-debug four-phase investigation recorded in the iterate spec; no separate plan artifact was produced, so there was no plan document to review. Design decisions were instead reviewed as code by the spec/code/doubt cascade.",
+      "recorded_by": "iterate-orchestrator",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": "shipwright-build:code-reviewer (opus)",
+      "completed_at": "2026-07-27T17:12:03.535033+00:00",
+      "disposition": null,
+      "recorded_by": "iterate-orchestrator",
+      "parse_status": "unstructured",
+      "raw_excerpt": "Stage-2 code-quality review (shipwright-build:code-reviewer, opus) — VERDICT: FAIL\n(1 blocking, 6 should-fix, 6 nits). Reviewed shared/scripts/lib/atomic_write.py,\nits tests, file_lock.py, run_config_store.py, phase_task_lifecycle.py,\nstep_planning.py and the changelog hunk.\n\nConfirmed sound: the retry loop's deadline arithmetic, temp-file cleanup on every\npath including KeyboardInterrupt, no swallowed failure mode, no half-published\ndestination. Explicit deadlock analysis across every lock that can be held across\ndurable_atomic_write: run_config_lock, _PhaseTasksLock and file_lock all target a\n.lock SIDECAR, never the destination, so no self-deadlock is possible; worst case\nis bounded amplification.\n\nBLOCKING 1 — the changelog fix sterilised literals but the message interpolates\nuntrusted data ({changelog_path}, {version}); a non-ASCII project path reproduces\nthe identical failure, and the new test used an ASCII tmp_path so its green\ncertified the fixture, not the code. FIXED: moved to a source-level fix (the CLI\npins stdout+stderr to utf-8) and the test now uses a non-ASCII project directory.\nVerified against the pre-fix module: 0xfc at position 61.\n\n2 — exception filter may miss ERROR_LOCK_VIOLATION (33) / ERROR_USER_MAPPED_FILE\n(1224). DECLINED ON EVIDENCE: probed on Windows 11 — a memory-mapped holder and a\nbyte-range lock both surface as PermissionError winerror 5. Premise did not\nreproduce. The related point that winerror 5 is ALSO the generic access-denied\ncode was CONFIRMED by probe (read-only destination and directory destination both\ngive 5) and is now stated honestly in the code and pinned by a test.\n\n3 — the Windows branch has no CI coverage (ci.yml is ubuntu-only). DECLINED here:\nadding a workflow leg trips touches_ci_supplychain and its acknowledgement gate;\nthat is its own decision, not a rider on a bug fix. Injected-failure tests give\nLinux CI real coverage of the retry logic.\n\n4 — the cleanup os.unlink can itself hit a sharing violation, leaving .tmp debris,\nso AC3 overclaimed. ACCEPTED: AC3 reworded to best-effort-on-Windows with the\nreason stated.\n\n5 — two unrelated fixes in one commit harms bisectability. DECLINED: the F11\nverifier checks a single F6 commit. Kept as separate self-contained hunks and\nnamed separately in the commit body.\n\n6 — the exhaustion test could spin forever (no pytest-timeout configured).\nACCEPTED: added an elapsed-time bound.\n\n7 — the primitive-level fix leaves the in-repo unlocked reader\n(_read_standalone_flag) untouched and the docstring implied closure. ACCEPTED:\ndocstring now states the retry is a mitigation for holders we do not control and\nthat our own unlocked reader remains a separately-recorded trade-off.\n\nNits: inert `# noqa: SIM115` for a rule this repo does not enable (ACCEPTED,\nremoved); timer not joined / reader not closed in finally (ACCEPTED, try/finally +\ncancel); REPLACE_RETRY_BUDGET_SECONDS missing from __all__ (ACCEPTED, added);\nhelper name over-narrow (ACCEPTED, renamed to _replace_retrying_sharing_violations);\ndocstring phrasing mirror (ACCEPTED); AC6 evidence and changelog drop land at\nF4/F5 (ACCEPTED, done).\n\nNote: this reviewer explicitly judged the os.name monkeypatch \"not a finding\".\nThat assessment was wrong — the external reviewer caught it and a live probe\nconfirmed it would have been red on Linux CI. Recorded because it is the clearest\nevidence in this run that the reviewers are not substitutable for one another.\n"
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": "shipwright-build:doubt-reviewer (opus)",
+      "completed_at": "2026-07-27T17:12:47.139501+00:00",
+      "disposition": null,
+      "recorded_by": "iterate-orchestrator",
+      "parse_status": "unstructured",
+      "raw_excerpt": "Stage-3 adversarial doubt review (shipwright-build:doubt-reviewer, opus) —\n8 doubts: 3 high, 1 medium-high, 2 medium, 2 low. Advisory-must-address.\n\nSurvived the attack (reviewer tried to break these and failed): the mechanism is\nreal, not hypothetical (_read_standalone_flag genuinely reads the run config\noutside run_config_lock on every update_step); the retry loop is structurally\ncorrect with a real clamp; _is_windows() is the right fix and the pre-existing\ntests were correctly migrated to it; closing the card is reversible because\nsuite_race_triage dedups against OPEN items only; test_runconfig_concurrency\nremains meaningful for the stale-copy-clobber class it exists to catch.\n\nD1 high — winerror 5 is BOTH the sharing-violation symptom and the canonical\ngenuine-denial code, so a read-only destination or deny-ACL is retried for the\nwhole budget and the comment claimed a discrimination the code lacks; the 1337\ntest pinned nothing real. ACCEPTED, PROBED (attrib +R and a directory destination\nboth return winerror 5). Comment rewritten honestly; the 1337 test relabelled as\na synthetic shape-check; a new test records that a genuine denial IS retried.\n\nD2 high — a SUCCESSFUL retry is silent, so the module swallows the one signal\nthat would show the unlocked-reader discipline degrading. ACCEPTED AS A LIMIT,\nDECLINED AS BUILT-HERE: wiring telemetry out of a primitive with 30 call sites is\na design decision with no consumer today (YAGNI). Now named explicitly in the\nmodule docstring so it is visible rather than implied.\n\nD3 high — the statistics do not support the claim. P(0 failures in 72 | rate\nunchanged) = (47/48)^72 = 0.22; rule of three gives a 95% upper bound of 4.2%,\nabove the pre-fix point estimate. The ORIGINAL failure was never reproduced, its\ntraceback never captured, and it came from a different worktree at a different\ncommit — yet the plan presented a traceback under \"Phase 1 — Read Error\" as if it\nwere the original observation. FULLY ACCEPTED. The plan now labels the\ntraceback's provenance, states that the deterministic repro (100% -> 0%) is the\nload-bearing evidence and the rate data is corroboration only, and carries a\n\"What is NOT established\" section covering all three points.\n\nD4 medium-high — the retry also widens the window in which an UNLOCKED writer can\npublish a STALE snapshot over a newer one; config_io.save_run_config documents\nthat the lock is held by callers, not the writer, so such writers exist.\nACCEPTED AND VERIFIED against the source. Budget cut 2.0s -> 0.5s (still ~500x a\nconfig read) with the reasoning recorded at the constant.\n\nD5 medium — the changelog fix was literal-only and structurally could not catch\nan interpolated non-ASCII path. ACCEPTED; same finding as the code-reviewer's\nblocking item. Fixed at the source; test now uses a non-ASCII project directory.\n\nD6 medium — inter-unit pollution was excluded only for the 12-copy configuration,\nnot for the 18-unit run the card describes, and real pollution exists in the tree.\nACCEPTED: filed as trg-c6e75011 and stated in the plan's \"What is NOT established\".\n\nD7 low — the budget was chosen against a human, not against the enclosing\ntimeouts. ACCEPTED implicitly by the cut to 0.5s.\n\nD8 low — claims the parent gets IndexError rather than stderr=None. DISPROVED BY\nDIRECT OBSERVATION: `result.stderr is None` is True on Python 3.12.13, and the\noriginal pytest failure was `TypeError: argument of type 'NoneType' is not\niterable`. The recorded mechanism stands.\n"
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 2,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "test",
+          "file": "shared/tests/test_atomic_write.py:198, 223, 241",
+          "line": null,
+          "finding": "The tests simulate Windows by assigning `aw.os.name = \"nt\"`, but `aw.os` is the process-global stdlib `os` module. On POSIX, this also changes what `pathlib.Path()` selects. `durable_atomic_write()` immediately executes `Path(path)`, which then attempts to construct a `WindowsPath` on a POSIX host and raises `NotImplementedError` before reaching the retry logic. Thus the new supposedly cross-platform injected-failure tests fail in POSIX CI rather than testing AC1/AC2.",
+          "suggestion": "Do not monkeypatch global `os.name`. Introduce a narrowly mockable platform predicate in `atomic_write` (for example, `_is_windows()`), or test the helper with string paths while separately testing temp cleanup without changing the platform identity.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "bug",
+          "file": "shared/scripts/lib/atomic_write.py:108-109",
+          "line": null,
+          "finding": "The retry sleep is not bounded by the remaining retry budget. If the loop observes time just before `deadline`, it can sleep for up to `_RETRY_MAX_SLEEP_SECONDS` beyond the deadline and then successfully replace a destination released after the configured budget. This violates the documented/accepted bounded retry behavior: a destination held past the budget may succeed rather than raising, and failures may return later than the budget.",
+          "suggestion": "Compute remaining time before sleeping and sleep only `min(delay, max(0, deadline - time.monotonic()))`; if no time remains, re-raise before sleeping or attempting another replace.  Overall assessment: ship-with-fixes. The implementation approach is appropriate, but the new platform-simulation tests break POSIX CI and the retry window is not actually bounded to its configured budget.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter: openai=revise, gemini=degraded(empty reply)",
+      "completed_at": "2026-07-27T17:13:38.716433+00:00",
+      "disposition": null,
+      "recorded_by": "iterate-orchestrator",
+      "parse_status": "partial",
+      "raw_excerpt": "[gemini] <no review returned: provider returned an empty reply>\n\n[openai] - Category: test\n- Severity: high\n- File: shared/tests/test_atomic_write.py:198, 223, 241\n- Finding: The tests simulate Windows by assigning `aw.os.name = \"nt\"`, but `aw.os` is the process-global stdlib `os` module. On POSIX, this also changes what `pathlib.Path()` selects. `durable_atomic_write()` immediately executes `Path(path)`, which then attempts to construct a `WindowsPath` on a POSIX host and raises `NotImplementedError` before reaching the retry logic. Thus the new supposedly cross-platform injected-failure tests fail in POSIX CI rather than testing AC1/AC2.\n- Suggestion: Do not monkeypatch global `os.name`. Introduce a narrowly mockable platform predicate in `atomic_write` (for example, `_is_windows()`), or test the helper with string paths while separately testing temp cleanup without changing the platform identity.\n\n- Category: bug\n- Severity: medium\n- File: shared/scripts/lib/atomic_write.py:108-109\n- Finding: The retry sleep is not bounded by the remaining retry budget. If the loop observes time just before `deadline`, it can sleep for up to `_RETRY_MAX_SLEEP_SECONDS` beyond the deadline and then successfully replace a destination released after the configured budget. This violates the documented/accepted bounded retry behavior: a destination held past the budget may succeed rather than raising, and failures may return later than the budget.\n- Suggestion: Compute remaining time before sleeping and sleep only `min(delay, max(0, deadline - time.monotonic()))`; if no time remains, re-raise before sleeping or attempting another replace.\n\nOverall assessment: ship-with-fixes. The implementation approach is appropriate, but the new platform-simulation tests break POSIX CI and the retry window is not actually bounded to its configured budget.\n\nSHIPWRIGHT_VERDICT: revise"
+    }
+  }
+}

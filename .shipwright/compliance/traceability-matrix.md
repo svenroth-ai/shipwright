@@ -1,14 +1,14 @@
 # Requirements Traceability Matrix
 
-Generated: 2026-07-27T17:36:33.332091+00:00
-Source-State: run=iterate-2026-07-27-changelog-aggregator-idempotency
+Generated: 2026-07-27T17:38:43.791837+00:00
+Source-State: run=iterate-2026-07-27-run-unit-parallel-race
 Consistency-audit: never run
 
 ## Requirements Coverage
 
 | Requirement | Title | Priority | Verified By | Tests | Last tested | Reconciled? | Status | Unit | Integration | E2E |
 |-------------|-------|----------|-------------|-------|-------------|-------------|--------|------|-------------|-----|
-| [FR-01.01](../../.shipwright/planning/01-adopted/spec.md#fr-0101)<a id="rtm-fr-0101"></a> | Run the whole delivery pipeline end to end in one conversation — requirements, design, planning, build, test, release notes and hosting, in that order — so a change moves from a plain description to delivered work without the operator driving each phase by hand. Security scanning and audit evidence are deliberately not steps of it: the first runs on its own, the second happens alongside every phase. | Must | [evt-e3d2949e](#evt-e3d2949e), [evt-b0b9c422](#evt-b0b9c422), [evt-ca7b7d64](#evt-ca7b7d64), [evt-7620210f](#evt-7620210f) +4 | 225/225 → 1691/1716 | 2026-05-05 ([iter](#evt-7620210f)) | ⚠️ needs re-verification | COVERED | MISSING | — | — |
+| [FR-01.01](../../.shipwright/planning/01-adopted/spec.md#fr-0101)<a id="rtm-fr-0101"></a> | Run the whole delivery pipeline end to end in one conversation — requirements, design, planning, build, test, release notes and hosting, in that order — so a change moves from a plain description to delivered work without the operator driving each phase by hand. Security scanning and audit evidence are deliberately not steps of it: the first runs on its own, the second happens alongside every phase. | Must | [evt-e3d2949e](#evt-e3d2949e), [evt-b0b9c422](#evt-b0b9c422), [evt-ca7b7d64](#evt-ca7b7d64), [evt-7620210f](#evt-7620210f) +5 | 225/225 → 1691/1716 | 2026-05-05 ([iter](#evt-7620210f)) | ⚠️ needs re-verification | COVERED | MISSING | — | — |
 | [FR-01.02](../../.shipwright/planning/01-adopted/spec.md#fr-0102)<a id="rtm-fr-0102"></a> | Turn a project description into well-scoped, individually deliverable requirements, and write the starting guidance an assistant needs to work inside that project. | Must | [evt-e3d2949e](#evt-e3d2949e), [evt-b0b9c422](#evt-b0b9c422), [evt-ca7b7d64](#evt-ca7b7d64), [evt-7620210f](#evt-7620210f) +4 | 225/225 → 140/140 | 2026-05-16 ([iter](#evt-8659999c)) | ⚠️ needs re-verification | FAIL → [trg-1d7d91d0](../agent_docs/triage_inbox.md#trg-1d7d91d0) | MISSING | — | — |
 | [FR-01.03](../../.shipwright/planning/01-adopted/spec.md#fr-0103)<a id="rtm-fr-0103"></a> | Produce an implementation plan from research and an optional interview, structured so the build phase can consume it one section at a time, tests first. No plan reaches the build phase unreviewed: two independent external language models review it by default, and declining them obliges a structured self-review in their place. | Must | [evt-e3d2949e](#evt-e3d2949e), [evt-ca7b7d64](#evt-ca7b7d64), [evt-ddb23fe7](#evt-ddb23fe7), [evt-ea7203ec](#evt-ea7203ec) +2 | 225/225 → 13/13 | 2026-05-03 ([iter](#evt-ca7b7d64)) | ⚠️ needs re-verification | COVERED | MISSING | — | — |
 | [FR-01.04](../../.shipwright/planning/01-adopted/spec.md#fr-0104)<a id="rtm-fr-0104"></a> | Turn requirements into clickable mockups — standalone screens and the flows between them — that can be refined by conversation before any production code is written. | Should | [evt-e3d2949e](#evt-e3d2949e), [evt-ca7b7d64](#evt-ca7b7d64), [evt-ddb23fe7](#evt-ddb23fe7), [evt-ea7203ec](#evt-ea7203ec) +1 | 225/225 → 13/13 | 2026-05-03 ([iter](#evt-ca7b7d64)) | ⚠️ needs re-verification | FAIL → [trg-e9e5188e](../agent_docs/triage_inbox.md#trg-e9e5188e) | — | — | MISSING |
@@ -33,8 +33,10 @@ Consistency-audit: never run
 
 | Event | Source | Type | FRs | Tests | Commit | Date |
 |-------|--------|------|-----|-------|--------|------|
-| <a id="evt-101fccaa"></a>the release aggregator writes a version once, or says why not | iterate | change | [FR-01.09](#rtm-fr-0109) | — | — | 2026-07-27 |
+| <a id="evt-92094b2e"></a>bounded sharing-violation retry on both sides of the atomic-write boundary | iterate | change | [FR-01.01](#rtm-fr-0101), [FR-01.09](#rtm-fr-0109) | — | — | 2026-07-27 |
+| <a id="evt-aea234e3"></a>refuse a multi-root pytest session instead of failing 21 unrelated tests | iterate | change |  | — | — | 2026-07-27 |
 | <a id="evt-36d0f887"></a>raise the PR-review diff cap, cut at a file boundary, name what went unreviewed | iterate | change | [FR-01.17](#rtm-fr-0117) | — | — | 2026-07-27 |
+| <a id="evt-e3d8f519"></a>an audit that checked nothing is not recorded | iterate | change |  | — | — | 2026-07-27 |
 | <a id="evt-e0b8fd18"></a>the phase canon asks whether the handoff belongs to this run | iterate | change | [FR-01.01](#rtm-fr-0101) | — | — | 2026-07-27 |
 | <a id="evt-90ce4f39"></a>document the delivery watch in the guide | iterate | change |  | — | — | 2026-07-27 |
 | <a id="evt-f2747703"></a>inherited failures and coverage gaps are recorded as inherited | iterate | change | [FR-01.13](#rtm-fr-0113) | — | — | 2026-07-27 |
@@ -419,7 +421,7 @@ Consistency-audit: never run
 |--------|-------|
 | Total splits built | 0 |
 | Build sections | 0 |
-| Iterate changes | 379 |
+| Iterate changes | 381 |
 | Requirements total | 18 |
 | Requirements verified | 17/18 |
 | Must-have verified | 14/14 |
@@ -432,7 +434,7 @@ Consistency-audit: never run
 
 ### FRs needing re-verification
 
-- [FR-01.01](../../.shipwright/planning/01-adopted/spec.md) (Must): behavior changed without a later test run — behavior last touched by `evt-e0b8fd18` (2026-07-27)
+- [FR-01.01](../../.shipwright/planning/01-adopted/spec.md) (Must): behavior changed without a later test run — behavior last touched by `evt-92094b2e` (2026-07-27)
 - [FR-01.02](../../.shipwright/planning/01-adopted/spec.md) (Must): behavior changed without a later test run — behavior last touched by `evt-ea7203ec` (2026-07-26)
 - [FR-01.03](../../.shipwright/planning/01-adopted/spec.md) (Must): behavior changed without a later test run — behavior last touched by `evt-368b0d6c` (2026-07-27)
 - [FR-01.04](../../.shipwright/planning/01-adopted/spec.md) (Should): behavior changed without a later test run — behavior last touched by `evt-cf1bab8b` (2026-07-27)
@@ -440,7 +442,7 @@ Consistency-audit: never run
 - [FR-01.06](../../.shipwright/planning/01-adopted/spec.md) (Must): behavior changed without a later test run — behavior last touched by `evt-ea7203ec` (2026-07-26)
 - [FR-01.07](../../.shipwright/planning/01-adopted/spec.md) (Must): behavior changed without a later test run — behavior last touched by `evt-ea7203ec` (2026-07-26)
 - [FR-01.08](../../.shipwright/planning/01-adopted/spec.md) (Should): behavior changed without a later test run — behavior last touched by `evt-a345a59f` (2026-07-27)
-- [FR-01.09](../../.shipwright/planning/01-adopted/spec.md) (Must): behavior changed without a later test run — behavior last touched by `evt-101fccaa` (2026-07-27)
+- [FR-01.09](../../.shipwright/planning/01-adopted/spec.md) (Must): behavior changed without a later test run — behavior last touched by `evt-92094b2e` (2026-07-27)
 - [FR-01.10](../../.shipwright/planning/01-adopted/spec.md) (Must): behavior changed without a later test run — behavior last touched by `evt-37719eaa` (2026-07-27)
 - [FR-01.11](../../.shipwright/planning/01-adopted/spec.md) (Must): behavior changed without a later test run — behavior last touched by `evt-368b0d6c` (2026-07-27)
 - [FR-01.12](../../.shipwright/planning/01-adopted/spec.md) (May): behavior changed without a later test run — behavior last touched by `evt-ea7203ec` (2026-07-26)
