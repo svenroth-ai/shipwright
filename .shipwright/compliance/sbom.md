@@ -1,7 +1,7 @@
 # Software Bill of Materials (SBOM)
 
-Generated: 2026-07-27T17:19:50.821876+00:00 (dependency versions resolved from uv.lock)
-Source-State: run=iterate-2026-07-27-pytest-root-composition
+Generated: 2026-07-27T16:36:15.546432+00:00 (dependency versions resolved from uv.lock)
+Source-State: run=iterate-2026-07-27-c3-phase-content-key
 Consistency-audit: never run
 
 ## Summary

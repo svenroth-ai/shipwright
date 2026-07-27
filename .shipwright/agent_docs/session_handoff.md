@@ -1,43 +1,44 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-07-27-pytest-root-composition"
+run_id: "iterate-2026-07-27-c3-phase-content-key"
 phase: "iterate"
-reason: "iterate: refuse a multi-root pytest session instead of failing 21 unrelated tests"
-timestamp: "2026-07-27T17:19:57.990788+00:00"
+reason: "ensure-current pre-merge refresh"
+timestamp: "2026-07-27T16:36:23.078641+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-07-27 17:19:57 UTC
+> Auto-generated 2026-07-27 16:36:23 UTC
 
 ## Session Info
 
-- **Session ID**: 2a2ccc95-e7ec-4ca6-bcdb-601ae9e9b002
-- **Timestamp**: 2026-07-27 17:19:57 UTC
-- **Reason**: iterate: refuse a multi-root pytest session instead of failing 21 unrelated tests
+- **Session ID**: 537acd2e-45f2-4a62-8eba-dc5e3fa65db8
+- **Timestamp**: 2026-07-27 16:36:23 UTC
+- **Reason**: ensure-current pre-merge refresh
 
 ## Last Iterate
 
-- **Run ID**: iterate-2026-07-27-pytest-root-composition
-- **Date**: 2026-07-27T17:19:50.695876Z
-- **Type**: bug
+- **Run ID**: iterate-2026-07-27-c3-phase-content-key
+- **Date**: 2026-07-27T16:36:15.112994Z
+- **Type**: change
 - **Complexity**: medium
-- **Branch**: iterate/pytest-root-composition
-- **ADR**: iterate-2026-07-27-pytest-root-composition
+- **Branch**: iterate/c3-phase-content-key
+- **ADR**: iterate-2026-07-27-c3-phase-content-key
 - **Tests passed**: True
-- **Spec**: .shipwright/planning/iterate/iterate-2026-07-27-pytest-root-composition.md
+- **Spec**: .shipwright/planning/iterate/iterate-2026-07-27-c3-phase-content-key.md
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/pytest-root-composition
-- **Run ID**: `iterate-2026-07-27-pytest-root-composition`
-- **Spec**: .shipwright/planning/iterate/iterate-2026-07-27-pytest-root-composition.md
+- **Branch**: iterate/c3-phase-content-key
+- **Run ID**: iterate-2026-07-27-c3-phase-content-key
+- **Spec**: .shipwright/planning/iterate/iterate-2026-07-27-c3-phase-content-key.md
 - **Complexity**: medium
-- **External Review Marker**: completed (external_review_state.json @ 2026-07-27T17:10:30)
+- **External Review Marker**: stale (predates spec (2026-07-27T16:16:32))
 
 ### Mandatory replay on Resume
 
 Before dispatching to the handoff's Remaining phase, run these if missing:
+- Step 4 — External LLM Review (marker missing/stale)
 - Finalization (F0–F11) after all mandatory phases pass
 
 ## Legacy build state
@@ -51,8 +52,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/pytest-root-composition
-- **Last Commit**: d8009de1 chore(triage): sweep 4 outbox append(s) into branch
+- **Branch**: iterate/c3-phase-content-key
+- **Last Commit**: f1b549b2 Merge remote-tracking branch 'origin/main' into iterate/c3-phase-content-key
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -68,17 +69,17 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 | Event | Type | Source | Date |
 |-------|------|--------|------|
-| evt-024abc36 | grade_snapshot | — | 2026-07-27 |
-| evt-aea234e3 | work_completed | iterate (iterate: refuse a multi-root pytest session instead of failing 21 unrelated tests) | 2026-07-27 |
 | evt-76f1beff | grade_snapshot | — | 2026-07-27 |
 | evt-90ce4f39 | work_completed | iterate (iterate: document the delivery watch in the guide) | 2026-07-27 |
-| evt-942e3e04 | grade_snapshot | — | 2026-07-27 |
+| evt-cf1bab8b | work_completed | iterate (iterate: requirement write-back loop — design rounds and build sections declare their requirement impact) | 2026-07-27 |
+| evt-a5ff7d12 | grade_snapshot | — | 2026-07-27 |
+| evt-e0b8fd18 | work_completed | iterate (iterate: the phase canon asks whether the handoff belongs to this run) | 2026-07-27 |
 
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 376
-- **Last iterate**: change — iterate: refuse a multi-root pytest session instead of failing 21 unrelated tests (2026-07-27)
+- **Total work events**: 377
+- **Last iterate**: change — iterate: document the delivery watch in the guide (2026-07-27)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
 ## Recent Decisions
