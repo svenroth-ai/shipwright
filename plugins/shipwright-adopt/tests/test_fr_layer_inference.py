@@ -133,8 +133,12 @@ def test_rendered_spec_carries_a_layers_column():
         features=features, qr_items=[], constraints=[],
     )
     fr_section = md.split("## Functional Requirements", 1)[1].split("## Quality", 1)[0]
-    # header carries the new column
-    assert "Layers" in fr_section.splitlines()[2]
+    # header carries the new column. Found by SHAPE, not by line index: the
+    # section also carries the derived/unconfirmed provenance block above the
+    # table (trg-1aa5a8ab), and a positional assertion would break on any prose
+    # added there while proving nothing about the header itself.
+    header = next(ln for ln in fr_section.splitlines() if ln.strip().startswith("| ID |"))
+    assert "Layers" in header
     # the route FR declares e2e; the migration FR declares integration
     route_row = next(l for l in fr_section.splitlines() if "FR-01.01" in l)
     migration_row = next(l for l in fr_section.splitlines() if "FR-01.02" in l)

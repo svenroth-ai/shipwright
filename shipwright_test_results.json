@@ -1,157 +1,217 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-07-27-name-the-blocker",
+    "run_id": "iterate-2026-07-27-adopt-derived-catalogue",
     "date": "2026-07-27",
     "unit": {
       "status": "passed",
-      "passed": 5298,
-      "total": 5314,
-      "skipped": 16
+      "passed": 526,
+      "total": 526
     },
     "integration": {
       "status": "passed",
-      "passed": 422,
-      "total": 422
+      "passed": 418,
+      "total": 418
+    },
+    "pgtap": {
+      "status": "skipped",
+      "passed": 0,
+      "total": 0
     },
     "e2e": {
-      "status": "not_run",
+      "status": "passed",
+      "passed": 72,
+      "total": 72
+    },
+    "design_fidelity": {
+      "status": "skipped",
       "passed": 0,
       "total": 0
     },
     "smoke": {
-      "status": "not_run"
+      "status": "skipped"
     },
-    "pgtap": {
-      "status": "not_run",
-      "passed": 0,
-      "total": 0
-    },
-    "design_fidelity": {
-      "status": "not_run",
-      "passed": 0,
-      "total": 0
-    },
+    "degraded": [
+      {
+        "condition": "interview_and_approval_gate_skipped",
+        "reason": "--autonomous against a complete, self-contained brief (trg-1aa5a8ab)."
+      },
+      {
+        "condition": "internal_code_reviewer_and_doubt_reviewer_subagents_not_dispatched",
+        "reason": "session rule forbids spawning subagents unless requested; covered by the external CODE review on this split diff (4 findings, all fixed) plus 10 empirical probes. Both types closed explicitly in reviews.json."
+      },
+      {
+        "condition": "card_split_from_trg_1aa5a8ab",
+        "reason": "PR 1 of 2. The inherited-baseline register, Step E.18 and the confirmation follow-up ship next: a validator demanding a file no step writes would break every adopt run between the merges. Split so the Tier-3 review gate can actually READ each half (~33k / ~26k tokens vs 51.5k combined, which failed closed on truncation)."
+      }
+    ],
     "surface_verification": {
       "surface": "cli",
-      "runner": "uv run pytest shared/tests/test_pr_blockers.py shared/tests/test_watch_pr_delivery.py shared/tests/test_canon_frontmatter.py shared/tests/test_handoff_freshness.py shared/tests/test_handoff_freshness_composition.py shared/tests/test_layer_coverage_criteria.py shared/tests/test_layer_coverage_verdict.py shared/tests/test_external_review_reply.py -v",
+      "runner": "uv run --directory plugins/shipwright-adopt --extra dev pytest tests/test_spec_document.py tests/test_derived_catalogue.py tests/test_derived_catalogue_doc.py tests/test_validate_adoption_soft_checks.py tests/test_adopt_pipeline_subprocess.py -q",
       "exit_code": 0,
-      "tests_run": 111,
-      "evidence_path": "C:\\01_Development\\shipwright\\.worktrees\\name-the-blocker\\.shipwright\\runs\\iterate-2026-07-27-name-the-blocker\\surface_verification.log",
-      "timestamp": "2026-07-27T12:47:02.722Z",
-      "attempts": 1
+      "tests_run": 72,
+      "evidence_path": ".shipwright/runs/iterate-2026-07-27-adopt-derived-catalogue/surface_verification.json",
+      "timestamp": "2026-07-27T11:49:07.300Z"
     },
     "test_completeness": {
       "status": "complete",
       "behaviors": [
         {
-          "behavior": "a pending verdict carries the named reasons the PR is not merging",
+          "behavior": "spec.md carries the derived-and-unconfirmed block naming the count",
           "disposition": "tested",
-          "evidence": "test_watch_pr_delivery.py::test_pending_timeout_carries_named_blockers PASSED"
+          "evidence": "test_spec_document.py::test_the_spec_says_the_catalogue_is_derived_and_unconfirmed PASSED"
         },
         {
-          "behavior": "the blocker probe is told which PR and branch, resolved from the payload's own url",
+          "behavior": "the block changes no FR-table reader view of the rows",
           "disposition": "tested",
-          "evidence": "test_watch_pr_delivery.py::test_the_probe_is_told_which_pr_and_branch_to_look_at PASSED"
+          "evidence": "test_derived_catalogue.py::test_the_reader_sees_the_same_rows_with_and_without_the_banner PASSED"
         },
         {
-          "behavior": "terminal verdicts keep their shape and exit codes, and are never probed",
+          "behavior": "the block interpolates no free text, so a pipe cannot reach it",
           "disposition": "tested",
-          "evidence": "test_watch_pr_delivery.py::test_terminal_verdicts_are_not_probed_and_not_changed PASSED"
+          "evidence": "test_derived_catalogue.py::test_banner_interpolates_no_free_text PASSED"
         },
         {
-          "behavior": "a probe that raises never costs the verdict it was meant to explain",
+          "behavior": "all-derived / partly confirmed / fully confirmed each render differently",
           "disposition": "tested",
-          "evidence": "test_watch_pr_delivery.py::test_a_probe_that_raises_never_costs_the_verdict PASSED; test_pr_blockers.py::test_probe_turns_a_fetch_failure_into_an_unknown_source PASSED"
+          "evidence": "test_derived_catalogue.py::test_a_partly_confirmed_catalogue_does_not_claim_nobody_confirmed_it PASSED (+2 variants)"
         },
         {
-          "behavior": "the operator-facing line names the cause instead of the elapsed time",
+          "behavior": "no banner variant emits a table row",
           "disposition": "tested",
-          "evidence": "test_watch_pr_delivery.py::test_pending_report_names_the_cause_in_plain_words PASSED (+2)"
+          "evidence": "test_derived_catalogue.py::test_no_banner_variant_emits_a_table_row PASSED (3 variants)"
         },
         {
-          "behavior": "an unresolved review thread is a named cause",
+          "behavior": "the JSON is schema-versioned and lists every derived row",
           "disposition": "tested",
-          "evidence": "test_pr_blockers.py::test_an_unresolved_thread_is_a_named_cause PASSED"
+          "evidence": "test_derived_catalogue_doc.py::test_document_is_schema_versioned_and_carries_every_row PASSED"
         },
         {
-          "behavior": "a truncated thread page never asserts that no thread is unresolved",
+          "behavior": "the JSON describes the table actually rendered",
           "disposition": "tested",
-          "evidence": "test_pr_blockers.py::test_a_truncated_page_with_nothing_unresolved_is_unknown_not_clean PASSED (+1)"
+          "evidence": "test_derived_catalogue.py::test_json_summary_matches_the_table_the_reader_actually_parses PASSED"
         },
         {
-          "behavior": "a required check that never reported is named, and distinguished from one still running",
+          "behavior": "a zero-detection repo placeholder row is counted, not reported as 0",
           "disposition": "tested",
-          "evidence": "test_pr_blockers.py::test_a_required_check_absent_from_the_rollup_is_named PASSED (+1)"
+          "evidence": "test_spec_document.py::test_a_zero_detection_repo_still_agrees PASSED"
         },
         {
-          "behavior": "required contexts are collected from every matching ruleset, not just the first",
+          "behavior": "nothing adopt derives counts as confirmed; an interview basis does",
           "disposition": "tested",
-          "evidence": "test_pr_blockers.py::test_contexts_from_every_ruleset_rule_are_collected PASSED"
+          "evidence": "test_derived_catalogue.py::test_nothing_adopt_derives_today_counts_as_confirmed PASSED"
         },
         {
-          "behavior": "unreadable or empty branch rules are unknown, never 'no required check is missing'",
+          "behavior": "an explicitly declared vocabulary Basis survives re-rendering",
           "disposition": "tested",
-          "evidence": "test_pr_blockers.py::test_unreadable_rules_is_unknown_never_no_missing_checks PASSED; test_pr_blockers.py::test_an_empty_rules_list_is_unknown_not_nothing_required PASSED"
+          "evidence": "test_spec_table.py::test_an_explicitly_declared_basis_survives_re_rendering PASSED"
         },
         {
-          "behavior": "an absent or UNKNOWN host merge state is reported as an unknown source",
+          "behavior": "a declared Basis outside the vocabulary is ignored, never emitted",
           "disposition": "tested",
-          "evidence": "test_pr_blockers.py::test_an_unknown_host_merge_state_is_an_unknown_source PASSED (+2)"
+          "evidence": "test_spec_table.py::test_a_declared_basis_outside_the_vocabulary_is_ignored_not_passed_through PASSED (5 cases)"
         },
         {
-          "behavior": "blocking is asserted only when the host itself says BLOCKED",
+          "behavior": "every emitted Basis passes the audit vocabulary",
           "disposition": "tested",
-          "evidence": "test_pr_blockers.py::test_causes_are_reported_without_asserting_blocking_when_merge_state_disagrees PASSED"
+          "evidence": "test_derived_catalogue.py::test_every_emitted_basis_passes_the_audit_vocabulary PASSED"
         },
         {
-          "behavior": "handoff freshness passes on an old file naming this run, fails on a new file naming another, and reads no mtime",
+          "behavior": "a truthy string is not confirmation",
           "disposition": "tested",
-          "evidence": "test_handoff_freshness.py (13 tests) PASSED, incl. test_the_check_never_consults_mtime"
+          "evidence": "test_derived_catalogue_doc.py::test_a_truthy_string_is_not_confirmation PASSED"
         },
         {
-          "behavior": "only the Current Iterate Progress marker satisfies the body fallback",
+          "behavior": "confirmation cannot be claimed without an interview basis, either direction",
           "disposition": "tested",
-          "evidence": "test_handoff_freshness.py::test_last_iterate_run_id_does_not_satisfy_the_check PASSED (+2)"
+          "evidence": "test_derived_catalogue_doc.py::test_confirmation_cannot_be_claimed_without_an_interview_basis and ::test_an_interview_row_claiming_to_be_unconfirmed_is_also_rejected PASSED"
         },
         {
-          "behavior": "writer, Stop hook and verifier agree on one canon marker on disk, incl. the hook's production entry point from an unrelated cwd",
+          "behavior": "a malformed or self-contradicting document is rejected",
           "disposition": "tested",
-          "evidence": "test_handoff_freshness_composition.py (5 tests) PASSED",
+          "evidence": "test_derived_catalogue_doc.py::test_a_malformed_catalogue_is_rejected (7 cases) and ::test_a_document_that_contradicts_its_own_entries_is_rejected PASSED"
+        },
+        {
+          "behavior": "a declared total, by_basis or name that is missing or wrong is rejected",
+          "disposition": "tested",
+          "evidence": "test_derived_catalogue_doc.py::test_a_document_missing_a_declared_total_is_rejected (4 cases), ::test_a_wrong_by_basis_tally_is_rejected, ::test_a_row_without_a_name_is_rejected PASSED"
+        },
+        {
+          "behavior": "an interview-backed document still round-trips",
+          "disposition": "tested",
+          "evidence": "test_derived_catalogue_doc.py::test_an_interview_backed_document_round_trips PASSED"
+        },
+        {
+          "behavior": "read_summary round-trips and applies the fail-closed checks",
+          "disposition": "tested",
+          "evidence": "test_derived_catalogue_doc.py::test_read_summary_round_trips_what_write_summary_wrote, ::test_read_summary_applies_the_fail_closed_checks, ::test_read_summary_fails_closed_on_missing_or_unreadable (3 cases) PASSED",
           "category": "integration"
         },
         {
-          "behavior": "a folded acceptance criterion resolves to its named requirement, including alongside a row change",
+          "behavior": "the commit body reports the unconfirmed count and points at the method",
           "disposition": "tested",
-          "evidence": "test_layer_coverage_verdict.py::test_a_folded_criterion_resolves_to_its_named_requirement PASSED (+1)"
+          "evidence": "test_adopt_commit_template.py::test_the_body_reports_how_many_requirements_are_unconfirmed PASSED"
         },
         {
-          "behavior": "a spec edit touching no row and no criteria stays visibly could-not-determine; a pure refactor stays green",
+          "behavior": "the count cannot be silently omitted from the handover",
           "disposition": "tested",
-          "evidence": "test_layer_coverage_verdict.py::test_undecidable_stays_undecidable PASSED; test_a_pure_refactor_is_still_green PASSED"
+          "evidence": "test_adopt_commit_template.py::test_the_count_cannot_be_omitted PASSED"
         },
         {
-          "behavior": "an unreadable spec blocks a medium+ iterate instead of reading as 'nothing changed'",
+          "behavior": "a missing artifact hard-blocks the handover, naming its step",
           "disposition": "tested",
-          "evidence": "test_layer_coverage_verdict.py::test_an_unreadable_spec_blocks_a_medium_iterate_rather_than_reading_as_unchanged PASSED (+1)"
+          "evidence": "test_validate_adoption_soft_checks.py::test_a_missing_honesty_artifact_blocks_the_handover PASSED"
+        },
+        {
+          "behavior": "a forged or self-contradicting catalogue blocks the handover at validation",
+          "disposition": "tested",
+          "evidence": "test_validate_adoption_soft_checks.py::test_a_catalogue_that_contradicts_itself_blocks_the_handover and ::test_a_catalogue_claiming_unearned_confirmation_blocks_the_handover PASSED",
+          "category": "integration"
+        },
+        {
+          "behavior": "Step H reference names the artifact, the kwarg, the method and read_summary",
+          "disposition": "tested",
+          "evidence": "test_skill_references_link.py::test_step_h_reference_tells_the_agent_where_the_count_comes_from PASSED"
+        },
+        {
+          "behavior": "effective_features is the one answer to which rows exist, non-aliasing",
+          "disposition": "tested",
+          "evidence": "test_spec_table.py::test_effective_features_synthesizes_the_placeholder_for_a_zero_detection_repo PASSED (3 cases)"
+        },
+        {
+          "behavior": "both files are written together, spec first, idempotently",
+          "disposition": "tested",
+          "evidence": "test_spec_document.py::test_both_files_are_written_spec_first and ::test_a_re_run_overwrites_both_in_place PASSED"
+        },
+        {
+          "behavior": "summarize survives lib bound to another plugin (ADR-045)",
+          "disposition": "tested",
+          "evidence": "test_derived_catalogue.py::test_summarize_works_when_lib_belongs_to_another_plugin PASSED (subprocess, hostile binding)",
+          "category": "integration"
+        },
+        {
+          "behavior": "the wired-up generator writes both artifacts and they agree",
+          "disposition": "tested",
+          "evidence": "test_adopt_pipeline_subprocess.py::test_full_pipeline_e2e_via_subprocess PASSED; F0.5 cli exit_code 0, tests_run 72",
+          "category": "integration"
+        },
+        {
+          "behavior": "the Step H handoff BANNER renders these counts on screen",
+          "disposition": "untestable",
+          "reason_code": "covered-by-existing-test",
+          "reason": "prompt-rendered text, not code. What is mechanical is tested: the required unconfirmed_fr_count kwarg, and the drift test pinning that Step H reads via read_summary."
         }
       ],
       "counts": {
-        "testable": 18,
-        "tested": 18,
-        "untestable": 0,
+        "testable": 27,
+        "tested": 27,
+        "untestable": 1,
         "untested_testable": 0
       },
       "enumeration_basis": {
-        "acs": 6,
-        "covered_acs": 6
+        "acs": 7,
+        "covered_acs": 7
       }
-    },
-    "degraded": [
-      "classify_complexity risk flag touches_auth: OVERRIDDEN as a prose false positive. The literal 'session' in 'session_handoff' matched an auth path pattern; no auth, RLS, middleware or credential code is in the diff. The diff-driven risk_detectors predicates are authoritative and flag none. Over-flagging is the fail-safe direction, so the run proceeded at the enforced floor anyway (medium, mandatory review).",
-      "Review passes 'code' and 'doubt' recorded not_run: subagent review is disabled for this session by operator configuration. The adversarial function was carried out of band by the external plan review (17 findings) and the external code review (4 findings), both fully answered. Whether these passes should run in autonomous iterates is an open operator policy question, deliberately not decided by this run.",
-      "External code review ran with 1 of 2 legs delivering: the Gemini leg returned an empty reply (and, on the preceding attempt, a reply the provider reported as cut off at finish_reason=length). Both were recorded status=degraded with the reason by the classifier this same iterate introduces — under the previous code both would have been recorded as successful reviews. The GPT leg delivered a complete review.",
-      "The first external code review was run against a diff built from origin/main, which had advanced three merged PRs beyond this branch's base, so it reviewed other people's work shown as deletions and returned high-severity findings about files this change never touches. Discarded; the recorded review is against the merge-base (ce149b07) diff."
-    ]
+    }
   },
   "coverage": {
     "total": 80.2,

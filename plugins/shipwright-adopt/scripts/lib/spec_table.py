@@ -27,7 +27,10 @@ from pathlib import Path
 from types import ModuleType
 from typing import Any
 
-from lib.render_helpers import infer_required_layers
+try:  # normal: adopt's `scripts` is on sys.path and `lib` is adopt's
+    from lib.render_helpers import infer_required_layers
+except ImportError:  # `lib` is bound to ANOTHER plugin's package (ADR-045)
+    from render_helpers import infer_required_layers
 
 _PLACEHOLDER_DESCRIPTION = "TBD — refine via /shipwright-iterate"
 
@@ -74,15 +77,62 @@ def _load_shared(name: str) -> ModuleType:
     if spec is None or spec.loader is None:
         raise ImportError(f"could not load spec for {file_path}")
     module = importlib.util.module_from_spec(spec)
-    # Registered only after a successful exec, so a raising load cannot leave a
-    # half-initialised module memoized for every later call.
-    spec.loader.exec_module(module)
+    # Registered BEFORE exec, and this ordering is load-bearing: ``fr_basis``
+    # defines ``@dataclass`` types, and stdlib ``dataclasses`` resolves
+    # ``cls.__module__`` through ``sys.modules`` at class-creation time — an
+    # unregistered module makes that lookup return ``None`` and the decorator
+    # raises ``AttributeError`` before the module ever finishes loading. Same
+    # ordering, same reason, as ``validate_adoption._jsonl_records``.
+    #
+    # The unwind keeps what the previous ordering bought: a raising load must
+    # not leave a half-initialised module memoized for every later call.
     sys.modules[sentinel] = module
+    try:
+        spec.loader.exec_module(module)
+    except Exception:
+        sys.modules.pop(sentinel, None)
+        raise
     return module
+
+
+#: The single synthetic row an adopted repo gets when detection found nothing.
+#: A header with no rows is what the reader reports as ``no_fr_rows``, and a
+#: placeholder an author can edit is more useful than a state every gate has to
+#: special-case. ``assumed`` is the honest basis for a row asserting the absence
+#: of findings, and ``_placeholder`` is what earns it the softer ``May``.
+_PLACEHOLDER_FEATURE: dict[str, Any] = {
+    "fr_id": "FR-01.01",
+    "label": "_no features detected_",
+    "description": "Edit manually after adoption",
+    "_placeholder": True,
+}
+
+
+def effective_features(features: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """The rows ``render_fr_table`` actually emits — the input, or the one
+    synthetic placeholder a zero-detection repo gets.
+
+    Exists so *"which requirements does this catalogue contain?"* has ONE
+    answer. ``derived_catalogue`` summarises the same list this renders, so the
+    count it reports at handover cannot describe a different table than the one
+    handed over — the drift an external review flagged as the failure mode of
+    two independently-derived views over one input.
+    """
+    return [dict(f) for f in features] if features else [dict(_PLACEHOLDER_FEATURE)]
 
 
 def basis_for(feature: dict[str, Any]) -> str:
     """The ``Basis`` value for a detected feature (SPEC §3.2, decision D-S5-1).
+
+    An explicit ``basis`` on the feature WINS when it is a vocabulary value:
+    that is how a requirement someone actually confirmed (``interview``) keeps
+    its provenance instead of being re-derived back down to ``code``. Adopt
+    cannot produce one today — nothing interviews a human at onboarding, which
+    is precisely why the catalogue must announce itself as unconfirmed — but the
+    elicitation follow-up this run files is what eventually supplies them, and
+    the renderer must not throw the answer away when it arrives. A non-vocabulary
+    value is ignored rather than passed through, because ``fr_basis`` scores an
+    unknown cell as a HARD audit failure and a producer must not manufacture one.
 
     This answers campaign open question 3 — *"`enrichment` maps to
     `code`/`observed` depending on origin — is that lossy?"* — with **no**,
@@ -103,6 +153,9 @@ def basis_for(feature: dict[str, Any]) -> str:
     carries ``source_file: "—"``, and treating that dash as evidence would
     label every crawled page ``code``, which is precisely backwards.
     """
+    declared = str(feature.get("basis") or "").strip().lower()
+    if declared in _load_shared("fr_basis").BASIS_VALUES:
+        return declared
     if _has(feature.get("source_file")):
         return "code"
     if _has(feature.get("url")):
@@ -124,34 +177,19 @@ def render_fr_table(features: list[dict[str, Any]], *, split_name: str) -> str:
     escape_cell = _load_shared("markdown_table").escape_cell
 
     lines = [shape.FR_TABLE_HEADER, shape.FR_TABLE_SEPARATOR]
-    for feature in features:
+    for feature in effective_features(features):
         fr_id = feature.get("fr_id", "FR-01.?")
         cells = (
             fr_id,
             shape.area_for(fr_id, split_name),
             feature.get("label", feature.get("route", "?")),
-            "Must",
+            "May" if feature.get("_placeholder") else "Must",
             feature.get("description", _PLACEHOLDER_DESCRIPTION),
             basis_for(feature),
             shape.render_layers(infer_required_layers(feature), inferred=True),
         )
         lines.append("| " + " | ".join(escape_cell(c) for c in cells) + " |")
-
-    if not features:
-        # An adopted repo where detection found nothing still needs a
-        # well-formed table: a header with no rows is what the reader reports as
-        # `no_fr_rows`, and a placeholder row that an author can edit is more
-        # useful than a state a gate has to special-case. `assumed` is the
-        # honest basis for a row asserting the absence of findings.
-        lines.append(
-            "| " + " | ".join(escape_cell(c) for c in (
-                "FR-01.01", shape.area_for("FR-01.01", split_name),
-                "_no features detected_", "May",
-                "Edit manually after adoption", "assumed",
-                shape.render_layers(("unit",), inferred=True),
-            )) + " |"
-        )
     return "\n".join(lines)
 
 
-__all__ = ["basis_for", "render_fr_table"]
+__all__ = ["basis_for", "effective_features", "render_fr_table"]

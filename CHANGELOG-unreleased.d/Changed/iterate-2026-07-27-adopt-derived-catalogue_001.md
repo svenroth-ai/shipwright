@@ -1,0 +1,1 @@
+/shipwright-adopt validation now parses that catalogue rather than just checking it exists: a document whose stated counts contradict its own entries, or that marks a code-derived requirement as confirmed by a person, blocks the handover.

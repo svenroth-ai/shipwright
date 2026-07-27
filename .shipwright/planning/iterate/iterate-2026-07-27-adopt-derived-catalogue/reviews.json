@@ -1,0 +1,66 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-07-27-adopt-derived-catalogue",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-07-27T11:49:21.642007+00:00",
+      "disposition": null,
+      "recorded_by": "orchestrator 7-point: AC1-AC7 mapped to ledger rows; split-specific check — PR1 claims no Triage card, since the step that files it ships next; diff confined to plugins/shipwright-adopt + the two docs CLAUDE.md mandates",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": "openrouter",
+      "completed_at": "2026-07-27T11:49:21.408278+00:00",
+      "disposition": null,
+      "recorded_by": "external_review.py --mode iterate on the combined card (12 findings, 11 accepted); this PR carries the derived-catalogue half",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "code": {
+      "review_type": "code",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-07-27T11:49:21.746593+00:00",
+      "disposition": "Session rule forbids spawning subagents unless the user requests it. Covered by the external CODE review over this split diff (4 findings, all fixed).",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-07-27T11:49:21.851603+00:00",
+      "disposition": "Same session rule. Adversarial function covered by 10 empirical probes, 5 of which overturned a decision; no migration/concurrency/irreversible-op trigger applies (this diff writes one idempotent JSON artifact).",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": "openrouter",
+      "completed_at": "2026-07-27T11:49:21.527619+00:00",
+      "disposition": null,
+      "recorded_by": "external_review.py --mode code on THIS split diff: 4 findings, all 4 accepted and fixed (write_spec catalogue override removed; Step H + validate_adoption now read via the fail-closed read_summary; totals+by_basis+name required; fixture built through the real writer). Plus 3 earlier rounds on the combined diff.",
+      "parse_status": null,
+      "raw_excerpt": null
+    }
+  }
+}
