@@ -4,15 +4,32 @@
 Provides:
 - categorize_commits(): Group parsed commits by changelog section
 - generate_entry(): Create a changelog entry string
-- update_changelog(): Prepend entry to CHANGELOG.md
+- update_changelog(): Splice an entry into CHANGELOG.md, preserving the rest
 """
 
 import json
+import os
 import sys
+import tempfile
 from collections import defaultdict
 from datetime import date
 from pathlib import Path
 from typing import Optional
+
+try:  # imported as a package module (``lib.changelog``)
+    from .changelog_sections import (
+        entry_version,
+        insertion_index,
+        section_end,
+        section_starts,
+    )
+except ImportError:  # executed as a script (``python .../lib/changelog.py``)
+    from changelog_sections import (
+        entry_version,
+        insertion_index,
+        section_end,
+        section_starts,
+    )
 
 
 # Map commit types to changelog sections (in display order)
@@ -116,48 +133,106 @@ def generate_entry(
     return "\n".join(lines)
 
 
+def _read_preserving(changelog_path: Path) -> tuple[str, str, str]:
+    """Read the changelog, reporting its BOM and its line-ending convention.
+
+    ``newline=""`` disables universal-newline translation so CRLF survives the
+    round trip; a BOM is split off so it cannot blind the heading regexes (a
+    BOM on line 0 made a first-line ``## [1.0.0]`` invisible, and the orphaned
+    body was then deleted on the next run).
+    """
+    with changelog_path.open("r", encoding="utf-8", newline="") as handle:
+        text = handle.read()
+    bom = ""
+    if text.startswith("﻿"):
+        bom, text = "﻿", text[1:]
+    return text, bom, "\r\n" if "\r\n" in text else "\n"
+
+
+def _to_eol(text: str, eol: str) -> str:
+    """Re-express `text` with the file's own line ending."""
+    normalized = text.replace("\r\n", "\n")
+    return normalized if eol == "\n" else normalized.replace("\n", eol)
+
+
+def _write_atomic(changelog_path: Path, text: str) -> None:
+    """Write via a temp file + os.replace.
+
+    A plain write truncates first, so an interrupted write would leave the
+    operator's entire history as a zero-length file — the exact loss this
+    module exists to prevent. ``newline=""`` keeps the endings chosen above.
+    """
+    fd, tmp = tempfile.mkstemp(
+        dir=str(changelog_path.parent), prefix=".changelog-", suffix=".tmp"
+    )
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8", newline="") as handle:
+            handle.write(text)
+            handle.flush()
+            os.fsync(handle.fileno())
+        os.replace(tmp, changelog_path)
+    finally:
+        if os.path.exists(tmp):
+            os.unlink(tmp)
+
+
 def update_changelog(
     changelog_path: Path,
     entry: str,
 ) -> str:
-    """Prepend a new entry to CHANGELOG.md.
+    """Insert `entry` into CHANGELOG.md, preserving everything already there.
 
-    Creates the file with standard header if it doesn't exist.
-    Inserts after the header and any [Unreleased] section.
+    Creates the file with the standard header if it does not exist. Otherwise
+    the entry is SPLICED into the text that was read — the file is never
+    rebuilt from a fresh header, so no existing content can be dropped.
+    Re-running with the same version replaces that version's section rather
+    than appending a duplicate, so one version appears exactly once.
 
     Returns the full new content.
+
+    Raises ValueError when the entry is not a released-version section, or when
+    the file already holds more than one section for that version (which of
+    them is authoritative is not knowable, so the caller must resolve it).
     """
-    if changelog_path.exists():
-        content = changelog_path.read_text(encoding="utf-8")
-    else:
-        content = CHANGELOG_HEADER + "## [Unreleased]\n\n"
+    version = entry_version(entry)
 
-    # Find insertion point: after [Unreleased] section
-    unreleased_marker = "## [Unreleased]"
-    if unreleased_marker in content:
-        idx = content.index(unreleased_marker)
-        # Find end of Unreleased section (next ## or end)
-        rest = content[idx + len(unreleased_marker):]
-        next_section = rest.find("\n## [")
-        if next_section == -1:
-            # No existing versions — append after Unreleased
-            new_content = (
-                content[:idx]
-                + unreleased_marker + "\n\n"
-                + entry + "\n"
-            )
-        else:
-            insert_at = idx + len(unreleased_marker) + next_section + 1
-            new_content = (
-                content[:insert_at]
-                + entry + "\n"
-                + content[insert_at:]
-            )
-    else:
-        # No Unreleased section — prepend after header
-        new_content = CHANGELOG_HEADER + "## [Unreleased]\n\n" + entry + "\n"
+    if not changelog_path.exists():
+        new_content = (
+            CHANGELOG_HEADER + "## [Unreleased]\n\n" + entry.rstrip("\n") + "\n"
+        )
+        _write_atomic(changelog_path, new_content)
+        return new_content
 
-    changelog_path.write_text(new_content, encoding="utf-8")
+    content, bom, eol = _read_preserving(changelog_path)
+    lines = content.splitlines(keepends=True)
+
+    existing = section_starts(lines, version)
+    if len(existing) > 1:
+        raise ValueError(
+            f"{changelog_path} already contains {len(existing)} sections for "
+            f"version {version}; refusing to guess which one to replace — "
+            "remove the duplicates and re-run"
+        )
+
+    # Only the separators immediately around the spliced block are controlled.
+    # Text outside it — trailing blank lines, the BOM, the line endings — is
+    # carried through byte-for-byte. The one exception: appending at end of
+    # file terminates a previously-unterminated last line.
+    body = _to_eol(entry.rstrip("\n"), eol) + eol
+    if existing:
+        start = existing[0]
+        head, tail = lines[:start], lines[section_end(lines, start):]
+    else:
+        at = insertion_index(lines)
+        head, tail = lines[:at], lines[at:]
+
+    if head and not head[-1].endswith("\n"):
+        head = head[:-1] + [head[-1] + eol]
+    prefix = eol if head and head[-1].strip() else ""
+    suffix = eol if tail else ""
+
+    new_content = bom + "".join(head + [prefix + body + suffix] + tail)
+    _write_atomic(changelog_path, new_content)
     return new_content
 
 
@@ -185,7 +260,14 @@ if __name__ == "__main__":
         entry = generate_entry(args.version, sections, args.date)
 
         changelog_path = Path(args.changelog_path)
-        update_changelog(changelog_path, entry)
+        try:
+            update_changelog(changelog_path, entry)
+        except ValueError as exc:
+            # Safe insertion was not possible. Stop with an actionable message
+            # instead of writing something plausible over the operator's file.
+            print(f"changelog: {exc}", file=sys.stderr)
+            print(json.dumps({"success": False, "error": str(exc)}, indent=2))
+            sys.exit(1)
 
         print(json.dumps({
             "success": True,

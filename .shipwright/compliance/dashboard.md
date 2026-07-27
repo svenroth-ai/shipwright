@@ -1,7 +1,7 @@
 # Compliance Dashboard
 
-Generated: 2026-07-27T15:50:13.106639+00:00
-Source-State: run=iterate-2026-07-27-guide-delivery-watch
+Generated: 2026-07-27T14:35:17.696770+00:00
+Source-State: run=iterate-2026-07-27-adopt-inherited-baseline
 Consistency-audit: never run
 Profile: python-plugin-monorepo
 Scope: library
@@ -57,13 +57,13 @@ _Ingested from CI `findings.json` (public-safe: severity counts + gate verdict o
 |--------|-------|--------|-----------|
 | Pipeline phases completed | n/a (adopted) | INFO |  |
 | Work events (iterate) | 374 changes | INFO |  |
-| Recent changes traced to an FR | 17/30 (57%) | INFO | feature vs. maintenance mix — informational, does not affect the Control Grade |
+| Recent changes traced to an FR | 18/30 (60%) | INFO | feature vs. maintenance mix — informational, does not affect the Control Grade |
 | All unit tests passing | 4946/4961 | WARN | 15/4961 not green in last full suite — see test-evidence.md; +16 change(s) since last full suite |
 | Architecture decisions | 328 ADRs | INFO |  |
-| Iterate tests passing | 53/78 testable changes tested | WARN | 25 testable change(s) without tests — see test-evidence.md |
+| Iterate tests passing | 53/79 testable changes tested | WARN | 26 testable change(s) without tests — see test-evidence.md |
 | Dependencies | 11 packages | INFO |  |
 | Copyleft risk | 0 | PASS |  |
-| Triage open | 21 open | WARN | 21 actionable item(s) — see ../agent_docs/triage_inbox.md |
+| Triage open | 22 open | WARN | 22 actionable item(s) — see ../agent_docs/triage_inbox.md |
 | Bloat over-limit (grandfathered) | 125 | INFO |  |
 | Bloat in allowlist | 159 entries | INFO |  |
 | Bloat ratchet delta | -42 lines | PASS |  |

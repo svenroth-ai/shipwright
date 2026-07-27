@@ -1,14 +1,14 @@
 # Triage Inbox
 
-> Auto-generated 2026-07-27T15:50:19.371756Z. Items waiting for triage decision.
+> Auto-generated 2026-07-27T14:35:23.623868Z. Items waiting for triage decision.
 > Promote via WebUI Triage tab (when v1b lands) or `shared/scripts/tools/triage_promote.py --id <id> --task-ref EXT:<ref>`.
 
 ## Status summary
 
-- Total: 422
-- Triage: 21 | Promoted: 1 | Dismissed: 399 | Snoozed: 1
+- Total: 421
+- Triage: 22 | Promoted: 1 | Dismissed: 397 | Snoozed: 1
 
-## Top 21 items (severity-sorted)
+## Top 22 items (severity-sorted)
 
 ### Source: analysis (1 item)
 
@@ -48,7 +48,7 @@
     ```
   - Promote: `triage_promote.py --id trg-7a4c0da7 --task-ref EXT:<ref>`
 
-### Source: github (2 items)
+### Source: github (1 item)
 
 <a id="trg-2b5ca5f5"></a>
 - **GitHub security: 1 code-scanning + 0 Dependabot (high)** `id=trg-2b5ca5f5 | severity=high | kind=bug → P1/engineering`
@@ -64,22 +64,12 @@
     ```
   - Promote: `triage_promote.py --id trg-2b5ca5f5 --task-ref EXT:<ref>`
 
-<a id="trg-8481c271"></a>
-- **GitHub prompt-injection: 1 finding(s) (medium)** `id=trg-8481c271 | severity=medium | kind=improvement → P2/engineering`
-  - Repo svenroth-ai/shipwright \| prompt-injection (prompt_risks.json): 1 medium \| run: https://github.com/svenroth-ai/sh…
-  - Launch payload (copy into a new Claude session):
-    ```text
-    /shipwright-security
-    
-    Context: the shipwright-security prompt-injection scan reports 1 open finding(s) for svenroth-ai/shipwright.
-    Severity breakdown — prompt-injection: 1 medium.
-    Workflow run: https://github.com/svenroth-ai/shipwright/actions/runs/30276486297
-    Re-scan locally: see docs/security-ci-setup.md
-    Source: triage item gh-prompt:svenroth-ai/shipwright
-    ```
-  - Promote: `triage_promote.py --id trg-8481c271 --task-ref EXT:<ref>`
+### Source: iterate (3 items)
 
-### Source: iterate (2 items)
+<a id="trg-a6616bbe"></a>
+- **Three finalization/delivery checks report a weaker signal than they can compute** `id=trg-a6616bbe | severity=medium | kind=improvement → P2/engineering`
+  - Three checks in the finalization / delivery path each already hold the information needed to name a cause, but report a…
+  - Promote: `triage_promote.py --id trg-a6616bbe --task-ref EXT:<ref>`
 
 <a id="trg-bd4e75a9"></a>
 - **Phase-canon C3 handoff freshness still keys on mtime** `id=trg-bd4e75a9 | severity=low | kind=improvement → P3/engineering`
@@ -131,7 +121,7 @@
   - Evidence: `.shipwright/planning/iterate/2026-07-27-project-granularity-basis.md`
   - Promote: `triage_promote.py --id trg-1d7d91d0 --task-ref EXT:<ref>`
 
-### Source: req3-phase2-walk (8 items)
+### Source: req3-phase2-walk (9 items)
 
 <a id="trg-6690d175"></a>
 - **CRITICAL - release-note writer destroys an existing history file it does not recognise** `id=trg-6690d175 | severity=critical | kind=bug → P0/engineering`
@@ -150,6 +140,12 @@
   - OWNS: everything under the workflows directory, the shipped workflow templates, and the must-pass-check derivation help…
   - Evidence: `.shipwright/planning/campaigns/2026-07-23-req3-ac-evidence-ledger-mono.md`
   - Promote: `triage_promote.py --id trg-c7e5835b --task-ref EXT:<ref>`
+
+<a id="trg-1aa5a8ab"></a>
+- **onboarding: a derived catalogue must announce itself as derived, and ask to be questioned** `id=trg-1aa5a8ab | severity=high | kind=improvement → P1/engineering`
+  - OWNS: the onboarding plugin's artifact writers and its handover step. Independently executable; touches no other plugin…
+  - Evidence: `.shipwright/planning/campaigns/2026-07-23-req3-ac-evidence-ledger-mono.md`
+  - Promote: `triage_promote.py --id trg-1aa5a8ab --task-ref EXT:<ref>`
 
 <a id="trg-15a43b6b"></a>
 - **security phase: coverage, one register, comparable runs, ask the scope (supersedes trg-9305ff98)** `id=trg-15a43b6b | severity=high | kind=improvement → P1/engineering`

@@ -1,17 +1,17 @@
 # Commit Change Log
 
-Generated: 2026-07-27T15:50:13.106639+00:00
-Source-State: run=iterate-2026-07-27-guide-delivery-watch
+Generated: 2026-07-27T14:35:17.696770+00:00
+Source-State: run=iterate-2026-07-27-adopt-inherited-baseline
 Consistency-audit: never run
-Total commits: 1225
+Total commits: 1230
 
 ## Commit Distribution
 
 ```mermaid
 pie title Commit Types
-    "fix" : 350
+    "fix" : 351
     "feat" : 345
-    "chore" : 255
+    "chore" : 259
     "docs" : 147
     "refactor" : 76
     "test" : 31
@@ -22,11 +22,12 @@ pie title Commit Types
 
 ## Changes by Type
 
-### Fixes (fix) — 350 commits
+### Fixes (fix) — 351 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
 | 2026-07-27 | deploy | rollback uses the version it was given, and stops overclaiming the rest (#441) | ce149b07dd04 |
+| 2026-07-27 | changelog | the release-note writer preserves the history it read (#trg-6690d175) | 5c97df256ce6 |
 | 2026-07-27 | run | an override overrides the verdict, never the check (#438) | f6179f6e1ed5 |
 | 2026-07-27 | ci | the PR review gate stops being bypassable (#437) | ec0c7055046f |
 | 2026-07-23 | deps | bump pyasn1 0.6.3 -> 0.6.4 (CVE-2026-59885, CVE-2026-59886) (#432) | 9ffbae764acd |
@@ -727,11 +728,15 @@ pie title Commit Types
 | 2026-03-20 | — | Task 02 — project templates (CLAUDE.md, agent_docs, CI) | c3a6d2f53bd3 |
 | 2026-03-20 | — | Task 01 — monorepo scaffolding + supabase-nextjs stack profile | 990a138a4690 |
 
-### Chores (chore) — 255 commits
+### Chores (chore) — 259 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
-| 2026-07-27 | triage | sweep 3 outbox append(s) into branch | 54319a446fec |
+| 2026-07-27 | churn | regenerate derived snapshots after main merge | bd021a33a030 |
+| 2026-07-27 | churn | regenerate derived snapshots after main merge | 7d944f0e4d67 |
+| 2026-07-27 | churn | regenerate derived snapshots after main merge | 7265b3d63ea4 |
+| 2026-07-27 | churn | regenerate derived snapshots after main merge | 71017bcd0692 |
+| 2026-07-27 | triage | sweep 60 outbox append(s) into branch | f47d2fd8b38c |
 | 2026-07-26 | review | default external-review GPT model to gpt-5.6-terra (#435) | 8d750a5fc7af |
 | 2026-07-24 | security | stage full compliance write-set in Step 7.5 finalizer (#434) | 5da96ebe8561 |
 | 2026-07-23 | compliance | refresh after security scan (#433) | 2b644805fb7d |
@@ -1296,7 +1301,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 1225 |
+| Total commits | 1230 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 1225 |
+| Human-authored commits | 1230 |
 
