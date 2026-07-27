@@ -84,7 +84,11 @@ _RANK = {"approve": 0, "revise": 1, "reject": 2}
 # blockquote, and whitespace. A heading marker is NOT included — a verdict is
 # not a section — and neither is arbitrary punctuation.
 _LINE_PREFIX = r"^[\s>*_`+\-]*"
-_LINE_SUFFIX = r"[\s*_`.]*$"
+# No trailing punctuation: `SHIPWRIGHT_VERDICT: approve.` yields UNKNOWN. The
+# prompt asks for the line and nothing after it, so a reviewer that added
+# something deviated — and an UNKNOWN blocks, which is the safe direction to
+# be wrong in. Only the same emphasis/tick decoration is allowed to close.
+_LINE_SUFFIX = r"[\s*_`]*$"
 
 # A line that PURPORTS to be the sentinel: the token opens the line, whatever
 # follows. Counted first, so a malformed attempt still makes the reply

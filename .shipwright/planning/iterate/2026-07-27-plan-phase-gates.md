@@ -300,6 +300,20 @@ reviewed against the current head.
 | 5 | `check-sections.py` never checks `is_valid`, so a duplicate id passes | **declined again — not reproducible, second time raised.** Both scenarios were run: duplicate `01-a` with its file present, and an invalid dependency token. Each prints `"success": false` with the line-numbered parse error and exits 1. The guard sits above the hunk the finding cites |
 | 6 | the tests chunk contains no production implementation, so it cannot implement AC1–AC12 | **declined — an artifact of the chunking.** The production code was in the source chunk, reviewed separately (it produced findings 1–2 above). Worth recording as a real limitation of the split-diff workaround: each reviewer sees less than the whole change, so a cross-chunk claim from one of them is not evidence |
 
+**Round 4 — the whole implementation surface as one diff**, at the pushed
+head. Chunking was abandoned after round 3: every finding the docs-only chunk
+produced was "the implementation is missing", which is what a reviewer shown
+one third of a change says. Excluding the generated compliance artifacts got
+the implementation under the limit in one piece, and **both legs answered** —
+Gemini `approve`, OpenAI `revise`, no contradiction.
+
+| # | Finding | Disposition |
+|---|---|---|
+| 1 | requirement linkage is mined with an *unanchored* FR-ID search, so `FR-01.01x` and `not-FR-02.02-example` are credited as live ids | **accepted — the real bug of this round.** Reproduced before fixing. Tokens are now split on commas and each must match the canonical grammar *in full*; anything else is reported as a linkage error rather than mined. Same shape as the `@FR-01.03x` prefix bug the repo already learned once, which is why it is worth the ratchet |
+| 2 | the verdict-line grammar accepts a heading marker and trailing `!`/`.`, wider than AC1 licenses | **accepted, in two steps.** `#` and `!` dropped immediately; a follow-up pass caught that `.` was still allowed, and that went too. `SHIPWRIGHT_VERDICT: approve.` now yields `unknown` — the prompt says "nothing after it", so a reviewer that added punctuation deviated, and `unknown` blocks, which is the safe direction to be wrong in |
+| 3 | three findings against `triage_cli.py` / `triage_promote.py` / `github_triage/mappers.py` — removed `defer`, lost sanitization, dropped a length cap | **declined — my error, not the reviewer's.** I built that diff with two-dot (`git diff origin/main`) instead of three-dot semantics, so commit `631e0805`, which landed on main after this branch merged, appeared as *deletions* authored by this change. The branch never touches those files. Rebuilt with `origin/main...HEAD` and the findings vanished |
+| 4 | `check-sections.py` never checks `is_valid`, so a malformed manifest exits 0 | **declined a THIRD time — verified three ways.** The guard is `if not result.is_valid: … return 1` at line 50, above the `success` computation the finding cites. Read in source, and run against duplicate ids and an invalid dependency token: both print `"success": false` with the line-numbered parse error and exit 1. The reviewer's *suggestion* was taken though: five CLI-level cases now pin it (`test_a_malformed_manifest_never_reports_success`), so a claim raised three times is settled by a test instead of re-argued a fourth |
+
 ## Confidence Calibration
 
 - **Boundaries touched:** see Affected Boundaries above — `SECTION_MANIFEST`,

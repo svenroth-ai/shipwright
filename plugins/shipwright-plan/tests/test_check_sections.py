@@ -5,6 +5,8 @@ import subprocess
 import sys
 from pathlib import Path
 
+import pytest
+
 SCRIPT = str(Path(__file__).resolve().parent.parent / "scripts" / "checks" / "check-sections.py")
 
 
@@ -81,3 +83,25 @@ def test_bare_manifest_declares_nothing_and_passes(tmp_path):
     output = run_check(["--planning-dir", str(planning)])
     assert output["success"] is True
     assert output["order_errors"] == []
+
+
+# A malformed manifest must fail even when the entries that survived parsing
+# have their files and no order errors — the tempting false-pass. Reviewers
+# read the `success` computation without the `is_valid` guard above it three
+# times running and filed it as a bypass each time; these pin the real
+# behaviour so the question is settled by a test rather than re-argued.
+@pytest.mark.parametrize(
+    "manifest,files,expected_error",
+    [
+        ("01-a\n01-a", ["01-a"], "duplicate section id"),
+        ("01-a\nBad Name", ["01-a"], "Invalid section name"),
+        ("01-a\n02-b: ../../etc/passwd", ["01-a", "02-b"], "Invalid dependency id"),
+        ("01-a\n02-b: 01-a, , 01-a", ["01-a", "02-b"], "empty dependency token"),
+        ("01-a\n02-b: 01-a, 01-a", ["01-a", "02-b"], "duplicate dependency"),
+    ],
+)
+def test_a_malformed_manifest_never_reports_success(tmp_path, manifest, files, expected_error):
+    planning = _planning_with(tmp_path, manifest, files)
+    output = run_check(["--planning-dir", str(planning)])
+    assert output["success"] is False
+    assert any(expected_error in e for e in output["errors"]), output

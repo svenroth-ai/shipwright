@@ -4,8 +4,8 @@
     "date": "2026-07-27",
     "unit": {
       "status": "passed",
-      "passed": 5209,
-      "total": 5209
+      "passed": 5249,
+      "total": 5249
     },
     "integration": {
       "status": "passed",
@@ -257,11 +257,21 @@
           "behavior": "each of the four gates blocks phase completion on its own",
           "disposition": "tested",
           "evidence": "test_verifiers_plan_gates_wiring.py::test_each_gate_blocks_phase_completion_on_its_own PASSED (4 cases) + ::test_a_clean_plan_trips_none_of_the_four PASSED"
+        },
+        {
+          "behavior": "a malformed manifest never reports success from the CLI",
+          "disposition": "tested",
+          "evidence": "test_check_sections.py::test_a_malformed_manifest_never_reports_success PASSED (5 cases)"
+        },
+        {
+          "behavior": "trailing punctuation on the verdict line yields unknown",
+          "disposition": "tested",
+          "evidence": "test_review_verdict.py::test_decoration_outside_the_documented_set_is_unknown PASSED (4 cases)"
         }
       ],
       "counts": {
-        "testable": 39,
-        "tested": 39,
+        "testable": 41,
+        "tested": 41,
         "untestable": 2,
         "untested_testable": 0
       },

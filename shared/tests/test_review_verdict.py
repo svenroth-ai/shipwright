@@ -49,6 +49,7 @@ def test_sentinel_survives_ordinary_markdown(line):
     [
         "# SHIPWRIGHT_VERDICT: approve",      # a verdict is not a heading
         "SHIPWRIGHT_VERDICT: approve!",       # not one of the licensed decorations
+        "SHIPWRIGHT_VERDICT: approve.",       # trailing punctuation is not decoration
         "~~SHIPWRIGHT_VERDICT: approve~~",
     ],
 )
