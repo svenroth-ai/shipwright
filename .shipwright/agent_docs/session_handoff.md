@@ -1,6 +1,6 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-07-27-plan-section-deps"
+run_id: "iterate-2026-07-27-adopt-derived-catalogue"
 phase: "iterate"
 reason: "ensure-current pre-merge refresh"
 timestamp: "2026-07-27T12:14:34.040370+00:00"
@@ -12,7 +12,7 @@ timestamp: "2026-07-27T12:14:34.040370+00:00"
 
 ## Session Info
 
-- **Session ID**: 1ea85a9d-f698-4336-8e01-ea2f4e2ae714
+- **Session ID**: 98053cc9-0f7c-4be8-b1cc-8b5d8b25d84b
 - **Timestamp**: 2026-07-27 12:14:34 UTC
 - **Reason**: ensure-current pre-merge refresh
 
@@ -29,10 +29,11 @@ timestamp: "2026-07-27T12:14:34.040370+00:00"
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/plan-section-deps
-- **Run ID**: `iterate-2026-07-27-plan-section-deps`
-- **Spec**: .shipwright/planning/iterate/2026-07-27-plan-section-deps.md
-- **External Review Marker**: completed (external_review_state.json @ 2026-07-27T12:04:57)
+- **Branch**: iterate/adopt-derived-catalogue
+- **Run ID**: iterate-2026-07-27-adopt-derived-catalogue
+- **Spec**: .shipwright/planning/iterate/2026-07-27-adopt-derived-catalogue.md
+- **Complexity**: medium
+- **External Review Marker**: completed (external_review_state.json @ 2026-07-27T11:49:21)
 
 ### Mandatory replay on Resume
 
@@ -50,8 +51,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/plan-section-deps
-- **Last Commit**: 811ba2fa Merge remote-tracking branch 'origin/main' into iterate/plan-section-deps
+- **Branch**: iterate/adopt-derived-catalogue
+- **Last Commit**: 7f35a14e Merge remote-tracking branch 'origin/main' into iterate/adopt-derived-catalogue
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -71,12 +72,12 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 | evt-5ecd7d7e | work_completed | iterate (iterate: reviewer verdicts recorded, disagreement is its own outcome (1 of 3)) | 2026-07-27 |
 | evt-8039a18b | grade_snapshot | — | 2026-07-27 |
 | evt-8cab1d1d | work_completed | iterate (iterate: section dependencies are declarable, so the numbering is checkable (2 of 3)) | 2026-07-27 |
-| evt-64bc7af0 | grade_snapshot | — | 2026-07-27 |
+| evt-4ab23c76 | grade_snapshot | — | 2026-07-27 |
 
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 368
+- **Total work events**: 369
 - **Last iterate**: change — iterate: reviewer verdicts recorded, disagreement is its own outcome (1 of 3) (2026-07-27)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 

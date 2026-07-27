@@ -1,14 +1,14 @@
 # Triage Inbox
 
-> Auto-generated 2026-07-27T12:14:34.040370Z. Items waiting for triage decision.
+> Auto-generated 2026-07-27T11:51:44.632826Z. Items waiting for triage decision.
 > Promote via WebUI Triage tab (when v1b lands) or `shared/scripts/tools/triage_promote.py --id <id> --task-ref EXT:<ref>`.
 
 ## Status summary
 
 - Total: 418
-- Triage: 20 | Promoted: 1 | Dismissed: 396 | Snoozed: 1
+- Triage: 23 | Promoted: 1 | Dismissed: 393 | Snoozed: 1
 
-## Top 20 items (severity-sorted)
+## Top 23 items (severity-sorted)
 
 ### Source: analysis (1 item)
 
@@ -17,7 +17,7 @@
   - Scope the Shipwright marketplace correctly instead of enabling all ~14 plugins at user scope (they currently load /ship…
   - Promote: `triage_promote.py --id trg-57317128 --task-ref EXT:<ref>`
 
-### Source: compliance (1 item)
+### Source: compliance (2 items)
 
 <a id="trg-554786d0"></a>
 - **Compliance: 4 open finding(s)** `id=trg-554786d0 | severity=high | kind=compliance → P1/compliance`
@@ -31,6 +31,19 @@
     Each finding + hint is listed in this item's detail.
     ```
   - Promote: `triage_promote.py --id trg-554786d0 --task-ref EXT:<ref>`
+
+<a id="trg-59f3c54d"></a>
+- **Compliance: 3 open finding(s)** `id=trg-59f3c54d | severity=high | kind=compliance → P1/compliance`
+  - 3 open compliance finding(s): D/D1, D/D3, H/H1  - D/D1: Spec FR coverage in events — uncovered FRs — Must: FR-01.17; Sh…
+  - Launch payload (copy into a new Claude session):
+    ```text
+    /shipwright-compliance
+    
+    Context: 3 open compliance finding(s): D/D1, D/D3, H/H1.
+    Dashboard: .shipwright/compliance/dashboard.md
+    Each finding + hint is listed in this item's detail.
+    ```
+  - Promote: `triage_promote.py --id trg-59f3c54d --task-ref EXT:<ref>`
 
 ### Source: github (1 item)
 
@@ -92,7 +105,13 @@
   - Evidence: `.shipwright/planning/iterate/2026-07-27-project-granularity-basis.md`
   - Promote: `triage_promote.py --id trg-1d7d91d0 --task-ref EXT:<ref>`
 
-### Source: req3-phase2-walk (10 items)
+### Source: req3-phase2-walk (12 items)
+
+<a id="trg-74b945bc"></a>
+- **CRITICAL - going back to a previous version does not use the version you ask for, and reports success** `id=trg-74b945bc | severity=critical | kind=bug → P0/engineering`
+  - OWNS: the hosting plugin, the liveness check and the target profiles. Independently executable. Supersedes trg-c9dc5a16…
+  - Evidence: `.shipwright/planning/campaigns/2026-07-23-req3-ac-evidence-ledger-mono.md`
+  - Promote: `triage_promote.py --id trg-74b945bc --task-ref EXT:<ref>`
 
 <a id="trg-6690d175"></a>
 - **CRITICAL - release-note writer destroys an existing history file it does not recognise** `id=trg-6690d175 | severity=critical | kind=bug → P0/engineering`
@@ -153,4 +172,10 @@
   - OWNS: the compliance dashboard and report renderers. Does NOT own artifact stamping — that moved to its own card so it…
   - Evidence: `.shipwright/planning/campaigns/2026-07-23-req3-ac-evidence-ledger-mono.md`
   - Promote: `triage_promote.py --id trg-a1fd8125 --task-ref EXT:<ref>`
+
+<a id="trg-a8110d84"></a>
+- **project phase: no notion of how big a requirement should be, and the templates contradict the basis rule** `id=trg-a8110d84 | severity=medium | kind=improvement → P2/engineering`
+  - Per-plugin work unit from the FR-01.02 scenario pass. (1) Requirement granularity has no guidance and no check. There i…
+  - Evidence: `.shipwright/planning/campaigns/2026-07-23-req3-ac-evidence-ledger-mono.md`
+  - Promote: `triage_promote.py --id trg-a8110d84 --task-ref EXT:<ref>`
 
