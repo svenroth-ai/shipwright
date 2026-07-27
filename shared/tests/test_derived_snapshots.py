@@ -37,7 +37,6 @@ from lib.derived_snapshots import (  # noqa: E402
 )
 
 _DASH = ".shipwright/compliance/dashboard.md"
-_RUN_ID = "iterate-2026-07-27-derived-snapshots-off-branch"
 
 
 def _env() -> dict[str, str]:
