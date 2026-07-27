@@ -1,100 +1,174 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-07-23-req3-phase2-content-mono",
+    "run_id": "iterate-2026-07-27-review-gate-failclosed-fork",
     "date": "2026-07-27",
     "unit": {
-      "status": "passed",
-      "passed": 9891,
-      "total": 9891
+      "status": "pass",
+      "passed": 6352,
+      "failed": 0,
+      "detail": "shared 4994 + integration 418 + shipwright-security 476 + shipwright-adopt 464"
     },
     "integration": {
-      "status": "passed",
-      "passed": 417,
-      "total": 417
+      "status": "pass",
+      "passed": 418,
+      "failed": 0
     },
     "pgtap": {
-      "status": "not_run",
-      "passed": 0,
-      "total": 0
+      "status": "n/a",
+      "reason": "no database in this repo"
     },
     "e2e": {
-      "status": "not_run",
-      "passed": 0,
-      "total": 0
+      "status": "n/a",
+      "reason": "no runnable application surface; CI workflow configuration only"
     },
     "design_fidelity": {
-      "status": "not_run",
-      "passed": 0,
-      "total": 0
+      "status": "n/a",
+      "reason": "no UI"
     },
     "smoke": {
-      "status": "not_run"
+      "status": "n/a",
+      "reason": "no server"
     },
     "degraded": [],
     "surface_verification": {
-      "surface": "cli",
-      "runner": "uv run pytest integration-tests/test_requirements_catalog_contract.py integration-tests/test_requirements_catalog_parsers.py integration-tests/test_fr_table_shape_convergence.py -q",
+      "surface": "none",
+      "tests_run": 0,
       "exit_code": 0,
-      "tests_run": 23,
-      "evidence_path": "C:\\01_Development\\shipwright\\.worktrees\\req3-phase2-content-mono\\.shipwright\\runs\\iterate-2026-07-23-req3-phase2-content-mono\\surface_verification.log",
-      "timestamp": "2026-07-26T23:23:54.302Z",
-      "attempts": 1
+      "justification": "This change is GitHub Actions workflow configuration and the scaffolder that ships it. There is no runnable application surface: the executable surface is GitHub's workflow_run engine, which cannot be driven locally. Verification is the 38-assertion parsed-YAML invariant suite plus the 3-profile scaffold->deploy->derive composition test. The residual gap is recorded as behaviour 22 of the completeness ledger and fails CLOSED in production."
     },
     "test_completeness": {
       "status": "complete",
       "behaviors": [
         {
-          "behavior": "the catalog carries 18 requirements, each with its own id, anchor, priority, basis and layers cell",
+          "behavior": "oversize diff fails the job instead of skipping the review",
           "disposition": "tested",
-          "evidence": "test_requirements_catalog_contract.py::test_all_requirements_survive_with_unchanged_ids and ::test_every_requirement_has_an_explicit_anchor PASSED"
+          "evidence": "test_oversize_diff_fails_instead_of_skipping[monorepo,shipped-template] PASSED"
         },
         {
-          "behavior": "both production parsers read the changed catalog and agree on the same id set",
+          "behavior": "a reviewer that exits non-zero fails the gate (`|| true` gone)",
           "disposition": "tested",
-          "evidence": "test_requirements_catalog_parsers.py::test_the_fr_table_reader_still_sees_every_requirement and ::test_the_heading_parser_sees_the_same_set PASSED"
+          "evidence": "test_reviewer_exit_code_is_never_discarded x4 PASSED"
         },
         {
-          "behavior": "every requirement keeps a resolving deep link from the traceability matrix",
+          "behavior": "review output that will not parse fails closed",
           "disposition": "tested",
-          "evidence": "test_requirements_catalog_contract.py::test_every_rtm_deep_link_resolves_end_to_end PASSED after regenerating the matrix"
+          "evidence": "test_unparseable_review_output_fails_closed x2 PASSED"
         },
         {
-          "behavior": "no criterion sentence carries a run id, a decision-record number, a path or a source filename",
+          "behavior": "stage 1 holds no secret",
           "disposition": "tested",
-          "evidence": "test_requirements_catalog_contract.py forbidden-token scan over every (E) line PASSED"
+          "evidence": "test_stage1_holds_no_secret x2 + TestStage1::test_holds_no_secret PASSED"
         },
         {
-          "behavior": "the newly minted requirement carries its decided basis and layers, pinned per requirement rather than in aggregate",
+          "behavior": "stage 1 is not fork-guarded",
           "disposition": "tested",
-          "evidence": "test_fr_table_shape_convergence.py::test_every_live_requirement_carries_its_decided_basis and ::test_the_migration_did_not_change_any_required_layers PASSED"
+          "evidence": "test_stage1_is_not_fork_guarded, TestStage1::test_fork_guard_absent PASSED"
         },
         {
-          "behavior": "the elicitation module keeps every section and load-bearing sentence the catalog cites",
+          "behavior": "stage 1 records the change for audit",
           "disposition": "tested",
-          "evidence": "test_requirement_elicitation_refs.py + test_requirement_elicitation_rigor.py PASSED (28 cases)"
+          "evidence": "test_stage1_records_the_change_for_audit x2 PASSED"
         },
         {
-          "behavior": "the glossary stays within its size ceiling and carries no legacy artifact path",
+          "behavior": "stage 1 emits no `PR Review` check-run context",
           "disposition": "tested",
-          "evidence": "test_bloat_defense_artifacts.py::test_glossary_under_loc_limit and test_artifact_path_canon.py PASSED"
+          "evidence": "test_stage1_owns_no_pr_review_context x2 PASSED"
         },
         {
-          "behavior": "the acceptance criteria say what is true of the product",
+          "behavior": "stage 1 carries no policy a contributor could edit",
+          "disposition": "tested",
+          "evidence": "test_stage1_carries_no_policy x2, TestStage1::test_carries_no_policy PASSED"
+        },
+        {
+          "behavior": "stage 2 is triggered by stage 1 completing",
+          "disposition": "tested",
+          "evidence": "test_stage2_is_triggered_by_workflow_run x2, test_stage2_is_chained_to_stage1 PASSED"
+        },
+        {
+          "behavior": "stage 2 never checks out the contributor's code",
+          "disposition": "tested",
+          "evidence": "test_stage2_never_checks_out_contributor_code x2, TestStage2::test_never_checks_out_the_pr_head PASSED"
+        },
+        {
+          "behavior": "stage 2 takes identity from the trusted workflow_run event",
+          "disposition": "tested",
+          "evidence": "test_stage2_takes_identity_from_the_trusted_event x2 PASSED"
+        },
+        {
+          "behavior": "stage 2 never reviews the artifact (contributor-controlled)",
+          "disposition": "tested",
+          "evidence": "test_stage2_never_reviews_the_artifact x2, TestStage2::test_does_not_review_the_artifact PASSED"
+        },
+        {
+          "behavior": "stage 2 derives the tier from API data in default-branch code",
+          "disposition": "tested",
+          "evidence": "TestStage2::test_tier_is_decided_here_from_api_data PASSED"
+        },
+        {
+          "behavior": "stage 2 refuses an ambiguous PR (one SHA, several open PRs)",
+          "disposition": "tested",
+          "evidence": "test_stage2_refuses_an_ambiguous_pull_request x2 PASSED"
+        },
+        {
+          "behavior": "stage 2 re-checks the head SHA before blessing it (force-push race)",
+          "disposition": "tested",
+          "evidence": "test_stage2_rechecks_the_head_before_blessing_it x2 PASSED"
+        },
+        {
+          "behavior": "stage 2 posts the verdict onto the PR and the required status",
+          "disposition": "tested",
+          "evidence": "test_stage2_posts_the_verdict_onto_the_change x2, TestStage2::test_posts_the_required_context_as_a_status PASSED"
+        },
+        {
+          "behavior": "least-privilege tokens: stage 1 no write, stage 2 posting job only",
+          "disposition": "tested",
+          "evidence": "test_pr_review_stage1_holds_no_write_scope, test_pr_review_run_only_posting_job_widens, test_stage2_top_level_token_is_read_only x2 PASSED"
+        },
+        {
+          "behavior": "the waiver cannot cover a change to the checks themselves",
+          "disposition": "tested",
+          "evidence": "test_waiver_cannot_cover_a_change_to_the_checks, TestStage2::test_waiver_cannot_cover_a_change_to_the_checks PASSED"
+        },
+        {
+          "behavior": "tier logic preserved across the move (labels/sensitive/external)",
+          "disposition": "tested",
+          "evidence": "TestStage2::test_tier_is_decided_here_from_api_data, TestStage1 suite PASSED"
+        },
+        {
+          "behavior": "adopt scaffolds BOTH review stages",
+          "disposition": "tested",
+          "evidence": "test_stage2_lands_too, test_stage2_existing_file_preserved PASSED"
+        },
+        {
+          "behavior": "required-check derivation names the posted status, not a job name",
+          "disposition": "tested",
+          "evidence": "test_required_check_names_match_deployed_workflows[3 profiles], test_posted_status_contexts_name_known_workflows PASSED"
+        },
+        {
+          "behavior": "stage 2 executes correctly against live GitHub on a real fork PR",
           "disposition": "untestable",
-          "reason_code": "requires-manual-visual-judgment",
-          "reason": "whether a sentence in business language faithfully describes a mechanism is a reading judgement, not an oracle. This is the round's own finding, recorded as FR-01.16 criterion 9 and as campaign decision D7: an LLM may adjudicate a mechanically raised flag, never raise one. Each criterion instead carries an enforcement classification in the AC evidence ledger, and the criteria that CAN be pinned are enumerated above."
+          "reason_code": "requires-external-nondeterministic-service",
+          "reason": "needs a real fork PR against GitHub with live secrets; no local harness can synthesise a workflow_run event. The first live fork PR is the proof. Until then the gate fails closed, which is the safe direction."
         }
       ],
       "counts": {
-        "testable": 7,
-        "tested": 7,
+        "total": 22,
+        "tested": 21,
         "untestable": 1,
         "untested_testable": 0
-      },
-      "enumeration_basis": {
-        "acs": 8,
-        "covered_acs": 8
       }
+    },
+    "ci_supplychain_ack": {
+      "run_id": "iterate-2026-07-27-review-gate-failclosed-fork",
+      "paths_fingerprint": "ef6cf514447be7b15d961fa14b737e0d9cd692124f92107dc14534d45b8fabd8",
+      "consistent_with": "iterate-2026-06-30-workflow-token-permissions",
+      "statement": "Splits the Tier-3 PR review into two workflows. Stage 1 (pull_request, runs on forks) holds NO secret and no write scope; stage 2 (workflow_run, default-branch code) is the only credentialed half and widens solely to statuses:write + pull-requests:write + contents:read, preserving read-only top-level tokens with per-job widening. Adds .github/workflows/pr-review-run.yml. Action-pinning posture unchanged: GitHub-owned actions (checkout@v4, upload-artifact@v4, github-script@v7) stay on mutable tags per the recorded do-not-SHA-pin decision; the only third-party action (astral-sh/setup-uv) remains pinned to a full commit SHA. Net effect on the trust boundary is a REDUCTION: credentials move out of any run whose workflow file the contributor controls, and stage 2 derives tier and diff from the API rather than from contributor-supplied artifact data.",
+      "ci_paths": [
+        ".github/workflows/pr-review-run.yml",
+        ".github/workflows/pr-review.yml",
+        "shared/templates/github-actions/claude-review-run.yml.template",
+        "shared/templates/github-actions/claude-review.yml.template"
+      ]
     }
   },
   "coverage": {
