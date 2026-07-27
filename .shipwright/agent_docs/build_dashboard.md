@@ -1,10 +1,11 @@
 # Project Activity Dashboard
-> Updated: 2026-07-27 18:46 UTC | Session: 871b1865-c6ae-4724-a105-dc987ddca125 | Run: iterate-2026-07-27-security-coverage-manifest
+> Updated: 2026-07-27 19:44 UTC | Session: 9058f47a-25f4-4469-b517-e3b5c91347e0 | Run: iterate-2026-07-27-no-silent-revert
 
-## Recent Changes (385 iterations)
+## Recent Changes (386 iterations)
 
 | Type | Description | Tests | Commit | FRs | Date |
 |------|-------------|-------|--------|-----|------|
+| change | iterate: a branch may not quietly revert merged work | 0/0 |  | FR-01.11 | 2026-07-27 |
 | change | iterate: raise the PR-review diff cap, cut at a file boundary, name what went unreviewed | 0/0 |  | FR-01.17 | 2026-07-27 |
 | change | iterate: an audit that checked nothing is not recorded | 0/0 |  | compliance | 2026-07-27 |
 | change | iterate: refuse a multi-root pytest session instead of failing 21 unrelated tests | 0/0 |  | tooling | 2026-07-27 |
@@ -392,7 +393,7 @@
 | change | post-adoption framework cleanup (Sub-1A through 1D) | 225/225 | 3db485b | FR-01.01, FR-01.02, FR-01.03 | 2026-05-02 |
 
 ## Test Status
-Last run: 2026-07-27 | Unit: 9663/9663 | Integration: 420/420 | Smoke: not_run | (iterate)
+Last run: 2026-07-27 | Unit: 5868/5884 | Smoke: not_run | (iterate)
 
 ## Pipeline
 
