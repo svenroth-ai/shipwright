@@ -214,5 +214,10 @@
     "measured_tier": "repo",
     "source": "combined coverage.xml (all plugins + shared + integration)",
     "measured_at": "2026-07-04T00:00:00Z"
+  },
+  "source_state": {
+    "run_id": "iterate-2026-07-27-checks-that-gate-nothing",
+    "commit": "abea11c3ddbc8d62c337c248431a8cad9fa5ec58",
+    "dirty": false
   }
 }
