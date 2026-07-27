@@ -1,14 +1,14 @@
 # Commit Change Log
 
-Generated: 2026-07-27T06:59:39.392372+00:00
-Total commits: 1208
+Generated: 2026-07-27T08:12:42.718426+00:00
+Total commits: 1210
 
 ## Commit Distribution
 
 ```mermaid
 pie title Commit Types
-    "fix" : 347
-    "feat" : 333
+    "fix" : 348
+    "feat" : 334
     "chore" : 255
     "docs" : 147
     "refactor" : 75
@@ -20,10 +20,11 @@ pie title Commit Types
 
 ## Changes by Type
 
-### Fixes (fix) — 347 commits
+### Fixes (fix) — 348 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-07-27 | ci | the PR review gate stops being bypassable (#437) | ec0c7055046f |
 | 2026-07-23 | deps | bump pyasn1 0.6.3 -> 0.6.4 (CVE-2026-59885, CVE-2026-59886) (#432) | 9ffbae764acd |
 | 2026-07-23 | compliance | design verifier C1 skips projects that never ran the design phase (#429) | c841751a7a8e |
 | 2026-07-22 | compliance | count a tested mint as coverage and delivery (D1/D3) + tighten bloat ratchet (H2) (#427) | 4a93b8a7c023 |
@@ -372,10 +373,11 @@ pie title Commit Types
 | 2026-03-21 | — | rename skill folders for clean slash commands | 5a8d77658fab |
 | 2026-03-20 | — | update README attribution to svenroth.ai | dd5de7f7d6ab |
 
-### Features (feat) — 333 commits
+### Features (feat) — 334 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-07-27 | project | give requirements a size rule, and stop the templates contradicting the basis rule | 81535b7682af |
 | 2026-07-27 | spec | REQ-3 Phase 2 — every requirement now states what it guarantees (#436) | 28491e1c9631 |
 | 2026-07-23 | shared | shared requirement-elicitation method + FR-01.16 (REQ-3 Phase 1) (#431) | 601fafe55276 |
 | 2026-07-23 | compliance | track skipped tests as a first-class field; key D4 on genuine failures (FR-01.10) (#430) | 355681bdcd4e |
@@ -714,7 +716,7 @@ pie title Commit Types
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
-| 2026-07-27 | triage | sweep 59 outbox append(s) into branch | d34443bdb51c |
+| 2026-07-27 | triage | sweep 60 outbox append(s) into branch | 3dd32d27ea29 |
 | 2026-07-26 | review | default external-review GPT model to gpt-5.6-terra (#435) | 8d750a5fc7af |
 | 2026-07-24 | security | stage full compliance write-set in Step 7.5 finalizer (#434) | 5da96ebe8561 |
 | 2026-07-23 | compliance | refresh after security scan (#433) | 2b644805fb7d |
@@ -1277,7 +1279,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 1208 |
+| Total commits | 1210 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 1208 |
+| Human-authored commits | 1210 |
 
