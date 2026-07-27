@@ -252,10 +252,10 @@ def test_w5_fails_when_marker_missing(proj: Path):
     assert f["status"] == pq.STATUS_FAIL
 
 
-def test_w5_passes_with_completed_status(proj: Path):
+def test_w5_passes_with_completed_status(proj: Path):  # legacy + disagreement: test_verifiers_plan_w5.py
     (proj / ".shipwright" / "planning").mkdir(parents=True)
     (proj / ".shipwright" / "planning" / "external_review_state.json").write_text(
-        json.dumps({"status": "completed", "provider": "openrouter"}),
+        json.dumps({"status": "completed", "provider": "openrouter", "verdicts": {"gemini": "approve", "openai": "revise"}}),
         encoding="utf-8",
     )
     f = plan_compliance.check_w5_external_review_marker(proj)

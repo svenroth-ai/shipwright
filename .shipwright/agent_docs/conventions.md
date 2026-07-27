@@ -226,6 +226,7 @@ Python 3.11+ with uv as package manager. All scripts are invoked via uv run. Hoo
 - (2026-07-23) iterate/review — generating the external-review diff with `git diff … 2>&1` leaks git's CRLF `warning:` lines INTO the diff file; the external reviewer reads them as corrupted file content and reports false-positive HIGH findings (word-splits, mangled tokens). Redirect stderr elsewhere (`2>err.txt`), never merge it into the diff. → iterate-2026-07-23-req3-elicitation-module
 
 ---
+- (2026-07-27) iterate — a gate that parses LLM output must be validated against real LLM output, not reasoned about: this run's verdict rule was disproven three times by the replies it received (counting the sentinel TOKEN threw away a genuine `reject` from a reviewer quoting the instruction; matching only the LAST line let a two-verdict reply through; counting only WELL-FORMED lines skipped a malformed attempt). Survivor: exactly one purported sentinel LINE, and it must be last; unreadable blocks. → iterate-2026-07-27-plan-verdict-record
 
 ## Contributing
 
