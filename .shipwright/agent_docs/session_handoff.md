@@ -1,39 +1,39 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-07-27-requirement-writeback-loop"
+run_id: "iterate-2026-07-27-artifact-state-stamping"
 phase: "iterate"
-reason: "iterate: requirement write-back loop — design rounds and build sections declare their requirement impact"
-timestamp: "2026-07-27T09:29:09.040930+00:00"
+reason: "ensure-current pre-merge refresh"
+timestamp: "2026-07-27T09:08:48.846142+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-07-27 09:29:09 UTC
+> Auto-generated 2026-07-27 09:08:48 UTC
 
 ## Session Info
 
-- **Session ID**: 13e72d08-112b-49da-9f1a-81bacdcc93e8
-- **Timestamp**: 2026-07-27 09:29:09 UTC
-- **Reason**: iterate: requirement write-back loop — design rounds and build sections declare their requirement impact
+- **Session ID**: 821e1007-5fc9-403d-9122-21e7ce9dc8e5
+- **Timestamp**: 2026-07-27 09:08:48 UTC
+- **Reason**: ensure-current pre-merge refresh
 
 ## Last Iterate
 
-- **Run ID**: iterate-2026-07-27-requirement-writeback-loop
-- **Date**: 2026-07-27T09:29:03.245312Z
-- **Type**: change
+- **Run ID**: iterate-2026-07-27-artifact-state-stamping
+- **Date**: 2026-07-27T09:08:42.675204Z
+- **Type**: feature
 - **Complexity**: medium
-- **Branch**: iterate/requirement-writeback-loop
-- **ADR**: iterate-2026-07-27-requirement-writeback-loop
+- **Branch**: iterate/artifact-state-stamping
+- **ADR**: iterate-2026-07-27-artifact-state-stamping
 - **Tests passed**: True
-- **Spec**: .shipwright/planning/iterate/2026-07-27-requirement-writeback-loop.md
+- **Spec**: .shipwright/planning/iterate/2026-07-27-artifact-state-stamping.md
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/requirement-writeback-loop
-- **Run ID**: iterate-2026-07-27-requirement-writeback-loop
-- **Spec**: .shipwright/planning/iterate/2026-07-27-requirement-writeback-loop.md
+- **Branch**: iterate/artifact-state-stamping
+- **Run ID**: iterate-2026-07-27-artifact-state-stamping
+- **Spec**: .shipwright/planning/iterate/2026-07-27-artifact-state-stamping.md
 - **Complexity**: medium
-- **External Review Marker**: stale (predates spec (2026-07-27T07:14:07))
+- **External Review Marker**: stale (predates spec (2026-07-27T07:17:44))
 
 ### Mandatory replay on Resume
 
@@ -52,8 +52,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/requirement-writeback-loop
-- **Last Commit**: d40eb13d chore(triage): sweep 60 outbox append(s) into branch
+- **Branch**: iterate/artifact-state-stamping
+- **Last Commit**: 83bec3aa Merge remote-tracking branch 'origin/main' into iterate/artifact-state-stamping
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -69,17 +69,17 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 | Event | Type | Source | Date |
 |-------|------|--------|------|
-| evt-60b67b74 | grade_snapshot | — | 2026-07-27 |
-| evt-cf1bab8b | work_completed | iterate (iterate: requirement write-back loop — design rounds and build sections declare their requirement impact) | 2026-07-27 |
-| evt-2055af94 | grade_snapshot | — | 2026-07-26 |
-| evt-ea7203ec | work_completed | iterate (iterate: REQ-3 Phase 2 content round - all 18 requirements walked or minted) | 2026-07-26 |
-| evt-6ff6084f | grade_snapshot | — | 2026-07-26 |
+| evt-64bc7af0 | grade_snapshot | — | 2026-07-27 |
+| evt-19f53577 | grade_snapshot | — | 2026-07-27 |
+| evt-78684181 | work_completed | iterate (iterate: the review gate stops being bypassable (fail-closed + fork review)) | 2026-07-27 |
+| evt-c880344a | grade_snapshot | — | 2026-07-27 |
+| evt-4794dcc1 | work_completed | iterate (iterate: phase-gate override leaves evidence; handoff renders phase status) | 2026-07-27 |
 
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 360
-- **Last iterate**: change — iterate: requirement write-back loop — design rounds and build sections declare their requirement impact (2026-07-27)
+- **Total work events**: 364
+- **Last iterate**: change — iterate: the review gate stops being bypassable (fail-closed + fork review) (2026-07-27)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
 ## Recent Decisions

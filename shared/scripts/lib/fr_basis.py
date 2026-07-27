@@ -11,13 +11,22 @@ path. ``Basis`` answers *how we know this*, from a fixed set, so it can be.
 | `code`      | read from source                           |
 | `observed`  | seen in the running application            |
 | `tests`     | derived from existing tests                |
-| `assumed`   | **nobody confirmed this — needs checking** |
+| `assumed`   | **nobody confirmed it — and what would settle it is named** |
 | `other`     | special case; free-text reason requested   |
 
 ``assumed`` is the load-bearing value. Its whole job is to stop a guess from
 later reading as established fact — the §6.5 laundering risk — which is also why
 the layers convergence in this same sub-iterate marks inferred cells rather than
 writing bare values.
+
+**``assumed`` is never bare in the prose sense**: it is available only together
+with what would settle it — who to ask, or what to try — which is what separates
+an honest "we cannot know this yet" from a silent "nobody asked". That
+settlement is written as an **acceptance criterion on the requirement**, never
+inside this cell: the cell takes one bare vocabulary token and nothing else, so
+``assumed — ask the PO`` is malformed here exactly as ``code (auth.ts)`` is.
+Which situations may use it at all is `shared/requirement-elicitation.md` §8;
+the authoring rule is `shared/fr-authoring.md` §4a.
 
 **Severity is deliberately asymmetric** (SPEC §3.2):
 

@@ -285,6 +285,20 @@ cat > shipwright_test_results.json << 'RESULTS_EOF'
 RESULTS_EOF
 ```
 
+**Then stamp it with the state it describes** (immediately after the write above):
+```bash
+: "${SHIPWRIGHT_RUN_ID:=test-$(date +%Y%m%d-%H%M%S)}"
+uv run "{shared_root}/scripts/tools/stamp_test_results.py" \
+  --project-root "$(pwd)" --run-id "$SHIPWRIGHT_RUN_ID"
+```
+Adds the top-level `source_state` block — run id, the HEAD commit the tests ran
+against, and whether tracked files were modified. Never hand-write the commit or the
+modified flag into the JSON above: the tool reads those from git, which is what
+makes them evidence rather than a claim. Pass the shell variable, not a literal — an
+unsubstituted placeholder is refused, leaving the record with no run id. Without the
+stamp the record is not bound to a code version, so a leftover record from an
+earlier commit passes the phase gate (card `trg-4d5b6a56`, FR-01.10).
+
 Also return the same JSON object as the **last line of your response**:
 
 ```json

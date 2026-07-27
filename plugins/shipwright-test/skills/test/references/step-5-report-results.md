@@ -52,6 +52,33 @@ If learnings exist:
 - **Cross-project insights** -> save Claude Code feedback/project Memory
 If none: skip.
 
+**Stamp the record with the state it describes** (always — run it here, after every
+layer has merged into the file, so the stamp describes the *finished* record):
+
+```bash
+: "${SHIPWRIGHT_RUN_ID:=test-$(date +%Y%m%d-%H%M%S)}"
+export SHIPWRIGHT_RUN_ID
+uv run "{shared_root}/scripts/tools/stamp_test_results.py" \
+  --project-root "$(pwd)" --run-id "$SHIPWRIGHT_RUN_ID"
+```
+
+Pass the shell variable, never a literal: `{run_id}` is not a placeholder this
+plugin substitutes, and an unsubstituted template literal is refused rather than
+stamped, leaving the record with no run id. The `:=` guard is idempotent, so this
+works whether or not the phase-session step below already exported the variable.
+
+This writes the top-level `source_state` block — the run id, the HEAD commit the
+tests ran against, and whether tracked files were modified. **Do not hand-write the
+commit or the modified flag**: the tool reads those from git, which is what makes
+them evidence rather than a claim — the same defect as a self-declared
+`"mode": "standalone"`. (The run id itself is declared by the caller; the tool
+cannot verify it.)
+
+Without this the record is not bound to a code version, so a leftover record from
+an earlier commit satisfies the phase gate (card `trg-4d5b6a56`, FR-01.10). Exit
+non-zero means the record is missing or unreadable — fix that rather than skipping
+the stamp; the tool deliberately refuses to overwrite a record it cannot parse.
+
 **Record test_run event** (always, even on failure — captures layer results):
 ```bash
 uv run "{shared_root}/scripts/tools/record_event.py" \

@@ -24,7 +24,10 @@ from pathlib import Path
 import pytest
 
 from lib.ci_workflow_scaffolder import scaffold_ci_workflow
-from lib.claude_review_workflow_scaffolder import scaffold_claude_review_workflow
+from lib.claude_review_workflow_scaffolder import (
+    scaffold_claude_review_run_workflow,
+    scaffold_claude_review_workflow,
+)
 
 
 # ---------------------------------------------------------------------------
@@ -203,6 +206,36 @@ class TestClaudeReviewScaffolder:
         workflow.write_text(user_content, encoding="utf-8")
 
         result = scaffold_claude_review_workflow(tmp_project)
+
+        assert result["wrote"] is False
+        assert result["reason"] == "already_exists"
+        assert workflow.read_text(encoding="utf-8") == user_content
+
+    def test_stage2_lands_too(self, tmp_project: Path) -> None:
+        """@FR-01.17 — stage 1 alone prepares a review that nothing ever runs.
+
+        Stage 2 is the half holding the API key that a fork's `pull_request`
+        run is denied, and the sole producer of the required status. An adopted
+        repo that got only stage 1 would have a gate nothing can satisfy.
+        """
+        result = scaffold_claude_review_run_workflow(tmp_project)
+
+        assert result["wrote"] is True
+        assert result["reason"] == "scaffolded"
+        workflow = tmp_project / ".github" / "workflows" / "claude-review-run.yml"
+        assert workflow.exists()
+        body = workflow.read_text(encoding="utf-8")
+        assert "workflow_run" in body, "stage 2 must trigger on stage 1 completing"
+        assert "statuses" in body, "stage 2 posts the required status context"
+
+    def test_stage2_existing_file_preserved(self, tmp_project: Path) -> None:
+        workflow_dir = tmp_project / ".github" / "workflows"
+        workflow_dir.mkdir(parents=True)
+        workflow = workflow_dir / "claude-review-run.yml"
+        user_content = "# user-customized review runner\n"
+        workflow.write_text(user_content, encoding="utf-8")
+
+        result = scaffold_claude_review_run_workflow(tmp_project)
 
         assert result["wrote"] is False
         assert result["reason"] == "already_exists"

@@ -26,6 +26,7 @@ from typing import TYPE_CHECKING
 
 from scripts.lib.collectors import NOT_INSTALLED, UNKNOWN_LICENSE
 from scripts.lib.mermaid import license_pie
+from scripts.lib._provenance import provenance_lines
 from scripts.lib.sbom_render import (
     license_cell,
     license_compliance_lines,
@@ -50,14 +51,14 @@ def generate(data: ComplianceData) -> str:
     resolved = [d for d in deps if d.license not in (NOT_INSTALLED, UNKNOWN_LICENSE)]
     unresolved = len(deps) - len(resolved)
 
-    header = f"Generated: {data.timestamp}"
-    if data.dependencies_lock_resolved:
-        header += " (dependency versions resolved from uv.lock)"
+    # Only doc that annotates its own Generated: line. Splatted, never unpacked — the
+    # provenance block's length is not a contract (see _provenance.provenance_lines).
+    suffix = " (dependency versions resolved from uv.lock)" if data.dependencies_lock_resolved else ""
 
     lines = [
         "# Software Bill of Materials (SBOM)",
         "",
-        header,
+        *provenance_lines(data, generated_suffix=suffix),
         "",
     ]
     lines += summary_lines(deps, deduped=data.dependencies_deduped)

@@ -536,17 +536,20 @@ Security tab for Path B, workflow run URL for Path A).
 
 ### Operator flow
 
-Three verbs on every action-unit (matching the launch-surface model
+Four verbs on every action-unit (matching the launch-surface model
 from iterate-2026-05-20):
 
 - **Fix now** — copy the `launchPayload` fence into a new Claude session.
   The matching slash command auto-fires and resolves the item via the
   existing lifecycle hooks.
 - **Promote** — `triage_cli.py promote <id> --task-ref EXT:<ref>`
-  creates a backlog ExternalTask for deferred work.
+  names a backlog ExternalTask that already exists.
 - **Dismiss** — `triage_cli.py dismiss <id> --reason <reason>` for
   false-positives / won't-fix. (Per-finding false-positives are
   dismissed on GitHub at SARIF level, not in the triage inbox.)
+- **Defer** — `triage_cli.py defer <id> --reason <reason>` for real work
+  that is deliberately not now. The item flips to `snoozed` and appears
+  in the listing's deferred section rather than vanishing from it.
 
 ### Freshness window (Path A only)
 

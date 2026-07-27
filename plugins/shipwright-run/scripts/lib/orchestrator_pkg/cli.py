@@ -78,7 +78,19 @@ def build_parser() -> argparse.ArgumentParser:
     all_steps = PIPELINE_STEPS + ["security"]
     p.add_argument("--step", required=True, choices=all_steps)
     p.add_argument("--status", required=True, choices=["in_progress", "complete", "failed"])
-    p.add_argument("--force", action="store_true", help="Skip validation (user override)")
+    p.add_argument(
+        "--force", action="store_true",
+        help=("Complete despite ask-level validation findings (user override). The "
+              "validator still RUNS — force overrides the verdict, not the check — "
+              "and what it found is recorded. Requires --force-reason."),
+    )
+    p.add_argument(
+        "--force-reason", default=None,
+        help=("Why the person decided to go ahead. Recorded verbatim in "
+              "run_config.validation_overrides[] next to what the gate found, so "
+              "'passed its checks' and 'was waved through' stay distinguishable "
+              "(FR-01.01). Required with --force."),
+    )
 
     p = subparsers.add_parser("get-build-progress")
     p.add_argument("--project-root", default=".")
@@ -206,6 +218,17 @@ def main() -> int:
         print(json.dumps(result, indent=2))
 
     elif args.command == "update-step":
+        # Argument validation before anything else: an override with no recorded
+        # reason is the gap FR-01.01 exists to close, so refuse it here with a
+        # readable message rather than letting update_step raise ValueError.
+        # (update_step enforces the same rule for library callers.)
+        if args.force and not (args.force_reason or "").strip():
+            parser.error(
+                '--force requires --force-reason "<why>": the validator still runs '
+                "under --force and what it found is recorded, but the person's "
+                "reason for going ahead has to be recorded with it."
+            )
+
         # Drivability guard (iterate-2026-07-14-phase-invocation-mode). `update-step` is the
         # v1 completion path; in a driven single_session run `single-session-apply` owns
         # phase completion — run/SKILL.md is explicit: "Do NOT ... call `orchestrator
@@ -234,7 +257,10 @@ def main() -> int:
                 ),
             }, indent=2))
             return 0
-        config = update_step(project_root, args.step, args.status, force=args.force)
+        config = update_step(
+            project_root, args.step, args.status,
+            force=args.force, force_reason=args.force_reason,
+        )
         print(json.dumps(config, indent=2))
 
     elif args.command == "get-build-progress":

@@ -289,7 +289,8 @@ criterion that reads as though it does.
 
 **The stop-condition, stated once:** before the requirement is treated as
 settled, every row above is answered — or, **only where the answer cannot be
-obtained**, its cell is `Basis: assumed` with the guess recorded as a guess.
+obtained**, its cell is `Basis: assumed`, with the guess recorded as a guess
+**and what would settle it named**.
 
 **`assumed` is for unobtainable answers, never for unasked questions.** This is
 the load-bearing half of the rule, and the earlier wording — which allowed
@@ -302,12 +303,21 @@ made. Before writing `assumed`, answer one question — *could I have found this
 out, by asking the person or by reading the code?* If yes, `assumed` is not
 available to you.
 
+**`assumed` is never bare — it comes with what would settle it.** Naming the
+settlement (*who to ask, or what to try*) is what separates the two things the
+value would otherwise express identically: an honest *we cannot know this yet*,
+and a silent *nobody asked*. It also converts the guess into scheduled work
+rather than a permanent one. Write the settlement as an **acceptance criterion**
+on the requirement — the `Basis` cell itself takes one bare vocabulary value and
+nothing else, so `assumed — ask the PO` is a malformed cell that fails audit
+`I5` (`shared/fr-authoring.md` §4a).
+
 So the rule divides by whether the person who knows is reachable:
 
 | Situation | Is `assumed` acceptable? |
 |---|---|
-| **A new project** (`/shipwright-project`) — the person is right there | **No.** Elicitation is not finished while a dimension is unanswered. Ask. Not asking is the defect; there is no budget excuse for it when the answer is one question away. |
-| **An existing codebase** (`/shipwright-adopt`) — the decisions were made long ago, often by people who have left | **Yes**, for what the code cannot settle — deriving every requirement's full intent up front is work nobody would sit through. But each `assumed` requirement **must raise a work item to confirm it**, so it is a scheduled debt rather than a permanent guess. |
+| **A new project** (`/shipwright-project`) — the person is right there | **Not for anything they could answer.** Elicitation is not finished while an answerable dimension is unanswered. Ask. Not asking is the defect; there is no budget excuse for it when the answer is one question away. Where the answer genuinely does not exist yet — nobody has decided, or it depends on something not built — `assumed` **is** available, with what would settle it named. The ban is on silent assuming, not on honest not-knowing. |
+| **An existing codebase** (`/shipwright-adopt`) — the decisions were made long ago, often by people who have left | **Yes**, for what the code cannot settle — deriving every requirement's full intent up front is work nobody would sit through. The settlement is still named: each `assumed` requirement **raises a work item saying who to ask or what to try**, so it is a scheduled debt rather than a permanent guess. "Someone should check this" is not a settlement. |
 | **A change to a finished project** (`/shipwright-iterate`) | As for a new project where the operator is present; as for an existing codebase for pre-existing behaviour nobody can now explain. |
 
 Never invent a confident answer. But never reach for `assumed` to avoid a
@@ -374,11 +384,17 @@ surface-specific questions, layered on top:
   dependencies between splits, and uncertainty mapping (which parts need a
   dedicated planning exploration). It also surfaces its inferred assumptions
   (stack, persistence, auth) up front so they can be corrected cheaply.
-  **The person is present, so `assumed` is not available (§8):** elicitation is
-  not finished while a dimension is unanswered, and no requirement leaves this
-  phase without acceptance criteria its author has confirmed. Producing a
+  **The person is present, so `assumed` is not available for anything they could
+  answer (§8):** elicitation is not finished while an answerable dimension is
+  unanswered, and no requirement leaves this phase without acceptance criteria
+  its author has confirmed. Where the answer genuinely does not exist yet,
+  `assumed` is available *with what would settle it named*. Producing a
   plausible-looking specification without asking is the failure mode this phase
   exists to prevent — the questions are the product.
+  **Requirement granularity** is this phase's own to get right: a capability
+  that cannot be given criteria a single delivery would satisfy is too broad and
+  gets divided (`shared/fr-authoring.md` §3a). Splitting the *work* into
+  planning units is a separate judgement, made against `split-heuristics.md`.
 - **`/shipwright-adopt` (brownfield)** — *infer-from-the-code first* (§3/§6): the
   vast majority of facts come from Layer-1 detection; the interview asks only the
   strategic questions the code cannot answer (profile, scope, nested projects)
