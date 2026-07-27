@@ -3,15 +3,15 @@
 Generated: 2026-07-27T19:47:47.363461+00:00
 Source-State: run=iterate-2026-07-27-review-floor-not-chained
 Consistency-audit: never run
-Total commits: 1241
+Total commits: 1244
 
 ## Commit Distribution
 
 ```mermaid
 pie title Commit Types
-    "fix" : 361
+    "fix" : 362
     "feat" : 348
-    "chore" : 256
+    "chore" : 258
     "docs" : 148
     "refactor" : 76
     "test" : 31
@@ -22,12 +22,13 @@ pie title Commit Types
 
 ## Changes by Type
 
-### Fixes (fix) — 361 commits
+### Fixes (fix) — 362 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
-| 2026-07-27 | iterate | the code review becomes a floor, not a chain | 6c897be7cd34 |
+| 2026-07-27 | iterate | the code review becomes a floor, not a chain (#476) | 7c116c035480 |
 | 2026-07-27 | security | the test suite stops leaking a triage store into the plugin dir (#474) | 6ba177083769 |
+| 2026-07-27 | ci | three checks that ran, reported, and gated nothing | bd1c2eb47705 |
 | 2026-07-27 | run | report against what will exist, and assert only what you can prove (#468) | 3c13001aafeb |
 | 2026-07-27 | iterate | the merge state is a vocabulary, not a BLOCKED flag (#473) | 159953eec378 |
 | 2026-07-27 | shared | a multi-root pytest session names its own cause (#469) | bd7121b79d53 |
@@ -741,12 +742,14 @@ pie title Commit Types
 | 2026-03-20 | — | Task 02 — project templates (CLAUDE.md, agent_docs, CI) | c3a6d2f53bd3 |
 | 2026-03-20 | — | Task 01 — monorepo scaffolding + supabase-nextjs stack profile | 990a138a4690 |
 
-### Chores (chore) — 256 commits
+### Chores (chore) — 258 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
-| 2026-07-27 | triage | sweep 4 outbox append(s) into branch | 425b637b9a73 |
+| 2026-07-27 | churn | regenerate derived snapshots after main merge | 5e6b46e2c140 |
+| 2026-07-27 | churn | regenerate derived snapshots after main merge | 6fdd45f6d37f |
 | 2026-07-27 | triage | follow-up card for requiring the checks that gate nothing | 7387b2796960 |
+| 2026-07-27 | triage | sweep 1 outbox append(s) into branch | 554a1f0211cc |
 | 2026-07-26 | review | default external-review GPT model to gpt-5.6-terra (#435) | 8d750a5fc7af |
 | 2026-07-24 | security | stage full compliance write-set in Step 7.5 finalizer (#434) | 5da96ebe8561 |
 | 2026-07-23 | compliance | refresh after security scan (#433) | 2b644805fb7d |
@@ -1312,7 +1315,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 1241 |
+| Total commits | 1244 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 1241 |
+| Human-authored commits | 1244 |
 

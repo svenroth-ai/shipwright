@@ -1,14 +1,14 @@
 # Triage Inbox
 
-> Auto-generated 2026-07-27T19:47:53.112213Z. Items waiting for triage decision.
+> Auto-generated 2026-07-27T20:10:39.859419Z. Items waiting for triage decision.
 > Promote via WebUI Triage tab (when v1b lands) or `shared/scripts/tools/triage_promote.py --id <id> --task-ref EXT:<ref>`.
 
 ## Status summary
 
-- Total: 430
-- Triage: 21 | Promoted: 1 | Dismissed: 407 | Snoozed: 1
+- Total: 431
+- Triage: 22 | Promoted: 1 | Dismissed: 407 | Snoozed: 1
 
-## Top 21 items (severity-sorted)
+## Top 22 items (severity-sorted)
 
 ### Source: analysis (1 item)
 
@@ -17,7 +17,7 @@
   - Scope the Shipwright marketplace correctly instead of enabling all ~14 plugins at user scope (they currently load /ship…
   - Promote: `triage_promote.py --id trg-57317128 --task-ref EXT:<ref>`
 
-### Source: compliance (1 item)
+### Source: compliance (2 items)
 
 <a id="trg-a5b167f4"></a>
 - **Compliance: 5 open finding(s)** `id=trg-a5b167f4 | severity=high | kind=compliance → P1/compliance`
@@ -31,6 +31,19 @@
     Each finding + hint is listed in this item's detail.
     ```
   - Promote: `triage_promote.py --id trg-a5b167f4 --task-ref EXT:<ref>`
+
+<a id="trg-b1b635be"></a>
+- **Compliance: 3 open finding(s)** `id=trg-b1b635be | severity=high | kind=compliance → P1/compliance`
+  - 3 open compliance finding(s): D/D1, D/D3, H/H1  - D/D1: Spec FR coverage in events — uncovered FRs — Must: FR-01.17; Sh…
+  - Launch payload (copy into a new Claude session):
+    ```text
+    /shipwright-compliance
+    
+    Context: 3 open compliance finding(s): D/D1, D/D3, H/H1.
+    Dashboard: .shipwright/compliance/dashboard.md
+    Each finding + hint is listed in this item's detail.
+    ```
+  - Promote: `triage_promote.py --id trg-b1b635be --task-ref EXT:<ref>`
 
 ### Source: github (2 items)
 
