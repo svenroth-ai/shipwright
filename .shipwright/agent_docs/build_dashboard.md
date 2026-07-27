@@ -1,7 +1,7 @@
 # Project Activity Dashboard
-> Updated: 2026-07-27 18:46 UTC | Session: a7fa3da4-74bf-406f-b92b-f309691d90f9 | Run: iterate-2026-07-27-handoff-tally-and-gate-honesty
+> Updated: 2026-07-27 18:46 UTC | Session: 871b1865-c6ae-4724-a105-dc987ddca125 | Run: iterate-2026-07-27-security-coverage-manifest
 
-## Recent Changes (384 iterations)
+## Recent Changes (385 iterations)
 
 | Type | Description | Tests | Commit | FRs | Date |
 |------|-------------|-------|--------|-----|------|
@@ -20,6 +20,7 @@
 | change | iterate: section dependencies are declarable, so the numbering is checkable (2 of 3) | 0/0 |  | tooling | 2026-07-27 |
 | change | iterate: name the blocker instead of reporting a weaker signal | 0/0 |  | FR-01.03, FR-01.11 | 2026-07-27 |
 | change | iterate: the derived requirements catalogue announces itself | 0/0 |  | FR-01.13 | 2026-07-27 |
+| change | security-coverage-manifest | 10083/10083 |  | FR-01.07 | 2026-07-27 |
 | change | iterate: the review gate stops being bypassable (fail-closed + fork review) | 0/0 |  | infra | 2026-07-27 |
 | change | iterate: phase-gate override leaves evidence; handoff renders phase status | 0/0 |  | FR-01.01 | 2026-07-27 |
 | change | iterate: requirement granularity guidance + advisory I6 check + the Basis-assumed template contradiction | 0/0 |  | compliance | 2026-07-27 |
@@ -391,7 +392,7 @@
 | change | post-adoption framework cleanup (Sub-1A through 1D) | 225/225 | 3db485b | FR-01.01, FR-01.02, FR-01.03 | 2026-05-02 |
 
 ## Test Status
-Last run: 2026-07-27 | Unit: 5977/5977 | Integration: 422/422 | Smoke: not_run | (iterate)
+Last run: 2026-07-27 | Unit: 9663/9663 | Integration: 420/420 | Smoke: not_run | (iterate)
 
 ## Pipeline
 
