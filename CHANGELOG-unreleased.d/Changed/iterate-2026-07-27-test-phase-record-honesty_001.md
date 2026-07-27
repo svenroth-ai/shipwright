@@ -1,0 +1,1 @@
+`/shipwright-test` reads the same accepted-baseline list (`shipwright_known_failures.json`) the audit phase reads, through one shared reader, and reports known-and-accepted failures separately from genuine ones. An onboarded project no longer reports a permanently red run while the audit calls the same run fine.

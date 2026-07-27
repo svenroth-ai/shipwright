@@ -41,6 +41,46 @@ This runs Gemini and OpenAI reviews **in parallel** via ThreadPoolExecutor
 2. Integrate accepted suggestions into `plan.md`
 3. Mark each finding as addressed or declined (with reason)
 
+### Read the two verdicts before anything else
+
+Each reviewer ends with `SHIPWRIGHT_VERDICT: approve|revise|reject`. The CLI
+reads both and reports them:
+
+```json
+"verdicts": { "gemini": "approve", "openai": "reject" },
+"contradiction": { "detected": true, "requires_resolution": true,
+                   "reason": "reviewers contradict each other: gemini=approve, openai=reject" }
+```
+
+**`requires_resolution: true` is its own outcome, not a finding count.** It
+means the two reviewers cannot be compared, for one of these reasons:
+
+- they **contradict each other** — one approves, the other rejects. Two
+  independent reviewers exist so this gets noticed; a plan whose reviewers
+  disagree about the approach as a whole is not a reviewed plan;
+- a **verdict could not be read** (missing, ambiguous, or the reply was
+  truncated). An unreadable verdict is not agreement;
+- **only one reviewer answered.** One approving review is not the guarantee
+  two reviewers give — proceeding on it is a decision, so it gets recorded as
+  one.
+
+(*Neither* answering is different: nothing ran, and the degraded-review gate
+above already covers it.)
+
+Put it to the user, in these terms:
+
+> The two reviewers disagree about this plan. {gemini} says **{verdict}**;
+> {openai} says **{verdict}**. Their reasons are above. How should I proceed —
+> take one side, rework the plan, or record why the disagreement does not
+> block?
+
+Do NOT average it away, and do not proceed on the approving review alone.
+Carry the decision into Step 5b as `--contradiction-resolution`; Step 6 will
+not begin without it, and the `W5` compliance check fails while it is missing.
+
+`approve` vs `revise`, or `revise` vs `reject`, is a difference of degree that
+the finding list already carries — those do not require a resolution.
+
 **If the CLI exits non-zero or the JSON has `"degraded": true`** (keys were
 present but every review leg failed), the external review did NOT run. Do not
 record Step 5b as `completed`: surface the `degraded_reason` and treat it like
@@ -141,11 +181,33 @@ uv run --project {plugin_root} {shared_root}/scripts/checks/mark-review-state.py
   --status "{completed | skipped_user_opt_out | skipped_config_disabled}" \
   --provider "{openrouter | gemini | openai | null}" \
   --findings-count {N} \
-  --reason "{optional reason for skip}"
+  --reason "{optional reason for skip}" \
+  --verdict gemini={approve|revise|reject|unknown|unavailable} \
+  --verdict openai={approve|revise|reject|unknown|unavailable} \
+  --contradiction-resolution "{only when the reviewers disagreed}"
 ```
 
-- Branch A → `--status completed --provider {actual provider}`
+- Branch A → `--status completed --provider {actual provider}`, plus one
+  `--verdict` per reviewer, copied from the CLI's `verdicts` block. The
+  contradiction is **derived** from the pair — there is no flag to assert
+  agreement the verdicts do not support.
 - Branch B Option 2 → `--status skipped_user_opt_out --reason "{user's reason}"`
 - Branch C → `--status skipped_config_disabled`
 
-**Checkpoint:** `{planning_dir}/external_review_state.json` exists.
+Pass `--contradiction-resolution` only when the CLI reported
+`requires_resolution: true`, and only with the decision the **user** made —
+which side was taken and why, why the unreadable verdict does not block, or
+why proceeding on a single review is acceptable. Without it Step 6 refuses to
+begin.
+
+Reviewer names must be `gemini` and `openai` (the two that run), each given
+once. Branch B/C skips record no verdicts, which is correct — a skipped review
+has no reviewers. But a **`completed`** review with no verdicts is treated as
+not-yet-recorded and blocks Step 6: omitting the flags must not be a way to
+opt out of the disagreement check.
+
+**Checkpoint:** `{planning_dir}/external_review_state.json` exists, and the
+state it records is clear to proceed past — which is the same question the
+resume gate and the compliance `W5` check ask, via the one shared
+`lib.review_marker.evaluate_review_state`. A marker recording an undecided
+disagreement sends a resumed session back to Step 5 rather than past it.

@@ -1,0 +1,1 @@
+The review marker, the compliance check that reads it, and the resume gate now share one definition of "reviewed", and each recomputes the disagreement from the recorded verdicts rather than trusting the marker's own summary of them.

@@ -39,14 +39,13 @@ _COPYLEFT_LICENSES = {"GPL", "LGPL", "AGPL", "MPL-2.0", "GPL-2.0", "GPL-3.0", "A
 def _is_adopted(run_config: dict) -> bool:
     """True when the project was onboarded via /shipwright-adopt.
 
-    The empirically correct signal is the presence of the `adoption`
-    object (carrying `adopted_at`, `commit_at_adoption`, ...). The
-    artifact-polish plan originally suggested checking `scope`, but
-    `scope` carries values like `"library"` / `"full_app"` — orthogonal
-    to adoption status (Iterate B.1, 2026-05-21).
+    Delegates to `project_facts`, which owns the signal and its rationale —
+    the test phase routes journey-coverage gaps on the same fact, and one fact
+    answered two ways is how components end up disagreeing about a project.
     """
-    adoption = run_config.get("adoption")
-    return isinstance(adoption, dict) and bool(adoption)
+    from project_facts import is_adopted_run_config  # noqa: PLC0415
+
+    return is_adopted_run_config(run_config)
 
 
 _SIGNAL_SEVERITIES = frozenset({"critical", "high", "medium", "low"})
