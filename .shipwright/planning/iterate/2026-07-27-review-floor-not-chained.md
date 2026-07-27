@@ -205,7 +205,7 @@ The first attempt moved only the new cases out and trimmed the original back to
 495 — one fewer than it started. **That was not enough**, and the gate said so
 again: it blocks on `delta == "crossing" and not in_baseline`, which is a
 property of the file being over the limit at all, not of it having grown. A file
-496 lines over its ceiling with no grandfathering entry is a blocker whoever
+196 lines over its ceiling with no grandfathering entry is a blocker whoever
 touches it, and "it was already like that" is the deferral the Iron Law names.
 
 So the file is split along **its own section headers** — the seams its author

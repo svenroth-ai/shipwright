@@ -1,18 +1,14 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-07-27-review-floor-not-chained",
+    "run_id": "iterate-2026-07-27-no-silent-revert",
     "date": "2026-07-27",
     "unit": {
       "status": "passed",
-      "passed": 6378,
-      "total": 6378
+      "passed": 5868,
+      "total": 5884,
+      "skipped": 16
     },
     "integration": {
-      "status": "passed",
-      "passed": 422,
-      "total": 422
-    },
-    "pgtap": {
       "status": "not_run",
       "passed": 0,
       "total": 0
@@ -22,147 +18,114 @@
       "passed": 0,
       "total": 0
     },
+    "smoke": {
+      "status": "not_run"
+    },
+    "pgtap": {
+      "status": "not_run",
+      "passed": 0,
+      "total": 0
+    },
     "design_fidelity": {
       "status": "not_run",
       "passed": 0,
       "total": 0
     },
-    "smoke": {
-      "status": "not_run"
-    },
-    "degraded": [
-      {
-        "condition": "external review - gemini degraded on all three calls",
-        "detail": "Gemini 3.1 Pro's replies were cut off (finish_reason=length) for the plan review and both code-review rounds, so every external pass here is single-reviewer (GPT-5.6). Recorded rather than counted as a two-provider pass."
-      },
-      {
-        "condition": "internal code-reviewer / doubt-reviewer subagents not invoked",
-        "detail": "Standing session directive not to use the Agent tool unless the user asks. Recorded as not_run per the escalation rule this iterate introduces - the external review carries the pass and is recorded under external_code."
-      }
-    ],
     "surface_verification": {
       "surface": "cli",
-      "runner": "uv run --with pytest pytest shared/tests/test_review_record_floor.py shared/tests/test_review_cascade_decoupled.py shared/tests/test_record_review_pass_cli.py -q",
+      "runner": "uv run pytest shared/tests/test_silent_revert.py shared/tests/test_verify_iterate_finalization.py -v",
       "exit_code": 0,
-      "tests_run": 44,
-      "evidence_path": ".shipwright/runs/iterate-2026-07-27-review-floor-not-chained/surface_verification.json"
+      "tests_run": 109,
+      "evidence_path": "C:\\01_Development\\shipwright\\.worktrees\\no-silent-revert\\.shipwright\\runs\\iterate-2026-07-27-no-silent-revert\\surface_verification.log",
+      "timestamp": "2026-07-27T19:33:19.315Z",
+      "attempts": 1
     },
     "test_completeness": {
       "status": "complete",
       "behaviors": [
         {
-          "behavior": "medium with neither code nor external_code completed is BLOCKED",
+          "behavior": "a branch that integrated main and then dropped main's new content is caught",
           "disposition": "tested",
-          "evidence": "shared/tests/test_review_record_floor.py::test_medium_blocks_when_neither_ran PASSED"
+          "evidence": "test_silent_revert.py::test_the_463_shape_is_caught PASSED; replayed on REAL repo history (1 file, 24 lines flagged)"
         },
         {
-          "behavior": "external_code alone satisfies the floor (the substitution path, 15 of 27 historical runs)",
+          "behavior": "a clean union integration drops nothing",
           "disposition": "tested",
-          "evidence": "shared/tests/test_review_record_floor.py::test_external_alone_satisfies_the_floor PASSED"
+          "evidence": "test_silent_revert.py::test_a_clean_integration_drops_nothing PASSED; real-history probe: 0 files, 0.0s"
         },
         {
-          "behavior": "code alone satisfies the floor",
+          "behavior": "a branch that has not integrated yet is never accused (BEHIND is not a revert)",
           "disposition": "tested",
-          "evidence": "shared/tests/test_review_record_floor.py::test_internal_alone_satisfies_the_floor PASSED"
+          "evidence": "test_silent_revert.py::test_a_branch_that_never_integrated_is_not_accused PASSED"
         },
         {
-          "behavior": "not_applicable on both does NOT satisfy the floor (no bypass by relabelling)",
+          "behavior": "editing a line that predates the fork is not a drop",
           "disposition": "tested",
-          "evidence": "shared/tests/test_review_record_floor.py::test_not_applicable_does_not_satisfy_the_floor PASSED"
+          "evidence": "test_silent_revert.py::test_editing_a_line_that_existed_before_is_not_a_drop PASSED"
         },
         {
-          "behavior": "large is floored too - not an equality check on 'medium'",
+          "behavior": "overwriting a line main itself changed is reported, and settled by a declaration",
           "disposition": "tested",
-          "evidence": "shared/tests/test_review_record_floor.py::test_large_is_floored_too PASSED"
+          "evidence": "test_silent_revert.py::test_overwriting_a_line_main_itself_changed_IS_reported PASSED"
         },
         {
-          "behavior": "small is NOT floored - the one historical zero-review run was small and correct",
+          "behavior": "deleting a file after taking their work is reported",
           "disposition": "tested",
-          "evidence": "shared/tests/test_review_record_floor.py::test_small_is_not_floored PASSED"
+          "evidence": "test_silent_revert.py::test_deleting_a_file_after_taking_their_work_is_reported PASSED"
         },
         {
-          "behavior": "trivial skips the gate entirely",
+          "behavior": "a deletion with no integration is out of scope and not flagged",
           "disposition": "tested",
-          "evidence": "shared/tests/test_review_record_floor.py::test_trivial_is_skipped_entirely PASSED"
+          "evidence": "test_silent_revert.py::test_a_branch_that_never_integrated_is_not_this_checks_business PASSED"
         },
         {
-          "behavior": "unknown complexity skips, and the missing entry is caught by the sibling check_iterate_history_has_run_id",
+          "behavior": "blank and whitespace-only lines are ignored",
           "disposition": "tested",
-          "evidence": "shared/tests/test_review_record_floor.py::test_unknown_complexity_skips_the_gate_and_is_caught_elsewhere PASSED"
+          "evidence": "test_silent_revert.py::test_blank_and_whitespace_lines_are_ignored PASSED"
         },
         {
-          "behavior": "an unanswered type still reports as unanswered, not as a floor failure",
+          "behavior": "the check blocks and names both the file and the lines being lost",
           "disposition": "tested",
-          "evidence": "shared/tests/test_review_record_floor.py::test_pending_still_reported_first PASSED"
+          "evidence": "test_silent_revert.py::test_the_check_blocks_and_names_the_file PASSED"
         },
         {
-          "behavior": "the two medium+ shapes observed in this repo still pass",
+          "behavior": "a declared removal with a reason passes",
           "disposition": "tested",
-          "evidence": "shared/tests/test_review_record_floor.py::test_historical_shapes_still_pass PASSED (2 params); measured against the real 27-record corpus before building"
+          "evidence": "test_silent_revert.py::test_a_declared_removal_passes PASSED"
         },
         {
-          "behavior": "the trigger rule no longer chains external to internal",
+          "behavior": "a declaration without a reason, or for another file, does not count",
           "disposition": "tested",
-          "evidence": "shared/tests/test_review_cascade_decoupled.py::test_trigger_is_not_conditional_on_internal PASSED"
+          "evidence": "test_silent_revert.py::test_a_declaration_without_a_reason_does_not_count PASSED; test_silent_revert.py::test_a_declaration_for_another_file_does_not_cover_this_one PASSED"
         },
         {
-          "behavior": "the trigger states its own thresholds",
+          "behavior": "an unresolvable default branch or non-git tree is a visible skip, never a pass",
           "disposition": "tested",
-          "evidence": "shared/tests/test_review_cascade_decoupled.py::test_trigger_states_its_own_conditions PASSED"
+          "evidence": "test_silent_revert.py::test_no_default_branch_is_a_visible_skip_not_a_pass PASSED; test_silent_revert.py::test_a_non_git_tree_skips PASSED"
         },
         {
-          "behavior": "the small/trivial exemption is conditional, not blanket (the contradiction the decoupling exposed)",
+          "behavior": "a clean branch passes",
           "disposition": "tested",
-          "evidence": "shared/tests/test_review_cascade_decoupled.py::test_small_exemption_does_not_contradict_the_thresholds PASSED - found by external code review, verdict REVISE, re-reviewed APPROVE after the fix"
-        },
-        {
-          "behavior": "the escalation rule is stated (responsibility moves outward, never lapses)",
-          "disposition": "tested",
-          "evidence": "shared/tests/test_review_cascade_decoupled.py::test_escalation_is_stated PASSED"
-        },
-        {
-          "behavior": "recording a substituted pass as 'completed' is forbidden in the prose",
-          "disposition": "tested",
-          "evidence": "shared/tests/test_review_cascade_decoupled.py::test_substitution_bookkeeping_is_forbidden PASSED"
-        },
-        {
-          "behavior": "the prose names the enforcing gate, so the two cannot drift apart",
-          "disposition": "tested",
-          "evidence": "shared/tests/test_review_cascade_decoupled.py::test_doc_names_the_enforcing_gate PASSED"
-        },
-        {
-          "behavior": "close-missing still writes a COMPLETE record in one command",
-          "disposition": "tested",
-          "evidence": "shared/tests/test_record_review_pass_cli.py::test_close_missing_closes_every_outstanding_type PASSED"
-        },
-        {
-          "behavior": "close-missing no longer green-lights a medium+ run (AC10 narrowing, operator-ruled)",
-          "disposition": "tested",
-          "evidence": "shared/tests/test_record_review_pass_cli.py::test_close_missing_does_not_satisfy_the_floor_at_medium PASSED"
-        },
-        {
-          "behavior": "close-missing still unblocks a small run",
-          "disposition": "tested",
-          "evidence": "shared/tests/test_record_review_pass_cli.py::test_close_missing_still_unblocks_a_small_run PASSED"
-        },
-        {
-          "behavior": "whether a given diff DESERVES more review than the floor requires",
-          "disposition": "untestable",
-          "evidence": "reason_code is a separate key below; judging sufficiency of review depth against a diff is reading comprehension with no oracle. The floor asserts that a review happened, never that it was good enough - which is why it is a floor and not a verdict.",
-          "reason_code": "requires-manual-visual-judgment"
+          "evidence": "test_silent_revert.py::test_a_clean_branch_passes PASSED"
         }
       ],
       "counts": {
-        "testable": 19,
-        "tested": 19,
-        "untestable": 1,
+        "testable": 13,
+        "tested": 13,
+        "untestable": 0,
         "untested_testable": 0
       },
       "enumeration_basis": {
-        "acs": 3,
-        "covered_acs": 3
+        "acs": 5,
+        "covered_acs": 5
       }
-    }
+    },
+    "degraded": [
+      "Review passes 'code' and 'doubt' recorded not_run: subagent review is disabled for this session by operator configuration. External code review ran instead (4 findings, all addressed) alongside two empirical probes on real repository history.",
+      "'plan' recorded not_run: external plan review is a medium+ phase and this run is small.",
+      "External code review delivered 1 of 2 legs: the Gemini leg returned an empty reply and was recorded status=degraded by the classifier shipped in #473. The GPT leg delivered a complete review whose four findings drove the final implementation.",
+      "The FIRST implementation of this check was invalidated by its own probe before shipping: walking every merge in history reported 889 files for a demonstrably clean merge and took over ten minutes. Scoped to the branch's own merges (<default>..HEAD) it reports 0 files in 0.0s for that same merge."
+    ]
   },
   "coverage": {
     "total": 80.2,

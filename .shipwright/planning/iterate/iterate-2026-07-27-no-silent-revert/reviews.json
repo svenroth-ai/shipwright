@@ -1,0 +1,103 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-07-27-no-silent-revert",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-07-27T19:43:50.863517+00:00",
+      "disposition": null,
+      "recorded_by": "orchestrator",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-07-27T19:43:50.969326+00:00",
+      "disposition": "External plan review is a medium+ phase; this run is small. The design was not speculative: it was derived from a reproduced failure (#463) and validated against real repo history before implementation.",
+      "recorded_by": "orchestrator",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "code": {
+      "review_type": "code",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-07-27T19:43:51.080398+00:00",
+      "disposition": "Subagent review is disabled for this session by operator configuration. A full external code review ran instead (4 findings, all addressed: octopus parents, indeterminate-base skip, whitespace normalisation, and a test that did not exercise its own name).",
+      "recorded_by": "orchestrator",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-07-27T19:43:51.178213+00:00",
+      "disposition": "Same rule as the code pass. The adversarial function was carried by the external review plus two empirical probes on real repository history, one of which invalidated the first algorithm entirely (889 false positives on a clean merge).",
+      "recorded_by": "orchestrator",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 4,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "spec",
+          "file": "shared/scripts/tools/verifiers/silent_revert.py:124-129",
+          "line": null,
+          "finding": "The line-set comparison flags ordinary edits to pre-existing lines, contrary to AC (C). For example, if the common ancestor contains `old`, default changes it to `new`, and the branch later changes that same line to `revised`, `new` is treated as “gained” and then missing from `HEAD`. This is a replacement/edit of an existing line, not necessarily discarded newly merged work.",
+          "suggestion": "Distinguish pure additions on the merged-in side from replacements of lines present in the common ancestor (for example, using zero-context diff hunks and excluding additions in replacement hunks). Add a test where both sides edit the same ancestor line and the branch’s resolved value must not be reported.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "spec",
+          "file": "shared/scripts/tools/verifiers/silent_revert.py:112-119",
+          "line": null,
+          "finding": "Failure to resolve the merge base, or failure to diff the merged-in parent against it, is silently converted into “no dropped lines.” A shallow or incomplete repository can resolve `main` and contain the merge commit but lack the merge base; this code `continue`s and `check_no_silent_revert` returns a normal successful “nothing ... is missing” result. That violates AC (E): an unresolvable base must be a visible `SKIP`, never a silent pass.",
+          "suggestion": "Propagate an indeterminate/error status from `_integration_merges`/`dropped_lines` to `check_no_silent_revert`, and return `Severity.SKIPPED` with an explicit comparison-not-made detail whenever a relevant merge base or diff cannot be resolved.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": "shared/scripts/tools/verifiers/silent_revert.py:83-88",
+          "line": null,
+          "finding": "Only the second parent of a merge commit is considered. In a valid octopus merge, the default-branch parent can be third or later (for example, `git merge another-topic main`), so the default-branch integration is ignored and its dropped content is not checked. This does not satisfy “for each merge this branch performed of the default branch.”",
+          "suggestion": "Inspect every non-first parent that is an ancestor of the default branch, and compare each applicable merged-in parent against the first parent/common ancestor. Add a test with an octopus merge where `main` is not parent two.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "test",
+          "file": "shared/tests/test_silent_revert.py:128-141",
+          "line": null,
+          "finding": "The test labeled as editing a line main also changed does not exercise that condition: it changes `bravo` only on the branch after main added `THEIR LINE`. The current implementation passes this test while still falsely reporting the same-line replacement case prohibited by AC (C).",
+          "suggestion": "Create a base line changed differently by default and the branch, merge default, retain the branch’s resolved edit, and assert `dropped_lines(...) == {}`. Also add a shallow/incomplete-history test asserting visible `skipped` behavior for an unresolvable merge base.  Overall assessment: ship-with-fixes. The core motivating overwrite case is detected, but the implementation currently violates the ordinary-edit and visible-SKIP acceptance criteria and has an integration-parent bypass. SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-07-27T19:43:50.761445+00:00",
+      "disposition": null,
+      "recorded_by": "orchestrator",
+      "parse_status": "partial",
+      "raw_excerpt": "[gemini] , list)` is `False`, and it returns `[]`. That behaves correctly.\n\nLet's look at error handling in `declared_removals`:\n```python\ndef declared_removals(project_root) -> list[dict]:\n    import json\n    path = Path(project_root) / \"shipwright_test_results.json\"\n    try:\n        data = json.loads(path.read_text(encoding=\"utf-8\"))\n    except (OSError, json.JSONDecodeError):\n        return []\n```\nIf we return `[]` when the file is missing/broken, that's fail-closed (removals are not excused). This checks out.\n\nLet's reconsider the multiple integration merges\n\n[openai] - Category: spec\n- Severity: medium\n- File: `shared/scripts/tools/verifiers/silent_revert.py:124-129`\n- Finding: The line-set comparison flags ordinary edits to pre-existing lines, contrary to AC (C). For example, if the common ancestor contains `old`, default changes it to `new`, and the branch later changes that same line to `revised`, `new` is treated as “gained” and then missing from `HEAD`. This is a replacement/edit of an existing line, not necessarily discarded newly merged work.\n- Suggestion: Distinguish pure additions on the merged-in side from replacements of lines present in the common ancestor (for example, using zero-context diff hunks and excluding additions in replacement hunks). Add a test where both sides edit the same ancestor line and the branch’s resolved value must not be reported.\n\n- Category: spec\n- Severity: medium\n- File: `shared/scripts/tools/verifiers/silent_revert.py:112-119`\n- Finding: Failure to resolve the merge base, or failure to diff the merged-in parent against it, is silently converted into “no dropped lines.” A shallow or incomplete repository can resolve `main` and contain the merge commit but lack the merge base; this code `continue`s and `check_no_silent_revert` returns a normal successful “nothing ... is missing” result. That violates AC (E): an unresolvable base must be a visible `SKIP`, never a silent pass.\n- Suggestion: Propagate an indeterminate/error status from `_integration_merges`/`dropped_lines` to `check_no_silent_revert`, and return `Severity.SKIPPED` with an explicit comparison-not-made detail whenever a relevant merge base or diff cannot be resolved.\n\n- Category: edge-case\n- Severity: low\n- File: `shared/scripts/tools/verifiers/silent_revert.py:83-88`\n- Finding: Only the second parent of a merge commit is considered. In a valid octopus merge, the default-branch parent can be third or later (for example, `git merge another-topic main`), so the default-branch integration is ignored and its dropped cont […truncated]"
+    }
+  }
+}
