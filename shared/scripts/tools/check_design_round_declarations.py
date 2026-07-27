@@ -56,8 +56,10 @@ def discover_rounds(project_root, run_id) -> list[str]:
     named ``...round2 (1).md``), and an empty glob resolved to PASS. Three
     processed rounds could therefore finalize clean.
 
-    A baseline is written by the round itself, under this run's identity, in a
-    tracked directory — so a round that ran cannot fail to be seen here.
+    Returns ``(scopes, problems)``. A baseline is written by the round itself,
+    under this run's identity, in a tracked directory — so a round that ran
+    cannot fail to be seen here, and a damaged one is reported rather than
+    silently dropped (a dropped baseline IS an invisible round).
 
     Scoped to ``run_id``, which also fixes the multi-session false failure: the
     design loop is explicitly resumable, so rounds accumulate across sessions,
@@ -66,6 +68,13 @@ def discover_rounds(project_root, run_id) -> list[str]:
     """
     return discover_baseline_scopes(
         declaration_dir(project_root), run_id=run_id, phase=_DESIGN_PHASE)
+
+
+def _rounds_and_problems(args, project_root) -> tuple[list[str], list[dict]]:
+    """Explicit ``--round`` values win; otherwise discover, surfacing damage."""
+    if args.rounds:
+        return args.rounds, []
+    return discover_rounds(project_root, args.run_id)
 
 
 def _build_parser() -> argparse.ArgumentParser:
@@ -86,12 +95,11 @@ def main(argv=None) -> int:
     args = _build_parser().parse_args(argv)
     project_root = Path(args.project_root).resolve()
 
-    rounds = args.rounds or discover_rounds(project_root, args.run_id)
+    rounds, all_problems = _rounds_and_problems(args, project_root)
     directory = declaration_dir(project_root)
 
     declared: list[str] = []
     undeclared: list[str] = []
-    all_problems: list[dict] = []
     for scope in rounds:
         record, problems = find_declaration(
             directory, run_id=args.run_id, phase=_DESIGN_PHASE, scope=scope)
@@ -106,7 +114,8 @@ def main(argv=None) -> int:
         # meant to buy: an accurate picture of what each round decided.
         print(json.dumps({
             "success": False, "error": "declaration_damaged",
-            "detail": "repair these declaration files before finalizing",
+            "detail": ("repair these declaration/baseline files before "
+                       "finalizing — damage is not the same as absence"),
             "problems": all_problems,
         }, indent=2))
         return 2

@@ -86,7 +86,7 @@ def test_rounds_are_discovered_from_the_baselines_the_rounds_recorded(project, c
     _round_file(project, 1)
     _round_file(project, 2)
     capsys.readouterr()
-    assert discover_rounds(project, RUN) == ["round-1", "round-2"]
+    assert discover_rounds(project, RUN) == (["round-1", "round-2"], [])
 
 
 def test_rounds_from_another_run_are_not_this_run_s(project, capsys):
@@ -94,11 +94,25 @@ def test_rounds_from_another_run_are_not_this_run_s(project, capsys):
     _round_file(project, 1, run_id="EARLIER-SESSION")
     _round_file(project, 2)
     capsys.readouterr()
-    assert discover_rounds(project, RUN) == ["round-2"]
+    assert discover_rounds(project, RUN) == (["round-2"], [])
 
 
 def test_no_baselines_means_no_rounds(project):
-    assert discover_rounds(project, RUN) == []
+    assert discover_rounds(project, RUN) == ([], [])
+
+
+def test_a_damaged_baseline_blocks_finalization(project, capsys):
+    """A round whose baseline is damaged must not simply vanish from the gate."""
+    from lib.requirement_impact_baseline import BASELINE_SUBDIR
+    directory = declaration_dir(project) / BASELINE_SUBDIR
+    directory.mkdir(parents=True, exist_ok=True)
+    (directory / "x__design__round-1__deadbeef.json").write_text(
+        "{broken", encoding="utf-8")
+
+    code, payload = _check(project, capsys)
+
+    assert code == 2
+    assert payload["error"] == "declaration_damaged"
 
 
 # --------------------------------------------------------------------------

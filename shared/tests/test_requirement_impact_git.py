@@ -209,8 +209,8 @@ def test_design_round_works_before_the_first_commit(tmp_path, capsys):
 ])
 def test_free_text_fields_must_stay_one_line(repo, capsys, flag, value):
     """A record meant to be one-line greppable must not accept a wall of text."""
-    args = ["--phase", "build", "--impact", "none", "--reason", "ok",
-            "--worktree", "--scope", "01-auth"]
+    args = ["--phase", "design", "--impact", "none", "--reason", "ok",
+            "--worktree", "--scope", "round-1"]
     # Replace the default for whichever flag this case is exercising.
     if flag in args:
         args[args.index(flag) + 1] = value

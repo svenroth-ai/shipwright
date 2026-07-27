@@ -321,5 +321,10 @@
     "measured_tier": "repo",
     "source": "combined coverage.xml (all plugins + shared + integration)",
     "measured_at": "2026-07-04T00:00:00Z"
+  },
+  "source_state": {
+    "run_id": "iterate-2026-07-27-requirement-writeback-loop",
+    "commit": "5bfca2f74abee1c3df1151e388d2828755581698",
+    "dirty": true
   }
 }

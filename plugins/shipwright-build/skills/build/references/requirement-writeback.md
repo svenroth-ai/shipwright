@@ -72,6 +72,12 @@ uv run "{shared_root}/scripts/tools/record_requirement_impact.py" \
 `--impact modify` is refused unless a `.shipwright/planning/**/spec.md` was
 actually edited, and `--impact none` is refused without a one-line reason.
 
+The evidence mode belongs to the **phase**, not to the flags you happen to pass:
+a build section must use `--base-ref/--head-ref`, and the range must be exactly
+one commit (its own). A wider range containing some unrelated requirement edit
+would otherwise satisfy a behaviour-affecting declaration this section never
+earned; `--worktree` is the design phase's mode and is refused here.
+
 Then verify every changed file is accounted for:
 
 ```bash

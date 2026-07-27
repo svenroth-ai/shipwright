@@ -114,9 +114,13 @@ def test_build_section_uses_a_committed_range(repo):
 
 
 def test_attributed_extra_is_recorded_against_the_section(repo):
+    _write(repo, "src/lib/http.py", "def get(): return 'retried'\n")
+    _git(repo, "add", "-A")
+    _git(repo, "commit", "-qm", "section 01-auth")
+
     rc = _run(repo, "--phase", "build", "--scope", "01-auth",
               "--impact", "none", "--reason", "section matched spec and mockup",
-              "--worktree",
+              "--base-ref", "HEAD~1", "--head-ref", "HEAD",
               "--extra", "src/lib/http.py=section needed a shared retry helper")
 
     assert rc == 0
@@ -127,11 +131,13 @@ def test_attributed_extra_is_recorded_against_the_section(repo):
 
 def test_contradiction_decision_is_recorded(repo):
     """Part (2): stopping is only useful if the decision is written down."""
-    _snapshot(repo, "build", "01-auth")
     _write(repo, SPEC, "# Spec\n\n| FR-01.05 | matches the mockup now |\n")
+    _git(repo, "add", "-A")
+    _git(repo, "commit", "-qm", "section 01-auth")
 
     rc = _run(repo, "--phase", "build", "--scope", "01-auth",
-              "--impact", "modify", "--fr", "FR-01.05", "--worktree",
+              "--impact", "modify", "--fr", "FR-01.05",
+              "--base-ref", "HEAD~1", "--head-ref", "HEAD",
               "--contradiction", "operator chose the mockup; requirement corrected")
 
     assert rc == 0
@@ -197,7 +203,8 @@ def test_bad_vocabulary_exits_1_with_structured_json(repo, capsys, flag, value, 
 
 def test_extra_escaping_project_root_is_rejected(repo, capsys):
     rc = _run(repo, "--phase", "build", "--scope", "01-auth",
-              "--impact", "none", "--reason", "ok", "--worktree",
+              "--impact", "none", "--reason", "ok",
+              "--base-ref", "HEAD~1", "--head-ref", "HEAD",
               "--extra", "../../../etc/passwd=nope")
 
     assert rc == 1
@@ -210,10 +217,15 @@ def test_extra_escaping_project_root_is_rejected(repo, capsys):
 # --------------------------------------------------------------------------
 
 def test_record_round_trips_through_the_reader(repo):
+    _write(repo, "src/app.py", "print('section work')\n")
+    _git(repo, "add", "-A")
+    _git(repo, "commit", "-qm", "section 01-auth")
+
     _run(repo, "--phase", "design", "--scope", "round-1",
          "--impact", "none", "--reason", "colour only", "--worktree")
     _run(repo, "--phase", "build", "--scope", "01-auth",
-         "--impact", "none", "--reason", "matched", "--worktree")
+         "--impact", "none", "--reason", "matched",
+         "--base-ref", "HEAD~1", "--head-ref", "HEAD")
 
     records = _decls(repo)
     assert {(r["phase"], r["scope"]) for r in records} == \
@@ -237,3 +249,47 @@ def test_rerecording_the_same_identity_overwrites_in_place(repo):
 
     (record,) = _decls(repo)
     assert record["reason"] == "corrected"
+
+
+# --------------------------------------------------------------------------
+# The evidence mode belongs to the PHASE, not to the caller's argv
+# --------------------------------------------------------------------------
+
+def test_a_design_declaration_may_not_use_a_committed_range(repo, capsys):
+    """Otherwise any historical spec edit satisfies this round's declaration."""
+    rc = _run(repo, "--phase", "design", "--scope", "round-1",
+              "--impact", "none", "--reason", "ok",
+              "--base-ref", "HEAD~1", "--head-ref", "HEAD")
+
+    assert rc == 1
+    assert json.loads(capsys.readouterr().out)["error"] == \
+        "requirement_impact_wrong_evidence_mode"
+
+
+def test_a_build_declaration_may_not_use_the_worktree(repo, capsys):
+    """A section HAS a commit; judging it against uncommitted state is not it."""
+    rc = _run(repo, "--phase", "build", "--scope", "01-auth",
+              "--impact", "none", "--reason", "ok", "--worktree")
+
+    assert rc == 1
+    assert json.loads(capsys.readouterr().out)["error"] == \
+        "requirement_impact_wrong_evidence_mode"
+
+
+def test_a_build_range_wider_than_one_commit_is_rejected(repo, capsys):
+    """An older/broader range containing some spec edit must not satisfy modify."""
+    _write(repo, SPEC, "# Spec\n\n| FR-01.05 | v2 |\n")
+    _git(repo, "add", "-A")
+    _git(repo, "commit", "-qm", "an earlier commit touching the spec")
+    _write(repo, "src/app.py", "print('section work only')\n")
+    _git(repo, "add", "-A")
+    _git(repo, "commit", "-qm", "section 01-auth")
+
+    rc = _run(repo, "--phase", "build", "--scope", "01-auth",
+              "--impact", "modify", "--fr", "FR-01.05",
+              "--base-ref", "HEAD~2", "--head-ref", "HEAD")
+
+    assert rc == 1
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["error"] == "requirement_impact_evidence_unusable"
+    assert "more than one commit" in payload["detail"]

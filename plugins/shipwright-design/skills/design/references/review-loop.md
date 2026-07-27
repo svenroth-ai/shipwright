@@ -208,6 +208,7 @@ Where `{shared_root}` = `{plugin_root}/../../shared`.
    | `requirement_impact_requires_fr` / `_malformed_fr` | Name the real FR id(s). |
    | `requirement_impact_evidence_unusable` | The comparison boundary was wrong (bad ref, or `--worktree` combined with a range). |
    | `requirement_impact_no_baseline` | Step 1's snapshot was skipped — take it, then re-declare. |
+   | `requirement_impact_wrong_evidence_mode` | A design round is always `--worktree`; a committed range is the build phase's mode. |
 
    > **Why the baseline matters.** Without it the check was satisfiable for free.
    > Nothing in the pipeline commits before the build phase, so every `spec.md`

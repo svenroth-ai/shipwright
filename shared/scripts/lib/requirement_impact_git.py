@@ -153,7 +153,7 @@ def _result(source: str, detail: str = "", buckets=None, extra_changed=(),
 
 
 def changed_paths(project_root, *, base_ref=None, head_ref=None,
-                  worktree: bool = False) -> dict:
+                  worktree: bool = False, single_commit: bool = False) -> dict:
     """Derive the changed-path set for a declaration's scope.
 
     Two modes, matching the two call sites:
@@ -176,7 +176,8 @@ def changed_paths(project_root, *, base_ref=None, head_ref=None,
             return _result(SOURCE_SKIPPED, "not a git repository")
         prefix = _project_prefix(root)
         return (_worktree_paths(root, prefix) if worktree
-                else _range_paths(root, base_ref, head_ref, prefix))
+                else _range_paths(root, base_ref, head_ref, prefix,
+                                  single_commit=single_commit))
     except _GitUnavailable as exc:
         return _result(SOURCE_SKIPPED, f"git unavailable: {exc}")
     except _GitBroke as exc:
@@ -239,7 +240,8 @@ def _listed_paths(stdout: str, prefix: str) -> list[str]:
     ]
 
 
-def _range_paths(root: Path, base_ref, head_ref, prefix: str = "") -> dict:
+def _range_paths(root: Path, base_ref, head_ref, prefix: str = "",
+                 single_commit: bool = False) -> dict:
     if not base_ref or not head_ref:
         return _result(SOURCE_ERROR,
                        "either --worktree or both --base-ref and --head-ref "
@@ -255,6 +257,16 @@ def _range_paths(root: Path, base_ref, head_ref, prefix: str = "") -> dict:
             f"--base-ref {base_ref!r} and --head-ref {head_ref!r} both resolve to "
             f"{base_sha[:8]} — an empty range would let any declaration pass",
         )
+    if single_commit and not _is_parent(root, base_sha, head_sha):
+        # A section is answerable for ONE commit. A wider range containing some
+        # unrelated requirement edit would otherwise satisfy a behaviour-
+        # affecting declaration the section's own work never earned.
+        return _result(
+            SOURCE_ERROR,
+            f"{base_ref}..{head_ref} spans more than one commit — a build "
+            "section is judged against its own commit, so --base-ref must be "
+            "--head-ref's parent (normally HEAD^ and HEAD)",
+        )
 
     diff = _run(root, ["diff", "--name-status", "-z", base_ref, head_ref, "--"])
     if diff.returncode != 0:
@@ -262,6 +274,14 @@ def _range_paths(root: Path, base_ref, head_ref, prefix: str = "") -> dict:
     return _result(SOURCE_GIT, f"{base_ref}..{head_ref}",
                    parse_name_status(diff.stdout, prefix),
                    base_sha=base_sha, head_sha=head_sha)
+
+
+def _is_parent(root: Path, base_sha: str, head_sha: str) -> bool:
+    """True iff ``base_sha`` is a parent of ``head_sha``."""
+    result = _run(root, ["rev-parse", f"{head_sha}^@"])
+    if result.returncode != 0:
+        return False
+    return base_sha in result.stdout.split()
 
 
 def _stderr(result) -> str:

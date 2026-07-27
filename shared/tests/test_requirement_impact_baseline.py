@@ -161,10 +161,27 @@ def test_round_registry_lists_this_run_and_phase_only(tmp_path):
         write_baseline(_decl_dir(tmp_path), run_id=run_id, phase=phase,
                        scope=scope, project_root=tmp_path)
 
-    assert discover_baseline_scopes(_decl_dir(tmp_path), run_id="r",
-                                    phase="design") == ["round-1", "round-2"]
+    scopes, problems = discover_baseline_scopes(_decl_dir(tmp_path), run_id="r",
+                                                phase="design")
+    assert scopes == ["round-1", "round-2"]
+    assert problems == []
 
 
 def test_round_registry_is_empty_when_nothing_snapshotted(tmp_path):
     assert discover_baseline_scopes(_decl_dir(tmp_path), run_id="r",
-                                    phase="design") == []
+                                    phase="design") == ([], [])
+
+
+def test_a_damaged_baseline_is_reported_not_silently_dropped(tmp_path):
+    """A dropped baseline IS an invisible round — the exact failure the gate
+    exists to catch, reintroduced one level down."""
+    directory = _decl_dir(tmp_path) / BASELINE_SUBDIR
+    directory.mkdir(parents=True)
+    (directory / "r__design__round-1__deadbeef.json").write_text(
+        "{broken", encoding="utf-8")
+
+    scopes, problems = discover_baseline_scopes(_decl_dir(tmp_path), run_id="r",
+                                                phase="design")
+
+    assert scopes == []
+    assert len(problems) == 1 and "unreadable" in problems[0]["error"]

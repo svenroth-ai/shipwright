@@ -115,6 +115,36 @@ def _build_parser() -> argparse.ArgumentParser:
     return parser
 
 
+def _evidence_mode_error(args) -> dict | None:
+    """Each phase has exactly one legitimate evidence boundary.
+
+    A **design** round has no commit, so it is judged against the baseline it
+    snapshotted (`--worktree`). A **build** section has one, so it is judged
+    against that commit and nothing wider — an older or broader range containing
+    some unrelated requirement edit would otherwise satisfy `--impact modify`
+    while the section itself touched no requirement.
+    """
+    if args.phase == "design" and not args.worktree:
+        return {
+            "error": "requirement_impact_wrong_evidence_mode",
+            "detail": (
+                "a design round is judged against the baseline it snapshotted, "
+                "so it must use --worktree. A committed range would let any "
+                "historical spec edit satisfy this round's declaration."
+            ),
+        }
+    if args.phase == "build" and args.worktree:
+        return {
+            "error": "requirement_impact_wrong_evidence_mode",
+            "detail": (
+                "a build section is judged against its own commit, so it must "
+                "use --base-ref/--head-ref (normally HEAD^ and HEAD, run after "
+                "the section commit)."
+            ),
+        }
+    return None
+
+
 def _fail(payload: dict) -> int:
     print(json.dumps({"success": False, **payload}, indent=2))
     return 1
@@ -140,6 +170,14 @@ def main(argv=None) -> int:
             "detail": "--worktree and --base-ref/--head-ref are mutually exclusive.",
         })
 
+    # The evidence mode belongs to the PHASE, not to the caller's argv. Leaving
+    # it free let a design round skip its baseline by naming any historical
+    # range that happened to contain a spec edit — the boundary defeated by flag
+    # choice rather than by argument.
+    mode_error = _evidence_mode_error(args)
+    if mode_error is not None:
+        return _fail(mode_error)
+
     try:
         extras = normalize_extras(args.extras)
     except ValueError as exc:
@@ -162,6 +200,7 @@ def main(argv=None) -> int:
     evidence = changed_paths(
         project_root,
         base_ref=args.base_ref, head_ref=args.head_ref, worktree=args.worktree,
+        single_commit=(args.phase == "build"),
     )
     # A bad ref is a caller mistake, not an unavailable environment. Letting it
     # degrade into "check skipped" is exactly how a typo would silently disable
@@ -174,7 +213,7 @@ def main(argv=None) -> int:
 
     changed = evidence["changed"]
     baseline_specs = None
-    if args.worktree and is_behavior_affecting(args.impact):
+    if args.phase == "design" and is_behavior_affecting(args.impact):
         # A worktree diff answers "what is uncommitted", which in the standard
         # pipeline (nothing commits before build) lists every untracked spec the
         # project phase wrote — so ANY modify passed on a spec nobody edited.

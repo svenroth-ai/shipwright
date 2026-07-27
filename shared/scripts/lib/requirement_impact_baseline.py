@@ -129,7 +129,8 @@ def changed_specs_since(baseline: dict, project_root) -> list[str]:
     return sorted(changed)
 
 
-def discover_baseline_scopes(declaration_directory, *, run_id, phase) -> list[str]:
+def discover_baseline_scopes(declaration_directory, *, run_id,
+                             phase) -> tuple[list[str], list[dict]]:
     """Every scope that snapshotted a baseline under this run and phase.
 
     This is the completion gate's round registry. It is written by the phase
@@ -140,17 +141,25 @@ def discover_baseline_scopes(declaration_directory, *, run_id, phase) -> list[st
     """
     directory = baseline_dir(declaration_directory)
     if not directory.is_dir():
-        return []
+        return [], []
     scopes: list[str] = []
+    problems: list[dict] = []
     for path in sorted(directory.glob("*.json")):
         try:
             data = json.loads(path.read_text(encoding="utf-8"))
-        except (OSError, ValueError, UnicodeDecodeError):
+        except (OSError, ValueError, UnicodeDecodeError) as exc:
+            # Loud, not skipped: a round whose baseline is damaged would
+            # otherwise vanish from the registry and finalize clean — the very
+            # "silent round" the gate exists to catch.
+            problems.append({"path": str(path), "error": f"unreadable: {exc}"})
             continue
         if not isinstance(data, dict):
+            problems.append({"path": str(path), "error": "not a JSON object"})
             continue
         if data.get("run_id") == run_id and data.get("phase") == phase:
             scope = data.get("scope")
             if isinstance(scope, str) and scope.strip():
                 scopes.append(scope)
-    return sorted(set(scopes))
+            else:
+                problems.append({"path": str(path), "error": "no usable scope"})
+    return sorted(set(scopes)), problems
