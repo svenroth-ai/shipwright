@@ -1,12 +1,11 @@
 # Project Activity Dashboard
-> Updated: 2026-07-26 07:08 UTC | Session: 34c1dbf5-2b48-4645-a5d3-6f478e843a0b | Run: iterate-2026-07-26-review-model-terra
+> Updated: 2026-07-26 23:36 UTC | Session: 170bb5a6-5652-4115-abe3-004f2d2a8ed9 | Run: iterate-2026-07-23-req3-phase2-content-mono
 
-## Recent Changes (360 iterations)
+## Recent Changes (359 iterations)
 
 | Type | Description | Tests | Commit | FRs | Date |
 |------|-------------|-------|--------|-----|------|
-| change | external review GPT default -> gpt-5.6-terra | 5548/5559 |  | tooling | 2026-07-26 |
-| change | Fix finalize_security_compliance (Step 7.5) leaving shipwright_events.jsonl (plus compliance config and a direct triage.jsonl append) dirty after committing. The finalizer now stages the full compliance write-set update_compliance writes, via an explicit FINALIZE_ARTIFACTS list + a real-invocation drift-guard test, mirroring iterate F6. Corrects the false 'idempotent no-op on re-run' claim in the docstring and SKILL.md. | 0/0 |  | tooling | 2026-07-24 |
+| change | iterate: REQ-3 Phase 2 content round - all 18 requirements walked or minted | 0/0 |  | FR-01.01, FR-01.02, FR-01.03 | 2026-07-26 |
 | feature | REQ-3 Phase 1: shared requirement-elicitation method (grilling + domain-modeling) + CONTEXT.md format + FR-01.16 mint | 4946/4961 |  |  | 2026-07-23 |
 | bug | design verifier C1 skips projects that never ran the design phase | 26/26 |  | compliance | 2026-07-23 |
 | change | First-class tests.skipped tracking: --tests-skipped flag + shared tests_block SSOT; D4 keys on genuine failures (charitable when absent) and is re-enabled; test-evidence + dashboard disclose skips; apply_amendments deep-merge opt-in. | 6230/6242 (12 skipped) |  | FR-01.10 | 2026-07-23 |
@@ -367,7 +366,7 @@
 | change | post-adoption framework cleanup (Sub-1A through 1D) | 225/225 | 3db485b | FR-01.01, FR-01.02, FR-01.03 | 2026-05-02 |
 
 ## Test Status
-Last run: 2026-07-26 | Unit: 5548/5559 | Integration: 417/417 | Smoke: not_run | (iterate)
+Last run: 2026-07-27 | Unit: 9891/9891 | Integration: 417/417 | Smoke: not_run | (iterate)
 
 ## Pipeline
 

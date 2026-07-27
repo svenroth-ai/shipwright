@@ -1,37 +1,31 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-07-26-review-model-terra",
-    "date": "2026-07-26",
+    "run_id": "iterate-2026-07-23-req3-phase2-content-mono",
+    "date": "2026-07-27",
     "unit": {
       "status": "passed",
-      "passed": 5548,
-      "total": 5559,
-      "skipped": 11,
-      "note": "Canonical F0 suite runner (run_test_suite.py): 18/18 units PASS in 1.8 min, no RACE warnings. The counts above are the separately measured shared/ blast radius — shared/tests 4948 passed / 11 skipped, shared/scripts/tools/tests 255 passed, shared/scripts/tests 345 passed. The diff touches only shared/config, shared/scripts and shared/tests. Skips are pre-existing environment gates that hard-fail in CI."
+      "passed": 9891,
+      "total": 9891
     },
     "integration": {
       "status": "passed",
       "passed": 417,
-      "total": 417,
-      "note": "integration-tests/ run separately for the count; also PASS as a unit in the canonical F0 suite."
+      "total": 417
     },
     "pgtap": {
       "status": "not_run",
       "passed": 0,
-      "total": 0,
-      "note": "no DB surface"
+      "total": 0
     },
     "e2e": {
-      "status": "skipped",
+      "status": "not_run",
       "passed": 0,
-      "total": 0,
-      "note": "Phase matrix at small: E2E only if feature+UI or touches_io_boundary — neither applies. The F0.5 cli-surface probe below is the empirical end-to-end evidence."
+      "total": 0
     },
     "design_fidelity": {
-      "status": "skipped",
+      "status": "not_run",
       "passed": 0,
-      "total": 0,
-      "note": "no UI"
+      "total": 0
     },
     "smoke": {
       "status": "not_run"
@@ -39,62 +33,67 @@
     "degraded": [],
     "surface_verification": {
       "surface": "cli",
-      "runner": "uv run <scratchpad>/probe_terra.py",
+      "runner": "uv run pytest integration-tests/test_requirements_catalog_contract.py integration-tests/test_requirements_catalog_parsers.py integration-tests/test_fr_table_shape_convergence.py -q",
       "exit_code": 0,
-      "tests_run": 2,
-      "evidence_path": ".shipwright/runs/iterate-2026-07-26-review-model-terra/surface_verification.log",
-      "timestamp": "2026-07-26T06:55:29.241Z",
-      "note": "Live probe through the production code path: (1) resolve_model on the shipping config returns openai/gpt-5.6-terra; (2) that model answers a real OpenRouter call (PROBE_OK), proving account access — which the public model list alone does not prove. Synthetic prompt only, no repo content transmitted."
+      "tests_run": 23,
+      "evidence_path": "C:\\01_Development\\shipwright\\.worktrees\\req3-phase2-content-mono\\.shipwright\\runs\\iterate-2026-07-23-req3-phase2-content-mono\\surface_verification.log",
+      "timestamp": "2026-07-26T23:23:54.302Z",
+      "attempts": 1
     },
     "test_completeness": {
       "status": "complete",
       "behaviors": [
         {
-          "behavior": "llm_review.DEFAULT_MODELS and shared/config/external_review.json agree on every model key (new invariant introduced by this diff)",
+          "behavior": "the catalog carries 18 requirements, each with its own id, anchor, priority, basis and layers cell",
           "disposition": "tested",
-          "evidence": "shared/tests/test_llm_review.py::test_default_models_match_shipping_config PASSED — observed RED before the llm_review.py edit (real red-green, not assumed)"
+          "evidence": "test_requirements_catalog_contract.py::test_all_requirements_survive_with_unchanged_ids and ::test_every_requirement_has_an_explicit_anchor PASSED"
         },
         {
-          "behavior": "the OpenRouter GPT leg resolves to openai/gpt-5.6-terra from the shipping config",
+          "behavior": "both production parsers read the changed catalog and agree on the same id set",
           "disposition": "tested",
-          "evidence": "F0.5 cli-surface probe CHECK 1 PASS (resolve_model(openrouter_chatgpt) -> openai/gpt-5.6-terra), .shipwright/runs/iterate-2026-07-26-review-model-terra/surface_verification.log"
+          "evidence": "test_requirements_catalog_parsers.py::test_the_fr_table_reader_still_sees_every_requirement and ::test_the_heading_parser_sees_the_same_set PASSED"
         },
         {
-          "behavior": "openai/gpt-5.6-terra actually answers a live review call (the account has access to the model)",
+          "behavior": "every requirement keeps a resolving deep link from the traceability matrix",
           "disposition": "tested",
-          "evidence": "F0.5 cli-surface probe CHECK 2 PASS (live call via openrouter returned PROBE_OK), same log"
+          "evidence": "test_requirements_catalog_contract.py::test_every_rtm_deep_link_resolves_end_to_end PASSED after regenerating the matrix"
         },
         {
-          "behavior": "the shipping config still loads and exposes external_review / models / llm_client after the edit",
+          "behavior": "no criterion sentence carries a run id, a decision-record number, a path or a source filename",
           "disposition": "tested",
-          "evidence": "shared/tests/test_external_review_config.py::test_load_review_config_real_default PASSED"
+          "evidence": "test_requirements_catalog_contract.py forbidden-token scan over every (E) line PASSED"
         },
         {
-          "behavior": "resolve_model returns the config value and still honors the SHIPWRIGHT_REVIEW_MODEL_* env overrides",
+          "behavior": "the newly minted requirement carries its decided basis and layers, pinned per requirement rather than in aggregate",
           "disposition": "tested",
-          "evidence": "shared/tests/test_external_review_config.py — 13 resolve_model tests PASSED (defaults, env overrides, whitespace/empty fallback, invalid key)"
+          "evidence": "test_fr_table_shape_convergence.py::test_every_live_requirement_carries_its_decided_basis and ::test_the_migration_did_not_change_any_required_layers PASSED"
         },
         {
-          "behavior": "the direct (non-OpenRouter) OpenAI leg sends the configured chatgpt model to the API",
+          "behavior": "the elicitation module keeps every section and load-bearing sentence the catalog cites",
           "disposition": "tested",
-          "evidence": "shared/tests/test_llm_review.py::test_llm_review_openai_uses_max_completion_tokens PASSED — captures the outbound call built from the passed models dict"
+          "evidence": "test_requirement_elicitation_refs.py + test_requirement_elicitation_rigor.py PASSED (28 cases)"
         },
         {
-          "behavior": "the review-report header written by review_assistant_ui_plan.py names the current GPT model",
+          "behavior": "the glossary stays within its size ceiling and carries no legacy artifact path",
+          "disposition": "tested",
+          "evidence": "test_bloat_defense_artifacts.py::test_glossary_under_loc_limit and test_artifact_path_canon.py PASSED"
+        },
+        {
+          "behavior": "the acceptance criteria say what is true of the product",
           "disposition": "untestable",
-          "reason_code": "requires-external-nondeterministic-service",
-          "reason": "The header line is only emitted by main() after a live OpenRouter review completes; the tool is an ad-hoc one-off campaign driver (its own module docstring calls it 'not part of the pipeline canon') with no test harness and no fixture path that reaches the writer."
+          "reason_code": "requires-manual-visual-judgment",
+          "reason": "whether a sentence in business language faithfully describes a mechanism is a reading judgement, not an oracle. This is the round's own finding, recorded as FR-01.16 criterion 9 and as campaign decision D7: an LLM may adjudicate a mechanically raised flag, never raise one. Each criterion instead carries an enforcement classification in the AC evidence ledger, and the criteria that CAN be pinned are enumerated above."
         }
       ],
       "counts": {
-        "testable": 6,
-        "tested": 6,
+        "testable": 7,
+        "tested": 7,
         "untestable": 1,
         "untested_testable": 0
       },
       "enumeration_basis": {
-        "acs": 1,
-        "covered_acs": 1
+        "acs": 8,
+        "covered_acs": 8
       }
     }
   },

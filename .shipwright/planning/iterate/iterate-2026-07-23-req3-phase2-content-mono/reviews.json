@@ -1,0 +1,112 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-07-23-req3-phase2-content-mono",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-07-26T23:17:49.958641+00:00",
+      "disposition": null,
+      "recorded_by": "req3-phase2-walk",
+      "parse_status": "unstructured",
+      "raw_excerpt": "Self-review — REQ-3 Phase 2 content round (monorepo).\n\nScope match: the round walked all 18 requirements against the code and minted\nFR-01.17 and FR-01.18. Both mints were operator decisions and are now recorded\nin the iterate spec's Spec Impact section, which an external review correctly\nfound stale.\n\nCorrectness of the artifact under change: the catalog is consumed by two\nproduction parsers, the RTM generator and the compliance updater. All were run\nagainst the changed file — 23 catalog-contract tests and 417 integration tests\ngreen, and the RTM regenerated so all 18 requirements keep a resolving deep link.\n\nWhat I checked myself and found wrong, then fixed:\n- Nine ledger rows claimed \"tested\" on assumption rather than evidence; a\n  targeted test search corrected them and left exactly one honestly untested.\n- FR-01.16 criterion 5 was inherited unchanged and is untrue (nothing creates\n  the target project's domain glossary). Left standing as a carded promise,\n  knowingly, and stated as such.\n- Five FR-01.05 criteria carried no enforcement classification at all.\n- Seven bare prompt-only rows had reappeared after the 2026-07-25 sweep.\n- The glossary and the ledger header pointed at superseded/dismissed ids.\n- Two triage cards described the same mechanism in different words.\n\nKnown and deliberate: two forward-looking criteria in FR-01.16, both carded;\nglossary at 527 lines and the elicitation module at 409, both above the round's\nown convention and neither gated; FR-01.18 criterion 1 (same repo, same grade)\nis enforced by construction but has no test.\n\nRisk: none of this changes runtime behaviour. The executable changes are test\npins extended for the new requirement, and a regenerated compliance artifact.\n"
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-07-26T23:18:01.821438+00:00",
+      "disposition": "Plan review not re-run at finalization: the round's mini-plan was reviewed externally at intake on 2026-07-23 (GPT+Gemini, mode=iterate) and the plan did not change afterwards. The external pass that DID run at finalization is recorded under external_code against the current head, which is the review the constitution's review-cascade rule asks for on a changed diff.",
+      "recorded_by": "req3-phase2-walk",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "code": {
+      "review_type": "code",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-07-26T23:18:12.692718+00:00",
+      "disposition": "The code-reviewer subagent was not spawned: this session runs under an explicit operator instruction not to invoke subagents. The diff was instead reviewed by the external cascade against the current head (recorded under external_code, GPT returned five findings, all dispositioned) and by the self pass, and every executable line in it is a test pin verified by running the tests it pins. Recorded as not_run rather than claimed, per the rule that a pass which did not run says so with a reason.",
+      "recorded_by": "req3-phase2-walk",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-07-26T23:18:01.944380+00:00",
+      "disposition": "Adversarial pass is scoped by the constitution to changes touching risky ground - stored-data migrations, concurrency, or anything hard to undo. This round touches none: the executable delta is test-pin extensions plus a regenerated compliance artifact, and every other change is prose in tracked planning documents. Reverting it is a revert.",
+      "recorded_by": "req3-phase2-walk",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 5,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "spec",
+          "file": ".shipwright/planning/01-adopted/spec.md:30-31",
+          "line": null,
+          "finding": "The specification permits one pending ADD, `FR-01.17 — /shipwright-grade`, after its mint-or-fold decision. This change instead mints an unrelated `FR-01.17 — Independent re-check on the code host` and assigns `/shipwright-grade` the new ID `FR-01.18`. This both adds an unapproved capability and violates the specified next-free ID for the grade requirement.",
+          "suggestion": "Remove the independent-recheck FR from this iterate (or obtain and record a separate mint decision), and make the approved grade capability `FR-01.17`. Update the ID/count tests accordingly.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "spec",
+          "file": ".shipwright/planning/01-adopted/spec.md",
+          "line": 57,
+          "finding": "AC3 requires a catalog-wide, consumable by-product listing every acceptance criterion not proven by a test, with one row per unproven criterion. No such artifact is added in this diff; the change only adds catalog criteria and documentation/tests. The evidence ledger mentioned in the session log is also not added or updated here.",
+          "suggestion": "Add the test-completeness/backfill artifact, enumerate every catalog AC and its proof status, and include a concrete work-item row for every unproven AC. Add a mechanical test that validates the artifact covers all live criteria.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "spec",
+          "file": ".shipwright/planning/01-adopted/spec.md",
+          "line": 40,
+          "finding": "The new `C-02` constraint is outside this iterate’s explicitly stated scope: “Quality requirements and constraints (QR-01, C-01) — the round is about functional requirements.” Adding a new constraint is neither required to make the FR catalog complete nor within the approved MODIFY/ADD list.",
+          "suggestion": "Remove `C-02` from this change and, if it is a real product constraint, propose it through a separately scoped requirement/constraint iterate.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "test",
+          "file": "integration-tests/test_requirements_catalog_contract.py",
+          "line": 36,
+          "finding": "The updated contract test codifies the erroneous 18-row catalog and accepts `FR-01.18`, rather than testing the scope-approved catalog shape. Consequently it will pass when the unauthorized FR-01.17 and misnumbered grade row are present, masking rather than detecting the spec violation.",
+          "suggestion": "Keep the expected IDs aligned with the approved scope (`FR-01.01` through the approved `FR-01.17`) until a separately approved mint extends the catalog.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "test",
+          "file": "shared/tests/test_requirement_elicitation_rigor.py:31-129",
+          "line": null,
+          "finding": "The new rigor tests only search for selected prose substrings in the elicitation document. They do not validate the claimed acceptance-round outcome: that criteria have outcome coverage, that two operator-facing scenarios were recorded, that prompt-only claims are represented in the test-backfill output, or that all catalog requirements were actually walked. A document containing the phrases while the method is not followed would still pass.",
+          "suggestion": "Retain these drift tests, but add artifact-level validation for the required grill traces/evidence ledger and the AC-to-test completeness report, including coverage of every live FR and criterion.  Overall assessment: block. The change fills many criteria, but it omits the required unproven-criteria work list and introduces an unauthorized/misnumbered requirement, while also expanding into an out-of-scope constraint.",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-07-26T23:17:04.271967+00:00",
+      "disposition": null,
+      "recorded_by": "req3-phase2-walk",
+      "parse_status": "partial",
+      "raw_excerpt": "[gemini] \"` in lowercase?\nNo, the document has `\"What should this capability guarantee that it currently does not?\"`.\n\"should\" is lowercase. So `in body` matches. It is case-sensitive, and the sentence is `> **What should ...`.\nWait, in the document: `> **What should this capability guarantee that it currently does not?**`.\nIs \"should\" lowercase in the document? Yes. \"What should...\"\nSo it's fine.\n\nLet's look at:\n```python\ndef test_assumed_is_only_for_unobtainable_answers():\n...\n    body = MODULE.read_text(encoding=\"utf-8\")\n    lower = body.lower()\n    assert \"cannot be obtained\n\n[openai] - Category: spec  \n  Severity: high  \n  File: `.shipwright/planning/01-adopted/spec.md:30-31`  \n  Finding: The specification permits one pending ADD, `FR-01.17 — /shipwright-grade`, after its mint-or-fold decision. This change instead mints an unrelated `FR-01.17 — Independent re-check on the code host` and assigns `/shipwright-grade` the new ID `FR-01.18`. This both adds an unapproved capability and violates the specified next-free ID for the grade requirement.  \n  Suggestion: Remove the independent-recheck FR from this iterate (or obtain and record a separate mint decision), and make the approved grade capability `FR-01.17`. Update the ID/count tests accordingly.\n\n- Category: spec  \n  Severity: high  \n  File: `.shipwright/planning/01-adopted/spec.md:57`  \n  Finding: AC3 requires a catalog-wide, consumable by-product listing every acceptance criterion not proven by a test, with one row per unproven criterion. No such artifact is added in this diff; the change only adds catalog criteria and documentation/tests. The evidence ledger mentioned in the session log is also not added or updated here.  \n  Suggestion: Add the test-completeness/backfill artifact, enumerate every catalog AC and its proof status, and include a concrete work-item row for every unproven AC. Add a mechanical test that validates the artifact covers all live criteria.\n\n- Category: spec  \n  Severity: medium  \n  File: `.shipwright/planning/01-adopted/spec.md:40`  \n  Finding: The new `C-02` constraint is outside this iterate’s explicitly stated scope: “Quality requirements and constraints (QR-01, C-01) — the round is about functional requirements.” Adding a new constraint is neither required to make the FR catalog complete nor within the approved MODIFY/ADD list.  \n  Suggestion: Remove `C-02` from this change and, if it is a real product constraint, propose it through a separately scoped requirement/constraint iterate.\n\n- Category: test  \n  Severity: medium  \n  File: `integration-tests/tes […truncated]"
+    }
+  }
+}

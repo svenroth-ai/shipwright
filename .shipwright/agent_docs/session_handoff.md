@@ -1,41 +1,36 @@
----
-canon_generated: true
-run_id: "iterate-2026-07-26-review-model-terra"
-phase: "iterate"
-reason: "iterate: external review GPT default -> gpt-5.6-terra"
-timestamp: "2026-07-26T07:08:16.568574+00:00"
----
-
 # Session Handoff
 
-> Auto-generated 2026-07-26 07:08:16 UTC
+> Auto-generated 2026-07-26 23:36:39 UTC
 
 ## Session Info
 
-- **Session ID**: 34c1dbf5-2b48-4645-a5d3-6f478e843a0b
-- **Timestamp**: 2026-07-26 07:08:16 UTC
-- **Reason**: iterate: external review GPT default -> gpt-5.6-terra
+- **Session ID**: 170bb5a6-5652-4115-abe3-004f2d2a8ed9
+- **Timestamp**: 2026-07-26 23:36:39 UTC
+- **Reason**: iterate completion: iterate-2026-07-23-req3-phase2-content-mono
 
 ## Last Iterate
 
-- **Run ID**: iterate-2026-07-26-review-model-terra
-- **Date**: 2026-07-26T07:06:43.997342Z
+- **Run ID**: iterate-2026-07-23-req3-phase2-content-mono
+- **Date**: 2026-07-26T23:36:34.414046Z
 - **Type**: change
-- **Complexity**: small
-- **Branch**: iterate/review-model-terra
-- **ADR**: iterate-2026-07-26-review-model-terra
+- **Complexity**: large
+- **Branch**: iterate/req3-phase2-content-mono
+- **ADR**: iterate-2026-07-23-req3-phase2-content-mono
 - **Tests passed**: True
-- **Spec**: none — small complexity, no iterate spec file (Phase Matrix); spec impact NONE
+- **Spec**: .shipwright/planning/iterate/2026-07-23-req3-phase2-content-mono.md
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/review-model-terra
+- **Branch**: iterate/req3-phase2-content-mono
+- **Run ID**: iterate-2026-07-23-req3-phase2-content-mono
+- **Spec**: .shipwright/planning/iterate/2026-07-23-req3-phase2-content-mono.md
+- **Complexity**: medium
 - **External Review Marker**: missing
 
 ### Mandatory replay on Resume
 
 Before dispatching to the handoff's Remaining phase, run these if missing:
-- Finalization (F0–F11) after all mandatory phases pass
+- Step 4 — External LLM Review (marker missing/stale)
 
 ## Legacy build state
 
@@ -48,9 +43,9 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/review-model-terra
-- **Last Commit**: 5da96ebe chore(security): stage full compliance write-set in Step 7.5 finalizer (#434)
-- **Uncommitted Changes**: Yes
+- **Branch**: iterate/req3-phase2-content-mono
+- **Last Commit**: fe5be3c1 feat(spec): REQ-3 Phase 2 — every requirement now states what it guarantees
+- **Uncommitted Changes**: None
 
 ## Config Files to Read
 
@@ -65,17 +60,17 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 | Event | Type | Source | Date |
 |-------|------|--------|------|
-| evt-a5221116 | grade_snapshot | — | 2026-07-26 |
-| evt-0deef4c5 | grade_snapshot | — | 2026-07-26 |
-| evt-9508c7d4 | work_completed | iterate (external review GPT default -> gpt-5.6-terra) | 2026-07-26 |
-| evt-6788fc9e | grade_snapshot | — | 2026-07-24 |
-| evt-57b390e0 | work_completed | iterate (Fix finalize_security_compliance (Step 7.5) leaving shipwright_events.jsonl (plus compliance config and a direct triage.jsonl append) dirty after committing. The finalizer now stages the full compliance write-set update_compliance writes, via an explicit FINALIZE_ARTIFACTS list + a real-invocation drift-guard test, mirroring iterate F6. Corrects the false 'idempotent no-op on re-run' claim in the docstring and SKILL.md.) | 2026-07-24 |
+| evt-2055af94 | grade_snapshot | — | 2026-07-26 |
+| evt-ea7203ec | work_completed | iterate (iterate: REQ-3 Phase 2 content round - all 18 requirements walked or minted) | 2026-07-26 |
+| evt-6ff6084f | grade_snapshot | — | 2026-07-26 |
+| evt-bb7c91f1 | grade_snapshot | — | 2026-07-24 |
+| evt-17075aa5 | grade_snapshot | — | 2026-07-23 |
 
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 360
-- **Last iterate**: change — external review GPT default -> gpt-5.6-terra (2026-07-26)
+- **Total work events**: 359
+- **Last iterate**: change — iterate: REQ-3 Phase 2 content round - all 18 requirements walked or minted (2026-07-26)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
 ## Recent Decisions
