@@ -285,10 +285,32 @@ a GitHub Action post-merge regen (host-specific); untracking the snapshots (brea
 away is "shoot and forget": a Required Check can fail afterward and the PR sits
 BLOCKED, un-merged, red. F11's final step runs
 `shared/scripts/tools/watch_pr_delivery.py`, which polls
-`gh pr view --json state,mergeStateStatus,statusCheckRollup` until the PR is
+`gh pr view --json state,mergeStateStatus,statusCheckRollup,url,baseRefName` until
+the PR is
 `merged` (delivered), a Required Check fails (STOP — diagnose/fix/re-push/re-watch),
 the PR is closed, or the poll times out while pending (keep watching, not "done").
-A `needs:`-skipped Tier-1/2 `PR Review` counts as a pass. Companion F2 rule: the
+A `needs:`-skipped Tier-1/2 `PR Review` counts as a pass.
+
+**A pending verdict names its blockers
+(iterate-2026-07-27-name-the-blocker).** "Timed out" is not a cause. PR #439 sat
+green for ~25 minutes — ten successful check-runs, `PR Review` successful,
+auto-merge armed — while the watcher reported only that it had waited; the actual
+blocker was one unresolved review thread, which stops auto-merge on its own. When
+the watcher returns `pending` it now attaches a `blockers` block from
+`shared/scripts/lib/pr_blockers.py`, built from three sources: `mergeStateStatus`
+(already in the payload, previously read by nothing), the PR's review threads
+(one `gh api graphql` call), and the base branch's required contexts (`GET
+/repos/{o}/{r}/rules/branches/{b}` — readable without admin). The probe runs once
+on the way out, not per poll, so a 30-minute watch costs two extra API calls.
+
+Two properties matter more than the list itself. A source that cannot be read —
+an unreadable rules endpoint, a truncated thread page, a repository on classic
+branch protection rather than rulesets — lands in `blockers.unknown` with the
+reason, **never** in "nothing found"; and `blocking` is asserted only when the
+host itself says `BLOCKED`, because an unresolved thread only blocks where the
+repository requires conversation resolution. Terminal verdicts and exit codes
+(0 merged / 2 checks_failed / 3 closed / 4 pending-timeout) are unchanged — the
+probe does not run for them, since they already name their cause. Companion F2 rule: the
 agent-doc 600-char budget gate (`test_agent_doc_entry_rules`) lives in the
 iterate-plugin suite, OUTSIDE the `shared/tests` F0 run, so F2 mandates running it
 locally after writing the `## Architecture Updates` / `## Learnings` entry, before

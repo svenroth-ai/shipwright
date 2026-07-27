@@ -1,14 +1,14 @@
 # Triage Inbox
 
-> Auto-generated 2026-07-27T09:08:48.846142Z. Items waiting for triage decision.
+> Auto-generated 2026-07-27T12:52:40.120480Z. Items waiting for triage decision.
 > Promote via WebUI Triage tab (when v1b lands) or `shared/scripts/tools/triage_promote.py --id <id> --task-ref EXT:<ref>`.
 
 ## Status summary
 
-- Total: 416
-- Triage: 23 | Promoted: 1 | Dismissed: 391 | Snoozed: 1
+- Total: 419
+- Triage: 22 | Promoted: 1 | Dismissed: 395 | Snoozed: 1
 
-## Top 23 items (severity-sorted)
+## Top 22 items (severity-sorted)
 
 ### Source: analysis (1 item)
 
@@ -48,7 +48,18 @@
     ```
   - Promote: `triage_promote.py --id trg-2b5ca5f5 --task-ref EXT:<ref>`
 
-### Source: iterate (1 item)
+### Source: iterate (3 items)
+
+<a id="trg-a6616bbe"></a>
+- **Three finalization/delivery checks report a weaker signal than they can compute** `id=trg-a6616bbe | severity=medium | kind=improvement → P2/engineering`
+  - Three checks in the finalization / delivery path each already hold the information needed to name a cause, but report a…
+  - Promote: `triage_promote.py --id trg-a6616bbe --task-ref EXT:<ref>`
+
+<a id="trg-bd4e75a9"></a>
+- **Phase-canon C3 handoff freshness still keys on mtime** `id=trg-bd4e75a9 | severity=low | kind=improvement → P3/engineering`
+  - The F11 iterate freshness check moved off filesystem mtime to a content key in iterate-2026-07-27-name-the-blocker (it…
+  - Evidence: `shared/scripts/tools/verifiers/common.py`
+  - Promote: `triage_promote.py --id trg-bd4e75a9 --task-ref EXT:<ref>`
 
 <a id="trg-d1e466aa"></a>
 - **Retire the write-once v1 run-config fields (current_step / completed_steps)** `id=trg-d1e466aa | severity=low | kind=improvement → P3/engineering`
@@ -87,13 +98,7 @@
   - Evidence: `.shipwright/planning/iterate/2026-07-27-project-granularity-basis.md`
   - Promote: `triage_promote.py --id trg-1d7d91d0 --task-ref EXT:<ref>`
 
-### Source: req3-phase2-walk (14 items)
-
-<a id="trg-74b945bc"></a>
-- **CRITICAL - going back to a previous version does not use the version you ask for, and reports success** `id=trg-74b945bc | severity=critical | kind=bug → P0/engineering`
-  - OWNS: the hosting plugin, the liveness check and the target profiles. Independently executable. Supersedes trg-c9dc5a16…
-  - Evidence: `.shipwright/planning/campaigns/2026-07-23-req3-ac-evidence-ledger-mono.md`
-  - Promote: `triage_promote.py --id trg-74b945bc --task-ref EXT:<ref>`
+### Source: req3-phase2-walk (11 items)
 
 <a id="trg-6690d175"></a>
 - **CRITICAL - release-note writer destroys an existing history file it does not recognise** `id=trg-6690d175 | severity=critical | kind=bug → P0/engineering`
@@ -118,18 +123,6 @@
   - OWNS: the onboarding plugin's artifact writers and its handover step. Independently executable; touches no other plugin…
   - Evidence: `.shipwright/planning/campaigns/2026-07-23-req3-ac-evidence-ledger-mono.md`
   - Promote: `triage_promote.py --id trg-1aa5a8ab --task-ref EXT:<ref>`
-
-<a id="trg-10597d50"></a>
-- **change workflow: a concurrency warning must outlive the session, and loudly** `id=trg-10597d50 | severity=high | kind=improvement → P1/engineering`
-  - OWNS: the change workflow's parallel test-gate runner. Independently executable; touches no other plugin and no workflo…
-  - Evidence: `.shipwright/planning/campaigns/2026-07-23-req3-ac-evidence-ledger-mono.md`
-  - Promote: `triage_promote.py --id trg-10597d50 --task-ref EXT:<ref>`
-
-<a id="trg-3f4d6b57"></a>
-- **orchestrator: a waved-through phase leaves no trace; the handoff hides state it already has** `id=trg-3f4d6b57 | severity=high | kind=improvement → P1/engineering`
-  - OWNS: the orchestrator's step-advance path and the session-handoff renderer. Independently executable; touches no workf…
-  - Evidence: `.shipwright/planning/campaigns/2026-07-23-req3-ac-evidence-ledger-mono.md`
-  - Promote: `triage_promote.py --id trg-3f4d6b57 --task-ref EXT:<ref>`
 
 <a id="trg-15a43b6b"></a>
 - **security phase: coverage, one register, comparable runs, ask the scope (supersedes trg-9305ff98)** `id=trg-15a43b6b | severity=high | kind=improvement → P1/engineering`

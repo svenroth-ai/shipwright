@@ -122,7 +122,27 @@ def behavior_changed_keys(base: dict, head: dict) -> list[str]:
     return changed
 
 
-def evaluate_cross_layer(base: dict, head: dict) -> CrossLayerVerdict:
+def criteria_changed_keys(head: dict, ac_changed_ids: set[str] | None) -> list[str]:
+    """Head ACTIVE keys whose acceptance criteria changed between base and head.
+
+    ``ac_changed_ids`` holds display ids (``FR-01.03``) computed by
+    ``_layer_coverage_ac`` from the two spec checkouts. They are mapped onto
+    manifest keys here, and filtered to ACTIVE nodes: a requirement moved to
+    ``## Removed Requirements`` loses its section, which is the removal gate's
+    business, not this one's. A collision display id maps to every key that
+    carries it (fail-closed — collisions then route to ADVISORY as usual).
+    """
+    if not ac_changed_ids:
+        return []
+    return [
+        key for key, node in _active_nodes(head).items()
+        if node.get("id") in ac_changed_ids
+    ]
+
+
+def evaluate_cross_layer(
+    base: dict, head: dict, ac_changed_ids: set[str] | None = None,
+) -> CrossLayerVerdict:
     """Each behaviour-changed FR must be executed-passing at every required layer (R1).
 
     Severity routing mirrors ``D-layer`` exactly: an ``explicit`` (or unknown-provenance)
@@ -131,15 +151,24 @@ def evaluate_cross_layer(base: dict, head: dict) -> CrossLayerVerdict:
     collision display id → ADVISORY regardless (its ``ok`` is never credited AND a HARD
     block would be a false-red).
 
-    could-not-determine (R2/AC3, external-review MUST-FIX): a real spec delta
-    (``spec_hash`` differs) that produces NO FR-row-level behaviour change is
-    **undeterminable**, never a silent pass — the manifest carries FR title/priority/layers
-    but not AC prose, so a behaviour-changing AC edit under an unchanged FR row is
-    indistinguishable from a cosmetic edit. Both surface as WARN so a human adjudicates,
-    rather than green-lighting a possibly-behavioural spec change with no layer check. A
-    pure refactor leaves ``spec_hash`` identical → no WARN, no gate (the green case).
+    **Behaviour change is the union of two signals** (iterate-2026-07-27-name-the-blocker):
+    the FR ROW changing (title / required_layers), and the requirement's own ACCEPTANCE
+    CRITERIA changing. The row alone was not enough: ``shared/fr-authoring.md`` §3 makes
+    FOLDING the common case — append a criterion to an existing requirement rather than
+    mint a row — so a correctly folded change left the row identical and the gate saw
+    nothing. The union also closes a quieter hole: ``could_not_determine`` is only reached
+    when NO row changed, so an AC-only-changed FR sitting alongside a row-changed one used
+    to be dropped with no warning at all.
+
+    could-not-determine (R2/AC3, external-review MUST-FIX) survives for what is still
+    genuinely undecidable: a real spec delta (``spec_hash`` differs) that changed neither
+    any FR row nor any requirement's criteria — an edit to an abstract, a quality
+    requirement, or prose between the sections. That is a WARN for a human to adjudicate,
+    never a silent pass. A pure refactor leaves ``spec_hash`` identical → no WARN, no gate.
     """
-    changed = behavior_changed_keys(base, head)
+    row_changed = behavior_changed_keys(base, head)
+    ac_changed = criteria_changed_keys(head, ac_changed_ids)
+    changed = row_changed + [k for k in ac_changed if k not in row_changed]
     if not changed:
         spec_changed = base.get("spec_hash") != head.get("spec_hash")
         return CrossLayerVerdict(changed_keys=[], could_not_determine=bool(spec_changed))
@@ -186,5 +215,6 @@ __all__ = [
     "LayerGap",
     "CrossLayerVerdict",
     "behavior_changed_keys",
+    "criteria_changed_keys",
     "evaluate_cross_layer",
 ]

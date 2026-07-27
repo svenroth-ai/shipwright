@@ -19,9 +19,17 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import subprocess
 import sys
 import time
+from pathlib import Path
+
+_SCRIPTS_ROOT = Path(__file__).resolve().parent.parent
+if str(_SCRIPTS_ROOT) not in sys.path:
+    sys.path.insert(0, str(_SCRIPTS_ROOT))
+
+from lib.pr_blockers import probe as _probe_blockers  # noqa: E402
 
 #: CheckRun conclusions that mean "this required check will not go green on its own".
 _FAILING_CONCLUSIONS = frozenset(
@@ -30,7 +38,11 @@ _FAILING_CONCLUSIONS = frozenset(
 #: Legacy StatusContext states that mean failure.
 _FAILING_STATES = frozenset({"FAILURE", "ERROR"})
 
-_GH_FIELDS = "state,mergeStateStatus,statusCheckRollup,url"
+_GH_FIELDS = "state,mergeStateStatus,statusCheckRollup,url,baseRefName"
+
+#: owner / name / number out of the PR url the payload already carries — so
+#: naming a blocker costs no extra call just to resolve which repo this is.
+_PR_URL_RE = re.compile(r"github\.com/(?P<owner>[^/]+)/(?P<name>[^/]+)/pull/(?P<number>\d+)")
 
 
 def _failing_checks(rollup: list[dict]) -> list[dict]:
@@ -77,6 +89,32 @@ def _gh_pr_json(pr: str, repo: str | None) -> dict:
     return json.loads(proc.stdout)
 
 
+def _name_blockers(payload: dict, probe) -> dict:
+    """The named reasons an OPEN, not-failing PR is not merging.
+
+    Never raises: a diagnostic that can crash the watcher would cost the verdict
+    it was meant to explain, so every failure becomes an explicit ``unknown``
+    source rather than an exception or a clean-looking empty answer.
+    """
+    merge_state = str(payload.get("mergeStateStatus") or "")
+    try:
+        m = _PR_URL_RE.search(str(payload.get("url") or ""))
+        if not m:
+            raise ValueError("PR url not parseable")
+        return probe(
+            owner=m.group("owner"), name=m.group("name"), number=int(m.group("number")),
+            branch=str(payload.get("baseRefName") or ""),
+            merge_state=merge_state, rollup=payload.get("statusCheckRollup") or [],
+        )
+    except Exception as exc:  # noqa: BLE001 — see docstring
+        return {
+            "merge_state_status": merge_state,
+            "blocking": merge_state.upper() == "BLOCKED",
+            "causes": [],
+            "unknown": [{"source": "probe", "reason": f"blocker probe failed: {type(exc).__name__}"}],
+        }
+
+
 def watch(
     pr: str,
     *,
@@ -87,17 +125,34 @@ def watch(
     fetch=_gh_pr_json,
     sleep=time.sleep,
     now=time.monotonic,
+    probe_blockers=_probe_blockers,
 ) -> dict:
     """Poll until a terminal verdict (merged/closed/checks_failed) or timeout.
-    Returns the classify_delivery result, augmented with ``{"timed_out": True}`` on
-    a pending timeout. ``fetch``/``sleep``/``now`` are injectable for tests."""
+
+    Returns the classify_delivery result. A **pending** verdict — the one that
+    used to say only how long it had waited — is augmented with ``blockers``: the
+    named reasons the PR is not merging (unresolved review threads, required
+    checks that never reported, the host's own BLOCKED verdict). Terminal
+    verdicts are returned exactly as before; they already name their cause, and
+    the probe is not run for them.
+
+    The probe runs once, on the way out, rather than per poll: a 30-minute watch
+    costs two extra API calls, not sixty. It reads the payload from the final
+    poll, so its rollup and the freshly-fetched sources share one moment.
+
+    ``fetch``/``sleep``/``now``/``probe_blockers`` are injectable for tests."""
     deadline = now() + timeout_seconds
     while True:
-        verdict = classify_delivery(fetch(pr, repo))
-        if verdict["status"] != "pending" or once:
+        payload = fetch(pr, repo)
+        verdict = classify_delivery(payload)
+        if verdict["status"] != "pending":
+            return verdict
+        if once:
+            verdict["blockers"] = _name_blockers(payload, probe_blockers)
             return verdict
         if now() >= deadline:
             verdict["timed_out"] = True
+            verdict["blockers"] = _name_blockers(payload, probe_blockers)
             return verdict
         sleep(poll_seconds)
 
@@ -131,7 +186,45 @@ def main(argv: list[str] | None = None) -> int:
             + ", ".join(f"{f['name']} ({f['url']})" for f in result["failed"]),
             file=sys.stderr,
         )
+    elif result["status"] == "pending":
+        print(_render_pending(result), file=sys.stderr)
     return _exit_code(result["status"])
+
+
+def _render_blocker(cause: dict) -> str:
+    kind = cause.get("kind", "?")
+    if "checks" in cause:
+        return f"{kind}: {', '.join(cause['checks'])}"
+    if "count" in cause:
+        return f"{kind}: {cause['count']}"
+    return kind
+
+
+def _render_pending(result: dict) -> str:
+    """Say WHY it is still pending, not just that it is.
+
+    The whole point of the change: an operator reading this line should learn the
+    cause. When a source could not be read we say so — an unreadable source is
+    not the same answer as a clean one."""
+    blockers = result.get("blockers") or {}
+    head = "NOT DELIVERED (timed out) — " if result.get("timed_out") else "NOT MERGED YET — "
+    causes = blockers.get("causes") or []
+    unknown = blockers.get("unknown") or []
+    parts: list[str] = []
+    if blockers.get("blocking"):
+        parts.append("the host reports the merge as BLOCKED")
+    if causes:
+        parts.append("blocked by " + "; ".join(_render_blocker(c) for c in causes))
+    if unknown:
+        parts.append(
+            "could not check " + ", ".join(f"{u['source']} ({u['reason']})" for u in unknown)
+        )
+    if not parts:
+        parts.append(
+            "no blocker found — every required check reported and no review thread "
+            "is unresolved; the PR is most likely still queued"
+        )
+    return head + "; ".join(parts)
 
 
 if __name__ == "__main__":
