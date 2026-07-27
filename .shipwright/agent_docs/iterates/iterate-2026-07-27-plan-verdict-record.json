@@ -1,0 +1,10 @@
+{
+  "run_id": "iterate-2026-07-27-plan-verdict-record",
+  "date": "2026-07-27T11:57:25.035012Z",
+  "type": "change",
+  "complexity": "medium",
+  "branch": "iterate/plan-verdict-record",
+  "spec": ".shipwright/planning/iterate/2026-07-27-plan-verdict-record.md",
+  "tests_passed": true,
+  "adr": "iterate-2026-07-27-plan-verdict-record"
+}

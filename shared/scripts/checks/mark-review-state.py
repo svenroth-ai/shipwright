@@ -68,13 +68,57 @@ from lib.review_marker import (  # noqa: E402
     build_marker,
     write_marker,
 )
+from lib.review_verdict import (  # noqa: E402
+    REVIEWERS,
+    UNKNOWN,
+    VERDICTS,
+    contradiction_block,
+)
 
 __all__ = [
     "ALLOWED_REVIEW_TYPES",
     "ALLOWED_STATUSES",
     "CODE_REVIEW_STATE_FILE",
     "REVIEW_STATE_FILE",
+    "parse_verdict_args",
 ]
+
+_ALLOWED_VERDICT_VALUES = frozenset(VERDICTS) | {UNKNOWN, "unavailable"}
+
+
+def parse_verdict_args(pairs: list[str] | None) -> tuple[dict[str, str], str | None]:
+    """Turn ``["gemini=approve", "openai=reject"]`` into a verdict mapping.
+
+    Returns ``(verdicts, error)``. An unrecognised verdict word is an error
+    rather than a silent ``unknown``: the caller mistyped, and coercing it
+    would hide exactly the disagreement this field exists to surface.
+    """
+    verdicts: dict[str, str] = {}
+    for pair in pairs or []:
+        name, sep, value = pair.partition("=")
+        name, value = name.strip().lower(), value.strip().lower()
+        if not sep or not name or not value:
+            return {}, f"--verdict expects reviewer=value, got {pair!r}"
+        if name not in REVIEWERS:
+            return {}, f"--verdict: unknown reviewer {name!r}, expected one of {sorted(REVIEWERS)}"
+        if name in verdicts:
+            # Overwriting would silently discard one of the two verdicts —
+            # exactly the loss this whole field exists to prevent.
+            return {}, f"--verdict {name} given twice"
+        if value not in _ALLOWED_VERDICT_VALUES:
+            return {}, f"--verdict {name}: {value!r} not in {sorted(_ALLOWED_VERDICT_VALUES)}"
+        verdicts[name] = value
+    return verdicts, None
+
+
+def _derive_contradiction(verdicts: dict[str, str]) -> dict | None:
+    """Contradiction is COMPUTED from the verdicts, never asserted by the
+    caller — there must be no way to record agreement the verdicts do not
+    support. The reader recomputes it too (``evaluate_review_state``), so an
+    edited marker cannot disagree with itself and get away with it."""
+    if not verdicts:
+        return None
+    return contradiction_block(verdicts)
 
 
 def main() -> int:
@@ -96,7 +140,35 @@ def main() -> int:
     parser.add_argument("--reason", default=None)
     parser.add_argument("--findings-count", type=int, default=0)
     parser.add_argument("--self-review-fallback-ran", action="store_true")
+    parser.add_argument(
+        "--verdict",
+        action="append",
+        metavar="REVIEWER=VALUE",
+        help=(
+            "One reviewer's overall verdict, e.g. --verdict gemini=approve "
+            "--verdict openai=reject. Read from each reply's SHIPWRIGHT_VERDICT "
+            "line (external_review.py reports them under 'verdicts'). The "
+            "contradiction is DERIVED from the pair, never passed in."
+        ),
+    )
+    parser.add_argument(
+        "--contradiction-resolution",
+        default=None,
+        help=(
+            "The operator's decision on a recorded disagreement. Required "
+            "before the plan can proceed when the two verdicts contradict each "
+            "other, or when both reviewers answered but a verdict could not be "
+            "read."
+        ),
+    )
     args = parser.parse_args()
+
+    verdicts, verdict_error = parse_verdict_args(args.verdict)
+    if verdict_error:
+        print(json.dumps({
+            "success": False, "error": "invalid_verdict", "message": verdict_error,
+        }))
+        return 2
 
     if args.status not in ALLOWED_STATUSES:
         print(json.dumps({
@@ -122,6 +194,9 @@ def main() -> int:
         reason=args.reason,
         findings_count=args.findings_count,
         self_review_fallback_ran=args.self_review_fallback_ran,
+        verdicts=verdicts or None,
+        contradiction=_derive_contradiction(verdicts),
+        contradiction_resolution=args.contradiction_resolution,
     )
     out_path = write_marker(planning_dir, marker, args.review_type)
 

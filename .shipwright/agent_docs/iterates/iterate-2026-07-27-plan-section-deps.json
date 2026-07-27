@@ -1,0 +1,10 @@
+{
+  "run_id": "iterate-2026-07-27-plan-section-deps",
+  "date": "2026-07-27T12:14:28.199191Z",
+  "type": "change",
+  "complexity": "medium",
+  "branch": "iterate/plan-section-deps",
+  "spec": ".shipwright/planning/iterate/2026-07-27-plan-section-deps.md",
+  "tests_passed": true,
+  "adr": "iterate-2026-07-27-plan-section-deps"
+}
