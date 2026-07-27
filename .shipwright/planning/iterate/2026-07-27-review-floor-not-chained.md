@@ -201,11 +201,37 @@ oversize file, which is a ratchet whether or not a baseline entry happens to
 exist for it (none does, so the anti-ratchet hook stayed silent; the Stop-hook
 Iron Law caught it).
 
-So the new cases live in `test_record_review_pass_cli_floor.py` (113 lines), and
-the original file ends this iterate at **495 lines — one fewer than it started**.
-The pre-existing crossing is left alone: it is a real finding, but not this
-change's to fix, and taking it on would have meant refactoring a file this
-iterate had no other reason to touch.
+**The first attempt (merged as #478) was reasoned wrongly.** It moved the new
+cases out to `test_record_review_pass_cli_floor.py` (113 lines) and trimmed the
+original back to 495 — one fewer than it started — on the argument that the
+pre-existing crossing was a real finding but not this change's to fix, and that
+taking it on would mean refactoring a file this iterate had no other reason to
+touch.
+
+**That was not enough**, and the gate said so again: it blocks on
+`delta == "crossing" and not in_baseline`, which is a property of the file being
+over the limit **at all**, not of it having grown. A file 196 lines over its
+ceiling with no grandfathering entry is a blocker for whoever touches it, and
+"it was already like that" is precisely the deferral the Iron Law names. The
+first argument was the rationalization, not the reasoning.
+
+So the file is split along **its own section headers** — the seams its author
+already drew, not ones invented for the line count:
+
+| file | lines | holds |
+|---|---|---|
+| `_review_cli_harness.py` | 96 | fixture builder, subprocess wrapper, reviewer payloads |
+| `test_record_review_pass_cli.py` | 192 | AC8 / AC7 / AC3 / AC2 |
+| `..._cli_regressions.py` | 171 | the code-review round's findings |
+| `..._cli_doubt.py` | 160 | the Stage-3 doubt pass's findings |
+| `..._cli_floor.py` | 113 | `close-missing` × the floor |
+
+29 tests before, 29 after. The harness is a plain module rather than a
+`conftest.py` because `shared/tests/conftest.py` loads for the whole suite, and
+a `project` fixture visible to ~5,900 unrelated tests is a collision waiting to
+happen. It exports `make_project()` as a function, not a fixture: importing a
+fixture makes ruff read every test taking `project` as an F811 redefinition (28
+of them), and silencing that per test is noisier than a three-line wrapper.
 
 ## 9. Out of scope
 
