@@ -1,7 +1,7 @@
 # Requirements Traceability Matrix
 
-Generated: 2026-07-27T12:14:28.287189+00:00
-Source-State: run=iterate-2026-07-27-plan-section-deps
+Generated: 2026-07-27T12:43:49.972175+00:00
+Source-State: run=iterate-2026-07-27-plan-step9-gates
 Consistency-audit: never run
 
 ## Requirements Coverage
@@ -33,6 +33,7 @@ Consistency-audit: never run
 
 | Event | Source | Type | FRs | Tests | Commit | Date |
 |-------|--------|------|-----|-------|--------|------|
+| <a id="evt-f540a880"></a>the four Step-9 gates become code, closing trg-88f721be (3 of 3) | iterate | change |  | — | — | 2026-07-27 |
 | <a id="evt-8cab1d1d"></a>section dependencies are declarable, so the numbering is checkable (2 of 3) | iterate | change |  | — | — | 2026-07-27 |
 | <a id="evt-5ecd7d7e"></a>reviewer verdicts recorded, disagreement is its own outcome (1 of 3) | iterate | change | [FR-01.03](#rtm-fr-0103) | — | — | 2026-07-27 |
 | <a id="evt-37719eaa"></a>Evidence documents and test-run records now name which version of the project they describe, not just when they were written. | iterate | change | [FR-01.10](#rtm-fr-0110) | — | — | 2026-07-27 |
@@ -409,7 +410,7 @@ Consistency-audit: never run
 |--------|-------|
 | Total splits built | 0 |
 | Build sections | 0 |
-| Iterate changes | 369 |
+| Iterate changes | 370 |
 | Requirements total | 18 |
 | Requirements verified | 16/18 |
 | Must-have verified | 13/14 |

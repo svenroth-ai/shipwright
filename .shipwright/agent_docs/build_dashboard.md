@@ -1,10 +1,11 @@
 # Project Activity Dashboard
-> Updated: 2026-07-27 12:14 UTC | Session: 184abbf4-c486-4d5b-b89a-1dc21aebc3e1 | Run: iterate-2026-07-27-disclose-audit-last-run
+> Updated: 2026-07-27 12:43 UTC | Session: 1ea85a9d-f698-4336-8e01-ea2f4e2ae714 | Run: iterate-2026-07-27-plan-step9-gates
 
-## Recent Changes (369 iterations)
+## Recent Changes (370 iterations)
 
 | Type | Description | Tests | Commit | FRs | Date |
 |------|-------------|-------|--------|-----|------|
+| change | iterate: the four Step-9 gates become code, closing trg-88f721be (3 of 3) | 0/0 |  | tooling | 2026-07-27 |
 | change | iterate: reviewer verdicts recorded, disagreement is its own outcome (1 of 3) | 0/0 |  | FR-01.03 | 2026-07-27 |
 | change | iterate: section dependencies are declarable, so the numbering is checkable (2 of 3) | 0/0 |  | tooling | 2026-07-27 |
 | change | iterate: the review gate stops being bypassable (fail-closed + fork review) | 0/0 |  | infra | 2026-07-27 |
@@ -376,7 +377,7 @@
 | change | post-adoption framework cleanup (Sub-1A through 1D) | 225/225 | 3db485b | FR-01.01, FR-01.02, FR-01.03 | 2026-05-02 |
 
 ## Test Status
-Last run: 2026-07-27 | Unit: 8963/8963 | Integration: 418/418 | Smoke: not_run | (iterate)
+Last run: 2026-07-27 | Unit: 5443/5443 | Integration: 422/422 | E2E: 16/16 | Smoke: not_run | (iterate)
 
 ## Pipeline
 
