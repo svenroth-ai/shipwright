@@ -162,7 +162,9 @@ consistently.
 | 10 | the doc names the enforcing gate (prose ↔ code pointer) | `tested` | `::test_doc_names_the_enforcing_gate` |
 | 11 | `close-missing` still writes a complete record in one command | `tested` | `test_record_review_pass_cli.py::test_close_missing_closes_every_outstanding_type` |
 | 12 | `close-missing` no longer green-lights a medium+ run | `tested` | `::test_close_missing_does_not_satisfy_the_floor_at_medium` |
-| 13 | `close-missing` still unblocks a small run | `tested` | `::test_close_missing_still_unblocks_a_small_run` |
+| 13 | `close-missing` still unblocks a small run | `tested` | `test_record_review_pass_cli_floor.py::test_close_missing_still_unblocks_a_small_run` |
+| 14 | `close-missing` still unblocks a trivial run | `tested` | `::test_close_missing_still_unblocks_a_trivial_run` |
+| 15 | the repair path the failure message names actually clears the floor | `tested` | `::test_recording_one_real_review_clears_the_floor` — a gate that blocks without a working way forward is a trap, so the remediation is exercised rather than asserted |
 
 Zero untested-testable behaviours.
 
@@ -190,6 +192,20 @@ What changed concretely:
 - At small it is untouched.
 - The gate's remediation text now says so up front, so the operator learns it
   when reading the failure rather than after trying the command.
+
+## 8b. Where the new CLI tests live, and why not in the obvious file
+
+`test_record_review_pass_cli.py` was **496 lines against a 300-line limit before
+this change**. Appending three tests to it took it to 534 — growing an already
+oversize file, which is a ratchet whether or not a baseline entry happens to
+exist for it (none does, so the anti-ratchet hook stayed silent; the Stop-hook
+Iron Law caught it).
+
+So the new cases live in `test_record_review_pass_cli_floor.py` (113 lines), and
+the original file ends this iterate at **495 lines — one fewer than it started**.
+The pre-existing crossing is left alone: it is a real finding, but not this
+change's to fix, and taking it on would have meant refactoring a file this
+iterate had no other reason to touch.
 
 ## 9. Out of scope
 
