@@ -3,17 +3,17 @@
 Generated: 2026-07-27T19:47:47.363461+00:00
 Source-State: run=iterate-2026-07-27-review-floor-not-chained
 Consistency-audit: never run
-Total commits: 1248
+Total commits: 1251
 
 ## Commit Distribution
 
 ```mermaid
 pie title Commit Types
-    "fix" : 363
+    "fix" : 364
     "feat" : 349
-    "chore" : 259
+    "chore" : 260
     "docs" : 148
-    "refactor" : 77
+    "refactor" : 78
     "test" : 31
     "ci" : 11
     "other" : 9
@@ -22,10 +22,11 @@ pie title Commit Types
 
 ## Changes by Type
 
-### Fixes (fix) — 363 commits
+### Fixes (fix) — 364 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-07-27 | ci | the sweep gate stops handing its own CI flag to its subject | a125096ea995 |
 | 2026-07-27 | ci | a remote that is not github.com is refused, not guessed at | 74211ac393a6 |
 | 2026-07-27 | iterate | the code review becomes a floor, not a chain (#476) | 7c116c035480 |
 | 2026-07-27 | security | the test suite stops leaking a triage store into the plugin dir (#474) | 6ba177083769 |
@@ -744,10 +745,11 @@ pie title Commit Types
 | 2026-03-20 | — | Task 02 — project templates (CLAUDE.md, agent_docs, CI) | c3a6d2f53bd3 |
 | 2026-03-20 | — | Task 01 — monorepo scaffolding + supabase-nextjs stack profile | 990a138a4690 |
 
-### Chores (chore) — 259 commits
+### Chores (chore) — 260 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-07-27 | churn | regenerate derived snapshots after main merge | 86b4c2482556 |
 | 2026-07-27 | churn | regenerate derived snapshots after main merge | 8085f1bd9dbb |
 | 2026-07-27 | churn | regenerate derived snapshots after main merge | 5e6b46e2c140 |
 | 2026-07-27 | churn | regenerate derived snapshots after main merge | 6fdd45f6d37f |
@@ -1161,10 +1163,11 @@ pie title Commit Types
 | 2026-03-21 | — | expand README with pipeline diagram, architecture, and quality gates | 377dc2141b3d |
 | 2026-03-20 | — | add README.md for GitHub repo | 853c8f930132 |
 
-### Refactoring (refactor) — 77 commits
+### Refactoring (refactor) — 78 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-07-27 | test | split the close-missing floor cases out of the CLI test file (#478) | f7eee6f4b3a9 |
 | 2026-07-27 | test | split the close-missing floor cases out of the CLI test file (#478) | cf6d326b5011 |
 | 2026-07-27 | shared | split git resolution out of source_state (300-LOC compliance) (#451) | 3cdca5cfc884 |
 | 2026-07-21 | adopt | route the eight scaffolders through one guarded shared/ loader (FR-01.13) (#423) | 736fc8d1712c |
@@ -1319,7 +1322,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 1248 |
+| Total commits | 1251 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 1248 |
+| Human-authored commits | 1251 |
 

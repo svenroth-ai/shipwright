@@ -3,17 +3,17 @@ canon_generated: true
 run_id: "iterate-2026-07-27-checks-that-gate-nothing"
 phase: "iterate"
 reason: "merge origin/main reconciliation"
-timestamp: "2026-07-27T20:14:33.972206+00:00"
+timestamp: "2026-07-27T20:26:51.936829+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-07-27 20:14:33 UTC
+> Auto-generated 2026-07-27 20:26:51 UTC
 
 ## Session Info
 
 - **Session ID**: 99609ad4-4e4b-47ca-a23f-ccfc53ee7516
-- **Timestamp**: 2026-07-27 20:14:33 UTC
+- **Timestamp**: 2026-07-27 20:26:51 UTC
 - **Reason**: merge origin/main reconciliation
 
 ## Last Iterate
@@ -51,7 +51,7 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 ## Git State
 
 - **Branch**: iterate/checks-that-gate-nothing
-- **Last Commit**: 48c8c740 Merge remote-tracking branch 'origin/main' into iterate/checks-that-gate-nothing
+- **Last Commit**: 2f5ea1ef Merge remote-tracking branch 'origin/main' into iterate/checks-that-gate-nothing
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -67,11 +67,11 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 | Event | Type | Source | Date |
 |-------|------|--------|------|
+| evt-bd19424c | grade_snapshot | — | 2026-07-27 |
 | evt-d10007cf | grade_snapshot | — | 2026-07-27 |
 | evt-61ab1c8b | grade_snapshot | — | 2026-07-27 |
 | evt-10f83f9f | grade_snapshot | — | 2026-07-27 |
 | evt-b1a81042 | grade_snapshot | — | 2026-07-27 |
-| evt-301cc5e3 | grade_snapshot | — | 2026-07-27 |
 
 ## Recovery
 
