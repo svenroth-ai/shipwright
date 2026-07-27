@@ -1,14 +1,14 @@
 # Triage Inbox
 
-> Auto-generated 2026-07-27T12:52:40.120480Z. Items waiting for triage decision.
+> Auto-generated 2026-07-27T12:43:55.872393Z. Items waiting for triage decision.
 > Promote via WebUI Triage tab (when v1b lands) or `shared/scripts/tools/triage_promote.py --id <id> --task-ref EXT:<ref>`.
 
 ## Status summary
 
 - Total: 419
-- Triage: 22 | Promoted: 1 | Dismissed: 395 | Snoozed: 1
+- Triage: 21 | Promoted: 1 | Dismissed: 396 | Snoozed: 1
 
-## Top 22 items (severity-sorted)
+## Top 21 items (severity-sorted)
 
 ### Source: analysis (1 item)
 
@@ -48,18 +48,12 @@
     ```
   - Promote: `triage_promote.py --id trg-2b5ca5f5 --task-ref EXT:<ref>`
 
-### Source: iterate (3 items)
+### Source: iterate (2 items)
 
 <a id="trg-a6616bbe"></a>
 - **Three finalization/delivery checks report a weaker signal than they can compute** `id=trg-a6616bbe | severity=medium | kind=improvement → P2/engineering`
   - Three checks in the finalization / delivery path each already hold the information needed to name a cause, but report a…
   - Promote: `triage_promote.py --id trg-a6616bbe --task-ref EXT:<ref>`
-
-<a id="trg-bd4e75a9"></a>
-- **Phase-canon C3 handoff freshness still keys on mtime** `id=trg-bd4e75a9 | severity=low | kind=improvement → P3/engineering`
-  - The F11 iterate freshness check moved off filesystem mtime to a content key in iterate-2026-07-27-name-the-blocker (it…
-  - Evidence: `shared/scripts/tools/verifiers/common.py`
-  - Promote: `triage_promote.py --id trg-bd4e75a9 --task-ref EXT:<ref>`
 
 <a id="trg-d1e466aa"></a>
 - **Retire the write-once v1 run-config fields (current_step / completed_steps)** `id=trg-d1e466aa | severity=low | kind=improvement → P3/engineering`
@@ -72,6 +66,13 @@
 - **S2b: converge the requirement-discovery filter semantics (~10 call-site decisions)** `id=trg-8bf97fd4 | severity=medium | kind=improvement → P2/engineering`
   - The tail of campaign step S2, not a new campaign - file it now so it is not lost between "S2 merged" and "somebody noti…
   - Promote: `triage_promote.py --id trg-8bf97fd4 --task-ref EXT:<ref>`
+
+### Source: manual (1 item)
+
+<a id="trg-efca9de7"></a>
+- **shared/tests and integration-tests fail 21 tests when run in one pytest session** `id=trg-efca9de7 | severity=medium | kind=bug → P2/engineering`
+  - Running 'uv run pytest shared/tests integration-tests -m "not slow and not cross_plugin"' as a SINGLE invocation fails…
+  - Promote: `triage_promote.py --id trg-efca9de7 --task-ref EXT:<ref>`
 
 ### Source: req3-campaign (3 items)
 
@@ -98,7 +99,7 @@
   - Evidence: `.shipwright/planning/iterate/2026-07-27-project-granularity-basis.md`
   - Promote: `triage_promote.py --id trg-1d7d91d0 --task-ref EXT:<ref>`
 
-### Source: req3-phase2-walk (11 items)
+### Source: req3-phase2-walk (10 items)
 
 <a id="trg-6690d175"></a>
 - **CRITICAL - release-note writer destroys an existing history file it does not recognise** `id=trg-6690d175 | severity=critical | kind=bug → P0/engineering`
@@ -159,10 +160,4 @@
   - OWNS: the compliance dashboard and report renderers. Does NOT own artifact stamping — that moved to its own card so it…
   - Evidence: `.shipwright/planning/campaigns/2026-07-23-req3-ac-evidence-ledger-mono.md`
   - Promote: `triage_promote.py --id trg-a1fd8125 --task-ref EXT:<ref>`
-
-<a id="trg-a8110d84"></a>
-- **project phase: no notion of how big a requirement should be, and the templates contradict the basis rule** `id=trg-a8110d84 | severity=medium | kind=improvement → P2/engineering`
-  - Per-plugin work unit from the FR-01.02 scenario pass. (1) Requirement granularity has no guidance and no check. There i…
-  - Evidence: `.shipwright/planning/campaigns/2026-07-23-req3-ac-evidence-ledger-mono.md`
-  - Promote: `triage_promote.py --id trg-a8110d84 --task-ref EXT:<ref>`
 

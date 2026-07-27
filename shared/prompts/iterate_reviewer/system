@@ -19,3 +19,14 @@ Format your review as a structured list of findings, each with:
 - Suggestion (how to address it)
 
 End with a 1-2 sentence overall assessment.
+
+
+End your reply with exactly one line, and nothing after it:
+SHIPWRIGHT_VERDICT: approve|revise|reject
+
+Use `approve` when the work is sound and any findings are refinements,
+`revise` when it works but needs specific changes first, and `reject` when
+the approach itself is wrong. Write that line exactly once — do not repeat
+or quote it anywhere else in your reply. Two reviewers read this change
+independently; the line is what lets a disagreement between them be seen
+rather than averaged into a finding count.

@@ -9,10 +9,13 @@ Shipwright-specific glue.
 
 from __future__ import annotations
 
-import json
 from pathlib import Path
 from typing import TYPE_CHECKING
 
+# AR-03's inline Consistency Audit summary moved to ``_audit_disclosure_render``
+# when it stopped reading the gitignored transient and started reading the
+# durable last-run record. Re-exported so the dashboard's import site is unchanged.
+from scripts.lib._audit_disclosure_render import render_consistency_audit  # noqa: F401
 from scripts.lib._diff_coverage_block import (
     diff_coverage_info_line,
     gradeable_diff_percent,
@@ -239,58 +242,6 @@ def format_control_block(
         + "Scorecard. Age is neutral; only unreconciled change and net growth "
         + "are control failures. Each Anchor names the open standard the "
         + "dimension follows — see the guide's Control-Grade dimensions table._",
-        "",
-    ])
-    return lines
-
-
-def _audit_generated_date(project_root: Path) -> str:
-    """Parse the 'Generated:' date from audit-report.md (deterministic;
-    the JSON payload carries no timestamp)."""
-    md = project_root / ".shipwright" / "compliance" / "audit-report.md"
-    if not md.exists():
-        return ""
-    try:
-        for line in md.read_text(encoding="utf-8").splitlines():
-            if line.startswith("Generated:"):
-                return line.split("Generated:", 1)[1].strip()[:10]
-    except OSError:  # pragma: no cover - tolerant
-        pass
-    return ""
-
-
-def render_consistency_audit(project_root: Path) -> list[str]:
-    """Inline Consistency Audit summary (AR-03) — replaces the dead
-    gitignored ``audit-report.md`` link. Reads the (transient, gitignored)
-    ``audit-report.json``; degrades gracefully when it has not been run."""
-    path = project_root / ".shipwright" / "compliance" / "audit-report.json"
-    lines = ["## 🔎 Consistency Audit", ""]
-    if not path.exists():
-        lines.extend([
-            "_Detective cross-artifact audit not run this session — "
-            + "run `/shipwright-compliance` to refresh._",
-            "",
-        ])
-        return lines
-    try:
-        report = json.loads(path.read_text(encoding="utf-8"))
-        findings = report.get("findings", [])
-        passed = sum(1 for f in findings if f.get("status") == "pass")
-        failed = sum(1 for f in findings if f.get("status") == "fail")
-        skipped = sum(1 for f in findings if f.get("status") == "skip")
-        verdict = "FAIL — drift found" if report.get("any_fail") else "PASS"
-    except (OSError, json.JSONDecodeError, AttributeError):  # pragma: no cover
-        lines.extend(["_Audit report present but unreadable._", ""])
-        return lines
-
-    date = _audit_generated_date(project_root)
-    when = f" ({date})" if date else ""
-    lines.extend([
-        f"Detective audit{when}: **{verdict}** · "
-        f"{len(findings)} checks — {passed} pass, {failed} fail, {skipped} skip.",
-        "",
-        "_Inlined from `audit-report.json` (a gitignored transient — no "
-        + "external link, so this stays visible on the public repo)._",
         "",
     ])
     return lines

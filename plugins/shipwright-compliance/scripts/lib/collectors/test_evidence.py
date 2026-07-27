@@ -12,9 +12,19 @@ Iterate Campaign B (B2): split out of ``data_collector.py``.
 from __future__ import annotations
 
 import json
+import sys
 from pathlib import Path
 
 from ._types import KnownFailure, TestResults
+
+# The accepted-baseline parser is shared with the test phase. It lives at
+# ``shared/scripts/`` top level (NOT under a ``lib/`` package) so importing it
+# cannot shadow a plugin's own ``scripts/lib`` namespace — ADR-045.
+_SHARED_SCRIPTS = Path(__file__).resolve().parents[5] / "shared" / "scripts"
+if str(_SHARED_SCRIPTS) not in sys.path:
+    sys.path.insert(0, str(_SHARED_SCRIPTS))
+
+from known_failures import load_accepted_baseline as _load_accepted_baseline  # noqa: E402
 
 
 def _parse_test_results_file(path: Path) -> TestResults | None:
@@ -159,24 +169,24 @@ def collect_known_failures(project_root: Path) -> tuple[list[KnownFailure], int]
     """Load known failures from shipwright_known_failures.json.
 
     Returns (failures_list, baseline_failure_count).
-    """
-    path = project_root / "shipwright_known_failures.json"
-    if not path.exists():
-        return [], 0
-    try:
-        data = json.loads(path.read_text(encoding="utf-8"))
-    except (json.JSONDecodeError, OSError):
-        return [], 0
 
+    **Delegates** to ``shared/scripts/known_failures.py``. The audit used to own
+    the only parse of this file, which is how the test phase ended up not
+    knowing it existed — one component excusing an onboarded project's inherited
+    failures while the other reported them as fresh. Both now read through one
+    parser (iterate-2026-07-27-test-phase-record-honesty, FR-01.06). Signature,
+    return types and every observable answer are unchanged; only the ownership
+    of the parse moved.
+    """
+    baseline = _load_accepted_baseline(project_root)
     failures = [
         KnownFailure(
-            test=f.get("test", ""),
-            description=f.get("description", ""),
-            ticket=f.get("ticket", ""),
-            added=f.get("added", ""),
-            count=f.get("count", 1),
+            test=e.test,
+            description=e.description,
+            ticket=e.ticket,
+            added=e.added,
+            count=e.count,
         )
-        for f in data.get("known_failures", [])
+        for e in baseline.entries
     ]
-    baseline = data.get("baseline_failure_count", sum(f.count for f in failures))
-    return failures, baseline
+    return failures, baseline.baseline_failure_count

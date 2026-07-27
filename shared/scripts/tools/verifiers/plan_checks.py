@@ -23,6 +23,10 @@ Phase-own checks:
 - ``check_fr_orphans_in_plan`` — every ``FR-XX.YY`` mentioned in
   ``plan.md`` or ``sections/*.md`` must exist in the parent spec.md
   for the split. ERROR. Adapted from shipwright-check Group C2.
+The four Step-9 gates come from ``plan_gate_checks``: dependency order,
+requirement coverage, section→requirement trace, and section quality. All
+four were listed in ``SKILL.md`` as verification gates and existed only as
+instructions until they moved there.
 - ``check_section_id_validity`` — section names match the zero-padded
   numeric prefix convention (``^\\d{2}-[a-z0-9-]+$``), are unique, and
   form a gap-free sequence starting at 01. ERROR. Adapted from
@@ -50,71 +54,40 @@ from .common import (
     check_c4_decision_log_has_phase_adr,
     check_phase_history_has_run,
 )
+from .plan_gate_checks import (
+    PLANNING_DIRNAME,
+    check_fr_coverage_in_sections,
+    check_section_dependency_order,
+    check_section_quality,
+    check_section_traces_to_requirement,
+    find_planning_split_dirs as _find_planning_split_dirs,
+)
 
 # Add shared/scripts to path for lib imports.
 import sys
-
-# Canonical home of the planning artifact set, relative to project_root.
-# Mirrors PLANNING_DIR in shared/scripts/lib/artifact_migrations.py.
-PLANNING_DIRNAME = ".shipwright/planning"
 
 _SHARED_SCRIPTS = Path(__file__).resolve().parent.parent.parent
 if str(_SHARED_SCRIPTS) not in sys.path:
     sys.path.insert(0, str(_SHARED_SCRIPTS))
 
 from lib.drift_parsers import collect_requirements_from_planning  # noqa: E402
+from lib.plan_manifest import parse_manifest  # noqa: E402
 
 
 # ---------------------------------------------------------------------------
 # Section manifest + section-file parsers
 # ---------------------------------------------------------------------------
 
-_SECTION_MANIFEST_RE = re.compile(
-    r"<!--\s*SECTION_MANIFEST\s*\n(?P<body>.*?)\nEND_MANIFEST\s*-->",
-    re.DOTALL,
-)
-_SECTION_NAME_RE = re.compile(r"^(?P<num>\d{2})-[a-z0-9]+(?:-[a-z0-9]+)*$")
 _FR_REF_RE = re.compile(r"FR-\d{1,3}\.\d{1,3}")
 
 
 def _parse_section_manifest(plan_path: Path) -> list[str]:
-    """Return the ordered list of section names from the SECTION_MANIFEST
-    block of ``plan.md``, or an empty list if missing/malformed."""
-    if not plan_path.exists():
-        return []
-    try:
-        content = plan_path.read_text(encoding="utf-8", errors="ignore")
-    except OSError:
-        return []
-    m = _SECTION_MANIFEST_RE.search(content)
-    if not m:
-        return []
-    names: list[str] = []
-    for line in m.group("body").splitlines():
-        line = line.strip()
-        if not line or line.startswith("#"):
-            continue
-        names.append(line)
-    return names
+    """Ordered section names from ``plan.md``, or ``[]`` if missing/malformed.
 
-
-def _find_planning_split_dirs(project_root: Path) -> list[Path]:
-    """Return every ``.shipwright/planning/<split>/`` directory that contains a
-    ``plan.md``. These are the canonical plan roots to iterate over."""
-    planning = project_root / PLANNING_DIRNAME
-    if not planning.is_dir():
-        return []
-    out: list[Path] = []
-    for d in sorted(planning.iterdir()):
-        if not d.is_dir():
-            continue
-        if d.name.startswith("."):
-            continue
-        if d.name == "iterate":
-            continue
-        if (d / "plan.md").exists():
-            out.append(d)
-    return out
+    Thin adapter over the shared parser: this module only ever needed the
+    names, while the parser also carries dependencies and line numbers.
+    """
+    return parse_manifest(plan_path).sections
 
 
 # ---------------------------------------------------------------------------
@@ -240,18 +213,16 @@ def check_section_id_validity(project_root: Path) -> CheckResult:
 
     drift: list[str] = []
     for split in splits:
-        declared = _parse_section_manifest(split / "plan.md")
+        parsed = parse_manifest(split / "plan.md")
+        # The shared parser already rejects malformed and duplicated ids with
+        # line-numbered diagnostics; surface those rather than re-deriving them
+        # from a name list it has already filtered.
+        if parsed.errors:
+            drift.append(f"{split.name}: {'; '.join(parsed.errors)}")
+            continue
+        declared = parsed.sections
         if not declared:
             continue  # covered by check_section_files_match_manifest
-        bad_format = [n for n in declared if not _SECTION_NAME_RE.match(n)]
-        if bad_format:
-            drift.append(f"{split.name}: invalid names {bad_format}")
-            continue
-
-        dupes = [n for n in declared if declared.count(n) > 1]
-        if dupes:
-            drift.append(f"{split.name}: duplicate names {sorted(set(dupes))}")
-            continue
 
         numbers = sorted(int(n.split("-", 1)[0]) for n in declared)
         expected = list(range(1, len(numbers) + 1))
@@ -281,6 +252,10 @@ def run_plan_checks(
     results.append(check_section_files_match_manifest(project_root))
     results.append(check_fr_orphans_in_plan(project_root))
     results.append(check_section_id_validity(project_root))
+    results.append(check_section_dependency_order(project_root))
+    results.append(check_fr_coverage_in_sections(project_root))
+    results.append(check_section_traces_to_requirement(project_root))
+    results.append(check_section_quality(project_root))
 
     # Canon (C5 skipped by policy)
     results.append(check_c1_phase_event_recorded(project_root, "plan"))
@@ -305,7 +280,12 @@ def run_all_checks(project_root: Path, run_id: str = "") -> list[CheckResult]:
 
 
 __all__ = [
+    "PLANNING_DIRNAME",
     "Severity",
+    "check_fr_coverage_in_sections",
+    "check_section_dependency_order",
+    "check_section_quality",
+    "check_section_traces_to_requirement",
     "check_fr_orphans_in_plan",
     "check_plan_config_status_complete",
     "check_section_files_match_manifest",

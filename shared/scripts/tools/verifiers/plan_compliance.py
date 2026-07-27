@@ -2,8 +2,14 @@
 
 Implements W5 — ``.shipwright/planning/external_review_state.json`` exists with a
 ``status=completed`` OR a ``skipped_*`` status carrying a non-empty
-``reason`` (no-keys-marker variant). Matches the marker written by
+``reason`` (no-keys-marker variant), **and** records no reviewer disagreement
+that nobody decided. Matches the marker written by
 ``shared/scripts/checks/mark-review-state.py``.
+
+The verdict on the marker's contents comes from
+``lib.review_marker.evaluate_review_state`` — the same function the in-session
+Step 6 gate and the ``setup-planning-session`` resume gate call, so the three
+readers cannot drift into three different definitions of "reviewed".
 """
 
 from __future__ import annotations
@@ -25,7 +31,13 @@ if str(_SHARED_SCRIPTS) not in sys.path:
 from lib.phase_quality import (  # noqa: E402
     STATUS_FAIL,
     STATUS_PASS,
+    STATUS_WARN,
     make_finding,
+)
+from lib.review_marker import (  # noqa: E402
+    STATE_BLOCK,
+    STATE_LEGACY,
+    evaluate_review_state,
 )
 
 
@@ -33,6 +45,16 @@ W5_NAME = "W5 plan external review marker"
 W5_REMEDIATION = (
     "Run external review via /shipwright-plan Step 5, or document the "
     "skip in external_review_state.json with a reason."
+)
+W5_CONTRADICTION_REMEDIATION = (
+    "Two reviewers disagreed, or a verdict could not be read. Decide it and "
+    "record the decision: mark-review-state.py "
+    "--contradiction-resolution '<which side you took and why>'."
+)
+W5_LEGACY_REMEDIATION = (
+    "Re-run Step 5b with one --verdict per reviewer so a disagreement between "
+    "the two would be noticed. Markers written before verdicts existed are "
+    "expected to hit this."
 )
 
 
@@ -70,6 +92,30 @@ def check_w5_external_review_marker(project_root: Path) -> dict[str, Any]:
             name=W5_NAME,
             remediation=W5_REMEDIATION,
         )
+    state, detail = evaluate_review_state(data)
+    if state == STATE_BLOCK:
+        return make_finding(
+            "W5", STATUS_FAIL,
+            f"{detail} ({marker.name})",
+            name=W5_NAME,
+            remediation=(
+                W5_CONTRADICTION_REMEDIATION
+                if "disagreement" in detail
+                else W5_REMEDIATION
+            ),
+        )
+    if state == STATE_LEGACY:
+        # The marker may predate per-reviewer verdicts entirely. W5 audits
+        # plans of any age, so it says so rather than failing one written
+        # before the field existed; the in-session gate, which only ever sees
+        # a marker written moments ago, blocks on the same state.
+        return make_finding(
+            "W5", STATUS_WARN,
+            f"{detail} ({marker.name})",
+            name=W5_NAME,
+            remediation=W5_LEGACY_REMEDIATION,
+        )
+
     status = str(data.get("status") or "")
     if status == "completed":
         provider = data.get("provider") or "unknown"
@@ -79,26 +125,12 @@ def check_w5_external_review_marker(project_root: Path) -> dict[str, Any]:
             name=W5_NAME,
             provenance="marker",
         )
-    if status.startswith("skipped_"):
-        reason = str(data.get("reason") or "").strip()
-        if not reason:
-            return make_finding(
-                "W5", STATUS_FAIL,
-                f"status={status} but reason is empty (justification required)",
-                name=W5_NAME,
-                remediation=W5_REMEDIATION,
-            )
-        return make_finding(
-            "W5", STATUS_PASS,
-            f"status={status} with justification: {reason[:80]}",
-            name=W5_NAME,
-            provenance="marker",
-        )
+    reason = str(data.get("reason") or "").strip()
     return make_finding(
-        "W5", STATUS_FAIL,
-        f"unknown status={status!r} in {marker.name}",
+        "W5", STATUS_PASS,
+        f"status={status} with justification: {reason[:80]}",
         name=W5_NAME,
-        remediation=W5_REMEDIATION,
+        provenance="marker",
     )
 
 
