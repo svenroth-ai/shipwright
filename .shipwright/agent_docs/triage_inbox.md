@@ -1,14 +1,14 @@
 # Triage Inbox
 
-> Auto-generated 2026-07-27T18:26:39.126718Z. Items waiting for triage decision.
+> Auto-generated 2026-07-27T18:35:49.901598Z. Items waiting for triage decision.
 > Promote via WebUI Triage tab (when v1b lands) or `shared/scripts/tools/triage_promote.py --id <id> --task-ref EXT:<ref>`.
 
 ## Status summary
 
-- Total: 425
-- Triage: 20 | Promoted: 1 | Dismissed: 403 | Snoozed: 1
+- Total: 426
+- Triage: 21 | Promoted: 1 | Dismissed: 403 | Snoozed: 1
 
-## Top 20 items (severity-sorted)
+## Top 21 items (severity-sorted)
 
 ### Source: analysis (1 item)
 
@@ -99,13 +99,18 @@
   - The tail of campaign step S2, not a new campaign - file it now so it is not lost between "S2 merged" and "somebody noti…
   - Promote: `triage_promote.py --id trg-8bf97fd4 --task-ref EXT:<ref>`
 
-### Source: manual (3 items)
+### Source: manual (4 items)
 
 <a id="trg-2ca796f3"></a>
 - **Release aggregator can write the same version twice on a re-run** `id=trg-2ca796f3 | severity=high | kind=bug → P1/engineering`
   - aggregate_changelog.py is the writer the release path actually invokes (changelog SKILL.md Step 4). _insert_section alw…
   - Evidence: `.shipwright/planning/iterate/iterate-2026-07-27-changelog-writer-preserve-history.md`
   - Promote: `triage_promote.py --id trg-2ca796f3 --task-ref EXT:<ref>`
+
+<a id="trg-9862202d"></a>
+- **host checks part 2 follow-up: require the checks that currently gate nothing** `id=trg-9862202d | severity=medium | kind=improvement → P2/engineering`
+  - FOLLOW-UP to trg-c7e5835b, do this AFTER the part-2 PR (items 3-5) is merged. The new check_required_checks producer fo…
+  - Promote: `triage_promote.py --id trg-9862202d --task-ref EXT:<ref>`
 
 <a id="trg-efca9de7"></a>
 - **shared/tests and integration-tests fail 21 tests when run in one pytest session** `id=trg-efca9de7 | severity=medium | kind=bug → P2/engineering`
