@@ -22,10 +22,10 @@ from pathlib import Path
 
 from .._audit_disclosure_render import freshness_note
 from ._common import CONFIG_FILES, collect_configs
+from ._compliance_data import ComplianceData
 from ._license_const import NOT_INSTALLED, UNKNOWN_LICENSE
 from ._types import (
     CommitEntry,
-    ComplianceData,
     DecisionEntry,
     DependencyInfo,
     ExternalReviewState,
