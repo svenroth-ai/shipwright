@@ -886,6 +886,15 @@ A round claiming it changed a requirement is refused unless a requirements file 
 - Commits with Conventional Commits format (e.g., `feat(auth): implement magic link authentication`)
 - Logs decisions, updates the build dashboard, and checks context pressure -- if the context window is getting full, it saves progress and stops cleanly so you can resume in a fresh session
 
+**When the mockup and the section description disagree, building stops.** A section is held to two rules — implement exactly what it specified, and never ignore the mockup — and when the two contradict each other, neither can be satisfied, so whichever one the builder happened to follow would win silently. Instead the phase stops and puts the contradiction to you, quoting both sides. The expected resolution is that **the requirement is corrected to match the mockup**, because the mockup is the thing a person looked at and judged against real use; you can decide otherwise, and either way the decision is recorded. Spotting the contradiction is a human read — comparing prose against rendered markup has no automatic check — but the record of who decided, and the correction actually reaching the spec, are both verified.
+
+**A section may touch shared code when it genuinely needs to.** "Nothing outside the section's scope" is aimed at unrequested extra work; read literally it would make a section that cannot function without a shared helper unbuildable. So:
+
+- the change is allowed, provided it is the **smallest** one the section needs;
+- it must be **recorded as belonging to that section**, with a reason;
+- after the section commit, `/shipwright-build` checks that every file the section changed, created **or deleted** is either in its own file list or recorded as an attributed extra;
+- a section that records no declaration at all fails the same check.
+
 **Standalone usage.** Yes. Run `/shipwright-build @sections/01-auth.md` for any section file. When used standalone, you manage the section order yourself. When used within the pipeline, the orchestrator feeds sections in dependency order and handles split transitions automatically.
 ### 4.6 Testing -- /shipwright-test
 
