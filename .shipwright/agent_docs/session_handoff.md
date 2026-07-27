@@ -1,6 +1,6 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-07-27-pytest-root-composition"
+run_id: "iterate-2026-07-27-changelog-aggregator-idempotency"
 phase: "iterate"
 reason: "ensure-current pre-merge refresh"
 timestamp: "2026-07-27T17:38:49.456380+00:00"
@@ -12,7 +12,7 @@ timestamp: "2026-07-27T17:38:49.456380+00:00"
 
 ## Session Info
 
-- **Session ID**: 2a2ccc95-e7ec-4ca6-bcdb-601ae9e9b002
+- **Session ID**: 8a0611d4-b05d-411a-a42a-cc448bc145a7
 - **Timestamp**: 2026-07-27 17:38:49 UTC
 - **Reason**: ensure-current pre-merge refresh
 
@@ -29,11 +29,11 @@ timestamp: "2026-07-27T17:38:49.456380+00:00"
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/pytest-root-composition
-- **Run ID**: `iterate-2026-07-27-pytest-root-composition`
-- **Spec**: .shipwright/planning/iterate/iterate-2026-07-27-pytest-root-composition.md
-- **Complexity**: medium
-- **External Review Marker**: completed (external_review_state.json @ 2026-07-27T17:10:30)
+- **Branch**: iterate/changelog-aggregator-idempotency
+- **Run ID**: `iterate-2026-07-27-changelog-aggregator-idempotency`
+- **Spec**: .shipwright/planning/iterate/iterate-2026-07-27-changelog-aggregator-idempotency.md
+- **Complexity**: medium (classifier: `estimate=medium`, `prior_source=history`,
+- **External Review Marker**: stale (predates spec (2026-07-27T16:31:40))
 
 ### Mandatory replay on Resume
 
@@ -51,8 +51,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/pytest-root-composition
-- **Last Commit**: 4942819e Merge remote-tracking branch 'origin/main' into iterate/pytest-root-composition
+- **Branch**: iterate/changelog-aggregator-idempotency
+- **Last Commit**: 0e353768 Merge remote-tracking branch 'origin/main' into iterate/changelog-aggregator-idempotency
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -77,7 +77,7 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 381
+- **Total work events**: 382
 - **Last iterate**: change — iterate: raise the PR-review diff cap, cut at a file boundary, name what went unreviewed (2026-07-27)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
