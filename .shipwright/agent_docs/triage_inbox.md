@@ -1,14 +1,14 @@
 # Triage Inbox
 
-> Auto-generated 2026-07-27T17:46:55.259681Z. Items waiting for triage decision.
+> Auto-generated 2026-07-27T18:24:14.588527Z. Items waiting for triage decision.
 > Promote via WebUI Triage tab (when v1b lands) or `shared/scripts/tools/triage_promote.py --id <id> --task-ref EXT:<ref>`.
 
 ## Status summary
 
-- Total: 423
-- Triage: 19 | Promoted: 1 | Dismissed: 402 | Snoozed: 1
+- Total: 426
+- Triage: 21 | Promoted: 1 | Dismissed: 403 | Snoozed: 1
 
-## Top 19 items (severity-sorted)
+## Top 21 items (severity-sorted)
 
 ### Source: analysis (1 item)
 
@@ -19,18 +19,18 @@
 
 ### Source: compliance (1 item)
 
-<a id="trg-554786d0"></a>
-- **Compliance: 4 open finding(s)** `id=trg-554786d0 | severity=high | kind=compliance → P1/compliance`
-  - 4 open compliance finding(s): D/D1, D/D3, H/H1, H/H2  - D/D1: Spec FR coverage in events — uncovered FRs — Must: FR-01.…
+<a id="trg-a5b167f4"></a>
+- **Compliance: 5 open finding(s)** `id=trg-a5b167f4 | severity=high | kind=compliance → P1/compliance`
+  - 5 open compliance finding(s): D/D1, D/D3, F/F6, H/H1, H/H2  - D/D1: Spec FR coverage in events — uncovered FRs — Must:…
   - Launch payload (copy into a new Claude session):
     ```text
     /shipwright-compliance
     
-    Context: 4 open compliance finding(s): D/D1, D/D3, H/H1, H/H2.
+    Context: 5 open compliance finding(s): D/D1, D/D3, F/F6, H/H1, H/H2.
     Dashboard: .shipwright/compliance/dashboard.md
     Each finding + hint is listed in this item's detail.
     ```
-  - Promote: `triage_promote.py --id trg-554786d0 --task-ref EXT:<ref>`
+  - Promote: `triage_promote.py --id trg-a5b167f4 --task-ref EXT:<ref>`
 
 ### Source: f0-suite (1 item)
 
@@ -99,7 +99,7 @@
   - The tail of campaign step S2, not a new campaign - file it now so it is not lost between "S2 merged" and "somebody noti…
   - Promote: `triage_promote.py --id trg-8bf97fd4 --task-ref EXT:<ref>`
 
-### Source: manual (2 items)
+### Source: manual (4 items)
 
 <a id="trg-2ca796f3"></a>
 - **Release aggregator can write the same version twice on a re-run** `id=trg-2ca796f3 | severity=high | kind=bug → P1/engineering`
@@ -107,10 +107,20 @@
   - Evidence: `.shipwright/planning/iterate/iterate-2026-07-27-changelog-writer-preserve-history.md`
   - Promote: `triage_promote.py --id trg-2ca796f3 --task-ref EXT:<ref>`
 
+<a id="trg-9862202d"></a>
+- **host checks part 2 follow-up: require the checks that currently gate nothing** `id=trg-9862202d | severity=medium | kind=improvement → P2/engineering`
+  - FOLLOW-UP to trg-c7e5835b, do this AFTER the part-2 PR (items 3-5) is merged. The new check_required_checks producer fo…
+  - Promote: `triage_promote.py --id trg-9862202d --task-ref EXT:<ref>`
+
 <a id="trg-efca9de7"></a>
 - **shared/tests and integration-tests fail 21 tests when run in one pytest session** `id=trg-efca9de7 | severity=medium | kind=bug → P2/engineering`
   - Running 'uv run pytest shared/tests integration-tests -m "not slow and not cross_plugin"' as a SINGLE invocation fails…
   - Promote: `triage_promote.py --id trg-efca9de7 --task-ref EXT:<ref>`
+
+<a id="trg-c6e75011"></a>
+- **shipwright-security tests write an untracked .shipwright/ dir into the repo tree** `id=trg-c6e75011 | severity=low | kind=bug → P3/engineering`
+  - Running the F0 suite leaves an untracked directory in the working tree: plugins/shipwright-security/.shipwright/ contai…
+  - Promote: `triage_promote.py --id trg-c6e75011 --task-ref EXT:<ref>`
 
 ### Source: req3-campaign (3 items)
 

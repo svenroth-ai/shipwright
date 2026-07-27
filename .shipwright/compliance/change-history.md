@@ -3,7 +3,7 @@
 Generated: 2026-07-27T17:38:43.791837+00:00
 Source-State: run=iterate-2026-07-27-run-unit-parallel-race
 Consistency-audit: never run
-Total commits: 1239
+Total commits: 1242
 
 ## Commit Distribution
 
@@ -11,7 +11,7 @@ Total commits: 1239
 pie title Commit Types
     "fix" : 358
     "feat" : 346
-    "chore" : 259
+    "chore" : 262
     "docs" : 148
     "refactor" : 76
     "test" : 31
@@ -736,10 +736,13 @@ pie title Commit Types
 | 2026-03-20 | — | Task 02 — project templates (CLAUDE.md, agent_docs, CI) | c3a6d2f53bd3 |
 | 2026-03-20 | — | Task 01 — monorepo scaffolding + supabase-nextjs stack profile | 990a138a4690 |
 
-### Chores (chore) — 259 commits
+### Chores (chore) — 262 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-07-27 | churn | background append after main merge | 06b31afc32ae |
+| 2026-07-27 | triage | follow-up card for requiring the checks that gate nothing | 7387b2796960 |
+| 2026-07-27 | churn | regenerate derived snapshots after main merge | dfa304b52094 |
 | 2026-07-27 | churn | background append after main merge | 536258c834d8 |
 | 2026-07-27 | churn | regenerate derived snapshots after main merge | b867c6ec28e6 |
 | 2026-07-27 | churn | background grade_snapshot append after main merge | 9b79a6cef5f8 |
@@ -1310,7 +1313,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 1239 |
+| Total commits | 1242 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 1239 |
+| Human-authored commits | 1242 |
 

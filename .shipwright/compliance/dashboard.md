@@ -63,7 +63,7 @@ _Ingested from CI `findings.json` (public-safe: severity counts + gate verdict o
 | Iterate tests passing | 53/84 testable changes tested | WARN | 31 testable change(s) without tests — see test-evidence.md |
 | Dependencies | 11 packages | INFO |  |
 | Copyleft risk | 0 | PASS |  |
-| Triage open | 20 open | WARN | 20 actionable item(s) — see ../agent_docs/triage_inbox.md |
+| Triage open | 21 open | WARN | 21 actionable item(s) — see ../agent_docs/triage_inbox.md |
 | Bloat over-limit (grandfathered) | 125 | INFO |  |
 | Bloat in allowlist | 159 entries | INFO |  |
 | Bloat ratchet delta | -88 lines | PASS |  |

@@ -3,17 +3,17 @@ canon_generated: true
 run_id: "iterate-2026-07-27-handoff-tally-and-gate-honesty"
 phase: "iterate"
 reason: "ensure-current pre-merge refresh"
-timestamp: "2026-07-27T17:46:55.259681+00:00"
+timestamp: "2026-07-27T18:24:14.588527+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-07-27 17:46:55 UTC
+> Auto-generated 2026-07-27 18:24:14 UTC
 
 ## Session Info
 
 - **Session ID**: a7fa3da4-74bf-406f-b92b-f309691d90f9
-- **Timestamp**: 2026-07-27 17:46:55 UTC
+- **Timestamp**: 2026-07-27 18:24:14 UTC
 - **Reason**: ensure-current pre-merge refresh
 
 ## Last Iterate
@@ -52,7 +52,7 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 ## Git State
 
 - **Branch**: iterate/handoff-tally-and-gate-honesty
-- **Last Commit**: 8db28a2a Merge remote-tracking branch 'origin/main' into iterate/handoff-tally-and-gate-honesty
+- **Last Commit**: dab70ccb Merge remote-tracking branch 'origin/main' into iterate/handoff-tally-and-gate-honesty
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -68,11 +68,11 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 | Event | Type | Source | Date |
 |-------|------|--------|------|
+| evt-d33730ea | grade_snapshot | — | 2026-07-27 |
 | evt-2acd6fdb | grade_snapshot | — | 2026-07-27 |
 | evt-950798de | grade_snapshot | — | 2026-07-27 |
 | evt-36d0f887 | work_completed | iterate (iterate: raise the PR-review diff cap, cut at a file boundary, name what went unreviewed) | 2026-07-27 |
 | evt-ad7b51e0 | grade_snapshot | — | 2026-07-27 |
-| evt-e3d8f519 | work_completed | iterate (iterate: an audit that checked nothing is not recorded) | 2026-07-27 |
 
 ## Recovery
 
