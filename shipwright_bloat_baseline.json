@@ -116,7 +116,7 @@
     {
       "path": "plugins/shipwright-compliance/scripts/audit/audit_staleness.py",
       "limit": 300,
-      "current": 365,
+      "current": 379,
       "state": "exception",
       "adr": "ADR-095"
     },
@@ -172,28 +172,28 @@
     {
       "path": "plugins/shipwright-compliance/scripts/lib/compliance_report.py",
       "limit": 300,
-      "current": 359,
+      "current": 360,
       "state": "grandfathered",
       "adr": null
     },
     {
       "path": "plugins/shipwright-compliance/scripts/lib/rtm_generator.py",
       "limit": 300,
-      "current": 763,
+      "current": 764,
       "state": "grandfathered",
       "adr": null
     },
     {
       "path": "plugins/shipwright-compliance/scripts/lib/sbom_generator.py",
       "limit": 300,
-      "current": 522,
+      "current": 523,
       "state": "grandfathered",
       "adr": null
     },
     {
       "path": "plugins/shipwright-compliance/scripts/lib/test_evidence.py",
       "limit": 300,
-      "current": 906,
+      "current": 907,
       "state": "grandfathered",
       "adr": null
     },

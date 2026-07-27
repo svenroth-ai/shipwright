@@ -1,0 +1,10 @@
+{
+  "run_id": "iterate-2026-07-27-artifact-state-stamping",
+  "date": "2026-07-27T09:08:42.675204Z",
+  "type": "feature",
+  "complexity": "medium",
+  "branch": "iterate/artifact-state-stamping",
+  "spec": ".shipwright/planning/iterate/2026-07-27-artifact-state-stamping.md",
+  "tests_passed": true,
+  "adr": "iterate-2026-07-27-artifact-state-stamping"
+}

@@ -1,15 +1,16 @@
 # Commit Change Log
 
-Generated: 2026-07-27T08:43:53.887359+00:00
-Total commits: 1220
+Generated: 2026-07-27T09:08:42.773123+00:00
+Source-State: run=iterate-2026-07-27-artifact-state-stamping
+Total commits: 1213
 
 ## Commit Distribution
 
 ```mermaid
 pie title Commit Types
-    "fix" : 354
+    "fix" : 349
     "feat" : 336
-    "chore" : 257
+    "chore" : 255
     "docs" : 147
     "refactor" : 75
     "test" : 30
@@ -20,15 +21,10 @@ pie title Commit Types
 
 ## Changes by Type
 
-### Fixes (fix) — 354 commits
+### Fixes (fix) — 349 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
-| 2026-07-27 | security | manifest labels are data, and the status vocabulary is closed | 4bc15e18a151 |
-| 2026-07-27 | security | a degradation must not overwrite an accurate status | 88e329831165 |
-| 2026-07-27 | security | an ineffective ruleset degrades the class, it is not a footnote | 547496658778 |
-| 2026-07-27 | security | treat a file-sourced coverage manifest as untrusted input | 633739ad1dbc |
-| 2026-07-27 | security | close four false-coverage claims found reviewing the PR head | dece611d4560 |
 | 2026-07-27 | run | an override overrides the verdict, never the check (#438) | f6179f6e1ed5 |
 | 2026-07-27 | ci | the PR review gate stops being bypassable (#437) | ec0c7055046f |
 | 2026-07-23 | deps | bump pyasn1 0.6.3 -> 0.6.4 (CVE-2026-59885, CVE-2026-59886) (#432) | 9ffbae764acd |
@@ -383,8 +379,8 @@ pie title Commit Types
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-07-27 | compliance | produced artifacts name the state they describe (FR-01.10) | 66714199af06 |
 | 2026-07-27 | triage | defer from the terminal; cap the failing-check detail (#444) | 631e08055ebc |
-| 2026-07-27 | security | name what the scan did not check, and ask how far to go | 5e45fcacb549 |
 | 2026-07-27 | project | give requirements a size rule, and stop the templates contradicting the basis rule (#442) | af72103d0e7a |
 | 2026-07-27 | spec | REQ-3 Phase 2 — every requirement now states what it guarantees (#436) | 28491e1c9631 |
 | 2026-07-23 | shared | shared requirement-elicitation method + FR-01.16 (REQ-3 Phase 1) (#431) | 601fafe55276 |
@@ -720,13 +716,11 @@ pie title Commit Types
 | 2026-03-20 | — | Task 02 — project templates (CLAUDE.md, agent_docs, CI) | c3a6d2f53bd3 |
 | 2026-03-20 | — | Task 01 — monorepo scaffolding + supabase-nextjs stack profile | 990a138a4690 |
 
-### Chores (chore) — 257 commits
+### Chores (chore) — 255 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
-| 2026-07-27 | review | record the converged external code review | 4ecf3b4f7535 |
-| 2026-07-27 | churn | regenerate derived snapshots after main merge | 6b93dbe57590 |
-| 2026-07-27 | triage | sweep 60 outbox append(s) into branch | 73ead296f529 |
+| 2026-07-27 | triage | sweep 60 outbox append(s) into branch | 9c8b62747190 |
 | 2026-07-26 | review | default external-review GPT model to gpt-5.6-terra (#435) | 8d750a5fc7af |
 | 2026-07-24 | security | stage full compliance write-set in Step 7.5 finalizer (#434) | 5da96ebe8561 |
 | 2026-07-23 | compliance | refresh after security scan (#433) | 2b644805fb7d |
@@ -1289,7 +1283,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 1220 |
+| Total commits | 1213 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 1220 |
+| Human-authored commits | 1213 |
 

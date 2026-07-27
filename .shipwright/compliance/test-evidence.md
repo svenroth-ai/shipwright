@@ -1,13 +1,14 @@
 # Test Evidence Report
 
-Generated: 2026-07-27T08:43:53.887359+00:00
+Generated: 2026-07-27T09:08:42.773123+00:00
+Source-State: run=iterate-2026-07-27-artifact-state-stamping
 
 ## Summary
 
 | Metric | Value |
 |--------|-------|
 | Total test checkpoints | 364 |
-| Total unit tests (latest full suite) | 10107/10107 (2026-07-27) |
+| Total unit tests (latest full suite) | 4946/4961 (2026-07-23) |
 | New tests from iterations | +220 |
 
 ## Test Progression
@@ -18,7 +19,7 @@ Generated: 2026-07-27T08:43:53.887359+00:00
 | 2 | Overriding a phase gate now runs the check anyway and records what it found plus the reason given, and the session handoff states which phases are finished and which one was interrupted. | [iterate](traceability-matrix.md#evt-4794dcc1) | — | +0 | — | — | 2026-07-27 |
 | 3 | requirement granularity guidance + advisory I6 check + the Basis-assumed template contradiction | [iterate](traceability-matrix.md#evt-9ad5050b) | — | +0 | — | — | 2026-07-27 |
 | 4 | triage defer from the terminal + failing-check detail cap | [iterate](traceability-matrix.md#evt-2aa40a94) | — | +0 | — | — | 2026-07-27 |
-| 5 | A security scan now says which kinds of weakness it did not look at, honours the project's own list of accepted findings, only calls a finding fixed when the later scan checked the same ground, and asks how far to go instead of deciding silently. | [iterate](traceability-matrix.md#evt-a39a5e95) | mixed | +0 | 10107/10107 | PASS | 2026-07-27 |
+| 5 | Evidence documents and test-run records now name which version of the project they describe, not just when they were written. | [iterate](traceability-matrix.md#evt-37719eaa) | — | +0 | — | — | 2026-07-27 |
 | 6 | REQ-3 Phase 2 content round - all 18 requirements walked or minted | [iterate](traceability-matrix.md#evt-ea7203ec) | — | +0 | — | — | 2026-07-26 |
 | 7 | Requirement gathering now follows one shared, thorough interview method across the project, adopt and iterate steps, and a new requirement records that guarantee. | [iterate](traceability-matrix.md#evt-11304ded) | unit | +0 | 4946/4961 | PASS (15 skipped) | 2026-07-23 |
 | 8 | The automated design check no longer flags a false problem for projects that were adopted into Shipwright and never went through the design/mockup step. | [iterate](traceability-matrix.md#evt-a8a0f759) | unit | +0 | 26/26 | PASS | 2026-07-23 |
@@ -385,36 +386,36 @@ _Synthesized from per-iterate **unit** results — Integration / pgTAP / E2E / S
 
 | Run | Trigger | Unit | Integration | pgTAP | E2E | Smoke | Date |
 |-----|---------|------|-------------|-------|-----|-------|------|
-| 1 | iterate | 22/22 | — | — | — | — | 2026-07-11 |
-| 2 | iterate | 37/37 | — | — | — | — | 2026-07-12 |
-| 3 | iterate | 4889/4889 | — | — | — | — | 2026-07-14 |
-| 4 | iterate | 33/33 | — | — | — | — | 2026-07-14 |
-| 5 | iterate | 54/54 | — | — | — | — | 2026-07-14 |
-| 6 | iterate | 42/42 | — | — | — | — | 2026-07-15 |
-| 7 | iterate | 143/143 | — | — | — | — | 2026-07-15 |
-| 8 | iterate | 41/41 | — | — | — | — | 2026-07-15 |
-| 9 | iterate | 1009/1009 | — | — | — | — | 2026-07-15 |
-| 10 | iterate | 1047/1047 | — | — | — | — | 2026-07-15 |
-| 11 | iterate | 1060/1060 | — | — | — | — | 2026-07-16 |
-| 12 | iterate | 1090/1090 | — | — | — | — | 2026-07-16 |
-| 13 | iterate | 4572/4572 | — | — | — | — | 2026-07-16 |
-| 14 | iterate | 4164/4164 | — | — | — | — | 2026-07-16 |
-| 15 | iterate | 4597/4597 | — | — | — | — | 2026-07-16 |
-| 16 | iterate | 5697/5697 | — | — | — | — | 2026-07-16 |
-| 17 | iterate | 5936/5936 | — | — | — | — | 2026-07-16 |
-| 18 | iterate | 1119/1119 | — | — | — | — | 2026-07-16 |
-| 19 | iterate | 17/17 | — | — | — | — | 2026-07-17 |
-| 20 | iterate | 9458/9486 | — | — | — | — | 2026-07-20 |
-| 21 | iterate | 4712/4723 | — | — | — | — | 2026-07-20 |
-| 22 | iterate | 5207/5207 | — | — | — | — | 2026-07-20 |
-| 23 | iterate | 6/6 | — | — | — | — | 2026-07-20 |
-| 24 | iterate | 5/5 | — | — | — | — | 2026-07-20 |
-| 25 | iterate | 4708/4708 | — | — | — | — | 2026-07-20 |
-| 26 | iterate | 6452/6452 | — | — | — | — | 2026-07-21 |
-| 27 | iterate | 6230/6242 | — | — | — | — | 2026-07-23 |
-| 28 | iterate | 26/26 | — | — | — | — | 2026-07-23 |
-| 29 | iterate | 4946/4961 | — | — | — | — | 2026-07-23 |
-| 30 | iterate | 10107/10107 | — | — | — | — | 2026-07-27 |
+| 1 | iterate | 28/28 | — | — | — | — | 2026-07-11 |
+| 2 | iterate | 22/22 | — | — | — | — | 2026-07-11 |
+| 3 | iterate | 37/37 | — | — | — | — | 2026-07-12 |
+| 4 | iterate | 4889/4889 | — | — | — | — | 2026-07-14 |
+| 5 | iterate | 33/33 | — | — | — | — | 2026-07-14 |
+| 6 | iterate | 54/54 | — | — | — | — | 2026-07-14 |
+| 7 | iterate | 42/42 | — | — | — | — | 2026-07-15 |
+| 8 | iterate | 143/143 | — | — | — | — | 2026-07-15 |
+| 9 | iterate | 41/41 | — | — | — | — | 2026-07-15 |
+| 10 | iterate | 1009/1009 | — | — | — | — | 2026-07-15 |
+| 11 | iterate | 1047/1047 | — | — | — | — | 2026-07-15 |
+| 12 | iterate | 1060/1060 | — | — | — | — | 2026-07-16 |
+| 13 | iterate | 1090/1090 | — | — | — | — | 2026-07-16 |
+| 14 | iterate | 4572/4572 | — | — | — | — | 2026-07-16 |
+| 15 | iterate | 4164/4164 | — | — | — | — | 2026-07-16 |
+| 16 | iterate | 4597/4597 | — | — | — | — | 2026-07-16 |
+| 17 | iterate | 5697/5697 | — | — | — | — | 2026-07-16 |
+| 18 | iterate | 5936/5936 | — | — | — | — | 2026-07-16 |
+| 19 | iterate | 1119/1119 | — | — | — | — | 2026-07-16 |
+| 20 | iterate | 17/17 | — | — | — | — | 2026-07-17 |
+| 21 | iterate | 9458/9486 | — | — | — | — | 2026-07-20 |
+| 22 | iterate | 4712/4723 | — | — | — | — | 2026-07-20 |
+| 23 | iterate | 5207/5207 | — | — | — | — | 2026-07-20 |
+| 24 | iterate | 6/6 | — | — | — | — | 2026-07-20 |
+| 25 | iterate | 5/5 | — | — | — | — | 2026-07-20 |
+| 26 | iterate | 4708/4708 | — | — | — | — | 2026-07-20 |
+| 27 | iterate | 6452/6452 | — | — | — | — | 2026-07-21 |
+| 28 | iterate | 6230/6242 | — | — | — | — | 2026-07-23 |
+| 29 | iterate | 26/26 | — | — | — | — | 2026-07-23 |
+| 30 | iterate | 4946/4961 | — | — | — | — | 2026-07-23 |
 
 ## Code Review Evidence
 
