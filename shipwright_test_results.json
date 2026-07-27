@@ -1,16 +1,17 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-07-27-plan-section-deps",
+    "run_id": "iterate-2026-07-27-disclose-audit-last-run",
     "date": "2026-07-27",
     "unit": {
       "status": "passed",
-      "passed": 5305,
-      "total": 5305
+      "passed": 8963,
+      "total": 8963,
+      "note": "14 plugin suites (4011) + shared/tests -m 'not slow and not cross_plugin' (4952); 16 skipped"
     },
     "integration": {
       "status": "passed",
-      "passed": 422,
-      "total": 422
+      "passed": 418,
+      "total": 418
     },
     "pgtap": {
       "status": "not_run",
@@ -18,9 +19,9 @@
       "total": 0
     },
     "e2e": {
-      "status": "passed",
-      "passed": 43,
-      "total": 43
+      "status": "not_run",
+      "passed": 0,
+      "total": 0
     },
     "design_fidelity": {
       "status": "not_run",
@@ -33,105 +34,157 @@
     "degraded": [],
     "surface_verification": {
       "surface": "cli",
-      "runner": "uv run --extra dev pytest shared/tests/test_plan_manifest.py shared/tests/test_verifiers_plan_gates.py -v",
+      "runner": "uv run --directory plugins/shipwright-compliance pytest tests/test_disclosure_e2e.py -q",
       "exit_code": 0,
-      "tests_run": 43,
-      "evidence_path": "C:\\01_Development\\shipwright\\.worktrees\\plan-section-deps\\.shipwright\\runs\\iterate-2026-07-27-plan-section-deps\\surface_verification.log",
-      "timestamp": "2026-07-27T12:05:25.657Z"
+      "tests_run": 5,
+      "evidence_path": "C:\\01_Development\\shipwright\\.worktrees\\disclose-audit-last-run\\.shipwright\\runs\\iterate-2026-07-27-disclose-audit-last-run\\surface_verification.log",
+      "timestamp": "2026-07-27T08:36:51.328Z",
+      "attempts": 1
     },
     "test_completeness": {
       "status": "complete",
       "behaviors": [
         {
-          "behavior": "a bare NN-slug manifest parses exactly as before",
+          "behavior": "every evidence document (RTM, test-evidence, change-history, SBOM) discloses the last cross-check as the third line of its provenance header",
           "disposition": "tested",
-          "evidence": "shared/tests/test_plan_manifest.py::test_bare_manifest_still_parses PASSED"
+          "evidence": "test_evidence_docs_disclose_audit.py::test_never_run_is_disclosed_in_every_document + ::test_recorded_run_is_disclosed_in_every_document + ::test_the_disclosure_sits_in_the_provenance_block (parametrized x4) PASSED"
         },
         {
-          "behavior": "'NN-slug: dep, dep' declares dependencies",
+          "behavior": "the dashboard carries both the provenance line and the full Consistency Audit section",
           "disposition": "tested",
-          "evidence": "::test_dependencies_are_parsed PASSED"
+          "evidence": "test_evidence_docs_disclose_audit.py::test_dashboard_carries_both_the_line_and_the_section + ::test_dashboard_section_reflects_a_recorded_run PASSED"
         },
         {
-          "behavior": "whitespace variants and a trailing comma are tolerated",
+          "behavior": "the disclosure is additive: the generated timestamp, the source-state line and the SBOM lock qualifier all survive",
           "disposition": "tested",
-          "evidence": "::test_whitespace_and_trailing_comma_tolerated PASSED (3 cases)"
+          "evidence": "test_evidence_docs_disclose_audit.py::test_disclosure_does_not_displace_the_generated_timestamp + ::test_sbom_keeps_its_own_header_qualifier PASSED"
         },
         {
-          "behavior": "interior-empty, duplicate, self, undeclared and non-grammar dependencies fail",
+          "behavior": "never-run is stated explicitly in both renderings",
           "disposition": "tested",
-          "evidence": "::test_empty_dependency_token_rejected, ::test_duplicate_dependency_token_rejected, ::test_self_dependency_fails, ::test_dependency_on_an_undeclared_section_fails, ::test_dependency_must_match_the_section_grammar PASSED"
+          "evidence": "test_audit_disclosure_render.py::test_never_run_says_so_explicitly + ::test_never_run_is_stated_plainly PASSED"
         },
         {
-          "behavior": "a duplicate section id fails",
+          "behavior": "the age is relative to the document's own reference: same day / 1 day / N days",
           "disposition": "tested",
-          "evidence": "::test_duplicate_section_id_rejected PASSED"
+          "evidence": "test_audit_disclosure_render.py::test_records_the_date_and_the_age, ::test_same_day_reads_as_same_day, ::test_one_day_is_singular PASSED"
         },
         {
-          "behavior": "a prerequisite numbered after its user fails",
+          "behavior": "a reference that trails the audit clamps instead of rendering a negative age",
           "disposition": "tested",
-          "evidence": "::test_prerequisite_after_its_user_fails + test_check_sections.py::test_prerequisite_after_its_user_fails_the_gate + test_verifiers_plan_gates.py::test_prerequisite_after_its_user_fails PASSED"
+          "evidence": "test_audit_disclosure_render.py::test_audit_newer_than_the_render_reference_clamps PASSED"
         },
         {
-          "behavior": "a cycle cannot satisfy the order rule",
+          "behavior": "a completed audit records itself durably with counts, verdict, scope and timestamp",
           "disposition": "tested",
-          "evidence": "::test_a_cycle_cannot_satisfy_the_order_rule PASSED"
+          "evidence": "test_audit_disclosure.py::test_records_run_with_counts_and_verdict + test_run_audit_records_run.py::test_a_full_run_is_recorded_in_tracked_state PASSED"
         },
         {
-          "behavior": "diagnostics name the manifest line number",
+          "behavior": "a failing audit is still recorded, and disclosed as failing",
           "disposition": "tested",
-          "evidence": "::test_errors_name_the_manifest_line, ::test_order_errors_name_their_line PASSED"
+          "evidence": "test_audit_disclosure.py::test_failing_audit_is_still_recorded + test_audit_disclosure_render.py::test_failing_run_names_the_drift PASSED"
         },
         {
-          "behavior": "the section-id grammar rejects traversal payloads and malformed ids",
+          "behavior": "recording preserves every unrelated config key (read-modify-write)",
           "disposition": "tested",
-          "evidence": "::test_grammar_rejects PASSED (7 cases incl. '../01-auth')"
+          "evidence": "test_audit_disclosure.py::test_preserves_unrelated_config_keys + test_run_audit_records_run.py::test_recording_does_not_disturb_an_existing_config PASSED"
         },
         {
-          "behavior": "check-sections.py reports dependencies and order errors",
+          "behavior": "the write is atomic and leaves no temp file behind",
           "disposition": "tested",
-          "evidence": "plugins/shipwright-plan/tests/test_check_sections.py::test_dependencies_are_reported, ::test_prerequisite_after_its_user_fails_the_gate PASSED"
+          "evidence": "test_audit_disclosure_state.py::test_no_temp_file_is_left_behind PASSED"
         },
         {
-          "behavior": "a malformed manifest never reports success from the CLI",
+          "behavior": "producer-to-consumer round-trip: what is written is what is read (touches_io_boundary probe)",
           "disposition": "tested",
-          "evidence": "test_check_sections.py::test_a_malformed_manifest_never_reports_success PASSED (5 cases)"
+          "evidence": "test_audit_disclosure.py::test_round_trips_through_the_file PASSED"
         },
         {
-          "behavior": "a bare manifest passes the CLI gate \u2014 no migration owed",
+          "behavior": "a partial --only run is recorded and disclosed as partial",
           "disposition": "tested",
-          "evidence": "test_check_sections.py::test_bare_manifest_declares_nothing_and_passes PASSED"
+          "evidence": "test_run_audit_records_run.py::test_a_partial_run_is_recorded_as_partial + test_audit_disclosure_render.py::test_partial_run_does_not_displace_the_last_full_check PASSED"
         },
         {
-          "behavior": "the plugin parser and the shared parser agree",
+          "behavior": "a partial run never erases the last full cross-check, including from a pre-upgrade config",
           "disposition": "tested",
-          "evidence": "plugins/shipwright-plan/tests/test_sections.py (8 tests) + shared/tests/test_plan_manifest.py::test_parse_manifest_text_is_the_same_parser PASSED; also probed cross-process (ADR-044 lib collision)"
+          "evidence": "test_audit_disclosure_state.py::test_a_partial_run_never_erases_the_last_full_check, ::test_a_partial_run_promotes_a_pre_upgrade_full_record, ::test_a_partial_run_does_not_promote_a_prior_partial_record PASSED"
         },
         {
-          "behavior": "the dependency-order gate runs at phase completion and blocks",
+          "behavior": "a project with only partial runs reads 'never fully run'",
           "disposition": "tested",
-          "evidence": "shared/tests/test_verifiers_plan_gates.py::test_the_gate_runs_at_phase_completion, ::test_a_bad_order_blocks_phase_completion, ::test_a_good_order_does_not_block_phase_completion PASSED"
+          "evidence": "test_audit_disclosure_render.py::test_partial_only_project_says_never_fully_run (header note + dashboard) PASSED"
         },
         {
-          "behavior": "section-id validity still catches malformed and duplicate ids via the shared parser",
+          "behavior": "the gitignored audit-report transient cannot change the tracked render",
           "disposition": "tested",
-          "evidence": "shared/tests/test_verifiers_plan.py::test_section_id_validity_detects_bad_format, ::test_section_id_validity_detects_duplicates PASSED"
+          "evidence": "test_audit_disclosure_render.py::test_gitignored_transient_does_not_change_the_render PASSED"
         },
         {
-          "behavior": "find_planning_split_dirs skips iterate/ and dotdirs",
+          "behavior": "rendering is deterministic; the audit record is an explicit render input, the wall clock is not",
           "disposition": "tested",
-          "evidence": "test_verifiers_plan_gates.py::test_find_planning_split_dirs_skips_iterate_and_dotdirs PASSED"
+          "evidence": "test_audit_disclosure_render.py::test_render_is_deterministic + test_evidence_docs_disclose_audit.py::test_render_stays_byte_stable_across_regens + ::test_the_audit_record_is_an_explicit_render_input PASSED"
+        },
+        {
+          "behavior": "a damaged record reads as unknown, never as 'never run'",
+          "disposition": "tested",
+          "evidence": "test_audit_disclosure_state.py::test_damaged_records_are_invalid_not_absent (6 shapes) + test_audit_disclosure_render.py::test_unreadable_record_is_unknown_not_never, ::test_damaged_record_renders_as_unknown PASSED"
+        },
+        {
+          "behavior": "an unparseable or non-object config never aborts a compliance regen",
+          "disposition": "tested",
+          "evidence": "test_audit_disclosure_state.py::test_unparseable_config_is_invalid + ::test_non_object_config_root_is_invalid PASSED"
+        },
+        {
+          "behavior": "an unwritable or corrupt config is reported, never clobbered, never raised",
+          "disposition": "tested",
+          "evidence": "test_audit_disclosure.py::test_never_raises_on_an_unwritable_config + ::test_corrupt_config_is_not_clobbered_silently PASSED"
+        },
+        {
+          "behavior": "hostile scope values and non-integer check counts never reach a rendered document",
+          "disposition": "tested",
+          "evidence": "test_audit_disclosure_state.py::test_a_hostile_scope_value_is_stripped_before_it_is_stored, ::test_a_hostile_scope_value_is_stripped_on_read, ::test_non_integer_check_counts_are_dropped PASSED"
+        },
+        {
+          "behavior": "the header note is always single-line and never empty, in all four states",
+          "disposition": "tested",
+          "evidence": "test_audit_disclosure_render.py::test_note_is_a_single_line PASSED"
+        },
+        {
+          "behavior": "a directly constructed ComplianceData omits the line rather than inventing one (backwards compatible)",
+          "disposition": "tested",
+          "evidence": "test_evidence_docs_disclose_audit.py::test_directly_constructed_data_omits_the_line_rather_than_guessing PASSED"
+        },
+        {
+          "behavior": "the compliance phase regenerates all five documents, so an audit's answer is visible immediately instead of a regen cycle later",
+          "disposition": "tested",
+          "evidence": "test_disclosure_e2e.py::test_the_compliance_phase_refreshes_every_documents_disclosure PASSED"
+        },
+        {
+          "behavior": "end-to-end through the real CLIs: cross-check -> durable record -> regenerated documents on disk",
+          "disposition": "tested",
+          "evidence": "test_disclosure_e2e.py (5 tests) PASSED - also the F0.5 surface runner (exit_code 0, tests_run 5)"
+        },
+        {
+          "behavior": "the disclosure modules import under both the scripts.lib.* and the bare lib.* package root (ADR-045)",
+          "disposition": "tested",
+          "evidence": "test_audit_disclosure.py::TestImportDiscipline::test_collectors_import_under_the_bare_lib_package_root PASSED"
+        },
+        {
+          "behavior": "run_audit warns on stderr when a completed run could not be recorded",
+          "disposition": "untestable",
+          "reason_code": "covered-by-existing-test",
+          "reason": "the failure branch is pinned by test_never_raises_on_an_unwritable_config, which asserts the recorded:False payload the warning keys off. The added print(..., file=sys.stderr) is a one-line diagnostic on that already-covered branch; asserting console text would pin wording, not behaviour."
         }
       ],
       "counts": {
-        "testable": 16,
-        "tested": 16,
-        "untestable": 0,
+        "testable": 25,
+        "tested": 25,
+        "untestable": 1,
         "untested_testable": 0
       },
       "enumeration_basis": {
-        "acs": 6,
-        "covered_acs": 6
+        "acs": 7,
+        "covered_acs": 7
       }
     }
   },
@@ -140,5 +193,10 @@
     "measured_tier": "repo",
     "source": "combined coverage.xml (all plugins + shared + integration)",
     "measured_at": "2026-07-04T00:00:00Z"
+  },
+  "source_state": {
+    "run_id": "iterate-2026-07-27-disclose-audit-last-run",
+    "commit": "cb19a3953fb685f2e6b69d0b4b74b3ce5361a76c",
+    "dirty": true
   }
 }

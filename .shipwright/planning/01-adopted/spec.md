@@ -530,6 +530,12 @@ _Where the work detail lives_ at the end of this document.
   requirement and gives no reason for naming none, when the cross-check audit
   runs, then it is reported together with a suggested command to fix it, without
   failing the audit.
+- (E) Given the cross-check runs only when someone asks for it — it is on demand
+  by design, with no schedule behind it — when any evidence document is read,
+  then that document states when the cross-check last happened, or states that it
+  never has, so a reader can judge how much the evidence is worth instead of
+  assuming it was checked. A cross-check restricted to part of the project says
+  so, and the answer survives a fresh copy of the project.
 - (E) Given the evidence is read as a record of the project, when it is relied
   on, then it covers only what the project actually recorded — a change that
   recorded nothing about the requirement it touched does not appear, so the
