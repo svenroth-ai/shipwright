@@ -39,6 +39,7 @@ EXPECTED_STEP_REFERENCES = {
     "step-e-artifact-generation.md",
     "step-e5-env-scaffold.md",
     "step-e16-triage-inbox.md",
+    "step-e18-inherited-baseline.md",
     "step-f-compliance-seeding.md",
     "step-g-layer3-review.md",
     "step-h-validate-commit-handoff.md",
@@ -179,6 +180,12 @@ def test_step_h_reference_tells_the_agent_where_the_count_comes_from() -> None:
     assert "unconfirmed_fr_count" in doc, "Step H must pass the count to the commit builder"
     assert "requirement-elicitation.md" in doc, (
         "the banner must point at the method that resolves the unconfirmed catalogue"
+    )
+    assert "shipwright_known_failures.json" in doc, (
+        "the banner must surface what the codebase arrived with, as inherited"
+    )
+    assert "adopt-derived-catalogue-confirmation" in doc, (
+        "the banner must name the follow-up that resolves the unconfirmed catalogue"
     )
     assert "read_summary" in doc, (
         "Step H must read the catalogue through the fail-closed reader — a bare "

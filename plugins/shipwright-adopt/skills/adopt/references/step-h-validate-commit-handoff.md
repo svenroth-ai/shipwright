@@ -12,10 +12,12 @@ The output now carries `errors` AND `warnings`. Hard-stop on
 the "few ADRs for repo size" plausibility check) — they're informational,
 not blocking.
 
-`errors[]` includes the **honesty artifact** (trg-1aa5a8ab):
-`.shipwright/adopt/derived-catalogue.json` (Step E). Missing it means the
-handover would present a derived catalogue as if someone had confirmed it — so
-it blocks, and the error names the step to re-run.
+`errors[]` includes the two **honesty artifacts** (trg-1aa5a8ab):
+`.shipwright/adopt/derived-catalogue.json` (Step E) and
+`shipwright_known_failures.json` (Step E.18). Missing either means the handover
+would present a derived catalogue as if someone had confirmed it, or an
+inherited red suite as this project's own failure — so it blocks, and the error
+names the step to re-run.
 
 If `.shipwright/adopt/preservation_log.json` exists, also surface a
 "Preserved files" section in the handoff: count of files preserved, list
@@ -65,9 +67,11 @@ of `.preserved` backup paths, and a special call-out if any
    Adopted via /shipwright-adopt using profile=<profile>, scope=<scope>.
    Inferred <N> functional requirements from existing codebase.
    <U> of them are DERIVED AND UNCONFIRMED — no person has
-   agreed they describe this product. Work through them with someone who
-   knows it, following shared/requirement-elicitation.md; counts in
+   agreed they describe this product. Follow-up filed in the Triage Inbox
+   (adopt-derived-catalogue-confirmation); counts in
    .shipwright/adopt/derived-catalogue.json.
+   Inherited test failures and coverage gaps recorded in
+   shipwright_known_failures.json, not counted as this project's own.
    Seeded compliance artifacts (SBOM, change-history, RTM skeleton).
    Test evidence starts collecting from next /shipwright-test run.
 
@@ -102,6 +106,10 @@ Features:      <N> FR(s) in .shipwright/planning/<split>/spec.md
                   agreed by nobody. Traceability, coverage and drift all measure
                   against this catalogue, so those numbers describe the
                   catalogue until someone confirms it.
+Inherited:     <F> pre-existing test failure(s) <observed|not measured>,
+               <R> requirement(s) with no test, <D> test(s) switched off
+               → shipwright_known_failures.json (recorded as INHERITED, not as
+                 this project's own failures)
 Crawl:         <enabled|skipped: <reason>>
 Review:        <completed|skipped: <reason>>
 Security CI:   <installed (dormant) | preserved (existing file untouched)>
@@ -110,7 +118,8 @@ Commit:        <sha>
 
 Next steps:
   •  Confirm the derived requirements with someone who knows the product —
-     follow shared/requirement-elicitation.md.
+     follow shared/requirement-elicitation.md. Onboarding filed the follow-up
+     in the Triage Inbox as `adopt-derived-catalogue-confirmation`.
      Reading the code is a start; it is not enough on its own.
   •  Edit .env.local — fill in the keys still flagged as missing:
        <one bullet per key in results["env_local"]["missing_keys"]>
@@ -140,6 +149,13 @@ commit body — never recomputed by hand, and never re-read raw:
 | Banner slot | Source |
 |---|---|
 | `<N>` / `<U>` | `read_summary(project_root).total` / `.unconfirmed` |
+| `<F>` + `observed` \| `not measured` | `shipwright_known_failures.json` → `baseline_failure_count` + `baseline_observed` |
+| `<R>` / `<D>` | same file → `inherited_coverage_gaps.counts` |
+
+`baseline_observed: false` renders **"not measured"**, never "0 failures":
+onboarding does not run an arbitrary repository's test suite, and a run that
+never happened is a different fact from a run that found nothing — nor from the
+shared reader's `present`, which only says a declaration exists.
 
 Step 1's `validate_adoption.py` already parsed the file through that same reader,
 so by the time the banner renders a contradictory catalogue has been rejected.
