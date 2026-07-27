@@ -22,7 +22,22 @@ from ``common.py``.
 from __future__ import annotations
 
 import json
+import sys
 from pathlib import Path
+
+# The accepted-baseline reader is shared with the compliance audit. It lives at
+# ``shared/scripts/`` top level (not under a ``lib/`` package) so importing it
+# can never shadow a plugin's own ``scripts/lib`` namespace — ADR-045.
+_SHARED_SCRIPTS = Path(__file__).resolve().parents[2]
+if str(_SHARED_SCRIPTS) not in sys.path:
+    sys.path.insert(0, str(_SHARED_SCRIPTS))
+
+from known_failures import (  # noqa: E402
+    KNOWN_FAILURES_NAME,
+    genuine_failure_count,
+    has_exact_failure_count,
+    load_accepted_baseline,
+)
 
 from .common import (
     CheckResult,
@@ -45,6 +60,16 @@ def check_test_results_file_fresh(project_root: Path) -> CheckResult:
     """``shipwright_test_results.json`` must exist and have a populated
     ``unit`` layer. The other layers (integration / e2e / smoke) are
     optional per profile, but unit is always expected.
+
+    Reads the same accepted-baseline list the audit phase reads
+    (``shipwright_known_failures.json``), so an onboarded project's inherited
+    failures are not reported here as a failing run while the audit reports the
+    same run as within baseline
+    (iterate-2026-07-27-test-phase-record-honesty, FR-01.06).
+
+    The baseline is an **aggregate allowance** — it says how many failures were
+    declared, not which. The detail line says so rather than claiming these
+    particular failures are the accepted ones.
     """
     name = "test_results unit layer populated"
     path = project_root / "shipwright_test_results.json"
@@ -62,13 +87,56 @@ def check_test_results_file_fresh(project_root: Path) -> CheckResult:
             f"unit.total={total}, expected >0 (were unit tests executed?)",
         )
     passed = unit.get("passed", 0)
-    if not isinstance(passed, int) or passed < total:
+    if not isinstance(passed, int):
+        passed = 0
+
+    # A skipped test is not a failure. Prefer the layer's own `failed` count;
+    # fall back to the gap minus skips; fall back again to the bare gap.
+    exact = has_exact_failure_count(unit.get("failed"), unit.get("skipped"))
+    failures = genuine_failure_count(
+        passed=passed,
+        total=total,
+        failed=unit.get("failed"),
+        skipped=unit.get("skipped"),
+    )
+    if failures <= 0:
+        return CheckResult(name, True, f"unit {passed}/{total} passed")
+
+    baseline = load_accepted_baseline(project_root)
+    declared = baseline.baseline_failure_count
+    unreadable = " — accepted-failure list unreadable" if baseline.malformed else ""
+
+    # The aggregate allowance is charity for an un-broken-down gap only. Where
+    # the layer counted its failures exactly, the allowance does not apply —
+    # the audit made that call deliberately (`tests_block.progression_result`,
+    # pinned by `test_explicit_residual_ignores_baseline_charity`), and the two
+    # must agree. Acceptance of an exactly-counted failure is decided per
+    # failure by identity in the phase report, not by arithmetic here.
+    if not exact and declared > 0 and failures <= declared:
         return CheckResult(
-            name, False,
-            f"unit.passed={passed}/{total} (tests failing)",
-            severity=Severity.WARNING.value,
+            name, True,
+            f"unit {passed}/{total} passed; gap of {failures} within the "
+            f"declared baseline of {declared} ({KNOWN_FAILURES_NAME}) — an "
+            f"aggregate allowance over an un-broken-down gap, not a per-failure "
+            f"acceptance",
         )
-    return CheckResult(name, True, f"unit {passed}/{total} passed")
+
+    if declared > 0:
+        detail = (
+            f"unit.passed={passed}/{total}: {failures} failing, "
+            f"{declared} declared in the baseline"
+        )
+        if exact:
+            detail += (
+                " — an exactly-counted failure is not waived by a count; "
+                "report which of them are known-and-accepted by name"
+            )
+        else:
+            detail += f", {failures - declared} beyond it"
+    else:
+        detail = f"unit.passed={passed}/{total} ({failures} tests failing){unreadable}"
+
+    return CheckResult(name, False, detail, severity=Severity.WARNING.value)
 
 
 # ---------------------------------------------------------------------------

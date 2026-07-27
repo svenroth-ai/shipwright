@@ -40,39 +40,27 @@ from datetime import datetime, timezone
 from pathlib import Path
 from uuid import uuid4
 
-# Cross-platform append-log mutex, extracted to lib/file_lock.py
-# (iterate-2026-06-13-shc-file-lock). Imported LAZILY (never at module top): an
-# eager `from lib.file_lock import ...` would bind sys.modules['lib'] to
-# shared/scripts/lib, and triage.py deliberately lives OUTSIDE lib/ per ADR-045
-# so it stays importable from plugins/*/{tests,scripts} (which each carry their
-# own `lib` package) without that collision. `_load_file_lock_cls()` mirrors the
-# lazy worktree_isolation import below; the PEP 562 `__getattr__` keeps
-# `triage._FileLock` and `from triage import _FileLock` resolving for external
+from shared_lib_loader import load_shared_lib
+
+# Cross-platform append-log mutex + the record-boundary / header leaves live under
+# lib/, but triage.py deliberately lives OUTSIDE lib/ per ADR-045 so it stays
+# importable from plugins/*/{tests,scripts} (which each carry their own `lib`
+# package). `shared_lib_loader.load_shared_lib` owns that import — including the
+# path-based fallback for the case where a plugin's `lib` is already cached. The
+# PEP 562 `__getattr__` below keeps `triage._FileLock` resolving for external
 # consumers (sweep_outbox, triage_gc, reconcile_triage).
 def _load_file_lock_cls():
-    scripts_dir = str(Path(__file__).resolve().parent)  # shared/scripts
-    if scripts_dir not in sys.path:
-        sys.path.insert(0, scripts_dir)
-    from lib.file_lock import FileLock  # noqa: PLC0415
-    return FileLock
+    return load_shared_lib("file_lock").FileLock
 
 
 def _load_jsonl_records():
     """Lazy `lib.jsonl_records` (record-boundary SSoT) — ADR-045 constraint above."""
-    scripts_dir = str(Path(__file__).resolve().parent)  # shared/scripts
-    if scripts_dir not in sys.path:
-        sys.path.insert(0, scripts_dir)
-    from lib import jsonl_records  # noqa: PLC0415
-    return jsonl_records
+    return load_shared_lib("jsonl_records")
 
 
 def _load_triage_header():
     """Lazy `lib.triage_header` — same ADR-045 constraint as above."""
-    scripts_dir = str(Path(__file__).resolve().parent)  # shared/scripts
-    if scripts_dir not in sys.path:
-        sys.path.insert(0, scripts_dir)
-    from lib import triage_header  # noqa: PLC0415
-    return triage_header
+    return load_shared_lib("triage_header")
 
 
 def __getattr__(name):  # PEP 562 — lazy `triage._FileLock`, no eager lib import
@@ -112,6 +100,10 @@ KNOWN_SOURCES = (
     "f0.5",
     "drift",
     "github",
+    # Test-phase producers — the non-blocking layers that used to leave nothing
+    # behind once the session ended (iterate-2026-07-27-test-phase-record-honesty).
+    "test-warning",
+    "journey-coverage",
 )
 
 SEVERITY_RANK = {"critical": 0, "high": 1, "medium": 2, "low": 3, "info": 4}

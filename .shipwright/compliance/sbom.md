@@ -1,7 +1,7 @@
 # Software Bill of Materials (SBOM)
 
-Generated: 2026-07-27T11:31:14.777421+00:00 (dependency versions resolved from uv.lock)
-Source-State: run=iterate-2026-07-27-changelog-writer-preserve-history
+Generated: 2026-07-27T11:57:25.139011+00:00 (dependency versions resolved from uv.lock)
+Source-State: run=iterate-2026-07-27-plan-verdict-record
 
 ## Summary
 
@@ -10,7 +10,7 @@ Source-State: run=iterate-2026-07-27-changelog-writer-preserve-history
 | Runtime dependencies | 6 (deduplicated) |
 | Dev dependencies | 5 |
 | Total packages | 11 |
-| Licenses resolved | 8 / 11 |
+| Licenses resolved | 10 / 11 |
 | Unique licenses | 2 (Apache-2.0, MIT) |
 | Copyleft licenses | 0 |
 
@@ -19,8 +19,8 @@ Source-State: run=iterate-2026-07-27-changelog-writer-preserve-history
 ```mermaid
 pie title License Distribution (all 11 packages)
     "MIT" : 6
-    "Apache-2.0" : 2
-    "unknown" : 3
+    "Apache-2.0" : 4
+    "unknown" : 1
 ```
 
 ## Runtime Dependencies
@@ -28,11 +28,11 @@ pie title License Distribution (all 11 packages)
 | Package | Version | License |
 |---------|---------|---------|
 | defusedxml | 0.7.1 | - |
-| google-genai | 1.68.0 | - |
+| google-genai | 1.68.0 | Apache-2.0 |
 | jsonschema | 4.26.0 | MIT |
 | openai | 2.30.0 | Apache-2.0 |
 | pyyaml | 6.0.3 | MIT |
-| requests | 2.33.0 | - |
+| requests | 2.33.0 | Apache-2.0 |
 
 ## Dev Dependencies
 
@@ -46,5 +46,5 @@ pie title License Distribution (all 11 packages)
 
 ## License Compliance
 
-**3 dependency(ies) could not be resolved in this scan** - license unverified; verify before distribution.
+**1 dependency(ies) could not be resolved in this scan** - license unverified; verify before distribution.
 

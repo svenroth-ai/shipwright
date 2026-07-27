@@ -1,44 +1,38 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-07-27-changelog-writer-preserve-history"
+run_id: "iterate-2026-07-27-plan-verdict-record"
 phase: "iterate"
 reason: "ensure-current pre-merge refresh"
-timestamp: "2026-07-27T11:31:20.545287+00:00"
+timestamp: "2026-07-27T11:57:30.959539+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-07-27 11:31:20 UTC
+> Auto-generated 2026-07-27 11:57:30 UTC
 
 ## Session Info
 
-- **Session ID**: 
-- **Timestamp**: 2026-07-27 11:31:20 UTC
+- **Session ID**: 1ea85a9d-f698-4336-8e01-ea2f4e2ae714
+- **Timestamp**: 2026-07-27 11:57:30 UTC
 - **Reason**: ensure-current pre-merge refresh
 
 ## Last Iterate
 
-- **Run ID**: iterate-2026-07-27-changelog-writer-preserve-history
-- **Date**: 2026-07-27T11:31:14.683921Z
-- **Type**: bug
+- **Run ID**: iterate-2026-07-27-plan-verdict-record
+- **Date**: 2026-07-27T11:57:25.035012Z
+- **Type**: change
 - **Complexity**: medium
-- **Branch**: iterate/changelog-writer-preserve-history
-- **ADR**: iterate-2026-07-27-changelog-writer-preserve-history
+- **Branch**: iterate/plan-verdict-record
+- **ADR**: iterate-2026-07-27-plan-verdict-record
 - **Tests passed**: True
-- **Spec**: .shipwright/planning/iterate/iterate-2026-07-27-changelog-writer-preserve-history.md
+- **Spec**: .shipwright/planning/iterate/2026-07-27-plan-verdict-record.md
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/changelog-writer-preserve-history
-- **Run ID**: `iterate-2026-07-27-changelog-writer-preserve-history`
-- **Spec**: .shipwright/planning/iterate/iterate-2026-07-27-changelog-writer-preserve-history.md
-- **Complexity**: medium (classifier: `estimate=medium`, `prior_source=history`,
-- **External Review Marker**: completed (external_review_state.json @ 2026-07-27T11:28:16)
-
-### Mandatory replay on Resume
-
-Before dispatching to the handoff's Remaining phase, run these if missing:
-- Finalization (F0–F11) after all mandatory phases pass
+- **Branch**: iterate/plan-verdict-record
+- **Run ID**: `iterate-2026-07-27-plan-verdict-record`
+- **Spec**: .shipwright/planning/iterate/2026-07-27-plan-verdict-record.md
+- **External Review Marker**: completed (external_review_state.json @ 2026-07-27T11:45:04)
 
 ## Legacy build state
 
@@ -51,9 +45,9 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/changelog-writer-preserve-history
-- **Last Commit**: 66e9df40 Merge remote-tracking branch 'origin/main' into iterate/changelog-writer-preserve-history
-- **Uncommitted Changes**: Yes
+- **Branch**: iterate/plan-verdict-record
+- **Last Commit**: ac44b9a4 Merge remote-tracking branch 'origin/main' into iterate/plan-verdict-record
+- **Uncommitted Changes**: None
 
 ## Config Files to Read
 
@@ -68,17 +62,17 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 | Event | Type | Source | Date |
 |-------|------|--------|------|
+| evt-0b2bb01b | grade_snapshot | — | 2026-07-27 |
+| evt-5ecd7d7e | work_completed | iterate (iterate: reviewer verdicts recorded, disagreement is its own outcome (1 of 3)) | 2026-07-27 |
 | evt-64bc7af0 | grade_snapshot | — | 2026-07-27 |
 | evt-19f53577 | grade_snapshot | — | 2026-07-27 |
 | evt-78684181 | work_completed | iterate (iterate: the review gate stops being bypassable (fail-closed + fork review)) | 2026-07-27 |
-| evt-c880344a | grade_snapshot | — | 2026-07-27 |
-| evt-4794dcc1 | work_completed | iterate (iterate: phase-gate override leaves evidence; handoff renders phase status) | 2026-07-27 |
 
 ## Recovery
 
 - **Pipeline**: 1 phases completed
 - **Total work events**: 367
-- **Last iterate**: change — iterate: the review gate stops being bypassable (fail-closed + fork review) (2026-07-27)
+- **Last iterate**: change — iterate: reviewer verdicts recorded, disagreement is its own outcome (1 of 3) (2026-07-27)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
 ## Recent Decisions

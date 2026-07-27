@@ -68,12 +68,9 @@ with Step 1.
 See [research-protocol.md](references/research-protocol.md) for detailed guidance.
 
 **Goal:** Understand the codebase, existing patterns, and technical landscape.
-
-**Actions:**
-1. Read the spec file thoroughly
-2. If existing codebase: explore structure, read key files, understand patterns
-3. If new project: review similar codebases, best practices
-4. Use web search for unfamiliar technologies or patterns
+Read the spec thoroughly; explore an existing codebase's structure and
+patterns, or review comparable ones for a new project; web-search unfamiliar
+technologies.
 
 **Checkpoint:** Mental model formed. No file written — research informs all subsequent steps.
 
@@ -141,14 +138,12 @@ SECTION_MANIFEST format.
 
 ## Step 5: External LLM Review (Default + Fallback)
 
-See [step-5-external-review.md](references/step-5-external-review.md)
-for the full branch logic, and [external-review.md](references/external-review.md)
-for the underlying protocol.
+Full branch logic: [step-5-external-review.md](references/step-5-external-review.md);
+underlying protocol: [external-review.md](references/external-review.md).
 
-**This step is NOT optional.** One of three branches must run to
-completion, and the marker file
-`{planning_dir}/external_review_state.json` must be written. Step 6
-is gated on that marker.
+**This step is NOT optional.** One of three branches must run to completion,
+and `{planning_dir}/external_review_state.json` must be written. Step 6 is
+gated on that marker.
 
 Read `external_review_status` from the session report (First Actions
 > F). Branch on its value:
@@ -156,7 +151,11 @@ Read `external_review_status` from the session report (First Actions
 - **Branch A — `available`:** run
   `shared/scripts/tools/external_review.py --mode plan ...` (Gemini +
   OpenAI in parallel), integrate findings, log every finding to
-  `decision_log.md`, then go to Step 5b.
+  `decision_log.md`, then go to Step 5b. **Read the `contradiction` block
+  first:** `requires_resolution: true` means the two reviewers contradict
+  each other, a verdict could not be read, or only one answered. That is its
+  own outcome, not a finding count — put it to the user, take their decision,
+  and carry it into Step 5b. Never proceed on the approving review alone.
 - **Branch B — `missing_keys`:** STOP. Ask user verbatim (Option 1:
   add key + retry → Branch A; Option 2: skip → Self-Review Fallback).
   Do NOT proceed until the user chooses.
@@ -165,18 +164,18 @@ Read `external_review_status` from the session report (First Actions
   architectural soundness / section boundaries / TDD coverage / risk
   hotspots / assumptions).
 
-After exactly one branch completes, **Step 5b** writes the marker:
+After exactly one branch completes, **Step 5b** writes the marker with
+`{shared_root}/scripts/checks/mark-review-state.py` — `--status`,
+`--provider`, `--findings-count`, `--reason`, one
+`--verdict {gemini|openai}={verdict}` per reviewer, and
+`--contradiction-resolution` when they disagreed. The contradiction is
+**derived** from the two verdicts; there is no flag to assert agreement they do
+not support. Exact invocation:
+[step-5-external-review.md](references/step-5-external-review.md).
 
-```bash
-uv run --project {plugin_root} {shared_root}/scripts/checks/mark-review-state.py \
-  --planning-dir "{planning_dir}" \
-  --status "{completed | skipped_user_opt_out | skipped_config_disabled}" \
-  --provider "{openrouter | gemini | openai | null}" \
-  --findings-count {N} \
-  --reason "{optional reason for skip}"
-```
-
-**Checkpoint:** `{planning_dir}/external_review_state.json` exists.
+**Checkpoint:** `{planning_dir}/external_review_state.json` exists and records
+a state clear to proceed past — the same question the resume gate and
+compliance `W5` ask, through one shared evaluator.
 
 ---
 
