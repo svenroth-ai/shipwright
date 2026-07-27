@@ -1,6 +1,6 @@
 # Triage Inbox
 
-> Auto-generated 2026-07-27T19:45:42.731458Z. Items waiting for triage decision.
+> Auto-generated 2026-07-27T19:47:53.112213Z. Items waiting for triage decision.
 > Promote via WebUI Triage tab (when v1b lands) or `shared/scripts/tools/triage_promote.py --id <id> --task-ref EXT:<ref>`.
 
 ## Status summary
@@ -85,11 +85,6 @@
 
 ### Source: manual (6 items)
 
-<a id="trg-51f8e2a1"></a>
-- **deferring a triage finding does not yet defer it - make the third decision mean what it says** `id=trg-51f8e2a1 | severity=high | kind=improvement → P1/engineering`
-  - Post-merge review of PR #444 found the CLI defer subcommand records the decision correctly but almost nothing downstrea…
-  - Promote: `triage_promote.py --id trg-51f8e2a1 --task-ref EXT:<ref>`
-
 <a id="trg-2ca796f3"></a>
 - **Release aggregator can write the same version twice on a re-run** `id=trg-2ca796f3 | severity=high | kind=bug → P1/engineering`
   - aggregate_changelog.py is the writer the release path actually invokes (changelog SKILL.md Step 4). _insert_section alw…
@@ -110,6 +105,11 @@
 - **A successful atomic-write retry is silent, so degrading contention is unobservable** `id=trg-0a294ef3 | severity=medium | kind=improvement → P2/engineering`
   - shared/scripts/lib/atomic_write.py retries a Windows sharing violation on both the write and the read side. A retry tha…
   - Promote: `triage_promote.py --id trg-0a294ef3 --task-ref EXT:<ref>`
+
+<a id="trg-cc640142"></a>
+- **Iterate PRs touching regenerated artifacts livelock against auto-merge on a busy default branch** `id=trg-cc640142 | severity=medium | kind=improvement → P2/engineering`
+  - An iterate PR that touches regenerated artifacts cannot reliably auto-merge while the default branch is busy. Observed…
+  - Promote: `triage_promote.py --id trg-cc640142 --task-ref EXT:<ref>`
 
 <a id="trg-c6e75011"></a>
 - **shipwright-security tests write an untracked .shipwright/ dir into the repo tree** `id=trg-c6e75011 | severity=low | kind=bug → P3/engineering`

@@ -1,7 +1,7 @@
 # Test Evidence Report
 
-Generated: 2026-07-27T19:44:51.061795+00:00
-Source-State: run=iterate-2026-07-27-no-silent-revert
+Generated: 2026-07-27T19:47:47.363461+00:00
+Source-State: run=iterate-2026-07-27-review-floor-not-chained
 Consistency-audit: never run
 
 ## Summary
@@ -16,7 +16,7 @@ Consistency-audit: never run
 
 | # | Event | Source | Layer | New Tests | Suite Total | Result | Date |
 |---|-------|--------|-------|-----------|-------------|--------|------|
-| 1 | a branch may not quietly revert merged work | [iterate](traceability-matrix.md#evt-afcb8629) | — | +0 | — | — | 2026-07-27 |
+| 1 | the code review becomes a floor, not a chain | [iterate](traceability-matrix.md#evt-53ba0065) | — | +0 | — | — | 2026-07-27 |
 | 2 | raise the PR-review diff cap, cut at a file boundary, name what went unreviewed | [iterate](traceability-matrix.md#evt-36d0f887) | — | +0 | — | — | 2026-07-27 |
 | 3 | an audit that checked nothing is not recorded | [iterate](traceability-matrix.md#evt-e3d8f519) | — | +0 | — | — | 2026-07-27 |
 | 4 | refuse a multi-root pytest session instead of failing 21 unrelated tests | [iterate](traceability-matrix.md#evt-aea234e3) | — | +0 | — | — | 2026-07-27 |

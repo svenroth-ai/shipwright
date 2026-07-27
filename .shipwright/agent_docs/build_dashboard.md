@@ -1,11 +1,11 @@
 # Project Activity Dashboard
-> Updated: 2026-07-27 19:44 UTC | Session: 9058f47a-25f4-4469-b517-e3b5c91347e0 | Run: iterate-2026-07-27-no-silent-revert
+> Updated: 2026-07-27 19:47 UTC | Session: d25b0a7e-0ae6-43cf-9f0d-0888374ebaee | Run: iterate-2026-07-27-review-floor-not-chained
 
 ## Recent Changes (386 iterations)
 
 | Type | Description | Tests | Commit | FRs | Date |
 |------|-------------|-------|--------|-----|------|
-| change | iterate: a branch may not quietly revert merged work | 0/0 |  | FR-01.11 | 2026-07-27 |
+| change | iterate: the code review becomes a floor, not a chain | 0/0 |  | compliance | 2026-07-27 |
 | change | iterate: raise the PR-review diff cap, cut at a file boundary, name what went unreviewed | 0/0 |  | FR-01.17 | 2026-07-27 |
 | change | iterate: an audit that checked nothing is not recorded | 0/0 |  | compliance | 2026-07-27 |
 | change | iterate: refuse a multi-root pytest session instead of failing 21 unrelated tests | 0/0 |  | tooling | 2026-07-27 |
@@ -393,7 +393,7 @@
 | change | post-adoption framework cleanup (Sub-1A through 1D) | 225/225 | 3db485b | FR-01.01, FR-01.02, FR-01.03 | 2026-05-02 |
 
 ## Test Status
-Last run: 2026-07-27 | Unit: 5868/5884 | Smoke: not_run | (iterate)
+Last run: 2026-07-27 | Unit: 6378/6378 | Integration: 422/422 | Smoke: not_run | (iterate)
 
 ## Pipeline
 

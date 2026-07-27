@@ -1,17 +1,17 @@
 # Commit Change Log
 
-Generated: 2026-07-27T19:44:51.061795+00:00
-Source-State: run=iterate-2026-07-27-no-silent-revert
+Generated: 2026-07-27T19:47:47.363461+00:00
+Source-State: run=iterate-2026-07-27-review-floor-not-chained
 Consistency-audit: never run
-Total commits: 1242
+Total commits: 1241
 
 ## Commit Distribution
 
 ```mermaid
 pie title Commit Types
-    "fix" : 360
-    "feat" : 349
-    "chore" : 257
+    "fix" : 361
+    "feat" : 348
+    "chore" : 256
     "docs" : 148
     "refactor" : 76
     "test" : 31
@@ -22,10 +22,11 @@ pie title Commit Types
 
 ## Changes by Type
 
-### Fixes (fix) — 360 commits
+### Fixes (fix) — 361 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-07-27 | iterate | the code review becomes a floor, not a chain | 6c897be7cd34 |
 | 2026-07-27 | security | the test suite stops leaking a triage store into the plugin dir (#474) | 6ba177083769 |
 | 2026-07-27 | run | report against what will exist, and assert only what you can prove (#468) | 3c13001aafeb |
 | 2026-07-27 | iterate | the merge state is a vocabulary, not a BLOCKED flag (#473) | 159953eec378 |
@@ -387,12 +388,11 @@ pie title Commit Types
 | 2026-03-21 | — | rename skill folders for clean slash commands | 5a8d77658fab |
 | 2026-03-20 | — | update README attribution to svenroth.ai | dd5de7f7d6ab |
 
-### Features (feat) — 349 commits
+### Features (feat) — 348 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
 | 2026-07-27 | security | a scan records what it did not check (part 1/2) (#455) | 8154e1bcaf2b |
-| 2026-07-27 | iterate | a branch may not quietly revert work that merged while it was open | 6ff78bf45a41 |
 | 2026-07-27 | test | per-journey coverage, durable warning follow-ups, retry-passes (FR-01.06) (#446) | fbf93d01b55b |
 | 2026-07-27 | shared | the requirement-impact declaration, one mechanism for two phases (#463) | 26dfefa7286e |
 | 2026-07-27 | adopt | what the codebase arrived with is recorded as inherited (2/2) (#460) | 97b9878ed5b2 |
@@ -741,12 +741,11 @@ pie title Commit Types
 | 2026-03-20 | — | Task 02 — project templates (CLAUDE.md, agent_docs, CI) | c3a6d2f53bd3 |
 | 2026-03-20 | — | Task 01 — monorepo scaffolding + supabase-nextjs stack profile | 990a138a4690 |
 
-### Chores (chore) — 257 commits
+### Chores (chore) — 256 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
-| 2026-07-27 | churn | regenerate derived snapshots after main merge | b68bbf21c3f3 |
-| 2026-07-27 | triage | sweep 5 outbox append(s) into branch | aa539d682089 |
+| 2026-07-27 | triage | sweep 4 outbox append(s) into branch | 425b637b9a73 |
 | 2026-07-27 | triage | follow-up card for requiring the checks that gate nothing | 7387b2796960 |
 | 2026-07-26 | review | default external-review GPT model to gpt-5.6-terra (#435) | 8d750a5fc7af |
 | 2026-07-24 | security | stage full compliance write-set in Step 7.5 finalizer (#434) | 5da96ebe8561 |
@@ -1313,7 +1312,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 1242 |
+| Total commits | 1241 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 1242 |
+| Human-authored commits | 1241 |
 
