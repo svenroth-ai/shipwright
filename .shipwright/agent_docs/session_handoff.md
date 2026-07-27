@@ -1,43 +1,44 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-07-27-review-gate-failclosed-fork"
+run_id: "iterate-2026-07-27-adopt-derived-catalogue-honesty"
 phase: "iterate"
-reason: "iterate: the review gate stops being bypassable (fail-closed + fork review)"
-timestamp: "2026-07-27T06:59:45.100902+00:00"
+reason: "ensure-current pre-merge refresh"
+timestamp: "2026-07-27T08:15:35.551577+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-07-27 06:59:45 UTC
+> Auto-generated 2026-07-27 08:15:35 UTC
 
 ## Session Info
 
-- **Session ID**: 13d5330b-459e-4dde-bd59-76ab801c34ec
-- **Timestamp**: 2026-07-27 06:59:45 UTC
-- **Reason**: iterate: the review gate stops being bypassable (fail-closed + fork review)
+- **Session ID**: 98053cc9-0f7c-4be8-b1cc-8b5d8b25d84b
+- **Timestamp**: 2026-07-27 08:15:35 UTC
+- **Reason**: ensure-current pre-merge refresh
 
 ## Last Iterate
 
-- **Run ID**: iterate-2026-07-27-review-gate-failclosed-fork
-- **Date**: 2026-07-27T06:59:39.306983Z
-- **Type**: change
+- **Run ID**: iterate-2026-07-27-adopt-derived-catalogue-honesty
+- **Date**: 2026-07-27T08:15:28.167766Z
+- **Type**: feature
 - **Complexity**: medium
-- **Branch**: iterate/review-gate-failclosed-fork
-- **ADR**: iterate-2026-07-27-review-gate-failclosed-fork
+- **Branch**: iterate/adopt-derived-catalogue-honesty
+- **ADR**: iterate-2026-07-27-adopt-derived-catalogue-honesty
 - **Tests passed**: True
-- **Spec**: .shipwright/planning/iterate/2026-07-27-review-gate-failclosed-fork.md
+- **Spec**: .shipwright/planning/iterate/2026-07-27-adopt-derived-catalogue-honesty.md
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/review-gate-failclosed-fork
-- **Run ID**: iterate-2026-07-27-review-gate-failclosed-fork
-- **Spec**: .shipwright/planning/iterate/2026-07-27-review-gate-failclosed-fork.md
+- **Branch**: iterate/adopt-derived-catalogue-honesty
+- **Run ID**: iterate-2026-07-27-adopt-derived-catalogue-honesty
+- **Spec**: .shipwright/planning/iterate/2026-07-27-adopt-derived-catalogue-honesty.md
 - **Complexity**: medium
-- **External Review Marker**: completed (external_review_state.json @ 2026-07-27T06:47:38)
+- **External Review Marker**: stale (predates spec (2026-07-27T07:13:55))
 
 ### Mandatory replay on Resume
 
 Before dispatching to the handoff's Remaining phase, run these if missing:
+- Step 4 — External LLM Review (marker missing/stale)
 - Finalization (F0–F11) after all mandatory phases pass
 
 ## Legacy build state
@@ -51,8 +52,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/review-gate-failclosed-fork
-- **Last Commit**: d34443bd chore(triage): sweep 59 outbox append(s) into branch
+- **Branch**: iterate/adopt-derived-catalogue-honesty
+- **Last Commit**: f7e5b5e6 Merge remote-tracking branch 'origin/main' into iterate/adopt-derived-catalogue-honesty
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -70,14 +71,14 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 |-------|------|--------|------|
 | evt-19f53577 | grade_snapshot | — | 2026-07-27 |
 | evt-78684181 | work_completed | iterate (iterate: the review gate stops being bypassable (fail-closed + fork review)) | 2026-07-27 |
+| evt-a4f051d1 | grade_snapshot | — | 2026-07-27 |
+| evt-f41a75f5 | work_completed | iterate (iterate: adopt announces its derived catalogue and records inherited failures as inherited) | 2026-07-27 |
 | evt-2055af94 | grade_snapshot | — | 2026-07-26 |
-| evt-ea7203ec | work_completed | iterate (iterate: REQ-3 Phase 2 content round - all 18 requirements walked or minted) | 2026-07-26 |
-| evt-6ff6084f | grade_snapshot | — | 2026-07-26 |
 
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 360
+- **Total work events**: 361
 - **Last iterate**: change — iterate: the review gate stops being bypassable (fail-closed + fork review) (2026-07-27)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
