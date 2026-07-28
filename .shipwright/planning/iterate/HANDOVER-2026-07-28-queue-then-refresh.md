@@ -49,6 +49,47 @@ without a refresh producer — the operator's third step, already tracked, nothi
 
 Commit as `svroch <218151234+svroch@users.noreply.github.com>`.
 
+### The admin bypass is CONFIRMED for the operator — still unproven for the token
+
+Pushing this handover produced GitHub's own confirmation:
+
+```
+remote: Bypassed rule violations for refs/heads/main:
+remote: - Changes must be made through a pull request.
+remote: - 6 of 6 required status checks are expected.
+```
+
+This closes a question the parked refresh could not answer from inside the repo. Earlier
+attempts: `GET /rules/branches/main` returned all five rules for the calling actor and is
+**not** evidence either way; the design therefore reasoned from `origin/main`'s history
+(direct `chore(triage)` and `docs(…)` commits, and merge commits that also cleared
+`required_linear_history`). That inference is now directly corroborated.
+
+**Do not over-read it.** It proves the bypass for the human identity `svroch`. It does
+**not** prove it for `SHIPWRIGHT_REFRESH_TOKEN`: a fine-grained PAT can be narrower than
+its owner, and the refresh's whole delivery path depends on the token bypassing. The
+adversarial review raised exactly this (rework item M5: a permanent `protected branch hook
+declined` is indistinguishable from a transient race, and files nothing). **Verify the
+token's bypass before the refresh ships** — a single throwaway push with that credential
+answers it, and it is far cheaper than discovering it from a workflow that goes red on
+every push to main with nothing recorded.
+
+### `main` moves fast — re-base before assuming anything
+
+Ten PRs merged during the session that produced this handover (#472, #479, #482–#489),
+leaving the parked refresh branch **11 commits behind** its base `e21a7b71`. This is the
+`BEHIND` problem the merge queue exists to fix, demonstrated on itself.
+
+Four of those commits land in areas the refresh rework must touch — read them before
+reworking, because they may already have solved, moved, or invalidated part of the list:
+
+| Commit | Why it matters here |
+|---|---|
+| `bcc7a590` (#489) | *"'cannot run' must not mean 'was never asked'"* — the same class as rework item H2 (a failed generator reporting success). May already supply the pattern, or the vocabulary, to reuse. |
+| `ee07a3b5` (#485) | *"a grade snapshot names the tree it was measured in"* — touches the `grade_snapshot` event the refresh deliberately restores between convergence passes. The restore's rationale is written against the old behaviour; re-check it. |
+| `00ff3949` (#482) | *"the reviewer cascade gets an owner"* — changes how review passes are owned/recorded, which the refresh's five recorded review types depend on. |
+| `e4db5154` (#488) | *"the revert check stops accusing an edit and a deletion it did not make"* — the silent-revert verifier the refresh's F11 will run. |
+
 ### After any merge that touches `plugins/*` or `shared/*`
 
 `bash scripts/update-marketplace.sh` then
