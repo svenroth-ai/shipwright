@@ -402,6 +402,17 @@ _Where the work detail lives_ at the end of this document.
   scan run with one check available never reads as a clean result for every
   kind. A report that cannot say what it examined states that too, rather than
   implying everything was.
+- (E) Given two scans of the same project are compared, when the later one no
+  longer shows a finding, then it counts as fixed only for the kinds of
+  weakness both scans actually examined; for a kind the later scan did not
+  examine, the comparison says the two cannot be compared there instead of
+  reporting the finding as gone.
+- (E) Given the project keeps its own record of consciously accepted findings,
+  when a check runs on the developer's machine, then it reaches the same verdict
+  as that check running on the code host — the local run extends that record
+  rather than substituting one of its own. Where honouring it would leave a check
+  looking for almost nothing, the result is reported as untrustworthy rather than
+  clean.
 - (E) Given no scanner is available at all, when the phase starts, then it stops
   with setup instructions rather than reporting that nothing was found.
 - (E) Given a finding that exposes a leaked secret, when the report is written,

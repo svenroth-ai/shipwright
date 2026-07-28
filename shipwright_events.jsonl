@@ -587,3 +587,5 @@
 {"v":1,"id":"evt-d33730ea","ts":"2026-07-27T18:24:14.588527+00:00","type":"grade_snapshot","grade":"F","score":49.0,"session":"a7fa3da4-74bf-406f-b92b-f309691d90f9"}
 {"v":1,"id":"evt-301cc5e3","ts":"2026-07-27T18:35:49.901598+00:00","type":"grade_snapshot","grade":"F","score":49.0,"session":"a7fa3da4-74bf-406f-b92b-f309691d90f9"}
 {"v":1,"id":"evt-b1a81042","ts":"2026-07-27T18:46:12.605534+00:00","type":"grade_snapshot","grade":"F","score":49.0,"session":"a7fa3da4-74bf-406f-b92b-f309691d90f9"}
+{"spec_impact":"modify","affected_frs":["FR-01.07"],"arch_impact":"component","part":"2 of 2","part_1":"PR #455, merged as 8154e1bc","v":1,"id":"evt-24adc17a","ts":"2026-07-28T07:51:54.925932+00:00","type":"work_completed","source":"iterate","commit":"","adr_id":"iterate-2026-07-27-security-scope-and-parity","description":"iterate: put the security coverage manifest to work — parity, coverage-gated comparison, scope gate","session":"871b1865-c6ae-4724-a105-dc987ddca125"}
+{"v":1,"id":"evt-1f193d02","ts":"2026-07-28T07:52:01.565175+00:00","type":"grade_snapshot","grade":"B","score":85.0,"session":"871b1865-c6ae-4724-a105-dc987ddca125"}

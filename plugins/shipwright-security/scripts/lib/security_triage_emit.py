@@ -1,10 +1,18 @@
 #!/usr/bin/env python3
 """Mirror security findings into the project's Triage Inbox.
 
+Two surfaces, deliberately different in shape.
+
 :func:`emit_findings_to_triage` writes one item per finding — the enumeration.
 It carries a stable per-finding dedup key so the same finding on the same line
 is one item across runs. Moved here verbatim out of ``generate_security_report``
 (which sits over its bloat baseline) so that file could shrink.
+
+:func:`emit_scan_card` writes ONE collapsed action unit per repository carrying
+the per-severity split, what the scan did not check, and the scope question. The
+enumeration says *what* was found; the card says *how much of each* and asks how
+far to go. A card carrying only a total leaves the executing agent to decide
+silently that the low-severity findings do not matter.
 
 Best-effort: an emission failure is logged to stderr and swallowed so it can
 never block the report the operator actually asked for.
@@ -19,6 +27,8 @@ from typing import Any
 _LIB_DIR = Path(__file__).resolve().parent
 if str(_LIB_DIR) not in sys.path:
     sys.path.insert(0, str(_LIB_DIR))
+
+from security_card import build_scan_action_unit  # noqa: E402
 
 _SECURITY_KIND_FROM_SEVERITY = {
     "critical": "bug",
@@ -146,3 +156,50 @@ def emit_findings_to_triage(
                 f"{type(exc).__name__}: {exc}\n"
             )
     return appended
+
+
+def emit_scan_card(
+    project_root: Path,
+    findings: list[dict[str, Any]],
+    *,
+    coverage: list[dict[str, Any]] | None = None,
+    repo: str = "unknown",
+    report_path: str | None = None,
+    run_id: str | None = None,
+    commit: str | None = None,
+) -> str | None:
+    """Append the collapsed ``security-scan:{repo}`` action unit.
+
+    Returns the new triage id, or ``None`` when there was nothing to act on, the
+    appender was unreachable, or the card already exists in the window.
+    """
+    card = build_scan_action_unit(
+        findings=findings, coverage=coverage, repo=repo, report_path=report_path,
+    )
+    if card is None:
+        return None
+
+    append_triage_item_idempotent = _import_triage_appender()
+    if append_triage_item_idempotent is None:
+        return None
+
+    try:
+        return append_triage_item_idempotent(
+            project_root,
+            source="security",
+            severity=card["severity"],
+            kind=card["kind"],
+            title=card["title"],
+            detail=card["detail"],
+            dedup_key=card["dedup_key"],
+            launch_payload=card["launch_payload"],
+            run_id=run_id,
+            commit=commit,
+            match_commit=True,
+            window_seconds=_DEDUP_WINDOW_SECONDS,
+        )
+    except Exception as exc:  # noqa: BLE001 — best-effort, never blocks the report
+        sys.stderr.write(
+            f"[security] scan card emit failed: {type(exc).__name__}: {exc}\n"
+        )
+        return None

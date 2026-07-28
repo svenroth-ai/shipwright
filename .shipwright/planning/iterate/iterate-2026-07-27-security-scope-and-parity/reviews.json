@@ -1,0 +1,104 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-07-27-security-scope-and-parity",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-07-28T07:47:47.525605+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 2,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "spec",
+          "file": "plugins/shipwright-security/scripts/lib/gitleaks_config.py:148-160, 250-256",
+          "line": null,
+          "finding": "Wrapping the project config in a generated config consumes one of Gitleaks’ limited extension levels. A repository chain such as `.gitleaks.toml -> base.toml -> defaults.toml` can be fully resolved by the host workflow, which loads `.gitleaks.toml` directly, but the local scan becomes `generated.toml -> .gitleaks.toml -> base.toml -> defaults.toml` and exceeds the documented extension depth. This breaks AC-1’s requirement that local and host scans reach the same accepted-findings/rules verdict. The inspection code recognizes this risk by marking a second project-side hop “unverifiable,” but the scanner wiring still performs the parity-breaking wrap.",
+          "suggestion": "Avoid introducing an additional Gitleaks extend layer for repositories that already use an extend chain, or compose/materialize a configuration that preserves the project’s effective extension depth while adding Shipwright exclusions. Add a real-binary parity test covering a two-hop project extension chain and asserting local and host-equivalent scans produce the same findings.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "test",
+          "file": "plugins/shipwright-security/tests/test_gitleaks_extend_smoke.py:47-55, 109-151",
+          "line": null,
+          "finding": "The real-binary smoke coverage tests only a project config that directly sets `useDefault = true`; it does not exercise the nested extension case introduced by the generated wrapper. Consequently, the current tests can all pass while local scanning silently loses rules or project accepted findings for valid chained project configurations.",
+          "suggestion": "Add a fixture where `.gitleaks.toml` extends `base.toml` and `base.toml` extends defaults or defines the relevant rules/allowlist, then compare the local generated-config result with the direct project-config result.  Overall assessment: ship-with-fixes. Most acceptance criteria are implemented with substantial coverage, but the added configuration layer can break the required host/local parity for legitimate chained Gitleaks configurations. SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-07-28T07:47:59.446744+00:00",
+      "disposition": null,
+      "recorded_by": "claude-opus-5",
+      "parse_status": "partial",
+      "raw_excerpt": "[gemini] <no review returned: provider returned an empty reply>\n\n[openai] - Category: spec\n- Severity: high\n- File: `plugins/shipwright-security/scripts/lib/gitleaks_config.py:148-160, 250-256`\n- Finding: Wrapping the project config in a generated config consumes one of Gitleaks’ limited extension levels. A repository chain such as `.gitleaks.toml -> base.toml -> defaults.toml` can be fully resolved by the host workflow, which loads `.gitleaks.toml` directly, but the local scan becomes `generated.toml -> .gitleaks.toml -> base.toml -> defaults.toml` and exceeds the documented extension depth. This breaks AC-1’s requirement that local and host scans reach the same accepted-findings/rules verdict. The inspection code recognizes this risk by marking a second project-side hop “unverifiable,” but the scanner wiring still performs the parity-breaking wrap.\n- Suggestion: Avoid introducing an additional Gitleaks extend layer for repositories that already use an extend chain, or compose/materialize a configuration that preserves the project’s effective extension depth while adding Shipwright exclusions. Add a real-binary parity test covering a two-hop project extension chain and asserting local and host-equivalent scans produce the same findings.\n\n- Category: test\n- Severity: medium\n- File: `plugins/shipwright-security/tests/test_gitleaks_extend_smoke.py:47-55, 109-151`\n- Finding: The real-binary smoke coverage tests only a project config that directly sets `useDefault = true`; it does not exercise the nested extension case introduced by the generated wrapper. Consequently, the current tests can all pass while local scanning silently loses rules or project accepted findings for valid chained project configurations.\n- Suggestion: Add a fixture where `.gitleaks.toml` extends `base.toml` and `base.toml` extends defaults or defines the relevant rules/allowlist, then compare the local generated-config result with the direct project-config result.\n\nOverall assessment: ship-with-fixes. Most acceptance criteria are implemented with substantia […truncated]"
+    },
+    "code": {
+      "review_type": "code",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-07-28T07:47:59.559285+00:00",
+      "disposition": "internal code-reviewer subagent not invoked: this session carries an explicit operator instruction not to call the Agent tool unless asked. Per iteration-reviews.md the external LLM review then becomes mandatory and carries the pass — it ran twice (four findings fixed in round 1, one HIGH acted on in round 2) and is recorded as external_code.",
+      "recorded_by": "claude-opus-5",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-07-28T07:47:59.664577+00:00",
+      "disposition": "doubt-reviewer is an Agent-tool subagent and Advisory per iteration-reviews.md (Stage 3, conditional on the Stage 2 cascade running); not invoked for the same operator instruction. Its function — trying to disprove the diff's claims — was carried by the two external rounds, which is where both the false-clean and the extend-depth defects came from.",
+      "recorded_by": "claude-opus-5",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 2,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "spec",
+          "file": "plugins/shipwright-security/scripts/lib/gitleaks_config.py:148-160, 250-256",
+          "line": null,
+          "finding": "Wrapping the project config in a generated config consumes one of Gitleaks’ limited extension levels. A repository chain such as `.gitleaks.toml -> base.toml -> defaults.toml` can be fully resolved by the host workflow, which loads `.gitleaks.toml` directly, but the local scan becomes `generated.toml -> .gitleaks.toml -> base.toml -> defaults.toml` and exceeds the documented extension depth. This breaks AC-1’s requirement that local and host scans reach the same accepted-findings/rules verdict. The inspection code recognizes this risk by marking a second project-side hop “unverifiable,” but the scanner wiring still performs the parity-breaking wrap.",
+          "suggestion": "Avoid introducing an additional Gitleaks extend layer for repositories that already use an extend chain, or compose/materialize a configuration that preserves the project’s effective extension depth while adding Shipwright exclusions. Add a real-binary parity test covering a two-hop project extension chain and asserting local and host-equivalent scans produce the same findings.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "test",
+          "file": "plugins/shipwright-security/tests/test_gitleaks_extend_smoke.py:47-55, 109-151",
+          "line": null,
+          "finding": "The real-binary smoke coverage tests only a project config that directly sets `useDefault = true`; it does not exercise the nested extension case introduced by the generated wrapper. Consequently, the current tests can all pass while local scanning silently loses rules or project accepted findings for valid chained project configurations.",
+          "suggestion": "Add a fixture where `.gitleaks.toml` extends `base.toml` and `base.toml` extends defaults or defines the relevant rules/allowlist, then compare the local generated-config result with the direct project-config result.  Overall assessment: ship-with-fixes. Most acceptance criteria are implemented with substantial coverage, but the added configuration layer can break the required host/local parity for legitimate chained Gitleaks configurations. SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-07-28T07:46:32.671181+00:00",
+      "disposition": null,
+      "recorded_by": "claude-opus-5",
+      "parse_status": "partial",
+      "raw_excerpt": "[gemini] <no review returned: provider returned an empty reply>\n\n[openai] - Category: spec\n- Severity: high\n- File: `plugins/shipwright-security/scripts/lib/gitleaks_config.py:148-160, 250-256`\n- Finding: Wrapping the project config in a generated config consumes one of Gitleaks’ limited extension levels. A repository chain such as `.gitleaks.toml -> base.toml -> defaults.toml` can be fully resolved by the host workflow, which loads `.gitleaks.toml` directly, but the local scan becomes `generated.toml -> .gitleaks.toml -> base.toml -> defaults.toml` and exceeds the documented extension depth. This breaks AC-1’s requirement that local and host scans reach the same accepted-findings/rules verdict. The inspection code recognizes this risk by marking a second project-side hop “unverifiable,” but the scanner wiring still performs the parity-breaking wrap.\n- Suggestion: Avoid introducing an additional Gitleaks extend layer for repositories that already use an extend chain, or compose/materialize a configuration that preserves the project’s effective extension depth while adding Shipwright exclusions. Add a real-binary parity test covering a two-hop project extension chain and asserting local and host-equivalent scans produce the same findings.\n\n- Category: test\n- Severity: medium\n- File: `plugins/shipwright-security/tests/test_gitleaks_extend_smoke.py:47-55, 109-151`\n- Finding: The real-binary smoke coverage tests only a project config that directly sets `useDefault = true`; it does not exercise the nested extension case introduced by the generated wrapper. Consequently, the current tests can all pass while local scanning silently loses rules or project accepted findings for valid chained project configurations.\n- Suggestion: Add a fixture where `.gitleaks.toml` extends `base.toml` and `base.toml` extends defaults or defines the relevant rules/allowlist, then compare the local generated-config result with the direct project-config result.\n\nOverall assessment: ship-with-fixes. Most acceptance criteria are implemented with substantia […truncated]"
+    }
+  }
+}

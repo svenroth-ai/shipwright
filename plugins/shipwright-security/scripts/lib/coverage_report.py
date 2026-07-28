@@ -56,13 +56,11 @@ def coverage_banner(coverage: list[dict[str, Any]] | None) -> list[str]:
     if is_complete(rows):
         return []
     unchecked = unchecked_classes(rows)
-    # Degraded classes are named HERE too, not only in the degraded banner.
-    # Today every degraded row comes from a scan_errors marker, so the two
-    # overlap — but the banner renders from scan_errors while this renders from
-    # the MANIFEST, and Part 2 adds a degradation with no marker behind it (a
-    # project gitleaks config carrying no effective rules runs fine and finds
-    # almost nothing). Naming degraded rows here means that case arrives already
-    # warned about instead of silently changing a status.
+    # Degraded classes are named HERE too, not only in the degraded banner. The
+    # degraded banner renders from `scan_errors`; a degradation can now arrive
+    # with NO marker behind it — a project gitleaks config carrying no effective
+    # rules runs fine and finds almost nothing — so relying on the other banner
+    # would leave that case with a changed status and no warning anywhere.
     degraded = [
         str(r["class"]) for r in rows
         if r.get("status") == "degraded" and r.get("class")

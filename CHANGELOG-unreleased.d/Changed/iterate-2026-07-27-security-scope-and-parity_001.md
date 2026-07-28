@@ -1,0 +1,1 @@
+Security: the local secret scan now EXTENDS a project's own `.gitleaks.toml` instead of replacing it, so a repository has one accepted-findings answer whether the local scan or the host workflow asked. A project config that brings no rules marks the `secrets` class degraded rather than clean.

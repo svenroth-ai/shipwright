@@ -29,6 +29,7 @@ sys.path.insert(0, str(PLUGIN_ROOT / "scripts" / "tools"))
 
 import generate_security_report as gsr  # noqa: E402
 from coverage_report import coverage_table  # noqa: E402
+from scan_compare import compare_scans  # noqa: E402
 from scan_coverage import build_coverage  # noqa: E402
 
 _FULL = build_coverage(available={"sast", "sca", "secrets"})
@@ -140,3 +141,27 @@ class TestCoverageCellsAreEscaped:
             {"class": "sast", "tool": "semgrep", "status": "covered", "detail": None},
         ])
         assert any("checked" in ln for ln in rows)
+
+
+@pytest.mark.covers("FR-01.07")
+class TestComparisonKeyIncludesClass:
+    def test_same_location_in_two_classes_does_not_match_across_them(self) -> None:
+        """Same source/rule/line, different normalized class: two findings, not
+        one persisting pair."""
+        sast = {"source": "x", "rule": "r", "affected_file": "a.py",
+                "affected_line": 1, "severity": "high", "type": "sast"}
+        secret = {**sast, "type": "secret_detection"}
+        result = compare_scans(
+            {"findings": [sast], "coverage": _FULL},
+            {"findings": [secret], "coverage": _FULL},
+        )
+        assert result["counts"] == {"resolved": 1, "new": 1, "persisting": 0}
+
+    def test_same_class_and_location_still_persists(self) -> None:
+        f = {"source": "semgrep", "rule": "r", "affected_file": "a.py",
+             "affected_line": 1, "severity": "high", "type": "sast"}
+        result = compare_scans(
+            {"findings": [f], "coverage": _FULL},
+            {"findings": [dict(f)], "coverage": _FULL},
+        )
+        assert result["counts"]["persisting"] == 1
