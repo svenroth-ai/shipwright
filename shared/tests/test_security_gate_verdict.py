@@ -78,6 +78,50 @@ def test_breakdown_reaches_the_job_summary(critical_gate_run: str) -> None:
     assert "| severity |" in critical_gate_run, "no severity table in the summary"
 
 
+def test_the_console_verdict_line_spends_the_counts_it_computed(
+    critical_gate_run: str,
+) -> None:
+    """The counts must reach the ONE line the step log leads with.
+
+    The two tests above pin that every severity is *counted* and that the table
+    reaches the job summary. Neither pins the console line, and a verdict that
+    computes `$high` and then prints only the blocking total is the original
+    understatement restated one sink over — visible precisely where a reader
+    looks first.
+
+    Scoped to the text BEFORE the job-summary guard, which is what makes it a
+    test about the step log rather than about the phrase. Matching the whole
+    body would accept the line being MOVED inside the `>> $GITHUB_STEP_SUMMARY`
+    group: the console would fall silent, the summary would still be complete,
+    and both this test and `test_breakdown_reaches_the_job_summary` would stay
+    green. Selection is by prefix, not position, so the summary's own
+    `**critical-gate ...` line cannot stand in for the console one either.
+    """
+    head, guard, _ = critical_gate_run.partition('if [ -n "${GITHUB_STEP_SUMMARY:-}"')
+    assert guard, (
+        "the job-summary guard is gone — without it this test cannot tell the "
+        "step log from the summary sink, and would pass on a silent console"
+    )
+    console = [
+        ln.strip() for ln in head.splitlines()
+        if ln.strip().startswith('echo "critical-gate')
+    ]
+    assert len(console) == 1, (
+        f'expected exactly one `echo "critical-gate ..."` line, found '
+        f"{len(console)}: {console}. The guarantee is that ONE line carries the "
+        f"whole breakdown; spread over several, each is incomplete where it is "
+        f"read and only their union is honest."
+    )
+    missing = [
+        var for var in ("$total", "$high", "$medium", "$low")
+        if var not in console[0]
+    ]
+    assert not missing, (
+        f"the console verdict omits {missing} — it reports only the severity it "
+        f"blocks on, which is what this module exists to remove: {console[0]}"
+    )
+
+
 def test_reporting_cannot_fail_the_gate(critical_gate_run: str) -> None:
     """The breakdown is a log line; it must never be able to block a merge.
 
