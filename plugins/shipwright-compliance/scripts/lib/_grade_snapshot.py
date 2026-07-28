@@ -14,6 +14,15 @@ full regen cadence for the trend, while the WebUI dedupes consecutive identical
 unchanged-grade no-op regen — would need a read-back-last-snapshot scan here for
 no functional gain, so the simpler contract wins.
 
+Attribution (iterate-2026-07-28-grade-snapshot-lineage): a Control Grade is a
+property of a TREE, and this regen usually runs inside an iterate worktree whose
+event then union-merges onto ``main``. Every snapshot therefore carries
+``lineage``/``branch``/``base``, built by the shared ``grade_snapshot_shape``
+SSOT so this emitter and the ``record_event`` CLI cannot drift apart. Consumers
+filter on ``lineage``; an ABSENT ``lineage`` means the event predates
+attribution, which is why an unresolvable tree emits ``"unknown"`` explicitly
+rather than omitting the field.
+
 Additive: consumers that don't know ``grade_snapshot`` skip it
 (``change_history.collect_events`` filters by known type) and the dashboard
 output is unchanged. Fail-soft is SPLIT across two layers: this emitter only
@@ -49,9 +58,11 @@ def emit_grade_snapshot(data: ComplianceData) -> dict:
     the parity guarantee (pinned by a real-flow test). Do NOT refactor to cache
     or thread the report through the render path.
 
-    Returns a small result dict (``appended`` count + grade/score, or a skip
-    ``reason``) for the ``update_compliance`` output payload. Raises on a real
-    append failure (the caller's best-effort wrapper catches it).
+    Returns a small result dict (``appended`` count + grade/score + the resolved
+    ``lineage``, or a skip ``reason``) for the ``update_compliance`` output
+    payload. Raises on a real append failure (the caller's best-effort wrapper
+    catches it) — but never because attribution failed, which degrades to
+    ``lineage="unknown"``.
     """
     report = compute_grade(build_grade_inputs(data))
     if not report.gradeable or report.score is None:
@@ -60,12 +71,14 @@ def emit_grade_snapshot(data: ComplianceData) -> dict:
         return {"appended": 0, "reason": "not_gradeable"}
 
     # Lazy import (ADR-045 / mirrors ``_control_block._ratchet_delta`` +
-    # ``hooks/check_rtm_coverage``): ``record_event`` lives in shared/scripts,
-    # OUTSIDE this plugin's ``scripts.lib`` namespace, so it is wired at call
-    # time to avoid binding ``sys.modules['lib']`` at module import.
+    # ``hooks/check_rtm_coverage``): these live in shared/scripts, OUTSIDE this
+    # plugin's ``scripts.lib`` namespace, so they are wired at call time to avoid
+    # binding ``sys.modules['lib']`` at module import. ``grade_snapshot_shape``
+    # sits top-level there (not under ``lib/``) for exactly that reason.
     shared = Path(__file__).resolve().parents[4] / "shared" / "scripts"
     if str(shared) not in sys.path:
         sys.path.insert(0, str(shared))
+    from grade_snapshot_shape import apply_grade_snapshot  # noqa: PLC0415
     from tools.record_event import (  # noqa: PLC0415
         SCHEMA_VERSION,
         append_event,
@@ -77,15 +90,18 @@ def emit_grade_snapshot(data: ComplianceData) -> dict:
         "id": generate_event_id(),
         "ts": datetime.now(timezone.utc).isoformat(),
         "type": "grade_snapshot",
-        "grade": report.grade,
-        "score": report.score,
     }
     session = os.environ.get("SHIPWRIGHT_SESSION_ID", "")
     if session:
         event["session"] = session
-    # ``commit`` is deliberately omitted: the finalize-time regen runs BEFORE the
-    # F6 commit, so HEAD would still be the PREVIOUS commit — recording it would
-    # mislabel the snapshot. The WebUI correlates snapshots by ``ts``.
+    # grade/score + the tree attribution come from the shape SSOT shared with
+    # the ``record_event`` CLI, so the two producers of this durable event cannot
+    # drift apart. ``commit`` stays omitted: this regen runs BEFORE the F6
+    # commit, so HEAD would still be the PREVIOUS commit and would mislabel the
+    # snapshot. ``base`` — the merge-base the attribution resolves — answers
+    # "which tree" without that defect (iterate-2026-07-28-grade-snapshot-lineage).
+    apply_grade_snapshot(event, grade=report.grade, score=report.score,
+                         project_root=data.project_root)
 
     event_id = append_event(data.project_root, event)
     return {
@@ -93,4 +109,5 @@ def emit_grade_snapshot(data: ComplianceData) -> dict:
         "id": event_id,
         "grade": report.grade,
         "score": report.score,
+        "lineage": event["lineage"],
     }
