@@ -23,7 +23,8 @@ Complexity-adaptive change lifecycle for completed Shipwright projects. Detects 
 | Context Loading | [context-loading](references/context-loading.md) |
 | Path A / B / C body (+ SIMPLIFY sub-mode) | [path-a-feature](references/path-a-feature.md) · [path-b-change](references/path-b-change.md) · [path-c-bug](references/path-c-bug.md) · [F-debug](references/F-debug.md) (BUG systematic-debugging) · [F-simplify](references/F-simplify.md) (SIMPLIFY behavior-preserving) |
 | Campaign Mode, Escalation, Degraded, Errors | [campaign-mode](references/campaign-mode.md) · [mid-flight-escalation](references/mid-flight-escalation.md) · [degraded-mode](references/degraded-mode.md) · [error-handling](references/error-handling.md) |
-| Artifact Ownership | [artifact-ownership](references/artifact-ownership.md) |
+| Repairing a red shared branch (§B1b + F11) | [main-repair](references/main-repair.md) |
+| Artifact Ownership — iterate spec, `spec.md`, `shipwright_events.jsonl`, ADR, `architecture.md`, mini-plan | [artifact-ownership](references/artifact-ownership.md) |
 | Phase Timing (Iterate-Rail durations, M-Pre-1) | [phase-timing](references/phase-timing.md) |
 | Finalization F-phases | [F0](references/F0.md) · [F0.5](references/F0.5.md) · [F1](references/F1.md) · [F2](references/F2.md) · [F3](references/F3.md) · [F3a](references/F3a.md) · [F4](references/F4.md) · [F5](references/F5.md) · [F5b](references/F5b.md) · [F5c](references/F5c.md) · [F6](references/F6.md) · [F6.5](references/F6.5.md) · [F7](references/F7.md) · [F7b](references/F7b.md) · [F11](references/F11.md) · [F12](references/F12.md) |
 | Risk Taxonomy, Override Classes, Phase Matrix | this file (inline — NORMATIVE) |
@@ -67,6 +68,10 @@ uv run "{shared_root}/scripts/tools/setup_iterate_worktree.py" \
 ```
 
 Creates `.worktrees/<slug>` off freshly-fetched `origin/<default>` with branch `iterate/<slug>`. Parse the JSON; **`{project_root}` for the rest of the run = the helper's `project_root` field**. `cd` shell into it. Exit codes: `0` ok · `2` slug collision · `3` fetch failed (STOP unless `SHIPWRIGHT_ITERATE_NO_FETCH=1`). One iterate = one worktree = one branch = one PR. `.worktrees/<slug>` is `.gitignore`'d. Re-hydrate `.env*` + `node_modules`/`.venv` per project shape. Cleanup after PR merge: `git worktree remove` + `git branch -D`.
+
+### B1b. Shared-Branch Health (one API call)
+
+This run inherits `origin/<default>`'s state, so check it before building on it — a broken base otherwise surfaces later as a confusing F0 failure "from another session". Run `uv run "{shared_root}/scripts/tools/main_health.py" --project-root "{project_root}"`. Exit `0` green / `3` running → continue. `4` unknown → continue, but report it in the F12 summary: **unknown is never green.** `2` red → **repair `main` first, as its own small PR**, then continue with this iterate's actual task. `5` escalate → a finding-class workflow (scanner, bloat) is red: that is a finding, never an auto-repair — file the card per `escalate.keys`, then continue. Both per [main-repair](references/main-repair.md). The claim is **creating** the ref `iterate/fix-main-<sha12>` (a same-SHA `git push` succeeds for both racers and is therefore no lock); an existing claim means someone else is on it, so just proceed. The same check runs again before the arm at F11 — merging onto a red base puts the blame for the next red run on the wrong change.
 
 ### B2. Load Project Context (MANDATORY)
 
@@ -252,10 +257,6 @@ See `references/mid-flight-escalation.md` (trivial → small → medium → larg
 
 See `references/escape-hatch.md` and `references/iteration-planning.md` (handoff file format and failure behavior). Triggered when complexity = large.
 
-## 9. Artifact Ownership
-
-See `references/artifact-ownership.md` (iterate spec, `spec.md`, `shipwright_events.jsonl`, ADR, `architecture.md`, mini-plan).
-
 ## Finalization (all paths)
 
 **CRITICAL: F0–F11 (incl. F3a, F5a, F5b, F5c) are MANDATORY.** (→ Phase Timing: `mark test` at F0, `mark finalize` at F1 — see [phase-timing](references/phase-timing.md).)
@@ -293,8 +294,5 @@ Four fail-closed conditions enforced by `surface_verification.py` (orchestrator)
 | F11 | [F11](references/F11.md) | Leak-guard (`--stage f11`), `ensure_current.py` refresh-if-behind (integrate+regenerate before arm), push + `gh pr create` against `origin/<default>`, arm fail-soft `gh pr merge --auto --squash` (iterate/* only; deferred under campaign `SHIPWRIGHT_ITERATE_AUTOMERGE=0` — orchestrator merges each PR in turn, interleaved-serial), update handoff, run `verify_iterate_finalization.py`, then **`watch_pr_delivery.py`** — delivered = MERGED + green (no shoot-and-forget) |
 | F12 | [F12](references/F12.md) | Count pending drops; prompt for `/shipwright-changelog` once PR merges; print summary banner |
 
-## Degraded Mode
-See `references/degraded-mode.md` (no sync config, stale mappings, no visual-guidelines, browser-verify failure, code-reviewer unavailable, external review opt-out, pipeline handoff failure, no designs). Record degraded conditions in `shipwright_test_results.json.degraded[]`.
-
-## Error Handling
-See `references/error-handling.md` (test failures: 3-attempt circuit breaker; pre-commit hook failures: auto-fix, never `--no-verify`; missing sync config: TBD/conservative; session handoff: see `references/iteration-reviews.md`).
+## Degraded Mode & Error Handling
+See `references/degraded-mode.md` (no sync config, stale mappings, no visual-guidelines, browser-verify failure, code-reviewer unavailable, external review opt-out, pipeline handoff failure, no designs) — record degraded conditions in `shipwright_test_results.json.degraded[]`. See `references/error-handling.md` (test failures: 3-attempt circuit breaker; pre-commit hook failures: auto-fix, never `--no-verify`; missing sync config: TBD/conservative; session handoff: see `references/iteration-reviews.md`).

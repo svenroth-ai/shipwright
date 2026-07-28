@@ -28,6 +28,7 @@ Shipwright is an AI-powered SDLC framework built on Claude Code. It is structure
 | FR-01.16 | Adopted | Guided requirement elicitation | Must | Elicit requirements through one shared, rigorous method wherever they are gathered — a new project, an adopted codebase, or an ongoing change: ask one question at a time, each with a recommended answer, look facts up in the code instead of asking, challenge wording against the project's own glossary, and stress-test with concrete edge cases. Capture the project's domain vocabulary and the reason behind each hard-to-reverse choice as they surface. No requirement is treated as settled until every dimension of its context is either answered or explicitly marked as an unconfirmed assumption. | interview | unit (inferred) |
 | FR-01.17 | Adopted | Independent re-check on the code host | Must | Re-check every proposed change on the code host before it can merge — the project's tests, its lint, its security scans and the host's own code analysis — independently of whatever already ran on the author's machine, and have the change reviewed there automatically rather than on request. A local pass is never accepted in place of the host's. | interview | unit (inferred) |
 | FR-01.18 | Adopted | /shipwright-grade | Should | Give any git repository a control grade from A to F without changing anything in it: derive what can honestly be derived from its history, its tests and its configuration, and score it on the same rubric the framework's own dashboard uses. A dimension that cannot be determined is marked as exactly that and left out of the calculation rather than filled in, and the report says for each judgement whether it was read from the project's own records or estimated from the outside. Nothing about a repository that is not public leaves the machine without two separate consents. | interview | unit (inferred) |
+| FR-01.19 | Adopted | Recovery of a broken shared branch | Should | When the shared branch breaks after a change is merged, say so and name the single change that broke it, instead of leaving whoever comes next to discover it. That naming is only trustworthy because every merged change is checked on its own rather than only the newest one, and what a repair needs travels with it: what failed, and which other changes the broken one had never been tested alongside. A repair corrects the mismatch and is never allowed to make a test ask for less — that is refused outright, and refused again independently on the code host. Where repairing would be a guess rather than a correction — a security finding, too many changes implicated, or two attempts already spent — the matter is filed for a decision instead, with the way back included. Only one repair is ever under way for the same breakage, and one that is abandoned releases its place rather than blocking every later attempt. | interview | unit (inferred) |
 
 ## Quality Requirements
 
@@ -1054,6 +1055,45 @@ _Where the work detail lives_ at the end of this document.
   about it leaves the machine unless consent was given twice: once for reaching
   out at all, and again for doing so on a repository that is not public — so a
   permission granted broadly never sweeps a private repository along with it.
+
+<a id="fr-0119"></a>
+### FR-01.19 — Recovery of a broken shared branch
+
+- (E) Given several changes merged in quick succession, when each is checked,
+  then every one of them is checked on its own and none is skipped because a
+  later one arrived — otherwise "this change broke it" is a guess dressed as a
+  fact, and the wrong author is asked to explain someone else's mistake.
+- (E) Given the shared branch is broken, when it is examined, then what comes
+  back names the earliest change that broke it, what failed, and which other
+  changes that one had never been tested alongside — everything a repair needs,
+  without assembling it by hand.
+- (E) Given the answer cannot be established — the history looked at was too
+  short, a check never reported, or the code host could not be reached — when
+  the shared branch is examined, then that is what comes back, never "it is
+  fine". A health answer that reads "I could not tell" as "healthy" is worse
+  than none, because it is believed.
+- (E) Given a repair would make a test ask for less than it did — dropping a
+  check, removing a test, or switching one off — when it is proposed, then it is
+  refused, and refused again by the code host using the version of the rule that
+  the proposed change cannot edit. Adjusting a test until it passes is not a
+  repair.
+- (E) Given a repair only updates what a test expects because another change
+  legitimately moved it, when it is proposed, then it is allowed and it must say
+  why the new expectation is the correct one — the commonest honest repair is
+  not blocked, but it is never silent either.
+- (E) Given the breakage is not something a repair should attempt — a security
+  finding, more changes implicated than one overlap explains, or two attempts
+  already spent — when it is examined, then it is filed for a decision with what
+  was learned and the way back to the previous state, instead of being repaired
+  by guesswork. Filing it twice for the same breakage is prevented.
+- (E) Given two people or agents start at the same moment, when each looks for
+  work to do, then only one of them ends up repairing that breakage — the claim
+  is made by an act the other cannot also perform, not by asking first and
+  hoping. And given a claim is abandoned part-way, then it stops holding the
+  place, so a worker that walked away cannot block every later attempt.
+- (E) Given a size limit is only crossed when two separately-acceptable changes
+  combine, when they are merged, then the crossing is visible on the shared
+  branch — previously nothing looked, because each change had been fine alone.
 - (E) Given anything did leave the machine, when the report is written, then it
   states exactly what was fetched, so a reader can tell what the grade rests on
   and what was sent away to find out.

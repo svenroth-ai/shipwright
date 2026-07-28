@@ -32,8 +32,13 @@ CATALOG = REPO_ROOT / ".shipwright" / "planning" / "01-adopted" / "spec.md"
 RTM = REPO_ROOT / ".shipwright" / "compliance" / "traceability-matrix.md"
 
 #: The ids the catalog carries. S6 must not lose or renumber one; a later iterate
-#: may append the next free number (FR-01.16 was minted 2026-07-23, REQ-3 Ph1).
-EXPECTED_IDS = tuple(f"FR-01.{n:02d}" for n in range(1, 19))
+#: may append the next free number (FR-01.16 was minted 2026-07-23, REQ-3 Ph1;
+#: FR-01.19 "Recovery of a broken shared branch" 2026-07-28,
+#: iterate-2026-07-28-main-self-heal). The bound moves only by APPENDING — if a
+#: diff ever makes this tuple shorter, or changes an id already in it, that is
+#: the loss this constant exists to catch and the number must not be adjusted
+#: to match.
+EXPECTED_IDS = tuple(f"FR-01.{n:02d}" for n in range(1, 20))
 
 _EXPLICIT_ANCHOR = re.compile(r'<a\s+id="([^"]+)"\s*>')
 _RTM_FR_LINK = re.compile(r"\[(FR-[\d.]+)\]\(([^)]*spec\.md#[^)]+)\)")
@@ -198,7 +203,11 @@ def test_every_requirement_has_an_explicit_anchor(catalog):
     """
     anchors = _EXPLICIT_ANCHOR.findall(catalog)
     fr_anchors = [a for a in anchors if a.startswith("fr-")]
-    assert fr_anchors == [f"fr-01{n:02d}" for n in range(1, 19)]
+    # Derived from EXPECTED_IDS rather than repeating its bound: the two were
+    # separate literals, so appending FR-01.19 moved one and left this one
+    # behind. One source, one place to append.
+    assert fr_anchors == [i.replace("FR-", "fr-").replace(".", "")
+                          for i in EXPECTED_IDS]
     assert len(set(anchors)) == len(anchors), "duplicate anchor id"
 
 

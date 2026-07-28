@@ -36,8 +36,13 @@ permissions:
   security-events: write # required by github/codeql-action/upload-sarif@v4
 
 concurrency:
-  group: security-${{ github.ref }}
-  cancel-in-progress: true
+  # Same fix as ci.yml, same reason: on `main` the group is per-COMMIT and
+  # cancelling is off, so every merge is actually scanned instead of two close
+  # merges cancelling each other and leaving an unverified intermediate state.
+  # Per-commit rather than just cancel-in-progress: false, because a shared
+  # group with cancelling off queues the runs serially. PRs keep superseding.
+  group: security-${{ github.ref == 'refs/heads/main' && github.sha || github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 
 jobs:
   scan:
