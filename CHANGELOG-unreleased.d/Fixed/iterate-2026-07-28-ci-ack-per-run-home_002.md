@@ -1,0 +1,1 @@
+Committed file content is read by blob OID rather than `git show <rev>:<path>`, which git first stats as a filename and so crosses Windows' 260-character path limit on deep checkouts. A failed read is now an error instead of being hashed as the "file deleted" sentinel.
