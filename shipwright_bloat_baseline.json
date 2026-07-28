@@ -795,7 +795,7 @@
     {
       "path": "shared/scripts/tools/verifiers/iterate_checks.py",
       "limit": 300,
-      "current": 1062,
+      "current": 1087,
       "state": "exception",
       "adr": "ADR-093"
     },

@@ -51,6 +51,24 @@ def _entry(root: Path, run_id: str, complexity: str = "medium", **extra) -> None
     }), encoding="utf-8")
 
 
+def _real_repo(root: Path) -> None:
+    """A git repo whose `main` RESOLVES — a bare `git init` has no commit, so
+    `check_no_silent_revert` returns at its pre-flight and any assertion after
+    it is measuring a skip rather than the path under test."""
+    import subprocess
+
+    def git(*args):
+        subprocess.run(["git", "-C", str(root), *args], capture_output=True, check=False)
+
+    root.mkdir(parents=True, exist_ok=True)
+    git("init", "-b", "main")
+    git("config", "user.email", "t@example.com")
+    git("config", "user.name", "t")
+    (root / "seed.md").write_text("seed\n", encoding="utf-8")
+    git("add", "-A")
+    git("commit", "-m", "seed")
+
+
 def _results(root: Path, owner: str | None, **blocks) -> None:
     latest: dict = dict(blocks)
     if owner is not None:
@@ -237,18 +255,21 @@ def test_a_disregarded_declaration_is_disclosed_even_on_a_clean_run(tmp_path):
     reported: only the operator can tell stale leftovers from "my evidence was
     rewound and the run I meant to describe is unprotected".
     """
-    import subprocess
-
     from tools.verifiers.common import Severity
     from tools.verifiers.silent_revert import check_silent_revert_for_run
 
-    subprocess.run(["git", "init", "-q", "-b", "main", str(tmp_path)],
-                   capture_output=True, check=False)
+    _real_repo(tmp_path)
     _results(tmp_path, OTHER,
              declared_removals=[{"path": "a.md", "reason": "another run's reason"}])
 
     result = check_silent_revert_for_run(tmp_path, run_id=RUN)
 
+    # The comparison must actually RUN. A bare `git init` leaves `main`
+    # unresolvable, the check returns at its pre-flight, and this assertion
+    # would pass on a skip that never reached the clean-run path it names
+    # (Stage-2 code review) — the same shape as the AC-7 test that went green
+    # with production reverted.
+    assert "comparison not made" not in result.detail
     assert result.severity == Severity.WARNING.value
     assert OTHER in result.detail and "F5c" in result.detail
 
@@ -265,16 +286,14 @@ def test_no_declarations_anywhere_stays_silent(tmp_path):
     this one. Asserted rather than left implicit, because a later reading of
     AC-1 will otherwise "fix" it (external code review, openai).
     """
-    import subprocess
-
     from tools.verifiers.silent_revert import check_silent_revert_for_run
 
-    subprocess.run(["git", "init", "-q", "-b", "main", str(tmp_path)],
-                   capture_output=True, check=False)
+    _real_repo(tmp_path)
     _results(tmp_path, OTHER, test_completeness=_GOOD_LEDGER)
 
     result = check_silent_revert_for_run(tmp_path, run_id=RUN)
 
+    assert "comparison not made" not in result.detail
     assert not result.is_failure
     assert "ignored" not in result.detail
 
@@ -339,3 +358,34 @@ def test_the_run_id_is_required_not_defaulted(tmp_path):
 
     with pytest.raises(TypeError):
         check_silent_revert_for_run(tmp_path, "main")
+
+
+def test_f5c_warns_when_a_medium_entry_has_no_durable_evidence(capsys):
+    """Move the discovery back to F5c, where the data is still in hand.
+
+    Without it, an entry missing both blocks surfaces as a post-commit F11 red
+    AFTER `ensure_current` rewound the shared snapshot — the last step of the
+    run (Stage-2 code review). A warning, never a gate: trivial entries
+    legitimately omit them.
+    """
+    from tools.finalize_bundle_lib import _warn_if_no_durable_evidence
+
+    _warn_if_no_durable_evidence({"complexity": "medium"})
+    assert "WARNING" in capsys.readouterr().err
+
+    _warn_if_no_durable_evidence({"complexity": "trivial"})
+    assert capsys.readouterr().err == ""
+
+    # Per MISSING block: carrying the ledger must NOT silence the warning about
+    # surface_verification, which F11 hard-fails on separately (Stage-3 doubt).
+    _warn_if_no_durable_evidence(
+        {"complexity": "large", "test_completeness": {"status": "complete"}})
+    err = capsys.readouterr().err
+    assert "surface_verification" in err and "test_completeness" not in err
+
+    _warn_if_no_durable_evidence({
+        "complexity": "large",
+        "test_completeness": {"status": "complete"},
+        "surface_verification": {"surface": "cli"},
+    })
+    assert capsys.readouterr().err == ""

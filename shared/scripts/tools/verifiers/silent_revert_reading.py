@@ -209,7 +209,7 @@ def tokens_in_order(needle: str, hay: str) -> bool:
 
 
 def replacement_hunks(
-    project_root: Path, ref: str, head: str, path: str,
+    project_root: Path, ref: str, head: str, path: str, flag: str = "-b",
 ) -> list[tuple[set[str], list[str]]]:
     """``[(deleted, added)]`` per minimal diff hunk of ``ref..head`` for one path.
 
@@ -236,8 +236,17 @@ def replacement_hunks(
     whitespace ENTIRELY, so it read a token merge (``a b`` → ``ab``) as no
     change at all while the finder read it as a change — leaving a finding no
     hunk could ever answer, which is the asymmetry ``trg-ffddd6b9`` (3) names.
+
+    ``flag`` is a parameter because hunk WIDTH matters as much as line equality.
+    ``-b`` marks a strict superset of ``-w`` as changed, and under ``-U0`` a
+    changed line JOINS two hunks that an unchanged line would separate — so a
+    de-indent to column 0 between two regions merges them, and
+    :func:`unexplained_by_edit` would let an added line from one region vouch
+    for a deleted line in the other. That is the unbounded matching this
+    docstring rejects, re-entered through the back door (Stage-3 doubt). The
+    filter therefore asks BOTH flags and suppresses only where they agree.
     """
-    rc, out, _ = _run_git(project_root, "diff", "-U0", "-b", ref, head, "--", path)
+    rc, out, _ = _run_git(project_root, "diff", "-U0", flag, ref, head, "--", path)
     if rc != 0:
         return []
     hunks: list[tuple[set[str], list[str]]] = []

@@ -206,3 +206,48 @@ def test_the_pairer_and_the_finder_share_one_equivalence_relation(tmp_path):
         assert not (finder_sees_change and not pairer_has_hunk), (
             f"{label}: the finder reports a change the pairer cannot see"
         )
+
+
+def test_a_de_indent_between_two_regions_cannot_vouch_across_them(tmp_path):
+    """Stage-3 doubt: `-b` widens hunks, and under `-U0` a changed line JOINS
+    two hunks that an unchanged one separates.
+
+    A de-indent to column 0 is unchanged under `-w` and changed under `-b`, so
+    with `-b` alone the region above and the region below collapse into ONE
+    hunk — and `unexplained_by_edit` would let the long added line in region B
+    vouch for the deleted line in region A, which it has nothing to do with.
+    That is the unbounded matching `replacement_hunks`' own docstring rejects,
+    re-entered through hunk boundaries rather than line equality.
+
+    Requiring BOTH pairings to explain a line keeps the narrower `-w`
+    boundaries in charge of suppression.
+    """
+    from tools.verifiers.silent_revert_filters import unexplained_by_edit
+
+    root = _repo(tmp_path)
+    _commit(root, "a.md", "keep alpha beta\n    indented\ntail\n")
+    # Region A drops the line; the middle de-indents; region B gains a longer
+    # line that CONTAINS region A's tokens in order.
+    _commit(root, "a.md", "indented\nkeep alpha beta and more\n", "three regions")
+
+    survivors = unexplained_by_edit(
+        root, "HEAD~1", "HEAD", "a.md",
+        lines={"tail"}, excluded=set(), cache={})
+
+    # `tail` has no replacement carrying its tokens anywhere — it must survive.
+    assert survivors == {"tail"}
+
+
+def test_a_genuine_in_place_rewrite_is_still_explained(tmp_path):
+    """The control: requiring both pairings must not stop the filter working."""
+    from tools.verifiers.silent_revert_filters import unexplained_by_edit
+
+    root = _repo(tmp_path)
+    _commit(root, "a.md", "the quick fox\n")
+    _commit(root, "a.md", "the quick brown fox jumps\n", "in-place rewrite")
+
+    survivors = unexplained_by_edit(
+        root, "HEAD~1", "HEAD", "a.md",
+        lines={"the quick fox"}, excluded=set(), cache={})
+
+    assert survivors == set(), "an in-place rewrite that keeps every token must explain the line"

@@ -43,6 +43,7 @@ from __future__ import annotations
 
 from .review_record_core import (
     ImmutableReviewError,
+    entry_for,
     ReviewRecordError,
     lock_path,
     make_entry,
@@ -89,6 +90,7 @@ __all__ = [
     "ImmutableReviewError",
     "ReviewRecordError",
     "close_pending",
+    "entry_for",
     "init_record",
     "is_safe_run_id",
     "lock_path",

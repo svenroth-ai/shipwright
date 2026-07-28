@@ -172,28 +172,83 @@ def test_trivial_complexity_still_skips(tmp_path):
     assert check_review_record(tmp_path, RUN).is_skipped
 
 
-def test_the_stage_1_remediation_command_is_actually_executable(tmp_path):
+def test_the_stage_1_remediation_command_actually_parses(tmp_path):
     """A gate that blocks with a broken way forward is a trap.
 
-    The failure message advertised `--from spec-reviewer`, which is not in
-    `lib.review_payloads.ADAPTERS` — argparse would have rejected the very
-    command the gate told the operator to run (external code review, openai #2).
-    Parsed here rather than eyeballed, so the message and the CLI cannot drift.
+    Round 1 of this test regexed the ``--from`` token only, so it green-lit a command
+    that argparse rejects for a DIFFERENT missing flag: the message advertised
+    `--from spec-reviewer` (not an adapter) and then, once that was fixed, still
+    omitted the REQUIRED `--run-id`. Two rounds, same trap, because the test
+    checked one token instead of running the parser (Stage-2 code review).
+
+    So the command is now extracted from the message and fed to the real
+    `record_review_pass._parse_args`. Nothing about it can drift silently.
     """
     import re
+    import shlex
 
-    from lib.review_payloads import ADAPTERS
+    from tools.record_review_pass import _parse_args
     from tools.verifiers.review_record_floor import stage_one_precedes_stage_two
 
     record = new_record(RUN)
     record = upsert_review(record, make_entry(
         "code", STATUS_COMPLETED, recorded_by="code-reviewer"), force=True)
-    detail = stage_one_precedes_stage_two(record).detail
+    detail = stage_one_precedes_stage_two(record, RUN).detail
 
-    adapters = re.findall(r"--from (\S+)", detail)
-    assert adapters, "the remediation must name an adapter"
-    for adapter in adapters:
-        assert adapter in ADAPTERS, (
-            f"the gate tells the operator to run `--from {adapter}`, which "
-            f"argparse rejects — choices are {sorted(ADAPTERS)}"
-        )
+    command = re.search(r"`([^`]*record --run-id[^`]*)`", detail)
+    assert command, f"the remediation must quote a runnable command: {detail}"
+    tokens = shlex.split(command.group(1))
+    tokens = tokens[tokens.index("record"):]
+    # Drop each `--flag <placeholder>` pair whole; dropping the placeholder
+    # alone would leave the flag dangling and fail for the wrong reason.
+    argv, skip = [], False
+    for token in tokens:
+        if skip:
+            skip = False
+            continue
+        if token.startswith("<") and token.endswith(">"):
+            argv.pop()
+            continue
+        if token.startswith("--") and token in ("--payload-file",):
+            skip = True
+            continue
+        argv.append(token)
+
+    args = _parse_args(argv)          # raises SystemExit if the CLI rejects it
+    assert args.review_type == "spec"
+    assert args.status == STATUS_COMPLETED
+    assert args.run_id == RUN
+
+
+def test_a_completed_spec_row_without_evidence_does_not_satisfy_stage_1(tmp_path):
+    """The HARD-GATE is held to the bar it exists to impose.
+
+    `--status completed` with `--from` omitted produces the same empty shape
+    AC-2 rejects for `code`. Accepting it for `spec` would make the one row this
+    change exists to render provable the one row that can still be merely
+    asserted (Stage-2 code review).
+    """
+    from tools.verifiers.review_record_floor import stage_one_precedes_stage_two
+
+    record = new_record(RUN)
+    record = upsert_review(record, make_entry(
+        "code", STATUS_COMPLETED, recorded_by="code-reviewer"), force=True)
+    record = upsert_review(record, make_entry(
+        "spec", STATUS_COMPLETED, recorded_by="none"), force=True)
+
+    result = stage_one_precedes_stage_two(record, RUN)
+
+    assert result is not None and result.is_failure
+    assert "no evidence" in result.detail
+
+
+def test_an_evidenced_spec_row_satisfies_stage_1(tmp_path):
+    from tools.verifiers.review_record_floor import stage_one_precedes_stage_two
+
+    record = new_record(RUN)
+    record = upsert_review(record, make_entry(
+        "code", STATUS_COMPLETED, recorded_by="code-reviewer"), force=True)
+    record = upsert_review(record, make_entry(
+        "spec", STATUS_COMPLETED, recorded_by="spec-reviewer"), force=True)
+
+    assert stage_one_precedes_stage_two(record, RUN) is None

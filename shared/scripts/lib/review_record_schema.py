@@ -241,9 +241,16 @@ def _validate_gates(gates: Any) -> tuple[bool, str | None]:
         return True, None
     if not isinstance(gates, dict):
         return False, "gates is not an object"
-    unknown = [t for t in gates if t not in GATE_TYPES]
-    if unknown:
-        return False, f"gates has unknown type(s): {', '.join(sorted(unknown))}"
+    # An UNKNOWN gate key is tolerated, unlike an unknown `reviews` key. That
+    # asymmetry is deliberate: `reviews` mirrors a cross-repo contract whose
+    # consumer rejects strangers, so strictness there protects the mirror.
+    # `gates` has no mirror, and `schema_version` is frozen at 1 by design — so
+    # rejecting strangers here would mean the day GATE_TYPES gains a second
+    # member, records from the new writer read as schema-INVALID to every reader
+    # still on the old constant, and the gate tells the operator to "repair or
+    # delete" an immutable, git-tracked, never-evicted review history that is
+    # perfectly fine. That is §1.3's failure mode reproduced inside this repo,
+    # and the plugin cache makes old-and-new readers routine (Stage-3 doubt).
     for gate_type in GATE_TYPES:
         if gate_type not in gates:
             continue

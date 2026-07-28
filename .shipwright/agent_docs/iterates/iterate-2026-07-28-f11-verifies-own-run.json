@@ -170,10 +170,80 @@
         "behavior": "finder and pairer never disagree in the dangerous direction over 6 whitespace shapes",
         "disposition": "tested",
         "evidence": "shared/tests/test_silent_revert_narrowings.py::test_the_pairer_and_the_finder_share_one_equivalence_relation PASSED"
+      },
+      {
+        "behavior": "the spec-reviewer adapter consumes Stage 1's REAL reply shape (PASS and REJECT)",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_review_findings_spec_adapter.py (5 tests) PASSED; also exercised live — this run's spec row was re-recorded through it"
+      },
+      {
+        "behavior": "a code-reviewer payload is still refused for a spec reply, pinning why the adapter exists",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_review_findings_spec_adapter.py::test_the_code_reviewer_adapter_still_rejects_a_spec_reply PASSED"
+      },
+      {
+        "behavior": "both -b and -w must explain a line before it is suppressed",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_silent_revert_narrowings.py::test_a_de_indent_between_two_regions_cannot_vouch_across_them PASSED"
+      },
+      {
+        "behavior": "a genuine in-place rewrite is still explained under the two-pass rule",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_silent_revert_narrowings.py::test_a_genuine_in_place_rewrite_is_still_explained PASSED"
+      },
+      {
+        "behavior": "an unknown gate key is tolerated, so a future GATE_TYPES member cannot invalidate old readers",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_review_record_gates.py::test_an_unknown_gate_key_is_tolerated_not_rejected PASSED"
+      },
+      {
+        "behavior": "a malformed KNOWN gate entry is still rejected",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_review_record_gates.py::test_a_malformed_known_gate_entry_is_still_rejected PASSED"
+      },
+      {
+        "behavior": "a completed spec row without evidence does not satisfy Stage 1",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_review_record_evidence_floor.py::test_a_completed_spec_row_without_evidence_does_not_satisfy_stage_1 PASSED"
+      },
+      {
+        "behavior": "an evidenced spec row satisfies Stage 1",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_review_record_evidence_floor.py::test_an_evidenced_spec_row_satisfies_stage_1 PASSED"
+      },
+      {
+        "behavior": "the Stage-1 remediation command parses under the real record_review_pass argparse",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_review_record_evidence_floor.py::test_the_stage_1_remediation_command_actually_parses PASSED"
+      },
+      {
+        "behavior": "the Stage-1 ordering rule does not fire on a record written before `gates` existed",
+        "disposition": "tested",
+        "evidence": "shared/scripts/tools/verifiers/review_record_floor.py stage_one_precedes_stage_two early return; covered by test_review_record_gate.py + test_review_record_floor.py (33 tests) PASSED"
+      },
+      {
+        "behavior": "the F5c warning names each MISSING durable block",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_iterate_latest_attribution.py::test_f5c_warns_when_a_medium_entry_has_no_durable_evidence PASSED"
+      },
+      {
+        "behavior": "the clean-run disclosure tests reach the comparison instead of a pre-flight skip",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_iterate_latest_attribution.py::test_a_disregarded_declaration_is_disclosed_even_on_a_clean_run PASSED (asserts 'comparison not made' absent)"
+      },
+      {
+        "behavior": "an F5c entry whose evidence block is present but the wrong SHAPE is reported, not ignored",
+        "disposition": "tested",
+        "evidence": "shared/scripts/tools/verifiers/iterate_checks.py _wrong_shape_detail in both readers; covered by test_verify_iterate_finalization.py (95 tests) PASSED"
+      },
+      {
+        "behavior": "a test repo carries its own git identity, so a CI runner reproduces the local result",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_silent_revert_narrowings.py::test_a_resolvable_local_ref_is_still_preferred_when_it_is_ahead PASSED under GIT_CONFIG_GLOBAL=/dev/null"
       }
     ],
     "counts": {
-      "tested": 32,
+      "tested": 46,
       "untestable": 0,
       "untested_testable": 0
     },
@@ -186,7 +256,7 @@
     "surface": "cli",
     "runner": "uv run pytest shared/tests/test_audit_e2e_integration.py shared/tests/test_iterate_latest_attribution.py shared/tests/test_review_record_gates.py shared/tests/test_review_record_evidence_floor.py shared/tests/test_silent_revert_narrowings.py shared/tests/test_derived_definition_integration.py shared/tests/test_review_record_gate.py shared/tests/test_review_record_floor.py -q",
     "exit_code": 0,
-    "tests_run": 89,
+    "tests_run": 94,
     "evidence_path": ".shipwright/runs/iterate-2026-07-28-f11-verifies-own-run/surface_verification.json",
     "timestamp": "2026-07-28T00:00:00Z"
   }

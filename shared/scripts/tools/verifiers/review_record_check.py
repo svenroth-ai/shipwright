@@ -32,7 +32,7 @@ if str(_SCRIPTS_ROOT) not in sys.path:
 
 from lib.iterate_entry import find_entry_by_run_id  # noqa: E402
 from lib.review_record import (  # noqa: E402
-    REVIEW_TYPES,
+    RECORDABLE_TYPES,
     ReviewRecordError,
     is_safe_run_id,
     pending_types,
@@ -42,14 +42,9 @@ from lib.review_record import (  # noqa: E402
 
 from .common import CheckResult, Severity  # noqa: E402
 from .git_helpers import _run_git  # noqa: E402
-# The substance predicates — "does this answer mean what it says" — live next
-# door. `FLOORED_COMPLEXITIES` / `_CODE_REVIEW_TYPES` are re-exported from here
-# because existing importers and tests resolve them at this module.
+# The substance predicates — "does this answer mean what it says" — live next door.
 from .review_record_floor import (  # noqa: E402
-    _CODE_REVIEW_TYPES,  # noqa: F401 — re-exported surface
-    FLOORED_COMPLEXITIES,  # noqa: F401 — re-exported surface
     CHECK_NAME,
-    carries_evidence,  # noqa: F401 — re-exported surface
     code_review_floor,
     stage_one_precedes_stage_two,
     substitution_note,
@@ -126,7 +121,7 @@ def check_review_record(project_root: Path, run_id: str, commit_hash: str = "") 
             f"no review record for {run_id} — the reviews of this run left no "
             "machine-readable trace, so the Mission view cannot tell 'not run' "
             f"from 'not recorded'. Run `uv run {_TOOL} init --run-id {run_id}`, "
-            f"then {_remediation(run_id, list(REVIEW_TYPES))}",
+            f"then {_remediation(run_id, list(RECORDABLE_TYPES))}",
         )
 
     outstanding = pending_types(record)
@@ -141,7 +136,7 @@ def check_review_record(project_root: Path, run_id: str, commit_hash: str = "") 
     if floor is not None:
         return floor
 
-    stage1 = stage_one_precedes_stage_two(record)
+    stage1 = stage_one_precedes_stage_two(record, run_id)
     if stage1 is not None:
         return stage1
 

@@ -114,7 +114,7 @@ def _seed(
         return {
             "review_type": review_type, "status": "completed", "findings_count": 0,
             "findings": [], "provider": None, "completed_at": "2026-05-06T07:00:00Z",
-            "disposition": None, "recorded_by": "test-fixture",
+            "disposition": None, "recorded_by": "code-reviewer",
             "parse_status": None, "raw_excerpt": None,
         }
 

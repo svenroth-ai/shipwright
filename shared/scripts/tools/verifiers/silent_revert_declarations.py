@@ -99,6 +99,17 @@ def attributed_declared_removals(project_root, run_id: str) -> tuple[list[dict],
     per_run = (entry or {}).get("declared_removals")
     if isinstance(per_run, list):
         return _dicts(per_run), None
+    if per_run is not None:
+        # Symmetric with the `malformed` rule below, and MORE likely to fire:
+        # the F5c entry is the home operators hand-write into `--entry-json`, so
+        # it is the likelier place to get the shape wrong. Falling through to the
+        # shared file here would answer "none declared" to a question the entry
+        # tried and failed to answer (Stage-2 code review).
+        return [], (
+            "the F5c entry's declared_removals is not a list "
+            f"({type(per_run).__name__}), so whether this run declared any "
+            "removal is unknowable from it"
+        )
 
     latest = read_iterate_latest(Path(project_root), run_id)
     if latest.is_current:

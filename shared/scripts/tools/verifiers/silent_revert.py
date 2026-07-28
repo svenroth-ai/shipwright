@@ -39,23 +39,18 @@ declaration is the answer.
 
 from __future__ import annotations
 
-import sys
 from pathlib import Path
 
-_SCRIPTS_ROOT = Path(__file__).resolve().parents[2]
-if str(_SCRIPTS_ROOT) not in sys.path:
-    sys.path.insert(0, str(_SCRIPTS_ROOT))
-
-from .common import CheckResult, Severity  # noqa: E402
-from .git_helpers import _run_git  # noqa: E402
-from .silent_revert_declarations import (  # noqa: E402
+from .common import CheckResult, Severity
+from .git_helpers import _run_git
+from .silent_revert_declarations import (
     attributed_declared_removals,
     covered_by_declaration as _covered,
 )
 # Re-exported: `dropped_lines` is this module's published detector surface and
 # several tests + the integration test import it from here.
-from .silent_revert_detect import dropped_lines  # noqa: E402
-from .silent_revert_reading import resolve_default_ref as _resolve_default_ref  # noqa: E402
+from .silent_revert_detect import dropped_lines
+from .silent_revert_reading import resolve_default_ref as _resolve_default_ref
 
 _NAME = "no silent revert of merged work"
 

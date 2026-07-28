@@ -147,24 +147,37 @@ def unexplained_by_edit(
       branch line is merely reworded to mention what it discards, and one long
       pre-existing line can clear any number of deleted ones.
     """
-    if path not in cache:
-        cache[path] = replacement_hunks(project_root, ref, head, path)
-    survivors = set(lines)
-    for deleted, added in cache[path]:
-        candidates = lines & deleted
-        if not candidates:
-            continue
-        # Tokenise each candidate replacement ONCE per hunk rather than once per
-        # (missing line x replacement) pair: an F11 gate that hangs is an F11 gate
-        # that gets switched off.
-        replacements = [a.split() for a in added if a not in excluded]
-        if not replacements:
-            continue
-        for line in candidates:
-            needle = line.split()
-            if any(is_subsequence(needle, r) for r in replacements):
-                survivors.discard(line)
-    return survivors
+    # BOTH diff modes must explain a line before it is suppressed. `-b` is the
+    # finder's twin on line equality, but it also marks MORE lines changed, and
+    # under -U0 a changed line joins hunks an unchanged one separates — so a
+    # de-indent to column 0 between two regions merges them and lets an added
+    # line from one vouch for a deleted line in the other. `-w` keeps the
+    # narrower boundaries. Agreement means the suppression survives the stricter
+    # of the two pairings (Stage-3 doubt).
+    suppressed: set[str] | None = None
+    for flag in ("-b", "-w"):
+        key = (path, flag)
+        if key not in cache:
+            cache[key] = replacement_hunks(project_root, ref, head, path, flag)
+        this_pass: set[str] = set()
+        for deleted, added in cache[key]:
+            candidates = lines & deleted
+            if not candidates:
+                continue
+            # Tokenise each candidate replacement ONCE per hunk rather than once
+            # per (missing line x replacement) pair: an F11 gate that hangs is an
+            # F11 gate that gets switched off.
+            replacements = [a.split() for a in added if a not in excluded]
+            if not replacements:
+                continue
+            for line in candidates:
+                needle = line.split()
+                if any(is_subsequence(needle, r) for r in replacements):
+                    this_pass.add(line)
+        suppressed = this_pass if suppressed is None else (suppressed & this_pass)
+        if not suppressed:
+            break
+    return set(lines) - (suppressed or set())
 
 
 __all__ = [

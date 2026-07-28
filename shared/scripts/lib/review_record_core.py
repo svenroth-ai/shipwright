@@ -66,6 +66,7 @@ def _section(review_type: str) -> str:
 __all__ = [
     "GATE_TYPES",
     "ImmutableReviewError",
+    "entry_for",
     "ReviewRecordError",
     "lock_path",
     "make_entry",
@@ -188,6 +189,20 @@ def upsert_review(
     updated[section] = dict(record.get(section) or {})
     updated[section][review_type] = entry
     return updated
+
+
+def entry_for(record: dict[str, Any], review_type: str) -> dict[str, Any]:
+    """The recorded entry for ``review_type``, from whichever section owns it.
+
+    Exported so no caller has to re-derive the routing. Two did — the CLI's
+    immutable-collision repair path and ``repair_companion`` — both reading
+    ``record["reviews"]`` directly, which would silently read ``{}`` for a gate
+    type and report "recorded as None" (Stage-2 code review). Not live today
+    (both require ``--marker-status``, which only the two MARKER_TYPES accept),
+    but two section-blind readers are the drift :func:`_section` exists to make
+    unrepresentable.
+    """
+    return (record.get(_section(review_type)) or {}).get(review_type) or {}
 
 
 def pending_types(record: dict[str, Any]) -> list[str]:

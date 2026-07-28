@@ -82,20 +82,6 @@ def test_a_legacy_record_without_gates_is_still_valid():
     assert ok, err
 
 
-def test_an_unknown_gate_type_is_rejected():
-    record = new_record(RUN)
-    record["gates"]["invented"] = make_entry("spec", STATUS_COMPLETED)
-    ok, err = validate_record(record, expected_run_id=RUN)
-    assert not ok and "invented" in err
-
-
-def test_a_malformed_gate_entry_is_rejected():
-    record = new_record(RUN)
-    record["gates"]["spec"]["findings_count"] = 99
-    ok, err = validate_record(record, expected_run_id=RUN)
-    assert not ok and "gates.spec" in err
-
-
 # --- a live run cannot dodge the row by omitting the section ----------------
 
 def test_a_new_record_materialises_spec_as_pending():
@@ -127,3 +113,30 @@ def test_spec_round_trips_and_is_immutable(tmp_path):
         assert type(exc).__name__ == "ImmutableReviewError"
     else:  # pragma: no cover
         raise AssertionError("a terminal gate row must not be silently rewritable")
+
+
+def test_an_unknown_gate_key_is_tolerated_not_rejected():
+    """Stage-3 doubt: `schema_version` is frozen at 1 BY DESIGN, and GATE_TYPES
+    is documented as where future stages go. Rejecting an unknown gate key would
+    mean the day it gains a second member, records from the new writer read as
+    schema-INVALID to every reader still on the old constant — and the gate tells
+    the operator to "repair or delete" an immutable, git-tracked, never-evicted
+    history that is perfectly fine. That is §1.3's failure reproduced internally,
+    and the plugin cache makes old-and-new readers routine.
+
+    The asymmetry with `reviews` is deliberate: that one mirrors a cross-repo
+    contract whose consumer rejects strangers, so strictness protects the mirror.
+    `gates` has no mirror.
+    """
+    record = new_record(RUN)
+    record["gates"]["a_future_stage"] = make_entry("spec", STATUS_COMPLETED)
+    ok, err = validate_record(record, expected_run_id=RUN)
+    assert ok, err
+
+
+def test_a_malformed_known_gate_entry_is_still_rejected():
+    """Tolerating strangers must not tolerate a broken row we DO know."""
+    record = new_record(RUN)
+    record["gates"]["spec"]["findings_count"] = 99
+    ok, err = validate_record(record, expected_run_id=RUN)
+    assert not ok and "gates.spec" in err

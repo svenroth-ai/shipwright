@@ -47,7 +47,7 @@ from lib.review_record import (  # noqa: E402
     TERMINAL_STATUSES,
     ImmutableReviewError,
     ReviewRecordError,
-    close_pending,
+    close_pending, entry_for,
     init_record,
     make_entry,
     pending_types,
@@ -262,7 +262,7 @@ def _repair_or_reject(
         record = read_record(project_root, args.run_id)
     except ReviewRecordError:
         record = None
-    recorded = ((record or {}).get("reviews", {}).get(args.review_type) or {})
+    recorded = entry_for(record or {}, args.review_type)
     if recorded.get("status") != args.status:
         return _fail(
             "immutable",

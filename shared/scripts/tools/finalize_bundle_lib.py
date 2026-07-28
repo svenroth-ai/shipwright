@@ -86,6 +86,42 @@ def _reject_unknown(obj: dict, allowed, where: str) -> None:
         )
 
 
+#: The blocks whose only restore-proof home is the per-run F5c entry.
+_DURABLE_EVIDENCE = ("test_completeness", "surface_verification")
+
+
+def _warn_if_no_durable_evidence(entry: dict) -> None:
+    """Warn — never fail — when a medium+ entry carries neither evidence block.
+
+    ``shipwright_test_results.json`` is a derived snapshot that F11's own
+    ``ensure_current`` rewinds to HEAD, so on a branch that fell behind these
+    blocks survive only here. Without this, an agent that follows F5b/F5c
+    without reading `references/F5c.md` learns about it as a post-commit F11 red
+    — at the last step of the run, after the rewind, when the repair is re-run
+    F5 and re-commit. A warning at F5c moves that discovery back to where the
+    data is still in hand (Stage-2 code review).
+
+    Deliberately NOT a hard error: the entry legitimately omits them at trivial
+    complexity, and turning a usability warning into a gate would red runs the
+    F11 checks themselves would pass.
+    """
+    if str(entry.get("complexity", "")).lower() not in ("medium", "large"):
+        return
+    # Per MISSING block, not "any present silences all": carrying the ledger and
+    # not `surface_verification` used to warn about neither, and F11 then
+    # hard-failed on the one that was absent — the discovery-too-late sequence
+    # this warning exists to move (Stage-3 doubt).
+    missing = [k for k in _DURABLE_EVIDENCE if not isinstance(entry.get(k), dict)]
+    for key in missing:
+        print(
+            f"finalize_bundle: WARNING — iterate_entry carries no {key!r}. "
+            "shipwright_test_results.json is a derived snapshot that F11 rewinds "
+            "to HEAD, so on a behind branch this entry is the only home it "
+            "survives in. See references/F5c.md.",
+            file=sys.stderr,
+        )
+
+
 def validate(payload: object) -> str:
     """Validate ``payload`` structurally; return the trimmed ``run_id``.
 
@@ -134,6 +170,7 @@ def validate(payload: object) -> str:
         raise BundleValidationError(
             f"iterate_entry must not set {sorted(forbidden)} — append_iterate_entry adds them"
         )
+    _warn_if_no_durable_evidence(entry)
 
     finalize = payload.get("finalize")
     if not isinstance(finalize, dict):

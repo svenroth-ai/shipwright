@@ -155,10 +155,31 @@ the one consumer while breaking it. See §5 for why that is not a dodge.
 
 **AC-1 — an `iterate_latest` block that names another run is not evidence.**
 One shared reader returning a **typed state** — `current` · `foreign` ·
-`unattributed` · `malformed` · `missing` — and every caller fails closed on
-every non-`current` state, naming both run ids and the repair. Applies to
-`check_test_completeness_ledger`, `check_surface_verification`, and the
-silent-revert `declared_removals`.
+`unattributed` · `malformed` · `missing` — which hands the block back **only**
+in `current`. Applies to `check_test_completeness_ledger`,
+`check_surface_verification`, and the silent-revert `declared_removals`.
+
+*Corrected during Stage-1 review.* The first draft said every caller "fails
+closed on every non-`current` state, naming both run ids and the repair", and
+the third caller does not — so the AC stated something its own implementation
+contradicts. **"Fails closed" means the foreign block is never USED**; what
+follows differs by what the block is FOR:
+
+- `check_test_completeness_ledger` / `check_surface_verification` demand
+  evidence in order to PASS, so absence must block, and both report both run
+  ids and the repair.
+- `declared_removals` supplies an *exception*, not evidence. Not using it is
+  the whole fix: the caller receives `[]`, nothing is exempted, and every
+  dropped line still blocks. It reports unconditionally when the file is
+  `malformed` — the one state where "none declared" cannot be told from
+  "could not be read" — and when declarations were found but belong to another
+  run. It stays silent when nothing was declared anywhere, because requiring
+  `declared_removals: []` on every run would be ceremony on 100% of runs
+  defending against nothing.
+
+AC-7 was amended for this same class of AC-vs-code disagreement (§2c row 3.1);
+leaving AC-1's wording alone while arguing the behaviour only in §2c prose was
+the inconsistency Stage 1 caught.
 
 **AC-1b — the evidence has a home the restore cannot reach.**
 `check_surface_verification` prefers the per-run F5c entry exactly as the ledger
@@ -269,6 +290,33 @@ the review — which is why it was run to convergence instead of once.
 | 6.1 | every non-current state should block, even with no declarations anywhere | med | **HALF accepted.** `malformed` now reports unconditionally — it is the one state where "none declared" cannot be told from "could not read". **Declined** for missing/unattributed/foreign-with-nothing: see below. |
 | 6.2 | the test codifying that fail-open should be replaced | med | **Declined, and rewritten to say why** rather than deleted. |
 
+## 2c-bis. Stage-1 spec-compliance review (HARD-GATE) — REJECT, then fixed
+
+The cascade ran after `#496` merged into this branch and made it a **standing
+request**, retiring the `--autonomous` disposition these rows had been closed
+with. Stage 1 returned **REJECT** on two points, both correct and both cheap:
+
+1. **AC-1's normative text contradicted its own implementation** for the third
+   caller. AC-7 had been amended for exactly this class of disagreement while
+   AC-1's wording was left alone and the behaviour argued only in §2c prose —
+   "the contract therefore ships stating something its own implementation
+   contradicts, at the exact point two competent readers already disagreed."
+   Fixed in AC-1 above. No code change.
+2. **The delivered `reviews.json` asserted Stage 1 did not run, while Stage 1
+   was running.** The row still carried the session-policy disposition. That is
+   the not-run-versus-not-recorded confusion this artifact exists to abolish,
+   inverted, shipping inside the very run that hardens it. Re-recorded from the
+   Stage-1 reply with `--force`.
+
+Stage 1 also independently re-derived three of this spec's load-bearing claims
+rather than taking them: it read the webui consumer itself and confirmed `:276`
+filters unknown keys of `record.reviews` **only**, with no top-level rejection
+anywhere in the parse (so the `gates` sibling is genuinely invisible); it
+re-derived the six-row `-b`/`-w` table from real git semantics; and it counted
+the tests (51 exactly) and the `record_review_pass.py` hunks (all 1:1 swaps,
+395/395 held). It also re-ran the 45/45 evidence measurement against the now-48
+records and found **zero** rows in the evidence-free shape.
+
 **The one substantive disagreement (6.1 / 6.2).** The reviewer reads AC-1's
 "fail closed on every non-`current` state" as: block whenever the shared block
 is non-current and the F5c entry carries no `declared_removals`. Every iterate
@@ -284,6 +332,66 @@ must block them; declarations are an *exception* mechanism, whose absence is the
 normal state of a healthy run. A gate red on every run is the failure mode this
 repo keeps having to un-teach. The half that was a genuine hole — malformed,
 where silence is a guess — is now closed.
+
+## 2c-ter. Stage-2 code review (10 findings) and Stage-3 doubt (8 doubts)
+
+All eighteen addressed. The three that matter:
+
+**The gate's own recording path was broken (Stage-3, high).** `--from
+code-reviewer` — the ONE documented way to record the new `spec` row — routes to
+an adapter requiring a top-level `review` array, while `spec-reviewer.md` pins
+Stage 1's reply as `{stage, verdict, spec_citations, summary}`. Handing the reply
+over verbatim exits 1. **This run hit it and papered over it**: I hand-transformed
+my payload to add a `review` key rather than noticing the adapter was missing.
+Every test substituted a code-reviewer payload, hiding it. So the gate that
+exists to make Stage 1 provable made *fabricating* its evidence easier than
+recording it. Fixed with a real `from_spec_reviewer` adapter; this run's `spec`
+row was then re-recorded through it.
+
+That is the third instance of one defect class in this run — a gate that blocks
+with a repair that does not work (`--from spec-reviewer` unparseable; `--run-id`
+omitted; no adapter at all). Each was found by a different reviewer, and none by
+me.
+
+**`-w` → `-b` could SUPPRESS a finding (Stage-3, medium).** My AC-7 analysis was
+entirely per-line. `-b` also marks *more* lines changed, and under `-U0` a
+changed line JOINS two hunks an unchanged one separates — so a de-indent to
+column 0 between two regions merges them, and an added line in region B can
+vouch for a deleted line in region A. That is the unbounded matching
+`replacement_hunks`' own docstring rejects, re-entered through hunk boundaries
+rather than line equality. The filter now requires **both** `-b` and `-w` to
+explain a line before suppressing it.
+
+**`gates` rejected unknown keys (Stage-3, medium).** `schema_version` is frozen
+at 1 by design and `GATE_TYPES` is documented as where future stages go — so the
+day it gains a second member, new-writer records read as schema-INVALID to every
+reader on the old constant, and the gate says "repair or delete" a healthy,
+never-evicted history. §1.3's failure mode reproduced *inside* this repo, via
+the plugin cache. `gates` now tolerates strangers; `reviews` stays strict
+because it mirrors a contract whose consumer rejects them.
+
+Also fixed: the Stage-1 ordering rule no longer fires on records written before
+`gates` existed (every in-flight run, whose `code` row is already immutable);
+`carries_evidence` checks ADAPTERS membership rather than non-blankness, closing
+a one-undocumented-flag bypass; the `spec` row is held to the same evidence bar
+as the code review it precedes; `F11.md` — the prompt loaded AT the failing step
+— was the one doc left saying "all five"; the F5c warning reports per missing
+block; the wrong-shape branch reached both sibling readers; and AC-3's message
+distinguishes "F5c did not run" from "evicted by the 50-entry retention window".
+
+**What Stage 3 could not disprove**, having attacked it directly: the central
+`gates`-invisibility claim. It read the consumer in full and confirmed the only
+key filter is on `record.reviews`, with no top-level allowlist, no key-set
+assertion and no byte comparison anywhere in the parse — and that the webui's own
+fixture tests assert on returned rows, so a fixture carrying `gates` would not
+fail them.
+
+**One deliberate non-fix.** AC-1b put the load-bearing evidence in the one
+artifact with a TTL: `iterates/` is a 50-entry recency cache, already at the cap,
+while `reviews.json` and the event log are never evicted. It does not affect a
+run's own F11 (its entry is the newest), and the AC-3 message now says so
+honestly. Moving the blocks into the run dir beside `reviews.json` is the real
+fix and is recorded as a follow-up rather than done here.
 
 ---
 

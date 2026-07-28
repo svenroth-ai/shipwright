@@ -437,7 +437,7 @@ or the whole message with its ```json block; both are accepted) and hand it over
 uv run "{shared_root}/scripts/tools/record_review_pass.py" record \
   --project-root "{project_root}" --run-id "{run_id}" \
   --review-type {self|plan|spec|code|doubt|external_code} --status completed \
-  --from {self-review|code-reviewer|doubt-reviewer|external-review-json|external-prose} \
+  --from {self-review|spec-reviewer|code-reviewer|doubt-reviewer|external-review-json|external-prose} \
   --payload-file "{path to the reply}" \
   [--provider openrouter] [--marker-status completed]
 ```
@@ -446,7 +446,7 @@ uv run "{shared_root}/scripts/tools/record_review_pass.py" record \
 |---|---|---|---|
 | Step 7 Self-Review | `self` | `self-review` | `{"items":[{"name","verdict":"pass\|fail\|n/a","note"}]}` — one entry per checklist item |
 | External plan/iterate review (Branch A) | `plan` | `external-review-json` | `external_review.py` stdout, verbatim. Add `--marker-status` |
-| `spec-reviewer` (Stage 1, HARD-GATE) | `spec` | `code-reviewer` | the subagent's reply. Must be `completed` before a `completed` `code` row |
+| `spec-reviewer` (Stage 1, HARD-GATE) | `spec` | `spec-reviewer` | the subagent's reply verbatim (`{stage, verdict, spec_citations[]}`). Must be `completed` before a `completed` `code` row |
 | Internal `code-reviewer` (Stage 2) | `code` | `code-reviewer` | the subagent's reply |
 | `doubt-reviewer` (Stage 3) | `doubt` | `doubt-reviewer` | the subagent's reply |
 | External code cascade | `external_code` | `external-review-json` | `external_review.py` stdout. Add `--marker-status` |
@@ -490,7 +490,12 @@ prefix, i.e. `uv run "{shared_root}/scripts/tools/record_review_pass.py" record
   --disposition "{the rule that applies, e.g. external_code_review.enabled is false for this project}" \
   --marker-status "{skipped_user_opt_out | skipped_config_disabled}"
 
-# the delegated internal cascade — recorded as NOT having run
+# the delegated internal cascade — recorded as NOT having run.
+# Stage 1 has a row of its own and is delegated with the rest; omitting it
+# leaves `spec` pending and reds the sub-iterate at F11.
+… --review-type spec --status not_run \
+  --disposition "blocker 1 (no Agent tool): the sub-iterate-runner cannot spawn the Stage-1 spec-reviewer; delegated with the rest of the cascade (ADR-029, campaign mode only)"
+
 … --review-type code --status not_run \
   --disposition "blocker 1 (no Agent tool): the sub-iterate-runner cannot spawn the cascade; delegated to the campaign orchestrator (ADR-029, campaign mode only)"
 

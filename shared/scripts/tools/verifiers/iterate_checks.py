@@ -107,6 +107,22 @@ _COMPLETENESS_ENFORCED_COMPLEXITIES: frozenset[str] = frozenset({"small", "mediu
 _COMPLETENESS_VALID_DISPOSITIONS: frozenset[str] = frozenset({"tested", "untestable"})
 
 
+def _wrong_shape_detail(field: str, value: object) -> str:
+    """The F5c entry ANSWERED, but not in a shape the gate can read.
+
+    `validate_iterate_entry` performs no shape check on these extra keys, so
+    `"test_completeness": "see the spec"` is accepted at F5c and would otherwise
+    be silently ignored here — falling through to the shared file and reporting
+    "the F5c entry carries no {field} either", which is false and points the
+    operator at a repair they already performed (Stage-3 doubt).
+    """
+    return (
+        f"the F5c entry's {field} is a {type(value).__name__}, not an object — "
+        "it answered, but not in a shape this gate can read. Fix the "
+        "`--entry-json` payload; see references/F5c.md for the block's shape"
+    )
+
+
 def _no_entry_detail(run_id: str) -> str:
     """Why an absent F5c entry FAILS instead of skipping.
 
@@ -118,9 +134,14 @@ def _no_entry_detail(run_id: str) -> str:
     """
     return (
         f"no iterate entry for {run_id} in .shipwright/agent_docs/iterates/ — "
-        "F5c did not run, so this gate cannot resolve the run's complexity and "
-        "must not report itself as not-applicable. Run F5c "
-        "(`append_iterate_entry.py --run-id ... --entry-json ...`) first"
+        "this gate cannot resolve the run's complexity and must not report "
+        "itself as not-applicable. For the run being finalized this means F5c "
+        "did not run: `append_iterate_entry.py --run-id ... --entry-json ...`. "
+        "For an OLDER run it may instead have been evicted by the 50-entry "
+        "retention window (that directory is a recency cache, not the "
+        "historical record — `shipwright_events.jsonl` keeps the "
+        "`work_completed` event permanently), in which case the run cannot be "
+        "re-verified from the tree and this result is a limit, not a defect"
     )
 
 
@@ -554,6 +575,8 @@ def check_surface_verification(project_root: Path, run_id: str) -> CheckResult:
     # file is a derived snapshot the F11 integration rewinds to HEAD, so a block
     # found there may belong to whatever run main last committed.
     block = entry.get("surface_verification")
+    if block is not None and not isinstance(block, dict):
+        return CheckResult(name, False, _wrong_shape_detail("surface_verification", block))
     if not isinstance(block, dict):
         latest = read_iterate_latest(project_root, run_id)
         if not latest.is_current:
@@ -660,6 +683,8 @@ def check_test_completeness_ledger(project_root: Path, run_id: str) -> CheckResu
     # file before this check runs on a behind branch, wiping this run's ledger and
     # failing a run that did everything right. Shared file = legacy fallback.
     block = entry.get("test_completeness")
+    if block is not None and not isinstance(block, dict):
+        return CheckResult(name, False, _wrong_shape_detail("test_completeness", block))
     if not isinstance(block, dict):
         latest = read_iterate_latest(project_root, run_id)
         if not latest.is_current:

@@ -14,14 +14,10 @@ first") and the more specific message has to win.
 
 from __future__ import annotations
 
-import sys
-from pathlib import Path
 
-_SCRIPTS_ROOT = Path(__file__).resolve().parents[2]
-if str(_SCRIPTS_ROOT) not in sys.path:
-    sys.path.insert(0, str(_SCRIPTS_ROOT))
+from lib.review_payloads import ADAPTERS  # noqa: E402
 
-from .common import CheckResult  # noqa: E402
+from .common import CheckResult
 
 __all__ = [
     "carries_evidence",
@@ -47,6 +43,9 @@ _CODE_REVIEW_TYPES = ("code", "external_code")
 #: with ``--from`` omitted defaults to it, so a row naming it as ``recorded_by``
 #: is precisely the evidence-free shape.
 _NO_ADAPTER = "none"
+
+#: The adapter names that constitute evidence — every real one, minus the no-op.
+_EVIDENCE_ADAPTERS = frozenset(ADAPTERS) - {_NO_ADAPTER}
 
 _TOOL = "shared/scripts/tools/record_review_pass.py"
 
@@ -181,13 +180,15 @@ def carries_evidence(entry: dict) -> bool:
         if isinstance(value, str) and value.strip():
             return True
     recorded_by = entry.get("recorded_by")
-    return (
-        isinstance(recorded_by, str)
-        and recorded_by.strip() not in ("", _NO_ADAPTER)
-    )
+    # Membership, not non-blankness: the message calls this trace "a recorded_by
+    # naming an ADAPTER", and `--recorded-by` takes no `choices`, so any string
+    # cleared the floor with no payload, no provider and no excerpt — one
+    # undocumented flag wide (Stage-3 doubt). Now the predicate and the message
+    # say the same thing.
+    return isinstance(recorded_by, str) and recorded_by.strip() in _EVIDENCE_ADAPTERS
 
 
-def stage_one_precedes_stage_two(record: dict) -> CheckResult | None:
+def stage_one_precedes_stage_two(record: dict, run_id: str = "") -> CheckResult | None:
     """A completed internal ``code`` pass implies a completed ``spec`` pass.
 
     Stage 1 (``spec-reviewer``) is the spec-compliance HARD-GATE: per SKILL.md
@@ -204,22 +205,50 @@ def stage_one_precedes_stage_two(record: dict) -> CheckResult | None:
     route — which is exactly the fallback that exists for when the internal
     reviewer cannot run. ``_substitution_note`` already REPORTS that residual
     cost on the passing result; this check does not convert it into a block.
+
+    **The Stage-1 row is held to the same evidence bar as the others.** A
+    ``completed`` status alone would make the HARD-GATE this whole change exists
+    to render provable the ONE row that can still be asserted rather than
+    evidenced — with :func:`carries_evidence` sitting forty lines above it
+    (Stage-2 code review). ``--status completed`` with ``--from`` omitted
+    produces exactly the empty shape AC-2 rejects for ``code``.
     """
+    if "gates" not in record:
+        # A record written BEFORE `gates` existed cannot answer this question,
+        # and every exit available to it is bad: invent evidence for `spec`,
+        # --force-rewrite a real `code` row to not_run and destroy its findings,
+        # or delete the record. Every run in flight at merge time is in exactly
+        # that state, and its `code` row is already terminal and immutable. The
+        # ordering rule applies to cascades that could have recorded Stage 1
+        # (Stage-3 doubt).
+        return None
     reviews = record.get("reviews", {}) or {}
-    gates = record.get("gates", {}) or {}
+    gates = record.get("gates") or {}
     if str((reviews.get("code") or {}).get("status", "")) != "completed":
         return None
-    spec_status = str((gates.get("spec") or {}).get("status", "")) or "absent"
+    spec_entry = gates.get("spec") or {}
+    spec_status = str(spec_entry.get("status", "")) or "absent"
+    # `--run-id` is REQUIRED by the CLI, so a remediation that omits it exits 2
+    # on usage — the "blocks with no way forward" trap, twice over.
+    how = (f"`{_TOOL} record --run-id {run_id or '<run-id>'} --review-type spec "
+           "--status completed --from code-reviewer --payload-file <reply>`")
     if spec_status == "completed":
-        return None
+        if carries_evidence(spec_entry):
+            return None
+        return CheckResult(
+            CHECK_NAME, False,
+            "`spec` is recorded completed but carries no evidence a review "
+            "happened: no findings, no provider, no raw excerpt, and no "
+            "recorded_by naming an adapter. The Stage-1 HARD-GATE is held to "
+            f"the same bar as the code review it precedes. Re-record it: {how} "
+            "--force",
+        )
     return CheckResult(
         CHECK_NAME, False,
         f"`code` is recorded completed but `spec` is {spec_status!r} — Stage 1 "
         "(`spec-reviewer`) is the HARD-GATE that must PASS before the "
         "code-reviewer runs, so a completed Stage 2 with no completed Stage 1 "
-        "describes a cascade that skipped its own first gate. Record the "
-        f"Stage-1 pass (`{_TOOL} record --review-type spec --status completed "
-        "--from code-reviewer --payload-file <reply>`), or — if the pass was "
-        "carried externally — record `code` as not_run and let `external_code` "
-        "satisfy the floor.",
+        f"describes a cascade that skipped its own first gate. Record it: {how}"
+        ", or — if the pass was carried externally — record `code` as not_run "
+        "and let `external_code` satisfy the floor.",
     )
