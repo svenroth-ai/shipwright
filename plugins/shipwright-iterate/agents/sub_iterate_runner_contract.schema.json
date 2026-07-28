@@ -73,11 +73,12 @@
             },
             "code": {
               "type": "object",
-              "description": "Internal code-reviewer subagent (Step 3.7a). Runner has no Agent tool, so the subagent is delegated to the orchestrator (campaign mode) or to the parent SKILL.md lifecycle (standalone iterate mode).",
+              "description": "Internal code-reviewer subagent (Step 3.7a). This contract applies to the sub-iterate-runner in CAMPAIGN MODE only, where the runner has no Agent tool and the cascade is delegated to the orchestrator. A standalone iterate never reaches this contract — it spawns the cascade itself from SKILL.md Step 8. The runner must never report 'completed' here on the strength of the external review; that is external_code.",
               "required": ["status"],
               "properties": {
                 "status": {
                   "type": "string",
+                  "description": "delegated_to_orchestrator is the campaign-only delegation. delegated_to_skill is DEPRECATED and invalid for new runs — it encoded a standalone delegation that had no delegate; the value is retained so historical result.json artifacts stay readable.",
                   "enum": [
                     "completed",
                     "delegated_to_orchestrator",

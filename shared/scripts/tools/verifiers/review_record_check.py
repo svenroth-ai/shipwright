@@ -127,7 +127,48 @@ def check_review_record(project_root: Path, run_id: str, commit_hash: str = "") 
     if committed is not None:
         return committed
 
-    return CheckResult(CHECK_NAME, True, "all five review types are recorded")
+    return CheckResult(
+        CHECK_NAME, True,
+        "all five review types are recorded" + _substitution_note(record, complexity),
+    )
+
+
+def _substitution_note(record: dict, complexity: str) -> str:
+    """Say what an external-only pass does NOT cover, on the PASSING result.
+
+    The floor is satisfied by `code` OR `external_code`, and that is correct —
+    the two are independent routes to a code review. But they are not
+    equivalent routes: per `iteration-reviews.md`, the spec-compliance and
+    doubt roles are deliberately NOT cascaded to external providers. So a run
+    carried by `external_code` alone has had no Stage-1 gate and no adversarial
+    pass, and nothing in a green gate said so.
+
+    Reported rather than enforced on purpose. Requiring the internal cascade
+    here would re-encode the phase matrix inside a verifier — the design this
+    module's docstring rejects, and that rejection still stands. Naming the
+    residual cost costs nothing and leaves the decision where it belongs.
+    """
+    if complexity not in FLOORED_COMPLEXITIES:
+        return ""
+    reviews = record.get("reviews", {}) or {}
+
+    def _status(review_type: str) -> str:
+        return str((reviews.get(review_type) or {}).get("status", ""))
+
+    if _status("code") == "completed" or _status("external_code") != "completed":
+        return ""
+    note = (
+        " — NOTE: the code-review floor is carried by `external_code` alone. "
+        "The external route is a generic code-quality second opinion; Stage-1 "
+        "spec-compliance (`spec-reviewer`, the HARD-GATE) and Stage-3 "
+        "`doubt-reviewer` are not cascaded to external providers"
+    )
+    # `doubt` is recorded independently, so it may have run even when the
+    # internal code pass did not. Claiming otherwise would make the note itself
+    # the unreliable narrator it exists to prevent (Stage-1 spec-review REJECT).
+    if _status("doubt") == "completed":
+        return note + ", so Stage-1 did not run for this change (Stage-3 did)."
+    return note + ", so neither ran for this change."
 
 
 def _code_review_floor(
