@@ -22,15 +22,19 @@ LEGACY_AGENT_DOCS_DIRNAME = "agent_docs"
 # import ...`). Add the parent's parent (scripts/) so `lib.preserve_existing` resolves.
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from lib.preserve_existing import (  # noqa: E402
-    SUGGESTED_CLAUDE_REL,
-    is_loadbearing_claude_md,
     merge_decision_log,
     parse_max_adr_id,
     preserve_if_exists,
     record_preservation_action,
 )
 from lib.render_helpers import _fmt_stack_line, _utc_today  # noqa: E402
-from lib.claude_md_renderer import _render_claude_md  # noqa: E402,F401
+# `write_claude_md` lives with the render it writes (claude_md_renderer); this
+# module re-exports both so existing importers keep working, the same way
+# `write_spec` / `_render_spec_md` are re-exported from `spec_document` below.
+from lib.claude_md_renderer import (  # noqa: E402,F401
+    _render_claude_md,
+    write_claude_md,
+)
 # The planning spec lives in `spec_document` (this module is grandfathered at
 # its bloat ceiling, the same reason `spec_table` was split out). Re-exported so
 # existing callers keep importing `write_spec` / `_render_spec_md` from here.
@@ -408,52 +412,6 @@ def _render_build_dashboard(
 | compliance | seeded |
 {changelog_block}"""
 
-
-
-def write_claude_md(
-    project_root: Path,
-    *,
-    project_name: str,
-    profile: str,
-    stack: dict[str, Any],
-    commands: dict[str, str | None],
-    product_description: str,
-) -> Path:
-    """Write CLAUDE.md with load-bearing-content protection.
-
-    If an existing CLAUDE.md is larger than the load-bearing threshold
-    (~1 KB), it's preserved untouched and the adopt-generated content
-    is written to `.shipwright/adopt/CLAUDE.md.adopt-suggested` instead.
-    Smaller existing files are backed up to `.preserved` and then
-    overwritten. The returned path is the file that actually received
-    the new content (either the real CLAUDE.md or the suggested side-file).
-    """
-    content = _render_claude_md(
-        project_name=project_name, profile=profile, stack=stack,
-        commands=commands, product_description=product_description,
-    )
-    path = project_root / "CLAUDE.md"
-    backup = preserve_if_exists(project_root, "CLAUDE.md")
-    if path.exists() and is_loadbearing_claude_md(path):
-        suggested = project_root / SUGGESTED_CLAUDE_REL
-        suggested.parent.mkdir(parents=True, exist_ok=True)
-        suggested.write_text(content, encoding="utf-8")
-        record_preservation_action(
-            project_root,
-            file="CLAUDE.md",
-            action="skipped_loadbearing",
-            backup_path=backup,
-            note=f"existing CLAUDE.md > {is_loadbearing_claude_md.__defaults__[0] if is_loadbearing_claude_md.__defaults__ else 1024} bytes; adopt suggestion at {SUGGESTED_CLAUDE_REL}",
-        )
-        return suggested
-    path.write_text(content, encoding="utf-8")
-    record_preservation_action(
-        project_root,
-        file="CLAUDE.md",
-        action=("overwritten_with_backup" if backup else "written_fresh"),
-        backup_path=backup,
-    )
-    return path
 
 
 def write_agent_docs(

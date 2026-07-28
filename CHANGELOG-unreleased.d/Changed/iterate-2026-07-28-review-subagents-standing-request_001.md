@@ -1,0 +1,1 @@
+Iterate review prose defers to the grant — `SKILL.md` Step 8, `iteration-reviews.md` step 0 and `F11.md` state that a project-level grant outranks the ask, while keeping the ask for a project without one and leaving the four genuine blockers untouched.
