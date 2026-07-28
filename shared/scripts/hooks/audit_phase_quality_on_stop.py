@@ -130,7 +130,7 @@ def main() -> int:
             if pq.already_audited(project_root, phase, run_id, session_id):
                 continue
             findings = {
-                "canon": pq.run_canon_checks(phase, project_root, run_id),
+                "canon": pq.run_canon_checks(phase, project_root),
                 "workflow": pq.run_workflow_checks(phase, project_root, run_id),
                 "infrastructure": pq.run_infrastructure_checks(phase, project_root),
                 "traceability": pq.run_traceability_checks(phase, project_root),

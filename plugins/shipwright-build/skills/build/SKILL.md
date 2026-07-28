@@ -275,11 +275,11 @@ If conversation is long:
 
 ```bash
 uv run "{shared_root}/scripts/tools/generate_session_handoff.py" \
-  --project-root "$(pwd)" \
+  --project-root "$(pwd)" --preserve-canon-marker \
   --reason "mid-build handoff: section {section_name} {complete|in_progress}"
 ```
 
-Do NOT pass `--canon-marker` here; mid-build handoffs are not canon closures (canon marker reserved for the split-level C3 closure in [section-state](references/section-state.md)).
+Do NOT pass `--canon-marker` here — a mid-build handoff is not a canon closure (the marker is reserved for the split-level C3 closure in [section-state](references/section-state.md)). DO pass `--preserve-canon-marker`: this writes to the same tracked `session_handoff.md` that closure marked, and without the flag it DROPS that marker, so Canon C3 reports "no canon marker" for every phase until the next split closes (iterate-2026-07-27-c3-phase-history-join).
 
 ---
 

@@ -8,25 +8,27 @@ parallel iterates on adopted target projects unworkable.
 Behavior:
 
 * On first call against a project that still carries a legacy
-  ``iterate_history`` array, the tool runs a one-shot migration under
-  the same lock as the append. Invalid legacy rows and duplicate
-  ``run_id`` values are diverted to
-  ``.shipwright/agent_docs/iterates/_quarantine/`` and the count is recorded on the
-  run config as ``_iterate_migration_quarantined_count`` for downstream
-  visibility.
-* The append itself is atomic per file; migration + append + retention
-  all happen inside a single ``file_lock`` held on the run-config lock
-  file so concurrent same-worktree finalize calls are serialized.
+  ``iterate_history`` array, the tool runs a one-shot migration under the same
+  lock as the append. Invalid legacy rows and duplicate ``run_id`` values are
+  diverted to ``.shipwright/agent_docs/iterates/_quarantine/`` and the count is
+  recorded on the run config as ``_iterate_migration_quarantined_count``.
+* The append itself is atomic per file; migration + append + retention all
+  happen inside a single ``file_lock`` held on the run-config lock file so
+  concurrent same-worktree finalize calls are serialized.
 * Retention drops the oldest entries beyond ``ITERATE_RETENTION`` (50) — a
   BOUNDED window; a consumer needing FULL history reads ``shipwright_events.jsonl``
   (never evicted), NOT this dir (see F5c.md). Applied only **after** migration
   so first contact with a historic 60-entry array does not drop 10 rows on upgrade.
 
+Canonical keys the caller may NOT set: ``run_id`` and ``date`` (a full instant
+here, unlike ``phase_history``'s day-precision one). ``event_at`` is reserved —
+sibling producers stamp it as Canon C3's event anchor; this tool deliberately
+does not, a bound recorded at ``lib/phase_history.py::COMPLETION_PRODUCER``.
+
 CLI:
 
     uv run shared/scripts/tools/append_iterate_entry.py \\
-        --project-root . \\
-        --run-id iterate-2026-04-23-feat-x \\
+        --project-root . --run-id iterate-2026-04-23-feat-x \\
         --entry-json '{"type":"feature","complexity":"medium", ...}'
 """
 
@@ -389,13 +391,11 @@ def main(argv: list[str] | None = None) -> int:
     if not isinstance(extra, dict):
         print("ERROR: --entry-json must be a JSON object", file=sys.stderr)
         return 1
-    for forbidden in ("run_id", "date"):
-        if forbidden in extra:
-            print(
-                f"ERROR: --entry-json must not set {forbidden} (canonical fields)",
-                file=sys.stderr,
-            )
-            return 1
+    collided = {"run_id", "date", "event_at"} & set(extra)
+    if collided:
+        print(f"ERROR: --entry-json must not set {', '.join(sorted(collided))} "
+              "(canonical fields)", file=sys.stderr)
+        return 1
 
     entry: dict[str, Any] = {
         "run_id": args.run_id,

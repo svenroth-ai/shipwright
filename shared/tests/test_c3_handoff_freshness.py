@@ -1,21 +1,22 @@
-"""Canon **C3** `session_handoff.md fresh` — decided by CONTENT, never by mtime.
+"""Canon **C3** — did THIS phase leave the handover note?
 
-The F11 twin moved off filesystem mtime in iterate-2026-07-27-name-the-blocker.
-C3 kept the defect until iterate-2026-07-27-c3-phase-content-key because its
-content key had to be *designed*: C3 is phase-scoped, and the handoff is a
-single overwritten file with no per-phase history.
+iterate-2026-07-27-c3-phase-content-key keyed C3 on a run id the caller supplied.
+The internal review cascade showed that key is vacuous in one regime and broken
+in the other; this suite pins the replacement.
 
-The design these tests pin: **C3 keys on the run and reports the phase.** Keying
-on the marker's ``phase`` was rejected on evidence — ``verify_phase.py --phase
-all`` hands one ``run_id`` to eight phase dispatchers that all read the SAME
-handoff, so a phase key would pass whichever phase wrote last and warn on the
-other seven. That is a new structural false fire, which is the defect class the
-change exists to remove. ``test_auditing_a_whole_run_*`` are the regression pair
-for exactly that.
+This half covers the note that names THIS phase — the run-id join — plus the
+four unanswerable states and the module guards. Its siblings:
+
+* ``test_c3_cross_phase_verdict.py`` — a DIFFERENT phase owns the note, which is
+  where both regressions of this check have lived.
+* ``test_c3_same_phase_window.py`` — one run recording several completions.
+* ``test_c3_applicability.py`` — which phases are checked, and whole-run audits.
+* ``test_completion_writers.py`` — the real producers, in real canon order.
 """
 
 from __future__ import annotations
 
+import importlib
 import inspect
 import os
 import sys
@@ -23,231 +24,174 @@ import time
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(Path(__file__).resolve().parent))
 sys.path.insert(0, str(REPO_ROOT / "shared" / "scripts"))
 sys.path.insert(0, str(REPO_ROOT / "shared" / "scripts" / "tools"))
 
 import pytest  # noqa: E402
 
-from verifiers.handoff_freshness import (  # noqa: E402
+from _c3_fixtures import (  # noqa: E402
+    EARLY,
+    LATE,
+    OLDER,
+    RUN,
+    history_entries as _hist,
+    write_handoff,
+    write_run_config,
+)
+from verifiers.handoff_phase_canon import (  # noqa: E402
     check_c3_session_handoff_fresh_after_phase as check_c3,
 )
 
-RUN = "iterate-2026-07-27-c3-phase-content-key"
-OTHER = "iterate-2026-07-01-something-else"
+#: RLO + zero-width space, built from codepoints so this source stays ASCII.
+_RLO = chr(0x202E)
+_ZWSP = chr(0x200B)
 
 
-def _write(root: Path, body: str) -> Path:
-    docs = root / ".shipwright" / "agent_docs"
-    docs.mkdir(parents=True, exist_ok=True)
-    path = docs / "session_handoff.md"
-    path.write_text(body, encoding="utf-8")
-    return path
+def _project(root: Path, *, marker_phase: str, marker_run: str, marker_ts: str = EARLY,
+             history: dict | None = None, marker: bool = True) -> Path:
+    write_handoff(root, phase=marker_phase, run_id=marker_run,
+                  timestamp=marker_ts, marker=marker)
+    write_run_config(root, history)
+    return root
 
 
-def _canon(run_id: str, phase: str = "build", extra: str = "") -> str:
-    return (
-        f'---\ncanon_generated: true\nrun_id: "{run_id}"\nphase: "{phase}"\n'
-        f'reason: "phase complete"\ntimestamp: "2026-07-27T09:00:00+00:00"\n{extra}---\n\n'
-        "# Session Handoff\n"
-    )
+# --- the note names THIS phase: the run-id join -------------------------------
+
+def test_the_phase_that_wrote_the_note_passes(tmp_path):
+    _project(tmp_path, marker_phase="build", marker_run=RUN,
+             history={"build": _hist((RUN, EARLY))})
+
+    result = check_c3(tmp_path, "build")
+
+    assert result.ok is True, result.detail
+    assert RUN in result.detail
 
 
-# --- (A) the defect this replaces --------------------------------------------
+def test_a_note_from_an_earlier_run_of_this_phase_warns(tmp_path):
+    _project(tmp_path, marker_phase="build", marker_run=OLDER,
+             history={"build": _hist((OLDER, EARLY), (RUN, LATE))})
 
-def test_an_old_handoff_naming_this_run_passes(tmp_path):
-    """The regression. A handoff written three hours ago still describes THIS
-    run — time spent waiting on CI is not staleness."""
-    path = _write(tmp_path, _canon(RUN))
-    old = time.time() - 3 * 60 * 60
-    os.utime(path, (old, old))
-
-    result = check_c3(tmp_path, "build", run_id=RUN)
-
-    assert result.ok is True
-    assert "mtime" not in result.detail.lower()
-
-
-def test_a_brand_new_handoff_naming_another_run_fails(tmp_path):
-    """The other half: recency never rescues a handoff that describes a
-    different run. Under the old rule this passed on mtime alone."""
-    _write(tmp_path, _canon(OTHER))
-
-    result = check_c3(tmp_path, "build", run_id=RUN)
+    result = check_c3(tmp_path, "build")
 
     assert result.ok is False
-    assert OTHER in result.detail
+    assert "earlier" in result.detail and OLDER in result.detail
 
 
-def test_the_check_never_consults_mtime(tmp_path):
-    """Drift guard: the mtime path is deleted, not merely out-ranked. Two files
-    identical in content but a day apart in mtime must verdict identically."""
-    fresh_root, stale_root = tmp_path / "fresh", tmp_path / "stale"
-    for root in (fresh_root, stale_root):
-        root.mkdir()
-        _write(root, _canon(RUN))
-    old = time.time() - 86_400
-    os.utime(stale_root / ".shipwright" / "agent_docs" / "session_handoff.md", (old, old))
+def test_a_note_naming_a_run_history_never_recorded_warns(tmp_path):
+    """Distinct from 'earlier run' on purpose: it is the shape a mid-flight read
+    takes, and conflating the two would misattribute it as a stale note."""
+    _project(tmp_path, marker_phase="build", marker_run="build-ghost",
+             history={"build": _hist((RUN, EARLY))})
 
-    a = check_c3(fresh_root, "build", run_id=RUN)
-    b = check_c3(stale_root, "build", run_id=RUN)
+    result = check_c3(tmp_path, "build")
 
-    assert (a.ok, a.detail) == (b.ok, b.detail)
+    assert result.ok is False
+    assert "does not hold" in result.detail
 
 
-def test_the_source_carries_no_mtime_call():
-    """Belt-and-braces for the above: no stat/mtime call survives in the check."""
-    src = inspect.getsource(check_c3)
-    for forbidden in ("st_mtime", "getmtime", "max_age_seconds", "time.time"):
-        assert forbidden not in src
-
-
-# --- (C) the result names which phase wrote the handoff ----------------------
-
-def test_a_passing_result_names_the_writing_phase(tmp_path):
-    _write(tmp_path, _canon(RUN, phase="test"))
-
-    result = check_c3(tmp_path, "test", run_id=RUN)
-
-    assert result.ok is True
-    assert "test" in result.detail
-
-
-def test_a_handoff_written_by_another_phase_of_this_run_passes_and_says_so(tmp_path):
-    """The known bound, pinned so it stays deliberate: one overwritten file has
-    no per-phase history, so C3 for `build` passes on `test`'s write within the
-    same run — and says which phase actually wrote it."""
-    _write(tmp_path, _canon(RUN, phase="test"))
-
-    result = check_c3(tmp_path, "build", run_id=RUN)
-
-    assert result.ok is True
-    assert "test" in result.detail
-
-
-def test_a_marker_without_a_phase_renders_a_placeholder(tmp_path):
-    _write(tmp_path, _canon(RUN, phase=""))
-
-    result = check_c3(tmp_path, "build", run_id=RUN)
-
-    assert result.ok is True
-    assert "(unnamed)" in result.detail
-
-
-# --- (D) an unanswerable check says so, distinctly ---------------------------
+# --- unanswerable says which part ---------------------------------------------
 
 def test_a_missing_handoff_is_not_a_pass(tmp_path):
-    result = check_c3(tmp_path, "build", run_id=RUN)
+    (tmp_path / "shipwright_run_config.json").write_text("{}", encoding="utf-8")
+
+    result = check_c3(tmp_path, "build")
 
     assert result.ok is False
     assert "missing" in result.detail
 
 
 def test_a_handoff_without_a_canon_marker_is_not_a_pass(tmp_path):
-    _write(tmp_path, "# Session Handoff\n\nno frontmatter here\n")
+    _project(tmp_path, marker_phase="build", marker_run=RUN, marker=False,
+             history={"build": _hist((RUN, EARLY))})
 
-    result = check_c3(tmp_path, "build", run_id=RUN)
-
-    assert result.ok is False
-    assert "no canon marker" in result.detail
-
-
-def test_a_non_canon_frontmatter_block_is_not_a_marker(tmp_path):
-    """`canon_generated: true` is what makes a block a marker — a hand-written
-    YAML header that happens to carry a run_id must not satisfy C3."""
-    _write(tmp_path, f'---\nrun_id: "{RUN}"\nphase: "build"\n---\n\n# Session Handoff\n')
-
-    result = check_c3(tmp_path, "build", run_id=RUN)
+    result = check_c3(tmp_path, "build")
 
     assert result.ok is False
     assert "no canon marker" in result.detail
+
+
+def test_no_recorded_completion_for_this_phase_is_not_a_pass(tmp_path):
+    _project(tmp_path, marker_phase="build", marker_run=RUN, history={})
+
+    result = check_c3(tmp_path, "build")
+
+    assert result.ok is False
+    assert "phase_history" in result.detail
 
 
 def test_a_marker_without_a_run_id_is_not_a_pass(tmp_path):
-    _write(tmp_path, _canon("", phase="build"))
+    _project(tmp_path, marker_phase="build", marker_run="",
+             history={"build": _hist((RUN, EARLY))})
 
-    result = check_c3(tmp_path, "build", run_id=RUN)
+    result = check_c3(tmp_path, "build")
 
     assert result.ok is False
     assert "no run id" in result.detail
 
 
-@pytest.mark.parametrize("sentinel", ["", "unknown", "  ", "UNKNOWN"])
-def test_a_degenerate_run_id_cannot_evaluate_rather_than_warn(tmp_path, sentinel):
-    """A degenerate audit context must reach C3 as itself and be reported as
-    unanswerable — never silently compared against the marker and warned."""
-    _write(tmp_path, _canon(RUN))
-
-    result = check_c3(tmp_path, "build", run_id=sentinel)
-
-    assert result.ok is False
-    assert "cannot evaluate" in result.detail
-
-
-def test_an_unreadable_handoff_is_not_a_pass(tmp_path, monkeypatch):
-    _write(tmp_path, _canon(RUN))
-
-    def _boom(*_a, **_k):
-        raise OSError("nope")
-
-    monkeypatch.setattr(Path, "read_text", _boom)
-    result = check_c3(tmp_path, "build", run_id=RUN)
-
-    assert result.ok is False
-    assert "unreadable" in result.detail
-
-
 def test_an_inaccessible_handoff_reads_as_unreadable_not_missing(tmp_path, monkeypatch):
-    """`Path.is_file()` answers False for a file it cannot stat, which would
-    report an existing-but-locked handoff as one nobody wrote. Different defect,
-    different remedy — AC (D) wants them told apart."""
-    _write(tmp_path, _canon(RUN))
+    _project(tmp_path, marker_phase="build", marker_run=RUN,
+             history={"build": _hist((RUN, EARLY))})
 
     def _denied(*_a, **_k):
         raise PermissionError("locked")
 
     monkeypatch.setattr(Path, "read_text", _denied)
-    result = check_c3(tmp_path, "build", run_id=RUN)
+    result = check_c3(tmp_path, "build")
 
     assert result.ok is False
-    assert "unreadable" in result.detail
-    assert "missing" not in result.detail
+    assert "unreadable" in result.detail and "missing" not in result.detail
 
 
-def test_run_id_is_keyword_only_and_has_no_default():
-    """Eight call sites. A default would let a missed one compare against "" and
-    warn forever; keyword-only + no default makes the interpreter catch it."""
-    sig = inspect.signature(check_c3)
-    param = sig.parameters["run_id"]
+# --- the clock is gone, and stays gone ----------------------------------------
 
-    assert param.kind is inspect.Parameter.KEYWORD_ONLY
-    assert param.default is inspect.Parameter.empty
-    with pytest.raises(TypeError):
-        check_c3(Path("."), "build")  # type: ignore[call-arg]
+def test_the_check_never_consults_mtime(tmp_path):
+    fresh, stale = tmp_path / "a", tmp_path / "b"
+    for root in (fresh, stale):
+        root.mkdir()
+        _project(root, marker_phase="build", marker_run=RUN,
+                 history={"build": _hist((RUN, EARLY))})
+    old = time.time() - 86_400
+    os.utime(stale / ".shipwright" / "agent_docs" / "session_handoff.md", (old, old))
+
+    a = check_c3(fresh, "build")
+    b = check_c3(stale, "build")
+
+    assert (a.ok, a.detail) == (b.ok, b.detail)
 
 
-def test_a_malformed_marker_does_not_dump_its_contents_into_the_detail(tmp_path):
-    """Stop-hook findings are operator-facing; a hostile or corrupt handoff
-    must not paste a wall of text into them."""
-    _write(tmp_path, _canon("x" * 5000, phase="build"))
+@pytest.mark.parametrize("module_name", [
+    "verifiers.handoff_phase_canon",  # the verdict
+    "verifiers.handoff_marker",       # where the file I/O actually lives
+    "lib.phase_history",              # where the timekeeping actually lives
+])
+def test_no_mtime_call_survives_anywhere_in_the_chain(module_name):
+    """#467's guard inspected one FUNCTION while the file I/O lived in another.
+    Its replacement inspected one MODULE — the only one of the three with no file
+    I/O at all, so a reintroduced `st_mtime` would have landed outside it. Guard
+    every module the check reads through."""
+    module = importlib.import_module(module_name)
+    src = inspect.getsource(module)
+    for forbidden in ("st_mtime", "getmtime", "max_age_seconds", "time.time"):
+        assert forbidden not in src, f"{module_name}: {forbidden}"
 
-    result = check_c3(tmp_path, "build", run_id=RUN)
 
-    assert result.ok is False
-    assert len(result.detail) < 400
+def test_the_check_takes_no_run_id():
+    """The parameter is REMOVED, not defaulted: #467 kept a defaulted run_id on
+    the runner, and that is exactly how the caller mismatch reached C3."""
+    params = inspect.signature(check_c3).parameters
+
+    assert "run_id" not in params
+    assert list(params) == ["project_root", "phase"]
 
 
 def test_terminal_escapes_in_a_marker_never_reach_the_detail(tmp_path):
-    """These details are printed into terminals and logs (`format_report` emits
-    real ANSI itself), so an ESC/OSC sequence carried in a tracked handoff could
-    rewrite what the operator sees. Applies to the supplied run id too."""
-    _write(tmp_path, _canon("\x1b[31mred\x1b]0;title\x07", phase="build"))
+    hostile = "a\x1b[31mred" + _RLO + "reversed" + _ZWSP
+    _project(tmp_path, marker_phase="build", marker_run=hostile,
+             history={"build": _hist((RUN, EARLY))})
 
-    result = check_c3(tmp_path, "build", run_id="run\x1b[2Jclear")
+    result = check_c3(tmp_path, "build")
 
-    assert result.ok is False
-    for forbidden in ("\x1b", "\x07", "\x00"):
+    for forbidden in ("\x1b", _RLO, _ZWSP):
         assert forbidden not in result.detail
-
-
-# Applicability (which phases C3 covers) and whole-run `--phase all` audits live
-# in test_c3_applicability.py.

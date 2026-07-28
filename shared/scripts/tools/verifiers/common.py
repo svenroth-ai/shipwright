@@ -228,9 +228,9 @@ def get_latest_phase_completed_event(
 #
 # C1: record_event phase_completed
 # C2: update_build_dashboard for the phase
-# C3: session_handoff names the run being verified — lives in
-#     ``handoff_freshness.py`` beside its F11 twin, since both read one
-#     canon marker (iterate-2026-07-27-c3-phase-content-key)
+# C3: did THIS phase leave the handover note — ``handoff_phase_canon.py``,
+#     joined against the phase's completion record via ``lib/phase_history.py``.
+#     Takes no run id (iterate-2026-07-27-c3-phase-history-join)
 # C4: decision_log has a new ADR tied to this run (phase-dependent)
 # C5: CHANGELOG [Unreleased] has a new bullet (phase-dependent)
 #

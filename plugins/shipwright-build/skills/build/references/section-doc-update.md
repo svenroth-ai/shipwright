@@ -32,9 +32,15 @@ Before context limits, generate handoff:
 
 ```bash
 uv run "{shared_root}/scripts/tools/generate_session_handoff.py" \
-  --project-root "$(pwd)" \
+  --project-root "$(pwd)" --preserve-canon-marker \
   --reason "mid-build handoff: section {section_name}"
 ```
+
+`--preserve-canon-marker` is not optional here. This is a per-SECTION write to
+the same tracked file the split-level C3 closure marked, so without it every
+section silently deletes that marker and Canon C3 reports "no canon marker" for
+**all eight** canon phases — they all read this one file — until the next split
+closes. It is not a canon closure, so it must not pass `--canon-marker`.
 
 This writes `.shipwright/agent_docs/session_handoff.md`. The shared handoff writer
 reads `shipwright_build_config.json` automatically, so the current

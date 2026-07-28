@@ -166,6 +166,11 @@ def test_unreadable_handoff_is_a_warning_not_a_crash(tmp_path):
     result = check_session_handoff_fresh(tmp_path, RUN)
 
     assert result.ok is False
+    # `ok is False` alone would also pass for "missing", and the two have
+    # different remedies — write the note vs. fix the path. The reader keeps
+    # them apart (`handoff_marker.Handoff.missing`); assert the detail does too.
+    assert "unreadable" in result.detail
+    assert "missing" not in result.detail
 
 
 def test_severity_stays_warning(tmp_path):
