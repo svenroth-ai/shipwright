@@ -50,9 +50,16 @@ def _git_available(project_root: Path, timeout: float | None = 10.0) -> bool:
 
 
 def _commit_changed_paths(project_root: Path, commit: str) -> list[str] | None:
-    """Return the repo-relative paths a commit touched, or None on git failure."""
+    """Return the repo-relative paths a commit touched, or None on git failure.
+
+    ``core.quotePath=false`` so a non-ASCII path arrives addressable rather than
+    octal-escaped inside quotes; an escaped name resolves to no file, which turned a
+    content fingerprint over it into a content-INDEPENDENT one
+    (iterate-2026-07-28-ci-ack-per-run-home, Stage-3 doubt review).
+    """
     rc, out, _ = _run_git(
-        project_root, "show", "--name-only", "--pretty=format:", commit
+        project_root, "-c", "core.quotePath=false",
+        "show", "--name-only", "--pretty=format:", commit
     )
     if rc != 0:
         return None

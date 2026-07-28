@@ -1,0 +1,44 @@
+{
+  "items": [
+    {
+      "name": "Scope matches the spec",
+      "verdict": "pass",
+      "note": "Relocation of the ack plus its reader/writer and the docs naming it. No unrelated behaviour."
+    },
+    {
+      "name": "No duplicated hazard left behind",
+      "verdict": "fail",
+      "note": "_read_legacy still used `git show {commit}:{path}` after I removed that exact MAX_PATH spelling from _read_committed one function above, so the legacy leg would have failed on precisely the deep checkouts the new leg was fixed for. Refactored _read_legacy to read through _read_committed, removing the duplicate and giving it the same absent-vs-broken discrimination."
+    },
+    {
+      "name": "Behaviour added while answering review is itself tested",
+      "verdict": "fail",
+      "note": "The `source` return value and the appended worktree/legacy caveat were added in response to the Stage-1 review and initially shipped with no test and no ledger row, while the ledger still claimed 21/21 completeness. Added ledger rows 22-24 and assertions in the three tests that traverse each source, including the negative case so a caveat that fires unconditionally is also caught."
+    },
+    {
+      "name": "Error paths fail closed",
+      "verdict": "pass",
+      "note": "git failure is an error, not an absence; present-but-invalid is terminal and never falls through to the legacy leg; unsafe run id fails closed but only after the no-CI-file early exit."
+    },
+    {
+      "name": "Tests assert behaviour, not implementation",
+      "verdict": "pass",
+      "note": "Round-trip drives the real CLI into a real commit through the real verifier; that depth is what surfaced the MAX_PATH defect. The F6 drift guard was mutation-checked after the reviewer showed the first version could not fail."
+    },
+    {
+      "name": "No weakening of an existing gate",
+      "verdict": "pass",
+      "note": "DERIVED_SNAPSHOTS untouched and pinned by test; run/fingerprint/field validation unchanged; unsafe-run-id branch strictly strengthens. The one property that did move (durability) is stated in the spec rather than claimed away."
+    },
+    {
+      "name": "Affected boundaries covered",
+      "verdict": "pass",
+      "note": "Artifact write->commit->read seam covered by the round-trip test; F6 staging verified to be directory-level and pinned by a mutation-checked drift test; F11 verifier surface covered by the composition tests."
+    },
+    {
+      "name": "Conventions followed",
+      "verdict": "pass",
+      "note": "All touched files under the 300-line rule; ruff clean; append-log discipline kept for conventions.md (superseded marker, not a rewrite)."
+    }
+  ]
+}

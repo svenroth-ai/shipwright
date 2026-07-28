@@ -424,10 +424,19 @@ live: webui PR #285 reversed an accepted-risk posture while recording
 confidence calibration), and its revert reproduced the same blind spot on the same
 7 files. Mandatory review was therefore explicitly REJECTED as the enforcement —
 #285 already had more review than it would impose. The `touches_ci_supplychain`
-flag (`risk_detectors.CI_SUPPLYCHAIN_FILE_PATTERNS`) instead requires
-`iterate_latest.ci_supplychain_ack`, written by
-`shared/scripts/tools/record_ci_supplychain_ack.py` and naming the recorded posture
-decision the change is consistent with. NON-dodgeable: the F11 verifier
+flag (`risk_detectors.CI_SUPPLYCHAIN_FILE_PATTERNS`) instead requires a recorded
+acknowledgement naming the posture decision the change is consistent with, written
+by `shared/scripts/tools/record_ci_supplychain_ack.py` to
+**`.shipwright/planning/iterate/<run_id>/ci_supplychain_ack.json`** — beside
+`reviews.json`, staged by F6's directory-level add. It lived in
+`iterate_latest.ci_supplychain_ack` inside `shipwright_test_results.json` until
+iterate-2026-07-28-ci-ack-per-run-home, which made it impossible to ship: that
+file is a DERIVED SNAPSHOT, so committing it tripped
+`check_no_derived_snapshots_committed` while omitting it starved this gate — two
+ERROR checks no workflow-touching iterate could satisfy at once — and
+`restore_derived_to_head` reverted the ack during ordinary finalization hygiene.
+An ack still recorded the old way is honoured, under identical run/fingerprint
+validation, so in-flight branches do not red-line. NON-dodgeable: the F11 verifier
 `check_ci_supplychain_ack` RECOMPUTES the flag from the diff, applies at EVERY
 complexity (a complexity floor would be the obvious dodge), fails CLOSED when the
 diff is unobtainable, and binds the ack to the run id **plus** a fingerprint of

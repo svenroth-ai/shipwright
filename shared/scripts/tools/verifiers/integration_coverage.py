@@ -63,7 +63,15 @@ def _iterate_changed_paths(project_root: Path, commit: str) -> list[str] | None:
     base_ref = ref.strip() if rc == 0 and ref.strip().startswith("origin/") else "origin/main"
     rc, mb, _ = _run_git(project_root, "merge-base", base_ref, commit)
     if rc == 0 and mb.strip():
-        rc2, out, _ = _run_git(project_root, "diff", "--name-only", f"{mb.strip()}..{commit}")
+        # core.quotePath=false: by default git QUOTES a non-ASCII path and escapes
+        # its bytes octally (`"…r\303\251sum\303\251-check.yml"`). Consumers then
+        # hold a name that addresses no file, so a content read returns "absent" on
+        # BOTH sides and a content fingerprint over it becomes content-independent —
+        # a measured false-green in the CI supply-chain gate
+        # (iterate-2026-07-28-ci-ack-per-run-home, Stage-3 doubt review). Same idiom
+        # as `lib/worktree_isolation.py`.
+        rc2, out, _ = _run_git(project_root, "-c", "core.quotePath=false",
+                               "diff", "--name-only", f"{mb.strip()}..{commit}")
         if rc2 == 0:
             return [ln.strip() for ln in out.splitlines() if ln.strip()]
     return _commit_changed_paths(project_root, commit)
