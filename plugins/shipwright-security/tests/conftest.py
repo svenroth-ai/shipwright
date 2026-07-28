@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import json
-import shutil
 from pathlib import Path
 
 import pytest
@@ -24,10 +23,22 @@ def _no_source_tree_pollution():
     how ``plugins/shipwright-security/.shipwright/triage.jsonl`` kept
     reappearing as an untracked file.
 
-    The guard fails loudly rather than cleaning up quietly: a test that pollutes
-    the source tree is also a test that is not asserting against the state it
-    thinks it is. It restores the tree either way so one offender cannot cascade
-    into the next test.
+    Complements — does not replace — the ``pytest_sessionfinish`` guard below.
+    This one names the OFFENDING TEST and covers the whole ``.shipwright/`` tree;
+    that one is the ordering-proof session backstop over three specific paths.
+    Neither is redundant: a leak into ``.shipwright/securityreports/`` (which
+    ``run_scan_and_report.py`` writes) is invisible to the path list, and a leak
+    created outside any test's teardown window is invisible to this fixture.
+
+    **Deliberately does not delete.** An earlier version called
+    ``shutil.rmtree`` here, which made the session hook below dead code — proven
+    by reintroducing a leak: only this fixture ever fired. It also destroyed the
+    evidence, against the explicit reasoning of
+    iterate-2026-07-27-security-test-triage-leak: the leaked file holds fixtures
+    that read as real security findings, and a stray ``.lock`` is the shape that
+    later produces merge conflicts, so a developer needs to SEE it. Cascading is
+    prevented by the ``existed`` snapshot, not by cleaning up — a later test sees
+    the directory as pre-existing and stays silent.
     """
     marker = PLUGIN_ROOT / ".shipwright"
     existed = marker.exists()
@@ -35,7 +46,6 @@ def _no_source_tree_pollution():
     if marker.exists() and not existed:
         leaked = sorted(str(p.relative_to(PLUGIN_ROOT)) for p in marker.rglob("*")
                         if p.is_file())
-        shutil.rmtree(marker, ignore_errors=True)
         pytest.fail(
             "this test wrote into the plugin source tree: "
             f"{', '.join(leaked) or '.shipwright/'}. An entry point whose "
@@ -103,6 +113,11 @@ def pytest_sessionfinish(session, exitstatus):
 
     Cause when it fires: a test drives a producer whose `--project-root`
     defaults to `"."`. Pass `tmp_path`; do not gitignore the symptom.
+
+    Complements the ``_no_source_tree_pollution`` fixture above, which names the
+    offending test and watches the whole ``.shipwright/`` tree. This hook is the
+    ordering-proof net: it also sees a leak created outside any test's teardown
+    window, which a per-test fixture cannot. Keep both.
     """
     leaked = [p for p in _LEAK_PATHS if p.exists()]
     if not leaked:
