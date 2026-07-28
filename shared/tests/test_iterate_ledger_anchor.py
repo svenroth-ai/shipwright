@@ -215,6 +215,35 @@ def test_the_writer_refuses_to_let_a_caller_forge_the_anchor(tmp_path):
     assert "event_at" in result.stderr
 
 
+def test_main_stamps_and_omits_the_anchor_in_process(tmp_path):
+    """The same two behaviours as above, driven IN-PROCESS through `main(argv)`.
+
+    Not redundant with the subprocess tests: diff-coverage measures the process
+    it instruments, so a `main()` reached only by `subprocess.run` reads as 0%
+    covered and the patch-coverage gate blocks a change that is in fact fully
+    exercised. The subprocess tests remain the honest ones — they prove the tool
+    behaves as the pipeline invokes it — and this one makes that provable to the
+    coverage gate as well.
+    """
+    from tools.append_iterate_entry import main as append_main
+
+    entry_json = json.dumps({"type": "change", "complexity": "medium",
+                             "tests_passed": True, "branch": f"iterate/{ITERATE_RUN}"})
+    argv = ["--project-root", str(_project(tmp_path)), "--run-id", ITERATE_RUN,
+            "--entry-json", entry_json]
+
+    assert append_main(argv) == 0
+    assert "event_at" not in json.loads(
+        entry_file_for(tmp_path, ITERATE_RUN).read_text(encoding="utf-8"))
+
+    _event(tmp_path, "--type", "phase_completed", "--phase", "iterate",
+           "--detail", "now there is something to anchor to")
+
+    assert append_main(argv) == 0
+    entry = json.loads(entry_file_for(tmp_path, ITERATE_RUN).read_text(encoding="utf-8"))
+    assert entry["event_at"], "the second call must stamp the anchor"
+
+
 def test_the_hand_built_ledger_fixture_matches_the_writer(tmp_path):
     """The ledger's half of the anti-drift assertion `test_completion_writers`
     makes for `phase_history` — and EQUALITY, not a subset.
