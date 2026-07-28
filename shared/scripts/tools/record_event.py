@@ -36,6 +36,9 @@ if str(_SCRIPTS_ROOT) not in sys.path:
     sys.path.insert(0, str(_SCRIPTS_ROOT))
 
 from lib.events_log import resolve_events_path  # noqa: E402
+# grade_snapshot's shape + tree attribution, shared with the compliance emitter.
+# Top-level for the same ADR-045 reason as tests_block below.
+from grade_snapshot_shape import apply_grade_snapshot  # noqa: E402
 # Shared skip-vs-fail SSOT (top-level, not under lib/, so the compliance plugin
 # can import it too without a lib-namespace collision — ADR-045).
 from tests_block import validate_tests_block  # noqa: E402
@@ -363,16 +366,11 @@ def build_event(args: argparse.Namespace) -> dict:
             event["detail"] = args.detail
 
     elif args.type == "grade_snapshot":
-        # grade_snapshot lands on the DURABLE log — require a valid grade + a
-        # 0-100 score (the auto-emitter guarantees this; harden the manual CLI).
-        if not args.grade or args.score is None:
-            raise ValueError("grade_snapshot requires --grade and --score")
-        if not 0.0 <= args.score <= 100.0:
-            raise ValueError(f"grade_snapshot --score must be in [0, 100], got {args.score}")
-        event["grade"] = args.grade
-        event["score"] = args.score
-        if args.commit:  # optional — the finalize-time regen runs BEFORE F6
-            event["commit"] = args.commit
+        # Shape owned by grade_snapshot_shape (shared with the compliance
+        # emitter): validation AND the tree attribution, which is derived from
+        # --project-root and cannot be asserted by any caller.
+        apply_grade_snapshot(event, grade=args.grade, score=args.score,
+                             project_root=args.project_root, commit=args.commit)
 
     return event
 

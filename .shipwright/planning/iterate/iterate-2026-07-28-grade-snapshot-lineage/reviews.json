@@ -1,0 +1,185 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-07-28-grade-snapshot-lineage",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-07-28T07:24:20.739682+00:00",
+      "disposition": null,
+      "recorded_by": "Step 7 self-review, canonical 8-item checklist",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 10,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "Continuous Integration environments often default to shallow clones (e.g., `fetch-depth: 1`). In a shallow clone, `git merge-base HEAD origin/main` lacks the necessary commit history to find the common ancestor and will exit non-zero (or worse, identify the root of the shallow clone incorrectly). Because the implementation is designed to silently degrade to `base=None` on failure, this could cleanly but permanently disable chronological ordering for any runs executed in CI.",
+          "suggestion": "Verify the git fetch configuration in your CI pipelines. If compliance regeneration runs in CI, ensure the checkout step is configured with `fetch-depth: 0` (or adequate depth) so remote history is present for `merge-base` to succeed.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "Because `tree_lineage.py` implements its own `git -C` executor via `subprocess.run` to satisfy the ADR-045 boundary, there is a common pitfall with standard out processing. Failing to decode bytes or strip terminal newlines will result in values like `b'main\\n'` or `\"a1b2c3d4...\\n\"` being stamped into the JSON payload.",
+          "suggestion": "Ensure the explicit ~15 line `subprocess` helper uses `text=True` (or standard `utf-8` decoding) and `.strip()` on stdout before populating the `TreeLineage` dataclass.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "The spec notes that existing legacy snapshots omit the `lineage` field and should be treated as such by consumers. However, if the repository relies on strict schema-based deserialization (e.g., `pydantic` models) for `read_events`, encountering those 183 legacy events without the new fields might trigger validation errors and blow up local or regression testing.",
+          "suggestion": "When verifying AC6 (Round-trip `append_event` → `read_events`), ensure the Python structs backing `read_events` declare the three new fields as strictly `Optional` with default values (e.g., `= None`) so legacy lines parse successfully.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The fallback logic to determine the default branch uses `symbolic-ref --short refs/remotes/origin/HEAD`. If the local repository does not have remote tracking configured (e.g., an independent local repo before pushing, or a detached clone state), this command fails.",
+          "suggestion": "The spec already mentions \"fallback main\", but ensure this explicitly hooks the failure of the `symbolic-ref` command, degrading cleanly to checking against `main` (or `master`) as a hardcoded safety net.  Overall assessment: This is a highly mature, heavily researched, and exceptionally well-reasoned change plan. The author accurately diagnosed the root cause (union merge mangling multiple tree measurements), rejected the quick-but-wrong fix based on empirical repo data (the 18/18 probe), and proposed a safe, strictly additive solution with excellent failure posturing.  SHIPWRIGHT_VERDICT: approve",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "Default-branch discovery can silently misattribute snapshots. `symbolic-ref refs/remotes/origin/HEAD` is often absent in fixture repos, locally initialized repos, partially fetched clones, and some worktrees. Falling back unconditionally to `main` will classify a repository whose default branch is `master`/`trunk` as `\"branch\"` and may compute a missing or incorrect base. Worse, a local branch named `main` could be labeled `\"main\"` even when it is not the repository’s actual default lineage.",
+          "suggestion": "Make default-branch resolution explicit and conservative: use `origin/HEAD` only when both the symbolic ref and target ref resolve; otherwise use a validated local default ref only if the application has an authoritative configured default branch. If no default branch can be established, return `TreeLineage(\"unknown\", branch_if_known, None)` rather than assuming `main`. Add tests for `master`/`trunk`, an unset `origin/HEAD`, absent `origin`, and a stale or missing remote-tracking default ref.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "The manual/replay path permits callers to assert an arbitrary lineage tuple. The plan says `record_event` derives attribution “unless explicitly supplied,” but only validates the `lineage` vocabulary. For example, `--lineage main` from a branch worktree can write a false main-lineage event, and supplying only `--lineage` can suppress derivation of otherwise available `branch` and `base`. This weakens the stated principle that attribution is derived rather than asserted.",
+          "suggestion": "Define explicit override semantics as an atomic, intentional operation. Prefer deriving the complete tuple and allowing explicit flags only to fill/override individual fields after derivation, or require a complete override tuple and validate `base` format. If replay genuinely needs to preserve historical values from an existing event, expose a clearly named replay/preserve mode rather than making normal manual invocation able to manufacture provenance.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "The planned consumer handoff assumes that every `base` can be positioned on `main`’s first-parent history. A Git merge-base is guaranteed to be reachable from the default branch, but is not guaranteed to occur on its first-parent chain when merge commits or criss-cross history exist. The proposed follow-up’s “order branch snapshots by their base’s position in main’s first-parent history” can therefore fail or exclude valid attributed events.",
+          "suggestion": "Document `base` as a common ancestor reachable from the default branch, not necessarily a first-parent commit. Ensure the WebUI follow-up uses general ancestry/topological resolution, or explicitly establishes and documents a repository invariant that main is linear/squash-only before relying on first-parent positioning.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The failure contract needs coverage for realistic partial-Git states beyond the listed total failures. In particular, shallow clones can resolve `HEAD` and the branch but lack the ancestry needed for `merge-base`; detached HEADs can be on the default tip, on an older default-branch commit, or on an unrelated commit; and a remote default ref can be symbolic but not locally fetched. These states are likely in CI/worktree tooling and determine whether a result should be `main`, `branch`, or `unknown`.",
+          "suggestion": "Add resolver tests for shallow/no-merge-base repositories, detached HEAD at default tip, detached HEAD at an older default commit, detached non-default commits, and a symbolic `origin/HEAD` whose target ref is unavailable. Preserve the intended partial result only when the facts supporting it are actually resolved.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "A new subprocess-based dependency is introduced on the compliance-regeneration path. Although bounded and best-effort, repeated snapshots may repeatedly invoke several Git processes, and timeout handling alone does not guarantee that child processes spawned by Git are cleaned up. This should not change cadence, but it can add avoidable latency during degraded filesystem or repository conditions.",
+          "suggestion": "Keep the resolver small as proposed, but use short, documented timeouts; capture no unnecessary output; and ensure the emitter catches exceptions from both importing and invoking the resolver. Add one test that simulates a timeout/runner exception and verifies the event is still emitted with `lineage: \"unknown\"`.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "security",
+          "file": null,
+          "line": null,
+          "finding": "The subprocess approach is appropriately using argument arrays, `shell=False`, and `git -C`, so there is no apparent command-injection issue. The remaining integrity concern is unvalidated externally supplied `--base` and `--branch` values in the manual path, which can create misleading event data even if they cannot execute code.",
+          "suggestion": "Validate `base` against the repository object format expected by this application (currently the specified full SHA-1 form, if SHA-1 repositories are an invariant), reject control characters in supplied branch names, and serialize only validated values. If SHA-256 Git repositories may be supported, avoid hard-coding the 40-character assumption or explicitly document that limitation.  Overall, attribution is the correct decision and the producer-side design is appropriately additive and failure-tolerant. The implementation should be revised to make default-branch resolution conservative and to prevent the manual path from undermining provenance integrity. SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-07-28T06:54:48.071440+00:00",
+      "disposition": null,
+      "recorded_by": "iterate Step 3.5 external plan review (Gemini 3.1 Pro approve, GPT-5.6 revise; 10 findings dispositioned in the spec)",
+      "parse_status": "structured",
+      "raw_excerpt": "[gemini] Here is the review of the implementation approach for the `grade_snapshot` lineage attribution change.\n\n- **Category:** edge-case\n- **Severity:** medium\n- **Finding:** Continuous Integration environments often default to shallow clones (e.g., `fetch-depth: 1`). In a shallow clone, `git merge-base HEAD origin/main` lacks the necessary commit history to find the common ancestor and will exit non-zero (or worse, identify the root of the shallow clone incorrectly). Because the implementation is designed to silently degrade to `base=None` on failure, this could cleanly but permanently disable chronological ordering for any runs executed in CI.\n- **Suggestion:** Verify the git fetch configuration in your CI pipelines. If compliance regeneration runs in CI, ensure the checkout step is configured with `fetch-depth: 0` (or adequate depth) so remote history is present for `merge-base` to succeed.\n\n- **Category:** risk\n- **Severity:** low\n- **Finding:** Because `tree_lineage.py` implements its own `git -C` executor via `subprocess.run` to satisfy the ADR-045 boundary, there is a common pitfall with standard out processing. Failing to decode bytes or strip terminal newlines will result in values like `b'main\\n'` or `\"a1b2c3d4...\\n\"` being stamped into the JSON payload.\n- **Suggestion:** Ensure the explicit ~15 line `subprocess` helper uses `text=True` (or standard `utf-8` decoding) and `.strip()` on stdout before populating the `TreeLineage` dataclass.\n\n- **Category:** risk\n- **Severity:** low\n- **Finding:** The spec notes that existing legacy snapshots omit the `lineage` field and should be treated as such by consumers. However, if the repository relies on strict schema-based deserialization (e.g., `pydantic` models) for `read_events`, encountering those 183 legacy events without the new fields might trigger validation errors and blow up local or regression testing.\n- **Suggestion:** When verifying AC6 (Round-trip `append_event` → `read_events`), ensure the Python […truncated]\n\n[openai] 1. **Category: edge-case**  \n   **Severity: high**  \n   **Finding:** Default-branch discovery can silently misattribute snapshots. `symbolic-ref refs/remotes/origin/HEAD` is often absent in fixture repos, locally initialized repos, partially fetched clones, and some worktrees. Falling back unconditionally to `main` will classify a repository whose default branch is `master`/`trunk` as `\"branch\"` and may compute a missing or incorrect base. Worse, a local branch named `main` could be labeled `\"main\"` even when it is not the repository’s actual default lineage.  \n   **Suggestion:** Make default-branch resolution explicit and conservative: use `origin/HEAD` only when both the symbolic ref and target ref resolve; otherwise use a validated local default ref only if the application has an authoritative configured default branch. If no default branch can be established, return `TreeLineage(\"unknown\", branch_if_known, None)` rather than assuming `main`. Add tests for `master`/`trunk`, an unset `origin/HEAD`, absent `origin`, and a stale or missing remote-tracking default ref.\n\n2. **Category: approach**  \n   **Severity: medium**  \n   **Finding:** The manual/replay path permits callers to assert an arbitrary lineage tuple. The plan says `record_event` derives attribution “unless explicitly supplied,” but only validates the `lineage` vocabulary. For example, `--lineage main` from a branch worktree can write a false main-lineage event, and supplying only `--lineage` can suppress derivation of otherwise available `branch` and `base`. This weakens the stated principle that attribution is derived rather than asserted.  \n   **Suggestion:** Define explicit override semantics as an atomic, intentional operation. Prefer deriving the complete tuple and allowing explicit flags only to fill/override individual fields after derivation, or require a complete override tuple and validate `base` format. If replay genuinely needs to preserve historical values from an existing even […truncated]"
+    },
+    "code": {
+      "review_type": "code",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-07-28T07:24:29.959931+00:00",
+      "disposition": "Internal cascade (spec-reviewer HARD-GATE / code-reviewer) needs the Agent tool, which this session's standing directive 'Do not call the AgentTool unless the user requested it' gates behind an explicit operator request. The directive is conditional and one sentence from the operator lifts it, but --autonomous forbids blocking to ask, so it is offered in the run summary rather than assumed. Substitute evidence recorded on external_code: GPT-5.6 + Gemini 3.1 Pro reviewed the diff in two halves and produced two real findings, both fixed. Not substitutable in principle (see the #438 precedent) - this row is an honest gap, not a claim of equivalence.",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-07-28T07:24:38.838946+00:00",
+      "disposition": "Stage-3 doubt pass is conditional (migrations, async/concurrency, cross-plugin imports, irreversible operations) AND requires the Agent tool, gated as for the code row. This diff has no migration, no concurrency, and no irreversible operation; the cross-plugin import it DOES add is the one design point that would have warranted a doubt pass, and it was instead reasoned about explicitly against ADR-045 and placed on the established top-level shared/scripts seam that tests_block.py documents. Recorded not_run rather than not_applicable because the trigger was arguably met.",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 3,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "spec",
+          "file": "docs/hooks-and-pipeline.md` (missing change)",
+          "line": null,
+          "finding": "The required documentation update is absent. In particular, the Event Emission Points table does not gain the required `grade_snapshot` row, and consumers are not documented on the critical compatibility rule that an absent `lineage` denotes a legacy pre-attribution event while `\"unknown\"` denotes an attempted but unresolved attribution.",
+          "suggestion": "Update `docs/hooks-and-pipeline.md` with the emission point, `main` / `branch` / `unknown` vocabulary, optional `branch` and `base` semantics, and the absent-field legacy rule.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "test",
+          "file": "shared/scripts/tree_lineage.py:156-188",
+          "line": null,
+          "finding": "No tests are included in the diff despite the specification requiring resolver tests using real Git fixture repositories, emitter stamping, CLI derivation/validation, append/read I/O round-trip coverage, and a real compliance-regen integration test. Consequently, regressions in default-branch discovery, detached-HEAD ancestry classification, fail-soft behavior, or the two producer paths would not be detected by this change.",
+          "suggestion": "Add the specified test coverage, including no-default-branch and Git-failure cases, a branch worktree and detached default-history commit fixture, and assertions on persisted events rather than only `build_event`/emitter return values.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": "shared/scripts/tree_lineage.py:97-108",
+          "line": null,
+          "finding": "_git_status` promises that nothing in the resolver raises, but it runs subprocesses in strict UTF-8 text mode and catches only `OSError` and `SubprocessError`. A repository/ref or Git diagnostic containing non-UTF-8 bytes can cause `UnicodeDecodeError` while decoding captured stdout/stderr, escaping `resolve_tree_lineage` directly and violating its fail-soft public contract. The current event producers happen to catch this one layer later, but direct users of the resolver do not get the documented degradation behavior.",
+          "suggestion": "Capture bytes and decode defensively (for example, `decode(\"utf-8\", errors=\"replace\")`), or catch decoding errors in `_git_status` and return `(None, None)`.  Overall assessment: the core attribution logic substantially follows the required design, but the explicitly required documentation and verification work are missing. Ship with fixes after adding the documentation and meaningful behavioral tests. SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-07-28T07:16:28.551995+00:00",
+      "disposition": null,
+      "recorded_by": "Step 3.7 external code review, GPT-5.6 + Gemini 3.1 Pro via OpenRouter, run in two halves (1125-line diff truncated both providers in one pass). Production half: 1 real finding (UnicodeDecodeError escapes the no-raise contract) FIXED + test. Tests/docs half: 1 real finding (CLI derivation test only proved the unknown path) FIXED with two real-git CLI tests. Remaining findings on both halves were split-scope artifacts - each half reported the other half as missing.",
+      "parse_status": "partial",
+      "raw_excerpt": "[gemini] )`. If it matches, it's included.\nBut wait! `_git(...)` strips output. A `base` is typically a single hex string. What if it returns multiple merge bases?\n`git merge-base HEAD ref` returns *one* commit by default, even if there are multiple, unless `--all` is specified. So it will return a single hex string. This is correct.\n\nWhat about `lineage.branch`?\nIn `lineage_fields`, `fields[\"branch\"] = lineage.branch` if `lineage.branch`.\nIs there a risk that `branch` is an empty string, or invalid?\n`name = _git(root, \"rev-parse\", \"--abbrev-ref\", \"HEAD\n\n[openai] - Category: spec\n- Severity: medium\n- File: `docs/hooks-and-pipeline.md` (missing change)\n- Finding: The required documentation update is absent. In particular, the Event Emission Points table does not gain the required `grade_snapshot` row, and consumers are not documented on the critical compatibility rule that an absent `lineage` denotes a legacy pre-attribution event while `\"unknown\"` denotes an attempted but unresolved attribution.\n- Suggestion: Update `docs/hooks-and-pipeline.md` with the emission point, `main` / `branch` / `unknown` vocabulary, optional `branch` and `base` semantics, and the absent-field legacy rule.\n\n- Category: test\n- Severity: medium\n- File: `shared/scripts/tree_lineage.py:156-188`\n- Finding: No tests are included in the diff despite the specification requiring resolver tests using real Git fixture repositories, emitter stamping, CLI derivation/validation, append/read I/O round-trip coverage, and a real compliance-regen integration test. Consequently, regressions in default-branch discovery, detached-HEAD ancestry classification, fail-soft behavior, or the two producer paths would not be detected by this change.\n- Suggestion: Add the specified test coverage, including no-default-branch and Git-failure cases, a branch worktree and detached default-history commit fixture, and assertions on persisted events rather than only `build_event`/emitter return values.\n\n- Category: edge-case\n- Severity: low\n- File: `shared/scripts/tree_lineage.py:97-108`\n- Finding: `_git_status` promises that nothing in the resolver raises, but it runs subprocesses in strict UTF-8 text mode and catches only `OSError` and `SubprocessError`. A repository/ref or Git diagnostic containing non-UTF-8 bytes can cause `UnicodeDecodeError` while decoding captured stdout/stderr, escaping `resolve_tree_lineage` directly and violating its fail-soft public contract. The current event producers happen to catch this one layer later, but direct users of the resolver do n […truncated]"
+    }
+  }
+}
