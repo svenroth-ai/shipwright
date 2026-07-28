@@ -17,7 +17,6 @@ import json
 import sys
 from pathlib import Path
 
-import pytest
 
 PLUGIN_ROOT = Path(__file__).parent.parent
 sys.path.insert(0, str(PLUGIN_ROOT / "scripts" / "tools"))
@@ -30,6 +29,7 @@ FAKE_KEY = "ORTESTKEY-not-a-real-credential-0123456789"
 
 
 # --- File contract ---
+
 
 class TestFileContract:
 
@@ -49,125 +49,17 @@ class TestFileContract:
             "script must not reference ANTHROPIC_API_KEY — OpenRouter is the single provider"
         )
 
-    def test_default_model_is_sonnet(self):
+    def test_every_re_exported_name_resolves(self):
+        # The lib modules are reachable through `pr_review.<symbol>` — that is
+        # the contract the workflow and every monkeypatching test rely on, and
+        # a module split is exactly what silently breaks it.
+        for name in pr_review.__all__:
+            assert hasattr(pr_review, name), f"__all__ names {name}, which does not resolve"
         assert pr_review.DEFAULT_MODEL == "anthropic/claude-sonnet-4.6"
 
 
-# --- _post_openrouter — HTTP boundary (urllib monkeypatched) ---
-
-class TestPostOpenRouter:
-
-    def test_builds_authorized_json_request(self, monkeypatch):
-        captured = {}
-
-        class _FakeResp:
-            def __enter__(self):
-                return self
-
-            def __exit__(self, *a):
-                return False
-
-            def read(self):
-                return json.dumps(
-                    {"choices": [{"message": {"content": "{\"decision\":\"approve\"}"}}]}
-                ).encode("utf-8")
-
-        def fake_urlopen(req, timeout=None):
-            captured["url"] = req.full_url
-            captured["headers"] = {k.lower(): v for k, v in req.header_items()}
-            captured["body"] = json.loads(req.data.decode("utf-8"))
-            return _FakeResp()
-
-        monkeypatch.setattr(pr_review.urllib.request, "urlopen", fake_urlopen)
-        data = pr_review._post_openrouter(FAKE_KEY, "some/model", [{"role": "user", "content": "hi"}], 30)
-
-        assert captured["url"] == pr_review.OPENROUTER_URL
-        assert captured["headers"]["authorization"] == f"Bearer {FAKE_KEY}"
-        assert captured["body"]["model"] == "some/model"
-        assert captured["body"]["response_format"] == {"type": "json_object"}
-        assert data["choices"][0]["message"]["content"] == '{"decision":"approve"}'
-
-
-# --- call_openrouter — content extraction + error wrapping (_post_openrouter mocked) ---
-
-class TestCallOpenRouter:
-
-    def test_success_extracts_content(self, monkeypatch):
-        monkeypatch.setattr(
-            pr_review, "_post_openrouter",
-            lambda k, m, msgs, t: {"choices": [{"message": {"content": "OK"}}]},
-        )
-        assert pr_review.call_openrouter("k", "m", [], 1) == "OK"
-
-    def test_bad_shape_raises_runtime(self, monkeypatch):
-        monkeypatch.setattr(pr_review, "_post_openrouter", lambda *a: {"unexpected": 1})
-        with pytest.raises(RuntimeError):
-            pr_review.call_openrouter("k", "m", [], 1)
-
-    def test_http_error_wrapped(self, monkeypatch):
-        def boom(*a):
-            raise pr_review.urllib.error.HTTPError("u", 429, "rate limit", {}, None)
-        monkeypatch.setattr(pr_review, "_post_openrouter", boom)
-        with pytest.raises(RuntimeError):
-            pr_review.call_openrouter("k", "m", [], 1)
-
-    def test_url_error_wrapped(self, monkeypatch):
-        def boom(*a):
-            raise pr_review.urllib.error.URLError("connection refused")
-        monkeypatch.setattr(pr_review, "_post_openrouter", boom)
-        with pytest.raises(RuntimeError):
-            pr_review.call_openrouter("k", "m", [], 1)
-
-
-# --- gh-CLI wrappers — exit handling (subprocess mocked) ---
-
-class _Proc:
-    def __init__(self, rc, out="", err=""):
-        self.returncode, self.stdout, self.stderr = rc, out, err
-
-
-class TestGhWrappers:
-
-    def test_fetch_pr_diff_success(self, monkeypatch):
-        monkeypatch.setattr(pr_review.subprocess, "run", lambda *a, **k: _Proc(0, "DIFFTEXT"))
-        assert pr_review.fetch_pr_diff(1, "o/r") == "DIFFTEXT"
-
-    def test_fetch_pr_diff_failure_raises(self, monkeypatch):
-        monkeypatch.setattr(pr_review.subprocess, "run", lambda *a, **k: _Proc(1, "", "no auth"))
-        with pytest.raises(RuntimeError):
-            pr_review.fetch_pr_diff(1, "o/r")
-
-    def test_post_pr_comment_failure_raises(self, monkeypatch):
-        monkeypatch.setattr(pr_review.subprocess, "run", lambda *a, **k: _Proc(1, "", "forbidden"))
-        with pytest.raises(RuntimeError):
-            pr_review.post_pr_comment(1, "o/r", "body")
-
-    def test_review_state_block_requests_changes(self, monkeypatch):
-        captured = {}
-
-        def fake_run(cmd, **k):
-            captured["cmd"] = cmd
-            return _Proc(0)
-
-        monkeypatch.setattr(pr_review.subprocess, "run", fake_run)
-        pr_review.post_pr_review_state(1, "o/r", "block", "nope")
-        assert "--request-changes" in captured["cmd"]
-
-    def test_review_state_non_block_comments(self, monkeypatch):
-        captured = {}
-
-        def fake_run(cmd, **k):
-            captured["cmd"] = cmd
-            return _Proc(0)
-
-        monkeypatch.setattr(pr_review.subprocess, "run", fake_run)
-        pr_review.post_pr_review_state(1, "o/r", "approve", "")
-        assert "--comment" in captured["cmd"]
-        # empty summary must still pass a non-empty body to `gh pr review`
-        assert "--body" in captured["cmd"]
-
-
 # --- main() orchestration — boundaries monkeypatched ---
+
 
 def _wire(monkeypatch, *, review_json=None, diff="diff --git a b\n+x\n", raise_call=None):
     """Patch every external boundary; capture posted comment/review state."""
@@ -178,6 +70,10 @@ def _wire(monkeypatch, *, review_json=None, diff="diff --git a b\n+x\n", raise_c
     monkeypatch.setattr(pr_review, "fetch_pr_diff", lambda pr, repo: diff)
 
     def fake_call(api_key, model, messages, timeout=120):
+        # Capture what actually reaches the MODEL. Asserting only on the posted
+        # comment let the meta wiring rot silently: dropping the file lists from
+        # the build_pr_meta call left the whole suite green.
+        posted["messages"] = messages
         if raise_call is not None:
             raise raise_call
         return review_json
@@ -235,7 +131,10 @@ class TestMainOrchestration:
         # APPROVE. Rationale in pr_review_lib.MAX_DIFF_CHARS.
         posted = _wire(
             monkeypatch,
-            diff="z" * (pr_review.MAX_DIFF_CHARS + 1000),
+            # A real over-cap diff WITH headers. A headerless one is now caught
+            # earlier as "nothing to review", which is a different branch.
+            diff=("diff --git a/big.py b/big.py\n--- a/big.py\n+++ b/big.py\n"
+                  "@@ -1 +1 @@\n" + "+z" * pr_review.MAX_DIFF_CHARS + "\n"),
             review_json=json.dumps(
                 {"decision": "approve", "summary": "huge", "blocking": [], "comments": []}),
         )
@@ -243,8 +142,7 @@ class TestMainOrchestration:
         assert rc == pr_review.EXIT_BLOCK
         assert rc != pr_review.EXIT_OK  # the size-bypass is closed
         assert "review limit" in posted["comment"].lower()
-        # Headerless: honest about being unable to say WHICH files were missed.
-        assert "could not be identified" in posted["comment"]
+        assert "big.py" in posted["comment"]     # says WHICH file went unreviewed
         assert posted["state"] == "block"  # forced request-changes on truncation
 
     def test_an_oversized_diff_names_the_unreviewed_file_in_every_sink(
@@ -261,6 +159,88 @@ class TestMainOrchestration:
         assert "ig.py" in posted["comment"]
         assert "\x1b" not in posted["comment"]
         assert "\x1b" not in capsys.readouterr().err
+        # ...and the MODEL is told too, not just the human.
+        assert "ig.py" in posted["messages"][1]["content"]
+
+    def test_a_fully_filtered_pr_fails_closed(self, monkeypatch, capsys):
+        # This script runs only on PRs the tier step said need review. If the
+        # generated-artifact filter leaves nothing, the model would be handed an
+        # empty diff — and the system prompt answers that with `approve`. A fork
+        # PR touching only regenerated artifacts is the shape that matters.
+        posted = _wire(monkeypatch, review_json=json.dumps({"decision": "approve"}),
+                       diff="diff --git a/triage.jsonl b/triage.jsonl\n--- a/triage.jsonl\n"
+                            "+++ b/triage.jsonl\n@@ -1 +1 @@\n-a\n+x\n")
+        assert pr_review.main(ARGV) == pr_review.EXIT_BLOCK
+        assert "messages" not in posted        # the model was never consulted
+        assert "triage.jsonl" in capsys.readouterr().err
+
+    def test_an_empty_fetch_fails_closed(self, monkeypatch, capsys):
+        # The broadened gate, at its widest input. `gh pr diff` returning ''
+        # used to satisfy neither half of the old narrow condition (nothing was
+        # excluded, so `excluded and ...` was False), truncate_diff('') reports
+        # complete, and the system prompt answers an empty diff with `approve`.
+        posted = _wire(monkeypatch, review_json=json.dumps({"decision": "approve"}), diff="")
+        assert pr_review.main(ARGV) == pr_review.EXIT_BLOCK
+        assert "messages" not in posted          # the model was never consulted
+        assert "no file sections at all" in capsys.readouterr().err
+
+    def test_a_headerless_body_fails_closed(self, monkeypatch, capsys):
+        # Same failure from the model's side: a `gh` body that carries no
+        # LF-anchored `diff --git` header at all is also "nothing to review".
+        posted = _wire(monkeypatch, review_json=json.dumps({"decision": "approve"}),
+                       diff="warning: something went wrong\nno diff here\n")
+        assert pr_review.main(ARGV) == pr_review.EXIT_BLOCK
+        assert "messages" not in posted
+        assert "no file sections at all" in capsys.readouterr().err
+
+    def test_an_ordinary_pr_with_some_generated_files_still_runs(self, monkeypatch):
+        # The fail-closed rule must not swing the other way: a PR that mixes a
+        # genuinely generated artifact with real source is reviewed normally —
+        # the generated section is dropped and disclosed, the source is sent.
+        posted = _wire(monkeypatch, review_json=json.dumps({"decision": "approve"}),
+                       diff="diff --git a/triage.jsonl b/triage.jsonl\n--- a/triage.jsonl\n"
+                            "+++ b/triage.jsonl\n@@ -1 +1 @@\n-a\n+b\n"
+                            "diff --git a/src/x.py b/src/x.py\n--- a/src/x.py\n"
+                            "+++ b/src/x.py\n@@ -1 +1 @@\n-old\n+new\n")
+        assert pr_review.main(ARGV) == pr_review.EXIT_OK
+        assert "src/x.py" in posted["messages"][1]["content"]
+        assert "excluded" in posted["comment"].lower()   # and the drop is disclosed
+
+    def test_a_lockfile_only_pr_is_reviewed_not_filtered_away(self, monkeypatch):
+        # Decision 4, end to end: `uv.lock` used to be filtered as generated, so
+        # a fork PR touching only it left NOTHING to review. On the one gate
+        # whose input is untrusted, the lockfile IS the supply-chain surface —
+        # it must reach the model, and the run must not fail closed on "nothing
+        # to review" either.
+        posted = _wire(monkeypatch, review_json=json.dumps({"decision": "approve"}),
+                       diff="diff --git a/uv.lock b/uv.lock\n--- a/uv.lock\n+++ b/uv.lock\n"
+                            "@@ -1 +1 @@\n-name = \"safe-pkg\"\n+name = \"safe-pkq\"\n")
+        assert pr_review.main(ARGV) == pr_review.EXIT_OK
+        assert "safe-pkq" in posted["messages"][1]["content"], \
+            "the lockfile change never reached the model"
+        assert "excluded" not in posted["comment"].lower()
+
+    def test_a_broken_template_exits_2_redacted_not_as_a_traceback(self, monkeypatch, capsys):
+        # build_messages raises when the shipped template lost a placeholder.
+        # That was the only boundary in main() not caught — it escaped as a raw
+        # traceback, bypassing _redact and the documented exit-code table, and
+        # was fail-closed only by the accident that exit 1 == EXIT_BLOCK.
+        _wire(monkeypatch, review_json=json.dumps({"decision": "approve"}))
+        monkeypatch.setattr(pr_review, "load_prompts",
+                            lambda d: ("SYSTEM", "USER with no placeholders"))
+        assert pr_review.main(ARGV) == pr_review.EXIT_ERROR
+        err = capsys.readouterr().err
+        assert "missing" in err
+        assert "Traceback" not in err
+        assert FAKE_KEY not in err
+
+    def test_the_fail_closed_comment_does_not_credit_a_model(self, monkeypatch):
+        # This branch returns BEFORE call_openrouter, so a footer naming the
+        # model says a review happened that provably did not.
+        posted = _wire(monkeypatch, review_json=json.dumps({"decision": "approve"}), diff="")
+        assert pr_review.main(ARGV) == pr_review.EXIT_BLOCK
+        assert pr_review.DEFAULT_MODEL not in posted["comment"]
+        assert "nothing was sent" in posted["comment"]
 
     def test_api_key_never_logged(self, monkeypatch, capsys):
         # Force the worst path (error message embeds the key) and assert it is

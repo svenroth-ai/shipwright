@@ -1,39 +1,39 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-07-27-pytest-root-composition"
+run_id: "iterate-2026-07-27-pr-review-forged-boundary"
 phase: "iterate"
-reason: "ensure-current pre-merge refresh"
-timestamp: "2026-07-27T17:38:49.456380+00:00"
+reason: "iterate: a PR must not be able to forge a file boundary in its own diff"
+timestamp: "2026-07-28T07:58:49.038874+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-07-27 17:38:49 UTC
+> Auto-generated 2026-07-28 07:58:49 UTC
 
 ## Session Info
 
-- **Session ID**: 2a2ccc95-e7ec-4ca6-bcdb-601ae9e9b002
-- **Timestamp**: 2026-07-27 17:38:49 UTC
-- **Reason**: ensure-current pre-merge refresh
+- **Session ID**: d45b5209-08f4-453b-b127-43083fb94396
+- **Timestamp**: 2026-07-28 07:58:49 UTC
+- **Reason**: iterate: a PR must not be able to forge a file boundary in its own diff
 
 ## Last Iterate
 
-- **Run ID**: iterate-2026-07-27-run-unit-parallel-race
-- **Date**: 2026-07-27T17:38:43.705219Z
+- **Run ID**: iterate-2026-07-27-pr-review-forged-boundary
+- **Date**: 2026-07-28T07:58:42.507362Z
 - **Type**: bug
 - **Complexity**: medium
-- **Branch**: iterate/run-unit-parallel-race
-- **ADR**: iterate-2026-07-27-run-unit-parallel-race
+- **Branch**: iterate/pr-review-forged-boundary
+- **ADR**: iterate-2026-07-27-pr-review-forged-boundary
 - **Tests passed**: True
-- **Spec**: .shipwright/planning/iterate/iterate-2026-07-27-run-unit-parallel-race.md
+- **Spec**: .shipwright/planning/iterate/2026-07-27-pr-review-forged-boundary.md
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/pytest-root-composition
-- **Run ID**: `iterate-2026-07-27-pytest-root-composition`
-- **Spec**: .shipwright/planning/iterate/iterate-2026-07-27-pytest-root-composition.md
-- **Complexity**: medium
-- **External Review Marker**: completed (external_review_state.json @ 2026-07-27T17:10:30)
+- **Branch**: iterate/pr-review-forged-boundary
+- **Run ID**: `iterate-2026-07-27-pr-review-forged-boundary`
+- **Spec**: .shipwright/planning/iterate/2026-07-27-pr-review-forged-boundary.md
+- **Complexity**: medium — a required merge gate over attacker-controlled input
+- **External Review Marker**: missing
 
 ### Mandatory replay on Resume
 
@@ -51,8 +51,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/pytest-root-composition
-- **Last Commit**: 4942819e Merge remote-tracking branch 'origin/main' into iterate/pytest-root-composition
+- **Branch**: iterate/pr-review-forged-boundary
+- **Last Commit**: 0cb1e5ad chore(triage): sweep 4 outbox append(s) into branch
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -68,17 +68,17 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 | Event | Type | Source | Date |
 |-------|------|--------|------|
+| evt-86513ed6 | grade_snapshot | — | 2026-07-28 |
+| evt-88a675ea | work_completed | iterate (iterate: a PR must not be able to forge a file boundary in its own diff) | 2026-07-28 |
 | evt-950798de | grade_snapshot | — | 2026-07-27 |
 | evt-36d0f887 | work_completed | iterate (iterate: raise the PR-review diff cap, cut at a file boundary, name what went unreviewed) | 2026-07-27 |
 | evt-ad7b51e0 | grade_snapshot | — | 2026-07-27 |
-| evt-e3d8f519 | work_completed | iterate (iterate: an audit that checked nothing is not recorded) | 2026-07-27 |
-| evt-024abc36 | grade_snapshot | — | 2026-07-27 |
 
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 381
-- **Last iterate**: change — iterate: raise the PR-review diff cap, cut at a file boundary, name what went unreviewed (2026-07-27)
+- **Total work events**: 382
+- **Last iterate**: bug — iterate: a PR must not be able to forge a file boundary in its own diff (2026-07-28)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
 ## Recent Decisions

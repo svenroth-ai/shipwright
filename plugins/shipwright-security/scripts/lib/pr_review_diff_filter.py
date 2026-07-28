@@ -1,20 +1,18 @@
-"""Generated-artifact exclusion for the Tier-3 PR reviewer.
+"""Unified-diff parsing for the Tier-3 PR reviewer — the MECHANISM.
 
-Root fix for the truncation false-positive (triage trg-e1c554d9). A medium+
-shipwright PR regenerates many producer-owned artifacts (compliance MDs,
-agent-docs, lockfiles, append-log state files) that carry NO reviewable logic
-but dominate the diff — measured ~82% of chars on PR #310. `filter_generated_paths`
-drops those file-sections from a unified diff BEFORE the truncation check, so the
-reviewer stays under the size cap and sees only real code. The excluded list is
-surfaced by the caller in the PR meta + comment (transparent, never silent).
+Where a file section begins and ends, which paths it touches, where the size cap
+may cut, and which sections the generated-artifact policy drops. That policy —
+*what counts as generated* — lives in `pr_review_generated`, because it changes
+for a different reason (a new producer) and its over-reach is a security bug,
+not a parsing bug.
 
-NOTE: these paths are producer-regenerated and non-executable; a human still
-reviews the full PR when the `skip-pr-review` label path is taken, and the
-compliance detective audit covers the artifacts themselves.
+The single definition of "a file boundary" lives here, so the generated filter
+and the size cap can never disagree about where one file ends. It is LF-anchored:
+git ends a diff line at LF and nothing else, and a parser that thinks otherwise
+lets a PR forge a boundary from inside its own hunk (see `_split_sections`).
 
-Split out of ``pr_review_lib`` so the diff-parsing cluster is its own
-cohesive, unit-testable module and both files stay under the source-size
-guideline.
+Split out of ``pr_review_lib`` so the diff-parsing cluster is its own cohesive,
+unit-testable module and every file stays under the source-size guideline.
 """
 
 from __future__ import annotations
@@ -22,46 +20,32 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass
 
+# The membership policy — re-exported so `pr_review_lib.is_generated_path` and
+# every existing caller keep working. See that module for the governing rule.
+from pr_review_generated import is_generated_path  # noqa: F401
+
 __all__ = [
-    "ReviewedDiff",
-    "filter_generated_paths",
-    "is_generated_path",
-    "truncate_diff_at_boundary",
+    "MAX_DIFF_CHARS", "ReviewedDiff", "count_sections",
+    "filter_generated_paths", "is_generated_path", "truncate_diff_at_boundary",
 ]
 
-_GENERATED_PREFIXES = (
-    ".shipwright/compliance/",     # regenerated dashboard / RTM / SBOM / test-evidence / change-history
-    ".shipwright/agent_docs/",     # regenerated build dashboard, session handoff, iterate entries
-    "CHANGELOG-unreleased.d/",     # per-run changelog drop files
-)
-_GENERATED_BASENAMES = frozenset({
-    "shipwright_test_results.json",  # latest-run test state (regenerated each run)
-    "shipwright_events.jsonl",       # append-only event log (union-merged)
-    "triage.jsonl",                  # append-only triage backlog
-    "triage.outbox.jsonl",           # triage outbox staging
-    "uv.lock", "poetry.lock", "Cargo.lock", "yarn.lock",  # dependency lockfiles
-    "package-lock.json", "pnpm-lock.yaml",
-})
-
-# A run's REVIEW EVIDENCE, under `.shipwright/planning/iterate/`: the review
-# record `record_review_pass.py` maintains, and the raw reviewer replies
-# `external_review.py` emits. Both are tool-written transcripts OF a review —
-# feeding them to the reviewer is circular, and they are bulky: measured 45,596
-# chars (19% of the reviewed diff) on PR #446, which was the difference between
-# fitting the size cap and failing closed on truncation.
+# Over this, the diff is reviewed on a boundary-truncated copy and the gate
+# FAILS CLOSED — a large diff must not bypass review by size (B4.5,
+# iterate-2026-06-17-pr-review-truncation-failclosed).
 #
-# Deliberately NARROW. The `.md` siblings in the same directory — the iterate
-# spec and its mini-plan — are AUTHORED, state the acceptance criteria, and are
-# exactly the intent a reviewer should read the diff against. They stay in.
-# The rule is "a reviewer does not review prior reviews", not "planning docs
-# are uninteresting".
-_REVIEW_EVIDENCE_PREFIX = ".shipwright/planning/iterate/"
-_REVIEW_EVIDENCE_RE = re.compile(
-    r"(^|/)(reviews\.json|[^/]*-external-[^/]*review[^/]*\.json)$"
-)
+# CHARACTERS, not tokens: ~250-285k input tokens at a full cap, against the
+# review model's reported 1M-token context (~4x margin). Raised from 200_000
+# by iterate-2026-07-27-pr-review-diff-cap, where the old cap failed ordinary
+# large PRs closed (#447: 467,591 chars AFTER filtering).
+MAX_DIFF_CHARS = 1_000_000
 
 # Split boundary — a unified diff starts each file section with `diff --git `.
 _DIFF_GIT_RE = re.compile(r"^diff --git a/(.+?) b/(.+?)\s*$")
+
+# LF-anchored section boundary. Python's MULTILINE `^` matches at the start of
+# the string and after a `\n` — and after nothing else — which is exactly git's
+# notion of a line. `str.splitlines()` is NOT equivalent (see _split_sections).
+_SECTION_SPLIT_RE = re.compile(r"(?m)^(?=diff --git )")
 
 
 @dataclass(frozen=True)
@@ -93,16 +77,6 @@ class ReviewedDiff:
     unidentified: int = 0
 
 
-def is_generated_path(path: str) -> bool:
-    """True iff ``path`` is a producer-generated artifact (not reviewable code)."""
-    p = (path or "").strip()
-    if any(p.startswith(pre) for pre in _GENERATED_PREFIXES):
-        return True
-    if p.startswith(_REVIEW_EVIDENCE_PREFIX) and _REVIEW_EVIDENCE_RE.search(p):
-        return True
-    return p.rsplit("/", 1)[-1] in _GENERATED_BASENAMES
-
-
 def _clean_diff_path(rest: str) -> str:
     """Normalize a `+++ b/…` / `--- a/…` remainder to a repo-relative path.
 
@@ -126,7 +100,16 @@ def _section_paths(section: str) -> list[str]:
     :func:`filter_generated_paths` for why that matters.
     """
     paths: list[str] = []
-    for ln in section.splitlines():
+    # `split("\n")`, never `splitlines()` — the same LF-only rule as
+    # `_split_sections`; otherwise a `\f`-borne fragment can present itself as a
+    # `--- a/…` line and put a path into the list that the PR never touched.
+    #
+    # Stop at the first `@@`: inside a hunk, `---`/`+++` at column 0 are
+    # ORDINARY git output (adding a line reading `++ b/x` emits `+++ b/x`), not
+    # file headers — treating them as such let a PR mint paths it never touched.
+    for ln in section.split("\n"):
+        if ln.startswith("@@"):
+            break
         if ln.startswith(("+++ ", "--- ")):
             p = _clean_diff_path(ln[4:])
             if p:
@@ -146,25 +129,27 @@ def _split_sections(diff: str) -> tuple[str, list[str]]:
     "a file boundary" — both the generated-artifact filter and the size cap cut
     on it, so they can never disagree about where one file ends.
 
-    A ``diff --git`` line *inside* a hunk cannot false-match: every content line
-    in a unified diff carries a ``+``, ``-`` or space prefix, so a bare header at
-    column 0 is always a real header.
+    **Split on LF only.** A content line in a unified diff carries a ``+``, ``-``
+    or space prefix, so a header at the start of a *git* line is always a real
+    header — but only once "line" means the same thing here as it does to git.
+    ``str.splitlines()`` also breaks on ``\\v \\f \\r \\x1c \\x1d \\x1e \\x85
+    \\u2028 \\u2029``, none of which git treats as a terminator, so it lets a PR
+    manufacture a boundary from *inside* a hunk: the harmless half keeps the
+    ``+`` prefix and the rest becomes a counterfeit section. If that counterfeit
+    header names a generated path the filter drops it — silently taking the
+    attacker's real lines with it, on a gate whose input is untrusted by
+    definition. The fetch reads bytes for the same reason (``pr_review_gh``).
     """
-    preamble: list[str] = []
-    sections: list[list[str]] = []
-    cur: list[str] | None = None
-    for ln in diff.splitlines(keepends=True):
-        if ln.startswith("diff --git "):
-            if cur is not None:
-                sections.append(cur)
-            cur = [ln]
-        elif cur is None:
-            preamble.append(ln)
-        else:
-            cur.append(ln)
-    if cur is not None:
-        sections.append(cur)
-    return "".join(preamble), ["".join(s) for s in sections]
+    # `re.split` on a zero-width match always emits a leading element, so parts
+    # is never empty and parts[0] is "" when the diff opens straight on a header
+    # — no special-casing needed, and a guard for it would be unreachable.
+    parts = _SECTION_SPLIT_RE.split(diff)
+    return parts[0], parts[1:]
+
+
+def count_sections(diff: str) -> int:
+    """How many file sections a diff carries. Zero means nothing to review."""
+    return len(_split_sections(diff)[1])
 
 
 def _dropped_paths(sections: list[str]) -> tuple[list[str], int]:

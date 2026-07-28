@@ -1,10 +1,11 @@
 # Project Activity Dashboard
-> Updated: 2026-07-27 17:38 UTC | Session: 2a2ccc95-e7ec-4ca6-bcdb-601ae9e9b002 | Run: iterate-2026-07-27-pytest-root-composition
+> Updated: 2026-07-28 07:58 UTC | Session: d45b5209-08f4-453b-b127-43083fb94396 | Run: iterate-2026-07-27-pr-review-forged-boundary
 
-## Recent Changes (381 iterations)
+## Recent Changes (382 iterations)
 
 | Type | Description | Tests | Commit | FRs | Date |
 |------|-------------|-------|--------|-----|------|
+| bug | iterate: a PR must not be able to forge a file boundary in its own diff | 0/0 |  | FR-01.17 | 2026-07-28 |
 | change | iterate: raise the PR-review diff cap, cut at a file boundary, name what went unreviewed | 0/0 |  | FR-01.17 | 2026-07-27 |
 | change | iterate: an audit that checked nothing is not recorded | 0/0 |  | compliance | 2026-07-27 |
 | change | iterate: refuse a multi-root pytest session instead of failing 21 unrelated tests | 0/0 |  | tooling | 2026-07-27 |
@@ -388,7 +389,7 @@
 | change | post-adoption framework cleanup (Sub-1A through 1D) | 225/225 | 3db485b | FR-01.01, FR-01.02, FR-01.03 | 2026-05-02 |
 
 ## Test Status
-Last run: 2026-07-27 | Unit: 6643/6655 | Integration: 422/422 | Smoke: not_run | (iterate)
+Last run: 2026-07-28 | Unit: 6435/6454 | Integration: 422/422 | Smoke: not_run | (iterate)
 
 ## Pipeline
 
