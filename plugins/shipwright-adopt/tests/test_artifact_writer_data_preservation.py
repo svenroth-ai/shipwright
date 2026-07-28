@@ -40,7 +40,14 @@ _RICH_DECISION_LOG = (
 
 def test_write_claude_md_preserves_loadbearing_existing(tmp_path: Path) -> None:
     """If CLAUDE.md > threshold, do NOT overwrite — write to side-file
-    `.shipwright/adopt/CLAUDE.md.adopt-suggested` instead."""
+    `.shipwright/adopt/CLAUDE.md.adopt-suggested` instead.
+
+    Since iterate-2026-07-28-review-subagents-standing-request the file is no
+    longer byte-identical: the review-subagent standing request is APPENDED, by
+    explicit operator decision, because a side-file the harness never loads meant
+    an adopted project never received it. The protection this test exists for is
+    unchanged and still asserted — every byte of the original survives, nothing is
+    overwritten, and the backup is still taken."""
     existing = tmp_path / "CLAUDE.md"
     existing.write_text(_BIG_CLAUDE, encoding="utf-8")
     write_claude_md(
@@ -51,8 +58,14 @@ def test_write_claude_md_preserves_loadbearing_existing(tmp_path: Path) -> None:
         commands={"build": "npm run build", "test": "vitest", "dev": "npm run dev"},
         product_description="adopt-generated description",
     )
-    # Existing CLAUDE.md untouched
-    assert existing.read_text(encoding="utf-8") == _BIG_CLAUDE
+    # Existing content survives in full — appended to, never overwritten
+    after = existing.read_text(encoding="utf-8")
+    assert after.startswith(_BIG_CLAUDE), (
+        "the original CLAUDE.md must survive byte-for-byte at the head of the "
+        "file; only an additive section may follow it"
+    )
+    assert "## Review subagents: standing request." in after
+    assert after.count("## Review subagents: standing request.") == 1
     # Backup written
     backup = tmp_path / ".shipwright" / "adopt" / "backups" / "CLAUDE.md.preserved"
     assert backup.exists()

@@ -1,0 +1,340 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-07-28-review-subagents-standing-request",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-07-28T20:07:34.742116+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 7,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "AC4 updates the iterate prose (`iteration-reviews.md`) to defer to the `CLAUDE.md` standing grant, but Section 3 explicitly notes that `/shipwright-build` (Step 6) uses the exact same reviewer cascade. If the build phase instructions have similar \"ask first\" prose, they will contradict the new `CLAUDE.md` rule.",
+          "suggestion": "Add a requirement to AC4 to update the `/shipwright-build` prose (and any other phase skills triggering the cascade) in parallel with the iterate prose, ensuring all phases recognize the standing grant.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "Because the Claude Code system limitations are hardcoded literal strings (`Do not call the AgentTool unless the user requested it`), the model may still hesitate if the `CLAUDE.md` text is interpreted as a general preference rather than an explicit \"request\".",
+          "suggestion": "Ensure the injected text in `CLAUDE.md` uses exact, forceful phrasing that directly satisfies the system prompt's condition (e.g., \"The user explicitly requests the use of the AgentTool for review subagents... This standing request guarantees the condition 'unless the user requested it' is met.\").  Overall Assessment: The approach is highly logical, safely bounding costs by separating out workflows/deep-research while resolving the friction in standard reviewer cascades. The multi-location sync with a drift test (AC3) is excellent practice.  SHIPWRIGHT_VERDICT: approve",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "The change’s central assumption—that a checked-in `CLAUDE.md` standing request satisfies the runtime’s “unless the user requested it” gate—has not been validated against the actual Claude Code version/runtime where the problem occurs. Documentation that project instructions “override default behavior” does not necessarily prove that they override or satisfy an instruction-originated tool-use restriction. If the runtime still treats this as requiring an interactive session request, all prose and mirror changes will ship without resolving the recorded `not_run` failures.",
+          "suggestion": "Add a targeted acceptance test/manual verification procedure using the supported Claude Code version: create a clean project containing only the proposed standing-grant section, invoke an applicable medium-complexity Shipwright path, and verify that the `Agent` tool is actually called without an additional operator prompt. Record the expected observable result and retain a fallback behavior if the tool remains unavailable or refuses the call.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "The plan explicitly updates Iterate Step 8 and `iteration-reviews.md`, but acknowledges that `/shipwright-build` Step 6 invokes the same reviewer cascade. Other phase skills, reviewer entry points, or documentation may also contain ask-first language or classify a missing per-session request as a blocker. A project-wide grant helps, but contradictory local instructions can still cause inconsistent behavior.",
+          "suggestion": "Before implementation, search all plugin skills, templates, and review-status/blocker definitions for `Agent`, `subagent`, `ask`, `requested`, `not_run`, and `Operator-declined`. Update every review-cascade invocation path to use the same precedence rule: a valid standing grant authorizes the prescribed review subagents; absent that grant, use the existing ask-first path.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "A drift assertion across the template, renderer f-string, and this repository’s `CLAUDE.md` verifies text equality but does not verify that brownfield adoption actually renders the instruction into an adopted project, or that its placement preserves its intended scope and precedence. The renderer and template can remain textually aligned while the rendered output omits, escapes, or positions the section incorrectly.",
+          "suggestion": "Keep the mirror/drift test, but add or extend a renderer integration test that generates a brownfield `CLAUDE.md` and asserts the standing-grant section is present exactly once, is readable as an instruction, and explicitly excludes workflows and deep research. Also test the greenfield template output if template rendering is part of setup.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "security",
+          "file": null,
+          "line": null,
+          "finding": "“Spawning review subagents is requested by default for this project” is broad project-level authorization for cost-incurring agents that receive repository context. In a shared or cloned repository, it can be interpreted as authorization for arbitrary review-agent delegation rather than only the known cascade, increasing accidental spend and the exposure surface for sensitive repository material. This does not authorize workflows, but it should be bounded with similar precision.",
+          "suggestion": "Make the grant narrowly scoped to the named Shipwright review cascade and its defined reviewer count/purpose, state that it does not authorize ad hoc delegation, workflows, deep research, or access beyond the normal session/repository context, and preserve an explicit in-session opt-out/revocation instruction. This keeps the standing request proportional to the intended automation.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The plan retains the known ask-first fallback behavior for projects without the grant, including the recorded race and incorrect `Operator-declined` classification. Deferring the underlying defects is reasonable, but the new precedence wording must not cause those cases to be reported as standing-grant failures when the grant is missing, malformed, or not loaded.",
+          "suggestion": "Define a deterministic grant-detection rule and test at least: grant absent, grant present, malformed/ambiguous grant, explicit in-session decline after a grant, unavailable `Agent` tool, and tool invocation error. Ensure review status distinguishes “no standing grant / awaiting operator” from “operator declined” and from actual tool failure.  Overall, the chosen mechanism is reasonable and avoids incorrectly authorizing workflows, but it needs runtime validation and a complete audit of all cascade entry points before shipping. The text-mirroring work should be supplemented by rendered-output and behavior-level tests.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-07-28T19:26:25.534057+00:00",
+      "disposition": null,
+      "recorded_by": "external_review.py --mode iterate (gemini approve, openai revise; high finding answered by measurement)",
+      "parse_status": "structured",
+      "raw_excerpt": "[gemini] Here is the review of the implementation approach. \n\n- **Category:** dependency\n- **Severity:** medium\n- **Finding:** AC4 updates the iterate prose (`iteration-reviews.md`) to defer to the `CLAUDE.md` standing grant, but Section 3 explicitly notes that `/shipwright-build` (Step 6) uses the exact same reviewer cascade. If the build phase instructions have similar \"ask first\" prose, they will contradict the new `CLAUDE.md` rule.\n- **Suggestion:** Add a requirement to AC4 to update the `/shipwright-build` prose (and any other phase skills triggering the cascade) in parallel with the iterate prose, ensuring all phases recognize the standing grant.\n\n- **Category:** edge-case\n- **Severity:** low\n- **Finding:** Because the Claude Code system limitations are hardcoded literal strings (`Do not call the AgentTool unless the user requested it`), the model may still hesitate if the `CLAUDE.md` text is interpreted as a general preference rather than an explicit \"request\".\n- **Suggestion:** Ensure the injected text in `CLAUDE.md` uses exact, forceful phrasing that directly satisfies the system prompt's condition (e.g., *\"The user explicitly requests the use of the AgentTool for review subagents... This standing request guarantees the condition 'unless the user requested it' is met.\"*).\n\n**Overall Assessment:**\nThe approach is highly logical, safely bounding costs by separating out workflows/deep-research while resolving the friction in standard reviewer cascades. The multi-location sync with a drift test (AC3) is excellent practice.\n\nSHIPWRIGHT_VERDICT: approve\n\n[openai] 1. **Category:** approach  \n   **Severity:** high  \n   **Finding:** The change’s central assumption—that a checked-in `CLAUDE.md` standing request satisfies the runtime’s “unless the user requested it” gate—has not been validated against the actual Claude Code version/runtime where the problem occurs. Documentation that project instructions “override default behavior” does not necessarily prove that they override or satisfy an instruction-originated tool-use restriction. If the runtime still treats this as requiring an interactive session request, all prose and mirror changes will ship without resolving the recorded `not_run` failures.  \n   **Suggestion:** Add a targeted acceptance test/manual verification procedure using the supported Claude Code version: create a clean project containing only the proposed standing-grant section, invoke an applicable medium-complexity Shipwright path, and verify that the `Agent` tool is actually called without an additional operator prompt. Record the expected observable result and retain a fallback behavior if the tool remains unavailable or refuses the call.\n\n2. **Category:** dependency  \n   **Severity:** medium  \n   **Finding:** The plan explicitly updates Iterate Step 8 and `iteration-reviews.md`, but acknowledges that `/shipwright-build` Step 6 invokes the same reviewer cascade. Other phase skills, reviewer entry points, or documentation may also contain ask-first language or classify a missing per-session request as a blocker. A project-wide grant helps, but contradictory local instructions can still cause inconsistent behavior.  \n   **Suggestion:** Before implementation, search all plugin skills, templates, and review-status/blocker definitions for `Agent`, `subagent`, `ask`, `requested`, `not_run`, and `Operator-declined`. Update every review-cascade invocation path to use the same precedence rule: a valid standing grant authorizes the prescribed review subagents; absent that grant, use the existing ask-first p […truncated]"
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 10,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "plugins/shipwright-iterate/skills/iterate/references/iteration-reviews.md",
+          "line": 245,
+          "finding": "'Shipwright and every project it onboards carry that grant' asserts a fact the agent cannot verify and that is false for repos adopted before the grant shipped and for any project that deleted the section.",
+          "suggestion": "Replace the assertion with a lookup: read the file, treat absence as the ungranted case.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "security",
+          "file": "CLAUDE.md",
+          "line": 180,
+          "finding": "The body granted 'any subagent a phase skill prescribes', which includes build's section-builder fan-out — the same open-ended cost the next paragraph withholds from workflows. The distinction the whole change rests on was not drawn by the text.",
+          "suggestion": "Bound the clause to the review role and name the excluded fan-out explicitly.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "shared/tests/test_claude_md_template.py",
+          "line": 37,
+          "finding": "The marker set pinned the grant's self-description, not its operative instruction: deleting 'do not pause to ask' left every marker matching, i.e. a section that describes a grant but no longer instructs the session to act on it.",
+          "suggestion": "Pin the operative phrases, and add a real section-equality mirror.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "architecture",
+          "file": "CLAUDE.md",
+          "line": 176,
+          "finding": "CLAUDE.md went 195 -> 211 lines against a 200-line cap enforced by compliance audit F6, undoing a hygiene sweep that landed the same day.",
+          "suggestion": "Compress to fit, or declare the breach.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "CLAUDE.md",
+          "line": 185,
+          "finding": "'(Remove this section to opt out.)' is a bare imperative in a file framed as overriding instructions, with a live incentive to action it (the file was over its cap).",
+          "suggestion": "Make it declarative and say the wording is deliberately verbose.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "docs/guide.md",
+          "line": 2078,
+          "finding": "The user-facing guide still documented the pre-change behaviour ('the iterate asks you for the go-ahead').",
+          "suggestion": "State the precedence: a project carrying the section spawns without asking.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "plugins/shipwright-adopt/scripts/lib/claude_md_renderer.py",
+          "line": 106,
+          "finding": "The insertion point orphaned the adoption-ADR pointer into the new section, so the two carriers were structurally different while both passed the drift test.",
+          "suggestion": "Insert after the ADR paragraph so section order matches the template.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "plugins/shipwright-iterate/skills/iterate/references/iteration-reviews.md",
+          "line": 253,
+          "finding": "'It is conditional and one sentence lifts it, so Step 8 asks before Stage 1' reads unconditionally eight lines after establishing the ask never fires in a granted project.",
+          "suggestion": "Qualify with 'Absent the grant'.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "shared/tests/test_iterate_skill_prose.py",
+          "line": 9,
+          "finding": "The module docstring stated the reversed precedence and contradicted a test added 240 lines below it in the same diff.",
+          "suggestion": "Amend to state the grant outranks the ask.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "shared/tests/test_iteration_reviews_prose.py",
+          "line": 131,
+          "finding": "Four consecutive blank lines and the only assertion in either prose-guard file with no failure message.",
+          "suggestion": "Trim the blanks, add the message.",
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-07-28T20:08:49.426160+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer PASS (stage 1) then code-reviewer (stage 2, 10 findings, all applied)",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 11,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "boundary-contract",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: the probe measured the shipped section, including that parallel implementation subagents are not granted — Section 2a recorded a THREE-field probe run before Stage 2 rewrote the section; the fan-out carve-out did not exist when it ran, and 2a was never updated. The single piece of empirical evidence for the central claim was collected against text that no longer ships.",
+          "suggestion": "ACCEPTED - re-run against the verbatim shipped section WITH a negative control; recorded as spec 3c. Positive: condition_satisfied true, would_spawn true, workflows false, section_builder false. Control (no section): condition_satisfied false, would_spawn false.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "high",
+          "category": "hidden-coupling",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: AC3 - the section ships in all three places, so brownfield-adopted projects carry the grant — write_claude_md skips any existing CLAUDE.md over 1024 bytes and writes to an inert side-file; essentially every repo worth adopting takes that branch. The new mirror test calls the renderer directly, bypassing the writer, so all tests were green while the delivered artifact carried nothing.",
+          "suggestion": "ACCEPTED - the section is now one constant that write_claude_md APPENDS to a preserved CLAUDE.md (additive, idempotent by heading, original bytes intact, backup unchanged). Two new tests go through the writer; both proven to bite. The two pre-existing preservation tests were updated to the new contract.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "high",
+          "category": "reversibility",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: 'this file is that request' - the operator makes the scale decision once — True for this monorepo, false for every other project: adopt and the greenfield scaffold WRITE that sentence into a user's repo without asking, and the runtime then reads it as that user's own standing request. The framework authors the consent it later cites, for an authorization with no bound.",
+          "suggestion": "OPERATOR DECISION, taken explicitly: install everywhere anyway, unbounded. Alternatives offered (ask during onboarding; suggest rather than install on a load-bearing file; re-ask past N reviewers) were declined in favour of every project getting full review quality by default. Recorded in spec 3d so it is not re-litigated.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "boundary-contract",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: the probe proves a checked-in file satisfies the runtime gate — Self-report rather than an observed Agent call; leading field name; --print mode cannot ask, so would_ask_first is partly an artifact; n=1; no negative control; and the fixture gave the section maximal salience whereas it ships as one of 199 lines.",
+          "suggestion": "PARTIALLY ACCEPTED - the negative control is now run and is what gives the result discriminating power. The remaining limits (self-report, n=1, salience) are stated in spec 3c rather than papered over; a behavioural probe asserting a real Agent invocation is named as the stronger test and is not built.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "boundary-contract",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: 'The grant covers reviewers, not fan-out' is a rule an agent can apply at runtime — The named exclusion (section-builder) is SERIAL in autonomous-loop.md while migration-safety.md calls it parallel, so the repo contradicts itself; and the reviewers-vs-fan-out split has no bucket for phase-runner, sub-iterate-runner, security-fixer, browser-fixer, test-runner or section-writer.",
+          "suggestion": "NOT APPLIED, recorded in spec 3d - a closed allowlist of covered agent names is the right shape and is a follow-up. The shipped wording names the review cascade explicitly, so the common case is unambiguous.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "reversibility",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: the cost concern is answered because the operator decides scale once — Build Step 6 fires per section; a 25-section autonomous build allows ~75 reviewer spawns, order 7-14M tokens, with no question anywhere. The grant has no scale - it is an unbounded standing authorization, and Anthropic's per-session checkpoint is replaced with nothing.",
+          "suggestion": "OPERATOR DECISION - left unbounded deliberately (spec 3d). The worst case is recorded verbatim so the decision is legible.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "hidden-coupling",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: three carriers plus a section-equality drift test make the grant safe to change — Equality catches drift, never regression: append ', and dynamic workflows are covered too' to all three and every marker still matches, all three stay equal, all tests pass, and the carve-out is gone.",
+          "suggestion": "ACCEPTED - added test_the_section_never_affirmatively_grants_fan_out, a negative assertion over all three carriers.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "concurrency-ordering",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: Step 8, step 0, F11 and guide.md read as one coherent instruction set — F11's grant branch was unconditional and sat ahead of the blocker check, so a sub-iterate-runner in this granted repo would read 'spawn them' from both CLAUDE.md and F11 while campaign-mode says it structurally cannot - pressure toward a hallucinated spawn or a falsely completed row.",
+          "suggestion": "ACCEPTED - F11's branch is now conditioned like Step 8's and states that the four blockers are unaffected by any grant.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "boundary-contract",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: the section is well-formed for the file it is inserted into — In the generated carriers it is one ~1,100-character line sitting a few lines above a keep-it-lean rule forbidding exactly that, and it pre-empts the fix with 'must not be compressed further'.",
+          "suggestion": "ACCEPTED - the keep-it-lean section now carries an explicit exception naming this section and why.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "hidden-coupling",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: 199 of 200 is fine — One line of headroom on a file with a two-day-old triage item for crossing the same cap, and the cheapest edit a maintainer makes - reflowing a long line - blows it while staying green on every test.",
+          "suggestion": "PARTIALLY ACCEPTED - the do-not-reflow reason is now stated in the file itself via the keep-it-lean exception. The headroom remains one line; raising the cap to fit content was rejected as gate-weakening.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "hidden-coupling",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: the three carriers hold the same section, so all three behave the same — Same text, three different positions (template ~line 27, renderer ~96, repo 176 of 199); the equality test normalises position away, and the section's own salience claim implies position matters.",
+          "suggestion": "NOT APPLIED, recorded - the negative-control probe shows the grant reads correctly when present; whether salience at line 176 differs from line 27 is unmeasured and named as such.",
+          "source": "doubt-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-07-28T20:08:49.567876+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer (stage 3) — 11 doubts, 3 high; two were hard disproofs of shipped claims",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 2,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "spec",
+          "file": "shared/tests/test_claude_md_template.py:175-217` — AC3 requires a drift test asserting the standing-request section is mirrored across the greenfield template, brownfield renderer, and this repository’s `CLAUDE.md`. The added tests only assert a few independent marker substrings. The three shipped sections already differ, and a semantic regression such as the renderer authorizing work […truncated]",
+          "line": null,
+          "finding": "Extract the complete standing-request section from each source (or define it once and render it in both locations) and compare normalized section content. At minimum, assert the full grant and carve-out paragraphs, including their negative workflow/deep-research authorization, for template, renderer output, and repository `CLAUDE.md`.",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "test",
+          "file": "shared/tests/test_claude_md_template.py:196-217` — The new “does not grant workflows” test does not test non-granting behavior; it only checks that two carve-out phrases appear. A broken implementation that says “ask for them explicitly, every time, unless this standing grant applies” would pass despite violating AC2. Likewise, the subagent test does not verify that the request is sco […truncated]",
+          "line": null,
+          "finding": "Assert the complete scoped policy or parse the identified section and verify explicit prohibitions for dynamic workflows and deep-research, plus the intended review-subagent scope. Add a rendered brownfield-output test rather than relying solely on source-text markers.  Overall assessment: the implementation covers the requested locations and updates the iterate precedence prose, but its promised drift protection does not actually protect the policy’s critical semantics. Ship with fixes to make the tests enforce AC2/AC3 rather than marker presence.  SHIPWRIGHT_VERDICT: revise",
+          "suggestion": null,
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-07-28T20:08:49.699210+00:00",
+      "disposition": null,
+      "recorded_by": "external_review.py --mode code (openai revise; gemini degraded)",
+      "parse_status": "partial",
+      "raw_excerpt": "[gemini] A review of the diff against the specification reveals no functional regressions, correct handling of the review subagents vs. workflows requirement, and good test coverage for the introduced text markers.\n\n### Spec Compliance & Correctness\n* Both the core project's `CLAUDE.md` and the greenfield/brownfield templates were accurately updated.\n* The explicit carve-out for workflows and deep-research is present and enforces Anthropic's tool opt-in requirements (AC2).\n* All drift-tests and mirroring tests are provided and assert exactly what the specification mandates (AC3).\n* The skill prompts correctly recognize that a standing grant makes the \"ask\" branch unreachable and correctly instructs the LLM not to pause.\n\nThe implementation is sound, logically bound, and matches the acceptance criteria\n\n[openai] - Category: spec\n- Severity: medium\n- File: `shared/tests/test_claude_md_template.py:175-217` — AC3 requires a drift test asserting the standing-request section is mirrored across the greenfield template, brownfield renderer, and this repository’s `CLAUDE.md`. The added tests only assert a few independent marker substrings. The three shipped sections already differ, and a semantic regression such as the renderer authorizing workflows, omitting the opt-out, or materially broadening the grant would still pass as long as those markers remain somewhere in the body.\n- Suggestion: Extract the complete standing-request section from each source (or define it once and render it in both locations) and compare normalized section content. At minimum, assert the full grant and carve-out paragraphs, including their negative workflow/deep-research authorization, for template, renderer output, and repository `CLAUDE.md`.\n\n- Category: test\n- Severity: medium\n- File: `shared/tests/test_claude_md_template.py:196-217` — The new “does not grant workflows” test does not test non-granting behavior; it only checks that two carve-out phrases appear. A broken implementation that says “ask for them explicitly, every time, unless this standing grant applies” would pass despite violating AC2. Likewise, the subagent test does not verify that the request is scoped to review subagents rather than arbitrary delegation.\n- Suggestion: Assert the complete scoped policy or parse the identified section and verify explicit prohibitions for dynamic workflows and deep-research, plus the intended review-subagent scope. Add a rendered brownfield-output test rather than relying solely on source-text markers.\n\nOverall assessment: the implementation covers the requested locations and updates the iterate precedence prose, but its promised drift protection does not actually protect the policy’s critical semantics. Ship with fixes to make the tests enforce AC2/AC3 rather than marker presence.\n\nSHIPWRI […truncated]"
+    }
+  }
+}

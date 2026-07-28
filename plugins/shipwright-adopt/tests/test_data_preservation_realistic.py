@@ -116,9 +116,20 @@ def test_realistic_claude_and_decision_log_preserved_e2e(tmp_path: Path) -> None
     )
     assert r.returncode == 0, f"adopt failed: stdout={r.stdout[-1000:]}\nstderr={r.stderr[-1000:]}"
 
-    # CLAUDE.md must be UNTOUCHED (load-bearing)
+    # CLAUDE.md must be PRESERVED (load-bearing): every original byte survives at
+    # the head, and the only addition is the review-subagent standing request,
+    # appended by explicit operator decision so an adopted project actually
+    # receives it (iterate-2026-07-28-review-subagents-standing-request).
     final_claude = (tmp_path / "CLAUDE.md").read_text(encoding="utf-8")
-    assert final_claude == big_claude, "load-bearing CLAUDE.md was overwritten"
+    assert final_claude.startswith(big_claude), (
+        "load-bearing CLAUDE.md was overwritten or reordered — the original must "
+        "survive byte-for-byte at the head"
+    )
+    added = final_claude[len(big_claude):]
+    assert "## Review subagents: standing request." in added
+    assert added.count("## Review subagents: standing request.") == 1, (
+        "adopt must append the grant exactly once; re-runs are idempotent by heading"
+    )
 
     # Adopt's suggested side-file must exist
     suggested = tmp_path / ".shipwright" / "adopt" / "CLAUDE.md.adopt-suggested"
