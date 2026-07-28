@@ -34,9 +34,11 @@ _DECISION_REQUIRED = ("section", "title", "context", "decision", "consequences")
 _DECISION_OPTIONAL = ("rationale", "rejected", "architecture_impact", "spec_ref")
 _DECISION_ALLOWED = frozenset(_DECISION_REQUIRED + _DECISION_OPTIONAL)
 _ARTIFACT_SYNC_ALLOWED = frozenset({"ref", "skip"})
-# append_iterate_entry.py injects run_id + date itself and REJECTS them in the
-# entry payload — pre-reject here so the typo fails fast, before F1/F3/F4 write.
-_ITERATE_ENTRY_FORBIDDEN = frozenset({"run_id", "date"})
+# append_iterate_entry.py injects run_id + date + event_at itself and REJECTS
+# them in the entry payload — pre-reject here so the typo fails fast, before
+# F1/F3/F4 write. `event_at` is Canon C3's event anchor: a bundle that reached
+# F5c with one supplied would be forging the value the gate reads.
+_ITERATE_ENTRY_FORBIDDEN = frozenset({"run_id", "date", "event_at"})
 _ARCHITECTURE_IMPACTS = ("component", "data-flow", "convention", "none")
 _CHANGELOG_CATEGORIES = frozenset(
     {"Added", "Changed", "Deprecated", "Removed", "Fixed", "Security"}

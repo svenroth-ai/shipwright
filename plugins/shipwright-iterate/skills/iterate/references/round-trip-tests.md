@@ -102,7 +102,7 @@ def test_round_trip_cross_process(tmp_path):
 When the same parser/serializer logic exists in N places (a known
 anti-pattern, but common during refactor windows). The env iterate
 shipped with `parse_env` in BOTH `lib/env_loader.py` AND
-`tools/validate_env.py` — Sven's BOM fix landed in one but not the
+`tools/validate_env.py` — a BOM fix landed in one but not the
 other, which the round-trip test surfaced.
 
 ### Skeleton parametrized test

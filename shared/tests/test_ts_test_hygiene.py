@@ -70,7 +70,7 @@ def test_only_is_not_quarantineable_even_with_annotation() -> None:
     src = """\
         // @quarantine
         // reason: whatever
-        // owner: @svroch
+        // owner: @example-owner
         // ticket: SHIP-1
         // expires: 2099-01-01
         test.only('a', () => {})
@@ -96,7 +96,7 @@ def test_valid_future_quarantine_passes() -> None:
     src = """\
         // @quarantine
         // reason: flaky under CI parallelism
-        // owner: @svroch
+        // owner: @example-owner
         // ticket: SHIP-123
         // expires: 2026-12-31
         test.skip('logs in with SSO', () => {})
@@ -108,7 +108,7 @@ def test_expired_quarantine_fails() -> None:
     src = """\
         // @quarantine
         // reason: flaky under CI parallelism
-        // owner: @svroch
+        // owner: @example-owner
         // ticket: SHIP-123
         // expires: 2020-01-01
         test.skip('logs in with SSO', () => {})
@@ -166,7 +166,7 @@ def test_block_comment_quarantine_form_passes() -> None:
     src = """\
         /* @quarantine
          * reason: upstream driver bug
-         * owner: @svroch
+         * owner: @example-owner
          * ticket: SHIP-9
          * expires: 2026-09-01
          */
