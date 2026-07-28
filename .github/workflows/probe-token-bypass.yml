@@ -1,14 +1,17 @@
 name: Probe refresh-token bypass
 
-# THROWAWAY. Answers one question before the derived-snapshots refresh is built
-# on top of it: can SHIPWRIGHT_REFRESH_TOKEN push a commit to protected `main`?
+# THROWAWAY, report-only (always exits 0). Round 2.
 #
-# The admin bypass on `main-protection` is confirmed for the human identity
-# svroch (RepositoryRole 5, bypass_mode: always). A fine-grained PAT can be
-# narrower than its owner, so that is not evidence for the token.
+# Round 1 got `Permission to svenroth-ai/shipwright.git denied to svroch` + 403
+# on a push to main. That is a REPOSITORY-level refusal, not the ruleset's
+# `GH006: Protected branch update failed`, so it never reached the bypass
+# question. This round separates the two causes:
 #
-# The commit this pushes DELETES this workflow, so a successful probe cleans up
-# after itself. A failed probe leaves the file for the operator to remove.
+#   * token permissions as the API reports them, and
+#   * a push to a THROWAWAY BRANCH, which no ruleset protects.
+#
+# throwaway push OK + main refused -> the PAT cannot bypass main-protection.
+# both refused                     -> the PAT simply lacks contents:write.
 on:
   workflow_dispatch:
 
@@ -24,41 +27,48 @@ jobs:
           ref: main
           persist-credentials: false
 
-      - name: Attempt a real commit + push to main with the refresh token
+      - name: Report token identity and effective repository permissions
+        env:
+          GH_TOKEN: ${{ secrets.SHIPWRIGHT_REFRESH_TOKEN }}
+        run: |
+          set -uo pipefail
+          echo "IDENTITY: $(gh api user --jq '.login' 2>&1 | head -1)"
+          echo "REPO-PERMISSIONS: $(gh api repos/${GITHUB_REPOSITORY} --jq '.permissions' 2>&1 | head -1)"
+          exit 0
+
+      - name: Push to an unprotected throwaway branch, then to main
         env:
           TOKEN: ${{ secrets.SHIPWRIGHT_REFRESH_TOKEN }}
         run: |
           set -uo pipefail
-          if [ -z "${TOKEN}" ]; then
-            echo "PROBE-RESULT: NO-SECRET (SHIPWRIGHT_REFRESH_TOKEN is empty)"
-            exit 1
-          fi
-
           git config user.name  "shipwright-refresh[bot]"
           git config user.email "218151234+svroch@users.noreply.github.com"
+          git commit -q --allow-empty -m "ci(probe): throwaway, delete me"
 
-          git rm -q .github/workflows/probe-token-bypass.yml
-          git commit -q -m "ci(probe): refresh token can write to main; probe removes itself" \
-                        -- .github/workflows/probe-token-bypass.yml
+          URL="https://x-access-token:${TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+          BR="probe/token-write-check-${GITHUB_RUN_ID}"
 
-          # Inline URL, no remote rewrite, no hooks, no credential helper.
-          set +e
-          git -c core.hooksPath= -c credential.helper= \
-              push "https://x-access-token:${TOKEN}@github.com/${GITHUB_REPOSITORY}.git" \
-              HEAD:refs/heads/main 2>push.err
-          rc=$?
-          set -e
+          git push "${URL}" "HEAD:refs/heads/${BR}" 2>t.err; rc_branch=$?
+          sed -i "s#${TOKEN}#***#g" t.err || true
+          echo "--- throwaway-branch push (rc=${rc_branch}) ---"; cat t.err
 
-          # Never echo the URL back; scrub the token out of any error text.
-          sed -i "s#${TOKEN}#***#g" push.err || true
+          git push "${URL}" HEAD:refs/heads/main 2>m.err; rc_main=$?
+          sed -i "s#${TOKEN}#***#g" m.err || true
+          echo "--- main push (rc=${rc_main}) ---"; cat m.err
 
-          echo "--- push stderr ---"
-          cat push.err
-          echo "-------------------"
-
-          if [ $rc -eq 0 ]; then
-            echo "PROBE-RESULT: CAN-PUSH — the token bypassed main-protection."
-          else
-            echo "PROBE-RESULT: CANNOT-PUSH (exit $rc) — the delivery path is invalid."
+          # Clean the throwaway branch up if it was created.
+          if [ ${rc_branch} -eq 0 ]; then
+            git push "${URL}" --delete "refs/heads/${BR}" >/dev/null 2>&1 || true
           fi
-          exit $rc
+
+          echo "==================== VERDICT ===================="
+          if [ ${rc_branch} -ne 0 ]; then
+            echo "VERDICT: NO-WRITE — the PAT cannot write to the repository at all."
+            echo "         Cause is token configuration, not the branch ruleset."
+          elif [ ${rc_main} -ne 0 ]; then
+            echo "VERDICT: NO-BYPASS — the PAT can write, but main-protection refuses it."
+            echo "         The direct-push delivery path is invalid as designed."
+          else
+            echo "VERDICT: CAN-PUSH — the PAT bypassed main-protection."
+          fi
+          exit 0
