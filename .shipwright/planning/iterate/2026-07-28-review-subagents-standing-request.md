@@ -150,26 +150,49 @@ stronger test and is not built here.
   `autonomous-loop.md` while `migration-safety.md` calls it parallel. The wording
   ships as-is; tightening it to a named allowlist is a follow-up.
 
-## 3e. One change made after the review cascade
+## 3e. Two changes made after the review cascade
 
-Disclosed rather than folded in silently. At F6 the bloat anti-ratchet blocked
-the commit: `artifact_writer.py` had gone 590 → 629, and it is already
-*grandfathered* at roughly twice the 300-line limit. Writing a bloat-exception
-ADR to bless a further 39 lines on that file is the rationalization the gate
-exists to refuse, so the preferred remediation was taken instead — **shrink**.
+Both are bloat-gate remediations, disclosed rather than folded in silently.
+Neither alters behaviour; both were re-verified rather than assumed.
 
-`write_claude_md` and `_append_standing_request` moved verbatim into
-`claude_md_renderer.py`, the module that already owns the section constant they
-append; `artifact_writer` re-exports `write_claude_md`, exactly as it already
-re-exports `write_spec` / `_render_spec_md` from `spec_document`. The function
-bodies are unchanged. `artifact_writer.py` 629 → 548 (under its 590 baseline),
-`claude_md_renderer.py` 146 → 238 (under the 300 limit), and the cohesion
-improves: rendering and writing the same file now live together.
+**(1) The writer moved to the module that owns the constant.** At F6 the
+anti-ratchet blocked the commit: `artifact_writer.py` had gone 590 → 629, on a
+file already *grandfathered* at roughly twice the 300-line limit. An exception
+ADR blessing a further 39 lines there is the rationalization the gate exists to
+refuse, so the preferred remediation was taken — **shrink**. `write_claude_md`
+and `_append_standing_request` moved verbatim into `claude_md_renderer.py`,
+which already owns `STANDING_REQUEST_SECTION`; `artifact_writer` re-exports
+`write_claude_md`, exactly as it already re-exports `write_spec` /
+`_render_spec_md` from `spec_document`. Function bodies unchanged.
+`artifact_writer.py` 629 → 548 (under its 590 baseline), `claude_md_renderer.py`
+146 → 238 (under 300). Cohesion improves: rendering and writing the same file
+now live together.
 
-Re-verified after the move, not assumed: adopt 591 passed, `shared/tests` 6285
-passed / 16 skipped — both identical to the pre-move counts — plus ruff clean
-and F0.5 re-run against the final tree (34 tests, exit 0). The re-export is
-pinned by row #21 below.
+**(2) The test file was split by concern.** The Stop-gate then caught a *new*
+crossing this run had caused: `shared/tests/test_claude_md_template.py` had gone
+160 → 446 against a 300 limit, with no baseline entry. That file owns one
+question — do the greenfield template and the brownfield render stay *mirrored*
+on the onboarding bullets — and this iterate had bolted a second, larger
+question onto it. Split three ways along the seam that was already there:
+
+| file | owns | LOC |
+|---|---|---|
+| `shared/tests/test_claude_md_template.py` | the original mirror (restored verbatim) | 160 |
+| `shared/tests/test_claude_md_standing_request.py` | the grant's CONTENT across three carriers — markers, equality, negative assertion | 207 |
+| `plugins/shipwright-adopt/tests/test_claude_md_standing_request_append.py` | DELIVERY through the writer — append, idempotence, preservation log | 176 |
+
+The delivery half moved to adopt's own test root, which is its proper home by
+the repo's by-artifact convention *and* drops the subprocess trampoline: inside
+that root `from lib.artifact_writer import write_claude_md` resolves directly,
+so those tests now drive the writer in-process instead of shelling out. Coverage
+went **up**, not sideways — 15 tests in one file became 18 across three, because
+the grant assertion that had been a loop inside the mirror test is now a test of
+its own, and a guard was added asserting the markers still exist in the shipped
+constant (a marker tuple that drifts from the constant asserts nothing).
+
+Re-verified after both moves: `shared/tests` **6294** passed / 16 skipped,
+adopt **597**, iterate **510**, integration **429**, ruff clean, F0.5 re-run
+against the final tree (31 tests, exit 0). The re-export is pinned by row #21.
 
 ## 4. Out of scope
 
@@ -232,23 +255,23 @@ None. No serialized format, producer or consumer changes.
 
 ## 7. Test Completeness Ledger
 
-**Principle: testable ⇒ tested.** 21 behaviors · 19 tested · 2 untestable · **0
+**Principle: testable ⇒ tested.** 22 behaviors · 20 tested · 2 untestable · **0
 untested-testable**. Enumeration basis: 4 ACs, all 4 covered.
 
 | # | Behavior | Disposition | Evidence / reason |
 |---|---|---|---|
-| 1 | Greenfield template carries the grant | tested | `test_claude_md_template.py::test_template_carries_the_subagent_standing_request` PASSED |
-| 2 | Greenfield template withholds workflows + fan-out | tested | `::test_template_does_not_grant_workflows` PASSED |
-| 3 | This repo's own `CLAUDE.md` carries grant + carve-out | tested | `::test_own_claude_md_carries_the_same_grant_and_carveout` PASSED |
-| 4 | Brownfield renderer emits the grant | tested | `::test_adopt_rendered_claude_md_mirrors_template_iterate_bullets` PASSED |
-| 5 | All three carriers hold the *same* section, not just the markers | tested | `::test_the_three_carriers_hold_the_same_section_not_just_the_markers` PASSED |
-| 6 | The section never affirmatively grants fan-out (negative half) | tested | `::test_the_section_never_affirmatively_grants_fan_out` PASSED |
+| 1 | Greenfield template carries the grant | tested | `test_claude_md_standing_request.py::test_template_carries_the_subagent_standing_request` PASSED |
+| 2 | Greenfield template withholds workflows + fan-out | tested | `test_claude_md_standing_request.py::test_template_does_not_grant_workflows` PASSED |
+| 3 | This repo's own `CLAUDE.md` carries grant + carve-out | tested | `test_claude_md_standing_request.py::test_own_claude_md_carries_the_same_grant_and_carveout` PASSED |
+| 4 | Brownfield renderer emits the grant | tested | `test_claude_md_standing_request.py::test_brownfield_render_carries_the_grant_and_carveout` PASSED — its own test since the split, no longer a loop inside the mirror test |
+| 5 | All three carriers hold the *same* section, not just the markers | tested | `test_claude_md_standing_request.py::test_the_three_carriers_hold_the_same_section_not_just_the_markers` PASSED |
+| 6 | The section never affirmatively grants fan-out (negative half) | tested | `test_claude_md_standing_request.py::test_the_section_never_affirmatively_grants_fan_out` PASSED |
 | 7 | `STANDING_REQUEST_SECTION` is one constant, not three copies | tested | implied and enforced by #5 — equality across carriers is red if the constant is bypassed |
-| 8 | A preserved load-bearing `CLAUDE.md` receives the grant | tested | `::test_a_preserved_loadbearing_claude_md_still_receives_the_grant` PASSED (goes through the writer) |
-| 9 | The append is idempotent by heading | tested | `::test_appending_the_grant_is_idempotent` PASSED |
-| 10 | Preserved original survives byte-for-byte at the head | tested | `test_artifact_writer_data_preservation.py` + `test_data_preservation_realistic.py` PASSED (both updated to the append contract) |
-| 11 | The preservation log discloses the append as additive | tested | `::test_the_preservation_log_records_that_the_file_was_appended_to` PASSED |
-| 12 | A re-run records a no-op, distinguishable from an append | tested | `::test_a_second_run_records_that_the_grant_was_already_present` PASSED |
+| 8 | A preserved load-bearing `CLAUDE.md` receives the grant | tested | `test_claude_md_standing_request_append.py::test_a_preserved_loadbearing_claude_md_still_receives_the_grant` PASSED — adopt root, drives the writer in-process |
+| 9 | The append is idempotent by heading | tested | `test_claude_md_standing_request_append.py::test_appending_the_grant_is_idempotent` PASSED |
+| 10 | Preserved original survives byte-for-byte at the head | tested | `test_artifact_writer_data_preservation.py` + `test_data_preservation_realistic.py` PASSED (both updated to the append contract), plus a direct `test_claude_md_standing_request_append.py::test_the_original_survives_byte_for_byte_at_the_head` |
+| 11 | The preservation log discloses the append as additive | tested | `test_claude_md_standing_request_append.py::test_the_preservation_log_records_that_the_file_was_appended_to` PASSED |
+| 12 | A re-run records a no-op, distinguishable from an append | tested | `test_claude_md_standing_request_append.py::test_a_second_run_records_that_the_grant_was_already_present` PASSED |
 | 13 | `SKILL.md` Step 8: a standing grant outranks the ask | tested | `test_iterate_skill_prose.py::test_step_8_lets_a_standing_grant_outrank_the_ask` PASSED |
 | 14 | Step 8's ask survives, scoped to the ungranted project | tested | same test — asserts `only when no such grant exists` |
 | 15 | `iteration-reviews.md` step 0: a grant satisfies the policy outright | tested | `test_iteration_reviews_prose.py::test_a_project_grant_satisfies_the_policy_outright` PASSED |
@@ -257,7 +280,8 @@ untested-testable**. Enumeration basis: 4 ACs, all 4 covered.
 | 18 | `F11.md`: the four blockers are immune to any grant | tested | `::test_the_four_blockers_are_immune_to_the_grant` PASSED |
 | 19 | The model actually spawns an `Agent` under the grant, observed rather than self-reported | untestable | `requires-external-nondeterministic-service` — needs a live model session driven end-to-end; §3c ships the self-report plus a negative control and states this ceiling explicitly |
 | 20 | `docs/guide.md` describes the grant accurately for a human reader | untestable | `requires-manual-visual-judgment` — the assertable invariants are pinned by #1–#18; whether the narrative reads correctly is editorial |
-| 21 | After the §3e move, every existing importer still gets `write_claude_md` from `artifact_writer` | tested | `plugins/shipwright-adopt/tests` 591 passed — `test_artifact_writer.py` and `test_artifact_writer_data_preservation.py` both import it from `lib.artifact_writer`, and `shared/tests/test_claude_md_template.py` drives that import path in a subprocess |
+| 21 | After the §3e move, every existing importer still gets `write_claude_md` from `artifact_writer` | tested | `plugins/shipwright-adopt/tests` 597 passed — `test_artifact_writer.py`, `test_artifact_writer_data_preservation.py` and the new `test_claude_md_standing_request_append.py` all import it from `lib.artifact_writer`, and `shared/tests/test_claude_md_standing_request.py` drives `_render_claude_md` through the same re-export in a subprocess |
+| 22 | The adopt-side marker tuple cannot silently drift from the shipped constant | tested | `test_claude_md_standing_request_append.py::test_the_markers_are_actually_in_the_shipped_constant` PASSED — a guard on the guard, added with the spec 3e split |
 
 Also re-verified, not new behavior: `CLAUDE.md` stays under the 200-line
 hygiene cap (`group_f._CLAUDE_MD_LINE_CAP`, file at 199) and `SKILL.md` under
