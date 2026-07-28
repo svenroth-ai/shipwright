@@ -12,13 +12,35 @@ formalizes the ad-hoc orchestration pattern.
 > runner contract mandates **Step 3.5 (External Plan Review)** and
 > **Step 3.7 (Code Review Cascade)** between Build and Finalization for
 > medium+ iterates (Step 3.5) and for medium+ / risk-flag / >100-LOC
-> iterates (Step 3.7). The runner has no `Agent` tool, so the internal
-> code-reviewer subagent is delegated back to the orchestrator (campaign
-> mode) — the orchestrator spawns it in parallel with the runner after
-> Build, then merges findings into the iterate ADR. Skipping these
-> review steps silently is a contract violation under ADR-029; the
-> runner must record `reviews.{plan,code,external_code}.status` in its
-> result-JSON with an explicit `skipped_*` value when applicable.
+> iterates (Step 3.7). Skipping these review steps silently is a
+> contract violation under ADR-029; the runner must record
+> `reviews.{plan,code,external_code}.status` in its result-JSON with an
+> explicit `skipped_*` value when applicable.
+>
+> **What the internal cascade currently covers here — read this before
+> relying on it.** The runner subagent has no `Agent` tool, so it cannot
+> spawn `spec-reviewer` / `code-reviewer` / `doubt-reviewer` itself. The
+> orchestrator is the named delegate, but **the loop below has no step
+> that spawns them, so for sub-iterates built by the runner under
+> `--autonomous` the internal cascade does not run.** (A hand-run
+> `--sub-iterate-id` invocation is a normal standalone session WITH the
+> `Agent` tool — it spawns the cascade itself per SKILL.md Step 8, and
+> this gap does not apply to it.) The external review (item 2) carries the code
+> pass alone, and per `iteration-reviews.md` the spec-compliance and
+> doubt roles are *not* cascaded to external providers — so Stage 1 and
+> Stage 3 have no substitute in campaign mode today.
+>
+> An earlier version of this note claimed the orchestrator spawned the
+> cascade in parallel with the runner, after Build. That window does not
+> exist: the
+> orchestrator blocks at `3d` on the runner's **terminal** DONE marker,
+> which the runner emits only after F6 (commit) and Step 5 (push).
+> Closing this is a tracked follow-up — a before-merge cascade at
+> `3f-bis`, which needs a specified repair/re-review state machine
+> (bounded retry, row-targeted record updates, a durable Stage-1 verdict
+> the merge gate inspects, branch-ref provenance) before it is built.
+> Standalone iterates are unaffected: they spawn the cascade themselves
+> (SKILL.md Step 8).
 
 ## Why interleaved-serial (and not build-all-then-merge)
 
