@@ -1,159 +1,308 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-07-27-triage-defer-review-followup",
-    "date": "2026-07-27",
+    "run_id": "iterate-2026-07-27-pr-review-forged-boundary",
+    "date": "2026-07-28",
     "unit": {
       "status": "passed",
-      "passed": 5873,
-      "total": 5885,
-      "skipped": 12
+      "passed": 6435,
+      "total": 6454,
+      "skipped": 19
     },
     "integration": {
       "status": "passed",
       "passed": 422,
-      "total": 422
+      "total": 422,
+      "skipped": 0
+    },
+    "e2e": {
+      "status": "not_run",
+      "reason": "library/plugin monorepo \u2014 no web surface in this diff"
+    },
+    "smoke": {
+      "status": "not_run",
+      "reason": "no server surface"
     },
     "pgtap": {
       "status": "not_run",
-      "passed": 0,
-      "total": 0
-    },
-    "e2e": {
-      "status": "passed",
-      "passed": 122,
-      "total": 122
+      "reason": "no database"
     },
     "design_fidelity": {
       "status": "not_run",
-      "passed": 0,
-      "total": 0
+      "reason": "no UI in this diff"
     },
-    "smoke": {
-      "status": "not_run"
-    },
-    "degraded": [
-      {
-        "condition": "external LLM review not run",
-        "detail": "'skip' at small complexity per the Phase Matrix. Scope came from the two subagent passes instead, which produced 22 findings including two highs; both rows are recorded `completed` with the full disposition table in .shipwright/planning/iterate/iterate-2026-07-27-triage-defer-review-followup/subagent_reviews.md."
-      },
-      {
-        "condition": "shared/scripts/tools/triage_promote.py registered over the 300-line limit",
-        "detail": "304 lines, state grandfathered, per the 2026-07-19 convention that a file drifting just past the limit on coherent content is registered rather than trimmed. It was first trimmed to 299; the Stage-3 pass showed that removed load-bearing detail (a runnable uv-run prefix, the 200-vs-500 rationale, the newline enumeration), so the trim was reverted and the crossing registered honestly."
-      }
-    ],
     "surface_verification": {
       "surface": "cli",
-      "runner": "uv run pytest shared/tests/test_triage_render_rows.py shared/tests/test_triage_defer.py shared/tests/test_triage_docs_consistency.py shared/tests/test_triage_wp9_sanitize_outbox.py shared/tests/test_triage_cli.py shared/tests/test_triage_cli_json.py shared/tests/test_triage_promote.py -v",
+      "tests_run": 194,
       "exit_code": 0,
-      "tests_run": 122,
-      "evidence_path": ".shipwright/runs/iterate-2026-07-27-triage-defer-review-followup/surface_verification.json",
-      "timestamp": "2026-07-27T20:40:00.000Z"
+      "runner": "uv run pytest plugins/shipwright-security/tests/test_pr_review_script.py plugins/shipwright-security/tests/test_pr_review_forged_boundary.py plugins/shipwright-security/tests/test_pr_review_prompt_template.py plugins/shipwright-security/tests/test_pr_review_render.py plugins/shipwright-security/tests/test_pr_review_gh.py plugins/shipwright-security/tests/test_pr_review_filter.py plugins/shipwright-security/tests/test_pr_review_lib.py plugins/shipwright-security/tests/test_pr_review_openrouter.py plugins/shipwright-security/tests/test_pr_review_truncation.py -q --no-header"
     },
     "test_completeness": {
       "status": "complete",
       "behaviors": [
         {
-          "behavior": "a reason that renders blank (spaces, tab, newline, zero-width) reads (no reason recorded)",
+          "behavior": "AC1 \u2014 none of the nine characters Python breaks lines on can open a diff section",
           "disposition": "tested",
-          "evidence": "test_triage_render_rows.py::test_a_reason_that_renders_to_nothing_says_so[6 cases] PASSED"
+          "evidence": "tests/test_pr_review_forged_boundary.py::TestForgedSectionBoundary::test_a_forged_header_cannot_hide_a_line_from_the_reviewer (9 params)"
         },
         {
-          "behavior": "a real reason is still printed verbatim",
+          "behavior": "AC1 \u2014 a forged header cannot split a section at the size cap either",
           "disposition": "tested",
-          "evidence": "test_triage_render_rows.py::test_a_real_reason_is_still_printed PASSED"
+          "evidence": "tests/test_pr_review_forged_boundary.py::TestForgedSectionBoundary::test_a_forged_header_does_not_split_the_section (3 params)"
         },
         {
-          "behavior": "a deferred row is marked deferred at a fixed position",
+          "behavior": "AC2 \u2014 the fetch asks for no text mode (text, encoding and errors all absent)",
           "disposition": "tested",
-          "evidence": "test_triage_render_rows.py::test_a_deferred_row_is_marked_as_deferred PASSED"
+          "evidence": "tests/test_pr_review_gh.py::TestFetchPrDiff::test_it_does_not_ask_for_text_mode"
         },
         {
-          "behavior": "an open row is marked open at a fixed position",
+          "behavior": "AC2 \u2014 a lone CR is still a CR when the parser sees it",
           "disposition": "tested",
-          "evidence": "test_triage_render_rows.py::test_an_open_row_is_marked_open PASSED"
+          "evidence": "tests/test_pr_review_gh.py::TestFetchPrDiff::test_a_lone_cr_survives_the_fetch"
         },
         {
-          "behavior": "the token cannot be forged by an untrusted source or dedupKey",
+          "behavior": "AC2 \u2014 undecodable bytes do not crash the gate",
           "disposition": "tested",
-          "evidence": "test_triage_render_rows.py::test_a_forged_marker_in_an_untrusted_field_cannot_reclassify_a_row PASSED"
+          "evidence": "tests/test_pr_review_gh.py::TestFetchPrDiff::test_undecodable_bytes_do_not_crash_the_gate"
         },
         {
-          "behavior": "every entry row in the real listing declares which kind it is, by prefix",
+          "behavior": "AC3 \u2014 a genuine LF-anchored header still splits",
           "disposition": "tested",
-          "evidence": "test_triage_render_rows.py::test_the_listing_never_repeats_a_row_shape_across_the_two_meanings PASSED"
+          "evidence": "tests/test_pr_review_forged_boundary.py::TestForgedSectionBoundary::test_a_real_lf_header_still_splits"
         },
         {
-          "behavior": "a deferred field cannot grow without limit (title / reason / source)",
+          "behavior": "AC3 \u2014 a real CRLF diff still parses, resolves paths and excludes",
           "disposition": "tested",
-          "evidence": "test_triage_render_rows.py::test_a_deferred_field_cannot_grow_without_limit[3 cases] PASSED"
+          "evidence": "tests/test_pr_review_forged_boundary.py::TestForgedSectionBoundary::test_a_crlf_diff_still_parses"
         },
         {
-          "behavior": "only what exceeds the cap is clipped (119 / 120 / 121)",
+          "behavior": "AC3 \u2014 the generated set still excludes what it excluded, minus lockfiles",
           "disposition": "tested",
-          "evidence": "test_triage_render_rows.py::test_only_what_exceeds_the_cap_is_clipped[3 cases] PASSED"
+          "evidence": "tests/test_pr_review_filter.py::TestIsGeneratedPath + ::TestFilterGeneratedPaths + ::TestReviewEvidenceExcluded"
         },
         {
-          "behavior": "a dedupKey of only control characters is still emitted",
+          "behavior": "AC4 \u2014 a fully-filtered PR fails closed, names what was filtered, never reaches the model",
           "disposition": "tested",
-          "evidence": "test_triage_render_rows.py::test_a_dedup_key_of_only_control_characters_is_still_emitted PASSED"
+          "evidence": "tests/test_pr_review_script.py::TestMainOrchestration::test_a_fully_filtered_pr_fails_closed"
         },
         {
-          "behavior": "an absent dedupKey is still omitted",
+          "behavior": "AC4 \u2014 an empty fetch fails closed",
           "disposition": "tested",
-          "evidence": "test_triage_render_rows.py::test_an_absent_dedup_key_is_still_omitted PASSED"
+          "evidence": "tests/test_pr_review_script.py::TestMainOrchestration::test_an_empty_fetch_fails_closed"
         },
         {
-          "behavior": "--help mentions the deferred section",
+          "behavior": "AC4 \u2014 a header-less body fails closed",
           "disposition": "tested",
-          "evidence": "test_triage_render_rows.py::test_the_list_help_mentions_the_deferred_section PASSED"
+          "evidence": "tests/test_pr_review_script.py::TestMainOrchestration::test_a_headerless_body_fails_closed"
         },
         {
-          "behavior": "refusing a decision on an already-decided item leaves the stored bytes unchanged (library)",
+          "behavior": "AC4 \u2014 count_sections counts only LF-anchored headers (the gate itself)",
           "disposition": "tested",
-          "evidence": "test_triage_defer.py::test_defer_refuses_an_already_decided_item[3 cases] PASSED"
+          "evidence": "tests/test_pr_review_forged_boundary.py::TestCountSections (7 params + forged case)"
         },
         {
-          "behavior": "refusing a decision on an already-decided item leaves the stored bytes unchanged (CLI)",
+          "behavior": "AC5 \u2014 a PR mixing generated files with real source is reviewed, and the drop is disclosed",
           "disposition": "tested",
-          "evidence": "test_triage_defer.py::test_cli_defer_refuses_an_already_decided_item PASSED"
+          "evidence": "tests/test_pr_review_script.py::TestMainOrchestration::test_an_ordinary_pr_with_some_generated_files_still_runs"
         },
         {
-          "behavior": "an outbox-only item is deferrable, as it is promotable and dismissable",
+          "behavior": "AC5 \u2014 a lockfile-only PR is reviewed rather than filtered to nothing",
           "disposition": "tested",
-          "evidence": "test_triage_wp9_sanitize_outbox.py::test_defer_outbox_only_item PASSED"
+          "evidence": "tests/test_pr_review_script.py::TestMainOrchestration::test_a_lockfile_only_pr_is_reviewed_not_filtered_away"
         },
         {
-          "behavior": "defer raises FileNotFoundError when neither store exists",
+          "behavior": "AC5 \u2014 a dependency lockfile is not a generated path (7 lockfile flavours)",
           "disposition": "tested",
-          "evidence": "test_triage_wp9_sanitize_outbox.py::test_defer_still_raises_filenotfound_when_neither_store_exists PASSED"
+          "evidence": "tests/test_pr_review_filter.py::TestIsGeneratedPath::test_a_lockfile_is_NOT_generated"
         },
         {
-          "behavior": "the three documents document the defer command without denying it",
+          "behavior": "AC6 \u2014 the unreviewed-file list reaches the MODEL, not only the PR comment",
           "disposition": "tested",
-          "evidence": "test_triage_docs_consistency.py::test_the_documents_describe_the_defer_subcommand PASSED"
+          "evidence": "tests/test_pr_review_script.py::TestMainOrchestration::test_an_oversized_diff_names_the_unreviewed_file_in_every_sink"
         },
         {
-          "behavior": "list --json is unchanged by all of the above",
+          "behavior": "AC7 \u2014 a count mixing renames reports paths, not files",
           "disposition": "tested",
-          "evidence": "test_triage_cli_json.py (8 tests) + test_triage_defer.py::test_list_json_stays_open_only_when_an_item_is_deferred PASSED"
+          "evidence": "tests/test_pr_review_render.py::TestRenderComment::test_a_mixed_count_is_reported_in_paths_not_files"
         },
         {
-          "behavior": "dismiss and promote are unaffected by the render and docstring changes",
+          "behavior": "AC7 \u2014 paths and unnameable sections are counted apart, never summed",
           "disposition": "tested",
-          "evidence": "test_triage_promote.py (38) + test_triage_defer.py::test_dismiss_is_unchanged_by_the_shared_extraction PASSED"
+          "evidence": "tests/test_pr_review_render.py::TestBuildPrMeta::test_paths_and_unnameable_sections_are_counted_apart"
+        },
+        {
+          "behavior": "AC8 \u2014 a path named {DIFF} arriving via pr_meta is not expanded by the fill",
+          "disposition": "tested",
+          "evidence": "tests/test_pr_review_prompt_template.py::TestOnePassSubstitution::test_a_placeholder_arriving_via_pr_meta_is_not_expanded"
+        },
+        {
+          "behavior": "AC8 \u2014 the mirror case: {PR_META} inside the diff does not pull the metadata in",
+          "disposition": "tested",
+          "evidence": "tests/test_pr_review_prompt_template.py::TestOnePassSubstitution::test_a_placeholder_arriving_via_the_diff_is_not_expanded_either"
+        },
+        {
+          "behavior": "AC8 \u2014 a template missing either placeholder raises",
+          "disposition": "tested",
+          "evidence": "tests/test_pr_review_prompt_template.py::TestOnePassSubstitution::test_a_template_missing_a_placeholder_raises (3 params)"
+        },
+        {
+          "behavior": "AC8 \u2014 a broken template exits 2 redacted, not as a traceback",
+          "disposition": "tested",
+          "evidence": "tests/test_pr_review_script.py::TestMainOrchestration::test_a_broken_template_exits_2_redacted_not_as_a_traceback"
+        },
+        {
+          "behavior": "AC8 \u2014 the SHIPPED template carries both placeholders and no unknown one",
+          "disposition": "tested",
+          "evidence": "tests/test_pr_review_prompt_template.py::TestShippedTemplate (5 cases)"
+        },
+        {
+          "behavior": "AC8 \u2014 {DIFF} lands inside the untrusted fence, after {PR_META}",
+          "disposition": "tested",
+          "evidence": "tests/test_pr_review_prompt_template.py::TestShippedTemplate::test_diff_lands_inside_the_untrusted_fence"
+        },
+        {
+          "behavior": "AC8 \u2014 the CLI default and the workflow both name the guarded prompt dir",
+          "disposition": "tested",
+          "evidence": "tests/test_pr_review_prompt_template.py::TestCallersNameThisDirectory"
+        },
+        {
+          "behavior": "AC9 \u2014 _section_paths stops at the first @@, so hunk content mints no path",
+          "disposition": "tested",
+          "evidence": "tests/test_pr_review_forged_boundary.py::TestHunkContentCannotMintPaths::test_section_paths_stops_at_the_first_hunk"
+        },
+        {
+          "behavior": "AC9 \u2014 a minted path cannot flip an exclusion decision in either direction",
+          "disposition": "tested",
+          "evidence": "tests/test_pr_review_forged_boundary.py::TestHunkContentCannotMintPaths::test_a_minted_path_cannot_flip_an_exclusion_decision"
+        },
+        {
+          "behavior": "AC9 \u2014 a minted path reaches neither path list nor the model metadata",
+          "disposition": "tested",
+          "evidence": "tests/test_pr_review_forged_boundary.py::TestHunkContentCannotMintPaths::test_an_in_hunk_header_line_is_not_named_to_the_model_or_the_human"
+        },
+        {
+          "behavior": "AC9 \u2014 a genuine second section after a hunk still registers",
+          "disposition": "tested",
+          "evidence": "tests/test_pr_review_forged_boundary.py::TestHunkContentCannotMintPaths::test_a_real_second_section_after_a_hunk_still_registers"
+        },
+        {
+          "behavior": "Decision 7 \u2014 the three regenerated agent-docs and the two regenerated sub-dirs are still filtered",
+          "disposition": "tested",
+          "evidence": "tests/test_pr_review_filter.py::TestIsGeneratedPath::test_the_three_regenerated_agent_docs"
+        },
+        {
+          "behavior": "Decision 7 \u2014 the AUTHORED agent-docs are not filtered",
+          "disposition": "tested",
+          "evidence": "tests/test_pr_review_filter.py::TestIsGeneratedPath::test_authored_agent_docs_are_NOT_generated (6 names)"
+        },
+        {
+          "behavior": "Decision 7 \u2014 the regenerated set cannot drift from the repo's churn allowlist",
+          "disposition": "tested",
+          "evidence": "tests/test_pr_review_filter.py::TestIsGeneratedPath::test_the_regenerated_set_matches_the_repo_churn_allowlist"
+        },
+        {
+          "behavior": "Sanitiser \u2014 every character the splitter refuses to break on is neutralised here",
+          "disposition": "tested",
+          "evidence": "tests/test_pr_review_render.py::TestSafePath::test_every_character_the_splitter_refuses_to_break_on_is_neutralised_here (10 params)"
+        },
+        {
+          "behavior": "Sanitiser \u2014 bidi and zero-width controls are neutralised",
+          "disposition": "tested",
+          "evidence": "tests/test_pr_review_render.py::TestSafePath::test_invisible_and_bidi_controls_are_neutralised (6 params)"
+        },
+        {
+          "behavior": "Sanitiser \u2014 braces are stripped so a path cannot pose as a template token",
+          "disposition": "tested",
+          "evidence": "tests/test_pr_review_render.py::TestSafePath::test_braces_are_stripped_so_a_path_cannot_pose_as_a_placeholder"
+        },
+        {
+          "behavior": "Sanitiser \u2014 a rendered name is length-bounded, truncation marker included",
+          "disposition": "tested",
+          "evidence": "tests/test_pr_review_render.py::TestSafePath::test_a_rendered_name_is_length_bounded + ::test_a_name_at_the_bound_is_untouched"
+        },
+        {
+          "behavior": "Sanitiser \u2014 ordinary paths pass through unchanged",
+          "disposition": "tested",
+          "evidence": "tests/test_pr_review_render.py::TestSafePath::test_ordinary_paths_are_untouched"
+        },
+        {
+          "behavior": "Prompt hygiene \u2014 Markdown in a filtered path cannot inject into the comment or review state",
+          "disposition": "tested",
+          "evidence": "tests/test_pr_review_render.py::TestNothingReviewedSummary::test_markdown_in_a_path_cannot_inject_into_the_comment"
+        },
+        {
+          "behavior": "Prompt hygiene \u2014 more than ten filtered paths disclose the remainder",
+          "disposition": "tested",
+          "evidence": "tests/test_pr_review_render.py::TestNothingReviewedSummary::test_more_than_ten_filtered_paths_disclose_the_remainder"
+        },
+        {
+          "behavior": "Prompt hygiene \u2014 the untrusted-data warning precedes the names it governs",
+          "disposition": "tested",
+          "evidence": "tests/test_pr_review_render.py::TestBuildPrMeta::test_the_untrusted_warning_precedes_the_names"
+        },
+        {
+          "behavior": "Prompt hygiene \u2014 the model-facing names are code-spanned and bounded",
+          "disposition": "tested",
+          "evidence": "tests/test_pr_review_render.py::TestBuildPrMeta::test_model_facing_names_are_bounded_and_sanitised"
+        },
+        {
+          "behavior": "Disclosure \u2014 the exclusion notice no longer claims lockfiles are filtered",
+          "disposition": "tested",
+          "evidence": "tests/test_pr_review_render.py::TestRenderCommentExclusion::test_the_note_does_not_claim_lockfiles_are_filtered"
+        },
+        {
+          "behavior": "Disclosure \u2014 the fail-closed comment does not credit a model that was never called",
+          "disposition": "tested",
+          "evidence": "tests/test_pr_review_script.py::TestMainOrchestration::test_the_fail_closed_comment_does_not_credit_a_model"
+        },
+        {
+          "behavior": "Disclosure \u2014 the fail-closed summary distinguishes filtered-away from no-sections-at-all",
+          "disposition": "tested",
+          "evidence": "tests/test_pr_review_render.py::TestNothingReviewedSummary::test_a_fully_filtered_pr_names_what_was_filtered + ::test_a_headerless_diff_says_so_instead"
+        },
+        {
+          "behavior": "gh boundary \u2014 the comment body is encoded UTF-8, not by locale",
+          "disposition": "tested",
+          "evidence": "tests/test_pr_review_gh.py::TestPostComment::test_the_body_is_encoded_as_utf8_not_by_locale"
+        },
+        {
+          "behavior": "gh boundary \u2014 a failed review-state post is raised rather than discarded",
+          "disposition": "tested",
+          "evidence": "tests/test_pr_review_gh.py::TestReviewState::test_a_failure_is_raised_rather_than_discarded"
+        },
+        {
+          "behavior": "Transport \u2014 one timeout default, shared by the CLI flag and a direct call",
+          "disposition": "tested",
+          "evidence": "tests/test_pr_review_openrouter.py::TestDefaults::test_the_timeout_default_is_shared_with_the_cli + ::TestCallOpenRouter::test_the_default_timeout_is_passed_through"
+        },
+        {
+          "behavior": "Module split \u2014 every re-exported name still resolves through pr_review.<symbol>",
+          "disposition": "tested",
+          "evidence": "tests/test_pr_review_script.py::TestFileContract::test_every_re_exported_name_resolves"
+        },
+        {
+          "behavior": "Module split \u2014 the five modules are behaviour-preserving beyond the declared changes",
+          "disposition": "untestable",
+          "reason_code": "covered-by-existing-test",
+          "note": "A pure code move has no behaviour of its own to assert. It is covered by the 600-test plugin suite passing unchanged across the move, and by the re-export test above; a dedicated test would only restate them."
         }
       ],
       "counts": {
-        "testable": 18,
-        "tested": 18,
-        "untestable": 0,
+        "total": 48,
+        "tested": 47,
+        "untestable": 1,
         "untested_testable": 0
-      },
-      "enumeration_basis": {
-        "acs": 10,
-        "covered_acs": 10
       }
-    }
+    },
+    "degraded": [
+      {
+        "condition": "external_review_partial",
+        "detail": "external_review.py: gemini returned an empty body on round 1 and finish_reason=length (truncated) on round 2, so only openai answered on both. Recorded degraded, not as a pass. Compensated by the full internal cascade (spec/code/doubt, opus) run on the same diff \u2014 Stage 1 REJECTed it with five blocking items before Stage 2 was allowed to run."
+      },
+      {
+        "condition": "leak_guard_baseline_amended",
+        "detail": "check_iterate_isolation flagged .shipwright/planning/iterate/HANDOVER-2026-07-28-silent-revert-false-positives.md as a main-tree leak. It is not from this run: the snapshot was taken 2026-07-27 18:36Z and the untracked file was written 2026-07-28 00:38 local by a different session, documenting iterate-2026-07-27-checks-that-gate-nothing. Added to the snapshot baseline with that attribution recorded in main_tree_snapshot.json; the file itself was left untouched."
+      }
+    ]
   },
   "coverage": {
     "total": 80.2,

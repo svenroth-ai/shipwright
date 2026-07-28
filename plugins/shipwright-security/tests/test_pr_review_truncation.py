@@ -139,5 +139,5 @@ class TestBoundaryTruncation:
         body = L.render_comment({"decision": "approve"}, model="m", truncated=True,
                                 omitted=out.omitted, partial=out.partial,
                                 unidentified=out.unidentified)
-        assert "1 file(s) whose path could not be identified" in body
+        assert "1 section(s) whose path could not be identified" in body
         assert "no parseable file headers" not in body

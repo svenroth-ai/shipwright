@@ -1,0 +1,1 @@
+PR review: dependency lockfiles and the authored files under `.shipwright/agent_docs` are no longer filtered out of a reviewed diff. On an untrusted pull request the lockfile is the supply-chain surface and the agent docs are the instruction surface — the same reviewer is told to block on injected instructions in exactly those files.

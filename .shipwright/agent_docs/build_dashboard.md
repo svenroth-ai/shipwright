@@ -1,14 +1,18 @@
 # Project Activity Dashboard
-> Updated: 2026-07-28 00:29 UTC | Session: 8a0611d4-b05d-411a-a42a-cc448bc145a7 | Run: iterate-2026-07-27-changelog-aggregator-idempotency
+> Updated: 2026-07-28 07:58 UTC | Session: d45b5209-08f4-453b-b127-43083fb94396 | Run: iterate-2026-07-27-pr-review-forged-boundary
 
-## Recent Changes (391 iterations)
+## Recent Changes (395 iterations)
 
 | Type | Description | Tests | Commit | FRs | Date |
 |------|-------------|-------|--------|-----|------|
+| change | Bump pyasn1 to 0.6.4 (CVE-2026-59885/59886) and record a scoped, expiring acceptance for CVE-2026-14257 (brace-expansion, dev-only perf runner) in both registers, guarded by a new dependency-floor test. | 11282/11282 |  | infra | 2026-07-28 |
+| change | iterate: normalize a benign dynamic import in the profile-reader test | 0/0 |  | tooling | 2026-07-28 |
 | change | Give the internal reviewer cascade an executable owner in standalone mode, scope the ADR-029 delegation to campaign mode, and make the campaign runner record each review pass under the name of whoever performed it. | 0/0 |  | FR-01.11 | 2026-07-28 |
 | change | iterate: derived snapshots leave the iterate PR | 0/0 |  | FR-01.10, FR-01.11 | 2026-07-27 |
 | change | iterate: the code review becomes a floor, not a chain | 0/0 |  | compliance | 2026-07-27 |
 | change | iterate: a branch may not quietly revert merged work | 0/0 |  | FR-01.11 | 2026-07-27 |
+| change | iterate: post-merge review follow-up for the triage defer surface | 0/0 |  | FR-01.14 | 2026-07-27 |
+| bug | iterate: a PR must not be able to forge a file boundary in its own diff | 0/0 |  | FR-01.17 | 2026-07-28 |
 | change | iterate: raise the PR-review diff cap, cut at a file boundary, name what went unreviewed | 0/0 |  | FR-01.17 | 2026-07-27 |
 | change | iterate: an audit that checked nothing is not recorded | 0/0 |  | compliance | 2026-07-27 |
 | change | iterate: refuse a multi-root pytest session instead of failing 21 unrelated tests | 0/0 |  | tooling | 2026-07-27 |
@@ -398,7 +402,7 @@
 | change | post-adoption framework cleanup (Sub-1A through 1D) | 225/225 | 3db485b | FR-01.01, FR-01.02, FR-01.03 | 2026-05-02 |
 
 ## Test Status
-Last run: 2026-07-27 | Unit: 5575/5587 | Integration: 422/422 | E2E: 22/22 | Smoke: skipped | (iterate)
+Last run: 2026-07-28 | Unit: 6435/6454 | Integration: 422/422 | Smoke: not_run | (iterate)
 
 ## Pipeline
 
