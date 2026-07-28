@@ -207,12 +207,12 @@ def render_comparison(result: dict[str, Any]) -> list[str]:
     if unclassified:
         # Stated next to the counts, not buried: these findings are in neither
         # bucket, so the three numbers above are not the whole picture.
-        lines.extend([
-            "",
+        note = (
             f"> ⚠️ {unclassified} finding(s) could not be attributed to a class "
             "and are counted in none of the totals above — an unattributable "
-            "finding cannot be proven covered, so it is never called fixed.",
-        ])
+            "finding cannot be proven covered, so it is never called fixed."
+        )
+        lines.extend(["", note])
     not_comparable = result.get("not_comparable") or []
     if not_comparable:
         lines.extend([
@@ -224,10 +224,12 @@ def render_comparison(result: dict[str, Any]) -> list[str]:
             lines.append(
                 f"- **{class_label(entry.get('class'))}** — {entry.get('reason')}")
     if not result.get("coverage_known", False):
-        lines.extend([
-            "",
+        # Parenthesized, not two adjacent literals inside the list: CodeQL
+        # flagged that shape because a missing comma looks exactly the same.
+        warning = (
             "> ⚠️ One of the two scans records no coverage manifest, so no "
-            "finding can be proven fixed. Re-scan to get a comparable pair.",
-        ])
+            "finding can be proven fixed. Re-scan to get a comparable pair."
+        )
+        lines.extend(["", warning])
     lines.append("")
     return lines

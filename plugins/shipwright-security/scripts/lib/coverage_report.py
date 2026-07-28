@@ -47,12 +47,12 @@ def coverage_banner(coverage: list[dict[str, Any]] | None) -> list[str]:
     """
     rows = [r for r in (coverage or []) if isinstance(r, dict)]
     if not rows:
-        return [
+        unknown = (
             "> ⚠️ **Coverage not reported** — this scan record does not say "
             "which classes of weakness were checked, so coverage is unknown. "
-            "Absence of findings here is NOT evidence that a class is clean.",
-            "",
-        ]
+            "Absence of findings here is NOT evidence that a class is clean."
+        )
+        return [unknown, ""]
     if is_complete(rows):
         return []
     unchecked = unchecked_classes(rows)
@@ -76,12 +76,12 @@ def coverage_banner(coverage: list[dict[str, Any]] | None) -> list[str]:
             + ", ".join(class_label(c) for c in degraded))
     if not parts:
         return []
-    return [
+    banner = (
         f"> ⚠️ **Incomplete Coverage** — this scan {'; and '.join(parts)}. "
         "Those classes read as clean below only because nothing reliable "
-        "looked at them. See the Coverage table.",
-        "",
-    ]
+        "looked at them. See the Coverage table."
+    )
+    return [banner, ""]
 
 
 def coverage_table(coverage: list[dict[str, Any]] | None) -> list[str]:
