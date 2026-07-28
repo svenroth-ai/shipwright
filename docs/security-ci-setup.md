@@ -548,8 +548,11 @@ from iterate-2026-05-20):
   false-positives / won't-fix. (Per-finding false-positives are
   dismissed on GitHub at SARIF level, not in the triage inbox.)
 - **Defer** — `triage_cli.py defer <id> --reason <reason>` for real work
-  that is deliberately not now. The item flips to `snoozed` and appears
-  in the listing's deferred section rather than vanishing from it.
+  that is deliberately not now. The item flips to `snoozed` and appears in
+  the CLI listing's deferred section rather than vanishing from it. Note for
+  action-units specifically: a deferred finding is NOT yet suppressed on the
+  next import, so the importer re-creates it as a new open item while the
+  deferred entry remains (`trg-51f8e2a1`).
 
 ### Freshness window (Path A only)
 

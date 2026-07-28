@@ -723,6 +723,13 @@
       "adr": "ADR-092"
     },
     {
+      "path": "shared/scripts/tools/triage_promote.py",
+      "limit": 300,
+      "current": 304,
+      "state": "grandfathered",
+      "adr": null
+    },
+    {
       "path": "shared/scripts/tools/update_build_dashboard.py",
       "limit": 300,
       "current": 498,
