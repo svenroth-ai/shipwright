@@ -74,7 +74,13 @@ def _remediation(run_id: str, outstanding: list[str]) -> str:
         f"{run_id} --status not_run --disposition \"<reason>\"`. "
         "NOTE at medium+: closing BOTH `code` and `external_code` without "
         "having run either does not satisfy the gate — one of the two must "
-        "actually have happened."
+        "actually have happened. "
+        "A `code` row still outstanding HERE means the Step-8 cascade never "
+        "ran. If the only obstacle is a session policy gating subagents, that "
+        "is NOT a blocker — it is conditional and one sentence from the "
+        "operator lifts it. Ask now rather than closing the row; see "
+        "`iteration-reviews.md` → \"When the internal reviewer cannot run\" "
+        "step 0 for the four things that ARE blockers."
     )
 
 
