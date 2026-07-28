@@ -1,0 +1,64 @@
+name: Probe refresh-token bypass
+
+# THROWAWAY. Answers one question before the derived-snapshots refresh is built
+# on top of it: can SHIPWRIGHT_REFRESH_TOKEN push a commit to protected `main`?
+#
+# The admin bypass on `main-protection` is confirmed for the human identity
+# svroch (RepositoryRole 5, bypass_mode: always). A fine-grained PAT can be
+# narrower than its owner, so that is not evidence for the token.
+#
+# The commit this pushes DELETES this workflow, so a successful probe cleans up
+# after itself. A failed probe leaves the file for the operator to remove.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          persist-credentials: false
+
+      - name: Attempt a real commit + push to main with the refresh token
+        env:
+          TOKEN: ${{ secrets.SHIPWRIGHT_REFRESH_TOKEN }}
+        run: |
+          set -uo pipefail
+          if [ -z "${TOKEN}" ]; then
+            echo "PROBE-RESULT: NO-SECRET (SHIPWRIGHT_REFRESH_TOKEN is empty)"
+            exit 1
+          fi
+
+          git config user.name  "shipwright-refresh[bot]"
+          git config user.email "218151234+svroch@users.noreply.github.com"
+
+          git rm -q .github/workflows/probe-token-bypass.yml
+          git commit -q -m "ci(probe): refresh token can write to main; probe removes itself" \
+                        -- .github/workflows/probe-token-bypass.yml
+
+          # Inline URL, no remote rewrite, no hooks, no credential helper.
+          set +e
+          git -c core.hooksPath= -c credential.helper= \
+              push "https://x-access-token:${TOKEN}@github.com/${GITHUB_REPOSITORY}.git" \
+              HEAD:refs/heads/main 2>push.err
+          rc=$?
+          set -e
+
+          # Never echo the URL back; scrub the token out of any error text.
+          sed -i "s#${TOKEN}#***#g" push.err || true
+
+          echo "--- push stderr ---"
+          cat push.err
+          echo "-------------------"
+
+          if [ $rc -eq 0 ]; then
+            echo "PROBE-RESULT: CAN-PUSH — the token bypassed main-protection."
+          else
+            echo "PROBE-RESULT: CANNOT-PUSH (exit $rc) — the delivery path is invalid."
+          fi
+          exit $rc
