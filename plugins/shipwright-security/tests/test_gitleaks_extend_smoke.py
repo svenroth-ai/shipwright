@@ -170,7 +170,14 @@ def test_extend_keeps_default_rules_and_both_allowlists(
        plain secret would be missed;
     2. the PROJECT's allowlist applies locally, so the local scan reaches the
        same verdict as the host workflow on the same repo;
-    3. the SHIPWRIGHT path exclusions still apply on top of it.
+    3. nothing under a shipwright-excluded path is reported.
+
+    Property 3 is a NON-REGRESSION, not proof that the exclusions work: the
+    chained test below measured the host — which has no shipwright exclusions —
+    also not reporting `node_modules`, so gitleaks' own defaults already skip
+    it and this assertion would hold either way. Read it as "the exclusions did
+    not make things worse", and see `test_gitleaks_config.py` for the rendered
+    allowlist itself.
     """
     skip_or_fail_on_missing_binary("gitleaks", _INSTALL_HINT)
     monkeypatch.delenv("SHIPWRIGHT_SCAN_EXCLUDES", raising=False)
@@ -188,7 +195,9 @@ def test_extend_keeps_default_rules_and_both_allowlists(
         f"disagree on this repo's accepted findings. Got: {paths}"
     )
     assert not any("node_modules" in p for p in paths), (
-        f"shipwright path exclusions were lost by extending. Got: {paths}"
+        "an excluded path was reported. NOTE this cannot distinguish the "
+        "shipwright exclusions from gitleaks' own defaults, which already skip "
+        f"node_modules — see the docstring. Got: {paths}"
     )
 
 
@@ -244,12 +253,19 @@ def test_a_project_config_that_is_already_a_chain_keeps_parity(
         "a chained config is passed through unwrapped, so the local scan must "
         f"match the host EXACTLY. host={sorted(host)} local={sorted(local)}"
     )
-    assert any("node_modules" in p for p in local), (
-        "the shipwright exclusions are deliberately forgone for a chained "
-        "config — this asserts the COST is real rather than assumed, so that "
-        "silently regaining them (which would mean a wrapper came back, and "
-        f"with it the false-clean) fails here. Got: {local}"
-    )
+
+    # No assertion here that the forgone exclusions are OBSERVABLE. One was
+    # written — requiring `node_modules` to appear, to prove the cost was real
+    # rather than assumed — and CI refuted it: the HOST leg, which has no
+    # shipwright exclusions at all, does not report the planted
+    # `node_modules/vendor.pem` either. Gitleaks' own defaults already skip that
+    # path, so on this fixture the exclusions change nothing and asserting
+    # otherwise would assert something false.
+    #
+    # The guarantee that a wrapper cannot quietly come back therefore does NOT
+    # rest on scan output, where it would be unobservable. It rests on
+    # `test_gitleaks_runs_at_the_repo_root.py::TestChainedConfigIsPassedThroughUnwrapped`,
+    # which asserts the decision directly and needs no binary.
 
 
 @pytest.mark.smoke

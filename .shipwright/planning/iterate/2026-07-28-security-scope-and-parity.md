@@ -214,12 +214,21 @@ read with the real consumer.
     `test_the_class_is_degraded_not_covered`. Six external review rounds against
     the unsplit diff found thirteen defects; all are carried here already fixed,
     and the final round returned no findings.
-  - *Coverage (breadth):* 712 tests in the security plugin (7 skipped — the
+  - *Coverage (breadth):* 809 tests in the security plugin (7 skipped — the
     real-binary smoke legs, which execute in CI), 9 in `shared/tests` for the
-    card's producer/consumer round trip. F0 green across all 18 units: 11,313
-    passed of 11,340 collected, 422 integration, zero failures — summed from
-    each unit's junit XML rather than carried over from an earlier run, which is
-    how the previously recorded figure turned out to be ~1,400 low. ruff clean.
+    card's producer/consumer round trip. F0 green across all 18 units: 11,718
+    passed of 11,745 collected, 422 integration, zero failures — re-summed from
+    each unit's junit XML after every merge from main rather than incremented,
+    which is how the first recorded figure turned out ~1,400 low and a later one
+    stale by the 88 tests a main merge added. ruff clean.
+  - *Does an assertion that "the exclusions are really forgone" hold?* No, and
+    CI is what said so. A `node_modules` finding was asserted to prove the cost
+    was real rather than assumed — but the HOST leg, which carries no shipwright
+    exclusions at all, does not report it either: gitleaks' own defaults already
+    skip that path. The assertion was removed rather than weakened, and the
+    neighbouring non-regression in the unchained test now says plainly that it
+    cannot discriminate. What guards against a wrapper quietly returning is the
+    binary-free unit test that asserts the decision itself.
   - *Integration composition:* `cross_component` does not fire — no hooks, no
     merge/churn/event-log resolver, no phase validator, no campaign machinery.
     `touches_ci_supplychain` does not fire: no `.github/workflows/**`,
