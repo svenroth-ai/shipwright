@@ -27,12 +27,23 @@ def _git(root: Path, *args: str) -> subprocess.CompletedProcess:
                           text=True, encoding="utf-8", check=False)
 
 
+def _identify(root: Path) -> None:
+    """Give the repo its own committer identity.
+
+    A CLONE does not inherit the origin's LOCAL config, and a CI runner has no
+    global one — so `git commit` there fails, the "local is ahead" setup never
+    happens, and the assertion reads the unmoved ref. Green on a dev box with a
+    global identity, red on CI: caught by CI on this run's first push.
+    """
+    _git(root, "config", "user.email", "t@example.com")
+    _git(root, "config", "user.name", "t")
+
+
 def _repo(tmp_path: Path) -> Path:
     root = tmp_path / "repo"
     root.mkdir(parents=True)
     _git(root, "init", "-b", "main")
-    _git(root, "config", "user.email", "t@example.com")
-    _git(root, "config", "user.name", "t")
+    _identify(root)
     return root
 
 
@@ -81,6 +92,7 @@ def test_the_remote_is_used_when_the_local_ref_does_not_resolve(tmp_path):
     clone = tmp_path / "clone"
     subprocess.run(["git", "clone", "--quiet", str(origin), str(clone)],
                    capture_output=True, check=False)
+    _identify(clone)
     _git(clone, "checkout", "-q", "-b", "work")
     _git(clone, "branch", "-q", "-D", "main")
     assert _git(clone, "rev-parse", "--verify", "main^{commit}").returncode != 0
@@ -94,7 +106,13 @@ def test_a_resolvable_local_ref_is_still_preferred_when_it_is_ahead(tmp_path):
     clone = tmp_path / "clone"
     subprocess.run(["git", "clone", "--quiet", str(origin), str(clone)],
                    capture_output=True, check=False)
+    _identify(clone)
     _commit(clone, "a.md", "one\ntwo\n")   # local main ahead of origin/main
+    # Assert the SETUP before the subject. Without an identity the commit fails
+    # silently, main never moves, and the test would "pass" by measuring nothing
+    # — which is exactly how it went green locally and red on CI.
+    assert (_git(clone, "rev-parse", "main").stdout.strip()
+            != _git(clone, "rev-parse", "origin/main").stdout.strip())
 
     assert resolve_default_ref(clone, "main") == "main"
 
