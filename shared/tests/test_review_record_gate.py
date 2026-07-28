@@ -14,7 +14,7 @@ import pytest
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))
 
 from lib.review_record import (  # noqa: E402
-    REVIEW_TYPES,
+    RECORDABLE_TYPES,
     make_entry,
     new_record,
     record_path,
@@ -40,12 +40,19 @@ def _project(tmp_path, complexity="medium"):
 
 def _complete_record(project, **overrides):
     record = new_record(RUN_ID)
-    for review_type in REVIEW_TYPES:
+    # RECORDABLE_TYPES, not REVIEW_TYPES: `spec` is a gate row and is unanswered
+    # until closed like any other pass, so a fixture that skipped it would make
+    # every test here fail on the pending row rather than on its own subject.
+    for review_type in RECORDABLE_TYPES:
         status = overrides.get(review_type, "completed")
         record = upsert_review(
             record,
             make_entry(review_type, status,
-                       disposition=REASON if status != "completed" else None),
+                       disposition=REASON if status != "completed" else None,
+                       # A completed row must carry evidence a pass happened;
+                       # `recorded_by` is what a real `--from <adapter>`
+                       # recording leaves behind.
+                       recorded_by="code-reviewer" if status == "completed" else None),
             force=True,
         )
     write_record(project, RUN_ID, record)
@@ -141,13 +148,20 @@ def test_applies_from_small_upwards(tmp_path, complexity):
     assert not check_review_record(project, RUN_ID).ok
 
 
-def test_skips_when_the_complexity_is_unknown(tmp_path):
-    """No iterate entry means the gate cannot know whether it applies. It says
-    so rather than inventing a verdict in either direction."""
+def test_fails_when_the_iterate_entry_is_missing(tmp_path):
+    """No iterate entry means the gate cannot know whether it applies — and
+    "I could not tell" must not be reported as "not applicable".
+
+    Was `test_skips_when_the_complexity_is_unknown`, whose docstring claimed the
+    SKIP said so "rather than inventing a verdict in either direction". It did
+    invent one: a SKIPPED result is a pass, and callers that run this check
+    without its sibling `check_iterate_history_has_run_id` got a green from a
+    run whose F5c step had not happened (`trg-51a57370`).
+    """
     (tmp_path / ".shipwright" / "planning" / "iterate").mkdir(parents=True)
     result = check_review_record(tmp_path, RUN_ID)
-    assert result.ok
-    assert "skipped" in result.detail.lower()
+    assert result.is_failure
+    assert "F5c" in result.detail
 
 
 # --- the record must be IN THE COMMIT, not just the worktree ----------------
@@ -216,5 +230,5 @@ def test_the_failure_message_lists_every_outstanding_type(tmp_path):
     project = _project(tmp_path)
     write_record(project, RUN_ID, new_record(RUN_ID))
     message = check_review_record(project, RUN_ID).detail
-    for review_type in REVIEW_TYPES:
+    for review_type in RECORDABLE_TYPES:
         assert review_type in message

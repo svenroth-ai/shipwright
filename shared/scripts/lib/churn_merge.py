@@ -107,13 +107,39 @@ def is_campaign_status(rel: str) -> bool:
     )
 
 
+def is_derived_churn(rel: str) -> bool:
+    """True iff ``rel`` is a REGENERATED artifact rather than authored content.
+
+    The single definition of "derived", for every consumer that needs one.
+    :func:`classify` asks it to decide what the merge resolver may auto-resolve;
+    the F11 ``no silent revert`` check asks it to decide which paths are exempt
+    from line-level comparison, because a regenerated file legitimately changes
+    wholesale on every integration.
+
+    Those two used to hold *different* answers: the verifier asked
+    ``path in CHURN_ALLOWLIST`` while ``classify`` asked
+    ``... or is_campaign_status(rel)``, so a campaign ``status.json`` was
+    regenerated churn to the resolver and authored content to the verifier
+    (found by the review cascade during #488, deferred there). One predicate,
+    called by both, is what makes that drift unrepresentable.
+
+    Pure and dependency-light on purpose (stdlib only, one normalised
+    repo-relative path in): the verifier package imports this module, so
+    anything heavier here would couple the merge resolver to verifier concerns
+    (external plan review, openai #8).
+    """
+    rel = norm(rel)
+    return rel in CHURN_ALLOWLIST or is_campaign_status(rel)
+
+
 def classify(conflicted: object) -> tuple[list[str], list[str]]:
     """Split conflicted paths into ``(resolvable, blocking)``.
 
-    ``resolvable`` = :data:`CHURN_ALLOWLIST` members ∪ campaign ``status.json``
-    files (:func:`is_campaign_status`); ``blocking`` is everything else (real
-    source / curated prose). Both lists are normalised + de-duplicated + sorted.
-    The pre-flight gate aborts whenever ``blocking`` is non-empty (AC-3).
+    ``resolvable`` = whatever :func:`is_derived_churn` admits —
+    :data:`CHURN_ALLOWLIST` members ∪ campaign ``status.json`` files;
+    ``blocking`` is everything else (real source / curated prose). Both lists are
+    normalised + de-duplicated + sorted. The pre-flight gate aborts whenever
+    ``blocking`` is non-empty (AC-3).
     """
     resolvable: list[str] = []
     blocking: list[str] = []
@@ -121,8 +147,7 @@ def classify(conflicted: object) -> tuple[list[str], list[str]]:
         rel = norm(str(raw))
         if not rel:
             continue
-        ok = rel in CHURN_ALLOWLIST or is_campaign_status(rel)
-        (resolvable if ok else blocking).append(rel)
+        (resolvable if is_derived_churn(rel) else blocking).append(rel)
     return sorted(set(resolvable)), sorted(set(blocking))
 
 

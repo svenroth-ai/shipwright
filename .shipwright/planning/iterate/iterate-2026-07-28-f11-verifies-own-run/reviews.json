@@ -1,0 +1,109 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-07-28-f11-verifies-own-run",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-07-28T21:14:06.078401+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 1,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "The plan adds a strict `run_id` check that fails closed (AC-1) but omits the fix for the root cause identified in 1.1 (`integrate_main.py` rewinding the file). If `restore_derived_to_head` continues to overwrite the current test results with `main`'s copy before the F11 checks run, introducing this strict failure will permanently break F11 for all runs.",
+          "suggestion": "Add a step to either exclude `shipwright_test_results.json` from `restore_derived_to_head` (e.g., by separating test results from `DERIVED_SNAPSHOTS`), or read the evidence into",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-07-28T21:15:00.649649+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "partial",
+      "raw_excerpt": "[gemini] - **Category**: risk\n- **Severity**: high\n- **Finding**: The plan adds a strict `run_id` check that fails closed (AC-1) but omits the fix for the root cause identified in 1.1 (`integrate_main.py` rewinding the file). If `restore_derived_to_head` continues to overwrite the current test results with `main`'s copy before the F11 checks run, introducing this strict failure will permanently break F11 for all runs.\n- **Suggestion**: Add a step to either exclude `shipwright_test_results.json` from `restore_derived_to_head` (e.g., by separating test results from `DERIVED_SNAPSHOTS`), or read the evidence into\n\n[openai] 1. **Category:** risk / **Severity:** high — Keeping `schema_version: 1` and making `gates` optional is compatible for the web UI, but it creates an internal fail-open risk unless F11 explicitly distinguishes legacy records from records produced for the current run. A current run can omit `gates` entirely and still pass schema validation.\n\n2. **Category:** dependency / **Severity:** medium — The plan identifies the CLI symbol swap in `record_review_pass.py`, but does not explicitly audit every use of `REVIEW_TYPES`.\n\n3. **Category:** approach / **Severity:** medium — The claimed webui compatibility is supported by two relevant checks, but it remains an assumption that the consumer ignores all unknown top-level fields through its full parse/validation/render pipeline. The stated round-trip probe is not concretely included in the implementation or test steps.\n\n4. **Category:** edge-case / **Severity:** medium — AC-4 names a completed `code` row, but the existing evidence floor accepts either `code` or `external_code`. Define the cascade's Stage-2 set centrally and state whether `external_code` is intentionally outside the cascade.\n\n5. **Category:** edge-case / **Severity:** medium — The new attributed `iterate_latest` reader needs a defined failure contract beyond a foreign `run_id`: absent, malformed, no block, empty/non-string `run_id`. Have the shared reader return a typed result distinguishing `current`, `foreign`, `unattributed`, and `invalid/missing`.\n\n6. **Category:** approach / **Severity:** medium — AC-2 calls the required values evidence, but the proposed predicate permits trivially fabricated metadata such as `provider: \"\"`, whitespace-only excerpts, or arbitrary `recorded_by`.\n\n7. **Category:** risk / **Severity:** medium — Failing when the F5c entry is missing is correct at the current-run F11 boundary, but the plan does not identify invocation modes where these checks may run before F5c has been generated or outside an iterate context.\n\n8. * […truncated]"
+    },
+    "code": {
+      "review_type": "code",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-07-28T21:15:15.784050+00:00",
+      "disposition": "the session policy gates the Agent tool behind an explicit operator request, and --autonomous cannot pause to acquire it; SKILL.md Step 8 routes this to the external review, which carried the pass over six rounds",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-07-28T21:15:15.884350+00:00",
+      "disposition": "the session policy gates the Agent tool behind an explicit operator request, and --autonomous cannot pause to acquire it; SKILL.md Step 8 routes this to the external review, which carried the pass over six rounds",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 2,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "spec",
+          "file": "shared/scripts/tools/verifiers/silent_revert_declarations.py:92-97",
+          "line": null,
+          "finding": "attributed_declared_removals()` treats every non-current `iterate_latest` state as harmless when the foreign/malformed/missing snapshot contains no declarations: it returns `([], None)`. Consequently, `check_silent_revert_for_run()` can pass or skip on a clean tree without reporting that the declarations source was missing, malformed, unattributed, or belonged to another run. AC-1 explicitly requires every caller, including `declared_removals`, to fail closed on every non-`current` state and provide repair guidance. The current behavior only reports a foreign source if there happened to be declarations to disregard.",
+          "suggestion": "Return a non-current-state problem unconditionally whenever no valid per-run F5c `declared_removals` list is available, including an explicitly empty list as the durable “no declarations” evidence. Make `check_silent_revert_for_run()` turn that problem into a blocking F11 failure rather than a conditional warning.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "test",
+          "file": "shared/tests/test_iterate_latest_attribution.py:267-277",
+          "line": null,
+          "finding": "test_no_declarations_anywhere_stays_silent` codifies the fail-open behavior above by asserting that a foreign `iterate_latest` with no declarations must not fail or disclose anything. This is contrary to AC-1’s requirement that all three readers fail closed for all non-`current` attribution states, so the test suite would reject a compliant implementation that fixes the production defect.",
+          "suggestion": "Replace this test with cases asserting a blocking result for missing, malformed, unattributed, and foreign shared snapshots when the F5c entry lacks `declared_removals`; retain a passing case only when the per-run F5c entry explicitly carries `declared_removals: []`.  Overall assessment: ship-with-fixes. The attribution reader and the other AC implementations are broadly aligned with the specification, but the silent-revert declaration path still intentionally bypasses the required fail-closed contract in a concrete non-current-state case.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-07-28T21:15:07.901808+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "partial",
+      "raw_excerpt": "[gemini] SHIPWRIGHT_VERDICT: approve\n\n[openai] - Category: spec\n- Severity: medium\n- File: shared/scripts/tools/verifiers/silent_revert_declarations.py:92-97\n- Finding: `attributed_declared_removals()` treats every non-current `iterate_latest` state as harmless when the foreign/malformed/missing snapshot contains no declarations: it returns `([], None)`. Consequently, `check_silent_revert_for_run()` can pass or skip on a clean tree without reporting that the declarations source was missing, malformed, unattributed, or belonged to another run. AC-1 explicitly requires every caller, including `declared_removals`, to fail closed on every non-`current` state and provide repair guidance. The current behavior only reports a foreign source if there happened to be declarations to disregard.\n- Suggestion: Return a non-current-state problem unconditionally whenever no valid per-run F5c `declared_removals` list is available, including an explicitly empty list as the durable “no declarations” evidence. Make `check_silent_revert_for_run()` turn that problem into a blocking F11 failure rather than a conditional warning.\n\n- Category: test\n- Severity: medium\n- File: shared/tests/test_iterate_latest_attribution.py:267-277\n- Finding: `test_no_declarations_anywhere_stays_silent` codifies the fail-open behavior above by asserting that a foreign `iterate_latest` with no declarations must not fail or disclose anything. This is contrary to AC-1’s requirement that all three readers fail closed for all non-`current` attribution states, so the test suite would reject a compliant implementation that fixes the production defect.\n- Suggestion: Replace this test with cases asserting a blocking result for missing, malformed, unattributed, and foreign shared snapshots when the F5c entry lacks `declared_removals`; retain a passing case only when the per-run F5c entry explicitly carries `declared_removals: []`.\n\nOverall assessment: ship-with-fixes. The attribution reader and the other AC implementations are broadly aligned with the  […truncated]"
+    }
+  },
+  "gates": {
+    "spec": {
+      "review_type": "spec",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-07-28T21:15:15.667192+00:00",
+      "disposition": "the session policy gates the Agent tool behind an explicit operator request, and --autonomous cannot pause to acquire it; SKILL.md Step 8 routes this to the external review, which carried the pass over six rounds",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    }
+  }
+}

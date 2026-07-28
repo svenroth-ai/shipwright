@@ -14,7 +14,10 @@ overwrote. This is the missing durable half.
 
 **Keyed by type, not a list.** ``reviews`` is a dict over the five review types
 so "every type is represented" is structural rather than a convention a writer
-can forget, and so a type cannot appear twice. A type nobody has recorded yet
+can forget, and so a type cannot appear twice. The sibling ``gates`` object holds
+the passes this repo's F11 gate requires that the pinned cross-repo ``reviews``
+contract has no slot for (today: ``spec``, the Stage-1 HARD-GATE) — see
+:data:`lib.review_record_schema.GATE_TYPES` for why it is not a sixth key. A type nobody has recorded yet
 reads ``pending`` — explicitly present and explicitly unanswered, which is the
 whole point of the artifact: an empty Review row must mean "genuinely not run",
 never "somebody forgot to write it down".
@@ -59,6 +62,8 @@ from .review_record_ops import (
 )
 from .review_record_schema import (
     ALL_STATUSES,
+    GATE_TYPES,
+    RECORDABLE_TYPES,
     REVIEW_TYPES,
     SCHEMA_VERSION,
     STATUS_COMPLETED,
@@ -72,6 +77,8 @@ from .review_record_schema import (
 
 __all__ = [
     "ALL_STATUSES",
+    "GATE_TYPES",
+    "RECORDABLE_TYPES",
     "REVIEW_TYPES",
     "SCHEMA_VERSION",
     "STATUS_COMPLETED",

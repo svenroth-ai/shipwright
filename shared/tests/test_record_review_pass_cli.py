@@ -44,7 +44,7 @@ def project(tmp_path):
 # --- AC8: the whole path, CLI → gate ----------------------------------------
 
 
-def test_recording_all_five_types_makes_the_gate_pass(project, tmp_path):
+def test_recording_every_type_makes_the_gate_pass(project, tmp_path):
     assert check_review_record(project, RUN_ID).ok is False  # nothing recorded yet
 
     code, _ = run_tool(project, "init")
@@ -66,6 +66,13 @@ def test_recording_all_five_types_makes_the_gate_pass(project, tmp_path):
          "--payload-file", payload(tmp_path, "ext.json", EXTERNAL_REVIEW_OUTPUT)],
         ["record", "--review-type", "external_code", "--status", "not_applicable",
          "--disposition", REASON],
+        # Stage 1 of the cascade. `code` is recorded completed above, and the
+        # gate now requires the HARD-GATE that must precede it to have passed —
+        # a completed Stage 2 with no completed Stage 1 describes a cascade that
+        # skipped its own first gate.
+        ["record", "--review-type", "spec", "--status", "completed",
+         "--from", "code-reviewer",
+         "--payload-file", payload(tmp_path, "spec.md", CODE_REVIEWER_REPLY)],
     ):
         code, output = run_tool(project, *args)
         assert code == 0, output
@@ -75,6 +82,7 @@ def test_recording_all_five_types_makes_the_gate_pass(project, tmp_path):
 
     record = json.loads(record_path(project, RUN_ID).read_text(encoding="utf-8"))
     reviews = record["reviews"]
+    assert record["gates"]["spec"]["status"] == "completed"
     assert reviews["code"]["findings"][0]["severity"] == "high"
     assert reviews["code"]["findings"][0]["source"] == "code-reviewer"
     assert reviews["doubt"]["findings"][0]["category"] == "reversibility"
@@ -165,7 +173,7 @@ def test_close_missing_closes_every_outstanding_type(project):
                             "--disposition", "predates the per-run review record")
     assert code == 0, output
     assert set(json.loads(output)["closed"]) == {
-        "self", "plan", "code", "doubt", "external_code"}
+        "self", "plan", "code", "doubt", "external_code", "spec"}
     assert check_review_record(project, RUN_ID).detail.count("unanswered") == 0
 
 

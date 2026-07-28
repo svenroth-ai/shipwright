@@ -14,7 +14,10 @@ overwrote. This module is the missing durable half.
 
 **Keyed by type, not a list.** ``reviews`` is a dict over the five review types
 so "every type is represented" is structural rather than a convention a writer
-can forget, and so a type cannot appear twice. A type nobody has recorded yet
+can forget, and so a type cannot appear twice. The sibling ``gates`` object holds
+the passes this repo's F11 gate requires that the pinned cross-repo ``reviews``
+contract has no slot for (today: ``spec``, the Stage-1 HARD-GATE) — see
+:data:`lib.review_record_schema.GATE_TYPES` for why it is not a sixth key. A type nobody has recorded yet
 reads ``pending`` — explicitly present and explicitly unanswered, which is the
 whole point of the artifact: an empty Review row must mean "genuinely not run",
 never "somebody forgot to write it down".
@@ -38,7 +41,9 @@ from typing import Any
 from .atomic_write import durable_atomic_write
 from .review_record_schema import (
     ALL_STATUSES,
+    GATE_TYPES,
     NEEDS_DISPOSITION,
+    RECORDABLE_TYPES,
     REVIEW_TYPES,
     SCHEMA_VERSION,
     STATUS_PENDING,
@@ -48,7 +53,18 @@ from .review_record_schema import (
     validate_record,
 )
 
+
+def _section(review_type: str) -> str:
+    """Which top-level object a type is stored under.
+
+    ``reviews`` is the pinned cross-repo contract and may hold only the five
+    types the consumer knows; :data:`GATE_TYPES` live in the sibling ``gates``.
+    Routing in ONE place is what keeps the split from leaking into every caller.
+    """
+    return "gates" if review_type in GATE_TYPES else "reviews"
+
 __all__ = [
+    "GATE_TYPES",
     "ImmutableReviewError",
     "ReviewRecordError",
     "lock_path",
@@ -119,7 +135,7 @@ def make_entry(
     ``findings_count`` is DERIVED from ``findings``, never supplied — a count
     that can disagree with the list it counts is a count nobody can trust.
     """
-    if review_type not in REVIEW_TYPES:
+    if review_type not in RECORDABLE_TYPES:
         raise ReviewRecordError(f"unknown review_type: {review_type!r}")
     if status not in ALL_STATUSES:
         raise ReviewRecordError(f"unknown status: {status!r}")
@@ -144,11 +160,12 @@ def make_entry(
 
 
 def new_record(run_id: str) -> dict[str, Any]:
-    """A record with all five types materialized as ``pending``."""
+    """A record with every recordable type materialized as ``pending``."""
     return {
         "schema_version": SCHEMA_VERSION,
         "run_id": run_id,
         "reviews": {t: make_entry(t, STATUS_PENDING) for t in REVIEW_TYPES},
+        "gates": {t: make_entry(t, STATUS_PENDING) for t in GATE_TYPES},
     }
 
 
@@ -157,9 +174,10 @@ def upsert_review(
 ) -> dict[str, Any]:
     """Place ``entry`` into ``record``, refusing to overwrite a terminal status."""
     review_type = entry.get("review_type")
-    if review_type not in REVIEW_TYPES:
+    if review_type not in RECORDABLE_TYPES:
         raise ReviewRecordError(f"unknown review_type: {review_type!r}")
-    existing = record.get("reviews", {}).get(review_type) or {}
+    section = _section(review_type)
+    existing = (record.get(section) or {}).get(review_type) or {}
     if not force and existing.get("status") in TERMINAL_STATUSES:
         raise ImmutableReviewError(
             f"{review_type} is already recorded as {existing['status']!r} and a "
@@ -167,17 +185,24 @@ def upsert_review(
             "genuinely wrong record"
         )
     updated = dict(record)
-    updated["reviews"] = dict(record.get("reviews", {}))
-    updated["reviews"][review_type] = entry
+    updated[section] = dict(record.get(section) or {})
+    updated[section][review_type] = entry
     return updated
 
 
 def pending_types(record: dict[str, Any]) -> list[str]:
-    """Types that have not reached a terminal status — in contract order."""
-    reviews = record.get("reviews", {}) or {}
+    """Types that have not reached a terminal status — in contract order.
+
+    An ABSENT gate section counts as pending, not as absent-and-therefore-fine.
+    The optionality in ``validate_record`` exists so records written before
+    :data:`GATE_TYPES` stay readable; letting a live run inherit it would make
+    the new row dodgeable by simply not writing it (external plan review,
+    openai #1).
+    """
     return [
-        t for t in REVIEW_TYPES
-        if (reviews.get(t) or {}).get("status", STATUS_PENDING) == STATUS_PENDING
+        t for t in RECORDABLE_TYPES
+        if ((record.get(_section(t)) or {}).get(t) or {}).get(
+            "status", STATUS_PENDING) == STATUS_PENDING
     ]
 
 

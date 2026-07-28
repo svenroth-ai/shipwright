@@ -46,10 +46,14 @@ _SCRIPTS_ROOT = Path(__file__).resolve().parents[2]
 if str(_SCRIPTS_ROOT) not in sys.path:
     sys.path.insert(0, str(_SCRIPTS_ROOT))
 
-from lib.churn_merge import CHURN_ALLOWLIST  # noqa: E402
+from lib.churn_merge import is_derived_churn  # noqa: E402
 
 from .common import CheckResult, Severity  # noqa: E402
 from .git_helpers import _run_git  # noqa: E402
+from .silent_revert_declarations import (  # noqa: E402
+    attributed_declared_removals,
+    covered_by_declaration as _covered,
+)
 from .silent_revert_filters import (  # noqa: E402
     matches_default,
     superseded_on_default,
@@ -148,11 +152,14 @@ def dropped_lines(project_root, default_branch: str, head: str = "HEAD",
                 problems.append(f"cannot diff {base[:8]}..{p2[:8]}")
             continue
         for path in (p.strip() for p in out.splitlines() if p.strip()):
-            if path in CHURN_ALLOWLIST:
+            if is_derived_churn(path):
                 # Derived artifacts are REGENERATED from the merged tree, not
                 # merged line-by-line. Their content legitimately changes wholesale
                 # on every integration, so comparing them flags all eleven on every
                 # iterate. Caught by running this check against its own branch.
+                # The predicate is the churn resolver's own, so "derived" cannot
+                # come to mean two things (a campaign status.json used to be
+                # regenerated churn to `classify` and authored content here).
                 continue
             # Strongest of the three proofs and the cheapest, so it is asked first:
             # if the two trees agree about the file, nothing in it can be a loss.
@@ -186,16 +193,6 @@ def dropped_lines(project_root, default_branch: str, head: str = "HEAD",
                 dropped.setdefault(path, set()).update(missing)
 
     return {path: sorted(lines) for path, lines in dropped.items()}
-
-
-def _covered(path: str, declared_removals) -> bool:
-    """True when the operator declared this path's removal WITH a reason."""
-    for entry in declared_removals or []:
-        if not isinstance(entry, dict):
-            continue
-        if str(entry.get("path", "")) == path and str(entry.get("reason", "")).strip():
-            return True
-    return False
 
 
 def check_no_silent_revert(
@@ -266,35 +263,43 @@ def check_no_silent_revert(
     )
 
 
-def declared_removals(project_root) -> list[dict]:
-    """``iterate_latest.declared_removals`` — the run's stated intentional removals.
+def check_silent_revert_for_run(
+    project_root, default_branch: str = "main", *, run_id: str,
+) -> CheckResult:
+    """F11 entry point: the check plus the run's own declarations.
 
-    Kept here rather than at the call site so the F11 orchestrator stays a list of
-    check invocations. A missing or malformed file yields ``[]``: an unreadable
-    declaration must not silently excuse a removal.
+    ``run_id`` is REQUIRED and keyword-only. Defaulting it to ``""`` would let an
+    unconverted caller keep the old two-argument shape while silently changing
+    behaviour — every block would read as foreign, discarding even the current
+    run's declarations. A TypeError is the only version anyone would notice.
     """
-    import json
-
-    path = Path(project_root) / "shipwright_test_results.json"
-    try:
-        data = json.loads(path.read_text(encoding="utf-8"))
-    except (OSError, json.JSONDecodeError):
-        return []
-    entries = (data.get("iterate_latest") or {}).get("declared_removals")
-    return [e for e in entries if isinstance(e, dict)] if isinstance(entries, list) else []
-
-
-def check_silent_revert_for_run(project_root, default_branch: str = "main") -> CheckResult:
-    """F11 entry point: the check plus the run's own declarations."""
-    return check_no_silent_revert(
-        project_root, default_branch=default_branch,
-        declared_removals=declared_removals(project_root),
+    entries, problem = attributed_declared_removals(project_root, run_id)
+    result = check_no_silent_revert(
+        project_root, default_branch=default_branch, declared_removals=entries,
+    )
+    if not problem:
+        return result
+    # A disregarded declaration is DISCLOSED either way — this module's one
+    # prohibition is saying nothing (external code review, openai #2).
+    if result.is_failure:
+        return CheckResult(result.name, result.ok, f"{result.detail}  ({problem})",
+                           severity=result.severity)
+    # Nothing dropped ⇒ nothing wrongly excused, so a hard failure would be a
+    # false red — but declarations this gate did not use must still be reported.
+    # WARNING is the honest severity when the subject is the evidence, not the tree.
+    return CheckResult(
+        result.name, False,
+        f"{result.detail} — but {problem}. Re-run F5 to rewrite "
+        "shipwright_test_results.json for this run, or carry "
+        "`declared_removals` in the F5c entry, which the F11 integration "
+        "cannot rewind",
+        severity=Severity.WARNING.value,
     )
 
 
 __all__ = [
+    "attributed_declared_removals",
     "check_no_silent_revert",
     "check_silent_revert_for_run",
-    "declared_removals",
     "dropped_lines",
 ]

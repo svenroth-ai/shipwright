@@ -1,0 +1,1 @@
+The first stage of the review cascade — the spec-compliance gate that must pass before the code review starts — now records its own result, so a finished run can show that it ran rather than leaving it unstated. Recording the code review as done while that first gate did not pass is refused. Existing review records stay readable unchanged.
