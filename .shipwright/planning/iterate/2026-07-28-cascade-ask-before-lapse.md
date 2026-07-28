@@ -17,7 +17,7 @@ spawns the cascade itself"*. It says nothing about the case that actually
 occurs, so the lifecycle still loses the pass.
 
 **The session-level directive.** Sessions in this project carry a standing rule
-in the system prompt:
+in the system prompt, quoted verbatim:
 
 > Do not call the AgentTool unless the user requested it
 
