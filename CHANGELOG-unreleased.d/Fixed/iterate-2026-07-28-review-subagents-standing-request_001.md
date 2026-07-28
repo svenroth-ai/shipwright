@@ -1,0 +1,1 @@
+Onboarding an existing repo with a load-bearing `CLAUDE.md` now actually delivers the standing request: `write_claude_md` appends the section instead of writing its render to a side-file no harness loads. The append is idempotent, leaves the original bytes untouched, and is disclosed in `preservation_log.json`.

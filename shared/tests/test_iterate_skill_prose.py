@@ -9,8 +9,9 @@ CONTRACT they defer to (`iteration-reviews.md`) is guarded in
 What these pin: Step 8 names an actor (this session), states the Stage-1
 HARD-GATE and its pre-F6 placement, does not overpromise what the cascade sees,
 scopes ADR-029's "no `Agent` tool" to campaign mode — and, since a session
-policy can gate subagent spawning, ASKS for the go-ahead before Stage 1 rather
-than lapsing into `not_run` at F11. F12's banner must actually carry the
+grant in `CLAUDE.md` now requests the cascade standingly, states that the grant
+OUTRANKS the ask — the ask survives only for a project without it, where it
+fires before Stage 1 rather than lapsing into `not_run` at F11. F12's banner must actually carry the
 missing pass, because that is the surface Step 8 promises it on.
 """
 
@@ -254,4 +255,19 @@ def test_the_f12_banner_actually_carries_the_missing_pass():
     )
     assert "omit it entirely when the cascade ran" in norm, (
         "a row that always appears stops being read — it must be conditional"
+    )
+
+
+def test_step_8_lets_a_standing_grant_outrank_the_ask():
+    """`CLAUDE.md` now grants the cascade standingly. Without stating the
+    precedence, Step 8 would tell the session to ask while CLAUDE.md tells it
+    not to — two live instructions in opposite directions."""
+    body = _norm(_section(SKILL_DOC, "### Step 8: Full Code Review"))
+    assert "a standing grant in claude.md outranks this" in body, (
+        "Step 8 must state that the project-level grant wins"
+    )
+    assert "do not ask" in body, "…and say plainly not to ask when it applies"
+    assert "only when no such grant exists" in body, (
+        "the ask must be scoped to the ungranted case, not deleted — a project "
+        "without the grant still needs it"
     )

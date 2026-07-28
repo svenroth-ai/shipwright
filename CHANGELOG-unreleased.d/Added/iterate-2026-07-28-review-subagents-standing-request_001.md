@@ -1,0 +1,1 @@
+`CLAUDE.md` now carries a standing request for review subagents, so the `spec-reviewer` → `code-reviewer` → `doubt-reviewer` cascade runs without pausing to ask each session. Shipped to all three carriers — the greenfield template, adopt's renderer and this repo — from one shared constant.

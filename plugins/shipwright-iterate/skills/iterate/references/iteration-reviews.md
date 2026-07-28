@@ -240,7 +240,13 @@ answer.
 
 A standing session policy that a request would lift — e.g. *"do not call the
 Agent tool unless the user requested it"* — **is not a blocker until** the
-request has been made and declined. Nothing on disk carries a grant across
+request has been made and declined. **And a project whose `CLAUDE.md` states
+that review subagents are requested by default has already made it**: the policy
+is satisfied, nothing is gated, and there is nothing to ask. **Read the file —
+do not assume it.** A project onboarded before the grant shipped, or one that
+deleted the section, is the ungranted case below. The grant covers the review
+cascade only: dynamic workflows, deep-research and parallel implementation
+subagents are asked for separately, every time. **Absent such a grant**, nothing carries one across
 compaction, a handoff or a resume, so **if you cannot establish from this
 session that permission was given, ASK** — a redundant question costs one line;
 a lost pass costs the review. (SKILL.md B1's resume replay-check re-runs Step 4
