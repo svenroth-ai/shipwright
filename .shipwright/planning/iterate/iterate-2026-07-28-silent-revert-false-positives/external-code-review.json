@@ -1,0 +1,33 @@
+{
+  "success": true,
+  "provider": "openrouter",
+  "degraded": false,
+  "reviews_succeeded": 1,
+  "reviews": {
+    "gemini": {
+      "feedback": "\n\nWait! In `dropped_lines`, `base_lines = _file_lines(...)`. `gained = theirs - base_lines`, `missing = gained - ours`. Everything is compared via `set[str]` containing stripped lines.\nSo `lines` are stripped versions. In `unexplained_by_edit`: `candidates = lines & deleted`.\nSince `deleted` adds `.strip()`, they should match perfectly.\nWait... what if `-w` causes git diff to not even output a chunk if the lines only changed in whitespace?\nYes! If lines only changed in whitespace, git diff will NOT output a hunk!\nWait. If git diff `-w` outputs NO hunk for a line because it changed only in whitespace, how did it end up in `missing`",
+      "via": "openrouter",
+      "status": "degraded",
+      "reason": "provider reported the reply was cut off (finish_reason=length)"
+    },
+    "openai": {
+      "feedback": "- Category: bug\n- Severity: high\n- File: shared/scripts/tools/verifiers/silent_revert.py:165-172\n- Finding: Fail-honest handling is incomplete. `_file_lines()` returns `None` for both an absent file and a Git read failure, but the main detection path treats an unreadable `p2` side as `continue`, an unreadable base as an empty set, and an unreadable `HEAD` as a deleted file. None of these paths append to `problems`. Consequently, an object-store/read failure can silently omit a real finding or produce an undisclosed/inaccurate comparison, violating AC5b\u2019s requirement that unreadable sides suppress nothing and result in an incomplete-comparison notice or visible SKIP.\n- Suggestion: Use `tip_state()` (or a new status-returning reader) for every comparison side used by `dropped_lines`, not only the Filter-1 tip comparison. Distinguish absence from read failure; append a problem on failures and never `continue` merely because a source side could not be read.\n\n- Category: test\n- Severity: medium\n- File: shared/tests/test_silent_revert_filters.py:157-185\n- Finding: The unreadable-path tests only monkeypatch `silent_revert_filters.tip_state`, exercising Filter 1\u2019s failure behavior. They do not exercise the detector\u2019s `_file_lines()` calls for the integration-delivered side, merge base, or branch HEAD, so the silent failure paths at `silent_revert.py:165-172` remain untested. A broken implementation that skips an unreadable delivered side would still pass this suite.\n- Suggestion: Add detector-level tests that make each `_file_lines`/Git read side fail after the integration merge has been identified, and assert that existing findings remain blocking with an incomplete-comparison note, while no-findings cases return `SKIPPED`.\n\nOverall assessment: ship-with-fixes. The core filtering logic addresses the intended false positives, but the unhandled Git-read failure paths violate the explicitly required fail-honest behavior and can silently weaken the gate.  \nSHIPWRIGHT_VERDICT: revise",
+      "via": "openrouter",
+      "status": "success"
+    }
+  },
+  "verdicts": {
+    "gemini": "unavailable",
+    "openai": "revise"
+  },
+  "statuses": {
+    "gemini": "degraded",
+    "openai": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": false,
+    "requires_resolution": true,
+    "reason": "only one reviewer answered \u2014 gemini did not (gemini=unavailable, openai=revise)"
+  }
+}
