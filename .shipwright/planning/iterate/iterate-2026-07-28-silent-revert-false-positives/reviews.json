@@ -1,0 +1,158 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-07-28-silent-revert-false-positives",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-07-28T08:02:51.252816+00:00",
+      "disposition": null,
+      "recorded_by": "7-point self-review on the final tree, after all three cascade stages + external code review",
+      "parse_status": "unstructured",
+      "raw_excerpt": "# Self-review — iterate-2026-07-28-silent-revert-false-positives\n\nSeven-point checklist, run on the final tree after all three cascade stages and\nthe external code review had been applied.\n\n**1. Does it do what the spec says, and only that?** Yes. Three proofs plus the\nref repair, the doc update and the FR-01.11 fold. One scope judgement is\ndisclosed rather than smuggled: the default-ref resolution was *not* in the\noriginal bug report (which is about false positives) — it is a false *negative*.\nIt is in scope because the case-(A) proof asks \"does the default branch still\ncarry this?\", and a stale ref answers that against the wrong tree. Measured\nbefore deciding: 6 → 2 → 1 integration merges seen as the ref is walked back.\n\n**2. Tests: would each fail without the change?** The ones asserting new silence\n(AC1, AC1b, AC2, AC5) fail against the pre-change code. The ones asserting\ncontinued noise (AC3, AC4, AC4b–AC4e) pass against pre-change code by\nconstruction — that is correct for negative guards, and each is instead\nmutation-sensitive against the delivered implementation: remove the base guard →\nAC3 fails; remove the `p1` guard → AC4c fails; drop `-w` → AC4d fails; drop the\n\"and followed\" condition → AC4e fails. Stated explicitly because \"my test passes\"\nis not evidence for a guard.\n\n**3. Failure modes.** Every filter can only REMOVE findings, so every git read\nthey depend on is fail-honest: `read_side` distinguishes absent from unreadable\non all four sides, records the reason, and the check reports findings *with* the\nincomplete comparison rather than replacing them with a non-blocking SKIP. One\nresidual, checked by hand: an unreadable `p1` shrinks the exclusion set, which is\nthe *unsafe* direction (more suppression) — but it also appends a problem, so if\nthe suppression empties the findings the run returns a visible SKIP, never a\ngreen pass.\n\n**4. Did I weaken anything to make it pass?** No. The 16 pre-existing tests are\nbyte-identical to HEAD (`git diff` empty) and green. The motivating failure was\nre-verified at real scale on a real 2,700-line file: still blocks, 185 lines.\n\n**5. Accepted risks, written down rather than implied.**\n- Token containment proves words survive, not meaning. Bounded on three sides and\n  pinned by `test_the_accepted_blind_spot_is_pinned_not_implied`.\n- `-w` makes the hunks whitespace-insensitive while lines are compared after\n  `.strip()`. A line whose *internal* whitespace changed is therefore a finding\n  that no hunk can pair — a false positive, i.e. the safe direction. Not\n  normalised away, because that would be a late broad behaviour change to what\n  \"the same line\" means for the whole detector.\n- `CHURN_ALLOWLIST` membership only, where `churn_merge.classify` also treats\n  campaign `status.json` as churn. Pre-existing, unchanged, filed.\n\n**6. Simplifications applied during review.** `merely_edited` → `unexplained_by_edit`\n(its polarity was the opposite of its sibling's, called back-to-back — an\ninversion hazard on a safety gate). One `file_lines` instead of two. Replacements\ntokenised once per hunk instead of once per pair. And the two hunk caches were\nsharing one dict with different key shapes (`path` vs `(delivered, path)`) —\nsafe, since a str can never equal a tuple, but it read as a bug; now two named\ndicts.\n\n**7. Affected Boundaries.** `verifiers/silent_revert.py` (detector, F11 entry\npoint, unchanged signature), the two new sibling modules, and read-only git.\n`shipwright_test_results.json → iterate_latest.declared_removals` keeps its shape\n— the point of the change is that it stops being needed. No config, env var,\nhook or workflow. Three modules where #477 had one: forced by the repo's own\n300-line cap, disclosed in the mini-plan, and each file is now under it\n(299/174/201).\n"
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 8,
+      "findings": [
+        {
+          "severity": null,
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "Filter 2's token sub-sequence check (`_tokens_in_order`) will silence valid reverts of short lines. If `main` added a one-word or short line (e.g., `break`, `pass`, `}`, `return`), and the PR deleted it but happened to author any new line in the file containing that token (e.g., `if error: break`), the true-positive revert of `break` will be incorrectly masked.",
+          "suggestion": "Require a minimum token count (e.g., `len(needle_tokens) >= 3`) before permitting Filter 2 to silence the missing line,",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The proposed Filter 1 does not satisfy AC1 when the default branch deleted the entire file. The stated implementation only drops a line when `tip is not None and line not in tip`; `_file_lines(...) == None` therefore preserves every missing line when the path no longer exists at the resolved default-branch tip. That is precisely a valid “main no longer carries it at that path” case.",
+          "suggestion": "Treat an absent file at the resolved default ref as an empty line set for Filter 1, so all candidates for that path are removed. If `_file_lines` currently uses `None` both for “path absent” and Git/read failure, split those outcomes first; a Git failure must remain fail-honest rather than being interpreted as an empty file.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "Filter 2 as written assumes `ours`, `base_lines`, and `theirs` are sets. Existing code explicitly permits `ours is None` when the branch deleted a file (`missing = gained if ours is None ...`). Computing `authored = ours - base_lines - theirs` in that state will either raise a `TypeError` or require an implicit normalization that has not been specified.",
+          "suggestion": "Apply Filter 2 only when the branch-side file exists, or explicitly normalize file contents to sets while preserving a separate existence/error indicator for Filter 1. Add a regression test for a branch deleting a file: one where main still has the gained content (should remain a finding) and one where main later deleted the file too (should be silenced by Filter 1).",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "_tokens_in_order` needs defined behavior for empty or whitespace-only lines. An empty token sequence is mathematically a subsequence of every authored line, so Filter 2 could suppress a genuinely dropped blank/whitespace-only line without demonstrating that any content survived.",
+          "suggestion": "Do not apply Filter 2 to a candidate with no tokens (leave it to the existing detector and Filter 1), and add a test covering a deleted blank line plus an unrelated newly authored line.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "The mini-plan says “one file changes” but also requires changes to the test suite, `docs/hooks-and-pipeline.md`, and the adopted spec. This is a scope/accounting contradiction that could result in the behavioral contract or its test coverage being omitted from the actual change.",
+          "suggestion": "Correct the implementation scope to explicitly include `shared/tests/test_silent_revert.py`, the hook/pipeline documentation, and FR-01.11. Keep the runtime production change limited to `silent_revert.py`, but make the required non-runtime updates release criteria rather than incidental follow-up work.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "The ref-resolution behavior depends on distinguishing normal negative ancestry results from Git invocation/ref-resolution failures. Treating every failed `merge-base --is-ancestor` call as “diverged or locally ahead” could silently fall back to a stale local ref on repository corruption, an invalid ref, or command failure—the same class of silent coverage shrinkage this change is intended to eliminate.",
+          "suggestion": "Make `_resolve_default_ref` explicitly handle: remote ref absent, ancestry true, ancestry false, and command failure. Preserve the existing verifier’s fail-honest behavior for unexpected Git failures, and test that a missing `origin/<name>` falls back while an unexpected Git error does not silently alter the comparison target.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "The current-tip lookup is invariant for a given `(resolved_ref, path)` but the plan performs it inside the per-integration-merge loop. A long-lived branch with repeated integrations affecting the same file can issue the same `git show` repeatedly, increasing verifier cost unnecessarily.",
+          "suggestion": "Use a small per-run cache keyed by path for default-tip line sets, including a distinct cached “path absent” result. This is a simple local dictionary, not a new abstraction, and also makes the intended current-tip semantics clearer.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "security",
+          "file": null,
+          "line": null,
+          "finding": "No new external input, write operation, or data exposure is introduced; the change remains read-only Git inspection. The only relevant security invariant is that `_resolve_default_ref` must continue using the project’s existing argv-based Git command helper rather than constructing shell commands from a branch name.",
+          "suggestion": "Reuse the existing Git invocation path and add no shell interpolation or new remote/network operation. This should be verified during implementation, but does not require a new security mechanism.  Overall, the core approach is sound: resolving the actual integrated default ref and applying narrowly guarded line-preservation filters addresses the demonstrated false positives without changing the detector’s per-merge framing. It needs the absent-file/error-state handling and deleted-branch-file handling corrected before it can safely meet the acceptance criteria. SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-07-28T06:50:40.466527+00:00",
+      "disposition": null,
+      "recorded_by": "external_review.py --mode iterate (openai=revise, gemini=degraded/truncated); all 8 findings addressed in spec + mini-plan before build",
+      "parse_status": "structured",
+      "raw_excerpt": "[gemini] ### Design Review: silent-revert false positives fix\n\n**1. edge-case** (Medium)\n- **Finding:** Filter 2's token sub-sequence check (`_tokens_in_order`) will silence valid reverts of short lines. If `main` added a one-word or short line (e.g., `break`, `pass`, `}`, `return`), and the PR deleted it but happened to author *any* new line in the file containing that token (e.g., `if error: break`), the true-positive revert of `break` will be incorrectly masked.\n- **Suggestion:** Require a minimum token count (e.g., `len(needle_tokens) >= 3`) before permitting Filter 2 to silence the missing line,\n\n[openai] 1. **Category:** edge-case  \n   **Severity:** high  \n   **Finding:** The proposed Filter 1 does not satisfy AC1 when the default branch deleted the entire file. The stated implementation only drops a line when `tip is not None and line not in tip`; `_file_lines(...) == None` therefore preserves every missing line when the path no longer exists at the resolved default-branch tip. That is precisely a valid “main no longer carries it at that path” case.  \n   **Suggestion:** Treat an absent file at the resolved default ref as an empty line set for Filter 1, so all candidates for that path are removed. If `_file_lines` currently uses `None` both for “path absent” and Git/read failure, split those outcomes first; a Git failure must remain fail-honest rather than being interpreted as an empty file.\n\n2. **Category:** edge-case  \n   **Severity:** high  \n   **Finding:** Filter 2 as written assumes `ours`, `base_lines`, and `theirs` are sets. Existing code explicitly permits `ours is None` when the branch deleted a file (`missing = gained if ours is None ...`). Computing `authored = ours - base_lines - theirs` in that state will either raise a `TypeError` or require an implicit normalization that has not been specified.  \n   **Suggestion:** Apply Filter 2 only when the branch-side file exists, or explicitly normalize file contents to sets while preserving a separate existence/error indicator for Filter 1. Add a regression test for a branch deleting a file: one where main still has the gained content (should remain a finding) and one where main later deleted the file too (should be silenced by Filter 1).\n\n3. **Category:** edge-case  \n   **Severity:** medium  \n   **Finding:** `_tokens_in_order` needs defined behavior for empty or whitespace-only lines. An empty token sequence is mathematically a subsequence of every authored line, so Filter 2 could suppress a genuinely dropped blank/whitespace-only line without demonstrating that any content survived.  \n   **Suggest […truncated]"
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-07-28T08:01:04.245602+00:00",
+      "disposition": null,
+      "recorded_by": "Stage 2 shipwright-build:code-reviewer (Opus); Stage 1 shipwright-build:spec-reviewer returned approve and gated it. verdict=revise, 1 high + 3 medium + 6 low, all applied",
+      "parse_status": "unstructured",
+      "raw_excerpt": "# Stage 2 — internal code-reviewer (`shipwright-build:code-reviewer`, Opus)\n\nRan after Stage 1 (`spec-reviewer`) returned **approve** and its two MEDIUM\nfindings were applied. Reviewed the full diff plus the post-change files, the F11\ncall site, `git_helpers.py`, `churn_merge.CHURN_ALLOWLIST`, the ruff ruleset and\nthe file-size limits.\n\n**SHIPWRIGHT_VERDICT: revise** — 1 high, 3 medium, 6 low.\n\n## What it verified as correct\n\n`tokens_in_order`'s greedy two-pointer is a correct subsequence test.\n`replacement_hunks` handles `\\ No newline at end of file`, CRLF, a deleted\n`---`/`@@`-prefixed content line, binary files, and outright add/delete. Both\ncache keys are sound. `dropped` unions per merge, so a line reported by one merge\nis never un-reported by another. Every new test except two would genuinely fail\nagainst the pre-change code.\n\n## Findings, and what each became\n\n| # | Sev | Finding | Resolution |\n|---|---|---|---|\n| 1 | **high** | `still_carried_by_default` mapped a git FAILURE and a genuinely absent path onto the same `None`, and `None` silenced the ENTIRE path — so an unreadable file produced a green **pass** on a comparison that never happened, in a module that turns exactly that into a visible SKIP everywhere else. | Fixed. `tip_state` uses `ls-tree` to separate absence from failure; failures go to the `problems` channel. Later widened by external code review to all four read sides (`read_side`). |\n| 2 | medium | Token containment proves the words survive, not the meaning; both docstrings claimed the question was \"no longer open\". | Fixed. The claim is narrowed in prose and the accepted case is pinned by `test_the_accepted_blind_spot_is_pinned_not_implied`. |\n| 3 | medium | `tokens_in_order` and `replacement_hunks` — the two parsing surfaces where a mis-read becomes a suppressed finding — had no direct tests. Deleting the empty-needle guard would have kept the suite green. | Fixed. `test_silent_revert_filters.py` added (11 unit tests at the time). |\n| 4 | medium | `merely_edited` re-split every replacement for every missing line; with `-U0` a wholesale rewrite is ONE hunk, so cost is quadratic on a large file and an F11 gate that hangs is a gate that gets switched off. | Fixed. Replacements tokenised once per hunk. |\n| 5 | low | `merely_edited` returned the lines that were *not* merely edited — opposite polarity to its sibling, called back-to-back with identical shape. An inversion hazard on a safety gate. | Fixed. Renamed `unexplained_by_edit`. |\n| 6 | low | `_file_lines` duplicated verbatim between the two modules; both feed the same comparison, so a divergence would silently change what \"the same line\" means. | Fixed. One definition, in `silent_revert_reading`. |\n| 7 | low | `dropped_lines` rebound `default_branch`, but every operator-facing string still named the UNRESOLVED ref — so a block message could name a ref the comparison did not use. Given this run exists because an operator was handed findings they could not verify, not cosmetic. | Fixed. Resolved once in `check_no_silent_revert`, before the pre-flight, and used in the messages. |\n| 8 | low | The AC1 fixture committed **conflict markers**: the assertion passed on text inside a `<<<<<<<` block, and a contributor with `merge.conflictStyle=diff3` would have seen it fail. | Fixed. Merge 2 resolved explicitly; `merge.conflictStyle` pinned in the fixture; a no-markers assertion added. |\n| 9 | low | `test_deleting_a_file_..._does_not_raise` pinned nothing — its docstring described a crash the shipped code cannot have. | Fixed. Renamed and the docstring corrected to what it actually proves. |\n| 10 | low | `significant_line` documented with a Sphinx `#:` attribute comment instead of a docstring. | Fixed. |\n| 11 | low | `test-traceability.json` lists only the 16 pre-existing tests for this area. | Regenerated at F5b; verified after finalization. |\n"
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-07-28T08:01:14.800420+00:00",
+      "disposition": null,
+      "recorded_by": "Stage 3 shipwright-build:doubt-reviewer (Opus), briefed per the handover to attack case (B). verdict=revise, 4 high — all four disproofs reproduced, fixed, and pinned in test_silent_revert_not_weakened.py",
+      "parse_status": "unstructured",
+      "raw_excerpt": "# Stage 3 — adversarial doubt-reviewer (`shipwright-build:doubt-reviewer`, Opus)\n\nBriefed per the handover to attack **case (B)** — the edited-line filter —\nhardest, with its author's warning attached: *\"this is a design question, not a\none-liner; do not build the first idea.\"*\n\n**SHIPWRIGHT_VERDICT: revise** — 8 doubts, 4 high. It **disproved the design**:\nall four of its constructions returned \"nothing was dropped\" against a version\nthat had already passed Stage 1 and Stage 2. Each was reproduced before being\nfixed, and each is now a permanent test in `test_silent_revert_not_weakened.py`.\n\n## The four disproofs\n\n| # | The real revert that went green | Fix |\n|---|---|---|\n| **D1** | The check's OWN motivating test (`test_the_463_shape_is_caught`) with the branch line reworded to mention what it discards. The branch wrote that line *before* seeing theirs, so it cannot be the replacement — the hunk pairing could not tell, and cleared a `-s ours` resolution that throws away documented behaviour while naming it. | Exclude the branch's own pre-merge side (`p1`) from the set of possible replacements. |\n| **D2** | The same hole at scale: with `-U0`, two adjacent deletions and one addition share a hunk, so one long pre-existing line clears **both** bullets the default branch added. | Same fix. |\n| **D3** | A whitespace-only reindent makes git call every line changed and emit ONE hunk spanning the file, inside which any addition vouches for any deletion 28 lines away — exactly the unbounded matching AC4 exists to forbid. | Diff with `-w`, so hunks and findings agree on what \"the same line\" means. |\n| **D4** | The default branch fixes a typo in a line this branch really had reverted; the exact string vanishes from the tip and the finding with it. Composition hazard: the ref repair makes the tip *fresher*, so this fires *more* often — the two fixes worked against each other. | Replace the line-level tip test with whole-file agreement (`matches_default`) plus \"superseded **and** followed\" (`superseded_on_default`). |\n\nD4 is the one that reshaped the design: a line-level absence test cannot tell\n\"they superseded it\" from \"they merely touched it\", so case (A) is no longer\nasked that way at all.\n\n## The two accepted, plus one fixed\n\n- **medium — a SKIP swallowed findings.** A SKIP is `ok=True` and blocks nothing,\n  so returning one the moment *any* path was unreadable converted a real block\n  over every other path into a pass naming none of them. **Fixed**: findings are\n  reported and the incomplete comparison is noted alongside them.\n- **medium — the blind-spot pin was narrower than the implementation.** Accepted\n  and widened in prose: what is accepted is bounded on three sides (same hunk,\n  not the base, not the branch's pre-merge side), so it is an edit this branch\n  made to a line it had just received.\n- **low — `CHURN_ALLOWLIST` vs `churn_merge.classify`.** The verifier tests\n  membership only; the resolver also treats campaign `status.json` as churn.\n  Pre-existing (from #477), unchanged here, filed rather than fixed.\n\n## Clean bills it gave (useful negative information)\n\n- The union over merges is sound — a line reported under any merge is reported.\n- `resolve_default_ref` cannot cause **fewer** merges to be examined: the upgrade\n  condition requires `main ⊆ origin/main`, so the ancestor test can only start\n  passing.\n- #463 itself still trips: a stale-copy overwrite is mostly pure-deletion hunks\n  with no `+` to vouch.\n- Diff-parser edges (`---`/`+++`/`\\ No newline`, binary, bad ref, textconv) all\n  yield the value that suppresses nothing.\n- Submodules and symlinks produce no suppression.\n"
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 2,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "bug",
+          "file": "shared/scripts/tools/verifiers/silent_revert.py:165-172",
+          "line": null,
+          "finding": "Fail-honest handling is incomplete. `_file_lines()` returns `None` for both an absent file and a Git read failure, but the main detection path treats an unreadable `p2` side as `continue`, an unreadable base as an empty set, and an unreadable `HEAD` as a deleted file. None of these paths append to `problems`. Consequently, an object-store/read failure can silently omit a real finding or produce an undisclosed/inaccurate comparison, violating AC5b’s requirement that unreadable sides suppress nothing and result in an incomplete-comparison notice or visible SKIP.",
+          "suggestion": "Use `tip_state()` (or a new status-returning reader) for every comparison side used by `dropped_lines`, not only the Filter-1 tip comparison. Distinguish absence from read failure; append a problem on failures and never `continue` merely because a source side could not be read.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "test",
+          "file": "shared/tests/test_silent_revert_filters.py:157-185",
+          "line": null,
+          "finding": "The unreadable-path tests only monkeypatch `silent_revert_filters.tip_state`, exercising Filter 1’s failure behavior. They do not exercise the detector’s `_file_lines()` calls for the integration-delivered side, merge base, or branch HEAD, so the silent failure paths at `silent_revert.py:165-172` remain untested. A broken implementation that skips an unreadable delivered side would still pass this suite.",
+          "suggestion": "Add detector-level tests that make each `_file_lines`/Git read side fail after the integration merge has been identified, and assert that existing findings remain blocking with an incomplete-comparison note, while no-findings cases return `SKIPPED`.  Overall assessment: ship-with-fixes. The core filtering logic addresses the intended false positives, but the unhandled Git-read failure paths violate the explicitly required fail-honest behavior and can silently weaken the gate. SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-07-28T08:01:14.997665+00:00",
+      "disposition": null,
+      "recorded_by": "external_review.py --mode code on the final diff (openai=revise, gemini=degraded/truncated); the high finding (fail-honest applied to only one of four read sides) fixed via read_side + a detector-level test",
+      "parse_status": "partial",
+      "raw_excerpt": "[gemini] \n\nWait! In `dropped_lines`, `base_lines = _file_lines(...)`. `gained = theirs - base_lines`, `missing = gained - ours`. Everything is compared via `set[str]` containing stripped lines.\nSo `lines` are stripped versions. In `unexplained_by_edit`: `candidates = lines & deleted`.\nSince `deleted` adds `.strip()`, they should match perfectly.\nWait... what if `-w` causes git diff to not even output a chunk if the lines only changed in whitespace?\nYes! If lines only changed in whitespace, git diff will NOT output a hunk!\nWait. If git diff `-w` outputs NO hunk for a line because it changed only in whitespace, how did it end up in `missing`\n\n[openai] - Category: bug\n- Severity: high\n- File: shared/scripts/tools/verifiers/silent_revert.py:165-172\n- Finding: Fail-honest handling is incomplete. `_file_lines()` returns `None` for both an absent file and a Git read failure, but the main detection path treats an unreadable `p2` side as `continue`, an unreadable base as an empty set, and an unreadable `HEAD` as a deleted file. None of these paths append to `problems`. Consequently, an object-store/read failure can silently omit a real finding or produce an undisclosed/inaccurate comparison, violating AC5b’s requirement that unreadable sides suppress nothing and result in an incomplete-comparison notice or visible SKIP.\n- Suggestion: Use `tip_state()` (or a new status-returning reader) for every comparison side used by `dropped_lines`, not only the Filter-1 tip comparison. Distinguish absence from read failure; append a problem on failures and never `continue` merely because a source side could not be read.\n\n- Category: test\n- Severity: medium\n- File: shared/tests/test_silent_revert_filters.py:157-185\n- Finding: The unreadable-path tests only monkeypatch `silent_revert_filters.tip_state`, exercising Filter 1’s failure behavior. They do not exercise the detector’s `_file_lines()` calls for the integration-delivered side, merge base, or branch HEAD, so the silent failure paths at `silent_revert.py:165-172` remain untested. A broken implementation that skips an unreadable delivered side would still pass this suite.\n- Suggestion: Add detector-level tests that make each `_file_lines`/Git read side fail after the integration merge has been identified, and assert that existing findings remain blocking with an incomplete-comparison note, while no-findings cases return `SKIPPED`.\n\nOverall assessment: ship-with-fixes. The core filtering logic addresses the intended false positives, but the unhandled Git-read failure paths violate the explicitly required fail-honest behavior and can silently weaken the gate.  \nSHIPWRI […truncated]"
+    }
+  }
+}

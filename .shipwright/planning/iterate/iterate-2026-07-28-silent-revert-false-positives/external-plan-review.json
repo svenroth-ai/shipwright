@@ -1,0 +1,33 @@
+{
+  "success": true,
+  "provider": "openrouter",
+  "degraded": false,
+  "reviews_succeeded": 1,
+  "reviews": {
+    "openai": {
+      "feedback": "1. **Category:** edge-case  \n   **Severity:** high  \n   **Finding:** The proposed Filter 1 does not satisfy AC1 when the default branch deleted the entire file. The stated implementation only drops a line when `tip is not None and line not in tip`; `_file_lines(...) == None` therefore preserves every missing line when the path no longer exists at the resolved default-branch tip. That is precisely a valid “main no longer carries it at that path” case.  \n   **Suggestion:** Treat an absent file at the resolved default ref as an empty line set for Filter 1, so all candidates for that path are removed. If `_file_lines` currently uses `None` both for “path absent” and Git/read failure, split those outcomes first; a Git failure must remain fail-honest rather than being interpreted as an empty file.\n\n2. **Category:** edge-case  \n   **Severity:** high  \n   **Finding:** Filter 2 as written assumes `ours`, `base_lines`, and `theirs` are sets. Existing code explicitly permits `ours is None` when the branch deleted a file (`missing = gained if ours is None ...`). Computing `authored = ours - base_lines - theirs` in that state will either raise a `TypeError` or require an implicit normalization that has not been specified.  \n   **Suggestion:** Apply Filter 2 only when the branch-side file exists, or explicitly normalize file contents to sets while preserving a separate existence/error indicator for Filter 1. Add a regression test for a branch deleting a file: one where main still has the gained content (should remain a finding) and one where main later deleted the file too (should be silenced by Filter 1).\n\n3. **Category:** edge-case  \n   **Severity:** medium  \n   **Finding:** `_tokens_in_order` needs defined behavior for empty or whitespace-only lines. An empty token sequence is mathematically a subsequence of every authored line, so Filter 2 could suppress a genuinely dropped blank/whitespace-only line without demonstrating that any content survived.  \n   **Suggestion:** Do not apply Filter 2 to a candidate with no tokens (leave it to the existing detector and Filter 1), and add a test covering a deleted blank line plus an unrelated newly authored line.\n\n4. **Category:** dependency  \n   **Severity:** medium  \n   **Finding:** The mini-plan says “one file changes” but also requires changes to the test suite, `docs/hooks-and-pipeline.md`, and the adopted spec. This is a scope/accounting contradiction that could result in the behavioral contract or its test coverage being omitted from the actual change.  \n   **Suggestion:** Correct the implementation scope to explicitly include `shared/tests/test_silent_revert.py`, the hook/pipeline documentation, and FR-01.11. Keep the runtime production change limited to `silent_revert.py`, but make the required non-runtime updates release criteria rather than incidental follow-up work.\n\n5. **Category:** risk  \n   **Severity:** medium  \n   **Finding:** The ref-resolution behavior depends on distinguishing normal negative ancestry results from Git invocation/ref-resolution failures. Treating every failed `merge-base --is-ancestor` call as “diverged or locally ahead” could silently fall back to a stale local ref on repository corruption, an invalid ref, or command failure—the same class of silent coverage shrinkage this change is intended to eliminate.  \n   **Suggestion:** Make `_resolve_default_ref` explicitly handle: remote ref absent, ancestry true, ancestry false, and command failure. Preserve the existing verifier’s fail-honest behavior for unexpected Git failures, and test that a missing `origin/<name>` falls back while an unexpected Git error does not silently alter the comparison target.\n\n6. **Category:** risk  \n   **Severity:** low  \n   **Finding:** The current-tip lookup is invariant for a given `(resolved_ref, path)` but the plan performs it inside the per-integration-merge loop. A long-lived branch with repeated integrations affecting the same file can issue the same `git show` repeatedly, increasing verifier cost unnecessarily.  \n   **Suggestion:** Use a small per-run cache keyed by path for default-tip line sets, including a distinct cached “path absent” result. This is a simple local dictionary, not a new abstraction, and also makes the intended current-tip semantics clearer.\n\n7. **Category:** security  \n   **Severity:** low  \n   **Finding:** No new external input, write operation, or data exposure is introduced; the change remains read-only Git inspection. The only relevant security invariant is that `_resolve_default_ref` must continue using the project’s existing argv-based Git command helper rather than constructing shell commands from a branch name.  \n   **Suggestion:** Reuse the existing Git invocation path and add no shell interpolation or new remote/network operation. This should be verified during implementation, but does not require a new security mechanism.\n\nOverall, the core approach is sound: resolving the actual integrated default ref and applying narrowly guarded line-preservation filters addresses the demonstrated false positives without changing the detector’s per-merge framing. It needs the absent-file/error-state handling and deleted-branch-file handling corrected before it can safely meet the acceptance criteria.  \nSHIPWRIGHT_VERDICT: revise",
+      "via": "openrouter",
+      "status": "success"
+    },
+    "gemini": {
+      "feedback": "### Design Review: silent-revert false positives fix\n\n**1. edge-case** (Medium)\n- **Finding:** Filter 2's token sub-sequence check (`_tokens_in_order`) will silence valid reverts of short lines. If `main` added a one-word or short line (e.g., `break`, `pass`, `}`, `return`), and the PR deleted it but happened to author *any* new line in the file containing that token (e.g., `if error: break`), the true-positive revert of `break` will be incorrectly masked.\n- **Suggestion:** Require a minimum token count (e.g., `len(needle_tokens) >= 3`) before permitting Filter 2 to silence the missing line,",
+      "via": "openrouter",
+      "status": "degraded",
+      "reason": "provider reported the reply was cut off (finish_reason=length)"
+    }
+  },
+  "verdicts": {
+    "openai": "revise",
+    "gemini": "unavailable"
+  },
+  "statuses": {
+    "openai": "success",
+    "gemini": "degraded"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": false,
+    "requires_resolution": true,
+    "reason": "only one reviewer answered — gemini did not (gemini=unavailable, openai=revise)"
+  }
+}

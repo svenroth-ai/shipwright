@@ -1,0 +1,81 @@
+"""The OpenRouter HTTP boundary for the Tier-3 PR reviewer.
+
+The second of the tool's two I/O boundaries — `pr_review_gh` owns the subprocess
+one. Both are split out of `pr_review.py` so it holds orchestration only and
+stays under the source-size guideline, and so each boundary (with its timeout,
+its error mapping and, here, its Semgrep suppression) is reviewable on its own.
+
+Stdlib urllib only: the script carries no third-party HTTP dependency and runs
+under whatever environment `uv run` resolves on the CI runner.
+"""
+
+from __future__ import annotations
+
+import json
+import urllib.error
+import urllib.request
+
+__all__ = ["DEFAULT_MODEL", "DEFAULT_TIMEOUT", "OPENROUTER_URL", "call_openrouter"]
+
+DEFAULT_MODEL = "anthropic/claude-sonnet-4.6"
+OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
+
+# ONE default for the whole tool — the CLI flag and the direct call share it.
+# 120s was sized for a 200k-char cap. The cap is now 1M chars (~250k input
+# tokens) and the request is non-streaming, so a single blocking read must cover
+# prompt processing AND generation. A socket timeout maps to EXIT_ERROR — still
+# fail-closed, but it lands on exactly the large PRs the raise exists to
+# unblock, and it returns before any comment is posted.
+DEFAULT_TIMEOUT = 600
+
+
+def _post_openrouter(api_key: str, model: str, messages: list[dict], timeout: int) -> dict:
+    """POST the chat-completion request and return the parsed JSON body."""
+    payload = {
+        "model": model,
+        "messages": messages,
+        "response_format": {"type": "json_object"},
+    }
+    data = json.dumps(payload).encode("utf-8")
+    req = urllib.request.Request(
+        OPENROUTER_URL,
+        data=data,
+        headers={
+            "Authorization": f"Bearer {api_key}",
+            "Content-Type": "application/json",
+            # OpenRouter attribution headers (optional, recommended).
+            "HTTP-Referer": "https://github.com/svenroth-ai/shipwright",
+            "X-Title": "Shipwright PR Review",
+        },
+        method="POST",
+    )
+    # OPENROUTER_URL is a fixed `https://` module constant; no user/dynamic input reaches
+    # the request URL, so the dynamic-scheme (`file://`) / SSRF concern this Semgrep rule
+    # guards against cannot occur here — confirmed false positive, suppressed on the match line.
+    with urllib.request.urlopen(req, timeout=timeout) as resp:  # nosemgrep: python.lang.security.audit.dynamic-urllib-use-detected.dynamic-urllib-use-detected
+        body = resp.read().decode("utf-8")
+    return json.loads(body)
+
+
+def call_openrouter(api_key: str, model: str, messages: list[dict],
+                    timeout: int = DEFAULT_TIMEOUT) -> str:
+    """Call OpenRouter and return the assistant message content string.
+
+    Raises RuntimeError on transport failure (HTTP error, timeout) or an
+    unexpected response shape — the caller maps that to exit 2.
+    """
+    try:
+        data = _post_openrouter(api_key, model, messages, timeout)
+    except urllib.error.HTTPError as e:
+        detail = ""
+        try:
+            detail = e.read().decode("utf-8", errors="replace")
+        except Exception:  # noqa: BLE001 — best-effort body read
+            pass
+        raise RuntimeError(f"OpenRouter HTTP {e.code}: {detail}") from e
+    except (urllib.error.URLError, OSError, json.JSONDecodeError) as e:
+        raise RuntimeError(f"OpenRouter request failed: {e}") from e
+    try:
+        return data["choices"][0]["message"]["content"]
+    except (KeyError, IndexError, TypeError) as e:
+        raise RuntimeError(f"unexpected OpenRouter response shape: {e}") from e

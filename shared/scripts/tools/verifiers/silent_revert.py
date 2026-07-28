@@ -3,17 +3,12 @@
 **The failure this exists for.** PR #463 rewrote `docs/hooks-and-pipeline.md`
 from a stale base — 10 insertions, 83 deletions — silently reverting
 documentation belonging to four already-merged PRs. Every existing guard let it
-through, and each for a defensible reason:
-
-* the repo requires branches to be up to date, which is what *forces* the
-  integration in which the bad resolution happens — the enforcement is the
-  trigger, not the cure;
-* `ensure_current` correctly refuses to auto-resolve a non-churn conflict and
-  hands over to a human, which is where the wholesale "take my side" happens;
-* the `PR Review` LLM gate saw the whole diff and returned SUCCESS;
-* `Anti-ratchet` only ever asks whether a file GREW past its baseline;
-* and the squash-merge flattened the branch, so the resolution left no trace in
-  `main` to audit afterwards.
+through, and each for a defensible reason: requiring branches to be up to date is
+what *forces* the integration in which the bad resolution happens; `ensure_current`
+correctly refuses a non-churn conflict and hands to a human, which is where the
+wholesale "take my side" happens; the `PR Review` LLM gate saw the whole diff and
+returned SUCCESS; `Anti-ratchet` only ever asks whether a file GREW; and the
+squash-merge flattened the branch, leaving no trace in `main` to audit.
 
 **The question asked here is narrow and decidable.** Every line `main` gained
 since this branch forked must still be present in the branch's tree. A line that
@@ -31,13 +26,15 @@ Two things it deliberately does NOT do:
   exactly right; it just has to be said out loud, with a reason, like every
   other disposition in this pipeline.
 
-**The one undecidable case, on purpose.** If main changed a line and this branch
-then changed that same line again, "I built on their change" and "I threw their
-change away" are indistinguishable from the text — and that is exactly the #463
-shape at line granularity, where a whole file was replaced by an older copy. The
-check reports it and asks. Guessing in either direction is worse: guessing
-"fine" reproduces the original failure, guessing "revert" would block ordinary
-work with no way to proceed. The declaration is the answer.
+**The one undecidable case, narrowed but not eliminated.** If main changed a line
+and this branch then changed that same line again, "I built on their change" and
+"I threw their change away" are indistinguishable from the text. Where every word
+main wrote survives, in order, in the line that replaced it — and that
+replacement is one this branch could only have written after seeing theirs —
+:mod:`silent_revert_filters` settles it. The rest is still reported and asked
+about. Guessing either way is worse: guessing "fine" reproduces the original
+failure, guessing "revert" blocks ordinary work with no way through. The
+declaration is the answer.
 """
 
 from __future__ import annotations
@@ -53,36 +50,28 @@ from lib.churn_merge import CHURN_ALLOWLIST  # noqa: E402
 
 from .common import CheckResult, Severity  # noqa: E402
 from .git_helpers import _run_git  # noqa: E402
+from .silent_revert_filters import (  # noqa: E402
+    matches_default,
+    superseded_on_default,
+    unexplained_by_edit,
+)
+from .silent_revert_reading import (  # noqa: E402
+    read_side as _read_side,
+    resolve_default_ref as _resolve_default_ref,
+)
 
 _NAME = "no silent revert of merged work"
 
-#: Shown per file before truncating, so the operator sees WHAT is being lost
-#: rather than only a count.
+#: Shown per file before truncating, so the operator sees WHAT is being lost.
 _SAMPLE_LINES = 4
 _SAMPLE_CHARS = 120
-
-
-def _significant(line: str) -> bool:
-    """Formatting churn is not lost work."""
-    return bool(line.strip())
-
-
-def _file_lines(project_root: Path, ref: str, path: str) -> set[str] | None:
-    """The significant lines of ``path`` at ``ref``; ``None`` if absent there."""
-    rc, out, _ = _run_git(project_root, "show", f"{ref}:{path}")
-    if rc != 0:
-        return None
-    return {line.strip() for line in out.splitlines() if _significant(line)}
 
 
 def _integration_merges(root: Path, default_branch: str, head: str) -> list[tuple[str, str]]:
     """``(branch_parent, merged_in_parent)`` for the merges THIS BRANCH performed.
 
-    Scoped to ``default_branch..head`` — commits reachable from the branch but not
-    from the default branch. That is exactly the branch's own history, including
-    the integration merge it made, and it excludes every merge already part of the
-    default branch's past.
-
+    Scoped to ``default_branch..head`` — the branch's own history, including the
+    integration merges it made, and nothing already in the default branch's past.
     Walking the full history instead is both wrong and slow: for a merge that
     landed months ago, everything legitimately edited or deleted since reads as
     "dropped". A probe on this repo's real history reported 889 files for a
@@ -126,13 +115,22 @@ def dropped_lines(project_root, default_branch: str, head: str = "HEAD",
     ordinary edit (the old line is on main and absent here, by definition);
     subtracting ``B`` is what separates "I changed my line" from "I discarded
     theirs". Checking against ``head`` rather than the merge commit means content
-    restored in a later commit correctly counts as kept.
+    restored in a later commit correctly counts as kept. A branch that has not
+    integrated yet has no such merge and returns empty — ``BEHIND``, not a revert.
 
-    A branch that has not integrated yet has no such merge and returns empty —
-    that state is ``BEHIND``, not a revert.
+    Several things that satisfy ``gained - ours`` are not losses; each is settled
+    by a proof in :mod:`silent_revert_filters`, never by a threshold, and each
+    runs only once something was going to be reported. Per-path reads are memoised.
     """
     root = Path(project_root)
     dropped: dict[str, set[str]] = {}
+    # The ref the branch actually integrates — a stale local one silently skips
+    # whole merges AND answers "does main still carry this?" against the wrong
+    # tree, so every use takes the same resolved value.
+    default_branch = _resolve_default_ref(root, default_branch)
+    tip_cache: dict = {}
+    superseded_cache: dict = {}   # keyed (delivered, path)
+    edit_cache: dict = {}         # keyed path — its ref pair is always (default, head)
 
     for p1, p2 in _integration_merges(root, default_branch, head):
         rc, base, _ = _run_git(root, "merge-base", p1, p2)
@@ -152,19 +150,38 @@ def dropped_lines(project_root, default_branch: str, head: str = "HEAD",
         for path in (p.strip() for p in out.splitlines() if p.strip()):
             if path in CHURN_ALLOWLIST:
                 # Derived artifacts are REGENERATED from the merged tree, not
-                # merged line-by-line — that is what CHURN_ALLOWLIST marks. Their
-                # content legitimately changes wholesale on every integration, so
-                # comparing them here flags all eleven of them on every single
+                # merged line-by-line. Their content legitimately changes wholesale
+                # on every integration, so comparing them flags all eleven on every
                 # iterate. Caught by running this check against its own branch.
                 continue
-            theirs = _file_lines(root, p2, path)
-            if theirs is None:
-                continue  # they deleted it too — not this branch's doing
-            gained = theirs - (_file_lines(root, base, path) or set())
+            # Strongest of the three proofs and the cheapest, so it is asked first:
+            # if the two trees agree about the file, nothing in it can be a loss.
+            if matches_default(root, default_branch, head, path, tip_cache, problems):
+                continue
+            # Every side goes through read_side: an unreadable one is DISCLOSED,
+            # never inferred as an absence (external code review).
+            theirs, ok = _read_side(root, p2, path, problems)
+            if not ok or theirs is None:
+                continue  # unreadable (disclosed) or they deleted it too
+            base_lines = _read_side(root, base, path, problems)[0] or set()
+            gained = theirs - base_lines
             if not gained:
                 continue
-            ours = _file_lines(root, head, path)
+            ours = _read_side(root, head, path, problems)[0]
             missing = gained if ours is None else gained - ours
+            if missing:
+                missing = superseded_on_default(
+                    root, default_branch, p2, head, path, missing, superseded_cache)
+            # Skipped when our side is absent: the branch deleted the file, so the
+            # diff holds only deletions and there is nothing to pair with. Saves
+            # the git call; the outcome is the same either way.
+            if missing and ours is not None:
+                # A replacement only counts if this branch could have written it
+                # AFTER seeing theirs — so neither the merge base nor the branch's
+                # own pre-merge side may vouch for a line they predate.
+                excluded = base_lines | (_read_side(root, p1, path, problems)[0] or set())
+                missing = unexplained_by_edit(
+                    root, default_branch, head, path, missing, excluded, edit_cache)
             if missing:
                 dropped.setdefault(path, set()).update(missing)
 
@@ -192,6 +209,11 @@ def check_no_silent_revert(
     if rc != 0 or out.strip() != "true":
         return CheckResult(_NAME, True, "skipped (not a git work tree)",
                            severity=Severity.SKIPPED.value)
+    # Resolve BEFORE the pre-flight so the ref that is validated, the ref that is
+    # compared, and the ref the operator is told about are all the same one. This
+    # run exists because an operator was handed four findings they could not
+    # verify; naming a ref the comparison did not use is that failure in miniature.
+    default_branch = _resolve_default_ref(root, default_branch)
     rc, _, _ = _run_git(root, "rev-parse", "--verify", f"{default_branch}^{{commit}}")
     if rc != 0:
         # Honest degradation: unresolvable base means the comparison did not run.
@@ -205,13 +227,20 @@ def check_no_silent_revert(
 
     problems: list[str] = []
     dropped = dropped_lines(root, default_branch, problems=problems)
-    if problems:
+    undeclared = {p: lines for p, lines in dropped.items() if not _covered(p, declared_removals)}
+    # Order matters: findings first. Returning a (non-blocking) SKIP the moment
+    # ANY path was unreadable would let one unreadable file convert a real block
+    # over every other path into a pass that names none of them (Stage-3 review).
+    if problems and not undeclared:
         return CheckResult(
             _NAME, True,
             "skipped (comparison could not be made: " + "; ".join(problems[:3]) + ")",
             severity=Severity.SKIPPED.value,
         )
-    undeclared = {p: lines for p, lines in dropped.items() if not _covered(p, declared_removals)}
+    incomplete = (
+        f"  (comparison also incomplete for {len(problems)} path(s): {problems[0]})"
+        if problems else ""
+    )
 
     if not undeclared:
         if dropped:
@@ -232,7 +261,8 @@ def check_no_silent_revert(
         "work merged by someone else would be reverted by this change: "
         + " | ".join(parts)
         + "  →  re-integrate and resolve as a UNION, or declare the removal with a reason "
-          "in shipwright_test_results.json iterate_latest.declared_removals[{path,reason}]",
+          "in shipwright_test_results.json iterate_latest.declared_removals[{path,reason}]"
+        + incomplete,
     )
 
 
