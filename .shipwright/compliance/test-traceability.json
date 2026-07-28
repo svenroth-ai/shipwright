@@ -1,9 +1,9 @@
 {
   "schema_version": 3,
   "collector_version": "test_links/1.0.0",
-  "generated_at": "2026-07-27T20:12:50.912171+00:00",
-  "source_commit": "f5f0331638442c0eb3b6bd17a503333462e8ad3d",
-  "spec_hash": "sha256:29e8eff9a68eaa4f9e6717777c0396acbd36403c7aaacb1f2c8f59ba25a7130d",
+  "generated_at": "2026-07-27T19:47:47.363461+00:00",
+  "source_commit": "04a9383add90bf7af04435e301f3ec27eaa7e882",
+  "spec_hash": "sha256:4a2f146b396cc9077aab4166a91401789a6e724d84b65e2463e8e4ad06498f40",
   "requirements": {
     "01::FR-01.01": {
       "id": "FR-01.01",
@@ -945,7 +945,7 @@
             "path": "shared/tests/test_known_failures.py::test_absent_file_is_an_empty_baseline_not_an_error",
             "layer": "unit",
             "status": "enabled",
-            "executed": "pass",
+            "executed": "not_run",
             "tag_source": "pytest_marker"
           },
           {
@@ -953,7 +953,7 @@
             "path": "shared/tests/test_known_failures.py::test_declared_entries_are_read_with_their_metadata",
             "layer": "unit",
             "status": "enabled",
-            "executed": "pass",
+            "executed": "not_run",
             "tag_source": "pytest_marker"
           },
           {
@@ -961,7 +961,7 @@
             "path": "shared/tests/test_known_failures.py::test_explicit_baseline_count_wins_over_the_derived_sum",
             "layer": "unit",
             "status": "enabled",
-            "executed": "pass",
+            "executed": "not_run",
             "tag_source": "pytest_marker"
           },
           {
@@ -969,7 +969,7 @@
             "path": "shared/tests/test_known_failures.py::test_malformed_file_is_flagged_but_yields_a_zero_baseline",
             "layer": "unit",
             "status": "enabled",
-            "executed": "pass",
+            "executed": "not_run",
             "tag_source": "pytest_marker"
           },
           {
@@ -977,7 +977,7 @@
             "path": "shared/tests/test_known_failures.py::test_a_non_object_payload_is_malformed_not_a_crash",
             "layer": "unit",
             "status": "enabled",
-            "executed": "pass",
+            "executed": "not_run",
             "tag_source": "pytest_marker"
           },
           {
@@ -985,7 +985,7 @@
             "path": "shared/tests/test_known_failures.py::test_non_list_known_failures_key_is_malformed",
             "layer": "unit",
             "status": "enabled",
-            "executed": "pass",
+            "executed": "not_run",
             "tag_source": "pytest_marker"
           },
           {
@@ -993,7 +993,7 @@
             "path": "shared/tests/test_known_failures.py::test_garbage_entries_are_skipped_without_losing_the_good_ones",
             "layer": "unit",
             "status": "enabled",
-            "executed": "pass",
+            "executed": "not_run",
             "tag_source": "pytest_marker"
           },
           {
@@ -1001,7 +1001,7 @@
             "path": "shared/tests/test_known_failures.py::test_a_non_integer_count_falls_back_to_one",
             "layer": "unit",
             "status": "enabled",
-            "executed": "pass",
+            "executed": "not_run",
             "tag_source": "pytest_marker"
           },
           {
@@ -1009,7 +1009,7 @@
             "path": "shared/tests/test_known_failures.py::test_within_baseline_mirrors_the_audit_rule",
             "layer": "unit",
             "status": "enabled",
-            "executed": "pass",
+            "executed": "not_run",
             "tag_source": "pytest_marker"
           },
           {
@@ -1017,7 +1017,7 @@
             "path": "shared/tests/test_known_failures.py::test_genuine_failure_count_prefers_an_explicit_failed_number",
             "layer": "unit",
             "status": "enabled",
-            "executed": "pass",
+            "executed": "not_run",
             "tag_source": "pytest_marker"
           },
           {
@@ -1025,7 +1025,7 @@
             "path": "shared/tests/test_known_failures.py::test_genuine_failure_count_subtracts_skips_when_failed_is_absent",
             "layer": "unit",
             "status": "enabled",
-            "executed": "pass",
+            "executed": "not_run",
             "tag_source": "pytest_marker"
           },
           {
@@ -1033,7 +1033,7 @@
             "path": "shared/tests/test_known_failures.py::test_genuine_failure_count_falls_back_to_the_bare_gap",
             "layer": "unit",
             "status": "enabled",
-            "executed": "pass",
+            "executed": "not_run",
             "tag_source": "pytest_marker"
           },
           {
@@ -1041,7 +1041,7 @@
             "path": "shared/tests/test_known_failures.py::test_genuine_failure_count_never_goes_negative",
             "layer": "unit",
             "status": "enabled",
-            "executed": "pass",
+            "executed": "not_run",
             "tag_source": "pytest_marker"
           },
           {
@@ -1049,7 +1049,7 @@
             "path": "shared/tests/test_known_failures.py::test_split_accepted_separates_declared_failures_from_genuine_ones",
             "layer": "unit",
             "status": "enabled",
-            "executed": "pass",
+            "executed": "not_run",
             "tag_source": "pytest_marker"
           },
           {
@@ -1057,7 +1057,7 @@
             "path": "shared/tests/test_known_failures.py::test_split_accepted_matches_a_declared_substring_of_the_reported_name",
             "layer": "unit",
             "status": "enabled",
-            "executed": "pass",
+            "executed": "not_run",
             "tag_source": "pytest_marker"
           },
           {
@@ -1065,7 +1065,7 @@
             "path": "shared/tests/test_known_failures.py::test_split_accepted_does_not_match_on_a_partial_word",
             "layer": "unit",
             "status": "enabled",
-            "executed": "pass",
+            "executed": "not_run",
             "tag_source": "pytest_marker"
           },
           {
@@ -1073,7 +1073,7 @@
             "path": "shared/tests/test_known_failures.py::test_a_declared_failure_that_did_not_fire_does_not_excuse_a_different_one",
             "layer": "unit",
             "status": "enabled",
-            "executed": "pass",
+            "executed": "not_run",
             "tag_source": "pytest_marker"
           },
           {
@@ -1081,7 +1081,7 @@
             "path": "shared/tests/test_known_failures.py::test_split_accepted_with_no_baseline_calls_everything_genuine",
             "layer": "unit",
             "status": "enabled",
-            "executed": "pass",
+            "executed": "not_run",
             "tag_source": "pytest_marker"
           },
           {
@@ -1089,7 +1089,7 @@
             "path": "shared/tests/test_known_failures.py::test_split_accepted_tolerates_non_string_failure_names",
             "layer": "unit",
             "status": "enabled",
-            "executed": "pass",
+            "executed": "not_run",
             "tag_source": "pytest_marker"
           },
           {
@@ -1097,7 +1097,7 @@
             "path": "shared/tests/test_known_failures.py::test_a_project_with_an_adoption_block_is_brownfield",
             "layer": "unit",
             "status": "enabled",
-            "executed": "pass",
+            "executed": "not_run",
             "tag_source": "pytest_marker"
           },
           {
@@ -1105,7 +1105,7 @@
             "path": "shared/tests/test_known_failures.py::test_an_empty_adoption_block_is_not_adoption",
             "layer": "unit",
             "status": "enabled",
-            "executed": "pass",
+            "executed": "not_run",
             "tag_source": "pytest_marker"
           },
           {
@@ -1113,7 +1113,7 @@
             "path": "shared/tests/test_known_failures.py::test_scope_is_not_the_adoption_signal",
             "layer": "unit",
             "status": "enabled",
-            "executed": "pass",
+            "executed": "not_run",
             "tag_source": "pytest_marker"
           },
           {
@@ -1121,7 +1121,7 @@
             "path": "shared/tests/test_known_failures.py::test_a_missing_or_broken_run_config_reads_as_greenfield",
             "layer": "unit",
             "status": "enabled",
-            "executed": "pass",
+            "executed": "not_run",
             "tag_source": "pytest_marker"
           },
           {
@@ -1129,7 +1129,7 @@
             "path": "shared/tests/test_known_failures_audit_parity.py::test_the_audit_and_the_test_phase_agree_on_failing",
             "layer": "unit",
             "status": "enabled",
-            "executed": "pass",
+            "executed": "not_run",
             "tag_source": "pytest_marker"
           },
           {
@@ -1137,7 +1137,7 @@
             "path": "shared/tests/test_known_failures_audit_parity.py::test_a_gap_the_declared_baseline_covers_is_failing_to_neither",
             "layer": "unit",
             "status": "enabled",
-            "executed": "pass",
+            "executed": "not_run",
             "tag_source": "pytest_marker"
           },
           {
@@ -1145,7 +1145,7 @@
             "path": "shared/tests/test_known_failures_audit_parity.py::test_a_gap_beyond_the_baseline_is_where_the_two_deliberately_differ",
             "layer": "unit",
             "status": "enabled",
-            "executed": "pass",
+            "executed": "not_run",
             "tag_source": "pytest_marker"
           },
           {
@@ -1153,7 +1153,7 @@
             "path": "shared/tests/test_known_failures_audit_parity.py::test_they_agree_that_an_exact_residual_is_not_waived_by_the_baseline",
             "layer": "unit",
             "status": "enabled",
-            "executed": "pass",
+            "executed": "not_run",
             "tag_source": "pytest_marker"
           },
           {
@@ -1161,7 +1161,7 @@
             "path": "shared/tests/test_known_failures_audit_parity.py::test_an_explicit_failed_count_matches_the_audits_derived_one",
             "layer": "unit",
             "status": "enabled",
-            "executed": "pass",
+            "executed": "not_run",
             "tag_source": "pytest_marker"
           },
           {
@@ -1169,7 +1169,7 @@
             "path": "shared/tests/test_known_failures_audit_parity.py::test_within_baseline_still_mirrors_the_audits_no_skip_field_branch",
             "layer": "unit",
             "status": "enabled",
-            "executed": "pass",
+            "executed": "not_run",
             "tag_source": "pytest_marker"
           },
           {
@@ -1177,7 +1177,7 @@
             "path": "shared/tests/test_test_checks_accepted_baseline.py::test_a_gap_with_no_declared_baseline_still_warns",
             "layer": "unit",
             "status": "enabled",
-            "executed": "pass",
+            "executed": "not_run",
             "tag_source": "pytest_marker"
           },
           {
@@ -1185,7 +1185,7 @@
             "path": "shared/tests/test_test_checks_accepted_baseline.py::test_a_green_run_still_passes",
             "layer": "unit",
             "status": "enabled",
-            "executed": "pass",
+            "executed": "not_run",
             "tag_source": "pytest_marker"
           },
           {
@@ -1193,7 +1193,7 @@
             "path": "shared/tests/test_test_checks_accepted_baseline.py::test_an_empty_run_is_still_never_a_pass",
             "layer": "unit",
             "status": "enabled",
-            "executed": "pass",
+            "executed": "not_run",
             "tag_source": "pytest_marker"
           },
           {
@@ -1201,7 +1201,7 @@
             "path": "shared/tests/test_test_checks_accepted_baseline.py::test_an_unbroken_gap_within_the_declared_baseline_does_not_fail_the_check",
             "layer": "unit",
             "status": "enabled",
-            "executed": "pass",
+            "executed": "not_run",
             "tag_source": "pytest_marker"
           },
           {
@@ -1209,7 +1209,7 @@
             "path": "shared/tests/test_test_checks_accepted_baseline.py::test_an_exactly_counted_failure_is_not_waived_by_the_baseline",
             "layer": "unit",
             "status": "enabled",
-            "executed": "pass",
+            "executed": "not_run",
             "tag_source": "pytest_marker"
           },
           {
@@ -1217,7 +1217,7 @@
             "path": "shared/tests/test_test_checks_accepted_baseline.py::test_a_gap_beyond_the_baseline_still_warns_and_names_both_numbers",
             "layer": "unit",
             "status": "enabled",
-            "executed": "pass",
+            "executed": "not_run",
             "tag_source": "pytest_marker"
           },
           {
@@ -1225,7 +1225,7 @@
             "path": "shared/tests/test_test_checks_accepted_baseline.py::test_an_unreadable_baseline_file_never_widens_what_is_excused",
             "layer": "unit",
             "status": "enabled",
-            "executed": "pass",
+            "executed": "not_run",
             "tag_source": "pytest_marker"
           },
           {
@@ -1233,7 +1233,7 @@
             "path": "shared/tests/test_test_checks_accepted_baseline.py::test_an_explicit_failed_count_is_preferred_over_the_bare_gap",
             "layer": "unit",
             "status": "enabled",
-            "executed": "pass",
+            "executed": "not_run",
             "tag_source": "pytest_marker"
           },
           {
@@ -1241,7 +1241,7 @@
             "path": "shared/tests/test_test_checks_accepted_baseline.py::test_skips_are_subtracted_when_no_failed_count_is_recorded",
             "layer": "unit",
             "status": "enabled",
-            "executed": "pass",
+            "executed": "not_run",
             "tag_source": "pytest_marker"
           },
           {
@@ -1249,7 +1249,7 @@
             "path": "shared/tests/test_test_checks_accepted_baseline.py::test_skips_plus_a_real_failure_still_warns",
             "layer": "unit",
             "status": "enabled",
-            "executed": "pass",
+            "executed": "not_run",
             "tag_source": "pytest_marker"
           },
           {
@@ -1257,7 +1257,7 @@
             "path": "shared/tests/test_test_checks_accepted_baseline.py::test_a_skip_only_gap_does_not_consume_accepted_failure_allowance",
             "layer": "unit",
             "status": "enabled",
-            "executed": "pass",
+            "executed": "not_run",
             "tag_source": "pytest_marker"
           },
           {
@@ -1265,7 +1265,7 @@
             "path": "shared/tests/test_test_checks_accepted_baseline.py::test_an_explicit_skip_count_also_makes_the_residual_exact",
             "layer": "unit",
             "status": "enabled",
-            "executed": "pass",
+            "executed": "not_run",
             "tag_source": "pytest_marker"
           },
           {
@@ -1273,7 +1273,7 @@
             "path": "shared/tests/test_test_checks_accepted_baseline.py::test_a_malformed_results_file_is_still_an_error",
             "layer": "unit",
             "status": "enabled",
-            "executed": "pass",
+            "executed": "not_run",
             "tag_source": "pytest_marker"
           },
           {
@@ -1281,13 +1281,13 @@
             "path": "shared/tests/test_test_checks_accepted_baseline.py::test_a_non_integer_failed_field_falls_back_rather_than_crashing",
             "layer": "unit",
             "status": "enabled",
-            "executed": "pass",
+            "executed": "not_run",
             "tag_source": "pytest_marker"
           }
         ]
       },
       "coverage": {
-        "unit": "ok"
+        "unit": "MISSING"
       }
     },
     "01::FR-01.07": {
@@ -3709,6 +3709,22 @@
     "plugins/shipwright-build/tests/test_skill_references_link.py::test_kern_skill_md_under_300_loc",
     "plugins/shipwright-build/tests/test_skill_references_link.py::test_references_dir_exists",
     "plugins/shipwright-build/tests/test_skill_references_link.py::test_skill_md_exists",
+    "plugins/shipwright-build/tests/test_skill_writeback_rules.py::test_attribution_check_is_wired",
+    "plugins/shipwright-build/tests/test_skill_writeback_rules.py::test_autonomous_path_declares_and_checks_too",
+    "plugins/shipwright-build/tests/test_skill_writeback_rules.py::test_autonomous_priority_ladder_does_not_silently_settle_contradictions",
+    "plugins/shipwright-build/tests/test_skill_writeback_rules.py::test_carve_out_requires_the_change_to_be_smallest_and_recorded",
+    "plugins/shipwright-build/tests/test_skill_writeback_rules.py::test_carve_out_states_what_the_rule_actually_forbids",
+    "plugins/shipwright-build/tests/test_skill_writeback_rules.py::test_contradiction_decision_is_recorded",
+    "plugins/shipwright-build/tests/test_skill_writeback_rules.py::test_contradiction_rule_is_honest_about_having_no_automatic_check",
+    "plugins/shipwright-build/tests/test_skill_writeback_rules.py::test_contradiction_rule_names_the_expected_resolution",
+    "plugins/shipwright-build/tests/test_skill_writeback_rules.py::test_contradiction_rule_says_stop_and_asks_a_person",
+    "plugins/shipwright-build/tests/test_skill_writeback_rules.py::test_declaration_is_recorded_after_the_section_commit",
+    "plugins/shipwright-build/tests/test_skill_writeback_rules.py::test_every_scope_rule_site_carries_the_shared_touch_carve_out",
+    "plugins/shipwright-build/tests/test_skill_writeback_rules.py::test_every_script_the_prompt_names_actually_exists",
+    "plugins/shipwright-build/tests/test_skill_writeback_rules.py::test_reviewers_and_autonomous_path_also_stop_on_a_contradiction",
+    "plugins/shipwright-build/tests/test_skill_writeback_rules.py::test_skill_step_1_carries_the_contradiction_stop_rule",
+    "plugins/shipwright-build/tests/test_skill_writeback_rules.py::test_spec_reviewer_output_schema_carries_the_contradiction_kind",
+    "plugins/shipwright-build/tests/test_skill_writeback_rules.py::test_step_10b_declares_the_requirement_impact",
     "plugins/shipwright-build/tests/test_tools.py::test_design_fidelity_report_build_complete_marker",
     "plugins/shipwright-build/tests/test_tools.py::test_design_fidelity_report_merge_multiple_sections",
     "plugins/shipwright-build/tests/test_tools.py::test_no_design_fidelity_report_when_no_args",
@@ -5237,6 +5253,18 @@
     "plugins/shipwright-design/tests/test_skill_references_link.py::test_kern_skill_md_under_300_loc",
     "plugins/shipwright-design/tests/test_skill_references_link.py::test_references_dir_exists",
     "plugins/shipwright-design/tests/test_skill_references_link.py::test_skill_md_exists",
+    "plugins/shipwright-design/tests/test_skill_writeback_rules.py::test_declaration_command_carries_its_identity_and_evidence",
+    "plugins/shipwright-design/tests/test_skill_writeback_rules.py::test_every_script_the_prompt_names_actually_exists",
+    "plugins/shipwright-design/tests/test_skill_writeback_rules.py::test_flow_diagram_shows_the_declaration_step",
+    "plugins/shipwright-design/tests/test_skill_writeback_rules.py::test_iteration_mode_points_at_the_declaration",
+    "plugins/shipwright-design/tests/test_skill_writeback_rules.py::test_option_a_has_a_requirement_write_back_gate",
+    "plugins/shipwright-design/tests/test_skill_writeback_rules.py::test_option_b_backflow_writes_requirement_substance_not_only_pointers",
+    "plugins/shipwright-design/tests/test_skill_writeback_rules.py::test_option_b_carries_the_behaviour_vs_appearance_read",
+    "plugins/shipwright-design/tests/test_skill_writeback_rules.py::test_option_b_records_the_declaration",
+    "plugins/shipwright-design/tests/test_skill_writeback_rules.py::test_option_b_snapshots_a_baseline_before_revising",
+    "plugins/shipwright-design/tests/test_skill_writeback_rules.py::test_write_back_gate_documents_its_exit_codes",
+    "plugins/shipwright-design/tests/test_skill_writeback_rules.py::test_write_back_gate_rejects_a_declaration_from_another_run",
+    "plugins/shipwright-design/tests/test_skill_writeback_rules.py::test_write_back_gate_runs_a_real_checker_not_a_prose_instruction",
     "plugins/shipwright-grade/tests/empirical/test_empirical.py::test_calibration_ordering",
     "plugins/shipwright-grade/tests/empirical/test_empirical.py::test_edge_repo_grades_without_crash",
     "plugins/shipwright-grade/tests/empirical/test_empirical.py::test_real_repo_grade_in_band",
@@ -8048,6 +8076,34 @@
     "shared/tests/test_check_iterate_isolation.py::test_blocks_when_snapshot_missing",
     "shared/tests/test_check_iterate_isolation.py::test_check_script_exists",
     "shared/tests/test_check_iterate_isolation.py::test_tolerates_preexisting_main_tree_dirt",
+    "shared/tests/test_check_required_checks_cli.py::test_a_repo_that_requires_nothing_reads_as_empty_not_unreadable",
+    "shared/tests/test_check_required_checks_cli.py::test_both_mechanisms_union",
+    "shared/tests/test_check_required_checks_cli.py::test_classic_branch_protection_is_still_read",
+    "shared/tests/test_check_required_checks_cli.py::test_contexts_come_from_rulesets",
+    "shared/tests/test_check_required_checks_cli.py::test_drift_files_one_item_keyed_on_repo_and_branch",
+    "shared/tests/test_check_required_checks_cli.py::test_empty_configured_set_makes_every_check_unenforced",
+    "shared/tests/test_check_required_checks_cli.py::test_in_sync_repo_exits_0_and_files_nothing",
+    "shared/tests/test_check_required_checks_cli.py::test_missing_gh_exits_2_without_a_traceback",
+    "shared/tests/test_check_required_checks_cli.py::test_neither_mechanism_readable_raises",
+    "shared/tests/test_check_required_checks_cli.py::test_one_mechanism_unreadable_does_not_sink_the_other",
+    "shared/tests/test_check_required_checks_cli.py::test_the_policy_is_read_for_the_named_branch",
+    "shared/tests/test_check_required_checks_cli.py::test_unparseable_response_is_not_read_as_empty",
+    "shared/tests/test_check_required_checks_cli.py::test_unreachable_repo_exits_2_before_any_policy_lookup",
+    "shared/tests/test_check_required_checks_io.py::test_a_failure_with_no_http_code_carries_no_status",
+    "shared/tests/test_check_required_checks_io.py::test_a_non_github_remote_is_refused_not_guessed_at",
+    "shared/tests/test_check_required_checks_io.py::test_gh_timeout_is_a_controlled_error",
+    "shared/tests/test_check_required_checks_io.py::test_git_itself_failing_is_a_controlled_error",
+    "shared/tests/test_check_required_checks_io.py::test_github_remotes_resolve_to_owner_name",
+    "shared/tests/test_check_required_checks_io.py::test_http_status_is_carried_off_stderr",
+    "shared/tests/test_check_required_checks_io.py::test_missing_gh_binary_is_a_controlled_error",
+    "shared/tests/test_check_required_checks_io.py::test_missing_origin_is_refused",
+    "shared/tests/test_checks_that_gate.py::test_a_verifier_named_only_in_a_comment_is_still_an_orphan",
+    "shared/tests/test_checks_that_gate.py::test_every_surface_verifier_is_wired_to_some_workflow",
+    "shared/tests/test_checks_that_gate.py::test_gated_script_exists",
+    "shared/tests/test_checks_that_gate.py::test_surface_verifier_is_a_hard_gate",
+    "shared/tests/test_checks_that_gate.py::test_surface_verifier_runs_in_the_required_job",
+    "shared/tests/test_checks_that_gate.py::test_the_gate_guard_can_see_the_surface_gates",
+    "shared/tests/test_checks_that_gate.py::test_the_sweep_verifier_does_not_hand_its_own_ci_flag_to_its_subject",
     "shared/tests/test_churn_merge.py::test_architecture_md_is_NOT_allowlisted_so_it_blocks",
     "shared/tests/test_churn_merge.py::test_ci_security_json_in_churn_allowlist",
     "shared/tests/test_churn_merge.py::test_classify_admits_campaign_status_via_glob",
@@ -10049,35 +10105,35 @@
     "shared/tests/test_record_requirement_impact.py::test_record_round_trips_through_the_reader",
     "shared/tests/test_record_requirement_impact.py::test_rerecording_the_same_identity_overwrites_in_place",
     "shared/tests/test_record_requirement_impact.py::test_same_scope_under_two_runs_produces_two_records",
-    "shared/tests/test_record_review_pass_cli.py::test_a_forced_correction_must_also_restate_the_marker",
     "shared/tests/test_record_review_pass_cli.py::test_a_generic_disposition_is_rejected",
-    "shared/tests/test_record_review_pass_cli.py::test_a_leg_that_fails_to_parse_makes_the_merge_partial",
     "shared/tests/test_record_review_pass_cli.py::test_a_marker_is_not_written_for_an_internal_type",
-    "shared/tests/test_record_review_pass_cli.py::test_a_not_applicable_marker_type_needs_no_marker_status",
-    "shared/tests/test_record_review_pass_cli.py::test_a_not_run_pass_records_no_findings_even_with_a_payload",
     "shared/tests/test_record_review_pass_cli.py::test_a_plan_record_dual_writes_the_legacy_marker",
-    "shared/tests/test_record_review_pass_cli.py::test_a_provider_that_errored_counts_toward_the_denominator",
-    "shared/tests/test_record_review_pass_cli.py::test_a_restatement_is_rejected_not_answered_with_success",
-    "shared/tests/test_record_review_pass_cli.py::test_an_out_of_vocabulary_marker_status_is_rejected",
-    "shared/tests/test_record_review_pass_cli.py::test_an_unitemizable_review_does_not_reach_the_marker_as_a_clean_zero",
-    "shared/tests/test_record_review_pass_cli.py::test_an_unsafe_run_id_is_reported_as_json",
-    "shared/tests/test_record_review_pass_cli.py::test_close_missing_can_be_scoped_to_named_types",
     "shared/tests/test_record_review_pass_cli.py::test_close_missing_closes_every_outstanding_type",
     "shared/tests/test_record_review_pass_cli.py::test_close_missing_leaves_already_recorded_types_alone",
     "shared/tests/test_record_review_pass_cli.py::test_close_missing_refuses_to_assert_completed_in_bulk",
-    "shared/tests/test_record_review_pass_cli.py::test_close_missing_rejects_an_unknown_type",
     "shared/tests/test_record_review_pass_cli.py::test_force_overrides_immutability",
-    "shared/tests/test_record_review_pass_cli.py::test_init_over_a_corrupt_record_reports_json_not_a_traceback",
     "shared/tests/test_record_review_pass_cli.py::test_re_recording_a_terminal_type_exits_3",
-    "shared/tests/test_record_review_pass_cli.py::test_re_running_a_marker_bearing_record_repairs_instead_of_dead_ending",
-    "shared/tests/test_record_review_pass_cli.py::test_recording_a_marker_type_as_completed_requires_a_marker_status",
     "shared/tests/test_record_review_pass_cli.py::test_recording_all_five_types_makes_the_gate_pass",
-    "shared/tests/test_record_review_pass_cli.py::test_repair_markers_refuses_when_nothing_is_recorded_yet",
-    "shared/tests/test_record_review_pass_cli.py::test_repair_markers_rewrites_the_marker_without_touching_the_record",
+    "shared/tests/test_record_review_pass_cli_doubt.py::test_a_forced_correction_must_also_restate_the_marker",
+    "shared/tests/test_record_review_pass_cli_doubt.py::test_a_not_run_pass_records_no_findings_even_with_a_payload",
+    "shared/tests/test_record_review_pass_cli_doubt.py::test_a_provider_that_errored_counts_toward_the_denominator",
+    "shared/tests/test_record_review_pass_cli_doubt.py::test_a_restatement_is_rejected_not_answered_with_success",
+    "shared/tests/test_record_review_pass_cli_doubt.py::test_an_unitemizable_review_does_not_reach_the_marker_as_a_clean_zero",
+    "shared/tests/test_record_review_pass_cli_doubt.py::test_close_missing_can_be_scoped_to_named_types",
+    "shared/tests/test_record_review_pass_cli_doubt.py::test_close_missing_rejects_an_unknown_type",
     "shared/tests/test_record_review_pass_cli_floor.py::test_close_missing_does_not_satisfy_the_floor_at_medium",
     "shared/tests/test_record_review_pass_cli_floor.py::test_close_missing_still_unblocks_a_small_run",
     "shared/tests/test_record_review_pass_cli_floor.py::test_close_missing_still_unblocks_a_trivial_run",
     "shared/tests/test_record_review_pass_cli_floor.py::test_recording_one_real_review_clears_the_floor",
+    "shared/tests/test_record_review_pass_cli_regressions.py::test_a_leg_that_fails_to_parse_makes_the_merge_partial",
+    "shared/tests/test_record_review_pass_cli_regressions.py::test_a_not_applicable_marker_type_needs_no_marker_status",
+    "shared/tests/test_record_review_pass_cli_regressions.py::test_an_out_of_vocabulary_marker_status_is_rejected",
+    "shared/tests/test_record_review_pass_cli_regressions.py::test_an_unsafe_run_id_is_reported_as_json",
+    "shared/tests/test_record_review_pass_cli_regressions.py::test_init_over_a_corrupt_record_reports_json_not_a_traceback",
+    "shared/tests/test_record_review_pass_cli_regressions.py::test_re_running_a_marker_bearing_record_repairs_instead_of_dead_ending",
+    "shared/tests/test_record_review_pass_cli_regressions.py::test_recording_a_marker_type_as_completed_requires_a_marker_status",
+    "shared/tests/test_record_review_pass_cli_regressions.py::test_repair_markers_refuses_when_nothing_is_recorded_yet",
+    "shared/tests/test_record_review_pass_cli_regressions.py::test_repair_markers_rewrites_the_marker_without_touching_the_record",
     "shared/tests/test_reducibility_gate.py::test_catalog_defines_finding_contract",
     "shared/tests/test_reducibility_gate.py::test_catalog_encodes_behavioral_rules",
     "shared/tests/test_reducibility_gate.py::test_catalog_exists",
@@ -10102,6 +10158,19 @@
     "shared/tests/test_repo_root.py::test_main_repo_root_non_git_returns_none_silently",
     "shared/tests/test_repo_root.py::test_main_repo_root_plain_repo",
     "shared/tests/test_repo_root.py::test_main_repo_root_str_project_root_accepted",
+    "shared/tests/test_required_checks_drift.py::test_a_check_nobody_requires_is_unenforced",
+    "shared/tests/test_required_checks_drift.py::test_a_required_check_nothing_produces_is_phantom",
+    "shared/tests/test_required_checks_drift.py::test_a_workflow_that_cannot_run_on_a_pr_is_not_derived",
+    "shared/tests/test_required_checks_drift.py::test_advisory_contexts_are_not_drift",
+    "shared/tests/test_required_checks_drift.py::test_both_directions_are_reported_together",
+    "shared/tests/test_required_checks_drift.py::test_dedup_key_is_stable_and_divergence_specific",
+    "shared/tests/test_required_checks_drift.py::test_empty_derived_never_reads_as_in_sync",
+    "shared/tests/test_required_checks_drift.py::test_enumeration_covers_every_workflow_not_just_adopts_five",
+    "shared/tests/test_required_checks_drift.py::test_enumeration_skips_an_unparseable_workflow",
+    "shared/tests/test_required_checks_drift.py::test_enumeration_survives_a_repo_with_no_workflows",
+    "shared/tests/test_required_checks_drift.py::test_identical_sets_are_in_sync",
+    "shared/tests/test_required_checks_drift.py::test_the_monorepos_manual_launch_gate_is_not_reported_as_drift",
+    "shared/tests/test_required_checks_drift.py::test_whitespace_and_blanks_do_not_create_phantom_drift",
     "shared/tests/test_requirement_elicitation_refs.py::test_context_format_exists_and_is_non_empty",
     "shared/tests/test_requirement_elicitation_refs.py::test_context_format_retains_cited_sections",
     "shared/tests/test_requirement_elicitation_refs.py::test_context_format_states_the_glossary_distinction",
@@ -10469,6 +10538,12 @@
     "shared/tests/test_security_findings_gh_tag_drop.py::test_import_findings_alarm_fires_without_accept",
     "shared/tests/test_security_findings_gh_tag_drop.py::test_import_findings_no_alarm_when_gh_owned_accepted",
     "shared/tests/test_security_findings_gh_tag_drop.py::test_owner_base_dir_rejects_absolute_and_traversal",
+    "shared/tests/test_security_gate_verdict.py::test_breakdown_reaches_the_job_summary",
+    "shared/tests/test_security_gate_verdict.py::test_every_severity_is_counted_across_both_scan_outputs",
+    "shared/tests/test_security_gate_verdict.py::test_passing_with_open_high_findings_is_said_out_loud",
+    "shared/tests/test_security_gate_verdict.py::test_reporting_cannot_fail_the_gate",
+    "shared/tests/test_security_gate_verdict.py::test_the_gate_itself_still_blocks_on_critical_only",
+    "shared/tests/test_security_gate_verdict.py::test_verdict_is_labelled_not_a_bare_count",
     "shared/tests/test_security_workflow_convention.py::test_comment_action_pinned_to_commit_sha",
     "shared/tests/test_security_workflow_convention.py::test_critical_gate_step_id_present",
     "shared/tests/test_security_workflow_convention.py::test_gitleaks_download_is_sha256_verified",
@@ -10503,6 +10578,22 @@
     "shared/tests/test_setup_writes_canonical.py::test_no_legacy_designs_path_construction_in_plugin_source",
     "shared/tests/test_setup_writes_canonical.py::test_no_legacy_path_construction_in_plugin_source",
     "shared/tests/test_setup_writes_canonical.py::test_run_phase_validator_looks_under_canonical",
+    "shared/tests/test_silent_revert.py::test_a_branch_that_never_integrated_is_not_accused",
+    "shared/tests/test_silent_revert.py::test_a_branch_that_never_integrated_is_not_this_checks_business",
+    "shared/tests/test_silent_revert.py::test_a_clean_branch_passes",
+    "shared/tests/test_silent_revert.py::test_a_clean_integration_drops_nothing",
+    "shared/tests/test_silent_revert.py::test_a_declaration_for_another_file_does_not_cover_this_one",
+    "shared/tests/test_silent_revert.py::test_a_declaration_without_a_reason_does_not_count",
+    "shared/tests/test_silent_revert.py::test_a_declared_removal_passes",
+    "shared/tests/test_silent_revert.py::test_a_non_git_tree_skips",
+    "shared/tests/test_silent_revert.py::test_blank_and_whitespace_lines_are_ignored",
+    "shared/tests/test_silent_revert.py::test_deleting_a_file_after_taking_their_work_is_reported",
+    "shared/tests/test_silent_revert.py::test_derived_churn_artifacts_are_excluded",
+    "shared/tests/test_silent_revert.py::test_editing_a_line_that_existed_before_is_not_a_drop",
+    "shared/tests/test_silent_revert.py::test_no_default_branch_is_a_visible_skip_not_a_pass",
+    "shared/tests/test_silent_revert.py::test_overwriting_a_line_main_itself_changed_IS_reported",
+    "shared/tests/test_silent_revert.py::test_the_463_shape_is_caught",
+    "shared/tests/test_silent_revert.py::test_the_check_blocks_and_names_the_file",
     "shared/tests/test_silent_skip_ci_discipline.py::test_affected_file_does_not_redefine_lib_helpers",
     "shared/tests/test_silent_skip_ci_discipline.py::test_affected_file_does_not_use_brittle_exact_match",
     "shared/tests/test_silent_skip_ci_discipline.py::test_affected_file_imports_from_lib_test_hygiene",
@@ -10949,7 +11040,7 @@
     "shared/tests/test_triage_defer.py::test_list_says_nothing_about_deferral_when_there_is_none",
     "shared/tests/test_triage_defer.py::test_list_shows_deferred_in_its_own_section_with_the_reason",
     "shared/tests/test_triage_defer.py::test_list_with_only_deferred_items_still_reports_no_open_work",
-    "shared/tests/test_triage_docs_consistency.py::test_the_documents_describe_the_defer_subcommand",
+    "shared/tests/test_triage_defer.py::test_the_documents_no_longer_say_the_terminal_cannot_defer",
     "shared/tests/test_triage_gc.py::test_apply_compacts_and_backs_up",
     "shared/tests/test_triage_gc.py::test_apply_does_not_fold_outbox_into_tracked",
     "shared/tests/test_triage_gc.py::test_apply_drops_all_lines_of_multi_status_item",
@@ -11063,17 +11154,6 @@
     "shared/tests/test_triage_promote.py::test_sanitize_rejects_tab",
     "shared/tests/test_triage_promote.py::test_sanitize_rejects_too_long",
     "shared/tests/test_triage_promote.py::test_sanitize_strips_whitespace",
-    "shared/tests/test_triage_render_rows.py::test_a_dedup_key_of_only_control_characters_is_still_emitted",
-    "shared/tests/test_triage_render_rows.py::test_a_deferred_field_cannot_grow_without_limit",
-    "shared/tests/test_triage_render_rows.py::test_a_deferred_row_is_marked_as_deferred",
-    "shared/tests/test_triage_render_rows.py::test_a_forged_marker_in_an_untrusted_field_cannot_reclassify_a_row",
-    "shared/tests/test_triage_render_rows.py::test_a_real_reason_is_still_printed",
-    "shared/tests/test_triage_render_rows.py::test_a_reason_that_renders_to_nothing_says_so",
-    "shared/tests/test_triage_render_rows.py::test_an_absent_dedup_key_is_still_omitted",
-    "shared/tests/test_triage_render_rows.py::test_an_open_row_is_marked_open",
-    "shared/tests/test_triage_render_rows.py::test_only_what_exceeds_the_cap_is_clipped",
-    "shared/tests/test_triage_render_rows.py::test_the_list_help_mentions_the_deferred_section",
-    "shared/tests/test_triage_render_rows.py::test_the_listing_never_repeats_a_row_shape_across_the_two_meanings",
     "shared/tests/test_triage_repair.py::test_apply_quarantines_unrecoverable_text_verbatim",
     "shared/tests/test_triage_repair.py::test_apply_requires_the_quiesced_acknowledgement",
     "shared/tests/test_triage_repair.py::test_apply_splits_the_line_and_preserves_both_records",
@@ -11187,8 +11267,6 @@
     "shared/tests/test_triage_wp9_sanitize_outbox.py::test_cli_list_strips_c1_control_chars_from_title",
     "shared/tests/test_triage_wp9_sanitize_outbox.py::test_cli_list_strips_control_chars_from_title",
     "shared/tests/test_triage_wp9_sanitize_outbox.py::test_cli_promote_outbox_only_item",
-    "shared/tests/test_triage_wp9_sanitize_outbox.py::test_defer_outbox_only_item",
-    "shared/tests/test_triage_wp9_sanitize_outbox.py::test_defer_still_raises_filenotfound_when_neither_store_exists",
     "shared/tests/test_triage_wp9_sanitize_outbox.py::test_dismiss_outbox_only_item",
     "shared/tests/test_triage_wp9_sanitize_outbox.py::test_dismiss_still_raises_filenotfound_when_neither_store_exists",
     "shared/tests/test_triage_wp9_sanitize_outbox.py::test_promote_dual_presence_resolves_via_mark_status",

@@ -113,12 +113,20 @@ def test_three_concurrent_iterates_drain_without_cascade(git_origin_repo, make_w
     for tag in tags:
         wt = make_worktree(work, f"iter-{tag}")
         _prepend_arch(wt, f"- **iterate-{tag}** (2026-06-12): {tag} change")
-        _write(wt, _DASH, f"{tag} dashboard\n")  # each regenerates the churn MD differently
+        # F5a/F5b regenerate the churn MD differently in every worktree — but since
+        # iterate-2026-07-27-derived-snapshots-off-branch F6 does NOT stage it, so it
+        # stays dirty and never enters the branch. That is the whole point: the class
+        # is resolved by ABSENCE, not by regenerate-at-merge. Leaving it dirty also
+        # exercises the restore-before-merge path (without it `git merge` refuses).
+        _write(wt, _DASH, f"{tag} dashboard\n")
         # adr_id == run_id: integrate validates THIS run's work_completed event
         # survives the union merge (else F11 would fail) — a real guard we honor.
         _append(wt / "shipwright_events.jsonl",
                 f'{{"type":"work_completed","adr_id":"iterate-{tag}","id":"evt-{tag}","commit":""}}')
-        _git(wt, "commit", "-am", f"iterate {tag}")
+        # Explicit adds, NOT `-am`: a blanket stage would sweep the dirty dashboard
+        # back in — the exact accident the F11 gate exists to catch.
+        _git(wt, "add", "--", _ARCH, "shipwright_events.jsonl")
+        _git(wt, "commit", "-m", f"iterate {tag}")
         worktrees.append((tag, wt))
 
     # Serial drain: branch 0 is current → push; each later branch integrates the
@@ -128,11 +136,14 @@ def test_three_concurrent_iterates_drain_without_cascade(git_origin_repo, make_w
         if i:
             result = integrate_main.integrate(wt, f"iterate-{tag}", do_fetch=True)
             assert result["status"] == "ok", (tag, result)
-            assert "regenerated-followup" in result["steps"], (tag, result)
+            # No derived-snapshot follow-up: the branch carries none, so there is
+            # nothing to regenerate and nothing to conflict on.
+            assert "regenerate-noop" in result["steps"], (tag, result)
+            assert "restored-derived" in result["steps"], (tag, result)
         _git(wt, "push", "origin", "HEAD:main")
 
-    # Final origin/main: ALL curated bullets survived (union), no markers, churn
-    # regenerated, JSONL union'd — the cascade is fully resolved.
+    # Final origin/main: ALL curated bullets survived (union), no markers, JSONL
+    # union'd — the cascade is fully resolved.
     _git(work, "fetch", "origin", "main")
     arch = _show(work, "origin/main:" + _ARCH)
     assert "<<<<<<<" not in arch
@@ -140,7 +151,11 @@ def test_three_concurrent_iterates_drain_without_cascade(git_origin_repo, make_w
         assert f"iterate-{tag}" in arch, tag
     assert "base entry" in arch
     assert arch.count("## Architecture Updates") == 1
-    assert "regenerated from merged tree" in _show(work, "origin/main:" + _DASH)
+    # The churn snapshot is resolved by ABSENCE: three iterates each rewrote it
+    # locally and NONE reached main, so it still reads exactly as seeded. Under the
+    # old regenerate-at-merge contract this was the class that produced the
+    # conflicts; now it produces no diff at all.
+    assert _show(work, "origin/main:" + _DASH) == "base dashboard\n"
     events = _show(work, "origin/main:shipwright_events.jsonl")
     assert "<<<<<<<" not in events
     for tag in tags:
@@ -252,7 +267,13 @@ def test_ci_security_json_conflict_resolves_through_cascade(git_origin_repo, mak
             # THE regression guard: pre-fix classify() marked ci-security.json
             # blocking → integrate aborted with status "blocked".
             assert result["status"] == "ok", (tag, result)
-            assert "regenerated-followup" in result["steps"], (tag, result)
+            # LEGACY-BRANCH coverage, deliberately kept: these worktrees COMMIT the
+            # derived files, which a branch opened before
+            # iterate-2026-07-27-derived-snapshots-off-branch still does. The
+            # resolver must keep resolving them rather than blocking. What changed
+            # is only that nothing is re-derived afterwards, so the merge commit
+            # carries the resolved side and there is no follow-up.
+            assert "regenerate-noop" in result["steps"], (tag, result)
         _git(wt, "push", "origin", "HEAD:main")
 
     _git(work, "fetch", "origin", "main")
@@ -262,9 +283,10 @@ def test_ci_security_json_conflict_resolves_through_cascade(git_origin_repo, mak
     # aaaa drained first, so ITS summary (critical:1) became mainline; every later
     # merge took --theirs (mainline) → critical:1 survives, not bbbb/cccc, no markers.
     assert json.loads(ci_sec)["critical"] == 1, ci_sec
-    # The derived MD regenerated from the merged tree; arch unioned all bullets;
-    # events unioned all run-events — the churn cascade fully composed.
-    assert "regenerated from merged tree" in _show(work, "origin/main:" + _DASH)
+    # The derived MD is no longer re-derived at merge: the last-drained branch's
+    # own copy stands (these legacy worktrees committed it). No markers is the
+    # property that matters; the content is whatever the resolver's side chose.
+    assert "<<<<<<<" not in _show(work, "origin/main:" + _DASH)
     arch = _show(work, "origin/main:" + _ARCH)
     assert "<<<<<<<" not in arch
     events = _show(work, "origin/main:shipwright_events.jsonl")

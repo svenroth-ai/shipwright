@@ -1,12 +1,12 @@
 # Project Activity Dashboard
-> Updated: 2026-07-27 20:12 UTC | Session: 8a66b2f1-81e9-4505-8591-b94928ca02f6 | Run: iterate-2026-07-27-triage-defer-review-followup
+> Updated: 2026-07-27 20:49 UTC | Session: 99609ad4-4e4b-47ca-a23f-ccfc53ee7516 | Run: iterate-2026-07-27-checks-that-gate-nothing
 
-## Recent Changes (387 iterations)
+## Recent Changes (388 iterations)
 
 | Type | Description | Tests | Commit | FRs | Date |
 |------|-------------|-------|--------|-----|------|
 | change | iterate: the code review becomes a floor, not a chain | 0/0 |  | compliance | 2026-07-27 |
-| change | iterate: post-merge review follow-up for the triage defer surface | 0/0 |  | FR-01.14 | 2026-07-27 |
+| change | iterate: a branch may not quietly revert merged work | 0/0 |  | FR-01.11 | 2026-07-27 |
 | change | iterate: raise the PR-review diff cap, cut at a file boundary, name what went unreviewed | 0/0 |  | FR-01.17 | 2026-07-27 |
 | change | iterate: an audit that checked nothing is not recorded | 0/0 |  | compliance | 2026-07-27 |
 | change | iterate: refuse a multi-root pytest session instead of failing 21 unrelated tests | 0/0 |  | tooling | 2026-07-27 |
@@ -23,6 +23,7 @@
 | change | iterate: name the blocker instead of reporting a weaker signal | 0/0 |  | FR-01.03, FR-01.11 | 2026-07-27 |
 | change | iterate: the derived requirements catalogue announces itself | 0/0 |  | FR-01.13 | 2026-07-27 |
 | change | security-coverage-manifest | 10083/10083 |  | FR-01.07 | 2026-07-27 |
+| change | iterate: checks that run, report, and gate nothing (trg-c7e5835b items 3-5) | 0/0 |  | FR-01.17 | 2026-07-27 |
 | change | iterate: the review gate stops being bypassable (fail-closed + fork review) | 0/0 |  | infra | 2026-07-27 |
 | change | iterate: phase-gate override leaves evidence; handoff renders phase status | 0/0 |  | FR-01.01 | 2026-07-27 |
 | change | iterate: requirement granularity guidance + advisory I6 check + the Basis-assumed template contradiction | 0/0 |  | compliance | 2026-07-27 |
@@ -394,7 +395,7 @@
 | change | post-adoption framework cleanup (Sub-1A through 1D) | 225/225 | 3db485b | FR-01.01, FR-01.02, FR-01.03 | 2026-05-02 |
 
 ## Test Status
-Last run: 2026-07-27 | Unit: 5873/5885 | Integration: 422/422 | E2E: 122/122 | Smoke: not_run | (iterate)
+Last run: 2026-07-27 | Unit: 5040/5056 | Integration: 418/418 | Smoke: skipped | (iterate)
 
 ## Pipeline
 

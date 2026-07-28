@@ -1,39 +1,38 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-07-27-triage-defer-review-followup"
+run_id: "iterate-2026-07-27-checks-that-gate-nothing"
 phase: "iterate"
-reason: "ensure-current pre-merge refresh"
-timestamp: "2026-07-27T20:12:58.249412+00:00"
+reason: "merge origin/main reconciliation"
+timestamp: "2026-07-27T20:49:06.352614+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-07-27 20:12:58 UTC
+> Auto-generated 2026-07-27 20:49:06 UTC
 
 ## Session Info
 
-- **Session ID**: 8a66b2f1-81e9-4505-8591-b94928ca02f6
-- **Timestamp**: 2026-07-27 20:12:58 UTC
-- **Reason**: ensure-current pre-merge refresh
+- **Session ID**: 99609ad4-4e4b-47ca-a23f-ccfc53ee7516
+- **Timestamp**: 2026-07-27 20:49:06 UTC
+- **Reason**: merge origin/main reconciliation
 
 ## Last Iterate
 
-- **Run ID**: iterate-2026-07-27-triage-defer-review-followup
-- **Date**: 2026-07-27T20:12:50.735006Z
+- **Run ID**: iterate-2026-07-27-review-floor-not-chained
+- **Date**: 2026-07-27T19:47:47.266963Z
 - **Type**: change
-- **Complexity**: small
-- **Branch**: iterate/triage-defer-review-followup
-- **ADR**: iterate-2026-07-27-triage-defer-review-followup
+- **Complexity**: medium
+- **Branch**: iterate/review-floor-not-chained
+- **ADR**: iterate-2026-07-27-review-floor-not-chained
 - **Tests passed**: True
-- **Spec**: .shipwright/planning/iterate/2026-07-27-triage-defer-review-followup.md
+- **Spec**: .shipwright/planning/iterate/2026-07-27-review-floor-not-chained.md
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/triage-defer-review-followup
-- **Run ID**: iterate-2026-07-27-triage-defer-review-followup
-- **Spec**: .shipwright/planning/iterate/2026-07-27-triage-defer-review-followup.md
-- **Complexity**: small
-- **External Review Marker**: missing
+- **Branch**: iterate/checks-that-gate-nothing
+- **Run ID**: iterate-2026-07-27-checks-that-gate-nothing
+- **Spec**: .shipwright/planning/iterate/2026-07-27-checks-that-gate-nothing.md
+- **External Review Marker**: stale (predates spec (2026-07-27T19:22:03))
 
 ### Mandatory replay on Resume
 
@@ -51,8 +50,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/triage-defer-review-followup
-- **Last Commit**: f5f03316 Merge remote-tracking branch 'origin/main' into iterate/triage-defer-review-followup
+- **Branch**: iterate/checks-that-gate-nothing
+- **Last Commit**: 04a9383a Merge remote-tracking branch 'origin/main' into iterate/checks-that-gate-nothing
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -68,16 +67,16 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 | Event | Type | Source | Date |
 |-------|------|--------|------|
-| evt-b1a81042 | grade_snapshot | — | 2026-07-27 |
-| evt-301cc5e3 | grade_snapshot | — | 2026-07-27 |
-| evt-d33730ea | grade_snapshot | — | 2026-07-27 |
-| evt-2acd6fdb | grade_snapshot | — | 2026-07-27 |
-| evt-43b5a915 | grade_snapshot | — | 2026-07-27 |
+| evt-c217c84c | grade_snapshot | — | 2026-07-27 |
+| evt-bd19424c | grade_snapshot | — | 2026-07-27 |
+| evt-d10007cf | grade_snapshot | — | 2026-07-27 |
+| evt-61ab1c8b | grade_snapshot | — | 2026-07-27 |
+| evt-10f83f9f | grade_snapshot | — | 2026-07-27 |
 
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 387
+- **Total work events**: 388
 - **Last iterate**: change — iterate: the code review becomes a floor, not a chain (2026-07-27)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 

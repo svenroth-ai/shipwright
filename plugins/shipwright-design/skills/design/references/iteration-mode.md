@@ -26,7 +26,11 @@ When invoked with a feedback file (e.g. `@.shipwright/designs/design-feedback-ro
 3. Identify and apply global changes to all affected screens
 4. Update design-manifest.md (status → `revised-rN`)
 5. Regenerate index.html
-6. Run Spec Backflow (partial)
+6. Do the **behaviour-vs-appearance read**, run Spec Backflow (partial) — which
+   corrects the FR's substance when the round changed what a screen or flow
+   *does* — and **declare the round's requirement impact**. All three are in
+   [review-loop.md](review-loop.md) → Option B, steps 5–7; the declaration is
+   what Option A's Requirement Write-Back Gate looks for.
 7. Report what was changed
 8. → Enter **Step 8.5** (review loop)
 

@@ -49,8 +49,22 @@ For each acceptance criterion / requirement / explicit step in the spec, answer:
 3. **In-scope?** Did the diff add behaviour the spec does **not** call for (YAGNI)?
    Scope creep is a divergence in the other direction — flag it, cite the spec's
    boundary, and REJECT if it changes the contract or risks the acceptance test.
+   - **Shared-touch carve-out — do NOT reject this.** A section that cannot be
+     built without touching something shared outside it MAY make that change,
+     provided it is the smallest one the section needs and it is **recorded as
+     belonging to that section** (an `--extra` entry on the section's
+     requirement-impact declaration). Read literally, "nothing outside the
+     section" would make such a section unbuildable — that was never the intent.
+     Reject an *unrecorded* or *oversized* shared change; never a recorded,
+     minimal one.
 4. **Acceptance-test-aligned?** If the spec lists acceptance criteria, would each
    one actually pass against this diff? Walk them concretely, not by vibes.
+5. **Mockup-consistent?** If the section has a `## Design Reference`, does the
+   diff match the mockup? If the mockup and the section description **contradict
+   each other**, REJECT with `kind: "contradiction"` regardless of which side the
+   code took — a silent choice either way discards the reason mockups exist. Say
+   which side the code followed and that the decision belongs to a person; the
+   expected resolution is that the requirement is corrected to match the mockup.
 
 ## Anti-rationalization (spec edition)
 
@@ -61,6 +75,8 @@ For each acceptance criterion / requirement / explicit step in the spec, answer:
 | "The missing case is unlikely" | The spec named it; the spec wins. Unlikely ≠ absent. |
 | "Tests pass, so it matches" | Tests prove the tests pass, not that the spec is met. You read the spec; the tests may not cover it. |
 | "It's a small divergence" | Small divergences in a contract compound. The gate exists to catch them while they are cheap. |
+| "The mockup and the spec disagree, but the code followed the spec, so PASS" | Neither side is a pass. Following the spec silently discards a design a human judged against real use; following the mockup silently discards the contract. REJECT as a contradiction and let a person decide. |
+| "It touched a shared file, so it's out of scope" | Not if the section could not function without it, the change is minimal, and it is recorded as an attributed extra. Reject the unrecorded and the oversized, not the necessary. |
 
 ## Output
 
@@ -75,7 +91,7 @@ Return a single JSON object. The verdict is binary.
       "spec_ref": "sections/03-auth.md:L42  (AC-2: 'reject expired tokens')",
       "divergence": "login() never checks token expiry; expired tokens are accepted",
       "diff_location": "src/auth/login.ts:88",
-      "kind": "missing | unfaithful | out-of-scope"
+      "kind": "missing | unfaithful | out-of-scope | contradiction"
     }
   ],
   "summary": "1 acceptance criterion not met (AC-2). Code-reviewer not invoked."

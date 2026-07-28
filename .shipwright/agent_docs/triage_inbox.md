@@ -1,14 +1,14 @@
 # Triage Inbox
 
-> Auto-generated 2026-07-27T20:12:58.249412Z. Items waiting for triage decision.
+> Auto-generated 2026-07-27T20:49:06.352614Z. Items waiting for triage decision.
 > Promote via WebUI Triage tab (when v1b lands) or `shared/scripts/tools/triage_promote.py --id <id> --task-ref EXT:<ref>`.
 
 ## Status summary
 
 - Total: 432
-- Triage: 23 | Promoted: 1 | Dismissed: 407 | Snoozed: 1
+- Triage: 22 | Promoted: 1 | Dismissed: 408 | Snoozed: 1
 
-## Top 23 items (severity-sorted)
+## Top 22 items (severity-sorted)
 
 ### Source: analysis (1 item)
 
@@ -83,7 +83,7 @@
   - The tail of campaign step S2, not a new campaign - file it now so it is not lost between "S2 merged" and "somebody noti…
   - Promote: `triage_promote.py --id trg-8bf97fd4 --task-ref EXT:<ref>`
 
-### Source: manual (8 items)
+### Source: manual (7 items)
 
 <a id="trg-51f8e2a1"></a>
 - **deferring a triage finding does not yet defer it - make the third decision mean what it says** `id=trg-51f8e2a1 | severity=high | kind=improvement → P1/engineering`
@@ -95,11 +95,6 @@
   - aggregate_changelog.py is the writer the release path actually invokes (changelog SKILL.md Step 4). _insert_section alw…
   - Evidence: `.shipwright/planning/iterate/iterate-2026-07-27-changelog-writer-preserve-history.md`
   - Promote: `triage_promote.py --id trg-2ca796f3 --task-ref EXT:<ref>`
-
-<a id="trg-93ceb2b0"></a>
-- **a triage decision can be silently lost and the command still reports success** `id=trg-93ceb2b0 | severity=medium | kind=bug → P2/engineering`
-  - Found by adversarial review of PR #444; pre-existing, shared by all three decisions (promote, dismiss, defer), not intr…
-  - Promote: `triage_promote.py --id trg-93ceb2b0 --task-ref EXT:<ref>`
 
 <a id="trg-9862202d"></a>
 - **host checks part 2 follow-up: require the checks that currently gate nothing** `id=trg-9862202d | severity=medium | kind=improvement → P2/engineering`

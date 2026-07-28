@@ -491,8 +491,8 @@ def test_run_all_checks_returns_green_on_happy_path(tmp_path):
     proj.mkdir()
     seed_project(proj, "iterate-foo", "abcd1234", adr="ADR-999")
     results = run_all_checks(proj, run_id="iterate-foo", commit_hash="abcd1234")
-    assert all(r.ok for r in results), [
-        f"{r.name}: {r.detail}" for r in results if not r.ok
+    assert all(r.ok is not False for r in results), [  # None = deliberate skip, not red
+        f"{r.name}: {r.detail}" for r in results if r.ok is False
     ]
 
 
@@ -556,7 +556,7 @@ def test_run_all_checks_green_under_drop_directory_model(tmp_path):
     )
 
     results = run_all_checks(proj, run_id="iterate-foo", commit_hash="abcd1234")
-    failures = [r for r in results if not r.ok]
+    failures = [r for r in results if r.ok is False]  # None = deliberate skip, not red
     assert not failures, [
         f"{r.name}: {r.detail}" for r in failures
     ]

@@ -1,19 +1,19 @@
 # Commit Change Log
 
-Generated: 2026-07-27T20:12:50.912171+00:00
-Source-State: run=iterate-2026-07-27-triage-defer-review-followup
+Generated: 2026-07-27T19:47:47.363461+00:00
+Source-State: run=iterate-2026-07-27-review-floor-not-chained
 Consistency-audit: never run
-Total commits: 1243
+Total commits: 1256
 
 ## Commit Distribution
 
 ```mermaid
 pie title Commit Types
-    "fix" : 362
-    "feat" : 348
-    "chore" : 256
-    "docs" : 148
-    "refactor" : 77
+    "fix" : 364
+    "feat" : 351
+    "chore" : 262
+    "docs" : 149
+    "refactor" : 78
     "test" : 31
     "ci" : 11
     "other" : 9
@@ -22,13 +22,15 @@ pie title Commit Types
 
 ## Changes by Type
 
-### Fixes (fix) — 362 commits
+### Fixes (fix) — 364 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
-| 2026-07-27 | triage | anchor the listing row token; retract three false claims | 9eba1cffa6fe |
+| 2026-07-27 | ci | the sweep gate stops handing its own CI flag to its subject | a125096ea995 |
+| 2026-07-27 | ci | a remote that is not github.com is refused, not guessed at | 74211ac393a6 |
 | 2026-07-27 | iterate | the code review becomes a floor, not a chain (#476) | 7c116c035480 |
 | 2026-07-27 | security | the test suite stops leaking a triage store into the plugin dir (#474) | 6ba177083769 |
+| 2026-07-27 | ci | three checks that ran, reported, and gated nothing | bd1c2eb47705 |
 | 2026-07-27 | run | report against what will exist, and assert only what you can prove (#468) | 3c13001aafeb |
 | 2026-07-27 | iterate | the merge state is a vocabulary, not a BLOCKED flag (#473) | 159953eec378 |
 | 2026-07-27 | shared | a multi-root pytest session names its own cause (#469) | bd7121b79d53 |
@@ -389,10 +391,13 @@ pie title Commit Types
 | 2026-03-21 | — | rename skill folders for clean slash commands | 5a8d77658fab |
 | 2026-03-20 | — | update README attribution to svenroth.ai | dd5de7f7d6ab |
 
-### Features (feat) — 348 commits
+### Features (feat) — 351 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-07-27 | build | stop on a mockup-vs-section contradiction; allow a recorded shared touch (3/3) (#465) | ea2ad4bfab15 |
+| 2026-07-27 | design | a feedback round declares what it changed about the requirements (2/3) (#464) | 4da3f66526b5 |
+| 2026-07-27 | iterate | a branch may not quietly revert work that merged while it was open (#477) | 5b351ed4491d |
 | 2026-07-27 | security | a scan records what it did not check (part 1/2) (#455) | 8154e1bcaf2b |
 | 2026-07-27 | test | per-journey coverage, durable warning follow-ups, retry-passes (FR-01.06) (#446) | fbf93d01b55b |
 | 2026-07-27 | shared | the requirement-impact declaration, one mechanism for two phases (#463) | 26dfefa7286e |
@@ -742,12 +747,18 @@ pie title Commit Types
 | 2026-03-20 | — | Task 02 — project templates (CLAUDE.md, agent_docs, CI) | c3a6d2f53bd3 |
 | 2026-03-20 | — | Task 01 — monorepo scaffolding + supabase-nextjs stack profile | 990a138a4690 |
 
-### Chores (chore) — 256 commits
+### Chores (chore) — 262 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
-| 2026-07-27 | triage | sweep 6 outbox append(s) into branch | 156f923515a6 |
+| 2026-07-27 | iterate | declare four check_no_silent_revert false positives with proof | 45ef0d1a7137 |
+| 2026-07-27 | churn | regenerate derived snapshots after main merge | 11835f35eaea |
+| 2026-07-27 | churn | regenerate derived snapshots after main merge | 86b4c2482556 |
+| 2026-07-27 | churn | regenerate derived snapshots after main merge | 8085f1bd9dbb |
+| 2026-07-27 | churn | regenerate derived snapshots after main merge | 5e6b46e2c140 |
+| 2026-07-27 | churn | regenerate derived snapshots after main merge | 6fdd45f6d37f |
 | 2026-07-27 | triage | follow-up card for requiring the checks that gate nothing | 7387b2796960 |
+| 2026-07-27 | triage | sweep 1 outbox append(s) into branch | 554a1f0211cc |
 | 2026-07-26 | review | default external-review GPT model to gpt-5.6-terra (#435) | 8d750a5fc7af |
 | 2026-07-24 | security | stage full compliance write-set in Step 7.5 finalizer (#434) | 5da96ebe8561 |
 | 2026-07-23 | compliance | refresh after security scan (#433) | 2b644805fb7d |
@@ -1003,10 +1014,11 @@ pie title Commit Types
 | 2026-03-28 | — | add shipwright-run uv.lock | ef1cc1ad180c |
 | 2026-03-20 | — | initial commit with spec and task list | 07ca9c1de51c |
 
-### Documentation (docs) — 148 commits
+### Documentation (docs) — 149 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-07-27 | iterate | restore the post-merge plugin-cache sync follow-up | 40b1c41889b8 |
 | 2026-07-27 | guide | the finalization walkthrough ends at delivery, not at arming (#462) | eea6e1643388 |
 | 2026-07-27 | campaign | correct the revert attribution in the REQ-3 ledger | ff8825879571 |
 | 2026-07-21 | security | document operator-run converge for adopted repos (#420) | d9aa64b32f99 |
@@ -1156,10 +1168,11 @@ pie title Commit Types
 | 2026-03-21 | — | expand README with pipeline diagram, architecture, and quality gates | 377dc2141b3d |
 | 2026-03-20 | — | add README.md for GitHub repo | 853c8f930132 |
 
-### Refactoring (refactor) — 77 commits
+### Refactoring (refactor) — 78 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-07-27 | test | split the close-missing floor cases out of the CLI test file (#478) | f7eee6f4b3a9 |
 | 2026-07-27 | test | split the close-missing floor cases out of the CLI test file (#478) | cf6d326b5011 |
 | 2026-07-27 | shared | split git resolution out of source_state (300-LOC compliance) (#451) | 3cdca5cfc884 |
 | 2026-07-21 | adopt | route the eight scaffolders through one guarded shared/ loader (FR-01.13) (#423) | 736fc8d1712c |
@@ -1314,7 +1327,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 1243 |
+| Total commits | 1256 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 1243 |
+| Human-authored commits | 1256 |
 

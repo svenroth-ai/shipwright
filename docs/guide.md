@@ -522,6 +522,16 @@ gh pr merge --auto --squash --delete-branch <pr-number>
 
 GitHub merges automatically once all Required Checks pass; if a check goes red, the PR waits until you push a fix. `/shipwright-iterate`'s finalization arms this for you on `iterate/*` branches, so day-to-day changes merge hands-free once green.
 
+**5. Check the list again later.** The must-pass set lives in GitHub's settings, not in your repo, so nothing keeps the two in step. Add a workflow and its check runs on every PR while blocking nothing; rename a job and the old name stays required, so every PR waits forever on a result that can no longer arrive. Neither is visible from inside the repo. This reports both:
+
+```bash
+uv run shared/scripts/tools/check_required_checks.py --project-root .
+```
+
+It needs your own `gh` login (the Actions token cannot read a repo's protection settings), which is why it is a command you run rather than a check in CI. It prints what it found and files a triage item on divergence; `--json` prints the raw comparison, and `--branch` checks a branch other than your default one.
+
+A repo that requires **nothing** is a result, not an error: every check you run is listed as gating nothing, which is the most useful thing this can tell you. Only a configuration it could not read at all makes it stop and say so — "I could not look" is never reported as "everything matches", and never as "nothing is required" either.
+
 See the generated `AUTOMERGE_SETUP.md` for your repo's specific check names, and §4.7 / `docs/security-ci-setup.md` for activating the security workflow.
 
 ---
@@ -791,6 +801,12 @@ If a session start finds a legacy top-level `planning/` directory, the drift det
 - Generates multi-screen user flows and a review viewer (`.shipwright/designs/index.html`) with built-in feedback collection
 - Enters a review loop: you review in the browser, export feedback, and Shipwright applies changes iteratively until you finalize
 
+**Feedback that changes what a flow *does* is written back into the requirement.** Design is where flows are rightly rethought, so each round is classified: did the feedback change **behaviour** (a step added, an option removed, a path reordered), or only **appearance** (colour, spacing, type, layout that leaves the same steps in the same order)?
+
+Behaviour means the requirement it belongs to is corrected — description and acceptance criteria — before the design can be approved. Every round then records a one-line **requirement-impact declaration**. Declaring "appearance only" is a perfectly good answer; saying nothing is not, and finalizing is blocked while any round stays silent.
+
+A round claiming it changed a requirement is refused unless a requirements file genuinely differs from what it said when that round started — each round takes a snapshot before it revises anything, which is what makes "this round corrected it" checkable rather than merely asserted. Judging behaviour-versus-appearance is a human read; the declaration and the check are not.
+
 **Standalone usage.** Yes. `/shipwright-design` works independently as long as specs exist. You can also iterate on individual screens or process feedback files at any time. The review viewer at `.shipwright/designs/index.html` is your primary tool for reviewing and providing feedback.
 
 ---
@@ -879,6 +895,15 @@ If a session start finds a legacy top-level `planning/` directory, the drift det
 - Applies accepted review fixes, re-runs tests to confirm no regressions
 - Commits with Conventional Commits format (e.g., `feat(auth): implement magic link authentication`)
 - Logs decisions, updates the build dashboard, and checks context pressure -- if the context window is getting full, it saves progress and stops cleanly so you can resume in a fresh session
+
+**When the mockup and the section description disagree, building stops.** A section is held to two rules — implement exactly what it specified, and never ignore the mockup — and when the two contradict each other, neither can be satisfied, so whichever one the builder happened to follow would win silently. Instead the phase stops and puts the contradiction to you, quoting both sides. The expected resolution is that **the requirement is corrected to match the mockup**, because the mockup is the thing a person looked at and judged against real use; you can decide otherwise, and either way the decision is recorded. Spotting the contradiction is a human read — comparing prose against rendered markup has no automatic check — but the record of who decided, and the correction actually reaching the spec, are both verified.
+
+**A section may touch shared code when it genuinely needs to.** "Nothing outside the section's scope" is aimed at unrequested extra work; read literally it would make a section that cannot function without a shared helper unbuildable. So:
+
+- the change is allowed, provided it is the **smallest** one the section needs;
+- it must be **recorded as belonging to that section**, with a reason;
+- after the section commit, `/shipwright-build` checks that every file the section changed, created **or deleted** is either in its own file list or recorded as an attributed extra;
+- a section that records no declaration at all fails the same check.
 
 **Standalone usage.** Yes. Run `/shipwright-build @sections/01-auth.md` for any section file. When used standalone, you manage the section order yourself. When used within the pipeline, the orchestrator feeds sections in dependency order and handles split transitions automatically.
 ### 4.6 Testing -- /shipwright-test
@@ -1437,7 +1462,7 @@ OPENAI_API_KEY=sk-your-key
   ```json
   { "external_code_review": { "enabled": true } }
   ```
-- `/shipwright-iterate` -- default **on** for medium+ runs that already triggered the internal `code-reviewer` subagent (no new threshold). Same Branch A/B/C interactive opt-out flow as the mini-plan review. To opt out at the project level: `shipwright_iterate_config.json` -> `external_code_review.enabled: false`. This flag is independent of `external_review.feedback_iterations` -- you can disable plan/iterate-mode reviews while keeping the code-review cascade on, and vice versa.
+- `/shipwright-iterate` -- default **on** for medium+ runs, evaluated on its **own** thresholds (diff > 100 lines, security-sensitive files, or medium+ complexity). It is *not* conditional on the internal `code-reviewer` having fired: chaining the two put both reviews behind a single point of failure, so a run where the internal pass could not happen was excused from the external one too. The two are independent routes to the same guarantee, and at medium+ the F11 gate requires at least one of them to have actually run. Same Branch A/B/C interactive opt-out flow as the mini-plan review. To opt out at the project level: `shipwright_iterate_config.json` -> `external_code_review.enabled: false`. This flag is independent of `external_review.feedback_iterations` -- you can disable plan/iterate-mode reviews while keeping the code-review cascade on, and vice versa.
 
 **Diff exposure warning:** Code-review mode transmits the staged diff to whichever LLM provider is configured. Diffs can contain secrets, customer data, or code under restrictive license/NDA terms more often than markdown plans do. If those risks apply to your project, leave the cascade off (build) or set `external_code_review.enabled: false` (iterate). The diff is read from `/tmp/shipwright-review-diff.txt` -- the same file the internal subagent uses.
 
@@ -1856,6 +1881,53 @@ A worktree carries tracked files only: neither `.env*` nor
 from the main repo and run the project's install command (`npm install`,
 `uv sync`). This per-run overhead is accepted by design.
 
+#### Why parallel iterates no longer collide at merge time
+
+Isolation solves the *working tree*. It does not, by itself, solve the
+*merge*. Several artifacts are **derived views** — the compliance reports,
+the build dashboard, the triage inbox, the session handoff, the test
+results. They are computed from the event log, the triage log and git
+history. If every iterate committed its own copy of them, then N iterates
+open at once would collide N(N−1)/2 times on files that say nothing about
+any of the changes.
+
+So an iterate does **not** commit them. It still regenerates them locally —
+everything that reads them during the run keeps working — but they stay out
+of the pull request, and the tree is restored before the branch merges
+`main`. What ships instead is the *truth* they derive from: the event log
+and the triage log, both append-only and reconciled automatically.
+
+This is also a correctness fix, not only a convenience one. A derived view
+computed inside a worktree sees the *branch's* git history — including
+commits that get squashed away on merge — and an event log missing every
+branch merging alongside it. It is wrong for `main` by construction, and
+which wrong version landed used to depend on merge order.
+
+The consequence to know about: those views are refreshed from `main` after
+merge, not by the branch. Until that refresh runs, they show the last state
+`main` computed. A staleness audit reporting them as out of date is telling
+the truth, not misfiring.
+
+#### Merge queues
+
+Removing the collisions removes the *conflicts*. It does not remove the
+*re-runs*: if your repository requires branches to be up to date before
+merging, every merge into `main` still invalidates every other open pull
+request, and each one re-runs its full check suite. With a handful of
+iterates open that is the dominant cost.
+
+The standard remedy is a **merge queue** — the host merges approved pull
+requests one at a time, testing each against `main` plus everything already
+queued ahead of it, so the branch itself never has to be up to date. On
+GitHub this needs two things: the merge-queue rule enabled on the protected
+branch, and every required check's workflow extended to trigger on
+`merge_group` as well as `pull_request`. A required check that does not fire
+for the queue will never report, and the queue waits forever.
+
+Order matters: a merge queue cannot rescue a pull request that is already
+conflicted, because it merges server-side and hits the same conflict. Get
+the derived views out of the branch first; enable the queue second.
+
 ### Resuming an interrupted iterate
 
 If a previous run's worktree still exists, B1 detects it and offers
@@ -1987,8 +2059,8 @@ Tests must pass before every commit. The constitution rule "fix the code, not th
 Every section goes through up to three review layers:
 
 1. **Self-review checklist** -- The building agent checks spec compliance, error handling, security, test quality, and naming before committing.
-2. **Subagent code review** -- A dedicated code-reviewer subagent examines the diff against the spec and flags issues. Triggers on diffs > 100 lines, security-sensitive files, or medium+ complexity iterates.
-3. **External LLM code review (cascade)** -- Optional second-opinion gate that sends the same diff to Gemini + OpenAI in parallel against the section/iterate spec. Build: opt-in via `shipwright_build_config.json` -> `external_code_review.enabled: true`, default off. Iterate: default-on for medium+ runs that already triggered layer 2, with Branch A/B/C interactive opt-out (same flow as the mini-plan review). See `External LLM Review` in Chapter 6 for provider setup and the diff-exposure caveat.
+2. **Subagent code review** -- A dedicated `spec-reviewer` -> `code-reviewer` -> `doubt-reviewer` cascade examines the diff against the spec and flags issues. Triggers on diffs > 100 lines, security-sensitive files, or medium+ complexity iterates. **A standalone iterate spawns this cascade itself** (iterate `SKILL.md` Step 8), before the commit. Only the campaign sub-iterate-runner cannot -- it is a subagent without the `Agent` tool, so its cascade is delegated to the orchestrator (ADR-029, campaign mode only). Read that delegation as campaign-specific: taken as a general rule it tells every iterate not to spawn reviewers, which is exactly how runs reached `main` with no internal review.
+3. **External LLM code review (cascade)** -- Optional second-opinion gate that sends the same diff to Gemini + OpenAI in parallel against the section/iterate spec. Build: opt-in via `shipwright_build_config.json` -> `external_code_review.enabled: true`, default off. Iterate: default-on for medium+ runs on its own thresholds, with Branch A/B/C interactive opt-out (same flow as the mini-plan review). See `External LLM Review` in Chapter 6 for provider setup and the diff-exposure caveat. **It does not substitute for layer 2:** the external route is a generic code-quality opinion, so the Stage-1 spec-compliance HARD-GATE and the Stage-3 adversarial pass have no external counterpart. When the F11 floor is carried by the external review alone, the gate says so in its own output.
 
 ### Migration Safety
 

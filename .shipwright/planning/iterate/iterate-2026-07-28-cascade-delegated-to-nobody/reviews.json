@@ -1,0 +1,412 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-07-28-cascade-delegated-to-nobody",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-07-27T23:21:44.950659+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 11,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "In Section 5, you correctly avoid modifying `REVIEW_TYPES` because adding a value changes the schema and invalidates historical `.json` files without a version bump. However, S3/AC5 plans to delete `delegated_to_skill` from `sub_iterate_runner_contract.schema.json`. Removing an allowed enum value is also a breaking schema change and will cause validation failures for historical sub-iterate runs that used it.",
+          "suggestion": "Do not remove `delegated_to_skill` from the JSON schema. Keep the enum value, but update its description to explicitly state `[DEPRECATED - Legacy/Invalid]`, which solves the documentation defect without breaking backward compatibility for old artifacts.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "Step S4 specifies that if `3f-bis` finds issues, the orchestrator \"commits, or re-spawns the runner\". There is no termination condition mentioned for this feedback loop. Respawning the runner automatically on an unavoidable review failure creates a severe risk of an infinite loop (and runaway token costs/API usage).",
+          "suggestion": "Add a hard termination condition to `3f-bis` in `campaign-mode.md` (e.g., max 2 re-spawns). If it still fails, the orchestrator must ABORT and surface a Stage-1 REJECT rather than continuously retrying.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "Under S4/AC3, the orchestrator \"updates and pushes the sub-iterate's `reviews.json`\". Since S5 now requires the sub-iterate runner to accurately write its own rows (like `external_code` and `self`) before returning, a blunt update by the orchestrator in `3f-bis` could accidentally overwrite the runner's meticulously assembled file.",
+          "suggestion": "Clarify in S4 that `3f-bis` must use `record_review_pass.py` to target and update its specific review rows (e.g., switching `code: not_run` to `code: completed`) to safely preserve the rows the runner wrote.  Overall, the plan correctly diagnoses the root cause of the silent delegation and the solution smartly aligns the cascade ownership to where execution physically happens, but it introduces a subtle schema breakage and a runaway loop hazard in the orchestration step that must be patched first.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "The campaign lifecycle remains internally contradictory about the F6 review-record gate. The runner’s F6 verification currently stops on any `pending` review type before it can emit its terminal `DONE` marker and push the branch. But the proposed campaign-owned `doubt` and spec-compliance stages run only after that terminal marker, at `3f-bis`. Recording those stages as `pending` therefore prevents the branch from reaching the orchestrator; recording them as `not_run` with a “delegated” disposition conflicts with AC6, which explicitly says delegation is not a valid blocker.",
+          "suggestion": "Define a distinct, valid campaign handoff state and its gate semantics before implementing the prose changes. For example, defer the applicable F6 review-record completeness check for campaign runners until `3f-bis`, with an explicit result-contract field that says the review obligation is owned by the orchestrator; then have the orchestrator run the final verifier before merge. Do not attempt to satisfy the runner’s existing final gate by mislabeling unperformed internal reviews as completed or `not_run`.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "AC1 gives standalone review an owner but does not establish a pre-commit/pre-push execution point. The plan only expands existing `SKILL.md` Step 8, while the problem statement identifies review-before-commit as the required timing. If Step 8 remains after finalization, the change can still produce a pushed commit before Stage 1, code, and doubt review occur.",
+          "suggestion": "Explicitly place or invoke the standalone cascade before the final commit/push gate, and specify the repair loop: address findings, rerun affected reviews/checks, then commit and push. If Step 8 must remain positioned later for lifecycle reasons, state that it is a mandatory pre-finalization substep rather than merely adding ownership text.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "3f-bis` lacks a defined fix-and-rereview state machine. “Orchestrator commits, or re-spawns the runner” can produce materially different behavior: a respawn may repeat build/finalization, overwrite or append review rows, emit a new result, and require another review; an orchestrator-authored fix also needs CI and the relevant review stages rerun. Without bounded retry and result ownership rules, a finding can be fixed but never re-reviewed, or the loop can cycle indefinitely.",
+          "suggestion": "Specify a single repair path or explicit rules for both paths: branch/worktree used, who commits, which checks must rerun, which review stages rerun after substantive fixes, maximum retry/escalation behavior, and when `reviews.json` may transition from an interim state to completed. Require CI and the final record check to pass on the exact branch SHA merged by `3g`.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "Removing `delegated_to_skill` from the JSON schema is a contract-breaking change for every producer, fixture, saved result, and parser that may still emit or consume it. The plan only calls out rerunning structural contract tests, not locating all values or validating compatibility behavior.",
+          "suggestion": "Repository-search for `delegated_to_skill`, status-enum assumptions, result fixtures, example artifacts, and web UI parsing. Update all producers and fixtures in the same change, and decide whether historical result files must remain readable. Add a schema-level negative test for the retired value and a positive test for the campaign-only value.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "S5 says the runner will record `self`, `code`, `doubt`, and `external_code`, but does not state the required status and disposition for each. This is the central correctness detail: the runner performs `self` and external code review, while the campaign orchestrator performs internal spec/code/doubt review. Ambiguous wording risks exactly the current bug—rows marked completed for work another actor performed—or a workaround that merely clears `pending`.",
+          "suggestion": "Include an explicit status-transition table in the runner contract and campaign loop. For each review type, define actor, allowed interim status, required disposition, evidence/artifact location, and which actor may mark it completed. In particular, do not allow the runner to mark internal `code` or `doubt` completed solely because external code review completed.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The plan still has no durable representation for the Stage-1 spec-compliance result. Deferring the new `spec` review type is reasonable to avoid a schema migration, but “the cascade runs” is not enough for the campaign merge gate to prove that a Stage-1 rejection blocks merge or that the stage occurred. Updating existing rows cannot truthfully represent a separate stage unless an existing field is already designed for per-stage evidence.",
+          "suggestion": "Until the schema-versioned `spec` type is introduced, define a structured existing artifact or explicit cascade-result field that `3f-bis` must inspect before merge, including a Stage-1 verdict and blocker reason. Add a test that a Stage-1 reject prevents `3g`, even when `external_code` satisfies the existing floor. Do not overload `plan` or `code` as a silently equivalent spec-review row.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "The proposed integration test mostly composes markdown ordering, a synthetic record, and the checker. It does not verify the critical operational invariant that a campaign branch cannot merge until the orchestrator has persisted review outcomes, pushed them, and passed the final gate after any review-driven changes. The listed S1 tests also do not cover the proposed `self`/`doubt` recording semantics or AC6’s claimed disposition enforcement.",
+          "suggestion": "Add focused tests for: campaign-runner handoff versus final-gate behavior; reject/blocked cascade preventing merge; successful cascade updating the record before merge; review-fix causing revalidation on the final SHA; and external-only floor behavior requiring a non-delegation blocker disposition. Keep the existing document-structure tests, but do not treat them as sufficient integration coverage.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "security",
+          "file": null,
+          "line": null,
+          "finding": "3f-bis` gives the orchestrator authority to inspect, modify, commit, and push a sub-iterate branch based on runner output and reviewer findings. The plan does not say how it constrains the branch/ref and working directory, or how it treats reviewer text. A malformed result or untrusted branch/ref must not redirect the orchestrator to another branch, and reviewer output must not become shell input.",
+          "suggestion": "Require the loop to derive the branch from the campaign’s tracked sub-iterate state and verify it matches the expected repository/ref before checkout, commit, or merge. Treat review findings as data rather than executable commands, use argument-safe git invocations, and preserve existing protected-branch/CI requirements for orchestrator-authored commits.  Overall, assigning concrete owners is the right direction, and deferring the schema-wide `spec` type is appropriately scoped. However, the campaign handoff currently cannot satisfy the existing runner gate honestly, and the review/fix/rereview lifecycle needs explicit executable semantics before this is safe to implement. SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-07-27T23:05:56.746178+00:00",
+      "disposition": null,
+      "recorded_by": "external_review.py --mode iterate (gemini+openai, both revise)",
+      "parse_status": "structured",
+      "raw_excerpt": "[gemini] Here is the review of the implementation approach:\n\n- **Category:** risk\n- **Severity:** high\n- **Finding:** In Section 5, you correctly avoid modifying `REVIEW_TYPES` because adding a value changes the schema and invalidates historical `.json` files without a version bump. However, S3/AC5 plans to *delete* `delegated_to_skill` from `sub_iterate_runner_contract.schema.json`. Removing an allowed enum value is also a breaking schema change and will cause validation failures for historical sub-iterate runs that used it. \n- **Suggestion:** Do not remove `delegated_to_skill` from the JSON schema. Keep the enum value, but update its description to explicitly state `[DEPRECATED - Legacy/Invalid]`, which solves the documentation defect without breaking backward compatibility for old artifacts.\n\n- **Category:** edge-case\n- **Severity:** high\n- **Finding:** Step S4 specifies that if `3f-bis` finds issues, the orchestrator \"commits, or re-spawns the runner\". There is no termination condition mentioned for this feedback loop. Respawning the runner automatically on an unavoidable review failure creates a severe risk of an infinite loop (and runaway token costs/API usage).\n- **Suggestion:** Add a hard termination condition to `3f-bis` in `campaign-mode.md` (e.g., max 2 re-spawns). If it still fails, the orchestrator must ABORT and surface a Stage-1 REJECT rather than continuously retrying.\n\n- **Category:** approach\n- **Severity:** medium\n- **Finding:** Under S4/AC3, the orchestrator \"updates and pushes the sub-iterate's `reviews.json`\". Since S5 now requires the sub-iterate runner to accurately write its own rows (like `external_code` and `self`) *before* returning, a blunt update by the orchestrator in `3f-bis` could accidentally overwrite the runner's meticulously assembled file.\n- **Suggestion:** Clarify in S4 that `3f-bis` must use `record_review_pass.py` to target and update its specific review rows (e.g., switching `code: not_run` to `code: completed`) to safel […truncated]\n\n[openai] 1. **Category:** approach  \n   **Severity:** high  \n   **Finding:** The campaign lifecycle remains internally contradictory about the F6 review-record gate. The runner’s F6 verification currently stops on any `pending` review type before it can emit its terminal `DONE` marker and push the branch. But the proposed campaign-owned `doubt` and spec-compliance stages run only after that terminal marker, at `3f-bis`. Recording those stages as `pending` therefore prevents the branch from reaching the orchestrator; recording them as `not_run` with a “delegated” disposition conflicts with AC6, which explicitly says delegation is not a valid blocker.  \n   **Suggestion:** Define a distinct, valid campaign handoff state and its gate semantics before implementing the prose changes. For example, defer the applicable F6 review-record completeness check for campaign runners until `3f-bis`, with an explicit result-contract field that says the review obligation is owned by the orchestrator; then have the orchestrator run the final verifier before merge. Do not attempt to satisfy the runner’s existing final gate by mislabeling unperformed internal reviews as completed or `not_run`.\n\n2. **Category:** approach  \n   **Severity:** high  \n   **Finding:** AC1 gives standalone review an owner but does not establish a pre-commit/pre-push execution point. The plan only expands existing `SKILL.md` Step 8, while the problem statement identifies review-before-commit as the required timing. If Step 8 remains after finalization, the change can still produce a pushed commit before Stage 1, code, and doubt review occur.  \n   **Suggestion:** Explicitly place or invoke the standalone cascade before the final commit/push gate, and specify the repair loop: address findings, rerun affected reviews/checks, then commit and push. If Step 8 must remain positioned later for lifecycle reasons, state that it is a mandatory pre-finalization substep rather than merely adding ownership text.\n\n3. **Cate […truncated]"
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 13,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "correctness",
+          "file": "plugins/shipwright-iterate/skills/iterate/SKILL.md",
+          "line": 177,
+          "finding": "Stage 1 and Stage 2 were both instructed to write the SAME immutable code row, so the documented standalone flow could not complete: the second write raises ImmutableReviewError and --force replaces the whole entry rather than merging.",
+          "suggestion": "Write the code row ONCE, from the stage the cascade ended at.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "shared/scripts/lib/review_findings.py",
+          "line": 163,
+          "finding": "from_spec_reviewer raised AttributeError (not ReviewFindingsError) on a payload with no readable verdict, escaping _cmd_record catch and breaking the JSON-on-stdout contract.",
+          "suggestion": "Raise ReviewFindingsError; do not default the verdict to empty string.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "plugins/shipwright-iterate/skills/iterate/references/iteration-reviews.md",
+          "line": 399,
+          "finding": "The three campaign recording commands carried the record subcommand twice once the legend was expanded, so every one exits 2 with unrecognized arguments.",
+          "suggestion": "Keep record in the legend only.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "shared/tests/test_review_record_campaign_shape.py",
+          "line": 240,
+          "finding": "The drift guard grepped bare substrings against the whole runner document; 8 of its 10 assertions were already true before the fix and the pairing it is named after was never checked.",
+          "suggestion": "Scope to the Step 3.7 table and assert the type-to-status pairing.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/tests/test_review_cascade_owner.py",
+          "line": 265,
+          "finding": "test_campaign_doc_states_the_residual_gap_honestly asserted external in norm, true before the change; its or was also dead.",
+          "suggestion": "Assert the specific claim.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/scripts/lib/review_findings.py",
+          "line": 189,
+          "finding": "severity short-circuited on truthiness before coercion, so an out-of-vocabulary severity became None on a REJECT, contradicting the documented rule.",
+          "suggestion": "coerce_severity before the fallback.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/scripts/lib/review_findings.py",
+          "line": 160,
+          "finding": "A payload missing both keys reported the deprecated findings alias instead of the producer key spec_citations.",
+          "suggestion": "Name spec_citations.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "performance",
+          "file": "shared/scripts/lib/review_findings.py",
+          "line": 170,
+          "finding": "Both composed strings could exceed MAX_TEXT_CHARS, unlike every sibling adapter, allowing ~1.6MB of LLM text into a git-tracked reviews.json.",
+          "suggestion": "Bound both with MAX_TEXT_CHARS.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "shared/scripts/lib/review_findings.py",
+          "line": 198,
+          "finding": "Catalog C: the mapped counter and conditional negative slice existed only to feed _no_element_loss a right-length list.",
+          "suggestion": "Collect citations in their own list and return out + citations.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "architecture",
+          "file": "shared/tests/test_spec_reviewer_adapter.py",
+          "line": 32,
+          "finding": "Catalog D: both new test modules re-implemented helpers _review_cli_harness.py already provides, and the fork leaked a NamedTemporaryFile per test run.",
+          "suggestion": "Use the harness; write payloads under tmp_path.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "shared/tests/test_spec_reviewer_adapter.py",
+          "line": 66,
+          "finding": "Catalog X: sys.path.insert repeated inside two test bodies although module scope already does it.",
+          "suggestion": "Delete both.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/tests/test_spec_reviewer_adapter.py",
+          "line": 54,
+          "finding": "The producer-example enum substitution was unanchored, so any example string starting with missing would be rewritten and the fixture silently mangled.",
+          "suggestion": "Anchor on the kind key.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "plugins/shipwright-iterate/agents/sub-iterate-runner.md",
+          "line": 139,
+          "finding": "The Step 3.6 addition shipped a command fragment missing the record subcommand, --project-root, --run-id, --status and --payload-file.",
+          "suggestion": "Point at iteration-reviews.md like Step 3.7 does.",
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-07-28T00:04:10.141701+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer PASS (stage 1, 3 rounds) then code-reviewer (stage 2)",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 10,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "concurrency & ordering",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: The code row is written ONCE, by the stage the cascade ended at; nothing is lost. — A Stage-1 REJECT is terminal at the moment it happens, so the agent records code --from spec-reviewer; the fix then re-reviews to PASS and Stage 2 runs, hitting ImmutableReviewError. --force erases the Stage-1 REJECT; not forcing leaves the record claiming a cascade blocked at Stage 1 for a diff Stage 2 passed. This run took that path twice.",
+          "suggestion": "ACCEPTED — AC8 withdrawn; the code row is Stage 2s and Stage 1 has no row.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "high",
+          "category": "boundary & contract",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: Recording the Stage-1-terminal case as code --from spec-reviewer is honest bookkeeping and costs the gate nothing. — --status completed makes _code_review_floor count it as a code review that HAPPENED and suppresses the substitution note, for a cascade whose own table says Stage 2 provably never ran; --status not_run zeroes the findings and discards the verdict. Neither status does what the design claimed.",
+          "suggestion": "ACCEPTED — AC8 withdrawn.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "boundary & contract",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: Spec section 5: (E) is a visibility gap, not a correctness one. — The write-once resolution removed the Stage-1 evidence from the normal path entirely, so the justification for deferring (E) no longer holds.",
+          "suggestion": "ACCEPTED — section 5 rewritten; (E) is now filed as a correctness gap, and iteration-reviews.md states it where the recording rule is read.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "boundary & contract",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: The three relocated campaign commands run as written. — The external_code not_run branch carries no --disposition (make_entry raises, exit 2) and offers skipped_diff_below_threshold as --marker-status, which review_marker.ALLOWED_STATUSES rejects (exit 2). Two more unexecutable instructions.",
+          "suggestion": "ACCEPTED — command split into completed and not_run forms, invalid marker status removed, payload made non-optional.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "boundary & contract",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: The Step 3.7 table tells the runner which status it may write. — The external_code row listed skipped_* in a column headed Status the RUNNER may write, but --status accepts only TERMINAL_STATUSES; skipped_* is the marker vocabulary.",
+          "suggestion": "ACCEPTED — row now reads completed / not_run + rule (marker: skipped_*).",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "boundary & contract",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: _substitution_note never over-claims. — It infers a fact about the world from one status on a row shared by two stages; reachable combinations exist where Stage 1 ran but the note says it did not.",
+          "suggestion": "PARTIALLY ACCEPTED — with AC8 withdrawn the code row is single-stage again, which removes the shared-row cases. The residual wording concern is recorded in triage with the note that a claim about the record is safer than a claim about the world.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "reversibility",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: The contract fails closed, so deferring the campaign before-merge cascade is safe. — Constructed a green-gate medium+ sub-iterate with no review: external_code completed with --from omitted records findings_count 0 and provider null, indistinguishable from a fabricated row; and check_review_record skips entirely when the iterate entry is missing.",
+          "suggestion": "PARTIALLY ACCEPTED — the prescribed command no longer makes the payload optional. The floor accepting an evidence-free row and the missing-entry skip are pre-existing fail-open paths; filed as triage with this counter-example rather than changing the floor contract in a bug-fix iterate.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "hidden coupling & blast radius",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: campaign-mode.md now states the truth about the internal cascade. — The sentence was unqualified, but a hand-run --sub-iterate-id invocation is a standalone session WITH the Agent tool and does spawn the cascade.",
+          "suggestion": "ACCEPTED — sentence scoped to sub-iterates built by the runner under --autonomous.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "concurrency & ordering",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: It runs before F6, so it reviews what ships. — Steps 11a/11b and finalization write files into the same commit after Step 8; the cascade sees a strict subset of the shipped diff.",
+          "suggestion": "ACCEPTED — Step 8 now states the limit explicitly.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "hidden coupling & blast radius",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: Importing _items/_no_element_loss across modules is acceptable coupling. — Could not disprove the import itself; the untested half was that from_spec_reviewer inherited its no-silent-loss guarantee with no test binding it to this caller.",
+          "suggestion": "MOOT — the module was removed with AC8.",
+          "source": "doubt-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-07-28T00:18:36.693154+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer (stage 3) — 2 high doubts withdrew AC8",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 4,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "bug",
+          "file": "shared/scripts/lib/review_spec_stage.py:69-75",
+          "line": null,
+          "finding": "The adapter treats every nonempty verdict other than the exact string `REJECT` as a successful/non-blocking review. A malformed producer response such as `{\"verdict\":\"ERROR\",\"spec_citations\":[]}` or an unsupported verdict can therefore be recorded as a completed `code` row with no high-severity finding, bypassing the Stage-1 HARD-GATE rather than failing closed.",
+          "suggestion": "Validate `verdict` against the producer contract’s allowed values (`PASS` and `REJECT`, after normalization) and raise `ReviewFindingsError` for any other value. Add tests for unknown and malformed verdict values.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "spec",
+          "file": "plugins/shipwright-iterate/agents/sub-iterate-runner.md:191-196",
+          "line": null,
+          "finding": "AC4 requires a status-transition table that specifies, for each review type, the actor, statuses it may write, and the required disposition. The added table provides actors and broad statuses, but does not state the required disposition for `not_run` rows; “`not_run` ONLY + rule” is not a required disposition or a concrete rule. The detailed commands elsewhere happen to provide dispositions for `code` and `doubt`, but the required contract table itself is incomplete.",
+          "suggestion": "Add a disposition-required column with the precise requirement for each applicable status, including the capability-limit disposition for `code` and the Stage-2-precondition disposition for `doubt` (and rules for any `not_run` values permitted for `self`/`plan`).",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "test",
+          "file": "shared/tests/test_review_record_campaign_shape.py:73-80, 250-280",
+          "line": null,
+          "finding": "The claimed contract → CLI → verifier integration test does not execute the commands documented in `iteration-reviews.md`. It constructs its own hard-coded argument list and hard-coded dispositions, while its “drift guard” inspects only the runner’s status table. Consequently, malformed, removed, or semantically changed command blocks at `iteration-reviews.md:407-419` would still leave the CLI/gate integration tests green—the same prose-to-executable-path failure mode this change is intended to prevent.",
+          "suggestion": "Parse or otherwise derive the documented campaign command arguments/dispositions from the canonical command section and execute them through the CLI, or add focused assertions that validate each documented command block’s required subcommand, review type, status, disposition, and payload/marker options.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "spec",
+          "file": ".shipwright/triage.jsonl:943-949",
+          "line": null,
+          "finding": "The specification explicitly requires filing two triage follow-ups: the schema-versioned `spec` review type and the campaign before-merge cascade. The added triage records concern unrelated prior work; neither required follow-up is present, while the campaign documentation describes the work only as “tracked” without a durable issue reference.",
+          "suggestion": "Add triage entries for both deferred items, including the required state-machine/schema-impact analysis and a stable identifier that can be referenced from the campaign and review documentation.  Overall assessment: ship-with-fixes. The main ownership and recording changes are substantially implemented, but malformed Stage-1 verdicts currently fail open, and the required contract/follow-up and executable-command coverage are incomplete.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-07-28T00:18:47.937070+00:00",
+      "disposition": null,
+      "recorded_by": "external_review.py --mode code (openai; gemini leg returned unavailable)",
+      "parse_status": "partial",
+      "raw_excerpt": "[gemini] <no review returned: provider returned an empty reply>\n\n[openai] - Category: bug\n- Severity: high\n- File: `shared/scripts/lib/review_spec_stage.py:69-75`\n- Finding: The adapter treats every nonempty verdict other than the exact string `REJECT` as a successful/non-blocking review. A malformed producer response such as `{\"verdict\":\"ERROR\",\"spec_citations\":[]}` or an unsupported verdict can therefore be recorded as a completed `code` row with no high-severity finding, bypassing the Stage-1 HARD-GATE rather than failing closed.\n- Suggestion: Validate `verdict` against the producer contract’s allowed values (`PASS` and `REJECT`, after normalization) and raise `ReviewFindingsError` for any other value. Add tests for unknown and malformed verdict values.\n\n- Category: spec\n- Severity: medium\n- File: `plugins/shipwright-iterate/agents/sub-iterate-runner.md:191-196`\n- Finding: AC4 requires a status-transition table that specifies, for each review type, the actor, statuses it may write, and the required disposition. The added table provides actors and broad statuses, but does not state the required disposition for `not_run` rows; “`not_run` ONLY + rule” is not a required disposition or a concrete rule. The detailed commands elsewhere happen to provide dispositions for `code` and `doubt`, but the required contract table itself is incomplete.\n- Suggestion: Add a disposition-required column with the precise requirement for each applicable status, including the capability-limit disposition for `code` and the Stage-2-precondition disposition for `doubt` (and rules for any `not_run` values permitted for `self`/`plan`).\n\n- Category: test\n- Severity: medium\n- File: `shared/tests/test_review_record_campaign_shape.py:73-80, 250-280`\n- Finding: The claimed contract → CLI → verifier integration test does not execute the commands documented in `iteration-reviews.md`. It constructs its own hard-coded argument list and hard-coded dispositions, while its “drift guard” inspects only the runner’s status table. Consequently, malformed, removed, o […truncated]"
+    }
+  }
+}

@@ -97,9 +97,16 @@ def check_integration_coverage(project_root: Path, run_id: str, commit_hash: str
     hit = [p for p in changed if _is_cross_component([p])]
     if not hit:
         return CheckResult(name, True, "no cross-component machinery touched")
-    block: dict = {}
+    # Prefer the PER-RUN entry, same reason as check_test_completeness_ledger
+    # (iterate-2026-07-27-derived-snapshots-off-branch): the shared results file is
+    # restored to HEAD before F11 reads it on a behind branch, so this run's ledger
+    # would be gone and a change WITH integration coverage would be failed for
+    # lacking it. Caught by this gate on its own iterate.
+    block: dict = entry.get("test_completeness") if isinstance(entry, dict) else {}
+    if not isinstance(block, dict):
+        block = {}
     results_path = project_root / "shipwright_test_results.json"
-    if results_path.exists():
+    if not block and results_path.exists():
         try:
             il = json.loads(results_path.read_text(encoding="utf-8")).get("iterate_latest", {})
             block = il.get("test_completeness", {}) if isinstance(il, dict) else {}
