@@ -33,7 +33,7 @@ from .common import (
     check_c2_dashboard_reflects_phase,
     check_phase_history_has_run,
 )
-from .handoff_freshness import check_c3_session_handoff_fresh_after_phase
+from .handoff_phase_canon import check_c3_session_handoff_fresh_after_phase
 
 
 # ---------------------------------------------------------------------------
@@ -96,7 +96,7 @@ def run_deploy_checks(
     # Canon (C4 + C5 skipped)
     results.append(check_c1_phase_event_recorded(project_root, "deploy"))
     results.append(check_c2_dashboard_reflects_phase(project_root, "deploy"))
-    results.append(check_c3_session_handoff_fresh_after_phase(project_root, "deploy", run_id=run_id))
+    results.append(check_c3_session_handoff_fresh_after_phase(project_root, "deploy"))
 
     # Phase history
     results.append(check_phase_history_has_run(project_root, "deploy", run_id))

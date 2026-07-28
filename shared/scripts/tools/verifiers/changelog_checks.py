@@ -38,7 +38,7 @@ from .common import (
     check_phase_history_has_run,
     find_changelog,
 )
-from .handoff_freshness import check_c3_session_handoff_fresh_after_phase
+from .handoff_phase_canon import check_c3_session_handoff_fresh_after_phase
 
 
 _VERSION_HEADING_RE = re.compile(
@@ -189,7 +189,7 @@ def run_changelog_checks(
     # Canon (C4 skipped, C5 n/a)
     results.append(check_c1_phase_event_recorded(project_root, "changelog"))
     results.append(check_c2_dashboard_reflects_phase(project_root, "changelog"))
-    results.append(check_c3_session_handoff_fresh_after_phase(project_root, "changelog", run_id=run_id))
+    results.append(check_c3_session_handoff_fresh_after_phase(project_root, "changelog"))
 
     # Phase history
     results.append(check_phase_history_has_run(project_root, "changelog", run_id))

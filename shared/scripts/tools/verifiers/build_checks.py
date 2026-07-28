@@ -44,7 +44,7 @@ from .common import (
     read_events_jsonl,
     read_run_config,
 )
-from .handoff_freshness import check_c3_session_handoff_fresh_after_phase
+from .handoff_phase_canon import check_c3_session_handoff_fresh_after_phase
 
 
 # ---------------------------------------------------------------------------
@@ -422,7 +422,7 @@ def run_build_checks(
 
     # Phase-level canon (C2 + C3 + C5)
     results.append(check_c2_dashboard_reflects_phase(project_root, "build"))
-    results.append(check_c3_session_handoff_fresh_after_phase(project_root, "build", run_id=run_id))
+    results.append(check_c3_session_handoff_fresh_after_phase(project_root, "build"))
     results.append(check_c5_changelog_has_bullet_per_section(project_root))
 
     # Phase history (standard + build-specific sub-array check)

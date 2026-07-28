@@ -1,0 +1,10 @@
+{
+  "run_id": "iterate-2026-07-27-c3-phase-history-join",
+  "date": "2026-07-28T11:24:22.018048Z",
+  "type": "change",
+  "complexity": "medium",
+  "branch": "iterate/c3-phase-history-join",
+  "spec": ".shipwright/planning/iterate/iterate-2026-07-27-c3-phase-history-join.md",
+  "tests_passed": true,
+  "adr": "iterate-2026-07-27-c3-phase-history-join"
+}

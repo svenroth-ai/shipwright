@@ -343,22 +343,18 @@ def _generate_handoff(project_root: Path, session_id: str, run_id: str, reason: 
     :func:`_unlink_runtime_artifacts` wipes the stale runtime variant.
     """
     try:
-        from lib.events_log import latest_event_dt
+        from lib.canon_frontmatter import build_marker, marker_timestamp
         from tools.generate_session_handoff import generate_handoff
 
-        # Deterministic canon-frontmatter timestamp — see
-        # iterate-2026-05-22-deterministic-render-timestamps. Wall-clock
-        # here re-dirtied session_handoff.md on every finalize_iterate call.
-        _canon_dt = latest_event_dt(project_root)
-        canon_fm = {
-            "run_id": run_id,
-            "phase": "iterate",
-            "reason": reason,
-            "timestamp": (
-                _canon_dt.isoformat() if _canon_dt is not None
-                else "(no events)"
-            ),
-        }
+        # Both through the shared module: ONE definition of the marker's shape
+        # (and the only place its values are made safe to render), and ONE
+        # definition of its timestamp rule — the newest EVENT time, never wall
+        # clock, which re-dirtied session_handoff.md on every finalize call
+        # (iterate-2026-05-22-deterministic-render-timestamps).
+        canon_fm = build_marker(
+            run_id=run_id, phase="iterate", reason=reason,
+            timestamp=marker_timestamp(project_root),
+        )
         content = generate_handoff(
             project_root, session_id,
             reason=reason,

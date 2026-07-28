@@ -2596,7 +2596,7 @@ not a canon target.
 |---|---|---|---|
 | **C1** | `phase_completed` event recorded in `shipwright_events.jsonl` | `shared/scripts/tools/record_event.py --type phase_completed --source <phase>` | **ERROR** |
 | **C2** | `.shipwright/agent_docs/build_dashboard.md` reflects the phase | `shared/scripts/tools/update_build_dashboard.py --phase <phase>` | **WARNING** |
-| **C3** | `.shipwright/agent_docs/session_handoff.md` regenerated with phase-specific reason | `shared/scripts/tools/generate_session_handoff.py --reason "<phase>: …"` | **WARNING** |
+| **C3** | `.shipwright/agent_docs/session_handoff.md` carries a canon marker naming THIS phase and its latest recorded completion | `generate_session_handoff.py --canon-marker --phase <phase>` + that phase's completion producer (`append_phase_history.py` for pipeline phases, `append_iterate_entry.py` for `iterate`) | **WARNING** |
 | **C4** | `.shipwright/agent_docs/decision_log.md` has a new ADR referencing the phase | `shared/scripts/tools/write_decision_log.py --title …` | **ERROR** (only for decision-taking phases) |
 | **C5** | `CHANGELOG.md [Unreleased]` has a bullet under the right Keep-a-Changelog category | `shared/scripts/tools/append_changelog_entry.py --category <Added\|Changed\|Fixed\|…> --entry "…"` | **ERROR** (only for user-facing phases) |
 
@@ -2624,6 +2624,161 @@ accepts their conventions before failing:
   today.) The fallback is reachable even when `shipwright_events.jsonl`
   is empty or absent — the normal state of a freshly-adopted project
   that has run no iterates yet.
+
+### C3 Freshness — Did THIS Phase Leave the Note?
+
+Until iterate-2026-07-27-c3-phase-content-key, C3 compared the handoff's
+filesystem mtime against a 600-second budget. That fired on any run that
+waited more than ten minutes on CI — on the schedule, not on a defect —
+and filesystem mtime is not a content-staleness signal in a git repo
+anyway (checkout, branch-switch and worktree creation all reset it; see
+`shared/scripts/hooks/check_drift.py:10-16`).
+
+That change replaced the clock with a run id supplied by the caller, and
+iterate-2026-07-27-c3-phase-history-join replaced *that*, because a
+caller-supplied run id turned out to be unusable in both directions:
+
+- **It passed a phase that wrote nothing.** `SHIPWRIGHT_RUN_ID` is set with
+  `: "${SHIPWRIGHT_RUN_ID:=…}"` — assign-only-if-unset — in build, test,
+  changelog and the release-target phase, so those inherit an earlier
+  phase's id. A run-id comparison therefore matched even when the phase
+  skipped its C3 step entirely. Silently weaker than the mtime rule it
+  replaced.
+- **It warned on every phase of every Stop.** The two callers resolve the
+  id differently by construction: `phase_quality.resolve_run_id` walks
+  run-config → `run_started` event → loop vars → **session UUID**, while
+  `phase_validators._run_canon_checks` reads `SHIPWRIGHT_RUN_ID` from a
+  hook-launched subprocess that never inherits the skill's shell export.
+  Neither is the id the writer stamped.
+
+**C3 now takes no run id at all.** It joins the canon marker against the
+phase's own completion record — both on disk. A check that never consults
+the caller's run id cannot be broken by the caller resolving it.
+
+**Which record.** `lib/phase_history.py::COMPLETION_PRODUCER` names one per
+phase, because the pipeline keeps two. The seven pipeline phases append to
+`shipwright_run_config.json::phase_history[<phase>]`. `iterate` does not and
+never has: F5c writes the file-per-run ledger under
+`.shipwright/agent_docs/iterates/` (a shared array made two parallel iterates
+a guaranteed merge conflict), so reading `phase_history` for it produced a
+permanent WARNING whose remediation named a tool iterate had abandoned. A
+drift test asserts every phase in `C3_CANON_PHASES` has a producer here, and
+that every producer named resolves to a tool that runs.
+
+| Case | Verdict |
+|------|---------|
+| marker names this phase and its latest recorded run | **PASS** |
+| marker names this phase and its latest run, the completion carries an event anchor, and the note's anchor is older than it | WARNING — a later step completed without re-writing it |
+| marker names this phase, run id is an older entry | WARNING |
+| marker names this phase, run id absent from the record | WARNING (own reason) |
+| marker names another phase, **this phase completed after that phase did** | WARNING — it left no note |
+| marker names another phase, **this phase completed before that phase did** | SKIP, naming the owner |
+| either side's time missing, unparseable, or too coarse to settle the order | WARNING (stated, never inferred) |
+| no marker / no completion record / unreadable / missing | WARNING (each its own reason) |
+
+**The marker's `timestamp` is not the time the note was written.**
+`generate_session_handoff.py` stamps `latest_event_dt` — the newest `ts` in
+`shipwright_events.jsonl` — because wall clock there re-dirtied the tracked
+handoff on every regeneration (iterate-2026-05-22-deterministic-render-timestamps).
+Everything below follows from that, and getting it wrong is what broke the first
+version of this rule.
+
+**So the completion must be read on the same clock.**
+`append_phase_history.py` stamps `event_at` from that same function alongside
+the wall-clock `at`, and C3 compares against `event_at`. A correct canon block
+therefore leaves the two **equal** — the marker and the completion read one clock
+moments apart. Comparing the marker against `at` instead made it unconditionally
+"older" (the block records the event, writes the marker, *then* appends), so
+every phase re-run where `record_event`'s first-wins dedup meant no fresh event
+landed was accused of skipping its own C3 step — in the same words as the true
+positive, with a remedy that could not clear it, because re-running the C3 step
+re-derives the same event time. Ties are therefore **not** "later".
+
+**A matching run id is not by itself evidence of a note.** `build` appends one
+completion per split under the sticky id, so split 1 can write the marker and
+split 2 pass on the id alone; `iterate`'s F5c can rewrite its single ledger entry
+in place. So where the completion carries an anchor, the note must also not
+predate it. The gate is the anchor's EXISTENCE, not a count of entries — a count
+of one is not evidence a phase completed once (the iterate ledger is one file per
+run id, so its count is pinned at one forever), whereas a missing anchor really
+does mean the two sides sit on different clocks and must not be compared.
+
+**Ownership is decided by time, not by pipeline order** — and, when another
+phase owns the note, by ordering the two phases against **each other** rather
+than against the note. A static order cannot separate "a later phase legitimately
+superseded this one" from "a stale later-phase marker plus a re-run of this phase
+that wrote nothing". Nor can the note's anchor: `record_event` dedups
+`phase_completed` on `(phase, splitId)` permanently, so a phase completing a
+second time inherits whatever anchor was newest — routinely the note owner's.
+Ordered by that the two read as simultaneous, and the phase that ran LATER was
+reported as superseded by the EARLIER one. Both completions come from one
+producer calling `datetime.now()`, so their wall clocks ARE mutually comparable,
+and that is what decides this branch.
+
+**Time is read to the precision the record carries.** Entries written before
+iterate-2026-07-27-c3-phase-history-join carry no `event_at`, and some carry only
+`date`. A bare `YYYY-MM-DD` pins a DAY, and `lib/phase_history.py` represents it
+as one — reading it as midnight UTC, as an earlier draft did, made every same-day
+comparison answer confidently and wrongly, which is how a phase that skipped its
+C3 step read as legitimately superseded. Across days a bare date still settles
+the order; within one, **wherever the clock is consulted at all**, it is a stated
+WARNING and never a guess. Where it is not consulted — an anchorless completion
+in the same-phase branch — the run id answers alone.
+
+**Known bounds.** Three, all in the same-phase branch — the cross-phase branch
+deliberately stops using anchors, which is what closes them there:
+
+1. A completion that records no new event AND does not re-write the marker leaves
+   its anchor equal to the note's, and reads as a pass. Nothing on disk
+   distinguishes it from a step that legitimately did nothing new.
+2. `iterate` records no anchor at all, so its clock check never runs. Its ledger
+   is one file per run id, so a stale marker names a DIFFERENT run and the run-id
+   branch catches it; only an in-place F5c re-run without a matching F5b escapes.
+   Note `--preserve-canon-marker` on F11 widens that window: run A's marker now
+   survives into run B until B's own F5b, where it used to be deleted (which is
+   the point — see AC-(E) — but it is a longer window than before).
+3. **The strengthening is inert until each phase completes once after this
+   ships.** `event_at` is what opens the clock check, and only completions
+   recorded from now on carry it. On a repo whose latest entry per phase predates
+   this change — including this one — every phase falls back to the run id alone,
+   exactly as before. It decays per-phase, not all at once, and `adopt`'s
+   `config_writer.py` REPLACES the whole run config with anchorless entries, so a
+   re-adopt resets it. That is a deliberate no-op-until-used design, not an
+   assumption that the gate is already active.
+
+**Ordering.** The canon block runs `record_event.py`, then the marker, then the
+completion producer, then `orchestrator update-step` (which runs the validators),
+so the record is current when C3 reads it and C1 is what gives the marker an
+anchor at all. Two exceptions, both real:
+
+- **`build`'s split-level closure contains no `record_event`** — C1 runs per
+  SECTION (`section-state.md`), not in the closure. The split's anchor is
+  therefore whatever its sections last recorded.
+- **`iterate` inverts the order**: `finalize_bundle.py` runs F5c (the ledger)
+  BEFORE F5b (the marker). Not observable in the bundled path since both run in
+  one call, but F5c and F5b in separate turns — or an F5b abort — leaves the
+  ledger a run ahead of the marker, and C3 then correctly reports the note as
+  being from an earlier iterate run.
+
+`test_canon_marker_write_contract.py` guards the FLAGS on every invocation, not
+this ordering.
+
+**Applicability.** `security`, `compliance` and `adopt` write no canon
+marker, so C3 reports an explicit SKIP for them rather than a permanent
+warning — the Stop-hook canon runner invokes C3 for every phase in
+`PLUGIN_TO_PHASE`. The producing set is `C3_CANON_PHASES`
+(`tools/verifiers/handoff_phase_canon.py`), kept aligned with
+`PLUGIN_TO_PHASE` by a two-direction drift test.
+
+**Mid-phase handoffs must not erase the marker.** `build` Step 11 writes a
+mid-split handoff to the same tracked path without `--canon-marker`; it
+passes `--preserve-canon-marker` so the split-level marker survives.
+Preservation fires only for a write that never *asked* for a marker — not
+for a degraded `--canon-marker` write whose `SHIPWRIGHT_RUN_ID` was unset,
+which would come back carrying the previous run's marker. The preserved
+marker also keeps the Stop hook's regeneration skip in force for the rest
+of the split; that is intended, since Step 11 rewrote the body itself and
+the skip is protecting the fresher of the two files.
 
 ### C4 Skip Criteria — Who Gets an ADR
 
@@ -2748,18 +2903,34 @@ A new top-level field in `shipwright_run_config.json` parallel to
 ```json
 {
   "phase_history": {
-    "project": [{"run_id": "…", "date": "…", "outcome": "…", "splits": N}],
-    "design":  [{"run_id": "…", "date": "…", "screens": N, "flows": M}],
-    "build":   [{"run_id": "…", "date": "…", "split": "…", "sections": N}]
+    "project": [{"run_id": "…", "at": "…", "event_at": "…", "date": "…", "outcome": "…", "splits": N}],
+    "design":  [{"run_id": "…", "at": "…", "event_at": "…", "date": "…", "screens": N, "flows": M}],
+    "build":   [{"run_id": "…", "at": "…", "event_at": "…", "date": "…", "split": "…", "sections": N}]
   }
 }
 ```
 
 - Retention: last 50 entries per phase.
+- `at` is the completion INSTANT (wall clock, ISO-8601 UTC) and `date` the same
+  moment truncated to a day. `event_at` is the newest EVENT time at completion,
+  stamped from `latest_event_dt` — the same function that stamps the canon
+  marker's `timestamp`, and therefore **the only one of the three that Canon C3
+  may compare against the marker** (see "C3 Freshness" above). All three are
+  canonical and `--entry-json` may set none of them; `event_at` is omitted, not
+  nulled, on a project with no events yet. Entries written before
+  iterate-2026-07-27-c3-phase-history-join carry `date` alone; readers must treat
+  a bare `YYYY-MM-DD` as a day, not as midnight — the fabricated instant is what
+  killed the original time comparison.
 - `iterate` writes to `.shipwright/agent_docs/iterates/<run_id>.json` (file-per-iterate
-  refactor — richer schema: branch, spec path, tests_passed, adr). The
-  legacy `iterate_history` key is left empty on new projects for
-  backward-compat with external readers. Not mirrored into `phase_history`.
+  refactor — richer schema: branch, spec path, tests_passed, adr). It stamps **no**
+  `event_at`: the key is reserved so a caller cannot inject a fake anchor, but the
+  tool does not produce one, so C3's clock check never runs for `iterate` (known
+  bound 2 above). Its `date` is a full instant, unlike `phase_history`'s
+  day-precision one, so it still orders correctly against another phase. The
+  legacy `iterate_history` key is left empty on new projects for backward-compat
+  with external readers. Not mirrored into `phase_history`, so a reader after
+  "when did `iterate` last complete" must go through `lib/phase_history.py`,
+  which routes each phase to its own producer.
 - Phase modules fill `phase_history` starting in iterate 12.1.
 
 #### Why two histories
@@ -2776,6 +2947,12 @@ to carry null columns for iterate-only attributes. Consumers that
 need a merged view should read both arrays and sort by date — the
 asymmetry is the schema, not tech-debt waiting for a migration.
 
+A consumer asking the narrower question "when did phase X last complete"
+should NOT hand-roll that merge: `lib/phase_history.py::latest_completion`
+routes each phase to its own record via `COMPLETION_PRODUCER` and returns one
+shape. Canon C3 hard-coded the `phase_history` bucket instead, which is how
+`iterate` came to be checked against a record nothing has ever written for it.
+
 ### Verifier Package Layout
 
 ```
@@ -2786,7 +2963,11 @@ shared/scripts/tools/
   append_phase_history.py          # phase_history write path
   verifiers/
     __init__.py
-    common.py                      # CheckResult, readers, generic C1–C5, ADR F1/F2/F3
+    common.py                      # CheckResult, readers, generic C1/C2/C4/C5, ADR F1/F2/F3
+    handoff_marker.py              # Reads session_handoff.md + its canon marker. Judges nothing.
+    handoff_freshness.py           # The F11 check: does the note name the run finishing NOW
+    handoff_phase_canon.py         # Canon C3: did THIS phase leave the note. Takes no run id;
+                                   #   joins the marker against the phase's completion record
     iterate_checks.py              # iterate finalization checks (5 @12.0 + F0.5 surface + spec-impact + no-direct-decision_log gates)
     runtime_checks.py              # Zombie-task replay check                     — 12.0b
     project_checks.py              # Project phase-own + canon + phase_history   — 12.1
@@ -2820,7 +3001,7 @@ Legend: ✅ present · ⏭ skip by policy · n/a not applicable
 
 | Phase | C1 event | C2 dashboard | C3 handoff | C4 ADR | C5 CHANGELOG | phase_history | Verifier module | Phase validator |
 |---|---|---|---|---|---|---|---|---|
-| **iterate** | ✅ F7 | ✅ F5 (`check_build_dashboard_has_run_id`, implemented 14.8) | ✅ F5/F11 | ✅ F3 | ✅ F4 | ✅ `iterate_history` | `iterate_checks.py` + cross-artifact warnings (compliance, architecture, conventions) | `verify_iterate_finalization.py` |
+| **iterate** | ✅ F7 | ✅ F5 (`check_build_dashboard_has_run_id`, implemented 14.8) | ✅ F5/F11 | ✅ F3 | ✅ F4 | ✅ the F5c ledger, NOT `phase_history` — C3 reads it via `COMPLETION_PRODUCER` | `iterate_checks.py` + cross-artifact warnings (compliance, architecture, conventions) | `verify_iterate_finalization.py` |
 | **runtime** | n/a | n/a | n/a | n/a | n/a | n/a | `runtime_checks.py` (zombie replay) | — |
 | **project** | ✅ | ✅ | ✅ (canon-marker) | ✅ (Step 7) | ✅ | ✅ | `project_checks.py` | `_validate_project` |
 | **design** | ✅ | ✅ | ✅ (canon-marker) | ⏭ transformation | ✅ | ✅ | `design_checks.py` + FR coverage (check-plan C1 import) | `_validate_design` |

@@ -25,11 +25,14 @@ recomputes as cross-component machinery from the diff.
 
 from __future__ import annotations
 
+import json
+import os
 import subprocess
 import sys
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(Path(__file__).resolve().parent))
 sys.path.insert(0, str(REPO_ROOT / "shared" / "scripts"))
 sys.path.insert(0, str(REPO_ROOT / "shared" / "scripts" / "tools"))
 sys.path.insert(0, str(REPO_ROOT / "shared" / "scripts" / "hooks"))
@@ -37,10 +40,14 @@ sys.path.insert(0, str(REPO_ROOT / "shared" / "scripts" / "hooks"))
 import generate_handoff_on_stop as stop_hook  # noqa: E402
 import generate_session_handoff as writer  # noqa: E402
 
+from _c3_fixtures import history_entries  # noqa: E402
 from verifiers.handoff_freshness import check_session_handoff_fresh  # noqa: E402
 
 RUN = "iterate-2026-07-27-name-the-blocker"
 OTHER_RUN = "iterate-2026-07-01-a-different-run"
+
+EARLY = "2026-07-27T10:00:00+00:00"
+LATE = "2026-07-27T12:00:00+00:00"
 
 _HANDOFF_REL = Path(".shipwright") / "agent_docs" / "session_handoff.md"
 
@@ -55,8 +62,16 @@ def _project(tmp_path: Path) -> Path:
     return root
 
 
-def _write_real_handoff(root: Path, run_id: str, phase: str = "iterate") -> Path:
-    """Generate the handoff through the REAL writer, with a real canon marker."""
+def _write_real_handoff(root: Path, run_id: str, phase: str = "iterate",
+                        timestamp: str = EARLY) -> Path:
+    """Generate the handoff through the REAL writer, with a real canon marker.
+
+    ``timestamp`` defaults to the same anchor the completion fixtures record,
+    because that is what a real canon block produces: `generate_session_handoff`
+    and the completion producer both stamp `latest_event_dt`, moments apart, so
+    the two are EQUAL. A fixture that picks an older marker time is modelling a
+    phase that skipped its C3 step, and C3 is right to say so.
+    """
     content = writer.generate_handoff(
         root,
         session_id="sess-1",
@@ -65,7 +80,7 @@ def _write_real_handoff(root: Path, run_id: str, phase: str = "iterate") -> Path
             "run_id": run_id,
             "phase": phase,
             "reason": "finalize",
-            "timestamp": "2026-07-27T09:00:00+00:00",
+            "timestamp": timestamp,
         },
     )
     path = root / _HANDOFF_REL
@@ -123,80 +138,126 @@ def test_both_readers_use_the_same_parser_object(tmp_path):
 
 # --- C3, through its real production path -------------------------------------
 #
-# iterate-2026-07-27-c3-phase-content-key. C3 has a THIRD consumer of the same
-# marker: the Stop-hook phase-quality canon runner. The unit suite proves the
-# check; these prove the runner reaches it with a real run id and a real
-# writer's file — the join openai R1 of the plan review asked for, rather than
-# a direct call with hand-aligned values.
+# iterate-2026-07-27-c3-phase-history-join. C3 has a THIRD consumer of the same
+# marker: the Stop-hook phase-quality canon runner. These prove the runner
+# reaches the check with the REAL writer's file on disk, and that the join is
+# marker -> phase_history with no run id crossing the boundary at all.
 
 
 def _c3(findings: list[dict]) -> dict:
     return next(f for f in findings if f["id"] == "C3")
 
 
+def _history(root: Path, history: dict) -> None:
+    cfg = root / "shipwright_run_config.json"
+    data = json.loads(cfg.read_text(encoding="utf-8"))
+    data["phase_history"] = history
+    cfg.write_text(json.dumps(data), encoding="utf-8")
+
+
 def test_the_canon_runner_passes_c3_on_the_real_writers_marker(tmp_path):
-    """Writer → disk → the runner the Stop hook actually calls."""
+    """Writer -> disk -> the runner the Stop hook actually calls."""
     from lib.phase_quality import run_canon_checks
 
     root = _project(tmp_path)
     _write_real_handoff(root, RUN, phase="build")
+    _history(root, {"build": history_entries((RUN, EARLY))})
 
-    finding = _c3(run_canon_checks("build", root, RUN))
+    finding = _c3(run_canon_checks("build", root))
 
     assert finding["status"] == "PASS", finding["evidence"]
     assert RUN in finding["evidence"]
 
 
-def test_the_canon_runner_warns_when_the_handoff_belongs_to_another_run(tmp_path):
-    from lib.phase_quality import run_canon_checks
-
-    root = _project(tmp_path)
-    _write_real_handoff(root, OTHER_RUN, phase="build")
-
-    finding = _c3(run_canon_checks("build", root, RUN))
-
-    assert finding["status"] == "WARN"
-    assert OTHER_RUN in finding["evidence"]
-
-
-def test_the_canon_runner_skips_c3_for_a_phase_with_no_producer(tmp_path):
-    """`security` is audited by the Stop hook but writes no canon marker. Without
-    the applicability set this is where a content key would warn forever."""
+def test_the_canon_runner_catches_a_phase_that_skipped_its_step(tmp_path):
+    """The #467 regression, end-to-end through the production runner: build wrote
+    the note, `test` completed later and wrote nothing, and both carry the same
+    run id because of the `:=` idiom. #467 reported PASS here."""
     from lib.phase_quality import run_canon_checks
 
     root = _project(tmp_path)
     _write_real_handoff(root, RUN, phase="build")
+    _history(root, {
+        "build": history_entries((RUN, EARLY)),
+        "test": history_entries((RUN, LATE)),
+    })
 
-    finding = _c3(run_canon_checks("security", root, RUN))
+    finding = _c3(run_canon_checks("test", root))
+
+    assert finding["status"] == "WARN", finding["evidence"]
+    assert "left no note of its own" in finding["evidence"]
+
+
+def test_the_canon_runner_skips_c3_for_a_phase_with_no_producer(tmp_path):
+    """`security` is audited by the Stop hook but writes no canon marker."""
+    from lib.phase_quality import run_canon_checks
+
+    root = _project(tmp_path)
+    _write_real_handoff(root, RUN, phase="build")
+    _history(root, {"build": history_entries((RUN, EARLY))})
+
+    finding = _c3(run_canon_checks("security", root))
 
     assert finding["status"] == "SKIP"
 
 
-def test_a_degenerate_run_id_reaches_c3_as_itself(tmp_path):
-    """The runner must not synthesize a run id to fill the gap — an audit with no
-    resolvable run has to read as unanswerable, not as a stale handoff."""
-    from lib.phase_quality import run_canon_checks
-
-    root = _project(tmp_path)
-    _write_real_handoff(root, RUN, phase="build")
-
-    finding = _c3(run_canon_checks("build", root, "unknown"))
-
-    assert finding["status"] == "WARN"
-    assert "cannot evaluate" in finding["evidence"]
-
-
-def test_the_stop_hook_call_site_supplies_the_run_id():
-    """Drift guard on the join itself: `run_canon_checks` defaults `run_id` to ""
-    so the Stop hook keeps working if this argument is ever dropped — which would
-    silently turn every C3 into "cannot evaluate". Pin the production call."""
+def test_no_run_id_crosses_the_runner_boundary(tmp_path):
+    """The join is marker -> phase_history, both on disk. #467 threaded a caller
+    run id through here and C3 warned on every phase of every Stop, because
+    `resolve_run_id` and the handoff writer never agree on what that id is.
+    Neither the runner nor the check may take one."""
     import inspect
 
-    import audit_phase_quality_on_stop as audit
+    from lib.phase_quality import run_canon_checks
+    from verifiers.handoff_phase_canon import check_c3_session_handoff_fresh_after_phase
 
-    src = inspect.getsource(audit)
+    assert "run_id" not in inspect.signature(run_canon_checks).parameters
+    assert "run_id" not in inspect.signature(
+        check_c3_session_handoff_fresh_after_phase
+    ).parameters
 
-    assert "run_canon_checks(phase, project_root, run_id)" in src
+
+def test_preserving_the_marker_keeps_the_stop_hook_off_a_fresh_mid_split_handoff(
+    tmp_path, monkeypatch
+):
+    """`--preserve-canon-marker` has a SECOND consumer, and the effect is intended.
+
+    The Stop hook skips regeneration while the on-disk marker names the current
+    run. Carrying the marker through build's Step 11 therefore extends that skip
+    across the rest of the split — which is the same protection the split's own
+    canon closure already earned, not a new one. It suppresses nothing stale:
+    Step 11 rewrote the body itself moments earlier, so what the skip preserves
+    is the FRESHER of the two files. Dropping the marker instead would hand the
+    tracked handoff back to the Stop hook mid-phase and destroy C3's evidence,
+    which is the regression this flag exists to close.
+    """
+    root = _project(tmp_path)
+    writer_path = REPO_ROOT / "shared" / "scripts" / "tools" / "generate_session_handoff.py"
+    env = {**os.environ, "SHIPWRIGHT_RUN_ID": RUN}
+
+    closure = subprocess.run(
+        [sys.executable, str(writer_path), "--project-root", str(root),
+         "--reason", "build phase complete: split 1", "--phase", "build",
+         "--canon-marker"],
+        capture_output=True, text=True, timeout=180, env=env,
+    )
+    step_11 = subprocess.run(
+        [sys.executable, str(writer_path), "--project-root", str(root),
+         "--reason", "mid-build handoff: section 3 in_progress",
+         "--preserve-canon-marker"],
+        capture_output=True, text=True, timeout=180, env=env,
+    )
+    assert closure.returncode == 0, closure.stderr
+    assert step_11.returncode == 0, step_11.stderr
+
+    monkeypatch.setenv("SHIPWRIGHT_RUN_ID", RUN)
+    path = root / _HANDOFF_REL
+    skip, reason = stop_hook._should_skip_regeneration(path)
+
+    assert skip is True, reason
+    assert "mid-build handoff: section 3 in_progress" in path.read_text(encoding="utf-8"), (
+        "the skip must be protecting Step 11's body, not the closure's"
+    )
 
 
 def test_hook_runs_from_an_unrelated_working_directory(tmp_path):

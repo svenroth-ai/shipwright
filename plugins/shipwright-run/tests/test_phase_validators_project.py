@@ -61,7 +61,17 @@ def _seed_canon_artifacts(root: Path, *, run_id: str = "project-20260414-x") -> 
     )
     (root / ".shipwright" / "agent_docs").mkdir(parents=True, exist_ok=True)
     (root / ".shipwright" / "agent_docs" / "build_dashboard.md").write_text("- project: complete\n")
-    (root / ".shipwright" / "agent_docs" / "session_handoff.md").write_text("fresh")
+    # A REAL canon marker, naming this phase and the run phase_history records
+    # below. The literal "fresh" here used to pass on filesystem mtime; once C3
+    # became content-keyed it silently stopped exercising C3 at all — the
+    # assertion below only looks at ask-level issues and C3 is inform-level, so
+    # the suite stayed green while covering nothing
+    # (iterate-2026-07-27-c3-phase-history-join).
+    (root / ".shipwright" / "agent_docs" / "session_handoff.md").write_text(
+        f'---\ncanon_generated: true\nrun_id: "{run_id}"\nphase: "project"\n'
+        f'reason: "project scaffolding complete"\ndate: "2026-04-14"\n'
+        f'timestamp: "2026-04-14T12:00:00+00:00"\n---\n\n# Session Handoff\n'
+    )
     (root / ".shipwright" / "agent_docs" / "decision_log.md").write_text(
         "### ADR-027: Project decomposition\n- **Status:** accepted\n"
     )
@@ -96,6 +106,10 @@ def test_full_canon_project_passes(tmp_path, monkeypatch):
     ask = [i for i in issues if i["severity"] == "ask"]
     assert ask == [], ask
     assert valid is True
+    # "full canon" must actually mean C3 too. Asserting only on ask-level items
+    # let a fixture that had stopped satisfying C3 keep this test green, because
+    # C3 is inform-level (iterate-2026-07-27-c3-phase-history-join).
+    assert not [i for i in issues if "C3" in i["message"]], issues
 
 
 def test_missing_c5_blocks_validation(tmp_path, monkeypatch):
