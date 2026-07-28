@@ -1,0 +1,66 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-07-28-codescanning-alerts",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-07-28T20:26:39.857597+00:00",
+      "disposition": null,
+      "recorded_by": "iterate-session",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-07-28T20:27:16.963222+00:00",
+      "disposition": "Medium's external PLAN review was not run as a separate pre-build pass: the mini-plan and its two rejected alternatives went through the user approval gate instead, and the external LLM pass was spent on the built diff (--mode code), which is where this iterate's risk sat. Recorded as not_run rather than folded into external_code so the omission stays visible.",
+      "recorded_by": "iterate-session",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-07-28T20:26:57.670032+00:00",
+      "disposition": null,
+      "recorded_by": "shipwright-build:code-reviewer (Stage 2, opus); Stage 1 spec-reviewer PASS",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-07-28T20:34:42.260446+00:00",
+      "disposition": null,
+      "recorded_by": "shipwright-build:doubt-reviewer (Stage 3, opus): 8 doubts (1 high, 3 med, 4 low); 4 fixed, 1 premise-false, 1 already-fixed, 2 verified/expected",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": "openrouter",
+      "completed_at": "2026-07-28T20:27:07.704390+00:00",
+      "disposition": null,
+      "recorded_by": "external_review.py --mode code; gpt-5.6-terra approve (2nd pass, 1st was revise); gemini degraded x2",
+      "parse_status": null,
+      "raw_excerpt": null
+    }
+  }
+}

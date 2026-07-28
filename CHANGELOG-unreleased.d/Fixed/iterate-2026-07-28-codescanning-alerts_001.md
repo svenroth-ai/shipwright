@@ -1,0 +1,1 @@
+`test_checks_that_gate.py` no longer carries a `security.yml` constant no assertion reads: the security half was split out to `test_security_gate_verdict.py` and only the docstring bullet was left behind. The console verdict line is now pinned there too, scoped to the step log so relocating it into the job summary cannot pass unnoticed.

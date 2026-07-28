@@ -1,0 +1,89 @@
+{
+  "run_id": "iterate-2026-07-28-codescanning-alerts",
+  "date": "2026-07-28T20:43:37.603898Z",
+  "type": "change",
+  "complexity": "medium",
+  "branch": "iterate/codescanning-alerts",
+  "spec": ".shipwright/planning/iterate/iterate-2026-07-28-codescanning-alerts.md",
+  "tests_passed": true,
+  "adr": "iterate-2026-07-28-codescanning-alerts",
+  "test_completeness": {
+    "status": "complete",
+    "behaviors": [
+      {
+        "behavior": "escaped class matches the identical alphabet",
+        "disposition": "tested",
+        "evidence": "test_the_matched_alphabet_is_exactly_this_and_nothing_else (full 0x110000 enumeration) PASSED; plus a probe compiling the literal from git HEAD and from the worktree: 85 == 85 codepoints, zero added, zero dropped"
+      },
+      {
+        "behavior": "safe_path still neutralises every bidi/zero-width control",
+        "disposition": "tested",
+        "evidence": "test_invisible_and_bidi_controls_are_neutralised + test_every_character_the_splitter_refuses_to_break_on_is_neutralised_here - 77 passed across the two pr_review test modules"
+      },
+      {
+        "behavior": "escaped parametrize values are runtime-identical",
+        "disposition": "tested",
+        "evidence": "same 77 passed; \\uXXXX is decoded by the compiler, so the tests still exercise the real characters"
+      },
+      {
+        "behavior": "source carries no literal bidi character",
+        "disposition": "untestable",
+        "reason_code": "covered-by-existing-test",
+        "evidence": "the Semgrep Trojan-Source rule in security.yml is the standing guard - it caught this within hours of #487. A bespoke lint duplicating a scanner-covered concern was rejected in the spec's Alternatives"
+      },
+      {
+        "behavior": "the inline # nosemgrep binds to the flagged call",
+        "disposition": "tested",
+        "evidence": "mechanical adjacency probe across all 9 sites of the rule: each suppression's next line is the import_module call; the new site matches all 8 pre-existing ones"
+      },
+      {
+        "behavior": "the suppression is not an unrecorded acceptance",
+        "disposition": "tested",
+        "evidence": "accepted_risks_cli.py check - 4 entries / 4 suppressions / no drift, and 0 of the 8 pre-existing non-literal-import sites hold a register entry"
+      },
+      {
+        "behavior": "loader behaviour unchanged by the comment insertion",
+        "disposition": "tested",
+        "evidence": "load_shared_lib('jsonl_records') smoke + shared/tests 6274 passed"
+      },
+      {
+        "behavior": "_SECURITY removed without losing coverage",
+        "disposition": "tested",
+        "evidence": "test_security_gate_verdict.py 7 passed - it already owned the security half with strictly stronger assertions (step located by id:, whole if/fi block regex-matched); test_checks_that_gate.py 10 passed"
+      },
+      {
+        "behavior": "the console verdict line spends the counts it computed",
+        "disposition": "tested",
+        "evidence": "mutation probe, 5 mutants ALL killed incl. the Stage-3 relocation case (line moved inside the GITHUB_STEP_SUMMARY group) and the external reviewer's split-across-two-lines case; unmutated control passes"
+      },
+      {
+        "behavior": "docstring / comment corrections",
+        "disposition": "untestable",
+        "reason_code": "covered-by-existing-test",
+        "evidence": "prose describing scope, not behaviour; the behaviour they describe is pinned by test_accepted_risks_register.py - 18 passed"
+      }
+    ],
+    "counts": {
+      "behaviors": 10,
+      "tested": 8,
+      "untestable": 2,
+      "untested_testable": 0
+    }
+  },
+  "surface_verification": {
+    "surface": "cli",
+    "tests_run": 810,
+    "exit_code": 0,
+    "runner": "uv run pytest plugins/shipwright-security/tests -q"
+  },
+  "degraded": [
+    {
+      "condition": "external review: only one of two reviewers answered",
+      "detail": "gemini-3.1-pro-preview degraded on BOTH attempts (1st: finish_reason=length; 2nd: empty reply). gpt-5.6-terra answered both times - 'revise' on the first pass with a real finding (the console assertion aggregated across lines), 'approve' after the fix. Recorded rather than presented as a two-reviewer pass."
+    },
+    {
+      "condition": "nosemgrep suppression not empirically confirmed locally",
+      "detail": "semgrep is not installed on this machine, so the suppression's EFFECT was not run. Adjacency is verified mechanically against 8 working sites; live confirmation is the next scan closing alert 1286. A failure here is visible (the alert stays open), not silent."
+    }
+  ]
+}
