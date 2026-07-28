@@ -16,7 +16,7 @@ Examples::
     # every gate for a phase, resolved for the current mode
     resolve_gate_policy.py --phase deploy --list --project-root .
     # regenerate the human doc
-    resolve_gate_policy.py --render-doc > docs/gate-catalog.md
+    resolve_gate_policy.py --render-doc > shared/config/gate_catalog.md
 """
 from __future__ import annotations
 
@@ -51,7 +51,8 @@ def _build_parser() -> argparse.ArgumentParser:
     action = p.add_mutually_exclusive_group(required=True)
     action.add_argument("--gate", help="resolve a single gate id")
     action.add_argument("--list", action="store_true", help="list gates (optionally --phase)")
-    action.add_argument("--render-doc", action="store_true", help="print docs/gate-catalog.md")
+    action.add_argument("--render-doc", action="store_true",
+                        help="print shared/config/gate_catalog.md")
     p.add_argument("--phase", choices=COVERED_PHASES, help="filter --list to one phase")
     p.add_argument("--mode", help="explicit run mode (highest precedence)")
     p.add_argument("--project-root", default=".", help="root holding shipwright_run_config.json")

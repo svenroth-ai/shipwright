@@ -699,6 +699,20 @@ Shipwright's orchestrator pipeline consists of **7 phases** (project, design, pl
 
 > **Have an older run config?** `/shipwright-run` used to hand each phase off to its own separate Claude session, which you launched yourself by pasting a command. That mode is gone — the master runs the phases for you now. If you have a run config from back then, `/shipwright-run` will tell you exactly what to change (one line: set the mode to `single_session`) and pick the run back up where it left off. No phase work is lost. See [the migration note](migrations/multi-session-to-single-session.md).
 
+**Which decisions the pipeline makes without asking you**
+
+A driven run answers many of the questions a phase would otherwise put to you, so it can keep going while you are away. Which ones it may answer is not left to the agent's judgement — every interactive checkpoint in the `project`, `design`, `plan`, `build` and `deploy` phases is listed in advance with one of three settings:
+
+| Setting | What happens in a driven run |
+|---|---|
+| **Answer it and continue** (`auto-default`) | The phase proceeds with a documented default that is recorded as an assumption. Used where the answer is derivable from what you already supplied — the requirements interview, the proposed screen list, the split manifest. |
+| **Stop and ask a human** (`orchestrator-approve`) | The phase halts and surfaces the question. Used where the answer cannot be invented: an external project reference, a secret, or a judgement call such as approving the first screens you see. |
+| **Always stop, no exceptions** (`hard-stop`) | No autonomy setting can bypass it. Reserved for production deploys, destructive SQL, a failed migration apply, and rollbacks. |
+
+Two guarantees hold regardless of how autonomous you set the run. A checkpoint marked as constitution-locked — a secret, a production deploy, skipping a test layer — is **never** answered automatically. And the whole mechanism is inert outside a driven run: a standalone or adopted project keeps every one of its ordinary interactive prompts.
+
+The complete list of checkpoints, with each one's setting and its default answer, is `shared/config/gate_catalog.json` in the Shipwright repository (`gate_catalog.md` beside it is the same content as a readable table).
+
 **How it works**
 
 - Detects your input (file, inline text, or interactive chat) and asks 1-3 clarifying questions if the description is vague.

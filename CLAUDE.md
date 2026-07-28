@@ -132,6 +132,30 @@ starts with a sync check.
 - The guide is the primary user-facing documentation. README.md is a summary
   that links to the guide.
 
+### Where documents live
+
+**`docs/` holds hand-written instructions** — for users and for developers
+alike. The test is not who reads it, but that someone *wrote* it and someone
+*reads* it. `guide.md` and `hooks-and-pipeline.md` sit there as equals.
+
+**`.shipwright/` holds the artifacts Shipwright itself keeps** — specs under
+`.shipwright/planning/`, evidence under `.shipwright/compliance/`, architecture
+and decision memory under `.shipwright/agent_docs/`. They come out of runs;
+they are not composed by hand.
+
+**A file that is neither belongs nowhere:**
+
+- A **record of finished work** is deleted. Git history keeps it.
+- A **generated file** is not filed among the hand-written ones. If it is
+  committed at all, it lives **next to the source it is generated from**, so
+  source and render are read together and the drift test has an obvious
+  subject. `shared/config/gate_catalog.json` + `gate_catalog.md` is the shape.
+
+For neither case is the answer "then put it under `.shipwright/`". The
+`agent_docs`, `planning` and `compliance` trees are read as well — they are not
+a parking lot for files nobody reads. Relocating an unread file into a read
+directory is filing, not deciding.
+
 ### Testing
 ```bash
 # Single plugin

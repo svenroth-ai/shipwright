@@ -15,7 +15,7 @@ Inert outside a driven pipeline run: for a standalone / adopted / mode-less / v1
 missing config every gate resolves to ``interactive``. The resolver NEVER
 auto-answers a constitution-flagged gate (defense-in-depth on the validator).
 
-``docs/gate-catalog.md`` is GENERATED from the JSON by
+``shared/config/gate_catalog.md`` is GENERATED from the JSON beside it by
 ``render_catalog_markdown`` — edit the JSON, then regenerate.
 """
 from __future__ import annotations
@@ -220,7 +220,7 @@ def resolve_gate_policy(
 
 
 # --------------------------------------------------------------------------- #
-# Doc generation (docs/gate-catalog.md is rendered from the JSON)
+# Doc generation (shared/config/gate_catalog.md is rendered from the JSON)
 # --------------------------------------------------------------------------- #
 
 # Unicode punctuation the JSON summaries use, transliterated to ASCII so the
@@ -261,7 +261,7 @@ def render_catalog_markdown(catalog: Optional[dict[str, Any]] = None) -> str:
         "> **GENERATED** from `shared/config/gate_catalog.json` by",
         "> `gate_policy.render_catalog_markdown` (Campaign 2026-07-07, SS2). Do NOT",
         "> edit by hand — edit the JSON and regenerate (shell-agnostic writer):",
-        "> `uv run shared/scripts/tools/resolve_gate_policy.py --render-doc --output docs/gate-catalog.md`",
+        "> `uv run shared/scripts/tools/resolve_gate_policy.py --render-doc --output shared/config/gate_catalog.md`",
         "",
         _cell(cat.get("description")),
         "",

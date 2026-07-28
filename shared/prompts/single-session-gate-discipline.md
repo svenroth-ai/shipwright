@@ -52,4 +52,4 @@ Mode precedence: `--mode` > `$SHIPWRIGHT_RUN_MODE` > `run_config.mode` >
   lock; `policy` only distinguishes "surface to the orchestrator" from "a human
   must decide here, full stop".
 - Machine SSoT: `shared/config/gate_catalog.json`. Human reference:
-  `docs/gate-catalog.md` (generated from the JSON).
+  `shared/config/gate_catalog.md` (generated from the JSON beside it).

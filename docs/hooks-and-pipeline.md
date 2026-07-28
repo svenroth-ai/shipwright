@@ -578,7 +578,8 @@ After build completes: shows split summary table. After test completes: shows te
 > phase skills (`project`, `design`, `plan`, `build`, `deploy`) read the policy
 > via `shared/scripts/tools/resolve_gate_policy.py`; the full contract is
 > `shared/prompts/single-session-gate-discipline.md` and the catalog is documented
-> in `docs/gate-catalog.md`. The mechanism is **inert** — every gate resolves to
+> in `shared/config/gate_catalog.md`, generated beside its JSON source. The
+> mechanism is **inert** — every gate resolves to
 > `interactive` — for any config that is not an explicit `single_session` run, so a
 > standalone or adopted project keeps its ordinary interactive gates. That
 > inertness is keyed on `gate_policy.INERT_MODE` (`"standalone"`), which is a
@@ -1042,9 +1043,11 @@ finally to `migrated` after the cleanup sub-iterate. The companion
 test-suite (`shared/tests/test_artifact_path_canon.py` and the four
 sister tests) automatically covers the new entry.
 
-**Reference:** `docs/migrations/artifact-migration-reference.md`
-(written in Sub-Iterate G of the planning relocation) holds the full
-playbook for proposing and executing a new migration.
+**Reference:** the module docstring of
+`shared/scripts/lib/artifact_migrations.py` holds the four-step pattern.
+All four artefact migrations completed in 2026-04/05; their long-form
+execution records were removed by `iterate-2026-07-28-docs-placement-rule`
+and remain in `git log` should a fifth ever need them.
 
 ### Shared Hooks: Skill Bootstrap Pack (SP2 + SP4)
 

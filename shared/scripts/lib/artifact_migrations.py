@@ -23,8 +23,11 @@ Adding a new artifact migration:
 4. After the final cleanup sub-iterate, flip status to ``"migrated"``.
    Drift detector becomes a hard gate.
 
-See ``docs/migrations/artifact-migration-reference.md`` (written in
-Sub-Iterate G of the planning relocation) for the full pattern.
+The four steps above are the pattern. All four artefact migrations
+(planning, designs, agent_docs, compliance) completed in 2026-04/05 and
+their execution records were removed by
+``iterate-2026-07-28-docs-placement-rule``; ``git log`` holds them if a
+fifth migration ever needs the long-form playbook.
 """
 from __future__ import annotations
 
@@ -172,19 +175,16 @@ ALLOWLIST: dict[str, list[str]] = {
         # Layer 2 setup-contract test — intentionally asserts that the legacy
         # path is NOT created. Must reference legacy by name to do so.
         "shared/tests/test_setup_writes_canonical.py",
-        # Sub-Iterate F deliverables — migration CLI + chain helper +
-        # their tests reference "planning" as the artifact name.
+        # Sub-Iterate F deliverable — the migration CLI and its test
+        # reference "planning" as the artifact name.
         "shared/scripts/tools/migrate_artifact_dir.py",
-        "shared/scripts/tools/print_next_migration_prompt.py",
         "shared/tests/test_migrate_artifact_dir.py",
-        "shared/tests/test_print_next_migration_prompt.py",
         # Plan files (this migration's own design docs)
         "C:/Users/you/.claude/plans/iterate-shipwright-relocation-*.md",
         "C:/Users/you/.claude/plans/ich-bin-am-berarbeiten-glittery-sun.md",
-        # Historical changelog & migration docs (must not be rewritten)
+        # Historical changelog entries (must not be rewritten)
         "CHANGELOG.md",
         "CHANGELOG-unreleased.d/**",
-        "docs/migrations/**",
         # Pre-migration touchpoint inventory — every glob currently using
         # legacy paths.  These narrow as Sub-Iterates B-E migrate them.
         # Sub-Iterate B (shared/) — narrowed: drift_parsers.py + iterate_entry.py
@@ -257,17 +257,14 @@ ALLOWLIST: dict[str, list[str]] = {
         ".shipwright/planning/campaigns/**.md",
         # Layer-2 setup-contract test references both paths by design
         "shared/tests/test_setup_writes_canonical.py",
-        # Migration tooling (CLI + helpers) takes artifact name as argument
+        # Migration CLI takes the artifact name as an argument
         "shared/scripts/tools/migrate_artifact_dir.py",
-        "shared/scripts/tools/print_next_migration_prompt.py",
         "shared/tests/test_migrate_artifact_dir.py",
-        "shared/tests/test_print_next_migration_prompt.py",
         # Plan files (this migration's own design docs)
         "C:/Users/you/.claude/plans/iterate-shipwright-relocation-designs-*.md",
-        # Historical changelog & migration docs (must not be rewritten)
+        # Historical changelog entries (must not be rewritten)
         "CHANGELOG.md",
         "CHANGELOG-unreleased.d/**",
-        "docs/migrations/**",
         # Production code + tests for plugins migrated through Sub-Iterate C.
         # Earlier sub-iterates removed entries already migrated.
         # Remaining narrows as Sub-Iterate D (prose) lands.
@@ -339,17 +336,14 @@ ALLOWLIST: dict[str, list[str]] = {
         "shared/tests/test_setup_writes_canonical.py",
         # Edge-case test file that intentionally references both paths (introduced in designs migration)
         "shared/tests/test_artifact_drift_edge_cases.py",
-        # Migration tooling (CLI + helpers) takes artifact name as argument
+        # Migration CLI takes the artifact name as an argument
         "shared/scripts/tools/migrate_artifact_dir.py",
-        "shared/scripts/tools/print_next_migration_prompt.py",
         "shared/tests/test_migrate_artifact_dir.py",
-        "shared/tests/test_print_next_migration_prompt.py",
         # Plan files (this migration's own design docs)
         "C:/Users/you/.claude/plans/iterate-shipwright-relocation-agent_docs-*.md",
-        # Historical changelog & migration docs (must not be rewritten)
+        # Historical changelog entries (must not be rewritten)
         "CHANGELOG.md",
         "CHANGELOG-unreleased.d/**",
-        "docs/migrations/**",
         # Sub-Iterate B (shared/) — narrowed: lokale Konstanten in spec_parser /
         # generate_handoff_on_stop / verifiers/common kept (Layer-6 manifest
         # binds `LEGACY_AGENT_DOCS_DIRNAME = "agent_docs"`). Files no longer
@@ -493,11 +487,9 @@ ALLOWLIST: dict[str, list[str]] = {
         "shared/tests/test_setup_writes_canonical.py",
         # Edge-case test file that intentionally references both paths (introduced in designs migration)
         "shared/tests/test_artifact_drift_edge_cases.py",
-        # Migration tooling (CLI + helpers) takes artifact name as argument
+        # Migration CLI takes the artifact name as an argument
         "shared/scripts/tools/migrate_artifact_dir.py",
-        "shared/scripts/tools/print_next_migration_prompt.py",
         "shared/tests/test_migrate_artifact_dir.py",
-        "shared/tests/test_print_next_migration_prompt.py",
         # iterate-2026-05-21-triage-producer-contract (B0) — the triage
         # JSONL schema's `kind` enum includes the literal string
         # `"compliance"` as a triage-item domain category (NOT a legacy
@@ -506,10 +498,9 @@ ALLOWLIST: dict[str, list[str]] = {
         "shared/schemas/triage_item.schema.json",
         # Plan files (this migration's own design docs)
         "C:/Users/you/.claude/plans/iterate-shipwright-relocation-compliance-*.md",
-        # Historical changelog & migration docs (must not be rewritten)
+        # Historical changelog entries (must not be rewritten)
         "CHANGELOG.md",
         "CHANGELOG-unreleased.d/**",
-        "docs/migrations/**",
         "shared/constitution.md",
         "README.md",
         "CLAUDE.md",

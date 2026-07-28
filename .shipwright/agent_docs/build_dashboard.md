@@ -1,14 +1,19 @@
 # Project Activity Dashboard
-> Updated: 2026-07-28 07:58 UTC | Session: d45b5209-08f4-453b-b127-43083fb94396 | Run: iterate-2026-07-27-pr-review-forged-boundary
+> Updated: 2026-07-28 12:18 UTC | Session: 7c6c7b07-d3a2-4c91-ba4e-fab3535b5067 | Run: iterate-2026-07-28-docs-placement-rule
 
-## Recent Changes (395 iterations)
+## Recent Changes (400 iterations)
 
 | Type | Description | Tests | Commit | FRs | Date |
 |------|-------------|-------|--------|-----|------|
+| change | iterate: docs/ placement rule + remove one generated artifact and five finished records | 0/0 |  | docs | 2026-07-28 |
+| change | Make a conditional session policy gating subagents a question asked before Stage 1 rather than a silent not_run at F11, and define what a real blocker is. | 0/0 |  | FR-01.11 | 2026-07-28 |
+| change | Stamp every grade_snapshot with the tree it measured (lineage / branch / merge-base), so the Control-Grade trend can be filtered to one lineage instead of plotting a mixture of worktrees. | 0/0 |  | FR-01.10 | 2026-07-28 |
 | change | Bump pyasn1 to 0.6.4 (CVE-2026-59885/59886) and record a scoped, expiring acceptance for CVE-2026-14257 (brace-expansion, dev-only perf runner) in both registers, guarded by a new dependency-floor test. | 11282/11282 |  | infra | 2026-07-28 |
 | change | iterate: normalize a benign dynamic import in the profile-reader test | 0/0 |  | tooling | 2026-07-28 |
+| change | iterate: the revert check stops accusing edits and the default branch's own deletions | 0/0 |  | FR-01.11 | 2026-07-28 |
 | change | Give the internal reviewer cascade an executable owner in standalone mode, scope the ADR-029 delegation to campaign mode, and make the campaign runner record each review pass under the name of whoever performed it. | 0/0 |  | FR-01.11 | 2026-07-28 |
 | change | iterate: derived snapshots leave the iterate PR | 0/0 |  | FR-01.10, FR-01.11 | 2026-07-27 |
+| change | iterate: put the security coverage manifest to work — parity, coverage-gated comparison, scope gate | 0/0 |  | FR-01.07 | 2026-07-28 |
 | change | iterate: the code review becomes a floor, not a chain | 0/0 |  | compliance | 2026-07-27 |
 | change | iterate: a branch may not quietly revert merged work | 0/0 |  | FR-01.11 | 2026-07-27 |
 | change | iterate: post-merge review follow-up for the triage defer surface | 0/0 |  | FR-01.14 | 2026-07-27 |
@@ -402,7 +407,7 @@
 | change | post-adoption framework cleanup (Sub-1A through 1D) | 225/225 | 3db485b | FR-01.01, FR-01.02, FR-01.03 | 2026-05-02 |
 
 ## Test Status
-Last run: 2026-07-28 | Unit: 6435/6454 | Integration: 422/422 | Smoke: not_run | (iterate)
+Last run: 2026-07-28 | Unit: 6458/6474 | Integration: 422/422 | Smoke: not_run | (iterate)
 
 ## Pipeline
 

@@ -40,10 +40,18 @@ coverage number.
 
 `shared/config/gate_catalog.json` catalogues 47 interactive gates
 (`id` · `phase` · `policy` · `constitution` · `fires` · `summary`);
-`docs/gate-catalog.md` is **generated** from it by
+`shared/config/gate_catalog.md` is **generated** from it by
 `resolve_gate_policy.py --render-doc`; `shared/tests/test_gate_catalog.py` and
 `test_gate_catalog_doc_sync.py` fail CI on drift. Three parts: machine-readable
 catalogue, generated doc, drift test. Copy all three.
+
+Copy the **placement** too: the render sits beside its JSON in `shared/config/`,
+not under `docs/`. `docs/` holds hand-written instructions (CLAUDE.md "Where
+documents live"), and a generated file kept in the tree belongs next to the
+source it is generated from. So the register's render is
+`shared/config/constitution_catalog.md`, not `docs/constitution-catalog.md`.
+(The gate catalogue's render was moved there by
+`iterate-2026-07-28-docs-placement-rule`.)
 
 ## Shape
 

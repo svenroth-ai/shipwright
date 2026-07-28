@@ -1,39 +1,39 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-07-27-pr-review-forged-boundary"
+run_id: "iterate-2026-07-28-docs-placement-rule"
 phase: "iterate"
-reason: "F11 pre-merge refresh: iterate-2026-07-27-pr-review-forged-boundary"
-timestamp: "2026-07-28T07:58:49.038874+00:00"
+reason: "iterate: docs/ placement rule + remove one generated artifact and five finished records"
+timestamp: "2026-07-28T12:18:50.089137+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-07-28 07:58:49 UTC
+> Auto-generated 2026-07-28 12:18:50 UTC
 
 ## Session Info
 
-- **Session ID**: d45b5209-08f4-453b-b127-43083fb94396
-- **Timestamp**: 2026-07-28 07:58:49 UTC
-- **Reason**: F11 pre-merge refresh: iterate-2026-07-27-pr-review-forged-boundary
+- **Session ID**: 7c6c7b07-d3a2-4c91-ba4e-fab3535b5067
+- **Timestamp**: 2026-07-28 12:18:50 UTC
+- **Reason**: iterate: docs/ placement rule + remove one generated artifact and five finished records
 
 ## Last Iterate
 
-- **Run ID**: iterate-2026-07-27-pr-review-forged-boundary
-- **Date**: 2026-07-28T07:58:42.507362Z
-- **Type**: bug
+- **Run ID**: iterate-2026-07-28-docs-placement-rule
+- **Date**: 2026-07-28T12:18:44.151571Z
+- **Type**: change
 - **Complexity**: medium
-- **Branch**: iterate/pr-review-forged-boundary
-- **ADR**: iterate-2026-07-27-pr-review-forged-boundary
+- **Branch**: iterate/docs-placement-rule
+- **ADR**: iterate-2026-07-28-docs-placement-rule
 - **Tests passed**: True
-- **Spec**: .shipwright/planning/iterate/2026-07-27-pr-review-forged-boundary.md
+- **Spec**: .shipwright/planning/iterate/iterate-2026-07-28-docs-placement-rule.md
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/pr-review-forged-boundary
-- **Run ID**: `iterate-2026-07-27-pr-review-forged-boundary`
-- **Spec**: .shipwright/planning/iterate/2026-07-27-pr-review-forged-boundary.md
-- **Complexity**: medium — a required merge gate over attacker-controlled input
-- **External Review Marker**: missing
+- **Branch**: iterate/docs-placement-rule
+- **Run ID**: iterate-2026-07-28-docs-placement-rule
+- **Spec**: .shipwright/planning/iterate/iterate-2026-07-28-docs-placement-rule.md
+- **Complexity**: medium · **spec_impact:** none · **affected_frs:** [] ·
+- **External Review Marker**: completed (external_review_state.json @ 2026-07-28T11:58:04)
 
 ### Mandatory replay on Resume
 
@@ -51,8 +51,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/pr-review-forged-boundary
-- **Last Commit**: 513da9cc Merge remote-tracking branch 'origin/main' into iterate/pr-review-forged-boundary
+- **Branch**: iterate/docs-placement-rule
+- **Last Commit**: 7ec426a2 chore(triage): sweep 54 outbox append(s) into branch
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -68,17 +68,17 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 | Event | Type | Source | Date |
 |-------|------|--------|------|
-| evt-09c5b523 | grade_snapshot | — | 2026-07-28 |
-| evt-999e4aca | work_completed | iterate (Bump pyasn1 to 0.6.4 (CVE-2026-59885/59886) and record a scoped, expiring acceptance for CVE-2026-14257 (brace-expansion, dev-only perf runner) in both registers, guarded by a new dependency-floor test.) | 2026-07-28 |
-| evt-d0d80481 | grade_snapshot | — | 2026-07-28 |
-| evt-3284851e | work_completed | iterate (iterate: normalize a benign dynamic import in the profile-reader test) | 2026-07-28 |
-| evt-d096c5c5 | grade_snapshot | — | 2026-07-28 |
+| evt-003a4ccb | grade_snapshot | — | 2026-07-28 |
+| evt-a25fc820 | work_completed | iterate (iterate: docs/ placement rule + remove one generated artifact and five finished records) | 2026-07-28 |
+| evt-7963d51e | grade_snapshot | — | 2026-07-28 |
+| evt-2df150c5 | work_completed | iterate (Make a conditional session policy gating subagents a question asked before Stage 1 rather than a silent not_run at F11, and define what a real blocker is.) | 2026-07-28 |
+| evt-5f7e67f6 | grade_snapshot | — | 2026-07-28 |
 
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 395
-- **Last iterate**: change — Bump pyasn1 to 0.6.4 (CVE-2026-59885/59886) and record a scoped, expiring acceptance for CVE-2026-14257 (brace-expansion, dev-only perf runner) in both registers, guarded by a new dependency-floor test. (2026-07-28)
+- **Total work events**: 400
+- **Last iterate**: change — iterate: docs/ placement rule + remove one generated artifact and five finished records (2026-07-28)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
 ## Recent Decisions
