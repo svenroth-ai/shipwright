@@ -330,13 +330,13 @@ behaviours and carry no row.
      integrating main (5 commits behind at the time): it resolved `origin/main`
      rather than the stale local ref, saw the integration merge, and passed with
      an empty `declared_removals` — the first long branch since #477 that needed
-     none. Disclosed: the branch was afterwards **rebuilt on `origin/main`** to
-     keep the eleven derived snapshots out of the commit
-     (`check_no_derived_snapshots_committed`), so what ships carries no
-     integration merge. The AC7 run stands — the three verifier modules are
-     byte-identical between the merged branch and the shipped one (SHA-compared),
-     and the merged shape was re-checked against it: 1 merge seen, nothing
-     dropped.
+     none. Disclosed: the branch was then **rebuilt on `origin/main`** to keep the
+     eleven derived snapshots out of the iterate commit
+     (`check_no_derived_snapshots_committed`), and `main` moved again during
+     review, so it integrated once more. What ships therefore carries an
+     integration merge of its own, and the gate was re-run on **that** — resolved
+     `origin/main`, 1 merge seen, nothing dropped, no declaration needed. Run
+     three times across three different branch shapes, same answer each time.
 - **Test Completeness Ledger:** see the table above.
 - **Confidence-pattern check:**
   - *Asymptote (depth)* — the honest reading is that depth was **not** reached by
