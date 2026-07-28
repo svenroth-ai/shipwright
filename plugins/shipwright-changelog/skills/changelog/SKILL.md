@@ -201,6 +201,22 @@ Those bullets are NOT migrated automatically — the operator chooses
 whether to fold them into the new version manually or accept the
 split-brain.
 
+**Re-running a release is safe.** The changelog is written before the
+drop files are consumed, so an interruption in that window leaves the
+section written and the drops still pending. Running the same version
+again **replaces** that section rather than adding a second one — but
+only when what is on record is still what the drops say. Otherwise it
+**stops with a non-zero exit** and names the disagreement, changing
+neither `CHANGELOG.md` nor any drop file. That is a prompt to reconcile
+by hand, not a transient error to retry.
+
+`changelog_updated` means *bytes were written*, not *the run succeeded*:
+a converging re-run reports `"section_action": "unchanged"` with
+`"changelog_updated": false` and is a **success**. See
+[rerunning-a-release.md](references/rerunning-a-release.md) for the full
+state table, the `--release-date` rule, and why it refuses instead of
+overwriting.
+
 ### ADR decision-drops
 
 Iterate F3 no longer appends ADRs directly to `decision_log.md`. Since

@@ -648,7 +648,7 @@
     {
       "path": "shared/scripts/tools/aggregate_changelog.py",
       "limit": 300,
-      "current": 458,
+      "current": 413,
       "state": "grandfathered",
       "adr": null
     },
@@ -837,7 +837,7 @@
     {
       "path": "shared/tests/test_changelog_aggregation.py",
       "limit": 300,
-      "current": 326,
+      "current": 325,
       "state": "grandfathered",
       "adr": null
     },

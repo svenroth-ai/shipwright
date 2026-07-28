@@ -1,18 +1,18 @@
 # Commit Change Log
 
-Generated: 2026-07-27T19:47:47.363461+00:00
-Source-State: run=iterate-2026-07-27-review-floor-not-chained
+Generated: 2026-07-28T00:29:08.206336+00:00
+Source-State: run=iterate-2026-07-28-cascade-delegated-to-nobody
 Consistency-audit: never run
-Total commits: 1256
+Total commits: 1253
 
 ## Commit Distribution
 
 ```mermaid
 pie title Commit Types
-    "fix" : 364
+    "fix" : 366
     "feat" : 351
-    "chore" : 262
-    "docs" : 149
+    "chore" : 258
+    "docs" : 148
     "refactor" : 78
     "test" : 31
     "ci" : 11
@@ -22,20 +22,22 @@ pie title Commit Types
 
 ## Changes by Type
 
-### Fixes (fix) — 364 commits
+### Fixes (fix) — 366 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
-| 2026-07-27 | ci | the sweep gate stops handing its own CI flag to its subject | a125096ea995 |
-| 2026-07-27 | ci | a remote that is not github.com is refused, not guessed at | 74211ac393a6 |
+| 2026-07-28 | iterate | the reviewer cascade gets an owner, not a forwarding address (#482) | 00ff394972de |
+| 2026-07-28 | iterate | a derived view is produced where its inputs are complete (#480) | e21a7b71689c |
+| 2026-07-28 | ci | three checks that ran, reported, and gated nothing (#475) | 1786fc599063 |
+| 2026-07-28 | adr | renumber the requirement-writeback ADR off a collided number (#481) | f890bb215527 |
 | 2026-07-27 | iterate | the code review becomes a floor, not a chain (#476) | 7c116c035480 |
 | 2026-07-27 | security | the test suite stops leaking a triage store into the plugin dir (#474) | 6ba177083769 |
-| 2026-07-27 | ci | three checks that ran, reported, and gated nothing | bd1c2eb47705 |
 | 2026-07-27 | run | report against what will exist, and assert only what you can prove (#468) | 3c13001aafeb |
 | 2026-07-27 | iterate | the merge state is a vocabulary, not a BLOCKED flag (#473) | 159953eec378 |
 | 2026-07-27 | shared | a multi-root pytest session names its own cause (#469) | bd7121b79d53 |
 | 2026-07-27 | compliance | an audit that checked nothing is not recorded (#466) | 968578b9de35 |
 | 2026-07-27 | shared | a reader and a writer stop defeating each other on Windows (#471) | 0b4c9b8b4ae6 |
+| 2026-07-27 | changelog | the release aggregator writes a version once, or says why not | 0d71803c32cd |
 | 2026-07-27 | security | the PR reviewer stops being defeated by the size of the change (#470) | 17ca76d7f413 |
 | 2026-07-27 | iterate | the phase canon asks whether the handoff belongs to this run (#467) | 3c82d6332678 |
 | 2026-07-27 | security | the PR reviewer stops reviewing its own prior reviews (#461) | 273e3ef7ab56 |
@@ -747,18 +749,14 @@ pie title Commit Types
 | 2026-03-20 | — | Task 02 — project templates (CLAUDE.md, agent_docs, CI) | c3a6d2f53bd3 |
 | 2026-03-20 | — | Task 01 — monorepo scaffolding + supabase-nextjs stack profile | 990a138a4690 |
 
-### Chores (chore) — 262 commits
+### Chores (chore) — 258 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
-| 2026-07-27 | iterate | declare four check_no_silent_revert false positives with proof | 45ef0d1a7137 |
-| 2026-07-27 | churn | regenerate derived snapshots after main merge | 11835f35eaea |
-| 2026-07-27 | churn | regenerate derived snapshots after main merge | 86b4c2482556 |
-| 2026-07-27 | churn | regenerate derived snapshots after main merge | 8085f1bd9dbb |
-| 2026-07-27 | churn | regenerate derived snapshots after main merge | 5e6b46e2c140 |
-| 2026-07-27 | churn | regenerate derived snapshots after main merge | 6fdd45f6d37f |
 | 2026-07-27 | triage | follow-up card for requiring the checks that gate nothing | 7387b2796960 |
-| 2026-07-27 | triage | sweep 1 outbox append(s) into branch | 554a1f0211cc |
+| 2026-07-27 | churn | regenerate derived snapshots after main merge | d1da9e5278f3 |
+| 2026-07-27 | churn | regenerate derived snapshots after main merge | 734d4e73a090 |
+| 2026-07-27 | triage | sweep 4 outbox append(s) into branch | 0c6941fcf4d8 |
 | 2026-07-26 | review | default external-review GPT model to gpt-5.6-terra (#435) | 8d750a5fc7af |
 | 2026-07-24 | security | stage full compliance write-set in Step 7.5 finalizer (#434) | 5da96ebe8561 |
 | 2026-07-23 | compliance | refresh after security scan (#433) | 2b644805fb7d |
@@ -1014,11 +1012,10 @@ pie title Commit Types
 | 2026-03-28 | — | add shipwright-run uv.lock | ef1cc1ad180c |
 | 2026-03-20 | — | initial commit with spec and task list | 07ca9c1de51c |
 
-### Documentation (docs) — 149 commits
+### Documentation (docs) — 148 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
-| 2026-07-27 | iterate | restore the post-merge plugin-cache sync follow-up | 40b1c41889b8 |
 | 2026-07-27 | guide | the finalization walkthrough ends at delivery, not at arming (#462) | eea6e1643388 |
 | 2026-07-27 | campaign | correct the revert attribution in the REQ-3 ledger | ff8825879571 |
 | 2026-07-21 | security | document operator-run converge for adopted repos (#420) | d9aa64b32f99 |
@@ -1327,7 +1324,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 1256 |
+| Total commits | 1253 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 1256 |
+| Human-authored commits | 1253 |
 
