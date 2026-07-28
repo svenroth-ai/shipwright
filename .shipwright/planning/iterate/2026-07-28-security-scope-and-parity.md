@@ -175,6 +175,14 @@ read with the real consumer.
     Part 1's PR twice (run 30251298886 and again on #455), proving default rules
     still fire, the project allowlist applies, and the shipwright exclusions
     survive.
+  - *Does gitleaks resolve a relative `extend.path` against the process's
+    working directory?* The first CI run answered yes, by way of the chained
+    smoke test tripping its own fixture guard: the host-equivalent leg, launched
+    from the plugin directory, found NOTHING — the project's `gitleaks-base.toml`
+    was simply unreachable. So `_run_gitleaks` now runs the subprocess at the
+    scanned target, as the host workflow does. The generated config's own extend
+    path was absolute and never the problem; the project's INTERNAL chain was.
+    Pinned by `test_gitleaks_runs_at_the_repo_root.py`, verified by removal.
   - *Does the wrap survive a project config that is ALREADY a chain?* Open, and
     deliberately so. The second review round raised it as HIGH: wrapping spends
     an extension level, and a two-hop project chain becomes three. Asserting a

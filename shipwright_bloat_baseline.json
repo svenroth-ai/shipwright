@@ -410,7 +410,7 @@
     {
       "path": "plugins/shipwright-security/scripts/lib/oss_backend.py",
       "limit": 300,
-      "current": 509,
+      "current": 516,
       "state": "exception",
       "adr": "ADR-097"
     },

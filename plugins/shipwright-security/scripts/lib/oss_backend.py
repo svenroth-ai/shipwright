@@ -322,15 +322,20 @@ def _run_gitleaks(
     Gitleaks has no --exclude flag; path exclusions go through a TOML config
     with [allowlist] paths regex entries (rendered by ``gitleaks_config``, which
     EXTENDS the project's own ``.gitleaks.toml`` when it has one so the local
-    scan and the host workflow honour the same accepted findings). It also has no stdout-report mode:
-    ``--report-path -`` is NOT special-cased to stdout — gitleaks does
-    ``os.Create("-")`` and writes the JSON to a literal file named ``-``
-    (verified against v8.21.2 ``cmd/root.go::findingSummaryAndExit`` +
-    ``report/report.go::Write``). The old ``--report-path -`` therefore made
-    the wrapper read empty stdout and silently return 0 findings on every
-    platform (iterate-2026-06-05). So the report is written to a real temp
-    file and read back here. Both temp files are generated per invocation and
-    cleaned up afterward.
+    scan and the host workflow honour the same accepted findings).
+
+    **Run AT the target.** Gitleaks resolves a relative ``[extend] path``
+    against its own working directory (see ``resolve_project_config``), so the
+    project's INTERNAL chain — which we do not control and cannot rewrite — is
+    only reachable when the scan runs where the host runs it: the repo root.
+
+    It also has no stdout-report mode: ``--report-path -`` is NOT special-cased
+    to stdout — gitleaks does ``os.Create("-")`` and writes to a literal file
+    named ``-`` (verified against v8.21.2 ``cmd/root.go`` +
+    ``report/report.go::Write``), which made the wrapper read empty stdout and
+    silently return 0 findings on every platform (iterate-2026-06-05). So the
+    report goes to a real temp file, read back here; both temp files are
+    per-invocation and cleaned up afterward.
     """
     config_path = _write_gitleaks_allowlist(
         _resolve_excludes("gitleaks"), _resolve_gitleaks_config(target),
@@ -353,6 +358,7 @@ def _run_gitleaks(
             expect_nonzero=True,
             report_path=report_path,
             errors=errors,
+            cwd=os.path.abspath(target) if os.path.isdir(target) else None,
         )
     finally:
         for tmp in (config_path, report_path):
@@ -421,6 +427,7 @@ def _run_tool(
     expect_nonzero: bool = False,
     report_path: str | None = None,
     errors: list[dict[str, Any]] | None = None,
+    cwd: str | None = None,
 ) -> dict[str, Any] | list[dict[str, Any]] | None:
     """Run a CLI tool and parse its JSON output.
 
@@ -429,12 +436,11 @@ def _run_tool(
         tool_name: Human-readable name for error messages.
         expect_nonzero: If True, a non-zero exit code is acceptable
             (e.g. gitleaks returns 1 when findings exist).
-        report_path: If set, the tool writes its JSON report to this file
-            path and the parsed file content is returned (rather than
-            parsing stdout). Gitleaks requires this: it has no stdout-report
-            mode — ``--report-path -`` writes to a literal file named ``-``,
-            never to stdout (see ``_run_gitleaks``). Semgrep / Trivy leave
-            this None and emit JSON on stdout natively.
+        report_path: If set, the parsed FILE content is returned rather than
+            stdout. Gitleaks requires this (see ``_run_gitleaks``); Semgrep /
+            Trivy leave it None and emit JSON on stdout natively.
+        cwd: Working directory for the subprocess — see ``_run_gitleaks``, the
+            only caller that sets it. ``None`` inherits ours.
         errors: Optional degraded-scan accumulator. EVERY ``None`` return below
             is a degraded leg (the tool was invoked but produced no parseable
             output) and records exactly one marker here. A clean leg returns
@@ -447,6 +453,7 @@ def _run_tool(
     try:
         result = subprocess.run(
             cmd,
+            cwd=cwd,
             capture_output=True,
             text=True,
             encoding="utf-8",

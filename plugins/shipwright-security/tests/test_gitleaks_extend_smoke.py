@@ -120,8 +120,17 @@ def chained_repo(tmp_path: Path) -> Path:
 def _host_equivalent_scan(target: Path) -> list[str]:
     """What the HOST workflow sees: gitleaks driven by the project's config
     directly, with no shipwright layer in between. Mirrors ``_run_gitleaks``'
-    invocation exactly apart from ``--config``, so a difference in the results
-    is a difference the wrapping caused."""
+    invocation apart from ``--config``, so a difference in the results is a
+    difference the wrapping caused.
+
+    ``cwd=target`` because that is what the host does — `actions/checkout` then
+    gitleaks at the repository root. It is not cosmetic: the first CI run of
+    this test failed its own fixture guard with an EMPTY host result, which is
+    consistent with gitleaks resolving a relative ``extend.path`` against the
+    process's working directory rather than against the config's own location.
+    Run from the plugin directory, the project's ``gitleaks-base.toml`` is then
+    simply not found and the chain brings no rules at all.
+    """
     fd, report = tempfile.mkstemp(suffix=".json", prefix="host-gitleaks-")
     os.close(fd)
     try:
@@ -129,7 +138,7 @@ def _host_equivalent_scan(target: Path) -> list[str]:
             ["gitleaks", "detect", "--report-format", "json", "-s", str(target),
              "--report-path", report, "--config",
              str(target / PROJECT_CONFIG_NAME)],
-            capture_output=True, text=True, check=False,
+            cwd=str(target), capture_output=True, text=True, check=False,
         )
         raw = Path(report).read_text(encoding="utf-8") or "[]"
     finally:
@@ -214,14 +223,23 @@ def test_a_project_config_that_is_already_a_chain_keeps_parity(
     local = _paths(_run_gitleaks(str(chained_repo)))
 
     assert any("src/key.pem" in p for p in local), (
-        "PARITY BROKEN by wrapping a chained project config: the host scan "
-        f"found {sorted(host)} but the local scan found {sorted(local)}. The "
-        "generated config adds an extend level on top of a chain that already "
-        "used them, so the built-in rules no longer reach the local scan — it "
-        "reports clean where the host reports a secret. Fix the wiring (do not "
-        "relax this test): either extend the project's chain target instead of "
-        "the project's file, or apply the shipwright exclusions without an "
-        "extra extend level."
+        "PARITY BROKEN on a chained project config: the host scan found "
+        f"{sorted(host)} but the local scan found {sorted(local)} — it reports "
+        "clean where the host reports a secret. Two mechanisms can produce "
+        "this, and they need different fixes, so identify which before "
+        "changing anything:\n"
+        "(a) EXTENSION DEPTH — wrapping spends one of gitleaks' levels, so the "
+        "project's own chain no longer resolves. Fix: extend the chain's target "
+        "instead of the project's file, or apply the shipwright exclusions "
+        "without an extra level.\n"
+        "(b) WORKING DIRECTORY — a relative `extend.path` resolving against the "
+        "process cwd rather than the config's own directory. `_run_gitleaks` "
+        "passes `-s <target>` but does NOT cd there, so the project's chain "
+        "target is unreachable from wherever shipwright happens to run. Fix: "
+        "run the gitleaks subprocess with cwd=target.\n"
+        "Distinguish them by re-running with a chain whose `extend.path` is "
+        "ABSOLUTE: still broken means (a), fixed means (b). Do not relax this "
+        "test — a green assertion here is the whole content of AC-1."
     )
     assert not any("accepted/" in p for p in local), (
         "the project's own [allowlist] did not survive the chain — local and "
