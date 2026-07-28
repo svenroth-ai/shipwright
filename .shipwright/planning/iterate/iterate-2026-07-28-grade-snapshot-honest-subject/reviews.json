@@ -1,0 +1,139 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-07-28-grade-snapshot-honest-subject",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-07-28T11:01:15.361819+00:00",
+      "disposition": null,
+      "recorded_by": "Step 7 self-review, canonical 8-item checklist",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-07-28T11:01:27.239474+00:00",
+      "disposition": "No external plan review: this run has no plan of its own to review. Its scope IS the verified finding list of the internal cascade run against the predecessor's merged code, and every design decision here is a direct response to a named, reproduced defect rather than a fresh proposal.",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 8,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "correctness",
+          "file": "shared/scripts/grade_snapshot_shape.py",
+          "line": 57,
+          "finding": "dirty still self-dirties: REGENERATED_PATHS was pinned to DERIVED_SNAPSHOTS, which structurally excludes shipwright_events.jsonl and .shipwright/triage.jsonl - both tracked, both written by the producer chain before the snapshot is emitted. Reproduced: the run-orchestrator appends phase_completed to the tracked log, then regenerates, and the snapshot reports dirty true with zero uncommitted source. Combined with the shipped doc rule that dirty means provisional, every main-lineage point would be provisional.",
+          "suggestion": "Do not borrow an unrelated registry; capture dirtiness before the producer writes, or drop the field.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "high",
+          "category": "correctness",
+          "file": "shared/scripts/tree_lineage.py",
+          "line": 156,
+          "finding": "The new _is_dirty re-implements source_state_git.resolve_git_state without _repo_relative, re-introducing a documented, already-remediated bug: exclusions silently fail to match when project_root is a subdirectory of the repo, so dirty degenerates to always-True.",
+          "suggestion": "Reuse source_state_git rather than copying it a second time.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "test-coverage",
+          "file": "shared/tests/test_grade_snapshot_shape.py",
+          "line": 44,
+          "finding": "ATTRIBUTION_KEYS is not pinned to what lineage_fields actually emits; a future fifth attribution field would be assertable via --fields again.",
+          "suggestion": "Assert ATTRIBUTION_KEYS equals the projection's key set.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "test-coverage",
+          "file": "shared/tests/test_grade_snapshot_shape.py",
+          "line": 112,
+          "finding": "A SHA-1-width assertion (len(base) == 40) the ADR claimed was fixed is still present next to a production rule deliberately widened to 7-64.",
+          "suggestion": "Assert the 7-64 range.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/scripts/grade_snapshot_shape.py",
+          "line": 134,
+          "finding": "__all__ omits reject_asserted_attribution and REGENERATED_PATHS although both are imported elsewhere.",
+          "suggestion": "Declare the actual public API.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "test-quality",
+          "file": "shared/tests/test_tree_lineage_degradation.py",
+          "line": 109,
+          "finding": "TestUnresolvableAncestry::test_named_branch_stays_branch no longer tests its class's subject - under the new rule a named branch never reaches the ancestry check, so ancestry_blinded is a no-op there.",
+          "suggestion": "Rename or repurpose.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": null,
+          "category": "verification",
+          "file": "shared/scripts/tree_lineage.py",
+          "line": 247,
+          "finding": "Clean on the three other attack surfaces: the lineage rule is complete and correct across every enumerated combination; the amendment refusal is correctly placed (apply_amendments folds only event_amended, build_event is the only in-repo constructor, and the 4 keys appear on no amendment in the log); the compliance test split lost nothing (inventory 11 to 12).",
+          "suggestion": "None.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "shared/scripts/tree_lineage.py",
+          "line": 247,
+          "finding": "A detached HEAD at a default-branch commit with a dirty tree still reads lineage main; the fix's own argument applies to it, and its only mitigation was the dirty field.",
+          "suggestion": "Consider extending the rule to detached HEADs.",
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-07-28T11:00:53.461155+00:00",
+      "disposition": null,
+      "recorded_by": "Step 8 internal code-reviewer subagent (Opus), run on this corrective diff after the operator lifted the AgentTool gate; 2 HIGH accepted (dirty withdrawn as a result), 4 fixed, 1 acknowledged",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-07-28T11:01:27.110258+00:00",
+      "disposition": "Stage-3 is conditional (migrations, async/concurrency, cross-plugin imports, irreversible operations). This diff has none: no migration, no concurrency, no new cross-plugin import, and the one irreversible surface - the append-only durable log - is touched only by NARROWING what may be written to it. The doubt reviewer DID run on the predecessor diff (iterate-2026-07-28-grade-snapshot-lineage) and its findings 3 and 4 are precisely what this run implements, so the pass is not absent from the work, only from this diff.",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-07-28T11:01:38.256021+00:00",
+      "disposition": "The code-review floor is carried by the INTERNAL cascade this time, which is the stronger route here: the external providers reviewed the predecessor diff twice across two rounds and missed all three defects this run fixes, while the internal reviewer found them. Recorded not_run rather than dressed up - the external pass genuinely did not run on this diff.",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    }
+  }
+}

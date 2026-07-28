@@ -47,12 +47,28 @@ class TestLineageMainVsBranch:
         assert got.lineage == "branch"
         assert got.branch == "iterate/x"
 
-    def test_branch_with_no_commits_of_its_own_is_still_main_lineage(self, repo: Path):
-        # Branched but not yet diverged: the tree contains nothing that is not
-        # already on main, so calling it "branch" would misreport the subject.
+    def test_named_branch_at_the_fork_point_is_branch_not_main(self, repo: Path):
+        """The defect this iterate fixes — previously asserted the opposite.
+
+        An iterate worktree is created AT the fork point and the snapshot is
+        emitted at F5b, before the only mandated commit. Deciding by ancestry
+        answered "main" here, so a measurement of a working tree holding an
+        entire unmerged change set was stamped as the default branch's own — the
+        phantom point the attribution exists to expose, relabelled authoritative.
+        A branch is a branch by name.
+        """
         git(repo, "checkout", "-b", "iterate/empty")
 
-        assert resolve_tree_lineage(repo).lineage == "main"
+        assert resolve_tree_lineage(repo).lineage == "branch"
+
+    def test_named_branch_at_the_fork_point_with_a_dirty_tree(self, repo: Path):
+        # The production shape: worktree at the fork point, uncommitted work in
+        # it, grade computed over exactly that content.
+        git(repo, "checkout", "-b", "iterate/slug")
+        (repo / "feature.py").write_text("uncommitted", encoding="utf-8")
+        (repo / "one.txt").write_text("modified", encoding="utf-8")
+
+        assert resolve_tree_lineage(repo).lineage == "branch"
 
     def test_default_branch_ahead_of_its_remote_is_still_main_lineage(self, tmp_path: Path):
         # Local `main` with an unpushed commit is not an ancestor of
@@ -122,17 +138,42 @@ class TestDefaultBranchResolution:
         assert got.branch == "weird"   # what IS known is still reported
         assert got.base is None
 
-    def test_stray_local_main_does_not_hijack_a_master_repo(self, tmp_path: Path):
-        # origin/HEAD exists and says `master`, so it must win over the
-        # candidate probe, which would otherwise try `main` first.
-        origin = init_repo(tmp_path / "origin", branch="master")
+    def test_origin_head_beats_a_higher_priority_candidate(self, tmp_path: Path):
+        """The origin/HEAD tier must be load-bearing, not decorative.
+
+        The previous version of this test used a `master`-default origin and
+        asserted `master` — but `origin/main` did not exist there, so the
+        candidate probe reached `origin/master` on its own and the test passed
+        verbatim with the entire origin/HEAD tier deleted (proven by mutation).
+        Here the origin carries BOTH `main` and `trunk` and origin/HEAD names
+        `trunk`: the probe would answer `main` first, so only the tier under test
+        can produce the right answer.
+        """
+        origin = init_repo(tmp_path / "origin", branch="main")
+        git(origin, "branch", "trunk")
         clone = tmp_path / "clone"
         subprocess.run(["git", "clone", str(origin), str(clone)],
                        capture_output=True, text=True, check=True)
-        git(clone, "branch", "main")   # stray local branch, not the default
+        git(clone, "remote", "set-head", "origin", "trunk")
+        git(clone, "checkout", "-q", "trunk")
 
         got = resolve_tree_lineage(clone)
-        assert got.branch == "master"
+        assert got.branch == "trunk"
+        assert got.lineage == "main"     # trunk IS this repo's default
+
+    def test_a_dangling_origin_head_falls_through_to_the_candidates(self, tmp_path: Path):
+        # AC3's first clause: origin/HEAD is honoured only when its target ref
+        # RESOLVES. Implemented but previously untested, against a ledger
+        # claiming zero untested behaviours (internal spec review).
+        origin = init_repo(tmp_path / "origin", branch="main")
+        clone = tmp_path / "clone"
+        subprocess.run(["git", "clone", str(origin), str(clone)],
+                       capture_output=True, text=True, check=True)
+        git(clone, "symbolic-ref", "refs/remotes/origin/HEAD", "refs/remotes/origin/deleted")
+
+        # Dangling: the tier must be skipped, not crash and not win.
+        got = resolve_tree_lineage(clone)
+        assert got.branch == "main"
         assert got.lineage == "main"
 
 
