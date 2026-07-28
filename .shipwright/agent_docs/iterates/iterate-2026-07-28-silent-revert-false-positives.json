@@ -1,0 +1,10 @@
+{
+  "run_id": "iterate-2026-07-28-silent-revert-false-positives",
+  "date": "2026-07-28T08:13:54.713501Z",
+  "type": "bug",
+  "complexity": "medium",
+  "branch": "iterate/silent-revert-false-positives",
+  "spec": ".shipwright/planning/iterate/iterate-2026-07-28-silent-revert-false-positives.md",
+  "tests_passed": true,
+  "adr": "iterate-2026-07-28-silent-revert-false-positives"
+}

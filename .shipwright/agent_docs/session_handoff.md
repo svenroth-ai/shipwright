@@ -1,39 +1,39 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-07-27-changelog-aggregator-idempotency"
+run_id: "iterate-2026-07-27-pr-review-forged-boundary"
 phase: "iterate"
-reason: "ensure-current pre-merge refresh"
-timestamp: "2026-07-28T00:29:14.030862+00:00"
+reason: "F11 pre-merge refresh: iterate-2026-07-27-pr-review-forged-boundary"
+timestamp: "2026-07-28T07:58:49.038874+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-07-28 00:29:14 UTC
+> Auto-generated 2026-07-28 07:58:49 UTC
 
 ## Session Info
 
-- **Session ID**: 8a0611d4-b05d-411a-a42a-cc448bc145a7
-- **Timestamp**: 2026-07-28 00:29:14 UTC
-- **Reason**: ensure-current pre-merge refresh
+- **Session ID**: d45b5209-08f4-453b-b127-43083fb94396
+- **Timestamp**: 2026-07-28 07:58:49 UTC
+- **Reason**: F11 pre-merge refresh: iterate-2026-07-27-pr-review-forged-boundary
 
 ## Last Iterate
 
-- **Run ID**: iterate-2026-07-28-cascade-delegated-to-nobody
-- **Date**: 2026-07-28T00:29:08.126086Z
+- **Run ID**: iterate-2026-07-27-pr-review-forged-boundary
+- **Date**: 2026-07-28T07:58:42.507362Z
 - **Type**: bug
 - **Complexity**: medium
-- **Branch**: iterate/cascade-delegated-to-nobody
-- **ADR**: iterate-2026-07-28-cascade-delegated-to-nobody
+- **Branch**: iterate/pr-review-forged-boundary
+- **ADR**: iterate-2026-07-27-pr-review-forged-boundary
 - **Tests passed**: True
-- **Spec**: .shipwright/planning/iterate/2026-07-28-cascade-delegated-to-nobody.md
+- **Spec**: .shipwright/planning/iterate/2026-07-27-pr-review-forged-boundary.md
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/changelog-aggregator-idempotency
-- **Run ID**: `iterate-2026-07-27-changelog-aggregator-idempotency`
-- **Spec**: .shipwright/planning/iterate/iterate-2026-07-27-changelog-aggregator-idempotency.md
-- **Complexity**: medium (classifier: `estimate=medium`, `prior_source=history`,
-- **External Review Marker**: stale (predates spec (2026-07-27T16:31:40))
+- **Branch**: iterate/pr-review-forged-boundary
+- **Run ID**: `iterate-2026-07-27-pr-review-forged-boundary`
+- **Spec**: .shipwright/planning/iterate/2026-07-27-pr-review-forged-boundary.md
+- **Complexity**: medium — a required merge gate over attacker-controlled input
+- **External Review Marker**: missing
 
 ### Mandatory replay on Resume
 
@@ -51,8 +51,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/changelog-aggregator-idempotency
-- **Last Commit**: 4b259c18 Merge remote-tracking branch 'origin/main' into iterate/changelog-aggregator-idempotency
+- **Branch**: iterate/pr-review-forged-boundary
+- **Last Commit**: 513da9cc Merge remote-tracking branch 'origin/main' into iterate/pr-review-forged-boundary
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -68,17 +68,17 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 | Event | Type | Source | Date |
 |-------|------|--------|------|
+| evt-09c5b523 | grade_snapshot | — | 2026-07-28 |
+| evt-999e4aca | work_completed | iterate (Bump pyasn1 to 0.6.4 (CVE-2026-59885/59886) and record a scoped, expiring acceptance for CVE-2026-14257 (brace-expansion, dev-only perf runner) in both registers, guarded by a new dependency-floor test.) | 2026-07-28 |
+| evt-d0d80481 | grade_snapshot | — | 2026-07-28 |
+| evt-3284851e | work_completed | iterate (iterate: normalize a benign dynamic import in the profile-reader test) | 2026-07-28 |
 | evt-d096c5c5 | grade_snapshot | — | 2026-07-28 |
-| evt-1b8b86c7 | work_completed | iterate (Give the internal reviewer cascade an executable owner in standalone mode, scope the ADR-029 delegation to campaign mode, and make the campaign runner record each review pass under the name of whoever performed it.) | 2026-07-28 |
-| evt-5c9c8e33 | grade_snapshot | — | 2026-07-27 |
-| evt-c217c84c | grade_snapshot | — | 2026-07-27 |
-| evt-bd19424c | grade_snapshot | — | 2026-07-27 |
 
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 391
-- **Last iterate**: change — Give the internal reviewer cascade an executable owner in standalone mode, scope the ADR-029 delegation to campaign mode, and make the campaign runner record each review pass under the name of whoever performed it. (2026-07-28)
+- **Total work events**: 395
+- **Last iterate**: change — Bump pyasn1 to 0.6.4 (CVE-2026-59885/59886) and record a scoped, expiring acceptance for CVE-2026-14257 (brace-expansion, dev-only perf runner) in both registers, guarded by a new dependency-floor test. (2026-07-28)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
 ## Recent Decisions

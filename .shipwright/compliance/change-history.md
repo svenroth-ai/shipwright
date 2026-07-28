@@ -1,17 +1,17 @@
 # Commit Change Log
 
-Generated: 2026-07-28T00:29:08.206336+00:00
-Source-State: run=iterate-2026-07-28-cascade-delegated-to-nobody
+Generated: 2026-07-28T07:58:42.604954+00:00
+Source-State: run=iterate-2026-07-27-pr-review-forged-boundary
 Consistency-audit: never run
-Total commits: 1253
+Total commits: 1255
 
 ## Commit Distribution
 
 ```mermaid
 pie title Commit Types
-    "fix" : 366
+    "fix" : 370
     "feat" : 351
-    "chore" : 258
+    "chore" : 256
     "docs" : 148
     "refactor" : 78
     "test" : 31
@@ -22,10 +22,15 @@ pie title Commit Types
 
 ## Changes by Type
 
-### Fixes (fix) — 366 commits
+### Fixes (fix) — 370 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-07-28 | security | the reviewer ends a diff line where git does, and nowhere else | a609602c7bc6 |
+| 2026-07-28 | triage | anchor the listing row token; retract three false claims (#479) | 80647cc924db |
+| 2026-07-28 | changelog | the release aggregator writes a version once, or says why not (#472) | 23329f571dde |
+| 2026-07-28 | tests | a scanner finding is cleared at its source, not muted (#484) | e95db7a809c2 |
+| 2026-07-28 | security | the vulnerability with a fix gets fixed, the one without gets a deadline (#483) | 78be49fd00ea |
 | 2026-07-28 | iterate | the reviewer cascade gets an owner, not a forwarding address (#482) | 00ff394972de |
 | 2026-07-28 | iterate | a derived view is produced where its inputs are complete (#480) | e21a7b71689c |
 | 2026-07-28 | ci | three checks that ran, reported, and gated nothing (#475) | 1786fc599063 |
@@ -37,7 +42,6 @@ pie title Commit Types
 | 2026-07-27 | shared | a multi-root pytest session names its own cause (#469) | bd7121b79d53 |
 | 2026-07-27 | compliance | an audit that checked nothing is not recorded (#466) | 968578b9de35 |
 | 2026-07-27 | shared | a reader and a writer stop defeating each other on Windows (#471) | 0b4c9b8b4ae6 |
-| 2026-07-27 | changelog | the release aggregator writes a version once, or says why not | 0d71803c32cd |
 | 2026-07-27 | security | the PR reviewer stops being defeated by the size of the change (#470) | 17ca76d7f413 |
 | 2026-07-27 | iterate | the phase canon asks whether the handoff belongs to this run (#467) | 3c82d6332678 |
 | 2026-07-27 | security | the PR reviewer stops reviewing its own prior reviews (#461) | 273e3ef7ab56 |
@@ -749,14 +753,12 @@ pie title Commit Types
 | 2026-03-20 | — | Task 02 — project templates (CLAUDE.md, agent_docs, CI) | c3a6d2f53bd3 |
 | 2026-03-20 | — | Task 01 — monorepo scaffolding + supabase-nextjs stack profile | 990a138a4690 |
 
-### Chores (chore) — 258 commits
+### Chores (chore) — 256 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-07-27 | triage | sweep 4 outbox append(s) into branch | 0cb1e5ad2fd8 |
 | 2026-07-27 | triage | follow-up card for requiring the checks that gate nothing | 7387b2796960 |
-| 2026-07-27 | churn | regenerate derived snapshots after main merge | d1da9e5278f3 |
-| 2026-07-27 | churn | regenerate derived snapshots after main merge | 734d4e73a090 |
-| 2026-07-27 | triage | sweep 4 outbox append(s) into branch | 0c6941fcf4d8 |
 | 2026-07-26 | review | default external-review GPT model to gpt-5.6-terra (#435) | 8d750a5fc7af |
 | 2026-07-24 | security | stage full compliance write-set in Step 7.5 finalizer (#434) | 5da96ebe8561 |
 | 2026-07-23 | compliance | refresh after security scan (#433) | 2b644805fb7d |
@@ -1324,7 +1326,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 1253 |
+| Total commits | 1255 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 1253 |
+| Human-authored commits | 1255 |
 

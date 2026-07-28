@@ -696,7 +696,19 @@ _Where the work detail lives_ at the end of this document.
   in that work and is no longer present is reported and the hand-over refused —
   so bringing a change up to date cannot quietly undo someone else's finished
   work. Removing it on purpose stays allowed, but must be stated with a reason.
-  (iterate-2026-07-27-no-silent-revert)
+  Some things are not treated as missing, because in each the work is still
+  there: a file this change has ended up identical to; text the finished work
+  itself moved on from, where this change carries what took its place; and text
+  still present inside the line that replaced it, where this change edited a line
+  rather than deleting it — unless what it put back is the older wording from
+  before that work landed, or a line it had already written before that work
+  existed, both of which are removals like any other. The comparison is made
+  against the version of the finished work the change is actually brought up to
+  date with, whenever that can be established, and says which version that was.
+  When it cannot be established for something, that is reported rather than
+  passed over.
+  (iterate-2026-07-27-no-silent-revert,
+  iterate-2026-07-28-silent-revert-false-positives)
 - (E) Given the record of a change is checked for describing the run that is
   finishing, when that check runs, then it is decided by whether the record
   names that run, and never by how recently the file was written — so a run that

@@ -14,10 +14,7 @@ Steps: fetch the PR diff (`gh pr diff`) → load system+user prompts → POST to
 OpenRouter (`/chat/completions`, strict JSON) → parse the decision → post a
 rendered comment + (best-effort) review state → exit per decision.
 
-Usage:
-    uv run scripts/tools/pr_review.py \
-        --pr-number 42 --repo owner/repo \
-        --prompt-dir shared/prompts/pr_reviewer
+Usage: pr_review.py --pr-number N --repo owner/repo --prompt-dir shared/prompts/pr_reviewer
 
 Environment:
     OPENROUTER_API_KEY          required — OpenRouter credential (never logged)
@@ -26,21 +23,16 @@ Environment:
 
 Exit codes:
     0  decision approve | comment
-    1  decision block  (also: a truncated/partial review fails closed — needs human)
-    2  error (no key, OpenRouter down/rate-limited, JSON parse failure, unknown
-       decision, prompt/diff fetch failure)
+    1  block — also when nothing/not everything was reviewed (fails closed)
+    2  error (no key, OpenRouter down, JSON parse failure, unknown decision)
 """
 
 from __future__ import annotations
 
 import argparse
 import io
-import json
 import os
-import subprocess
 import sys
-import urllib.error
-import urllib.request
 from pathlib import Path
 
 SCRIPT_DIR = Path(__file__).resolve().parent
@@ -61,17 +53,37 @@ from pr_review_lib import (  # noqa: E402
     decision_to_exit,
     filter_generated_paths,
     load_prompts,
+    nothing_reviewed_summary,
     parse_review_response,
     render_comment, safe_path,
     truncate_diff,
 )
+from pr_review_diff_filter import count_sections  # noqa: E402
+# The two I/O boundaries each own a module — `gh` subprocess and OpenRouter HTTP.
+# Re-exported here so existing call sites and their monkeypatch targets
+# (`pr_review.fetch_pr_diff`, `pr_review.call_openrouter`, ...) are unchanged.
+from pr_review_gh import (  # noqa: E402
+    fetch_pr_diff,
+    post_pr_comment,
+    post_pr_review_state,
+)
+from pr_review_openrouter import (  # noqa: E402
+    DEFAULT_MODEL,
+    DEFAULT_TIMEOUT,
+    OPENROUTER_URL,
+    call_openrouter,
+)
 
+# The re-export surface: every name a caller or test is entitled to reach
+# through `pr_review.<symbol>`. Kept complete on purpose — a name that is
+# imported above but missing here reads as private while tests patch it.
 __all__ = [
     "EXIT_BLOCK", "EXIT_ERROR", "EXIT_OK", "MAX_DIFF_CHARS", "_redact",
-    "build_messages", "build_pr_meta", "decision_to_exit", "filter_generated_paths",
-    "load_prompts", "parse_review_response", "render_comment", "truncate_diff",
-    "DEFAULT_MODEL", "OPENROUTER_URL",
-]
+    "build_messages", "build_pr_meta", "count_sections", "decision_to_exit",
+    "fetch_pr_diff", "filter_generated_paths", "load_prompts",
+    "nothing_reviewed_summary", "parse_review_response", "post_pr_comment",
+    "post_pr_review_state", "render_comment", "safe_path", "truncate_diff",
+    "call_openrouter", "DEFAULT_MODEL", "DEFAULT_TIMEOUT", "OPENROUTER_URL"]
 
 
 def _fix_windows_encoding() -> None:
@@ -83,106 +95,19 @@ def _fix_windows_encoding() -> None:
             pass
 
 
-DEFAULT_MODEL = "anthropic/claude-sonnet-4.6"
-OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
-
-
-def _post_openrouter(api_key: str, model: str, messages: list[dict], timeout: int) -> dict:
-    """POST the chat-completion request to OpenRouter and return the parsed JSON body.
-
-    Uses stdlib urllib so the script carries no third-party HTTP dependency — it
-    runs under whatever environment `uv run` resolves on the CI runner.
-    """
-    payload = {
-        "model": model,
-        "messages": messages,
-        "response_format": {"type": "json_object"},
-    }
-    data = json.dumps(payload).encode("utf-8")
-    req = urllib.request.Request(
-        OPENROUTER_URL,
-        data=data,
-        headers={
-            "Authorization": f"Bearer {api_key}",
-            "Content-Type": "application/json",
-            # OpenRouter attribution headers (optional, recommended).
-            "HTTP-Referer": "https://github.com/svenroth-ai/shipwright",
-            "X-Title": "Shipwright PR Review",
-        },
-        method="POST",
-    )
-    # OPENROUTER_URL is a fixed `https://` module constant; no user/dynamic input reaches
-    # the request URL, so the dynamic-scheme (`file://`) / SSRF concern this Semgrep rule
-    # guards against cannot occur here — confirmed false positive, suppressed on the match line.
-    with urllib.request.urlopen(req, timeout=timeout) as resp:  # nosemgrep: python.lang.security.audit.dynamic-urllib-use-detected.dynamic-urllib-use-detected
-        body = resp.read().decode("utf-8")
-    return json.loads(body)
-
-
-def call_openrouter(api_key: str, model: str, messages: list[dict], timeout: int = 120) -> str:
-    """Call OpenRouter and return the assistant message content string.
-
-    Raises RuntimeError on transport failure (HTTP error, timeout) or an
-    unexpected response shape — the caller maps that to exit 2.
-    """
-    try:
-        data = _post_openrouter(api_key, model, messages, timeout)
-    except urllib.error.HTTPError as e:
-        detail = ""
+def _post_verdict(args, api_key: str, body: str, decision: str, summary: str) -> None:
+    """Post the comment + review state. Best-effort: a posting failure must not
+    flip the gate, which reflects the review outcome (the exit code), not the
+    side-effect. Shared so every fail-closed path leaves the same trail — a red
+    check with no comment tells the reader nothing."""
+    for fn, call_args, what in (
+        (post_pr_comment, (args.pr_number, args.repo, body), "PR comment"),
+        (post_pr_review_state, (args.pr_number, args.repo, decision, summary), "review state"),
+    ):
         try:
-            detail = e.read().decode("utf-8", errors="replace")
-        except Exception:  # noqa: BLE001 — best-effort body read
-            pass
-        raise RuntimeError(f"OpenRouter HTTP {e.code}: {detail}") from e
-    except (urllib.error.URLError, OSError, json.JSONDecodeError) as e:
-        raise RuntimeError(f"OpenRouter request failed: {e}") from e
-    try:
-        return data["choices"][0]["message"]["content"]
-    except (KeyError, IndexError, TypeError) as e:
-        raise RuntimeError(f"unexpected OpenRouter response shape: {e}") from e
-
-
-def fetch_pr_diff(pr_number: int, repo: str) -> str:
-    """Fetch the unified diff for a PR via the `gh` CLI."""
-    proc = subprocess.run(
-        ["gh", "pr", "diff", str(pr_number), "--repo", repo],
-        capture_output=True,
-        text=True,
-        timeout=120,
-    )
-    if proc.returncode != 0:
-        raise RuntimeError(f"`gh pr diff` failed ({proc.returncode}): {proc.stderr.strip()}")
-    return proc.stdout
-
-
-def post_pr_comment(pr_number: int, repo: str, body: str) -> None:
-    """Post the review comment to the PR via `gh pr comment` (stdin body)."""
-    proc = subprocess.run(
-        ["gh", "pr", "comment", str(pr_number), "--repo", repo, "--body-file", "-"],
-        input=body,
-        capture_output=True,
-        text=True,
-        timeout=60,
-    )
-    if proc.returncode != 0:
-        raise RuntimeError(f"`gh pr comment` failed ({proc.returncode}): {proc.stderr.strip()}")
-
-
-def post_pr_review_state(pr_number: int, repo: str, decision: str, summary: str) -> None:
-    """Post a review state (best-effort): block -> request-changes, else -> comment.
-
-    Deliberately never `--approve` (a bot approving its own org's PR is noise and
-    can fail). The merge gate is the workflow job's exit code, not this state.
-    """
-    norm = (decision or "").strip().lower()
-    flag = "--request-changes" if norm == "block" else "--comment"
-    body = summary or "Automated Tier-3 review."
-    subprocess.run(
-        ["gh", "pr", "review", str(pr_number), "--repo", repo, flag, "--body", body],
-        capture_output=True,
-        text=True,
-        timeout=60,
-    )
+            fn(*call_args)
+        except Exception as e:  # noqa: BLE001
+            print(_redact(f"[pr_review] failed to post {what}: {e}", api_key), file=sys.stderr)
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -194,7 +119,9 @@ def main(argv: list[str] | None = None) -> int:
         default="shared/prompts/pr_reviewer",
         help="Directory holding the `system` and `user` prompt files",
     )
-    parser.add_argument("--timeout", type=int, default=120, help="OpenRouter timeout (seconds)")
+    # One default, defined with the transport it belongs to (pr_review_openrouter).
+    parser.add_argument("--timeout", type=int, default=DEFAULT_TIMEOUT,
+                        help="OpenRouter timeout (seconds)")
     args = parser.parse_args(argv)
 
     api_key = os.environ.get("OPENROUTER_API_KEY")
@@ -215,19 +142,55 @@ def main(argv: list[str] | None = None) -> int:
         print(_redact(f"[pr_review] failed to fetch PR diff: {e}", api_key), file=sys.stderr)
         return EXIT_ERROR
 
-    # Drop producer-generated artifacts (compliance MDs, agent-docs, lockfiles,
-    # state logs) BEFORE the truncation check: they dominate a shipwright PR
+    # Drop producer-generated artifacts (compliance MDs, agent-docs, changelog
+    # drops, state logs, prior review records — NOT dependency lockfiles, which
+    # left this set in iterate-2026-07-27-pr-review-forged-boundary: on an
+    # untrusted PR the lockfile is the supply-chain surface)
+    # BEFORE the truncation check: they dominate a shipwright PR
     # diff (~82% of chars on PR #310) but carry no reviewable logic, so keeping
     # them would trip the size cap and fail the review closed on ordinary
     # medium+ iterates. The excluded list is surfaced to the model (pr_meta) +
     # humans (comment) — transparent, never silent. See triage trg-e1c554d9.
     diff, excluded = filter_generated_paths(diff)
+
+    # ...but "everything was generated" is not a review. This script runs ONLY
+    # when the tier step decided the PR needs one (needs-review label, sensitive
+    # path, or external contributor — an ordinary internal churn PR takes the
+    # `decide false "internal PR"` branch and never reaches here). So a filtered
+    # diff that came back empty means a PR that had to be reviewed was handed to
+    # the model as nothing at all — and the system prompt answers an empty diff
+    # with `approve` plainly: a green required check over an unread change. The
+    # shape that matters is a fork PR touching only producer-generated artifacts.
+    # The invariant is "the reviewer saw at least one file section" — NOT the
+    # narrower "everything was filtered". An empty fetch, a `gh` body with no
+    # `diff --git` header at all, and a fully-filtered PR are the same failure
+    # from the model's side.
+    if not count_sections(diff):
+        summary = nothing_reviewed_summary(excluded)
+        # `model=` names who reviewed. On this branch nobody did — we return
+        # before call_openrouter — so the footer must not attribute the verdict
+        # to a model that was never sent anything.
+        _post_verdict(args, api_key,
+                      render_comment({"decision": "block", "summary": summary},
+                                     model="no model — nothing was sent",
+                                     truncated=False,
+                                     excluded_generated=excluded), "block", summary)
+        print(f"[pr_review] {summary}", file=sys.stderr)
+        return EXIT_BLOCK
+
     reviewed = truncate_diff(diff)
     diff, truncated = reviewed.text, reviewed.incomplete
     missing = {"omitted": reviewed.omitted, "partial": reviewed.partial,
                "unidentified": reviewed.unidentified}
     pr_meta = build_pr_meta(args.pr_number, args.repo, truncated, excluded, **missing)
-    messages = build_messages(system_prompt, user_prompt, diff, pr_meta)
+    try:
+        messages = build_messages(system_prompt, user_prompt, diff, pr_meta)
+    except ValueError as e:
+        # A template that lost a placeholder. Mapped like every other boundary
+        # in main() — redacted, EXIT_ERROR — rather than escaping as a raw
+        # traceback that happens to exit non-zero.
+        print(_redact(f"[pr_review] {e}", api_key), file=sys.stderr)
+        return EXIT_ERROR
 
     est_tokens = (len(system_prompt) + len(user_prompt) + len(diff)) // 4
     print(
@@ -266,16 +229,8 @@ def main(argv: list[str] | None = None) -> int:
     body = render_comment(
         review, model=model, truncated=truncated, excluded_generated=excluded, **missing)
 
-    # Comment + review state are best-effort: a posting failure must not flip the
-    # gate, which reflects the review outcome (the exit code) not the side-effect.
-    try:
-        post_pr_comment(args.pr_number, args.repo, body)
-    except Exception as e:  # noqa: BLE001
-        print(_redact(f"[pr_review] failed to post PR comment: {e}", api_key), file=sys.stderr)
-    try:
-        post_pr_review_state(args.pr_number, args.repo, effective_decision, str(review.get("summary", "")))
-    except Exception as e:  # noqa: BLE001
-        print(_redact(f"[pr_review] failed to post review state: {e}", api_key), file=sys.stderr)
+    _post_verdict(args, api_key, body, effective_decision,
+                  str(review.get("summary", "")))
 
     if truncated:
         # Partial review fails closed — needs human (see comment above).
