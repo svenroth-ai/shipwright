@@ -275,6 +275,7 @@ Python 3.11+ with uv as package manager. All scripts are invoked via uv run. Hoo
 
 
 - (2026-07-28) iterate/cleanup — "nobody reads it" and "nothing depends on it" are different claims: deleting the generated gate-catalog and its drift test was the plan until context loading found `shared/constitution.md` and a REQ-3 campaign design both naming that trio "the pattern to copy — copy all three". Grep the constitution and campaign designs for an artifact's name before removing it. Corollary — a doc naming directory paths meets the path-canon gate like code; its first two hits were inside the placement rule being written. → iterate-2026-07-28-docs-placement-rule
+- **iterate-2026-07-28-review-subagents-standing-request** (2026-07-28): Gotcha — a mirror test that calls the RENDERER proves the text was composed, not that it was DELIVERED: `write_claude_md` refuses to overwrite a >1 KB `CLAUDE.md` and wrote its render to a side-file, so the grant reached no adopted repo while three carrier tests stayed green. Drive the WRITER against a load-bearing fixture. Same run, same shape: carrier EQUALITY plus substring markers are both blind to a regression applied identically to every carrier — that needs a negative assertion.
 
 ## Contributing
 

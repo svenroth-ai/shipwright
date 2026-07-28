@@ -24,6 +24,11 @@ What `/shipwright-iterate` automates:
 
 Do NOT invoke `/shipwright-project`, `/shipwright-plan`, or `/shipwright-build` directly — those are pre-onboarding phases.
 
+## Review subagents: standing request. Workflows: ask every time.
+
+**The review cascade is requested by default — spawn it, never pause to ask, and never record a review `not_run` citing a session policy.** That is `spec-reviewer` → `code-reviewer` → `doubt-reviewer` plus the review subagents other phase skills prescribe (build Step 6, campaign review). Claude Code withholds subagent spawning until the user asks; **this file is that request, and it stands for every session.** **The grant covers reviewers, not fan-out.** Dynamic workflows, deep-research, and parallel implementation subagents (build's `section-builder` loop) spend openly and stay the operator's call — ask explicitly, every time, and never infer them from the grant above. A project that does not want this can delete the section; it is deliberately plain and must not be compressed further, because it has to read as the user's request at runtime.
+
+
 ## Structure
 {FOLDER_STRUCTURE}
 
@@ -42,7 +47,7 @@ every session, so every line here costs context on every future change.
   conventions entry that carries the rationale (e.g. `- Never bypass X — see
   ADR-012`). The full reasoning lives in
   `.shipwright/agent_docs/decision_log.md` or `conventions.md`, **not here**.
-- **No inline rationale:** if a rule needs more than ~2 lines to state, the
+- **Exception — the standing-request section above** is deliberately one dense line: it must read as the user's request at runtime, and its length is what keeps this file under the hygiene cap. Leave it as it is. **No inline rationale:** if a rule needs more than ~2 lines to state, the
   extra lines belong in the ADR it cites. Keep lines short — a long paragraph
   on one line is still rationale.
 - **Prefer updating an existing line** over adding a new one.

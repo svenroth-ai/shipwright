@@ -130,3 +130,31 @@ def test_the_disposition_must_name_which_blocker_applied():
     )
 
 
+def test_a_project_grant_satisfies_the_policy_outright():
+    """Step 0 said a policy is not a blocker 'until asked and declined'. With a
+    standing grant there is nothing left to ask — the policy is already
+    satisfied, which is a different state from 'not yet asked'."""
+    body = _norm(_section(REVIEWS_DOC, "### When the internal reviewer cannot run"))
+    assert "has already made it" in body, (
+        "the ladder must say a CLAUDE.md grant has already made the request"
+    )
+    assert "nothing is gated, and there is nothing to ask" in body, (
+        "'satisfied' is a different state from 'not yet asked' — pin both"
+    )
+
+
+def test_the_grant_is_scoped_to_subagents_not_workflows():
+    """The carve-out has to survive where the grant is described, or a reader
+    of this file alone concludes fan-out is granted too."""
+    body = _norm(_section(REVIEWS_DOC, "### When the internal reviewer cannot run"))
+    assert "the grant covers the review cascade only" in body, (
+        "dynamic workflows, deep-research and parallel implementation "
+        "subagents keep their own per-invocation opt-in — the Workflow tool's "
+        "contract requires it, and Stage 2 caught the first wording silently "
+        "authorising build's section-builder fan-out"
+    )
+    assert "read the file - do not assume it" in body, (
+        "the ladder must tell the agent to LOOK for the grant; asserting that "
+        "every onboarded project carries one is false for repos adopted "
+        "before it shipped and for any project that deleted the section"
+    )
