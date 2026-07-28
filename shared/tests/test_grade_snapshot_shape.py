@@ -22,7 +22,7 @@ _SCRIPTS = Path(__file__).resolve().parents[1] / "scripts"
 if str(_SCRIPTS) not in sys.path:
     sys.path.insert(0, str(_SCRIPTS))
 
-from grade_snapshot_shape import apply_grade_snapshot  # noqa: E402
+from grade_snapshot_shape import ATTRIBUTION_KEYS, apply_grade_snapshot  # noqa: E402
 
 
 @pytest.fixture
@@ -88,6 +88,20 @@ class TestGradeAndScore:
         assert with_commit["commit"] == "deadbeef"
 
 
+def test_attribution_keys_cover_everything_the_resolver_emits():
+    """The refusal list must not drift behind the projection.
+
+    ``ATTRIBUTION_KEYS`` is what `event_amended --fields` refuses; `lineage_fields`
+    is what actually reaches the log. They are maintained by hand in two modules,
+    and this iterate had to *remember* to keep them aligned — a future field added
+    to one and not the other would be assertable again, which is the exact hole
+    the refusal exists to close (internal code review, medium).
+    """
+    from tree_lineage import TreeLineage, lineage_fields
+
+    assert set(lineage_fields(TreeLineage("branch", "b", "abcdef1"))) == ATTRIBUTION_KEYS
+
+
 class TestAttributionIsUnavoidable:
     def test_every_snapshot_is_attributed(self, repo: Path):
         event: dict = {}
@@ -95,7 +109,7 @@ class TestAttributionIsUnavoidable:
 
         assert event["lineage"] == "main"
         assert event["branch"] == "main"
-        assert len(event["base"]) == 40
+        assert 7 <= len(event["base"]) <= 64
 
     def test_branch_tree_is_attributed_as_such(self, repo: Path):
         subprocess.run(["git", "-C", str(repo), "checkout", "-b", "iterate/x"],

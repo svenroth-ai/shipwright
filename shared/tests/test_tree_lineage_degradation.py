@@ -106,13 +106,15 @@ class TestUnresolvableAncestry:
         # Still on the default branch, so the NAME comparison must carry it.
         assert ancestry_blinded(monkeypatch, repo).lineage == "main"
 
-    def test_named_branch_stays_branch(self, repo: Path, monkeypatch):
-        # A named non-default branch is a branch on the strength of its name;
-        # downgrading that to "unknown" would discard information we have.
+    def test_a_named_branch_never_reaches_the_ancestry_check(self, repo: Path, monkeypatch):
+        # Since the fork-point fix a NAMED branch is decided by name alone, so
+        # blinding ancestry must make no difference at all. Kept as the guard
+        # that the two code paths stay separated.
         git(repo, "checkout", "-b", "iterate/x")
         commit(repo, "two.txt")
 
         assert ancestry_blinded(monkeypatch, repo).lineage == "branch"
+        assert resolve_tree_lineage(repo).lineage == "branch"
 
     def test_detached_head_becomes_unknown_not_branch(self, repo: Path, monkeypatch):
         # Detached, so there is no name to fall back on and ancestry was the
@@ -133,13 +135,31 @@ class TestLineageFields:
         fields = lineage_fields(resolve_tree_lineage(repo))
         assert fields["lineage"] == "main"
         assert fields["branch"] == "main"
-        assert len(fields["base"]) == 40
+        # Width is NOT pinned to SHA-1's 40: the production rule is hex 7-64 so
+        # a SHA-256 repository keeps its attribution, and asserting 40 here
+        # would turn red on a git defaulting to sha256 while the code is right.
+        assert 7 <= len(fields["base"]) <= 64
 
     def test_unknown_projects_lineage_only(self):
         # `lineage: "unknown"` is emitted EXPLICITLY rather than by omitting the
         # field: a producer that tried and could not tell must not be
         # indistinguishable from a legacy event written before attribution.
         assert lineage_fields(TreeLineage("unknown", None, None)) == {"lineage": "unknown"}
+
+    def test_an_overlong_or_control_laden_branch_name_is_dropped(self):
+        # `branch` is untrusted external data landing on a tracked, cross-repo,
+        # append-only artifact that cannot honestly be rewritten. git's own ref
+        # grammar makes these unreachable through the producers today, but "the
+        # writer happens not to emit it" is not a bound.
+        assert "branch" not in lineage_fields(TreeLineage("branch", "a" * 256, None))
+        assert "branch" not in lineage_fields(TreeLineage("branch", "we\x00ird", None))
+        assert lineage_fields(TreeLineage("branch", "a" * 255, None))["branch"] == "a" * 255
+
+    def test_a_non_path_project_root_degrades_instead_of_raising(self):
+        # `Path(project_root)` was the one statement that could raise past the
+        # module's "nothing here raises" contract.
+        assert resolve_tree_lineage(None) == TreeLineage("unknown", None, None)
+        assert resolve_tree_lineage(3) == TreeLineage("unknown", None, None)
 
     def test_partial_resolution_keeps_what_is_known(self):
         got = lineage_fields(TreeLineage("branch", "iterate/x", None))

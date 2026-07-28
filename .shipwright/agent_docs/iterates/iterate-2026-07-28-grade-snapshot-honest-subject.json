@@ -1,0 +1,10 @@
+{
+  "run_id": "iterate-2026-07-28-grade-snapshot-honest-subject",
+  "date": "2026-07-28T10:58:12.727230Z",
+  "type": "change",
+  "complexity": "medium",
+  "branch": "iterate/grade-snapshot-honest-subject",
+  "spec": ".shipwright/planning/iterate/iterate-2026-07-28-grade-snapshot-honest-subject.md",
+  "tests_passed": true,
+  "adr": "iterate-2026-07-28-grade-snapshot-honest-subject"
+}

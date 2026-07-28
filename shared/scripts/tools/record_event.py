@@ -38,7 +38,7 @@ if str(_SCRIPTS_ROOT) not in sys.path:
 from lib.events_log import resolve_events_path  # noqa: E402
 # grade_snapshot's shape + tree attribution, shared with the compliance emitter.
 # Top-level for the same ADR-045 reason as tests_block below.
-from grade_snapshot_shape import apply_grade_snapshot  # noqa: E402
+from grade_snapshot_shape import apply_grade_snapshot, reject_asserted_attribution  # noqa: E402
 # Shared skip-vs-fail SSOT (top-level, not under lib/, so the compliance plugin
 # can import it too without a lib-namespace collision — ADR-045).
 from tests_block import validate_tests_block  # noqa: E402
@@ -343,6 +343,8 @@ def build_event(args: argparse.Namespace) -> dict:
             # here so the invariant holds on EVERY supported write route.
             if isinstance(fields.get("tests"), dict):
                 validate_tests_block(fields["tests"])
+            # Same for grade_snapshot attribution (rule+why: grade_snapshot_shape).
+            reject_asserted_attribution(fields)
             event["fields"] = fields
 
     elif args.type == "compliance_update_failed":
