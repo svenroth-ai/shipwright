@@ -1,9 +1,9 @@
 {
   "schema_version": 3,
   "collector_version": "test_links/1.0.0",
-  "generated_at": "2026-07-27T19:47:47.363461+00:00",
-  "source_commit": "04a9383add90bf7af04435e301f3ec27eaa7e882",
-  "spec_hash": "sha256:4a2f146b396cc9077aab4166a91401789a6e724d84b65e2463e8e4ad06498f40",
+  "generated_at": "2026-07-28T00:29:08.206336+00:00",
+  "source_commit": "4b259c18c59bf32bfe428b3a639b36cf0e94d3c5",
+  "spec_hash": "sha256:d5c4786f8d6117f200eefc7163ca39e889b861c1a724821a41e7d48c7fccaac7",
   "requirements": {
     "01::FR-01.01": {
       "id": "FR-01.01",
@@ -945,7 +945,7 @@
             "path": "shared/tests/test_known_failures.py::test_absent_file_is_an_empty_baseline_not_an_error",
             "layer": "unit",
             "status": "enabled",
-            "executed": "not_run",
+            "executed": "pass",
             "tag_source": "pytest_marker"
           },
           {
@@ -953,7 +953,7 @@
             "path": "shared/tests/test_known_failures.py::test_declared_entries_are_read_with_their_metadata",
             "layer": "unit",
             "status": "enabled",
-            "executed": "not_run",
+            "executed": "pass",
             "tag_source": "pytest_marker"
           },
           {
@@ -961,7 +961,7 @@
             "path": "shared/tests/test_known_failures.py::test_explicit_baseline_count_wins_over_the_derived_sum",
             "layer": "unit",
             "status": "enabled",
-            "executed": "not_run",
+            "executed": "pass",
             "tag_source": "pytest_marker"
           },
           {
@@ -969,7 +969,7 @@
             "path": "shared/tests/test_known_failures.py::test_malformed_file_is_flagged_but_yields_a_zero_baseline",
             "layer": "unit",
             "status": "enabled",
-            "executed": "not_run",
+            "executed": "pass",
             "tag_source": "pytest_marker"
           },
           {
@@ -977,7 +977,7 @@
             "path": "shared/tests/test_known_failures.py::test_a_non_object_payload_is_malformed_not_a_crash",
             "layer": "unit",
             "status": "enabled",
-            "executed": "not_run",
+            "executed": "pass",
             "tag_source": "pytest_marker"
           },
           {
@@ -985,7 +985,7 @@
             "path": "shared/tests/test_known_failures.py::test_non_list_known_failures_key_is_malformed",
             "layer": "unit",
             "status": "enabled",
-            "executed": "not_run",
+            "executed": "pass",
             "tag_source": "pytest_marker"
           },
           {
@@ -993,7 +993,7 @@
             "path": "shared/tests/test_known_failures.py::test_garbage_entries_are_skipped_without_losing_the_good_ones",
             "layer": "unit",
             "status": "enabled",
-            "executed": "not_run",
+            "executed": "pass",
             "tag_source": "pytest_marker"
           },
           {
@@ -1001,7 +1001,7 @@
             "path": "shared/tests/test_known_failures.py::test_a_non_integer_count_falls_back_to_one",
             "layer": "unit",
             "status": "enabled",
-            "executed": "not_run",
+            "executed": "pass",
             "tag_source": "pytest_marker"
           },
           {
@@ -1009,7 +1009,7 @@
             "path": "shared/tests/test_known_failures.py::test_within_baseline_mirrors_the_audit_rule",
             "layer": "unit",
             "status": "enabled",
-            "executed": "not_run",
+            "executed": "pass",
             "tag_source": "pytest_marker"
           },
           {
@@ -1017,7 +1017,7 @@
             "path": "shared/tests/test_known_failures.py::test_genuine_failure_count_prefers_an_explicit_failed_number",
             "layer": "unit",
             "status": "enabled",
-            "executed": "not_run",
+            "executed": "pass",
             "tag_source": "pytest_marker"
           },
           {
@@ -1025,7 +1025,7 @@
             "path": "shared/tests/test_known_failures.py::test_genuine_failure_count_subtracts_skips_when_failed_is_absent",
             "layer": "unit",
             "status": "enabled",
-            "executed": "not_run",
+            "executed": "pass",
             "tag_source": "pytest_marker"
           },
           {
@@ -1033,7 +1033,7 @@
             "path": "shared/tests/test_known_failures.py::test_genuine_failure_count_falls_back_to_the_bare_gap",
             "layer": "unit",
             "status": "enabled",
-            "executed": "not_run",
+            "executed": "pass",
             "tag_source": "pytest_marker"
           },
           {
@@ -1041,7 +1041,7 @@
             "path": "shared/tests/test_known_failures.py::test_genuine_failure_count_never_goes_negative",
             "layer": "unit",
             "status": "enabled",
-            "executed": "not_run",
+            "executed": "pass",
             "tag_source": "pytest_marker"
           },
           {
@@ -1049,7 +1049,7 @@
             "path": "shared/tests/test_known_failures.py::test_split_accepted_separates_declared_failures_from_genuine_ones",
             "layer": "unit",
             "status": "enabled",
-            "executed": "not_run",
+            "executed": "pass",
             "tag_source": "pytest_marker"
           },
           {
@@ -1057,7 +1057,7 @@
             "path": "shared/tests/test_known_failures.py::test_split_accepted_matches_a_declared_substring_of_the_reported_name",
             "layer": "unit",
             "status": "enabled",
-            "executed": "not_run",
+            "executed": "pass",
             "tag_source": "pytest_marker"
           },
           {
@@ -1065,7 +1065,7 @@
             "path": "shared/tests/test_known_failures.py::test_split_accepted_does_not_match_on_a_partial_word",
             "layer": "unit",
             "status": "enabled",
-            "executed": "not_run",
+            "executed": "pass",
             "tag_source": "pytest_marker"
           },
           {
@@ -1073,7 +1073,7 @@
             "path": "shared/tests/test_known_failures.py::test_a_declared_failure_that_did_not_fire_does_not_excuse_a_different_one",
             "layer": "unit",
             "status": "enabled",
-            "executed": "not_run",
+            "executed": "pass",
             "tag_source": "pytest_marker"
           },
           {
@@ -1081,7 +1081,7 @@
             "path": "shared/tests/test_known_failures.py::test_split_accepted_with_no_baseline_calls_everything_genuine",
             "layer": "unit",
             "status": "enabled",
-            "executed": "not_run",
+            "executed": "pass",
             "tag_source": "pytest_marker"
           },
           {
@@ -1089,7 +1089,7 @@
             "path": "shared/tests/test_known_failures.py::test_split_accepted_tolerates_non_string_failure_names",
             "layer": "unit",
             "status": "enabled",
-            "executed": "not_run",
+            "executed": "pass",
             "tag_source": "pytest_marker"
           },
           {
@@ -1097,7 +1097,7 @@
             "path": "shared/tests/test_known_failures.py::test_a_project_with_an_adoption_block_is_brownfield",
             "layer": "unit",
             "status": "enabled",
-            "executed": "not_run",
+            "executed": "pass",
             "tag_source": "pytest_marker"
           },
           {
@@ -1105,7 +1105,7 @@
             "path": "shared/tests/test_known_failures.py::test_an_empty_adoption_block_is_not_adoption",
             "layer": "unit",
             "status": "enabled",
-            "executed": "not_run",
+            "executed": "pass",
             "tag_source": "pytest_marker"
           },
           {
@@ -1113,7 +1113,7 @@
             "path": "shared/tests/test_known_failures.py::test_scope_is_not_the_adoption_signal",
             "layer": "unit",
             "status": "enabled",
-            "executed": "not_run",
+            "executed": "pass",
             "tag_source": "pytest_marker"
           },
           {
@@ -1121,7 +1121,7 @@
             "path": "shared/tests/test_known_failures.py::test_a_missing_or_broken_run_config_reads_as_greenfield",
             "layer": "unit",
             "status": "enabled",
-            "executed": "not_run",
+            "executed": "pass",
             "tag_source": "pytest_marker"
           },
           {
@@ -1129,7 +1129,7 @@
             "path": "shared/tests/test_known_failures_audit_parity.py::test_the_audit_and_the_test_phase_agree_on_failing",
             "layer": "unit",
             "status": "enabled",
-            "executed": "not_run",
+            "executed": "pass",
             "tag_source": "pytest_marker"
           },
           {
@@ -1137,7 +1137,7 @@
             "path": "shared/tests/test_known_failures_audit_parity.py::test_a_gap_the_declared_baseline_covers_is_failing_to_neither",
             "layer": "unit",
             "status": "enabled",
-            "executed": "not_run",
+            "executed": "pass",
             "tag_source": "pytest_marker"
           },
           {
@@ -1145,7 +1145,7 @@
             "path": "shared/tests/test_known_failures_audit_parity.py::test_a_gap_beyond_the_baseline_is_where_the_two_deliberately_differ",
             "layer": "unit",
             "status": "enabled",
-            "executed": "not_run",
+            "executed": "pass",
             "tag_source": "pytest_marker"
           },
           {
@@ -1153,7 +1153,7 @@
             "path": "shared/tests/test_known_failures_audit_parity.py::test_they_agree_that_an_exact_residual_is_not_waived_by_the_baseline",
             "layer": "unit",
             "status": "enabled",
-            "executed": "not_run",
+            "executed": "pass",
             "tag_source": "pytest_marker"
           },
           {
@@ -1161,7 +1161,7 @@
             "path": "shared/tests/test_known_failures_audit_parity.py::test_an_explicit_failed_count_matches_the_audits_derived_one",
             "layer": "unit",
             "status": "enabled",
-            "executed": "not_run",
+            "executed": "pass",
             "tag_source": "pytest_marker"
           },
           {
@@ -1169,7 +1169,7 @@
             "path": "shared/tests/test_known_failures_audit_parity.py::test_within_baseline_still_mirrors_the_audits_no_skip_field_branch",
             "layer": "unit",
             "status": "enabled",
-            "executed": "not_run",
+            "executed": "pass",
             "tag_source": "pytest_marker"
           },
           {
@@ -1177,7 +1177,7 @@
             "path": "shared/tests/test_test_checks_accepted_baseline.py::test_a_gap_with_no_declared_baseline_still_warns",
             "layer": "unit",
             "status": "enabled",
-            "executed": "not_run",
+            "executed": "pass",
             "tag_source": "pytest_marker"
           },
           {
@@ -1185,7 +1185,7 @@
             "path": "shared/tests/test_test_checks_accepted_baseline.py::test_a_green_run_still_passes",
             "layer": "unit",
             "status": "enabled",
-            "executed": "not_run",
+            "executed": "pass",
             "tag_source": "pytest_marker"
           },
           {
@@ -1193,7 +1193,7 @@
             "path": "shared/tests/test_test_checks_accepted_baseline.py::test_an_empty_run_is_still_never_a_pass",
             "layer": "unit",
             "status": "enabled",
-            "executed": "not_run",
+            "executed": "pass",
             "tag_source": "pytest_marker"
           },
           {
@@ -1201,7 +1201,7 @@
             "path": "shared/tests/test_test_checks_accepted_baseline.py::test_an_unbroken_gap_within_the_declared_baseline_does_not_fail_the_check",
             "layer": "unit",
             "status": "enabled",
-            "executed": "not_run",
+            "executed": "pass",
             "tag_source": "pytest_marker"
           },
           {
@@ -1209,7 +1209,7 @@
             "path": "shared/tests/test_test_checks_accepted_baseline.py::test_an_exactly_counted_failure_is_not_waived_by_the_baseline",
             "layer": "unit",
             "status": "enabled",
-            "executed": "not_run",
+            "executed": "pass",
             "tag_source": "pytest_marker"
           },
           {
@@ -1217,7 +1217,7 @@
             "path": "shared/tests/test_test_checks_accepted_baseline.py::test_a_gap_beyond_the_baseline_still_warns_and_names_both_numbers",
             "layer": "unit",
             "status": "enabled",
-            "executed": "not_run",
+            "executed": "pass",
             "tag_source": "pytest_marker"
           },
           {
@@ -1225,7 +1225,7 @@
             "path": "shared/tests/test_test_checks_accepted_baseline.py::test_an_unreadable_baseline_file_never_widens_what_is_excused",
             "layer": "unit",
             "status": "enabled",
-            "executed": "not_run",
+            "executed": "pass",
             "tag_source": "pytest_marker"
           },
           {
@@ -1233,7 +1233,7 @@
             "path": "shared/tests/test_test_checks_accepted_baseline.py::test_an_explicit_failed_count_is_preferred_over_the_bare_gap",
             "layer": "unit",
             "status": "enabled",
-            "executed": "not_run",
+            "executed": "pass",
             "tag_source": "pytest_marker"
           },
           {
@@ -1241,7 +1241,7 @@
             "path": "shared/tests/test_test_checks_accepted_baseline.py::test_skips_are_subtracted_when_no_failed_count_is_recorded",
             "layer": "unit",
             "status": "enabled",
-            "executed": "not_run",
+            "executed": "pass",
             "tag_source": "pytest_marker"
           },
           {
@@ -1249,7 +1249,7 @@
             "path": "shared/tests/test_test_checks_accepted_baseline.py::test_skips_plus_a_real_failure_still_warns",
             "layer": "unit",
             "status": "enabled",
-            "executed": "not_run",
+            "executed": "pass",
             "tag_source": "pytest_marker"
           },
           {
@@ -1257,7 +1257,7 @@
             "path": "shared/tests/test_test_checks_accepted_baseline.py::test_a_skip_only_gap_does_not_consume_accepted_failure_allowance",
             "layer": "unit",
             "status": "enabled",
-            "executed": "not_run",
+            "executed": "pass",
             "tag_source": "pytest_marker"
           },
           {
@@ -1265,7 +1265,7 @@
             "path": "shared/tests/test_test_checks_accepted_baseline.py::test_an_explicit_skip_count_also_makes_the_residual_exact",
             "layer": "unit",
             "status": "enabled",
-            "executed": "not_run",
+            "executed": "pass",
             "tag_source": "pytest_marker"
           },
           {
@@ -1273,7 +1273,7 @@
             "path": "shared/tests/test_test_checks_accepted_baseline.py::test_a_malformed_results_file_is_still_an_error",
             "layer": "unit",
             "status": "enabled",
-            "executed": "not_run",
+            "executed": "pass",
             "tag_source": "pytest_marker"
           },
           {
@@ -1281,13 +1281,13 @@
             "path": "shared/tests/test_test_checks_accepted_baseline.py::test_a_non_integer_failed_field_falls_back_rather_than_crashing",
             "layer": "unit",
             "status": "enabled",
-            "executed": "not_run",
+            "executed": "pass",
             "tag_source": "pytest_marker"
           }
         ]
       },
       "coverage": {
-        "unit": "MISSING"
+        "unit": "ok"
       }
     },
     "01::FR-01.07": {
@@ -1383,6 +1383,270 @@
           {
             "id": "shared/tests/test_aggregate_changelog.py::test_aggregate_cli_strict_flag_exits_nonzero_on_mangled",
             "path": "shared/tests/test_aggregate_changelog.py::test_aggregate_cli_strict_flag_exits_nonzero_on_mangled",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "pass",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "shared/tests/test_changelog_aggregation_idempotency.py::test_rerun_after_interrupted_release_writes_the_version_once",
+            "path": "shared/tests/test_changelog_aggregation_idempotency.py::test_rerun_after_interrupted_release_writes_the_version_once",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "pass",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "shared/tests/test_changelog_aggregation_idempotency.py::test_rerun_resumed_on_a_later_date_still_writes_the_version_once",
+            "path": "shared/tests/test_changelog_aggregation_idempotency.py::test_rerun_resumed_on_a_later_date_still_writes_the_version_once",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "pass",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "shared/tests/test_changelog_aggregation_idempotency.py::test_trailing_whitespace_in_the_recorded_section_still_converges",
+            "path": "shared/tests/test_changelog_aggregation_idempotency.py::test_trailing_whitespace_in_the_recorded_section_still_converges",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "pass",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "shared/tests/test_changelog_aggregation_idempotency.py::test_crlf_recorded_section_matches_an_lf_rendered_one",
+            "path": "shared/tests/test_changelog_aggregation_idempotency.py::test_crlf_recorded_section_matches_an_lf_rendered_one",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "pass",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "shared/tests/test_changelog_aggregation_idempotency.py::test_a_multi_line_bullet_still_converges",
+            "path": "shared/tests/test_changelog_aggregation_idempotency.py::test_a_multi_line_bullet_still_converges",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "pass",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "shared/tests/test_changelog_aggregation_idempotency.py::test_converging_rerun_consumes_the_drop_files",
+            "path": "shared/tests/test_changelog_aggregation_idempotency.py::test_converging_rerun_consumes_the_drop_files",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "pass",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "shared/tests/test_changelog_aggregation_idempotency.py::test_converging_rerun_reports_unchanged_without_writing",
+            "path": "shared/tests/test_changelog_aggregation_idempotency.py::test_converging_rerun_reports_unchanged_without_writing",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "pass",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "shared/tests/test_changelog_aggregation_idempotency.py::test_first_release_reports_inserted",
+            "path": "shared/tests/test_changelog_aggregation_idempotency.py::test_first_release_reports_inserted",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "pass",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "shared/tests/test_changelog_aggregation_idempotency.py::test_replacing_changed_content_reports_replaced",
+            "path": "shared/tests/test_changelog_aggregation_idempotency.py::test_replacing_changed_content_reports_replaced",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "pass",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "shared/tests/test_changelog_aggregation_idempotency.py::test_rerunning_a_completed_release_is_a_clean_noop",
+            "path": "shared/tests/test_changelog_aggregation_idempotency.py::test_rerunning_a_completed_release_is_a_clean_noop",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "pass",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "shared/tests/test_changelog_aggregation_idempotency.py::test_replace_preserves_trailing_prose_and_link_footer",
+            "path": "shared/tests/test_changelog_aggregation_idempotency.py::test_replace_preserves_trailing_prose_and_link_footer",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "pass",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "shared/tests/test_changelog_aggregation_refusal.py::test_partial_unlink_refuses_instead_of_deleting_released_bullets",
+            "path": "shared/tests/test_changelog_aggregation_refusal.py::test_partial_unlink_refuses_instead_of_deleting_released_bullets",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "pass",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "shared/tests/test_changelog_aggregation_refusal.py::test_hand_edited_section_refuses",
+            "path": "shared/tests/test_changelog_aggregation_refusal.py::test_hand_edited_section_refuses",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "pass",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "shared/tests/test_changelog_aggregation_refusal.py::test_yanked_marker_on_the_heading_refuses",
+            "path": "shared/tests/test_changelog_aggregation_refusal.py::test_yanked_marker_on_the_heading_refuses",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "pass",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "shared/tests/test_changelog_aggregation_refusal.py::test_aggregating_the_unreleased_block_refuses",
+            "path": "shared/tests/test_changelog_aggregation_refusal.py::test_aggregating_the_unreleased_block_refuses",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "pass",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "shared/tests/test_changelog_aggregation_refusal.py::test_duplicate_sections_refuse_with_the_count",
+            "path": "shared/tests/test_changelog_aggregation_refusal.py::test_duplicate_sections_refuse_with_the_count",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "pass",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "shared/tests/test_changelog_aggregation_refusal.py::test_dry_run_reports_the_replace_without_writing_or_unlinking",
+            "path": "shared/tests/test_changelog_aggregation_refusal.py::test_dry_run_reports_the_replace_without_writing_or_unlinking",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "pass",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "shared/tests/test_changelog_aggregation_refusal.py::test_dry_run_still_refuses_a_state_that_would_be_refused",
+            "path": "shared/tests/test_changelog_aggregation_refusal.py::test_dry_run_still_refuses_a_state_that_would_be_refused",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "pass",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "shared/tests/test_changelog_aggregation_refusal.py::test_dry_run_cli_also_exits_nonzero_on_a_refusal",
+            "path": "shared/tests/test_changelog_aggregation_refusal.py::test_dry_run_cli_also_exits_nonzero_on_a_refusal",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "pass",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "shared/tests/test_changelog_aggregation_refusal.py::test_cli_exits_nonzero_on_duplicate_sections",
+            "path": "shared/tests/test_changelog_aggregation_refusal.py::test_cli_exits_nonzero_on_duplicate_sections",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "pass",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "shared/tests/test_changelog_aggregation_refusal.py::test_cli_exits_nonzero_on_content_mismatch",
+            "path": "shared/tests/test_changelog_aggregation_refusal.py::test_cli_exits_nonzero_on_content_mismatch",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "pass",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "shared/tests/test_changelog_sections_shared.py::test_the_module_lives_at_shared_scripts_top_level",
+            "path": "shared/tests/test_changelog_sections_shared.py::test_the_module_lives_at_shared_scripts_top_level",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "pass",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "shared/tests/test_changelog_sections_shared.py::test_no_plugin_local_copy_survives",
+            "path": "shared/tests/test_changelog_sections_shared.py::test_no_plugin_local_copy_survives",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "pass",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "shared/tests/test_changelog_sections_shared.py::test_aggregator_has_no_second_insertion_predicate",
+            "path": "shared/tests/test_changelog_sections_shared.py::test_aggregator_has_no_second_insertion_predicate",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "pass",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "shared/tests/test_changelog_sections_shared.py::test_aggregator_carries_no_section_heading_pattern_of_its_own",
+            "path": "shared/tests/test_changelog_sections_shared.py::test_aggregator_carries_no_section_heading_pattern_of_its_own",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "pass",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "shared/tests/test_changelog_sections_shared.py::test_plugin_writer_resolves_changelog_sections_from_shared",
+            "path": "shared/tests/test_changelog_sections_shared.py::test_plugin_writer_resolves_changelog_sections_from_shared",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "pass",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "shared/tests/test_changelog_sections_shared.py::test_insertion_index_handles_degenerate_files",
+            "path": "shared/tests/test_changelog_sections_shared.py::test_insertion_index_handles_degenerate_files",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "pass",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "shared/tests/test_changelog_sections_shared.py::test_lowercase_unreleased_is_not_treated_as_a_release",
+            "path": "shared/tests/test_changelog_sections_shared.py::test_lowercase_unreleased_is_not_treated_as_a_release",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "pass",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "shared/tests/test_changelog_sections_shared.py::test_section_end_stops_before_a_link_reference_footer",
+            "path": "shared/tests/test_changelog_sections_shared.py::test_section_end_stops_before_a_link_reference_footer",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "pass",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "shared/tests/test_changelog_sections_shared.py::test_new_release_lands_above_prose_trailing_an_unreleased_block",
+            "path": "shared/tests/test_changelog_sections_shared.py::test_new_release_lands_above_prose_trailing_an_unreleased_block",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "pass",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "shared/tests/test_changelog_sections_shared.py::test_insert_terminates_an_unterminated_last_line",
+            "path": "shared/tests/test_changelog_sections_shared.py::test_insert_terminates_an_unterminated_last_line",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "pass",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "shared/tests/test_changelog_sections_shared.py::test_section_starts_finds_every_claim_on_a_version",
+            "path": "shared/tests/test_changelog_sections_shared.py::test_section_starts_finds_every_claim_on_a_version",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "pass",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "shared/tests/test_changelog_sections_shared.py::test_lowercase_unreleased_bullets_are_still_reported",
+            "path": "shared/tests/test_changelog_sections_shared.py::test_lowercase_unreleased_bullets_are_still_reported",
             "layer": "unit",
             "status": "enabled",
             "executed": "pass",
@@ -3777,6 +4041,10 @@
     "plugins/shipwright-changelog/tests/test_integration.py::test_refusal_message_survives_a_non_ascii_project_path",
     "plugins/shipwright-changelog/tests/test_integration.py::test_setup_changelog_detects_state",
     "plugins/shipwright-changelog/tests/test_integration.py::test_version_suggestion",
+    "plugins/shipwright-changelog/tests/test_shared_sections_loader.py::test_a_failed_load_does_not_leave_a_broken_module_registered",
+    "plugins/shipwright-changelog/tests/test_shared_sections_loader.py::test_loads_the_shared_module_and_memoises_it",
+    "plugins/shipwright-changelog/tests/test_shared_sections_loader.py::test_missing_shared_raises_an_actionable_import_error",
+    "plugins/shipwright-changelog/tests/test_shared_sections_loader.py::test_the_writer_only_needs_the_shared_module_when_it_splices",
     "plugins/shipwright-compliance/tests/test_accepted_risk_view.py::test_absent_register_is_not_a_degradation",
     "plugins/shipwright-compliance/tests/test_accepted_risk_view.py::test_audit_fields_reach_the_row",
     "plugins/shipwright-compliance/tests/test_accepted_risk_view.py::test_classic_flat_file_is_read",
@@ -7949,7 +8217,6 @@
     "shared/tests/test_changelog_aggregation.py::test_dry_run_reports_without_writing",
     "shared/tests/test_changelog_aggregation.py::test_empty_category_map_yields_empty_string",
     "shared/tests/test_changelog_aggregation.py::test_empty_file_still_inserts",
-    "shared/tests/test_changelog_aggregation.py::test_find_structural_insertion_line_handles_edge_cases",
     "shared/tests/test_changelog_aggregation.py::test_happy_path_builds_section_and_cleans_drops",
     "shared/tests/test_changelog_aggregation.py::test_inserts_above_first_version_section",
     "shared/tests/test_changelog_aggregation.py::test_inserts_after_header_when_no_existing_version",
@@ -8351,6 +8618,20 @@
     "shared/tests/test_deploy_profile.py::test_nonsensical_declared_durations_are_rejected",
     "shared/tests/test_deploy_profile.py::test_there_are_profiles_to_read",
     "shared/tests/test_deploy_profile.py::test_unparseable_json_is_an_error",
+    "shared/tests/test_derived_snapshots.py::test_completeness_ledger_reads_the_per_run_entry_after_a_restore",
+    "shared/tests/test_derived_snapshots.py::test_integration_coverage_reads_the_per_run_entry_after_a_restore",
+    "shared/tests/test_derived_snapshots.py::test_registry_covers_every_derived_md_plus_the_two_json_snapshots",
+    "shared/tests/test_derived_snapshots.py::test_registry_excludes_the_append_logs_and_per_run_paths",
+    "shared/tests/test_derived_snapshots.py::test_restore_ignores_a_snapshot_the_project_does_not_track",
+    "shared/tests/test_derived_snapshots.py::test_restore_is_a_noop_on_a_clean_tree_and_never_raises",
+    "shared/tests/test_derived_snapshots.py::test_restore_of_one_odd_path_does_not_defeat_the_others",
+    "shared/tests/test_derived_snapshots.py::test_restore_undoes_a_DELETED_derived_snapshot",
+    "shared/tests/test_derived_snapshots.py::test_restore_undoes_a_derived_snapshot_a_producer_already_staged",
+    "shared/tests/test_derived_snapshots_integrate.py::test_a_behind_branch_still_merges_and_the_run_stays_evidenced",
+    "shared/tests/test_derived_snapshots_integrate.py::test_gate_catches_a_derived_snapshot_that_reached_the_commit",
+    "shared/tests/test_derived_snapshots_integrate.py::test_gate_passes_a_commit_that_touches_only_real_files",
+    "shared/tests/test_derived_snapshots_integrate.py::test_gate_skips_rather_than_invents_when_it_cannot_read_the_commit",
+    "shared/tests/test_derived_snapshots_integrate.py::test_integrate_makes_no_followup_for_derived_snapshots",
     "shared/tests/test_design_round_declarations.py::test_a_build_declaration_does_not_satisfy_a_design_round",
     "shared/tests/test_design_round_declarations.py::test_a_damaged_baseline_blocks_finalization",
     "shared/tests/test_design_round_declarations.py::test_a_damaged_declaration_is_reported_not_treated_as_absent",
@@ -9396,7 +9677,7 @@
     "shared/tests/test_integrate_campaign_status.py::test_integrate_rolls_back_campaign_status_on_regenerate_failure",
     "shared/tests/test_integrate_campaign_status.py::test_integrate_status_regen_skipped_when_events_invalid",
     "shared/tests/test_integrate_main.py::test_integrate_aborts_and_restores_on_source_conflict",
-    "shared/tests/test_integrate_main.py::test_integrate_resolves_and_audit_finds_followup",
+    "shared/tests/test_integrate_main.py::test_integrate_followup_is_a_run_id_commit_the_audit_no_longer_claims",
     "shared/tests/test_integrate_main.py::test_integrate_rollback_restores_ci_security_on_regen_failure",
     "shared/tests/test_integrate_main.py::test_integrate_rollback_restores_test_traceability_on_regen_failure",
     "shared/tests/test_integrate_main.py::test_integrate_validates_events_on_clean_union_merge",
@@ -10309,6 +10590,23 @@
     "shared/tests/test_review_cascade_decoupled.py::test_substitution_bookkeeping_is_forbidden",
     "shared/tests/test_review_cascade_decoupled.py::test_trigger_is_not_conditional_on_internal",
     "shared/tests/test_review_cascade_decoupled.py::test_trigger_states_its_own_conditions",
+    "shared/tests/test_review_cascade_owner.py::test_campaign_doc_drops_the_impossible_parallel_claim",
+    "shared/tests/test_review_cascade_owner.py::test_campaign_doc_states_the_residual_gap_honestly",
+    "shared/tests/test_review_cascade_owner.py::test_cascade_section_is_not_conditioned_on_the_runner_contract",
+    "shared/tests/test_review_cascade_owner.py::test_cascade_section_names_the_standalone_owner_explicitly",
+    "shared/tests/test_review_cascade_owner.py::test_delegated_statuses_are_documented_with_their_scope",
+    "shared/tests/test_review_cascade_owner.py::test_delegated_to_skill_is_retained_for_backward_compatibility",
+    "shared/tests/test_review_cascade_owner.py::test_runner_assigns_the_external_run_and_the_internal_pass_to_different_rows",
+    "shared/tests/test_review_cascade_owner.py::test_runner_carries_a_status_transition_table",
+    "shared/tests/test_review_cascade_owner.py::test_runner_never_marks_internal_code_completed_from_an_external_run",
+    "shared/tests/test_review_cascade_owner.py::test_skill_campaign_paragraph_scopes_the_adr_029_sentence",
+    "shared/tests/test_review_cascade_owner.py::test_skill_step_8_does_not_promise_more_than_the_cascade_sees",
+    "shared/tests/test_review_cascade_owner.py::test_step_8_names_all_three_stages",
+    "shared/tests/test_review_cascade_owner.py::test_step_8_says_this_session_spawns_the_cascade",
+    "shared/tests/test_review_cascade_owner.py::test_step_8_states_the_stage_1_block_and_pre_commit_placement",
+    "shared/tests/test_review_cascade_owner.py::test_the_campaign_recording_commands_exist_where_the_runner_is_sent",
+    "shared/tests/test_review_cascade_owner.py::test_the_code_row_is_stage_2s_and_stage_1_has_none",
+    "shared/tests/test_review_cascade_owner.py::test_the_stage_1_evidence_gap_is_stated_as_correctness_not_cosmetic",
     "shared/tests/test_review_findings.py::test_a_category_less_layout_still_splits_into_findings",
     "shared/tests/test_review_findings.py::test_a_clean_external_review_yields_zero_findings_not_one_fabricated_one",
     "shared/tests/test_review_findings.py::test_a_long_finding_is_marked_when_shortened",
@@ -10368,6 +10666,16 @@
     "shared/tests/test_review_record.py::test_validate_rejects_an_unknown_review_type",
     "shared/tests/test_review_record.py::test_validate_rejects_an_unknown_status",
     "shared/tests/test_review_record.py::test_validate_rejects_findings_count_mismatch",
+    "shared/tests/test_review_record_campaign_shape.py::test_a_bare_delegated_disposition_is_rejected",
+    "shared/tests/test_review_record_campaign_shape.py::test_contract_shape_written_by_the_cli_passes_the_gate",
+    "shared/tests/test_review_record_campaign_shape.py::test_contract_table_lists_every_row_this_test_writes",
+    "shared/tests/test_review_record_campaign_shape.py::test_no_substitution_note_when_the_internal_cascade_actually_ran",
+    "shared/tests/test_review_record_campaign_shape.py::test_runner_may_not_close_code_completed_and_the_contract_says_so",
+    "shared/tests/test_review_record_campaign_shape.py::test_substitution_note_does_not_claim_doubt_was_skipped_when_it_ran",
+    "shared/tests/test_review_record_campaign_shape.py::test_the_code_row_cannot_be_written_twice",
+    "shared/tests/test_review_record_campaign_shape.py::test_the_gate_still_reports_what_the_substitution_costs",
+    "shared/tests/test_review_record_campaign_shape.py::test_the_table_never_lets_the_runner_close_an_internal_stage_completed",
+    "shared/tests/test_review_record_campaign_shape.py::test_unrecorded_doubt_blocks_the_push",
     "shared/tests/test_review_record_floor.py::test_external_alone_satisfies_the_floor",
     "shared/tests/test_review_record_floor.py::test_historical_shapes_still_pass",
     "shared/tests/test_review_record_floor.py::test_internal_alone_satisfies_the_floor",
