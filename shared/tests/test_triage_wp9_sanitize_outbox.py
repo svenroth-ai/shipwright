@@ -39,7 +39,7 @@ from triage import (  # noqa: E402
     append_triage_item,
     read_all_items,
 )
-from tools.triage_promote import dismiss, promote  # noqa: E402
+from tools.triage_promote import defer, dismiss, promote  # noqa: E402
 
 AGGREGATOR = _WORKTREE / "shared" / "scripts" / "tools" / "aggregate_triage.py"
 TRIAGE_CLI = _WORKTREE / "shared" / "scripts" / "tools" / "triage_cli.py"
@@ -175,6 +175,28 @@ def test_dismiss_outbox_only_item(project: Path) -> None:
     [item] = read_all_items(project)
     assert item["id"] == item_id and item["status"] == "dismissed"
     assert item["statusReason"] == "notRelevant"
+
+
+def test_defer_outbox_only_item(project: Path) -> None:
+    """The third decision reaches an outbox-only item too.
+
+    `_require_store`'s own comment calls this branch load-bearing (an idle-main
+    background producer appends there before the tracked store exists) and it
+    is the one place `mark_status` routes the write differently. `promote` and
+    `dismiss` were covered here; `defer` was not, while the ledger claimed no
+    testable behaviour was left untested.
+    """
+    item_id = _outbox_only_item(project)
+    result = defer(project, item_id=item_id, reason="later")
+    assert result["newStatus"] == "snoozed"
+    [item] = read_all_items(project)
+    assert item["id"] == item_id and item["status"] == "snoozed"
+    assert item["statusReason"] == "later"
+
+
+def test_defer_still_raises_filenotfound_when_neither_store_exists(project: Path) -> None:
+    with pytest.raises(FileNotFoundError):
+        defer(project, item_id="trg-12345678", reason="x")
 
 
 def test_promote_still_raises_filenotfound_when_neither_store_exists(project: Path) -> None:

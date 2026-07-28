@@ -103,10 +103,17 @@ def test_defer_refuses_control_characters_in_the_reason(
 def test_defer_refuses_an_already_decided_item(
     project: Path, item: str, already: str,
 ) -> None:
+    """Asserted on the stored BYTES, not the resolved status.
+
+    For ``already == "snoozed"`` a status assertion cannot fail: dropping the
+    guard would append a second `snoozed` event and the resolved status would
+    still read `snoozed`, so the test would stay green with the guard gone.
+    """
     mark_status(project, item, new_status=already, by="x", reason="r")
+    before = _store(project)
     with pytest.raises(ValueError, match="only `triage` is"):
         defer(project, item_id=item, reason="later")
-    assert _only(project)["status"] == already
+    assert _store(project) == before
 
 
 def test_defer_unknown_id_raises_key_error(project: Path, item: str) -> None:
@@ -174,9 +181,10 @@ def test_cli_defer_refuses_an_already_decided_item(
     project: Path, item: str,
 ) -> None:
     mark_status(project, item, new_status="dismissed", by="x", reason="r")
+    before = _store(project)
     result = _cli(project, "defer", item, "--reason", "later")
     assert result.returncode == 2
-    assert _only(project)["status"] == "dismissed"
+    assert _store(project) == before
 
 
 # ---------------------------------------------------------------------------
@@ -267,19 +275,17 @@ def test_a_stored_newline_cannot_forge_a_listing_row(
     assert "\t" not in out
 
 
-def test_the_documents_no_longer_say_the_terminal_cannot_defer() -> None:
-    """AC-9 — three documents asserted the CLI had no third decision."""
-    glossary = (_WORKTREE / "shared" / "glossary.md").read_text(encoding="utf-8")
-    assert "`triage_cli.py` has none" not in glossary
-    for doc in ("guide.md", "security-ci-setup.md"):
-        text = (_WORKTREE / "docs" / doc).read_text(encoding="utf-8")
-        assert "triage_cli.py defer" in text, doc
-
-
 def test_list_json_stays_open_only_when_an_item_is_deferred(
     project: Path, item: str,
 ) -> None:
-    """AC-6 — the Command Center pins this array byte-for-byte."""
+    """AC-6 — the machine contract stays open-only.
+
+    Pins only that the array stays open-only. The Command Center deep-equals a
+    committed snapshot that a human regenerates, and no CI job in either
+    repository re-runs this command — so ANY other drift here, including a
+    renamed field, is caught by neither side. The earlier "byte-for-byte"
+    wording overstated that badly.
+    """
     open_id = append_triage_item(
         project, source="phaseQuality", severity="low", kind="bug",
         title="still open", detail="d",

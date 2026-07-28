@@ -1,11 +1,11 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-07-27-changelog-aggregator-idempotency",
+    "run_id": "iterate-2026-07-27-triage-defer-review-followup",
     "date": "2026-07-27",
     "unit": {
       "status": "passed",
-      "passed": 5575,
-      "total": 5587,
+      "passed": 5873,
+      "total": 5885,
       "skipped": 12
     },
     "integration": {
@@ -14,215 +14,146 @@
       "total": 422
     },
     "pgtap": {
-      "status": "skipped",
+      "status": "not_run",
       "passed": 0,
       "total": 0
     },
     "e2e": {
       "status": "passed",
-      "passed": 22,
-      "total": 22
+      "passed": 122,
+      "total": 122
     },
     "design_fidelity": {
-      "status": "skipped",
+      "status": "not_run",
       "passed": 0,
       "total": 0
     },
     "smoke": {
-      "status": "skipped"
+      "status": "not_run"
     },
+    "degraded": [
+      {
+        "condition": "external LLM review not run",
+        "detail": "'skip' at small complexity per the Phase Matrix. Scope came from the two subagent passes instead, which produced 22 findings including two highs; both rows are recorded `completed` with the full disposition table in .shipwright/planning/iterate/iterate-2026-07-27-triage-defer-review-followup/subagent_reviews.md."
+      },
+      {
+        "condition": "shared/scripts/tools/triage_promote.py registered over the 300-line limit",
+        "detail": "304 lines, state grandfathered, per the 2026-07-19 convention that a file drifting just past the limit on coherent content is registered rather than trimmed. It was first trimmed to 299; the Stage-3 pass showed that removed load-bearing detail (a runnable uv-run prefix, the 200-vs-500 rationale, the newline enumeration), so the trim was reverted and the crossing registered honestly."
+      }
+    ],
     "surface_verification": {
       "surface": "cli",
-      "runner": "uv run python .shipwright/planning/iterate/iterate-2026-07-27-changelog-aggregator-idempotency/e2e_release_rerun.py",
+      "runner": "uv run pytest shared/tests/test_triage_render_rows.py shared/tests/test_triage_defer.py shared/tests/test_triage_docs_consistency.py shared/tests/test_triage_wp9_sanitize_outbox.py shared/tests/test_triage_cli.py shared/tests/test_triage_cli_json.py shared/tests/test_triage_promote.py -v",
       "exit_code": 0,
-      "tests_run": 22,
-      "evidence_path": ".shipwright/runs/iterate-2026-07-27-changelog-aggregator-idempotency/surface_verification.log",
-      "timestamp": "2026-07-27T17:32:01.152Z",
-      "attempts": 1
+      "tests_run": 122,
+      "evidence_path": ".shipwright/runs/iterate-2026-07-27-triage-defer-review-followup/surface_verification.json",
+      "timestamp": "2026-07-27T20:40:00.000Z"
     },
     "test_completeness": {
       "status": "complete",
       "behaviors": [
         {
-          "behavior": "No section for the version -> insert",
+          "behavior": "a reason that renders blank (spaces, tab, newline, zero-width) reads (no reason recorded)",
           "disposition": "tested",
-          "evidence": "test_changelog_aggregation_idempotency.py::test_first_release_reports_inserted PASSED"
+          "evidence": "test_triage_render_rows.py::test_a_reason_that_renders_to_nothing_says_so[6 cases] PASSED"
         },
         {
-          "behavior": "Body matches, same date -> one section, byte-identical file",
+          "behavior": "a real reason is still printed verbatim",
           "disposition": "tested",
-          "evidence": "test_changelog_aggregation_idempotency.py::test_rerun_after_interrupted_release_writes_the_version_once PASSED"
+          "evidence": "test_triage_render_rows.py::test_a_real_reason_is_still_printed PASSED"
         },
         {
-          "behavior": "Body matches, later date -> one section carrying the new date",
+          "behavior": "a deferred row is marked deferred at a fixed position",
           "disposition": "tested",
-          "evidence": "test_changelog_aggregation_idempotency.py::test_rerun_resumed_on_a_later_date_still_writes_the_version_once PASSED"
+          "evidence": "test_triage_render_rows.py::test_a_deferred_row_is_marked_as_deferred PASSED"
         },
         {
-          "behavior": "The converging re-run consumes the drop files",
+          "behavior": "an open row is marked open at a fixed position",
           "disposition": "tested",
-          "evidence": "test_changelog_aggregation_idempotency.py::test_converging_rerun_consumes_the_drop_files PASSED"
+          "evidence": "test_triage_render_rows.py::test_an_open_row_is_marked_open PASSED"
         },
         {
-          "behavior": "unchanged skips the write and still consumes the drops",
+          "behavior": "the token cannot be forged by an untrusted source or dedupKey",
           "disposition": "tested",
-          "evidence": "test_changelog_aggregation_idempotency.py::test_converging_rerun_reports_unchanged_without_writing PASSED"
+          "evidence": "test_triage_render_rows.py::test_a_forged_marker_in_an_untrusted_field_cannot_reclassify_a_row PASSED"
         },
         {
-          "behavior": "Completed release re-run is a clean no-op; refusal unreachable",
+          "behavior": "every entry row in the real listing declares which kind it is, by prefix",
           "disposition": "tested",
-          "evidence": "test_changelog_aggregation_idempotency.py::test_rerunning_a_completed_release_is_a_clean_noop PASSED"
+          "evidence": "test_triage_render_rows.py::test_the_listing_never_repeats_a_row_shape_across_the_two_meanings PASSED"
         },
         {
-          "behavior": "Body mismatch from a partially consumed drop set -> refuse",
+          "behavior": "a deferred field cannot grow without limit (title / reason / source)",
           "disposition": "tested",
-          "evidence": "test_changelog_aggregation_refusal.py::test_partial_unlink_refuses_instead_of_deleting_released_bullets PASSED"
+          "evidence": "test_triage_render_rows.py::test_a_deferred_field_cannot_grow_without_limit[3 cases] PASSED"
         },
         {
-          "behavior": "Hand-edited section -> same refusal",
+          "behavior": "only what exceeds the cap is clipped (119 / 120 / 121)",
           "disposition": "tested",
-          "evidence": "test_changelog_aggregation_refusal.py::test_hand_edited_section_refuses PASSED"
+          "evidence": "test_triage_render_rows.py::test_only_what_exceeds_the_cap_is_clipped[3 cases] PASSED"
         },
         {
-          "behavior": "More than one section for the version -> refuse, reporting the count",
+          "behavior": "a dedupKey of only control characters is still emitted",
           "disposition": "tested",
-          "evidence": "test_changelog_aggregation_refusal.py::test_duplicate_sections_refuse_with_the_count PASSED"
+          "evidence": "test_triage_render_rows.py::test_a_dedup_key_of_only_control_characters_is_still_emitted PASSED"
         },
         {
-          "behavior": "Heading carrying a marking a re-render would erase -> refuse",
+          "behavior": "an absent dedupKey is still omitted",
           "disposition": "tested",
-          "evidence": "test_changelog_aggregation_refusal.py::test_yanked_marker_on_the_heading_refuses PASSED"
+          "evidence": "test_triage_render_rows.py::test_an_absent_dedup_key_is_still_omitted PASSED"
         },
         {
-          "behavior": "Aggregating the Unreleased block -> refuse",
+          "behavior": "--help mentions the deferred section",
           "disposition": "tested",
-          "evidence": "test_changelog_aggregation_refusal.py::test_aggregating_the_unreleased_block_refuses PASSED"
+          "evidence": "test_triage_render_rows.py::test_the_list_help_mentions_the_deferred_section PASSED"
         },
         {
-          "behavior": "Every refusal leaves changelog bytes AND every drop untouched",
+          "behavior": "refusing a decision on an already-decided item leaves the stored bytes unchanged (library)",
           "disposition": "tested",
-          "evidence": "asserted in all 5 refusal tests in test_changelog_aggregation_refusal.py PASSED"
+          "evidence": "test_triage_defer.py::test_defer_refuses_an_already_decided_item[3 cases] PASSED"
         },
         {
-          "behavior": "The two refusal arms are distinguishable by message",
+          "behavior": "refusing a decision on an already-decided item leaves the stored bytes unchanged (CLI)",
           "disposition": "tested",
-          "evidence": "test_changelog_aggregation_refusal.py::test_partial_unlink_refuses_instead_of_deleting_released_bullets + ::test_duplicate_sections_refuse_with_the_count PASSED"
+          "evidence": "test_triage_defer.py::test_cli_defer_refuses_an_already_decided_item PASSED"
         },
         {
-          "behavior": "Dry-run previews a replace without writing or unlinking",
+          "behavior": "an outbox-only item is deferrable, as it is promotable and dismissable",
           "disposition": "tested",
-          "evidence": "test_changelog_aggregation_refusal.py::test_dry_run_reports_the_replace_without_writing_or_unlinking PASSED"
+          "evidence": "test_triage_wp9_sanitize_outbox.py::test_defer_outbox_only_item PASSED"
         },
         {
-          "behavior": "Dry-run still refuses, with a non-zero CLI exit",
+          "behavior": "defer raises FileNotFoundError when neither store exists",
           "disposition": "tested",
-          "evidence": "test_changelog_aggregation_refusal.py::test_dry_run_still_refuses_a_state_that_would_be_refused + ::test_dry_run_cli_also_exits_nonzero_on_a_refusal PASSED"
+          "evidence": "test_triage_wp9_sanitize_outbox.py::test_defer_still_raises_filenotfound_when_neither_store_exists PASSED"
         },
         {
-          "behavior": "Both refusals reach the operator as non-zero exit + stderr",
+          "behavior": "the three documents document the defer command without denying it",
           "disposition": "tested",
-          "evidence": "test_changelog_aggregation_refusal.py::test_cli_exits_nonzero_on_duplicate_sections + ::test_cli_exits_nonzero_on_content_mismatch PASSED"
+          "evidence": "test_triage_docs_consistency.py::test_the_documents_describe_the_defer_subcommand PASSED"
         },
         {
-          "behavior": "Refusal text is ASCII, so it survives a Windows console pipe",
+          "behavior": "list --json is unchanged by all of the above",
           "disposition": "tested",
-          "evidence": "test_changelog_aggregation_refusal.py::test_cli_exits_nonzero_on_content_mismatch (err.encode ascii) PASSED"
+          "evidence": "test_triage_cli_json.py (8 tests) + test_triage_defer.py::test_list_json_stays_open_only_when_an_item_is_deferred PASSED"
         },
         {
-          "behavior": "Replaced span bounded: trailing prose + link footer survive, once, in order",
+          "behavior": "dismiss and promote are unaffected by the render and docstring changes",
           "disposition": "tested",
-          "evidence": "test_changelog_aggregation_idempotency.py::test_replace_preserves_trailing_prose_and_link_footer PASSED"
-        },
-        {
-          "behavior": "Trailing whitespace is formatting, not a content conflict",
-          "disposition": "tested",
-          "evidence": "test_changelog_aggregation_idempotency.py::test_trailing_whitespace_in_the_recorded_section_still_converges PASSED"
-        },
-        {
-          "behavior": "CRLF vs LF is formatting, not a content conflict",
-          "disposition": "tested",
-          "evidence": "test_changelog_aggregation_idempotency.py::test_crlf_recorded_section_matches_an_lf_rendered_one PASSED"
-        },
-        {
-          "behavior": "A multi-line drop bullet still converges (symmetric comparison)",
-          "disposition": "tested",
-          "evidence": "test_changelog_aggregation_idempotency.py::test_a_multi_line_bullet_still_converges PASSED"
-        },
-        {
-          "behavior": "insert_section terminates an unterminated last line",
-          "disposition": "tested",
-          "evidence": "test_changelog_sections_shared.py::test_insert_terminates_an_unterminated_last_line PASSED"
-        },
-        {
-          "behavior": "Lowercase unreleased-block bullets are still reported to the operator",
-          "disposition": "tested",
-          "evidence": "test_changelog_sections_shared.py::test_lowercase_unreleased_bullets_are_still_reported PASSED"
-        },
-        {
-          "behavior": "A new release lands above prose trailing an Unreleased-only file",
-          "disposition": "tested",
-          "evidence": "test_changelog_sections_shared.py::test_new_release_lands_above_prose_trailing_an_unreleased_block PASSED"
-        },
-        {
-          "behavior": "ONE implementation: no plugin-local copy, no heading pattern in the aggregator",
-          "disposition": "tested",
-          "evidence": "test_changelog_sections_shared.py::test_no_plugin_local_copy_survives + ::test_aggregator_has_no_second_insertion_predicate + ::test_aggregator_carries_no_section_heading_pattern_of_its_own + ::test_the_module_lives_at_shared_scripts_top_level PASSED"
-        },
-        {
-          "behavior": "The plugin writer resolves the SHARED module (ADR-045 boundary)",
-          "disposition": "tested",
-          "evidence": "test_changelog_sections_shared.py::test_plugin_writer_resolves_changelog_sections_from_shared PASSED (clean subprocess)"
-        },
-        {
-          "behavior": "Missing shared/ raises an actionable ImportError, not FileNotFoundError",
-          "disposition": "tested",
-          "evidence": "plugins/shipwright-changelog/tests/test_shared_sections_loader.py::test_missing_shared_raises_an_actionable_import_error PASSED"
-        },
-        {
-          "behavior": "A failed load leaves no half-initialised module in sys.modules",
-          "disposition": "tested",
-          "evidence": "plugins/shipwright-changelog/tests/test_shared_sections_loader.py::test_a_failed_load_does_not_leave_a_broken_module_registered PASSED"
-        },
-        {
-          "behavior": "Predicates load lazily, so only the splice depends on shared/",
-          "disposition": "tested",
-          "evidence": "plugins/shipwright-changelog/tests/test_shared_sections_loader.py::test_the_writer_only_needs_the_shared_module_when_it_splices PASSED"
-        },
-        {
-          "behavior": "section_action reports all four values honestly",
-          "disposition": "tested",
-          "evidence": "test_changelog_aggregation_idempotency.py: inserted / replaced / unchanged / none each asserted PASSED"
-        },
-        {
-          "behavior": "End-to-end: the real release CLI, re-run after an interruption",
-          "disposition": "tested",
-          "evidence": "F0.5 e2e_release_rerun.py: 22/22 checks, exit 0 (surface=cli)"
-        },
-        {
-          "behavior": "The marketplace-cache layout resolves parents[4]",
-          "disposition": "untestable",
-          "reason_code": "requires-manual-visual-judgment",
-          "reason": "Reproducing the cache tree in a fixture would assert my own fixture, not the installed layout. Verified against the real cache (shared scripts are delivered there) and by the compliance plugin already depending on the same hop in production."
-        },
-        {
-          "behavior": "FR-01.09 acceptance-criterion widening",
-          "disposition": "untestable",
-          "reason_code": "covered-by-existing-test",
-          "reason": "A spec sentence is prose. What it claims is exactly the tested behaviours above; it was narrowed after the review cascade so that it claims nothing the code does not deliver."
+          "evidence": "test_triage_promote.py (38) + test_triage_defer.py::test_dismiss_is_unchanged_by_the_shared_extraction PASSED"
         }
       ],
       "counts": {
-        "testable": 31,
-        "tested": 31,
-        "untestable": 2,
+        "testable": 18,
+        "tested": 18,
+        "untestable": 0,
         "untested_testable": 0
       },
       "enumeration_basis": {
-        "acs": 14,
-        "covered_acs": 14
+        "acs": 10,
+        "covered_acs": 10
       }
-    },
-    "degraded": []
+    }
   },
   "coverage": {
     "total": 80.2,

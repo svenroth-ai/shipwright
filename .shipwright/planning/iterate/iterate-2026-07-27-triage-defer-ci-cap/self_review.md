@@ -45,16 +45,24 @@
    `triage_cli.py` 249, `triage_promote.py` 298, `triage_render.py` 92,
    `mappers.py` 220, the two new test files 133 and 275.
 
-7. **Affected Boundaries: pass.** Three, all listed in the spec. The one that
-   matters is `list --json`, pinned byte-for-byte by a fixture in the WebUI
+7. **Affected Boundaries: pass** *(claim corrected 2026-07-27 — the pin is
+   field-by-field, in the other repository, after a manual sync; not
+   byte-for-byte, and nothing in this repo pins the bytes at all)*. Three, all
+   listed in the spec. The one that matters is `list --json`, pinned by a fixture in the WebUI
    repo — the deferred section is human-output only and a test asserts the
    JSON array stays open-only *with a deferred item present*. No new stored
    format: `snoozed` was already in `triage.STATUSES` and already handled by
    `read_all_items`, `triage_gc` and `aggregate_triage`.
 
-8. **Test Hygiene Probe: pass.** No `pytest.skip`, no environment-conditional
-   assertion, no `xfail`. Both new files are self-contained under `tmp_path`
-   and touch no repo state. Neither imports across a plugin boundary, so the
+8. **Test Hygiene Probe: pass, with one claim corrected 2026-07-27.** No
+   `pytest.skip`, no environment-conditional assertion, no `xfail`. "Both new
+   files are self-contained under `tmp_path` and touch no repo state" was
+   **false**: `test_the_documents_no_longer_say_the_terminal_cannot_defer`
+   read three real repository files, so a docs-only edit could turn a
+   behaviour test red. Its assertions were also weak enough to pass for a
+   document stating the command does not exist. Split into
+   `test_triage_docs_consistency.py` and strengthened by
+   iterate-2026-07-27-triage-defer-review-followup. Neither imports across a plugin boundary, so the
    `cross_plugin` marker does not apply.
 
 ## Observed but deliberately not fixed
@@ -63,6 +71,9 @@
   duplicate `tty_sanitize.py` was extracted to end. It is not an owned file
   here and the copy is not what this card is about; noted rather than swept
   in, so a future extraction has a starting point.
-- Neither surface can un-defer. That is real, matches the Command Center
-  exactly, and is recorded in the spec's Out of Scope rather than left to be
-  discovered.
+- Neither surface can un-defer. *(Claim corrected 2026-07-27: the STORE
+  permits it — `mark_status(..., new_status="triage")` is legal — so only the
+  SUBCOMMAND is missing, and stating it as impossible pushed a mis-parking
+  operator toward hand-editing `triage.jsonl`. "Matches the Command Center
+  exactly" was also a cross-repo parity assertion of the kind this run's
+  AC-8 removes. Carried by `trg-51f8e2a1`.)*
