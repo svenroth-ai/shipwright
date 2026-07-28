@@ -57,6 +57,7 @@ from markdown_table import escape_cell  # noqa: E402
 sys.path.insert(0, str(PLUGIN_ROOT / "scripts" / "lib"))
 from coverage_report import coverage_banner, coverage_table  # noqa: E402
 from coverage_sanitize import sanitize_coverage  # noqa: E402
+from security_triage_emit import emit_scan_card  # noqa: E402
 from scan_coverage import with_prompt_injection_row  # noqa: E402
 
 # ---------------------------------------------------------------------------
@@ -580,10 +581,15 @@ def main() -> int:
     coverage = with_prompt_injection_row(coverage, ran=prompt_scan_read)
 
     # Iterate-2 AC-1: mirror findings into .shipwright/triage.jsonl before
-    # report rendering. Best-effort — emission failures never block the
+    # report rendering, plus the collapsed scan card carrying the severity split
+    # and the scope question. Best-effort — emission failures never block the
     # report.
     try:
         _emit_findings_to_triage(Path(args.project_root), findings)
+        emit_scan_card(
+            Path(args.project_root), findings,
+            coverage=coverage, repo=args.repo, report_path=args.output,
+        )
     except Exception as exc:  # noqa: BLE001
         sys.stderr.write(
             f"[security] triage emission top-level failed: "

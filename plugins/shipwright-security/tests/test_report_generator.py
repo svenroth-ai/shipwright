@@ -218,9 +218,6 @@ class TestMainCLI:
             "--input", str(findings_file),
             "--output", str(output_file),
             "--pr-mode",
-            # Without this the emitter's `--project-root` default of "." makes it
-            # write .shipwright/triage.jsonl into the PLUGIN directory.
-            "--project-root", str(tmp_path),
         ]
         with patch.object(sys, "argv", argv):
             rc = report_gen.main()
@@ -253,9 +250,6 @@ class TestMainCLI:
             "--prompt-risks", str(prompt_file),
             "--output", str(output_file),
             "--pr-mode",
-            # Without this the emitter's `--project-root` default of "." makes it
-            # write .shipwright/triage.jsonl into the PLUGIN directory.
-            "--project-root", str(tmp_path),
         ]
         with patch.object(sys, "argv", argv):
             rc = report_gen.main()

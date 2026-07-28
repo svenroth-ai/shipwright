@@ -47,22 +47,20 @@ def coverage_banner(coverage: list[dict[str, Any]] | None) -> list[str]:
     """
     rows = [r for r in (coverage or []) if isinstance(r, dict)]
     if not rows:
-        return [
+        unknown = (
             "> ⚠️ **Coverage not reported** — this scan record does not say "
             "which classes of weakness were checked, so coverage is unknown. "
-            "Absence of findings here is NOT evidence that a class is clean.",
-            "",
-        ]
+            "Absence of findings here is NOT evidence that a class is clean."
+        )
+        return [unknown, ""]
     if is_complete(rows):
         return []
     unchecked = unchecked_classes(rows)
-    # Degraded classes are named HERE too, not only in the degraded banner.
-    # Today every degraded row comes from a scan_errors marker, so the two
-    # overlap — but the banner renders from scan_errors while this renders from
-    # the MANIFEST, and Part 2 adds a degradation with no marker behind it (a
-    # project gitleaks config carrying no effective rules runs fine and finds
-    # almost nothing). Naming degraded rows here means that case arrives already
-    # warned about instead of silently changing a status.
+    # Degraded classes are named HERE too, not only in the degraded banner. The
+    # degraded banner renders from `scan_errors`; a degradation can now arrive
+    # with NO marker behind it — a project gitleaks config carrying no effective
+    # rules runs fine and finds almost nothing — so relying on the other banner
+    # would leave that case with a changed status and no warning anywhere.
     degraded = [
         str(r["class"]) for r in rows
         if r.get("status") == "degraded" and r.get("class")
@@ -78,12 +76,12 @@ def coverage_banner(coverage: list[dict[str, Any]] | None) -> list[str]:
             + ", ".join(class_label(c) for c in degraded))
     if not parts:
         return []
-    return [
+    banner = (
         f"> ⚠️ **Incomplete Coverage** — this scan {'; and '.join(parts)}. "
         "Those classes read as clean below only because nothing reliable "
-        "looked at them. See the Coverage table.",
-        "",
-    ]
+        "looked at them. See the Coverage table."
+    )
+    return [banner, ""]
 
 
 def coverage_table(coverage: list[dict[str, Any]] | None) -> list[str]:

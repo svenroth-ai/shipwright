@@ -1,0 +1,1 @@
+Security: `compare_scans.py` reports fixed / new / still-open **only for weakness classes both runs actually covered** — a finding that vanished because its scanner was uninstalled is no longer credited as a fix. Classes either run did not check are listed as not-comparable with the reason.

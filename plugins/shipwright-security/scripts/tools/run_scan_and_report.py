@@ -60,9 +60,10 @@ except ImportError as exc:  # pragma: no cover - import safety
 
 from atomic_write import durable_atomic_write  # noqa: E402
 from redact import redact_findings  # noqa: E402
+from gitleaks_inspect import class_degradations as gitleaks_degradations  # noqa: E402
 from scan_coverage import build_coverage  # noqa: E402
 from scan_history import HISTORY_DIRNAME, new_scan_id, prune_history  # noqa: E402
-from security_triage_emit import emit_findings_to_triage  # noqa: E402
+from security_triage_emit import emit_findings_to_triage, emit_scan_card  # noqa: E402
 
 import generate_security_report as gsr  # noqa: E402
 
@@ -227,6 +228,8 @@ def run(*, project_root: Path, repo: str = "unknown", full_evidence: bool = Fals
     coverage = build_coverage(
         available=raw_caps if isinstance(raw_caps, (set, frozenset, list, tuple)) else (),
         scan_errors=scan_errors,
+        # Unconditional is safe: run() returns early for non-OSS backends.
+        class_degradations=gitleaks_degradations(target),
     )
 
     # Default-on redaction unless explicitly opted out
@@ -260,6 +263,10 @@ def run(*, project_root: Path, repo: str = "unknown", full_evidence: bool = Fals
     # Mirror the REDACTED findings into triage. Best-effort — a triage failure
     # never blocks the report already on disk.
     emit_findings_to_triage(project_root, findings)
+    emit_scan_card(
+        project_root, findings, coverage=coverage, repo=repo,
+        report_path=f"{REPORTS_DIR}/{LATEST_MD}",  # POSIX: pasted into a shell
+    )
 
     summary = structured_success(data={
         "command": "run_scan_and_report",

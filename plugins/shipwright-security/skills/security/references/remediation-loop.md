@@ -82,3 +82,36 @@ Final status is written to `shipwright_security_config.json` for compliance.
 - Security findings in the Traceability Matrix (RTM)
 - Remediation status in Test Evidence Report
 - Dependency vulnerabilities in SBOM
+
+## Scope gate (SKILL.md Step 2.5)
+
+The operator is asked how far to go BEFORE anything is fixed. Deciding silently
+that the low-severity findings do not matter is the tool making the user's call.
+
+```
+Security scan: 22 findings.
+  critical: 2   high: 3   medium: 10   low: 7   info: 0
+  Not checked: Vulnerable dependencies (SCA), Leaked secrets
+  (those classes are not clean — nothing looked at them)
+How far should I go?
+```
+
+Tier rules:
+
+- One option per severity that actually HAS findings, carrying its real
+  cumulative count — **Everything (22)**, **Critical and above (2)**,
+  **High and above (5)**.
+- Never offer an empty tier, and never a tier that is just "everything" under
+  another name. `security_card.scope_options()` renders exactly this list and is
+  the SSoT; the card's launch payload carries the same question so an agent that
+  picks the card up asks it too.
+
+Non-interactive (`CI`, `SHIPWRIGHT_NON_INTERACTIVE`, or no TTY) — there is nobody
+to ask. Use **critical and high** and record it as *"no operator answer was
+available; scope defaulted to critical and high"*, never as a judgement that the
+rest did not matter.
+
+Carry the chosen scope into Steps 3-5: findings outside it get
+`_remediation_status: "deferred"` and land in the `remediation.deferred` count of
+`shipwright_security_config.json`, so the next scan sees them again — never
+`fixed`, never silently dropped.

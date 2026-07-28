@@ -158,6 +158,12 @@ tracked-files-in-gitignored-paths).
 - Trivy: `trivy fs --format json --scanners vuln --skip-dirs <each-default> {target}`
 - Gitleaks: `gitleaks detect --report-format json -s {target} --report-path <temp-json-report> --config <temp-toml-with-allowlist>` — report goes to a temp FILE the plugin reads back (gitleaks has no stdout-report mode; `--report-path -` writes a literal file named `-`, not stdout)
 
+**Accepted findings are answered once per repository.** With a `.gitleaks.toml` at
+the scanned root the generated config **extends** it (`[extend] path`) rather than
+replacing it, so the local scan honours the same accepted findings as the host.
+Never emit both `extend.useDefault` and `extend.path` — gitleaks aborts. A project
+config bringing no rules marks `secrets` `degraded`, not `covered`.
+
 **Coverage manifest — name what was NOT checked.** A crashing tool already fails
 the run; one that was never installed used to be invisible, so a machine with one
 scanner read clean for every class. Every scan records a row per weakness class
@@ -196,14 +202,22 @@ Each finding is automatically classified by `aikido_client.py`:
 | `needs-review` | Architecture issues, business logic flaws | User interview |
 | `informational` | Low-severity, best practices | Log only |
 
-Show classification summary:
-```
-Findings: 12 total
-  auto-fixable:    3  (will fix automatically)
-  agent-fixable:   4  (security-fixer subagent)
-  needs-review:    2  (will ask you)
-  informational:   3  (logged only)
-```
+Show the classification summary — `Findings: 12 total` plus the per-class counts
+(auto-fixable → fixed directly, agent-fixable → subagent, needs-review → asked,
+informational → logged).
+
+---
+
+## Step 2.5: Scope Gate — state the counts, ask how far to go (MANDATORY)
+
+**Never start fixing without asking how far to go** — deciding silently that the
+low-severity findings do not matter is the tool making the user's call. Runs in
+BOTH modes, from a triage card or a direct invocation alike.
+
+Before Step 3, print the per-severity counts plus the unchecked classes and ask via
+**AskUserQuestion**, offering only tiers that actually contain findings, each with
+its real count. Findings outside the chosen scope become `deferred`. Prompt shape,
+tier rules and the non-interactive default: `references/remediation-loop.md`.
 
 ---
 
@@ -227,16 +241,11 @@ For each `agent-fixable` finding, invoke the `security-fixer` subagent:
 
 ```
 Agent: security-fixer
-Input: {
-  "severity": "high",
-  "type": "sast",
+Input: {"severity": "high", "type": "sast", "cwe": "CWE-798",
   "rule": "python.lang.security.hardcoded-credentials",
-  "cwe": "CWE-798",
-  "file": "scripts/api.py",
-  "line": 42,
+  "file": "scripts/api.py", "line": 42,
   "description": "Hardcoded API key",
-  "remediation_hint": "Move to environment variable"
-}
+  "remediation_hint": "Move to environment variable"}
 ```
 
 Process the subagent's response:
@@ -244,13 +253,9 @@ Process the subagent's response:
 - If `escalation_reason` → move to `needs-review` category
 - **Max 3 retries per finding.**
 
-**Suppression syntax (when the fix is a justified `# nosemgrep:` comment):**
-read `references/suppression-syntax.md` before adding the comment — Semgrep
-requires the suppression to sit on the matched line or **immediately** above
-it; any intervening comment silently breaks the attribution. The reference
-also covers the multi-line-call kwarg trap, multi-rule suppression, and the
-post-merge verification recipe (`pass` on the workflow gate does **not**
-mean zero findings — only zero criticals).
+**Suppression syntax (`# nosemgrep:`):** read `references/suppression-syntax.md`
+first — the suppression must sit on the matched line or *immediately* above it,
+and any intervening comment silently breaks the attribution.
 
 ---
 
@@ -287,7 +292,17 @@ Output:
 
 The wrapper redacts secret evidence by default (Gitleaks `match`/`secret`/`commit`/`author`/`email` fields; high-entropy strings in `description` / `remediation_hint`). Use `--full-evidence` to retain raw values for explicit local debugging — refused when `CI` env is set.
 
-After the wrapper exits, read `{project_root}/.shipwright/securityreports/latest.json` for the structured scan summary (total_findings, by_severity, by_source, risk_level).
+After the wrapper exits, read `{project_root}/.shipwright/securityreports/latest.json` for the structured scan summary (total_findings, by_severity, by_source, risk_level, **coverage**). The wrapper also emits ONE `security-scan:{repo}` triage card carrying the severity split, the unchecked classes, and the scope question.
+
+**Compare against the previous scan (optional):**
+
+```bash
+uv run "{plugin_root}/scripts/tools/compare_scans.py" --project-root {project_root}
+```
+
+Reports fixed / new / still-open **only for classes both runs covered**; anything
+else is not-comparable, because a finding that vanished when its tool was
+uninstalled was never fixed. Exit 2 = no previous scan.
 
 **Migration note:** projects from before this iterate may have a `securityreports/` directory at project root. The wrapper detects it and emits a one-time stderr notice on the first run pointing at the new location; the old folder is gitignored, stale, and safe to delete (or `git mv securityreports .shipwright/` if you want to preserve archived scans).
 
@@ -304,22 +319,16 @@ Write results to `shipwright_security_config.json` in the project root:
 
 ```json
 {
-  "scan_date": "2026-03-26T10:00:00Z",
-  "repo": "svenroth-ai/claude-skills",
-  "scanner": "aikido",
+  "scan_date": "2026-03-26T10:00:00Z", "repo": "owner/name", "scanner": "aikido",
   "total_findings": 12,
   "by_severity": {"critical": 1, "high": 3, "medium": 5, "low": 3},
-  "remediation": {
-    "fixed": 5,
-    "declined": 1,
-    "deferred": 2,
-    "open": 4
-  },
-  "findings": [...],
-  "session_id": "..."
+  "coverage": [{"class": "sast", "tool": "semgrep", "status": "covered", "detail": null}],
+  "remediation": {"fixed": 5, "declined": 1, "deferred": 2, "open": 4},
+  "findings": [], "session_id": "..."
 }
 ```
 
+Findings outside the Step 2.5 scope are `deferred`, not `open` and not dropped.
 This config is consumed by `/shipwright-compliance` for traceability.
 
 ---
@@ -341,21 +350,14 @@ uv run "{plugin_root}/scripts/tools/finalize_security_compliance.py" \
   --scan-id "${scan_id}"
 ```
 
-Helper output is structured JSON:
+Output is structured JSON: `{"committed": true, "reason", "commit_sha",
+"regenerated"}`, or `committed: false` with the reason — compliance unchanged,
+standalone mode, or a CI / non-interactive environment.
 
-```json
-{"committed": true,  "reason": "...", "commit_sha": "...", "regenerated": [...]}
-{"committed": false, "reason": "compliance unchanged after security scan — no diff to commit"}
-{"committed": false, "reason": "standalone mode (no shipwright_project_config.json) — pipeline-only step"}
-{"committed": false, "reason": "CI / non-interactive env detected — step skipped"}
-```
-
-**Skip Step 7.5 entirely** (the helper does this internally — listed
-here for operator awareness) when any of:
-
-- `shipwright_project_config.json` absent → standalone mode (Step 8 hands off to `/shipwright-iterate` for the fix commits)
-- `os.environ.get("CI")` truthy → CI workflows don't drive interactive commits
-- `os.environ.get("SHIPWRIGHT_NON_INTERACTIVE")` truthy
+**Skip Step 7.5 entirely** (the helper does this internally — listed here for
+operator awareness) when `shipwright_project_config.json` is absent (standalone —
+Step 8 hands off to `/shipwright-iterate`), or when `CI` /
+`SHIPWRIGHT_NON_INTERACTIVE` is truthy.
 
 When `committed=true`, the new commit's body carries
 `Run-ID: security-<scan_id>` so the audit recognizes it as the new

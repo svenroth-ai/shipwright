@@ -142,6 +142,7 @@ def build_coverage(
     requested: Iterable[str] | None = None,
     scan_errors: Iterable[dict[str, Any]] | None = None,
     class_tools: dict[str, str] | None = None,
+    class_degradations: dict[str, str] | None = None,
 ) -> list[dict[str, Any]]:
     """Derive the coverage manifest for one scan.
 
@@ -150,6 +151,15 @@ def build_coverage(
         requested: the caller's ``--scan-types`` filter, or ``None`` for "all".
         scan_errors: degraded-leg markers recorded by the backend.
         class_tools: class -> tool map override (defaults to the OSS map).
+        class_degradations: ``class -> reason`` for a class whose tool RAN but
+            whose result cannot be trusted — e.g. a project gitleaks config that
+            leaves the secret scan with no effective rules. Such a class is
+            forced to ``degraded``, never left ``covered`` with a footnote: a
+            result that cannot be trusted is not a clean class. Applied ONLY to a
+            class that would otherwise be ``covered`` — ``degraded`` outranks
+            every other status, so tagging a class the caller scoped out (or
+            whose tool is absent) would replace an accurate status with a false
+            one.
 
     Status precedence is ``degraded`` > ``not_requested`` > ``not_available`` >
     ``covered``. ``degraded`` wins outright because a recorded marker is hard
@@ -165,6 +175,13 @@ def build_coverage(
         None if requested is None else {str(c).strip().lower() for c in requested})
     degraded = _degraded_by_class(
         scan_errors, {v: k for k, v in tools.items()})
+    for cls, reason in (class_degradations or {}).items():
+        would_be_covered = cls in available_set and (
+            requested_set is None or cls in requested_set)
+        if would_be_covered:
+            # An explicit scan_errors marker still wins: it is evidence about
+            # THIS invocation, not about the configuration.
+            degraded.setdefault(cls, reason)
 
     # CLASS_ORDER first so the three local classes always precede any
     # backend-specific extra (Aikido's `iac`); the subtraction keeps a local

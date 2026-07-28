@@ -99,6 +99,7 @@ except ImportError as _e:
 
 # Coverage manifest: DERIVED from capabilities, so nothing can forget it.
 from coverage_sanitize import sanitize_coverage  # noqa: E402
+from gitleaks_inspect import class_degradations as gitleaks_degradations  # noqa: E402
 from scan_coverage import build_coverage  # noqa: E402
 
 
@@ -347,8 +348,13 @@ def main() -> int:
         scan_errors = list(raw_errors) if isinstance(raw_errors, list) else []
         caps = backend_capabilities if isinstance(
             backend_capabilities, (set, frozenset, list, tuple)) else ()
+        # OSS-only degradations: Aikido runs its own secret scan, so this
+        # repo's .gitleaks.toml says nothing about what it examined.
         coverage = build_coverage(
-            available=caps, requested=scan_types, scan_errors=scan_errors)
+            available=caps, requested=scan_types, scan_errors=scan_errors,
+            class_degradations=(
+                gitleaks_degradations(str(target)) if backend_name == "oss" else {}),
+        )
 
     config = build_config(
         findings, repo=args.repo, scanner=backend_name,
