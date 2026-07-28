@@ -99,3 +99,28 @@ acceptances:
       iterate-2026-07-18-unpin-actions-no-dependabot after PR #285 reversed it
       unnoticed. The channel is OWNER-SCOPED: an unpinned THIRD-PARTY action is
       still flagged, which is the supply-chain guard the rule exists for.
+
+  - id: ar-2026-07-28-brace-expansion-dev-only
+    target: trivy-ignore
+    rule: CVE-2026-14257
+    scope:
+      paths:
+        - "plugins/shipwright-test/scripts/perf/package-lock.json"
+    expires: 2027-01-28
+    rationale_ref: iterate-2026-07-28-security-pyasn1-bump-brace-accept
+    statement: >-
+      brace-expansion 2.1.2 denial of service via unbounded expansion length:
+      expand() bounds the result COUNT (`max`, default 100k) but not the
+      accumulated string LENGTH, so chained brace groups exhaust memory and
+      crash the process. Verified present in the installed copy (no `maxLength`
+      option). Transitive and dev-only: it reaches this repo solely through the
+      Lighthouse perf-runner (lighthouse -> minimatch -> brace-expansion), which
+      globs local paths while driving Chrome against the project's own dev URL,
+      so no attacker-influenced brace pattern reaches expand(). No fix exists
+      for this tree: minimatch 9.0.9 requires ^2.0.2 and the fix landed only in
+      5.0.8, a two-major jump reachable solely by a forced npm `overrides`. The
+      v2 maintenance line has NO backport — 2.1.2 is its head and was published
+      2026-07-08, fifteen days BEFORE the 5.0.8 fix; the `maintenance-v2`
+      dist-tag means maintained, not patched. Re-fix when a 2.1.3 backport ships
+      or lighthouse moves minimatch off the v2 line. Operational entry lives in
+      .trivyignore.yaml (Trivy's --ignorefile input).
