@@ -1,0 +1,231 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-07-28-hygiene-sweep",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 5,
+      "findings": [
+        {
+          "severity": null,
+          "category": "2. Fail-open paths",
+          "file": null,
+          "line": null,
+          "finding": "critical_count() folded critical_gate=='fail' into a count of 1. With allowed_critical_findings >= 1 that ALLOWS a deploy the producer just refused, on a count nobody measured. Fixed: an unsizeable failure blocks at every threshold. Pinned by test_an_unsizeable_fail_blocks_at_every_threshold. Independently confirmed by the external code review afterwards.",
+          "suggestion": null,
+          "source": "self-review"
+        },
+        {
+          "severity": null,
+          "category": "3. Malformed-input handling",
+          "file": null,
+          "line": null,
+          "finding": "get_threshold() trusted the config shape: a non-int allowed_critical_findings, or a list-shaped config, either widened the gate or raised AttributeError into the fail-open wrapper (= allow). Fixed in lib/security_gate.load_threshold: every malformed shape coerces to 0. Pinned by test_a_malformed_threshold_falls_back_to_zero_tolerance.",
+          "suggestion": null,
+          "source": "self-review"
+        },
+        {
+          "severity": null,
+          "category": "5. Is the wiring itself tested",
+          "file": null,
+          "line": null,
+          "finding": "Every fold test passed against the module alone; deleting the _fold_tests_block call from finalize_iterate would have left them all green with AC-4 broken in production. Fixed by TestFinalizeIterateWiring, which drives the real _record_event and reads the event back out of the log. Mutation-verified: removing the call fails the first test with KeyError('tests').",
+          "suggestion": null,
+          "source": "self-review"
+        },
+        {
+          "severity": null,
+          "category": "8. Own bloat",
+          "file": null,
+          "line": null,
+          "finding": "Three files grew past their ceiling and all three were mine. Rather than baseline my own crossings I split test_security_gate.py and test_security_gate_subject.py out, extracted lib/security_gate.py (hook 300 -> 156 lines), and trimmed prose. One declared growth remains: finalize_iterate.py 548 -> 553, recorded with its rationale in the reconciliation script rather than absorbed silently.",
+          "suggestion": null,
+          "source": "self-review"
+        },
+        {
+          "severity": null,
+          "category": "9. Brief claims verified before acting",
+          "file": null,
+          "line": null,
+          "finding": "The brief's serialization premise was largely false. Measured: 2 of the 3 named 'unbaselined' files have been baselined for weeks, worktree_isolation.py matches its ceiling exactly, triage_gc.py at 300 is not oversize, H1 was 9 not 10, and the gate never blocked commits at all - it is a deploy gate. Recorded as a correction table in section 1.1 rather than silently building the wrong thing.",
+          "suggestion": null,
+          "source": "self-review"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-07-28T11:54:26.726334+00:00",
+      "disposition": null,
+      "recorded_by": "iterate-agent (Step 7 self-review, 9-point checklist)",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 10,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "Edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The security gate (AC-5) blocks on `degraded: true` but explicitly fails open on unreadable/malformed files. If the scan process crashes midway or the disk fills, writing a truncated/malformed `ci-security.json` file, the gate will silently allow the deploy. This undercuts the `degraded` check.",
+          "suggestion": "While preserving the fail-open posture for a missing file may be an intentional project convention (e.g., to allow emergency bypasses), an unreadable or malformed JSON file indicates a broken security scan that attempted to run but failed. Treat malformed/unparseable JSON as `degraded` and block the deploy.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "Approach",
+          "file": null,
+          "line": null,
+          "finding": "For AC-5, merely dropping the output rows for the events-based review findings (`rtm_generator.py:622-623`) could leave the heavy calculation logic dead but still executing. The spec mentions no other consumer exists for this calculation.",
+          "suggestion": "Ensure you prune the entire underlying calculation block (loading and summing the `work_completed` events for `review_findings - review_fixed`) inside `rtm_generator.py`, not just the final string output, to eliminate unnecessary dataset parsing.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "Dependency",
+          "file": null,
+          "line": null,
+          "finding": "AC-1 and AC-2 rely on `bloat_baseline.write_baseline` to atomically write the grandfathered/corrected file sizes. The spec mentions supplying exactly `state: \"grandfathered\"` and `current`. Most tracking baselines also require fields like `run_id`, `timestamp`, or `rationale` to satisfy schema validation.",
+          "suggestion": "Verify the schema requirements of `shipwright_bloat_baseline.json`. If it requires an attribution field, pass `\"run_id\": \"iterate-2026-07-28-hygiene-sweep\"` into the entries so the rewrite doesn't fail subsequent schema validators.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "security",
+          "file": null,
+          "line": null,
+          "finding": "The new deploy security gate fails open when `ci-security.json` is present but unreadable or malformed. That is materially different from an absent artifact: a truncated write, scanner-format regression, or corrupted artifact can turn a scan with real findings into an allowed deploy. This also conflicts with the stated rationale for blocking `degraded: true`: an unusable scanner result is not evidence of a clean scan.",
+          "suggestion": "Keep the legacy fail-open behavior only for a genuinely absent artifact if required for compatibility. For a present-but-invalid artifact, block deployment with a diagnostic and an explicit, audited override mechanism if operators need an emergency escape hatch. Add integration coverage for malformed JSON, wrong field types, and partially written JSON.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The AC-5 plan does not establish that `ci-security.json` is current for the worktree/commit being deployed. A valid but stale green artifact can pass the new gate after source, dependency, or security configuration changes. AC-4 explicitly guards against stale derived snapshots by checking `run_id`; the security-artifact reader needs an equivalent freshness decision.",
+          "suggestion": "Inspect the artifact’s existing metadata and bind the gate to a commit, worktree, scan timestamp, or scan-input fingerprint where available. If the artifact has no freshness metadata, document that limitation explicitly and consider treating a scan older than the current HEAD or with mismatched repository identity as degraded/blocked. Add a stale-green-artifact test.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "Removing the two event-derived RTM rows may alter a rendered RTM contract beyond the hook itself. The approach asserts that no code consumes the rows, but the affected-boundary table identifies the RTM as a dashboard-facing artifact; snapshots, parsers, documentation, external automation, or users may rely on the row labels and ordering even if there is no in-repository reader.",
+          "suggestion": "Search for the exact labels, generated RTM fixtures/snapshots, and documentation references; update intentional consumers and regression fixtures. If the RTM has a published or semi-stable format, record this as a compatible removal or preserve a clearly marked deprecated informational row until downstream consumers are confirmed migrated.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "AC-4’s resolver is sound, but the plan needs to make the result-file schema mapping explicit. It proposes deriving `{passed, total, skipped?, e2e_run?}` from `iterate_latest`, while the existing validator is the actual contract. If the ledger’s totals distinguish passed/failed/skipped differently, or if optional fields have required relationships, a superficially valid mapping could silently omit valid evidence or reject normal F5 output and leave events unannotated.",
+          "suggestion": "Define the exact source-field-to-`validate_tests_block` mapping and test it against a representative real F5 results artifact. Add cases for zero-test runs, failed test runs with nonzero totals, optional skipped/e2e fields, and a valid `iterate_latest` belonging to another run. Ensure diagnostics make a skipped derivation observable without changing finalize’s non-fatal behavior.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The stated precedence rule for `--event-extras-json` needs a merge/validation rule. In particular, it is unclear whether an explicit `tests: null`, a partial `tests` object, or an invalid explicit tests object suppresses derivation, is rejected, or is silently emitted. This is important because an explicit override is intentionally allowed to supersede recorded evidence.",
+          "suggestion": "Treat the presence of a `tests` key as an explicit override only if it passes the same validator; otherwise retain current CLI validation/error semantics rather than silently falling back to derived data. Add tests for absent `tests`, valid explicit tests, null/partial tests, and invalid explicit tests.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "Writing the entire bloat baseline through a regeneration path is appropriate, but it has a larger data-change surface than the 19 specified edits. A writer can reorder entries, normalize fields, discard unknown metadata, or calculate from a slightly different checkout, producing avoidable merge conflicts or weakening ceilings beyond the intended H1/H2 corrections.",
+          "suggestion": "Before committing, assert a structured diff: exactly the nine new grandfathered entries and ten `current` reductions, with all unrelated entries and metadata preserved. Include a round-trip test that preserves unknown/forward-compatible fields if that is a supported baseline-file property.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "The hook’s config threshold is named `allowed_critical_findings`, whereas the proposed gate compares it against combined `open_high_critical`. Existing nonzero configurations may have been intended to allow critical findings only, not high findings as well. Reusing it may therefore broaden deploy permission unexpectedly.",
+          "suggestion": "Verify the existing configuration’s documented semantics and all current values before reusing it for the aggregate count. Add threshold-boundary tests for zero, exact threshold, one above threshold, high-only findings, and critical-only findings; rename or introduce a separately explicit aggregate threshold only if existing semantics do not match.  Overall, the core direction is sound: record the F5 test evidence at its existing source, and make the deploy hook consult the actual security artifact rather than an unrelated review counter. The security artifact’s invalid/stale states and the RTM/output-contract fallout need resolution before this should land. SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-07-28T11:54:45.430071+00:00",
+      "disposition": null,
+      "recorded_by": "external_review.py --mode iterate (openai=revise, gemini=approve)",
+      "parse_status": "structured",
+      "raw_excerpt": "[gemini] Here is a review of the implementation approach for the IT-0 Hygiene-Sweep.\n\n- **Category:** Edge-case\n- **Severity:** Medium\n- **Finding:** The security gate (AC-5) blocks on `degraded: true` but explicitly fails open on unreadable/malformed files. If the scan process crashes midway or the disk fills, writing a truncated/malformed `ci-security.json` file, the gate will silently allow the deploy. This undercuts the `degraded` check.\n- **Suggestion:** While preserving the fail-open posture for a *missing* file may be an intentional project convention (e.g., to allow emergency bypasses), an *unreadable or malformed* JSON file indicates a broken security scan that attempted to run but failed. Treat malformed/unparseable JSON as `degraded` and block the deploy.\n\n- **Category:** Approach\n- **Severity:** Low\n- **Finding:** For AC-5, merely dropping the output rows for the events-based review findings (`rtm_generator.py:622-623`) could leave the heavy calculation logic dead but still executing. The spec mentions no other consumer exists for this calculation.\n- **Suggestion:** Ensure you prune the entire underlying calculation block (loading and summing the `work_completed` events for `review_findings - review_fixed`) inside `rtm_generator.py`, not just the final string output, to eliminate unnecessary dataset parsing.\n\n- **Category:** Dependency\n- **Severity:** Low\n- **Finding:** AC-1 and AC-2 rely on `bloat_baseline.write_baseline` to atomically write the grandfathered/corrected file sizes. The spec mentions supplying exactly `state: \"grandfathered\"` and `current`. Most tracking baselines also require fields like `run_id`, `timestamp`, or `rationale` to satisfy schema validation.\n- **Suggestion:** Verify the schema requirements of `shipwright_bloat_baseline.json`. If it requires an attribution field, pass `\"run_id\": \"iterate-2026-07-28-hygiene-sweep\"` into the entries so the rewrite doesn't fail subsequent schema validators.\n\n### Overall Assessment\nThis is a  […truncated]\n\n[openai] 1. **Category:** security  \n   **Severity:** high  \n   **Finding:** The new deploy security gate fails open when `ci-security.json` is present but unreadable or malformed. That is materially different from an absent artifact: a truncated write, scanner-format regression, or corrupted artifact can turn a scan with real findings into an allowed deploy. This also conflicts with the stated rationale for blocking `degraded: true`: an unusable scanner result is not evidence of a clean scan.  \n   **Suggestion:** Keep the legacy fail-open behavior only for a genuinely absent artifact if required for compatibility. For a present-but-invalid artifact, block deployment with a diagnostic and an explicit, audited override mechanism if operators need an emergency escape hatch. Add integration coverage for malformed JSON, wrong field types, and partially written JSON.\n\n2. **Category:** edge-case  \n   **Severity:** medium  \n   **Finding:** The AC-5 plan does not establish that `ci-security.json` is current for the worktree/commit being deployed. A valid but stale green artifact can pass the new gate after source, dependency, or security configuration changes. AC-4 explicitly guards against stale derived snapshots by checking `run_id`; the security-artifact reader needs an equivalent freshness decision.  \n   **Suggestion:** Inspect the artifact’s existing metadata and bind the gate to a commit, worktree, scan timestamp, or scan-input fingerprint where available. If the artifact has no freshness metadata, document that limitation explicitly and consider treating a scan older than the current HEAD or with mismatched repository identity as degraded/blocked. Add a stale-green-artifact test.\n\n3. **Category:** dependency  \n   **Severity:** medium  \n   **Finding:** Removing the two event-derived RTM rows may alter a rendered RTM contract beyond the hook itself. The approach asserts that no code consumes the rows, but the affected-boundary table identifies the RTM as a dashboar […truncated]"
+    },
+    "code": {
+      "review_type": "code",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-07-28T11:55:16.060168+00:00",
+      "disposition": "Internal code-reviewer cascade not spawned: a standing session policy forbids the Agent tool unless the operator requests it, and --autonomous forbids blocking to ask for that permission. Per SKILL.md Step 8 the escalation ladder applies: external code review was run instead (two rounds, both providers in round 2) and is recorded as external_code. Surfaced in the F12 summary so the operator can lift the policy next run.",
+      "recorded_by": "iterate-agent (--autonomous, Agent tool gated by session policy)",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-07-28T11:55:25.804385+00:00",
+      "disposition": "Stage-3 doubt-reviewer not spawned: same cause as the code row (session policy gates the Agent tool; --autonomous cannot ask). Partly compensated in kind, not in form: the external code review was run adversarially over two rounds and its findings were acted on, and the wiring claim was falsified by an actual mutation test (removing the finalize call turns the suite red) rather than asserted.",
+      "recorded_by": "iterate-agent (--autonomous, Agent tool gated by session policy)",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 3,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "security",
+          "file": "plugins/shipwright-compliance/scripts/hooks/check_security_scan.py:119-126",
+          "line": null,
+          "finding": "The presence check uses `Path.exists()` / `Path.is_symlink()`, both of which can suppress filesystem-access errors and return `False`. If the summary exists but its parent directory cannot be searched (or metadata cannot be read), the hook treats it as “never scanned” and allows deployment, despite the requirement that unreadable artifacts fail closed.",
+          "suggestion": "Use `path.lstat()` directly: return absent only for `FileNotFoundError`, return `UNUSABLE` for every other `OSError`, then separately reject non-regular files and read/parse failures.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "security",
+          "file": "plugins/shipwright-compliance/scripts/hooks/check_security_scan.py:164-169",
+          "line": null,
+          "finding": "get_threshold()` assumes both the decoded config and `config[\"enforcement\"]` are dictionaries. A valid JSON list, or `{\"enforcement\": null}` / a list, raises `AttributeError`, which will be handled by the hook’s fail-open wrapper and can allow a deploy with open critical findings. This contradicts the function’s stated safe-coercion behavior for hand-edited configuration.",
+          "suggestion": "Validate that `config` and `enforcement` are dictionaries before calling `.get()`; otherwise return threshold `0`. Catch `AttributeError`/`TypeError` defensively as well.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "test",
+          "file": "shared/tests/test_iterate_tests_block.py:240-244",
+          "line": null,
+          "finding": "The claimed end-to-end regression test calls `fold_into_event()` directly; none of the added tests invokes `finalize_iterate._record_event` or its CLI path. Consequently, removing the newly added `_fold_tests_block(event, project_root, run_id)` call from `finalize_iterate.py` would leave all these tests passing, while AC-4 would be broken in production.",
+          "suggestion": "Add a test that writes a matching `shipwright_test_results.json`, invokes `_record_event` (or the finalize command), reads the appended event, and asserts its `tests` block contains the derived totals; also cover the explicit-extras override through that path.  Overall assessment: the core implementation follows the requested behavior, but fail-closed guarantees can be bypassed by inaccessible artifacts or malformed config shapes, and AC-4 lacks coverage of the actual finalizer wiring. Ship with fixes. SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-07-28T11:55:03.410446+00:00",
+      "disposition": null,
+      "recorded_by": "external_review.py --mode code, round 2 of 2 (openai=revise, gemini=approve); round 1 findings all resolved",
+      "parse_status": "partial",
+      "raw_excerpt": "[gemini] SHIPWRIGHT_VERDICT: approve\n\n[openai] - Category: security  \n  Severity: high  \n  File: `plugins/shipwright-compliance/scripts/hooks/check_security_scan.py:119-126`  \n  Finding: The presence check uses `Path.exists()` / `Path.is_symlink()`, both of which can suppress filesystem-access errors and return `False`. If the summary exists but its parent directory cannot be searched (or metadata cannot be read), the hook treats it as “never scanned” and allows deployment, despite the requirement that unreadable artifacts fail closed.  \n  Suggestion: Use `path.lstat()` directly: return absent only for `FileNotFoundError`, return `UNUSABLE` for every other `OSError`, then separately reject non-regular files and read/parse failures.\n\n- Category: security  \n  Severity: medium  \n  File: `plugins/shipwright-compliance/scripts/hooks/check_security_scan.py:164-169`  \n  Finding: `get_threshold()` assumes both the decoded config and `config[\"enforcement\"]` are dictionaries. A valid JSON list, or `{\"enforcement\": null}` / a list, raises `AttributeError`, which will be handled by the hook’s fail-open wrapper and can allow a deploy with open critical findings. This contradicts the function’s stated safe-coercion behavior for hand-edited configuration.  \n  Suggestion: Validate that `config` and `enforcement` are dictionaries before calling `.get()`; otherwise return threshold `0`. Catch `AttributeError`/`TypeError` defensively as well.\n\n- Category: test  \n  Severity: medium  \n  File: `shared/tests/test_iterate_tests_block.py:240-244`  \n  Finding: The claimed end-to-end regression test calls `fold_into_event()` directly; none of the added tests invokes `finalize_iterate._record_event` or its CLI path. Consequently, removing the newly added `_fold_tests_block(event, project_root, run_id)` call from `finalize_iterate.py` would leave all these tests passing, while AC-4 would be broken in production.  \n  Suggestion: Add a test that writes a matching `shipwright_test_results.json`, invokes `_record_event` (or the fin […truncated]"
+    }
+  }
+}

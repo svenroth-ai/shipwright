@@ -35,6 +35,7 @@ from lib.atomic_write import durable_atomic_write  # noqa: E402
 from lib.campaign_status_io import finalize_campaign_status  # noqa: E402
 from lib.fr_classification import normalize_fr_impact as _normalize_fr_impact  # noqa: E402
 from lib.iterate_phase_groups import fold_into_event as _fold_phase_timings  # noqa: E402
+from lib.iterate_tests_block import fold_into_event as _fold_tests_block  # noqa: E402
 
 
 class FinalizeGateError(RuntimeError):
@@ -279,6 +280,10 @@ def _record_event(
         # Iterate-Rail per-phase durations (M-Pre-1, trg-8efeb3d7) — additive fold
         # of the boundary-mark sidecar into ``phase_timings`` (best-effort).
         _fold_phase_timings(event, project_root, run_id)
+
+        # This run's recorded test totals → ``tests``; D1/D3 read ``tests.total``
+        # to decide FR coverage, and the worktree flow used to record none.
+        _fold_tests_block(event, project_root, run_id)
 
         # FR-gate parity (iterate-2026-06-05-fr-linkage-lifecycle / ADR-059):
         # close the bypass that let FR-less iterate work_completed events reach

@@ -1,0 +1,1 @@
+`shipwright_bloat_baseline.json` reconciled with disk: nine oversize files that had no entry are recorded, eleven stale ceilings lowered to the real file length, and one deliberate growth declared. `CLAUDE.md` is back under its 200-line hygiene cap at 192 lines, with the plugin-cache and pytest-root rationale relocated to their canonical homes.

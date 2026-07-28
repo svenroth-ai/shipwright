@@ -1,12 +1,23 @@
 #!/usr/bin/env python3
 """PreToolUse hook: Soft-block deploy when critical security findings exist.
 
-Checks compliance reports for unresolved critical findings and blocks
-deploy commands if any remain.
+Reads the committed CI-security summary
+(``.shipwright/compliance/ci-security.json``) — the scanner chain's own
+public-safe output, produced by ``ci_security.summarize_ci_security``.
 
-Exit codes:
-  0 = allow (no findings data, or no critical findings)
-  2 = soft-block (user can say "Continue anyway", gets logged)
+Until 2026-07-28 it read the RTM row ``| Unresolved findings | N |``: code-review
+findings summed over ``work_completed`` events, unrelated to any scan, and
+under-reporting by construction. See ``docs/hooks-and-pipeline.md`` and
+iterate-2026-07-28-hygiene-sweep (trg-17f53a39). This hook now gates on the
+subject it is named for.
+
+This module is the shell: payload parsing, deploy-command detection, and the
+fail-open wrapper. **The gate itself is `lib/security_gate.decide`** — read its
+docstring for the branch table, the fail-closed posture, and why the threshold is
+compared against `by_severity.critical` rather than `open_high_critical`.
+
+Exit codes: 0 = allow (no summary, or clean within threshold);
+2 = soft-block (user can say "Continue anyway", gets logged).
 """
 
 from __future__ import annotations
@@ -59,50 +70,6 @@ def _hook_block(reason: str, details: dict[str, Any]) -> dict[str, Any]:
     }
 
 
-def get_unresolved_findings(project_root: str) -> tuple[int, list[str]]:
-    """Parse unresolved findings count and details from RTM.
-
-    Returns (unresolved_count, finding_descriptions).
-    """
-    rtm_path = str(Path(project_root) / ".shipwright" / "compliance" / "traceability-matrix.md")
-    if not os.path.exists(rtm_path):
-        return 0, []
-
-    try:
-        with open(rtm_path, encoding="utf-8") as f:
-            content = f.read()
-    except OSError:
-        return 0, []
-
-    # Match "| Unresolved findings | N |"
-    match = re.search(r"Unresolved findings\s*\|\s*(\d+)", content)
-    unresolved = int(match.group(1)) if match else 0
-
-    # Collect sections with FAIL status
-    failing = []
-    for line in content.splitlines():
-        if line.startswith("|") and "FAIL" in line:
-            parts = [p.strip() for p in line.split("|")]
-            if len(parts) >= 3:
-                failing.append(parts[2])  # section name
-
-    return unresolved, failing
-
-
-def get_threshold(project_root: str) -> int:
-    """Load allowed critical findings from compliance config."""
-    config_path = os.path.join(project_root, "shipwright_compliance_config.json")
-    if not os.path.exists(config_path):
-        return 0  # default: zero tolerance
-
-    try:
-        with open(config_path, encoding="utf-8") as f:
-            config = json.load(f)
-        return config.get("enforcement", {}).get("allowed_critical_findings", 0)
-    except (json.JSONDecodeError, OSError):
-        return 0
-
-
 # Command families this gate soft-blocks (the actual deploy CLIs / scripts).
 _DEPLOY_PATTERNS = ("deploy", "jelastic", "vercel", "fly deploy", "railway up")
 # Quoted argument spans — where justifications, commit messages, and `echo`
@@ -142,22 +109,26 @@ def main() -> int:
 
     project_root = _resolve_project_root()
 
-    unresolved, failing_sections = get_unresolved_findings(project_root)
-    if unresolved == 0:
-        return 0
+    # The whole decision lives in lib/security_gate.decide (see its docstring).
+    # An import failure here must NOT reach the fail-open wrapper: being unable
+    # to evaluate a security gate is not the same as passing it, so it blocks.
+    try:
+        lib_dir = Path(__file__).resolve().parent.parent / "lib"
+        if str(lib_dir) not in sys.path:
+            sys.path.insert(0, str(lib_dir))
+        from security_gate import decide  # noqa: PLC0415
+    except Exception as exc:  # noqa: BLE001
+        print(json.dumps(_hook_block(
+            reason=("the security gate could not be loaded "
+                    f"({type(exc).__name__}) — refusing to assume a clean scan"),
+            details={"state": "gate-unavailable"},
+        )))
+        return 2
 
-    threshold = get_threshold(project_root)
-    if unresolved <= threshold:
+    blocked, reason, details = decide(project_root)
+    if not blocked:
         return 0
-
-    print(json.dumps(_hook_block(
-        reason=f"{unresolved} unresolved finding(s) exceed allowed threshold ({threshold})",
-        details={
-            "unresolved_findings": unresolved,
-            "allowed_threshold": threshold,
-            "failing_sections": failing_sections,
-        },
-    )))
+    print(json.dumps(_hook_block(reason=reason, details=details)))
     return 2
 
 

@@ -1740,7 +1740,7 @@ Two surfaces (plan v7 Option Z, 2026-04-19):
 |-------|---------|--------|--------------|
 | SessionStart | — | `capture_session_id.py` (shared) | See Shared Hook section above |
 | PreToolUse | `Bash` | `check_rtm_coverage.py` | Soft-blocks `git commit` if RTM coverage < 80% threshold. Invoked `uv run --no-project` + routed through `lib/hook_failopen.run_failopen` (see note). |
-| PreToolUse | `Bash` | `check_security_scan.py` | Soft-blocks **deploy** commands when unresolved findings exceed threshold (security is no longer auto-inserted; manual scans only). Invoked `uv run --no-project` + routed through `lib/hook_failopen.run_failopen` (see note). |
+| PreToolUse | `Bash` | `check_security_scan.py` | Soft-blocks **deploy** commands from `.shipwright/compliance/ci-security.json`: blocks when open criticals (`by_severity.critical`, else the `critical_gate` verdict) exceed `enforcement.allowed_critical_findings`, when the scan is `degraded`, or when the summary is present-but-unusable. Allows only when the summary is genuinely **absent** (never scanned). Until 2026-07-28 it read the RTM row `Unresolved findings` — code-review findings, not a scan (trg-17f53a39). Invoked `uv run --no-project` + routed through `lib/hook_failopen.run_failopen` (see note). |
 
 > **Fail-open invocation (both Bash gates).** These two hooks fire on **every**
 > Bash tool call (matcher `Bash`), but only act on `git commit` / deploy
@@ -2526,6 +2526,29 @@ non-FR iterates show their classification instead of a blank cell. Today
 these fields are read-side only — Iterate C.1 will gate finalize on
 "`affected_frs` non-empty OR `change_type+none_reason` set".
 Origin: Phase 0a of the artifact-polish plan.
+
+**F5b records the run's test totals on `work_completed`
+(iterate-2026-07-28-hygiene-sweep).** `finalize_iterate._record_event` folds a
+`tests` block in via `lib/iterate_tests_block.fold_into_event`, derived from the
+`iterate_latest` block F5 wrote moments earlier — summing the layers that
+reported counts (`unit`, `integration`, `e2e`, `smoke`, `pgtap`) and setting
+`e2e_run` from the e2e layer. Before this, test totals reached an event ONLY
+through `record_event.py --tests-*`, the legacy/out-of-band F7 path the worktree
+flow skips, so the log stopped carrying test evidence as worktrees became the
+norm (2026-05: 57 events with totals / 27 without → 2026-07: 66 / 96). Group D's
+D1 requires `tests.total > 0` to count an FR covered, so the recorder's silence
+was being reported as the project's coverage gap.
+
+Three properties matter to callers: an explicit `tests` in F5b's
+`--event-extras-json` **wins** and is validated (a corrupt one raises rather
+than being written to an append-only log); a `shipwright_test_results.json`
+whose `iterate_latest.run_id` is **not** the run being finalized is treated as
+absent, because that file is a DERIVED SNAPSHOT a restore can reset to the
+previous run (trg-81fbf8ed) and laundering foreign totals would fabricate a
+coverage claim; and every other failure mode (absent, unreadable, malformed,
+non-int counts, `total == 0`) leaves the event without the key, never aborting
+finalize. Shape validated by `shared/scripts/tests_block.validate_tests_block`
+— the same contract `record_event.py` enforces, so the two writers cannot drift.
 
 **BP-1 — behavior-affecting changes must be FR-linked.**
 `record_event._fr_or_change_type_gate_error` (the gate that runs at the CLI

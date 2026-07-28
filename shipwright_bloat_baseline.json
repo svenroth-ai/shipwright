@@ -95,7 +95,14 @@
     {
       "path": "plugins/shipwright-build/agents/section-builder.md",
       "limit": 400,
-      "current": 486,
+      "current": 485,
+      "state": "grandfathered",
+      "adr": null
+    },
+    {
+      "path": "plugins/shipwright-changelog/scripts/lib/changelog.py",
+      "limit": 300,
+      "current": 302,
       "state": "grandfathered",
       "adr": null
     },
@@ -172,7 +179,7 @@
     {
       "path": "plugins/shipwright-compliance/scripts/lib/compliance_report.py",
       "limit": 300,
-      "current": 360,
+      "current": 359,
       "state": "grandfathered",
       "adr": null
     },
@@ -256,7 +263,7 @@
     {
       "path": "plugins/shipwright-compliance/tests/test_enforcement_hooks.py",
       "limit": 300,
-      "current": 360,
+      "current": 285,
       "state": "grandfathered",
       "adr": null
     },
@@ -298,7 +305,7 @@
     {
       "path": "plugins/shipwright-deploy/skills/deploy/SKILL.md",
       "limit": 400,
-      "current": 451,
+      "current": 446,
       "state": "grandfathered",
       "adr": null
     },
@@ -534,6 +541,13 @@
       "adr": null
     },
     {
+      "path": "plugins/shipwright-test/tests/test_warning_followups.py",
+      "limit": 300,
+      "current": 390,
+      "state": "grandfathered",
+      "adr": null
+    },
+    {
       "path": "shared/scripts/github_api.py",
       "limit": 300,
       "current": 321,
@@ -550,14 +564,14 @@
     {
       "path": "shared/scripts/hooks/generate_handoff_on_stop.py",
       "limit": 300,
-      "current": 306,
+      "current": 282,
       "state": "exception",
       "adr": "ADR-090"
     },
     {
       "path": "shared/scripts/lib/artifact_migrations.py",
       "limit": 300,
-      "current": 641,
+      "current": 632,
       "state": "exception",
       "adr": "ADR-091"
     },
@@ -676,21 +690,21 @@
     {
       "path": "shared/scripts/tools/external_review.py",
       "limit": 300,
-      "current": 430,
+      "current": 414,
       "state": "grandfathered",
       "adr": null
     },
     {
       "path": "shared/scripts/tools/finalize_iterate.py",
       "limit": 300,
-      "current": 548,
+      "current": 549,
       "state": "exception",
       "adr": "ADR-096"
     },
     {
       "path": "shared/scripts/tools/generate_session_handoff.py",
       "limit": 300,
-      "current": 569,
+      "current": 568,
       "state": "grandfathered",
       "adr": null
     },
@@ -707,6 +721,20 @@
       "current": 769,
       "state": "exception",
       "adr": "ADR-111"
+    },
+    {
+      "path": "shared/scripts/tools/record_requirement_impact.py",
+      "limit": 300,
+      "current": 330,
+      "state": "grandfathered",
+      "adr": null
+    },
+    {
+      "path": "shared/scripts/tools/record_review_pass.py",
+      "limit": 300,
+      "current": 395,
+      "state": "grandfathered",
+      "adr": null
     },
     {
       "path": "shared/scripts/tools/resolve_churn_conflicts.py",
@@ -746,7 +774,7 @@
     {
       "path": "shared/scripts/tools/verifiers/common.py",
       "limit": 300,
-      "current": 768,
+      "current": 737,
       "state": "grandfathered",
       "adr": null
     },
@@ -774,7 +802,7 @@
     {
       "path": "shared/scripts/tools/verifiers/plan_checks.py",
       "limit": 300,
-      "current": 315,
+      "current": 295,
       "state": "grandfathered",
       "adr": null
     },
@@ -795,7 +823,7 @@
     {
       "path": "shared/scripts/triage.py",
       "limit": 300,
-      "current": 704,
+      "current": 696,
       "state": "exception",
       "adr": "ADR-100"
     },
@@ -828,6 +856,13 @@
       "adr": null
     },
     {
+      "path": "shared/tests/test_audit_e2e_integration.py",
+      "limit": 300,
+      "current": 322,
+      "state": "grandfathered",
+      "adr": null
+    },
+    {
       "path": "shared/tests/test_audit_phase_quality.py",
       "limit": 300,
       "current": 820,
@@ -852,6 +887,13 @@
       "path": "shared/tests/test_ci_workflow_convention.py",
       "limit": 300,
       "current": 330,
+      "state": "grandfathered",
+      "adr": null
+    },
+    {
+      "path": "shared/tests/test_completion_writers.py",
+      "limit": 300,
+      "current": 302,
       "state": "grandfathered",
       "adr": null
     },
@@ -1010,9 +1052,37 @@
       "adr": null
     },
     {
+      "path": "shared/tests/test_review_findings.py",
+      "limit": 300,
+      "current": 403,
+      "state": "grandfathered",
+      "adr": null
+    },
+    {
+      "path": "shared/tests/test_review_state_gate.py",
+      "limit": 300,
+      "current": 307,
+      "state": "grandfathered",
+      "adr": null
+    },
+    {
+      "path": "shared/tests/test_section_file_attribution.py",
+      "limit": 300,
+      "current": 314,
+      "state": "grandfathered",
+      "adr": null
+    },
+    {
       "path": "shared/tests/test_setup_writes_canonical.py",
       "limit": 300,
       "current": 475,
+      "state": "grandfathered",
+      "adr": null
+    },
+    {
+      "path": "shared/tests/test_silent_revert.py",
+      "limit": 300,
+      "current": 319,
       "state": "grandfathered",
       "adr": null
     },
@@ -1089,7 +1159,7 @@
     {
       "path": "shared/tests/test_verifiers_common.py",
       "limit": 300,
-      "current": 507,
+      "current": 492,
       "state": "grandfathered",
       "adr": null
     },

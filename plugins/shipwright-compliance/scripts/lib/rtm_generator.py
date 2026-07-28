@@ -619,13 +619,13 @@ def _coverage_summary_events(data: ComplianceData) -> list[str]:
     if total_e2e_specs:
         lines.append(f"| E2E specs | {total_e2e_specs} |")
 
-    total_findings = sum(we.review_findings for we in data.work_events)
-    unresolved = sum(we.review_findings - we.review_fixed for we in data.work_events)
-    lines.extend([
-        f"| Total review findings | {total_findings} |",
-        f"| Unresolved findings | {unresolved} |",
-        "",
-    ])
+    # Event-derived review-findings rows RETIRED (trg-17f53a39): only 4 of 399
+    # work_completed events carry a ``review`` block, and ``review.fixed`` is
+    # written at F5b BEFORE the remediation commits exist into an append-only
+    # log — under-reporting by construction. check_security_scan gated deploys
+    # on it and now reads ci-security.json; nothing else consumed it. The
+    # SECTION rows in ``_coverage_summary`` are a different source and stay.
+    lines.append("")
 
     if not data.requirements:
         return lines
