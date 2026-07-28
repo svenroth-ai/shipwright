@@ -1,0 +1,10 @@
+{
+  "run_id": "iterate-2026-07-28-grade-snapshot-lineage",
+  "date": "2026-07-28T07:44:27.175071Z",
+  "type": "change",
+  "complexity": "medium",
+  "branch": "iterate/grade-snapshot-lineage",
+  "spec": ".shipwright/planning/iterate/iterate-2026-07-28-grade-snapshot-lineage.md",
+  "tests_passed": true,
+  "adr": "iterate-2026-07-28-grade-snapshot-lineage"
+}

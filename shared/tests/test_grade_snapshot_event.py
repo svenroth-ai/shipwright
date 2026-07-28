@@ -23,7 +23,9 @@ import pytest
 _TOOLS = Path(__file__).resolve().parents[1] / "scripts" / "tools"
 if str(_TOOLS) not in sys.path:
     sys.path.insert(0, str(_TOOLS))
+sys.path.insert(0, str(Path(__file__).resolve().parent))
 
+from _tree_lineage_fixtures import commit, git, init_repo  # noqa: E402
 from record_event import (  # noqa: E402
     append_event,
     build_event,
@@ -133,3 +135,95 @@ class TestGradeSnapshotRoundTrip:
         assert back[0]["type"] == "grade_snapshot"
         assert back[0]["grade"] == "C"
         assert back[0]["score"] == 71.0
+
+    def test_attribution_survives_the_round_trip_with_declared_types(self, tmp_path):
+        """The attribution fields cross the JSONL boundary intact and typed as
+        the cross-repo consumer contract declares (iterate-2026-07-28-…-lineage).
+
+        ``--project-root`` here is a bare temp dir, not a repo, so this also pins
+        the honest-degradation half: an unresolvable tree says ``"unknown"`` out
+        loud rather than omitting the field, because an ABSENT ``lineage`` is
+        reserved to mean "written before attribution existed".
+        """
+        args = parse_args([
+            "--project-root", str(tmp_path),
+            "--type", "grade_snapshot",
+            "--grade", "B", "--score", "84.0",
+        ])
+        event = build_event(args)
+        append_event(tmp_path, event)
+
+        back = read_events(tmp_path)[0]
+        assert back["lineage"] == "unknown"
+        assert isinstance(back["lineage"], str)
+        # Nothing was invented for the facts that could not be resolved.
+        assert "branch" not in back
+        assert "base" not in back
+
+
+class TestGradeSnapshotAttributionCannotBeAsserted:
+    """No caller may hand-write a lineage (external plan review, approach/medium).
+
+    A CLI able to pass ``--lineage main`` from a branch worktree could
+    manufacture a false main-lineage point in the exact log the grade trend
+    reads. Vocabulary validation would not catch it — ``main`` is a legal value;
+    the lie is the assertion. So the flags must not exist at all, and this test
+    fails if someone adds them back.
+    """
+
+    @pytest.mark.parametrize("flag", ["--lineage", "--branch", "--base"])
+    def test_no_flag_can_assert_attribution(self, flag):
+        with pytest.raises(SystemExit):
+            parse_args([
+                "--project-root", ".", "--type", "grade_snapshot",
+                "--grade", "A", "--score", "90", flag, "main",
+            ])
+
+    def test_the_cli_degrades_honestly_outside_a_repo(self, tmp_path, capsys):
+        # Derived, always: even the manual path cannot leave a snapshot
+        # unattributed. Outside a repo that derivation is "unknown".
+        rc = main([
+            "--project-root", str(tmp_path),
+            "--type", "grade_snapshot", "--grade", "A", "--score", "90",
+        ])
+        assert rc == 0
+        capsys.readouterr()
+
+        assert read_events(tmp_path)[0]["lineage"] == "unknown"
+
+    def test_the_cli_resolves_a_real_tree_not_just_unknown(self, tmp_path, capsys):
+        """AC7's substantive half (external code review, test/medium).
+
+        The degradation test above passes against a CLI hardcoded to stamp
+        ``"unknown"``, so on its own it proves nothing about derivation. This
+        one runs the CLI against a real repository on an unmerged branch and
+        demands the resolved facts.
+        """
+        repo = init_repo(tmp_path / "repo")
+        git(repo, "checkout", "-b", "iterate/cli")
+        commit(repo, "two.txt")
+        branch_point = git(repo, "rev-parse", "main")
+
+        assert main([
+            "--project-root", str(repo),
+            "--type", "grade_snapshot", "--grade", "C", "--score", "70",
+        ]) == 0
+        capsys.readouterr()
+
+        event = read_events(repo)[0]
+        assert event["lineage"] == "branch"
+        assert event["branch"] == "iterate/cli"
+        assert event["base"] == branch_point
+
+    def test_the_cli_resolves_main_lineage_on_the_default_branch(self, tmp_path, capsys):
+        repo = init_repo(tmp_path / "repo")
+
+        assert main([
+            "--project-root", str(repo),
+            "--type", "grade_snapshot", "--grade", "A", "--score", "95",
+        ]) == 0
+        capsys.readouterr()
+
+        event = read_events(repo)[0]
+        assert event["lineage"] == "main"
+        assert event["branch"] == "main"
