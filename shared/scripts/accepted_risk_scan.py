@@ -6,10 +6,14 @@ the pattern that keeps them in lockstep without either importing the other's
 package (ADR-044/045 — mirrors ``gh_action_tag_owner``, which the security
 plugin and the shared ingest path both consume this way).
 
-"In effect" here means *source-controlled*: the Trivy ignore file and the
-``SHIPWRIGHT_SEMGREP_*`` env vars in ``security.yml``. A GitHub code-scanning
-dismissal is live API state, not a file, so it is deliberately outside this
-module's reach — see ``accepted_risks.STATIC_TARGETS``.
+"In effect" here is scoped to the channels the register's ``target`` vocabulary
+can be reconciled against: the Trivy ignore file and the ``SHIPWRIGHT_SEMGREP_*``
+env vars in ``security.yml``. It does NOT mean *source-controlled* generally —
+an inline ``# nosemgrep`` is source-controlled and in effect, and no ``target``
+covers it, so reading the two as equivalent is what makes an inline suppression
+look like it needs a register entry. A GitHub code-scanning dismissal is live
+API state, not a file, so it is outside this module's reach for the opposite
+reason — see ``accepted_risks.STATIC_TARGETS``.
 """
 
 from __future__ import annotations
@@ -112,7 +116,15 @@ def read_trivyignore_ids(project_root: Path | str) -> set[str]:
 
 
 def discovered_suppressions(project_root: Path | str) -> dict[str, set[str]]:
-    """Every source-controlled suppression currently in effect, keyed by target."""
+    """The three reconcilable ``target`` channels, keyed by target.
+
+    Exactly the Trivy ignore ids, ``SHIPWRIGHT_SEMGREP_EXCLUDE_RULES`` and the
+    semgrep policy toggle — not every suppression in effect, and not even every
+    one in this env block: ``SHIPWRIGHT_SCAN_EXCLUDES`` scopes *paths* rather
+    than rules and has no ``target``, as does an inline ``# nosemgrep``. An
+    entry registered for either matches no discovered suppression, which is the
+    *stale* half of the both-directions gate and fails the build.
+    """
     env = read_workflow_env(project_root)
     # Comma-separated — mirrors semgrep_tailoring._resolve_exclude_rule_ids.
     exclude_rules = {

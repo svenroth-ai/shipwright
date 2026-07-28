@@ -36,6 +36,10 @@ def load_shared_lib(module_name: str):
     if str(_SCRIPTS_DIR) not in sys.path:
         sys.path.insert(0, str(_SCRIPTS_DIR))
     try:
+        # First-party hardcoded module identifiers only; no untrusted input.
+        # Dynamic resolution IS this module's purpose (ADR-045) — a static
+        # import is what reintroduces the `sys.modules['lib']` collision.
+        # nosemgrep: python.lang.security.audit.non-literal-import.non-literal-import
         return importlib.import_module(f"lib.{module_name}")
     except ImportError:
         pass

@@ -15,9 +15,17 @@
 #     uv run shared/scripts/tools/accepted_risks_cli.py check --project-root .
 #
 # Enforced in CI by shared/tests/test_accepted_risks_register.py:
-#   - every source-controlled suppression must have an entry here, and
+#   - every suppression on a RECONCILABLE channel must have an entry here, and
 #   - every entry here must match a real suppression, and
 #   - an entry past its `expires` date FAILS the build.
+#
+# "Reconcilable" is narrower than "source-controlled", and the difference bites:
+# the discovery reader looks at `.trivyignore*` and the `SHIPWRIGHT_SEMGREP_*`
+# env vars, nothing else. An inline `# nosemgrep` is source-controlled and in
+# effect and has NO `target` here — it is applied in the source and reviewed in
+# the diff. Registering one anyway matches no discovered suppression, which is
+# the *stale* half of the rule above, and FAILS THE BUILD. Same for
+# `SHIPWRIGHT_SCAN_EXCLUDES`, which scopes paths rather than rules.
 #
 # Fields (all required unless noted):
 #   id             stable, human-readable, unique
