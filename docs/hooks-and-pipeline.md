@@ -307,7 +307,34 @@ or merges stale (Group-E staleness noise). The contract:
   that has not integrated yet is `BEHIND`, not a revert, and is never accused.
   Removal stays legal, it just has to be said out loud:
   `iterate_latest.declared_removals[{path, reason}]` — a reason-less entry does not
-  count.
+  count. **Some answers to that question are not losses, and are filtered out
+  before anything is reported (`verifiers/silent_revert_filters.py` +
+  `…_reading.py`, iterate-2026-07-28-silent-revert-false-positives).** #477
+  shipped without them and the next long-running iterate produced **four**
+  findings, every one wrong, every one cleared through `declared_removals` — an
+  escape hatch in routine use is a gate on its way to being decoration. Each
+  filter can only ever REMOVE a finding, so each is a proof, never a threshold;
+  cheapest first: (1) **the two trees already agree about the file** — then
+  nothing in it can be a loss, whatever happened in between; (2) **the default
+  branch moved past the line itself AND this branch followed** — it deleted the
+  line, or replaced it with something this branch carries. The second half
+  matters: "the tip no longer has this exact line" is equally true when the
+  default branch merely fixed a typo in a line this branch really had reverted;
+  (3) **the line was rewritten in place** — the replacement must sit in the same
+  minimal (`-U0`, whitespace-insensitive) hunk as the deletion, and be a line
+  this branch could only have written *after* seeing theirs (in neither the merge
+  base nor its own pre-merge side). Those exclusions are what stop a fake
+  witness: a resurrected pre-merge line, or a line the branch already had before
+  the content it now vouches for existed. A minimum-token threshold was rejected
+  as an undefendable knob. Token containment proves the *words* survive, not the
+  meaning — an accepted, bounded trade, pinned by a test rather than implied.
+  Because the comparison must be anchored to the ref the branch actually
+  integrates (`ensure_current` merges `origin/<default>`), the check resolves
+  `origin/<default>` when the local ref is behind it and reports that ref by name
+  — a stale local ref made it skip whole merges (measured 6 → 2 → 1 as the ref
+  was walked back). A side that cannot be read suppresses nothing: findings are
+  reported with the incomplete comparison noted, and with no findings the check
+  is a visible SKIP, never a pass.
 - **Autonomous campaign** sets `SHIPWRIGHT_ITERATE_AUTOMERGE=0` so sub-iterate F11
   does NOT arm; the orchestrator runs **interleaved-serial** (campaign-mode.md) —
   build one sub-iterate → PR → CI-green → MERGE → build the next off fresh
