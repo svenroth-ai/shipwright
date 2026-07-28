@@ -10,14 +10,15 @@ canonical home is now under ``.shipwright/`` (per
   session): emit a schema-valid ``additionalContext`` payload on stdout
   so the model receives the drift + ``git mv`` remediation, plus a stderr
   notice + the report. Exit 0. (Historically this claimed an ``exit 1``
-  "hard-gate"; that was inert — see WP4 / artifact-migration-reference.md.)
+  "hard-gate"; that was inert — a SessionStart hook's exit code is not a
+  block. Corrected in WP4 of the compliance-relocation migration.)
 
 Self-healing: when no findings exist on a subsequent run, the report
 file is *deleted* (``unlink(missing_ok=True)``) instead of overwritten,
 so the absence of the file is the canonical "no drift" signal.
 
-See ``docs/migrations/artifact-migration-reference.md`` (Sub-Iterate G
-deliverable) for the full pattern and rationale.
+See ``lib/artifact_migrations.py`` for the migration pattern this
+detector belongs to.
 """
 from __future__ import annotations
 

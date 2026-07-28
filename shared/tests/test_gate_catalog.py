@@ -1,7 +1,7 @@
 """Catalog-integrity + validator tests for the phase-gate mechanism (SS2).
 
 The committed catalog (shared/config/gate_catalog.json) must load, pass every
-invariant, and pin Sven's 2026-07-07 sensitive-gate decisions. ``validate_catalog``
+invariant, and pin the 2026-07-07 sensitive-gate decisions. ``validate_catalog``
 must reject each class of corrupt data. See ``test_gate_policy.py`` for the
 resolver/mode/dry-run coverage.
 """
@@ -114,7 +114,7 @@ def test_danger_keyword_gates_are_constitution_locked():
 
 
 def test_known_sensitive_gates_have_confirmed_policies():
-    """Pin Sven's 2026-07-07 sensitive-gate decisions against silent drift."""
+    """Pin the 2026-07-07 sensitive-gate decisions against silent drift."""
     gates = load_catalog()["gates"]
     assert gates["design.preview-approval"]["policy"] == "orchestrator-approve"
     assert gates["design.review-loop-finalize"]["policy"] == "orchestrator-approve"

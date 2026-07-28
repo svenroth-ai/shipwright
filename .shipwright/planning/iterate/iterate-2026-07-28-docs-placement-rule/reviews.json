@@ -1,0 +1,66 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-07-28-docs-placement-rule",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-07-28T11:57:52.098709+00:00",
+      "disposition": "7-point self-review over the merge-base diff. Found and fixed two allowlist comments that over-described after the tool deletion ('chain helper', 'CLI + helpers').",
+      "recorded_by": "iterate-agent",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": "openrouter:gpt-5.6+gemini-3.1-pro",
+      "completed_at": "2026-07-28T11:58:04.649843+00:00",
+      "disposition": "Both providers succeeded, both verdict 'revise'. 9 findings, each answered with a probe: 2 refuted with evidence, 1 correct about the written plan but not the execution, 6 accepted and acted on. Table in the iterate spec.",
+      "recorded_by": "external_review.py --mode iterate",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "code": {
+      "review_type": "code",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-07-28T11:58:19.123671+00:00",
+      "disposition": "Operator-declined: a standing session policy forbids spawning subagents ('do not call the Agent tool unless the user requested it'). Per SKILL.md Step 8 the operator was told before going autonomous that one sentence lifts it; none was given, so the internal spec/code-reviewer cascade did not run. Escalation ladder followed: external code review ran instead (external_code, completed).",
+      "recorded_by": "iterate-agent",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-07-28T11:58:19.270685+00:00",
+      "disposition": "Operator-declined, same session policy as 'code'. Adversarial pressure was applied by other means and is recorded: 5 of the 12 external findings were refuted with executable probes rather than accepted, and the doubt pass that mattered most - whether the path-canon exemption was still load-bearing - was settled by removing it and running the check.",
+      "recorded_by": "iterate-agent",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": "openrouter:gpt-5.6 (gemini degraded)",
+      "completed_at": "2026-07-28T11:58:04.758502+00:00",
+      "disposition": "Ran against the merge-base diff. GPT-5.6 succeeded ('revise', 3 findings); Gemini returned degraded/truncated. Two findings refuted by probe (the --output flag exists and is deliberate; iterate docs are allowlisted in all four blocks); one real defect accepted - AC2 claimed byte-equality that autocrlf makes unverifiable, criterion reworded.",
+      "recorded_by": "external_review.py --mode code",
+      "parse_status": null,
+      "raw_excerpt": null
+    }
+  }
+}

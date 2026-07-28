@@ -1,18 +1,18 @@
 # Commit Change Log
 
-Generated: 2026-07-28T07:58:42.604954+00:00
-Source-State: run=iterate-2026-07-27-pr-review-forged-boundary
+Generated: 2026-07-28T12:18:44.236199+00:00
+Source-State: run=iterate-2026-07-28-docs-placement-rule
 Consistency-audit: never run
-Total commits: 1255
+Total commits: 1261
 
 ## Commit Distribution
 
 ```mermaid
 pie title Commit Types
-    "fix" : 370
-    "feat" : 351
+    "fix" : 373
+    "feat" : 352
     "chore" : 256
-    "docs" : 148
+    "docs" : 150
     "refactor" : 78
     "test" : 31
     "ci" : 11
@@ -22,11 +22,14 @@ pie title Commit Types
 
 ## Changes by Type
 
-### Fixes (fix) — 370 commits
+### Fixes (fix) — 373 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
-| 2026-07-28 | security | the reviewer ends a diff line where git does, and nowhere else | a609602c7bc6 |
+| 2026-07-28 | iterate | "cannot run" must not mean "was never asked" (#489) | bcc7a5901d53 |
+| 2026-07-28 | iterate | the revert check stops accusing an edit and a deletion it did not make (#488) | e4db51544224 |
+| 2026-07-28 | security | the reviewer ends a diff line where git does, and nowhere else (#487) | d9bc7d90cc07 |
+| 2026-07-28 | compliance | a grade snapshot names the tree it was measured in (#485) | ee07a3b57337 |
 | 2026-07-28 | triage | anchor the listing row token; retract three false claims (#479) | 80647cc924db |
 | 2026-07-28 | changelog | the release aggregator writes a version once, or says why not (#472) | 23329f571dde |
 | 2026-07-28 | tests | a scanner finding is cleared at its source, not muted (#484) | e95db7a809c2 |
@@ -397,10 +400,11 @@ pie title Commit Types
 | 2026-03-21 | — | rename skill folders for clean slash commands | 5a8d77658fab |
 | 2026-03-20 | — | update README attribution to svenroth.ai | dd5de7f7d6ab |
 
-### Features (feat) — 351 commits
+### Features (feat) — 352 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-07-28 | security | the coverage manifest decides, instead of being reported (Part 2 of 2) (#486) | d373ac400920 |
 | 2026-07-27 | build | stop on a mockup-vs-section contradiction; allow a recorded shared touch (3/3) (#465) | ea2ad4bfab15 |
 | 2026-07-27 | design | a feedback round declares what it changed about the requirements (2/3) (#464) | 4da3f66526b5 |
 | 2026-07-27 | iterate | a branch may not quietly revert work that merged while it was open (#477) | 5b351ed4491d |
@@ -757,7 +761,7 @@ pie title Commit Types
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
-| 2026-07-27 | triage | sweep 4 outbox append(s) into branch | 0cb1e5ad2fd8 |
+| 2026-07-28 | triage | sweep 54 outbox append(s) into branch | 7ec426a2ed01 |
 | 2026-07-27 | triage | follow-up card for requiring the checks that gate nothing | 7387b2796960 |
 | 2026-07-26 | review | default external-review GPT model to gpt-5.6-terra (#435) | 8d750a5fc7af |
 | 2026-07-24 | security | stage full compliance write-set in Step 7.5 finalizer (#434) | 5da96ebe8561 |
@@ -1014,10 +1018,12 @@ pie title Commit Types
 | 2026-03-28 | — | add shipwright-run uv.lock | ef1cc1ad180c |
 | 2026-03-20 | — | initial commit with spec and task list | 07ca9c1de51c |
 
-### Documentation (docs) — 148 commits
+### Documentation (docs) — 150 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-07-28 | planning | record the confirmed admin bypass and the 11-commit drift | 6bb11960b39c |
+| 2026-07-28 | planning | triage-delivery audit findings + queue/refresh handover | 1f8364b68017 |
 | 2026-07-27 | guide | the finalization walkthrough ends at delivery, not at arming (#462) | eea6e1643388 |
 | 2026-07-27 | campaign | correct the revert attribution in the REQ-3 ledger | ff8825879571 |
 | 2026-07-21 | security | document operator-run converge for adopted repos (#420) | d9aa64b32f99 |
@@ -1326,7 +1332,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 1255 |
+| Total commits | 1261 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 1255 |
+| Human-authored commits | 1261 |
 
