@@ -64,7 +64,7 @@ class TestForgedSectionBoundary:
 
     @pytest.mark.parametrize(
         "breaker",
-        ["\x0c", "\x0b", "\r", "\x1c", "\x1d", "\x1e", "\x85", " ", " "],
+        ["\x0c", "\x0b", "\r", "\x1c", "\x1d", "\x1e", "\x85", "\u2028", "\u2029"],
         ids=["FF", "VT", "CR", "FS", "GS", "RS", "NEL", "LS", "PS"],
     )
     def test_a_forged_header_cannot_hide_a_line_from_the_reviewer(self, breaker):
@@ -75,7 +75,7 @@ class TestForgedSectionBoundary:
         assert filtered == diff
 
     @pytest.mark.parametrize(
-        "breaker", ["\x0c", "\r", " "], ids=["FF", "CR", "LS"])
+        "breaker", ["\x0c", "\r", "\u2028"], ids=["FF", "CR", "LS"])
     def test_a_forged_header_does_not_split_the_section(self, breaker):
         # The size cap cuts on the same boundary, so a forged split would also
         # end the reviewed diff mid-hunk while reporting a phantom filename.

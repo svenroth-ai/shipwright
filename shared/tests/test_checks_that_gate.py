@@ -1,23 +1,21 @@
-"""Two workflow-shape contracts for checks that must actually hold something up.
+"""The workflow-shape contract for checks that must actually hold something up.
 
 @FR-01.17
 
 This repo's own workflows, not the adopt templates (those are pinned by
 ``test_ci_workflow_convention.py`` / ``test_security_workflow_convention.py``).
 
-Both halves guard the same failure: **a check that runs, reports a result and
-gates nothing reads as protection while providing none.**
+The failure guarded here: **a check that runs, reports a result and gates
+nothing reads as protection while providing none.**
 
-- *Surface verifiers wired to nothing* — ``scripts/verify_contract_surface.py``
-  and ``scripts/verify_sweep_delivery_surface.py`` existed, were correct, and
-  were referenced by no workflow. They ran nowhere. The reverse-drift test here
-  is the load-bearing one: it fails on the NEXT surface verifier born an orphan,
-  which is the only way this does not recur.
-- *A gate verdict that overstates itself* — ``security.yml`` printed a bare
-  ``Critical findings: 0`` and exited 0 while high findings sat unmentioned. The
-  gate is correct (blocking on critical is the deliberate posture); the
-  *reporting* implied a clean bill of health. The tests pin the honest form AND
-  that adding it did not move the gate.
+*Surface verifiers wired to nothing* — ``scripts/verify_contract_surface.py``
+and ``scripts/verify_sweep_delivery_surface.py`` existed, were correct, and were
+referenced by no workflow. They ran nowhere. The reverse-drift test here is the
+load-bearing one: it fails on the NEXT surface verifier born an orphan, which is
+the only way this does not recur.
+
+The sibling half — a gate verdict that overstates what it covers — is
+``test_security_gate_verdict.py``.
 """
 
 from __future__ import annotations
@@ -32,10 +30,9 @@ yaml = pytest.importorskip("yaml")
 _REPO_ROOT = Path(__file__).resolve().parents[2]
 _WORKFLOWS = _REPO_ROOT / ".github" / "workflows"
 _CI = _WORKFLOWS / "ci.yml"
-_SECURITY = _WORKFLOWS / "security.yml"
 
-# The required job. Wiring a gate into a job branch protection does not require
-# would leave it exactly as decorative as running it nowhere.
+# The required job. Wiring a gate into a job that branch protection does not
+# require would leave it exactly as decorative as running it nowhere.
 _REQUIRED_JOB = "python-checks"
 
 _SURFACE_GATES = {

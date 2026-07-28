@@ -21,6 +21,7 @@ PLUGIN_ROOT = Path(__file__).parent.parent
 sys.path.insert(0, str(PLUGIN_ROOT / "scripts" / "lib"))
 
 import pr_review_lib as L  # noqa: E402
+import pr_review_render as R  # noqa: E402
 
 
 class TestRenderComment:
@@ -102,7 +103,7 @@ class TestSafePath:
 
     @pytest.mark.parametrize(
         "breaker",
-        ["\x0c", "\x0b", "\r", "\n", "\x1c", "\x1d", "\x1e", "\x85", " ", " "],
+        ["\x0c", "\x0b", "\r", "\n", "\x1c", "\x1d", "\x1e", "\x85", "\u2028", "\u2029"],
         ids=["FF", "VT", "CR", "LF", "FS", "GS", "RS", "NEL", "LS", "PS"],
     )
     def test_every_character_the_splitter_refuses_to_break_on_is_neutralised_here(self, breaker):
@@ -115,12 +116,32 @@ class TestSafePath:
         assert breaker not in rendered
 
     @pytest.mark.parametrize(
-        "control", ["​", "‎", "‮", "⁦", "﻿", "\x9b"],
+        "control", ["\u200b", "\u200e", "\u202e", "\u2066", "\ufeff", "\x9b"],
         ids=["ZWSP", "LRM", "RLO", "LRI", "BOM", "C1-CSI"])
     def test_invisible_and_bidi_controls_are_neutralised(self, control):
         # A name that renders differently from its bytes is a name a maintainer
         # cannot check against the PR.
         assert control not in L.safe_path(f"src/a{control}b.py")
+
+    def test_the_matched_alphabet_is_exactly_this_and_nothing_else(self):
+        # The class is written with `\uXXXX` escapes, not literal characters:
+        # an unpaired U+202E renders the rest of its own line right-to-left,
+        # and a U+2028 makes `splitlines()` disagree with git about the file's
+        # length — intolerable in the file whose subject is a splitter and a
+        # reader agreeing where a line ends. Escaping is representation-only,
+        # so the alphabet is pinned by enumeration — and it fails both ways,
+        # a dropped range and a widened one alike.
+        expected = (
+            set(range(0x0000, 0x0020))     # C0
+            | {0x60, 0x7B, 0x7D}           # backtick, braces
+            | set(range(0x007F, 0x00A0))   # DEL + C1
+            | set(range(0x200B, 0x2010))   # zero-width + LRM/RLM
+            | set(range(0x2028, 0x202F))   # separators + bidi embeddings
+            | set(range(0x2066, 0x206A))   # bidi isolates
+            | {0xFEFF}                     # BOM
+        )
+        actual = {cp for cp in range(0x110000) if R._UNSAFE_IN_DISPLAY.match(chr(cp))}
+        assert actual == expected
 
     def test_a_rendered_name_is_length_bounded(self):
         # The metadata block is UNFENCED prose in the prompt. _path_list bounds

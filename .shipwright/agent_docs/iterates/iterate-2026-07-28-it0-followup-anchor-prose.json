@@ -1,0 +1,11 @@
+{
+  "run_id": "iterate-2026-07-28-it0-followup-anchor-prose",
+  "date": "2026-07-28T20:18:25.766776Z",
+  "event_at": "2026-07-28T12:18:50.089137+00:00",
+  "type": "change",
+  "complexity": "medium",
+  "branch": "iterate/it0-followup-anchor-prose",
+  "spec": ".shipwright/planning/iterate/iterate-2026-07-28-it0-followup-anchor-prose.md",
+  "tests_passed": true,
+  "adr": "iterate-2026-07-28-it0-followup-anchor-prose"
+}

@@ -21,15 +21,21 @@ __all__ = ["build_pr_meta", "nothing_reviewed_summary", "render_comment", "safe_
 # out of a code span, read as formatting, or start a fresh line.
 #
 # The alphabet is the SAME nine break characters the splitter refuses to break
-# on, plus the rest of C1, the bidi controls and the zero-width set. That
-# symmetry is the point: `_split_sections` ignores them because git does, so a
-# path carrying one survives parsing intact and arrives HERE — where a reader
-# and a tokenizer both do treat it as a line break. Ignoring it in one place and
-# honouring it in the other is what the whole run is about.
+# on, plus the rest of C1, the bidi embedding/isolate controls and the
+# zero-width space/joiner set. That symmetry is the point: `_split_sections`
+# ignores them because git does, so a path carrying one survives parsing intact
+# and arrives HERE — where a reader and a tokenizer both do treat it as a line
+# break. Ignoring it in one place and honouring it in the other is what the
+# whole run is about.
+# Those two names are deliberately narrow: "the bidi controls" and "the
+# zero-width set" are each a SUPERSET of what this class matches, and the
+# enumeration test now pins the alphabet exactly, so this comment has to
+# describe the real one. Widening it is a behaviour change and does not belong
+# in an escaping fix.
 # Braces are stripped too: a path literally named `{DIFF}` is legal, and the
 # prompt template is placeholder-based.
 _UNSAFE_IN_DISPLAY = re.compile(
-    "[\x00-\x1f\x7f-\x9f`{}​-‏  ‪-‮⁦-⁩﻿]")
+    "[\x00-\x1f\x7f-\x9f`{}\u200b-\u200f\u2028\u2029\u202a-\u202e\u2066-\u2069\ufeff]")
 
 # The metadata block sits OUTSIDE the fence in the user template, so a rendered
 # name is unfenced prose in the prompt. `_path_list` bounds how MANY names are

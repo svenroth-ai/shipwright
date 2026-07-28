@@ -50,9 +50,8 @@ sound because one producer calling ``datetime.now()`` writes both.
 
 * A completion that records no new event AND does not re-write the marker leaves
   its anchor equal to the note's, and the same-phase branch reads that as a pass.
-* ``iterate`` records no anchor, so the clock is never consulted for it. Its
-  ledger is one file per run id, so a stale marker names a DIFFERENT run and the
-  run-id branch catches it; only an in-place F5c re-run escapes.
+* A completion recorded before its producer stamped ``event_at`` carries no
+  anchor, so the clock is not consulted for it and the run id answers alone.
 * Cross-phase, the owner's completion is looked up by the run the NOTE names. If
   the owner recorded SEVERAL completions under that one run id, the last is used
   and a note written at an earlier one reads as newer than it is.
