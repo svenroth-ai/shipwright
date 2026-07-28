@@ -1,0 +1,1 @@
+`check_required_checks.py` compares the checks that must pass before merging (configured at GitHub, invisible from inside the repo) against the checks the project actually produces, reporting both a check that runs but gates nothing and one that is required but can never report.

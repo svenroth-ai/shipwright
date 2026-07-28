@@ -1,0 +1,10 @@
+{
+  "run_id": "iterate-2026-07-27-test-phase-record-honesty",
+  "date": "2026-07-27T08:39:31.432396Z",
+  "type": "change",
+  "complexity": "medium",
+  "branch": "iterate/test-phase-record-honesty",
+  "spec": ".shipwright/planning/iterate/iterate-2026-07-27-test-phase-record-honesty.md",
+  "tests_passed": true,
+  "adr": "iterate-2026-07-27-test-phase-record-honesty"
+}

@@ -92,8 +92,13 @@ def test_ensure_current_integrates_when_behind(git_origin_repo, make_worktree, m
     assert result["integrated"] is True, result
     assert result["behind"] >= 1, result
     assert "merge-committed" in result["steps"]
-    assert "regenerated-followup" in result["steps"]
+    # No follow-up commit: the fake stages a DERIVED snapshot, which
+    # `restore_derived_to_head` puts back before the commit step can see it
+    # (iterate-2026-07-27-derived-snapshots-off-branch). The branch still advances —
+    # `integrated` is carried by the MERGE commit, not by the regeneration.
+    assert "regenerate-noop" in result["steps"]
     assert _git(wt, "rev-parse", "HEAD").stdout.strip() != head_before, "branch must advance"
+    assert not _git(wt, "status", "--porcelain").stdout.strip(), "worktree must be clean"
 
 
 def test_ensure_current_blocks_on_source_conflict(git_origin_repo, make_worktree, monkeypatch) -> None:

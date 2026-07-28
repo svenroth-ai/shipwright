@@ -6,10 +6,9 @@ import re
 from pathlib import Path
 
 
+from changelog_splice import insert_section as _insert_section
 from tools.aggregate_changelog import (
     CHANGELOG_NAME,
-    _find_structural_insertion_line,
-    _insert_section,
     _render_versioned_section,
     aggregate,
 )
@@ -97,7 +96,7 @@ class TestRender:
 
 
 # ---------------------------------------------------------------------------
-# _find_structural_insertion_line + _insert_section
+# insert_section — the shared implementation the aggregator now uses
 # ---------------------------------------------------------------------------
 
 
@@ -158,10 +157,10 @@ class TestStructuralInsert:
         assert "## [0.3.0]" in new
 
 
-def test_find_structural_insertion_line_handles_edge_cases():
-    assert _find_structural_insertion_line([]) == 0
-    # Only a title + blank line.
-    assert _find_structural_insertion_line(["# Changelog", ""]) == 2
+# The degenerate-file edge cases moved to `test_changelog_sections_shared.py`
+# when `_find_structural_insertion_line` was retired: the insertion point is now
+# the shared `changelog_sections.insertion_index`, and its edge cases belong to
+# the module that owns it.
 
 
 # ---------------------------------------------------------------------------

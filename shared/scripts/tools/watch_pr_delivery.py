@@ -192,7 +192,16 @@ def main(argv: list[str] | None = None) -> int:
 
 
 def _render_blocker(cause: dict) -> str:
+    """One cause, in words.
+
+    Matched on ``kind``, never on which keys happen to be present: an
+    ``unresolved_review_threads`` cause carries BOTH ``count`` and ``detail``, so
+    a `"detail" in cause` test rendered it as a raw Python list of untrusted
+    GitHub file paths instead of its count (caught by external review).
+    """
     kind = cause.get("kind", "?")
+    if kind == "merge_state":  # our own wording, safe to print verbatim
+        return f"{kind} ({cause.get('state', '?')}): {cause.get('detail', '')}"
     if "checks" in cause:
         return f"{kind}: {', '.join(cause['checks'])}"
     if "count" in cause:
@@ -211,15 +220,22 @@ def _render_pending(result: dict) -> str:
     causes = blockers.get("causes") or []
     unknown = blockers.get("unknown") or []
     parts: list[str] = []
-    if blockers.get("blocking"):
-        parts.append("the host reports the merge as BLOCKED")
+    # Report the state OBSERVED, never a fixed phrase: `blocking` is true for
+    # several states now (BLOCKED, DIRTY, DRAFT), and the old wording announced
+    # "BLOCKED" for all of them — including a PR that merely had conflicts.
+    if blockers.get("merge_state_status"):
+        parts.append(f"merge state {blockers['merge_state_status']}")
     if causes:
-        parts.append("blocked by " + "; ".join(_render_blocker(c) for c in causes))
+        lead = "blocked by " if blockers.get("blocking") else "possible cause(s): "
+        parts.append(lead + "; ".join(_render_blocker(c) for c in causes))
     if unknown:
         parts.append(
             "could not check " + ", ".join(f"{u['source']} ({u['reason']})" for u in unknown)
         )
-    if not parts:
+    if not causes and not unknown:
+        # Keyed on causes, NOT on `parts`: the observed merge state is always
+        # reported, so a `not parts` test would never fire and the operator would
+        # lose the one line that says "nothing is wrong, it is just queued".
         parts.append(
             "no blocker found — every required check reported and no review thread "
             "is unresolved; the PR is most likely still queued"

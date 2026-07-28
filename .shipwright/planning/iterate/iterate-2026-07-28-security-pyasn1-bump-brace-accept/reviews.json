@@ -1,0 +1,66 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-07-28-security-pyasn1-bump-brace-accept",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-07-28T06:16:05.835793+00:00",
+      "disposition": null,
+      "recorded_by": "iterate-session",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-07-28T06:16:22.485067+00:00",
+      "disposition": "Phase Matrix: Mini-Plan / plan review is FEATURE-only at small; this is a CHANGE.",
+      "recorded_by": "iterate-session",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "code": {
+      "review_type": "code",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-07-28T06:16:22.583754+00:00",
+      "disposition": "Phase Matrix: Full Code Review at small runs 'only if risk flags'. risk_detectors raised none from the diff — uv.lock is absent from TOUCHES_BUILD_FILE_PATTERNS (JS-only list), and .trivyignore.yaml / shipwright_accepted_risks.yaml match no IO_BOUNDARY pattern.",
+      "recorded_by": "iterate-session",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-07-28T06:16:22.680882+00:00",
+      "disposition": "Stage 3 doubt-reviewer is conditional on the Stage 2 cascade running; the cascade is not triggered at small without risk flags.",
+      "recorded_by": "iterate-session",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-07-28T06:16:22.781200+00:00",
+      "disposition": "Phase Matrix: External LLM Review is 'skip' at small (auto at medium+ only).",
+      "recorded_by": "iterate-session",
+      "parse_status": null,
+      "raw_excerpt": null
+    }
+  }
+}

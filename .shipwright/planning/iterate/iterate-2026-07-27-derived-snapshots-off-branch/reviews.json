@@ -1,0 +1,230 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-07-27-derived-snapshots-off-branch",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": "self",
+      "completed_at": "2026-07-27T21:12:44.627170+00:00",
+      "disposition": null,
+      "recorded_by": "iterate-step-7 (7-point checklist in the iterate spec)",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 13,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "Dependency",
+          "file": null,
+          "line": null,
+          "finding": "The plan notes that `shipwright_test_results.json` has \"~12 consumers\" in the boundaries analysis, but C3 only specifies updating the writer (`append_iterate_entry.py`) to the new F5c schema. The other 12 consumers will crash or read missing data.",
+          "suggestion": "Add an explicit step to update the 12 downstream consumers to read/aggregate from `.shipwright/agent_docs/iterates/.json` instead of the legacy `shipwright_test_results.json` path.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "Edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The `derived-snapshots-refresh.yml` workflow triggers on `push` to `main` and outputs an auto-merging PR. When that bot PR merges, it generates another `push` to `main`. If the generated markdown contains any timestamps or jitter, this will trigger an infinite CI loop.",
+          "suggestion": "Add `[skip ci]` to the bot's commit message, or explicitly ignore the bot's GitHub Actor in the workflow trigger conditions.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "Approach",
+          "file": null,
+          "line": null,
+          "finding": "C1 states the merge conflict resolver \"simply no longer ships the regenerated result.\" If a tracked file is in a merge conflict, Git mechanically requires a version of the file to be staged in order to conclude the merge. It cannot be left unstaged or dirty without aborting the merge.",
+          "suggestion": "Specify that during conflict resolution, `integrate_main` will explicitly accept the `origin/main` version of the derived files (e.g., `git checkout origin/main -- <path>`) and stage them to successfully conclude the git merge.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "Risk",
+          "file": null,
+          "line": null,
+          "finding": "C1 and C2 state that the files are still generated locally for F0/F11 to read, but they are no longer staged. Because these paths are tracked by Git, this will leave the agent/developer working tree permanently \"dirty\" with uncommitted changes. This can break tooling that expects a clean work tree or lead to accidental commits if `-a` is ever used.",
+          "suggestion": "Add a step to execute `git restore <paths>` for the derived files at the end of the iterate process (or just before F6 is finalized) to reset the working tree back to its clean state.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "Security",
+          "file": null,
+          "line": null,
+          "finding": "The post-merge workflow (C4) aims to create an \"auto-merging PR\" using the default `GITHUB_TOKEN`. If `main` is protected by branch protection rules (e.g., required reviews), the default token cannot bypass them to auto-merge.",
+          "suggestion": "Verify if branch protection allows bot auto-merges without review; if not, you will need to provision and pass a GitHub App token or PAT to the workflow instead of the default token.  Overall Assessment: The core architectural shift to centralize derived file generation post-merge is exactly the right approach and effectively eliminates the N(N-1)/2 PR scaling problem. The plan must be updated to address the mechanical realities of Git merges, dirty worktrees, and downstream consumers before implementation begins.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "C1/C2 leave tracked derived files regenerated but unstaged on iterate worktrees. That creates a persistently dirty worktree. In particular, `git merge` during F11 can refuse to proceed when local modifications overlap incoming paths, and any existing “clean tree” assertions, status checks, or broad staging commands may fail or accidentally commit the files. “Do not stage” is not sufficient when the files remain tracked and modified.",
+          "suggestion": "Define the lifecycle of local derived output explicitly: regenerate only for the phases that consume it, then restore the tracked files to `HEAD` before merge/commit operations; or generate into a separate temporary/output location for local readers. Add tests for an iterate branch with regenerated snapshots followed by F11 integration, commit, and final clean-worktree validation.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "change-history.md` is self-referential under the proposed doc-PR model. A derived-snapshots PR generated from main is itself a new commit when merged to main. The next push-to-main run sees that commit in history and changes `change-history.md`, producing another PR, whose merge produces another history change. This can create an endless sequence of snapshot PRs and means a snapshot cannot both include its own merge commit and be an exact representation of the resulting main revision.",
+          "suggestion": "Establish and document a derivation boundary. For example, exclude commits authored/marked as derived-snapshot refreshes from change-history accounting, or define the artifact as representing the main parent revision used to create the PR rather than the eventual merge commit. Implement the same exclusion consistently in any history- or event-derived artifacts, and add an integration test showing that a merged refresh PR does not produce a subsequent no-op-changing refresh PR.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "“Force-update a single standing branch” must be implemented as reset/create the branch from the exact triggering `main` SHA before regeneration. If the workflow checks out the prior `chore/derived-snapshots` branch and regenerates there, its own prior unmerged/old documentation commit becomes part of the branch history presented to the generators—the same branch-local-history defect this change is intended to remove.",
+          "suggestion": "Capture the triggering `main` SHA, create/reset the refresh branch to that SHA, run generation before creating the refresh commit, and ensure the PR head is updated with only that generated commit. Verify the generated revision is based on main with tests or logged assertions such as `merge-base --is-ancestor <main-sha> HEAD` and an expected one-commit branch delta.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "C3 adds evidence to the per-run entry but does not address the roughly twelve existing consumers of `shipwright_test_results.json.iterate_latest`. Consumers and the regenerated test-evidence/traceability views may continue to read the lossy slot, so the durable data is written but not actually used for audit output. There is also an unaddressed timing question: F5c must run only after `test_completeness` and `surface_verification` are finalized.",
+          "suggestion": "Inventory and classify those consumers, then migrate consumers requiring run-level or historical evidence to the per-run entries. Define the entry schema, required/optional fields, and whether F5c writes final evidence or a later phase updates the per-run record. Preserve `iterate_latest` only as a compatibility view if needed, with an explicit deprecation plan and schema validation tests.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "The plan identifies F6 and `integrate_main` as producers, but F6 is documentation rather than an enforcement point. Any generic `git add -A`, hook, repair path, CI script, or future iterate implementation can still stage the tracked derived files. This would silently reintroduce the conflict class. Existing open iterate branches may also already contain snapshot commits.",
+          "suggestion": "Add a narrow enforcement check in the final iterate commit path that rejects or removes the eleven paths from an iterate-branch commit, while permitting the refresh branch to commit them. Audit actual staging callers rather than only the documented F6 list. Define how currently open branches are cleaned—normally by integrating main and selecting/restoring main’s snapshot version—before they merge.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "GitHub Actions concurrency with `cancel-in-progress: true` is not, by itself, a complete debounce/coalescing design. A canceled run may already have force-pushed the refresh branch or opened/updated a PR, and a later run can race with auto-merge or generate against a now-stale main SHA. A push caused by the refresh PR merge will also invoke the workflow again.",
+          "suggestion": "Make refresh updates idempotent and revision-aware: generate from the event SHA, compare generated output before pushing, only update an existing PR when its branch base is reset to that SHA, and re-check main immediately before enabling auto-merge. Explicitly handle no-diff runs and stale PR heads. Add a burst-of-pushes test or dry-run scenario covering cancellation after branch update but before PR/auto-merge operations.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "security",
+          "file": null,
+          "line": null,
+          "finding": "The new push-triggered workflow executes repository-controlled generation code with `contents: write` and `pull-requests: write`. Once a change to a generator is merged, that code can use the write token to alter the refresh branch or create PRs. This is a practical CI privilege-escalation surface beyond merely granting a bot branch-write permission.",
+          "suggestion": "Require CODEOWNERS/protected review for workflow files and generation/churn scripts, pin all third-party actions to immutable SHAs, avoid `pull_request_target`, and expose the write token only to the final job that needs it. Restrict that job to trusted `push`/manual events and ensure generated commands do not consume untrusted PR checkout content. Record the requested posture acknowledgment and verify repository settings permit bot-created auto-merge under branch protection.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "The workflow’s ability to create and auto-merge the standing PR depends on repository settings not stated in the plan: Actions write permissions, branch-protection allowances for the bot, auto-merge being enabled, required checks being available for the new PR type, and whether approval requirements permit an Actions-created PR to merge. Without these, the workflow will accumulate a stale PR rather than maintain the intended view.",
+          "suggestion": "Treat these as explicit rollout prerequisites, validate them in a non-production/dry-run repository or with a manually dispatched workflow, and provide failure visibility when the PR cannot be updated or auto-merge cannot be enabled. Include an initial `workflow_dispatch`/bootstrap path so the already-incorrect snapshots on main are corrected without waiting for an unrelated future merge.  Overall, moving shared derived views to a main-based refresh PR is the correct direction and addresses both conflict churn and branch-local incorrectness. The approach needs revision around dirty tracked worktrees, self-referential history generation, and deterministic main-based workflow execution before it is safe to ship. SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "gemini+openai",
+      "completed_at": "2026-07-27T19:57:32.204252+00:00",
+      "disposition": null,
+      "recorded_by": "iterate-step-3.5",
+      "parse_status": "structured",
+      "raw_excerpt": "[gemini] Here is a review of the implementation approach for moving derived snapshots out of the iterate PR:\n\n- **Category:** Dependency\n- **Severity:** High\n- **Finding:** The plan notes that `shipwright_test_results.json` has \"~12 consumers\" in the boundaries analysis, but C3 only specifies updating the writer (`append_iterate_entry.py`) to the new F5c schema. The other 12 consumers will crash or read missing data.\n- **Suggestion:** Add an explicit step to update the 12 downstream consumers to read/aggregate from `.shipwright/agent_docs/iterates/*.json` instead of the legacy `shipwright_test_results.json` path.\n\n- **Category:** Edge-case\n- **Severity:** High\n- **Finding:** The `derived-snapshots-refresh.yml` workflow triggers on `push` to `main` and outputs an auto-merging PR. When that bot PR merges, it generates another `push` to `main`. If the generated markdown contains any timestamps or jitter, this will trigger an infinite CI loop.\n- **Suggestion:** Add `[skip ci]` to the bot's commit message, or explicitly ignore the bot's GitHub Actor in the workflow trigger conditions.\n\n- **Category:** Approach\n- **Severity:** Medium\n- **Finding:** C1 states the merge conflict resolver \"simply no longer ships the regenerated result.\" If a tracked file is in a merge conflict, Git mechanically requires a version of the file to be staged in order to conclude the merge. It cannot be left unstaged or dirty without aborting the merge.\n- **Suggestion:** Specify that during conflict resolution, `integrate_main` will explicitly accept the `origin/main` version of the derived files (e.g., `git checkout origin/main -- <path>`) and stage them to successfully conclude the git merge. \n\n- **Category:** Risk\n- **Severity:** Medium\n- **Finding:** C1 and C2 state that the files are still generated locally for F0/F11 to read, but they are no longer staged. Because these paths are tracked by Git, this will leave the agent/developer working tree permanently \"dirty\" with uncommitted change […truncated]\n\n[openai] 1. **Category: edge-case**  \n   **Severity: high**  \n   **Finding:** C1/C2 leave tracked derived files regenerated but unstaged on iterate worktrees. That creates a persistently dirty worktree. In particular, `git merge` during F11 can refuse to proceed when local modifications overlap incoming paths, and any existing “clean tree” assertions, status checks, or broad staging commands may fail or accidentally commit the files. “Do not stage” is not sufficient when the files remain tracked and modified.  \n   **Suggestion:** Define the lifecycle of local derived output explicitly: regenerate only for the phases that consume it, then restore the tracked files to `HEAD` before merge/commit operations; or generate into a separate temporary/output location for local readers. Add tests for an iterate branch with regenerated snapshots followed by F11 integration, commit, and final clean-worktree validation.\n\n2. **Category: approach**  \n   **Severity: high**  \n   **Finding:** `change-history.md` is self-referential under the proposed doc-PR model. A derived-snapshots PR generated from main is itself a new commit when merged to main. The next push-to-main run sees that commit in history and changes `change-history.md`, producing another PR, whose merge produces another history change. This can create an endless sequence of snapshot PRs and means a snapshot cannot both include its own merge commit and be an exact representation of the resulting main revision.  \n   **Suggestion:** Establish and document a derivation boundary. For example, exclude commits authored/marked as derived-snapshot refreshes from change-history accounting, or define the artifact as representing the main parent revision used to create the PR rather than the eventual merge commit. Implement the same exclusion consistently in any history- or event-derived artifacts, and add an integration test showing that a merged refresh PR does not produce a subsequent no-op-changing refresh PR.\n\n3. **Categor […truncated]"
+    },
+    "code": {
+      "review_type": "code",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-07-27T21:12:26.160592+00:00",
+      "disposition": "internal code-reviewer runs as a subagent; subagent dispatch is disabled for this session by the launch --append-system-prompt directive. Substituted by: external code review (openai, verdict revise, 4 findings acted on) + the full shared/tests root (5886 green) + Self-Review step 7.",
+      "recorded_by": "iterate-step-3.7",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-07-27T21:12:56.846167+00:00",
+      "disposition": "doubt-reviewer is an optional Stage-3 subagent (advisory per SKILL.md Step 6); subagent dispatch is disabled for this session by the launch --append-system-prompt directive. Its adversarial role was served by the external code review, which returned 'revise' and produced two real defects that were fixed: restore_derived_to_head skipped DELETED tracked snapshots, and the gate was a WARNING under a non-strict F11.",
+      "recorded_by": "iterate-step-3.7",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 5,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "spec",
+          "file": ".shipwright/planning/iterate/2026-07-27-derived-snapshots-off-branch-miniplan.md",
+          "line": 51,
+          "finding": "AC-2 is not implemented. The plan explicitly drops C3, and the diff contains no change to `append_iterate_entry.py` or the per-run entry schema to preserve `test_completeness` and `surface_verification`. Removing `shipwright_test_results.json` from iterate commits therefore leaves the specified durable machine-readable evidence absent.",
+          "suggestion": "Extend the F5c per-run entry with the required evidence fields, define their schema/timing, and add tests that prove each run’s evidence remains available after subsequent runs overwrite `iterate_latest`.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "spec",
+          "file": ".shipwright/planning/iterate/2026-07-27-derived-snapshots-off-branch-miniplan.md",
+          "line": 46,
+          "finding": "AC-3 is entirely deferred rather than implemented. There is no post-merge workflow, no main-based regeneration, and no standing/debounced auto-merging documentation PR. As a result, the change freezes the derived artifacts on main indefinitely, rather than making them correct views derived from main.",
+          "suggestion": "Do not merge this as the completed change until the refresh workflow is implemented with a defined main-SHA derivation boundary, coalescing behavior, and safe bot authentication/auto-merge configuration; alternatively, formally narrow and re-approve the specification as an interim change.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "bug",
+          "file": "shared/scripts/lib/derived_snapshots.py:89-92",
+          "line": null,
+          "finding": "restore_derived_to_head()` does not restore a deleted tracked derived snapshot because it only includes paths for which `(project_root / rel).exists()`. A `git rm` or producer deletion of `shipwright_test_results.json` or a compliance file leaves the deletion staged/dirty; it can then enter the iterate commit despite the intended exclusion.",
+          "suggestion": "Remove the filesystem-existence condition for tracked porcelain entries and run `git checkout HEAD -- <path>` for deletions as well. Add a test covering both an unstaged deletion and a staged `git rm` of a derived snapshot.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "bug",
+          "file": "shared/scripts/tools/verifiers/derived_snapshot_gate.py:60-69",
+          "line": null,
+          "finding": "The purported enforcement gate does not reject a commit containing derived snapshots: it returns a `WARNING` result, and the documented lifecycle invokes F11 non-strictly. A stray `git add -A` can therefore still produce and merge an iterate commit containing these paths—the exact regression the gate is intended to prevent.",
+          "suggestion": "Make this an error/blocking result for iterate commits, or enforce removal before the commit is created. Also inspect the full branch/PR delta against its main merge-base rather than only the supplied final commit, so a derived snapshot committed in an earlier commit cannot evade the check.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": "shared/scripts/tools/verifiers/iterate_checks.py:410-415",
+          "line": null,
+          "finding": "The build-dashboard check treats any locally readable F5c JSON entry with a matching `run_id` as durable evidence, without verifying that the entry is tracked or present in the commit/branch being finalized. An untracked, manually created entry suppresses the warning even though no evidence will land in the PR; the added test itself demonstrates this by creating the entry without staging or committing it.",
+          "suggestion": "Require the matching per-run entry to be tracked and reachable from the inspected commit/branch (and ideally validate the required evidence fields), rather than trusting an arbitrary worktree file.  Overall assessment: the branch correctly removes several direct snapshot producers and handles the dirty-worktree merge problem, but it deliberately omits two central acceptance criteria and has gaps that allow derived snapshots or unsupported evidence claims to slip through. Ship only after the missing durable-evidence and post-merge-refresh work is delivered or the specification is explicitly revised to an interim scope.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openai (gemini unavailable)",
+      "completed_at": "2026-07-27T21:12:18.063476+00:00",
+      "disposition": null,
+      "recorded_by": "iterate-step-3.7",
+      "parse_status": "partial",
+      "raw_excerpt": "[gemini] If a path doesn't exist in HEAD (because it's newly added), `git checkout HEAD -- <path>` will fail with: `error: pathspec '...' did not match any file(s) known to git`!!\n  And it will exit non-zero!\n  Will `subprocess.run(..., check=False)` raise an exception? The `_git` helper sets `check=False` by default.\n  Wait, `_git(project_root, \"checkout\", \"HEAD\", \"--\", *restorable)` uses `check=False`.\n  If it fails because ONE of the restorable paths doesn't exist in HEAD, then ALL paths in that command might fail to restore! `git` might abort the\n\n[openai] - Category: spec\n- Severity: high\n- File: `.shipwright/planning/iterate/2026-07-27-derived-snapshots-off-branch-miniplan.md:51`\n- Finding: AC-2 is not implemented. The plan explicitly drops C3, and the diff contains no change to `append_iterate_entry.py` or the per-run entry schema to preserve `test_completeness` and `surface_verification`. Removing `shipwright_test_results.json` from iterate commits therefore leaves the specified durable machine-readable evidence absent.\n- Suggestion: Extend the F5c per-run entry with the required evidence fields, define their schema/timing, and add tests that prove each run’s evidence remains available after subsequent runs overwrite `iterate_latest`.\n\n- Category: spec\n- Severity: high\n- File: `.shipwright/planning/iterate/2026-07-27-derived-snapshots-off-branch-miniplan.md:46`\n- Finding: AC-3 is entirely deferred rather than implemented. There is no post-merge workflow, no main-based regeneration, and no standing/debounced auto-merging documentation PR. As a result, the change freezes the derived artifacts on main indefinitely, rather than making them correct views derived from main.\n- Suggestion: Do not merge this as the completed change until the refresh workflow is implemented with a defined main-SHA derivation boundary, coalescing behavior, and safe bot authentication/auto-merge configuration; alternatively, formally narrow and re-approve the specification as an interim change.\n\n- Category: bug\n- Severity: medium\n- File: `shared/scripts/lib/derived_snapshots.py:89-92`\n- Finding: `restore_derived_to_head()` does not restore a deleted tracked derived snapshot because it only includes paths for which `(project_root / rel).exists()`. A `git rm` or producer deletion of `shipwright_test_results.json` or a compliance file leaves the deletion staged/dirty; it can then enter the iterate commit despite the intended exclusion.\n- Suggestion: Remove the filesystem-existence condition for tracked porcelain entries and run `git […truncated]"
+    }
+  }
+}

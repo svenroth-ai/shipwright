@@ -1,16 +1,19 @@
 #!/usr/bin/env python3
 """The three triage decisions as library helpers, plus a promote-only CLI.
 
-``promote`` / ``dismiss`` / ``defer`` wrap `triage.mark_status` with the
-validation both operator surfaces share — ``triage_cli.py`` and the Command
-Center's Triage tab dispatch through these, so an audit trail cannot depend on
-which surface made the call. All three require the item to exist and to still
-be undecided (`triage`); moving out of a decided state is deliberately not
-offered here (use ``mark_status``). Operator strings are sanitized: no control
-characters, `--task-ref` ≤200 chars, `--reason` ≤500.
+``promote`` / ``dismiss`` / ``defer`` wrap `triage.mark_status` with this
+repo's CLI validation: the item must exist and still be undecided (`triage`);
+moving out of a decided state is not offered here (use ``mark_status``).
+Operator strings are sanitized — no control chars, task-ref ≤200, reason ≤500.
+
+**Reference semantics the Command Center's Triage tab mirrors — NOT a code
+path it shares**, so tightening validation here does not cover both surfaces
+(verified divergence: its snooze route permits a reason-less park —
+`shipwright-webui` `server/src/routes/triage.ts::parseDismissSnoozeBody`,
+2026-07-27). Canonical statement: `shared/glossary.md` → *Defer (Snooze)*.
 
 Usage:
-    uv run shared/scripts/tools/triage_promote.py \\
+    uv run shared/scripts/tools/triage_promote.py \
         --id trg-XXXXXXXX --task-ref "EXT:linear-ENG-123" [--reason TEXT]
 """
 
@@ -34,8 +37,9 @@ from triage import (  # noqa: E402
 _TASK_REF_MAX_LEN = 200
 _REASON_MAX_LEN = 500
 
-# Adjective per decided state, so the rejection message reads naturally for
-# whichever transition was refused.
+# Adjective per decided state. Read with .get: a KeyError HERE comes from the
+# VALIDATION path, which the CLI maps to "triage item not found" — a wrong,
+# quiet answer. The default stops a soft failure from lying.
 _DECIDABLE = {"dismissed": "dismissable", "snoozed": "deferrable"}
 
 
@@ -56,8 +60,9 @@ def _sanitize_single_line(raw: str, *, label: str, max_len: int) -> str:
             f"{label} too long ({len(value)} > {max_len} chars)"
         )
     for ch in value:
-        # Allow printable ASCII + non-ASCII; reject control chars
-        # (newline, tab, NUL, etc.).
+        # Printable ASCII + non-ASCII allowed; control chars rejected
+        # (newline, tab, NUL, etc. — a stored newline is what let a title
+        # forge a row in the CLI listing before the display-side fix).
         if ord(ch) < 0x20 or ord(ch) == 0x7F:
             raise ValueError(
                 f"{label} contains control character (0x{ord(ch):02X}); "
@@ -81,10 +86,10 @@ def sanitize_reason(raw: str) -> str:
 def _require_store(project_root: Path) -> None:
     """Both stores absent → the inbox was never initialised.
 
-    Distinct from an unknown id, which gets its own exit code at the CLI
-    layer. F29: the gitignored outbox counts, mirroring triage.mark_status's
-    union model — an idle-main background producer can append there before the
-    tracked store exists, and such an item must still be decidable.
+    Distinct from an unknown id, which gets its own exit code at the CLI layer.
+    F29: the gitignored outbox counts (mirroring triage.mark_status's union
+    model) — an idle-main producer appends there before the tracked store
+    exists, and such an item must still be decidable.
     """
     tracked_path = _triage_path(project_root)
     outbox_path = _outbox_path(project_root)
@@ -183,8 +188,8 @@ def _decide_from_triage(
     if current != "triage":
         raise ValueError(
             f"item {item_id} has status={current!r}; only `triage` is "
-            f"{_DECIDABLE[new_status]} from this CLI (use mark_status for "
-            f"other transitions)"
+            f"{_DECIDABLE.get(new_status, 'decidable')} from this CLI "
+            f"(use mark_status for other transitions)"
         )
 
     mark_status(project_root, item_id, new_status=new_status, by=by,
@@ -232,8 +237,9 @@ def defer(
 
     The third decision beside promote and dismiss (FR-01.14), stored as
     `snoozed`. Same contract as ``dismiss``: reason required, only `triage`
-    items are deferrable, same three exceptions. Neither surface can un-defer
-    — the Command Center's status-flip route also accepts `triage` alone.
+    items are deferrable, same three exceptions. No subcommand reverses it;
+    ``mark_status(..., new_status="triage")`` is the supported correction until
+    `trg-51f8e2a1` lands.
     """
     return _decide_from_triage(
         project_root, item_id=item_id, new_status="snoozed",

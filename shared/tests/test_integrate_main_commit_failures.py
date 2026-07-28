@@ -23,7 +23,14 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(REPO_ROOT / "shared" / "scripts"))
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from test_integrate_main import _DASH, _RUN_ID, _git, _set_repo_identity, _write  # noqa: E402
+from test_integrate_main import (  # noqa: E402
+    _CAMP_STATUS,
+    _DASH,
+    _RUN_ID,
+    _git,
+    _set_repo_identity,
+    _write,
+)
 from tools import integrate_main  # noqa: E402
 
 
@@ -49,11 +56,17 @@ def _seed_diverged_dashboard(git_origin_repo, make_worktree, slug: str) -> Path:
 
 
 def _staging_regen(project_root, run_id, **kw):
-    """A ``regenerate_tracked_snapshots`` stub that STAGES a snapshot change, so
-    ``_has_staged_changes`` is True and the separate follow-up commit is attempted."""
-    _write(Path(project_root), _DASH, f"regenerated ({run_id})\n")
-    _git(Path(project_root), "add", "--", _DASH)
-    return {_DASH: "regenerated"}
+    """A ``regenerate_tracked_snapshots`` stub that STAGES a change, so
+    ``_has_staged_changes`` is True and the separate follow-up commit is attempted.
+
+    Stages the CAMPAIGN STATUS, not a derived snapshot: since
+    iterate-2026-07-27-derived-snapshots-off-branch a staged derived snapshot is
+    restored before the commit step can see it, so it no longer drives a follow-up
+    at all. These tests are about how a REFUSED follow-up is reported, not about
+    which artifact triggered it."""
+    _write(Path(project_root), _CAMP_STATUS, f'{{"run": "{run_id}"}}\n')
+    _git(Path(project_root), "add", "--", _CAMP_STATUS)
+    return {_CAMP_STATUS: "regenerated"}
 
 
 def test_integrate_returns_json_and_aborts_when_merge_commit_blocked(
@@ -151,8 +164,8 @@ def test_integrate_returns_followup_commit_failed_when_followup_blocked(
     assert _git(wt, "rev-parse", "--verify", "--quiet", "MERGE_HEAD", check=False).returncode != 0
     parents = _git(wt, "rev-list", "--parents", "-n", "1", "HEAD").stdout.split()
     assert len(parents) == 3, "merge commit must remain (commit + two parents)"
-    # The regenerated snapshot stays staged for the manual retry the message promises.
-    assert _DASH in _git(wt, "diff", "--cached", "--name-only").stdout
+    # The re-projected artifact stays staged for the manual retry the message promises.
+    assert _CAMP_STATUS in _git(wt, "diff", "--cached", "--name-only").stdout
 
 
 def test_main_cli_reports_followup_commit_failed_exit_8(

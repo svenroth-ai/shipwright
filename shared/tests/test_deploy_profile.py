@@ -7,6 +7,7 @@ because a fixture only proves the reader agrees with the test author.
 """
 
 import json
+from pathlib import Path
 
 import pytest
 from deploy_profile import (
@@ -19,7 +20,7 @@ from deploy_profile import (
     smoke_policy,
 )
 
-REPO_ROOT = __import__("pathlib").Path(__file__).resolve().parent.parent.parent
+REPO_ROOT = Path(__file__).resolve().parent.parent.parent
 PROFILES_DIR = REPO_ROOT / "shared" / "profiles" / "deploy"
 SHIPPED = sorted(PROFILES_DIR.glob("*.json"))
 

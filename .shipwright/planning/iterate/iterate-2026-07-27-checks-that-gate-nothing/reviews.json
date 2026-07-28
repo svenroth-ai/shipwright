@@ -1,0 +1,212 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-07-27-checks-that-gate-nothing",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-07-27T19:21:54.971051+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 12,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "Edge Case",
+          "file": null,
+          "line": null,
+          "finding": "Workflow enumeration may misidentify matrix jobs or overridden status contexts. Statically parsing `.github/workflows/` (`all_workflow_check_names()`) yields file names or static `job.name` values, but GitHub checks often appear in the API under dynamic names (e.g., if a matrix is used like `Test (3.10)`, `Test (3.11)`). If the repository uses matrix strategies, the drift checker will falsely report the actual context as a \"phantom\" and the root job name as \"unenforced\".",
+          "suggestion": "Verify how `all_workflow_check_names()` handles matrix expansions. If matrices are used, you may need to rely on the GitHub API to fetch recently posted status contexts for `main` rather than completely depending on static YAML parsing, or explicitly map matrix permutations in `POSTED_STATUS_CONTEXTS`.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "Dependency",
+          "file": null,
+          "line": null,
+          "finding": "The local `check_required_checks.py` script relies on the operator's `gh` CLI for admin-scoped authentication, which is a good security separation. However, it will likely throw an unhandled traceback if `gh` is not installed, not authenticated, or missing the necessary scopes.",
+          "suggestion": "Add a fast-fail prerequisite check at the top of the script running `gh auth status` (or similar) that emits a clear human-readable error (e.g., \"Requires GitHub CLI with admin:repo scope. Run 'gh auth login'\").",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "Security",
+          "file": null,
+          "line": null,
+          "finding": "The update to `security.yml` emits GitHub Actions workflow commands (`::warning::`). If this warning includes any raw text from the scanner tool (like vulnerability titles or dependency names) rather than just the integer counts, it is vulnerable to workflow command injection via manipulated newlines in the tool output.",
+          "suggestion": "Ensure the `::warning::` echo statement only outputs aggregate static text and integers (e.g., `echo \"::warning::$HIGH_COUNT high vulnerabilities found\"`), or aggressively sanitize any included dynamic strings.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "Risk",
+          "file": null,
+          "line": null,
+          "finding": "verify_contract_surface.py` and `verify_sweep_delivery_surface.py` are now bundled into the existing `Python (lint + test)` job rather than running as their own job. If these scripts fail, they will fail the entire linting/testing job.",
+          "suggestion": "Ensure these scripts emit clear `stdout/stderr` explaining what failed (e.g., \"Surface contract mismatch in X\"), so developers aren't left hunting through standard pytest/lint output trying to figure out why the otherwise-stable test job suddenly turned red.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "The required-check drift comparison must use the same identity model as GitHub rulesets. GitHub can require job check-runs, legacy commit-status contexts, and—in some configurations—a context associated with a specific GitHub App. Enumerating workflow files and mapping workflow names alone can misclassify checks, especially for workflows with multiple jobs, matrix-expanded jobs, reusable workflows, conditional jobs, or externally posted statuses.",
+          "suggestion": "Define and test the exact normalized entity being compared: required ruleset context (and app ID if applicable) versus produced check-run/status context. Derive job-level names where rulesets require job checks, retain `POSTED_STATUS_CONTEXTS` only for genuine legacy/external statuses, and make unsupported/dynamic cases explicit as “unknown/unverifiable” rather than confidently reporting them as phantom or unenforced.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "Repository-level rulesets are not necessarily effective for every pull request. Rulesets may target particular branches, have conditions, coexist with classic branch protection, or differ for merge-queue refs. A comparison against all configured rulesets can produce findings that are technically true somewhere but misleading for the branch or PR an operator is evaluating.",
+          "suggestion": "Have the producer accept a target ref/branch (defaulting clearly, such as the repository default branch), evaluate only rulesets applicable to that target where the API exposes conditions, and label any limitations in the output. Include fixtures for multiple branch-targeted rulesets and overlapping requirements.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "The two newly wired verification scripts become part of the required `Python (lint + test)` result, so their runtime behavior—not merely their local green result—can block all PRs. The plan does not yet say whether they depend on checkout depth, generated files, repository working directory, Python packages, environment variables, or network access that differs in Actions.",
+          "suggestion": "Confirm both commands execute after all required setup in `ci.yml`, use repository-root-stable paths, and have deterministic failure messages. Add workflow-shape tests that assert the actual command steps are unconditional for relevant PR runs and do not use `continue-on-error`; also run the altered job in GitHub Actions before treating the gate as established.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "The manual drift producer depends on operator authentication and repository administration access, but the approach only says it uses the operator’s `gh` auth. Without explicit prerequisite checks, it can fail due to the wrong selected repository, insufficient organization/repository role, an expired token, or unavailable ruleset API access, and users may mistake an incomplete result for “no drift.”",
+          "suggestion": "Make the tool require or accept an explicit `--repo OWNER/REPO`, verify identity and permissions up front, fail nonzero on API/auth/pagination errors, and print a clear “results incomplete” error rather than an empty report. Document the exact `gh auth`/permission prerequisite and a sample invocation in `hooks-and-pipeline.md`.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The directory-wide workflow enumeration fix avoids the known five-workflow scaffold limitation, but it can still silently become incomplete as workflows evolve: nested workflow locations, `.yaml` versus `.yml`, YAML parse failures, name expressions, reusable workflows, and matrix/job-derived check names are all plausible in a CI-heavy repository. The current “covers every workflow” test protects enumeration count, not whether each workflow’s actual required contexts are represented correctly.",
+          "suggestion": "Add fixtures covering both file extensions, multiple jobs in one workflow, a reusable workflow, and a malformed or dynamically named workflow. Treat non-static names as an explicit diagnostic and avoid reporting a phantom solely because static analysis cannot establish a producer.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "The proposed workflow-shape tests are necessary, but checking only for the presence of strings/steps is too weak. A future edit could retain a step name while moving it behind an `if`, adding `continue-on-error`, changing the executed command, or placing the security reporting logic in the wrong workflow. The remaining-work description also refers to the security breakdown as though it were in `ci.yml`, while the implementation says it is in `security.yml`.",
+          "suggestion": "Test the correct workflow files separately (`ci.yml` for both blocking verifiers; `security.yml` for the severity output), and assert relevant execution semantics: expected script command, no soft-fail behavior, and the severity breakdown/warning paths. Keep these as focused structural tests rather than duplicating scanner behavior.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "security",
+          "file": null,
+          "line": null,
+          "finding": "The security-workflow summary and `::warning::` output are safe only if severity counts are parsed and emitted as validated numeric values. If any scanner-provided text, package name, or finding title is later incorporated into workflow commands or `$GITHUB_STEP_SUMMARY`, it can introduce GitHub Actions command/output injection or misleading summary content.",
+          "suggestion": "Keep the emitted values integer-normalized before interpolation, write summaries through the designated environment-file mechanism, and avoid echoing untrusted scanner fields into workflow-command syntax. A small unit test for malformed/missing severity fields would protect the intended fail/pass behavior.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "“Three checks that run, report, and hold nothing up” conflicts with the stated decision to make the contract and sweep scripts blocking through a required job. The detailed behavior is understandable, but the top-level wording makes it easy for a reviewer or operator to infer the opposite policy.",
+          "suggestion": "Clarify the goal/spec language to state the intended policy per item: the contract and sweep checks are enforced through the existing required CI job; the ruleset-drift check is an advisory/manual producer; the security workflow labels the scope of its existing critical-only gate.  Overall, the implementation direction is sound, particularly the correction from scaffold-only workflow enumeration to repository-wide discovery and the decision not to pre-silence the first real findings. The main remaining risk is correctness of the GitHub required-context model and ensuring the new required scripts behave deterministically in the actual Actions environment, not only locally.",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-07-27T19:22:03.406193+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[gemini] Here is a review of the implementation approach for this iterate change.\n\n- **Category:** Edge Case\n- **Severity:** Medium\n- **Finding:** Workflow enumeration may misidentify matrix jobs or overridden status contexts. Statically parsing `.github/workflows/` (`all_workflow_check_names()`) yields file names or static `job.name` values, but GitHub checks often appear in the API under dynamic names (e.g., if a matrix is used like `Test (3.10)`, `Test (3.11)`). If the repository uses matrix strategies, the drift checker will falsely report the actual context as a \"phantom\" and the root job name as \"unenforced\".\n- **Suggestion:** Verify how `all_workflow_check_names()` handles matrix expansions. If matrices are used, you may need to rely on the GitHub API to fetch recently posted status contexts for `main` rather than completely depending on static YAML parsing, or explicitly map matrix permutations in `POSTED_STATUS_CONTEXTS`.\n\n- **Category:** Dependency\n- **Severity:** Low\n- **Finding:** The local `check_required_checks.py` script relies on the operator's `gh` CLI for admin-scoped authentication, which is a good security separation. However, it will likely throw an unhandled traceback if `gh` is not installed, not authenticated, or missing the necessary scopes.\n- **Suggestion:** Add a fast-fail prerequisite check at the top of the script running `gh auth status` (or similar) that emits a clear human-readable error (e.g., \"Requires GitHub CLI with admin:repo scope. Run 'gh auth login'\").\n\n- **Category:** Security\n- **Severity:** Low\n- **Finding:** The update to `security.yml` emits GitHub Actions workflow commands (`::warning::`). If this warning includes any raw text from the scanner tool (like vulnerability titles or dependency names) rather than just the integer counts, it is vulnerable to workflow command injection via manipulated newlines in the tool output. \n- **Suggestion:** Ensure the `::warning::` echo statement *only* outputs aggregate static text  […truncated]\n\n[openai] 1. **Category:** approach  \n   **Severity:** high  \n   **Finding:** The required-check drift comparison must use the same identity model as GitHub rulesets. GitHub can require job check-runs, legacy commit-status contexts, and—in some configurations—a context associated with a specific GitHub App. Enumerating workflow files and mapping workflow names alone can misclassify checks, especially for workflows with multiple jobs, matrix-expanded jobs, reusable workflows, conditional jobs, or externally posted statuses.  \n   **Suggestion:** Define and test the exact normalized entity being compared: required ruleset context (and app ID if applicable) versus produced check-run/status context. Derive job-level names where rulesets require job checks, retain `POSTED_STATUS_CONTEXTS` only for genuine legacy/external statuses, and make unsupported/dynamic cases explicit as “unknown/unverifiable” rather than confidently reporting them as phantom or unenforced.\n\n2. **Category:** edge-case  \n   **Severity:** medium  \n   **Finding:** Repository-level rulesets are not necessarily effective for every pull request. Rulesets may target particular branches, have conditions, coexist with classic branch protection, or differ for merge-queue refs. A comparison against all configured rulesets can produce findings that are technically true somewhere but misleading for the branch or PR an operator is evaluating.  \n   **Suggestion:** Have the producer accept a target ref/branch (defaulting clearly, such as the repository default branch), evaluate only rulesets applicable to that target where the API exposes conditions, and label any limitations in the output. Include fixtures for multiple branch-targeted rulesets and overlapping requirements.\n\n3. **Category:** risk  \n   **Severity:** high  \n   **Finding:** The two newly wired verification scripts become part of the required `Python (lint + test)` result, so their runtime behavior—not merely their local green result—can block all P […truncated]"
+    },
+    "code": {
+      "review_type": "code",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-07-27T19:22:13.264391+00:00",
+      "disposition": "Stage-2 code-reviewer subagent not spawned: this session runs under a launch-level --append-system-prompt directive ('Do not call the AgentTool unless the user requested it'). Substituted by the external code-review cascade, run TWICE (round 1 verdict block -> 4 findings fixed; round 2 verdict ship-with-fixes -> 4 further findings fixed). Not equivalent per iteration-reviews.md; flagged to the operator.",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-07-27T19:22:13.404630+00:00",
+      "disposition": "Stage-3 doubt-reviewer subagent not spawned: same launch-level AgentTool directive as the code pass. Note it WOULD have applied — iteration-reviews.md scopes Stage 3 to non-trivial surfaces and this diff changes a merge gate — so this is not_run, not not_applicable.",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 4,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "bug",
+          "file": ".github/workflows/security.yml:267-269",
+          "line": null,
+          "finding": "The new high/medium/low totals are calculated only from `findings.json`, while the critical total includes findings from both `findings.json` and `prompt_risks.json`. If `prompt_risks.json` contains a high-, medium-, or low-severity finding, the emitted verdict and summary undercount it (for example, reporting `0 high` despite an open prompt-risk high finding). This contradicts the stated severity breakdown.",
+          "suggestion": "Calculate each non-critical severity from both findings sources, with the same guarded-file handling used for `prompt_critical`, or explicitly establish and enforce that `prompt_risks.json` can only contain critical findings.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "bug",
+          "file": "shared/scripts/lib/required_checks_drift.py",
+          "line": 52,
+          "finding": "all_workflow_check_names()` unconditionally adds checks from every workflow file, without determining whether that workflow can run for a pull request on the branch being inspected. A scheduled-, `workflow_dispatch`-, push-only-, or release-only workflow produces no PR check result, but its job names are reported as `unenforced` unless added to branch protection. This creates false drift findings and triage items.",
+          "suggestion": "Derive only contexts that can be produced for the target PR/ref (at minimum, workflows with applicable `pull_request`/relevant `pull_request_target` triggers, plus explicitly modeled downstream posted statuses), or have the producer accept and apply the branch/event scope before comparison.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "test",
+          "file": "shared/tests/test_check_required_checks_cli.py:166-176",
+          "line": null,
+          "finding": "The tests validate high/medium/low extraction only by inspecting the workflow source in `test_checks_that_gate.py`; they do not execute the shell body with a `prompt_risks.json` fixture containing non-critical findings. Consequently, the undercounting defect above passes all added tests.",
+          "suggestion": "Add behavioral fixtures for both `findings.json` and `prompt_risks.json`, including a passing scan with prompt-risk high/medium/low findings, and assert the log line, warning behavior, and summary totals.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "test",
+          "file": "shared/tests/test_checks_that_gate.py:113-132",
+          "line": null,
+          "finding": "The claimed reverse-drift protection for future `verify__surface.py` scripts only searches raw workflow text. A new verifier name placed in a comment, environment value, or non-executed/manual workflow would satisfy this test even though it runs nowhere and gates nothing.",
+          "suggestion": "Parse workflow steps and require every discovered verifier to appear in an executable `run` command of the required CI job, with no `continue-on-error` or exit-code suppression.  Overall assessment: ship-with-fixes. The current CI wiring is correctly pinned for the two existing surface verifiers, but the required-check producer can generate false actionable drift, and the security report can understate non-critical prompt-risk findings.",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-07-27T19:22:03.537219+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "partial",
+      "raw_excerpt": "[gemini] .py`:\n```python\ndef test_a_failure_with_no_http_code_carries_no_status(monkeypatch) -> None:\n    monkeypatch.setattr(\n        crc.subprocess, \"run\", lambda *a, **k: _Resp(1, \"\", \"dial tcp: no route to host\")\n    )\n    with pytest.raises(crc.GhError) as excinfo:\n        crc._gh([\"api\", \"repos/o/r\"])\n    assert excinfo.value.status is None\n```\n\nWhat about `json.loads(_gh([\"api\", ...]))`?\nIf `_gh` returns an empty string or something not json, `json.loads` will raise `JSONDecodeError\n\n[openai] - Category: bug  \n  Severity: medium  \n  File: `.github/workflows/security.yml:267-269`  \n  Finding: The new high/medium/low totals are calculated only from `findings.json`, while the critical total includes findings from both `findings.json` and `prompt_risks.json`. If `prompt_risks.json` contains a high-, medium-, or low-severity finding, the emitted verdict and summary undercount it (for example, reporting `0 high` despite an open prompt-risk high finding). This contradicts the stated severity breakdown.  \n  Suggestion: Calculate each non-critical severity from both findings sources, with the same guarded-file handling used for `prompt_critical`, or explicitly establish and enforce that `prompt_risks.json` can only contain critical findings.\n\n- Category: bug  \n  Severity: medium  \n  File: `shared/scripts/lib/required_checks_drift.py:52`  \n  Finding: `all_workflow_check_names()` unconditionally adds checks from every workflow file, without determining whether that workflow can run for a pull request on the branch being inspected. A scheduled-, `workflow_dispatch`-, push-only-, or release-only workflow produces no PR check result, but its job names are reported as `unenforced` unless added to branch protection. This creates false drift findings and triage items.  \n  Suggestion: Derive only contexts that can be produced for the target PR/ref (at minimum, workflows with applicable `pull_request`/relevant `pull_request_target` triggers, plus explicitly modeled downstream posted statuses), or have the producer accept and apply the branch/event scope before comparison.\n\n- Category: test  \n  Severity: low  \n  File: `shared/tests/test_check_required_checks_cli.py:166-176`  \n  Finding: The tests validate high/medium/low extraction only by inspecting the workflow source in `test_checks_that_gate.py`; they do not execute the shell body with a `prompt_risks.json` fixture containing non-critical findings. Consequently, the undercounting defect above passes all add […truncated]"
+    }
+  }
+}

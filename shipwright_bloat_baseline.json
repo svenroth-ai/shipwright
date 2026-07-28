@@ -417,7 +417,7 @@
     {
       "path": "plugins/shipwright-security/scripts/tools/generate_security_report.py",
       "limit": 300,
-      "current": 665,
+      "current": 647,
       "state": "grandfathered",
       "adr": null
     },
@@ -431,21 +431,21 @@
     {
       "path": "plugins/shipwright-security/scripts/tools/run_scan_and_report.py",
       "limit": 300,
-      "current": 334,
+      "current": 300,
       "state": "grandfathered",
       "adr": null
     },
     {
       "path": "plugins/shipwright-security/scripts/tools/scan.py",
       "limit": 300,
-      "current": 431,
+      "current": 425,
       "state": "grandfathered",
       "adr": null
     },
     {
       "path": "plugins/shipwright-security/skills/security/SKILL.md",
       "limit": 400,
-      "current": 449,
+      "current": 434,
       "state": "grandfathered",
       "adr": null
     },
@@ -648,7 +648,7 @@
     {
       "path": "shared/scripts/tools/aggregate_changelog.py",
       "limit": 300,
-      "current": 458,
+      "current": 413,
       "state": "grandfathered",
       "adr": null
     },
@@ -721,6 +721,13 @@
       "current": 883,
       "state": "exception",
       "adr": "ADR-092"
+    },
+    {
+      "path": "shared/scripts/tools/triage_promote.py",
+      "limit": 300,
+      "current": 304,
+      "state": "grandfathered",
+      "adr": null
     },
     {
       "path": "shared/scripts/tools/update_build_dashboard.py",
@@ -837,7 +844,7 @@
     {
       "path": "shared/tests/test_changelog_aggregation.py",
       "limit": 300,
-      "current": 326,
+      "current": 325,
       "state": "grandfathered",
       "adr": null
     },
