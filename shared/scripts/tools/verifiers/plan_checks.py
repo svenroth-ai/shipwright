@@ -53,7 +53,7 @@ from .common import (
     check_c4_decision_log_has_phase_adr,
     check_phase_history_has_run,
 )
-from .handoff_freshness import check_c3_session_handoff_fresh_after_phase
+from .handoff_phase_canon import check_c3_session_handoff_fresh_after_phase
 from .plan_gate_checks import (
     PLANNING_DIRNAME,
     check_fr_coverage_in_sections,
@@ -260,7 +260,7 @@ def run_plan_checks(
     # Canon (C5 skipped by policy)
     results.append(check_c1_phase_event_recorded(project_root, "plan"))
     results.append(check_c2_dashboard_reflects_phase(project_root, "plan"))
-    results.append(check_c3_session_handoff_fresh_after_phase(project_root, "plan", run_id=run_id))
+    results.append(check_c3_session_handoff_fresh_after_phase(project_root, "plan"))
     results.append(check_c4_decision_log_has_phase_adr(project_root, "plan"))
 
     # Phase history

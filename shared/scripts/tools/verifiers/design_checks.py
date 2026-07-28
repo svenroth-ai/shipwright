@@ -45,7 +45,7 @@ from .common import (
     check_c5_changelog_unreleased_has_phase_entry,
     check_phase_history_has_run,
 )
-from .handoff_freshness import check_c3_session_handoff_fresh_after_phase
+from .handoff_phase_canon import check_c3_session_handoff_fresh_after_phase
 
 # Add shared/scripts to path for lib imports
 import sys
@@ -312,7 +312,7 @@ def run_design_checks(
     # Canon (C4 skipped by policy)
     results.append(check_c1_phase_event_recorded(project_root, "design"))
     results.append(check_c2_dashboard_reflects_phase(project_root, "design"))
-    results.append(check_c3_session_handoff_fresh_after_phase(project_root, "design", run_id=run_id))
+    results.append(check_c3_session_handoff_fresh_after_phase(project_root, "design"))
     results.append(check_c5_changelog_unreleased_has_phase_entry(project_root, "design", "Added"))
 
     # Phase history

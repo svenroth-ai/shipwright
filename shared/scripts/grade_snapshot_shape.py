@@ -36,6 +36,31 @@ from typing import Any
 
 from tree_lineage import LINEAGE_UNKNOWN, lineage_fields, resolve_tree_lineage
 
+#: The keys no caller may supply, on ANY write route to the durable log. Owned
+#: here because this module owns the shape; `record_event`'s `event_amended`
+#: branch imports it so the two cannot drift — that branch was the door the
+#: original producer audit missed
+#: (iterate-2026-07-28-grade-snapshot-honest-subject).
+ATTRIBUTION_KEYS = frozenset({"lineage", "branch", "base"})
+
+def reject_asserted_attribution(fields: dict[str, Any]) -> None:
+    """Refuse an ``event_amended`` overlay that would assert attribution.
+
+    ``apply_amendments`` folds ``fields`` onto its target with a blind merge — no
+    allowlist, no target-type check — so without this the "derived, never
+    asserted" property held on the producer path and leaked through the log's own
+    mutator: an amendment could overlay ``lineage`` onto a snapshot and every
+    amendment-folding reader would honour it. Reproduced before the fix; this is
+    the same shape as the ``tests``-block validation that already guards that
+    branch for the same reason.
+    """
+    asserted = ATTRIBUTION_KEYS & set(fields)
+    if asserted:
+        raise ValueError(
+            f"event_amended --fields may not set {sorted(asserted)}: "
+            "grade_snapshot attribution is derived from the tree, never asserted"
+        )
+
 
 def apply_grade_snapshot(
     event: dict[str, Any],
@@ -79,4 +104,4 @@ def apply_grade_snapshot(
     return event
 
 
-__all__ = ["apply_grade_snapshot"]
+__all__ = ["ATTRIBUTION_KEYS", "apply_grade_snapshot", "reject_asserted_attribution"]

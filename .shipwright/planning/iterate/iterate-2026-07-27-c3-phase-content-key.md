@@ -187,6 +187,7 @@ tracked file C3 reads is written exclusively by phase finalizations and
   | 27 | A degenerate run id reaches C3 as itself through the runner | tested (**integration**) | `…::test_a_degenerate_run_id_reaches_c3_as_itself` |
   | 28 | The Stop-hook call site supplies the run id | tested | `…::test_the_stop_hook_call_site_supplies_the_run_id` |
   | 29 | The F11 twin is unaffected by the shared-reader refactor | tested | `test_handoff_freshness` (13 tests, unchanged) |
+  | 29 (corrected, iterate-2026-07-27-c3-phase-history-join) | The twin WAS affected: it routes through the shared `_read_handoff`, which clips detail text, and the suite asserted only `result.ok is False` — a verdict "missing" satisfies too. The successor moved the reader again into `verifiers/handoff_marker.py` and added the missing `assert "unreadable" in detail`. | tested | `test_handoff_freshness::test_unreadable_handoff_is_a_warning_not_a_crash` |
   | 30 | The guide + pipeline reference describe the contract the code now meets | untestable — `requires-manual-visual-judgment` | `docs/guide.md` C3 row, `docs/hooks-and-pipeline.md` "C3 Freshness — a Content Key, Not mtime" |
 
 - **Confidence-pattern check:**

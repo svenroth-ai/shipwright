@@ -171,6 +171,36 @@ class TestGradeSnapshotAttributionCannotBeAsserted:
     fails if someone adds them back.
     """
 
+    @pytest.mark.parametrize("key", ["lineage", "branch", "base"])
+    def test_an_amendment_cannot_overlay_attribution(self, key):
+        """The door the original producer audit missed.
+
+        `event_amended --fields` is a generic top-level field writer, and
+        `apply_amendments` overlays it onto the target with a blind merge — no
+        allowlist, no target-type check. So the "cannot be asserted" property
+        held on the producer path and leaked through the log's own mutator:
+        reproduced end to end, a snapshot honestly emitted as
+        `lineage=branch score=12` read back as `lineage=main score=99.9`.
+        Refusing these keys is the same shape as the `tests` block validation
+        that already sits in that branch for exactly this reason.
+        """
+        with pytest.raises(ValueError, match="derived from the tree, never asserted"):
+            build_event(parse_args([
+                "--project-root", ".", "--type", "event_amended",
+                "--amends", "evt-deadbeef", "--fields", json.dumps({key: "main"}),
+            ]))
+
+    def test_an_amendment_may_still_correct_ordinary_fields(self):
+        # The refusal must be surgical: amendments are the sanctioned correction
+        # channel for everything else, and 27 existing ones overlay spec_impact,
+        # change_type, affected_frs and description.
+        event = build_event(parse_args([
+            "--project-root", ".", "--type", "event_amended",
+            "--amends", "evt-deadbeef",
+            "--fields", json.dumps({"spec_impact": "none", "description": "fixed"}),
+        ]))
+        assert event["fields"]["spec_impact"] == "none"
+
     @pytest.mark.parametrize("flag", ["--lineage", "--branch", "--base"])
     def test_no_flag_can_assert_attribution(self, flag):
         with pytest.raises(SystemExit):

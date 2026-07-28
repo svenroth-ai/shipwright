@@ -220,7 +220,7 @@ def project_campaign_status(
             "spec_path": relativize_spec_path(base.get("spec_path")),  # self-heal to repo-relative (N1)
             "status": final_status,
             "commit": commit,
-            "branch": base.get("branch"),  # events carry no branch
+            "branch": base.get("branch"),  # from the committed status, not the event
             "tests_passed": tests_passed,
             "tests_total": tests_total,
         })

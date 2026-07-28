@@ -2154,20 +2154,21 @@ A Control Grade is a property of a **tree state**, not of the repository in the 
 
 | Field | Meaning |
 |---|---|
-| `lineage` | `"main"` — the measured tree contains nothing that is not already on the default branch (checked-out branch IS the default, or HEAD is an ancestor of it, which covers a detached HEAD at any default-branch commit). `"branch"` — it carries unmerged commits. `"unknown"` — the producer ran and could not tell (no git, not a repo, no commits, no resolvable default branch). |
-| `branch` | Short branch name; **absent** when HEAD is detached or unresolvable. |
-| `base` | Merge-base of HEAD with the default branch — the commit on the default branch that the measured tree extends. Lowercase hex, **7–64 chars** (not fixed at 40: a SHA-256 repository must keep its attribution, so do not validate for SHA-1 width). **Absent** when unobtainable (shallow clone, unrelated histories). |
+| `lineage` | `"main"` — the checked-out branch **is** the default branch (or, for a *detached* HEAD only, HEAD is an ancestor of it). `"branch"` — any named non-default branch, **regardless of ancestry**. `"unknown"` — the producer ran and could not tell (no git, not a repo, no commits, no resolvable default branch, or a detached HEAD whose ancestry is unobtainable). |
+| `branch` | Short branch name; **absent** when HEAD is detached, unresolvable, longer than 255 chars, or carrying control characters. |
+| `base` | Merge-base of HEAD with the default branch. Lowercase hex, **7–64 chars** (not fixed at 40: a SHA-256 repository must keep its attribution, so do not validate for SHA-1 width). **Absent** when unobtainable (shallow clone, unrelated histories). Read rule 3 before using it. |
 
-Four rules a consumer must honour:
+Five rules a consumer must honour:
 
-1. **Absent `lineage` ≠ `lineage: "unknown"`.** *Absent* means the event predates attribution (the 183 snapshots emitted before this change); treat it as unknown provenance and exclude it from a main-lineage series. An explicit `"unknown"` means the producer tried and failed — a degrading producer stays visible instead of looking like an old event. Legacy events are **not** backfilled: the emitter cannot know retroactively which tree measured what, and a guess wearing a data field's clothes is worse than a gap.
-2. **`base` is a common ancestor *reachable from* the default branch — nothing stronger.** It is not promised to sit on the default branch's **first-parent** chain (merge commits and criss-cross history break that). Order snapshots along the default branch by general ancestry / topological position, never by first-parent index.
-3. **Do not order the trend by `ts`.** `ts` is when the measurement was *taken*, which for a branch snapshot is unrelated to where its subject sits in the default branch's history — that is the whole defect this attribution exists to fix. A regen on an older default-branch commit (a detached checkout, a stale worktree) is honestly `lineage: "main"`, and only `base` places it correctly; ordering such a point by `ts` plots an old score as today's. Order by `base`.
-4. **`commit` is deliberately absent** and must not be reintroduced as a substitute: the regen runs before the F6 commit, so HEAD names the *previous* commit and would mislabel the snapshot. `base` answers "which tree" without that defect.
+1. **Absent `lineage` ≠ `lineage: "unknown"`.** *Absent* means the event predates attribution (the ~185 snapshots emitted before it existed); treat it as unknown provenance and exclude it from any lineage-filtered series. An explicit `"unknown"` means the producer tried and failed — a degrading producer stays visible instead of looking like an old event. Legacy events are **not** backfilled: the emitter cannot know retroactively which tree measured what, and a guess wearing a data field's clothes is worse than a gap.
+2. **`base` is a common ancestor *reachable from* the default branch — nothing stronger.** It is not promised to sit on the default branch's **first-parent** chain (merge commits and criss-cross history break that). Use general ancestry / topological position, never a first-parent index.
+3. **A `lineage: "branch"` snapshot is NOT a point on the default branch's trend — do not plot it there.** It measures `base` *plus an unmerged change set*, so placing it at `base`'s coordinate asserts that its grade describes `base`, which is false; and N concurrent iterates branched from one tip all carry the **same** `base`, so "keep the latest per base" silently discards the rest. Branch snapshots answer a different question — *did this branch move the grade relative to what it forked from* — which is a per-branch delta (`base` vs. this measurement), not a timeline point. Only `lineage: "main"` snapshots belong on the trend.
+4. **Do not order the trend by `ts`.** `ts` is when the measurement was *taken*. For a `"main"` snapshot on a detached checkout of an older commit, `ts` is now while the subject is historical; `base` places it correctly.
+5. **`base` names a commit, not the graded content — and on the main path it is the *previous* commit.** `grade`/`score` are computed from the **working tree**; `lineage`/`base` can only be derived from **committed** state, and nothing reconciles them. Where HEAD is an ancestor of the default ref, `merge-base(HEAD, default) == HEAD`, so a pre-commit regen stamps the commit it has not made yet — the same limitation for which `commit` was rejected outright. There is currently **no field that tells you whether the two agree**: a `dirty` flag was built for this and withdrawn before shipping, because every automatic producer writes tracked artifacts (its own regenerated documents, and an event appended just before it) *before* the snapshot is emitted, so the flag read `true` on pristine trees and would have marked every main-lineage point provisional. Tracked as `trg-10aa91e3`; until then treat `base` as "the commit this measurement was taken near", not "the commit this score describes".
 
-Attribution is derived from the tree on disk and **cannot be asserted** — neither producer exposes a way to supply it, so no caller can manufacture a false main-lineage point in the log the grade trend is read from. Resolution is best-effort and never fails a compliance regen: shape + attribution live in the shared SSOT `shared/scripts/grade_snapshot_shape.py` (with `shared/scripts/tree_lineage.py` doing the git work), used by both the compliance emitter and `record_event.py --type grade_snapshot`.
+Attribution is **derived** from the tree on disk, and no CLI route can assert it: neither producer takes it as input, and `record_event.py --type event_amended --fields` refuses the attribution keys (that generic mutator was the door the first producer audit missed — `apply_amendments` overlays fields with a blind merge, so without the refusal an amendment could overlay `lineage`). Two honest limits: this is not tamper-evidence — arbitrary Python may call `apply_grade_snapshot` and `append_event` with different roots — and **the *measurement* is still caller-supplied**: `--grade`/`--score` are free-text, so a hand-run `record_event.py` on the default branch mints a correctly-attributed point around a grade nobody computed. Resolution is best-effort and never fails a compliance regen: shape + attribution live in the shared SSOT `shared/scripts/grade_snapshot_shape.py` (with `shared/scripts/tree_lineage.py` doing the git work), used by both the compliance emitter and `record_event.py --type grade_snapshot`.
 
-> **Known gap.** Nothing currently regenerates compliance on `main` itself — F5b, `ensure_current` and `resolve_churn_conflicts` all run in the worktree, and no producer runs post-merge — so a consumer filtering `lineage == "main"` gets an empty series today. That is the honest empty. The useful series available *now* needs no new producer: group snapshots by `base`, keep the latest per base, and order the bases by ancestry.
+> **Where `main`-lineage snapshots come from.** Every `PHASE_REPORTS` entry in `update_compliance.py` includes `dashboard`, and that branch emits — so **every** compliance regen produces a snapshot, not only an iterate's. In a `/shipwright-run` or adopted project the orchestrator regenerates after each completed phase **on the default branch**, so `lineage: "main"` is the normal case there. In *this* monorepo it is not: every regen happens inside an iterate worktree, and a main-tree append is never committed, so `main`-lineage snapshots are rare-to-absent on `main`. Do not read either situation as universal — filter on the field, do not assume its distribution.
 
 **Where the log is written (per-tree, PR-committed — iterate-2026-05-29-events-jsonl-worktree-commit).**
 `shipwright_events.jsonl` is a per-tree, version-controlled artifact. `lib/events_log.py::resolve_events_path` (and the parity-pinned compliance copy `collectors/change_history.py::_resolve_events_path`) return `project_root / shipwright_events.jsonl` **literally** — no `git --git-common-dir` redirect. Under a `/shipwright-iterate` worktree run the event is therefore written to the **worktree's own** copy, and **F6 stages it** so it ships in the iterate PR and merges to `main` (the main tree is never written; AC2). The F11 verifier `check_events_has_commit` fails closed if a *tracked* log's `work_completed` event is not in the commit (AC4). `resolve_main_repo_root` (git-common-dir) no longer locates the event log; as of `iterate-2026-06-12-repo-root-resolver-relocate` its implementation lives in its thematic home `lib/repo_root.py` (beside `main_repo_root_or`) and `lib/events_log.py` re-exports it via a lazy back-compat shim. It serves the decision-drop resolvers (`write_decision_drop.py`, `aggregate_decisions.py` — gitignored staging that `/shipwright-changelog` consumes on `main`), the F11 verifier, the plugin-sync Stop hook, and the compliance Group-F detective. The legacy out-of-band F7 (`record_event.py`) + F7b seal (`commit_event_followup.py`) still target the main tree and are used only for replay / non-worktree phases.
@@ -2598,7 +2599,7 @@ not a canon target.
 |---|---|---|---|
 | **C1** | `phase_completed` event recorded in `shipwright_events.jsonl` | `shared/scripts/tools/record_event.py --type phase_completed --source <phase>` | **ERROR** |
 | **C2** | `.shipwright/agent_docs/build_dashboard.md` reflects the phase | `shared/scripts/tools/update_build_dashboard.py --phase <phase>` | **WARNING** |
-| **C3** | `.shipwright/agent_docs/session_handoff.md` regenerated with phase-specific reason | `shared/scripts/tools/generate_session_handoff.py --reason "<phase>: …"` | **WARNING** |
+| **C3** | `.shipwright/agent_docs/session_handoff.md` carries a canon marker naming THIS phase and its latest recorded completion | `generate_session_handoff.py --canon-marker --phase <phase>` + that phase's completion producer (`append_phase_history.py` for pipeline phases, `append_iterate_entry.py` for `iterate`) | **WARNING** |
 | **C4** | `.shipwright/agent_docs/decision_log.md` has a new ADR referencing the phase | `shared/scripts/tools/write_decision_log.py --title …` | **ERROR** (only for decision-taking phases) |
 | **C5** | `CHANGELOG.md [Unreleased]` has a bullet under the right Keep-a-Changelog category | `shared/scripts/tools/append_changelog_entry.py --category <Added\|Changed\|Fixed\|…> --entry "…"` | **ERROR** (only for user-facing phases) |
 
@@ -2626,6 +2627,161 @@ accepts their conventions before failing:
   today.) The fallback is reachable even when `shipwright_events.jsonl`
   is empty or absent — the normal state of a freshly-adopted project
   that has run no iterates yet.
+
+### C3 Freshness — Did THIS Phase Leave the Note?
+
+Until iterate-2026-07-27-c3-phase-content-key, C3 compared the handoff's
+filesystem mtime against a 600-second budget. That fired on any run that
+waited more than ten minutes on CI — on the schedule, not on a defect —
+and filesystem mtime is not a content-staleness signal in a git repo
+anyway (checkout, branch-switch and worktree creation all reset it; see
+`shared/scripts/hooks/check_drift.py:10-16`).
+
+That change replaced the clock with a run id supplied by the caller, and
+iterate-2026-07-27-c3-phase-history-join replaced *that*, because a
+caller-supplied run id turned out to be unusable in both directions:
+
+- **It passed a phase that wrote nothing.** `SHIPWRIGHT_RUN_ID` is set with
+  `: "${SHIPWRIGHT_RUN_ID:=…}"` — assign-only-if-unset — in build, test,
+  changelog and the release-target phase, so those inherit an earlier
+  phase's id. A run-id comparison therefore matched even when the phase
+  skipped its C3 step entirely. Silently weaker than the mtime rule it
+  replaced.
+- **It warned on every phase of every Stop.** The two callers resolve the
+  id differently by construction: `phase_quality.resolve_run_id` walks
+  run-config → `run_started` event → loop vars → **session UUID**, while
+  `phase_validators._run_canon_checks` reads `SHIPWRIGHT_RUN_ID` from a
+  hook-launched subprocess that never inherits the skill's shell export.
+  Neither is the id the writer stamped.
+
+**C3 now takes no run id at all.** It joins the canon marker against the
+phase's own completion record — both on disk. A check that never consults
+the caller's run id cannot be broken by the caller resolving it.
+
+**Which record.** `lib/phase_history.py::COMPLETION_PRODUCER` names one per
+phase, because the pipeline keeps two. The seven pipeline phases append to
+`shipwright_run_config.json::phase_history[<phase>]`. `iterate` does not and
+never has: F5c writes the file-per-run ledger under
+`.shipwright/agent_docs/iterates/` (a shared array made two parallel iterates
+a guaranteed merge conflict), so reading `phase_history` for it produced a
+permanent WARNING whose remediation named a tool iterate had abandoned. A
+drift test asserts every phase in `C3_CANON_PHASES` has a producer here, and
+that every producer named resolves to a tool that runs.
+
+| Case | Verdict |
+|------|---------|
+| marker names this phase and its latest recorded run | **PASS** |
+| marker names this phase and its latest run, the completion carries an event anchor, and the note's anchor is older than it | WARNING — a later step completed without re-writing it |
+| marker names this phase, run id is an older entry | WARNING |
+| marker names this phase, run id absent from the record | WARNING (own reason) |
+| marker names another phase, **this phase completed after that phase did** | WARNING — it left no note |
+| marker names another phase, **this phase completed before that phase did** | SKIP, naming the owner |
+| either side's time missing, unparseable, or too coarse to settle the order | WARNING (stated, never inferred) |
+| no marker / no completion record / unreadable / missing | WARNING (each its own reason) |
+
+**The marker's `timestamp` is not the time the note was written.**
+`generate_session_handoff.py` stamps `latest_event_dt` — the newest `ts` in
+`shipwright_events.jsonl` — because wall clock there re-dirtied the tracked
+handoff on every regeneration (iterate-2026-05-22-deterministic-render-timestamps).
+Everything below follows from that, and getting it wrong is what broke the first
+version of this rule.
+
+**So the completion must be read on the same clock.**
+`append_phase_history.py` stamps `event_at` from that same function alongside
+the wall-clock `at`, and C3 compares against `event_at`. A correct canon block
+therefore leaves the two **equal** — the marker and the completion read one clock
+moments apart. Comparing the marker against `at` instead made it unconditionally
+"older" (the block records the event, writes the marker, *then* appends), so
+every phase re-run where `record_event`'s first-wins dedup meant no fresh event
+landed was accused of skipping its own C3 step — in the same words as the true
+positive, with a remedy that could not clear it, because re-running the C3 step
+re-derives the same event time. Ties are therefore **not** "later".
+
+**A matching run id is not by itself evidence of a note.** `build` appends one
+completion per split under the sticky id, so split 1 can write the marker and
+split 2 pass on the id alone; `iterate`'s F5c can rewrite its single ledger entry
+in place. So where the completion carries an anchor, the note must also not
+predate it. The gate is the anchor's EXISTENCE, not a count of entries — a count
+of one is not evidence a phase completed once (the iterate ledger is one file per
+run id, so its count is pinned at one forever), whereas a missing anchor really
+does mean the two sides sit on different clocks and must not be compared.
+
+**Ownership is decided by time, not by pipeline order** — and, when another
+phase owns the note, by ordering the two phases against **each other** rather
+than against the note. A static order cannot separate "a later phase legitimately
+superseded this one" from "a stale later-phase marker plus a re-run of this phase
+that wrote nothing". Nor can the note's anchor: `record_event` dedups
+`phase_completed` on `(phase, splitId)` permanently, so a phase completing a
+second time inherits whatever anchor was newest — routinely the note owner's.
+Ordered by that the two read as simultaneous, and the phase that ran LATER was
+reported as superseded by the EARLIER one. Both completions come from one
+producer calling `datetime.now()`, so their wall clocks ARE mutually comparable,
+and that is what decides this branch.
+
+**Time is read to the precision the record carries.** Entries written before
+iterate-2026-07-27-c3-phase-history-join carry no `event_at`, and some carry only
+`date`. A bare `YYYY-MM-DD` pins a DAY, and `lib/phase_history.py` represents it
+as one — reading it as midnight UTC, as an earlier draft did, made every same-day
+comparison answer confidently and wrongly, which is how a phase that skipped its
+C3 step read as legitimately superseded. Across days a bare date still settles
+the order; within one, **wherever the clock is consulted at all**, it is a stated
+WARNING and never a guess. Where it is not consulted — an anchorless completion
+in the same-phase branch — the run id answers alone.
+
+**Known bounds.** Three, all in the same-phase branch — the cross-phase branch
+deliberately stops using anchors, which is what closes them there:
+
+1. A completion that records no new event AND does not re-write the marker leaves
+   its anchor equal to the note's, and reads as a pass. Nothing on disk
+   distinguishes it from a step that legitimately did nothing new.
+2. `iterate` records no anchor at all, so its clock check never runs. Its ledger
+   is one file per run id, so a stale marker names a DIFFERENT run and the run-id
+   branch catches it; only an in-place F5c re-run without a matching F5b escapes.
+   Note `--preserve-canon-marker` on F11 widens that window: run A's marker now
+   survives into run B until B's own F5b, where it used to be deleted (which is
+   the point — see AC-(E) — but it is a longer window than before).
+3. **The strengthening is inert until each phase completes once after this
+   ships.** `event_at` is what opens the clock check, and only completions
+   recorded from now on carry it. On a repo whose latest entry per phase predates
+   this change — including this one — every phase falls back to the run id alone,
+   exactly as before. It decays per-phase, not all at once, and `adopt`'s
+   `config_writer.py` REPLACES the whole run config with anchorless entries, so a
+   re-adopt resets it. That is a deliberate no-op-until-used design, not an
+   assumption that the gate is already active.
+
+**Ordering.** The canon block runs `record_event.py`, then the marker, then the
+completion producer, then `orchestrator update-step` (which runs the validators),
+so the record is current when C3 reads it and C1 is what gives the marker an
+anchor at all. Two exceptions, both real:
+
+- **`build`'s split-level closure contains no `record_event`** — C1 runs per
+  SECTION (`section-state.md`), not in the closure. The split's anchor is
+  therefore whatever its sections last recorded.
+- **`iterate` inverts the order**: `finalize_bundle.py` runs F5c (the ledger)
+  BEFORE F5b (the marker). Not observable in the bundled path since both run in
+  one call, but F5c and F5b in separate turns — or an F5b abort — leaves the
+  ledger a run ahead of the marker, and C3 then correctly reports the note as
+  being from an earlier iterate run.
+
+`test_canon_marker_write_contract.py` guards the FLAGS on every invocation, not
+this ordering.
+
+**Applicability.** `security`, `compliance` and `adopt` write no canon
+marker, so C3 reports an explicit SKIP for them rather than a permanent
+warning — the Stop-hook canon runner invokes C3 for every phase in
+`PLUGIN_TO_PHASE`. The producing set is `C3_CANON_PHASES`
+(`tools/verifiers/handoff_phase_canon.py`), kept aligned with
+`PLUGIN_TO_PHASE` by a two-direction drift test.
+
+**Mid-phase handoffs must not erase the marker.** `build` Step 11 writes a
+mid-split handoff to the same tracked path without `--canon-marker`; it
+passes `--preserve-canon-marker` so the split-level marker survives.
+Preservation fires only for a write that never *asked* for a marker — not
+for a degraded `--canon-marker` write whose `SHIPWRIGHT_RUN_ID` was unset,
+which would come back carrying the previous run's marker. The preserved
+marker also keeps the Stop hook's regeneration skip in force for the rest
+of the split; that is intended, since Step 11 rewrote the body itself and
+the skip is protecting the fresher of the two files.
 
 ### C4 Skip Criteria — Who Gets an ADR
 
@@ -2750,18 +2906,34 @@ A new top-level field in `shipwright_run_config.json` parallel to
 ```json
 {
   "phase_history": {
-    "project": [{"run_id": "…", "date": "…", "outcome": "…", "splits": N}],
-    "design":  [{"run_id": "…", "date": "…", "screens": N, "flows": M}],
-    "build":   [{"run_id": "…", "date": "…", "split": "…", "sections": N}]
+    "project": [{"run_id": "…", "at": "…", "event_at": "…", "date": "…", "outcome": "…", "splits": N}],
+    "design":  [{"run_id": "…", "at": "…", "event_at": "…", "date": "…", "screens": N, "flows": M}],
+    "build":   [{"run_id": "…", "at": "…", "event_at": "…", "date": "…", "split": "…", "sections": N}]
   }
 }
 ```
 
 - Retention: last 50 entries per phase.
+- `at` is the completion INSTANT (wall clock, ISO-8601 UTC) and `date` the same
+  moment truncated to a day. `event_at` is the newest EVENT time at completion,
+  stamped from `latest_event_dt` — the same function that stamps the canon
+  marker's `timestamp`, and therefore **the only one of the three that Canon C3
+  may compare against the marker** (see "C3 Freshness" above). All three are
+  canonical and `--entry-json` may set none of them; `event_at` is omitted, not
+  nulled, on a project with no events yet. Entries written before
+  iterate-2026-07-27-c3-phase-history-join carry `date` alone; readers must treat
+  a bare `YYYY-MM-DD` as a day, not as midnight — the fabricated instant is what
+  killed the original time comparison.
 - `iterate` writes to `.shipwright/agent_docs/iterates/<run_id>.json` (file-per-iterate
-  refactor — richer schema: branch, spec path, tests_passed, adr). The
-  legacy `iterate_history` key is left empty on new projects for
-  backward-compat with external readers. Not mirrored into `phase_history`.
+  refactor — richer schema: branch, spec path, tests_passed, adr). It stamps **no**
+  `event_at`: the key is reserved so a caller cannot inject a fake anchor, but the
+  tool does not produce one, so C3's clock check never runs for `iterate` (known
+  bound 2 above). Its `date` is a full instant, unlike `phase_history`'s
+  day-precision one, so it still orders correctly against another phase. The
+  legacy `iterate_history` key is left empty on new projects for backward-compat
+  with external readers. Not mirrored into `phase_history`, so a reader after
+  "when did `iterate` last complete" must go through `lib/phase_history.py`,
+  which routes each phase to its own producer.
 - Phase modules fill `phase_history` starting in iterate 12.1.
 
 #### Why two histories
@@ -2778,6 +2950,12 @@ to carry null columns for iterate-only attributes. Consumers that
 need a merged view should read both arrays and sort by date — the
 asymmetry is the schema, not tech-debt waiting for a migration.
 
+A consumer asking the narrower question "when did phase X last complete"
+should NOT hand-roll that merge: `lib/phase_history.py::latest_completion`
+routes each phase to its own record via `COMPLETION_PRODUCER` and returns one
+shape. Canon C3 hard-coded the `phase_history` bucket instead, which is how
+`iterate` came to be checked against a record nothing has ever written for it.
+
 ### Verifier Package Layout
 
 ```
@@ -2788,7 +2966,11 @@ shared/scripts/tools/
   append_phase_history.py          # phase_history write path
   verifiers/
     __init__.py
-    common.py                      # CheckResult, readers, generic C1–C5, ADR F1/F2/F3
+    common.py                      # CheckResult, readers, generic C1/C2/C4/C5, ADR F1/F2/F3
+    handoff_marker.py              # Reads session_handoff.md + its canon marker. Judges nothing.
+    handoff_freshness.py           # The F11 check: does the note name the run finishing NOW
+    handoff_phase_canon.py         # Canon C3: did THIS phase leave the note. Takes no run id;
+                                   #   joins the marker against the phase's completion record
     iterate_checks.py              # iterate finalization checks (5 @12.0 + F0.5 surface + spec-impact + no-direct-decision_log gates)
     runtime_checks.py              # Zombie-task replay check                     — 12.0b
     project_checks.py              # Project phase-own + canon + phase_history   — 12.1
@@ -2822,7 +3004,7 @@ Legend: ✅ present · ⏭ skip by policy · n/a not applicable
 
 | Phase | C1 event | C2 dashboard | C3 handoff | C4 ADR | C5 CHANGELOG | phase_history | Verifier module | Phase validator |
 |---|---|---|---|---|---|---|---|---|
-| **iterate** | ✅ F7 | ✅ F5 (`check_build_dashboard_has_run_id`, implemented 14.8) | ✅ F5/F11 | ✅ F3 | ✅ F4 | ✅ `iterate_history` | `iterate_checks.py` + cross-artifact warnings (compliance, architecture, conventions) | `verify_iterate_finalization.py` |
+| **iterate** | ✅ F7 | ✅ F5 (`check_build_dashboard_has_run_id`, implemented 14.8) | ✅ F5/F11 | ✅ F3 | ✅ F4 | ✅ the F5c ledger, NOT `phase_history` — C3 reads it via `COMPLETION_PRODUCER` | `iterate_checks.py` + cross-artifact warnings (compliance, architecture, conventions) | `verify_iterate_finalization.py` |
 | **runtime** | n/a | n/a | n/a | n/a | n/a | n/a | `runtime_checks.py` (zombie replay) | — |
 | **project** | ✅ | ✅ | ✅ (canon-marker) | ✅ (Step 7) | ✅ | ✅ | `project_checks.py` | `_validate_project` |
 | **design** | ✅ | ✅ | ✅ (canon-marker) | ⏭ transformation | ✅ | ✅ | `design_checks.py` + FR coverage (check-plan C1 import) | `_validate_design` |

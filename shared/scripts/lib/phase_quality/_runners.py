@@ -27,7 +27,7 @@ from tools.verifiers.common import (  # noqa: E402
     check_c4_decision_log_has_phase_adr,
     check_c5_changelog_unreleased_has_phase_entry,
 )
-from tools.verifiers.handoff_freshness import (  # noqa: E402
+from tools.verifiers.handoff_phase_canon import (  # noqa: E402
     check_c3_session_handoff_fresh_after_phase,
 )
 
@@ -41,18 +41,18 @@ CANON_REMEDIATION: dict[str, str] = {
     "C2": "Run update_build_dashboard.py --phase <phase>",
     "C3": (
         "Regenerate session_handoff.md via generate_session_handoff.py "
-        "--canon-marker --phase <phase> (the marker, not the mtime, is what C3 reads)"
+        "--canon-marker --phase <phase>, then record the completion with that "
+        "phase's producer (append_phase_history.py for pipeline phases, "
+        "append_iterate_entry.py for iterate) — C3 checks that the marker names "
+        "THIS phase and its latest recorded completion. The finding text names "
+        "the producer for the phase that actually failed"
     ),
     "C4": "Add an ADR to .shipwright/agent_docs/decision_log.md via write_decision_log.py",
     "C5": "Prepend an Unreleased bullet via append_changelog_entry.py",
 }
 
 
-def run_canon_checks(
-    phase: str,
-    project_root: Path,
-    run_id: str = "",
-) -> list[dict[str, Any]]:
+def run_canon_checks(phase: str, project_root: Path) -> list[dict[str, Any]]:
     """Run the C1-C5 Canon checks for ``phase`` and return finding dicts.
 
     Thin wrapper around ``tools/verifiers/common.py`` helpers so PR 1
@@ -61,13 +61,12 @@ def run_canon_checks(
     only runs the generic C1-C5 so it works uniformly for every plugin
     (including security + compliance which have no phase module).
 
-    ``run_id`` feeds C3, which since
-    iterate-2026-07-27-c3-phase-content-key asks whether the handoff's canon
-    marker names the run being audited rather than how recently the file was
-    written. It is passed through VERBATIM — a degenerate value (``""`` /
-    ``"unknown"``, per ``RUN_ID_SENTINELS``) must reach C3 as itself so the
-    check can report "cannot evaluate". Synthesizing one here would make an
-    unanswerable check look answered.
+    Takes NO run id. iterate-2026-07-27-c3-phase-content-key threaded one in for
+    C3 and C3 warned on every phase of every Stop, because the id this wrapper's
+    caller resolves (``resolve_run_id`` → run-config → ``run_started`` → loop
+    vars → session UUID) is never the id the handoff writer stamps. C3 now joins
+    the marker against ``phase_history`` on disk, so the parameter is gone rather
+    than defaulted — a default is what let the mismatch reach the check quietly.
     """
     skip_ids = skipped_check_ids()
     findings: list[dict[str, Any]] = []
@@ -94,9 +93,7 @@ def run_canon_checks(
 
     _emit("C1", check_c1_phase_event_recorded(project_root, phase))
     _emit("C2", check_c2_dashboard_reflects_phase(project_root, phase))
-    _emit("C3", check_c3_session_handoff_fresh_after_phase(
-        project_root, phase, run_id=run_id,
-    ))
+    _emit("C3", check_c3_session_handoff_fresh_after_phase(project_root, phase))
 
     if phase in C4_PHASES:
         _emit("C4", check_c4_decision_log_has_phase_adr(project_root, phase))

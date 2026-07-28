@@ -1,4 +1,5 @@
-"""Which tree was a measurement taken in? (iterate-2026-07-28-grade-snapshot-lineage)
+"""Which tree was a measurement taken in?
+(iterate-2026-07-28-grade-snapshot-lineage, corrected by …-honest-subject)
 
 A Control Grade is a property of a **tree state**, not of a repository in the
 abstract. Every iterate regenerates compliance inside its own worktree and
@@ -14,20 +15,17 @@ merge-base with the default branch — has no such defect: it names a real,
 already-existing commit that the measured tree extends, true whether or not F6
 has run.
 
-**What ``base`` guarantees.** A common ancestor *reachable from* the default
-branch. That is git's guarantee and nothing stronger — it is NOT promised to sit
-on the default branch's first-parent chain (merge commits and criss-cross history
-break that). Consumers ordering snapshots along the default branch must use
-general ancestry / topological position, not first-parent indexing.
+**What ``base`` guarantees:** a common ancestor *reachable from* the default
+branch, nothing stronger — not first-parent, and on the main-lineage path it
+equals HEAD. Consumer rules: ``docs/hooks-and-pipeline.md``.
 
 **Placement (ADR-045).** Top-level under ``shared/scripts/``, deliberately *not*
 under ``lib/`` — the same seam as ``tests_block.py``. The compliance emitter that
 calls this lives in the plugin's own ``scripts.lib`` namespace, so a shared
 ``lib.X`` import would shadow it. This module is stdlib-only and carries its own
-small git runner rather than reusing ``source_state_git._git``: that name is
-private, and every transitive import added on this lazily-imported cross-plugin
-path is another chance to bind the wrong ``lib``. The ~15 duplicated lines of
-``subprocess.run`` are a deliberate price for an import that cannot go wrong.
+git runner rather than reusing ``source_state_git``'s private one: every
+transitive import on this lazily-imported cross-plugin path is another chance to
+bind the wrong ``lib``, so the duplication buys an import that cannot go wrong.
 
 **Nothing here raises.** Attribution is best-effort metadata on a producer that
 must never fail because of it; every git failure degrades to ``None``.
@@ -53,6 +51,10 @@ _DEFAULT_CANDIDATES = (
 #: Object names are validated as hex rather than assumed to be 40-char SHA-1, so
 #: a SHA-256 repository is accepted while garbage never reaches the durable log.
 _OBJECT_NAME = re.compile(r"^[0-9a-f]{7,64}$")
+
+#: Ref names are untrusted external data crossing a repo boundary onto a durable
+#: artifact. git imposes no length limit of its own worth relying on here.
+_BRANCH_MAX = 255
 
 #: Closed vocabulary. ``"unknown"`` is a real value, emitted when the producer
 #: tried and could not tell — distinct from the field being ABSENT, which means
@@ -146,14 +148,20 @@ def _default_ref(root: Path, default_branch: str) -> str | None:
 def resolve_tree_lineage(project_root: Path | str) -> TreeLineage:
     """Resolve which tree ``project_root`` is, for stamping onto an event.
 
-    ``lineage`` is ``"main"`` when the measured tree contains nothing that is not
-    already on the default branch — either because the checked-out branch IS the
-    default (covering a local default that is ahead of its remote), or because
-    HEAD is an ancestor of the default ref (covering a detached HEAD at any
-    default-branch commit, not merely at the tip). Otherwise ``"branch"``, and
-    ``"unknown"`` when git cannot answer.
+    ``lineage`` is ``"main"`` only when the checked-out branch IS the default
+    branch (which also covers a local default ahead of its remote), or — for a
+    **detached** HEAD, which has no name to reason from — when HEAD is an
+    ancestor of the default ref. A named non-default branch is always
+    ``"branch"``, whatever its ancestry: it is a branch by name, and the working
+    tree it carries is not on the default branch's timeline even when its
+    commits happen to be. ``"unknown"`` when git cannot answer.
     """
-    root = Path(project_root)
+    try:
+        root = Path(project_root)
+    except (TypeError, ValueError):
+        # The one statement that could raise past the "nothing here raises"
+        # contract; direct callers have no outer handler (internal code review).
+        return TreeLineage(LINEAGE_UNKNOWN, None, None)
 
     head = _git(root, "rev-parse", "HEAD")
     if head is None:
@@ -177,6 +185,17 @@ def resolve_tree_lineage(project_root: Path | str) -> TreeLineage:
 
     if branch == default_branch:
         lineage = LINEAGE_MAIN
+    elif branch is not None:
+        # A NAMED non-default branch is a branch, full stop — ancestry is not
+        # consulted. It used to be, and that was the defect: an iterate worktree
+        # is created at the fork point and the snapshot is emitted at F5b,
+        # BEFORE the only mandated commit, so HEAD was still the fork point and
+        # ancestry answered "main" over a working tree holding the entire
+        # uncommitted change set. That stamped the very phantom point this
+        # attribution exists to expose, and stamped it as authoritative.
+        # Ancestry was only ever needed for a detached HEAD, which has no name
+        # to reason from (internal code review, correctness/high).
+        lineage = LINEAGE_BRANCH
     else:
         code, _ = _git_status(root, "merge-base", "--is-ancestor", "HEAD", ref)
         if code == 0:
@@ -184,30 +203,40 @@ def resolve_tree_lineage(project_root: Path | str) -> TreeLineage:
         elif code == 1:
             lineage = LINEAGE_BRANCH        # genuinely carries unmerged commits
         else:
-            # "Could not tell" — a shallow clone with truncated history, an
-            # unreadable object. Whether that is still an answer depends on what
-            # else we know: a NAMED non-default branch is a branch on the
-            # strength of its name alone, but a detached HEAD with no ancestry
-            # answer is genuinely unknowable, and guessing "branch" there would
-            # file a main-lineage measurement under the wrong subject.
-            lineage = LINEAGE_BRANCH if branch else LINEAGE_UNKNOWN
+            # Detached AND ancestry is unobtainable (shallow clone, unreadable
+            # object): there is no name to fall back on, so this is genuinely
+            # unknowable and guessing would file a measurement under the wrong
+            # subject.
+            lineage = LINEAGE_UNKNOWN
 
     return TreeLineage(lineage, branch, base)
 
 
-def lineage_fields(lineage: TreeLineage) -> dict[str, str]:
+def lineage_fields(lineage: TreeLineage) -> dict[str, object]:
     """Project a :class:`TreeLineage` onto the event keys to merge into a snapshot.
 
-    ``lineage`` is always present; ``branch``/``base`` appear only when resolved,
-    so a partial answer still carries what it knows instead of discarding all
-    three. An implausible object name is dropped rather than stamped.
+    ``lineage`` is always present; the rest appear only when resolved, so a
+    partial answer still carries what it knows instead of discarding everything.
+
+    Both string fields are bounded before they are stamped, because this lands on
+    a git-tracked, cross-repo-read, append-only artifact that cannot honestly be
+    rewritten later: an implausible object name is dropped, and a branch name is
+    dropped if it exceeds ``_BRANCH_MAX`` or carries control characters. Neither
+    is reachable through the producers today — git's own ref grammar forbids the
+    control characters — but "the writer happens not to emit it" is not a bound
+    (internal code review, security/low).
     """
-    fields: dict[str, str] = {"lineage": lineage.lineage}
-    if lineage.branch:
+    fields: dict[str, object] = {"lineage": lineage.lineage}
+    if lineage.branch and _is_stampable_branch(lineage.branch):
         fields["branch"] = lineage.branch
     if lineage.base and _OBJECT_NAME.match(lineage.base):
         fields["base"] = lineage.base
     return fields
+
+
+def _is_stampable_branch(name: str) -> bool:
+    """A ref name short enough and clean enough to put on the durable log."""
+    return len(name) <= _BRANCH_MAX and not any(ord(c) < 0x20 or ord(c) == 0x7F for c in name)
 
 
 __all__ = [

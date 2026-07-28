@@ -87,12 +87,17 @@ _Where the work detail lives_ at the end of this document.
   reinterpreted. The run still opens for reading, so past runs stay inspectable.
 - (E) Given a phase's completion checks ask whether the handover note a person
   reads on returning is current, when that is decided, then it is decided by
-  whether the note says it belongs to the run being checked — not by how
-  recently the file was written, so a run that spent a long time waiting is
-  never reported as stale. A phase whose work never produces such a note is
-  named as out of scope rather than reported as failing, and a check that cannot
-  reach an answer says which part it could not read instead of passing.
-  (iterate-2026-07-27-c3-phase-content-key)
+  whether that phase itself left the note for its own most recent completion —
+  not by how recently the file was written, so a run that spent a long time
+  waiting is never reported as stale, and not by an identifier the caller
+  supplies, which several phases share and therefore cannot tell them apart. A
+  phase that finished after the note was written is reported as having left
+  none, even where a later phase legitimately replaced it. A phase whose work
+  never produces such a note is named as out of scope rather than reported as
+  failing, and a check that cannot reach an answer — including one where the
+  records are too coarse to say which of two things happened first — says which
+  part it could not settle instead of passing.
+  (iterate-2026-07-27-c3-phase-history-join)
 
 <a id="fr-0102"></a>
 ### FR-01.02 — /shipwright-project

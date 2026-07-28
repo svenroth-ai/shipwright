@@ -37,7 +37,7 @@ from .common import (
     check_phase_history_has_run,
     read_run_config,
 )
-from .handoff_freshness import check_c3_session_handoff_fresh_after_phase
+from .handoff_phase_canon import check_c3_session_handoff_fresh_after_phase
 
 
 
@@ -156,7 +156,7 @@ def run_project_checks(
     # Canon (generic helpers from common.py)
     results.append(check_c1_phase_event_recorded(project_root, "project"))
     results.append(check_c2_dashboard_reflects_phase(project_root, "project"))
-    results.append(check_c3_session_handoff_fresh_after_phase(project_root, "project", run_id=run_id))
+    results.append(check_c3_session_handoff_fresh_after_phase(project_root, "project"))
     results.append(check_c4_decision_log_has_phase_adr(project_root, "project"))
     results.append(check_c5_changelog_unreleased_has_phase_entry(project_root, "project", "Added"))
 

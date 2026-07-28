@@ -26,6 +26,12 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from lib.config import read_all_configs, read_events
 from lib.events_log import latest_event_dt
 from lib.handoff_iterate import render_iterate_progress
+from lib.canon_frontmatter import (
+    CANON_MARKER_KEYS,
+    marker_timestamp,
+    marker_value,
+    resolve_marker_for_write,
+)
 from lib.handoff_pipeline import render_pipeline_phases
 from lib.iterate_entry import (
     MIGRATION_QUARANTINE_REPORT_KEY,
@@ -288,9 +294,12 @@ def generate_handoff(
     if canon_frontmatter:
         lines.append("---")
         lines.append("canon_generated: true")
-        for key in ("run_id", "phase", "reason", "timestamp"):
-            value = canon_frontmatter.get(key, "")
-            lines.append(f'{key}: "{value}"')
+        # Keys AND escaping from lib.canon_frontmatter, so the shape C3 keys on
+        # has one definition rather than a tuple repeated at each renderer.
+        # `marker_value` again here (not only in `build_marker`) because this
+        # function also takes caller-supplied dicts.
+        for key in CANON_MARKER_KEYS:
+            lines.append(f'{key}: "{marker_value(canon_frontmatter.get(key, ""))}"')
         lines.append("---")
         lines.append("")
 
@@ -511,6 +520,11 @@ def main() -> None:
         default="",
         help="Phase name to record in the canon frontmatter (project, design, …)",
     )
+    parser.add_argument(
+        "--preserve-canon-marker", action="store_true",
+        help="Without --canon-marker, keep an existing marker instead of dropping "
+             "it (mid-phase handoffs must not erase a split's C3 evidence).",
+    )
     args = parser.parse_args()
 
     project_root = Path(args.project_root).resolve() if args.project_root else Path(os.getcwd())
@@ -522,31 +536,20 @@ def main() -> None:
         run_id=env_run_id or None,
     )
 
-    canon_frontmatter: dict[str, str] | None = None
-    if args.canon_marker:
-        if not env_run_id:
-            print(
-                "WARN: --canon-marker requested but SHIPWRIGHT_RUN_ID is unset — "
-                "writing handoff WITHOUT canon frontmatter (Stop hook will regenerate "
-                "normally). Set SHIPWRIGHT_RUN_ID before calling this to enable the skip.",
-                file=sys.stderr,
-            )
-        else:
-            # Deterministic frontmatter timestamp — see iterate-2026-05-22.
-            # Using datetime.now() here was the second-most-common source of
-            # session_handoff.md drift after the rendered banner. Fall back
-            # to a placeholder so the frontmatter still has a `timestamp`
-            # key (Stop hook's conditional-skip logic keys on its presence).
-            _canon_dt = latest_event_dt(project_root)
-            canon_frontmatter = {
-                "run_id": env_run_id,
-                "phase": args.phase,
-                "reason": args.reason,
-                "timestamp": (
-                    _canon_dt.isoformat() if _canon_dt is not None
-                    else "(no events)"
-                ),
-            }
+    agent_docs = project_root / ".shipwright" / "agent_docs"
+    handoff_path = agent_docs / "session_handoff.md"
+
+    canon_frontmatter, marker_warning = resolve_marker_for_write(
+        handoff_path,
+        canon_marker=args.canon_marker,
+        preserve=args.preserve_canon_marker,
+        run_id=env_run_id,
+        phase=args.phase,
+        reason=args.reason,
+        timestamp=lambda: marker_timestamp(project_root),
+    )
+    if marker_warning:
+        print(marker_warning, file=sys.stderr)
 
     content = generate_handoff(
         project_root,
@@ -556,11 +559,7 @@ def main() -> None:
         session_resolution=resolution,
     )
 
-    # Ensure .shipwright/agent_docs/ exists
-    agent_docs = project_root / ".shipwright" / "agent_docs"
     agent_docs.mkdir(parents=True, exist_ok=True)
-
-    handoff_path = agent_docs / "session_handoff.md"
     handoff_path.write_text(content, encoding="utf-8")
     print(f"Session handoff written to {handoff_path}")
 

@@ -12,11 +12,21 @@ Schema:
 
     {
       "phase_history": {
-        "project": [{"run_id": "...", "date": "...", "outcome": "...", "splits": N}],
-        "design":  [{"run_id": "...", "date": "...", "screens": N, "flows": M}],
+        "project": [{"run_id": "...", "at": "...", "date": "...", "outcome": "...", "splits": N}],
+        "design":  [{"run_id": "...", "at": "...", "date": "...", "screens": N, "flows": M}],
         ...
       }
     }
+
+``at`` is the completion INSTANT (ISO-8601 UTC); ``date`` is the same moment
+truncated to a day, kept because readers written before
+iterate-2026-07-27-c3-phase-history-join look for it. Until that iterate this
+tool stamped ``date`` ALONE, and Canon C3 — which orders a phase's completion
+against the handover note's own intra-day timestamp — could not resolve anything
+inside a calendar day. It answered "the note came later" for every same-day
+comparison, so a phase that skipped its C3 step was reported as legitimately
+superseded. A day is not a time; writing one where an instant is meant is what
+made the comparison dead on arrival.
 
 Retention: last 50 entries per phase, oldest dropped. Older entries are
 preserved only by ``shipwright_events.jsonl`` (authoritative event log).
@@ -30,7 +40,7 @@ Usage:
         --entry-json '{"split": "02-dashboard", "sections": 4}'
 
 The ``--entry-json`` field is merged with the canonical keys
-``run_id`` and ``date`` so callers don't have to repeat them.
+``run_id``, ``at`` and ``date`` so callers don't have to repeat them.
 
 Exit codes:
 
@@ -54,6 +64,7 @@ if str(_SCRIPTS_ROOT) not in sys.path:
     sys.path.insert(0, str(_SCRIPTS_ROOT))
 
 from lib.atomic_write import durable_atomic_write, durable_read_text  # noqa: E402
+from lib.events_log import latest_event_dt  # noqa: E402
 from lib.file_lock import LockTimeout, file_lock  # noqa: E402
 
 
@@ -135,7 +146,7 @@ def main() -> int:
     parser.add_argument(
         "--entry-json",
         default="{}",
-        help="Additional JSON object merged into the entry (no run_id/date collision allowed)",
+        help="Additional JSON object merged into the entry (no run_id/at/date collision allowed)",
     )
     parser.add_argument(
         "--retention",
@@ -154,17 +165,37 @@ def main() -> int:
     if not isinstance(extra, dict):
         print("ERROR: --entry-json must be a JSON object", file=sys.stderr)
         return 1
-    if "run_id" in extra or "date" in extra:
-        print("ERROR: --entry-json must not set run_id or date (they are canonical)", file=sys.stderr)
+    canonical = {"run_id", "at", "event_at", "date"}
+    if canonical & set(extra):
+        print(
+            "ERROR: --entry-json must not set run_id, at, event_at or date "
+            "(they are canonical)",
+            file=sys.stderr,
+        )
         return 1
 
+    project_root = Path(args.project_root).resolve()
+
+    # One `now()`, so `at` and `date` can never name different days.
+    completed_at = datetime.now(timezone.utc)
+    # `event_at` is the anchor Canon C3 actually compares against, stamped with
+    # the SAME function that stamps the handoff's canon marker. `at` is wall
+    # clock, and the canon block runs record_event -> marker -> this tool, so
+    # `at` is unconditionally LATER than the marker that closed it; comparing
+    # those two accused a phase of skipping its C3 step on every re-run where
+    # record_event's first-wins dedup meant no fresh event landed. Omitted
+    # rather than nulled when the project has no events yet — an absent key is a
+    # stated unknown: without it C3 does not consult the clock at all for this
+    # phase, which is the right answer for entries written before this key.
+    event_dt = latest_event_dt(project_root)
     entry: dict[str, Any] = {
         "run_id": args.run_id,
-        "date": datetime.now(timezone.utc).strftime("%Y-%m-%d"),
+        "at": completed_at.isoformat(),
+        **({"event_at": event_dt.isoformat()} if event_dt is not None else {}),
+        "date": completed_at.strftime("%Y-%m-%d"),
         **extra,
     }
 
-    project_root = Path(args.project_root).resolve()
     lock_path = (project_root / RUN_CONFIG_NAME).with_suffix(".json.lock")
 
     try:
