@@ -1,0 +1,1 @@
+The escalation ladder now defines what 'cannot run' means: exactly four blockers (no Agent tool, the tool errored, a campaign sub-iterate under --autonomous, or the operator declined), with everything else explicitly excluded. A `not_run` disposition must name which one applied, and `doubt` is recorded `not_applicable` rather than `not_run` when Stage 3 was never due.

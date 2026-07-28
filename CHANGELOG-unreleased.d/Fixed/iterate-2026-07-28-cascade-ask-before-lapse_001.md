@@ -1,0 +1,1 @@
+The iterate's closing banner (F12) gained a conditional `Reviews:` row naming a cascade that did not run. The instruction to surface it existed but pointed at a template with no such field, so an operator reading the summary learned nothing about the missing pass.

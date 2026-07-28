@@ -1,0 +1,340 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-07-28-cascade-ask-before-lapse",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-07-28T08:52:59.843758+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 8,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The agent could prompt the user for permission even when physically unable to execute the action. If the run environment completely lacks the `Agent` tool, but the agent hits the \"ask first\" instruction in `SKILL.md`, it will interrupt the operator for permission, receive a \"yes\", and then fail anyway when it realizes the tool is missing.",
+          "suggestion": "Adjust the `SKILL.md` prose addition in S2 to specify that the agent must first verify the `Agent` tool is actually in its environment capabilities before pausing to ask the operator for the go-ahead.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "reducibility",
+          "file": null,
+          "line": null,
+          "finding": "Creating a brand new test file (`test_cascade_ask_before_lapse.py`) to guard these new prose additions fragments your drift guards by change/ticket rather than by artifact.",
+          "suggestion": "Fold these new assertions into the existing `test_review_cascade_owner.py` (and consider renaming it to `test_iteration_reviews_prose.py` or similar) so all structural/prose invariants for `iteration-reviews.md` and `SKILL.md` live together.  Overall, this is a pragmatic and well-scoped workaround for an opaque system prompt injection; the approach correctly leverages the prompt boundaries to redefine blocker conditions and mandate interactive confirmation.  SHIPWRIGHT_VERDICT: approve",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "AC2 says a conditional policy is not a blocker “until the request has been made and declined,” but the proposed three required `not_run` blocker classes exclude declined permission. The disposition rule therefore has no stated valid value for the important synchronous case: the session asks, the operator explicitly declines, and the internal cascade cannot run.",
+          "suggestion": "Define declined go-ahead as a fourth explicit disposition class (for example, `operator_declined`) or clarify that it is a real blocker with mandatory wording distinct from no-tool, tool failure, and autonomous mode. Add a prose guard for it.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "The proposed “ask as first action in Step 8” wording could cause an unnecessary question in sessions where Agent spawning has already been requested earlier in the same session, despite the stated policy being satisfied for the rest of that session. It also risks prompting when the cascade is not applicable to the current change.",
+          "suggestion": "Phrase the requirement conditionally: before Stage 1, if the cascade is required and the session has not already received applicable permission to spawn subagents, request it. State that existing session permission may be reused.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The plan treats `--autonomous` as a single unconditional case, but it does not specify behavior where the session already has operator authorization from earlier in the session. In that case, autonomous mode need not necessarily skip the internal cascade; it merely cannot pause to obtain new authorization.",
+          "suggestion": "Clarify the precedence: in autonomous mode, use previously granted session authorization if available; only record the autonomous ungated path when new permission is required and cannot be obtained without blocking.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "The tests are intentionally textual drift guards, which is appropriate for prompt contracts, but they could pass while the wording is internally contradictory or positioned outside the actual operational instructions of Step 8. The test list only asserts phrases/concepts, not their ordering relative to Stage 1 or consistency between the two documents.",
+          "suggestion": "Make the Step 8 guard assert ordering (ask instruction preceding the Stage 1 marker) and add one focused consistency assertion that the accepted `not_run` categories match between SKILL.md and `iteration-reviews.md`.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "S3 leaves guide documentation discretionary even though this changes a user-visible interaction: an operator may now be asked for permission before a cascade begins, and autonomous summaries will surface a skipped internal pass. If Ch. 8 documents the review lifecycle, omission can make the behavior surprising.",
+          "suggestion": "Inspect the chapter as planned, but establish a clear criterion: update it if it describes cascade initiation, autonomous operation, or review-result interpretation. The addition should be a short behavior note, not a duplicate of the runtime contract.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "security",
+          "file": null,
+          "line": null,
+          "finding": "No auth, RLS, or data-boundary change is proposed, and requesting operator approval before an Agent tool call does not introduce a new privilege path. The principal practical concern is avoiding language that implies a policy has been bypassed when it has not.",
+          "suggestion": "Require the autonomous and declined-permission dispositions to state that the internal pass was not run, while preserving the existing rule that external review does not mark `code` as completed by substitution.  Overall, the prose-and-guard approach is sound and appropriately scoped for a runtime prompt contract. It should be revised to model explicit operator refusal and prior authorization, so the new record accurately distinguishes every practical non-run path. SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-07-28T08:21:15.968507+00:00",
+      "disposition": null,
+      "recorded_by": "external_review.py --mode iterate (gemini approve, openai revise; 6 findings, 5 applied)",
+      "parse_status": "structured",
+      "raw_excerpt": "[gemini] - Category: edge-case\n- Severity: medium\n- Finding: The agent could prompt the user for permission even when physically unable to execute the action. If the run environment completely lacks the `Agent` tool, but the agent hits the \"ask first\" instruction in `SKILL.md`, it will interrupt the operator for permission, receive a \"yes\", and then fail anyway when it realizes the tool is missing. \n- Suggestion: Adjust the `SKILL.md` prose addition in S2 to specify that the agent must first verify the `Agent` tool is actually in its environment capabilities *before* pausing to ask the operator for the go-ahead.\n\n- Category: reducibility\n- Severity: low\n- Finding: Creating a brand new test file (`test_cascade_ask_before_lapse.py`) to guard these new prose additions fragments your drift guards by *change/ticket* rather than by *artifact*. \n- Suggestion: Fold these new assertions into the existing `test_review_cascade_owner.py` (and consider renaming it to `test_iteration_reviews_prose.py` or similar) so all structural/prose invariants for `iteration-reviews.md` and `SKILL.md` live together. \n\nOverall, this is a pragmatic and well-scoped workaround for an opaque system prompt injection; the approach correctly leverages the prompt boundaries to redefine blocker conditions and mandate interactive confirmation.\n\nSHIPWRIGHT_VERDICT: approve\n\n[openai] 1. **Category:** edge-case  \n   **Severity:** medium  \n   **Finding:** AC2 says a conditional policy is not a blocker “until the request has been made and declined,” but the proposed three required `not_run` blocker classes exclude *declined permission*. The disposition rule therefore has no stated valid value for the important synchronous case: the session asks, the operator explicitly declines, and the internal cascade cannot run.  \n   **Suggestion:** Define declined go-ahead as a fourth explicit disposition class (for example, `operator_declined`) or clarify that it is a real blocker with mandatory wording distinct from no-tool, tool failure, and autonomous mode. Add a prose guard for it.\n\n2. **Category:** approach  \n   **Severity:** medium  \n   **Finding:** The proposed “ask as first action in Step 8” wording could cause an unnecessary question in sessions where Agent spawning has already been requested earlier in the same session, despite the stated policy being satisfied for the rest of that session. It also risks prompting when the cascade is not applicable to the current change.  \n   **Suggestion:** Phrase the requirement conditionally: before Stage 1, if the cascade is required and the session has not already received applicable permission to spawn subagents, request it. State that existing session permission may be reused.\n\n3. **Category:** edge-case  \n   **Severity:** medium  \n   **Finding:** The plan treats `--autonomous` as a single unconditional case, but it does not specify behavior where the session already has operator authorization from earlier in the session. In that case, autonomous mode need not necessarily skip the internal cascade; it merely cannot pause to obtain new authorization.  \n   **Suggestion:** Clarify the precedence: in autonomous mode, use previously granted session authorization if available; only record the autonomous ungated path when new permission is required and cannot be obtained without blocking.\n\n4. **Category: […truncated]"
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 8,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "readability",
+          "file": "plugins/shipwright-iterate/skills/iterate/SKILL.md",
+          "line": 179,
+          "finding": "The inserted ask-paragraph split Step 8 mid-sentence: line 177 ended on a dangling colon and the cascade chain became a lazy continuation of the autonomous branch, reading as if the three stages belonged to --autonomous.",
+          "suggestion": "Restructure into clean paragraphs / keep the colon adjacent to its list.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "shared/tests/test_iterate_review_prose.py",
+          "line": 235,
+          "finding": "The autonomous guard used a tautological or (second disjunct subsumes the first) and pinned neither half of its docstring claim; the openai #3 precedence clause was unasserted.",
+          "suggestion": "Assert exact strings for both the limit and the named surface.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "shared/tests/test_iterate_review_prose.py",
+          "line": 245,
+          "finding": "The blocker guard searched the whole document while its message claimed section scope; normalized no agent tool already occurred four times elsewhere, so that item was green before the change.",
+          "suggestion": "Scope with _section() to the escalation ladder.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "shared/tests/test_iterate_review_prose.py",
+          "line": 269,
+          "finding": "The 320-char backward window sat ~22 chars from a false green: deleting the guarded clause leaves an unrelated doubt roles are not cascaded externally at ~342 chars, and any reflow of ladder item 1 closes that gap.",
+          "suggestion": "Replace proximity with an exact, section-scoped clause assertion.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "plugins/shipwright-iterate/skills/iterate/SKILL.md",
+          "line": 179,
+          "finding": "Step 8 instructs the session to ask but never says what to do with a no; the decline path lived only in the other file, at the exact moment the agent needs it.",
+          "suggestion": "Name blocker #4 and point at the ladder inline.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "shared/tests/test_iterate_review_prose.py",
+          "line": 3,
+          "finding": "Two module-docstring claims were false after the split: every invariant for these two documents lives in one place (the campaign file also asserts on iteration-reviews.md), and the _norm rationale cited CLI flags this module no longer asserts.",
+          "suggestion": "Reword both to what is true.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "shared/tests/test_campaign_review_contract_prose.py",
+          "line": 20,
+          "finding": "Dead SKILL_DOC constant (ruff does not flag unused module-level assignments) plus a docstring advertising a guard that stayed in the sibling file.",
+          "suggestion": "Delete the constant, correct the docstring.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "docs/guide.md",
+          "line": 2062,
+          "finding": "The guide dropped the openai #3 nuance, telling operators autonomous runs never get the cascade, and named a run summary with no matching artifact.",
+          "suggestion": "Add the condition and name the closing banner.",
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-07-28T08:53:21.624711+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer PASS (stage 1, 2 rounds) then code-reviewer (stage 2, 8 findings, all applied)",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 12,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "hidden coupling & blast radius",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: Putting the ask-first rule at the top of Step 8 changes what the observed failure runs would have done. — All four cited lapses were decided at F11, not Step 8. The artifacts read there are F11.md and review_record_check._remediation(), which printed only the sanctioned close-missing --status not_run command. The rule was written where a compliant agent already was.",
+          "suggestion": "ACCEPTED - scope extended: F11.md and _remediation() now both state that a code row outstanding at F11 means Step 8 never ran, and that a session policy is not a blocker.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "high",
+          "category": "boundary & contract",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: Blocker #3 (--autonomous) narrows the escape hatch. — --autonomous is prose in an invocation, and operators write it on STANDALONE runs (three planning docs record Mode: --autonomous). Blocker #3 would hand the exact failure mode an approved name, harder to spot than the vague disposition it replaced.",
+          "suggestion": "ACCEPTED - blocker #3 now binds to campaign sub-iterates built by the runner; a standalone run described as autonomous still asks, because the operator who wrote that invocation is present.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "high",
+          "category": "concurrency & ordering",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: Guard 3 and AC3's 'permission already held' are evaluable at runtime. — Nothing carries the grant: auto-compaction, handoff and resume all destroy it, and SKILL.md B1's replay-check re-runs Steps 4 and 7 but never Step 8, so a resumed run reaches F11 having never asked.",
+          "suggestion": "ACCEPTED - the rule now fails OPEN to asking: if the grant cannot be established from this session, ask. Persisting it in run state is noted as the fuller fix.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "boundary & contract",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: The four blockers are exhaustive and the document is internally consistent about them. — The file's own canonical campaign dispositions named none of the four; and unanswered questions, permission denials and token-budget refusals are reachable states outside the list.",
+          "suggestion": "ACCEPTED - both canonical examples now name blocker 1; an explicit 'anything not on this list is not a blocker' closes the set; a permission denial folds into blocker 2 and an unanswered question is called out as not 'declined'.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "boundary & contract",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: Requiring doubt=not_run alongside code makes the record more honest. — Stage 3 is conditional; on a docs-only diff it was never due, so recording 'blocked' is a false statement in the artifact whose accuracy is this change's entire currency.",
+          "suggestion": "ACCEPTED - doubt is not_run only when Stage 3 would have applied; otherwise not_applicable naming the conditional rule.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "reversibility",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: Section 4's 'enforcing this in a verifier is out of scope' is a sound reason. — It conflates truthfulness (unprovable) with FORM (provable). disposition_ok accepts any 12-char string containing a space, so 'a session directive applies' still passes, and the repo already enforces a closed reason_code vocabulary in the Test Completeness Ledger.",
+          "suggestion": "ACCEPTED - section 4 narrowed to the truthfulness half; the closed four-token vocabulary filed as a follow-up rather than silently absorbed.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "hidden coupling & blast radius",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: The ungated pass will be surfaced in the closing run summary (F12). — F12.md is a fixed banner with no review field and no instruction to add one; the guard pinned the POINTER in SKILL.md while the TARGET stayed silent.",
+          "suggestion": "ACCEPTED - F12.md gained a conditional Reviews row, and a guard now asserts it in F12.md itself.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "boundary & contract",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: The six new guards would catch drift that breaks the rule. — None asserted an OBLIGATION to ask. A concrete green-while-broken edit was given for each: reuse the 'first action' token for Stage 1; swap the conjunction for 'consider whether any apply'; delete the autonomous subject; add 'and a standing session policy' to the blocker list; satisfy the subject-less 'is not a blocker until' fragment elsewhere; let 'which of the four' go stale.",
+          "suggestion": "ACCEPTED - all six re-anchored on the obligations themselves, plus the count pinned in both places so they cannot drift apart.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "boundary & contract",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: The guards moved into the new file are live. — An or-operand containing a backtick can never be true because _norm strips backticks - the same class the diff's comments claim was removed, copied forward by the move.",
+          "suggestion": "ACCEPTED - the unreachable operand deleted.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "boundary & contract",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: docs/guide.md Ch. 8 now describes the behaviour correctly. — It contradicted itself within three sentences ('Only the campaign sub-iterate-runner cannot', immediately after describing a standalone run that cannot), and never told the user what happens if they decline.",
+          "suggestion": "ACCEPTED - wording corrected and the decline path documented.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "reversibility",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: AC1's rationale: 'a question at finalization buys nothing: the work is already built'. — At Step 8 the work is also already built; the real gain is that the answer arrives before F6 while the diff can still be fixed.",
+          "suggestion": "ACCEPTED - rationale replaced with the true one.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "hidden coupling & blast radius",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: The test-file rename is local. — test-traceability.json still names 17 node IDs under the deleted file, and the file sat at 288 of a 300 cap.",
+          "suggestion": "PARTIALLY ACCEPTED - the snapshot regenerates at F5b. The cap pressure was real and arrived immediately: the file hit 340 and was split a third time, by artifact, into skill-prose (255) and reviews-prose (132).",
+          "source": "doubt-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-07-28T08:54:44.842726+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer (stage 3) — 12 doubts, 3 high; the first extended this run's scope",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 2,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "test",
+          "file": "shared/tests/test_iterate_review_prose.py:226-235",
+          "line": null,
+          "finding": "The autonomous-mode guard only asserts that Step 8 contains “autonomous” and “run summary.” It does not verify AC3’s essential precedence rule: previously granted session permission must still allow the cascade in `--autonomous` mode. It also does not pin the required absent-permission path (`code = not_run`, mandatory external review, and surfaced ungated pass). A regression that treated autonomous mode as an unconditional skip would still pass this test.",
+          "suggestion": "Assert the Step 8 section explicitly states that autonomous mode prevents acquiring new permission but permits using already-held permission, and assert the absent-permission branch includes `code = not_run`, external review, and run-summary surfacing.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "test",
+          "file": "shared/tests/test_iterate_review_prose.py:238-257",
+          "line": null,
+          "finding": "The tests intended to verify the new escalation “step 0” search the entire `iteration-reviews.md` document rather than the “When the internal reviewer cannot run” section. The required blocker definitions could be removed or relocated outside the escalation instructions while these guards remain green if the relevant words occur elsewhere in the document.",
+          "suggestion": "Extract the escalation section with `_section()` and perform the blocker and conditional-policy assertions against that section specifically.  Overall, the runtime prose appears to implement AC1–AC4, including the important prior-permission behavior under autonomous mode, but the drift guards do not adequately protect AC3’s core branch and should be strengthened before shipping. SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-07-28T08:54:44.992048+00:00",
+      "disposition": null,
+      "recorded_by": "external_review.py --mode code (openai revise; gemini leg returned degraded/unavailable)",
+      "parse_status": "partial",
+      "raw_excerpt": "[gemini] docs/guide.md`.\n\"A standalone iterate spawns this cascade itself (iterate SKILL.md Step 8), before the commit. If your session runs under a policy that gates subagents behind an explicit request, the iterate **asks you for the go-ahead before it starts reviewing** rather than quietly recording the pass as \"not run\" at the end — such policies are conditional, and one sentence lifts them for the rest of the session.\"\n\nWait. Look at `SKILL.md` Step 8 again. Did it break the hard-gate sentence?\n\nOriginal:\n```markdown\n### Step 8: Full Code Review (conditional)\n\nSee `references/iteration-reviews.md` for trigger rules. **This session spawns the cascade itself** — a standalone iterate\n\n[openai] - Category: test\n- Severity: medium\n- File: `shared/tests/test_iterate_review_prose.py:226-235`\n- Finding: The autonomous-mode guard only asserts that Step 8 contains “autonomous” and “run summary.” It does not verify AC3’s essential precedence rule: previously granted session permission must still allow the cascade in `--autonomous` mode. It also does not pin the required absent-permission path (`code = not_run`, mandatory external review, and surfaced ungated pass). A regression that treated autonomous mode as an unconditional skip would still pass this test.\n- Suggestion: Assert the Step 8 section explicitly states that autonomous mode prevents acquiring new permission but permits using already-held permission, and assert the absent-permission branch includes `code = not_run`, external review, and run-summary surfacing.\n\n- Category: test\n- Severity: low\n- File: `shared/tests/test_iterate_review_prose.py:238-257`\n- Finding: The tests intended to verify the new escalation “step 0” search the entire `iteration-reviews.md` document rather than the “When the internal reviewer cannot run” section. The required blocker definitions could be removed or relocated outside the escalation instructions while these guards remain green if the relevant words occur elsewhere in the document.\n- Suggestion: Extract the escalation section with `_section()` and perform the blocker and conditional-policy assertions against that section specifically.\n\nOverall, the runtime prose appears to implement AC1–AC4, including the important prior-permission behavior under autonomous mode, but the drift guards do not adequately protect AC3’s core branch and should be strengthened before shipping.  \nSHIPWRIGHT_VERDICT: revise"
+    }
+  }
+}
