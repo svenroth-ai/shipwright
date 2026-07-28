@@ -221,14 +221,51 @@ rule. The two reviews are now independent routes to the same guarantee.
 
 ### When the internal reviewer cannot run — escalate, never lapse
 
-If the internal cascade cannot be run in this session, the responsibility moves
-**outward**, it does not disappear:
+**0. First establish that it genuinely cannot run.** This ladder is for a *real*
+blocker, and there are exactly four:
+
+1. this agent type has **no `Agent` tool** — structurally the sub-iterate-runner;
+2. the tool **errored** when called (a permission *denial* counts here — say so);
+3. the run is a **campaign sub-iterate built by the runner under `--autonomous`**,
+   where there is no operator to ask. A *standalone* run that an operator merely
+   described as "autonomous" is **not** this case: the person who wrote that
+   invocation is present, so ask them;
+4. the operator was asked and **declined** — including an answer that declines by
+   deferring ("later", "just do the external one").
+
+**Anything not on this list is not a blocker.** Name it verbatim and treat the
+pass as unproven rather than inventing a fifth class. If a question goes
+unanswered, that is not "declined" — say the question was asked and got no
+answer.
+
+A standing session policy that a request would lift — e.g. *"do not call the
+Agent tool unless the user requested it"* — **is not a blocker until** the
+request has been made and declined. Nothing on disk carries a grant across
+compaction, a handoff or a resume, so **if you cannot establish from this
+session that permission was given, ASK** — a redundant question costs one line;
+a lost pass costs the review. (SKILL.md B1's resume replay-check re-runs Step 4
+and Step 7, never Step 8, so a resumed run reaches F11 without ever having
+asked.) It is conditional and one sentence lifts it,
+so SKILL.md Step 8 asks *before Stage 1*. Recording `not_run` because nobody
+asked is a silent skip wearing an escalation's clothes: it produces the same
+green gate as a genuine blocker while costing a pass the external route cannot
+replace (the spec-compliance and doubt roles are not cascaded externally).
+
+If the cascade genuinely cannot be run, the responsibility moves **outward**, it
+does not disappear:
 
 1. the external review becomes **mandatory** and carries the pass — record it
    `--review-type external_code --status completed`;
-2. record `code` as `not_run` with a disposition naming *why* the internal pass
-   could not run. Do **not** record it `completed` "by substitution": that
-   claims the pass the contract describes ran, and it did not;
+2. record `code` — **and `doubt`, which Stage 3 cannot reach without a Stage 2
+   pass** — as `not_run`, each with a disposition naming *why* and specifically
+   **which of the four** blockers above applied, because "a session directive"
+   reads identically whether or not anyone asked. Record `doubt` `not_run` only
+   **when Stage 3 would have applied to this diff**; on a docs-only or trivial
+   surface it is `not_applicable` naming the conditional rule, because saying
+   "blocked" about a pass that was never due is the same false statement this
+   record exists to prevent. Do **not** record either
+   `completed` "by substitution": that claims the pass the contract describes
+   ran, and it did not;
 3. in campaign mode the same escalation is what ADR-029 already specifies —
    the runner has no `Agent` tool, so the cascade is delegated to the
    orchestrator. This section is its standalone-mode counterpart, which was
@@ -427,11 +464,11 @@ prefix, i.e. `uv run "{shared_root}/scripts/tools/record_review_pass.py" record
 
 # the delegated internal cascade — recorded as NOT having run
 … --review-type code --status not_run \
-  --disposition "sub-iterate-runner has no Agent tool; internal cascade delegated to the campaign orchestrator (ADR-029, campaign mode only)"
+  --disposition "blocker 1 (no Agent tool): the sub-iterate-runner cannot spawn the cascade; delegated to the campaign orchestrator (ADR-029, campaign mode only)"
 
 # Stage 3 cannot precede Stage 2
 … --review-type doubt --status not_run \
-  --disposition "Stage 3 runs only behind a Stage 2 pass; the internal cascade did not run in this campaign sub-iterate"
+  --disposition "blocker 1 (no Agent tool): Stage 3 runs only behind a Stage 2 pass, and the internal cascade did not run in this campaign sub-iterate"
 ```
 
 A bare `--disposition "delegated"` is **rejected** (a disposition must name a

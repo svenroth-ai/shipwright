@@ -1,0 +1,1 @@
+An iterate that runs under a policy gating subagent spawning now asks for the go-ahead BEFORE the review cascade instead of quietly recording the pass as 'not run' at the end. Such policies are conditional — one sentence lifts them — and the rule is repeated at F11, where every observed lapse was actually decided rather than at the step a compliant run had already passed.
