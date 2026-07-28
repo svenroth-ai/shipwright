@@ -10,6 +10,15 @@ import pytest
 
 SCRIPTS = Path(__file__).resolve().parent.parent / "scripts"
 
+# These tests decode child output as UTF-8, but on Windows a child Python
+# writes stdout/stderr in the console codepage (cp1252) unless told otherwise.
+# The mismatch is invisible while every message is ASCII and turns into a
+# `UnicodeDecodeError` -> `result.stderr is None` the moment one carries a
+# non-ASCII character — which is what the em dash in the duplicate-section
+# refusal did. Declaring the child's encoding is the matching half of
+# `encoding="utf-8"` on the read side.
+UTF8_ENV = {**os.environ, "PYTHONIOENCODING": "utf-8"}
+
 
 @pytest.mark.integration
 def test_full_changelog_flow(git_repo_with_tag):
@@ -22,7 +31,7 @@ def test_full_changelog_flow(git_repo_with_tag):
         result = subprocess.run(
             [sys.executable, str(SCRIPTS / "lib" / "git_utils.py"),
              "parse-commits", "--since", "v0.1.0"],
-            capture_output=True, text=True, encoding="utf-8",
+            capture_output=True, text=True, encoding="utf-8", env=UTF8_ENV,
         )
         parsed = json.loads(result.stdout)
         assert len(parsed) == 3
@@ -45,7 +54,7 @@ def test_full_changelog_flow(git_repo_with_tag):
              "--commits-json", str(commits_file),
              "--changelog-path", str(git_repo_with_tag / "CHANGELOG.md"),
              "--date", "2026-03-21"],
-            capture_output=True, text=True, encoding="utf-8",
+            capture_output=True, text=True, encoding="utf-8", env=UTF8_ENV,
         )
         output = json.loads(result.stdout)
         assert output["success"] is True
@@ -92,7 +101,7 @@ def test_generate_preserves_existing_history(tmp_path):
         "--changelog-path", str(changelog),
         "--date", "2026-07-27",
     ]
-    result = subprocess.run(argv, capture_output=True, text=True, encoding="utf-8")
+    result = subprocess.run(argv, capture_output=True, text=True, encoding="utf-8", env=UTF8_ENV)
     assert result.returncode == 0, result.stderr
 
     content = changelog.read_text(encoding="utf-8")
@@ -103,7 +112,7 @@ def test_generate_preserves_existing_history(tmp_path):
     assert content.index("## [1.1.0]") < content.index("## [1.0.0]")
 
     # Re-running the interrupted release must not duplicate the version.
-    result = subprocess.run(argv, capture_output=True, text=True, encoding="utf-8")
+    result = subprocess.run(argv, capture_output=True, text=True, encoding="utf-8", env=UTF8_ENV)
     assert result.returncode == 0, result.stderr
     assert changelog.read_text(encoding="utf-8").count("## [1.1.0]") == 1
 
@@ -190,7 +199,7 @@ def test_generate_refuses_ambiguous_file_and_leaves_it_untouched(tmp_path):
             "--changelog-path", str(changelog),
             "--date", "2026-07-27",
         ],
-        capture_output=True, text=True, encoding="utf-8",
+        capture_output=True, text=True, encoding="utf-8", env=UTF8_ENV,
     )
 
     assert result.returncode == 1
@@ -210,7 +219,7 @@ def test_setup_changelog_detects_state(git_repo_with_tag):
         result = subprocess.run(
             [sys.executable, str(SCRIPTS / "checks" / "setup-changelog.py"),
              "--plugin-root", plugin_root],
-            capture_output=True, text=True, encoding="utf-8",
+            capture_output=True, text=True, encoding="utf-8", env=UTF8_ENV,
         )
         output = json.loads(result.stdout)
 
@@ -233,7 +242,7 @@ def test_version_suggestion(git_repo_with_tag):
         result = subprocess.run(
             [sys.executable, str(SCRIPTS / "lib" / "git_utils.py"),
              "suggest-version", "--since", "v0.1.0"],
-            capture_output=True, text=True, encoding="utf-8",
+            capture_output=True, text=True, encoding="utf-8", env=UTF8_ENV,
         )
         output = json.loads(result.stdout)
 
