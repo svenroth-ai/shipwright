@@ -7,7 +7,8 @@ in CI (``ci.yml`` -> "Run CI-gate guard") and fails when:
 
   (a) a test dir (``plugins/*/tests``, ``shared/**/tests``,
       ``integration-tests/``) is NOT referenced by any CI pytest invocation;
-  (b) a quality-gate step (test/lint/type/scan/analyze) carries ``|| true`` or
+  (b) a quality-gate step (test/lint/type/scan/analyze, or any step whose name
+      carries the ``(gate)`` suffix) carries ``|| true`` or
       ``continue-on-error: true`` and is NOT in the documented allowlist;
   (c) the security.yml critical-gate lacks a fail-closed guard, so an absent
       ``findings.json`` (scanner crash) would read 0 criticals -> silent green.
@@ -58,6 +59,16 @@ GATE_COMMANDS = (
 GATE_NAME_KEYWORDS = (
     "lint", "type-check", "typecheck", "type check", "test", "scan",
     "sarif", "codeql", "analy",
+    # "(gate)" makes the naming convention load-bearing. A step that blocks the
+    # merge while running a command this guard does not recognise — a bespoke
+    # verifier script, say — is invisible here, so a later
+    # `continue-on-error: true` on it loosens the merge gate with nothing to
+    # catch it. That is precisely the failure this guard exists to prevent, and
+    # it applied to the guard's own blind spot: the two surface verifiers wired
+    # into ci.yml match no GATE_COMMAND and no other keyword. Suffixing a
+    # blocking step with `(gate)` now enrols it, so the NEXT one is covered
+    # without editing a registry.
+    "(gate)",
 )
 GATE_USES = (
     "codeql-action/analyze", "codeql-action/upload-sarif",

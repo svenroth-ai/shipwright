@@ -2,10 +2,31 @@
 """Structural analysis of a Keep-a-Changelog document.
 
 Pure functions over the lines of a CHANGELOG.md — no I/O, no writing. They
-exist so ``changelog.update_changelog`` can SPLICE a new section into the text
-it read instead of rebuilding the file from a fresh header. Rebuilding is what
-destroyed hand-written histories (trg-6690d175): every reconstruction path
-loses whatever fragment it forgets to concatenate.
+exist so a writer can SPLICE a new section into the text it read instead of
+rebuilding the file from a fresh header. Rebuilding is what destroyed
+hand-written histories (trg-6690d175): every reconstruction path loses whatever
+fragment it forgets to concatenate.
+
+**Two writers share this module**, and that is the point:
+
+* ``plugins/shipwright-changelog/scripts/lib/changelog.py::update_changelog``
+* ``shared/scripts/tools/aggregate_changelog.py`` — the writer the release path
+  actually invokes (changelog SKILL.md Step 4)
+
+They previously carried separate copies, which already disagreed on a lowercase
+``## [unreleased]`` and on where a link-reference footer ends a block. Neither
+lost content, so nothing had failed yet — but adding same-version replace logic
+as a third copy is precisely the drift ``conventions.md:50`` records ("when N
+readers share one arithmetic, extract it to ONE SSoT or a predicate WILL
+drift").
+
+**Why this file sits at ``shared/scripts/`` top level and not under ``lib/``:**
+ADR-045. Every plugin ships its own ``scripts/lib`` package, so a shared helper
+under ``lib/`` binds ``sys.modules['lib']`` to whichever one imports first and
+the other side's siblings vanish. Same placement as ``tests_block.py`` and
+``markdown_table.py``. It has no intra-package imports (only ``re``), so a
+consumer may also load it by path under a private module name — which is what
+the plugin writer does, to touch no ``lib`` namespace at all.
 """
 
 import re
@@ -103,6 +124,22 @@ def section_starts(lines: list[str], version: str) -> list[int]:
         if match and match.group(1).strip() == version:
             starts.append(i)
     return starts
+
+
+def unreleased_start(lines: list[str]) -> int | None:
+    """Line index of the first ``## [Unreleased]`` heading, or None.
+
+    Case-INSENSITIVE, matching :func:`insertion_index`. A reader that spells
+    this itself and forgets the casing disagrees with where a new section is
+    placed — which is exactly how the aggregator ended up finding the right
+    insertion point while silently failing to warn about the legacy bullets
+    sitting above it.
+    """
+    for i, line in enumerate(lines):
+        match = SECTION_HEADING_RE.match(line)
+        if match and match.group(1).strip().lower() == "unreleased":
+            return i
+    return None
 
 
 def insertion_index(lines: list[str]) -> int:

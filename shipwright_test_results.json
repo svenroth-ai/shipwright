@@ -1,11 +1,12 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-07-27-review-floor-not-chained",
+    "run_id": "iterate-2026-07-27-triage-defer-review-followup",
     "date": "2026-07-27",
     "unit": {
       "status": "passed",
-      "passed": 6378,
-      "total": 6378
+      "passed": 5873,
+      "total": 5885,
+      "skipped": 12
     },
     "integration": {
       "status": "passed",
@@ -18,9 +19,9 @@
       "total": 0
     },
     "e2e": {
-      "status": "not_run",
-      "passed": 0,
-      "total": 0
+      "status": "passed",
+      "passed": 122,
+      "total": 122
     },
     "design_fidelity": {
       "status": "not_run",
@@ -32,135 +33,125 @@
     },
     "degraded": [
       {
-        "condition": "external review - gemini degraded on all three calls",
-        "detail": "Gemini 3.1 Pro's replies were cut off (finish_reason=length) for the plan review and both code-review rounds, so every external pass here is single-reviewer (GPT-5.6). Recorded rather than counted as a two-provider pass."
+        "condition": "external LLM review not run",
+        "detail": "'skip' at small complexity per the Phase Matrix. Scope came from the two subagent passes instead, which produced 22 findings including two highs; both rows are recorded `completed` with the full disposition table in .shipwright/planning/iterate/iterate-2026-07-27-triage-defer-review-followup/subagent_reviews.md."
       },
       {
-        "condition": "internal code-reviewer / doubt-reviewer subagents not invoked",
-        "detail": "Standing session directive not to use the Agent tool unless the user asks. Recorded as not_run per the escalation rule this iterate introduces - the external review carries the pass and is recorded under external_code."
+        "condition": "shared/scripts/tools/triage_promote.py registered over the 300-line limit",
+        "detail": "304 lines, state grandfathered, per the 2026-07-19 convention that a file drifting just past the limit on coherent content is registered rather than trimmed. It was first trimmed to 299; the Stage-3 pass showed that removed load-bearing detail (a runnable uv-run prefix, the 200-vs-500 rationale, the newline enumeration), so the trim was reverted and the crossing registered honestly."
       }
     ],
     "surface_verification": {
       "surface": "cli",
-      "runner": "uv run --with pytest pytest shared/tests/test_review_record_floor.py shared/tests/test_review_cascade_decoupled.py shared/tests/test_record_review_pass_cli.py -q",
+      "runner": "uv run pytest shared/tests/test_triage_render_rows.py shared/tests/test_triage_defer.py shared/tests/test_triage_docs_consistency.py shared/tests/test_triage_wp9_sanitize_outbox.py shared/tests/test_triage_cli.py shared/tests/test_triage_cli_json.py shared/tests/test_triage_promote.py -v",
       "exit_code": 0,
-      "tests_run": 44,
-      "evidence_path": ".shipwright/runs/iterate-2026-07-27-review-floor-not-chained/surface_verification.json"
+      "tests_run": 122,
+      "evidence_path": ".shipwright/runs/iterate-2026-07-27-triage-defer-review-followup/surface_verification.json",
+      "timestamp": "2026-07-27T20:40:00.000Z"
     },
     "test_completeness": {
       "status": "complete",
       "behaviors": [
         {
-          "behavior": "medium with neither code nor external_code completed is BLOCKED",
+          "behavior": "a reason that renders blank (spaces, tab, newline, zero-width) reads (no reason recorded)",
           "disposition": "tested",
-          "evidence": "shared/tests/test_review_record_floor.py::test_medium_blocks_when_neither_ran PASSED"
+          "evidence": "test_triage_render_rows.py::test_a_reason_that_renders_to_nothing_says_so[6 cases] PASSED"
         },
         {
-          "behavior": "external_code alone satisfies the floor (the substitution path, 15 of 27 historical runs)",
+          "behavior": "a real reason is still printed verbatim",
           "disposition": "tested",
-          "evidence": "shared/tests/test_review_record_floor.py::test_external_alone_satisfies_the_floor PASSED"
+          "evidence": "test_triage_render_rows.py::test_a_real_reason_is_still_printed PASSED"
         },
         {
-          "behavior": "code alone satisfies the floor",
+          "behavior": "a deferred row is marked deferred at a fixed position",
           "disposition": "tested",
-          "evidence": "shared/tests/test_review_record_floor.py::test_internal_alone_satisfies_the_floor PASSED"
+          "evidence": "test_triage_render_rows.py::test_a_deferred_row_is_marked_as_deferred PASSED"
         },
         {
-          "behavior": "not_applicable on both does NOT satisfy the floor (no bypass by relabelling)",
+          "behavior": "an open row is marked open at a fixed position",
           "disposition": "tested",
-          "evidence": "shared/tests/test_review_record_floor.py::test_not_applicable_does_not_satisfy_the_floor PASSED"
+          "evidence": "test_triage_render_rows.py::test_an_open_row_is_marked_open PASSED"
         },
         {
-          "behavior": "large is floored too - not an equality check on 'medium'",
+          "behavior": "the token cannot be forged by an untrusted source or dedupKey",
           "disposition": "tested",
-          "evidence": "shared/tests/test_review_record_floor.py::test_large_is_floored_too PASSED"
+          "evidence": "test_triage_render_rows.py::test_a_forged_marker_in_an_untrusted_field_cannot_reclassify_a_row PASSED"
         },
         {
-          "behavior": "small is NOT floored - the one historical zero-review run was small and correct",
+          "behavior": "every entry row in the real listing declares which kind it is, by prefix",
           "disposition": "tested",
-          "evidence": "shared/tests/test_review_record_floor.py::test_small_is_not_floored PASSED"
+          "evidence": "test_triage_render_rows.py::test_the_listing_never_repeats_a_row_shape_across_the_two_meanings PASSED"
         },
         {
-          "behavior": "trivial skips the gate entirely",
+          "behavior": "a deferred field cannot grow without limit (title / reason / source)",
           "disposition": "tested",
-          "evidence": "shared/tests/test_review_record_floor.py::test_trivial_is_skipped_entirely PASSED"
+          "evidence": "test_triage_render_rows.py::test_a_deferred_field_cannot_grow_without_limit[3 cases] PASSED"
         },
         {
-          "behavior": "unknown complexity skips, and the missing entry is caught by the sibling check_iterate_history_has_run_id",
+          "behavior": "only what exceeds the cap is clipped (119 / 120 / 121)",
           "disposition": "tested",
-          "evidence": "shared/tests/test_review_record_floor.py::test_unknown_complexity_skips_the_gate_and_is_caught_elsewhere PASSED"
+          "evidence": "test_triage_render_rows.py::test_only_what_exceeds_the_cap_is_clipped[3 cases] PASSED"
         },
         {
-          "behavior": "an unanswered type still reports as unanswered, not as a floor failure",
+          "behavior": "a dedupKey of only control characters is still emitted",
           "disposition": "tested",
-          "evidence": "shared/tests/test_review_record_floor.py::test_pending_still_reported_first PASSED"
+          "evidence": "test_triage_render_rows.py::test_a_dedup_key_of_only_control_characters_is_still_emitted PASSED"
         },
         {
-          "behavior": "the two medium+ shapes observed in this repo still pass",
+          "behavior": "an absent dedupKey is still omitted",
           "disposition": "tested",
-          "evidence": "shared/tests/test_review_record_floor.py::test_historical_shapes_still_pass PASSED (2 params); measured against the real 27-record corpus before building"
+          "evidence": "test_triage_render_rows.py::test_an_absent_dedup_key_is_still_omitted PASSED"
         },
         {
-          "behavior": "the trigger rule no longer chains external to internal",
+          "behavior": "--help mentions the deferred section",
           "disposition": "tested",
-          "evidence": "shared/tests/test_review_cascade_decoupled.py::test_trigger_is_not_conditional_on_internal PASSED"
+          "evidence": "test_triage_render_rows.py::test_the_list_help_mentions_the_deferred_section PASSED"
         },
         {
-          "behavior": "the trigger states its own thresholds",
+          "behavior": "refusing a decision on an already-decided item leaves the stored bytes unchanged (library)",
           "disposition": "tested",
-          "evidence": "shared/tests/test_review_cascade_decoupled.py::test_trigger_states_its_own_conditions PASSED"
+          "evidence": "test_triage_defer.py::test_defer_refuses_an_already_decided_item[3 cases] PASSED"
         },
         {
-          "behavior": "the small/trivial exemption is conditional, not blanket (the contradiction the decoupling exposed)",
+          "behavior": "refusing a decision on an already-decided item leaves the stored bytes unchanged (CLI)",
           "disposition": "tested",
-          "evidence": "shared/tests/test_review_cascade_decoupled.py::test_small_exemption_does_not_contradict_the_thresholds PASSED - found by external code review, verdict REVISE, re-reviewed APPROVE after the fix"
+          "evidence": "test_triage_defer.py::test_cli_defer_refuses_an_already_decided_item PASSED"
         },
         {
-          "behavior": "the escalation rule is stated (responsibility moves outward, never lapses)",
+          "behavior": "an outbox-only item is deferrable, as it is promotable and dismissable",
           "disposition": "tested",
-          "evidence": "shared/tests/test_review_cascade_decoupled.py::test_escalation_is_stated PASSED"
+          "evidence": "test_triage_wp9_sanitize_outbox.py::test_defer_outbox_only_item PASSED"
         },
         {
-          "behavior": "recording a substituted pass as 'completed' is forbidden in the prose",
+          "behavior": "defer raises FileNotFoundError when neither store exists",
           "disposition": "tested",
-          "evidence": "shared/tests/test_review_cascade_decoupled.py::test_substitution_bookkeeping_is_forbidden PASSED"
+          "evidence": "test_triage_wp9_sanitize_outbox.py::test_defer_still_raises_filenotfound_when_neither_store_exists PASSED"
         },
         {
-          "behavior": "the prose names the enforcing gate, so the two cannot drift apart",
+          "behavior": "the three documents document the defer command without denying it",
           "disposition": "tested",
-          "evidence": "shared/tests/test_review_cascade_decoupled.py::test_doc_names_the_enforcing_gate PASSED"
+          "evidence": "test_triage_docs_consistency.py::test_the_documents_describe_the_defer_subcommand PASSED"
         },
         {
-          "behavior": "close-missing still writes a COMPLETE record in one command",
+          "behavior": "list --json is unchanged by all of the above",
           "disposition": "tested",
-          "evidence": "shared/tests/test_record_review_pass_cli.py::test_close_missing_closes_every_outstanding_type PASSED"
+          "evidence": "test_triage_cli_json.py (8 tests) + test_triage_defer.py::test_list_json_stays_open_only_when_an_item_is_deferred PASSED"
         },
         {
-          "behavior": "close-missing no longer green-lights a medium+ run (AC10 narrowing, operator-ruled)",
+          "behavior": "dismiss and promote are unaffected by the render and docstring changes",
           "disposition": "tested",
-          "evidence": "shared/tests/test_record_review_pass_cli.py::test_close_missing_does_not_satisfy_the_floor_at_medium PASSED"
-        },
-        {
-          "behavior": "close-missing still unblocks a small run",
-          "disposition": "tested",
-          "evidence": "shared/tests/test_record_review_pass_cli.py::test_close_missing_still_unblocks_a_small_run PASSED"
-        },
-        {
-          "behavior": "whether a given diff DESERVES more review than the floor requires",
-          "disposition": "untestable",
-          "evidence": "reason_code is a separate key below; judging sufficiency of review depth against a diff is reading comprehension with no oracle. The floor asserts that a review happened, never that it was good enough - which is why it is a floor and not a verdict.",
-          "reason_code": "requires-manual-visual-judgment"
+          "evidence": "test_triage_promote.py (38) + test_triage_defer.py::test_dismiss_is_unchanged_by_the_shared_extraction PASSED"
         }
       ],
       "counts": {
-        "testable": 19,
-        "tested": 19,
-        "untestable": 1,
+        "testable": 18,
+        "tested": 18,
+        "untestable": 0,
         "untested_testable": 0
       },
       "enumeration_basis": {
-        "acs": 3,
-        "covered_acs": 3
+        "acs": 10,
+        "covered_acs": 10
       }
     }
   },

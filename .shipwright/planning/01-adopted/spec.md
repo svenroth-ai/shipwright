@@ -549,11 +549,20 @@ _Where the work detail lives_ at the end of this document.
   written, then the new release-note section goes above the most recent released one and
   the document's title and older entries are left intact.
 - (E) Given a version already present in the history — an earlier attempt
-  having stopped before that version was marked — when its release note is
-  written again, then that version's section is replaced rather than added a
-  second time, so one version appears exactly once; and where the existing
-  history cannot be extended safely, writing stops and says why rather than
+  having stopped partway — when its release note is written again, whether
+  assembled at release time from the entries recorded since the last release or
+  written directly, then that version's section is replaced rather than added a
+  second time, so one version appears exactly once; and where more than one
+  section already claims that version, writing stops and says why rather than
   overwriting what it could not interpret.
+- (E) Given a release note assembled from the entries recorded since the last
+  release, when the section already on record is not what those entries now say
+  — an earlier attempt having consumed some of them before stopping, or the
+  section having been edited by hand — or carries a marking that rewriting it
+  would erase, such as a notice that the release was withdrawn, then writing
+  stops and says which of these it found, leaving both the history and every
+  pending entry untouched. Replacing regardless would delete released history,
+  which is worse than the duplicate section it would avoid.
 - (E) Given entries written the older way, straight into the pending release-note section,
   when a release is assembled, then each one is named back to the operator
   rather than being folded in silently.
@@ -693,6 +702,12 @@ _Where the work detail lives_ at the end of this document.
   reason is named in words. A state the host reports that is not recognised is
   reported as not understood rather than as nothing being wrong.
   (iterate-2026-07-27-merge-state-vocabulary)
+- (E) Given a change was brought up to date with work that finished while it was
+  open, when it is checked before being handed over, then anything that arrived
+  in that work and is no longer present is reported and the hand-over refused —
+  so bringing a change up to date cannot quietly undo someone else's finished
+  work. Removing it on purpose stays allowed, but must be stated with a reason.
+  (iterate-2026-07-27-no-silent-revert)
 - (E) Given the record of a change is checked for describing the run that is
   finishing, when that check runs, then it is decided by whether the record
   names that run, and never by how recently the file was written — so a run that

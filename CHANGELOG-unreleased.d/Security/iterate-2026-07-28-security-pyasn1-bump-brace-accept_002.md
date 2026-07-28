@@ -1,0 +1,1 @@
+Recorded a scoped, expiring acceptance for CVE-2026-14257 (brace-expansion) in the Trivy ignore file and the governance register: it is reachable only through the dev-only Lighthouse perf-runner, and no fixed version exists for the pinned minimatch tree.

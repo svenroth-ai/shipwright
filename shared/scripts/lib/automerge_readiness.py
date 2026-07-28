@@ -46,11 +46,12 @@ KNOWN_WORKFLOWS: tuple[str, ...] = (
 )
 
 # Workflows whose Required-Check is a commit status POSTED by a job, not a job
-# check name (the two-stage review, FR-01.17). Deriving job names here would
-# name a check branch protection can never match, and the `pull_request`-trigger
-# test would call stage 2 dormant when it is working exactly as designed.
+# check name (two-stage review, FR-01.17). Job names here would name a check
+# branch protection can never match, and the `pull_request`-trigger test would
+# call stage 2 dormant when it works as designed. Scopes: its drift test.
 POSTED_STATUS_CONTEXTS: dict[str, str] = {
-    "claude-review-run.yml": "Claude Code Review",
+    "claude-review-run.yml": "Claude Code Review",   # adopted repos
+    "pr-review-run.yml": "PR Review",                # this monorepo + the webui
 }
 
 # Placeholders the template carries.

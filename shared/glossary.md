@@ -190,9 +190,13 @@
   staging buffer, drained exactly-once via `merge=union` + dedup).
 - **Defer (Snooze)** — the third triage decision beside promote and dismiss:
   decided, but deliberately not now. Stored as `snoozed`, writable from both
-  surfaces (`triage_cli.py defer <id> --reason …` and the Command Center),
-  and shown by the CLI listing in its own section — deferred is not the same
-  as gone. Neither surface can un-defer.
+  surfaces (`triage_cli.py defer <id> --reason …` and the Command Center).
+  Only the **CLI listing** shows a deferred entry, in its own section with a
+  `[deferred]` row marker; the machine-readable `list --json`, the Command
+  Center and the rendered `triage_inbox.md` still treat it as absent (the last
+  shows a bare count) — so "deferred is not gone" is true of the terminal
+  only, today. No subcommand un-defers on either surface. Both gaps, plus a
+  revisit date and re-import suppression, are `trg-51f8e2a1`.
 - **Machine-Churn (triage)** — a dismissal a Producer set on itself
   (`MACHINE_DISMISSERS` **and** an exact `MACHINE_REASONS` token, so a human
   dismissal reusing a token survives). The only thing compaction may drop.

@@ -2,14 +2,15 @@
 
 Uses the shared `git_origin_repo` + `make_worktree` fixtures (a real bare
 `origin` + a linked iterate worktree) so the merge is a genuine
-`git merge origin/main` in a worktree — the real production scenario — instead
-of a hand-built local-branch topology. Repo-level git identity is set so the
-wrapper's OWN commits succeed on an identity-less CI runner.
+`git merge origin/main` in a worktree — the real production scenario. Repo-level
+git identity is set so the wrapper's own commits succeed on a bare CI runner.
 
-The load-bearing claim (AC-6, confirmed against the real audit): regenerated MD
-snapshots must live in a SEPARATE non-merge commit carrying the `Run-ID:`
-trailer, because `audit_staleness.find_snapshot_commit` uses
-`git log --diff-filter=AM`, which skips merge commits.
+AC-6's shape claim still holds: a follow-up must be a SEPARATE non-merge commit
+carrying the `Run-ID:` trailer, because `audit_staleness.find_snapshot_commit`
+uses `git log --diff-filter=AM`, which skips merge commits. What changed with
+iterate-2026-07-27-derived-snapshots-off-branch is WHAT the follow-up carries —
+campaign status only, never the derived snapshots — so that audit now finds
+nothing from an iterate branch. See test_derived_snapshots.py.
 """
 
 from __future__ import annotations
@@ -29,6 +30,7 @@ _AUDIT_STALENESS = (
     REPO_ROOT / "plugins" / "shipwright-compliance" / "scripts" / "audit" / "audit_staleness.py"
 )
 _DASH = ".shipwright/compliance/dashboard.md"
+_CAMP_STATUS = ".shipwright/planning/iterate/campaigns/demo/status.json"
 _CI_SEC = ".shipwright/compliance/ci-security.json"
 _TT = ".shipwright/compliance/test-traceability.json"
 _RUN_ID = "iterate-2026-05-31-churn-merge-resolver"
@@ -75,7 +77,7 @@ def _write(root: Path, rel: str, text: str) -> None:
     p.write_text(text, encoding="utf-8")
 
 
-def test_integrate_resolves_and_audit_finds_followup(git_origin_repo, make_worktree, monkeypatch) -> None:
+def test_integrate_followup_is_a_run_id_commit_the_audit_no_longer_claims(git_origin_repo, make_worktree, monkeypatch) -> None:
     work, _origin = git_origin_repo
     _set_repo_identity(work)
     # main: seed a tracked compliance MD, push.
@@ -93,10 +95,14 @@ def test_integrate_resolves_and_audit_finds_followup(git_origin_repo, make_workt
     _git(work, "commit", "-am", "main changes dashboard")
     _git(work, "push", "origin", "main")
 
+    # AC-6 is now carried by the CAMPAIGN STATUS re-projection: since
+    # iterate-2026-07-27-derived-snapshots-off-branch an iterate branch no longer
+    # carries the derived snapshots, so a derived MD staged here would be restored
+    # (see test_derived_snapshots.py) and produce no follow-up commit at all.
     def fake_regen(project_root, run_id, **kw):
-        _write(Path(project_root), _DASH, f"regenerated from merged tree ({run_id})\n")
-        _git(Path(project_root), "add", "--", _DASH)
-        return {_DASH: "regenerated"}
+        _write(Path(project_root), _CAMP_STATUS, f'{{"run": "{run_id}"}}\n')
+        _git(Path(project_root), "add", "--", _CAMP_STATUS)
+        return {_CAMP_STATUS: "regenerated"}
 
     monkeypatch.setattr(integrate_main.rcc, "regenerate_tracked_snapshots", fake_regen)
 
@@ -107,15 +113,14 @@ def test_integrate_resolves_and_audit_finds_followup(git_origin_repo, make_workt
     assert "regenerated-followup" in result["steps"]
 
     # HEAD is the follow-up: a NON-merge commit (one parent) with a Run-ID trailer.
-    head = _git(wt, "rev-parse", "HEAD").stdout.strip()
     parents = _git(wt, "rev-list", "--parents", "-n", "1", "HEAD").stdout.split()
     assert len(parents) == 2, "follow-up must be a non-merge commit (exactly one parent)"
     body = _git(wt, "log", "-1", "--format=%B", "HEAD").stdout
     assert f"Run-ID: {_RUN_ID}" in body
 
-    # The REAL audit finds the follow-up (not the merge, not None) — AC-6.
-    find_snapshot_commit = _load_find_snapshot_commit()
-    assert find_snapshot_commit(wt) == head
+    # ...but the audit no longer RECOGNIZES it: it qualifies only a commit touching
+    # a snapshot path, and an iterate now touches none (test_derived_snapshots.py).
+    assert _load_find_snapshot_commit()(wt) is None
 
 
 def test_integrate_validates_events_on_clean_union_merge(git_origin_repo, make_worktree, monkeypatch) -> None:

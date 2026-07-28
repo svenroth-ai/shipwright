@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
 """Triage Inbox CLI — operate on `.shipwright/triage.jsonl` from the shell.
 
-CLI = first-class operation interface; the shipwright-webui Triage tab is a
-thin wrapper over the same library helpers (``triage_promote.promote`` /
-``.dismiss`` / ``.defer``), so all three decisions the requirement promises
-can be made from either surface.
+CLI = first-class operation interface. All three decisions the requirement
+promises can be made here (``triage_promote.promote`` / ``.dismiss`` /
+``.defer``). The shipwright-webui Triage tab reaches the same store through
+its OWN implementation and mirrors these semantics rather than sharing the
+code — see ``triage_promote``'s header for the known divergence.
 
 Subcommands (positional ``<id>`` for the three decisions):
 
@@ -31,6 +32,7 @@ from __future__ import annotations
 import argparse
 import json
 import sys
+from collections.abc import Callable
 from pathlib import Path
 
 _SCRIPTS_DIR = Path(__file__).resolve().parent.parent
@@ -90,16 +92,19 @@ def _cmd_list(args: argparse.Namespace) -> int:
         sys.stdout.write(json.dumps(enriched, indent=2, ensure_ascii=False) + "\n")
         return 0
     if not items:
-        sys.stdout.write("No open triage items.\n")
+        sys.stdout.write("No open triage items.\n\n")
     for item in items:
         sys.stdout.write(format_item(item) + "\n\n")
-    # The third decision is not a disappearance: a deferred item is still
-    # here, still undone, and told apart from an open one at a glance. Header
-    # only when there is something under it.
+    # The third decision is not a disappearance ON THIS SURFACE: a deferred
+    # item is still here, still undone, and told apart from an open one by its
+    # row's own marker, not only by this header. (`list --json`, the Command
+    # Center and triage_inbox.md still show it as gone — trg-51f8e2a1.) Header
+    # only when there is something under it, blank-line-separated like every
+    # other block so the whole listing keeps one grouping rule.
     deferred = [it for it in resolved if it.get("status") == "snoozed"]
     if deferred:
         sys.stdout.write(
-            f"Deferred — decided, revisit later ({len(deferred)}):\n"
+            f"Deferred — decided, revisit later ({len(deferred)}):\n\n"
         )
         for item in deferred:
             sys.stdout.write(format_deferred(item) + "\n\n")
@@ -136,7 +141,9 @@ def _cmd_promote(args: argparse.Namespace) -> int:
     return 0
 
 
-def _status_flip(decide, args: argparse.Namespace, verb: str) -> int:
+def _status_flip(
+    decide: Callable[..., dict], args: argparse.Namespace, verb: str,
+) -> int:
     """Shared dispatch for the two decisions that need only a reason.
 
     Promote is not routed through here — it also takes a task reference and
@@ -188,7 +195,9 @@ def _build_parser() -> argparse.ArgumentParser:
     )
     sub = parser.add_subparsers(dest="cmd", required=True)
 
-    p_list = sub.add_parser("list", help="list open triage items")
+    p_list = sub.add_parser(
+        "list", help="list open triage items, then any deferred ones",
+    )
     p_list.add_argument(
         "--json", action="store_true",
         help="emit open items as a JSON array (machine-readable contract for the "

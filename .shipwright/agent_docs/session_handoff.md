@@ -1,37 +1,39 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-07-27-review-floor-not-chained"
+run_id: "iterate-2026-07-27-changelog-aggregator-idempotency"
 phase: "iterate"
 reason: "ensure-current pre-merge refresh"
-timestamp: "2026-07-27T19:47:53.112213+00:00"
+timestamp: "2026-07-28T00:29:14.030862+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-07-27 19:47:53 UTC
+> Auto-generated 2026-07-28 00:29:14 UTC
 
 ## Session Info
 
-- **Session ID**: d25b0a7e-0ae6-43cf-9f0d-0888374ebaee
-- **Timestamp**: 2026-07-27 19:47:53 UTC
+- **Session ID**: 8a0611d4-b05d-411a-a42a-cc448bc145a7
+- **Timestamp**: 2026-07-28 00:29:14 UTC
 - **Reason**: ensure-current pre-merge refresh
 
 ## Last Iterate
 
-- **Run ID**: iterate-2026-07-27-review-floor-not-chained
-- **Date**: 2026-07-27T19:47:47.266963Z
-- **Type**: change
+- **Run ID**: iterate-2026-07-28-cascade-delegated-to-nobody
+- **Date**: 2026-07-28T00:29:08.126086Z
+- **Type**: bug
 - **Complexity**: medium
-- **Branch**: iterate/review-floor-not-chained
-- **ADR**: iterate-2026-07-27-review-floor-not-chained
+- **Branch**: iterate/cascade-delegated-to-nobody
+- **ADR**: iterate-2026-07-28-cascade-delegated-to-nobody
 - **Tests passed**: True
-- **Spec**: .shipwright/planning/iterate/2026-07-27-review-floor-not-chained.md
+- **Spec**: .shipwright/planning/iterate/2026-07-28-cascade-delegated-to-nobody.md
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/review-floor-not-chained
-- **Spec**: .shipwright/planning/iterate/2026-07-27-review-floor-not-chained.md
-- **External Review Marker**: completed (external_review_state.json @ 2026-07-27T19:36:06)
+- **Branch**: iterate/changelog-aggregator-idempotency
+- **Run ID**: `iterate-2026-07-27-changelog-aggregator-idempotency`
+- **Spec**: .shipwright/planning/iterate/iterate-2026-07-27-changelog-aggregator-idempotency.md
+- **Complexity**: medium (classifier: `estimate=medium`, `prior_source=history`,
+- **External Review Marker**: stale (predates spec (2026-07-27T16:31:40))
 
 ### Mandatory replay on Resume
 
@@ -49,8 +51,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/review-floor-not-chained
-- **Last Commit**: 1f74845e Merge remote-tracking branch 'origin/main' into iterate/review-floor-not-chained
+- **Branch**: iterate/changelog-aggregator-idempotency
+- **Last Commit**: 4b259c18 Merge remote-tracking branch 'origin/main' into iterate/changelog-aggregator-idempotency
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -66,17 +68,17 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 | Event | Type | Source | Date |
 |-------|------|--------|------|
-| evt-b1a81042 | grade_snapshot | — | 2026-07-27 |
-| evt-301cc5e3 | grade_snapshot | — | 2026-07-27 |
-| evt-d33730ea | grade_snapshot | — | 2026-07-27 |
-| evt-2acd6fdb | grade_snapshot | — | 2026-07-27 |
-| evt-43b5a915 | grade_snapshot | — | 2026-07-27 |
+| evt-d096c5c5 | grade_snapshot | — | 2026-07-28 |
+| evt-1b8b86c7 | work_completed | iterate (Give the internal reviewer cascade an executable owner in standalone mode, scope the ADR-029 delegation to campaign mode, and make the campaign runner record each review pass under the name of whoever performed it.) | 2026-07-28 |
+| evt-5c9c8e33 | grade_snapshot | — | 2026-07-27 |
+| evt-c217c84c | grade_snapshot | — | 2026-07-27 |
+| evt-bd19424c | grade_snapshot | — | 2026-07-27 |
 
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 386
-- **Last iterate**: change — iterate: the code review becomes a floor, not a chain (2026-07-27)
+- **Total work events**: 391
+- **Last iterate**: change — Give the internal reviewer cascade an executable owner in standalone mode, scope the ADR-029 delegation to campaign mode, and make the campaign runner record each review pass under the name of whoever performed it. (2026-07-28)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
 ## Recent Decisions

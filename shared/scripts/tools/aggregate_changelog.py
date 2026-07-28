@@ -49,6 +49,11 @@ _SCRIPTS_ROOT = Path(__file__).resolve().parent.parent
 if str(_SCRIPTS_ROOT) not in sys.path:
     sys.path.insert(0, str(_SCRIPTS_ROOT))
 
+from changelog_sections import section_end, unreleased_start  # noqa: E402
+from changelog_splice import (  # noqa: E402 — ONE section SSoT (ADR-045)
+    SectionConflict,
+    apply_section,
+)
 from lib.atomic_write import durable_atomic_write  # noqa: E402
 from lib.file_lock import LockTimeout, file_lock  # noqa: E402
 from tools.write_changelog_drop import (  # noqa: E402
@@ -201,87 +206,13 @@ def _render_versioned_section(
     return "\n".join(lines).rstrip() + "\n"
 
 
-def _find_structural_insertion_line(lines: list[str]) -> int:
-    """Return the line index where a new ``## [version]`` section should go.
-
-    Keep-a-Changelog convention: ``## [Unreleased]`` stays at the top; new
-    released versions go BELOW it in descending chronological order.
-
-    Preference order:
-      1. Immediately above the first existing ``## [vX.Y.Z]`` (versioned)
-         heading — ``## [Unreleased]`` is skipped so it stays on top
-         of the file as the spec dictates.
-      2. If ``## [Unreleased]`` exists but no prior versioned section does,
-         place the new section directly AFTER the [Unreleased] block
-         (next blank after the last [Unreleased] bullet).
-      3. Otherwise, after the standard Keep-a-Changelog header block —
-         the line right after the first blank-line paragraph that follows
-         the ``# Changelog`` title.
-      4. End of file if none of the above match.
-    """
-    # ``## [ANYTHING-OTHER-THAN-Unreleased])``
-    version_pattern = re.compile(r"^##\s+\[(?!Unreleased\])")
-    unreleased_pattern = re.compile(r"^##\s+\[Unreleased\]")
-    any_section_pattern = re.compile(r"^##\s+\[")
-
-    # 1: first versioned (non-Unreleased) heading.
-    for i, line in enumerate(lines):
-        if version_pattern.match(line):
-            return i
-
-    # 2: only [Unreleased] exists — place after its block ends.
-    for i, line in enumerate(lines):
-        if unreleased_pattern.match(line):
-            j = len(lines)
-            for k in range(i + 1, len(lines)):
-                if any_section_pattern.match(lines[k]):
-                    j = k
-                    break
-            # Back up over trailing blank lines so we don't stack blanks.
-            while j - 1 > i and lines[j - 1].strip() == "":
-                j -= 1
-            return j
-
-    # 3: after header paragraph. Find first blank line after line 0.
-    for i in range(1, len(lines)):
-        if lines[i].strip() == "":
-            # Walk forward over contiguous blanks to the next non-blank.
-            j = i
-            while j + 1 < len(lines) and lines[j + 1].strip() == "":
-                j += 1
-            return j + 1
-
-    # 4: end of file.
-    return len(lines)
-
-
-def _insert_section(changelog_text: str, new_section: str) -> str:
-    """Insert ``new_section`` at the structural point in ``changelog_text``."""
-    # Preserve the line-ending-with-newline convention by splitting via
-    # splitlines(keepends=True).
-    lines = changelog_text.splitlines(keepends=True)
-    idx = _find_structural_insertion_line(
-        [line.rstrip("\n") for line in lines]
-    )
-
-    separator = "" if idx < len(lines) else "\n"
-    new_block = new_section
-    if not new_block.endswith("\n"):
-        new_block += "\n"
-    new_block += "\n"  # blank line separator before the following content
-
-    before = "".join(lines[:idx])
-    after = "".join(lines[idx:])
-    # Guard: don't emit three consecutive blank lines.
-    if before.endswith("\n\n") and new_block.startswith("\n"):
-        new_block = new_block.lstrip("\n")
-    return before + new_block + separator + after
-
-
 def _atomic_write(path: Path, content: str) -> None:
     """Durable atomic write (tmp + fsync + os.replace) via the shared
     :func:`durable_atomic_write`."""
     durable_atomic_write(path, content)
+
+
+_BULLET_RE = re.compile(r"^\s*-\s+")
 
 
 def _warn_if_legacy_unreleased_has_bullets(changelog_text: str) -> int:
@@ -290,16 +221,20 @@ def _warn_if_legacy_unreleased_has_bullets(changelog_text: str) -> int:
     When non-zero, the aggregator prints a prominent warning to stderr so
     the operator can decide whether to manually fold those bullets into
     the new version or accept the temporary split-brain.
+
+    Uses the shared section predicates rather than a local regex. The local
+    one was case-SENSITIVE and bounded the block at the next ``## [`` heading,
+    where the shared predicates lowercase the name and stop at the first
+    non-body line — so a history using ``## [unreleased]`` got the correct
+    insertion point from the shared side and NO warning from this one, and the
+    operator was never told about the split-brain.
     """
-    match = re.search(
-        r"^##\s+\[Unreleased\][^\n]*\n(.*?)(?=\n##\s+\[|\Z)",
-        changelog_text,
-        flags=re.DOTALL | re.MULTILINE,
-    )
-    if not match:
+    lines = changelog_text.splitlines(keepends=True)
+    start = unreleased_start(lines)
+    if start is None:
         return 0
-    section = match.group(1)
-    return len(re.findall(r"^\s*-\s+", section, flags=re.MULTILINE))
+    body = lines[start + 1:section_end(lines, start)]
+    return sum(1 for line in body if _BULLET_RE.match(line))
 
 
 def aggregate(
@@ -354,6 +289,9 @@ def aggregate(
         section = _render_versioned_section(version, release_date, by_category)
 
         if not section:
+            # Nothing pending. This is also how a COMPLETED release re-runs:
+            # the section is already recorded and its drops are gone, so the
+            # changelog is never read and no refusal arm can fire.
             return {
                 "version": version,
                 "release_date": release_date,
@@ -362,6 +300,7 @@ def aggregate(
                 "legacy_unreleased_bullets": 0,
                 "msys_mangled_findings": [],
                 "changelog_updated": False,
+                "section_action": "none",
             }
 
         changelog_text = (
@@ -379,10 +318,22 @@ def aggregate(
                 file=sys.stderr,
             )
 
-        new_text = _insert_section(changelog_text, section)
+        # Decide BEFORE anything is written or consumed: a refusal must leave
+        # the release exactly as it found it, under --dry-run too.
+        try:
+            new_text, action = apply_section(
+                changelog_text, version, section, str(changelog_path)
+            )
+        except SectionConflict as exc:
+            # Re-typed so this module's CLI contract (AggregatorError → exit 1)
+            # is unchanged; the shared splice stays independent of it.
+            raise AggregatorError(str(exc)) from exc
+        wrote = False
 
         if not dry_run:
-            _atomic_write(changelog_path, new_text)
+            if action != "unchanged":
+                _atomic_write(changelog_path, new_text)
+                wrote = True
             for p in processed:
                 try:
                     p.unlink()
@@ -406,7 +357,11 @@ def aggregate(
                 {"category": cat, "drop_file": rp, "first_line": fl}
                 for cat, rp, fl in msys_findings
             ],
-            "changelog_updated": not dry_run,
+            # "bytes were written", NOT "the run succeeded": a converging
+            # re-run finds the file already saying exactly this, writes
+            # nothing, and still consumes the drops.
+            "changelog_updated": wrote,
+            "section_action": action,
         }
 
 

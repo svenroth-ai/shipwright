@@ -17,19 +17,21 @@ from pathlib import Path
 from typing import Optional
 
 try:  # imported as a package module (``lib.changelog``)
-    from .changelog_sections import (
-        entry_version,
-        insertion_index,
-        section_end,
-        section_starts,
-    )
+    from ._shared_sections import load_changelog_sections
 except ImportError:  # executed as a script (``python .../lib/changelog.py``)
-    from changelog_sections import (
-        entry_version,
-        insertion_index,
-        section_end,
-        section_starts,
-    )
+    from _shared_sections import load_changelog_sections
+
+# ONE implementation of the section predicates, shared with the release-time
+# aggregator (`shared/scripts/changelog_sections.py`). See `_shared_sections`
+# for why it is loaded by path rather than imported off `sys.path`.
+#
+# Resolved LAZILY, inside `update_changelog`, not at module scope: binding it
+# here made a missing or stale `shared/` fail the whole `lib.changelog` import,
+# taking down `categorize_commits` and `generate_entry`, which do not need the
+# predicates at all. `ensure_shared_cache` is fail-open and re-mirrors
+# `shared/` only when its sentinel is absent, so a cached copy predating this
+# module is a reachable state. `load_changelog_sections` memoises, so the
+# per-call cost is one dict lookup.
 
 
 # Map commit types to changelog sections (in display order)
@@ -194,7 +196,8 @@ def update_changelog(
     the file already holds more than one section for that version (which of
     them is authoritative is not knowable, so the caller must resolve it).
     """
-    version = entry_version(entry)
+    sections = load_changelog_sections()
+    version = sections.entry_version(entry)
 
     if not changelog_path.exists():
         new_content = (
@@ -206,7 +209,7 @@ def update_changelog(
     content, bom, eol = _read_preserving(changelog_path)
     lines = content.splitlines(keepends=True)
 
-    existing = section_starts(lines, version)
+    existing = sections.section_starts(lines, version)
     if len(existing) > 1:
         raise ValueError(
             f"{changelog_path} already contains {len(existing)} sections for "
@@ -221,9 +224,9 @@ def update_changelog(
     body = _to_eol(entry.rstrip("\n"), eol) + eol
     if existing:
         start = existing[0]
-        head, tail = lines[:start], lines[section_end(lines, start):]
+        head, tail = lines[:start], lines[sections.section_end(lines, start):]
     else:
-        at = insertion_index(lines)
+        at = sections.insertion_index(lines)
         head, tail = lines[:at], lines[at:]
 
     if head and not head[-1].endswith("\n"):
