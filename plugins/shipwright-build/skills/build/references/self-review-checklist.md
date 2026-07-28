@@ -9,6 +9,15 @@ For each item: ✅ pass or ❌ fail + 1-sentence explanation. Fix all ❌ before
 Does the code implement what the section spec requires?
 - All features/endpoints/components mentioned in the spec exist
 - No extra features added beyond the spec (YAGNI)
+- **Shared-touch carve-out:** a file the section had to touch to function — a
+  shared helper, a barrel export, a type it must extend — is **not** a YAGNI
+  violation, provided the change is the smallest one the section needs AND it is
+  recorded as belonging to this section (`record_requirement_impact.py --extra
+  "PATH=why"`, SKILL.md Step 10b). YAGNI forbids unrequested extra work, not the
+  work the section needs to run.
+- **Mockup-vs-spec contradiction:** if the approved mockup and the section
+  description disagree, this item is ❌ regardless of which one the code follows
+  — the decision belongs to a person (SKILL.md Step 1).
 
 ### 2. Error Handling
 Are system boundaries properly guarded?

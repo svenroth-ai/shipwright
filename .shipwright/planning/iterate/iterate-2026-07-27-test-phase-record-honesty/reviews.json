@@ -1,0 +1,212 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-07-27-test-phase-record-honesty",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 4,
+      "findings": [
+        {
+          "severity": null,
+          "category": "Defect: aggregate baseline applied to exactly-counted failures",
+          "file": null,
+          "line": null,
+          "finding": "FIXED. The validator originally excused an explicit failed/skipped residual on the strength of the declared baseline count. The audit deliberately does not (compliance's test_explicit_residual_ignores_baseline_charity: an exact residual must not be waived by a count, or the rendered cell contradicts the D4 detective). That is a two-truths divergence in exactly the projects that carry a baseline file — the defect this iterate exists to close, reintroduced one layer down. has_exact_failure_count() now gates the allowance to un-broken-down gaps only. Found by the new audit-parity test, not by reading.",
+          "suggestion": null,
+          "source": "self-review"
+        },
+        {
+          "severity": null,
+          "category": "Defect: in-process triage appends impossible from a plugin test session",
+          "file": null,
+          "line": null,
+          "finding": "FIXED. shared/scripts/triage.py imports lib.file_lock lazily to dodge the ADR-045 namespace collision, but laziness does not help once sys.modules['lib'] is already bound to a plugin's own scripts/lib. Every pre-existing triage producer emits from a subprocess, so the hole stayed latent until this iterate wrote the first in-process one. Fixed at the root: _load_shared_lib falls back to a path-based load for the three stdlib-only lib modules on the append path.",
+          "suggestion": null,
+          "source": "self-review"
+        },
+        {
+          "severity": null,
+          "category": "Defect: four files crossed the 300-line guideline as written",
+          "file": null,
+          "line": null,
+          "finding": "FIXED by splitting along the natural seam rather than trimming: journey_plan.py (what the plan promised) vs journey_coverage.py (is it tested); warning_followup_items.py (what one item says) vs warning_followups.py (when they are emitted); the test modules mirror the split.",
+          "suggestion": null,
+          "source": "self-review"
+        },
+        {
+          "severity": null,
+          "category": "Defect: sanitize() lived in the plan parser but is used by both producers",
+          "file": null,
+          "line": null,
+          "finding": "FIXED. Same cohesion smell the external plan review flagged for is_adopted_project. Moved to its own text_safety.py so neither producer owns the other's helper.",
+          "suggestion": null,
+          "source": "self-review"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-07-27T08:20:31.234902+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 12,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "Dependency / Approach",
+          "file": null,
+          "line": null,
+          "finding": "Step 4 declares `emit_warning_followups` will take kwargs like `consistency=...` and `design_fidelity=...`. However, the problem statement notes these orphaned layers \"warn to stdout and are gone.\" The plan does not explain how `test_checks.py` or `playwright_runner.py` will read the boolean failure states of `consistency` and `design_fidelity` to pass them into this function. If these tools leave no artifacts, the inputs cannot currently be populated.",
+          "suggestion": "Define the extraction mechanism for these external layers. Either modify their execution scripts to drop a minimal artifact (e.g., `.consistency-status.json`), or run them via a wrapper that captures their stdout/exit codes into a readable state file for Step 4 to consume.  ### 2. Triage flood bypass via commit matching",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "Risk",
+          "file": null,
+          "line": null,
+          "finding": "Step 4 proposes `match_commit=True` alongside a `window_seconds=24h` deduplication criteria (copying the performance check). Because commit hashes change frequently during active development, deduplicating strictly by commit means a persistent test failure will emit a new triage item for every single commit pushed that day, defeating the purpose of the 24-hour window and flooding the triage board.",
+          "suggestion": "Set `match_commit=False` for these layers. A broken E2E journey or fidelity check should deduplicate based purely on the `test-warning:layer:{key}` and time window, ensuring it is only reported once per day regardless of commit volume.  ### 3. Legacy array collapse could miscount derivations",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "Edge Case",
+          "file": null,
+          "line": null,
+          "finding": "In Step 5, deriving `flaky` from the legacy `results[]` array introduces a risk of double counting or miscategorizing if a test fails, retries, and fails again, OR if it fails, retries, and passes. The plan states it counts \"per-test\" instead of \"per-attempt,\" but does not specify the reduction logic for the legacy shape.",
+          "suggestion": "Explicitly mandate the collapse logic for the legacy fallback: if the final array item is `passed` and array length > 1, the test yields `1 passed` and `1 flaky`. If the final item is `failed` (regardless of length), it yields `1 unexpected` (and `0 passed`, `0 flaky`).  ### 4. Cohesion mismatch in the shared known-failures module",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "Approach / Reducibility",
+          "file": null,
+          "line": null,
+          "finding": "Step 1 places `is_adopted_project(project_root)` - a helper that reads `shipwright_run_config.json` - inside `shared/scripts/known_failures.py`. Environmental configuration/adoption status has no domain relation to the test baseline list, muddling the single-responsibility principle of the new module.",
+          "suggestion": "Keep run-config parsing out of the known-failures module. Either move `is_adopted_project` to a separate `shared/scripts/run_config.py` helper, or leave it",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "The new `journey_coverage.py` and `warning_followups.py` modules have CLIs/functions, but the plan does not identify the test-phase orchestrator that invokes them with the final E2E, consistency, and fidelity results. Updating skill/reference Markdown does not itself make the checks execute. As written, the modules could be fully tested in isolation while no production test run emits journey results or durable warning triage.",
+          "suggestion": "Name and modify the concrete test-plugin entry point/session-finalization path. Invoke journey coverage after the plan and `e2e/` tree are available, and invoke warning follow-up emission once all three layer results are finalized. Add at least one integration-level test proving a normal `/shipwright-test` run reaches both paths.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "AC4 requires failures to be reported as \"known-and-accepted\" separately from genuine failures, but Step 2 only applies aggregate arithmetic (`total - passed <= baseline_count`) in the validator. The proposed `split_accepted()` helper is not wired into a named test-phase result producer or report renderer. Aggregate counts alone cannot identify which actual failures are accepted, and can make a run appear within baseline even when the declared failures and observed failures differ.",
+          "suggestion": "Identify the result structure that contains failure identities (at minimum the Playwright `failures[]` output) and explicitly apply `split_accepted()` there before rendering/reporting. For result sources that only provide counts, label the result as an aggregate baseline allowance rather than claiming individual failures are accepted. Add a test where an accepted failure is absent but an unrelated failure appears, so the reporting behavior is explicit.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The chosen `gap = total - passed` rule will treat skipped tests as baseline-consuming failures if the validator's `total` includes skipped outcomes. The new Playwright model explicitly has `passed + failed + skipped == total`, so this can produce an unintuitive outcome: a fully non-failing run with skipped tests may require accepted-failure capacity or emit a warning.",
+          "suggestion": "Verify the exact result-file semantics consumed by `check_test_results_file_fresh`. If skipped tests are included in `total`, pass an actual-failure count to the baseline decision, or ensure that this validator's `total` intentionally excludes skipped tests. Add skipped-only and skipped-plus-failed fixtures to pin the intended behavior. If audit's current arithmetic truly must remain unchanged, document this limitation rather than reporting skipped tests as declared failures.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "The stated triage dedup goal conflicts with `match_commit=True`. A persistent failure on subsequent commits will generally be considered distinct and create a new triage item, despite AC3 requiring that a persistent failure not multiply. Stable per-spec/category/screen keys alone do not solve this if commit participates in the idempotency match.",
+          "suggestion": "Confirm the actual `append_triage_item_idempotent` identity rules. For persistent-warning follow-ups, deduplicate primarily on the stable issue key/source across commits (while updating metadata such as latest commit/run if supported), or explicitly scope the requirement to one item per issue per commit and revise the acceptance language. Test two runs with different commits, not only two runs of the same fixture/configuration.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "Brownfield journey gaps are described as \"routed to the onboarding phase,\" but the proposed implementation only puts `/shipwright-adopt` in free-form `detail`. If triage routing is driven by a structured field, source convention, or consumer-side rule, this will not satisfy the routing requirement and may leave items in the generic queue.",
+          "suggestion": "Inspect the triage schema and the onboarding consumer, then set the established structured routing/phase field or use its recognized source convention. Add an integration assertion that the emitted item is selected by the onboarding phase, not merely that its text contains `/shipwright-adopt`.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "Playwright test-level status handling needs more precise fallback rules than \"derive from `results[]`.\" Reporter results can be empty, interrupted, timed out, or contain retry metadata that should not be inferred solely from list length. A legacy result with a final pass after one failure must be flaky, whereas an expected failure, skipped result, or incomplete result needs deliberate handling. Otherwise the new parser can silently convert incomplete/unknown outcomes into passes or report an incorrect retry count.",
+          "suggestion": "Define a status/retry decision table based on actual JSON fixtures from the supported Playwright versions: final outcome, `test.status`, result statuses, empty results, and retry indices. Treat unknown/interrupted shapes conservatively as non-successful or explicitly unsupported rather than defaulting to pass. Include fixtures for failed->passed, failed->failed, skipped, expected-failure behavior if supported, empty results, and interrupted/timed-out output.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "Journey parsing is correctly positioned as heuristic, but the proposed three-state model does not specify behavior for duplicate journey slugs, duplicate matching specs, plans with multiple journey sections, or a missing/unreadable plan file. In particular, duplicate titles can collapse into one triage key (`journey:{slug}`), causing a distinct uncovered journey to be hidden.",
+          "suggestion": "Preserve a stable per-journey identity in addition to a slug, such as section/index plus slug, and use it in triage deduplication. Treat missing/unreadable plans as `undetermined` with a visible diagnostic rather than an empty successful coverage result. Add duplicate-title and absent-plan tests.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "security",
+          "file": null,
+          "line": null,
+          "finding": "The change ingests human-authored plan headings, test titles, file paths, and accepted-failure descriptions into JSONL triage records and CLI output. There is no apparent new privilege or code-execution path, but unbounded or control-character-containing values could corrupt terminal output or downstream Markdown/HTML renderers if triage consumers do not already escape them.",
+          "suggestion": "Use the existing JSON serialization path rather than manually assembling JSONL, bound or normalize displayed titles/details, and ensure any renderer escapes these fields. This is mostly a defensive compatibility check with the existing triage writer rather than a reason to add new sanitization infrastructure.  Overall, the decomposition is sound and appropriately avoids duplicating the known-failure parser or changing blocking policy. The main gap is operational wiring: explicitly connect the new checks and triage emitter to the test-phase execution/reporting path, and tighten the status/baseline semantics so the resulting record remains truthful in non-happy-path runs.",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter (gemini-3-pro + gpt-5.6-terra)",
+      "completed_at": "2026-07-27T07:16:27.651572+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[gemini] Here is the review of the implementation approach, focused on practical risks and gaps.\n\n### 1. missing input data for warning orchestration\n- **Category:** Dependency / Approach\n- **Severity:** High\n- **Finding:** Step 4 declares `emit_warning_followups` will take kwargs like `consistency=...` and `design_fidelity=...`. However, the problem statement notes these orphaned layers \"warn to stdout and are gone.\" The plan does not explain *how* `test_checks.py` or `playwright_runner.py` will read the boolean failure states of `consistency` and `design_fidelity` to pass them into this function. If these tools leave no artifacts, the inputs cannot currently be populated.\n- **Suggestion:** Define the extraction mechanism for these external layers. Either modify their execution scripts to drop a minimal artifact (e.g., `.consistency-status.json`), or run them via a wrapper that captures their stdout/exit codes into a readable state file for Step 4 to consume.\n\n### 2. Triage flood bypass via commit matching\n- **Category:** Risk\n- **Severity:** High\n- **Finding:** Step 4 proposes `match_commit=True` alongside a `window_seconds=24h` deduplication criteria (copying the performance check). Because commit hashes change frequently during active development, deduplicating strictly by commit means a persistent test failure will emit *a new triage item for every single commit* pushed that day, defeating the purpose of the 24-hour window and flooding the triage board.\n- **Suggestion:** Set `match_commit=False` for these layers. A broken E2E journey or fidelity check should deduplicate based purely on the `test-warning:layer:{key}` and time window, ensuring it is only reported once per day regardless of commit volume.\n\n### 3. Legacy array collapse could miscount derivations\n- **Category:** Edge Case\n- **Severity:** Medium\n- **Finding:** In Step 5, deriving `flaky` from the legacy `results[]` array introduces a risk of double counting or miscategorizing if a test fails, ret […truncated]\n\n[openai] 1. **Category:** dependency\n   **Severity:** high\n   **Finding:** The new `journey_coverage.py` and `warning_followups.py` modules have CLIs/functions, but the plan does not identify the test-phase orchestrator that invokes them with the final E2E, consistency, and fidelity results. Updating skill/reference Markdown does not itself make the checks execute. As written, the modules could be fully tested in isolation while no production test run emits journey results or durable warning triage.\n   **Suggestion:** Name and modify the concrete test-plugin entry point/session-finalization path. Invoke journey coverage after the plan and `e2e/` tree are available, and invoke warning follow-up emission once all three layer results are finalized. Add at least one integration-level test proving a normal `/shipwright-test` run reaches both paths.\n\n2. **Category:** approach\n   **Severity:** medium\n   **Finding:** AC4 requires failures to be reported as \"known-and-accepted\" separately from genuine failures, but Step 2 only applies aggregate arithmetic (`total - passed <= baseline_count`) in the validator. The proposed `split_accepted()` helper is not wired into a named test-phase result producer or report renderer. Aggregate counts alone cannot identify which actual failures are accepted, and can make a run appear within baseline even when the declared failures and observed failures differ.\n   **Suggestion:** Identify the result structure that contains failure identities (at minimum the Playwright `failures[]` output) and explicitly apply `split_accepted()` there before rendering/reporting. For result sources that only provide counts, label the result as an aggregate baseline allowance rather than claiming individual failures are accepted. Add a test where an accepted failure is absent but an unrelated failure appears, so the reporting behavior is explicit.\n\n3. **Category:** edge-case\n   **Severity:** medium\n   **Finding:** The chosen `gap = total - passed` rule will […truncated]"
+    },
+    "code": {
+      "review_type": "code",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-07-27T08:20:43.321666+00:00",
+      "disposition": "Session constraint: this session is configured not to call the Agent tool unless the user requests it, so the shipwright-build:code-reviewer subagent could not be spawned. The diff was reviewed instead by (a) the full self-review checklist, recorded above with four defects found and fixed, and (b) an external two-model code review over the actual staged diff (external_code, recorded), whose three findings were each verified against the code before disposition. Not a silent skip.",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-07-27T08:20:43.454664+00:00",
+      "disposition": "Same session constraint as the code pass: shipwright-build:doubt-reviewer is a subagent and could not be spawned. Its adversarial function was partly served by the external code review, which is fresh-context by construction and did attack the baseline arithmetic (its C1 premise was wrong, but chasing it surfaced a real divergence the parity test now pins).",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": "openrouter (gemini-3-pro + gpt-5.6-terra) — 3 passes: full diff, fix delta, final delta (clean)",
+      "completed_at": "2026-07-27T09:11:23.875374+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "unstructured",
+      "raw_excerpt": "[gemini] ```routine\n        def _layer(results: dict, name: str) -> dict:\n            block = results.get(name)\n            if not isinstance(block, dict):\n                return {}\n            if block.get(\"skipped\") is True:\n                return {}\n            return block\n        ```\n        The old one was:\n        ```python\n        if not isinstance(block, dict) or block.get(\"skipped\"):\n            return {}\n        ```\n        If previous payload was `{\"skipped\": 2}`, `2` is truthy, so it returned `{}`.\n        Now `2 is True` evaluates to `False`, so it returns the block. This fixes the stated bug.\n\n        What about `layer.get(\"failed\")`\n\n[openai] No concrete defects found in this diff.\n\nThe change correctly distinguishes boolean layer-level `skipped: true` from integer skipped-test counts, and delegates count arithmetic to the shared `genuine_failure_count` logic so skipped tests do not create false warning follow-ups. The added tests exercise the prior failure modes: integer skip counts being treated as a skipped layer, fully skipped count-bearing runs, mixed skips plus a real residual failure, and explicit `failed: 0` overriding an ambiguous aggregate gap.\n\nNo security or caller-compatibility regression is evident from the changed code. Ship-as-is."
+    }
+  }
+}

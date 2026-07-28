@@ -49,6 +49,17 @@ CHECK_NAME = "review record (all five review types closed)"
 #: written; they are simply not blocked for lacking one.
 ENFORCED_COMPLEXITIES = ("small", "medium", "large")
 
+#: Complexities where a code review must actually have HAPPENED, not merely been
+#: answered. The phase matrix says Full Code Review "always" from medium up; at
+#: small it is conditional on risk flags, so a small run with neither review is
+#: compliant and must not be blocked.
+FLOORED_COMPLEXITIES = ("medium", "large")
+
+#: The pair that can carry the code-review pass. `doubt` is deliberately absent:
+#: it is Stage-3, conditional and advisory by design, so requiring it would
+#: block runs the contract says may skip it.
+_CODE_REVIEW_TYPES = ("code", "external_code")
+
 _TOOL = "shared/scripts/tools/record_review_pass.py"
 
 
@@ -60,7 +71,10 @@ def _remediation(run_id: str, outstanding: list[str]) -> str:
         f"for one that did not: `--status not_run|not_applicable --disposition "
         f"\"<the rule that applies>\"`. To close all "
         f"{len(outstanding)} at once: `uv run {_TOOL} close-missing --run-id "
-        f"{run_id} --status not_run --disposition \"<reason>\"`."
+        f"{run_id} --status not_run --disposition \"<reason>\"`. "
+        "NOTE at medium+: closing BOTH `code` and `external_code` without "
+        "having run either does not satisfy the gate — one of the two must "
+        "actually have happened."
     )
 
 
@@ -105,11 +119,101 @@ def check_review_record(project_root: Path, run_id: str, commit_hash: str = "") 
             f"{', '.join(outstanding)} — {_remediation(run_id, outstanding)}",
         )
 
+    floor = _code_review_floor(record, complexity, run_id)
+    if floor is not None:
+        return floor
+
     committed = _committed_check(project_root, run_id, commit_hash)
     if committed is not None:
         return committed
 
-    return CheckResult(CHECK_NAME, True, "all five review types are recorded")
+    return CheckResult(
+        CHECK_NAME, True,
+        "all five review types are recorded" + _substitution_note(record, complexity),
+    )
+
+
+def _substitution_note(record: dict, complexity: str) -> str:
+    """Say what an external-only pass does NOT cover, on the PASSING result.
+
+    The floor is satisfied by `code` OR `external_code`, and that is correct —
+    the two are independent routes to a code review. But they are not
+    equivalent routes: per `iteration-reviews.md`, the spec-compliance and
+    doubt roles are deliberately NOT cascaded to external providers. So a run
+    carried by `external_code` alone has had no Stage-1 gate and no adversarial
+    pass, and nothing in a green gate said so.
+
+    Reported rather than enforced on purpose. Requiring the internal cascade
+    here would re-encode the phase matrix inside a verifier — the design this
+    module's docstring rejects, and that rejection still stands. Naming the
+    residual cost costs nothing and leaves the decision where it belongs.
+    """
+    if complexity not in FLOORED_COMPLEXITIES:
+        return ""
+    reviews = record.get("reviews", {}) or {}
+
+    def _status(review_type: str) -> str:
+        return str((reviews.get(review_type) or {}).get("status", ""))
+
+    if _status("code") == "completed" or _status("external_code") != "completed":
+        return ""
+    note = (
+        " — NOTE: the code-review floor is carried by `external_code` alone. "
+        "The external route is a generic code-quality second opinion; Stage-1 "
+        "spec-compliance (`spec-reviewer`, the HARD-GATE) and Stage-3 "
+        "`doubt-reviewer` are not cascaded to external providers"
+    )
+    # `doubt` is recorded independently, so it may have run even when the
+    # internal code pass did not. Claiming otherwise would make the note itself
+    # the unreliable narrator it exists to prevent (Stage-1 spec-review REJECT).
+    if _status("doubt") == "completed":
+        return note + ", so Stage-1 did not run for this change (Stage-3 did)."
+    return note + ", so neither ran for this change."
+
+
+def _code_review_floor(
+    record: dict, complexity: str, run_id: str,
+) -> CheckResult | None:
+    """At medium+, at least one code review must have actually run.
+
+    Answering every type is bookkeeping; this asks whether a review HAPPENED.
+    Without it the record could read `not_run` across the board — dispositions
+    and all — and the gate still returned green, so a medium+ iterate could ship
+    with no code review of any kind.
+
+    ``not_applicable`` deliberately does NOT satisfy the floor. If it did, the
+    gate would be satisfiable by re-labelling, which is the same
+    substance-versus-bookkeeping failure it exists to close. An individual type
+    may still be `not_applicable`; both of them cannot be.
+
+    Runs AFTER the pending check so an unanswered type keeps reporting as
+    unanswered — the two failures need different repairs ("record the pass" vs
+    "run a review"), and the more specific message has to win.
+    """
+    if complexity not in FLOORED_COMPLEXITIES:
+        return None
+
+    reviews = record.get("reviews", {}) or {}
+    ran = [
+        t for t in _CODE_REVIEW_TYPES
+        if str((reviews.get(t) or {}).get("status", "")) == "completed"
+    ]
+    if ran:
+        return None
+
+    return CheckResult(
+        CHECK_NAME, False,
+        f"no code review ran for this {complexity} iterate: both `code` and "
+        "`external_code` are closed without having happened. Every review type "
+        "being answered is bookkeeping — at medium+ the phase matrix requires a "
+        "code review to actually take place. Run ONE of them and record it: the "
+        "internal cascade (`spec-reviewer` → `code-reviewer` → `doubt-reviewer`) "
+        "or the external one (`external_review.py --mode code`), then "
+        f"`record_review_pass.py record --run-id {run_id} --review-type "
+        "{code|external_code} --status completed …`. The two are independent "
+        "routes, not a chain: if the internal reviewer cannot run, the external "
+        "one carries the pass rather than lapsing with it.",
+    )
 
 
 def _committed_check(project_root: Path, run_id: str, commit_hash: str) -> CheckResult | None:

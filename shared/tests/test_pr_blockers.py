@@ -264,4 +264,5 @@ def test_probe_summarises_when_both_fetches_work(monkeypatch):
     report = pb.probe(owner="o", name="n", number=1, branch="main",
                       merge_state="BLOCKED", rollup=[_run("Python")])
 
-    assert _kinds(report) == ["unresolved_review_threads"]
+    # BLOCKED is itself a named cause now, alongside the thread.
+    assert _kinds(report) == ["merge_state", "unresolved_review_threads"]

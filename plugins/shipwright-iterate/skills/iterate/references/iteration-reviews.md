@@ -149,9 +149,17 @@ The code-reviewer subagent from `shipwright-build` is reused. Provide:
 
 The reused `shipwright-build` reviewers form a three-stage cascade (the same one
 `/shipwright-build` Step 6 runs — see that plugin's `references/code-review.md`).
-When the sub-iterate-runner contract (`agents/sub-iterate-runner.md` Step 3.7)
-delegates the cascade to the orchestrator (campaign mode) or the parent SKILL.md
-(standalone), all three stages run in this fixed order:
+
+**Who runs it.** **A standalone iterate spawns the cascade itself**, from
+SKILL.md Step 8, before F6 (commit) — it has the `Agent` tool, so there is no
+delegate. Only in **campaign mode** does the question of delegation arise at
+all: the sub-iterate-runner subagent has no `Agent` tool, so
+`agents/sub-iterate-runner.md` Step 3.7 hands the cascade to the orchestrator
+(see `campaign-mode.md` for what that currently does and does not cover). Do not
+read the campaign delegation as a general rule — that misreading is what let
+standalone runs finish with no internal review at all.
+
+All three stages run in this fixed order:
 
 1. **`spec-reviewer` (Stage 1, HARD-GATE).** Spec-compliance only: does the diff
    match the iterate spec / affected FR? A REJECT cites the exact spec line and
@@ -174,22 +182,63 @@ roles are not cascaded to external LLM providers.
 
 ## External Code-Review Cascade (medium+, default on)
 
-After the in-process `code-reviewer` subagent finishes (when it fired —
-see "When to Spawn" above), cascade an external LLM review of the same
-diff against the iterate spec. This is a second-opinion gate that mirrors
-the existing mini-plan-review Branch A/B/C interactive opt-out flow.
+Cascade an external LLM review of the diff against the iterate spec. This is a
+second-opinion gate that mirrors the existing mini-plan-review Branch A/B/C
+interactive opt-out flow.
 
 ### Trigger Rule
 
-Cascade fires **iff the internal `code-reviewer` subagent fired in this
-run** — same gate as the trigger above. No new threshold:
+The cascade fires on **its own** conditions — the same thresholds as the
+internal reviewer, evaluated independently:
 
 - Diff > 100 lines, OR
 - security-sensitive files touched, OR
 - complexity = medium+
 
-For trivial/small iterates the cascade does NOT run, even if API keys are
-present. Self-review is the only review for those.
+A trivial/small iterate that meets **none** of the three — no risk flag, no
+security-sensitive file, diff under 100 lines — does NOT run the cascade, even
+if API keys are present. Self-review is the only review for those.
+
+Note that this is an exemption for *quiet* small runs, not for small runs as
+such: a small iterate that touches auth or ships a 200-line diff satisfies a
+threshold above and the cascade **does** fire. That mirrors the internal
+reviewer's own rule ("When Self-Review is Sufficient" — small **and** no risk
+flags **and** under 100 lines), which is what makes the two routes genuinely
+symmetric rather than merely both present.
+
+**It is NOT conditional on the internal `code-reviewer` having fired.** It used
+to be — the rule read *"fires iff the internal subagent fired in this run"* —
+and that wired the two reviews in series behind a single point of failure: if
+the internal pass could not run for any reason (tool unavailable, session
+policy, a crash, or simply not being invoked), the external pass was excused
+along with it and a medium+ iterate could finish with **no code review at all**.
+
+That was not theoretical bookkeeping. Of the 27 review records in this repo when
+the rule was changed, **15 recorded `code = not_run` and ran the external review
+anyway** — every agent overrode the rule, because following it would obviously
+have been wrong. A rule that is universally routed around is evidence about the
+rule. The two reviews are now independent routes to the same guarantee.
+
+### When the internal reviewer cannot run — escalate, never lapse
+
+If the internal cascade cannot be run in this session, the responsibility moves
+**outward**, it does not disappear:
+
+1. the external review becomes **mandatory** and carries the pass — record it
+   `--review-type external_code --status completed`;
+2. record `code` as `not_run` with a disposition naming *why* the internal pass
+   could not run. Do **not** record it `completed` "by substitution": that
+   claims the pass the contract describes ran, and it did not;
+3. in campaign mode the same escalation is what ADR-029 already specifies —
+   the runner has no `Agent` tool, so the cascade is delegated to the
+   orchestrator. This section is its standalone-mode counterpart, which was
+   missing.
+
+**This is enforced, not merely instructed.** At medium+ the F11 verifier
+`check_review_record` fails the run unless at least one of `code` /
+`external_code` is `completed`. `not_applicable` on both does not satisfy it —
+otherwise the gate would be passable by re-labelling. See
+`shared/scripts/tools/verifiers/review_record_check.py`.
 
 For build (per-section opt-in, default off) see
 `{build_plugin_root}/skills/build/SKILL.md` Step 6c.
@@ -285,7 +334,26 @@ Every review pass writes its result to the run's review record:
 ```
 
 Five types — `self` · `plan` · `code` · `doubt` · `external_code` — all
-materialized up front, each closed by the pass that owns it. **F11 stops the run
+materialized up front, each closed by the pass that owns it.
+
+**The `code` row belongs to Stage 2, and Stage 1 has no row at all.**
+`spec-reviewer` is the cascade's HARD-GATE, but `REVIEW_TYPES` has no `spec`
+entry and adding one invalidates every existing record (a schema-version change
+— tracked, see below). Record `code` from **Stage 2** (`--from code-reviewer`)
+and name both stages in `--recorded-by`. Every run that finalizes ended at Stage
+2: a REJECT loops until PASS (`{build_plugin_root}/agents/spec-reviewer.md`
+→ "Re-review loop"), and an unresolved REJECT never reaches F6, so there is no
+shipping run whose `code` row is Stage 1's to claim.
+
+> **Known gap — the record cannot evidence Stage 1.** A `code` row sourced
+> `code-reviewer` is byte-identical whether Stage 1 passed first or was never
+> spawned, which is the "not run vs not recorded" distinction this artifact
+> exists to abolish, at the one stage the constitution calls first and blocking.
+> Carrying the verdict in the `code` row instead was **tried and rejected** on
+> this run: `completed` made a Stage-1-only row satisfy the medium+ code-quality
+> floor although Stage 2 provably had not run, and `not_run` discards the
+> findings. Until `REVIEW_TYPES` gains a `spec` entry this is a **correctness**
+> gap, not a cosmetic one. `--recorded-by` is prose, not proof. **F11 stops the run
 while any type is still `pending`** (small+; skipped at trivial), so an empty
 Review row in the Mission view always means "genuinely not run", never "nobody
 wrote it down". The reviewers already return structured JSON; before this record
@@ -314,7 +382,7 @@ uv run "{shared_root}/scripts/tools/record_review_pass.py" record \
 |---|---|---|---|
 | Step 7 Self-Review | `self` | `self-review` | `{"items":[{"name","verdict":"pass\|fail\|n/a","note"}]}` — one entry per checklist item |
 | External plan/iterate review (Branch A) | `plan` | `external-review-json` | `external_review.py` stdout, verbatim. Add `--marker-status` |
-| Internal `code-reviewer` (Stage 2) | `code` | `code-reviewer` | the subagent's reply |
+| Internal `code-reviewer` (Stage 2) | `code` | `code-reviewer` | the subagent's reply. Name Stage 1 in `--recorded-by` |
 | `doubt-reviewer` (Stage 3) | `doubt` | `doubt-reviewer` | the subagent's reply |
 | External code cascade | `external_code` | `external-review-json` | `external_review.py` stdout. Add `--marker-status` |
 
@@ -331,6 +399,44 @@ uv run "{shared_root}/scripts/tools/record_review_pass.py" record \
 `not_applicable` when the phase matrix says the pass does not apply at this
 complexity or change shape; `not_run` when it applied but was skipped (opt-out,
 missing keys, degraded provider).
+
+### Campaign sub-iterate rows
+
+The sub-iterate-runner subagent has no `Agent` tool, so it performs `self`,
+`plan` and `external_code` and performs neither internal stage. It records
+exactly this — **who did the work decides the name** (`agents/sub-iterate-runner.md`
+Step 3.7 carries the actor table). Each `…` below stands for the invocation
+prefix, i.e. `uv run "{shared_root}/scripts/tools/record_review_pass.py" record
+--project-root "{project_root}" --run-id "{run_id}"` — so `…` already includes
+`record`, and the lines below continue from there:
+
+```bash
+# the external run — under its OWN name, never as `code`.
+# `--from`/`--payload-file` are NOT optional: a row recorded without a payload
+# carries findings_count 0 and is indistinguishable from a fabricated one.
+… --review-type external_code --status completed \
+  --from external-review-json --payload-file "{external_review.py stdout}" \
+  --provider openrouter --marker-status completed
+
+# …or, when it did not run. `not_run` REQUIRES a disposition, and the marker
+# vocabulary is narrower than the result-JSON one — `skipped_diff_below_threshold`
+# is a valid result.json status but NOT a valid --marker-status.
+… --review-type external_code --status not_run \
+  --disposition "{the rule that applies, e.g. external_code_review.enabled is false for this project}" \
+  --marker-status "{skipped_user_opt_out | skipped_config_disabled}"
+
+# the delegated internal cascade — recorded as NOT having run
+… --review-type code --status not_run \
+  --disposition "sub-iterate-runner has no Agent tool; internal cascade delegated to the campaign orchestrator (ADR-029, campaign mode only)"
+
+# Stage 3 cannot precede Stage 2
+… --review-type doubt --status not_run \
+  --disposition "Stage 3 runs only behind a Stage 2 pass; the internal cascade did not run in this campaign sub-iterate"
+```
+
+A bare `--disposition "delegated"` is **rejected** (a disposition must name a
+rule: more than one word, ≥12 chars). Spell the limit out — that string is the
+only evidence a later reader gets.
 
 **Immutable after completion.** Re-recording a closed type exits `3`; use
 `--force` only to correct a genuinely wrong record.

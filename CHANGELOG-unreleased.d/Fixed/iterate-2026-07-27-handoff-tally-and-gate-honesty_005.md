@@ -1,0 +1,1 @@
+A crash in the optional Phase-Quality critical gate no longer discards the findings the phase validator already produced, a gate crash now writes its traceback to stderr, and inform-level notes no longer duplicate into the tracked build dashboard on a pause-then-override retry

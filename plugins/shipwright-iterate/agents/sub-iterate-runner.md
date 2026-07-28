@@ -135,7 +135,10 @@ For each item: pass or fail + 1-sentence explanation. Fix all failures
 before proceeding to Step 3.7. Output the 7-item block in the iterate
 ADR's "Self-Review" section using the format from
 `references/iteration-reviews.md`. The `reviews.self_review` field in
-the result-JSON contract records what fired.
+the result-JSON contract records what fired. **Also record the `self`
+row** per `references/iteration-reviews.md` → "Recording each review
+pass" — F11 STOPs on any `pending` type and F6-verify runs that same
+verifier, so an unrecorded `self` blocks the push.
 
 ### Step 3.7: Code Review Cascade (mandatory medium+ OR risk flag OR diff > 100 LOC, ADR-029)
 
@@ -158,19 +161,15 @@ review for those.
 
 **Procedure** when triggered:
 
-1. Internal reviewer cascade. The runner has `Read, Write, Edit,
-   Bash, Glob, Grep` tools — no `Agent` tool — so the runner CANNOT
-   spawn the `shipwright-build` reviewer subagents itself. The cascade
-   is `spec-reviewer` (HARD-GATE) → `code-reviewer` → conditional
-   `doubt-reviewer` (see `references/iteration-reviews.md`). Delegate:
-   - **Option A (campaign mode):** the campaign orchestrator spawns
-     the cascade in parallel with the runner, after Build completes;
-     the orchestrator merges findings back into the iterate ADR.
-   - **Option B (standalone iterate mode):** the parent SKILL.md
-     lifecycle Step 8 spawns the cascade.
-   In either case, the runner records `reviews.code` status as
-   `delegated_to_orchestrator` (Option A) or `delegated_to_skill`
-   (Option B) — never `skipped_silently`.
+1. Internal reviewer cascade — `spec-reviewer` (HARD-GATE) →
+   `code-reviewer` → conditional `doubt-reviewer`. The runner has
+   `Read, Write, Edit, Bash, Glob, Grep` — no `Agent` tool — so it
+   CANNOT spawn them and delegates to the orchestrator (`reviews.code`
+   = `delegated_to_orchestrator`, never `skipped_silently`). **That
+   limit is a fact about THIS subagent, not about iterates:** a
+   standalone iterate spawns the cascade itself (SKILL.md Step 8) and
+   never reaches this contract. Per `campaign-mode.md` no loop step
+   spawns it, so **do not record the internal pass as having happened.**
 
 2. External LLM code review:
 
@@ -189,16 +188,17 @@ review for those.
    ADR's `External-Code-Review-Findings` table. Same disposition
    pattern as Step 3.5.
 
-3. Write the cascade marker:
+3. Record every row — **who did the work decides the name** (replaces
+   the marker call that closed `code` on item 2's outcome):
 
-   ```bash
-   uv run "{shared_root}/scripts/checks/mark-review-state.py" \
-     --planning-dir "{iterate_planning_dir}" \
-     --review-type code \
-     --status "{completed | skipped_user_opt_out | skipped_config_disabled | skipped_diff_below_threshold}" \
-     --provider "{openrouter | null}" \
-     --findings-count {N}
-   ```
+   | Review type | Actor | Status the RUNNER may write |
+   |---|---|---|
+   | `self` (3.6), `plan` (3.5) | runner | `completed` / `not_run` + rule |
+   | `code`, `doubt` | orchestrator — NOT the runner | `not_run` ONLY + rule |
+   | `external_code` | runner (item 2) | `completed` / `not_run` + rule (marker: `skipped_*`) |
+
+   The runner may **never** write `code` or `doubt` as `completed`: it
+   performed neither. Commands: `references/iteration-reviews.md` → *Campaign sub-iterate rows*.
 
 The `reviews.code` and `reviews.external_code` fields in the
 result-JSON contract record what fired and what was deferred.

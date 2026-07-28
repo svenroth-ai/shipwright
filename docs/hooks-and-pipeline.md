@@ -140,6 +140,27 @@ artifact has exactly one documented resolution strategy:
 | `.shipwright/agent_docs/triage_inbox.md` | **regenerate** |
 | `shipwright_test_results.json` | **ours** (PR-owned snapshot) |
 
+> **Since iterate-2026-07-27-derived-snapshots-off-branch these eleven rows
+> describe a path an iterate no longer takes.** The strategies above remain the
+> documented behaviour of `resolve_churn_conflicts` — a legacy branch, a
+> non-worktree flow, or the post-merge refresh producer still uses them — but an
+> iterate branch **no longer carries any of them**, so on that path they cannot
+> conflict and there is nothing to resolve. `integrate_main` calls
+> `regenerate_tracked_snapshots(only=set())` (campaign `status.json` only) and
+> `restore_derived_to_head()` **before** the merge — before, because F5a/F5b write
+> them mid-run and F6 no longer commits them, so they sit tracked-and-dirty and
+> `git merge` refuses outright once mainline touches the same path. Registry:
+> `shared/scripts/lib/derived_snapshots.py`. Gate:
+> `verifiers/derived_snapshot_gate.check_no_derived_snapshots_committed`.
+>
+> **Write matrix consequence.** These eleven are now written on `main` by a
+> post-merge refresh producer, not by any phase. Until that producer exists they
+> are **frozen** at whatever `main` last computed — deliberately, because a
+> branch-local derivation was not merely conflict-prone but wrong: it reads the
+> branch's git history (pre-squash SHAs) and an event log missing every
+> concurrently-merging branch. The Group-E staleness audit reporting them as stale
+> is therefore a TRUE signal for that window, not a regression to silence.
+
 **`.shipwright/triage.outbox.jsonl` is deliberately NOT a churn artifact** —
 it is GITIGNORED and per-tree, so it is never merged and never appears in
 `CHURN_ALLOWLIST`. The per-tree transient buffer holds idle-main background
@@ -267,6 +288,26 @@ or merges stale (Group-E staleness noise). The contract:
   `integrate_main`) BEFORE arming auto-merge: if the branch is behind
   `origin/<default>` it merges + regenerates first (clean no-op if current), so the
   PR always arms from a current, already-regenerated tree.
+- **The integration is verified, not just performed
+  (iterate-2026-07-27-no-silent-revert).** Requiring branches to be current is what
+  *forces* the integration — it does not make the resolution correct, and a
+  resolution taken in favour of one side discards the other's. PR #463 rewrote this
+  very file from a stale base (10 insertions, **83 deletions**), silently reverting
+  documentation from four already-merged PRs. Every guard let it through for a
+  defensible reason: `ensure_current` correctly refuses a **non-churn** conflict and
+  hands to a human (that is where the wholesale take happens); the `PR Review` LLM
+  gate saw the whole diff and returned **SUCCESS**; `Anti-ratchet` only ever asks
+  whether a file GREW; and the squash-merge flattened the branch, leaving no trace
+  to audit. The F11 check `verifiers/silent_revert.check_no_silent_revert` now asks
+  the decidable question directly: for each merge **this branch** performed of the
+  default branch, what did the merged-in side gain over the common ancestor — and is
+  any of it missing from the branch's tree? Scoped to `<default>..HEAD`, so a merge
+  that landed months ago is not re-litigated (walking the full history flagged 889
+  files on a *clean* merge and took ten minutes — measured, not assumed). A branch
+  that has not integrated yet is `BEHIND`, not a revert, and is never accused.
+  Removal stays legal, it just has to be said out loud:
+  `iterate_latest.declared_removals[{path, reason}]` — a reason-less entry does not
+  count.
 - **Autonomous campaign** sets `SHIPWRIGHT_ITERATE_AUTOMERGE=0` so sub-iterate F11
   does NOT arm; the orchestrator runs **interleaved-serial** (campaign-mode.md) —
   build one sub-iterate → PR → CI-green → MERGE → build the next off fresh
@@ -285,10 +326,48 @@ a GitHub Action post-merge regen (host-specific); untracking the snapshots (brea
 away is "shoot and forget": a Required Check can fail afterward and the PR sits
 BLOCKED, un-merged, red. F11's final step runs
 `shared/scripts/tools/watch_pr_delivery.py`, which polls
-`gh pr view --json state,mergeStateStatus,statusCheckRollup` until the PR is
+`gh pr view --json state,mergeStateStatus,statusCheckRollup,url,baseRefName` until
+the PR is
 `merged` (delivered), a Required Check fails (STOP — diagnose/fix/re-push/re-watch),
 the PR is closed, or the poll times out while pending (keep watching, not "done").
-A `needs:`-skipped Tier-1/2 `PR Review` counts as a pass. Companion F2 rule: the
+A `needs:`-skipped Tier-1/2 `PR Review` counts as a pass.
+
+**A pending verdict names its blockers
+(iterate-2026-07-27-name-the-blocker).** "Timed out" is not a cause. PR #439 sat
+green for ~25 minutes — ten successful check-runs, `PR Review` successful,
+auto-merge armed — while the watcher reported only that it had waited; the actual
+blocker was one unresolved review thread, which stops auto-merge on its own. When
+the watcher returns `pending` it now attaches a `blockers` block from
+`shared/scripts/lib/pr_blockers.py`, built from three sources: `mergeStateStatus`
+(already in the payload, previously read by nothing), the PR's review threads
+(one `gh api graphql` call), and the base branch's required contexts (`GET
+/repos/{o}/{r}/rules/branches/{b}` — readable without admin). The probe runs once
+on the way out, not per poll, so a 30-minute watch costs two extra API calls.
+
+**`mergeStateStatus` is a vocabulary, not a flag
+(iterate-2026-07-27-merge-state-vocabulary).** The first cut read it as a
+boolean — `BLOCKED` or nothing — which dropped every other actionable value.
+Using the shipped watcher on a real stuck PR (#462) produced: all required checks
+green, no unresolved thread, `mergeStateStatus: DIRTY`, and the verdict "no
+blocker found … most likely still queued". `_pr_blocker_causes._MERGE_STATES` is
+now a **closed** table — `DIRTY` (conflicts), `BEHIND` (base moved), `DRAFT`,
+`BLOCKED`, `UNSTABLE` (a non-required check is red), against `CLEAN`/`HAS_HOOKS`
+as fine — and **any value not in it is `unknown`**, so a state GitHub adds later
+cannot be read as "nothing is wrong". `blocking` is claimed only where the merge
+is structurally impossible (`BLOCKED`/`DIRTY`/`DRAFT`); `BEHIND` and `UNSTABLE`
+are named without the claim, since whether they block depends on repository
+settings. The operator line reports the state it observed rather than a fixed
+phrase — the old wording announced "BLOCKED" for every blocking state, including
+a PR that merely had conflicts.
+
+Two properties matter more than the list itself. A source that cannot be read —
+an unreadable rules endpoint, a truncated thread page, a repository on classic
+branch protection rather than rulesets — lands in `blockers.unknown` with the
+reason, **never** in "nothing found"; and `blocking` is asserted only where the
+host structurally cannot merge, because an unresolved thread only blocks where
+the repository requires conversation resolution. Terminal verdicts and exit codes
+(0 merged / 2 checks_failed / 3 closed / 4 pending-timeout) are unchanged — the
+probe does not run for them, since they already name their cause. Companion F2 rule: the
 agent-doc 600-char budget gate (`test_agent_doc_entry_rules`) lives in the
 iterate-plugin suite, OUTSIDE the `shared/tests` F0 run, so F2 mandates running it
 locally after writing the `## Architecture Updates` / `## Learnings` entry, before
@@ -1176,7 +1255,7 @@ evidence (plan § 4.5).
 | W2 | iterate | FAIL · SKIP if small or `run_id` unresolvable (audit ctx, mirrors S2/S3) | 1 | `.shipwright/planning/iterate/{run_id}-external-review.json` OR `external_review_state.json` newer than spec |
 | W3 | iterate | FAIL | 1 | `work_completed` event (source=iterate) + `.shipwright/compliance/test-evidence.md` mtime <24h |
 | W4 | test | FAIL | 1 | `shipwright_test_results.json.coverage.total` ≥ `shipwright_test_config.json.coverage.min` (default 70) |
-| W5 | plan | FAIL | 1 | `.shipwright/planning/external_review_state.json` status=`completed` OR `skipped_*` with non-empty reason |
+| W5 | plan | FAIL | 1 | `.shipwright/planning/external_review_state.json` status=`completed` OR `skipped_*` with non-empty reason, **and** no unresolved reviewer disagreement (a contradiction, an unreadable verdict, or a single answering reviewer without a `contradiction_resolution`). Judged by `lib.review_marker.evaluate_review_state` — the same function the plan Step-6 gate and the resume gate call; it RECOMPUTES the disagreement from the recorded verdicts rather than trusting the marker's stored block |
 | W6 | changelog | FAIL | 1 | Wrapper around `changelog_checks.check_git_tag_exists` |
 | W7 | deploy | FAIL | 1 | `shipwright_deploy_config.json.smoke_test_status` OR `test_results.smoke.status` OR latest `test_run` event layer `smoke.status == "pass"` |
 | Sec1 | security (out-of-band) | FAIL | 1 | `.shipwright/compliance/security-scan-report.md` mtime ≥ latest `phase_started[security]`. Audits the standalone `/shipwright-security` skill — runs from the security skill's Stop hook, not as a pipeline gate. |
@@ -1598,8 +1677,18 @@ Two surfaces (plan v7 Option Z, 2026-04-19):
    Writes `.shipwright/compliance/audit-report.md` + `.shipwright/compliance/audit-report.json`
    (both transient/gitignored — the `.json` relocated from the repo root in
    iterate-2026-06-09 so the gitignore canon covers it; stdout stays the stable
-   JSON contract). Does not modify anything unless `--fix` is passed (Group E
-   per-doc regen only).
+   JSON contract). Also records its own run into
+   `shipwright_compliance_config.json` under `last_audit`
+   (`ran_at` / `verdict` / `scope` / `checks`) — tracked, unlike the two reports
+   above, so every compliance document can disclose when the cross-check last
+   happened even on a fresh clone. A `--only` run is recorded as partial. The
+   recording is best-effort and never changes the audit's exit code.
+   Does not otherwise modify anything unless `--fix` is passed (Group E
+   per-doc regen only). The skill then runs `update_compliance.py --phase
+   compliance` (Step 2b), which regenerates **all five** evidence documents —
+   an audit changes the freshness disclosure every one of them carries, so a
+   dashboard-only regen would leave the other four reporting the previous
+   answer at the exact moment the operator asked for the check.
    **Applicability (iterate-2026-05-31 `compliance-check-context-gate`):** a
    repo-root `audit_config.json` may set `disabled_checks: ["B7","D1",…]` —
    detective checks that are structurally not-applicable to the project type.
@@ -1645,7 +1734,41 @@ Non-pipeline skill — onboards a **brownfield** repo into the Shipwright SDLC. 
 
 Reads: `package.json`, `pyproject.toml`, `go.mod`, `Cargo.toml`, `composer.json`, `Gemfile`, `tsconfig.json`, `.eslintrc*`, `.prettierrc*`, `.editorconfig`, `README.md`, `.github/workflows/`, git log, plus route/page files for AST feature inference; optionally the running dev-server via Playwright BFS crawl.
 
-Writes: `CLAUDE.md`, `.shipwright/agent_docs/{architecture,conventions,decision_log,build_dashboard}.md`, `.shipwright/planning/<split>/spec.md`, all six `shipwright_*_config.json` (run-config LAST), `shipwright_events.jsonl` (one `adopted` event + optional backfill), `e2e/flows/adopted-baseline.spec.ts` when a Playwright crawl succeeded, `.shipwright/adopt/{snapshot,enrichment,routes}.json`, `.shipwright/adopt/review.md`, four `.github/workflows/*.yml` files (security, profile-specific CI, profile-aware CodeQL, claude-review — each idempotent and never overwritten), the repo-root `AUTOMERGE_SETUP.md` branch-protection / auto-merge guide (written LAST so its Required-Check job-name list is derived from the deployed workflow files), and seeds the five `.shipwright/compliance/*.md` via the existing compliance generators. The `suggest_iterate` UserPromptSubmit hook is plugin-owned (registered in `plugins/shipwright-iterate/hooks/hooks.json`); no project-level `.claude/settings.json` install is performed.
+Writes: `CLAUDE.md`, `.shipwright/agent_docs/{architecture,conventions,decision_log,build_dashboard}.md`, `.shipwright/planning/<split>/spec.md`, all six `shipwright_*_config.json` (run-config LAST), `shipwright_events.jsonl` (one `adopted` event + optional backfill), `e2e/flows/adopted-baseline.spec.ts` when a Playwright crawl succeeded, `.shipwright/adopt/{snapshot,enrichment,routes}.json`, `.shipwright/adopt/derived-catalogue.json` + `shipwright_known_failures.json` (the two **honesty artifacts** — see below), `.shipwright/adopt/review.md`, four `.github/workflows/*.yml` files (security, profile-specific CI, profile-aware CodeQL, claude-review — each idempotent and never overwritten), the repo-root `AUTOMERGE_SETUP.md` branch-protection / auto-merge guide (written LAST so its Required-Check job-name list is derived from the deployed workflow files), and seeds the five `.shipwright/compliance/*.md` via the existing compliance generators. The `suggest_iterate` UserPromptSubmit hook is plugin-owned (registered in `plugins/shipwright-iterate/hooks/hooks.json`); no project-level `.claude/settings.json` install is performed.
+
+**The honesty artifact (Step E, `trg-1aa5a8ab`).** An onboarded project is not
+required to arrive perfect, only to arrive honestly described. The requirements
+catalogue is DERIVED by reading code and confirmed by nobody, so
+`.shipwright/adopt/derived-catalogue.json` (`scripts/lib/derived_catalogue.py`)
+records one row per derived requirement (`fr_id`, `name`, `basis`, `confirmed`)
+plus `total` / `unconfirmed` / `by_basis`, and the rendered `spec.md` carries the
+same facts as a prose block above the FR table. Both come from ONE
+`spec_table.effective_features` pass through a single writer
+(`scripts/lib/spec_document.write_spec`), so the count reported at handover
+cannot describe a different table than the one handed over.
+`validate_adoption.py` hard-errors when it is missing, so Step H stops rather
+than handing over a catalogue that reads as confirmed.
+
+**The inherited baseline (Step E.18, `trg-1aa5a8ab`).** An onboarded project is
+not required to arrive perfect, only to arrive honestly described.
+`record_inherited_baseline.py` writes `shipwright_known_failures.json` in the
+shape the ONE shared reader `shared/scripts/known_failures.load_accepted_baseline`
+parses (the reader both the audit and the test phase go through since #453) —
+until now the file was a consumer contract with **no producer**, so every
+inherited red test read as this project's own failure. Two blocks, deliberately
+apart: `known_failures[]` + `baseline_failure_count` (already-failing tests) and
+an additive `inherited_coverage_gaps` (requirements with no `@FR`-tagged test,
+plus tests switched off) which **never** contributes to that count — it excuses a
+`passed < total` gap in `rtm_generator`, and a missing test must not spend that
+forgiveness. `baseline_observed: false` records "no run was made", which is a
+different fact from the reader's `present` ("a declaration exists").
+
+Step E.18 is also the sole triage-filing owner here (first step after E.16
+scaffolds the Inbox): one idempotent card asking that the derived catalogue be
+questioned with a person per `shared/requirement-elicitation.md`
+(`adopt-derived-catalogue-confirmation`), and one per non-empty gap class
+(`adopt-inherited-gaps::<class>`) — the destination a brownfield
+journey-coverage gap routes to instead of blocking a test run.
 
 **Workflow + automerge scaffolding (Steps E.13–E.15b):** the scaffolders below write dormant GitHub Actions workflows plus the automerge-readiness doc into adopted target repos. Each is byte-equal idempotent — pre-existing files are preserved. The CodeQL scaffolder additionally **renders** a per-profile language matrix, and the automerge-doc scaffolder runs LAST so it derives Required-Check names from the deployed workflow files.
 
@@ -1691,7 +1814,11 @@ Phase-Quality integration: registered as phase `adopt` in `PLUGIN_TO_PHASE`, `C4
 > states the contract ("Cross-repo contract"); the gates
 > (`test_report_model_contract.py`, `test_snapshot_contract.py`) diff the emitted
 > payload against the fixture published on `origin/main` and fail until the obliged
-> bump is performed. See FR-01.15.
+> bump is performed. Those unit gates pin the shape a producer *would* emit;
+> `scripts/verify_contract_surface.py` drives the real command a consumer runs and
+> parses the real bytes, catching a wrapper or a changed CLI flag that alters the
+> output while every unit gate stays green. It runs in `ci.yml` as `Contract
+> surface (gate)` (see "Merge gates in this repo's own CI"). See FR-01.15.
 
 ### Plugin-registered (shipwright-iterate)
 
@@ -1761,19 +1888,39 @@ Called by `orchestrator.py:update_step()` before marking a phase complete. Retur
 
 **Override mechanism:** `--force` on `update-step` overrides the **verdict**, never the
 **check**. The validator runs either way; what `--force` changes is that ask-level
-findings no longer pause the run. `--force` **requires** `--force-reason "<why>"`
-(refused otherwise, both at the CLI and in `update_step()` for library callers).
+findings no longer pause the run.
 
-Each forced completion appends one entry to `shipwright_run_config.json` →
-`validation_overrides[]` — `{step, at, reason, waived, gate_result,
-overridden_issues, inform_count}`, written by
+A forced **completion** requires `--force-reason "<why>"`: the CLI refuses
+`--status complete --force` with a blank or absent reason, and `update_step()`
+raises `ValueError` for the same call on a non-standalone run. Two deliberate
+narrowings: `--force` on a non-completion status (`in_progress` / `failed`)
+overrides nothing and needs no reason; and the library skips the demand for a
+**standalone** run, where the gate never runs and nothing is recorded. The CLI is
+stricter on that one arm on purpose — a person typing `--force` at a terminal is
+making an interactive override whether or not there is anywhere to file it.
+
+Each forced completion of a **non-standalone** step appends one entry to
+`shipwright_run_config.json` → `validation_overrides[]` — `{step, at, reason,
+waived, gate_result, overridden_issues, inform_count}`, written by
 `orchestrator_pkg/validation_record.py` and declared in
 `shared/schemas/run_config.v2.schema.json`. A step that completes with a clean gate
 and no `--force` writes **no** entry, so the presence of a record is itself the
-signal. `waived: false` / `gate_result: "pass"` means force was used but the gate was
-clean — nothing was actually waived. Retention is capped
-(`MAX_VALIDATION_OVERRIDES`); an eviction bumps `validation_overrides_dropped` so
-truncation is never silent.
+signal.
+
+`gate_result` has three values: `fail` (ask-level findings were overridden —
+`waived: true`), `pass` (a validator ran and found nothing — force was used but
+nothing was actually waived), and `not_checked` (**no validator exists for this
+step**, e.g. `security`, which has no `_VALIDATORS` entry; recording that as `pass`
+would mint a claim that a gate had been satisfied where none exists).
+
+A **standalone** (bare-phase) invocation is excluded from the record: the gate is
+skipped and no entry is written, because the gate never ran and so nothing was
+overridden. (The CLI still asks for a reason there; see above.)
+
+Retention is capped (`MAX_VALIDATION_OVERRIDES`); an eviction bumps
+`validation_overrides_dropped` so truncation is never silent. `validation_notes`
+is REPLACED per step rather than appended, so a pause → `--force` retry (which
+re-runs the gate) does not duplicate inform notes into the tracked dashboard.
 
 > Before iterate-2026-07-27-phase-gate-override-evidence, `--force` skipped
 > `validate_phase` **entirely**: nothing knew what the gate would have said, nothing
@@ -1861,12 +2008,13 @@ plan SKILL completes
 | `shipwright_project_config.json` | /shipwright-project | Orchestrator (splits), compliance (requirements), validators |
 | `shipwright_build_config.json` | /shipwright-build, update_section_state.py | Orchestrator (progress), dashboard, compliance, validators |
 | `shipwright_test_results.json` | test-runner subagent (full record); `record_coverage_total.py` (`coverage` block only); `stamp_test_results.py` (`source_state` block only — invoked as the last step of test Step 5 and iterate F5) | Compliance (test evidence), validators |
-| `shipwright_compliance_config.json` | update_compliance.py | Compliance (phases_covered) |
+| `shipwright_compliance_config.json` | update_compliance.py, run_audit.py (`last_audit` / `last_full_audit`) | Compliance (phases_covered; the audit record → the `Consistency-audit:` provenance line in every evidence document) |
 | `shipwright_plan_config.json` | /shipwright-plan | Build (section references) |
 | `shipwright_project_session.json` | /shipwright-project | /shipwright-project (session resume state) |
 | `shipwright_plan_session.json` | /shipwright-plan | /shipwright-plan (session resume state) |
-| `external_review_state.json` | /shipwright-plan Step 5, /shipwright-iterate (medium+) | /shipwright-plan Step 6 resume gate, compliance evidence collector |
+| `external_review_state.json` | /shipwright-plan Step 5b, /shipwright-iterate (medium+) — via `mark-review-state.py`, now carrying per-reviewer `verdicts` + derived `contradiction` (`marker_schema: 2`) | /shipwright-plan Step 6 gate (`check-plan-gates.py --gate review`), `setup-planning-session.py` resume gate, compliance `W5`, evidence collector — all three via `evaluate_review_state` |
 | `shipwright_security_config.json` | /shipwright-security | /shipwright-security, compliance (scan results) |
+| `findings.json` / `.shipwright/securityreports/latest.json` (+ `history/scan-*.json`) | /shipwright-security (`scan.py`, `run_scan_and_report.py`) | `generate_security_report.py`, `security.yml` critical-gate (jq), `shared/scripts/security_findings.py` (artifact ingest). **Iterate-2026-07-27 (`security-coverage-manifest`):** all three gained an additive `coverage` array — one row per weakness class with `status ∈ {covered, degraded, not_requested, not_available}`, derived by `scan_coverage.build_coverage()` from `(capabilities, scan_types, scan_errors)`. It is the counterpart to `scan_errors`: a tool that CRASHES already sets `degraded: true` and fails the run, but a tool that was never installed was invisible, so a one-scanner machine produced a report that read clean for every class. An empty/absent array means "coverage not reported" and renders as unknown, never as a clean pass. `schema_version` stays `1` (additive per the sidecar's own contract). A manifest read back from a caller-supplied file is sanitized at the boundary (`coverage_sanitize`), since its labels reach an operator-facing report. Turning incomplete coverage into a CI verdict is deliberately NOT wired here — that belongs to the workflow step. |
 
 ---
 
@@ -1892,8 +2040,10 @@ Each plugin reads project context at startup to ensure consistency. This table s
 | run_config.json | — | — | — | — | — | — | B2 | read |
 | project_config.json | — | Step 1 | — | — | B | B2 | — | read |
 | build_config.json | — | — | — | D (read+write) | — | — | — | read |
+| known_failures.json | — | — | — | — | 2.5/5 | — | — | read |
+| claude-plan-e2e.md | — | — | creates | — | 2.5 | — | — | read |
 
-**Key:** `read` = loaded at startup, `ext` = Extension scope only, `C2`/`B2`/`B3` = specific step name,
+**Key:** `read` = loaded at startup, `ext` = Extension scope only, `C2`/`B2`/`B3`/`2.5`/`5` = specific step name,
 `own` = only its own spec/section, `gate` = must-pass check before proceeding, `creates` = generated by that phase (consumed by later phases), `read+write` = step reads existing state, mutates it, writes back, `—` = not loaded.
 
 ### Artifact Write Matrix
@@ -1907,16 +2057,18 @@ Each plugin reads project context at startup to ensure consistency. This table s
 | `.shipwright/planning/adr/<NNN>-<slug>.md` | operator (during iterate F3) | manual edits; never overwritten by tooling. INDEX.md alongside is auto-regenerated by `aggregate_decisions.rebuild_adr_index` at each `/shipwright-changelog` aggregation. |
 | `architecture.md` | project | write_decision_log.py (architecture impact) |
 | `build_dashboard.md` | update_build_dashboard.py | build, test, changelog, deploy, iterate, **Stop hook** (all plugins) |
-| `session_handoff.md` | generate_handoff_on_stop.py | all plugins (Stop hook), **finalize_iterate.py** (iterate). Section renderers live in `shared/scripts/lib/`: `handoff_iterate.render_iterate_progress` (in-flight ITERATE state) and `handoff_pipeline.render_pipeline_phases` (**`## Pipeline Phases`** — FR-01.01: which phases are finished, which one was interrupted, and the loop's dispatch pointer). The pipeline block is rendered from state the run already holds — `run_config.phase_tasks[]` (authoritative, mutated only via `phase_task_lifecycle`) plus `.shipwright/run_loop_state.json` — and is **absent entirely** for any config without `phase_tasks[]`, so legacy / standalone / adopted handoffs are unchanged. It sits ABOVE the event-derived `## Recovery` tally (which counts distinct `phase_completed` events) and the legacy checkpoint block, because it is the authoritative view of the two. `shared/` must not import from a plugin, so the loop-state path literal is duplicated; `integration-tests/test_handoff_reads_real_loop_state.py` reads the owner's constant in a subprocess and fails if the two drift. |
+| `session_handoff.md` | generate_handoff_on_stop.py | all plugins (Stop hook), **finalize_iterate.py** (iterate). Section renderers live in `shared/scripts/lib/`: `handoff_iterate.render_iterate_progress` (in-flight ITERATE state) and `handoff_pipeline.render_pipeline_phases` (**`## Pipeline Phases`** — FR-01.01: which phases are finished, which one was interrupted, which failed, and the loop's dispatch pointer). The finished tally denominates against `run_config.pipeline` (falling back to the task count, and taking whichever is larger so splits are not undercounted) — NOT against `len(phase_tasks)`, which is materialised one task at a time and made a run one phase into seven read as "1 of 2". The pointer is only called *dispatched* when the attempt counter is >= 1 or the pointed task is `in_progress`; `advance_pointer` parks the pointer on an undispatched successor with attempt 0 after every completed phase, so pointer-set alone is the normal between-phases state and is rendered as **Next up**. The pipeline block is rendered from state the run already holds — `run_config.phase_tasks[]` (authoritative, mutated only via `phase_task_lifecycle`) plus `.shipwright/run_loop_state.json` — and is **absent entirely** for any config without `phase_tasks[]`, so legacy / standalone / adopted handoffs are unchanged. It sits ABOVE the event-derived `## Recovery` tally (which counts distinct `phase_completed` events) and the legacy checkpoint block, because it is the authoritative view of the two. `shared/` must not import from a plugin, so the loop-state path literal is duplicated; `integration-tests/test_handoff_reads_real_loop_state.py` reads the owner's constant in a subprocess and fails if the two drift. |
 | `events.jsonl` | record_event.py | build, iterate, test, deploy, changelog, orchestrator (append-only). Campaign sub-iterates (autonomous runner Step 4 + manual `--campaign`/`--sub-iterate-id`) stamp `campaign` + `sub_iterate_id` into the `work_completed` event via F5b `--event-extras-json` (S1, 2026-06-10) |
 | `test_results.json` | test, iterate | test, iterate |
 | `.shipwright/compliance/*` | compliance plugin | update_compliance.py (all phases trigger), **Stop hook** (all plugins, best-effort), **finalize_iterate.py** (iterate). **AR-10 (2026-06-28, ci-security-dashboard)**: when a phase regenerates the dashboard, `update_compliance.py` first runs the fail-soft network producer `plugins/shipwright-compliance/scripts/tools/refresh_ci_security.py`, which pulls the latest `security.yml` run's `findings.json` (via the shared `github_api` artifact helpers) and rewrites the tracked, public-safe `.shipwright/compliance/ci-security.json` (scan date, findings-by-severity, critical-gate verdict, prompt-injection count). The dashboard reads only that committed summary (deterministic, offline), and `_control_block.build_grade_inputs` lights the Control-Grade Security dimension from it (`open_high_critical` → `security_open_high_critical`; n/a — never a false CRITICAL — when un-ingested). gh-unavailable / no-fresh-run / fetch-failed → the existing summary is left untouched (never blocks a regen, never fabricates a green scan). |
 | `shipwright_accepted_risks.yaml` (repo root, **git-tracked, human-authored**) | operator | Manual edits; never overwritten by tooling. The scanner-agnostic accepted-risk **record**: `target` + scanner-native `rule` + `expires` re-review date + `rationale_ref` (must NAME a recorded decision) + `statement`. It records an acceptance; the wiring that *applies* one stays where it is (`.trivyignore{.yaml,.yml,}` for Trivy, the `SHIPWRIGHT_SEMGREP_*` env vars in `security.yml`). **Read by** `plugins/shipwright-compliance/scripts/lib/accepted_risk_view.py` — the dashboard renders one correlated row per acceptance with its expiry and authority, and renders a suppression that has **no** register entry as drift rather than as an accepted risk. **Enforced in CI by** `shared/tests/test_accepted_risks_register.py` over `shared/scripts/tools/accepted_risks_cli.py`: `check` fails both directions (an unrecorded suppression *and* a stale record), `expire` fails once an acceptance is past due — an expiry nobody enforces is a comment. `github-dismissal` targets are reported UNCHECKED by the offline `check` rather than silently skipped, because their counterpart is live GitHub alert state, not a file; they are resolved by `accepted_risks_cli.py converge` (`shared/scripts/tools/accepted_risks_converge.py` over the pure `alert_convergence` / `alert_match` leaf modules), which matches on `(tool, rule, path)`, stamps `[shipwright-accepted-risk: <id>]` provenance on every dismissal it writes, reopens ONLY its own marked alerts when an acceptance expires or is removed, and never touches a human dismissal. `converge` is **operator-invoked and read-only unless `--apply`**, and is deliberately NOT wired into any workflow — no scheduled job may hold the authority to mass-dismiss security alerts. Hand-written and never regenerated, so it is **not** a churn artifact and needs no `CHURN_ALLOWLIST` entry. Introduced by `iterate-2026-07-18-accepted-risk-register`. |
 | `.shipwright/planning/requirement-impact/<run_id>__<phase>__<scope>.json` (**git-tracked**; covered by the canon `!/.shipwright/planning/` re-include, so no gitignore change was needed) | `shared/scripts/tools/record_requirement_impact.py` | **design** (one per feedback round, review-loop.md Option B step 7) and **build** (one per section, SKILL.md Step 10b / section-builder Step 15a). Closes the requirement write-back loop (trg-e9e5188e, FR-01.04 + FR-01.05): the declaration the change workflow already runs — *declare a requirement impact, and refuse to finish unless a requirements file was touched or a one-line reason was given for touching none* — given to the two phases that lacked it. Design previously wrote back **pointers only** (which screen stands for which requirement), never substance, so a round that added an option or reordered a path left the FR describing the older intent. Build had two criteria that made the mockup-vs-section contradiction unsatisfiable either way, so whichever the builder followed won **silently**. **One file per declaration, not a shared append-log** — distinct filenames cannot interleave or conflict, so this artifact needs NO `merge=union` entry and NO `CHURN_ALLOWLIST` entry, identity `(run_id, phase, scope)` lives in the filename so a stale round from an earlier run can never satisfy a later run's gate, and a damaged file is isolated and nameable (`requirement_impact_store.read_declarations` returns records **plus structured problems**, incl. unresolved conflict markers). **Evidence is never the caller's to supply.** A build section uses its OWN commit (`--base-ref HEAD^ --head-ref HEAD`, git-derived via `requirement_impact_git.changed_paths`); passing the branch base instead puts every earlier section in range, and a degenerate range (`base == head`) is refused outright because an empty diff would pass any declaration. A design round has no commit, so it captures a **baseline** (`record_requirement_impact.py --snapshot-baseline`, stored under `requirement-impact/_baselines/`) before it revises anything and is judged against that. This is load-bearing: nothing in the pipeline commits before the build phase, so a plain worktree diff lists every untracked `spec.md` the project phase wrote and **any** `--impact modify` passed on a spec nobody had edited. The baselines double as the round registry the Option-A gate reads — deliberately not the gitignored `design-feedback-round*.md` scratch, whose absence resolved to PASS. The three git outcomes stay apart — `git` (authoritative), `skipped` (no binary/repo → warn + proceed, and `touch_check.source` records that the check did not run), `error` (bad ref → reject). **Read by** `shared/scripts/tools/check_design_round_declarations.py` (design's Option-A *Requirement Write-Back Gate*: every round that snapshotted a baseline under this run must have a declaration — a prose instruction cannot refuse anything, so this exits non-zero) and `shared/scripts/tools/check_section_file_attribution.py`, which verifies every file a section changed — **including deletions** — is either in its `## Files to Create/Modify` block or a recorded `--extra`, and fails a section that recorded no declaration at all. Artifacts the phase itself must write are excluded as a named category (`section_file_list.FRAMEWORK_BOOKKEEPING`), because `git add -A` sweeps the previous section's bookkeeping into the next commit. |
+| `.shipwright/adopt/derived-catalogue.json` | adopt Step E (`scripts/lib/derived_catalogue.py`, written by `spec_document.write_spec` alongside the spec) | adopt re-runs (idempotent overwrite). Records which requirements were DERIVED from reading code and how many nobody has confirmed, so traceability / coverage / drift consumers can tell an unconfirmed catalogue from a confirmed one without parsing prose. Read by the Step H handover (`unconfirmed` → the commit body's required `unconfirmed_fr_count` + the banner). Reading it back FAILS CLOSED: `confirmed` must be a real boolean AND must equal `basis in CONFIRMED_BASES`, so a hand-edited document cannot claim a confirmation nobody gave. `trg-1aa5a8ab` |
+| `shipwright_known_failures.json` | adopt Step E.18 (`scripts/tools/record_inherited_baseline.py`) | adopt re-runs (idempotent overwrite); hand-edited thereafter. **Read by** the shared SSoT `shared/scripts/known_failures.load_accepted_baseline` — the one reader the audit and the test phase share (#453) — which had no producer until `trg-1aa5a8ab`. `known_failures[]` + `baseline_failure_count` are already-failing tests; the additive `inherited_coverage_gaps` block (untested requirements, disabled tests) NEVER feeds that count, because the count excuses a red run. `baseline_observed: false` is the honest default: onboarding does not run an arbitrary repo's suite, and that is a different fact from the reader's `present`. |
 | `sync_config.json` | project | iterate (FR mappings) |
 | `{migrations.dir}` (profile) | build, iterate (create + apply DEV, serialized) | deploy (PROD apply only) |
-| `.shipwright/triage.jsonl` (**git-tracked SSoT** since campaign `2026-06-05-track-triage-jsonl`; producers append **per-tree**, finalize **F6** stages it so deltas ship in the iterate PR, churn resolver `resolve_churn_conflicts._reconcile_triage` unions concurrent worktree appends — only the `.lock` / `.bak` siblings stay ignored) | `shared/scripts/triage.py` (auto-creates header on first append) | **Iterate 1a producers:** `audit_phase_quality_on_stop.py` (Stop hook), `plugins/shipwright-compliance/scripts/audit/audit_detector.py::mirror_findings_to_triage`. **Iterate 2 producers:** `plugins/shipwright-security/scripts/tools/generate_security_report.py::_emit_findings_to_triage`, `plugins/shipwright-test/scripts/lib/performance_check.py::_emit_failures_to_triage`, `shared/scripts/hooks/check_drift.py::_emit_drift_to_triage` (SessionStart hook), `shared/scripts/artifact_sync.py::_emit_drift_to_triage` (F1 drift check). **Iterate B0 (2026-05-21)**: wire format codified at [shared/schemas/triage_item.schema.json](../shared/schemas/triage_item.schema.json); new optional cross-link fields `frId` / `suiteId` / `eventId` let the compliance RTM emit `FAIL → [trg-XXX](triage_inbox.md#trg-XXX)` deep-links (the aggregator stamps an HTML anchor over each card so the link resolves in plain-markdown viewers). See guide.md § 4.11.2. **Iterate B.2 (2026-05-21)**: new producer `plugins/shipwright-compliance/scripts/lib/sbom_generator.py::emit_undeclared_triage` — emits one `source="sbom"`, `severity="low"`, `kind="compliance"` item per workspace whose manifest has packages with unresolved licenses (dedupKey `sbom:undeclared:<manifest-rel-path>`). Body lists top-20 offenders, `launchPayload` carries the `cd <workspace> && npm install / uv sync && regenerate-SBOM` block, and a re-run with a clean workspace auto-dismisses the item with `reason="sbomResolved"`. Invoked by `update_compliance.py` whenever the phase regenerates `sbom.md`. **Iterate B.3 (2026-05-21)**: new producer `plugins/shipwright-compliance/scripts/lib/test_evidence.py::emit_test_failure_triage` — emits one `source="test-evidence"` item per failing layer in the latest test_run event (dedupKey `test-fail:<layer>`; severity `high` for e2e/integration/pgtap, `low` for unit; `eventId` set to the originating test_run id; `launchPayload` opens `/shipwright-iterate --type bug` scoped to the layer). Auto-dismiss when the layer goes green (`reason="testEvidenceResolved"`). Plus `record_event.py` now accepts `--integration-passed/total` and `--pgtap-passed/total`, extending the `test_run` event's `layers` dict so the Test Evidence Full Suite Runs table renders a 4-layer breakdown. **Iterate B.4 (2026-05-21)**: first consumer of `frId` cross-link — `plugins/shipwright-compliance/scripts/lib/rtm_generator.py::_open_triage_by_fr` reads open triage items by FR, and the requirements-coverage Status cell renders `FAIL → [trg-XXX](../agent_docs/triage_inbox.md#trg-XXX)` deep-links per matching FR (overrides COVERED/COVERED-baseline). Coverage Summary gains three operator-actionable subsections (FRs without tests / FRs with stale verification > 14 days / FRs with open triage items). **Iterate C.1 (2026-05-21)**: new hard-enforce gate in `record_event.py::_fr_or_change_type_gate_error` — every `work_completed` event with `source=iterate` must carry either `--affected-frs/--new-frs` OR `--change-type` ∈ `{docs,tooling,compliance,infra}` together with `--none-reason '<one-line>'`. Hard-rejects otherwise (exit 1, nothing written). Applies to ALL iterates incl. BUG (unlike the spec-impact gate which exempts BUG); runs BEFORE spec-impact so the broader requirement surfaces first. **Iterate C.2 (2026-05-21)**: four new detective-only documentation-hygiene checks added to `plugins/shipwright-compliance/scripts/audit/group_f.py` — F4 (ADR-bloat: >60 lines without `spec_ref`), F5 (architecture-drift: `architecture.md` marker vs new `architecture_impact ∈ {component, data-flow}` decision-drops), F6 (CLAUDE.md > 200 lines), F7 (CLAUDE.md inline `Iterate X.Y (ADR-NN)` annotations > 5). Fail findings mirror into `.shipwright/triage.jsonl` as `source="compliance"` items via the existing `audit_detector.mirror_findings_to_triage` path. **Iterate C.3 (2026-05-21)**: new standalone script `scripts/check_plugin_cache_sync.py` detects drift between the local plugin-cache (`~/.claude/plugins/cache/shipwright/<plugin>/<version>/`) and repo HEAD via per-file SHA-256 comparison. Fail-soft WARN by default (exit 0); `--strict` flips to exit 1 for CI use; `--json` emits structured output for programmatic consumers. No-ops cleanly when `~/.claude/` is absent (typical CI). Detective-only — does not emit triage items (a future iterate will wire SessionStart hook integration). **Iterate 2026-05-30 (compliance-audit-on-stop)**: the `audit_detector.mirror_findings_to_triage` producer finally gets a frequent automatic trigger — the new `shared/scripts/hooks/audit_compliance_on_stop.py` Stop hook (wired into the iterate + changelog Stop chains) runs the full A-G audit and mirrors/auto-dismisses `source=compliance` items every Stop, instead of only when `/shipwright-compliance` is run manually. A full-coverage safety gate refuses to mirror on any partial/crashed audit so a missing group can't wrongly auto-dismiss another group's items. Idempotent per `(HEAD-sha, session_id)`; opt-out `SHIPWRIGHT_COMPLIANCE_AUDIT_ON_STOP=0`. **Iterate-2026-07-14 (`sweep-drift-dismiss-loss`) — NEW WRITER:** the D2 outbox sweep (`setup_iterate_worktree.py` step 5 → `shared/scripts/lib/sweep_drift.py`) now WRITES this file in the MAIN tree. Any append that lands here uncommitted (a producer bypassing `should_route_to_outbox`) reaches no branch and no origin; the sweep ADOPTS such append-only drift into the gitignored outbox and restores the tracked log to HEAD via `git checkout -- `, so it ships in the iterate PR. Guarded: it plans before it mutates (a blocked sweep leaves both files untouched) and REFUSES to touch anything it does not understand — `main_tracked_diverged` (not an append-only prefix of HEAD), `main_tracked_index_diverged` (staged delta), `main_tracked_unparseable`, `main_tracked_changed_during_adopt` — each surfacing as `sweep-outbox skipped: <reason>`. Why it exists: such drift made a `status` for it look like an ORPHAN, and the #303 quarantine then DELETED the operator's dismiss while reporting success, so the item resurrected on the board forever (shipwright-webui, 2026-07-14). **Iterate-2026-07-27 (`f0-race-triage`) — NEW PRODUCER:** `shared/scripts/tools/suite_race_triage.py::emit_race_followups`, invoked by the F0 suite runner's CLI path. Emits one `source="f0-suite"`, `severity="high"`, `kind="bug"` item per test unit that was red while the units ran side by side and GREEN on its authoritative alone re-run (`dedupKey="f0-race:<unit-id>"`, `match_commit=False`, `window_seconds=None`, `suiteId=<unit-id>`; `launchPayload` carries `/shipwright-iterate --type bug` plus the actual re-run commands). It exists because that gate deliberately does NOT stop — the alone-run verdict is authoritative and stopping would false-block — so before this the observation lived only in a console warning and died with the session. **It has no auto-dismiss pass, deliberately:** unlike `test-evidence` (a layer's red/green is deterministic per run) a race is intermittent, so the common case is a clean parallel run, and auto-resolving would close the card one run later — recreating the disappearance it exists to prevent. Only an operator closes it; a dismissed card does not suppress a later re-observation. The card is composed by `suite_report.py` from an allowlist of scalars and never carries captured test output (this log is tracked → public). If an observed race cannot be recorded, the runner exits `3` rather than reporting a green gate. **Dismissal writer (not a producer):** `shared/scripts/tools/accepted_risks_converge.py` marks OPEN `source="security"` per-finding items dismissed with `statusBy="acceptedRiskConverger"` / `statusReason="acceptedRiskResolved"` when a `github-dismissal` register acceptance covers them — both tokens are registered in `triage_gc.MACHINE_DISMISSERS` / `MACHINE_REASONS` in the same diff, or the new reason escapes the dismissed-pile GC. It appends nothing, and deliberately never touches the repo-wide `gh-security:{owner}/{repo}` action-unit — dismissing an aggregate because one alert was accepted would silence every security finding in the repo. Operator-invoked only (`converge --apply`); no scheduled job holds this authority. |
-| `.shipwright/triage.outbox.jsonl` (**per-tree, GITIGNORED** background-triage buffer — campaign `2026-06-08-triage-outbox-delivery`; covered by the canon `/.shipwright/*` whitelist wildcard, pinned explicit by the `/.shipwright/triage.outbox.jsonl` ignore line, NO `!`-re-include) | `shared/scripts/triage.py` (auto-creates header-less buffer on first idle-main append; outbox path SSoT `triage._outbox_path`) | **The same background producers that append to `.shipwright/triage.jsonl` route HERE instead whenever HEAD is on the default branch with an `origin` remote (idle main):** `audit_phase_quality_on_stop.py` (phase-quality Stop hook), `audit_compliance_on_stop.py` / `audit_detector.mirror_findings_to_triage` (compliance audit + triage bundle), `check_drift.py` (SessionStart drift), `import_github_findings.py` / `github_triage.import_findings` (SessionStart GitHub-findings importer — all `gh-*` action-units; iterate-2026-07-03-github-triage-outbox-routing), and direct `triage_add` on idle main. (`plugin_sync_reminder_on_stop.py` no longer appends a triage item at all — iterate-2026-06-13-triage-not-current-work — so it routes nothing here.) Idle main therefore accrues NO tracked-log drift. **The phase-invoked emitters `generate_security_report.py` / `performance_check.py` / `artifact_sync.py` / `suite_race_triage.py` (security / perf / F1 / F0) do NOT route here** — they call `append_triage_item_idempotent(..., to_outbox=False)` and append to the tracked `triage.jsonl`. By design: each fires during an active `/shipwright-security`, `/shipwright-test`, or iterate-finalize phase (F0 and F1 run inside the iterate worktree), so their appends ship in that phase's PR branch rather than as idle-main drift; any stray main-resident append is folded by `reconcile_main_triage` before fast-forward. **Swept into the iterate PR branch** by `setup_iterate_worktree.py` (D2 → `shared/scripts/lib/sweep_outbox.sweep_outbox_to_branch`, whole-section triage lock, commit on `iterate/<slug>`), then **GC'd** once the line is origin-delivered (by semantic `id` for appends, normalized text for status flips). **Union-read** for immediacy: `triage.read_all_items` resolves tracked ∪ outbox so consumers see background findings before the sweep. `triage_gc` and `_reconcile_triage` operate on the tracked log ONLY. |
+| `.shipwright/triage.jsonl` (**git-tracked SSoT** since campaign `2026-06-05-track-triage-jsonl`; producers append **per-tree**, finalize **F6** stages it so deltas ship in the iterate PR, churn resolver `resolve_churn_conflicts._reconcile_triage` unions concurrent worktree appends — only the `.lock` / `.bak` siblings stay ignored) | `shared/scripts/triage.py` (auto-creates header on first append) | **Iterate 1a producers:** `audit_phase_quality_on_stop.py` (Stop hook), `plugins/shipwright-compliance/scripts/audit/audit_detector.py::mirror_findings_to_triage`. **Iterate 2 producers:** `plugins/shipwright-security/scripts/tools/generate_security_report.py::_emit_findings_to_triage`, `plugins/shipwright-test/scripts/lib/performance_check.py::_emit_failures_to_triage`, `shared/scripts/hooks/check_drift.py::_emit_drift_to_triage` (SessionStart hook), `shared/scripts/artifact_sync.py::_emit_drift_to_triage` (F1 drift check). **Iterate B0 (2026-05-21)**: wire format codified at [shared/schemas/triage_item.schema.json](../shared/schemas/triage_item.schema.json); new optional cross-link fields `frId` / `suiteId` / `eventId` let the compliance RTM emit `FAIL → [trg-XXX](triage_inbox.md#trg-XXX)` deep-links (the aggregator stamps an HTML anchor over each card so the link resolves in plain-markdown viewers). See guide.md § 4.11.2. **Iterate B.2 (2026-05-21)**: new producer `plugins/shipwright-compliance/scripts/lib/sbom_generator.py::emit_undeclared_triage` — emits one `source="sbom"`, `severity="low"`, `kind="compliance"` item per workspace whose manifest has packages with unresolved licenses (dedupKey `sbom:undeclared:<manifest-rel-path>`). Body lists top-20 offenders, `launchPayload` carries the `cd <workspace> && npm install / uv sync && regenerate-SBOM` block, and a re-run with a clean workspace auto-dismisses the item with `reason="sbomResolved"`. Invoked by `update_compliance.py` whenever the phase regenerates `sbom.md`. **Iterate B.3 (2026-05-21)**: new producer `plugins/shipwright-compliance/scripts/lib/test_evidence.py::emit_test_failure_triage` — emits one `source="test-evidence"` item per failing layer in the latest test_run event (dedupKey `test-fail:<layer>`; severity `high` for e2e/integration/pgtap, `low` for unit; `eventId` set to the originating test_run id; `launchPayload` opens `/shipwright-iterate --type bug` scoped to the layer). Auto-dismiss when the layer goes green (`reason="testEvidenceResolved"`). Plus `record_event.py` now accepts `--integration-passed/total` and `--pgtap-passed/total`, extending the `test_run` event's `layers` dict so the Test Evidence Full Suite Runs table renders a 4-layer breakdown. **Iterate B.4 (2026-05-21)**: first consumer of `frId` cross-link — `plugins/shipwright-compliance/scripts/lib/rtm_generator.py::_open_triage_by_fr` reads open triage items by FR, and the requirements-coverage Status cell renders `FAIL → [trg-XXX](../agent_docs/triage_inbox.md#trg-XXX)` deep-links per matching FR (overrides COVERED/COVERED-baseline). Coverage Summary gains three operator-actionable subsections (FRs without tests / FRs with stale verification > 14 days / FRs with open triage items). **Iterate C.1 (2026-05-21)**: new hard-enforce gate in `record_event.py::_fr_or_change_type_gate_error` — every `work_completed` event with `source=iterate` must carry either `--affected-frs/--new-frs` OR `--change-type` ∈ `{docs,tooling,compliance,infra}` together with `--none-reason '<one-line>'`. Hard-rejects otherwise (exit 1, nothing written). Applies to ALL iterates incl. BUG (unlike the spec-impact gate which exempts BUG); runs BEFORE spec-impact so the broader requirement surfaces first. **Iterate C.2 (2026-05-21)**: four new detective-only documentation-hygiene checks added to `plugins/shipwright-compliance/scripts/audit/group_f.py` — F4 (ADR-bloat: >60 lines without `spec_ref`), F5 (architecture-drift: `architecture.md` marker vs new `architecture_impact ∈ {component, data-flow}` decision-drops), F6 (CLAUDE.md > 200 lines), F7 (CLAUDE.md inline `Iterate X.Y (ADR-NN)` annotations > 5). Fail findings mirror into `.shipwright/triage.jsonl` as `source="compliance"` items via the existing `audit_detector.mirror_findings_to_triage` path. **Iterate C.3 (2026-05-21)**: new standalone script `scripts/check_plugin_cache_sync.py` detects drift between the local plugin-cache (`~/.claude/plugins/cache/shipwright/<plugin>/<version>/`) and repo HEAD via per-file SHA-256 comparison. Fail-soft WARN by default (exit 0); `--strict` flips to exit 1 for CI use; `--json` emits structured output for programmatic consumers. No-ops cleanly when `~/.claude/` is absent (typical CI). Detective-only — does not emit triage items (a future iterate will wire SessionStart hook integration). **Iterate 2026-05-30 (compliance-audit-on-stop)**: the `audit_detector.mirror_findings_to_triage` producer finally gets a frequent automatic trigger — the new `shared/scripts/hooks/audit_compliance_on_stop.py` Stop hook (wired into the iterate + changelog Stop chains) runs the full A-G audit and mirrors/auto-dismisses `source=compliance` items every Stop, instead of only when `/shipwright-compliance` is run manually. A full-coverage safety gate refuses to mirror on any partial/crashed audit so a missing group can't wrongly auto-dismiss another group's items. Idempotent per `(HEAD-sha, session_id)`; opt-out `SHIPWRIGHT_COMPLIANCE_AUDIT_ON_STOP=0`. **Iterate-2026-07-14 (`sweep-drift-dismiss-loss`) — NEW WRITER:** the D2 outbox sweep (`setup_iterate_worktree.py` step 5 → `shared/scripts/lib/sweep_drift.py`) now WRITES this file in the MAIN tree. Any append that lands here uncommitted (a producer bypassing `should_route_to_outbox`) reaches no branch and no origin; the sweep ADOPTS such append-only drift into the gitignored outbox and restores the tracked log to HEAD via `git checkout -- `, so it ships in the iterate PR. Guarded: it plans before it mutates (a blocked sweep leaves both files untouched) and REFUSES to touch anything it does not understand — `main_tracked_diverged` (not an append-only prefix of HEAD), `main_tracked_index_diverged` (staged delta), `main_tracked_unparseable`, `main_tracked_changed_during_adopt` — each surfacing as `sweep-outbox skipped: <reason>`. Why it exists: such drift made a `status` for it look like an ORPHAN, and the #303 quarantine then DELETED the operator's dismiss while reporting success, so the item resurrected on the board forever (shipwright-webui, 2026-07-14). **Iterate-2026-07-27 (`f0-race-triage`) — NEW PRODUCER:** `shared/scripts/tools/suite_race_triage.py::emit_race_followups`, invoked by the F0 suite runner's CLI path. Emits one `source="f0-suite"`, `severity="high"`, `kind="bug"` item per test unit that was red while the units ran side by side and GREEN on its authoritative alone re-run (`dedupKey="f0-race:<unit-id>"`, `match_commit=False`, `window_seconds=None`, `suiteId=<unit-id>`; `launchPayload` carries `/shipwright-iterate --type bug` plus the actual re-run commands). It exists because that gate deliberately does NOT stop — the alone-run verdict is authoritative and stopping would false-block — so before this the observation lived only in a console warning and died with the session. **It has no auto-dismiss pass, deliberately:** unlike `test-evidence` (a layer's red/green is deterministic per run) a race is intermittent, so the common case is a clean parallel run, and auto-resolving would close the card one run later — recreating the disappearance it exists to prevent. Only an operator closes it; a dismissed card does not suppress a later re-observation. The card is composed by `suite_report.py` from an allowlist of scalars and never carries captured test output (this log is tracked → public). If an observed race cannot be recorded, the runner exits `3` rather than reporting a green gate. **Iterate-2026-07-27 (`test-phase-record-honesty`) — TWO NEW TEST-PHASE PRODUCERS.** `plugins/shipwright-test/scripts/lib/warning_followups.py::emit_warning_followups` (`source="test-warning"`) closes the gap that only the performance budget did not have: of the four non-blocking layers, browser tests / cross-page consistency / screen-vs-mockup fidelity left nothing behind once the session ended. It reads the finished `shipwright_test_results.json` at Step 5.0 and emits one item per failing spec file (`test-warning:e2e:{file}`), inconsistent category (`test-warning:consistency:{category}`), diverging screen (`test-warning:fidelity:{screen}`), and retry-pass (`test-warning:flaky:{file}::{title}`, severity `low` — still a pass, never blocking); a layer that reports a failure it cannot itemize gets one aggregate `test-warning:{layer}:layer` item that says so rather than claiming a match. `plugins/shipwright-test/scripts/lib/journey_coverage.py` (`source="journey-coverage"`) emits one item per planned user journey with no browser test, on BROWNFIELD projects only (`launchPayload` routes to `/shipwright-adopt`); greenfield gaps block the phase instead of becoming backlog. **Both use `match_commit=False` + `window_seconds=None`** — unlike the per-commit performance producer, a persistently broken suite is ONE issue until somebody fixes it, so commit matching would file a fresh item every commit. Failures declared in `shipwright_known_failures.json` are excluded by identity: they are reported as known-and-accepted, not filed as new work, and a skipped test is never counted as a failure. Both are best-effort — a failed append never changes an exit code, because a warning layer must not become blocking through its own bookkeeping. **Dismissal writer (not a producer):** `shared/scripts/tools/accepted_risks_converge.py` marks OPEN `source="security"` per-finding items dismissed with `statusBy="acceptedRiskConverger"` / `statusReason="acceptedRiskResolved"` when a `github-dismissal` register acceptance covers them — both tokens are registered in `triage_gc.MACHINE_DISMISSERS` / `MACHINE_REASONS` in the same diff, or the new reason escapes the dismissed-pile GC. It appends nothing, and deliberately never touches the repo-wide `gh-security:{owner}/{repo}` action-unit — dismissing an aggregate because one alert was accepted would silence every security finding in the repo. Operator-invoked only (`converge --apply`); no scheduled job holds this authority. |
+| `.shipwright/triage.outbox.jsonl` (**per-tree, GITIGNORED** background-triage buffer — campaign `2026-06-08-triage-outbox-delivery`; covered by the canon `/.shipwright/*` whitelist wildcard, pinned explicit by the `/.shipwright/triage.outbox.jsonl` ignore line, NO `!`-re-include) | `shared/scripts/triage.py` (auto-creates header-less buffer on first idle-main append; outbox path SSoT `triage._outbox_path`) | **The same background producers that append to `.shipwright/triage.jsonl` route HERE instead whenever HEAD is on the default branch with an `origin` remote (idle main):** `audit_phase_quality_on_stop.py` (phase-quality Stop hook), `audit_compliance_on_stop.py` / `audit_detector.mirror_findings_to_triage` (compliance audit + triage bundle), `check_drift.py` (SessionStart drift), `import_github_findings.py` / `github_triage.import_findings` (SessionStart GitHub-findings importer — all `gh-*` action-units; iterate-2026-07-03-github-triage-outbox-routing), and direct `triage_add` on idle main. The operator-invoked `shared/scripts/tools/check_required_checks.py` (required-check drift — see "Merge gates in this repo's own CI") also routes here unconditionally (`to_outbox=True`): it needs admin-scoped `gh` auth, so it is run by hand from whatever tree the operator is in, and a `source="required-checks"` item that landed in the tracked log on idle main would strand as main-tree drift. (`plugin_sync_reminder_on_stop.py` no longer appends a triage item at all — iterate-2026-06-13-triage-not-current-work — so it routes nothing here.) Idle main therefore accrues NO tracked-log drift. **The phase-invoked emitters `generate_security_report.py` / `performance_check.py` / `warning_followups.py` / `journey_coverage.py` / `artifact_sync.py` / `suite_race_triage.py` (security / perf / test-warning / journey-coverage / F1 / F0) do NOT route here** — they call `append_triage_item_idempotent(..., to_outbox=False)` and append to the tracked `triage.jsonl`. By design: each fires during an active `/shipwright-security`, `/shipwright-test`, or iterate-finalize phase (F0 and F1 run inside the iterate worktree), so their appends ship in that phase's PR branch rather than as idle-main drift; any stray main-resident append is folded by `reconcile_main_triage` before fast-forward. **Swept into the iterate PR branch** by `setup_iterate_worktree.py` (D2 → `shared/scripts/lib/sweep_outbox.sweep_outbox_to_branch`, whole-section triage lock, commit on `iterate/<slug>`), then **GC'd** once the line is origin-delivered (by semantic `id` for appends, normalized text for status flips). **Union-read** for immediacy: `triage.read_all_items` resolves tracked ∪ outbox so consumers see background findings before the sweep. `triage_gc` and `_reconcile_triage` operate on the tracked log ONLY. |
 
 ---
 
@@ -2063,6 +2215,107 @@ During `/shipwright-project` Step 7 (Scaffolding), if the project has a GitHub r
 | `delete_branch_on_merge` | `true` | Prevents stale feature branches after PR merges (CLI or UI) |
 
 This complements `gh pr merge --merge --delete-branch` in `/shipwright-changelog` Step 7, which only fires on CLI merges.
+
+---
+
+## Merge gates in this repo's own CI
+
+`ci.yml`'s `Python (lint + test)` job is a Required Check, so every step in it
+blocks the merge. Besides lint, the test tiers and the diff-coverage gate, it
+runs three guards:
+
+| Step | Script | What it proves |
+|---|---|---|
+| `Run CI-gate guard` | `shared/scripts/tools/check_ci_gate_coverage.py` | no test dir is unreferenced by CI, no quality gate has gone loose (`\|\| true` / `continue-on-error`) outside the documented `LOOSE_GATE_ALLOWLIST`, and `security.yml`'s critical gate still fails closed |
+| `Contract surface (gate)` | `scripts/verify_contract_surface.py` | the bytes `grade.py --format json` and `analyze_codebase.py` actually emit still match the cross-repo contract this repo publishes |
+| `Sweep delivery surface (gate)` | `scripts/verify_sweep_delivery_surface.py` | an operator's triage dismiss survives the outbox sweep to origin instead of being quarantined away |
+
+The last two existed, were correct, and were referenced by no workflow until
+iterate-2026-07-27-checks-that-gate-nothing — they ran nowhere and gated
+nothing. Two rules follow from wiring them:
+
+- **Confirm a check passes locally before you make it block.** Wiring a red gate
+  blocks every PR, starting with the one that wires it.
+- **Suffix a blocking step's name with `(gate)`.** `check_ci_gate_coverage.py`
+  polices only the steps it recognises as gates, and it recognises them by
+  command or by name. A step running a bespoke script matches no known command,
+  so without the suffix the guard is blind to it and a later `continue-on-error`
+  would loosen the merge gate unnoticed. Both directions are pinned by
+  `shared/tests/test_checks_that_gate.py`, whose reverse-drift test fails on the
+  next `scripts/verify_*_surface.py` born unwired.
+
+`security.yml`'s `shipwright-critical-gate` step blocks on **critical findings
+only** — the deliberate posture, unchanged. What changed is the report: it used
+to print a bare `Critical findings: 0` and exit 0 while high findings sat
+unmentioned, which reads as a clean bill of health. It now prints
+`critical-gate PASS|FAIL — N critical (blocking), N high, N medium, N low`,
+writes a severity table to the job summary, and emits a `::warning::` when it
+passes with open highs. Nothing is computed that the scan did not already
+produce. `test_checks_that_gate.py` pins the honest report AND that the blocking
+rule did not move — turning highs into merge blockers is a posture change and
+belongs in an ADR, not in a reporting fix.
+
+### Required-check drift (`check_required_checks.py`)
+
+Which checks must be green before merging is configured **outside** the
+repository, in a GitHub ruleset or branch-protection rule. Nothing in the repo
+can see that, so the two drift silently and in both directions:
+
+- **unenforced** — a workflow declares a check, it runs on every PR, it reports
+  a result, and nobody ever added it to the configured set. It gates nothing
+  while reading as protection.
+- **phantom** — the configured set names a check no workflow produces (renamed
+  job, deleted workflow), so the context stays `pending` and every PR blocks
+  forever on a result that cannot arrive.
+
+```bash
+uv run shared/scripts/tools/check_required_checks.py --project-root .
+```
+
+**A producer, not a CI gate:** the Actions token cannot read a repo's protection
+configuration, so it runs out-of-band with the operator's own `gh` auth. On
+divergence it files ONE triage action-unit (`source="required-checks"`, routed to
+the outbox), deduped on `repo@branch` plus the exact divergence so the same drift
+does not re-file every run. The comparison itself is pure
+(`shared/scripts/lib/required_checks_drift.py`); tests in
+`shared/tests/test_required_checks_drift.py` (comparison) and
+`shared/tests/test_check_required_checks_cli.py` (host I/O + exit codes).
+
+**Readability is tracked separately from content**, because the two look alike
+and mean opposite things:
+
+- A repo that requires **nothing** is read successfully and compared against an
+  empty set, so every check it runs is reported `unenforced`. That is the loudest
+  finding this tool can produce, and the first draft raised an error on it —
+  blind exactly where it mattered most.
+- Only a branch on which **neither** mechanism (ruleset or classic branch
+  protection) could be consulted exits **2**. "I could not look" must never read
+  as "in sync", and it must never read as "protects nothing" either.
+- A `404` counts as an answer ("no such policy") **only after** the repo itself
+  has been proven readable — `resolve_default_branch` does that first. A typo'd
+  slug 404s on every endpoint too, and reading that as "protects nothing" would
+  report every check as unenforced.
+- `gh` missing or hanging exits 2 with a diagnostic, not a traceback (neither
+  raises `CalledProcessError`, so neither was caught in the first draft).
+
+Rulesets are read through `repos/{repo}/rules/branches/{branch}` — the projection
+GitHub has already evaluated for that ref — rather than by walking `/rulesets`.
+That scopes the answer to one branch (a ruleset restricted to `release/*` cannot
+leak its contexts onto `main` and be reported as a phantom) and needs no admin
+scope. `--branch` overrides the default branch.
+
+Two derivation landmines it is built around:
+
+- Check names are enumerated from **every** workflow in `.github/workflows/`
+  (`all_workflow_check_names`), NOT from `automerge_readiness.KNOWN_WORKFLOWS`.
+  That constant is deliberately the five workflows `/shipwright-adopt` scaffolds
+  into a target repo — the right scope for the `AUTOMERGE_SETUP.md` table and the
+  wrong one for policing a repo's own configuration. Derived from it, the
+  producer missed this repo's `bloat-check.yml` and `pr-review-run.yml` and
+  reported both correctly-configured contexts as phantoms. A drift producer that
+  cries wolf gets muted.
+- `ADVISORY_CONTEXTS` is deliberately **empty**. Pre-silencing a check on day one
+  is precisely how a gate becomes decorative.
 
 ---
 
@@ -2292,7 +2545,7 @@ not a canon target.
 |---|---|---|---|
 | **C1** | `phase_completed` event recorded in `shipwright_events.jsonl` | `shared/scripts/tools/record_event.py --type phase_completed --source <phase>` | **ERROR** |
 | **C2** | `.shipwright/agent_docs/build_dashboard.md` reflects the phase | `shared/scripts/tools/update_build_dashboard.py --phase <phase>` | **WARNING** |
-| **C3** | `.shipwright/agent_docs/session_handoff.md` carries a canon marker naming the run being verified | `shared/scripts/tools/generate_session_handoff.py --canon-marker --phase <phase> --reason "<phase>: …"` | **WARNING** |
+| **C3** | `.shipwright/agent_docs/session_handoff.md` regenerated with phase-specific reason | `shared/scripts/tools/generate_session_handoff.py --reason "<phase>: …"` | **WARNING** |
 | **C4** | `.shipwright/agent_docs/decision_log.md` has a new ADR referencing the phase | `shared/scripts/tools/write_decision_log.py --title …` | **ERROR** (only for decision-taking phases) |
 | **C5** | `CHANGELOG.md [Unreleased]` has a bullet under the right Keep-a-Changelog category | `shared/scripts/tools/append_changelog_entry.py --category <Added\|Changed\|Fixed\|…> --entry "…"` | **ERROR** (only for user-facing phases) |
 
@@ -2320,47 +2573,6 @@ accepts their conventions before failing:
   today.) The fallback is reachable even when `shipwright_events.jsonl`
   is empty or absent — the normal state of a freshly-adopted project
   that has run no iterates yet.
-
-### C3 Freshness — a Content Key, Not mtime
-
-Until iterate-2026-07-27-c3-phase-content-key, C3 compared the handoff's
-filesystem mtime against a 600-second budget. That fired on any run that
-waited more than ten minutes on CI — on the schedule, not on a defect —
-and filesystem mtime is not a content-staleness signal in a git repo
-anyway (checkout, branch-switch and worktree creation all reset it; see
-the standing comment at `shared/scripts/hooks/check_drift.py:10-16`).
-
-C3 now asks whether the handoff's **canon-marker frontmatter names the
-run being verified**. The check lives in
-`shared/scripts/tools/verifiers/handoff_freshness.py`, beside the F11
-check that asks the same question at iterate finalization — one module,
-one marker, one meaning of "fresh".
-
-**It keys on the run, not the phase.** `verify_phase.py --phase all`
-hands one `run_id` to eight phase dispatchers that all read the *same*
-`session_handoff.md`; the handoff is overwritten, never appended. Keying
-on the marker's `phase` would pass whichever phase wrote last and warn on
-the other seven. C1/C2/C4/C5 can ask per-phase questions because events,
-the dashboard, the decision log and the changelog all accumulate — C3
-reads a single mutable file. The marker's `phase` is *reported* in the
-result so the operator sees which phase wrote it.
-
-**Known bound:** if a phase skips its C3 step but a later phase of the
-same run writes the marker, C3 passes for both. Per-phase attribution
-would need a per-phase artifact.
-
-**Applicability.** `security`, `compliance` and `adopt` write no canon
-marker, so C3 reports an explicit SKIP for them rather than a permanent
-warning — the Stop-hook canon runner invokes C3 for every phase in
-`PLUGIN_TO_PHASE`. The producing set is `C3_CANON_PHASES`, kept aligned
-with `PLUGIN_TO_PHASE` by a two-direction drift test.
-
-**Run-id provenance.** The writer stamps `SHIPWRIGHT_RUN_ID`;
-`phase_validators._run_canon_checks` and
-`hooks/audit_phase_quality_on_stop.py` resolve the same id and pass it
-through verbatim. A degenerate run id (`""` / `"unknown"`) reaches the
-check as itself and is reported as "cannot evaluate" — never synthesized,
-which would make an unanswerable check look answered.
 
 ### C4 Skip Criteria — Who Gets an ADR
 
@@ -2523,14 +2735,14 @@ shared/scripts/tools/
   append_phase_history.py          # phase_history write path
   verifiers/
     __init__.py
-    common.py                      # CheckResult, readers, generic C1/C2/C4/C5, ADR F1/F2/F3
-    handoff_freshness.py           # session_handoff freshness by CONTENT — the F11 check
-                                   #   and canon C3, both keyed on the canon marker's run_id
+    common.py                      # CheckResult, readers, generic C1–C5, ADR F1/F2/F3
     iterate_checks.py              # iterate finalization checks (5 @12.0 + F0.5 surface + spec-impact + no-direct-decision_log gates)
     runtime_checks.py              # Zombie-task replay check                     — 12.0b
     project_checks.py              # Project phase-own + canon + phase_history   — 12.1
     design_checks.py               # Design phase-own + canon (skip C4)          — 12.2
     plan_checks.py                 # Plan phase-own + canon (skip C5) + check-plan C2/C3/C4 imports — 12.2
+    plan_gate_checks.py            # The four Step-9 gates: dependency order, FR coverage,
+                                   #   section->requirement trace, section quality — appended to run_plan_checks
     build_checks.py                # Build phase-own + canon hybrid + check-plan B3/B6 imports      — 12.3
     test_checks.py                 # Test phase-own + canon (skip C4+C5)         — 12.4
     changelog_checks.py            # Changelog canon + git-tag/version Sonder-Checks — 12.4
@@ -2539,6 +2751,10 @@ shared/scripts/tools/
 shared/scripts/lib/
   drift_parsers.py                 # Structure/dev-block/FR/ADR pure parsers
   file_lock.py                     # Cross-platform advisory lock
+  plan_manifest.py                 # SECTION_MANIFEST parser (names + declared dependencies + order rule)
+  plan_section_quality.py          # Section shape + section<->requirement linkage (both directions)
+  review_verdict.py                # Reviewer verdict sentinel + deterministic contradiction compare
+  review_marker.py                 # external_*review_state.json shape + evaluate_review_state (one authority)
 ```
 
 ### Canon Coverage — Iterate 12 Final State
@@ -2557,7 +2773,7 @@ Legend: ✅ present · ⏭ skip by policy · n/a not applicable
 | **runtime** | n/a | n/a | n/a | n/a | n/a | n/a | `runtime_checks.py` (zombie replay) | — |
 | **project** | ✅ | ✅ | ✅ (canon-marker) | ✅ (Step 7) | ✅ | ✅ | `project_checks.py` | `_validate_project` |
 | **design** | ✅ | ✅ | ✅ (canon-marker) | ⏭ transformation | ✅ | ✅ | `design_checks.py` + FR coverage (check-plan C1 import) | `_validate_design` |
-| **plan** | ✅ | ✅ | ✅ (canon-marker) | ✅ (Step 2/5) | ⏭ internal | ✅ | `plan_checks.py` + section-manifest/FR-orphan/section-id (check-plan C2/C3/C4 imports) | `_validate_plan` |
+| **plan** | ✅ | ✅ | ✅ (canon-marker) | ✅ (Step 2/5) | ⏭ internal | ✅ | `plan_checks.py` + section-manifest/FR-orphan/section-id (check-plan C2/C3/C4 imports) + `plan_gate_checks.py` (dependency order, FR coverage, section trace, section quality) | `_validate_plan` |
 | **build** | ✅ per section | ✅ per section | ✅ phase-level | ✅ per section | ✅ phase-level (one bullet per section) | ✅ with `sections[]` sub-array | `build_checks.py` + B3 test-files + B6 commit-sha (check-plan imports) | `_validate_build` |
 | **test** | ✅ (`phase_completed` alongside `test_run`) | ✅ | ✅ (canon-marker) | ⏭ events, not decisions | ⏭ results in `shipwright_test_results.json` | ✅ | `test_checks.py` + `check_test_results_file_fresh` | `_validate_test` |
 | **changelog** | ✅ | ✅ | ✅ (canon-marker) | ⏭ process management | n/a (plugin owns prepend) | ✅ | `changelog_checks.py` + `check_git_tag_exists` + `check_changelog_version_matches_tag` Sonder-Checks | `_validate_changelog` |
