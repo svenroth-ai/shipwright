@@ -47,7 +47,7 @@ class TestGenerate:
     def test_ai_attribution(self):
         commits = [
             CommitEntry("abc", "feat", None, "add feature", "2026-03-20", "Claude"),
-            CommitEntry("def", "fix", None, "fix bug", "2026-03-21", "Sven"),
+            CommitEntry("def", "fix", None, "fix bug", "2026-03-21", "Ada"),
         ]
         result = generate(_make_data(commits))
         assert "| AI-assisted commits | 1 |" in result

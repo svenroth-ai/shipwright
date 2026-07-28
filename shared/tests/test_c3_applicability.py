@@ -39,6 +39,7 @@ from _c3_fixtures import (  # noqa: E402
     record_completions,
     run_for,
     write_handoff,
+    write_iterate_entry,
 )
 from lib.phase_history import COMPLETION_PRODUCER  # noqa: E402
 from verifiers.handoff_phase_canon import (  # noqa: E402
@@ -190,6 +191,23 @@ def test_the_iterate_phase_is_checked_against_its_own_ledger(tmp_path):
     result = check_c3(tmp_path, "iterate")
 
     assert "iterate" not in config["phase_history"], "the fixture must not fake a bucket"
+    assert result.ok is True, result.detail
+
+
+def test_a_pre_anchor_iterate_ledger_entry_still_passes_on_the_run_id_alone(tmp_path):
+    """Backward compatibility, and the reason a missing anchor is not a defect.
+
+    Every ledger entry written before iterate-2026-07-28-it0-followup-anchor-prose
+    carries no `event_at`. C3 must answer those on the run id alone — the two
+    sides really are on different clocks there — rather than reading the absence
+    as a malformed record. `claims_anchor` is what separates "no key" from "a key
+    that cannot be read", and only the second forfeits the benefit of the doubt.
+    """
+    write_handoff(tmp_path, phase="iterate", run_id=ITERATE_RUN, timestamp=EARLY)
+    write_iterate_entry(tmp_path, ITERATE_RUN, LATE, anchored=False)
+
+    result = check_c3(tmp_path, "iterate")
+
     assert result.ok is True, result.detail
 
 

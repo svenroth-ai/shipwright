@@ -2751,26 +2751,30 @@ the order; within one, **wherever the clock is consulted at all**, it is a state
 WARNING and never a guess. Where it is not consulted — an anchorless completion
 in the same-phase branch — the run id answers alone.
 
-**Known bounds.** Three, all in the same-phase branch — the cross-phase branch
+**Known bounds.** Two, both in the same-phase branch — the cross-phase branch
 deliberately stops using anchors, which is what closes them there:
 
 1. A completion that records no new event AND does not re-write the marker leaves
    its anchor equal to the note's, and reads as a pass. Nothing on disk
    distinguishes it from a step that legitimately did nothing new.
-2. `iterate` records no anchor at all, so its clock check never runs. Its ledger
-   is one file per run id, so a stale marker names a DIFFERENT run and the run-id
-   branch catches it; only an in-place F5c re-run without a matching F5b escapes.
-   Note `--preserve-canon-marker` on F11 widens that window: run A's marker now
-   survives into run B until B's own F5b, where it used to be deleted (which is
-   the point — see AC-(E) — but it is a longer window than before).
-3. **The strengthening is inert until each phase completes once after this
-   ships.** `event_at` is what opens the clock check, and only completions
-   recorded from now on carry it. On a repo whose latest entry per phase predates
-   this change — including this one — every phase falls back to the run id alone,
-   exactly as before. It decays per-phase, not all at once, and `adopt`'s
-   `config_writer.py` REPLACES the whole run config with anchorless entries, so a
-   re-adopt resets it. That is a deliberate no-op-until-used design, not an
-   assumption that the gate is already active.
+2. **The strengthening is inert until each phase completes once after the anchor
+   ships for it.** `event_at` is what opens the clock check, and only completions
+   recorded from then on carry it; an entry without one answers on the run id
+   alone rather than across two clocks. On a repo whose latest entry for a phase
+   predates the change, that phase falls back exactly as before. It decays
+   per-phase, not all at once, and `adopt`'s `config_writer.py` REPLACES the
+   whole run config with anchorless entries, so a re-adopt resets it. That is a
+   deliberate no-op-until-used design, not an assumption that the gate is already
+   active. `--preserve-canon-marker` on F11 widens the window while a phase is
+   still anchorless: run A's marker survives into run B until B's own F5b, where
+   it used to be deleted (which is the point — see AC-(E) — but it is a longer
+   window than before).
+
+`iterate` was a **third** bound until it0-followup-anchor-prose: F5c stamped no
+anchor at all, so its clock check could never run and an in-place F5c re-run
+without a matching F5b escaped the run-id branch permanently. F5c stamps one now,
+so that bound decays with the ledger like every other phase's rather than
+standing forever.
 
 **Ordering.** The canon block runs `record_event.py`, then the marker, then the
 completion producer, then `orchestrator update-step` (which runs the validators),
@@ -2784,7 +2788,11 @@ anchor at all. Two exceptions, both real:
   BEFORE F5b (the marker). Not observable in the bundled path since both run in
   one call, but F5c and F5b in separate turns — or an F5b abort — leaves the
   ledger a run ahead of the marker, and C3 then correctly reports the note as
-  being from an earlier iterate run.
+  being from an earlier iterate run. The inversion is also why the anchor cannot
+  produce a false positive on a correct run: F5c reads the event log before F5b
+  records the run's own `work_completed`, so the marker is stamped from a log
+  that has moved on and is never OLDER than the ledger entry. An F5c re-run
+  *after* F5b is the case that now fails — which is the point.
 
 `test_canon_marker_write_contract.py` guards the FLAGS on every invocation, not
 this ordering.

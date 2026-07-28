@@ -1,0 +1,1 @@
+The maintainer's personal name no longer appears as an authority marker in shipped prose — the PR-reviewer system prompt, a security-tool docstring, a runtime skill reference and two test fixtures now say "a maintainer" or use neutral sample data. Authorship metadata (LICENSE, plugin.json, pyproject.toml) is unchanged.

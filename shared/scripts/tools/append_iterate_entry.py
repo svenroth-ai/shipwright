@@ -20,10 +20,10 @@ Behavior:
   (never evicted), NOT this dir (see F5c.md). Applied only **after** migration
   so first contact with a historic 60-entry array does not drop 10 rows on upgrade.
 
-Canonical keys the caller may NOT set: ``run_id`` and ``date`` (a full instant
-here, unlike ``phase_history``'s day-precision one). ``event_at`` is reserved —
-sibling producers stamp it as Canon C3's event anchor; this tool deliberately
-does not, a bound recorded at ``lib/phase_history.py::COMPLETION_PRODUCER``.
+Canonical keys the caller may NOT set: ``run_id``, ``date`` (a full instant
+here, unlike ``phase_history``'s day-precision one) and ``event_at`` — Canon
+C3's event anchor, stamped from the same ``latest_event_dt`` that stamps the
+canon marker it is compared against (see ``lib/phase_history.py``).
 
 CLI:
 
@@ -46,6 +46,7 @@ if str(_SCRIPTS_ROOT) not in sys.path:
     sys.path.insert(0, str(_SCRIPTS_ROOT))
 
 from lib.atomic_write import durable_atomic_write  # noqa: E402
+from lib.events_log import latest_event_dt  # noqa: E402
 from lib.file_lock import LockTimeout, file_lock  # noqa: E402
 from lib.iterate_entry import (  # noqa: E402
     MIGRATION_QUARANTINE_REPORT_KEY,
@@ -397,15 +398,25 @@ def main(argv: list[str] | None = None) -> int:
               "(canonical fields)", file=sys.stderr)
         return 1
 
+    project_root = Path(args.project_root)
+    # Read BEFORE the append, so the anchor is settled before migration or any
+    # ledger mutation can run. `latest_event_dt` never raises — missing, empty
+    # and unparseable logs all answer None — and the key is then OMITTED rather
+    # than nulled: an absent key is a stated unknown that sends C3 back to the
+    # run id alone, which is how every entry written before the anchor existed
+    # must keep being read. `at` is not stamped here; `date` is this ledger's
+    # full-instant wall clock, unlike `phase_history`'s day-precision one.
+    event_dt = latest_event_dt(project_root)
     entry: dict[str, Any] = {
         "run_id": args.run_id,
         "date": now_utc_iso(),
+        **({"event_at": event_dt.isoformat()} if event_dt is not None else {}),
         **extra,
     }
 
     try:
         result = append_iterate_entry(
-            Path(args.project_root),
+            project_root,
             entry,
             lock_timeout_seconds=args.lock_timeout,
             retention=args.retention,

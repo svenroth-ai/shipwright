@@ -18,6 +18,7 @@ from __future__ import annotations
 
 import json
 import sys
+from datetime import datetime, timedelta
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -87,22 +88,46 @@ def write_run_config(root: Path, history: dict | None = None) -> Path:
     return path
 
 
-def write_iterate_entry(root: Path, run_id: str, at: str) -> Path:
+def write_iterate_entry(
+    root: Path, run_id: str, at: str, *, anchored: bool = True,
+) -> Path:
     """One entry in the file-per-run ledger ``append_iterate_entry.py`` writes.
 
     Carries every field ``validate_iterate_entry`` requires — ``branch``
     included. The ledger's READER validates nothing, so an under-filled fixture
     reads back happily while being an entry the real writer would refuse; the
-    symmetric assertion in ``test_completion_writers`` is what keeps this honest.
+    symmetric assertion in ``test_iterate_ledger_anchor`` is what keeps this
+    honest.
+
+    ``event_at`` is the anchor C3 reads, stamped from the same function as the
+    marker's own timestamp, so a correct canon block makes the two EQUAL. This
+    ledger has no ``at``: ``date`` is its full-instant wall clock, and it is
+    stamped strictly LATER, mirroring the real writer — F5c reads the event log
+    and only then calls ``now()``. Collapsing the two would make every suite
+    built on this helper return the same verdict whether the code read the
+    anchor or the wall clock.
+
+    ``anchored=False`` writes the PRE-anchor shape. Every ledger entry written
+    before iterate-2026-07-28-it0-followup-anchor-prose has it, and C3 must keep
+    answering those on the run id alone rather than treating a missing anchor as
+    a malformed record — so the shape stays reachable on purpose.
     """
     path = entry_file_for(root, run_id)
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(
-        json.dumps({"run_id": run_id, "date": at, "type": "change",
-                    "complexity": "medium", "branch": f"iterate/{run_id}",
-                    "tests_passed": True}),
-        encoding="utf-8",
-    )
+    entry = {"run_id": run_id, "type": "change", "complexity": "medium",
+             "branch": f"iterate/{run_id}", "tests_passed": True}
+    if anchored:
+        entry["event_at"] = at
+        # Parsed and re-serialised rather than string-spliced: a `Z` suffix, a
+        # non-UTC offset or an existing fractional second all make textual
+        # surgery emit something no reader can parse (external code review R1).
+        entry["date"] = (
+            datetime.fromisoformat(at.replace("Z", "+00:00"))
+            + timedelta(microseconds=900_000)
+        ).isoformat()
+    else:
+        entry["date"] = at
+    path.write_text(json.dumps(entry), encoding="utf-8")
     return path
 
 

@@ -3,10 +3,11 @@
 
 Invoked by `.github/workflows/pr-review-run.yml` (stage 2 of the two-stage
 review, FR-01.17) for Tier-3 PRs only (external contributors, sensitive paths,
-or the `needs-review` label). Tier 1/2 PRs (iterate branches + Sven's manual
-PRs) are NEVER reviewed here — the tier filter lives in stage 2's `tier` step,
-which reads labels/author/changed-paths from the API in default-branch code, and
-`/shipwright-iterate` Step 8 already covers them in the local subscription.
+or the `needs-review` label). Tier 1/2 PRs (iterate branches + the maintainer's
+own hand-opened PRs) are NEVER reviewed here — the tier filter lives in stage
+2's `tier` step, which reads labels/author/changed-paths from the API in
+default-branch code, and `/shipwright-iterate` Step 8 already covers them in the
+local subscription.
 Stage 1 runs from the PR head and is never trusted. See B4.5 in
 `Spec/early-access-readiness-plan.md`.
 

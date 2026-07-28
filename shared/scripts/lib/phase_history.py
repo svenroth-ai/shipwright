@@ -20,9 +20,11 @@ So a completion's own wall-clock ``at`` is *not* comparable with it: every canon
 block records the event, writes the marker, then appends, which makes ``at``
 unconditionally later than the marker that closed it. Comparing the two produced
 a false "you skipped your step" on any phase re-run where ``record_event``'s
-first-wins dedup meant no fresh event landed. ``append_phase_history`` therefore
-also stamps ``event_at`` from the SAME function, and :func:`entry_anchor` reads
+first-wins dedup meant no fresh event landed. Both completion producers therefore
+also stamp ``event_at`` from the SAME function, and :func:`entry_anchor` reads
 that key ALONE — never falling back, because the fallback is the mixed clock.
+Entries written before their producer stamped it carry none, and answer on the
+run id alone rather than across two clocks.
 
 **Timestamps are read, never invented.** ``at``/``date`` are the wall clock, for
 ordering two PHASES against each other (:func:`entry_wall_time`); ``date`` is a
@@ -54,11 +56,8 @@ ITERATE_PHASE = "iterate"
 #: producer here can only ever WARN, naming the wrong tool — which is what
 #: ``iterate`` did after iterate-2026-07-27-c3-phase-content-key;
 #: ``test_every_c3_phase_has_a_completion_producer`` now fails the build instead.
-#: KNOWN BOUND — ``iterate``'s producer stamps no ``event_at``, so C3's clock
-#: check never runs for it. Safe because its ledger is one FILE per run id: a
-#: stale marker names a DIFFERENT run, which the run-id branch catches. Deferred
-#: rather than dropped (trg-1346abbd) — the stamp would push a grandfathered file
-#: past its bloat baseline for one out-of-band case.
+#: Both producers stamp ``event_at``, so C3's clock check runs for every phase
+#: here (``iterate``'s arrived last, in it0-followup-anchor-prose).
 COMPLETION_PRODUCER: dict[str, str] = {
     "project": "append_phase_history.py",
     "design": "append_phase_history.py",
