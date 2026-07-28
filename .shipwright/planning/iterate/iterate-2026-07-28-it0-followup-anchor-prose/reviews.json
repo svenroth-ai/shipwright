@@ -1,0 +1,141 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-07-28-it0-followup-anchor-prose",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 1,
+      "findings": [
+        {
+          "severity": null,
+          "category": "Naming & Structure",
+          "file": null,
+          "line": null,
+          "finding": "STATED, not hidden: shared/scripts/tools/append_iterate_entry.py goes 425 -> 436, still over the 300-line rule it was already grandfathered past. The eleven lines are the stamp plus the eight-line why-comment that mirrors how append_phase_history.py records the same decision. The remedy - extracting the one-shot legacy iterate_history migration - is a module-boundary decision that also ripples into a 509-line test file on its own ceiling, so it is deferred with its shape written down rather than taken inside a run scoped decision-free. Baseline entry raised in the same commit. Every other touched file is at or below 300; phase_history.py and handoff_phase_canon.py both SHRANK to 299.",
+          "suggestion": null,
+          "source": "self-review"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-07-28T19:59:45.287670+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 3,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "Edge-case / Risk",
+          "file": null,
+          "line": null,
+          "finding": "The Gemini reviewer correctly identified that `extra` being unpacked last allows forging, but the resolution (\"`main()` already rejects it\") is incomplete. If `main()` holds the rejection guard, but the dictionary is built inside",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The plan defines omission for an absent or empty event log, but not the failure behavior for an unreadable or malformed event log. Adding `latest_event_dt(project_root)` introduces a new read/parse failure point for standalone F5c execution. If this lookup occurs after the writer has begun legacy migration or any file mutation, a failed lookup could leave migration state changed without writing the intended completion.",
+          "suggestion": "Resolve the project root and obtain the event timestamp before any migration, recovery, or ledger mutation. Explicitly retain the sibling producer’s behavior for corrupt/unreadable logs—either fail cleanly before mutation or handle the condition as a documented unknown if that is what `latest_event_dt` already guarantees—and add a focused test if the helper can raise on malformed JSONL.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "The wording change from “Sven’s manual PRs” to “maintainer-authored PRs” may subtly change the meaning of the `pr_review.py` prose: “manual” distinguishes a workflow origin, while “maintainer-authored” distinguishes an author class. This is non-functional, but the stated goal is removal of a personal authority marker rather than changing the described PR category.",
+          "suggestion": "Confirm that “maintainer-authored PRs” is the intended operational category. If preserving both aspects matters, use wording such as “manually authored maintainer PRs”; otherwise retain the specified replacement.  Overall, the implementation is sound: it uses the established event-clock source, preserves backward compatibility for pre-anchor entries, closes the caller-forgery path at both direct and bundled entry points, and provides appropriately targeted end-to-end coverage. The only material implementation detail to pin down is making the new event-log lookup failure-safe and pre-mutation. SHIPWRIGHT_VERDICT: approve",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-07-28T19:40:06.645596+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[gemini] This is a well-considered and tightly scoped iteration plan. The rejection of the file split to avoid the baseline bump is fundamentally correct: pulling in unrelated migration-logic extraction just to suppress a quota flag violates the \"decision-free\" constraint of this run. The test completeness ledger and the pre-evaluation of boundaries show excellent rigor.\n\nHowever, there is one structural fragility in how the new key is unpacked that the previous review dismissed too quickly.\n\nHere are the findings:\n\n- **Category:** Edge-case / Risk\n- **Severity:** Medium\n- **Finding:** The Gemini reviewer correctly identified that `**extra` being unpacked last allows forging, but the resolution (\"`main()` already rejects it\") is incomplete. If `main()` holds the rejection guard, but the dictionary is built inside\n\n[openai] 1. **Category:** edge-case  \n   **Severity:** medium  \n   **Finding:** The plan defines omission for an absent or empty event log, but not the failure behavior for an unreadable or malformed event log. Adding `latest_event_dt(project_root)` introduces a new read/parse failure point for standalone F5c execution. If this lookup occurs after the writer has begun legacy migration or any file mutation, a failed lookup could leave migration state changed without writing the intended completion.  \n   **Suggestion:** Resolve the project root and obtain the event timestamp before any migration, recovery, or ledger mutation. Explicitly retain the sibling producer’s behavior for corrupt/unreadable logs—either fail cleanly before mutation or handle the condition as a documented unknown if that is what `latest_event_dt` already guarantees—and add a focused test if the helper can raise on malformed JSONL.\n\n2. **Category:** approach  \n   **Severity:** low  \n   **Finding:** The wording change from “Sven’s manual PRs” to “maintainer-authored PRs” may subtly change the meaning of the `pr_review.py` prose: “manual” distinguishes a workflow origin, while “maintainer-authored” distinguishes an author class. This is non-functional, but the stated goal is removal of a personal authority marker rather than changing the described PR category.  \n   **Suggestion:** Confirm that “maintainer-authored PRs” is the intended operational category. If preserving both aspects matters, use wording such as “manually authored maintainer PRs”; otherwise retain the specified replacement.\n\nOverall, the implementation is sound: it uses the established event-clock source, preserves backward compatibility for pre-anchor entries, closes the caller-forgery path at both direct and bundled entry points, and provides appropriately targeted end-to-end coverage. The only material implementation detail to pin down is making the new event-log lookup failure-safe and pre-mutation.  \nSHIPWRIGHT_VERDICT: approve"
+    },
+    "code": {
+      "review_type": "code",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-07-28T20:04:06.668621+00:00",
+      "disposition": "blocker 4 (operator policy): a standing session directive forbids the Agent tool unless the operator asks. SKILL.md Step 8 calls that policy conditional and lifted by one sentence, but --autonomous cannot block to ask, so permission was neither held nor obtainable. Escalation ladder followed: the external code review is mandatory in its place and ran (openrouter, verdict revise, all four findings addressed). Surfaced at F12 so the operator can lift it next time.",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-07-28T20:04:14.490385+00:00",
+      "disposition": "Stage 3 cannot precede Stage 2: the doubt-reviewer runs only AFTER the code-reviewer passes (iteration-reviews.md), and Stage 2 did not run for the reason recorded on the code row. Conditional in its own right besides — no migration, no concurrency, no irreversible operation in this diff.",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 4,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "spec",
+          "file": "docs/hooks-and-pipeline.md:2757-2766",
+          "line": null,
+          "finding": "AC5 requires the `KNOWN BOUND` / `Known bounds` paragraph for this issue to be removed from all five locations. This diff retains it as “Known bounds” item 2 and still describes the former iterate-specific escape case, rather than removing the bound paragraph as required.",
+          "suggestion": "Remove this numbered Known-bounds item entirely, or move any necessary legacy-entry compatibility explanation to a non-“Known bounds” section without retaining the closed bound as an active documented limitation.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "test",
+          "file": "shared/tests/test_iterate_ledger_anchor.py",
+          "line": 217,
+          "finding": "The fixture-symmetry assertion is one-sided (`written <= fixture`), while AC6 requires the fixture’s key set to be pinned exactly to the real writer’s key set. A stale fixture containing extra keys would still pass, so this does not detect all writer/fixture schema drift.",
+          "suggestion": "Assert equality of the two key sets (`assert written == fixture`) and report keys missing from either side.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "test",
+          "file": "shared/tests/test_iterate_ledger_anchor.py:113-128",
+          "line": null,
+          "finding": "The test claims to cover missing, empty, and unparseable event logs, but it only tests an absent log: `_project(tmp_path)` creates no events file. A regression where `latest_event_dt` or the writer mishandles an existing empty log would still pass despite AC1 explicitly requiring omission for empty logs.",
+          "suggestion": "Add cases that create an empty `shipwright_events.jsonl` and, if the intended helper contract includes it, an invalid-only log; assert `event_at` is omitted in each case.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": "shared/tests/_c3_fixtures.py",
+          "line": 116,
+          "finding": "The fixture constructs a later wall-clock value by string replacement. Inputs using `Z`, a non-UTC offset, or an existing fractional second produce invalid timestamps such as `2026-...Z.900000+00:00` or `...123456.900000+00:00`; this can make fixture consumers fail to parse `date` and violates the helper’s stated generic timestamp behavior.",
+          "suggestion": "Parse `at` as a datetime, add a positive timedelta, and serialize with `isoformat()` rather than modifying its textual representation.  Ship with fixes: the writer implementation and primary C3 behavior appear sound, but the retained known-bound paragraph misses an explicit acceptance criterion and the test/fixture gaps should be corrected. SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-07-28T20:03:58.451167+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "partial",
+      "raw_excerpt": "[gemini] <no review returned: provider returned an empty reply>\n\n[openai] - Category: spec\n- Severity: medium\n- File: docs/hooks-and-pipeline.md:2757-2766\n- Finding: AC5 requires the `KNOWN BOUND` / `Known bounds` paragraph for this issue to be removed from all five locations. This diff retains it as “Known bounds” item 2 and still describes the former iterate-specific escape case, rather than removing the bound paragraph as required.\n- Suggestion: Remove this numbered Known-bounds item entirely, or move any necessary legacy-entry compatibility explanation to a non-“Known bounds” section without retaining the closed bound as an active documented limitation.\n\n- Category: test\n- Severity: medium\n- File: shared/tests/test_iterate_ledger_anchor.py:217\n- Finding: The fixture-symmetry assertion is one-sided (`written <= fixture`), while AC6 requires the fixture’s key set to be pinned exactly to the real writer’s key set. A stale fixture containing extra keys would still pass, so this does not detect all writer/fixture schema drift.\n- Suggestion: Assert equality of the two key sets (`assert written == fixture`) and report keys missing from either side.\n\n- Category: test\n- Severity: low\n- File: shared/tests/test_iterate_ledger_anchor.py:113-128\n- Finding: The test claims to cover missing, empty, and unparseable event logs, but it only tests an absent log: `_project(tmp_path)` creates no events file. A regression where `latest_event_dt` or the writer mishandles an existing empty log would still pass despite AC1 explicitly requiring omission for empty logs.\n- Suggestion: Add cases that create an empty `shipwright_events.jsonl` and, if the intended helper contract includes it, an invalid-only log; assert `event_at` is omitted in each case.\n\n- Category: edge-case\n- Severity: low\n- File: shared/tests/_c3_fixtures.py:116\n- Finding: The fixture constructs a later wall-clock value by string replacement. Inputs using `Z`, a non-UTC offset, or an existing fractional second produce invalid timestamps such as `2026-...Z.900000+00:00` or `...1234 […truncated]"
+    }
+  }
+}

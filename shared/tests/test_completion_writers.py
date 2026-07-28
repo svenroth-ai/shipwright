@@ -279,11 +279,11 @@ def test_the_iterate_ledger_writer_produces_a_readable_completion(tmp_path):
         "its wall clock must be readable — that is what orders iterate against "
         "another phase in the cross-phase branch"
     )
-    # The recorded bound: the ledger stamps no event anchor, so C3 never consults
-    # the clock for iterate. Asserted rather than assumed, so the day someone adds
-    # `event_at` there this test is what tells them the bound moved.
-    assert "event_at" not in entry
-    assert completion.anchor is None
+    # The bound this line used to guard has MOVED, on purpose: the ledger stamps
+    # the anchor too now (trg-1346abbd), so C3 reads one clock for iterate as
+    # well. `test_iterate_ledger_anchor.py` owns that behaviour end to end.
+    assert entry["event_at"], "the ledger must carry the anchor C3 reads"
+    assert completion.anchor is not None
 
 
 def test_an_iterate_that_wrote_its_note_passes_end_to_end(tmp_path):
