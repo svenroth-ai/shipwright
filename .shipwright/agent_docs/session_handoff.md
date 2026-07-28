@@ -1,6 +1,6 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-07-27-triage-defer-review-followup"
+run_id: "iterate-2026-07-27-changelog-aggregator-idempotency"
 phase: "iterate"
 reason: "ensure-current pre-merge refresh"
 timestamp: "2026-07-28T00:29:14.030862+00:00"
@@ -12,7 +12,7 @@ timestamp: "2026-07-28T00:29:14.030862+00:00"
 
 ## Session Info
 
-- **Session ID**: 8a66b2f1-81e9-4505-8591-b94928ca02f6
+- **Session ID**: 8a0611d4-b05d-411a-a42a-cc448bc145a7
 - **Timestamp**: 2026-07-28 00:29:14 UTC
 - **Reason**: ensure-current pre-merge refresh
 
@@ -29,11 +29,11 @@ timestamp: "2026-07-28T00:29:14.030862+00:00"
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/triage-defer-review-followup
-- **Run ID**: iterate-2026-07-27-triage-defer-review-followup
-- **Spec**: .shipwright/planning/iterate/2026-07-27-triage-defer-review-followup.md
-- **Complexity**: small
-- **External Review Marker**: missing
+- **Branch**: iterate/changelog-aggregator-idempotency
+- **Run ID**: `iterate-2026-07-27-changelog-aggregator-idempotency`
+- **Spec**: .shipwright/planning/iterate/iterate-2026-07-27-changelog-aggregator-idempotency.md
+- **Complexity**: medium (classifier: `estimate=medium`, `prior_source=history`,
+- **External Review Marker**: stale (predates spec (2026-07-27T16:31:40))
 
 ### Mandatory replay on Resume
 
@@ -51,8 +51,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/triage-defer-review-followup
-- **Last Commit**: cd4793f5 Merge remote-tracking branch 'origin/main' into iterate/triage-defer-review-followup
+- **Branch**: iterate/changelog-aggregator-idempotency
+- **Last Commit**: 4b259c18 Merge remote-tracking branch 'origin/main' into iterate/changelog-aggregator-idempotency
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read

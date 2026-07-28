@@ -20,10 +20,10 @@ Consistency-audit: never run
 | 2 | derived snapshots leave the iterate PR | [iterate](traceability-matrix.md#evt-6421a5ba) | — | +0 | — | — | 2026-07-27 |
 | 3 | the code review becomes a floor, not a chain | [iterate](traceability-matrix.md#evt-53ba0065) | — | +0 | — | — | 2026-07-27 |
 | 4 | a branch may not quietly revert merged work | [iterate](traceability-matrix.md#evt-afcb8629) | — | +0 | — | — | 2026-07-27 |
-| 5 | post-merge review follow-up for the triage defer surface | [iterate](traceability-matrix.md#evt-76142a43) | — | +0 | — | — | 2026-07-27 |
-| 6 | raise the PR-review diff cap, cut at a file boundary, name what went unreviewed | [iterate](traceability-matrix.md#evt-36d0f887) | — | +0 | — | — | 2026-07-27 |
-| 7 | an audit that checked nothing is not recorded | [iterate](traceability-matrix.md#evt-e3d8f519) | — | +0 | — | — | 2026-07-27 |
-| 8 | refuse a multi-root pytest session instead of failing 21 unrelated tests | [iterate](traceability-matrix.md#evt-aea234e3) | — | +0 | — | — | 2026-07-27 |
+| 5 | raise the PR-review diff cap, cut at a file boundary, name what went unreviewed | [iterate](traceability-matrix.md#evt-36d0f887) | — | +0 | — | — | 2026-07-27 |
+| 6 | an audit that checked nothing is not recorded | [iterate](traceability-matrix.md#evt-e3d8f519) | — | +0 | — | — | 2026-07-27 |
+| 7 | refuse a multi-root pytest session instead of failing 21 unrelated tests | [iterate](traceability-matrix.md#evt-aea234e3) | — | +0 | — | — | 2026-07-27 |
+| 8 | the release aggregator writes a version once, or says why not | [iterate](traceability-matrix.md#evt-101fccaa) | — | +0 | — | — | 2026-07-27 |
 | 9 | document the delivery watch in the guide | [iterate](traceability-matrix.md#evt-90ce4f39) | — | +0 | — | — | 2026-07-27 |
 | 10 | requirement write-back loop — design rounds and build sections declare their requirement impact | [iterate](traceability-matrix.md#evt-cf1bab8b) | — | +0 | — | — | 2026-07-27 |
 | 11 | the phase canon asks whether the handoff belongs to this run | [iterate](traceability-matrix.md#evt-e0b8fd18) | — | +0 | — | — | 2026-07-27 |

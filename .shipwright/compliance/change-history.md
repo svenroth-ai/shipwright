@@ -9,9 +9,9 @@ Total commits: 1253
 
 ```mermaid
 pie title Commit Types
-    "fix" : 367
+    "fix" : 366
     "feat" : 351
-    "chore" : 257
+    "chore" : 258
     "docs" : 148
     "refactor" : 78
     "test" : 31
@@ -22,7 +22,7 @@ pie title Commit Types
 
 ## Changes by Type
 
-### Fixes (fix) — 367 commits
+### Fixes (fix) — 366 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
@@ -30,8 +30,6 @@ pie title Commit Types
 | 2026-07-28 | iterate | a derived view is produced where its inputs are complete (#480) | e21a7b71689c |
 | 2026-07-28 | ci | three checks that ran, reported, and gated nothing (#475) | 1786fc599063 |
 | 2026-07-28 | adr | renumber the requirement-writeback ADR off a collided number (#481) | f890bb215527 |
-| 2026-07-27 | iterate | route the ADR-057 retraction through the decision-drop | f1364eaf428a |
-| 2026-07-27 | triage | anchor the listing row token; retract three false claims | 9eba1cffa6fe |
 | 2026-07-27 | iterate | the code review becomes a floor, not a chain (#476) | 7c116c035480 |
 | 2026-07-27 | security | the test suite stops leaking a triage store into the plugin dir (#474) | 6ba177083769 |
 | 2026-07-27 | run | report against what will exist, and assert only what you can prove (#468) | 3c13001aafeb |
@@ -39,6 +37,7 @@ pie title Commit Types
 | 2026-07-27 | shared | a multi-root pytest session names its own cause (#469) | bd7121b79d53 |
 | 2026-07-27 | compliance | an audit that checked nothing is not recorded (#466) | 968578b9de35 |
 | 2026-07-27 | shared | a reader and a writer stop defeating each other on Windows (#471) | 0b4c9b8b4ae6 |
+| 2026-07-27 | changelog | the release aggregator writes a version once, or says why not | 0d71803c32cd |
 | 2026-07-27 | security | the PR reviewer stops being defeated by the size of the change (#470) | 17ca76d7f413 |
 | 2026-07-27 | iterate | the phase canon asks whether the handoff belongs to this run (#467) | 3c82d6332678 |
 | 2026-07-27 | security | the PR reviewer stops reviewing its own prior reviews (#461) | 273e3ef7ab56 |
@@ -750,13 +749,14 @@ pie title Commit Types
 | 2026-03-20 | — | Task 02 — project templates (CLAUDE.md, agent_docs, CI) | c3a6d2f53bd3 |
 | 2026-03-20 | — | Task 01 — monorepo scaffolding + supabase-nextjs stack profile | 990a138a4690 |
 
-### Chores (chore) — 257 commits
+### Chores (chore) — 258 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
-| 2026-07-27 | churn | regenerate derived snapshots after main merge | 6f5da2210503 |
-| 2026-07-27 | triage | sweep 6 outbox append(s) into branch | 156f923515a6 |
 | 2026-07-27 | triage | follow-up card for requiring the checks that gate nothing | 7387b2796960 |
+| 2026-07-27 | churn | regenerate derived snapshots after main merge | d1da9e5278f3 |
+| 2026-07-27 | churn | regenerate derived snapshots after main merge | 734d4e73a090 |
+| 2026-07-27 | triage | sweep 4 outbox append(s) into branch | 0c6941fcf4d8 |
 | 2026-07-26 | review | default external-review GPT model to gpt-5.6-terra (#435) | 8d750a5fc7af |
 | 2026-07-24 | security | stage full compliance write-set in Step 7.5 finalizer (#434) | 5da96ebe8561 |
 | 2026-07-23 | compliance | refresh after security scan (#433) | 2b644805fb7d |

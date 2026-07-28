@@ -1,0 +1,32 @@
+{
+  "success": true,
+  "provider": "openrouter",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviews": {
+    "gemini": {
+      "feedback": "SHIPWRIGHT_VERDICT: approve",
+      "via": "openrouter",
+      "status": "success"
+    },
+    "openai": {
+      "feedback": "- Category: test\n- Severity: low\n- File: `shared/tests/test_changelog_aggregation_idempotency.py:39-194`\n- Finding: The new convergence tests only compare identically formatted rendered sections. They do not validate the required body-normalization rule for trailing whitespace (and therefore would still pass if `apply_section()` compared bodies byte-for-byte and falsely refused an interrupted release whose recorded bullets merely have trailing spaces).\n- Suggestion: Add a re-run fixture whose existing target section has trailing whitespace on one or more body lines (and optionally CRLF input when testing `apply_section` directly), while the pending drops render the same semantic body. Assert it converges, consumes drops, and does not refuse.\n\nThe implementation appears to satisfy the specified insertion, replacement, refusal, dry-run, and result-action behaviors. Ship as-is functionally, but add the missing normalization regression test to pin an explicit acceptance requirement.\n\nSHIPWRIGHT_VERDICT: approve",
+      "via": "openrouter",
+      "status": "success"
+    }
+  },
+  "verdicts": {
+    "gemini": "approve",
+    "openai": "approve"
+  },
+  "statuses": {
+    "gemini": "success",
+    "openai": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: gemini=approve, openai=approve"
+  }
+}

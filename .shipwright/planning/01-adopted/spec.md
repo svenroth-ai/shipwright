@@ -538,11 +538,20 @@ _Where the work detail lives_ at the end of this document.
   written, then the new release-note section goes above the most recent released one and
   the document's title and older entries are left intact.
 - (E) Given a version already present in the history — an earlier attempt
-  having stopped before that version was marked — when its release note is
-  written again, then that version's section is replaced rather than added a
-  second time, so one version appears exactly once; and where the existing
-  history cannot be extended safely, writing stops and says why rather than
+  having stopped partway — when its release note is written again, whether
+  assembled at release time from the entries recorded since the last release or
+  written directly, then that version's section is replaced rather than added a
+  second time, so one version appears exactly once; and where more than one
+  section already claims that version, writing stops and says why rather than
   overwriting what it could not interpret.
+- (E) Given a release note assembled from the entries recorded since the last
+  release, when the section already on record is not what those entries now say
+  — an earlier attempt having consumed some of them before stopping, or the
+  section having been edited by hand — or carries a marking that rewriting it
+  would erase, such as a notice that the release was withdrawn, then writing
+  stops and says which of these it found, leaving both the history and every
+  pending entry untouched. Replacing regardless would delete released history,
+  which is worse than the duplicate section it would avoid.
 - (E) Given entries written the older way, straight into the pending release-note section,
   when a release is assembled, then each one is named back to the operator
   rather than being folded in silently.

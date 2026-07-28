@@ -64,8 +64,8 @@ _Ingested from CI `findings.json` (public-safe: severity counts + gate verdict o
 | Dependencies | 11 packages | INFO |  |
 | Copyleft risk | 0 | PASS |  |
 | Triage open | 28 open | WARN | 28 actionable item(s) — see ../agent_docs/triage_inbox.md |
-| Bloat over-limit (grandfathered) | 125 | INFO |  |
-| Bloat in allowlist | 160 entries | INFO |  |
+| Bloat over-limit (grandfathered) | 124 | INFO |  |
+| Bloat in allowlist | 159 entries | INFO |  |
 | Bloat ratchet delta | -89 lines | PASS |  |
 
 ## Project Velocity
