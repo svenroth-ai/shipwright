@@ -33,21 +33,22 @@ parallel. This half measures 136,559 (0.68x).
       local path reaches the same verdict as the host workflow, which already
       auto-loads that file. With no project file present, the previous generated
       config (`[extend] useDefault` plus the shipwright exclusions) is unchanged.
-      **The wrap costs one extension level — and that is tested, not assumed.**
-      A repo whose own config is already a chain (`.gitleaks.toml` →
-      `base.toml` → defaults) is resolved by the host in two hops and by the
-      local path in three. If gitleaks stops short of the third, the built-in
-      rules never reach the local scan and it reads clean where the host reports
-      a secret — precisely the false-clean this AC removes. The external review
-      raised it as HIGH; it cannot be settled from documentation on a machine
-      with no scanner installed, so it is settled by
-      `test_a_project_config_that_is_already_a_chain_keeps_parity`, which runs
-      the two scans against the real binary and compares them. The only
-      difference it permits is the shipwright path exclusions.
-      **If that test fails, the wiring changes, not the test:** for a chained
-      project config the local scan passes that config directly and forgoes the
-      shipwright exclusions, recording their absence on the `secrets` row —
-      parity is the guarantee, exclusion is the convenience.
+      **The wrap costs one extension level — measured, and the wiring changed.**
+      A repo whose own config already extends a second file is resolved by the
+      host in two hops and by a wrapped local scan in three. The external review
+      raised this as HIGH; it could not be settled from documentation on a
+      machine with no scanner, so
+      `test_a_project_config_that_is_already_a_chain_keeps_parity` put it to
+      gitleaks 8.21.2 in CI. **It came back broken:** with both scans running at
+      the repository root, the host found the planted secret and the wrapped
+      local scan found nothing.
+
+      So the wiring changed, as this AC pre-committed it would. `config_for_scan`
+      hands gitleaks a chained project config **unchanged** and forgoes the
+      shipwright path exclusions — parity is the guarantee, the exclusions are a
+      convenience, and a scan that finds nothing because its rules went missing
+      is worse than a noisy one. `extend.url` counts as a chain for the same
+      reason. Unchained configs are still wrapped and keep both.
 - [x] **AC-2 — `useDefault` and `path` are never both emitted.** Gitleaks aborts
       on a config setting both; the renderer emits exactly one. Proven against
       the real binary, not just the rendered TOML.
@@ -183,17 +184,22 @@ read with the real consumer.
     scanned target, as the host workflow does. The generated config's own extend
     path was absolute and never the problem; the project's INTERNAL chain was.
     Pinned by `test_gitleaks_runs_at_the_repo_root.py`, verified by removal.
-  - *Does the wrap survive a project config that is ALREADY a chain?* Open, and
-    deliberately so. The second review round raised it as HIGH: wrapping spends
-    an extension level, and a two-hop project chain becomes three. Asserting a
-    depth limit read from documentation would be the unfalsifiable-confidence
-    anti-pattern, so the question is put to the binary —
-    `test_a_project_config_that_is_already_a_chain_keeps_parity` runs the host's
-    scan and the local scan over the same repo and fails if they disagree beyond
-    the shipwright exclusions. It executes in CI on this PR, hard-fails if
-    gitleaks is missing, and its failure message names the fix. The wiring is
-    therefore shipped with the claim under test rather than with the claim
-    assumed.
+  - *Does the wrap survive a project config that is ALREADY a chain?* **No —
+    measured, not reasoned.** The second review round raised it as HIGH.
+    Asserting a depth limit read from documentation would have been the
+    unfalsifiable-confidence anti-pattern, so the question went to the binary in
+    CI, and the answer took two runs to become trustworthy. The first run failed
+    the test's OWN fixture guard — the host leg found nothing either, so the
+    comparison proved nothing. That was a second, independent defect (working
+    directory, above). With it fixed, the second run gave a clean verdict: host
+    `['src/key.pem']`, local `[]`. The wrap breaks parity, so chained configs are
+    no longer wrapped. Two lessons worth keeping: a guard that refuses to
+    conclude from a broken fixture is what stopped a false "parity confirmed",
+    and a failure message naming its candidate causes is what made the first red
+    run diagnostic instead of a puzzle.
+  - *Is `extend.url` safe to wrap?* No, and the test written to assert it was
+    safe is what showed otherwise: a remote hop spends the same level a local
+    one does. The expectation was wrong, the code was right.
   - *Will the review truncate again?* Measured with the gate's own
     `filter_generated_paths`: 136,559 chars against the 200,000 cap.
 

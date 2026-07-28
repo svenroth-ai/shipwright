@@ -20,7 +20,10 @@ import pytest
 PLUGIN_ROOT = Path(__file__).parent.parent
 sys.path.insert(0, str(PLUGIN_ROOT / "scripts" / "lib"))
 
-from gitleaks_config import PROJECT_CONFIG_NAME, project_config_warning  # noqa: E402
+from gitleaks_inspect import (  # noqa: E402
+    PROJECT_CONFIG_NAME,
+    project_config_warning,
+)
 from scan_compare import compare_scans, render_comparison  # noqa: E402
 from scan_coverage import CLASS_ORDER, build_coverage  # noqa: E402
 from security_card import build_scan_action_unit  # noqa: E402

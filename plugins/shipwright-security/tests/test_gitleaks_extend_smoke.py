@@ -29,7 +29,7 @@ sys.path.insert(0, str(PLUGIN_ROOT / "scripts" / "lib"))
 sys.path.insert(0, str(REPO_ROOT / "shared" / "scripts"))
 
 from test_hygiene import skip_or_fail_on_missing_binary  # noqa: E402
-from gitleaks_config import PROJECT_CONFIG_NAME  # noqa: E402
+from gitleaks_inspect import PROJECT_CONFIG_NAME  # noqa: E402
 from oss_backend import _run_gitleaks  # noqa: E402
 
 _INSTALL_HINT = (
@@ -198,18 +198,23 @@ def test_extend_keeps_default_rules_and_both_allowlists(
 def test_a_project_config_that_is_already_a_chain_keeps_parity(
     chained_repo: Path, monkeypatch
 ) -> None:
-    """The review's HIGH finding, asked as a question the binary answers.
+    """The review's HIGH finding, asked as a question the binary answered.
 
-    Wrapping the project's config spends one of gitleaks' extension levels. For
-    a repo whose config is already a chain (``.gitleaks.toml`` ->
-    ``gitleaks-base.toml`` -> defaults) the host resolves two hops and the local
-    path needs three. If gitleaks stops short, the default rules never reach the
-    local scan and it reports a clean repo while the host reports the secret —
-    the false-clean AC-1 exists to remove.
+    It answered NO: wrapping a chained config does not survive. Measured on
+    gitleaks 8.21.2 with BOTH scans running at the repository root — the host,
+    driven by the project's config directly, found the planted secret and the
+    wrapped local scan found nothing. Working directory was ruled out first: an
+    earlier run had the host leg finding nothing either, which turned out to be
+    this test launching gitleaks from the plugin directory. With that fixed the
+    host works and only the wrap fails, so the remaining difference is the
+    extension level the wrap spends.
 
-    So this compares the two directly instead of asserting a depth limit from
-    documentation. The only permitted difference is the shipwright path
-    exclusions, which the host deliberately does not have.
+    So the wiring changed, exactly as the spec pre-committed: a chained project
+    config is handed to gitleaks UNCHANGED and the shipwright exclusions are
+    forgone. Parity is the guarantee; the exclusions are a convenience. That is
+    why this asserts EXACT equality here — with no wrapper there is nothing left
+    to differ — while the unchained case above still asserts the exclusions
+    apply.
     """
     skip_or_fail_on_missing_binary("gitleaks", _INSTALL_HINT)
     monkeypatch.delenv("SHIPWRIGHT_SCAN_EXCLUDES", raising=False)
@@ -225,35 +230,25 @@ def test_a_project_config_that_is_already_a_chain_keeps_parity(
     assert any("src/key.pem" in p for p in local), (
         "PARITY BROKEN on a chained project config: the host scan found "
         f"{sorted(host)} but the local scan found {sorted(local)} — it reports "
-        "clean where the host reports a secret. Two mechanisms can produce "
-        "this, and they need different fixes, so identify which before "
-        "changing anything:\n"
-        "(a) EXTENSION DEPTH — wrapping spends one of gitleaks' levels, so the "
-        "project's own chain no longer resolves. Fix: extend the chain's target "
-        "instead of the project's file, or apply the shipwright exclusions "
-        "without an extra level.\n"
-        "(b) WORKING DIRECTORY — a relative `extend.path` resolving against the "
-        "process cwd rather than the config's own directory. `_run_gitleaks` "
-        "passes `-s <target>` but does NOT cd there, so the project's chain "
-        "target is unreachable from wherever shipwright happens to run. Fix: "
-        "run the gitleaks subprocess with cwd=target.\n"
-        "Distinguish them by re-running with a chain whose `extend.path` is "
-        "ABSOLUTE: still broken means (a), fixed means (b). Do not relax this "
-        "test — a green assertion here is the whole content of AC-1."
+        "clean where the host reports a secret. `config_for_scan` is supposed "
+        "to detect the chain and hand gitleaks the project's file UNCHANGED; "
+        "either that detection stopped firing (check "
+        "`gitleaks_inspect.chains_to_another_file`) or something re-introduced "
+        "a wrapper. Do not relax this test — a green assertion here IS AC-1."
     )
     assert not any("accepted/" in p for p in local), (
-        "the project's own [allowlist] did not survive the chain — local and "
-        f"host disagree on this repo's accepted findings. Got: {local}"
+        "the project's own [allowlist] did not apply — local and host disagree "
+        f"on this repo's accepted findings. Got: {local}"
     )
-    assert not any("node_modules" in p for p in local), (
-        f"shipwright path exclusions were lost by extending a chain. Got: {local}"
+    assert set(local) == set(host), (
+        "a chained config is passed through unwrapped, so the local scan must "
+        f"match the host EXACTLY. host={sorted(host)} local={sorted(local)}"
     )
-
-    expected = {p for p in host if "node_modules" not in p}
-    assert set(local) == expected, (
-        "the wrapped scan and the host scan disagree beyond the shipwright "
-        f"exclusions. host(minus exclusions)={sorted(expected)} "
-        f"local={sorted(local)}"
+    assert any("node_modules" in p for p in local), (
+        "the shipwright exclusions are deliberately forgone for a chained "
+        "config — this asserts the COST is real rather than assumed, so that "
+        "silently regaining them (which would mean a wrapper came back, and "
+        f"with it the false-clean) fails here. Got: {local}"
     )
 
 

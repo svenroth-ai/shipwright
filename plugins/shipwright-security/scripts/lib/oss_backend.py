@@ -21,8 +21,7 @@ from scanner_backend import ScannerBackend, classify_finding, register_backend
 from semgrep_tailoring import normalize_tailored as normalize_semgrep
 from normalizers.trivy import normalize as normalize_trivy
 from normalizers.gitleaks import normalize as normalize_gitleaks
-from gitleaks_config import resolve_project_config as _resolve_gitleaks_config
-from gitleaks_config import write_config as _write_gitleaks_allowlist
+from gitleaks_config import config_for_scan as _gitleaks_config_for_scan
 
 
 @register_backend
@@ -337,8 +336,8 @@ def _run_gitleaks(
     report goes to a real temp file, read back here; both temp files are
     per-invocation and cleaned up afterward.
     """
-    config_path = _write_gitleaks_allowlist(
-        _resolve_excludes("gitleaks"), _resolve_gitleaks_config(target),
+    config_path, owned = _gitleaks_config_for_scan(
+        target, _resolve_excludes("gitleaks"),
     )
     report_fd, report_path = tempfile.mkstemp(
         suffix=".json", prefix="shipwright-gitleaks-report-"
@@ -361,7 +360,8 @@ def _run_gitleaks(
             cwd=os.path.abspath(target) if os.path.isdir(target) else None,
         )
     finally:
-        for tmp in (config_path, report_path):
+        # Skip config_path when unowned — it is the repository's own file.
+        for tmp in ((config_path,) if owned else ()) + (report_path,):
             try:
                 os.unlink(tmp)
             except OSError:

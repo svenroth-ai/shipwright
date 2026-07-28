@@ -60,7 +60,7 @@ except ImportError as exc:  # pragma: no cover - import safety
 
 from atomic_write import durable_atomic_write  # noqa: E402
 from redact import redact_findings  # noqa: E402
-from gitleaks_config import class_degradations as gitleaks_degradations  # noqa: E402
+from gitleaks_inspect import class_degradations as gitleaks_degradations  # noqa: E402
 from scan_coverage import build_coverage  # noqa: E402
 from scan_history import HISTORY_DIRNAME, new_scan_id, prune_history  # noqa: E402
 from security_triage_emit import emit_findings_to_triage, emit_scan_card  # noqa: E402

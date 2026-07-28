@@ -26,6 +26,8 @@ PLUGIN_ROOT = Path(__file__).parent.parent
 sys.path.insert(0, str(PLUGIN_ROOT / "scripts" / "lib"))
 
 import oss_backend  # noqa: E402
+from gitleaks_config import config_for_scan  # noqa: E402
+from gitleaks_inspect import PROJECT_CONFIG_NAME  # noqa: E402
 
 
 @pytest.fixture
@@ -84,3 +86,63 @@ class TestGitleaksRunsAtTheTarget:
         cmd = captured["cmd"]
         assert "-s" in cmd
         assert cmd[cmd.index("-s") + 1] == str(tmp_path)
+
+
+@pytest.mark.covers("FR-01.07")
+class TestChainedConfigIsPassedThroughUnwrapped:
+    """CI measured it against gitleaks 8.21.2: wrapping a config that already
+    extends a second file leaves the built-in rules unreachable, so the local
+    scan reported a clean repository where the host reported a secret. These
+    pin the decision without needing the binary."""
+
+    def _seed(self, root: Path, body: str, base: str | None = None) -> None:
+        (root / PROJECT_CONFIG_NAME).write_text(body, encoding="utf-8")
+        if base is not None:
+            (root / "base.toml").write_text(base, encoding="utf-8")
+
+    def test_a_chained_config_is_handed_over_unchanged(self, tmp_path: Path) -> None:
+        self._seed(tmp_path, '[extend]\npath = "base.toml"\n',
+                   "[extend]\nuseDefault = true\n")
+        path, owned = config_for_scan(str(tmp_path), ("node_modules",))
+        assert Path(path) == tmp_path / PROJECT_CONFIG_NAME
+        assert owned is False, (
+            "the project's own file must never be reported as ours — the "
+            "caller unlinks what it owns, and that would delete the "
+            "repository's .gitleaks.toml"
+        )
+
+    def test_an_unchained_config_is_still_wrapped(self, tmp_path: Path) -> None:
+        """The common case keeps BOTH the project's answer and the exclusions."""
+        self._seed(tmp_path, "[extend]\nuseDefault = true\n")
+        path, owned = config_for_scan(str(tmp_path), ("node_modules",))
+        assert owned is True and Path(path) != tmp_path / PROJECT_CONFIG_NAME
+        body = Path(path).read_text(encoding="utf-8")
+        assert "node_modules" in body and str(tmp_path) in body.replace("\\\\", "\\")
+        os.unlink(path)
+
+    def test_no_project_config_still_renders_ours(self, tmp_path: Path) -> None:
+        path, owned = config_for_scan(str(tmp_path), ("node_modules",))
+        assert owned is True
+        assert "useDefault = true" in Path(path).read_text(encoding="utf-8")
+        os.unlink(path)
+
+    def test_a_url_extension_counts_as_a_chain_too(self, tmp_path: Path) -> None:
+        """Written first expecting the opposite — that a remote hop is "like
+        useDefault" and therefore safe to wrap. It is not: `extend.url` spends
+        an extension level exactly as `extend.path` does, which is the level CI
+        measured us losing. Wrapping it would break parity the same way, and
+        unlike the local case nothing here can even be inspected offline."""
+        self._seed(tmp_path, '[extend]\nurl = "https://example.invalid/g.toml"\n')
+        path, owned = config_for_scan(str(tmp_path), ())
+        assert owned is False and Path(path) == tmp_path / PROJECT_CONFIG_NAME
+
+    def test_the_scan_does_not_delete_the_projects_own_config(
+        self, captured, tmp_path: Path
+    ) -> None:
+        """End-to-end on the ownership contract: the `finally` must skip it."""
+        self._seed(tmp_path, '[extend]\npath = "base.toml"\n',
+                   "[extend]\nuseDefault = true\n")
+        oss_backend._run_gitleaks(str(tmp_path))
+        assert (tmp_path / PROJECT_CONFIG_NAME).is_file(), (
+            "the scan deleted the repository's own .gitleaks.toml"
+        )

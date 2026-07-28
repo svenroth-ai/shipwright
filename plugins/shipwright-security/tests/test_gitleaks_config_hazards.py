@@ -26,12 +26,12 @@ import pytest
 PLUGIN_ROOT = Path(__file__).parent.parent
 sys.path.insert(0, str(PLUGIN_ROOT / "scripts" / "lib"))
 
-from gitleaks_config import (  # noqa: E402
+from gitleaks_config import render_config  # noqa: E402
+from gitleaks_inspect import (  # noqa: E402
     PROJECT_CONFIG_NAME,
     class_degradations,
     inspect_project_config,
     project_config_warning,
-    render_config,
 )
 
 

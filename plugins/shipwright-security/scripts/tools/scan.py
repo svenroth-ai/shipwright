@@ -99,7 +99,7 @@ except ImportError as _e:
 
 # Coverage manifest: DERIVED from capabilities, so nothing can forget it.
 from coverage_sanitize import sanitize_coverage  # noqa: E402
-from gitleaks_config import class_degradations as gitleaks_degradations  # noqa: E402
+from gitleaks_inspect import class_degradations as gitleaks_degradations  # noqa: E402
 from scan_coverage import build_coverage  # noqa: E402
 
 
