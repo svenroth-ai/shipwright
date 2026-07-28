@@ -259,5 +259,11 @@
     "tests_run": 94,
     "evidence_path": ".shipwright/runs/iterate-2026-07-28-f11-verifies-own-run/surface_verification.json",
     "timestamp": "2026-07-28T00:00:00Z"
-  }
+  },
+  "declared_removals": [
+    {
+      "path": "plugins/shipwright-iterate/skills/iterate/SKILL.md",
+      "reason": "Intentional, and the ONLY clause of main's newer Step-8 paragraph not kept. #496 rewrote that paragraph to lead with the CLAUDE.md standing grant; the union keeps that lead verbatim. What it replaces is one sentence main still carried — 'Stage 1 has no row, REVIEW_TYPES has no spec entry, and the record therefore cannot yet prove Stage 1 ran (a known correctness gap)' — which THIS change makes false by adding the row. Leaving it would ship a runtime prompt telling the agent the capability it just gained does not exist. Replaced by the corrected description of the six-row record, the gates sibling, the Stage-1-before-Stage-2 rule and the evidence bar."
+    }
+  ]
 }
