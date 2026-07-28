@@ -42,6 +42,24 @@ def run_hook(hook_script: str, payload: dict, cwd: Path) -> tuple[int, dict | No
     return result.returncode, output
 
 
+def write_ci_security(project_root: Path, *, critical: int = 0, degraded: bool = False):
+    """ci-security.json in the producer's shape (ci_security.summarize_ci_security).
+
+    Since iterate-2026-07-28-hygiene-sweep the deploy gate reads THIS, not the
+    RTM's ``| Unresolved findings |`` row — that row counts code-review findings
+    and has nothing to do with a scan (trg-17f53a39).
+    """
+    compliance_dir = project_root / ".shipwright" / "compliance"
+    compliance_dir.mkdir(parents=True, exist_ok=True)
+    (compliance_dir / "ci-security.json").write_text(json.dumps({
+        "schema": 1, "scan_date": "2026-07-28T07:51:37Z", "source": "security.yml#1",
+        "by_severity": {"critical": critical, "high": 0, "medium": 0, "low": 0},
+        "total": critical, "open_high_critical": critical,
+        "critical_gate": "fail" if critical > 0 else "pass",
+        "prompt_injection": 0, "degraded": degraded,
+    }, indent=2, sort_keys=True), encoding="utf-8")
+
+
 def write_rtm(project_root: Path, coverage_pct: int, unresolved: int = 0):
     """Create a realistic traceability-matrix.md."""
     compliance_dir = project_root / ".shipwright" / "compliance"
@@ -126,8 +144,8 @@ class TestComplianceEnforcementInPipeline:
         assert rc == 0, "Should allow at 85% coverage"
 
     def test_security_hook_blocks_deploy_with_findings(self, trilogy_project):
-        """Deploy should be blocked when unresolved findings exist."""
-        write_rtm(trilogy_project, coverage_pct=80, unresolved=3)
+        """Deploy should be blocked when the scan reports open criticals."""
+        write_ci_security(trilogy_project, critical=3)
 
         rc, output = run_hook(
             "check_security_scan.py",
@@ -135,13 +153,13 @@ class TestComplianceEnforcementInPipeline:
             trilogy_project,
         )
 
-        assert rc == 2, "Should soft-block deploy with 3 unresolved findings"
+        assert rc == 2, "Should soft-block deploy with 3 open critical findings"
         assert output["hookSpecificOutput"]["blocked"] is True
-        assert "3 unresolved" in output["hookSpecificOutput"]["reason"]
+        assert "3 open critical" in output["hookSpecificOutput"]["reason"]
 
     def test_security_hook_allows_deploy_when_clean(self, trilogy_project):
-        """Deploy should be allowed when no unresolved findings."""
-        write_rtm(trilogy_project, coverage_pct=100, unresolved=0)
+        """Deploy should be allowed when the scan is clean."""
+        write_ci_security(trilogy_project, critical=0)
 
         rc, _ = run_hook(
             "check_security_scan.py",
@@ -149,7 +167,7 @@ class TestComplianceEnforcementInPipeline:
             trilogy_project,
         )
 
-        assert rc == 0, "Should allow deploy with 0 unresolved findings"
+        assert rc == 0, "Should allow deploy with a clean scan"
 
     def test_custom_thresholds_from_config(self, trilogy_project):
         """Project-level config can lower the enforcement thresholds."""

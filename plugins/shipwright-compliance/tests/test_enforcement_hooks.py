@@ -28,6 +28,10 @@ sys.path.insert(0, str(Path(__file__).parent.parent / "scripts"))
 from lib.thresholds import EnforcementThresholds, load_thresholds  # noqa: E402
 from lib.override_logger import log_override, read_overrides  # noqa: E402
 
+# check_security_scan's branch coverage — including its own
+# subdirectory-project-layout case — lives in test_security_gate.py, split out
+# when this file reached the 300-line cap (iterate-2026-07-28-hygiene-sweep).
+
 
 # ---------------------------------------------------------------------------
 # Thresholds tests
@@ -219,72 +223,6 @@ class TestCheckRtmCoverage:
         assert result.returncode == 0
 
 
-class TestCheckSecurityScan:
-    def test_allows_non_deploy_command(self, tmp_path: Path):
-        _make_rtm(tmp_path, 80, unresolved=5)
-        rc, _ = _run_hook(
-            "check_security_scan.py",
-            {"tool_input": {"command": "npm test"}},
-            tmp_path,
-        )
-        assert rc == 0
-
-    def test_allows_when_no_findings(self, tmp_path: Path):
-        _make_rtm(tmp_path, 80, unresolved=0)
-        rc, _ = _run_hook(
-            "check_security_scan.py",
-            {"tool_input": {"command": "deploy to jelastic"}},
-            tmp_path,
-        )
-        assert rc == 0
-
-    def test_blocks_deploy_with_findings(self, tmp_path: Path):
-        _make_rtm(tmp_path, 80, unresolved=3)
-        rc, output = _run_hook(
-            "check_security_scan.py",
-            {"tool_input": {"command": "deploy to jelastic"}},
-            tmp_path,
-        )
-        assert rc == 2
-        data = json.loads(output)
-        assert data["hookSpecificOutput"]["blocked"] is True
-        assert "3 unresolved" in data["hookSpecificOutput"]["reason"]
-
-    def test_allows_when_no_rtm(self, tmp_path: Path):
-        rc, _ = _run_hook(
-            "check_security_scan.py",
-            {"tool_input": {"command": "vercel deploy"}},
-            tmp_path,
-        )
-        assert rc == 0
-
-    def test_respects_custom_threshold(self, tmp_path: Path):
-        _make_rtm(tmp_path, 80, unresolved=2)
-        config = {"enforcement": {"allowed_critical_findings": 3}}
-        (tmp_path / "shipwright_compliance_config.json").write_text(
-            json.dumps(config), encoding="utf-8"
-        )
-        rc, _ = _run_hook(
-            "check_security_scan.py",
-            {"tool_input": {"command": "deploy to jelastic"}},
-            tmp_path,
-        )
-        assert rc == 0  # 2 <= 3 allowed
-
-    def test_deploy_word_in_quoted_arg_not_blocked(self, tmp_path: Path):
-        # Regression: findings present, but the deploy word lives ONLY inside a
-        # quoted argument value (an iterate-finalization justification). The gate
-        # must NOT fire — this is the false-block it caused before the fix.
-        _make_rtm(tmp_path, 80, unresolved=5)
-        rc, _ = _run_hook(
-            "check_security_scan.py",
-            {"tool_input": {"command":
-                'uv run surface_verification.py --justification "no status.json in any deployed flow"'}},
-            tmp_path,
-        )
-        assert rc == 0
-
-
 # ---------------------------------------------------------------------------
 # F5 (WP5): both PreToolUse gates must resolve the project root via
 # resolve_project_root() — NOT os.getcwd() — so the subdirectory-project layout
@@ -335,19 +273,6 @@ class TestSubdirectoryProjectLayout:
             env=env,
         )
         assert result.returncode == 2
-
-    def test_security_gate_blocks_from_workspace_root(self, tmp_path: Path):
-        project = _make_subproject(tmp_path, "webui")
-        _make_rtm(project, 80, unresolved=3)
-        rc, output = _run_hook(
-            "check_security_scan.py",
-            {"tool_input": {"command": "deploy to jelastic"}},
-            tmp_path,  # cwd = workspace root, ABOVE the managed project
-        )
-        assert rc == 2
-        data = json.loads(output)
-        assert data["hookSpecificOutput"]["blocked"] is True
-        assert "3 unresolved" in data["hookSpecificOutput"]["reason"]
 
     def test_foreign_repo_no_marker_allows(self, tmp_path: Path):
         # A non-Shipwright workspace (no marker anywhere): resolve_project_root()

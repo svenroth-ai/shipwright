@@ -26,5 +26,27 @@
     "iterate",
     "changelog",
     "design"
-  ]
+  ],
+  "last_audit": {
+    "ran_at": "2026-07-28T11:12:44.234373+00:00",
+    "verdict": "fail",
+    "scope": "full",
+    "checks": {
+      "total": 59,
+      "pass": 47,
+      "fail": 2,
+      "skip": 10
+    }
+  },
+  "last_full_audit": {
+    "ran_at": "2026-07-28T11:12:44.234373+00:00",
+    "verdict": "fail",
+    "scope": "full",
+    "checks": {
+      "total": 59,
+      "pass": 47,
+      "fail": 2,
+      "skip": 10
+    }
+  }
 }

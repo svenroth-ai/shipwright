@@ -68,30 +68,20 @@ plugins/shipwright-{name}/
   pyproject.toml                      # Plugin dependencies
 ```
 
-### Key Environment Variables
-```
-SHIPWRIGHT_SESSION_ID        # Unified session ID across all plugins
-SHIPWRIGHT_PLUGIN_ROOT       # Absolute path to active plugin directory
-```
-
 ### Conventions
-- All scripts invoked via `uv run`
-- Hooks use `${CLAUDE_PLUGIN_ROOT}` for path resolution
-- Config files: `shipwright_*_config.json` (written to target project)
-- Env var prefix: `SHIPWRIGHT_`
-- Config file prefix: `shipwright_`
+- All scripts invoked via `uv run`; hooks resolve paths via `${CLAUDE_PLUGIN_ROOT}`
+- Env var prefix `SHIPWRIGHT_` (`SHIPWRIGHT_SESSION_ID` = unified session id;
+  `SHIPWRIGHT_PLUGIN_ROOT` = active plugin dir); config-file prefix
+  `shipwright_` (`shipwright_*_config.json`, written to the target project)
 
 ### Hooks & Pipeline Reference
-- **Reference doc:** `docs/hooks-and-pipeline.md`
-- **ALWAYS read this file first** when working on any plugin. It contains the
-  complete context loading matrix (who reads what), artifact write matrix (who
-  writes what), hooks registry, config data flow, and between-phase actions.
-- **Rule:** When modifying any hook (hooks.json), adding/removing a pipeline phase,
-  changing phase validators, altering between-phase actions, or changing what a
-  plugin reads at startup (context loading), you MUST update
-  `docs/hooks-and-pipeline.md` to reflect the change.
-- This document is the single source of truth for understanding what fires when,
-  who reads/writes which artifacts, and the impact of pipeline changes.
+`docs/hooks-and-pipeline.md` is the single source of truth for what fires when:
+the context-loading matrix (who reads what), the artifact-write matrix (who
+writes what), the hooks registry, config data flow, and between-phase actions.
+**ALWAYS read it first** when working on any plugin. **Rule:** modifying a hook
+(`hooks.json`), adding/removing a pipeline phase, changing phase validators or
+between-phase actions, or changing what a plugin reads at startup means you MUST
+update it in the same diff.
 
 ### When editing plugin-side files
 
@@ -103,34 +93,22 @@ that Claude Code uses at runtime. After `git push`, run:
 bash scripts/update-marketplace.sh
 ```
 
-**Scope:** This is shipwright-monorepo-specific and only applies when
-developing the plugins themselves. End-users who consume the plugins via
-`/shipwright-iterate`, `/shipwright-build`, etc. on their own projects do
-NOT need this step — they run the installed/cached plugin versions.
+Then verify with `uv run scripts/check_plugin_cache_sync.py --strict`.
+Without the sync, plugin-side fixes land in the dev repo but never reach
+runtime — that silently cost iterates 7-11 their fixes.
 
-**Why it matters:** Without the sync, plugin-side fixes land in the dev
-repo but never reach runtime. Iterates 7-11 all had plugin-side fixes
-(SKILL.md F11 updates, shared script improvements) that silently never
-took effect because this step was skipped.
+**Scope:** monorepo-only. End-users consuming the plugins on their own
+projects run the installed versions and never need this.
 
-**Enforcement (Iterate C.3, 2026-05-21):** the script
-`scripts/check_plugin_cache_sync.py` detects drift between the local
-plugin-cache and repo HEAD via per-file SHA-256 comparison. Run it
-manually (fail-soft WARN by default; `--strict` for CI use) — a
-future iterate will wire it into a SessionStart hook so every iterate
-starts with a sync check.
+**Full procedure + rationale:** `shared/prompts/writing-plugin.md`.
 
 ### Documentation Guide
-- **Reference doc:** `docs/guide.md`
-- **Rule:** When adding a new skill, changing a skill's command/arguments/flags,
-  modifying the pipeline flow, or changing the constitution, check whether
-  `docs/guide.md` needs an update. Key sections to check:
-  - Chapter 4 (phase descriptions) — if skill behavior changed
-  - Chapter 7.5 (constitution) — if constitution rules changed
-  - Chapter 8 (quality gates) — if hooks changed
-  - Appendix B (command reference) — if commands/flags changed
-- The guide is the primary user-facing documentation. README.md is a summary
-  that links to the guide.
+`docs/guide.md` is the primary user-facing documentation (README.md is a
+summary that links to it). **Rule:** a new skill, a changed skill
+command/argument/flag, a pipeline-flow change, or a constitution change means
+checking whether the guide needs an update — its Chapter 4 (phases),
+Chapter 7.5 (constitution), Chapter 8 (quality gates) and Appendix B (command
+reference) are the sections that go stale.
 
 ### Where documents live
 
@@ -158,34 +136,18 @@ directory is filing, not deciding.
 
 ### Testing
 ```bash
-# Single plugin
-cd plugins/shipwright-build && uv run pytest tests/ -v
-
-# All integration tests
-uv run pytest integration-tests/ -v
+cd plugins/shipwright-build && uv run pytest tests/ -v   # single plugin
+uv run pytest integration-tests/ -v                      # integration
 ```
 
 **One test root per pytest process — a hard rule, enforced by the repo-root
 `conftest.py` (exit 4).** Roots: `integration-tests`, `shared/tests`,
 `shared/scripts/tests`, `shared/scripts/tools/tests`, each `plugins/*/tests`.
-Each needs `scripts`/`lib`/`tools` to mean a *different* directory; those are
-regular packages, so Python caches whichever loads first and never
-re-resolves — `sys.path` order cannot fix it (ADR-044). Combining roots used
-to fail 21 tests inside another root's suite, naming innocent files.
-Not covered by the guard: plugin-rooted sessions (never load this conftest —
-the capture check in `shared/contracts/compliance.py` is the net) and
-`shared/tests` + `shared/scripts/tests` (collide at conftest import). Both
-still fail loudly. Detail:
+Each needs `scripts`/`lib`/`tools` to mean a *different* directory, and Python
+caches whichever package loads first — `sys.path` order cannot fix it
+(ADR-044). One root per invocation, one `--junitxml` per root; merge
+afterwards. Why, plus the two gaps the guard does not cover:
 `.shipwright/planning/iterate/iterate-2026-07-27-pytest-root-composition.md`.
-
-```bash
-uv run pytest shared/tests      --junitxml=.shipwright/runs/<id>/junit-shared.xml
-uv run pytest integration-tests --junitxml=.shipwright/runs/<id>/junit-integration.xml
-```
-
-No one process can emit a junit.xml spanning roots; merge afterwards (same
-shape as `combine_coverage.py`). No junit merger exists yet — out of scope,
-not impossible.
 
 ## Context
 - **Guide**: docs/guide.md (primary user-facing documentation)
@@ -213,24 +175,20 @@ terminology and `shared/scripts/lib/anti_ratchet.py` for the rule.
 
 ## Asking the user questions (plain language)
 
-When you ask the user a question — a clarification, a choice between options,
-or a confirmation — phrase it so a **non-senior developer or a normal user**
-can understand, from a functional standpoint, what is actually being decided.
-The person answering may not know the internals; do not make them decode
-jargon to reply.
+Every interactive question — clarification, choice, confirmation — must be
+answerable by a **non-senior developer or a normal user** without decoding
+jargon. The person answering may not know the internals.
 
-- **Lead with the functional meaning:** say what the choice changes about how
-  the app behaves or what the user gets — not the implementation detail. Ask
-  "Should a deleted item be recoverable, or gone for good?" rather than "Soft
-  delete with a tombstone flag or hard delete?".
-- **Avoid unexplained jargon.** If a technical term is genuinely unavoidable,
-  add a short plain-language gloss in parentheses (e.g. "idempotent — safe to
-  run twice without doubling the effect").
-- **Make options concrete and comparable.** Give each option in plain words
-  with its real-world trade-off ("Option A is simpler but slower to load;
-  Option B is faster but adds a setup step"), not a raw technical menu.
-- **Rule of thumb:** a product owner reading the question should be able to
-  answer it without asking "what does that mean?". If they couldn't, rewrite it.
+- **Lead with the functional meaning:** what the choice changes about how the
+  app behaves, not the implementation. "Should a deleted item be recoverable,
+  or gone for good?" — not "soft delete with a tombstone flag, or hard delete?".
+- **Gloss any unavoidable term** in parentheses (e.g. "idempotent — safe to run
+  twice without doubling the effect").
+- **Make options concrete and comparable:** each in plain words with its
+  real-world trade-off ("A is simpler but slower to load; B is faster but adds
+  a setup step"), never a raw technical menu.
+- **Rule of thumb:** a product owner should be able to answer without asking
+  "what does that mean?". If they couldn't, rewrite it.
 
 This applies to every interactive question — clarifications, plan approvals,
 design feedback, and remediation choices alike. It governs *phrasing only*;
