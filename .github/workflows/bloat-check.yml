@@ -9,6 +9,12 @@ name: Bloat Check
 on:
   pull_request:
     branches: [main]
+  # Also on every merge, so a file that crosses its size baseline ONLY when two
+  # pull requests combine is visible on `main` at all. Each was green alone;
+  # nothing looked at the result. The PR-comment step below is already
+  # `pull_request`-gated, so it stays a no-op here.
+  push:
+    branches: [main]
   workflow_dispatch:
 
 # `pull_request` (not pull_request_target) keeps untrusted fork PR code
@@ -31,11 +37,13 @@ jobs:
       contents: read
       pull-requests: write
     steps:
-      - name: Checkout PR head with full history
+      - name: Checkout head with full history
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          ref: ${{ github.event.pull_request.head.sha }}
+          # On a push the PR field is empty; fall back to the pushed commit
+          # rather than relying on an empty `ref` meaning "the default".
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
 
       - name: Install uv
         # Third-party action pinned to a full commit SHA (supply-chain
@@ -49,14 +57,37 @@ jobs:
 
       - name: Resolve base ref
         id: base
+        shell: bash
         run: |
-          base_sha="${{ github.event.pull_request.base.sha }}"
-          echo "base_sha=$base_sha" >> "$GITHUB_OUTPUT"
+          set -euo pipefail
+          # PR: the base of the pull request. Push: the commit `main` was at
+          # before this merge. Guarded, because `event.before` is the all-zero
+          # SHA for a first push and can be unresolvable after a rewrite — and
+          # `git show ":path"` on an EMPTY base silently reads the INDEX, which
+          # would compare the baseline against itself and report no drift at all.
+          base_sha="${{ github.event.pull_request.base.sha || github.event.before }}"
+          zero="0000000000000000000000000000000000000000"
+          if [ -z "$base_sha" ] || [ "$base_sha" = "$zero" ] \
+             || ! git cat-file -e "${base_sha}^{commit}" 2>/dev/null; then
+            echo "base_available=false" >> "$GITHUB_OUTPUT"
+            echo "base_sha=" >> "$GITHUB_OUTPUT"
+          else
+            echo "base_available=true" >> "$GITHUB_OUTPUT"
+            echo "base_sha=$base_sha" >> "$GITHUB_OUTPUT"
+          fi
 
       - name: Capture base baseline
+        shell: bash
         run: |
-          git show "${{ steps.base.outputs.base_sha }}:shipwright_bloat_baseline.json" \
-              > /tmp/baseline_base.json 2>/dev/null || echo '{"version":1,"entries":[]}' > /tmp/baseline_base.json
+          set -euo pipefail
+          if [ "${{ steps.base.outputs.base_available }}" = "true" ]; then
+            git show "${{ steps.base.outputs.base_sha }}:shipwright_bloat_baseline.json" \
+                > /tmp/baseline_base.json 2>/dev/null \
+                || echo '{"version":1,"entries":[]}' > /tmp/baseline_base.json
+          else
+            echo "::notice::no resolvable base for this event — the allowlist diff is computed against an EMPTY baseline, so every entry reads as new"
+            echo '{"version":1,"entries":[]}' > /tmp/baseline_base.json
+          fi
 
       - name: Run anti-ratchet check (worktree mode)
         id: ratchet

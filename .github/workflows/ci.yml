@@ -14,8 +14,16 @@ permissions:
   contents: read
 
 concurrency:
-  group: ci-${{ github.ref }}
-  cancel-in-progress: true
+  # On `main` the group is per-COMMIT and cancelling is off, so EVERY merge is
+  # verified. That is the prerequisite for attribution: with one shared group,
+  # two merges landing close together cancelled each other and a red result
+  # covered N commits at once, so "P green, C red ⇒ C is the first bad commit"
+  # was not a fact about anything. Per-commit — not merely cancel-in-progress:
+  # false — because a shared group with cancelling off QUEUES the runs instead,
+  # serialising every merge behind the one before it.
+  # On a PR the group stays per-ref and a new push still supersedes the old run.
+  group: ci-${{ github.ref == 'refs/heads/main' && github.sha || github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 
 jobs:
   python-checks:
@@ -241,6 +249,37 @@ jobs:
           name: repo-diff-coverage
           path: coverage.xml
           if-no-files-found: ignore
+
+      - name: Repair-PR safety (gate)
+        # AC-6 of the `main` self-heal (FR-01.19), enforced rather than advised.
+        # A branch that repairs itself must never do it by adjusting a test
+        # until it is green, so a PR that DECLARES itself a repair — the one
+        # grammar `fix-main-<sha12>`, shared with the claim matcher in
+        # lib/main_health_diagnosis.py — has its merge-base diff checked for
+        # coverage that disappeared.
+        #
+        # The checker is materialised from the pull request's BASE revision and
+        # run from there, NOT from the checked-out head. A repair that edited
+        # the checker would otherwise be judged by its own edit, which is not an
+        # enforcement boundary — and it would fail exactly when it matters, on
+        # an agent "fixing" a red run by touching the thing that reported it.
+        # `git show` writes elsewhere, so the PR's own tree stays intact for the
+        # checker to examine. Fails CLOSED: `set -e` plus a non-zero exit from
+        # the tool, and no continue-on-error. The checkout above is
+        # fetch-depth: 0, so the base SHA is present.
+        if: ${{ github.event_name == 'pull_request' && contains(github.head_ref, 'fix-main-') }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          base="${{ github.event.pull_request.base.sha }}"
+          gate="$RUNNER_TEMP/repair-gate"
+          mkdir -p "$gate/lib" "$gate/tools"
+          : > "$gate/lib/__init__.py"
+          : > "$gate/tools/__init__.py"
+          git show "$base:shared/scripts/lib/assertion_weakening.py" > "$gate/lib/assertion_weakening.py"
+          git show "$base:shared/scripts/tools/check_repair_safety.py" > "$gate/tools/check_repair_safety.py"
+          uv run python "$gate/tools/check_repair_safety.py" \
+            --project-root . --base "$base"
 
       - name: Run CI-gate guard
         # Fails if a test dir is silently uncovered, a quality gate goes loose

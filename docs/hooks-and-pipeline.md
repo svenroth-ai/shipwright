@@ -1672,6 +1672,29 @@ former canonical/secondary session-role machinery (`session_role.py`,
 unnecessary. B1 still classifies `iterate/*` branches via
 `list_iterate_branches.py` (`stale`/`locked`) for the resume menu.
 
+**B1b Shared-Branch Health (2026-07-28, FR-01.19):** immediately after B1a cuts
+the worktree — and again at F11 before auto-merge is armed — the skill reads
+`shared/scripts/tools/main_health.py`. It is a **read**, not a hook: no hook is
+registered, and it writes nothing. On the green path it costs ONE `gh run list`
+call; the log / PR-association / claim calls only fire once the branch is red.
+Both call sites are prose in the skill (SKILL.md §B1b, `references/F11.md`),
+pinned by `plugins/shipwright-iterate/tests/test_main_repair_hooks.py`, and the
+repair procedure itself is `references/main-repair.md`.
+
+Two things this adds to the **context-loading** picture for iterate: the run now
+reads the *shared branch's CI state* at startup (previously it read only local
+artifacts), and it may open a second, separate PR — `iterate/fix-main-<sha12>` —
+before doing its own work. That branch name is the atomic claim; the same
+grammar gates `.github/workflows/ci.yml`'s "Repair-PR safety" step, which runs
+`check_repair_safety.py` **from the pull request's base revision** so a repair
+cannot edit the rule it is judged by.
+
+Exit codes: `0` green · `2` red · `3` running · `4` unknown. **`4` is never
+treated as `0`** — an unreadable host is reported in the F12 summary, not
+silently passed. Only `ci.yml` decides health; `security.yml`, `codeql.yml` and
+`bloat-check.yml` are reported and escalate to a triage card, because a scanner
+finding is not a merge overlap and must not trigger an automated fix.
+
 ### shipwright-changelog
 
 | Event | Matcher | Script | What It Does |

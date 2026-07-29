@@ -1897,6 +1897,40 @@ A worktree carries tracked files only: neither `.env*` nor
 from the main repo and run the project's install command (`npm install`,
 `uv sync`). This per-run overhead is accepted by design.
 
+### When the shared branch is broken
+
+Because every run builds on `origin/<default>`, a broken shared branch is
+everyone's problem — and with branches no longer required to be up to date
+before merging, two changes that were each fine can break it together. Nothing
+conflicts; only the result is wrong.
+
+So the iterate checks the shared branch twice: right after cutting its worktree,
+and again before it arms its own merge. That check costs one API call when
+everything is fine. When it is not, it answers with **which** change broke it —
+which is only meaningful because every merge is now verified separately instead
+of newer runs cancelling older ones — plus what failed and which other changes
+that one had never been tested alongside.
+
+From there the agent repairs it as its own small `fix(main): …` pull request
+before continuing with your actual request. Three things are worth knowing about
+that, because they are deliberate:
+
+- **A repair may never make a test ask for less.** Removing an assertion,
+  deleting a test, or switching one off is refused locally *and* on the code
+  host, using a copy of the rule the proposed change cannot edit. Updating what
+  a test expects *is* allowed — that is usually the whole fix — but the pull
+  request has to say why the new expectation is the correct one.
+- **Some failures are not repaired at all.** A security-scan finding, more
+  changes implicated than one overlap explains, or two attempts already spent:
+  those are filed for a decision, with the way back included, rather than
+  guessed at.
+- **Only one repair happens per breakage.** Several runs starting at once will
+  not open several competing fixes; the first to claim it proceeds and the rest
+  simply carry on with their own work.
+
+Nothing repairs the branch while no iterate is running. That gap is known and
+deliberate for now — see `references/main-repair.md` in the iterate skill.
+
 #### Why parallel iterates no longer collide at merge time
 
 Isolation solves the *working tree*. It does not, by itself, solve the

@@ -125,7 +125,10 @@ def test_no_producer_still_emits_the_retired_source_column() -> None:
 def test_every_live_requirement_stays_on_legacy_provenance() -> None:
     """ZERO ``explicit``. If this fails, the next gate run hard-aborts."""
     rows = _census(LIVE_SPEC)
-    assert len(rows) == 18
+    # 18 -> 19: FR-01.19 appended 2026-07-28. The count moves; the invariant
+    # below does NOT — the new row carries the (inferred) marker precisely so
+    # `explicit` stays empty and the layer-coverage gate stays advisory.
+    assert len(rows) == 19
     explicit = [r["id"] for r in rows if r["source"] == "explicit"]
     assert explicit == [], (
         f"{len(explicit)} requirement(s) flipped to `explicit` provenance: "
@@ -142,7 +145,7 @@ def test_every_live_layers_cell_carries_the_marker() -> None:
         line for line in LIVE_SPEC.read_text(encoding="utf-8").splitlines()
         if line.startswith("| FR-")
     ]
-    assert len(rows) == 18
+    assert len(rows) == 19  # FR-01.19 appended 2026-07-28
     for line in rows:
         layers_cell = line.rstrip("|").rsplit("|", 1)[-1].strip()
         assert "(inferred)" in layers_cell, f"unmarked Layers cell: {line[:60]}…"
@@ -199,6 +202,11 @@ _EXPECTED_BASIS["FR-01.17"] = "interview"
 #: a requirement, how it is cut, and what it refuses to claim are the
 #: operator's.
 _EXPECTED_BASIS["FR-01.18"] = "interview"
+#: FR-01.19 (minted 2026-07-28, iterate-2026-07-28-main-self-heal) — recovery of
+#: a broken shared branch. Same shape again: the mechanism was read out of the
+#: workflows and the run history, but that this IS a requirement, and where it
+#: refuses to repair rather than guess, is the operator's decision.
+_EXPECTED_BASIS["FR-01.19"] = "interview"
 
 
 def test_every_live_requirement_carries_its_decided_basis() -> None:
@@ -240,7 +248,8 @@ def test_the_migration_did_not_change_any_required_layers() -> None:
     # FR-01.16 was minted 2026-07-23 (post-S5), not part of the migration; its
     # inferred layers are pinned alongside the migrated fifteen.
     expected = {**_PRE_MIGRATION_LAYERS, "FR-01.16": ["unit"],
-                "FR-01.17": ["unit"], "FR-01.18": ["unit"]}
+                "FR-01.17": ["unit"], "FR-01.18": ["unit"],
+                "FR-01.19": ["unit"]}
     assert {r["id"]: r["layers"] for r in _census(LIVE_SPEC)} == expected
 
 

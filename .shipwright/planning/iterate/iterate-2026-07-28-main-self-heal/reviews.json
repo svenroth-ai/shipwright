@@ -1,0 +1,203 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-07-28-main-self-heal",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-07-28T19:20:43.913047+00:00",
+      "disposition": null,
+      "recorded_by": "Step 7 self-review, 8-point checklist",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 8,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "The plan does not yet provide a reliable way to populate AC-3’s required failing step. `gh run view --log-failed` supplies failed log text, but log formatting is not a stable or sufficient contract for identifying the job/step that failed, especially with multiple failed steps or actions that emit similar output.",
+          "suggestion": "Fetch structured run/job data as part of the red-path collection (for example, `gh run view <id> --json jobs` or the corresponding API endpoint), select failed steps from that payload, and use the logs only as the reduced untrusted diagnostic excerpt. Add fixtures for multiple failed jobs/steps and for a failed run where logs cannot be retrieved.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The run-limit arithmetic is still not a proof that the retrieved data covers the attribution window. `window × workflows × 2` assumes no more than two attempts per workflow/SHA. A heavily rerun recent commit can consume the result limit and omit runs for older commits. In that case, the tool may report `incomplete` or `no_green_anchor_in_window` without correctly identifying that the source was truncated.",
+          "suggestion": "Treat a saturated `gh run list` response as incomplete evidence unless pagination has reached runs older than the oldest commit needed for the requested history window. Either paginate until the coverage boundary is established, or return `unknown`/`uncertain` with a distinct `run_history_truncated` reason. Test a recent SHA with many reruns crowding out an otherwise available green anchor.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "AC-7’s “no duplicate repairs” is not satisfied by a query-only claim. Two iterate agents can both query before either PR exists, both conclude there is no claim, and both open repair PRs. Calling a claim stale also does not define who may take it over or how two takeover attempts avoid colliding.",
+          "suggestion": "Make creation of the deterministic same-repository branch (`iterate/fix-main-<sha12>`) the practical atomic claim operation: require the procedure to create/push that branch before repair work, treat an already-existing branch/PR as an existing claim, and define explicit stale-takeover behavior. Ensure matching verifies that the branch SHA prefix actually corresponds to the full attributed SHA, rather than accepting an arbitrary short matching prefix.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "The treatment of finding-class workflows conflicts with AC-6. The plan says `Security Scan`, `CodeQL`, and `Bloat Check` are reported but deliberately do not trigger a repair or card because another findings-to-triage producer exists. The acceptance criterion explicitly requires escalation to a card when a finding-class workflow is red.",
+          "suggestion": "Preserve the separation between health-deciding overlap workflows and finding workflows, but have the diagnosis output include an explicit `escalate: finding_class_red` outcome when a relevant push-to-main finding workflow fails. The skill procedure can then create/link the required card or deliberately hand off to the existing triage mechanism, but that integration and its idempotency key must be specified and tested.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "The safety-gate design depends on details not yet called out: the base SHA must be available in the runner checkout, the base-version tool and library must be materialized without importing the PR version, and the CI Python environment must be able to execute that base revision. A standard shallow checkout often cannot read `github.event.pull_request.base.sha`, particularly after fetch behavior changes.",
+          "suggestion": "Specify the exact CI sequence: fetch the immutable base SHA explicitly, write both base-version source files to an isolated temporary directory, invoke that directory’s tool with an explicit interpreter/path, and fail closed if any base source cannot be obtained or executed. Add a workflow-level test or integration fixture for shallow checkout/base-SHA-unavailable behavior.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The AST safety gate promises to block removed test files/classes/functions, but the implementation description only says it processes “each test file changed between the merge-base and HEAD.” A deleted file cannot be parsed from the after revision, and a renamed file can look like removal plus addition unless name-status handling and before/after mapping are explicit.",
+          "suggestion": "Drive file discovery from `git diff --name-status --find-renames <merge-base>...HEAD`, explicitly process deletions from the base tree, and define whether a rename preserves identity or is conservatively treated as removal/addition. Add tests for deleted Python test files, deleted test classes, and renamed test files.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "The stated branch-advance detection does not catch the common race where `main` advances after the local series is read or after `gh run list` returns, but before a run exists for the new SHA. In that case there is no unseen push run to trigger `main_advanced_during_check`, yet the green result can describe an obsolete tip. This is particularly consequential at F11.",
+          "suggestion": "Make the hooks consume the returned `tip_sha` as a precondition, not merely informational output: immediately before acting on a green result, verify that the merge target/base still equals `tip_sha`; otherwise refresh and rerun health. If the existing F11 arming process already has a target-tip consistency check, explicitly connect this requirement to it and test the interaction.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "security",
+          "file": null,
+          "line": null,
+          "finding": "The plan correctly labels failed logs as untrusted and redacts common token forms, but the diagnosis JSON is still intended for capture under the iterate evidence path. If that path is committed, uploaded, or broadly visible, failed test output can disclose internal paths, customer-like fixtures, or secrets not matched by the regexes.",
+          "suggestion": "State that diagnosis packages and captured CLI output are local/restricted operational evidence, must not be committed or uploaded as public artifacts, and should use restrictive file permissions where supported. Keep the redaction and caps, but treat them as defense-in-depth rather than authorization to distribute the package.  Overall, the core architecture is sound: separating pure classification from shell collection, restricting health to push-to-main runs, and enforcing repair safety from the base revision are strong choices. The plan needs concrete fixes for structured failed-step collection, retrieval completeness, duplicate-claim races, and the finding-class escalation contract before implementation.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter (gpt + gemini)",
+      "completed_at": "2026-07-28T12:19:31.107772+00:00",
+      "disposition": null,
+      "recorded_by": "external_review.py --mode iterate, 3 rounds; 30 findings dispositioned in mini-plan sections 7-9",
+      "parse_status": "partial",
+      "raw_excerpt": "[gemini] \n```\nWait, if `uv run` is used on a script outside the current repo root, it will look for a `project` root or use the one from `$GITHUB_WORKSPACE` if run there. But wait! Does it matter? The instructions say: \"materialises check_repair_safety.py and lib/assertion_weakening.py... into a temporary tree and runs *that* against the PR's working tree.\"\nThis is a standard operation (e.g., `git checkout ${{ github.base_ref }} -- shared/scripts/tools/check_repair_safety.py`). But wait, if you do `git checkout`, you overwrite the files in the workspace! So the temporary tree method is necessary, and the plan specifies exactly this: \"\n\n[openai] 1. **Category: approach**  \n   **Severity: high**  \n   **Finding:** The plan does not yet provide a reliable way to populate AC-3’s required *failing step*. `gh run view --log-failed` supplies failed log text, but log formatting is not a stable or sufficient contract for identifying the job/step that failed, especially with multiple failed steps or actions that emit similar output.  \n   **Suggestion:** Fetch structured run/job data as part of the red-path collection (for example, `gh run view <id> --json jobs` or the corresponding API endpoint), select failed steps from that payload, and use the logs only as the reduced untrusted diagnostic excerpt. Add fixtures for multiple failed jobs/steps and for a failed run where logs cannot be retrieved.\n\n2. **Category: edge-case**  \n   **Severity: high**  \n   **Finding:** The run-limit arithmetic is still not a proof that the retrieved data covers the attribution window. `window × workflows × 2` assumes no more than two attempts per workflow/SHA. A heavily rerun recent commit can consume the result limit and omit runs for older commits. In that case, the tool may report `incomplete` or `no_green_anchor_in_window` without correctly identifying that the source was truncated.  \n   **Suggestion:** Treat a saturated `gh run list` response as incomplete evidence unless pagination has reached runs older than the oldest commit needed for the requested history window. Either paginate until the coverage boundary is established, or return `unknown`/`uncertain` with a distinct `run_history_truncated` reason. Test a recent SHA with many reruns crowding out an otherwise available green anchor.\n\n3. **Category: approach**  \n   **Severity: high**  \n   **Finding:** AC-7’s “no duplicate repairs” is not satisfied by a query-only claim. Two iterate agents can both query before either PR exists, both conclude there is no claim, and both open repair PRs. Calling a claim stale also does not define who may take it over or how two takeov […truncated]"
+    },
+    "code": {
+      "review_type": "code",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-07-28T21:11:56.087485+00:00",
+      "disposition": "Step 8 cascade started twice (spec-reviewer + code-reviewer, model opus) and both were lost when the session process was terminated mid-run - the environment fault under investigation this session, not an operator decline. Substituted per the operator's explicit instruction with TWO independent rounds of external_review.py --mode code (recorded under external_code), which returned 11 findings; 7 were fixed in-diff, incl. three high-severity ones the internal cascade would have been expected to catch: a detected staleness still exiting green, a finding-class red never escalating, and a claim push that locks nothing.",
+      "recorded_by": "operator-directed substitution after two lost cascades",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-07-28T21:12:04.519641+00:00",
+      "disposition": "Stage-3 doubt-reviewer is conditional (migrations / async-concurrency / cross-plugin imports / irreversible ops). This diff has none: no migration, no concurrency primitive, no cross-plugin import, and every operation is a read except the CI gate, which fails closed. The adversarial function it serves was met instead by two independent external rounds that DID attack the design and broke three of its claims.",
+      "recorded_by": "conditional-trigger rule, iteration-reviews.md",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 7,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "bug",
+          "file": "shared/scripts/lib/main_health.py:230-234",
+          "line": null,
+          "finding": "classify()` records `main_advanced_during_check` and missing monitored-workflow-policy entries in `unknown`, but still returns `status: \"green\"` whenever the locally observed tip’s CI run passed. Consequently `main_health.py` exits 0 and both hooks treat a branch that advanced during observation—or one whose monitored workflow source is unavailable—as healthy. This violates AC-3’s requirement that unreadable/uncertain input is never reported as green.",
+          "suggestion": "If `unknown` contains a health-invalidating reason such as `main_advanced_during_check` or a missing monitored workflow, override the headline status to `unknown` (and exit 4), or explicitly revalidate the reported `tip_sha` before allowing the hooks to continue.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "spec",
+          "file": "shared/scripts/tools/main_health.py:89-111",
+          "line": null,
+          "finding": "A failing finding-class workflow does not trigger the required escalation in practice. Finding failures are included in `report[\"escalate\"]`, but `status` remains green because only CI decides health; the red-path procedure is only entered when `first_bad_commit` exists, and both hooks continue on exit 0. Thus a red Security Scan, CodeQL, or Bloat Check on an otherwise-green CI commit produces neither a repair workflow action nor the AC-6 card/escalation. It also produces an idempotency key with an empty SHA because `bad` is `None`.",
+          "suggestion": "Make finding-class failures produce a non-green actionable outcome at the hooks, or add an explicit hook path that consumes `escalate.required` even when CI is green. Build escalation keys from the affected finding run’s `headSha`, not `first_bad_commit`.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "bug",
+          "file": "plugins/shipwright-iterate/skills/iterate/references/main-repair.md:74-82",
+          "line": null,
+          "finding": "The claimed repair branch is pushed from `HEAD`. At the F11 hook, `HEAD` is the current iterate’s completed feature branch, not `origin/main`; pushing it as `iterate/fix-main-<sha12>` makes the supposed small repair PR contain the user’s unrelated iterate work. This breaks AC-5’s separate small repair PR requirement and can merge unrelated changes as part of a repair.",
+          "suggestion": "Create a dedicated repair worktree/branch from the diagnosed `origin/main` tip (or another explicitly validated repair base) before claiming it. Push that dedicated branch, then perform the repair only there.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "bug",
+          "file": "plugins/shipwright-iterate/skills/iterate/references/main-repair.md:74-82",
+          "line": null,
+          "finding": "Pushing a deterministic branch name is not an atomic “only one winner” claim as implemented. If two agents start from the same commit—as they commonly will immediately after cutting worktrees from `main`—both push the identical ref target. Git accepts the second push as “Everything up-to-date” with exit 0, so both agents believe they claimed the repair and can proceed. The atomicity test only exercises competing pushes with different commits, which does not cover this case.",
+          "suggestion": "Use a create-only atomic ref operation that requires the remote ref to be absent (for example, a GitHub ref-creation API call that fails if the ref exists, or a correctly configured expected-old-value/lease operation), and treat an already-existing ref as a lost claim regardless of whether it points at the same SHA. Add a concurrent same-commit test.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "edge-case",
+          "file": "shared/scripts/lib/main_health_diagnosis.py:182-193",
+          "line": null,
+          "finding": "A branch-only claim can never become stale: it is always emitted with `\"stale\": False` because the refs query supplies no timestamp. Moreover, after a repair PR is closed, `match_repair_claim()` falls back to the still-existing branch as an active non-stale claim; the procedure says to close the PR but does not delete the branch. An abandoned pre-PR claim or a closed failed repair therefore wedges all future repairs for that commit, contrary to AC-7.",
+          "suggestion": "Ensure failed repairs delete the claim branch, and obtain enough ref/commit metadata to age branch-only claims or otherwise define and implement a safe stale-takeover/release operation. Do not treat a branch belonging solely to a closed failed PR as an indefinitely live claim.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "bug",
+          "file": "shared/scripts/lib/assertion_weakening.py:190-204",
+          "line": null,
+          "finding": "Renaming `tests/test_feature.py` to a non-test path such as `shared/feature_helpers.py` bypasses the safety gate. `collect_changes()` correctly preserves rename identity, but `analyze_file()` checks only `change.path` (the destination); once the destination no longer looks like a test file, it returns no findings even though pytest will no longer collect the former tests. This is a test-file removal through a rename.",
+          "suggestion": "Determine test-file status from both `old_path` and `path` for renames. If an old test path becomes a non-test path, block it as a removed test file (or conservatively process it as one).",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "test",
+          "file": "shared/tests/test_repair_claim_is_atomic.py:77-99",
+          "line": null,
+          "finding": "The atomic-claim test gives each worker a distinct commit before pushing, so the second push is rejected as a normal non-fast-forward update. It does not test the critical same-commit case, where the second push succeeds as an idempotent push and demonstrates that the claimed locking mechanism does not provide exclusive ownership.",
+          "suggestion": "Add a case where both workers push the same source SHA to the deterministic claim ref and assert the second claimant receives an explicit “already claimed” result from the implemented claim operation.  Overall assessment: ship-with-fixes. The concurrency and diagnostic foundations are substantial, but the current hooks can approve uncertain health, finding-class failures do not actually escalate, and the repair-claim/repair-branch procedure does not meet the no-duplicate or separate-repair guarantees.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter (gpt + gemini), 2 rounds",
+      "completed_at": "2026-07-28T21:11:45.931113+00:00",
+      "disposition": null,
+      "recorded_by": "external_review.py --mode code, rounds 1+2; 11 findings, 7 fixed in-diff",
+      "parse_status": "partial",
+      "raw_excerpt": "[gemini] git diff --name-status` outputs `R100 test_something.py lib_something.py`.\nIn `collect_changes`:\n`status` = 'R'\n`old_path` = 'test_something.py', `path` = 'lib_something.py'\n`before_path` = `old_path` = 'test_something.py'\n`before` = contents of `test_something.py` from base.\n`after` = contents of `lib_something.py` from head.\n`change = FileChange(status='R', path='lib_something.py', old_path='test_something.py', before=<contents>, after=<contents>)`\nIn `analyze_file(\n\n[openai] - Category: bug  \n  Severity: high  \n  File: shared/scripts/lib/main_health.py:230-234  \n  Finding: `classify()` records `main_advanced_during_check` and missing monitored-workflow-policy entries in `unknown`, but still returns `status: \"green\"` whenever the locally observed tip’s CI run passed. Consequently `main_health.py` exits 0 and both hooks treat a branch that advanced during observation—or one whose monitored workflow source is unavailable—as healthy. This violates AC-3’s requirement that unreadable/uncertain input is never reported as green.  \n  Suggestion: If `unknown` contains a health-invalidating reason such as `main_advanced_during_check` or a missing monitored workflow, override the headline status to `unknown` (and exit 4), or explicitly revalidate the reported `tip_sha` before allowing the hooks to continue.\n\n- Category: spec  \n  Severity: high  \n  File: shared/scripts/tools/main_health.py:89-111  \n  Finding: A failing finding-class workflow does not trigger the required escalation in practice. Finding failures are included in `report[\"escalate\"]`, but `status` remains green because only CI decides health; the red-path procedure is only entered when `first_bad_commit` exists, and both hooks continue on exit 0. Thus a red Security Scan, CodeQL, or Bloat Check on an otherwise-green CI commit produces neither a repair workflow action nor the AC-6 card/escalation. It also produces an idempotency key with an empty SHA because `bad` is `None`.  \n  Suggestion: Make finding-class failures produce a non-green actionable outcome at the hooks, or add an explicit hook path that consumes `escalate.required` even when CI is green. Build escalation keys from the affected finding run’s `headSha`, not `first_bad_commit`.\n\n- Category: bug  \n  Severity: high  \n  File: plugins/shipwright-iterate/skills/iterate/references/main-repair.md:74-82  \n  Finding: The claimed repair branch is pushed from `HEAD`. At the F11 hook, `HEAD` is the current iterate’s compl […truncated]"
+    }
+  }
+}
