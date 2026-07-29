@@ -1,0 +1,221 @@
+{
+  "run_id": "iterate-2026-07-28-ci-ack-per-run-home",
+  "date": "2026-07-28T23:14:50.935720Z",
+  "event_at": "2026-07-28T21:37:00.319862+00:00",
+  "type": "change",
+  "complexity": "medium",
+  "branch": "iterate/ci-ack-per-run-home",
+  "spec": ".shipwright/planning/iterate/2026-07-28-ci-ack-per-run-home.md",
+  "tests_passed": true,
+  "adr": "iterate-2026-07-28-ci-ack-per-run-home",
+  "test_completeness": {
+    "status": "complete",
+    "behaviors": [
+      {
+        "behavior": "The ack's path is the per-run planning dir and is not derived",
+        "disposition": "tested",
+        "evidence": "test_ack_relpath_is_the_per_run_planning_dir PASSED"
+      },
+      {
+        "behavior": "Verifier accepts a committed per-run ack",
+        "disposition": "tested",
+        "evidence": "test_passes_with_a_committed_per_run_ack PASSED"
+      },
+      {
+        "behavior": "Genuine absence at the commit falls back to the worktree copy",
+        "disposition": "tested",
+        "evidence": "test_per_run_ack_untracked_at_the_commit_falls_back_to_the_worktree PASSED"
+      },
+      {
+        "behavior": "Per-run ack wins over a legacy ack",
+        "disposition": "tested",
+        "evidence": "test_per_run_ack_takes_precedence_over_a_legacy_ack PASSED"
+      },
+      {
+        "behavior": "A present-but-invalid per-run ack does NOT fall back to a valid legacy one",
+        "disposition": "tested",
+        "evidence": "test_invalid_per_run_ack_does_not_fall_back_to_a_valid_legacy_ack PASSED"
+      },
+      {
+        "behavior": "Mismatched fingerprint rejected in the new home",
+        "disposition": "tested",
+        "evidence": "test_per_run_ack_with_a_wrong_fingerprint_is_rejected PASSED"
+      },
+      {
+        "behavior": "Corrupt per-run ack fails closed",
+        "disposition": "tested",
+        "evidence": "test_corrupt_per_run_ack_fails_closed PASSED"
+      },
+      {
+        "behavior": "Legacy iterate_latest ack still honoured",
+        "disposition": "tested",
+        "evidence": "test_legacy_iterate_latest_ack_is_still_accepted PASSED"
+      },
+      {
+        "behavior": "Legacy leg keeps run + fingerprint binding",
+        "disposition": "tested",
+        "evidence": "test_legacy_ack_is_still_run_and_fingerprint_bound PASSED"
+      },
+      {
+        "behavior": "No ack anywhere still fails",
+        "disposition": "tested",
+        "evidence": "test_no_ack_anywhere_still_fails PASSED"
+      },
+      {
+        "behavior": "Unsafe run id fails closed",
+        "disposition": "tested",
+        "evidence": "test_unsafe_run_id_fails_closed PASSED"
+      },
+      {
+        "behavior": "Unsafe run id stays silent on a non-CI diff",
+        "disposition": "tested",
+        "evidence": "test_unsafe_run_id_does_not_fire_when_no_ci_file_is_touched PASSED"
+      },
+      {
+        "behavior": "BOTH F11 gates green on one workflow-touching commit (integration)",
+        "disposition": "tested",
+        "evidence": "test_both_gates_are_simultaneously_satisfiable PASSED"
+      },
+      {
+        "behavior": "The old home genuinely deadlocked - premise pin (integration)",
+        "disposition": "tested",
+        "evidence": "test_the_old_home_still_deadlocks PASSED"
+      },
+      {
+        "behavior": "restore_derived_to_head leaves the per-run ack intact",
+        "disposition": "tested",
+        "evidence": "test_restore_derived_to_head_does_not_erase_the_per_run_ack PASSED"
+      },
+      {
+        "behavior": "DERIVED_SNAPSHOTS still lists the results file",
+        "disposition": "tested",
+        "evidence": "test_results_file_is_still_a_derived_snapshot PASSED"
+      },
+      {
+        "behavior": "Round-trip CLI -> commit -> verifier, both gates green",
+        "disposition": "tested",
+        "evidence": "test_round_trip_cli_write_commit_verifier_read PASSED"
+      },
+      {
+        "behavior": "CLI leaves the derived snapshot byte-identical",
+        "disposition": "tested",
+        "evidence": "test_cli_does_not_write_the_ack_into_the_derived_snapshot + test_leaves_the_derived_results_file_untouched PASSED"
+      },
+      {
+        "behavior": "CLI refuses an unsafe run id",
+        "disposition": "tested",
+        "evidence": "test_cli_rejects_an_unsafe_run_id PASSED"
+      },
+      {
+        "behavior": "Re-recording after a CI edit overwrites cleanly",
+        "disposition": "tested",
+        "evidence": "test_cli_is_idempotent PASSED"
+      },
+      {
+        "behavior": "F6 keeps the directory-level add that carries the ack",
+        "disposition": "tested",
+        "evidence": "test_f6_reference_stages_the_per_run_directory (mutation-checked) PASSED"
+      },
+      {
+        "behavior": "A commit-sourced ack reports no caveat",
+        "disposition": "tested",
+        "evidence": "test_passes_with_a_committed_per_run_ack PASSED"
+      },
+      {
+        "behavior": "A worktree-sourced ack passes but is reported as not shipping",
+        "disposition": "tested",
+        "evidence": "test_per_run_ack_untracked_at_the_commit_falls_back_to_the_worktree PASSED"
+      },
+      {
+        "behavior": "A legacy-sourced ack names the legacy leg",
+        "disposition": "tested",
+        "evidence": "test_legacy_iterate_latest_ack_is_still_accepted PASSED"
+      },
+      {
+        "behavior": "A legacy ack read from DISK is also reported as not shipping",
+        "disposition": "tested",
+        "evidence": "test_legacy_ack_read_from_disk_is_reported_as_not_shipping PASSED"
+      },
+      {
+        "behavior": "An absent path reads as absent, not an error",
+        "disposition": "tested",
+        "evidence": "test_absent_path_is_absent_not_an_error PASSED"
+      },
+      {
+        "behavior": "An unreadable commit is an error, not an absence",
+        "disposition": "tested",
+        "evidence": "test_unreadable_commit_is_an_error_not_an_absence PASSED"
+      },
+      {
+        "behavior": "A non-blob (tree/symlink mode) is refused",
+        "disposition": "tested",
+        "evidence": "test_a_tree_is_not_a_regular_file PASSED"
+      },
+      {
+        "behavior": "The committed reader RAISES instead of reporting absent",
+        "disposition": "tested",
+        "evidence": "test_reader_raises_rather_than_reporting_absent PASSED"
+      },
+      {
+        "behavior": "The gate fails closed when CI content cannot be read",
+        "disposition": "tested",
+        "evidence": "test_gate_fails_closed_when_ci_content_cannot_be_read PASSED"
+      },
+      {
+        "behavior": "CRLF and LF content hash alike",
+        "disposition": "tested",
+        "evidence": "test_crlf_and_lf_hash_alike PASSED"
+      },
+      {
+        "behavior": "bytes and str readers agree for valid UTF-8",
+        "disposition": "tested",
+        "evidence": "test_bytes_and_str_readers_agree_for_valid_utf8 PASSED"
+      },
+      {
+        "behavior": "Non-UTF-8 content stable across the REAL seam",
+        "disposition": "tested",
+        "evidence": "test_non_utf8_content_is_stable_across_the_real_seam PASSED"
+      },
+      {
+        "behavior": "An absent path hashes differently from an empty one",
+        "disposition": "tested",
+        "evidence": "test_absent_is_distinct_from_empty PASSED"
+      },
+      {
+        "behavior": "load_ack enforces the run-id guard itself",
+        "disposition": "tested",
+        "evidence": "test_load_ack_guards_the_run_id_itself PASSED"
+      },
+      {
+        "behavior": "An unrecognised schema_version is refused",
+        "disposition": "tested",
+        "evidence": "test_unrecognised_schema_version_is_refused PASSED"
+      },
+      {
+        "behavior": "A non-ASCII workflow name still binds CONTENT (false-green fix)",
+        "disposition": "tested",
+        "evidence": "test_non_ascii_workflow_name_still_binds_content (mutation-checked) PASSED"
+      },
+      {
+        "behavior": "A pathspec metacharacter does not glob onto another entry",
+        "disposition": "tested",
+        "evidence": "test_pathspec_metacharacters_do_not_glob_onto_another_entry PASSED"
+      },
+      {
+        "behavior": "An ack path that exists but is not a regular file is an error",
+        "disposition": "tested",
+        "evidence": "test_worktree_ack_path_that_is_a_directory_is_an_error PASSED"
+      }
+    ],
+    "counts": {
+      "untested_testable": 0,
+      "tested": 39,
+      "untestable": 0
+    },
+    "enumeration_basis": {
+      "acs": 8,
+      "covered_acs": 8,
+      "note": "AC-1..AC-8; 39 ledger rows cover them"
+    }
+  }
+}

@@ -1,0 +1,55 @@
+name: Probe Actions-app bypass
+
+# THROWAWAY, report-only (always exits 0). Measures credential option A for the
+# derived-snapshots refresh: can the job's BUILT-IN GITHUB_TOKEN push to protected
+# `main` if the GitHub Actions app is added as a bypass actor on main-protection?
+#
+# Option A is the one to beat: no stored secret, no expiry, and the token dies with
+# the job. Option B (a fine-grained PAT) was REFUSED outright on 2026-07-29 — the
+# org forbids fine-grained PATs with a lifetime over 366 days, so it could not even
+# read the repo. Option C is a GitHub App.
+#
+# Run TWICE, deliberately:
+#   1. BEFORE the ruleset change  -> expect REFUSED (the control)
+#   2. AFTER adding the bypass    -> expect PUSHED
+# A probe that only ran the second half could not tell a working bypass from a
+# ruleset that was never enforcing anything.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    permissions:
+      # The whole question: does contents:write plus a ruleset bypass actor let the
+      # built-in token write to a protected branch?
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Attempt a push to protected main with the built-in token
+        run: |
+          set -uo pipefail
+          git config user.name  "shipwright-refresh[bot]"
+          git config user.email "218151234+svroch@users.noreply.github.com"
+          git commit -q --allow-empty -m "ci(probe): Actions-app bypass measurement"
+
+          set +e
+          git push origin HEAD:refs/heads/main 2>err.txt
+          rc=$?
+          set -e
+
+          echo "--- push stderr (rc=${rc}) ---"
+          cat err.txt
+          echo "------------------------------"
+          if [ ${rc} -eq 0 ]; then
+            echo "PROBE-RESULT: PUSHED — the built-in GITHUB_TOKEN wrote to protected main."
+          else
+            echo "PROBE-RESULT: REFUSED — the built-in token cannot write to protected main."
+          fi
+          exit 0
