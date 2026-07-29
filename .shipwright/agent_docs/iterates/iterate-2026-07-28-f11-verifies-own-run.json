@@ -256,7 +256,7 @@
     "surface": "cli",
     "runner": "uv run pytest shared/tests/test_audit_e2e_integration.py shared/tests/test_iterate_latest_attribution.py shared/tests/test_review_record_gates.py shared/tests/test_review_record_evidence_floor.py shared/tests/test_silent_revert_narrowings.py shared/tests/test_derived_definition_integration.py shared/tests/test_review_record_gate.py shared/tests/test_review_record_floor.py -q",
     "exit_code": 0,
-    "tests_run": 94,
+    "tests_run": 99,
     "evidence_path": ".shipwright/runs/iterate-2026-07-28-f11-verifies-own-run/surface_verification.json",
     "timestamp": "2026-07-28T00:00:00Z"
   },
