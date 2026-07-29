@@ -1,0 +1,80 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-07-29-path-quoting-contract",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-07-29T05:29:28.903523+00:00",
+      "disposition": null,
+      "recorded_by": "iterate-session",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-07-29T05:29:29.003735+00:00",
+      "disposition": "Phase matrix: no mini-plan or external plan review at small complexity for a CHANGE (mini-plan is FEATURE-only).",
+      "recorded_by": "iterate-session",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "code": {
+      "review_type": "code",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-07-29T05:29:29.105882+00:00",
+      "disposition": "Phase matrix: full code review at small runs only if risk flags are set; classify_complexity returned risk_flags=[] and the diff is one test file with no production code. Quality bar met by a mutation probe instead (parser-unquotes mutant KILLED, unmutated control passes).",
+      "recorded_by": "iterate-session",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-07-29T05:29:29.206324+00:00",
+      "disposition": "Stage 3 is conditional on a non-trivial touch (migrations, async, cross-plugin imports, irreversible ops); this adds two assertions to an existing test module and changes no runtime code.",
+      "recorded_by": "iterate-session",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-07-29T05:29:29.311689+00:00",
+      "disposition": "Phase matrix: external LLM review is auto at medium+, skipped at small.",
+      "recorded_by": "iterate-session",
+      "parse_status": null,
+      "raw_excerpt": null
+    }
+  },
+  "gates": {
+    "spec": {
+      "review_type": "spec",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-07-29T05:32:28.811382+00:00",
+      "disposition": "Phase matrix: the Step-8 cascade (spec-reviewer -> code-reviewer -> doubt-reviewer) runs at small complexity only when a risk flag is set; classify_complexity returned risk_flags=[] and the diff is two assertions in one existing test module with no production code. Not a session-policy skip: the standing subagent grant in CLAUDE.md was available and unused by proportionality. Quality bar met by a mutation probe (parser-unquotes mutant KILLED, control passes).",
+      "recorded_by": "close-missing",
+      "parse_status": null,
+      "raw_excerpt": null
+    }
+  }
+}

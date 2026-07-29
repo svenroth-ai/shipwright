@@ -1,0 +1,38 @@
+{
+  "run_id": "iterate-2026-07-29-path-quoting-contract",
+  "date": "2026-07-29T05:30:44.410262Z",
+  "event_at": "2026-07-28T23:14:56.924965+00:00",
+  "type": "change",
+  "complexity": "small",
+  "branch": "iterate/path-quoting-contract",
+  "spec": "n/a \u2014 small iterate, no spec file per the phase matrix",
+  "tests_passed": true,
+  "adr": "iterate-2026-07-29-path-quoting-contract",
+  "surface_verification": {
+    "surface": "cli",
+    "tests_run": 812,
+    "exit_code": 0,
+    "runner": "uv run pytest plugins/shipwright-security/tests -q"
+  },
+  "test_completeness": {
+    "status": "complete",
+    "behaviors": [
+      {
+        "behavior": "a git-quoted non-ASCII diff path renders with nothing invisible reaching the model-facing block",
+        "disposition": "tested",
+        "evidence": "NEW test_a_quoted_path_reaches_the_model_carrying_nothing_invisible PASSED \u2014 asserts no Cf/Cc/Co/Cs and no U+E0000 tag characters survive safe_path"
+      },
+      {
+        "behavior": "the diff parser does not undo git's quoting",
+        "disposition": "tested",
+        "evidence": "NEW test_the_parser_does_not_undo_what_git_quoted PASSED; mutation probe added unescaping to _clean_diff_path \u2192 KILLED, unmutated control passes"
+      }
+    ],
+    "counts": {
+      "behaviors": 2,
+      "tested": 2,
+      "untestable": 0,
+      "untested_testable": 0
+    }
+  }
+}
