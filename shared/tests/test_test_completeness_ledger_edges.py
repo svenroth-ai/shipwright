@@ -26,6 +26,16 @@ def _seed(proj: Path, complexity: str = "medium") -> None:
 
 
 def _write(proj: Path, iterate_latest) -> None:
+    """Write the block, attributed to ``r1`` whenever it is a mapping.
+
+    Attribution is what keeps these probes probing: since the gate began
+    refusing a block that names another run (or none), an unattributed fixture
+    fails on attribution and never reaches the shape branch it exists to test —
+    passing for the wrong reason. A non-mapping is written through untouched,
+    because that IS the shape under test.
+    """
+    if isinstance(iterate_latest, dict):
+        iterate_latest = {"run_id": "r1", **iterate_latest}
     (proj / "shipwright_test_results.json").write_text(
         json.dumps({"iterate_latest": iterate_latest}), encoding="utf-8"
     )
@@ -38,7 +48,7 @@ def test_iterate_latest_is_a_list_fails_closed(tmp_path):
     _write(proj, [])
     result = check_test_completeness_ledger(proj, "r1")
     assert result.ok is False
-    assert "missing" in result.detail.lower()
+    assert "not an object" in result.detail.lower()
 
 
 def test_test_completeness_block_is_a_list_fails_closed(tmp_path):

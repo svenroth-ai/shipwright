@@ -59,9 +59,9 @@ def test_runner_assigns_the_external_run_and_the_internal_pass_to_different_rows
     assert "| external_code | runner" in body, (
         "the actor table must assign external_code to the runner"
     )
-    assert "| code, doubt | orchestrator - not the runner |" in body, (
-        "the actor table must assign the two internal rows away from the "
-        "runner — it performs neither"
+    assert "| spec (stage 1), code, doubt | orchestrator - not the runner |" in body, (
+        "the actor table must assign the three internal rows away from the "
+        "runner — it performs none of them"
     )
     assert "not_run only" in body, (
         "the internal rows must be writable by the runner ONLY as not_run"

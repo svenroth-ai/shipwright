@@ -2461,6 +2461,20 @@ and the post-commit audit is `check_surface_verification` in
 on the same four conditions: missing block, `tests_run == 0`,
 `exit_code != 0` after retry cap, `surface == "none"` without justification.
 
+**Every `iterate_latest` reader must say whose run it is.**
+`shipwright_test_results.json` is a DERIVED_SNAPSHOT: at F11 `ensure_current` →
+`integrate_main` calls `restore_derived_to_head`, which resets it to `HEAD`, and
+since an iterate no longer commits it, `HEAD`'s copy is `main`'s — the PREVIOUS
+run's evidence, in this run's worktree, shaped exactly like this run's. Three
+F11 checks read that block and none of them used to compare `run_id`: the ledger
+gate, the F0.5 audit, and the silent-revert `declared_removals` (the worst
+direction — another run's declarations EXCUSING this run's removals). All three
+now go through `verifiers/_iterate_latest.read_iterate_latest`, which returns one
+of `current` / `foreign` / `unattributed` / `malformed` / `missing` and hands the
+block back only in the first. The durable home is the per-run **F5c entry**,
+which is not a derived snapshot; the ledger and F0.5 audits read it first
+(`trg-81fbf8ed`).
+
 **Test-completeness gate (iterate).** At small / medium / large complexity
 every `/shipwright-iterate` run writes a `test_completeness` ledger into
 `shipwright_test_results.json.iterate_latest` at F5 (producer) — every
@@ -2473,6 +2487,29 @@ any behavior is testable-but-untested, an `untestable` row lacks a valid
 that makes the operator's pre-merge "did you empirically test everything?"
 question structurally self-answering (`iterate-2026-05-30-test-completeness-gate`).
 Trivial iterates emit an auto `n/a` line and skip the hard gate.
+
+**Review-record gate (iterate).** Every review pass closes its own row in
+`.shipwright/planning/iterate/<run_id>/reviews.json`; `check_review_record`
+(`verifiers/review_record_check.py`, substance predicates in
+`verifiers/review_record_floor.py`) STOPs the run at small+ while any is
+`pending`. Three properties beyond "no pending row":
+
+- **The floor demands evidence, not a status** (medium+). A `code` /
+  `external_code` row recorded `completed` must carry a non-empty `findings`
+  list, a non-blank `provider`, a non-blank `raw_excerpt`, or a non-blank
+  `recorded_by` naming an adapter other than `none`. `--status completed` with
+  `--from` omitted produces a row with none of them (`trg-51a57370`). Measured
+  before shipping: 45 of 45 real records already carry evidence.
+- **Stage 1 has its own row and the cascade's order is enforced.** `spec` lives
+  in the record's sibling `gates` object — NOT as a sixth `reviews` key, because
+  the webui consumer rejects an unknown key *and* a bumped `schema_version`, and
+  renders an invalid record as a data-integrity fault rather than degrading to
+  the markers. A `code` row recorded `completed` while `spec` is not `completed`
+  FAILS: Stage 2 cannot legitimately have run without its HARD-GATE
+  (`trg-64372769`). `external_code` is outside that rule by design.
+- **A missing F5c entry fails, it does not skip.** The complexity comes from
+  that entry, so without it the gate cannot know what to enforce, and "I could
+  not tell" must not be reported as "not applicable".
 
 **Spec-impact gate (iterate).** Every FEATURE/CHANGE `/shipwright-iterate`
 run classifies its spec impact at Step 2 as ADD / MODIFY / REMOVE / NONE.

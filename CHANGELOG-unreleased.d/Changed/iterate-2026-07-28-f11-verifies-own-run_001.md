@@ -1,0 +1,1 @@
+A code review recorded as done must now show that it happened. A row carrying no findings, no provider, no reviewer reply and no reviewer name is indistinguishable from one nobody performed, and no longer satisfies the requirement for larger changes. Every existing record on file already meets this, so nothing in flight is affected.

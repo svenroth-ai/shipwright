@@ -107,28 +107,25 @@ def _seed(
         f"# Build Dashboard\nrun_id: {run_id}\n", encoding="utf-8"
     )
 
-    # review record — all five types closed, so the review-record gate is green
-    # and the block under test stays the only red flag.
+    # review record — every pass closed, so the review-record gate is green and
+    # the block under test stays the only red flag. `spec` lives in the sibling
+    # `gates` object, which the cross-repo consumer does not read.
+    def _row(review_type):
+        return {
+            "review_type": review_type, "status": "completed", "findings_count": 0,
+            "findings": [], "provider": None, "completed_at": "2026-05-06T07:00:00Z",
+            "disposition": None, "recorded_by": "code-reviewer",
+            "parse_status": None, "raw_excerpt": None,
+        }
+
     review_dir = proj / ".shipwright" / "planning" / "iterate" / run_id
     review_dir.mkdir(parents=True, exist_ok=True)
     (review_dir / "reviews.json").write_text(json.dumps({
         "schema_version": 1,
         "run_id": run_id,
-        "reviews": {
-            review_type: {
-                "review_type": review_type,
-                "status": "completed",
-                "findings_count": 0,
-                "findings": [],
-                "provider": None,
-                "completed_at": "2026-05-06T07:00:00Z",
-                "disposition": None,
-                "recorded_by": "test-fixture",
-                "parse_status": None,
-                "raw_excerpt": None,
-            }
-            for review_type in ("self", "plan", "code", "doubt", "external_code")
-        },
+        "reviews": {t: _row(t) for t in
+                    ("self", "plan", "code", "doubt", "external_code")},
+        "gates": {"spec": _row("spec")},
     }, indent=2), encoding="utf-8")
 
     # events.jsonl with the commit (we'll pass --commit fakeSHA)
@@ -139,7 +136,10 @@ def _seed(
 
     # test_results.json — varies per test
     if include_test_results:
-        results: dict = {"iterate_latest": {}}
+        # Attributed: the gate refuses an `iterate_latest` that does not name
+        # the run being verified, because this file is a derived snapshot the
+        # F11 integration rewinds to HEAD.
+        results: dict = {"iterate_latest": {"run_id": run_id}}
         if surface_block is not None:
             results["iterate_latest"]["surface_verification"] = surface_block
         comp = completeness_block if completeness_block is not None else _VALID_COMPLETENESS

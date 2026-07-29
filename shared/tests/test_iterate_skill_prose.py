@@ -107,44 +107,46 @@ def test_skill_campaign_paragraph_scopes_the_adr_029_sentence():
     )
 
 
-# --- Stage 1 has no row, and the docs say so plainly ------------------------
+# --- Stage 1 HAS a row now, and the docs say where and why ------------------
 
 
-def test_the_code_row_is_stage_2s_and_stage_1_has_none():
-    """Carrying the Stage-1 verdict in the `code` row was tried and reverted.
+def test_stage_1_has_its_own_row_and_the_ordering_is_enforced():
+    """Replaces `test_the_code_row_is_stage_2s_and_stage_1_has_none`.
 
-    Three independent reviewers converged on it: `completed` let a
-    Stage-1-only row satisfy the medium+ code-quality floor although Stage 2
-    provably had not run, `not_run` discards the findings, and the write
-    ordering was unknowable at write time (a REJECT you intend to fix is not
-    terminal). Since a REJECT loops until PASS and an unresolved REJECT never
-    reaches F6, every shipping run ends at Stage 2 — so the row is Stage 2's.
+    That test pinned the ABSENCE of a `spec` row, which was the correctness gap
+    `trg-64372769` names: a `code` row sourced `code-reviewer` is byte-identical
+    whether Stage 1 passed first or was never spawned. Now that Stage 1 records
+    itself, the doc must say so — and must state the invariant that gives the
+    row teeth, since a row nobody checks proves nothing either.
     """
     norm = _norm(REVIEWS_DOC.read_text(encoding="utf-8"))
-    assert "the code row belongs to stage 2, and stage 1 has no row at all" in norm, (
-        "iteration-reviews.md must say plainly whose row it is"
+    assert "stage 1 can now prove it ran" in norm
+    assert "a code row recorded completed while spec is not completed" in norm, (
+        "the doc must state the ordering invariant, not merely that a row exists"
     )
-    assert "record code from stage 2" in norm
 
 
-def test_the_stage_1_evidence_gap_is_stated_as_correctness_not_cosmetic():
-    """The record cannot prove Stage 1 ran. Saying so is the honest half.
+def test_the_withdrawn_code_row_shape_stays_warned_against():
+    """The `spec` row makes the rejected shape moot — it must not make its
+    reasons unavailable.
 
-    A `code` row sourced `code-reviewer` is byte-identical whether Stage 1
-    passed first or was never spawned — the not-run-versus-not-recorded
-    distinction this artifact exists to abolish, at the HARD-GATE.
+    Carrying the Stage-1 verdict inside the `code` row was built and WITHDRAWN
+    after three independent reviewers disproved it. Deleting that record along
+    with the gap it explained is how a settled question gets re-opened by
+    whoever reads the code next.
     """
     norm = _norm(REVIEWS_DOC.read_text(encoding="utf-8"))
-    assert "known gap" in norm and "cannot evidence stage 1" in norm, (
-        "the gap must be flagged where the recording rule is read"
-    )
-    assert "correctness" in norm, (
-        "it must be named a correctness gap — an earlier draft called it a "
-        "visibility gap, which is what justified deferring it"
-    )
-    # One operand only: `_norm` strips backticks, so the backticked variant
-    # this inherited from #482 could never be true (Stage-3 doubt).
-    assert "recorded-by is prose, not proof" in norm
+    assert "do not re-attempt" in norm
+    assert "recorded-by was prose, not proof" in norm
+
+
+def test_the_reviews_object_is_documented_as_a_cross_repo_contract():
+    """Why `spec` is not simply a sixth `reviews` key. Measured, not assumed:
+    the consumer rejects an unknown key AND a bumped schema_version, and does
+    not fall back to the markers — it renders an integrity fault instead."""
+    norm = _norm(REVIEWS_DOC.read_text(encoding="utf-8"))
+    assert "cross-repo contract" in norm
+    assert "data-integrity fault" in norm
 
 
 def test_skill_step_8_does_not_promise_more_than_the_cascade_sees():

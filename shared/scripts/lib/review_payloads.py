@@ -24,12 +24,14 @@ from .review_findings import (
     from_doubt_reviewer,
     from_external_prose,
     from_self_review,
+    from_spec_reviewer,
 )
 
 __all__ = ["ADAPTERS", "MAX_RAW_EXCERPT", "build_findings"]
 
 ADAPTERS = (
     "code-reviewer",
+    "spec-reviewer",
     "doubt-reviewer",
     "self-review",
     "external-review-json",
@@ -41,6 +43,7 @@ MAX_RAW_EXCERPT = 4000
 
 _NATIVE = {
     "code-reviewer": from_code_reviewer,
+    "spec-reviewer": from_spec_reviewer,
     "doubt-reviewer": from_doubt_reviewer,
     "self-review": from_self_review,
 }

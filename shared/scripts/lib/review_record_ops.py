@@ -15,6 +15,7 @@ from typing import Any
 from .file_lock import file_lock
 from .review_record_core import (
     TERMINAL_STATUSES,
+    entry_for,
     ReviewRecordError,
     lock_path,
     new_record,
@@ -120,7 +121,7 @@ def repair_companion(
         record = read_record(project_root, run_id)
         if record is None:
             raise ReviewRecordError(f"no review record for {run_id} to repair from")
-        entry = record.get("reviews", {}).get(review_type) or {}
+        entry = entry_for(record, review_type)
         if entry.get("status") not in TERMINAL_STATUSES:
             raise ReviewRecordError(
                 f"{review_type} is not recorded yet — nothing to repair from"

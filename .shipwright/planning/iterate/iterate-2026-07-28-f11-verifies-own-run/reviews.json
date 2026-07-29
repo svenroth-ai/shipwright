@@ -1,0 +1,292 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-07-28-f11-verifies-own-run",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-07-28T21:14:06.078401+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 1,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "The plan adds a strict `run_id` check that fails closed (AC-1) but omits the fix for the root cause identified in 1.1 (`integrate_main.py` rewinding the file). If `restore_derived_to_head` continues to overwrite the current test results with `main`'s copy before the F11 checks run, introducing this strict failure will permanently break F11 for all runs.",
+          "suggestion": "Add a step to either exclude `shipwright_test_results.json` from `restore_derived_to_head` (e.g., by separating test results from `DERIVED_SNAPSHOTS`), or read the evidence into",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-07-28T21:15:00.649649+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "partial",
+      "raw_excerpt": "[gemini] - **Category**: risk\n- **Severity**: high\n- **Finding**: The plan adds a strict `run_id` check that fails closed (AC-1) but omits the fix for the root cause identified in 1.1 (`integrate_main.py` rewinding the file). If `restore_derived_to_head` continues to overwrite the current test results with `main`'s copy before the F11 checks run, introducing this strict failure will permanently break F11 for all runs.\n- **Suggestion**: Add a step to either exclude `shipwright_test_results.json` from `restore_derived_to_head` (e.g., by separating test results from `DERIVED_SNAPSHOTS`), or read the evidence into\n\n[openai] 1. **Category:** risk / **Severity:** high — Keeping `schema_version: 1` and making `gates` optional is compatible for the web UI, but it creates an internal fail-open risk unless F11 explicitly distinguishes legacy records from records produced for the current run. A current run can omit `gates` entirely and still pass schema validation.\n\n2. **Category:** dependency / **Severity:** medium — The plan identifies the CLI symbol swap in `record_review_pass.py`, but does not explicitly audit every use of `REVIEW_TYPES`.\n\n3. **Category:** approach / **Severity:** medium — The claimed webui compatibility is supported by two relevant checks, but it remains an assumption that the consumer ignores all unknown top-level fields through its full parse/validation/render pipeline. The stated round-trip probe is not concretely included in the implementation or test steps.\n\n4. **Category:** edge-case / **Severity:** medium — AC-4 names a completed `code` row, but the existing evidence floor accepts either `code` or `external_code`. Define the cascade's Stage-2 set centrally and state whether `external_code` is intentionally outside the cascade.\n\n5. **Category:** edge-case / **Severity:** medium — The new attributed `iterate_latest` reader needs a defined failure contract beyond a foreign `run_id`: absent, malformed, no block, empty/non-string `run_id`. Have the shared reader return a typed result distinguishing `current`, `foreign`, `unattributed`, and `invalid/missing`.\n\n6. **Category:** approach / **Severity:** medium — AC-2 calls the required values evidence, but the proposed predicate permits trivially fabricated metadata such as `provider: \"\"`, whitespace-only excerpts, or arbitrary `recorded_by`.\n\n7. **Category:** risk / **Severity:** medium — Failing when the F5c entry is missing is correct at the current-run F11 boundary, but the plan does not identify invocation modes where these checks may run before F5c has been generated or outside an iterate context.\n\n8. * […truncated]"
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 10,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "shared/scripts/tools/verifiers/review_record_floor.py",
+          "line": 221,
+          "finding": "The Stage-1 remediation advertised a command with no --run-id, which _parse_args marks required — argparse exits 2 on usage. The identical defect external round 3.2 caught (--from spec-reviewer); only the adapter half was fixed. The pinning test regexed --from only, so it green-lit a command that does not run.",
+          "suggestion": "Give stage_one_precedes_stage_two the run_id parameter and emit it; strengthen the test to shlex the command out of the message and feed it to the real _parse_args.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "shared/scripts/tools/verifiers/review_record_floor.py",
+          "line": 212,
+          "finding": "stage_one_precedes_stage_two was satisfied by gates.spec.status == completed alone, no evidence required — so the HARD-GATE this run exists to make provable was the one row that could still be asserted rather than evidenced, with carries_evidence sitting 40 lines above it.",
+          "suggestion": "Treat completed as satisfying only when carries_evidence(spec_entry), with its own message so the repair stays distinct from the not-completed case.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "plugins/shipwright-iterate/skills/iterate/references/F11.md",
+          "line": 157,
+          "finding": "F11.md — the runtime prompt loaded AT the failing step — still enumerated five review types, so an agent reading it while the gate reports '1 review type(s) still unanswered: spec' is reading an enumeration that denies the row exists. SKILL.md, iteration-reviews.md, F5c.md and hooks-and-pipeline.md were updated; this one was not. Neither new failure mode was mentioned either.",
+          "suggestion": "Update to the six-row vocabulary and add the evidence-floor and Stage-1-ordering failure modes with their repairs.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/scripts/tools/verifiers/review_record_check.py",
+          "line": 129,
+          "finding": "The no-record branch passed REVIEW_TYPES to _remediation, which renders 'close all {n} at once' — telling the operator 5 for a close-missing that will close 6. A site the P4 inventory missed.",
+          "suggestion": "Pass RECORDABLE_TYPES.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "architecture",
+          "file": "shared/scripts/tools/record_review_pass.py",
+          "line": 265,
+          "finding": "_repair_or_reject and review_record_ops.repair_companion both read record['reviews'] directly, bypassing _section — whose docstring says routing in ONE place is what keeps the split from leaking. Not live today (both require --marker-status, restricted to MARKER_TYPES) but a gate type carrying a marker would read {} and produce a nonsense message.",
+          "suggestion": "Export a section-aware accessor from review_record_core and use it at both call sites.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "shared/scripts/tools/verifiers/review_record_check.py",
+          "line": 48,
+          "finding": "Three re-exports (_CODE_REVIEW_TYPES, FLOORED_COMPLEXITIES, carries_evidence) with noqa markers and a comment asserting 'existing importers and tests resolve them at this module'. Measured repo-wide: zero references outside review_record_floor.py. The measurement that legitimately retired declared_removals was not run here.",
+          "suggestion": "Drop the three re-exports and the justifying comment.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "shared/scripts/tools/verifiers/review_record_floor.py",
+          "line": 20,
+          "finding": "Dead sys.path bootstrap in review_record_floor.py (new file) and silent_revert.py — neither imports lib.* any more (silent_revert's only lib import moved to silent_revert_detect.py in this diff), and .common performs the identical bootstrap. The sibling extraction silent_revert_filters.py correctly carries none.",
+          "suggestion": "Delete the bootstrap, the unused import sys, and the accompanying noqa: E402 markers.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/scripts/tools/verifiers/silent_revert_declarations.py",
+          "line": 100,
+          "finding": "attributed_declared_removals accepted the per-run block only when isinstance(list); any other present-but-wrong shape fell through to the shared file and could return silence — the same 'cannot tell none from unreadable' condition the malformed branch was just changed to report. The F5c entry is the home operators hand-write, so it is the likelier place to get the shape wrong.",
+          "suggestion": "Report when per_run is present but not a list, symmetric with the malformed rule.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/tests/test_iterate_latest_attribution.py",
+          "line": 245,
+          "finding": "Two new tests git init a repo with NO commits, so check_no_silent_revert returns at its pre-flight ('main does not resolve') and the clean-run path the tests name is never reached. The assertions hold on the skip result. Same shape as the AC-7 test the run itself found non-discriminating.",
+          "suggestion": "Commit a file so the comparison actually runs, and assert the result is not a skip.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/scripts/tools/finalize_bundle_lib.py",
+          "line": 188,
+          "finding": "Residual of accepted AC-1b: the durable home now carries the gates' only surviving evidence on a behind branch, but nothing on the producing side checks it was filled in. An agent following F5b/F5c without reading the new prose learns about it as a post-commit F11 red after ensure_current has already rewound the shared file — at the last step of the run.",
+          "suggestion": "Emit a non-fatal warning when a medium/large entry carries neither block, moving discovery back to F5c where the data is still in hand.",
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-07-28T22:27:46.478463+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 8,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "boundary-contract",
+          "file": "shared/scripts/lib/review_payloads.py",
+          "line": 31,
+          "finding": "Claim under doubt: The spec row can be recorded by following the documented command. — DISPROVED. The one documented way to record the new spec row could not consume the spec-reviewer's actual output: --from code-reviewer routes to from_code_reviewer, which requires a top-level 'review' array, while spec-reviewer.md pins the Stage-1 contract as {stage, verdict, spec_citations, summary} on PASS and REJECT alike. Handing the reply over verbatim exits 1 payload_unreadable. Every test substituted a code-reviewer payload, hiding it. The gate that exists to make Stage 1 provable made FABRICATING its evidence easier than recording it — confirmed by this very run, which hit the error and hand-transformed its payload.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "detector-weakening",
+          "file": "shared/scripts/tools/verifiers/silent_revert_reading.py",
+          "line": 240,
+          "finding": "Claim under doubt: -w to -b diverges only on de-indent, harmlessly. — DISPROVED. It is a HUNK-BOUNDARY effect, not a line-equality one. -b marks a strict superset as changed, and under -U0 a changed line JOINS two hunks an unchanged line separates. A de-indent to column 0 between two regions merges them, so unexplained_by_edit lets an added line from region B vouch for a deleted line in region A — the unbounded matching replacement_hunks' own docstring rejects, re-entered through the back door. Monotone: -b hunks are never narrower, and wider hunks can only suppress more.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "forward-compatibility",
+          "file": "shared/scripts/lib/review_record_schema.py",
+          "line": 244,
+          "finding": "Claim under doubt: The gates design breaks no reader. — DISPROVED for tomorrow's writer. _validate_gates rejected unknown gate keys exactly as the webui rejects unknown reviews keys — but schema_version is frozen at 1 by design and GATE_TYPES is documented as where future stages go. The day it gains a second member, new-writer records read as schema-INVALID to every reader on the old constant, and the gate tells the operator to 'repair or delete' a healthy, immutable, git-tracked, never-evicted history. That is section 1.3's failure mode reproduced inside the monorepo, and the plugin cache makes old-and-new readers routine.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "unactionable-red",
+          "file": "shared/scripts/tools/verifiers/review_record_floor.py",
+          "line": 230,
+          "finding": "Claim under doubt: An absent gates section is answerable by close-missing. — DISPROVED in composition. stage_one_precedes_stage_two is not complexity-gated, so any run that recorded code=completed BEFORE this lands — every in-flight worktree, whose code row is already terminal and immutable — reaches F11 with gates absent and is hard-failed. All three exits are bad: invent evidence for spec, --force-rewrite a real code row to not_run and destroy its findings, or delete the record. No migration path for 'Stage 1 ran, before there was a row for it'.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "evidence-floor-width",
+          "file": "shared/scripts/tools/record_review_pass.py",
+          "line": 357,
+          "finding": "Claim under doubt: The evidence floor cannot be cleared without evidence. — DISPROVED. carries_evidence was defeated by --recorded-by <anything>: the flag has no choices, and the predicate checked non-blank-and-not-'none' while its own message calls the trace 'a recorded_by naming an ADAPTER'. Combined with the high finding this stops being theoretical — the honest route for spec was broken, and this flag is the first thing an agent finds when --from exits 1.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "fail-late-guard",
+          "file": "shared/scripts/tools/finalize_bundle_lib.py",
+          "line": 110,
+          "finding": "Claim under doubt: The F5c warning moves discovery earlier. — PARTLY DISPROVED. It used `any`, so carrying EITHER block silenced the warning about the OTHER — and F11 then hard-failed on the absent one after ensure_current had already rewound the shared file: the exact discovery-too-late sequence the warning exists to move.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "unswept-sibling",
+          "file": "shared/scripts/tools/verifiers/iterate_checks.py",
+          "line": 556,
+          "finding": "Claim under doubt: The present-but-wrong-shape gap was fixed. — DISPROVED for the siblings. It was fixed only in attributed_declared_removals. validate_iterate_entry does no shape check on the extra keys, so a string test_completeness is accepted at F5c, silently ignored at F11, and produces 'the F5c entry carries no test_completeness either' — false, and pointing at a repair already performed.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "durability",
+          "file": "plugins/shipwright-iterate/skills/iterate/references/F5c.md",
+          "line": 58,
+          "finding": "Claim under doubt: The F5c entry is a durable home. — PARTLY DISPROVED. AC-1b relocated the load-bearing evidence to the ONE artifact with a hard TTL: iterates/ is a 50-entry recency cache (already AT the cap), while reviews.json and the event log are never evicted. It does not bite the run's own F11 — the entry is the newest — but after eviction AC-3's message 'F5c did not run' is a false statement for an aged-out run.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-07-28T23:00:07.965962+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 2,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "spec",
+          "file": "shared/scripts/tools/verifiers/silent_revert_declarations.py:92-97",
+          "line": null,
+          "finding": "attributed_declared_removals()` treats every non-current `iterate_latest` state as harmless when the foreign/malformed/missing snapshot contains no declarations: it returns `([], None)`. Consequently, `check_silent_revert_for_run()` can pass or skip on a clean tree without reporting that the declarations source was missing, malformed, unattributed, or belonged to another run. AC-1 explicitly requires every caller, including `declared_removals`, to fail closed on every non-`current` state and provide repair guidance. The current behavior only reports a foreign source if there happened to be declarations to disregard.",
+          "suggestion": "Return a non-current-state problem unconditionally whenever no valid per-run F5c `declared_removals` list is available, including an explicitly empty list as the durable “no declarations” evidence. Make `check_silent_revert_for_run()` turn that problem into a blocking F11 failure rather than a conditional warning.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "test",
+          "file": "shared/tests/test_iterate_latest_attribution.py:267-277",
+          "line": null,
+          "finding": "test_no_declarations_anywhere_stays_silent` codifies the fail-open behavior above by asserting that a foreign `iterate_latest` with no declarations must not fail or disclose anything. This is contrary to AC-1’s requirement that all three readers fail closed for all non-`current` attribution states, so the test suite would reject a compliant implementation that fixes the production defect.",
+          "suggestion": "Replace this test with cases asserting a blocking result for missing, malformed, unattributed, and foreign shared snapshots when the F5c entry lacks `declared_removals`; retain a passing case only when the per-run F5c entry explicitly carries `declared_removals: []`.  Overall assessment: ship-with-fixes. The attribution reader and the other AC implementations are broadly aligned with the specification, but the silent-revert declaration path still intentionally bypasses the required fail-closed contract in a concrete non-current-state case.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-07-28T21:15:07.901808+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "partial",
+      "raw_excerpt": "[gemini] SHIPWRIGHT_VERDICT: approve\n\n[openai] - Category: spec\n- Severity: medium\n- File: shared/scripts/tools/verifiers/silent_revert_declarations.py:92-97\n- Finding: `attributed_declared_removals()` treats every non-current `iterate_latest` state as harmless when the foreign/malformed/missing snapshot contains no declarations: it returns `([], None)`. Consequently, `check_silent_revert_for_run()` can pass or skip on a clean tree without reporting that the declarations source was missing, malformed, unattributed, or belonged to another run. AC-1 explicitly requires every caller, including `declared_removals`, to fail closed on every non-`current` state and provide repair guidance. The current behavior only reports a foreign source if there happened to be declarations to disregard.\n- Suggestion: Return a non-current-state problem unconditionally whenever no valid per-run F5c `declared_removals` list is available, including an explicitly empty list as the durable “no declarations” evidence. Make `check_silent_revert_for_run()` turn that problem into a blocking F11 failure rather than a conditional warning.\n\n- Category: test\n- Severity: medium\n- File: shared/tests/test_iterate_latest_attribution.py:267-277\n- Finding: `test_no_declarations_anywhere_stays_silent` codifies the fail-open behavior above by asserting that a foreign `iterate_latest` with no declarations must not fail or disclose anything. This is contrary to AC-1’s requirement that all three readers fail closed for all non-`current` attribution states, so the test suite would reject a compliant implementation that fixes the production defect.\n- Suggestion: Replace this test with cases asserting a blocking result for missing, malformed, unattributed, and foreign shared snapshots when the F5c entry lacks `declared_removals`; retain a passing case only when the per-run F5c entry explicitly carries `declared_removals: []`.\n\nOverall assessment: ship-with-fixes. The attribution reader and the other AC implementations are broadly aligned with the  […truncated]"
+    }
+  },
+  "gates": {
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 2,
+      "findings": [
+        {
+          "severity": null,
+          "category": "spec",
+          "file": ".shipwright/planning/iterate/2026-07-28-f11-verifies-own-run.md",
+          "line": null,
+          "finding": "AC-1's normative text said every caller 'fails closed on every non-current state, naming both run ids and the repair', but the third caller (declared_removals) is silent in 3 of 4 non-current states. The behaviour is defensible and its stated reason holds, but AC-7 had been amended for exactly this class of AC-vs-code disagreement while AC-1's wording was left alone and argued only in prose. The contract would have shipped stating something its own implementation contradicts, at the exact point two readers already disagreed. — spec: .shipwright/planning/iterate/2026-07-28-f11-verifies-own-run.md:156",
+          "suggestion": ".shipwright/planning/iterate/2026-07-28-f11-verifies-own-run.md:156",
+          "source": "spec-reviewer"
+        },
+        {
+          "severity": null,
+          "category": "correctness",
+          "file": ".shipwright/planning/iterate/iterate-2026-07-28-f11-verifies-own-run/reviews.json",
+          "line": null,
+          "finding": "The delivered record closed gates.spec as not_run with the disposition 'the session policy gates the Agent tool ... --autonomous cannot pause to acquire it'. That statement became false the moment this cascade ran. The commit introducing 'Stage 1 can prove it ran' would have shipped an artifact asserting Stage 1 did not run when it did — the not-run-versus-not-recorded confusion this artifact exists to abolish, inverted. — spec: .shipwright/planning/iterate/iterate-2026-07-28-f11-verifies-own-run/reviews.json:1",
+          "suggestion": ".shipwright/planning/iterate/iterate-2026-07-28-f11-verifies-own-run/reviews.json:1",
+          "source": "spec-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-07-28T23:00:08.104670+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    }
+  }
+}

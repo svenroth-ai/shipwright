@@ -130,11 +130,34 @@ def test_the_file_is_utf8_json_with_a_trailing_newline(tmp_path):
 
 def test_the_on_disk_shape_matches_the_pinned_consumer_contract(tmp_path):
     """The webui ReviewRow reads exactly these keys. Renaming one here is a
-    silent cross-repo break, so the names are asserted, not assumed."""
+    silent cross-repo break, so the names are asserted, not assumed.
+
+    Tightened when the sibling ``gates`` object arrived. The consumer
+    (`shipwright-webui` `server/src/core/mission-context/review-record.ts`)
+    applies two guards this file now mirrors literally, because failing either
+    makes it render ALL FIVE rows as a data-integrity fault rather than falling
+    back to the markers (`review-state.ts:240`):
+
+      * `:261` — `record.schema_version !== 1` → invalid. Strict `!==`, so a
+        bump breaks it just as surely as a wrong value.
+      * `:276` — any key in `reviews` outside its own five → invalid.
+
+    So `reviews` is pinned to exactly the five, `schema_version` to exactly 1,
+    and anything this repo adds must sit OUTSIDE both — which is what `gates`
+    is. This mirrors the consumer rather than executing it; a cross-repo suite
+    cannot run from this commit, and that residual is stated in the iterate
+    spec rather than hidden.
+    """
     write_record(tmp_path, RUN_ID, _hostile_record())
     record = json.loads(record_path(tmp_path, RUN_ID).read_text(encoding="utf-8"))
 
-    assert set(record) == {"schema_version", "run_id", "reviews"}
+    assert record["schema_version"] == 1, "a bump makes the consumer refuse the file"
+    # Hard-coded, NOT `list(REVIEW_TYPES)`: pinning a constant against itself
+    # cannot catch that constant growing, which is the exact break at issue.
+    assert list(record["reviews"]) == [
+        "self", "plan", "code", "doubt", "external_code",
+    ]
+    assert set(record) - {"schema_version", "run_id", "reviews"} <= {"gates"}
     assert list(record["reviews"]) == list(REVIEW_TYPES)
     for entry in record["reviews"].values():
         assert set(entry) == {

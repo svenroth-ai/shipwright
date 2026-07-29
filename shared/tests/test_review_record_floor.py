@@ -29,7 +29,8 @@ import pytest
 REPO_ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(REPO_ROOT / "shared" / "scripts"))
 
-from lib.review_record_core import make_entry, new_record  # noqa: E402
+from lib.review_record_core import make_entry, new_record, upsert_review  # noqa: E402
+from lib.review_record_schema import RECORDABLE_TYPES  # noqa: E402
 from tools.verifiers.review_record_check import check_review_record  # noqa: E402
 
 
@@ -54,14 +55,22 @@ def _write_run(
     )
 
     record = new_record(run_id)
-    for review_type in ("self", "plan", "code", "doubt", "external_code"):
+    for review_type in RECORDABLE_TYPES:
         status = statuses.get(review_type, "completed")
         if status == "pending":
             continue                      # new_record already materialises it
-        record["reviews"][review_type] = make_entry(
+        # upsert_review, not a direct `record["reviews"][...]` write: `spec` is a
+        # gate row living in a sibling section, and routing is exactly what this
+        # helper must not re-implement.
+        record = upsert_review(record, make_entry(
             review_type, status,
             disposition=("the rule that applies" if status != "completed" else None),
-        )
+            # Evidence, because the floor now asks whether a pass HAPPENED and
+            # not merely whether a row says so. `recorded_by` is what a real
+            # `--from <adapter>` recording leaves behind; all 45 of this repo's
+            # real records carry at least one of the four traces.
+            recorded_by=("code-reviewer" if status == "completed" else None),
+        ), force=True)
 
     d = root / ".shipwright" / "planning" / "iterate" / run_id
     d.mkdir(parents=True, exist_ok=True)
@@ -138,33 +147,40 @@ def test_small_is_not_floored(tmp_path: Path):
     assert _check(tmp_path, "iterate-x").ok is True
 
 
-def test_unknown_complexity_skips_the_gate_and_is_caught_elsewhere(tmp_path: Path):
-    """A run with no iterate entry skips this gate — deliberately, not by accident.
+def test_unknown_complexity_fails_the_gate(tmp_path: Path):
+    """A run with no iterate entry now FAILS this gate. **This reverses a
+    decision recorded here**, so the reversal is argued rather than assumed.
 
-    Raised by both external plan reviewers: if complexity cannot be read, the
-    floor does not apply, so failing to write the entry would be a way around
-    it. Pinned here rather than "fixed" because the hole is closed one check
-    over: `check_iterate_history_has_run_id` fails the same F11 run when the
-    entry is missing, and F5c writes that entry before F11 reaches this point.
-    Making this check ALSO fail closed would change long-standing behaviour for
-    every pre-entry record, to defend a door that is already locked.
+    The prior reasoning: the exposure is closed one check over, because
+    `check_iterate_history_has_run_id` fails the same F11 run when the entry is
+    missing, and F5c writes it before F11 gets here — so failing here too would
+    change long-standing behaviour to defend a door already locked.
 
-    The test exists so that if the sibling check is ever relaxed, the exposure
-    is visible here instead of being rediscovered.
+    What changed (`trg-51a57370`): the lock is on a DIFFERENT door. It holds
+    only while both checks run in the same orchestrator, and `check_review_record`
+    is called directly — by tests, and by anything invoking the verifier before
+    F5c — where the sibling is not there to fail. A check that answers "not
+    applicable" to a question it could not evaluate is the same fail-open shape
+    this whole run is about; "I could not tell" and "this run is exempt" are
+    different claims and only one of them was being made.
+
+    The cost the prior decision named is real but bounded: no merged record is
+    ever re-verified, so nothing retroactively reds, and the remediation is the
+    F5c step the run owed anyway.
     """
     # No entry file at all → complexity unknown.
     d = tmp_path / ".shipwright" / "planning" / "iterate" / "iterate-x"
     d.mkdir(parents=True)
     record = new_record("iterate-x")
-    for review_type in ("self", "plan", "code", "doubt", "external_code"):
-        record["reviews"][review_type] = make_entry(
+    for review_type in RECORDABLE_TYPES:
+        record = upsert_review(record, make_entry(
             review_type, "not_run", disposition="the rule that applies",
-        )
+        ), force=True)
     (d / "reviews.json").write_text(json.dumps(record, indent=2), encoding="utf-8")
 
     result = _check(tmp_path, "iterate-x")
-    assert result.ok is True
-    assert result.severity == "skipped"
+    assert result.is_failure
+    assert "F5c" in result.detail
 
 
 def test_trivial_is_skipped_entirely(tmp_path: Path):
@@ -206,6 +222,13 @@ def test_historical_shapes_still_pass(tmp_path: Path, code: str, external: str):
 
     The measurement said this floor blocks none of them; this keeps that claim
     from silently becoming false.
+
+    Re-measured when the floor began demanding evidence rather than a status
+    (``trg-51a57370``): of the 45 records in this repo carrying a completed
+    ``code`` / ``external_code`` row, **45 carry evidence** and 0 are
+    evidence-free. The promise holds under the tighter rule — which is why the
+    fixture now supplies ``recorded_by``: a row without it is not a shape this
+    repo has ever produced.
     """
     _write_run(
         tmp_path, "iterate-x", complexity="medium",

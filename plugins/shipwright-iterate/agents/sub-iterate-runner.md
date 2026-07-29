@@ -194,11 +194,11 @@ review for those.
    | Review type | Actor | Status the RUNNER may write |
    |---|---|---|
    | `self` (3.6), `plan` (3.5) | runner | `completed` / `not_run` + rule |
-   | `code`, `doubt` | orchestrator — NOT the runner | `not_run` ONLY + rule |
+   | `spec` (Stage 1), `code`, `doubt` | orchestrator — NOT the runner | `not_run` ONLY + rule |
    | `external_code` | runner (item 2) | `completed` / `not_run` + rule (marker: `skipped_*`) |
 
-   The runner may **never** write `code` or `doubt` as `completed`: it
-   performed neither. Commands: `references/iteration-reviews.md` → *Campaign sub-iterate rows*.
+   The runner may **never** write `code` or `doubt` as `completed`, nor `spec`
+   (Stage 1): it performed none. Commands: `references/iteration-reviews.md` → *Campaign sub-iterate rows*.
 
 The `reviews.code` and `reviews.external_code` fields in the
 result-JSON contract record what fired and what was deferred.

@@ -98,9 +98,32 @@ def test_recording_one_real_review_clears_the_floor(project: Path):
 
     A gate that blocks without a working way forward is a trap, so the
     remediation is exercised rather than asserted.
+
+    `--provider` is not decoration here. The floor now asks whether a review
+    HAPPENED, so the row must carry one of the four traces a real recording
+    leaves; `--from none` with no payload produces exactly the evidence-free
+    shape the floor rejects, and using it would have exercised a repair path
+    that no longer repairs anything.
     """
     _close_missing(project)
     assert check_review_record(project, RUN_ID).ok is False
+
+    result = subprocess.run(
+        [sys.executable, TOOL, "record", "--review-type", "external_code",
+         "--status", "completed", "--marker-status", "completed",
+         "--from", "none", "--provider", "openrouter", "--force",
+         "--project-root", str(project), "--run-id", RUN_ID],
+        capture_output=True, text=True, encoding="utf-8",
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert check_review_record(project, RUN_ID).ok
+
+
+def test_an_evidence_free_repair_does_not_clear_the_floor(project: Path):
+    """The control for the test above: without `--provider` the same command
+    writes a row indistinguishable from one nobody earned, and the floor says
+    so instead of greening (`trg-51a57370`)."""
+    _close_missing(project)
 
     result = subprocess.run(
         [sys.executable, TOOL, "record", "--review-type", "external_code",
@@ -110,4 +133,7 @@ def test_recording_one_real_review_clears_the_floor(project: Path):
         capture_output=True, text=True, encoding="utf-8",
     )
     assert result.returncode == 0, result.stdout + result.stderr
-    assert check_review_record(project, RUN_ID).ok
+
+    outcome = check_review_record(project, RUN_ID)
+    assert outcome.is_failure
+    assert "evidence" in outcome.detail.lower()

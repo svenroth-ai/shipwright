@@ -20,7 +20,9 @@ from typing import Any
 
 __all__ = [
     "ALL_STATUSES",
+    "GATE_TYPES",
     "NEEDS_DISPOSITION",
+    "RECORDABLE_TYPES",
     "REVIEW_TYPES",
     "SCHEMA_VERSION",
     "SEVERITIES",
@@ -35,6 +37,14 @@ __all__ = [
     "validate_record",
 ]
 
+#: Deliberately NOT bumped when ``gates`` was added, and that is the whole
+#: decision: every field it introduces is optional, a record without one reads
+#: exactly as it always did, and the ONE external consumer compares this number
+#: with a strict ``!==`` (``shipwright-webui``
+#: ``server/src/core/mission-context/review-record.ts:261``) and rejects
+#: anything else — so a bump would make the only reader stop understanding a
+#: file it understands fine. The guard a bump exists to arm is already armed
+#: below: ``validate_record`` refuses a version NEWER than it knows.
 SCHEMA_VERSION = 1
 
 #: Contract order — plan · code · doubt · external_code are the four types the
@@ -42,7 +52,31 @@ SCHEMA_VERSION = 1
 #: and small complexity the Self-Review is the ONLY review that runs, and a
 #: Review artifact showing four empty rows for the commonest case would be
 #: actively misleading.
+#:
+#: **This tuple is a cross-repo contract and may not grow.** The consumer
+#: rejects a ``reviews`` object carrying any key outside its own copy of these
+#: five (``review-record.ts:276``), and an invalid record does NOT degrade to the
+#: marker fallback — it renders as a data-integrity fault (``review-state.ts:240``).
+#: A sixth key here would therefore report every healthy record as corrupt. Gate
+#: stages go in :data:`GATE_TYPES` instead.
 REVIEW_TYPES = ("self", "plan", "code", "doubt", "external_code")
+
+#: Review passes this repo's F11 gate requires that the pinned ``reviews``
+#: contract has no slot for. Stored in a sibling ``gates`` object the consumer
+#: does not inspect.
+#:
+#: ``spec`` is Stage 1 of the review cascade — the spec-compliance HARD-GATE the
+#: constitution calls first and blocking. Without a row of its own, a ``code``
+#: row sourced ``code-reviewer`` is byte-identical whether Stage 1 passed first
+#: or was never spawned, which is exactly the not-run-versus-not-recorded
+#: distinction this artifact exists to abolish (``trg-64372769``).
+#:
+#: Promotion into :data:`REVIEW_TYPES` — one line here, one there — becomes safe
+#: as soon as the webui ships a reader that tolerates unknown review types.
+GATE_TYPES = ("spec",)
+
+#: Everything ``record_review_pass.py`` will accept for ``--review-type``.
+RECORDABLE_TYPES = REVIEW_TYPES + GATE_TYPES
 
 STATUS_PENDING = "pending"
 STATUS_COMPLETED = "completed"
@@ -118,9 +152,9 @@ def _validate_finding(item: Any, where: str) -> str | None:
     return None
 
 
-def validate_entry(review_type: str, entry: Any) -> str | None:
+def validate_entry(review_type: str, entry: Any, *, where: str | None = None) -> str | None:
     """Return an error string, or ``None`` when ``entry`` is well-formed."""
-    where = f"reviews.{review_type}"
+    where = where or f"reviews.{review_type}"
     if not isinstance(entry, dict):
         return f"{where} is not an object"
     if entry.get("review_type") != review_type:
@@ -189,6 +223,38 @@ def validate_record(
         return False, f"reviews has unknown type(s): {', '.join(sorted(unknown))}"
     for review_type in REVIEW_TYPES:
         err = validate_entry(review_type, reviews[review_type])
+        if err:
+            return False, err
+    return _validate_gates(record.get("gates"))
+
+
+def _validate_gates(gates: Any) -> tuple[bool, str | None]:
+    """The sibling ``gates`` object — optional, but strict when present.
+
+    Absence is valid: every record written before :data:`GATE_TYPES` existed has
+    no such key, and invalidating them would make the F11 gate report an
+    integrity fault on 64 merged runs that are perfectly fine. Optional here is
+    about READING history — a live run cannot use it to dodge the row, because
+    ``pending_types`` counts an absent gate as unanswered.
+    """
+    if gates is None:
+        return True, None
+    if not isinstance(gates, dict):
+        return False, "gates is not an object"
+    # An UNKNOWN gate key is tolerated, unlike an unknown `reviews` key. That
+    # asymmetry is deliberate: `reviews` mirrors a cross-repo contract whose
+    # consumer rejects strangers, so strictness there protects the mirror.
+    # `gates` has no mirror, and `schema_version` is frozen at 1 by design — so
+    # rejecting strangers here would mean the day GATE_TYPES gains a second
+    # member, records from the new writer read as schema-INVALID to every reader
+    # still on the old constant, and the gate tells the operator to "repair or
+    # delete" an immutable, git-tracked, never-evicted review history that is
+    # perfectly fine. That is §1.3's failure mode reproduced inside this repo,
+    # and the plugin cache makes old-and-new readers routine (Stage-3 doubt).
+    for gate_type in GATE_TYPES:
+        if gate_type not in gates:
+            continue
+        err = validate_entry(gate_type, gates[gate_type], where=f"gates.{gate_type}")
         if err:
             return False, err
     return True, None

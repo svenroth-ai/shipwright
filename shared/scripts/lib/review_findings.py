@@ -124,6 +124,43 @@ def from_code_reviewer(payload: Any) -> list[dict[str, Any]]:
     return out
 
 
+def from_spec_reviewer(payload: Any) -> list[dict[str, Any]]:
+    """``{stage, verdict, spec_citations: [...]}`` — the Stage-1 HARD-GATE.
+
+    Stage 1 has its own reply shape and had no adapter, so the ONE documented
+    way to record its row (``--from code-reviewer``) raised
+    ``payload has no 'review' key`` on the reviewer's actual output. The gate
+    that exists to make Stage 1 provable printed a repair that exits 1, and the
+    cheapest way past it was to hand-write a ``{"review": [...]}`` file — i.e.
+    fabricating the evidence was easier than recording it (Stage-3 doubt).
+
+    A citation is "the spec says X, the diff does Y", so the finding text keeps
+    BOTH halves: the divergence alone does not say which requirement it breaks.
+    A PASS carries ``spec_citations: []`` and yields no findings — that is the
+    honest empty result, not a missing one.
+    """
+    items = _items(payload, "spec_citations")
+    out: list[dict[str, Any]] = []
+    for item in items:
+        if not isinstance(item, dict):
+            continue
+        spec_ref = coerce_text(item.get("spec_ref"))
+        divergence = coerce_text(item.get("divergence"))
+        text = f"{divergence} — spec: {spec_ref}" if spec_ref and divergence else (
+            divergence or spec_ref or "")
+        if not text:
+            continue
+        out.append(make_finding(
+            finding=text[:MAX_TEXT_CHARS],
+            source="spec-reviewer",
+            category=item.get("kind"),
+            file=item.get("diff_location"),
+            suggestion=spec_ref or None,
+        ))
+    _no_element_loss(items, out, "spec_citations")
+    return out
+
+
 def from_doubt_reviewer(payload: Any) -> list[dict[str, Any]]:
     """``{stage, doubts: [...]}`` — the fresh-context disprove pass.
 
