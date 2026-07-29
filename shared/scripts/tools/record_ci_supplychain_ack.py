@@ -3,8 +3,15 @@
 A CI trust-boundary change (`.github/workflows/**`, a hosted dependency-updater
 config, composite actions) must name the recorded posture decision it is
 consistent with. This CLI computes the run/content binding itself, so nobody
-hand-edits ``shipwright_test_results.json`` — a machine-written artifact whose
-hand-injected fields get dropped on the next regen (external-review finding).
+hand-writes the acknowledgement.
+
+The ack is written to ``.shipwright/planning/iterate/<run_id>/ci_supplychain_ack.json``
+— beside ``reviews.json``. It previously lived in ``iterate_latest`` inside
+``shipwright_test_results.json``, which made it impossible to ship: that file is
+a DERIVED SNAPSHOT, so committing it trips ``check_no_derived_snapshots_committed``
+while omitting it starves ``check_ci_supplychain_ack`` (both ERROR), and
+``restore_derived_to_head`` reverted the ack during ordinary finalization
+(iterate-2026-07-28-ci-ack-per-run-home).
 
 Run it AFTER the final `shipwright_test_results.json` write (F5) and BEFORE the
 F6 commit stages it: at that point the CI change lives in the WORKING TREE, which
@@ -25,6 +32,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import sys
 from pathlib import Path
 
@@ -37,6 +45,15 @@ from tools.verifiers.ci_supplychain import (  # noqa: E402
     ci_supplychain_fingerprint,
     worktree_reader,
 )
+
+# From the module that OWNS them, rather than through a re-export facade: the
+# facade claimed to give "one import site for the ack's location" while making the
+# same symbols reachable from two public modules (Stage-2 review).
+from tools.verifiers.ci_supplychain_ack_store import (  # noqa: E402
+    ack_relpath,
+    is_safe_run_id,
+    wrap_ack,
+)
 from tools.verifiers.git_helpers import _run_git  # noqa: E402
 
 
@@ -47,11 +64,19 @@ def worktree_ci_paths(project_root: Path) -> list[str]:
     a commit range here would find nothing and the tool would refuse to record an
     ack for a change that plainly exists.
     """
+    # core.quotePath=false on BOTH: git otherwise quotes a non-ASCII path and
+    # escapes its bytes octally, yielding a name that addresses no file. The reader
+    # then reports "absent" for it, and since the verifier's side did the same, the
+    # fingerprint over that path was content-INDEPENDENT — a measured false-green
+    # (Stage-3 doubt review). The writer must produce the same addressable names the
+    # verifier does, or the two would simply disagree instead.
     paths: list[str] = []
-    rc, out, _ = _run_git(project_root, "diff", "--name-only", "HEAD")
+    rc, out, _ = _run_git(project_root, "-c", "core.quotePath=false",
+                          "diff", "--name-only", "HEAD")
     if rc == 0:
         paths += out.splitlines()
-    rc, out, _ = _run_git(project_root, "ls-files", "--others", "--exclude-standard")
+    rc, out, _ = _run_git(project_root, "-c", "core.quotePath=false",
+                          "ls-files", "--others", "--exclude-standard")
     if rc == 0:
         paths += out.splitlines()
     return _ci_paths(paths)
@@ -74,27 +99,38 @@ def build_ack(project_root: Path, run_id: str, consistent_with: str, statement: 
     }
 
 
-def write_ack(project_root: Path, ack: dict) -> Path:
-    """Merge the ack into ``iterate_latest`` WITHOUT disturbing any other key.
+def write_ack(project_root: Path, run_id: str, ack: dict) -> Path:
+    """Write the ack to its own per-run file, beside ``reviews.json``.
 
-    Read-modify-write on purpose: a wholesale rewrite of this file has silently
-    dropped sibling blocks before (the top-level ``coverage`` block feeding the CI
-    coverage-baseline lint), so every untouched key is carried verbatim.
+    It used to be merged into ``iterate_latest`` in ``shipwright_test_results.json``.
+    That file is a DERIVED SNAPSHOT, which made the ack unshippable: committing it
+    trips ``check_no_derived_snapshots_committed`` and omitting it starves
+    ``check_ci_supplychain_ack`` (both ERROR), while ``restore_derived_to_head``
+    reverted it outright during finalization. The per-run path is tracked, not
+    derived, and collides with no other run.
+
+    Written atomically: an interrupted write would otherwise leave a half-file
+    that fails the gate for a reason unrelated to the CI change itself.
     """
-    path = project_root / "shipwright_test_results.json"
-    data: dict = {}
-    if path.exists():
-        try:
-            data = json.loads(path.read_text(encoding="utf-8"))
-        except (json.JSONDecodeError, OSError, UnicodeDecodeError) as exc:
-            raise SystemExit(f"shipwright_test_results.json is unreadable ({exc})") from exc
-    if not isinstance(data, dict):
-        raise SystemExit("shipwright_test_results.json is not a JSON object")
-    latest = data.setdefault("iterate_latest", {})
-    if not isinstance(latest, dict):
-        raise SystemExit("iterate_latest is not an object — refusing to overwrite it")
-    latest["ci_supplychain_ack"] = ack
-    path.write_text(json.dumps(data, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+    if not is_safe_run_id(run_id):
+        raise SystemExit(
+            f"run id {run_id!r} is not a single safe path component — it becomes a "
+            "directory name under .shipwright/planning/iterate/"
+        )
+    path = project_root / ack_relpath(run_id)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    body = json.dumps(wrap_ack(run_id, ack), indent=2, ensure_ascii=False) + "\n"
+    # with_name, not with_suffix: `with_suffix` REPLACES the final suffix, so it
+    # only happens to be correct while the filename has exactly one dot.
+    tmp = path.with_name(path.name + ".tmp")
+    try:
+        tmp.write_text(body, encoding="utf-8")
+        os.replace(tmp, path)
+    finally:
+        # A leftover .tmp from a failed write would otherwise be swept into the PR
+        # by F6's DIRECTORY-level add on the next successful run (Stage-2 review).
+        # No-op after a successful replace.
+        tmp.unlink(missing_ok=True)
     return path
 
 
@@ -110,8 +146,17 @@ def main(argv: list[str] | None = None) -> int:
     args = ap.parse_args(argv)
 
     root = Path(args.project_root).resolve()
+    # Cheapest, most certain rejection FIRST. Validating it only inside write_ack
+    # meant an unsafe run id on a tree with no CI change was reported as "touches
+    # no CI supply-chain file" — the wrong diagnosis (Stage-2 review). The guard in
+    # write_ack stays as the API-level one for non-CLI callers.
+    if not is_safe_run_id(args.run_id):
+        raise SystemExit(
+            f"run id {args.run_id!r} is not a single safe path component — it "
+            "becomes a directory name under .shipwright/planning/iterate/"
+        )
     ack = build_ack(root, args.run_id, args.consistent_with, args.statement)
-    path = write_ack(root, ack)
+    path = write_ack(root, args.run_id, ack)
     print(json.dumps({"written": str(path), "ci_supplychain_ack": ack}, indent=2))
     return 0
 

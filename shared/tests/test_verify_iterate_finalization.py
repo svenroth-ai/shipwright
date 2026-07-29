@@ -795,8 +795,9 @@ def _seed_iterate_entry(proj: Path, run_id: str, complexity: str) -> None:
     }))
 
 
-def _write_test_results(proj: Path, block: dict | None) -> None:
-    payload: dict = {"iterate_latest": {}}
+def _write_test_results(proj: Path, block: dict | None, run_id: str = "r1") -> None:
+    # `run_id`: the gate refuses a block not naming the run being verified.
+    payload: dict = {"iterate_latest": {"run_id": run_id}}
     if block is not None:
         payload["iterate_latest"]["surface_verification"] = block
     (proj / "shipwright_test_results.json").write_text(
@@ -933,7 +934,8 @@ def test_surface_verification_fails_when_test_results_malformed(tmp_path):
     (proj / "shipwright_test_results.json").write_text("{not valid json", encoding="utf-8")
     result = check_surface_verification(proj, "r1")
     assert result.ok is False
-    assert "malformed" in result.detail.lower()
+    # "malformed" -> "unreadable" via the shared reader; still fail-closed.
+    assert "unreadable" in result.detail.lower()
 
 
 def test_surface_verification_run_all_checks_includes_f05(tmp_path):
@@ -1292,9 +1294,9 @@ def test_run_all_checks_passes_run_id_to_events_check(tmp_path):
 # ──────────────────────────────────────────────────────────────────────
 
 
-def _write_completeness(proj: Path, block: dict | None) -> None:
+def _write_completeness(proj: Path, block: dict | None, run_id: str = "r1") -> None:
     """Write iterate_latest.test_completeness (None = block absent)."""
-    payload: dict = {"iterate_latest": {}}
+    payload: dict = {"iterate_latest": {"run_id": run_id}}
     if block is not None:
         payload["iterate_latest"]["test_completeness"] = block
     (proj / "shipwright_test_results.json").write_text(
@@ -1320,12 +1322,16 @@ def _complete_block(behaviors: list[dict], **extra) -> dict:
     return block
 
 
-def test_completeness_skipped_when_run_id_missing(tmp_path):
+def test_completeness_fails_when_the_f5c_entry_is_missing(tmp_path):
+    """Was `..._skipped_when_run_id_missing`, and the skip WAS the defect: the
+    complexity comes from that entry, so SKIPPED answered "not applicable" to a
+    question never asked — at F11 its absence means F5c did not run."""
     from tools.verifiers.iterate_checks import check_test_completeness_ledger
     proj = tmp_path / "webui"
     proj.mkdir()
     result = check_test_completeness_ledger(proj, "absent")
-    assert result.is_skipped
+    assert result.is_failure
+    assert "F5c" in result.detail
 
 
 def test_completeness_skipped_for_trivial(tmp_path):
@@ -1368,7 +1374,7 @@ def test_completeness_fails_when_results_malformed(tmp_path):
     (proj / "shipwright_test_results.json").write_text("{nope", encoding="utf-8")
     result = check_test_completeness_ledger(proj, "r1")
     assert result.ok is False
-    assert "malformed" in result.detail.lower()
+    assert "unreadable" in result.detail.lower()
 
 
 def test_completeness_fails_when_untested_testable_positive(tmp_path):

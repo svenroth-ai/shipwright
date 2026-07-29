@@ -15,9 +15,33 @@ uv run "{shared_root}/scripts/tools/append_iterate_entry.py" \
     "branch": "iterate/{short-description}",
     "spec": "{path to iterate spec or null}",
     "tests_passed": true,
-    "adr": "{run_id}"
+    "adr": "{run_id}",
+    "test_completeness": { ...the F5 ledger block... },
+    "surface_verification": { ...the F0.5 block... },
+    "declared_removals": [ {"path": "...", "reason": "..."} ]
   }'
 ```
+
+**Carry the three evidence blocks here, not only in
+`shipwright_test_results.json`.** That file is a DERIVED_SNAPSHOT: at F11
+`ensure_current` → `integrate_main` calls `restore_derived_to_head`, which resets
+it to `HEAD` — and since an iterate no longer commits it, `HEAD`'s copy is
+`main`'s, i.e. the PREVIOUS run's evidence sitting in this run's worktree,
+shaped exactly like this run's would be. `check_test_completeness_ledger`,
+`check_surface_verification` and the silent-revert declaration reader now refuse
+a block that does not name the run being verified, and all three read this
+per-run entry FIRST. The entry is not a derived snapshot, so the restore cannot
+reach it.
+
+`declared_removals` matters most of the three and is the easiest to forget: it
+is the only one whose loss *blocks* rather than merely failing to catch. A
+removal you declared at F5 that the restore then rewinds is a removal the F11
+`no silent revert` gate will report as undeclared — with your reason sitting in
+a file that now describes another run. Write it here and it survives.
+
+If you skip them, the gates are still satisfiable — but only for as long as the
+branch never falls behind, and the repair after it does is "re-run F5 and read
+the numbers again". Writing them here once is the durable form.
 
 Writes: `.shipwright/agent_docs/iterates/<run_id>.json` (atomic, under
 file lock covering the full append transaction). `run_id` and `date`

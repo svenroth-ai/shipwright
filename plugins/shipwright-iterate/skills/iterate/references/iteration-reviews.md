@@ -376,31 +376,58 @@ Every review pass writes its result to the run's review record:
 .shipwright/planning/iterate/{run_id}/reviews.json
 ```
 
-Five types — `self` · `plan` · `code` · `doubt` · `external_code` — all
-materialized up front, each closed by the pass that owns it.
+Six types, all materialized up front, each closed by the pass that owns it:
 
-**The `code` row belongs to Stage 2, and Stage 1 has no row at all.**
-`spec-reviewer` is the cascade's HARD-GATE, but `REVIEW_TYPES` has no `spec`
-entry and adding one invalidates every existing record (a schema-version change
-— tracked, see below). Record `code` from **Stage 2** (`--from code-reviewer`)
-and name both stages in `--recorded-by`. Every run that finalizes ended at Stage
-2: a REJECT loops until PASS (`{build_plugin_root}/agents/spec-reviewer.md`
-→ "Re-review loop"), and an unresolved REJECT never reaches F6, so there is no
-shipping run whose `code` row is Stage 1's to claim.
+* `reviews` — `self` · `plan` · `code` · `doubt` · `external_code`
+* `gates` — `spec`
 
-> **Known gap — the record cannot evidence Stage 1.** A `code` row sourced
-> `code-reviewer` is byte-identical whether Stage 1 passed first or was never
-> spawned, which is the "not run vs not recorded" distinction this artifact
-> exists to abolish, at the one stage the constitution calls first and blocking.
-> Carrying the verdict in the `code` row instead was **tried and rejected** on
-> this run: `completed` made a Stage-1-only row satisfy the medium+ code-quality
-> floor although Stage 2 provably had not run, and `not_run` discards the
-> findings. Until `REVIEW_TYPES` gains a `spec` entry this is a **correctness**
-> gap, not a cosmetic one. `--recorded-by` is prose, not proof. **F11 stops the run
-while any type is still `pending`** (small+; skipped at trivial), so an empty
-Review row in the Mission view always means "genuinely not run", never "nobody
-wrote it down". The reviewers already return structured JSON; before this record
-existed it survived only as ADR prose and was thrown away.
+**Why two objects, and why `spec` is not simply a sixth `reviews` key.** The
+`reviews` object is a pinned CROSS-REPO contract. The webui consumer
+(`shipwright-webui` `server/src/core/mission-context/review-record.ts`) rejects a
+record whose `schema_version` differs by strict `!==` (`:261`) or whose `reviews`
+carries any key outside its own five (`:276`) — and an invalid record does **not**
+fall back to the marker view: it renders all five rows as a data-integrity fault
+(`review-state.ts:240`). So a sixth `reviews` key, or a version bump, would make
+every healthy record report as corrupt in the Mission view. `gates` sits outside
+everything the consumer inspects, so it is additive and `schema_version` stays
+`1`. Promoting `spec` into `reviews` is a one-line change on each side once the
+webui ships a tolerant reader — that is the cross-repo half, not a blocker for
+this one.
+
+**Stage 1 can now prove it ran.** `spec-reviewer` closes `spec`; `code-reviewer`
+closes `code`; `doubt-reviewer` closes `doubt`. The gate enforces the cascade's
+own ordering: **a `code` row recorded `completed` while `spec` is not `completed`
+FAILS**, because Stage 2 cannot legitimately have run without its HARD-GATE
+passing first. `external_code` is deliberately outside that rule — the
+spec-compliance and doubt roles are not cascaded to external providers, so a run
+carried by the external route closes `spec` as `not_run` with a disposition, and
+`_substitution_note` reports what that does not buy.
+
+> **Do not re-attempt: carrying the Stage-1 verdict inside the `code` row.**
+> That shape was built and then WITHDRAWN on
+> `iterate-2026-07-28-cascade-delegated-to-nobody` after three independent
+> reviewers disproved it. `status=completed` let a Stage-1-only row satisfy the
+> medium+ code-quality floor although Stage 2 provably had not run;
+> `status=not_run` discards the findings; the write ordering was unknowable at
+> write time because a REJECT you intend to fix is not terminal; and the verdict
+> was never validated, so `{verdict: ERROR}` recorded as non-blocking. `spec`
+> having its own row is what makes all four moot — `--recorded-by` was prose,
+> not proof.
+
+**A completed code row must carry evidence, not just a status.** At medium+ the
+floor is satisfied only by a `code` / `external_code` row carrying at least one
+of: a non-empty `findings` list, a non-blank `provider`, a non-blank
+`raw_excerpt`, or a non-blank `recorded_by` naming an adapter other than `none`.
+`--status completed` with `--from` omitted produces a row with none of them —
+indistinguishable from one nobody earned — and that no longer greens the gate.
+
+**F11 stops the run while any type is still `pending`** (small+; skipped at
+trivial), so an empty Review row in the Mission view always means "genuinely not
+run", never "nobody wrote it down". An **absent** `gates` object counts as
+`spec` pending: the schema tolerates its absence so records written before it
+existed stay readable, and a live run gets nothing from that. The reviewers
+already return structured JSON; before this record existed it survived only as
+ADR prose and was thrown away.
 
 Materialize once, early in the run:
 
@@ -415,8 +442,8 @@ or the whole message with its ```json block; both are accepted) and hand it over
 ```bash
 uv run "{shared_root}/scripts/tools/record_review_pass.py" record \
   --project-root "{project_root}" --run-id "{run_id}" \
-  --review-type {self|plan|code|doubt|external_code} --status completed \
-  --from {self-review|code-reviewer|doubt-reviewer|external-review-json|external-prose} \
+  --review-type {self|plan|spec|code|doubt|external_code} --status completed \
+  --from {self-review|spec-reviewer|code-reviewer|doubt-reviewer|external-review-json|external-prose} \
   --payload-file "{path to the reply}" \
   [--provider openrouter] [--marker-status completed]
 ```
@@ -425,7 +452,8 @@ uv run "{shared_root}/scripts/tools/record_review_pass.py" record \
 |---|---|---|---|
 | Step 7 Self-Review | `self` | `self-review` | `{"items":[{"name","verdict":"pass\|fail\|n/a","note"}]}` — one entry per checklist item |
 | External plan/iterate review (Branch A) | `plan` | `external-review-json` | `external_review.py` stdout, verbatim. Add `--marker-status` |
-| Internal `code-reviewer` (Stage 2) | `code` | `code-reviewer` | the subagent's reply. Name Stage 1 in `--recorded-by` |
+| `spec-reviewer` (Stage 1, HARD-GATE) | `spec` | `spec-reviewer` | the subagent's reply verbatim (`{stage, verdict, spec_citations[]}`). Must be `completed` before a `completed` `code` row |
+| Internal `code-reviewer` (Stage 2) | `code` | `code-reviewer` | the subagent's reply |
 | `doubt-reviewer` (Stage 3) | `doubt` | `doubt-reviewer` | the subagent's reply |
 | External code cascade | `external_code` | `external-review-json` | `external_review.py` stdout. Add `--marker-status` |
 
@@ -468,7 +496,12 @@ prefix, i.e. `uv run "{shared_root}/scripts/tools/record_review_pass.py" record
   --disposition "{the rule that applies, e.g. external_code_review.enabled is false for this project}" \
   --marker-status "{skipped_user_opt_out | skipped_config_disabled}"
 
-# the delegated internal cascade — recorded as NOT having run
+# the delegated internal cascade — recorded as NOT having run.
+# Stage 1 has a row of its own and is delegated with the rest; omitting it
+# leaves `spec` pending and reds the sub-iterate at F11.
+… --review-type spec --status not_run \
+  --disposition "blocker 1 (no Agent tool): the sub-iterate-runner cannot spawn the Stage-1 spec-reviewer; delegated with the rest of the cascade (ADR-029, campaign mode only)"
+
 … --review-type code --status not_run \
   --disposition "blocker 1 (no Agent tool): the sub-iterate-runner cannot spawn the cascade; delegated to the campaign orchestrator (ADR-029, campaign mode only)"
 

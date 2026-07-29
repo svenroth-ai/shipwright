@@ -1,8 +1,11 @@
 """`record_ci_supplychain_ack` — the writer CLI for the F11 CI supply-chain gate
 (iterate-2026-07-18-ci-supplychain-risk-flag).
 
-The ack must never be hand-edited into `shipwright_test_results.json`: it is a
-machine-written artifact, and a hand-injected field is dropped on the next regen.
+The ack must never be hand-written: the run and content bindings are computed, not
+typed. Since iterate-2026-07-28-ci-ack-per-run-home it is written to
+`.shipwright/planning/iterate/<run_id>/ci_supplychain_ack.json` rather than into
+`shipwright_test_results.json`, which is a derived snapshot the iterate commit may
+not carry.
 
 The CLI runs PRE-F6, so it fingerprints the WORKING TREE while the F11 verifier
 fingerprints the COMMITTED tree. These tests pin that the two agree across that
@@ -78,26 +81,34 @@ def test_ack_is_invalidated_when_the_ci_file_changes_after_recording(
     assert "fingerprint" in res.detail.lower()
 
 
-def test_preserves_sibling_keys(git_origin_repo, make_worktree):
-    """The top-level `coverage` block has been silently dropped by a wholesale
-    rewrite of this file before — every untouched key must survive."""
+def test_leaves_the_derived_results_file_untouched(git_origin_repo, make_worktree):
+    """Was `test_preserves_sibling_keys`, which pinned the ack being MERGED into
+    `iterate_latest` while sibling keys (the top-level `coverage` block feeding the
+    CI coverage-baseline lint) survived.
+
+    Since iterate-2026-07-28-ci-ack-per-run-home the ack is not written here at
+    all — that file is a DERIVED SNAPSHOT, and parking the ack in it made two
+    ERROR-severity F11 checks unsatisfiable at once. The invariant is therefore
+    strictly stronger than "siblings survive": the file must come out BYTE-IDENTICAL.
+    """
     work, _o = git_origin_repo
     _set_repo_identity(work)
     wt = make_worktree(work, "rec-preserve")
     _stage_only(wt, ".github/workflows/ci.yml")
-    _write(wt, "shipwright_test_results.json", json.dumps({
+    before = json.dumps({
         "iterate_latest": {"run_id": _RUN, "unit": {"status": "passed"}},
         "coverage": {"total": 80.2, "measured_tier": "repo"},
-    }))
+    })
+    _write(wt, "shipwright_test_results.json", before)
 
     rec.main(["--project-root", str(wt), "--run-id", _RUN,
               "--consistent-with", "#285",
               "--statement", "Reverts the hosted updater, keeping third-party pins."])
 
-    data = json.loads((wt / "shipwright_test_results.json").read_text(encoding="utf-8"))
-    assert data["coverage"] == {"total": 80.2, "measured_tier": "repo"}
-    assert data["iterate_latest"]["unit"] == {"status": "passed"}
-    assert data["iterate_latest"]["ci_supplychain_ack"]["consistent_with"] == "#285"
+    after = (wt / "shipwright_test_results.json").read_text(encoding="utf-8")
+    assert after == before, "the writer must not touch the derived snapshot at all"
+    ack = json.loads((wt / cs.ack_relpath(_RUN)).read_text(encoding="utf-8"))
+    assert ack["ci_supplychain_ack"]["consistent_with"] == "#285"
 
 
 def test_refuses_when_working_tree_touches_no_ci_file(git_origin_repo, make_worktree):

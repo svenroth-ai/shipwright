@@ -27,6 +27,59 @@ def significant_line(line: str) -> bool:
     return bool(line.strip())
 
 
+def normalize_line(line: str) -> str:
+    """The comparison form of a line — the ONE definition of "the same line".
+
+    ``str.split()`` semantics: leading and trailing whitespace dropped, every
+    internal run of whitespace (spaces, tabs, newlines, and the Unicode
+    whitespace Python folds in) collapsed to a single space.
+
+    **Why internal whitespace had to join the definition.** Lines used to be
+    compared after a bare ``.strip()``, i.e. leading/trailing only, while
+    :func:`replacement_hunks` diffs with ``-w`` — whitespace-insensitive
+    *throughout*. A line whose INTERNAL spacing changed was therefore a finding
+    that no hunk could pair with, so it always reported. That direction is safe
+    and the finding is arguably real, but the asymmetry meant the finder and the
+    pairer disagreed about what a line is, and only one of them could be right
+    (``trg-ffddd6b9`` (3), deferred from #488).
+
+    **This is ``git diff -b``, not ``-w``, and that is the whole point.** The
+    pairer in :func:`replacement_hunks` was moved to ``-b`` in the same change
+    so the two implement ONE equivalence relation rather than two similar ones.
+    Measured on real git:
+
+    ======================================  ====  ====  ==================
+    change                                  -b    -w    " ".join(split())
+    ======================================  ====  ====  ==================
+    ``a b`` → ``a    b`` (run)              same  same  same
+    ``a b`` → ``a<TAB>b``                   same  same  same
+    ``    a b`` → ``        a b`` (indent)  same  same  same
+    ``a b`` → ``ab``     (token merge)      DIFF  same  DIFF
+    ``    a b`` → ``a b`` (de-indent)       DIFF  same  same
+    ``a b`` → ``a c``    (real edit)        DIFF  DIFF  DIFF
+    ======================================  ====  ====  ==================
+
+    ``-w`` was the wrong partner: it called a token merge "no change" while this
+    function called it a change, which is the finder/pairer disagreement
+    ``trg-ffddd6b9`` (3) is about — a finding with no hunk able to answer it.
+    ``-b`` agrees on that row. It disagrees on the de-indent row in the
+    HARMLESS direction: a hunk exists with nothing to pair, rather than a
+    finding with nothing to pair.
+
+    Closing the last row the other way (``"".join(...)``, full ``-w``) was
+    rejected twice over: it would **suppress a real content change** — merging
+    tokens changes meaning in every language this repo tracks, and a detector
+    whose one prohibition is silent suppression must not call that "no change" —
+    and :func:`tokens_in_order` splits these strings on whitespace, so a
+    single-token line would degrade the superseded and unexplained-by-edit
+    proofs to blob comparison (external code review, openai #1).
+
+    The ``-w`` anti-collapse property is preserved: a pure re-indent is still
+    "same" under ``-b``, so a reformat cannot swell one hunk to the whole file.
+    """
+    return " ".join(line.split())
+
+
 def file_lines(project_root: Path, ref: str, path: str) -> set[str] | None:
     """The significant lines of ``path`` at ``ref``; ``None`` if it cannot be read.
 
@@ -37,7 +90,7 @@ def file_lines(project_root: Path, ref: str, path: str) -> set[str] | None:
     rc, out, _ = _run_git(project_root, "show", f"{ref}:{path}")
     if rc != 0:
         return None
-    return {line.strip() for line in out.splitlines() if significant_line(line)}
+    return {normalize_line(line) for line in out.splitlines() if significant_line(line)}
 
 
 def tip_state(project_root: Path, ref: str, path: str) -> tuple[str, set[str] | None]:
@@ -92,15 +145,25 @@ def resolve_default_ref(project_root: Path, default_branch: str) -> str:
     current tip, 2 against a tip one commit older, 1 against a tip three older.
     A check that quietly shrinks is the same disease as a check that never fires.
 
-    Four outcomes, all explicit, because "it failed" and "it answered no" must not
+    Five outcomes, all explicit, because "it failed" and "it answered no" must not
     be conflated (external plan review):
 
     * ``origin/<name>`` does not resolve — no remote, which is every test repo
       here — keep the local ref;
+    * the remote resolves and the LOCAL ref does not — use the remote;
     * the local ref is an ancestor of it — the remote is strictly newer, use it;
     * it is not — diverged, or the local ref is ahead — keep the local ref;
     * git failed — keep the local ref, changing nothing on a repository whose
       state we could not read.
+
+    The second is new (``trg-ffddd6b9`` (2), deferred from #488). It used to fall
+    through the third: with no local ``main``, ``merge-base --is-ancestor`` fails,
+    the unresolvable local name came back, and ``check_no_silent_revert``'s
+    pre-flight then SKIPped a comparison that ``origin/main`` could have answered
+    perfectly well. Fail-honest, never a false green — but a checkable question
+    left unasked, which is the same disease as a check that never fires. It does
+    not arise in the F11 worktree flow, where the local ref always exists; a bare
+    clone or a detached CI checkout is where it bites.
 
     Idempotent: given ``origin/main`` the probe for ``origin/origin/main`` fails
     and the argument comes back unchanged.
@@ -109,6 +172,9 @@ def resolve_default_ref(project_root: Path, default_branch: str) -> str:
     rc, _, _ = _run_git(project_root, "rev-parse", "--verify", f"{remote}^{{commit}}")
     if rc != 0:
         return default_branch
+    rc, _, _ = _run_git(project_root, "rev-parse", "--verify", f"{default_branch}^{{commit}}")
+    if rc != 0:
+        return remote
     rc, _, _ = _run_git(project_root, "merge-base", "--is-ancestor", default_branch, remote)
     return remote if rc == 0 else default_branch
 
@@ -143,7 +209,7 @@ def tokens_in_order(needle: str, hay: str) -> bool:
 
 
 def replacement_hunks(
-    project_root: Path, ref: str, head: str, path: str,
+    project_root: Path, ref: str, head: str, path: str, flag: str = "-b",
 ) -> list[tuple[set[str], list[str]]]:
     """``[(deleted, added)]`` per minimal diff hunk of ``ref..head`` for one path.
 
@@ -158,14 +224,29 @@ def replacement_hunks(
     with no hunks at all — a binary file, an unreadable path — yields ``[]``,
     which suppresses nothing.
 
-    ``-w`` keeps the hunks and the findings agreeing about what "the same line"
-    means. Lines are compared everywhere else after ``.strip()``, so a pure
-    re-indent produces no finding — but git, diffing raw bytes, would see every
-    line as changed and collapse the file into ONE hunk, inside which any added
-    line could vouch for any deleted one. That is the unbounded matching the
-    design rejected, reachable by reformatting (Stage-3 review).
+    ``-b`` keeps the hunks and the findings agreeing about what "the same line"
+    means — it is the diff-side twin of :func:`normalize_line`, and the two are
+    equivalent on every case but one (that docstring carries the measured
+    table). Without it git diffs raw bytes, sees every line of a re-indent as
+    changed, and collapses the file into ONE hunk inside which any added line
+    could vouch for any deleted one — the unbounded matching the design rejected,
+    reachable by reformatting (Stage-3 review).
+
+    It was ``-w`` until iterate-2026-07-28-f11-verifies-own-run. ``-w`` ignores
+    whitespace ENTIRELY, so it read a token merge (``a b`` → ``ab``) as no
+    change at all while the finder read it as a change — leaving a finding no
+    hunk could ever answer, which is the asymmetry ``trg-ffddd6b9`` (3) names.
+
+    ``flag`` is a parameter because hunk WIDTH matters as much as line equality.
+    ``-b`` marks a strict superset of ``-w`` as changed, and under ``-U0`` a
+    changed line JOINS two hunks that an unchanged line would separate — so a
+    de-indent to column 0 between two regions merges them, and
+    :func:`unexplained_by_edit` would let an added line from one region vouch
+    for a deleted line in the other. That is the unbounded matching this
+    docstring rejects, re-entered through the back door (Stage-3 doubt). The
+    filter therefore asks BOTH flags and suppresses only where they agree.
     """
-    rc, out, _ = _run_git(project_root, "diff", "-U0", "-w", ref, head, "--", path)
+    rc, out, _ = _run_git(project_root, "diff", "-U0", flag, ref, head, "--", path)
     if rc != 0:
         return []
     hunks: list[tuple[set[str], list[str]]] = []
@@ -181,10 +262,10 @@ def replacement_hunks(
             continue
         elif raw.startswith("-"):
             if significant_line(raw[1:]):
-                deleted.add(raw[1:].strip())
+                deleted.add(normalize_line(raw[1:]))
         elif raw.startswith("+"):
             if significant_line(raw[1:]):
-                added.append(raw[1:].strip())
+                added.append(normalize_line(raw[1:]))
     if started and (deleted or added):
         hunks.append((deleted, added))
     return hunks
@@ -192,6 +273,7 @@ def replacement_hunks(
 
 __all__ = [
     "file_lines",
+    "normalize_line",
     "is_subsequence",
     "replacement_hunks",
     "resolve_default_ref",

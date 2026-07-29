@@ -56,11 +56,15 @@ def test_new_record_materializes_all_five_types_as_pending():
 
 
 def test_pending_types_lists_only_unclosed_types():
+    from lib.review_record import RECORDABLE_TYPES
+
     rec = new_record(RUN_ID)
-    assert set(pending_types(rec)) == set(REVIEW_TYPES)
+    # RECORDABLE_TYPES: the gate rows are materialised pending too, so "every
+    # type is represented" keeps meaning every type a run must answer for.
+    assert set(pending_types(rec)) == set(RECORDABLE_TYPES)
     rec = upsert_review(rec, make_entry("self", "completed"))
     assert "self" not in pending_types(rec)
-    assert len(pending_types(rec)) == 4
+    assert len(pending_types(rec)) == len(RECORDABLE_TYPES) - 1
 
 
 def test_findings_count_is_derived_not_supplied():

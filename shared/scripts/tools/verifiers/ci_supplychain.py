@@ -14,18 +14,17 @@ That is the sentence nobody could have written for #285 without noticing the
 contradiction.
 
 The ack is bound to the run id AND a fingerprint of this diff's CI paths *and
-their content*. Without the run binding, a leftover ack in ``iterate_latest``
-would satisfy the gate for any later CI change; without the content binding, an
-author could acknowledge "adds a ruff step" and then slip `pull_request_target:`
-into the same file before committing. Both were false-greens by construction —
-the first caught by the external review of this iterate's plan, the second by its
-code review.
+their content*. Without the run binding, a leftover ack would satisfy the gate for
+any later CI change; without the content binding, an author could acknowledge
+"adds a ruff step" and then slip `pull_request_target:` into the same file before
+committing. Both were false-greens by construction.
+
+Where the ack LIVES and how it is loaded is :mod:`ci_supplychain_ack_store`;
+reading committed content safely is :mod:`git_blob_read`.
 """
 
 from __future__ import annotations
 
-import hashlib
-import json
 import re
 import sys
 from pathlib import Path
@@ -34,7 +33,19 @@ _SCRIPTS_ROOT = Path(__file__).resolve().parents[2]
 if str(_SCRIPTS_ROOT) not in sys.path:
     sys.path.insert(0, str(_SCRIPTS_ROOT))
 
+from .ci_supplychain_ack_store import (  # noqa: E402
+    ack_relpath,
+    is_safe_run_id,
+    load_ack,
+    source_caveat,
+)
 from .common import CheckResult, Severity  # noqa: E402
+from .git_blob_read import (  # noqa: E402
+    GitReadError,
+    committed_bytes_reader,
+    content_fingerprint,
+    worktree_bytes_reader,
+)
 from .git_helpers import _run_git  # noqa: E402
 from .integration_coverage import _iterate_changed_paths  # noqa: E402
 
@@ -95,22 +106,10 @@ def _ci_paths(changed_files: list[str] | None) -> list[str]:
     return sorted(hits)
 
 
-def worktree_reader(project_root: Path):
-    """Content reader for the WORKING TREE — what the ack CLI sees pre-F6."""
-    def read(rel: str) -> str | None:
-        try:
-            return (project_root / rel).read_text(encoding="utf-8", errors="replace")
-        except OSError:
-            return None
-    return read
-
-
-def commit_reader(project_root: Path, commit: str):
-    """Content reader for a COMMITTED tree — what the F11 verifier sees."""
-    def read(rel: str) -> str | None:
-        rc, out, _ = _run_git(project_root, "show", f"{commit}:{rel}")
-        return out if rc == 0 else None
-    return read
+#: The working-tree content reader the ack CLI uses pre-F6. Re-exported under the
+#: name its callers already know; the implementation is shared with the committed
+#: reader so both sides of the write-then-verify seam hash identically.
+worktree_reader = worktree_bytes_reader
 
 
 def ci_supplychain_fingerprint(changed_files, content_reader) -> str:
@@ -123,52 +122,10 @@ def ci_supplychain_fingerprint(changed_files, content_reader) -> str:
     CI file after the ack invalidates it — re-recording is the correct cost.
 
     Only CI paths are covered, so the finalization churn (compliance regen, events
-    log, changelog drops) never perturbs it; a deleted file hashes as a sentinel so
-    removing a security workflow is a distinct fingerprint, not an absent one.
+    log, changelog drops) never perturbs it. Hashing rules are in
+    :func:`~.git_blob_read.content_fingerprint`.
     """
-    parts = []
-    for rel in _ci_paths(changed_files):
-        body = content_reader(rel)
-        if body is None:
-            digest = "<absent>"
-        else:
-            digest = hashlib.sha256(body.encode("utf-8")).hexdigest()
-        parts.append(rel + "\t" + digest)
-    return hashlib.sha256("\n".join(parts).encode("utf-8")).hexdigest()
-
-
-def _read_ack(project_root: Path, commit: str = "") -> tuple[dict | None, str | None]:
-    """Return ``(ack, error)`` — ``error`` set means the results file is unusable.
-
-    Prefers the COMMITTED copy: the ack is the durable record this gate exists to
-    produce, and one that lives only in the working copy would never ship in the PR
-    (same policy the events-log check enforces). Falls back to disk when the file is
-    untracked at that commit.
-    """
-    raw: str | None = None
-    if commit:
-        rc, out, _ = _run_git(project_root, "show", f"{commit}:shipwright_test_results.json")
-        if rc == 0:
-            raw = out
-    if raw is None:
-        results_path = project_root / "shipwright_test_results.json"
-        if not results_path.exists():
-            return None, None
-        try:
-            raw = results_path.read_text(encoding="utf-8")
-        except (OSError, UnicodeDecodeError) as exc:
-            return None, f"shipwright_test_results.json is unreadable/corrupt ({exc})"
-    try:
-        data = json.loads(raw)
-    except json.JSONDecodeError as exc:
-        return None, f"shipwright_test_results.json is unreadable/corrupt ({exc})"
-    if not isinstance(data, dict):
-        return None, "shipwright_test_results.json is not a JSON object"
-    latest = data.get("iterate_latest")
-    if not isinstance(latest, dict):
-        return None, None
-    ack = latest.get("ci_supplychain_ack")
-    return (ack if isinstance(ack, dict) else None), None
+    return content_fingerprint(_ci_paths(changed_files), content_reader)
 
 
 def _validate_fields(ack: dict) -> str | None:
@@ -200,11 +157,14 @@ def check_ci_supplychain_ack(
 ) -> CheckResult:
     """Non-dodgeable ``touches_ci_supplychain`` gate.
 
-    An iterate whose diff touches the CI trust boundary MUST carry
-    ``iterate_latest.ci_supplychain_ack`` naming the recorded posture decision the
-    change agrees with. The flag is RECOMPUTED from the diff (merge-base..HEAD),
-    never an agent-reported value, and the ack must be bound to this run and this
-    change set — so neither omitting a self-report nor reusing an old ack works.
+    An iterate whose diff touches the CI trust boundary MUST carry an
+    acknowledgement naming the recorded posture decision the change agrees with,
+    at ``.shipwright/planning/iterate/<run_id>/ci_supplychain_ack.json`` (the
+    legacy ``iterate_latest.ci_supplychain_ack`` key is still honoured under
+    identical validation — see :mod:`ci_supplychain_ack_store`). The flag is
+    RECOMPUTED from the diff (merge-base..HEAD), never an agent-reported value,
+    and the ack must be bound to this run and this change set — so neither
+    omitting a self-report nor reusing an old ack works.
 
     Applies at EVERY complexity on purpose (unlike the ``cross_component`` gate's
     medium+ floor): a one-line workflow edit is still a trust-boundary change, and
@@ -247,14 +207,26 @@ def check_ci_supplychain_ack(
         return CheckResult(name, True, "no CI supply-chain file touched")
 
     shown = ", ".join(hit[:3])
-    ack, err = _read_ack(project_root, commit)
+    # AFTER the no-CI-file early exit on purpose: the run id only becomes a path
+    # component once an ack is actually required, so an odd run id on an unrelated
+    # diff must not manufacture a finding. When one IS required, an unusable run id
+    # means the ack cannot be located at all — fail closed rather than fall through
+    # to the legacy key, which would make a malformed run id a bypass.
+    if not is_safe_run_id(run_id):
+        return CheckResult(
+            name, False,
+            f"CI supply-chain change touched ({shown}) but the run id "
+            f"({str(run_id)[:60]!r}) is not a single safe path component, so the "
+            "acknowledgement cannot be located",
+        )
+    ack, err, source = load_ack(project_root, run_id, commit)
     if err:
         return CheckResult(name, False, f"CI supply-chain change touched ({shown}) but {err}")
     if not ack:
         return CheckResult(
             name, False,
-            f"CI supply-chain change touched ({shown}) but no "
-            "`iterate_latest.ci_supplychain_ack` was recorded — run "
+            f"CI supply-chain change touched ({shown}) but no acknowledgement was "
+            f"recorded at {ack_relpath(run_id)} — run "
             "`shared/scripts/tools/record_ci_supplychain_ack.py` naming the "
             "recorded decision this change is consistent with",
         )
@@ -268,7 +240,19 @@ def check_ci_supplychain_ack(
             "stale ack cannot license this change",
         )
 
-    expected = ci_supplychain_fingerprint(changed, commit_reader(project_root, commit))
+    try:
+        expected = ci_supplychain_fingerprint(
+            changed, committed_bytes_reader(project_root, commit))
+    except GitReadError as exc:
+        # A read failure must never be hashed as "<absent>" — that is the value a
+        # genuinely DELETED path gets, so an ack recorded against a deletion would
+        # license arbitrary content here (Stage-2 review).
+        return CheckResult(
+            name, False,
+            f"CI supply-chain change touched ({shown}) but its content could not "
+            f"be read from {commit[:8]} ({exc}) — refusing to certify a "
+            "fingerprint over content this check could not see",
+        )
     if str(ack.get("paths_fingerprint", "")).strip() != expected:
         return CheckResult(
             name, False,
@@ -281,8 +265,14 @@ def check_ci_supplychain_ack(
     if invalid:
         return CheckResult(name, False, f"CI supply-chain acknowledgement is not usable: {invalid}")
 
+    # Name the source. A worktree read means the ack is NOT in the commit and so
+    # will not ship in the PR; the gate still passes (the record exists and is
+    # correctly bound), but reporting it keeps "recorded" from silently reading as
+    # "recorded and durable" — the ambiguity this whole change removes elsewhere.
+    # Rendered next to the code that MINTS the vocabulary, because minting and
+    # rendering it in two files is how `legacy-worktree` lost its caveat once.
     return CheckResult(
         name, True,
         f"CI supply-chain change acknowledged ({shown}) as consistent with "
-        f"{str(ack['consistent_with']).strip()[:60]}",
+        f"{str(ack['consistent_with']).strip()[:60]}{source_caveat(source)}",
     )

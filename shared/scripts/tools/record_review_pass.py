@@ -42,12 +42,12 @@ from lib.review_findings import (  # noqa: E402
 from lib.review_marker import ALLOWED_STATUSES  # noqa: E402
 from lib.review_payloads import ADAPTERS, build_findings  # noqa: E402
 from lib.review_record import (  # noqa: E402
-    REVIEW_TYPES,
+    RECORDABLE_TYPES,
     STATUS_COMPLETED,
     TERMINAL_STATUSES,
     ImmutableReviewError,
     ReviewRecordError,
-    close_pending,
+    close_pending, entry_for,
     init_record,
     make_entry,
     pending_types,
@@ -136,8 +136,8 @@ def _cmd_repair_markers(
 
 def _validate_record_args(args: argparse.Namespace) -> str | None:
     """Return an error message, or ``None`` when the arguments are coherent."""
-    if args.review_type not in REVIEW_TYPES:
-        return f"--review-type must be one of {list(REVIEW_TYPES)}"
+    if args.review_type not in RECORDABLE_TYPES:
+        return f"--review-type must be one of {list(RECORDABLE_TYPES)}"
     if args.status not in TERMINAL_STATUSES:
         return (f"--status must be one of {sorted(TERMINAL_STATUSES)} — 'pending' "
                 "is the absence of a record, not a way to close one")
@@ -262,7 +262,7 @@ def _repair_or_reject(
         record = read_record(project_root, args.run_id)
     except ReviewRecordError:
         record = None
-    recorded = ((record or {}).get("reviews", {}).get(args.review_type) or {})
+    recorded = entry_for(record or {}, args.review_type)
     if recorded.get("status") != args.status:
         return _fail(
             "immutable",
@@ -290,7 +290,7 @@ def _cmd_close_missing(args: argparse.Namespace) -> int:
     targets = pending_types(record)
     if args.only:
         requested = [t.strip() for t in args.only.split(",") if t.strip()]
-        unknown = [t for t in requested if t not in REVIEW_TYPES]
+        unknown = [t for t in requested if t not in RECORDABLE_TYPES]
         if unknown:
             return _fail("invalid_arguments",
                          f"--only names unknown review type(s): {', '.join(unknown)}",
@@ -345,7 +345,7 @@ def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
 
     rec = sub.add_parser("record", help="record one review pass")
     common(rec)
-    rec.add_argument("--review-type", required=True, choices=list(REVIEW_TYPES))
+    rec.add_argument("--review-type", required=True, choices=list(RECORDABLE_TYPES))
     rec.add_argument("--status", required=True)
     rec.add_argument("--from", dest="review_from", default="none", choices=list(ADAPTERS),
                      help="how to read --payload-file")

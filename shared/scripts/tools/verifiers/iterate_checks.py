@@ -19,7 +19,6 @@ files and no legacy array is fully supported.
 
 from __future__ import annotations
 
-import json
 import re
 import sys
 from pathlib import Path
@@ -45,6 +44,7 @@ from lib.iterate_entry import (  # noqa: E402
     read_iterate_entries,
 )
 
+from ._iterate_latest import read_iterate_latest, stale_detail  # noqa: E402
 from .agent_doc_budget_check import check_agent_doc_budget  # noqa: E402,F401 — re-exported
 from .agent_doc_shape_check import check_agent_doc_shape  # noqa: E402,F401 — re-exported
 from .common import CheckResult, Severity  # noqa: E402
@@ -105,6 +105,44 @@ _COMPLETENESS_ENFORCED_COMPLEXITIES: frozenset[str] = frozenset({"small", "mediu
 # The only two honest dispositions for a behavior. Any other value (e.g.
 # "deferred", "untested", "acceptable") IS the escape hatch and fails.
 _COMPLETENESS_VALID_DISPOSITIONS: frozenset[str] = frozenset({"tested", "untestable"})
+
+
+def _wrong_shape_detail(field: str, value: object) -> str:
+    """The F5c entry ANSWERED, but not in a shape the gate can read.
+
+    `validate_iterate_entry` performs no shape check on these extra keys, so
+    `"test_completeness": "see the spec"` is accepted at F5c and would otherwise
+    be silently ignored here — falling through to the shared file and reporting
+    "the F5c entry carries no {field} either", which is false and points the
+    operator at a repair they already performed (Stage-3 doubt).
+    """
+    return (
+        f"the F5c entry's {field} is a {type(value).__name__}, not an object — "
+        "it answered, but not in a shape this gate can read. Fix the "
+        "`--entry-json` payload; see references/F5c.md for the block's shape"
+    )
+
+
+def _no_entry_detail(run_id: str) -> str:
+    """Why an absent F5c entry FAILS instead of skipping.
+
+    Both gates resolve the run's complexity from the entry, so without one they
+    do not know what to enforce. Returning SKIPPED there answered "not
+    applicable" to a question that had actually not been asked — and at F11,
+    F5c is mandatory and has already run, so the honest reading of an absent
+    entry is "F5c did not happen", never "this run is exempt".
+    """
+    return (
+        f"no iterate entry for {run_id} in .shipwright/agent_docs/iterates/ — "
+        "this gate cannot resolve the run's complexity and must not report "
+        "itself as not-applicable. For the run being finalized this means F5c "
+        "did not run: `append_iterate_entry.py --run-id ... --entry-json ...`. "
+        "For an OLDER run it may instead have been evicted by the 50-entry "
+        "retention window (that directory is a recency cache, not the "
+        "historical record — `shipwright_events.jsonl` keeps the "
+        "`work_completed` event permanently), in which case the run cannot be "
+        "re-verified from the tree and this result is a limit, not a defect"
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -523,7 +561,9 @@ def check_surface_verification(project_root: Path, run_id: str) -> CheckResult:
     name = "F0.5 surface_verification block valid"
 
     entry = find_entry_by_run_id(project_root, run_id)
-    complexity = (entry or {}).get("complexity", "")
+    if entry is None:
+        return CheckResult(name, False, _no_entry_detail(run_id))
+    complexity = entry.get("complexity", "")
     if complexity not in ("medium", "large"):
         return CheckResult(
             name, True,
@@ -531,22 +571,19 @@ def check_surface_verification(project_root: Path, run_id: str) -> CheckResult:
             severity=Severity.SKIPPED.value,
         )
 
-    results_path = project_root / "shipwright_test_results.json"
-    if not results_path.exists():
-        return CheckResult(
-            name, False,
-            "shipwright_test_results.json missing — F5 did not run",
-        )
-    try:
-        results = json.loads(results_path.read_text(encoding="utf-8"))
-    except json.JSONDecodeError as exc:
-        return CheckResult(
-            name, False,
-            f"shipwright_test_results.json malformed: {exc}",
-        )
-
-    iterate_latest = (results or {}).get("iterate_latest", {})
-    block = iterate_latest.get("surface_verification") if isinstance(iterate_latest, dict) else None
+    # Per-run entry FIRST, exactly as the ledger check does: the shared results
+    # file is a derived snapshot the F11 integration rewinds to HEAD, so a block
+    # found there may belong to whatever run main last committed.
+    block = entry.get("surface_verification")
+    if block is not None and not isinstance(block, dict):
+        return CheckResult(name, False, _wrong_shape_detail("surface_verification", block))
+    if not isinstance(block, dict):
+        latest = read_iterate_latest(project_root, run_id)
+        if not latest.is_current:
+            return CheckResult(
+                name, False, stale_detail(latest, run_id, "surface_verification"),
+            )
+        block = (latest.block or {}).get("surface_verification")
     if not isinstance(block, dict):
         return CheckResult(
             name, False,
@@ -629,10 +666,7 @@ def check_test_completeness_ledger(project_root: Path, run_id: str) -> CheckResu
 
     entry = find_entry_by_run_id(project_root, run_id)
     if not entry:
-        return CheckResult(
-            name, True, f"skipped (run_id={run_id} not in history)",
-            severity=Severity.SKIPPED.value,
-        )
+        return CheckResult(name, False, _no_entry_detail(run_id))
     complexity = str(entry.get("complexity", "")).lower()
     if complexity == "trivial":
         return CheckResult(
@@ -649,24 +683,15 @@ def check_test_completeness_ledger(project_root: Path, run_id: str) -> CheckResu
     # file before this check runs on a behind branch, wiping this run's ledger and
     # failing a run that did everything right. Shared file = legacy fallback.
     block = entry.get("test_completeness")
+    if block is not None and not isinstance(block, dict):
+        return CheckResult(name, False, _wrong_shape_detail("test_completeness", block))
     if not isinstance(block, dict):
-        results_path = project_root / "shipwright_test_results.json"
-        if not results_path.exists():
+        latest = read_iterate_latest(project_root, run_id)
+        if not latest.is_current:
             return CheckResult(
-                name, False,
-                "no test_completeness in the F5c entry and no "
-                "shipwright_test_results.json — F5 did not write the ledger",
+                name, False, stale_detail(latest, run_id, "test_completeness"),
             )
-        try:
-            results = json.loads(results_path.read_text(encoding="utf-8"))
-        except (json.JSONDecodeError, OSError, UnicodeDecodeError) as exc:
-            return CheckResult(name, False, f"shipwright_test_results.json malformed: {exc}")
-        if not isinstance(results, dict):
-            return CheckResult(
-                name, False, "shipwright_test_results.json is not a JSON object",
-            )
-        iterate_latest = results.get("iterate_latest", {})
-        block = iterate_latest.get("test_completeness") if isinstance(iterate_latest, dict) else None
+        block = (latest.block or {}).get("test_completeness")
     if not isinstance(block, dict):
         return CheckResult(
             name, False,
@@ -1053,7 +1078,7 @@ def run_all_checks(
         check_ci_supplychain_ack(project_root, run_id, commit_hash),
         check_removal_coverage(project_root, run_id, commit_hash),
         check_cross_layer_coverage(project_root, run_id, commit_hash),
-        check_silent_revert_for_run(project_root),
+        check_silent_revert_for_run(project_root, run_id=run_id),
         check_agent_doc_budget(project_root, run_id, commit_hash),
         check_agent_doc_shape(project_root, run_id, commit_hash),
         check_no_derived_snapshots_committed(project_root, run_id, commit_hash),

@@ -53,9 +53,16 @@ _STAGE3_DISPOSITION = (
     "in this campaign sub-iterate"
 )
 
+#: Stage 1 shares Stage 2's cause in campaign mode: no Agent tool, no cascade.
+_STAGE1_DISPOSITION = (
+    "sub-iterate-runner has no Agent tool; the Stage-1 spec-reviewer HARD-GATE "
+    "is delegated with the rest of the cascade (ADR-029, campaign mode only)"
+)
+
 CONTRACT_ROWS: tuple[tuple[str, str, str | None], ...] = (
     ("self", "completed", None),
     ("plan", "completed", None),
+    ("spec", "not_run", _STAGE1_DISPOSITION),
     ("code", "not_run", _CAPABILITY_DISPOSITION),
     ("doubt", "not_run", _STAGE3_DISPOSITION),
     ("external_code", "completed", None),
@@ -73,8 +80,13 @@ def _record_row(root: Path, review_type: str, status: str, disposition: str | No
     args = ["record", "--review-type", review_type, "--status", status]
     if disposition:
         args += ["--disposition", disposition]
+    if status == "completed":
+        # Evidence. The floor now asks whether a pass HAPPENED, and a completed
+        # row with none is the shape it rejects — so the fixture has to produce
+        # what a real recording produces, not the minimum the CLI accepts.
+        args += ["--recorded-by", f"{review_type}-reviewer"]
     if status == "completed" and review_type in ("plan", "external_code"):
-        args += ["--marker-status", "completed"]
+        args += ["--marker-status", "completed", "--provider", "openrouter"]
     return run_tool(root, *args)
 
 
@@ -141,8 +153,10 @@ def test_no_substitution_note_when_the_internal_cascade_actually_ran(
     """The note is about a substitution — with `code` completed there is none,
     and a gate that cried wolf on every run would be tuned out."""
     for review_type, status, disposition in CONTRACT_ROWS:
-        if review_type == "code":
-            _record_row(campaign_root, "code", "completed", None)
+        if review_type in ("code", "spec"):
+            # Stage 1 too: a completed Stage 2 with an unrun Stage 1 is the
+            # cascade skipping its own HARD-GATE, which the gate now blocks.
+            _record_row(campaign_root, review_type, "completed", None)
             continue
         _record_row(campaign_root, review_type, status, disposition)
 
@@ -258,7 +272,7 @@ def test_contract_table_lists_every_row_this_test_writes(review_type, status):
     table = _step_37_table()
     assert review_type in table, f"the Step 3.7 table must carry the {review_type} row"
     if status == "not_run":
-        assert "| code, doubt | orchestrator - not the runner | not_run only" in table, (
+        assert "| spec (stage 1), code, doubt | orchestrator - not the runner | not_run only" in table, (
             f"{review_type} is an internal stage: the table must own it to the "
             "orchestrator and cap the runner at not_run"
         )
@@ -291,9 +305,15 @@ def _norm_doc_section(heading: str) -> str:
 
 
 def test_the_table_never_lets_the_runner_close_an_internal_stage_completed():
-    """The pairing that matters, asserted once and directly."""
+    """The pairing that matters, asserted once and directly.
+
+    The literal includes `spec`: Stage 1 joined the row when it became
+    recordable, and it belongs there for the same reason as the other two — the
+    campaign runner has no Agent tool, so it performs none of the three and may
+    write none of them `completed`.
+    """
     table = _step_37_table()
-    assert "| code, doubt | orchestrator - not the runner | not_run only" in table, (
+    assert "| spec (stage 1), code, doubt | orchestrator - not the runner | not_run only" in table, (
         "the internal stages must be one row, owned by the orchestrator, and "
         "writable by the runner only as not_run"
     )

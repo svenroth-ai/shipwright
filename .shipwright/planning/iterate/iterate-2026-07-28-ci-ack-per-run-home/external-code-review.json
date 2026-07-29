@@ -1,0 +1,33 @@
+{
+  "success": true,
+  "provider": "openrouter",
+  "degraded": false,
+  "reviews_succeeded": 1,
+  "reviews": {
+    "openai": {
+      "feedback": "- Category: spec\n- Severity: medium\n- File: `.shipwright/planning/iterate/2026-07-28-ci-ack-per-run-home.md:126` \u2014 AC-7 requires updates to both the F5 and F6 references, but the diff updates only `references/F6.md`; no `references/F5.md` change is present. F5 is explicitly the phase after which the writer is to run, so leaving its old location guidance can direct authors to the derived snapshot path or omit the required pre-F6 acknowledgement step.\n- Suggestion: Update `plugins/shipwright-iterate/skills/iterate/references/F5.md` to identify the new per-run acknowledgement path and instruct authors to run the writer after the final results-file generation and before F6 staging.\n\n- Category: bug\n- Severity: low\n- File: `shared/scripts/tools/verifiers/ci_supplychain_ack_store.py:148-154` \u2014 A legacy ack may be read from the working tree when `shipwright_test_results.json` is absent from the commit, but `load_ack` always returns its source as `\"legacy\"` (`:194`). Consequently, `check_ci_supplychain_ack` reports only \u201cvia the legacy iterate_latest key\u201d and omits the required warning that the record was read from the working tree and will not ship in the PR. This contradicts the stated source-reporting/durability behavior for any acknowledgement not read from the commit.\n- Suggestion: Have `_read_legacy` return whether its data came from the committed tree or working tree, and return a distinct source such as `\"legacy-worktree\"`; emit the non-shipping caveat for that source while retaining the legacy-location indication.\n\nOverall assessment: the core relocation, committed-first loading, validation, and compatibility behavior appear sound, but the missing F5 documentation update fails an explicit acceptance criterion and source reporting is incomplete for the legacy worktree fallback. Ship with fixes.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "openrouter",
+      "status": "success"
+    },
+    "gemini": {
+      "feedback": "- Category: bug\n- Severity: medium\n- File: shared/scripts/tools/record_ci_supplychain_ack.py:100\n- Finding: `path.with_suffix(path.suffix + \".tmp\")` actually replaces the entire original suffix because `path.suffix` is `.json`. `Path(\"foo.json\").with_suffix(\".json.tmp\")` works here, but if the original filename is ever changed to something with multiple dots (e.g. `foo.tar.gz`), it would yield `foo.tar.gz.tmp` \u2014 replacing only the final suffix. Using `path.with_name(path.name + \".tmp\")` is a more robust way to consistently append a new pseudo-",
+      "via": "openrouter",
+      "status": "degraded",
+      "reason": "provider reported the reply was cut off (finish_reason=length)"
+    }
+  },
+  "verdicts": {
+    "openai": "revise",
+    "gemini": "unavailable"
+  },
+  "statuses": {
+    "openai": "success",
+    "gemini": "degraded"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": false,
+    "requires_resolution": true,
+    "reason": "only one reviewer answered \u2014 gemini did not (gemini=unavailable, openai=revise)"
+  }
+}
