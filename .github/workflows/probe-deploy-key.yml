@@ -1,0 +1,75 @@
+name: Probe deploy-key bypass
+
+# THROWAWAY. Answers the last open credential question for the derived-snapshots
+# refresh: can a write-enabled DEPLOY KEY push to protected `main` when
+# "Deploy keys" is a bypass actor on main-protection?
+#
+# The control is already measured (2026-07-29): the built-in GITHUB_TOKEN with
+# contents: write is refused by the same ruleset with
+# `remote: error: GH013: Repository rule violations found`, naming both blocking
+# rules. So the ruleset genuinely enforces, and a successful push here can only be
+# the bypass working. The GitHub Actions app is NOT offerable as a bypass actor in
+# this repository — that is what killed the previous candidate.
+#
+# The commit this pushes DELETES this workflow, so a successful probe cleans up
+# after itself. A refused probe leaves the file for removal by hand.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          # No ambient credential: the deploy key must be the only thing that
+          # could authorise this push, or the measurement proves nothing.
+          persist-credentials: false
+
+      - name: Attempt a push to protected main with the deploy key
+        env:
+          DEPLOY_KEY: ${{ secrets.SHIPWRIGHT_REFRESH_KEY }}
+        run: |
+          set -uo pipefail
+          if [ -z "${DEPLOY_KEY}" ]; then
+            echo "PROBE-RESULT: NO-SECRET (SHIPWRIGHT_REFRESH_KEY is empty)"
+            exit 0
+          fi
+
+          install -m 700 -d "${RUNNER_TEMP}/ssh"
+          printf '%s\n' "${DEPLOY_KEY}" > "${RUNNER_TEMP}/ssh/id"
+          chmod 600 "${RUNNER_TEMP}/ssh/id"
+
+          # GitHub's PUBLISHED host keys, not ssh-keyscan. Trust-on-first-use in CI
+          # is a MITM window on every run, and this shape becomes production code.
+          curl -fsS https://api.github.com/meta \
+            | python3 -c 'import json,sys; d=json.load(sys.stdin); [sys.stdout.write("github.com "+k+"\n") for k in d["ssh_keys"]]' \
+            > "${RUNNER_TEMP}/ssh/known_hosts"
+          test -s "${RUNNER_TEMP}/ssh/known_hosts" || { echo "::error::no host keys"; exit 0; }
+
+          export GIT_SSH_COMMAND="ssh -i ${RUNNER_TEMP}/ssh/id -o IdentitiesOnly=yes -o UserKnownHostsFile=${RUNNER_TEMP}/ssh/known_hosts -o StrictHostKeyChecking=yes"
+
+          git config user.name  "shipwright-refresh[bot]"
+          git config user.email "218151234+svroch@users.noreply.github.com"
+          git rm -q .github/workflows/probe-deploy-key.yml
+          git commit -q -m "ci(probe): a deploy key can write to main; probe removes itself" \
+                        -- .github/workflows/probe-deploy-key.yml
+
+          set +e
+          git push "git@github.com:${GITHUB_REPOSITORY}.git" HEAD:refs/heads/main 2>err.txt
+          rc=$?
+          set -e
+
+          echo "--- push stderr (rc=${rc}) ---"
+          cat err.txt
+          echo "------------------------------"
+          if [ ${rc} -eq 0 ]; then
+            echo "PROBE-RESULT: PUSHED — a deploy key bypasses main-protection."
+          else
+            echo "PROBE-RESULT: REFUSED — the deploy-key bypass does not authorise this push."
+          fi
+          exit 0
