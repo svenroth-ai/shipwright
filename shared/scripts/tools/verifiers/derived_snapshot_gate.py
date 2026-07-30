@@ -29,13 +29,32 @@ if str(_SCRIPTS_ROOT) not in sys.path:
     sys.path.insert(0, str(_SCRIPTS_ROOT))
 
 from lib.churn_merge import norm  # noqa: E402
-from lib.derived_snapshots import DERIVED_SNAPSHOTS  # noqa: E402
+from lib.derived_snapshots import (  # noqa: E402
+    DERIVED_SNAPSHOTS,
+    RESTORABLE_SNAPSHOTS,
+)
 from tools.verifiers.common import CheckResult, Severity  # noqa: E402
 from tools.verifiers.git_helpers import _commit_changed_paths  # noqa: E402
 
 __all__ = ["check_no_derived_snapshots_committed"]
 
 _NAME = "no derived snapshots in the iterate commit"
+
+
+def _restore_flags(offenders: list[str]) -> str:
+    """The `git restore` flags this remedy may safely suggest.
+
+    ``--worktree`` on a RUN-WRITTEN path resets the file on disk to its pre-iterate
+    state, destroying the ledger F5 just wrote — ``iterate_latest``, the test totals,
+    ``test_completeness``, ``surface_verification``, ``ci_supplychain_ack``. That is
+    trg-ad29a709 verbatim, and printing it here made it reachable by following this
+    gate's own instructions, which is exactly what an operator copies under time
+    pressure. Unstaging is enough to clear the gate; the worktree copy is the run's
+    own evidence and must survive.
+    """
+    if set(offenders) - RESTORABLE_SNAPSHOTS:
+        return "--staged"
+    return "--staged --worktree"
 
 
 def check_no_derived_snapshots_committed(
@@ -64,6 +83,7 @@ def check_no_derived_snapshots_committed(
         )
 
     offenders = sorted({norm(p) for p in paths} & DERIVED_SNAPSHOTS)
+    # (see _restore_flags for why the remedy is not a fixed string)
     if not offenders:
         return CheckResult(_NAME, True, f"{len(paths)} path(s), none derived")
 
@@ -72,7 +92,7 @@ def check_no_derived_snapshots_committed(
         f"{len(offenders)} derived snapshot(s) committed: {', '.join(offenders)} — "
         "these are regenerated from main after merge and must stay out of the PR "
         "(every iterate rewrites them, so N open PRs collide N(N-1)/2 times). "
-        "Fix: `git restore --source=HEAD~1 --staged --worktree -- <paths>` then "
-        "amend; see shared/scripts/lib/derived_snapshots.py",
+        f"Fix: `git restore --source=HEAD~1 {_restore_flags(offenders)} -- <paths>` "
+        "then amend; see shared/scripts/lib/derived_snapshots.py",
         severity=Severity.ERROR.value,
     )

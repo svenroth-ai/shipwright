@@ -147,11 +147,47 @@ artifact has exactly one documented resolution strategy:
 > iterate branch **no longer carries any of them**, so on that path they cannot
 > conflict and there is nothing to resolve. `integrate_main` calls
 > `regenerate_tracked_snapshots(only=set())` (campaign `status.json` only) and
-> `restore_derived_to_head()` **before** the merge — before, because F5a/F5b write
-> them mid-run and F6 no longer commits them, so they sit tracked-and-dirty and
-> `git merge` refuses outright once mainline touches the same path. Registry:
+> `restore_derived_to_head()` **before** the merge, preceded by
+> `stash_run_written()` (see the two paragraphs below) — before, because F5a/F5b
+> write them mid-run and F6 no longer commits them, so they sit tracked-and-dirty
+> and `git merge` refuses outright once mainline touches the same path. Registry:
 > `shared/scripts/lib/derived_snapshots.py`. Gate:
 > `verifiers/derived_snapshot_gate.check_no_derived_snapshots_committed`.
+>
+> **Ten of the eleven, not all eleven** (trg-ad29a709). The restore resets
+> `RESTORABLE_SNAPSHOTS` — everything a producer can RE-DERIVE.
+> `shipwright_test_results.json` is excluded, because the run WRITES it (the F5
+> ledger) and nothing can recompute it: resetting a MODIFIED copy is not undoing a
+> regeneration, it is deleting this run's evidence, and it did so silently in two
+> separate sessions. A *deleted* one is still restored — a deletion has no content
+> to lose, and letting it ride would drop a tracked file — so the exclusion is
+> about content, not about the path.
+>
+> **So the path is CARRIED, not left dirty** — a second between-phase step, and it
+> is here because leaving it dirty is a pipeline failure mode. `integrate_main`
+> calls `stash_run_written()` immediately before the restore (read the bytes,
+> `git checkout HEAD --` so git sees a clean path) and `unstash_run_written()` in a
+> `finally` around the whole merge (write the bytes back). The file ends dirty
+> again, which is correct: it is the run's evidence and no iterate commits it.
+> Both live in `shared/scripts/lib/run_written_ledger.py` — `derived_snapshots.py`
+> next to it says what must be ABSENT, this one preserves what must be PRESENT, and
+> neither raises: each returns the paths it could not handle, because the defect
+> being closed here cost whole sessions purely by looking like success.
+>
+> Both halves are measured rather than argued, because the first draft of this
+> section argued the trigger could not fire — on the premise that nothing commits
+> `shipwright_test_results.json` any more — and that premise is **false**. `main`
+> still tracks the file and its copy still moves: one of `main`'s twelve most recent
+> commits on 2026-07-30 (#497) changed it, since the commit gate inspects a single
+> commit and a multi-commit PR can carry it past. Leaving the path dirty therefore
+> aborts the merge (`Your local changes ... would be overwritten by merge`, exit 2),
+> `ensure_current` returns exit 6, and no branch advances.
+>
+> **Why the write-back is in a `finally` and not a single site after the merge.**
+> `git merge --abort` is `git reset --merge`, which ALSO refuses when a path that
+> differs between `HEAD` and the index has unstaged changes — so a write-back placed
+> before the abort paths breaks them, silently (`error: Entry '<path>' not uptodate`,
+> exit 128, `MERGE_HEAD` left standing). The `finally` runs after any abort.
 >
 > **Write matrix consequence.** These eleven are now written on `main` by a
 > post-merge refresh producer, not by any phase. Until that producer exists they
@@ -2484,11 +2520,17 @@ and the post-commit audit is `check_surface_verification` in
 on the same four conditions: missing block, `tests_run == 0`,
 `exit_code != 0` after retry cap, `surface == "none"` without justification.
 
-**Every `iterate_latest` reader must say whose run it is.**
-`shipwright_test_results.json` is a DERIVED_SNAPSHOT: at F11 `ensure_current` →
-`integrate_main` calls `restore_derived_to_head`, which resets it to `HEAD`, and
-since an iterate no longer commits it, `HEAD`'s copy is `main`'s — the PREVIOUS
-run's evidence, in this run's worktree, shaped exactly like this run's. Three
+**Every `iterate_latest` reader must say whose run it is.** Since an iterate no
+longer commits `shipwright_test_results.json`, whatever sits at `HEAD` is
+`main`'s copy — the PREVIOUS run's evidence, in this run's worktree, shaped
+exactly like this run's, and distinguishable from it by nothing but `run_id`.
+That is the whole hazard, and it does not depend on how the file got there: a
+fresh worktree is checked out at `HEAD` and already holds it before this run
+writes a byte, and `restore_derived_to_head` still restores a DELETED ledger.
+(It no longer resets a MODIFIED one — see the write-matrix note above — so the
+one route that used to *replace* this run's block with main's is closed. The
+readers below are unchanged: closing one route is not the same as the file being
+trustworthy, and none of these checks were ever safe to derive from it.) Three
 F11 checks read that block and none of them used to compare `run_id`: the ledger
 gate, the F0.5 audit, and the silent-revert `declared_removals` (the worst
 direction — another run's declarations EXCUSING this run's removals). All three

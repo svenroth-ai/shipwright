@@ -10,11 +10,13 @@ Two things are verified against production conditions:
 1. **On a repo WITH a fold-map** — a `@covers` tag on a folded FR id lands as coverage of
    the surviving FR, carries `resolved_from`, produces zero orphans, and the written
    artifact passes the D-orphan detective.
-2. **On THIS monorepo (which declares NO fold-map)** — the regenerated manifest is
-   byte-identical to the committed one. This is the honest check on the central
+2. **On THIS monorepo (which declares NO fold-map)** — a regeneration emits none of the
+   fold keys and loses no requirement. This is the honest check on the central
    compatibility claim: `test-traceability.json` is committed churn, so had the new keys
    been emitted unconditionally, every project without a fold-map would diff on every
-   regen forever.
+   regen forever. It asserted byte-identity until #480 stopped branches committing that
+   manifest, which froze the baseline and made minting a requirement unpassable; the
+   comparison is now one-directional for requirements and unchanged for the defect lists.
 
 Lives in integration-tests/ (a CI-run root) per ADR-044.
 
@@ -133,14 +135,19 @@ def test_folded_tag_resolves_end_to_end_through_the_real_collector(tmp_path):
 
 
 @pytest.mark.skipif(not _COMMITTED.exists(), reason="no committed manifest to compare")
-def test_this_monorepo_regenerates_a_byte_identical_manifest():
+def test_this_monorepo_loses_nothing_when_the_manifest_is_regenerated():
     """The no-churn guarantee, checked on real production data rather than a fixture.
 
     This repo declares no `## FR-Fold-Map`, so the fold feature must be completely inert
-    here: no new top-level keys, no `resolved_from`, and every requirement node identical
-    to what is committed. Volatile provenance fields (timestamp / head sha / evidence-
-    dependent execution results) are excluded — they legitimately differ between a regen
-    and the committed snapshot, and are not what this test is about.
+    here: no new top-level keys and no `resolved_from`. Volatile provenance fields
+    (timestamp / head sha / evidence-dependent execution results) are excluded — they
+    legitimately differ between a regen and the committed snapshot.
+
+    NAMED FOR WHAT IT NOW ASSERTS. It used to claim a byte-identical manifest and
+    compare requirement sets with `==`; #480 froze the committed baseline, so that
+    claim is no longer available and keeping the old name would advertise a guarantee
+    this test stopped making. Requirements are compared for LOSS; the defect lists
+    below keep equality, and the comment there says why the asymmetry stops.
     """
     fresh = _drive_self()
     committed = json.loads(_COMMITTED.read_text(encoding="utf-8"))
@@ -153,6 +160,35 @@ def test_this_monorepo_regenerates_a_byte_identical_manifest():
     ]
     # The requirement SET is what a fold bug would corrupt (resurrected folded ids, or
     # coverage silently re-filed onto another FR).
-    assert set(fresh["requirements"]) == set(committed["requirements"])
+    #
+    # Compared in ONE direction, deliberately (trg-ad29a709 B). This asserted set
+    # EQUALITY against the committed manifest, and #480 stopped branches committing
+    # that manifest — so the baseline is frozen by design and a branch that MINTS a
+    # requirement had exactly two options: fail this test, or commit a derived
+    # artifact the F11 gate forbids. Adding a requirement could not pass CI at all.
+    #
+    # What the assertion is actually for still holds: a requirement that DISAPPEARS
+    # from a fresh derivation is a renumbering or a lost tag, and that is the direction
+    # this catches. NOT a resurrected folded id — that is an ADDITION, which the
+    # one-directional form cannot see and which the `fold_map` assertion above covers
+    # instead. Naming it here would advertise coverage this line does not have.
+    #
+    # A floor on BOTH sides, because a subtraction between two empty sets is empty.
+    # The committed side matters most: #480 froze that artifact, so nothing in CI
+    # re-derives it, and one bad snapshot committed once would make this green forever.
+    assert committed["requirements"], "the committed manifest lists no requirements"
+    assert fresh["requirements"], "a fresh derivation found no requirements at all"
+    lost = set(committed["requirements"]) - set(fresh["requirements"])
+    assert not lost, (
+        f"requirements vanished from a fresh derivation: {sorted(lost)} — a "
+        f"renumbering, a lost tag, or coverage re-filed onto another FR"
+    )
+    # These two keep EQUALITY, and the asymmetry above deliberately does NOT extend to
+    # them. They are DEFECT lists — tests tagged to a requirement that does not exist,
+    # and tags that do not parse. Minting a requirement adds neither, so the #480
+    # argument does not apply; and inverting them would demand that this repo's known
+    # defects still be present, i.e. forbid fixing them. (They are also lists of dicts,
+    # so a set() comparison raises TypeError rather than failing — vacuous while both
+    # are empty, and an error the moment either has something to say.)
     assert fresh["orphans"] == committed["orphans"]
     assert fresh["invalid_tags"] == committed["invalid_tags"]

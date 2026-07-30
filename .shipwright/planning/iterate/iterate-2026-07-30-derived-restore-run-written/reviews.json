@@ -1,0 +1,262 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-07-30-derived-restore-run-written",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-07-30T19:34:30.485968+00:00",
+      "disposition": "superseded by the three-stage subagent cascade (spec/code/doubt), each run in fresh context; a self-review by the author of the diff measures agreement, not correctness",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-07-30T19:34:30.584807+00:00",
+      "disposition": "iterate, not a /shipwright-plan pipeline phase — there is no plan document for a plan review to read",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 8,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "shared/scripts/tools/integrate_main.py",
+          "line": null,
+          "finding": "merge_commit_failed_abort_incomplete hands the operator a state whose own remedy (`git merge --abort`) cannot run, because the write-back re-dirties the ledger over a differing index.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "shared/scripts/lib/derived_snapshots.py",
+          "line": null,
+          "finding": "an `MD` ledger falls through both the stash and the restore silently.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "shared/scripts/tools/integrate_main.py",
+          "line": null,
+          "finding": "the stash sits outside the `try`, so a raise between it and the `finally` loses the only copy of the ledger.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "shared/scripts/lib/derived_snapshots.py",
+          "line": null,
+          "finding": "a 16-line comment defends a branch unreachable in the integrate flow.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/tests/test_run_written_ledger_integrate.py",
+          "line": null,
+          "finding": "`.strip().startswith('M')` cannot distinguish staged `M ` from unstaged ` M`.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "architecture",
+          "file": "shared/scripts/tools/integrate_regenerate.py",
+          "line": null,
+          "finding": "the rollback batches paths and filters on exists(), the two patterns its own imported module forbids.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "shared/scripts/tools/integrate_regenerate.py",
+          "line": null,
+          "finding": "the injected `git` is the one unannotated parameter.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/tests/test_derived_snapshots.py",
+          "line": null,
+          "finding": "the per-path restore test used an odd path filtered out before the loop, so a batched call would pass it.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-07-30T19:32:51.643067+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 12,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "correctness",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: an UNTRACKED ledger is declined without a name, and unstash_run_written MANUFACTURES that state when the merge deletes the path from HEAD - so the NEXT merge refuses, unnamed — an UNTRACKED ledger is declined without a name, and unstash_run_written MANUFACTURES that state when the merge deletes the path from HEAD - so the NEXT merge refuses, unnamed",
+          "suggestion": "carried via unlink instead of checkout; the docstring absolute corrected",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "high",
+          "category": "correctness",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: ledger-writeback-failed was recorded only in `steps`, which no consumer reads; `status` stayed ok over a ledger now holding main's copy — ledger-writeback-failed was recorded only in `steps`, which no consumer reads; `status` stayed ok over a ledger now holding main's copy",
+          "suggestion": "a guarded `return` inside the finally overrides the status; new CLI exit 9",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: MD / staged states were named but not prevented, so the staged ledger could ride into the MERGE commit, which the single-commit gate never inspects — MD / staged states were named but not prevented, so the staged ledger could ride into the MERGE commit, which the single-commit gate never inspects",
+          "suggestion": "carried out of the index via `git show :<path>`, which clears index and worktree together",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: two of the three abort sites claimed an abort they never verified (check=False, no MERGE_HEAD probe) — two of the three abort sites claimed an abort they never verified (check=False, no MERGE_HEAD probe)",
+          "suggestion": "all three now go through one `_abort` helper that re-reads MERGE_HEAD; wedged returns a distinct *_abort_incomplete status",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: _iterate_latest.py's LIVE operator message still taught the route this diff closed — _iterate_latest.py's LIVE operator message still taught the route this diff closed",
+          "suggestion": "rewritten to the checkout route, which is the one that survives",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: the fold-map half got no non-vacuity floor, and #480 froze that artifact so one bad snapshot would make it green forever — the fold-map half got no non-vacuity floor, and #480 froze that artifact so one bad snapshot would make it green forever",
+          "suggestion": "floors asserted on both the committed and the fresh side",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: run_written_ledger._git copied the sibling's STRICT decode posture into a function whose contract is never-raises — run_written_ledger._git copied the sibling's STRICT decode posture into a function whose contract is never-raises",
+          "suggestion": "errors=replace, with the reason stated",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: the 16-line comment defends a branch unreachable in the integrate flow — the 16-line comment defends a branch unreachable in the integrate flow",
+          "suggestion": "shortened to what is true",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: the fold-map failure message advertises a direction the one-directional assertion cannot see — the fold-map failure message advertises a direction the one-directional assertion cannot see",
+          "suggestion": "message corrected",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: durable_read_bytes passes a bound method where its twin passes a lambda — durable_read_bytes passes a bound method where its twin passes a lambda",
+          "suggestion": "made the same shape",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: the clamp test docstring states a consequence that does not follow at 2**-31 s — the clamp test docstring states a consequence that does not follow at 2**-31 s",
+          "suggestion": "magnitudes separated explicitly",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: monkeypatching aw.time.monotonic patches the stdlib process-wide, unsafe the day this root runs with -n auto — monkeypatching aw.time.monotonic patches the stdlib process-wide, unsafe the day this root runs with -n auto",
+          "suggestion": "recorded in-place as a known constraint rather than silently fixed",
+          "source": "doubt-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-07-30T19:33:56.382388+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-07-30T19:33:56.486140+00:00",
+      "disposition": null,
+      "recorded_by": "external-prose",
+      "parse_status": "unstructured",
+      "raw_excerpt": "External code review, mode=code, provider=openrouter, diff vs merge-base 86a948ac.\nopenai (gpt-5.6-terra): SHIPWRIGHT_VERDICT: revise - 2 findings, both accepted and fixed:\n  1. (medium) `git status --porcelain` returning non-zero was treated identically to a clean path:\n     `continue` without naming it, so an uninspectable dirty ledger stayed silent - the one label\n     `stash_run_written` promises never to give. Now appended to `not_carried`.\n  2. (low) the failed-writeback test asserted only the `steps` entry, so a regression that appended\n     the step and still returned `ok` would pass. Now asserts `status == ledger_writeback_failed`\n     and the `failed` path; negative-controlled (step kept, override removed -> the test fails).\ngemini (gemini-3.1-pro-preview): DEGRADED - provider reported finish_reason=length on a 192K diff.\n  Recorded as degraded rather than counted as a second opinion.\n"
+    }
+  },
+  "gates": {
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-07-30T19:32:51.520540+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    }
+  }
+}

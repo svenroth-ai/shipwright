@@ -56,7 +56,7 @@ import tempfile
 import time
 from pathlib import Path
 
-__all__ = ["durable_atomic_write", "durable_read_text",
+__all__ = ["durable_atomic_write", "durable_read_bytes", "durable_read_text",
            "REPLACE_RETRY_BUDGET_SECONDS", "READ_RETRY_BUDGET_SECONDS"]
 
 #: Windows codes seen when someone else has the destination open. Measured on
@@ -160,7 +160,14 @@ def _retry_past_sharing_violations(operation, budget_seconds: float):
         except PermissionError as exc:
             if getattr(exc, "winerror", None) not in _SHARING_VIOLATION_WINERRORS:
                 raise
-            remaining = deadline - time.monotonic()
+            # Capped by the budget as well as by the deadline. `deadline` is
+            # `t0 + budget`, and floating point makes `(t0 + budget) - t0` slightly
+            # LARGER than `budget` once t0 is big — monotonic() counts from boot, so
+            # the error lands around 2**-31 s. Both reads also fall in the same clock
+            # tick here (Windows granularity is ~15 ms), so the first retry would sleep
+            # marginally past the budget the caller configured. Microscopic in effect,
+            # but this function's contract is that the budget is exact.
+            remaining = min(deadline - time.monotonic(), budget_seconds)
             if remaining <= 0:
                 raise
             time.sleep(min(delay, remaining))
@@ -193,6 +200,24 @@ def durable_read_text(path: Path | str, *, encoding: str = "utf-8") -> str:
     target = Path(path)
     return _retry_past_sharing_violations(
         lambda: target.read_text(encoding=encoding), READ_RETRY_BUDGET_SECONDS)
+
+
+def durable_read_bytes(path: Path | str) -> bytes:
+    """:func:`durable_read_text` without the decode — for content that must round-trip.
+
+    Same retry, different contract. Reading a file as TEXT applies universal-newline
+    translation, so bytes read through :func:`durable_read_text` and written back are
+    not the bytes that were there: a CRLF file comes back LF. A caller that carries a
+    file across an operation and restores it needs this one.
+    """
+    target = Path(path)
+    # `lambda`, not the bound `target.read_bytes`: it re-resolves `Path.read_bytes` on
+    # every attempt, exactly like the text reader one function up. Indistinguishable in
+    # production — but the two are meant to be the same shape, and the sibling test that
+    # exists to catch one being hardened without the other cannot see a difference it
+    # is itself blind to.
+    return _retry_past_sharing_violations(
+        lambda: target.read_bytes(), READ_RETRY_BUDGET_SECONDS)
 
 
 def _fsync_parent_dir(directory: Path) -> None:

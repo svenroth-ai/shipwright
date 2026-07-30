@@ -24,7 +24,7 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(REPO_ROOT / "shared" / "scripts"))
 
-from tools import integrate_main  # noqa: E402
+from tools import integrate_main, integrate_merge  # noqa: E402
 
 _AUDIT_STALENESS = (
     REPO_ROOT / "plugins" / "shipwright-compliance" / "scripts" / "audit" / "audit_staleness.py"
@@ -104,7 +104,7 @@ def test_integrate_followup_is_a_run_id_commit_the_audit_no_longer_claims(git_or
         _git(Path(project_root), "add", "--", _CAMP_STATUS)
         return {_CAMP_STATUS: "regenerated"}
 
-    monkeypatch.setattr(integrate_main.rcc, "regenerate_tracked_snapshots", fake_regen)
+    monkeypatch.setattr(integrate_merge.rcc, "regenerate_tracked_snapshots", fake_regen)
 
     result = integrate_main.integrate(wt, _RUN_ID, do_fetch=True)
 
@@ -146,7 +146,7 @@ def test_integrate_validates_events_on_clean_union_merge(git_origin_repo, make_w
 
     called = {"regen": False}
     monkeypatch.setattr(
-        integrate_main.rcc, "regenerate_tracked_snapshots",
+        integrate_merge.rcc, "regenerate_tracked_snapshots",
         lambda *a, **k: called.__setitem__("regen", True) or {},
     )
 
@@ -177,7 +177,7 @@ def test_integrate_aborts_and_restores_on_source_conflict(git_origin_repo, make_
 
     called = {"regen": False}
     monkeypatch.setattr(
-        integrate_main.rcc, "regenerate_tracked_snapshots",
+        integrate_merge.rcc, "regenerate_tracked_snapshots",
         lambda *a, **k: called.__setitem__("regen", True) or {},
     )
 
@@ -227,7 +227,7 @@ def test_integrate_rollback_restores_ci_security_on_regen_failure(
         _git(Path(project_root), "add", "--", _CI_SEC)
         return {_DASH: "error", _CI_SEC: "regenerated"}
 
-    monkeypatch.setattr(integrate_main.rcc, "regenerate_tracked_snapshots", failing_regen)
+    monkeypatch.setattr(integrate_merge.rcc, "regenerate_tracked_snapshots", failing_regen)
 
     result = integrate_main.integrate(wt, _RUN_ID, do_fetch=True)
 
@@ -278,7 +278,7 @@ def test_integrate_rollback_restores_test_traceability_on_regen_failure(
         _git(Path(project_root), "add", "--", _TT)
         return {_DASH: "error", _TT: "regenerated"}
 
-    monkeypatch.setattr(integrate_main.rcc, "regenerate_tracked_snapshots", failing_regen)
+    monkeypatch.setattr(integrate_merge.rcc, "regenerate_tracked_snapshots", failing_regen)
 
     result = integrate_main.integrate(wt, _RUN_ID, do_fetch=True)
 

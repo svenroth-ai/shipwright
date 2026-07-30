@@ -26,6 +26,14 @@ so the Group-E staleness audit reports main's snapshots as increasingly stale �
 which is TRUE while they are frozen, and is resolved by the post-merge refresh
 producer, not by silencing the audit.
 
+**Three files, split on what a failure is allowed to do.** This one owns the brackets:
+resolving the ref, and carrying the run's own ledger across the merge (``lib/
+run_written_ledger.py``) so neither the merge nor its abort trips over it. Steps 2-4
+live in ``tools/integrate_merge.py``, the window where nothing has landed and every bad
+outcome ends in a verified ``git merge --abort``. Steps 5-6 live in
+``tools/integrate_regenerate.py``, after the merge commit, where there is nothing left
+to abort and a failure can only report itself.
+
 Devs should run THIS, never a bare ``git merge origin/main``, so the resolver is
 never skipped (folds external-review O14).
 """
@@ -42,14 +50,9 @@ from pathlib import Path
 _SCRIPTS_DIR = Path(__file__).resolve().parent.parent  # shared/scripts
 sys.path.insert(0, str(_SCRIPTS_DIR))
 
-from lib.churn_merge import (  # noqa: E402
-    CI_SECURITY_SUMMARY,
-    DERIVED_MDS,
-    TEST_TRACEABILITY,
-    is_campaign_status,
-)
 from lib.derived_snapshots import restore_derived_to_head  # noqa: E402
-from tools import resolve_churn_conflicts as rcc  # noqa: E402
+from lib.run_written_ledger import stash_run_written, unstash_run_written  # noqa: E402
+from tools.integrate_merge import merge_and_reconcile  # noqa: E402
 
 
 def _git(project_root: Path, *args: str, check: bool = True) -> subprocess.CompletedProcess[str]:
@@ -78,11 +81,6 @@ def _default_branch(project_root: Path) -> str:
     if proc.returncode == 0 and ref.startswith("origin/"):
         return ref[len("origin/"):]
     return "main"
-
-
-def _has_staged_changes(project_root: Path) -> bool:
-    # `git diff --cached --quiet` exits 1 when there ARE staged changes.
-    return _git(project_root, "diff", "--cached", "--quiet", check=False).returncode != 0
 
 
 def integrate(
@@ -126,128 +124,69 @@ def integrate(
     # moment mainline touches the same path, which is the normal case since every
     # other iterate rewrites them too. Verified: with the restore placed after the
     # merge, integrate returned `merge_failed` and the branch could not advance.
-    if restore_derived_to_head(project_root):
-        steps.append("restored-derived")
-
-    # --no-ff + --no-commit:
-    #   --no-ff  → always create a real merge commit (never fast-forward), so the
-    #     reachability of Run-ID-trailer commits is preserved (2026-05-27 AC-6
-    #     "merge, not rebase") AND `merge_in_progress` is deterministic regardless
-    #     of the runner's `merge.ff` config.
-    #   --no-commit → commit nothing until churn is reconciled AND events are
-    #     validated — even on a clean merge where `merge=union` silently resolves
-    #     events.jsonl (the designed common case).
-    merge = _git(project_root, "merge", "--no-ff", "--no-commit", "--no-edit", ref, check=False)
-    merge_in_progress = (
-        _git(project_root, "rev-parse", "--verify", "--quiet", "MERGE_HEAD", check=False).returncode == 0
-    )
-    if not merge_in_progress:
-        if merge.returncode != 0:
-            # Merge refused before it began (e.g. unborn ref, local changes) —
-            # surface it instead of silently claiming success.
-            return {"status": "merge_failed", "stderr": (merge.stderr or "").strip()[:500], "steps": steps}
-        # `ref` is already an ancestor — genuinely nothing to integrate.
-        steps.append("already-up-to-date")
-        return {"status": "ok", "steps": steps}
-
-    # A merge is staged-but-uncommitted. complete_merge() reconciles churn conflicts
-    # (if any) AND validates/dedups events.jsonl UNCONDITIONALLY (clean or conflicted).
-    result = rcc.complete_merge(project_root, run_id=run_id)
-    if result.status == "blocked":
-        _git(project_root, "merge", "--abort", check=False)
-        return {"status": "blocked", "blocking": result.blocking,
-                "message": "non-churn conflicts — merge aborted; resolve by hand", "steps": steps}
-    if result.status in ("events_invalid", "triage_invalid"):
-        _git(project_root, "merge", "--abort", check=False)
-        return {"status": result.status, "errors": result.errors, "steps": steps}
-    # F17: a check=True commit that fails (e.g. the pre-commit anti-ratchet hook
-    # rejecting upstream growth of a baselined file) would otherwise raise
-    # CalledProcessError — a traceback with no JSON, leaving the repo wedged in
-    # MERGE_HEAD. Mirror every other failure path: structured status + abort.
+    # ...and the run's OWN ledger is carried in memory across it rather than restored,
+    # because no producer can put its content back (trg-ad29a709). Both halves serve
+    # the same merge: the path has to be clean, and the bytes have to survive.
+    stashed, not_carried = stash_run_written(project_root)
+    # The `try` opens HERE, one line after the stash, and not at the merge below. Once
+    # the stash has run, `stashed` is the ONLY copy of the run's evidence — the path on
+    # disk is back at HEAD — so every statement after it must be covered or a traceback
+    # in between takes the ledger with it. `restore_derived_to_head` is documented not
+    # to raise, but "documented" is not the same as "guaranteed by this function", and
+    # this is the one window the whole feature exists to close.
+    #
+    # A `finally`, and the first draft was wrong to avoid one. The argument for a single
+    # site after the merge command was that git needs the path clean only for the merge
+    # to START. It needs it clean to ABORT as well: `git merge --abort` is
+    # `git reset --merge`, which refuses when a path differing between HEAD and the
+    # index has unstaged changes — exactly the state the write-back creates in the case
+    # this feature exists for (mainline moved the path, so the index differs). Measured,
+    # not deduced: `error: Entry '<path>' not uptodate. Cannot merge.`, exit 128,
+    # MERGE_HEAD left standing. `merge_and_reconcile` aborts on three paths, all inside
+    # this try, so the write-back is strictly after every one of them.
+    #
+    # `steps` is appended to AFTER a `return` has built its dict, which still shows up:
+    # the dict holds a reference to this same list, not a copy.
+    outcome: dict | None = None
     try:
-        _git(project_root, "commit", "--no-edit")
-    except subprocess.CalledProcessError as exc:
-        # `git merge --abort` is itself fallible (index.lock contention, hook
-        # side effects). Run it check=False, then VERIFY MERGE_HEAD actually
-        # cleared — distinguish a clean abort from a wedged tree so the caller
-        # never gets a false "aborted" claim (external-review Gemini/OpenAI HIGH).
-        _git(project_root, "merge", "--abort", check=False)
-        still_merging = (
-            _git(project_root, "rev-parse", "--verify", "--quiet", "MERGE_HEAD", check=False).returncode == 0
+        if not_carried:
+            # Could not be taken, so it stays dirty and the merge below may refuse.
+            # Named here because the merge error would otherwise be about a file
+            # nothing in this flow had mentioned.
+            steps.append("ledger-not-carried")
+        if restore_derived_to_head(project_root):
+            steps.append("restored-derived")
+        outcome = merge_and_reconcile(
+            project_root, run_id, git=_git, ref=ref, branch=branch,
+            session_id=session_id, reason=reason, regenerate=regenerate, steps=steps,
         )
+    finally:
+        preserved, writeback_failed = unstash_run_written(project_root, stashed)
+        if preserved:
+            steps.append("ledger-preserved")
+        if writeback_failed:
+            steps.append("ledger-writeback-failed")
+
+    # AFTER the try/finally, not inside it. An earlier draft returned from the `finally`
+    # — which does override the pending return, but also SWALLOWS a propagating
+    # exception, so it needed an `sys.exc_info()` guard to stay honest and CodeQL
+    # flagged the shape regardless. Holding the result in `outcome` says the same thing
+    # without the trap: an exception simply skips everything below.
+    if writeback_failed:
+        # The run's ledger is GONE and the path now holds HEAD's copy — another run's
+        # block, clean, in this run's worktree. A step alone does not carry that:
+        # `ensure_current` derives its verdict from `status` and F11 gates on the exit
+        # code, so `ok` here would report success over the exact loss this module exists
+        # to prevent.
         return {
-            "status": "merge_commit_failed" if not still_merging else "merge_commit_failed_abort_incomplete",
-            "stderr": (exc.stderr or "").strip()[:500],
-            "message": (
-                "merge commit refused (e.g. pre-commit hook) — merge aborted"
-                if not still_merging
-                else "merge commit refused AND `git merge --abort` failed — repo still mid-merge, resolve by hand"
-            ),
+            "status": "ledger_writeback_failed",
+            "failed": writeback_failed,
+            "message": ("the merge itself is intact, but this run's ledger could not "
+                        "be written back and the worktree now holds HEAD's copy — "
+                        "re-run F5 before F11 reads it"),
             "steps": steps,
         }
-    steps.append("merge-committed")
-
-    if regenerate:
-        # Scope campaign-status regen (S3) to the campaign(s) this merge actually
-        # CONFLICTED on — re-deriving an untouched campaign would be destructive.
-        camp_rels = [r for r in result.resolved if is_campaign_status(r)]
-        # derived=False: an iterate branch no longer carries the derived snapshots
-        # (iterate-2026-07-27-derived-snapshots-off-branch), so re-deriving them
-        # here would re-create the very diff that made parallel iterates collide.
-        # The merge itself still resolves them (mainline side) — they simply match
-        # `main` afterwards and stay out of the PR. Campaign statuses still ship.
-        outcomes = rcc.regenerate_tracked_snapshots(
-            project_root, run_id, session_id=session_id, reason=reason,
-            campaign_status_rels=camp_rels, only=set(),
-        )
-        # The merge's conflict resolution may have left the derived paths modified
-        # but unstaged (resolver picks a side, nothing commits it now). Restore them
-        # to the merge commit so the worktree is CLEAN: a tracked-but-dirty path
-        # makes a later `git merge` refuse when it overlaps an incoming change, and
-        # invites a stray `git add -A` to smuggle the snapshot back into the PR.
-        restore_derived_to_head(project_root)
-        failed = [k for k, v in outcomes.items() if v == "error"]
-        if failed:
-            # Transactional rollback: restore every derived snapshot (the .md set
-            # AND the ci-security.json summary, whose best-effort refresh may have
-            # mutated it before another generator failed) AND any campaign
-            # status.json touched this pass (campaign S3) to the just-made merge
-            # commit, so a partial regeneration never leaves a dirty tree.
-            restorable = [
-                p for p in sorted(DERIVED_MDS | {CI_SECURITY_SUMMARY, TEST_TRACEABILITY})
-                if (project_root / p).exists()
-            ]
-            restorable += [
-                k for k in sorted(outcomes)
-                if is_campaign_status(k) and (project_root / k).exists()
-            ]
-            if restorable:
-                _git(project_root, "checkout", "HEAD", "--", *restorable, check=False)
-            return {"status": "regenerate_failed", "failed": failed, "steps": steps}
-        if _has_staged_changes(project_root):
-            msg = (
-                f"chore(churn): regenerate derived snapshots after {branch} merge\n\n"
-                f"Run-ID: {run_id}"
-            )
-            # F17: the merge commit already landed (HEAD advanced, no MERGE_HEAD),
-            # so a failed follow-up commit must NOT `git merge --abort` (nothing in
-            # progress) — surface a structured status; the regenerated snapshots
-            # remain staged for a manual retry. Never raise CalledProcessError.
-            try:
-                _git(project_root, "commit", "-m", msg)
-            except subprocess.CalledProcessError as exc:
-                return {
-                    "status": "followup_commit_failed",
-                    "stderr": (exc.stderr or "").strip()[:500],
-                    "message": "regenerate follow-up commit refused; merge commit is intact",
-                    "steps": steps,
-                }
-            steps.append("regenerated-followup")
-        else:
-            # No diff: finalize's own Run-ID commit remains the audit anchor (M1).
-            steps.append("regenerate-noop")
-
-    return {"status": "ok", "steps": steps}
+    return outcome
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -273,8 +212,19 @@ def main(argv: list[str] | None = None) -> int:
         regenerate=not args.no_regenerate,
     )
     print(json.dumps(result, indent=2))
-    if result["status"] == "ok":
+    status = result["status"]
+    if status == "ok":
         return 0
+    # Checked BEFORE the per-status ladder. `_abort_incomplete` means the branch is
+    # NOT where it started, which is the opposite of what each base status promises —
+    # `blocked` says "aborted; resolve by hand", and exit 2 would send the operator on
+    # believing it. One code for "the repo is mid-merge", whatever led there.
+    if status.endswith("_abort_incomplete"):
+        print(f"ABORT: {status}: {result.get('message')}", file=sys.stderr)
+        return 7
+    if status == "ledger_writeback_failed":
+        print(f"ABORT: {result.get('message')}: {result.get('failed')}", file=sys.stderr)
+        return 9
     if result["status"] == "blocked":
         print("ABORT: non-churn conflicts — resolve by hand: " f"{result.get('blocking')}", file=sys.stderr)
         return 2
@@ -287,7 +237,7 @@ def main(argv: list[str] | None = None) -> int:
     if result["status"] == "merge_failed":
         print(f"ABORT: git merge refused: {result.get('stderr')}", file=sys.stderr)
         return 6
-    if result["status"] in ("merge_commit_failed", "merge_commit_failed_abort_incomplete"):
+    if result["status"] == "merge_commit_failed":
         print(f"ABORT: {result['status']}: {result.get('message')}: {result.get('stderr')}", file=sys.stderr)
         return 7
     if result["status"] == "followup_commit_failed":

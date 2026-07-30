@@ -228,3 +228,8 @@ Spec/
 # (iterate-2026-06-09); this is belt-and-suspenders.
 **/.shipwright/locks/
 # === END Shipwright canonical .shipwright artifact-ignore (managed) ===
+
+# Crash residue from `lib/atomic_write.durable_atomic_write`: it writes a
+# same-directory temp file before `os.replace`, and a hard kill between the two
+# leaves it behind. Likelier on Windows, where the replace can retry then fail.
+*.tmp

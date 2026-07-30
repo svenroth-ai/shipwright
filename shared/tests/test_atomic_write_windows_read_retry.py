@@ -23,7 +23,7 @@ _SHARED_SCRIPTS = Path(__file__).resolve().parents[1] / "scripts"
 if str(_SHARED_SCRIPTS) not in sys.path:
     sys.path.insert(0, str(_SHARED_SCRIPTS))
 
-from lib.atomic_write import durable_read_text  # noqa: E402
+from lib.atomic_write import durable_read_bytes, durable_read_text  # noqa: E402
 
 
 def _sharing_violation(winerror: int = 5) -> PermissionError:
@@ -123,3 +123,45 @@ def test_read_gives_up_loudly_rather_than_inventing_an_empty_config(
 
     with pytest.raises(PermissionError):
         durable_read_text(target)
+
+
+def test_reading_bytes_preserves_line_endings_that_reading_text_destroys(tmp_path):
+    """Why `durable_read_bytes` exists at all, as a difference rather than a claim.
+
+    `restore_derived_to_head`'s run-written carve-out carries a file across a merge:
+    read the bytes, hand git a clean path, write the bytes back. Read through the TEXT
+    helper and that round-trip is not byte-preserving — universal-newline translation
+    turns CRLF into LF — so a CRLF ledger would come back rewritten and show as a diff
+    the run never made. The two are asserted side by side because the failure is
+    invisible in isolation: both reads succeed, and only one gives back what was there.
+    """
+    target = tmp_path / "crlf.json"
+    original = b'{"iterate_latest": {"run_id": "x"}}\r\n'
+    target.write_bytes(original)
+
+    assert durable_read_bytes(target) == original
+    assert durable_read_text(target).encode("utf-8") != original
+
+
+def test_reading_bytes_retries_past_a_sharing_violation_then_raises(tmp_path, monkeypatch):
+    """Same posture as the text reader: bounded patience, then loud.
+
+    Pinned separately because the two go through different `Path` methods, so a
+    future change could harden one and silently leave the other bare — which is
+    exactly the asymmetry this function was added to remove.
+    """
+    import lib.atomic_write as aw
+
+    target = tmp_path / "f.json"
+    target.write_bytes(b"{}")
+
+    monkeypatch.setattr(aw, "_is_windows", lambda: True)
+    monkeypatch.setattr(aw, "READ_RETRY_BUDGET_SECONDS", 0.02)
+    calls = []
+    monkeypatch.setattr(Path, "read_bytes",
+                        lambda self, *a, **k: (calls.append(1), (_ for _ in ()).throw(
+                            _sharing_violation(32)))[0])
+
+    with pytest.raises(PermissionError):
+        durable_read_bytes(target)
+    assert len(calls) > 1, "it must RETRY, not fail on the first violation"

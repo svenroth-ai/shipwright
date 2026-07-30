@@ -40,7 +40,7 @@ from test_integrate_campaign_status import (  # noqa: E402  (campaign event + pr
 )
 from test_integrate_main import _git, _set_repo_identity, _write  # noqa: E402
 from lib import gitattributes_union as gu  # noqa: E402
-from tools import integrate_main  # noqa: E402
+from tools import integrate_main, integrate_merge  # noqa: E402
 
 _ARCH = ".shipwright/agent_docs/architecture.md"
 _DASH = ".shipwright/compliance/dashboard.md"
@@ -106,7 +106,7 @@ def test_three_concurrent_iterates_drain_without_cascade(git_origin_repo, make_w
     _git(work, "commit", "-m", "seed")
     _git(work, "push", "origin", "main")
 
-    monkeypatch.setattr(integrate_main.rcc, "regenerate_tracked_snapshots", _fake_regen)
+    monkeypatch.setattr(integrate_merge.rcc, "regenerate_tracked_snapshots", _fake_regen)
 
     tags = ("aaaa", "bbbb", "cccc")
     worktrees = []
@@ -247,7 +247,7 @@ def test_ci_security_json_conflict_resolves_through_cascade(git_origin_repo, mak
         _git(Path(project_root), "add", "--", _DASH)
         return {_DASH: "regenerated"}
 
-    monkeypatch.setattr(integrate_main.rcc, "regenerate_tracked_snapshots", _fake_regen)
+    monkeypatch.setattr(integrate_merge.rcc, "regenerate_tracked_snapshots", _fake_regen)
 
     tags = ("aaaa", "bbbb", "cccc")
     worktrees = []
