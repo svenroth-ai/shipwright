@@ -31,7 +31,7 @@ from test_integrate_main import (  # noqa: E402
     _set_repo_identity,
     _write,
 )
-from tools import integrate_main  # noqa: E402
+from tools import integrate_main, integrate_merge  # noqa: E402
 
 
 def _seed_diverged_dashboard(git_origin_repo, make_worktree, slug: str) -> Path:
@@ -57,7 +57,8 @@ def _seed_diverged_dashboard(git_origin_repo, make_worktree, slug: str) -> Path:
 
 def _staging_regen(project_root, run_id, **kw):
     """A ``regenerate_tracked_snapshots`` stub that STAGES a change, so
-    ``_has_staged_changes`` is True and the separate follow-up commit is attempted.
+    ``regenerate_after_merge``'s staged-changes check is True and the separate
+    follow-up commit is attempted.
 
     Stages the CAMPAIGN STATUS, not a derived snapshot: since
     iterate-2026-07-27-derived-snapshots-off-branch a staged derived snapshot is
@@ -91,7 +92,7 @@ def test_integrate_returns_json_and_aborts_when_merge_commit_blocked(
 
     called = {"regen": False}
     monkeypatch.setattr(
-        integrate_main.rcc, "regenerate_tracked_snapshots",
+        integrate_merge.rcc, "regenerate_tracked_snapshots",
         lambda *a, **k: called.__setitem__("regen", True) or {},
     )
 
@@ -141,7 +142,7 @@ def test_integrate_returns_followup_commit_failed_when_followup_blocked(
     ``followup_commit_failed`` WITHOUT aborting — the merge is intact, nothing in
     progress — and leaves the regenerated snapshot staged for a manual retry."""
     wt = _seed_diverged_dashboard(git_origin_repo, make_worktree, "churn-followup-blocked")
-    monkeypatch.setattr(integrate_main.rcc, "regenerate_tracked_snapshots", _staging_regen)
+    monkeypatch.setattr(integrate_merge.rcc, "regenerate_tracked_snapshots", _staging_regen)
 
     real_git = integrate_main._git
 
@@ -174,7 +175,7 @@ def test_main_cli_reports_followup_commit_failed_exit_8(
     """The CLI surfaces ``followup_commit_failed`` as JSON + exit 8 — distinct from
     the merge-commit exit 7 — with no traceback (a1-3 follow-up)."""
     wt = _seed_diverged_dashboard(git_origin_repo, make_worktree, "churn-followup-cli")
-    monkeypatch.setattr(integrate_main.rcc, "regenerate_tracked_snapshots", _staging_regen)
+    monkeypatch.setattr(integrate_merge.rcc, "regenerate_tracked_snapshots", _staging_regen)
 
     real_git = integrate_main._git
 
@@ -205,7 +206,7 @@ def test_integrate_returns_abort_incomplete_when_merge_abort_double_faults(
 
     called = {"regen": False}
     monkeypatch.setattr(
-        integrate_main.rcc, "regenerate_tracked_snapshots",
+        integrate_merge.rcc, "regenerate_tracked_snapshots",
         lambda *a, **k: called.__setitem__("regen", True) or {},
     )
 

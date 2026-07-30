@@ -679,8 +679,8 @@ def check_test_completeness_ledger(project_root: Path, run_id: str) -> CheckResu
             severity=Severity.SKIPPED.value,
         )
 
-    # Prefer the PER-RUN entry: `restore_derived_to_head` resets the shared results
-    # file before this check runs on a behind branch, wiping this run's ledger and
+    # Prefer the PER-RUN entry: an iterate does not commit the shared results file,
+    # so on a behind branch it can still hold HEAD's — the PREVIOUS run's — ledger,
     # failing a run that did everything right. Shared file = legacy fallback.
     block = entry.get("test_completeness")
     if block is not None and not isinstance(block, dict):

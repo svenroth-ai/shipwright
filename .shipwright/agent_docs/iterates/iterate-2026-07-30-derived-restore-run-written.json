@@ -1,0 +1,103 @@
+{
+  "run_id": "iterate-2026-07-30-derived-restore-run-written",
+  "date": "2026-07-30T19:25:26.010628Z",
+  "event_at": "2026-07-30T19:23:49.477645+00:00",
+  "type": "change",
+  "complexity": "medium",
+  "branch": "iterate/derived-restore-run-written",
+  "spec": ".shipwright/planning/iterate/2026-07-30-derived-restore-run-written.md",
+  "tests_passed": true,
+  "adr": "iterate-2026-07-30-derived-restore-run-written",
+  "test_completeness": {
+    "status": "complete",
+    "behaviors": [
+      {
+        "behavior": "mainline moves the ledger while the worktree copy is dirty -> merge still starts AND the run's block survives",
+        "disposition": "tested",
+        "evidence": "test_run_written_ledger_integrate.py::test_the_run_keeps_its_ledger_when_mainline_moves_the_same_file PASSED",
+        "category": "integration"
+      },
+      {
+        "behavior": "a non-churn conflict -> the abort really cleared MERGE_HEAD before 'blocked' is returned, and the ledger came back",
+        "disposition": "tested",
+        "evidence": "test_run_written_ledger_integrate.py::test_a_blocked_merge_still_aborts_with_the_ledger_carried PASSED",
+        "category": "integration"
+      },
+      {
+        "behavior": "mainline DELETES the path -> the ledger is recreated untracked rather than lost with it",
+        "disposition": "tested",
+        "evidence": "test_run_written_ledger_integrate.py::test_the_ledger_comes_back_untracked_when_mainline_deletes_it PASSED"
+      },
+      {
+        "behavior": "the ledger cannot be READ (held open) -> named as not-carried, never silently skipped",
+        "disposition": "tested",
+        "evidence": "test_run_written_ledger_integrate.py::test_an_unreadable_ledger_is_named_rather_than_skipped_in_silence PASSED"
+      },
+      {
+        "behavior": "the write-back FAILS -> reported, and the result does not claim ok over a lost ledger",
+        "disposition": "tested",
+        "evidence": "test_run_written_ledger_integrate.py::test_a_failed_write_back_is_reported_and_not_mistaken_for_nothing_to_do PASSED"
+      },
+      {
+        "behavior": "an MD ledger (staged mod + worktree delete) -> carried out of the INDEX, staged deletion cleared",
+        "disposition": "tested",
+        "evidence": "test_run_written_ledger_integrate.py::test_a_staged_modification_with_the_file_deleted_is_carried_from_the_index PASSED"
+      },
+      {
+        "behavior": "which porcelain pairs the restore may act on (MD, ' D', 'D ' from git rm --cached, untracked)",
+        "disposition": "tested",
+        "evidence": "test_derived_snapshots_run_written.py (9 tests) PASSED"
+      },
+      {
+        "behavior": "the F11 remedy never prints --worktree for a run-written path (following the gate must not destroy the ledger)",
+        "disposition": "tested",
+        "evidence": "test_derived_snapshots_integrate.py::test_the_remedy_never_offers_worktree_for_a_run_written_path PASSED"
+      },
+      {
+        "behavior": "frozen committed artifacts: a LOST requirement fails, an added one does not, and neither side may be empty",
+        "disposition": "tested",
+        "evidence": "test_fold_map_e2e.py::test_this_monorepo_loses_nothing_when_the_manifest_is_regenerated + test_rtm_deep_links.py::test_every_rtm_deep_link_resolves_end_to_end PASSED",
+        "category": "integration"
+      },
+      {
+        "behavior": "a retry deadline that floating-point rounds above the budget still sleeps no longer than the budget",
+        "disposition": "tested",
+        "evidence": "test_atomic_write_windows_retry.py::test_the_clamp_survives_a_deadline_that_rounds_above_the_budget PASSED"
+      },
+      {
+        "behavior": "reading bytes preserves line endings that reading text destroys (a carried CRLF ledger must round-trip)",
+        "disposition": "tested",
+        "evidence": "test_atomic_write_windows_read_retry.py::test_reading_bytes_preserves_line_endings_that_reading_text_destroys PASSED"
+      }
+    ],
+    "counts": {
+      "testable": 11,
+      "tested": 11,
+      "untestable": 0,
+      "untested_testable": 0
+    },
+    "enumeration_basis": {
+      "acs": 7,
+      "covered_acs": 7
+    }
+  },
+  "surface_verification": {
+    "surface": "cli",
+    "runner": "uv run --extra dev pytest shared/tests/test_run_written_ledger_integrate.py shared/tests/test_integrate_main_commit_failures.py shared/tests/test_derived_snapshots_integrate.py shared/tests/test_integrate_main.py -q",
+    "exit_code": 0,
+    "tests_run": 23,
+    "evidence_path": "C:\\01_Development\\shipwright\\.worktrees\\derived-restore-run-written\\.shipwright\\runs\\iterate-2026-07-30-derived-restore-run-written\\surface_verification.log",
+    "timestamp": "2026-07-30T19:03:57.510Z",
+    "attempts": 1
+  },
+  "declared_removals": [
+    {
+      "path": ".shipwright/agent_docs/iterates/iterate-2026-07-27-phase-gate-override-evidence.json",
+      "reason": "pruned by append_iterate_entry.py's own 50-entry retention when this run's entry was written (F5c) \u2014 not a revert of anything this iterate touched"
+    },
+    {
+      "path": ".shipwright/agent_docs/iterates/iterate-2026-07-27-review-gate-failclosed-fork.json",
+      "reason": "pruned by append_iterate_entry.py's own 50-entry retention when this run's entry was written (F5c) \u2014 not a revert of anything this iterate touched"
+    }
+  ]
+}

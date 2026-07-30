@@ -20,7 +20,7 @@ sys.path.insert(0, str(REPO_ROOT / "shared" / "scripts"))
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from test_integrate_main import _git, _set_repo_identity, _write  # noqa: E402
-from tools import integrate_main  # noqa: E402
+from tools import integrate_main, integrate_merge  # noqa: E402
 
 _CAMP_DIR = ".shipwright/planning/iterate/campaigns/demo"
 _CAMP_STATUS = f"{_CAMP_DIR}/status.json"
@@ -142,7 +142,7 @@ def test_integrate_status_regen_skipped_when_events_invalid(git_origin_repo, mak
 
     called = {"regen": False}
     monkeypatch.setattr(
-        integrate_main.rcc, "regenerate_tracked_snapshots",
+        integrate_merge.rcc, "regenerate_tracked_snapshots",
         lambda *a, **k: called.__setitem__("regen", True) or {},
     )
     result = integrate_main.integrate(wt, "iterate-s2", do_fetch=True)
@@ -209,7 +209,7 @@ def test_integrate_rolls_back_campaign_status_on_regenerate_failure(git_origin_r
         (Path(project_root) / _CAMP_STATUS).write_text("CORRUPT", encoding="utf-8")
         return {_CAMP_STATUS: "error"}
 
-    monkeypatch.setattr(integrate_main.rcc, "regenerate_tracked_snapshots", bad_regen)
+    monkeypatch.setattr(integrate_merge.rcc, "regenerate_tracked_snapshots", bad_regen)
     result = integrate_main.integrate(wt, "iterate-rb", do_fetch=True)
 
     assert result["status"] == "regenerate_failed", result

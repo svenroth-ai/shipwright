@@ -79,21 +79,36 @@ def test_the_old_home_still_deadlocks(git_origin_repo, make_worktree):
 def test_restore_derived_to_head_does_not_erase_the_per_run_ack(
         git_origin_repo, make_worktree):
     """Finalization hygiene reverted the ack in its old home — a third failure
-    mode beyond the two gates. The new home is not a derived snapshot."""
+    mode beyond the two gates. The new home is not a derived snapshot.
+
+    The probe vehicle changed with trg-ad29a709: ``shipwright_test_results.json``
+    is no longer restored when it is MODIFIED (a run writes it and nothing can
+    recompute it, so resetting it destroys the run's own ledger). It can therefore
+    no longer prove that a restore really happened. A derived MD does — and the
+    property under test, that the ack in its NEW home survives, is untouched.
+    """
+    probe = ".shipwright/agent_docs/build_dashboard.md"
     work, _o = git_origin_repo
     wt = make_worktree(work, "dl-restore")
     _touch_workflow(wt)
     rel = _write_per_run_ack(wt, _ack())
     _write(wt, "shipwright_test_results.json", json.dumps({"iterate_latest": {}}))
-    _commit(wt, _WF, rel, "shipwright_test_results.json")
+    _write(wt, probe, "committed\n")
+    _commit(wt, _WF, rel, "shipwright_test_results.json", probe)
 
-    # a producer dirties the derived snapshot mid-run, as F5a/F5b do
+    # producers dirty both mid-run, as F5a/F5b do
+    _write(wt, probe, "regenerated\n")
     _write(wt, "shipwright_test_results.json", json.dumps({"iterate_latest": {"x": 1}}))
     restored = restore_derived_to_head(wt)
 
-    assert "shipwright_test_results.json" in restored, "probe must exercise a real restore"
+    assert probe in restored, "probe must exercise a real restore"
     payload = json.loads((wt / rel).read_text(encoding="utf-8"))
     assert payload["ci_supplychain_ack"]["consistent_with"] == _WITH
+    # Pinned HERE, where the next reader of this test would otherwise trip over it:
+    # the run-written ledger is deliberately left alone (trg-ad29a709).
+    assert "shipwright_test_results.json" not in restored
+    assert json.loads((wt / "shipwright_test_results.json").read_text(
+        encoding="utf-8")) == {"iterate_latest": {"x": 1}}
 
 
 def test_results_file_is_still_a_derived_snapshot():

@@ -6,14 +6,20 @@ file is at the repo's 300-line source cap. The seam is real as well as
 budgetary — everything here reads a *declaration by the operator*, nothing here
 inspects the repository.
 
-**Why attribution matters more here than anywhere else.**
-``shipwright_test_results.json`` is a DERIVED_SNAPSHOT, and the F11 integration
-this very gate runs behind (``ensure_current`` → ``integrate_main`` →
-``restore_derived_to_head``) rewinds it to ``HEAD``. For the ledger and
-surface-verification gates that means a stale block *fails to catch* something.
-Here it is the other way round: a previous run's ``declared_removals`` sitting
-in this run's worktree would **excuse** paths this run never declared — the one
-place where reading the wrong run's evidence actively unblocks a real revert.
+**Why attribution matters more here than anywhere else.** An iterate does not
+commit ``shipwright_test_results.json``, so the copy a worktree is checked out
+with is ``main``'s — the previous run's, until and unless this run's F5 writes
+over it. For the ledger and surface-verification gates a stale block means
+*failing to catch* something. Here it is the other way round: a previous run's
+``declared_removals`` sitting in this run's worktree would **excuse** paths this
+run never declared — the one place where reading the wrong run's evidence
+actively unblocks a real revert.
+
+That hazard is not the one trg-ad29a709 closed. ``restore_derived_to_head`` used
+to rewind this file mid-run and no longer does (the path is excluded from
+``RESTORABLE_SNAPSHOTS``), which removes a second way for a foreign block to
+appear — but the checkout route above needs no help from it, and "F5 has not
+written yet" is the ordinary state when a gate runs early.
 """
 
 from __future__ import annotations

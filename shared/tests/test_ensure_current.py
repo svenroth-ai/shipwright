@@ -25,7 +25,9 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))  # so a standalone run 
 
 from test_integrate_main import _git, _set_repo_identity, _write  # noqa: E402
 from tools import ensure_current as ec  # noqa: E402
-from tools import integrate_main  # noqa: E402  (monkeypatch target: ec delegates to integrate_main.integrate)
+# monkeypatch target: `ec` delegates to `integrate_main.integrate`, which delegates the
+# merge itself to `integrate_merge` — where `rcc` now lives.
+from tools import integrate_merge  # noqa: E402
 
 _DASH = ".shipwright/compliance/dashboard.md"
 _RUN_ID = "iterate-2026-06-12-automerge-serial-integrate"
@@ -43,7 +45,7 @@ def test_ensure_current_noop_when_current(git_origin_repo, make_worktree, monkey
 
     # integrate() must NOT be reached when the branch is current.
     monkeypatch.setattr(
-        integrate_main.rcc, "regenerate_tracked_snapshots",
+        integrate_merge.rcc, "regenerate_tracked_snapshots",
         lambda *a, **k: (_ for _ in ()).throw(AssertionError("regen must not run when current")),
     )
 
@@ -83,7 +85,7 @@ def test_ensure_current_integrates_when_behind(git_origin_repo, make_worktree, m
         _git(Path(project_root), "add", "--", _DASH)
         return {_DASH: "regenerated"}
 
-    monkeypatch.setattr(integrate_main.rcc, "regenerate_tracked_snapshots", fake_regen)
+    monkeypatch.setattr(integrate_merge.rcc, "regenerate_tracked_snapshots", fake_regen)
 
     result = ec.ensure_current(wt, _RUN_ID, do_fetch=True)
 
@@ -122,7 +124,7 @@ def test_ensure_current_blocks_on_source_conflict(git_origin_repo, make_worktree
 
     called = {"regen": False}
     monkeypatch.setattr(
-        integrate_main.rcc, "regenerate_tracked_snapshots",
+        integrate_merge.rcc, "regenerate_tracked_snapshots",
         lambda *a, **k: called.__setitem__("regen", True) or {},
     )
 

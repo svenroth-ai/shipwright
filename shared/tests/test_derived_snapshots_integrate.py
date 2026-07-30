@@ -2,9 +2,10 @@
 (iterate-2026-07-27-derived-snapshots-off-branch).
 
 The unit half — the registry and `restore_derived_to_head` — is in
-test_derived_snapshots.py. Split only to stay inside the 300-LOC guideline.
-Helpers come from test_integrate_main rather than being duplicated, the same way
-test_integrate_main_commit_failures sources them.
+test_derived_snapshots.py. The run-written path is its own subject and its own pair of
+files: test_derived_snapshots_run_written.py (unit) and
+test_run_written_ledger_integrate.py (real git). Helpers come from test_integrate_main
+rather than being duplicated, the same way test_integrate_main_commit_failures does.
 
 What these pin, beyond "the snapshot is absent": a BEHIND branch must still merge.
 F5a/F5b regenerate the snapshots mid-run and F6 no longer commits them, so they sit
@@ -23,7 +24,7 @@ sys.path.insert(0, str(REPO_ROOT / "shared" / "scripts"))
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from test_integrate_main import _git, _set_repo_identity, _write  # noqa: E402
-from tools import integrate_main  # noqa: E402
+from tools import integrate_main, integrate_merge  # noqa: E402
 
 _DASH = ".shipwright/compliance/dashboard.md"
 _RUN_ID = "iterate-2026-07-27-derived-snapshots-off-branch"
@@ -60,7 +61,7 @@ def test_integrate_makes_no_followup_for_derived_snapshots(
         _git(Path(project_root), "add", "--", _DASH)
         return {_DASH: "regenerated"}
 
-    monkeypatch.setattr(integrate_main.rcc, "regenerate_tracked_snapshots", fake_regen)
+    monkeypatch.setattr(integrate_merge.rcc, "regenerate_tracked_snapshots", fake_regen)
 
     result = integrate_main.integrate(wt, _RUN_ID, do_fetch=True)
 
@@ -111,7 +112,7 @@ def test_a_behind_branch_still_merges_and_the_run_stays_evidenced(
     _git(work, "commit", "-am", "main regenerates dashboard")
     _git(work, "push", "origin", "main")
 
-    monkeypatch.setattr(integrate_main.rcc, "regenerate_tracked_snapshots", lambda *a, **k: {})
+    monkeypatch.setattr(integrate_merge.rcc, "regenerate_tracked_snapshots", lambda *a, **k: {})
     result = integrate_main.integrate(wt, _RUN_ID, do_fetch=True)
 
     assert result["status"] == "ok", f"a dirty snapshot must not wedge the merge: {result}"
@@ -177,3 +178,33 @@ def test_gate_skips_rather_than_invents_when_it_cannot_read_the_commit(git_origi
 
     assert check_no_derived_snapshots_committed(work, _RUN_ID, "").is_skipped
     assert check_no_derived_snapshots_committed(work, _RUN_ID, "no-such-ref").is_skipped
+
+
+# --- the remedy the gate prints (trg-ad29a709) -------------------------------
+
+def test_the_remedy_never_offers_worktree_for_a_run_written_path():
+    """The gate's own instructions must not destroy the ledger the carve-out saves.
+
+    `git restore --staged --worktree` on `shipwright_test_results.json` resets the file
+    on disk to its pre-iterate state, wiping the block F5 just wrote — trg-ad29a709
+    verbatim, reachable by following this gate's printed remedy, which is exactly what
+    an operator copies under time pressure. Unstaging alone clears the gate.
+    """
+    from lib.churn_merge import TEST_RESULTS
+    from tools.verifiers.derived_snapshot_gate import _restore_flags
+
+    assert _restore_flags([TEST_RESULTS]) == "--staged"
+    # ...and mixed offenders take the safe flag too: one run-written path in the list
+    # is enough, because the operator pastes ONE command for all of them.
+    assert _restore_flags([TEST_RESULTS, ".shipwright/compliance/sbom.md"]) == "--staged"
+
+
+def test_the_remedy_still_cleans_the_worktree_for_derived_paths():
+    """The other branch, pinned so a future edit cannot quietly drop `--worktree` for
+    the paths where it is correct: a derived snapshot left dirty keeps the tree unclean
+    and a later merge can refuse."""
+    from tools.verifiers.derived_snapshot_gate import _restore_flags
+
+    assert _restore_flags([".shipwright/compliance/sbom.md"]) == "--staged --worktree"
+    assert _restore_flags([".shipwright/compliance/dashboard.md",
+                           ".shipwright/agent_docs/triage_inbox.md"]) == "--staged --worktree"

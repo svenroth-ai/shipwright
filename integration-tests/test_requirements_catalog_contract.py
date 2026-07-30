@@ -5,17 +5,11 @@ compacted the per-change prose out of them, and started emitting deep-link
 anchors explicitly. Each of those three has a way of failing silently, so each
 gets an assertion here rather than a promise in a commit message.
 
-**The anchor assertion is a real resolution, not an inspection.** It reads the
-generated traceability matrix, takes the link the matrix actually emits, resolves
-it relative to the matrix's own directory, opens whatever that lands on, and
-checks the fragment is defined there. A test that merely looked for
-``<a id="fr-0101">`` in the catalog would pass just as happily if the matrix had
-started emitting some other fragment.
-
-Why explicit anchors at all: the matrix emits ``#fr-0101``, but the heading reads
-``### FR-01.01 — /shipwright-run``, which github-slugger turns into
-``fr-0101--shipwright-run``. The viewer matches anchors EXACTLY, so before S6
-every one of these links scrolled nowhere and reported nothing.
+Scope is the CATALOG: which ids it carries, that each has a unique explicit
+anchor, that its criteria are assertion-shaped, and that its prose carries none
+of the tokens that rot. Whether the generated traceability matrix's deep links
+actually RESOLVE to those anchors is the neighbouring subject and lives in
+``test_rtm_deep_links.py``, split out when this file reached the 300-line limit.
 
 @FR-01.10
 """
@@ -29,19 +23,15 @@ import pytest
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 CATALOG = REPO_ROOT / ".shipwright" / "planning" / "01-adopted" / "spec.md"
-RTM = REPO_ROOT / ".shipwright" / "compliance" / "traceability-matrix.md"
 
-#: The ids the catalog carries. S6 must not lose or renumber one; a later iterate
-#: may append the next free number (FR-01.16 was minted 2026-07-23, REQ-3 Ph1;
-#: FR-01.19 "Recovery of a broken shared branch" 2026-07-28,
-#: iterate-2026-07-28-main-self-heal). The bound moves only by APPENDING — if a
-#: diff ever makes this tuple shorter, or changes an id already in it, that is
-#: the loss this constant exists to catch and the number must not be adjusted
-#: to match.
+#: The ids the catalog carries. S6 must not lose or renumber one; a later iterate may
+#: append the next free number (FR-01.16 minted 2026-07-23 REQ-3 Ph1; FR-01.19 2026-07-28
+#: iterate-2026-07-28-main-self-heal). The bound moves only by APPENDING — a diff that
+#: makes this tuple shorter, or changes an id in it, is the loss this constant exists to
+#: catch, and the number must NOT be adjusted to match.
 EXPECTED_IDS = tuple(f"FR-01.{n:02d}" for n in range(1, 20))
 
 _EXPLICIT_ANCHOR = re.compile(r'<a\s+id="([^"]+)"\s*>')
-_RTM_FR_LINK = re.compile(r"\[(FR-[\d.]+)\]\(([^)]*spec\.md#[^)]+)\)")
 _TABLE_ROW = re.compile(r"^\|\s*(FR-\d+\.\d+)\s*\|")
 _CRITERION = re.compile(r"^\s*-\s+\(E\)\s")
 
@@ -209,41 +199,6 @@ def test_every_requirement_has_an_explicit_anchor(catalog):
     assert fr_anchors == [i.replace("FR-", "fr-").replace(".", "")
                           for i in EXPECTED_IDS]
     assert len(set(anchors)) == len(anchors), "duplicate anchor id"
-
-
-@pytest.mark.skipif(not RTM.exists(), reason="traceability matrix not generated")
-def test_every_rtm_deep_link_resolves_end_to_end():
-    """END TO END: matrix → relative link → file on disk → anchor defined there.
-
-    Every step is taken for real. The link text is not reconstructed from the FR
-    id, it is read out of the generated matrix; the path is resolved against the
-    matrix's own directory the way a reader's browser would; and the target file
-    is opened rather than assumed to be the catalog.
-    """
-    links = _RTM_FR_LINK.findall(RTM.read_text(encoding="utf-8"))
-    assert len(links) >= len(EXPECTED_IDS), "matrix emitted no FR deep links"
-    # EVERY link is resolved, not a representative one. A single spot-check would
-    # meet the wording of the acceptance criterion while missing a mismatch
-    # between the link generator's anchor convention and the catalog's ids.
-    # NOT PROBED, because it does not exist here: a FOLDED row, whose slug
-    # degrades worst of all (`fr-0107-folded--fr-0105-health-check`). This repo
-    # has no `## FR-Fold-Map` and the matrix emits no folded link, so there is
-    # nothing to resolve. The loop below would cover one the moment one appears.
-
-    unresolved = []
-    for fr_id, href in links:
-        rel, _, fragment = href.partition("#")
-        target = (RTM.parent / rel).resolve()
-        if not target.is_file():
-            unresolved.append(f"{fr_id}: {href} → no such file {target}")
-            continue
-        defined = set(_EXPLICIT_ANCHOR.findall(target.read_text(encoding="utf-8")))
-        if fragment not in defined:
-            unresolved.append(
-                f"{fr_id}: #{fragment} is not defined in {target.name} "
-                f"(a heading slug is NOT enough — the viewer matches exactly)"
-            )
-    assert not unresolved, "\n".join(unresolved)
 
 
 def test_no_requirement_text_carries_a_run_id_adr_number_or_path(catalog):

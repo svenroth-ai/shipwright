@@ -1,11 +1,18 @@
 """Whose run does ``shipwright_test_results.json.iterate_latest`` belong to?
 
 Every F11 check that reads that block used to answer "the run I am verifying",
-and never asked. The file is a DERIVED_SNAPSHOT
-(:data:`lib.derived_snapshots.DERIVED_SNAPSHOTS`), so at F11 ``ensure_current`` →
-``integrate_main`` calls ``restore_derived_to_head`` and resets it to ``HEAD``.
-An iterate no longer commits it, so ``HEAD``'s copy is ``main``'s — the previous
-run's evidence, in this run's worktree, shaped exactly like this run's would be.
+and never asked. An iterate no longer commits the file, so whatever sits at
+``HEAD`` is ``main``'s copy — the previous run's evidence, in this run's
+worktree, shaped exactly like this run's would be and separable from it by
+nothing but ``run_id``.
+
+It gets there without anyone doing anything: a fresh worktree is checked out at
+``HEAD`` and holds that block before this run writes a byte. It used to arrive by
+a second route as well — ``ensure_current`` → ``integrate_main`` →
+``restore_derived_to_head`` reset the file mid-run — and that route is closed
+(trg-ad29a709: the path is excluded from :data:`lib.derived_snapshots.RESTORABLE_SNAPSHOTS`
+because the run WRITES it). Closing it removes one way to *acquire* a foreign
+block, not the reason to check whose it is.
 
 Observed: the ledger gate reported *"complete: 30 tested, 1 untestable"* for a
 run that had six behaviours; the numbers belonged to
@@ -112,9 +119,10 @@ def stale_detail(result: IterateLatest, run_id: str, field: str) -> str:
     return (
         f"{result.detail} — the F5c entry for {run_id} carries no {field} "
         f"either, so this gate has no evidence belonging to THIS run. "
-        f"{RESULTS_NAME} is a derived snapshot that `restore_derived_to_head` "
-        "resets to HEAD during the F11 integration, which is how another run's "
-        f"block ends up here. Repair: re-run F5 to rewrite {RESULTS_NAME} for "
+        f"An iterate does not commit {RESULTS_NAME}, so the copy a worktree is "
+        "checked out with is HEAD's — the PREVIOUS run's — until this run's F5 "
+        f"writes over it. That is how another run's block ends up here. "
+        f"Repair: re-run F5 to rewrite {RESULTS_NAME} for "
         f"this run, or (durable) include {field!r} in the F5c "
         "`--entry-json` so it lives on a per-run path the restore cannot reach."
     )

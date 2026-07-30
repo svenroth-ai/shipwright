@@ -100,8 +100,14 @@ def test_replace_gives_up_loudly_when_the_handle_never_closes(tmp_path, monkeypa
 
 def test_retry_never_outlives_the_configured_budget(tmp_path, monkeypatch):
     """The backoff sleep is clamped to the time left, so the last attempt lands
-    AT the deadline rather than up to one backoff step past it — otherwise a
-    destination released after the budget could still succeed."""
+    AT the deadline rather than up to one backoff step past it.
+
+    Real magnitude here: a step can be up to `_RETRY_MAX_SLEEP_SECONDS`, so without
+    the clamp a 0.5 s budget can overrun by 20%. The SIBLING clamp — `min(..., budget)`
+    against a `deadline` that floating point rounds a hair high — is worth ~2**-31 s
+    and is a contract-exactness fix, not a bug fix; the test for it says so, because
+    conflating the two would have the next reader trusting the budget for more than
+    it promises."""
     import lib.atomic_write as aw
 
     monkeypatch.setattr(aw, "_is_windows", lambda: True)
@@ -227,3 +233,48 @@ def test_real_windows_reader_does_not_lose_the_write(tmp_path, monkeypatch):
         reader.close()
 
     assert target.read_text(encoding="utf-8") == '{"v": 2}'
+
+
+def test_the_clamp_survives_a_deadline_that_rounds_above_the_budget(monkeypatch):
+    """The budget cap, proven on ANY platform rather than only where it bites.
+
+    The sibling test above is real but platform-shaped: on Windows `time.monotonic()`
+    is GetTickCount64 (~15.6 ms), so both reads land in the same tick and
+    `(t0 + budget) - t0` evaluates a few ulps of t0 above `budget`. On Linux time
+    genuinely elapses between the reads, so `remaining < budget` strictly and the test
+    passes with or without the fix — meaning the gate that guards this change cannot
+    tell the two apart.
+
+    Here the clock is stubbed to reproduce the arithmetic exactly: one timestamp, read
+    twice. The literal is not decorative — it is a value for which `(t0 + 0.05) - t0`
+    returns 0.05000000004656613, the exact number the Windows run reported. Roughly 17
+    days of uptime; the error is ulp(t0)/2 at that magnitude.
+    """
+    import lib.atomic_write as aw
+
+    t0 = 1516983.2475057743
+    assert (t0 + 0.05) - t0 > 0.05, "fixture no longer reproduces the rounding error"
+
+    monkeypatch.setattr(aw, "_is_windows", lambda: True)
+    monkeypatch.setattr(aw, "_RETRY_INITIAL_SLEEP_SECONDS", 30.0)
+    # `aw.time` IS the stdlib module, so this patches `time.monotonic` process-wide
+    # rather than a module-local alias — safe under serial pytest, and NOT safe the day
+    # this root runs with `-n auto` alongside the `threading.Timer` test in this file.
+    # Recorded rather than fixed: giving `monotonic` the `_is_windows` treatment (a
+    # module-level seam plus the source-level drift guard above) is a change to the
+    # production module for a test's benefit, and that is a decision, not a cleanup.
+    monkeypatch.setattr(aw.time, "monotonic", lambda: t0)
+
+    slept: list[float] = []
+    monkeypatch.setattr(aw.time, "sleep", lambda s: slept.append(s))
+
+    attempts = {"n": 0}
+
+    def operation():
+        attempts["n"] += 1
+        if attempts["n"] == 1:
+            raise _sharing_violation(5)
+        return "ok"
+
+    assert aw._retry_past_sharing_violations(operation, budget_seconds=0.05) == "ok"
+    assert slept == [0.05], f"slept {slept} — the clamp must never exceed the budget"

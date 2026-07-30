@@ -23,11 +23,12 @@ uv run "{shared_root}/scripts/tools/append_iterate_entry.py" \
 ```
 
 **Carry the three evidence blocks here, not only in
-`shipwright_test_results.json`.** That file is a DERIVED_SNAPSHOT: at F11
-`ensure_current` → `integrate_main` calls `restore_derived_to_head`, which resets
-it to `HEAD` — and since an iterate no longer commits it, `HEAD`'s copy is
-`main`'s, i.e. the PREVIOUS run's evidence sitting in this run's worktree,
-shaped exactly like this run's would be. `check_test_completeness_ledger`,
+`shipwright_test_results.json`.** An iterate does not commit that file, so the copy
+a worktree is checked out with is `HEAD`'s — `main`'s, i.e. the PREVIOUS run's
+evidence sitting in this run's worktree, shaped exactly like this run's would be and
+separable from it by nothing but `run_id`. (F11's integration used to *rewind* it
+mid-run on top of that; trg-ad29a709 now carries the bytes across the merge instead,
+which closes that route and not the one above.) `check_test_completeness_ledger`,
 `check_surface_verification` and the silent-revert declaration reader now refuse
 a block that does not name the run being verified, and all three read this
 per-run entry FIRST. The entry is not a derived snapshot, so the restore cannot

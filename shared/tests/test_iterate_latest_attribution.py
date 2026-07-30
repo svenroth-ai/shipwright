@@ -1,10 +1,10 @@
 """AC-1 / AC-1b — an ``iterate_latest`` block that names another run is not evidence.
 
-``shipwright_test_results.json`` is a DERIVED_SNAPSHOT. At F11 ``ensure_current``
-→ ``integrate_main`` calls ``restore_derived_to_head``, which resets it to
-``HEAD`` — and since an iterate no longer commits it, ``HEAD``'s copy is
-``main``'s, i.e. the PREVIOUS run's evidence. Three F11 readers used to accept
-that silently.
+An iterate does not commit ``shipwright_test_results.json``, so the copy a worktree
+is checked out with is ``HEAD``'s — ``main``'s, i.e. the PREVIOUS run's evidence,
+already there before this run writes a byte. Three F11 readers used to accept that
+silently. (``restore_derived_to_head`` also used to rewind it mid-run; trg-ad29a709
+closed that route and not this one.)
 
 The fixtures below are deliberately *valid* for the foreign run: a gate that
 merely re-validated the shape would pass them, which is exactly how the observed

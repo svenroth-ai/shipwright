@@ -140,7 +140,15 @@ def test_restore_undoes_a_DELETED_derived_snapshot(git_origin_repo) -> None:
 def test_restore_of_one_odd_path_does_not_defeat_the_others(git_origin_repo) -> None:
     """`git checkout HEAD -- a b c` is all-or-nothing: one path unknown to HEAD can
     abort the whole call and silently leave the rest dirty. Restoring per path keeps
-    one odd file from defeating the others."""
+    one odd file from defeating the others.
+
+    The odd path must be one that REACHES the checkout and fails THERE. An untracked
+    file does not: it is filtered out well before the loop, so a batched call would
+    pass this test identically and the per-path property would go unpinned. A STAGED
+    addition does — `A ` is dirty and tracked, so it survives every filter, and then
+    `git checkout HEAD --` on it exits non-zero because HEAD has never heard of it.
+    """
+    other = ".shipwright/compliance/sbom.md"
     work, _origin = git_origin_repo
     _set_repo_identity(work)
     _write(work, _DASH, "committed dashboard\n")
@@ -148,13 +156,14 @@ def test_restore_of_one_odd_path_does_not_defeat_the_others(git_origin_repo) -> 
     _git(work, "commit", "-m", "seed ONE derived snapshot")
 
     _write(work, _DASH, "regenerated\n")                       # tracked + dirty
-    _write(work, TEST_RESULTS, "never tracked at all\n")       # unknown to HEAD
+    _write(work, other, "staged, but HEAD has never seen it\n")
+    _git(work, "add", "--", other)                             # status `A `
 
     restored = restore_derived_to_head(work)
 
     assert restored == [_DASH], "the tracked one must still be restored"
     assert (work / _DASH).read_text(encoding="utf-8") == "committed dashboard\n"
-    assert (work / TEST_RESULTS).exists(), "an untracked file must not be deleted"
+    assert (work / other).exists(), "the odd path is skipped, not destroyed"
 
 
 def test_restore_is_a_noop_on_a_clean_tree_and_never_raises(git_origin_repo) -> None:
@@ -186,11 +195,12 @@ def test_restore_ignores_a_snapshot_the_project_does_not_track(git_origin_repo) 
 def test_completeness_ledger_reads_the_per_run_entry_after_a_restore(tmp_path) -> None:
     """The ordering trap this change created in its own finalization.
 
-    F5 writes the ledger into ``shipwright_test_results.json``; F6 no longer commits
-    it; F11's `ensure_current` then restores it to HEAD on a behind branch — wiping
-    the ledger *before* `check_test_completeness_ledger` (severity ERROR) reads it.
-    A run that did everything right would fail its own gate. The ledger therefore
-    lives in the per-run F5c entry, which is collision-free and ships.
+    F5 writes the ledger into ``shipwright_test_results.json`` and F6 no longer commits
+    it, so on a behind branch the copy `check_test_completeness_ledger` (severity ERROR)
+    reads can be HEAD's — the PREVIOUS run's — or absent entirely, and a run that did
+    everything right fails its own gate. The ledger therefore lives in the per-run F5c
+    entry, which is collision-free and ships. (`ensure_current` used to *actively* wipe
+    it here; trg-ad29a709 stopped that, which closes one route and not the shape below.)
     """
     import json
 
