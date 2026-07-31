@@ -1,39 +1,39 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-07-31-review-record-spec-promotion"
+run_id: "iterate-2026-07-28-docs-placement-rule"
 phase: "iterate"
-reason: "iterate: promote the Stage-1 spec pass into the reviews contract, with a permanent read path for 65 older records"
-timestamp: "2026-07-31T23:32:38.909412+00:00"
+reason: "iterate: docs/ placement rule + remove one generated artifact and five finished records"
+timestamp: "2026-07-28T12:18:50.089137+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-07-31 23:32:38 UTC
+> Auto-generated 2026-07-28 12:18:50 UTC
 
 ## Session Info
 
-- **Session ID**: unknown
-- **Timestamp**: 2026-07-31 23:32:38 UTC
-- **Reason**: iterate: promote the Stage-1 spec pass into the reviews contract, with a permanent read path for 65 older records
+- **Session ID**: 7c6c7b07-d3a2-4c91-ba4e-fab3535b5067
+- **Timestamp**: 2026-07-28 12:18:50 UTC
+- **Reason**: iterate: docs/ placement rule + remove one generated artifact and five finished records
 
 ## Last Iterate
 
-- **Run ID**: iterate-2026-07-31-review-record-spec-promotion
-- **Date**: 2026-07-31T23:32:32.469410Z
+- **Run ID**: iterate-2026-07-28-docs-placement-rule
+- **Date**: 2026-07-28T12:18:44.151571Z
 - **Type**: change
 - **Complexity**: medium
-- **Branch**: iterate/review-record-spec-promotion
-- **ADR**: iterate-2026-07-31-review-record-spec-promotion
+- **Branch**: iterate/docs-placement-rule
+- **ADR**: iterate-2026-07-28-docs-placement-rule
 - **Tests passed**: True
-- **Spec**: .shipwright/planning/iterate/2026-07-31-review-record-spec-promotion.md
+- **Spec**: .shipwright/planning/iterate/iterate-2026-07-28-docs-placement-rule.md
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/review-record-spec-promotion
-- **Run ID**: `iterate-2026-07-31-review-record-spec-promotion`
-- **Spec**: .shipwright/planning/iterate/2026-07-31-review-record-spec-promotion.md
-- **Complexity**: medium (stage 1 said `small`; the stage-2 repo scout raised it — see below)
-- **External Review Marker**: missing
+- **Branch**: iterate/docs-placement-rule
+- **Run ID**: iterate-2026-07-28-docs-placement-rule
+- **Spec**: .shipwright/planning/iterate/iterate-2026-07-28-docs-placement-rule.md
+- **Complexity**: medium · **spec_impact:** none · **affected_frs:** [] ·
+- **External Review Marker**: completed (external_review_state.json @ 2026-07-28T11:58:04)
 
 ### Mandatory replay on Resume
 
@@ -51,8 +51,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/review-record-spec-promotion
-- **Last Commit**: 780ebf97 chore(triage): sweep 10 outbox append(s) into branch
+- **Branch**: iterate/docs-placement-rule
+- **Last Commit**: 7ec426a2 chore(triage): sweep 54 outbox append(s) into branch
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -68,17 +68,17 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 | Event | Type | Source | Date |
 |-------|------|--------|------|
-| evt-4876cc05 | grade_snapshot | — | 2026-07-31 |
-| evt-410afe54 | work_completed | iterate (iterate: promote the Stage-1 spec pass into the reviews contract, with a permanent read path for 65 older records) | 2026-07-31 |
-| evt-78a81135 | work_completed | iterate (adr-index-churn-register) | 2026-07-31 |
-| evt-6d912bb6 | grade_snapshot | — | 2026-07-31 |
-| evt-b1b28b77 | grade_snapshot | — | 2026-07-31 |
+| evt-003a4ccb | grade_snapshot | — | 2026-07-28 |
+| evt-a25fc820 | work_completed | iterate (iterate: docs/ placement rule + remove one generated artifact and five finished records) | 2026-07-28 |
+| evt-7963d51e | grade_snapshot | — | 2026-07-28 |
+| evt-2df150c5 | work_completed | iterate (Make a conditional session policy gating subagents a question asked before Stage 1 rather than a silent not_run at F11, and define what a real blocker is.) | 2026-07-28 |
+| evt-5f7e67f6 | grade_snapshot | — | 2026-07-28 |
 
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 421
-- **Last iterate**: change — iterate: promote the Stage-1 spec pass into the reviews contract, with a permanent read path for 65 older records (2026-07-31)
+- **Total work events**: 400
+- **Last iterate**: change — iterate: docs/ placement rule + remove one generated artifact and five finished records (2026-07-28)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
 ## Recent Decisions

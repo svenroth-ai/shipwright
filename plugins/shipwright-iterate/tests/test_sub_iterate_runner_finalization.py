@@ -11,6 +11,10 @@ Covers:
   campaign 2026-07-18-mission-artifacts;
 - the result-JSON schema admits the optional ``finalization`` record so a runner
   emitting it validates under ``additionalProperties: false``.
+
+The F-phase registry guards (runner Step 4 vs SKILL.md's index) live in
+``test_runner_phase_registry.py`` — split out when this module reached 313
+lines against a 300-line limit.
 """
 
 from __future__ import annotations

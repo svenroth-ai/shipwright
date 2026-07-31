@@ -1,0 +1,326 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-07-31-it7b-campaign-cascade",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-07-31T22:03:37.265378+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-07-31T22:03:52.724806+00:00",
+      "disposition": "External LLM PLAN review is Advisory per SKILL.md Override Classes and was not run before build; the design was instead put through the full internal cascade (spec HARD-GATE, code, doubt) plus an external CODE review on the final diff, which together returned 27 findings. Recorded not_run rather than claimed.",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 10,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "shared/tests/test_campaign_cascade_record_roundtrip.py",
+          "line": 192,
+          "finding": "_step_3f_bis() matched the first '3f-bis' (a prose mention), returning lines 23-204, so --force and strict-stop assertions were vacuous",
+          "suggestion": "anchor on the step label at line start",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "plugins/shipwright-iterate/tests/test_sub_iterate_runner_finalization.py",
+          "line": 149,
+          "finding": "_runner_phases() token-scans the whole prompt, so references/F0.5.md and the 'F0-F6' heading supply tokens; 5 of 10 phases stayed covered with their bullet deleted",
+          "suggestion": "derive the token set from the Step-4 bullet heads",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "plugins/shipwright-iterate/tests/test_sub_iterate_runner_finalization.py",
+          "line": 129,
+          "finding": "the F5 exclusion reason cites a rewind route trg-ad29a709 closed; F5 is in fact the producer check_test_completeness_ledger reads",
+          "suggestion": "move F5 into RUNNER_REQUIRED",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "plugins/shipwright-iterate/tests/test_sub_iterate_runner_finalization.py",
+          "line": 134,
+          "finding": "the F11 exclusion contradicts the runner's own Step 5 push; F11 is split, not excluded, and gh pr create has no owner",
+          "suggestion": "classify F11 as split and name the hole",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "plugins/shipwright-iterate/skills/iterate/references/campaign-mode.md",
+          "line": 196,
+          "finding": "3f-bis pushes a commit so CI restarts; 3g may read the previous rollup and merge an unchecked head, or false-negative",
+          "suggestion": "head-pin the merge and wait for the PR object to catch up",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "plugins/shipwright-iterate/skills/iterate/references/campaign-mode.md",
+          "line": 191,
+          "finding": "Stage 3 is conditional but the promotion block is unconditional, leaving a stale or fabricated doubt row",
+          "suggestion": "add the skip branch and the REJECT recording rule",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "architecture",
+          "file": "docs/hooks-and-pipeline.md",
+          "line": 2513,
+          "finding": "four rows still name 'F2 Browser Verify' while the diff forbids that label - the repo asserts both readings",
+          "suggestion": "rename the rows in the same diff",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/tests/test_campaign_review_contract_prose.py",
+          "line": 183,
+          "finding": "docstring says 'no step for 14 months'; ADR-029 is 2026-05-04 against a 2026-07-31 run - about three",
+          "suggestion": "say three months",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "docs/guide.md",
+          "line": 2116,
+          "finding": "the new parenthetical reintroduces dated iterate IDs and ADR numbers the guide deliberately strips",
+          "suggestion": "delete the parenthetical",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "architecture",
+          "file": "shared/tests/test_campaign_cascade_record_roundtrip.py",
+          "line": 192,
+          "finding": "catalog D: campaign-mode prose is pinned by two modules with two different normalisers",
+          "suggestion": "move the prose tests into the module that already owns the doc",
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-07-31T22:01:19.012658+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 13,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "boundary & contract",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: the F2 collision was the last 'label present, subject wrong' instance — F4 told every sub-iterate to append to CHANGELOG.md, which references/F4.md forbids in as many words",
+          "suggestion": "see spec Residual gaps / fixed in this diff",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "high",
+          "category": "hidden coupling",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: 3f-bis's trigger closes the review gap — the runner has no Stage-2 Repo Scout, so diff-driven flags are structurally never set and the gate would be narrowest on the framework surface",
+          "suggestion": "see spec Residual gaps / fixed in this diff",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "high",
+          "category": "boundary & contract",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: the drift tests prevent recurrence — RUNNER_REQUIRED is a hand-written literal: move F0.5 to EXCLUDED with any plausible string and all four tests stay green",
+          "suggestion": "see spec Residual gaps / fixed in this diff",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "high",
+          "category": "concurrency & ordering",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: the promoted record reaches main — git commit / git push in 3f-bis were unchecked, so a blocked commit left the local record completed and main not_run, fail-open",
+          "suggestion": "see spec Residual gaps / fixed in this diff",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "high",
+          "category": "concurrency & ordering",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: 3g pins the merge to  so a race aborts it — shell state does not survive between steps;  expands to empty in 3g and the merge runs UNPINNED, indistinguishable from the skip path",
+          "suggestion": "see spec Residual gaps / fixed in this diff",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "boundary & contract",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: a Stage-1 REJECT is recorded and visible — from_spec_reviewer drops verdict, so a completed REJECT is byte-indistinguishable from a PASS to the next reader",
+          "suggestion": "see spec Residual gaps / fixed in this diff",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "boundary & contract",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: every RUNNER_EXCLUDED reason is checkable — the F11 reason claims the runner does F11's branch-current half; Step 5 is one git push and ensure_current is nowhere",
+          "suggestion": "see spec Residual gaps / fixed in this diff",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "reversibility",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: every abnormal outcome routes to STRICT-STOP — an empty pr_url made the until-loop wait forever - a third outcome, neither delivered nor stopped",
+          "suggestion": "see spec Residual gaps / fixed in this diff",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "hidden coupling",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: congruent except where autonomy forces a difference — touches_ci_supplychain ack is unnamed in the runner and F0's leak-guard half is dropped without a note",
+          "suggestion": "see spec Residual gaps / fixed in this diff",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "boundary & contract",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: every phase SKILL.md defines is classified — _skill_phases() reads tables and headings, not the MANDATORY prose; F5a is named there and is in neither list",
+          "suggestion": "see spec Residual gaps / fixed in this diff",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "reversibility",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: ADR-119's Ousterhout argument is honest — the Chesterton citation described a different artifact, and the retirement premise was asserted without a probe",
+          "suggestion": "see spec Residual gaps / fixed in this diff",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "hidden coupling",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: the record names whoever performed each pass — result.json keeps delegated_to_orchestrator after 3f-bis promotes the rows; the loop's own artifact is not rewritten",
+          "suggestion": "see spec Residual gaps / fixed in this diff",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "boundary & contract",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: the new module documents the defect accurately — two comments said 'three phases' after F5 made it four, and the F2 measurement claim went stale",
+          "suggestion": "see spec Residual gaps / fixed in this diff",
+          "source": "doubt-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-07-31T22:01:19.150175+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 4,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "spec",
+          "file": "plugins/shipwright-iterate/skills/iterate/references/campaign-mode.md:238-244",
+          "line": null,
+          "finding": "The Stage-1 REJECT path does not actually specify a forced re-recording with the `spec-reviewer` as producer, nor a commit/push of that updated record before STRICT-STOP. The runner’s pre-existing terminal `spec: not_run` row therefore remains the durable record unless an operator improvises the missing commands, violating AC2’s requirement that the verdict be recorded under its producing actor and shipped with the PR.",
+          "suggestion": "Provide the concrete `record_review_pass.py ... --review-type spec --status not_run --recorded-by spec-reviewer --force ...` command (including citations/disposition), followed by the checked add/commit/push sequence, before stopping the loop.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "test",
+          "file": "plugins/shipwright-iterate/tests/test_runner_phase_registry.py:109-143",
+          "line": null,
+          "finding": "The purported bidirectional drift test does not implement AC5’s reverse direction for the actual runner document. `_runner_phases()` is only compared against `RUNNER_REQUIRED`; an extra/invented F-phase bullet in Step 4 would not fail any test because `test_required_and_excluded_sets_do_not_overlap_or_invent_phases` validates only the hand-maintained Python sets, not `_runner_phases()`.",
+          "suggestion": "Assert `(_runner_phases() - _skill_phases()) == set()` directly, and assert that actual runner bullets match the required classification rather than only that the hard-coded required set is present.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "spec",
+          "file": "plugins/shipwright-iterate/tests/test_runner_phase_registry.py:151-177",
+          "line": null,
+          "finding": "The drift protection still misses `F5a`, despite SKILL.md declaring it mandatory in prose. `_skill_phases()` only extracts table rows and headings, and `NON_EXCLUDABLE` omits F5a; consequently the runner neither runs nor explicitly classifies a mandatory phase. This is explicitly acknowledged as a residual gap, but it means AC5 (“matches SKILL.md’s mandatory set”) is not met.",
+          "suggestion": "Correct SKILL.md’s inconsistent F5a declaration as part of this change, or represent F5a in a machine-readable canonical phase registry and require the runner to implement or explicitly reject it according to that registry.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "test",
+          "file": "shipwright_test_results.json:5-18",
+          "line": null,
+          "finding": "The run is marked `cross_component`, whose stated requirement is integration coverage plus a full test suite, but the recorded run executes only 7,473 unit tests and 3 integration tests. The generated compliance report’s 13,108/13,108 result belongs to a different iterate (`adr-index-churn-register`) and is not evidence that this change’s revision passed the full suite.",
+          "suggestion": "Run and record the repository’s full suite on this branch/commit, or explicitly fail/defer the change rather than claiming the cross-component acceptance criterion is complete.  Overall assessment: ship-with-fixes. The core documentation wiring is substantially present, but the REJECT durability path and claimed phase-drift/full-suite guarantees are incomplete. SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-07-31T22:03:52.609181+00:00",
+      "disposition": null,
+      "recorded_by": "external-review",
+      "parse_status": "partial",
+      "raw_excerpt": "[gemini] <no review returned: provider returned an empty reply>\n\n[openai] - Category: spec  \n  Severity: medium  \n  File: `plugins/shipwright-iterate/skills/iterate/references/campaign-mode.md:238-244`  \n  Finding: The Stage-1 REJECT path does not actually specify a forced re-recording with the `spec-reviewer` as producer, nor a commit/push of that updated record before STRICT-STOP. The runner’s pre-existing terminal `spec: not_run` row therefore remains the durable record unless an operator improvises the missing commands, violating AC2’s requirement that the verdict be recorded under its producing actor and shipped with the PR.  \n  Suggestion: Provide the concrete `record_review_pass.py ... --review-type spec --status not_run --recorded-by spec-reviewer --force ...` command (including citations/disposition), followed by the checked add/commit/push sequence, before stopping the loop.\n\n- Category: test  \n  Severity: medium  \n  File: `plugins/shipwright-iterate/tests/test_runner_phase_registry.py:109-143`  \n  Finding: The purported bidirectional drift test does not implement AC5’s reverse direction for the actual runner document. `_runner_phases()` is only compared against `RUNNER_REQUIRED`; an extra/invented F-phase bullet in Step 4 would not fail any test because `test_required_and_excluded_sets_do_not_overlap_or_invent_phases` validates only the hand-maintained Python sets, not `_runner_phases()`.  \n  Suggestion: Assert `(_runner_phases() - _skill_phases()) == set()` directly, and assert that actual runner bullets match the required classification rather than only that the hard-coded required set is present.\n\n- Category: spec  \n  Severity: medium  \n  File: `plugins/shipwright-iterate/tests/test_runner_phase_registry.py:151-177`  \n  Finding: The drift protection still misses `F5a`, despite SKILL.md declaring it mandatory in prose. `_skill_phases()` only extracts table rows and headings, and `NON_EXCLUDABLE` omits F5a; consequently the runner neither runs nor explicitly classifies a mandatory phase. This is explicitly acknowl […truncated]"
+    }
+  },
+  "gates": {
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-07-31T22:00:54.835282+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    }
+  }
+}

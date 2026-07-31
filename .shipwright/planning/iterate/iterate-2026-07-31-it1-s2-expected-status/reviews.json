@@ -1,0 +1,336 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-07-31-it1-s2-expected-status",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-07-31T21:33:52.300232+00:00",
+      "disposition": null,
+      "recorded_by": "8-point checklist in the iterate spec (Self-Review Step 7); test-hygiene probe clean on all 7 changed test files",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 8,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "Edge-Case",
+          "file": null,
+          "line": null,
+          "finding": "Python string `in` operator evaluates as a substring check, not an exact match, if a single string is passed.",
+          "suggestion": "Because AC-1 specifies `expected_status` can be \"one status, or several\", evaluating `previous not in expected` will produce false positives if `expected` is passed as a string (e.g., `previous=\"age\" in expected=\"triage\"` evaluates to `True`). Explicitly normalize `expected_status` to a tuple inside `mark_status` (e.g., `if isinstance(expected_status, str): expected_status = (expected_status,)`) before evaluating the precondition.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The API contract for “one status, or several” is underspecified. A Python string is iterable, so an implementation that simply does `previous not in expected_status` will behave accidentally for string inputs and can accept unintended iterables (or reject invalid values unclearly). The exception payload also needs a stable representation of the normalized expected set for callers and tests.",
+          "suggestion": "Normalize at the `mark_status` boundary: accept either a single non-empty status string or a finite tuple/list/frozenset of non-empty status strings; convert internally to a tuple or frozenset. Reject empty collections and invalid element types with a clear `ValueError`. Preserve the original/normalized expected value explicitly on `StatusPreconditionError`.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "The proposed protection is atomic only among writers using the Python byte lock. The plan explicitly excludes the WebUI’s `proper-lockfile`, so a WebUI mutation can still land between the in-lock union read and append from the Python process. This means the change closes the reported Python producer/operator race but does not establish a universal “expected status under the lock” guarantee for all application writers.",
+          "suggestion": "State this limitation precisely in `mark_status`’s docstring and the change notes: it is a precondition against cooperating store writers only. Ensure the integration test uses the Python operator path as specified, and add a regression/unit test showing the precondition is evaluated while the cooperating lock is held. Track the cross-runtime lock unification as a concrete follow-up rather than allowing callers to infer broader protection.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "StatusPreconditionError` is a new public error contract across shared scripts and plugins. The plan says all nine automatic sites receive an explicit arm, but it does not explicitly account for import mechanics in every package context, especially alias-based imports (`mark_status_fn`) and scripts that may load `triage` differently in standalone execution.",
+          "suggestion": "Audit and update each module’s import path alongside the call change, including plugin execution environments. Add at least one import/execution-level test for an alias-based compliance producer so the new exception type is caught from the same `triage` module instance that raised it.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "“Reported as kept” needs a consistent operational contract across all nine producers. Merely catching the exception avoids a false resolved count, but a generic log message can be mistaken for a processing error or omit the useful distinction between an already-human-decided item and another automatic state.",
+          "suggestion": "In each explicit exception arm, leave the item out of `resolved`, increment an existing `kept`/skipped metric where one exists, and emit a consistent message including item ID, expected status, and actual resolved status. Do not introduce a broad new logging abstraction solely for this; a shared local message pattern or existing reporting mechanism is sufficient.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The plan should define behavior when the item exists but has no currently resolved status, or has malformed/legacy status-event data. `previous` is now both part of the return contract and the precondition comparison, so ambiguous handling could create unexpected successful writes or exception formatting failures.",
+          "suggestion": "Confirm the store invariant that every addressable triage item resolves to a status, and test it if it is guaranteed. Otherwise, represent the absence explicitly (for example `None`) in the return type and `StatusPreconditionError.actual`, and ensure `expected_status=\"triage\"` refuses such items without appending.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "Calling `read_all_items()` under the existing lock is sound only if that function is strictly lock-free and does not invoke any path that tries to acquire the same non-reentrant file lock. The plan relies on a precedent but does not call out this prerequisite, making a future refactor of `read_all_items` a potential self-deadlock hazard.",
+          "suggestion": "Verify the current call graph and document near the in-lock call that `read_all_items` must remain lock-free when invoked by write-side operations. A focused regression test is useful if the lock implementation makes reentrancy failures observable.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "security",
+          "file": null,
+          "line": null,
+          "finding": "No new injection or authorization surface is introduced, and refusal-before-append reduces unintended audit-log writes. However, reason text and actual status may be emitted in the new “kept” diagnostic path; if existing producer stderr is collected centrally, this should not expand exposure beyond existing triage logging.",
+          "suggestion": "Reuse existing safe diagnostic formatting, avoid logging full item payloads or unbounded reason text, and log only item ID and status values unless current logging policy explicitly permits reasons.  Overall, the core design—evaluate the resolved status and refuse the append inside the existing cooperating write lock—is the right minimal fix. It needs clearer input/legacy-state semantics and disciplined handling across all producer imports and reporting paths; the non-composing WebUI lock remains an acknowledged but material boundary. SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-07-31T20:07:19.967244+00:00",
+      "disposition": null,
+      "recorded_by": "external_review.py",
+      "parse_status": "structured",
+      "raw_excerpt": "[gemini] **Category:** Edge-Case\n**Severity:** High\n**Finding:** Python string `in` operator evaluates as a substring check, not an exact match, if a single string is passed.\n**Suggestion:** Because AC-1 specifies `expected_status` can be \"one status, or several\", evaluating `previous not in expected` will produce false positives if `expected` is passed as a string (e.g., `previous=\"age\" in expected=\"triage\"` evaluates to `True`). Explicitly normalize `expected_status` to a tuple inside `mark_status` (e.g., `if isinstance(expected_status, str): expected_status = (expected_status,)`) before evaluating the precondition.\n\n**Category:** Approach\n**Severity:** Medium\n**Finding\n\n[openai] 1. **Category:** edge-case  \n   **Severity:** medium  \n   **Finding:** The API contract for “one status, or several” is underspecified. A Python string is iterable, so an implementation that simply does `previous not in expected_status` will behave accidentally for string inputs and can accept unintended iterables (or reject invalid values unclearly). The exception payload also needs a stable representation of the normalized expected set for callers and tests.  \n   **Suggestion:** Normalize at the `mark_status` boundary: accept either a single non-empty status string or a finite tuple/list/frozenset of non-empty status strings; convert internally to a tuple or frozenset. Reject empty collections and invalid element types with a clear `ValueError`. Preserve the original/normalized expected value explicitly on `StatusPreconditionError`.\n\n2. **Category:** risk  \n   **Severity:** medium  \n   **Finding:** The proposed protection is atomic only among writers using the Python byte lock. The plan explicitly excludes the WebUI’s `proper-lockfile`, so a WebUI mutation can still land between the in-lock union read and append from the Python process. This means the change closes the reported Python producer/operator race but does not establish a universal “expected status under the lock” guarantee for all application writers.  \n   **Suggestion:** State this limitation precisely in `mark_status`’s docstring and the change notes: it is a precondition against cooperating store writers only. Ensure the integration test uses the Python operator path as specified, and add a regression/unit test showing the precondition is evaluated while the cooperating lock is held. Track the cross-runtime lock unification as a concrete follow-up rather than allowing callers to infer broader protection.\n\n3. **Category:** dependency  \n   **Severity:** medium  \n   **Finding:** `StatusPreconditionError` is a new public error contract across shared scripts and plugins. The plan says all nin […truncated]"
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 11,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "security",
+          "file": "shared/scripts/triage.py",
+          "line": 584,
+          "finding": "item_id is interpolated raw into both the exception message and kept_note. read_all_items only requires isinstance(item_id, str) and never sanitizes, and .shipwright/triage.jsonl is a git-tracked file in a public repo, so a crafted append line with ANSI escapes or CR puts them on operator stderr from six producers. Second vector on the same line: repr() does not escape non-ASCII, so a non-ASCII actual raises UnicodeEncodeError on a Windows cp1252 stderr inside a diagnostic path.",
+          "suggestion": "Use ascii(self.item_id) and ascii(self.actual) in both f-strings - one word each, kills both vectors.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "shared/tests/test_triage_precondition_callers.py",
+          "line": 55,
+          "finding": "Both drift pins have holes the spec claims they close. isinstance(node.func, ast.Name) only matches bare-name calls, so `import triage; triage.mark_status(...)` (an ast.Attribute) escapes BOTH the forward and reverse tests - and that is the idiomatic form. Separately the forward pin asserts the kwarg is present but never that it is non-None, and expected_status=None is the documented unconditional flip.",
+          "suggestion": "Match ast.Attribute with .attr in _CALL_NAMES too; assert the kwarg value is a Constant/Tuple, not None.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/tests/test_triage_precondition_callers.py",
+          "line": 122,
+          "finding": "The reverse pin filters on ABSOLUTE path components, so a checkout under any directory named `tests` or `node_modules` skips every file and the test fails reporting all 8 registry entries stale. Also ast.parse over every .py means one unparseable file elsewhere ERRORs this unrelated test.",
+          "suggestion": "Use path.relative_to(_REPO_ROOT).parts; wrap ast.parse in except SyntaxError: continue.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/scripts/lib/phase_quality/_triage_bundle.py",
+          "line": 266,
+          "finding": "Both _dismiss helpers previously could not raise (both arms return 0). The new arm puts an unguarded sys.stderr.write inside an except block, so a BrokenPipeError or encoding error now escapes _dismiss mid-sum(...), aborting the remaining dismissals and the subsequent append - contradicting the docstring promise that all errors are swallowed so the Stop hook stays non-blocking.",
+          "suggestion": "Guard the diagnostic write, or capture the note and write it after the try in its own guarded block.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "architecture",
+          "file": "plugins/shipwright-compliance/scripts/lib/sbom_generator.py",
+          "line": 141,
+          "finding": "Adding StatusPreconditionError to the `from triage import (...)` list widens what an ImportError disables. All three loaders return all-None on ImportError and their callers then return zeros silently, so an older triage.py bound in sys.modules (plugin-cache skew is a documented failure mode here) now disables the ENTIRE compliance triage producer, not just the precondition. Before this change the same skew worked fine.",
+          "suggestion": "Resolve the class separately with a fallback so a version-skewed store degrades to 'no precondition' rather than 'no producer'.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/tests/test_triage_precondition_callers.py",
+          "line": 231,
+          "finding": "AC-5 and the ledger claim 'the same message AND exit code', and external finding #9's resolution says the test asserts stdout/stderr and exit code. The test calls the library function triage_promote.dismiss and asserts only pytest.raises(ValueError, match=...). No CLI entry point is driven and no exit code or stream is asserted; the claim rests on inference from the exception type.",
+          "suggestion": "Drive a real CLI entry point through the race path and assert the exit code and the stream.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "shared/tests/test_triage_precondition_callers.py",
+          "line": 90,
+          "finding": "Three tests assert less than their names promise: test_kept_note_carries_id_actual_and_expected_and_nothing_else has no negative assertion for the 'nothing else' half; test_the_producer_facing_text_is_ascii builds the exception from ASCII inputs so it can only fail if someone types a non-ASCII literal into the format string, proving nothing about the interpolated values where the hazard is; test_cli_still_promotes_and_defers_a_still_open_item never calls promote and its second assertion checks an append set no decision path touches.",
+          "suggestion": "Rename to match, or assert what the names claim - especially the ASCII one, which should use hostile input.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "shared/tests/test_triage_precondition_callers.py",
+          "line": 242,
+          "finding": "sys.path.insert(0, str(_SHARED_SCRIPTS / 'tools')) is repeated unguarded inside three test bodies, growing sys.path on every call, while the two sibling new files use the module-scope guarded idiom. It also loads triage_promote as a flat module while test_triage_promote.py loads tools.triage_promote, giving one session two module objects for one file.",
+          "suggestion": "Use the module-scope guarded idiom once.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/scripts/triage.py",
+          "line": 644,
+          "finding": "The annotation str | tuple[str, ...] | list[str] | None understates the contract - _normalize_expected accepts any iterable, and a set yields nondeterministic _expected_phrase() ordering. Separately -> str | None is wrong for a legacy append line whose status field is a non-str: Pass 1 copies it verbatim, so previous can be an int or dict.",
+          "suggestion": "Make the contract text match the code, or make the code match the contract.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "efficiency",
+          "file": "shared/scripts/triage.py",
+          "line": 700,
+          "finding": "The lock section now parses each store twice - once via _append_ids_at and again inside read_all_items. In the per-item sweep loops this doubles both I/O and the hold time of the store's one canonical cross-process lock, on an O(N) loop. A private helper deriving tracked_ids, outbox_ids and the resolved status from a single _iter_raw_lines_at pair removes the duplicate parse at roughly zero net LOC.",
+          "suggestion": "Boy-scout suggestion bounded to the touched unit; non-blocking.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "shared/scripts/github_triage/resolve.py",
+          "line": 34,
+          "finding": "_dismiss_if_open is spliced between two blocks of module-level constants (SOURCE above, _LEGACY_* below), splitting the constants section in half.",
+          "suggestion": "Move it below _LEGACY_MIGRATIONS.",
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-07-31T21:33:41.089998+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer subagent (opus)",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 6,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "concurrency & ordering",
+          "file": "shared/scripts/triage.py:706-730",
+          "line": null,
+          "finding": "Claim under doubt: the RED counter-check proves the tests are bound to the production line, so AC-1's 'INSIDE the file lock' is verified — No test in the change exercises two concurrent writers. Every barrier is a single-threaded wrapper: the operator's write COMPLETES before real_mark_status is entered. Concretely: hoist BOTH the residence probe and the precondition block above the `with _load_file_lock_cls()(...)` line - the natural 'do not take the lock just to discover it is a no-op' optimization. All ledger rows stay green: the byte-identity probe still sees no write; the unknown-id test still gets KeyError; the acquisition count still reads 1 on the allowed path; the AST pins are source-level. And the original race is fully reopened. The one property that distinguishes this fix from the CLI's pre-existing 'protects by luck' read-then-write is the only property with no test.",
+          "suggestion": "one pin that fails if the check leaves the lock - two subprocesses both flipping the same item with expected_status='triage' asserting exactly one status event lands, or a FileLock subclass that records held-state and asserts read_all_items ran while held",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "boundary & contract",
+          "file": "plugins/shipwright-compliance/scripts/audit/triage_bundle.py:32,69,190,196",
+          "line": null,
+          "finding": "Claim under doubt: Stage-2 finding 5, 'fixed': the getattr fallback means a version-skewed store costs this producer its precondition, not its whole emit path — The fallback defends the wrong half of the skew. Under the exact condition _NoPrecondition names - a triage module predating StatusPreconditionError - getattr yields _NoPrecondition, but the call site still passes the kwarg. An old mark_status has no such parameter, so EVERY flip raises TypeError. `except precondition_error` cannot catch it (_NoPrecondition is never raised), so it falls to `except Exception: return 0` - the entire auto-resolve half of these three producers goes silently dead, with dismissed: 0, no error key, and no diagnostic. That is strictly worse than 'merely lacked the precondition', which is what the comment and the docstring both claim. The fallback branch has zero tests.",
+          "suggestion": "add except TypeError to the same arm, or drop the kwarg when the fallback is in play, plus a test pinning a pre-S2 triage module; or, if skew is judged unreachable, delete _NoPrecondition rather than ship a guard that does not guard",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "hidden coupling & blast radius",
+          "file": ".shipwright/planning/iterate/2026-07-31-it1-s2-expected-status.md:149-156",
+          "line": null,
+          "finding": "Claim under doubt: Stage-2 re-verified that all eight baseline entries measure to their recorded value; 'six baseline bumps, measured, in the same commit' — Four of the eight rows in the spec's bloat table are stale. Measured in the worktree: triage.py = 830 (spec says 818), _triage_bundle.py = 325 (spec: 317), sbom_generator.py = 545 (spec: 540), test_evidence.py = 927 (spec: 923). The COMMITTED shipwright_bloat_baseline.json carries the correct values, so no gate breaks and the commit is safe - but the spec's evidence table, the '+117' narrative for triage.py (it is +129), and its arithmetic are all wrong, and the Stage-2 record explicitly asserts these were independently re-measured. A review record that certifies four numbers that are off is the thing a later reader will trust.",
+          "suggestion": "correct the four rows and the +117 prose to the committed values, and note which claim was re-derived vs copied",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "boundary & contract",
+          "file": "shared/tests/test_triage_precondition_callers.py:200-220",
+          "line": null,
+          "finding": "Claim under doubt: ledger row: 'Without the StatusPreconditionError -> ValueError conversion this would escape as an unhandled exception rather than exit 2' — False. StatusPreconditionError subclasses ValueError and triage_promote.main catches `except ValueError -> return 2`. Delete the entire except StatusPreconditionError -> _not_triage_error mapping and this test still returns 2 and still passes. It is green for a reason other than the one it states; the message half is what is actually load-bearing.",
+          "suggestion": "assert the stderr wording alongside the exit code, or restate the docstring to say what it really pins",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "reversibility",
+          "file": "shared/scripts/triage.py:717-746",
+          "line": null,
+          "finding": "Claim under doubt: AC-3: mark_status returns the status its event replaced, so a real transition is distinguishable from a re-flip — previous is a pre-write read; the function never checks that the appended event wins resolution. Pass 2 is ts-primary and _now_z() is a wall clock. Any existing status event with a ts >= now - an NTP step backwards, a foreign writer with a skewed clock, a hand-edited or imported line - makes the new event sort earlier and lose. mark_status then returns 'triage', the producer does resolved += 1, the item stays open, and every subsequent run appends another losing event that triage_gc cannot compact. Pre-existing, not introduced here, but AC-3's wording asserts more than the code delivers.",
+          "suggestion": "narrow AC-3's wording to 'the status the store held immediately before the append', or write the limitation down beside the return",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "hidden coupling & blast radius",
+          "file": "shared/scripts/github_triage/resolve.py:71",
+          "line": null,
+          "finding": "Claim under doubt: Stage-2 finding 4, 'fixed': the diagnostic write is guarded at both sites — Two of four new diagnostic writes were guarded; three remain unguarded and two of them sit in swallow-everything paths. github_triage/resolve.py:71 is inside _dismiss_if_open, whose contract is fail-soft per item, but a broken pipe there propagates out through resolve_stale's untried loop and aborts the remaining items. check_drift.py:376 sits in the per-item try inside the resolve loop; a stderr failure escapes to the outer handler and kills the rest of the resolve pass - the same shape finding 4 described, at a third site. accepted_risks_converge.py:169 uses an unguarded print(), though there it matches the neighbouring success line.",
+          "suggestion": "guard the two swallow-path writes the same way, or state that the guard was applied only where the helper is called from inside a sum() and the others are accepted",
+          "source": "doubt-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-07-31T21:33:41.207403+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer subagent (opus)",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 3,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "bug",
+          "file": "plugins/shipwright-compliance/scripts/lib/sbom_generator.py",
+          "line": 526,
+          "finding": "The `StatusPreconditionError` handling path writes directly to `sys.stderr` without a guard. If stderr is closed or raises `BrokenPipeError`, the benign precondition miss escapes the dedicated handler into the surrounding outer exception path, making a healthy “kept” outcome appear as a producer failure. This violates AC-4’s requirement that a precondition miss not be escalated into a noisy failure.",
+          "suggestion": "Wrap this diagnostic write in `try/except Exception` (as the audit, phase-quality, drift, and GitHub paths do), then continue without adding an error or changing the dismissed count.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "bug",
+          "file": "plugins/shipwright-compliance/scripts/lib/test_evidence.py",
+          "line": 913,
+          "finding": "Like the SBOM producer, this refusal arm performs an unguarded `sys.stderr.write`. A broken stderr can cause a `StatusPreconditionError` refusal to escape its normal “kept” handling and reach the enclosing failure path, incorrectly turning an otherwise healthy concurrent operator decision into an error.",
+          "suggestion": "Guard the stderr write and swallow reporting failures in this dedicated refusal arm, preserving `dismissed` and `errors` as unchanged for a precondition miss.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": "shared/scripts/triage.py",
+          "line": 632,
+          "finding": "_normalize_expected` does not validate that each iterable member is a string before checking membership in `STATUSES`. An input such as `expected_status=([\"triage\"],)` can raise `TypeError` when `STATUSES` is set-like because the list is unhashable, rather than consistently rejecting invalid expected-status members with the documented `ValueError` contract.",
+          "suggestion": "Check `isinstance(status, str)` before membership and raise `ValueError` for non-string members; then perform the known-status membership check.  Overall assessment: The core in-lock precondition, return value, caller wiring, CLI race conversion, and integration coverage appear to satisfy the main specification. However, two automatic producers still allow a harmless refusal to become a failure through their diagnostic paths, so this should ship only with fixes. SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-07-31T21:37:54.741675+00:00",
+      "disposition": null,
+      "recorded_by": "external_review.py",
+      "parse_status": "partial",
+      "raw_excerpt": "[gemini] SHIPWRIGHT_VERDICT: revise\n\n[openai] - Category: bug  \n  Severity: medium  \n  File: `plugins/shipwright-compliance/scripts/lib/sbom_generator.py:526`  \n  Finding: The `StatusPreconditionError` handling path writes directly to `sys.stderr` without a guard. If stderr is closed or raises `BrokenPipeError`, the benign precondition miss escapes the dedicated handler into the surrounding outer exception path, making a healthy “kept” outcome appear as a producer failure. This violates AC-4’s requirement that a precondition miss not be escalated into a noisy failure.  \n  Suggestion: Wrap this diagnostic write in `try/except Exception` (as the audit, phase-quality, drift, and GitHub paths do), then continue without adding an error or changing the dismissed count.\n\n- Category: bug  \n  Severity: medium  \n  File: `plugins/shipwright-compliance/scripts/lib/test_evidence.py:913`  \n  Finding: Like the SBOM producer, this refusal arm performs an unguarded `sys.stderr.write`. A broken stderr can cause a `StatusPreconditionError` refusal to escape its normal “kept” handling and reach the enclosing failure path, incorrectly turning an otherwise healthy concurrent operator decision into an error.  \n  Suggestion: Guard the stderr write and swallow reporting failures in this dedicated refusal arm, preserving `dismissed` and `errors` as unchanged for a precondition miss.\n\n- Category: edge-case  \n  Severity: low  \n  File: `shared/scripts/triage.py:632`  \n  Finding: `_normalize_expected` does not validate that each iterable member is a string before checking membership in `STATUSES`. An input such as `expected_status=([\"triage\"],)` can raise `TypeError` when `STATUSES` is set-like because the list is unhashable, rather than consistently rejecting invalid expected-status members with the documented `ValueError` contract.  \n  Suggestion: Check `isinstance(status, str)` before membership and raise `ValueError` for non-string members; then perform the known-status membership check.\n\nOverall assessment: The core in-loc […truncated]"
+    }
+  },
+  "gates": {
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": "shipwright-build:spec-reviewer (opus)",
+      "completed_at": "2026-07-31T22:07:39.321045+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    }
+  }
+}

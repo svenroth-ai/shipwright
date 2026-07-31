@@ -24,11 +24,12 @@ from __future__ import annotations
 
 import sys
 
-from triage import mark_status, read_all_items
+from triage import StatusPreconditionError, mark_status, read_all_items
 
 from .producer import _OWNED_PREFIXES, PREFIX_PR_CI
 
 SOURCE = "github"
+
 
 # Legacy per-finding prefixes from iterate-2026-05-19. Migrated on the
 # first successful fetch of the corresponding source; never resolved from
@@ -45,6 +46,46 @@ _LEGACY_MIGRATIONS: tuple[tuple[str, str], ...] = (
     ("secret_scanning", _LEGACY_SECRET_SCANNING),
     ("runs", _LEGACY_CI),
 )
+
+
+def _report(line: str) -> None:
+    """Write one diagnostic line, and never let reporting break the sweep."""
+    try:
+        sys.stderr.write(line + "\n")
+    except Exception:  # noqa: BLE001 - a broken stderr is not a reason to stop
+        pass
+
+
+def _dismiss_if_open(project_root, item_id: str, *, reason: str, label: str) -> int:
+    """Dismiss ONE item, but only while it is still open. Returns 1 iff it landed.
+
+    Every sweep in this module reads the store UNLOCKED, filters
+    ``status == "triage"``, then flips each hit under its own separate lock
+    acquisition. ``expected_status="triage"`` re-checks that filter inside the
+    store's lock, so a decision a person recorded in the meantime is not
+    overwritten by this producer's machine reason (``trg-93ceb2b0``).
+
+    A refusal is a NORMAL outcome, not a failure: the item is reported KEPT and
+    left out of the resolved count, so the count describes the store rather than
+    the loop. Only ids and statuses are logged — never the item's reason text.
+    """
+    try:
+        mark_status(
+            project_root, item_id, new_status="dismissed",
+            by="githubImporter", reason=reason, expected_status="triage",
+        )
+        return 1
+    except StatusPreconditionError as exc:
+        # Guarded: this helper's contract is fail-soft PER ITEM, but its caller
+        # loops without a try, so an exception escaping the DIAGNOSTIC write
+        # (closed stderr, broken pipe) would abandon every remaining item.
+        _report(f"[github-triage] {label} {exc.kept_note}")
+    except Exception as exc:  # noqa: BLE001 — best-effort
+        _report(
+            f"[github-triage] {label} failed for {item_id}: "
+            f"{type(exc).__name__}: {exc}"
+        )
+    return 0
 
 
 def resolve_stale(
@@ -72,20 +113,9 @@ def resolve_stale(
             continue
         if dedup_key in current_keys:
             continue
-        try:
-            mark_status(
-                project_root,
-                item["id"],
-                new_status="dismissed",
-                by="githubImporter",
-                reason="githubResolved",
-            )
-            resolved += 1
-        except Exception as exc:  # noqa: BLE001 — best-effort
-            sys.stderr.write(
-                f"[github-triage] resolve failed for {item.get('id')}: "
-                f"{type(exc).__name__}: {exc}\n"
-            )
+        resolved += _dismiss_if_open(
+            project_root, item["id"], reason="githubResolved", label="resolve",
+        )
     return resolved
 
 
@@ -117,20 +147,10 @@ def migrate_legacy_items(
                 # Per-source-gating — that source's fetch failed; leave
                 # the item alone so a transient outage never mass-resolves.
                 break
-            try:
-                mark_status(
-                    project_root,
-                    item["id"],
-                    new_status="dismissed",
-                    by="githubImporter",
-                    reason="schemaMigration",
-                )
-                migrated += 1
-            except Exception as exc:  # noqa: BLE001
-                sys.stderr.write(
-                    f"[github-triage] legacy migration failed for "
-                    f"{item.get('id')}: {type(exc).__name__}: {exc}\n"
-                )
+            migrated += _dismiss_if_open(
+                project_root, item["id"], reason="schemaMigration",
+                label="legacy migration",
+            )
             break  # one prefix per item
     return migrated
 
@@ -186,18 +206,7 @@ def resolve_pr_ci(
                 # State unknown / still racing — keep the item open, resolve it
                 # on a later cycle rather than guess.
                 continue
-        try:
-            mark_status(
-                project_root,
-                item["id"],
-                new_status="dismissed",
-                by="githubImporter",
-                reason=reason,
-            )
-            resolved += 1
-        except Exception as exc:  # noqa: BLE001 — best-effort
-            sys.stderr.write(
-                f"[github-triage] pr-ci resolve failed for {item.get('id')}: "
-                f"{type(exc).__name__}: {exc}\n"
-            )
+        resolved += _dismiss_if_open(
+            project_root, item["id"], reason=reason, label="pr-ci resolve",
+        )
     return resolved

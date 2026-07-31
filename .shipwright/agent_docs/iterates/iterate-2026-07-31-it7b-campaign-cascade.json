@@ -1,0 +1,160 @@
+{
+  "run_id": "iterate-2026-07-31-it7b-campaign-cascade",
+  "date": "2026-07-31T22:12:14.595003Z",
+  "event_at": "2026-07-31T22:11:53.871884+00:00",
+  "type": "change",
+  "complexity": "medium",
+  "prior_source": "keyword",
+  "branch": "iterate/it7b-campaign-cascade",
+  "spec": ".shipwright/planning/iterate/iterate-2026-07-31-it7b-campaign-cascade.md",
+  "tests_passed": true,
+  "adr": "iterate-2026-07-31-it7b-campaign-cascade",
+  "test_completeness": {
+    "status": "complete",
+    "behaviors": [
+      {
+        "behavior": "3f-bis names spec-reviewer -> code-reviewer -> doubt-reviewer in that order",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_campaign_step_3f_bis.py::test_step_3f_bis_runs_the_cascade_in_the_order_the_gate_enforces PASSED"
+      },
+      {
+        "behavior": "3f-bis instructs --force for the promotion",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_campaign_step_3f_bis.py::test_step_3f_bis_promotes_with_force PASSED"
+      },
+      {
+        "behavior": "a Stage-1 REJECT STRICT-STOPs via the loop's existing non-delivery path",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_campaign_step_3f_bis.py::test_step_3f_bis_routes_a_reject_to_the_existing_non_delivery_path PASSED"
+      },
+      {
+        "behavior": "a below-threshold sub-iterate still delivers (the head pin is conditional)",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_campaign_step_3f_bis.py::test_step_3f_bis_does_not_break_delivery_when_the_cascade_is_skipped PASSED"
+      },
+      {
+        "behavior": "the head pin crosses 3f-bis -> 3g in a FILE, not a shell variable",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_campaign_step_3f_bis.py::test_the_head_pin_crosses_steps_in_a_file_not_a_shell_variable PASSED"
+      },
+      {
+        "behavior": "3f-bis's git commit and git push are checked (fail-closed)",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_campaign_step_3f_bis.py::test_step_3f_bis_fails_closed_when_the_promotion_does_not_ship PASSED"
+      },
+      {
+        "behavior": "the head catch-up wait is bounded, not an unbounded until-loop",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_campaign_step_3f_bis.py::test_step_3f_bis_bounds_its_wait PASSED"
+      },
+      {
+        "behavior": "3f-bis computes its trigger from the merge-base diff, not the runner's verdict",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_campaign_step_3f_bis.py::test_step_3f_bis_computes_its_own_trigger_from_the_diff PASSED"
+      },
+      {
+        "behavior": "a Stage-1 REJECT is recorded not_run, never completed",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_campaign_step_3f_bis.py::test_a_stage_1_reject_is_not_recorded_as_completed PASSED"
+      },
+      {
+        "behavior": "no doc still labels Browser Verify as F2 (hooks-and-pipeline SSoT)",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_campaign_step_3f_bis.py::test_no_doc_still_calls_browser_verify_f2 PASSED"
+      },
+      {
+        "behavior": "the orchestrator promotes the three delegated rows and check_review_record accepts the result",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_campaign_cascade_record_roundtrip.py::test_orchestrator_promotes_the_delegated_rows_and_the_gate_accepts_it PASSED",
+        "category": "integration"
+      },
+      {
+        "behavior": "promoting a terminal row without --force is refused (exit 3)",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_campaign_cascade_record_roundtrip.py::test_promotion_is_refused_without_force PASSED",
+        "category": "integration"
+      },
+      {
+        "behavior": "a completed code row over a non-completed spec fails the gate",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_campaign_cascade_record_roundtrip.py::test_stage_2_cannot_be_promoted_ahead_of_stage_1 PASSED",
+        "category": "integration"
+      },
+      {
+        "behavior": "the runner contract names every required finalization phase as a Step-4 bullet",
+        "disposition": "tested",
+        "evidence": "plugins/shipwright-iterate/tests/test_runner_phase_registry.py::test_runner_carries_every_required_finalization_phase PASSED"
+      },
+      {
+        "behavior": "every phase SKILL.md defines is classified required or excluded",
+        "disposition": "tested",
+        "evidence": "plugins/shipwright-iterate/tests/test_runner_phase_registry.py::test_every_skill_phase_is_classified_required_or_excluded PASSED"
+      },
+      {
+        "behavior": "the classification invents no phase and has no overlap",
+        "disposition": "tested",
+        "evidence": "plugins/shipwright-iterate/tests/test_runner_phase_registry.py::test_required_and_excluded_sets_do_not_overlap_or_invent_phases PASSED"
+      },
+      {
+        "behavior": "F2 is bound to architecture.md and Browser Verify carries no F-number",
+        "disposition": "tested",
+        "evidence": "plugins/shipwright-iterate/tests/test_runner_phase_registry.py::test_f2_is_bound_to_architecture_not_to_browser_verify PASSED"
+      },
+      {
+        "behavior": "a SKILL.md-mandatory phase cannot be reclassified as excluded",
+        "disposition": "tested",
+        "evidence": "plugins/shipwright-iterate/tests/test_runner_phase_registry.py::test_a_mandatory_phase_cannot_be_reclassified_as_excluded PASSED"
+      },
+      {
+        "behavior": "every excluded phase states a checkable reason",
+        "disposition": "tested",
+        "evidence": "plugins/shipwright-iterate/tests/test_runner_phase_registry.py::test_every_excluded_phase_states_a_reason PASSED"
+      },
+      {
+        "behavior": "each required phase names its SUBJECT, not just its number (F4 -> write_changelog_drop.py)",
+        "disposition": "tested",
+        "evidence": "plugins/shipwright-iterate/tests/test_runner_phase_registry.py::test_each_required_phase_names_its_subject_not_just_its_number PASSED"
+      },
+      {
+        "behavior": "campaign-mode.md no longer declares the internal cascade absent",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_campaign_review_contract_prose.py::test_campaign_doc_no_longer_declares_the_cascade_absent PASSED"
+      },
+      {
+        "behavior": "campaign-mode.md names WHERE the delegated cascade runs",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_campaign_review_contract_prose.py::test_campaign_doc_names_where_the_delegated_cascade_runs PASSED"
+      }
+    ],
+    "counts": {
+      "testable": 22,
+      "tested": 22,
+      "untestable": 0,
+      "untested_testable": 0
+    },
+    "enumeration_basis": {
+      "acs": 6,
+      "covered_acs": 6
+    }
+  },
+  "surface_verification": {
+    "surface": "none",
+    "tests_run": 0,
+    "exit_code": 0,
+    "justification": "prose contract, drift tests and docs only - no route, component, server or UI is added or changed, so there is no runnable surface. The executable half is covered by the integration round-trip, which runs the real record_review_pass.py CLI as a subprocess against the real check_review_record gate."
+  },
+  "declared_removals": [
+    {
+      "path": "shared/tests/test_campaign_review_contract_prose.py",
+      "reason": "test_campaign_doc_states_the_residual_gap_honestly REPLACED by test_campaign_doc_no_longer_declares_the_cascade_absent: it pinned that campaign-mode.md SAYS the internal cascade does not run. 3f-bis makes that false, so the assertion is inverted, not dropped."
+    },
+    {
+      "path": "shared/tests/test_campaign_review_contract_prose.py",
+      "reason": "the step-3f-bis tests plus _norm/_section/_step_3f_bis MOVED to test_campaign_step_3f_bis.py and _campaign_prose_harness.py - a bloat split at 354 lines against a 300 limit. No assertion removed."
+    },
+    {
+      "path": "plugins/shipwright-iterate/tests/test_sub_iterate_runner_finalization.py",
+      "reason": "the F-phase registry group MOVED to test_runner_phase_registry.py - a bloat split at 313 lines against a 300 limit. No assertion removed."
+    }
+  ]
+}

@@ -17,30 +17,27 @@ formalizes the ad-hoc orchestration pattern.
 > `reviews.{plan,code,external_code}.status` in its result-JSON with an
 > explicit `skipped_*` value when applicable.
 >
-> **What the internal cascade currently covers here — read this before
-> relying on it.** The runner subagent has no `Agent` tool, so it cannot
-> spawn `spec-reviewer` / `code-reviewer` / `doubt-reviewer` itself. The
-> orchestrator is the named delegate, but **the loop below has no step
-> that spawns them, so for sub-iterates built by the runner under
-> `--autonomous` the internal cascade does not run.** (A hand-run
-> `--sub-iterate-id` invocation is a normal standalone session WITH the
-> `Agent` tool — it spawns the cascade itself per SKILL.md Step 8, and
-> this gap does not apply to it.) The external review (item 2) carries the code
-> pass alone, and per `iteration-reviews.md` the spec-compliance and
-> doubt roles are *not* cascaded to external providers — so Stage 1 and
-> Stage 3 have no substitute in campaign mode today.
+> **Where the internal cascade runs here.** The runner subagent has no
+> `Agent` tool, so it cannot spawn `spec-reviewer` / `code-reviewer` /
+> `doubt-reviewer` itself. ADR-029 named the **orchestrator** the
+> delegate; step **`3f-bis`** below is where the delegate acts — after
+> the result is recorded, before the PR is merged. That is the last
+> point at which a REJECT can still stop delivery, because `3g` merges.
 >
-> An earlier version of this note claimed the orchestrator spawned the
-> cascade in parallel with the runner, after Build. That window does not
-> exist: the
-> orchestrator blocks at `3d` on the runner's **terminal** DONE marker,
-> which the runner emits only after F6 (commit) and Step 5 (push).
-> Closing this is a tracked follow-up — a before-merge cascade at
-> `3f-bis`, which needs a specified repair/re-review state machine
-> (bounded retry, row-targeted record updates, a durable Stage-1 verdict
-> the merge gate inspects, branch-ref provenance) before it is built.
-> Standalone iterates are unaffected: they spawn the cascade themselves
-> (SKILL.md Step 8).
+> The window is `3f-bis` and NOT "in parallel with the runner, after
+> Build", which an earlier version of this note claimed. No such window
+> exists: the orchestrator blocks at `3d` on the runner's **terminal**
+> DONE marker, which the runner emits only after F6 (commit) and Step 5
+> (push). Everything the cascade reviews is therefore already committed
+> — which is why `3f-bis` gates the **merge** rather than the commit.
+>
+> The runner still records `spec` / `code` / `doubt` as `not_run`; that
+> is true at the moment it writes them. `3f-bis` promotes those rows
+> with `--force` once the passes have actually run, so the record names
+> the actor that performed each one. (A hand-run `--sub-iterate-id`
+> invocation is a normal standalone session WITH the `Agent` tool — it
+> spawns the cascade itself per SKILL.md Step 8 and never reaches
+> `3f-bis`.)
 
 ## Why interleaved-serial (and not build-all-then-merge)
 
@@ -170,14 +167,106 @@ If campaign directory doesn't exist yet:
          NOT merge, do NOT build the next. The already-MERGED sub-iterates are
          durable; the partial campaign is left for manual follow-up.
 
+   3f-bis. REVIEW before merging — the delegated cascade (ADR-029). The
+       orchestrator HAS the `Agent` tool the runner lacks, and this is the last
+       step before 3g merges, so a REJECT here can still stop delivery.
+
+       State crosses to 3g in a FILE, never a shell variable: these are separate
+       steps and a fresh Bash call starts with an empty environment, so a `$sha`
+       set here would silently expand to "" there — unpinning the merge in the
+       exact window this step calls dangerous.
+         run_dir=".shipwright/runs/{loop_id}/{id}"; rm -f "$run_dir/reviewed_head"
+         pr_url=$(gh pr view "{branch}" --json url -q .url)
+         [ -n "$pr_url" ] || STRICT-STOP   # no PR = nothing to review or merge
+
+       FIRES on a trigger computed HERE, from the diff — not inherited from the
+       runner. The runner classifies from its spec text alone and has no Stage-2
+       Repo Scout, so diff-driven flags (`cross_component`, `touches_*`) are
+       structurally never set for it; inheriting that verdict would make this
+       gate NARROWEST on exactly the framework surface it exists to protect:
+         diff=$(git diff "$(git merge-base origin/{default} HEAD)"...HEAD)
+       Fire when the runner said medium+, OR the diff sets any risk flag, OR it
+       exceeds 100 lines. Otherwise SKIP the rest of 3f-bis, leave the runner's
+       `not_run` rows standing (they are honest), write no `reviewed_head`, and
+       go to 3g — a below-threshold sub-iterate must still DELIVER.
+
+       Review that same MERGE-BASE diff, never `origin/{default}`'s tip (a moved
+       main yields false high findings):
+
+       a) `spec-reviewer`  — Stage 1, HARD-GATE. A REJECT blocks the rest.
+       b) `code-reviewer`  — Stage 2, only once Stage 1 PASSES.
+       c) `doubt-reviewer` — Stage 3, conditional, advisory-must-address.
+
+       Promote the rows IN THAT ORDER. The runner already closed them and a
+       closed row is immutable, so `--force` is REQUIRED (without it the CLI
+       exits 3). A `code` row completed over a non-completed `spec` FAILS the
+       gate, so Stage 1 must land first — `…` is the invocation prefix from
+       `iteration-reviews.md`:
+         … record --review-type spec  --status completed --from spec-reviewer              --payload-file "{reply}" --recorded-by spec-reviewer --force
+         … record --review-type code  --status completed --from code-reviewer   … --force
+         … record --review-type doubt --status completed --from doubt-reviewer  … --force
+
+       When Stage 3 does NOT fire (it is conditional), do not leave the runner's
+       row standing — its disposition says the cascade did not run, which is now
+       FALSE. Re-record it for the reason that actually applies:
+         … record --review-type doubt --status not_applicable --force              --disposition "Stage 3 is conditional and did not trigger for this
+             diff; Stage 2 passed at 3f-bis"
+
+       Then ship the record with the PR. Every command is CHECKED: a promotion
+       that does not reach the remote must STOP the loop, not shorten it. An
+       unchecked `git commit` that the pre-commit hook blocks would otherwise
+       leave the runner's head in place, the local record saying `completed`,
+       and main saying `not_run` — the cascade silently un-shipped:
+         git add ".shipwright/planning/iterate/{run_id}/reviews.json"
+         git commit -m "chore(review): record the delegated cascade for {id}" || STRICT-STOP
+         git push || STRICT-STOP
+         git rev-parse HEAD > "$run_dir/reviewed_head"
+
+       **This push restarts CI**, so 3g must watch THIS head. Wait for the PR
+       object to catch up — BOUNDED, because an unbounded wait is a third
+       outcome the loop has no name for (neither delivered nor stopped):
+         for i in $(seq 1 60); do
+           [ "$(gh pr view "$pr_url" --json headRefOid -q .headRefOid)" = "$(cat "$run_dir/reviewed_head")" ] && break
+           sleep 5
+         done
+         # still not matching after the cap → STRICT-STOP, do not hand a stale
+         # head to 3g.
+
+       On a Stage-1 REJECT, or a Stage-2 high finding left unaddressed:
+       STRICT-STOP exactly as 3f/3g — do NOT merge, do NOT build the next. The
+       already-merged sub-iterates stay durable; this PR is left OPEN so a human
+       can repair it.
+
+       SHIP the REJECT before stopping, or the durable record stays the runner's
+       `not_run` and the left-open PR reads as merely unreviewed rather than
+       REJECTED. `completed` is wrong here — the native Stage-1 payload stores
+       `spec_citations` and drops `verdict`, so a `completed` REJECT is
+       byte-indistinguishable from a PASS to the next reader, human or gate:
+         … record --review-type spec --status not_run --force \\
+             --recorded-by spec-reviewer \\
+             --disposition "Stage-1 spec-reviewer REJECTED at 3f-bis: {the
+             citations, spec_ref -> divergence}. Delivery stopped; PR left open."
+         git add ".shipwright/planning/iterate/{run_id}/reviews.json"
+         git commit -m "chore(review): record the Stage-1 REJECT for {id}" || STRICT-STOP
+         git push || STRICT-STOP
+       Then STRICT-STOP. Write no `reviewed_head` — nothing may merge this.
+
    3g. MERGE this sub-iterate's PR — verify CI-green first, then merge, one at a
        time (no shoot-and-forget). The orchestrator owns the merge (the PR did not
        self-arm, step 1):
+         # Re-resolve from the branch: shell state does NOT survive between steps,
+         # so nothing set in 3f-bis is still in the environment here.
          pr_url=$(gh pr view "{branch}" --json url -q .url)
+         # The pin comes from 3f-bis's FILE. Absent = 3f-bis pushed nothing (the
+         # cascade skipped below its trigger), and that sub-iterate must still
+         # deliver — so the pin is conditional, never unconditional.
+         run_dir=".shipwright/runs/{loop_id}/{id}"
+         head_pin=""
+         [ -f "$run_dir/reviewed_head" ] && head_pin="--match-head-commit $(cat "$run_dir/reviewed_head")"
          gh pr checks "$pr_url" --watch        # blocks until Required Checks finish
          #   non-zero exit = a check FAILED → STRICT-STOP (as 3f): do not merge,
          #   do not build the next; surface to the user. Merged subs stay durable.
-         gh pr merge "$pr_url" --squash --delete-branch
+         gh pr merge "$pr_url" --squash --delete-branch $head_pin
          until [ "$(gh pr view "$pr_url" --json state -q .state)" = "MERGED" ]; do sleep 5; done
        A merge conflict / timeout is likewise non-delivered → STRICT-STOP.
 

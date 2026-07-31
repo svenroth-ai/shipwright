@@ -207,13 +207,60 @@ artifact has exactly one documented resolution strategy:
 > before the abort paths breaks them, silently (`error: Entry '<path>' not uptodate`,
 > exit 128, `MERGE_HEAD` left standing). The `finally` runs after any abort.
 >
-> **Write matrix consequence.** These eleven are now written on `main` by a
-> post-merge refresh producer, not by any phase. Until that producer exists they
-> are **frozen** at whatever `main` last computed — deliberately, because a
-> branch-local derivation was not merely conflict-prone but wrong: it reads the
-> branch's git history (pre-squash SHAs) and an event log missing every
+> **Write matrix consequence.** No *phase* writes these eleven onto the default
+> branch. Seven of them — the compliance directory — are written by the **release**
+> and by an **on-demand documents-only PR**; the other four stay frozen by
+> classification (see the next block). Freezing was deliberate rather than
+> incidental: a branch-local derivation is not merely conflict-prone but wrong,
+> reading the branch's git history (pre-squash SHAs) and an event log missing every
 > concurrently-merging branch. The Group-E staleness audit reporting them as stale
-> is therefore a TRUE signal for that window, not a regression to silence.
+> was therefore a TRUE signal for that window, not a regression to silence — and it
+> is now answered rather than silenced.
+
+### Refreshing the compliance evidence (iterate-2026-07-31-derived-docs-at-release)
+
+> Deliberately its own `###`: the table below is keyed by path like the churn
+> table above, and `test_churn_merge_doc_sync` scrapes that section by heading.
+> Two path-keyed tables under one heading make the drift guard read this one as
+> churn strategies and fail.
+
+**Who refreshes the seven, and when.** Weg B of `.shipwright/planning/iterate/2026-07-30-derived-snapshots-decision.md`:
+recompute where a human is already looking, never from a robot holding write access
+to the default branch.
+
+| Path | Class | Refreshed by |
+|---|---|---|
+| the five `.shipwright/compliance/*.md` | `derives_from_tree` | release Step 5.5 · `/shipwright-compliance --refresh-pr` |
+| `.shipwright/compliance/test-traceability.json` | `derives_from_tree` | same (side effect of the same `_update_compliance` call) |
+| `.shipwright/compliance/ci-security.json` | `derives_from_ci_history` | same, but **not** tree-derived — it carries the latest COMPLETED `security.yml` run, so its freshness is not a property of the commit. Excluded from the fixpoint claim; reported with `stale` + `scan_date`; never blocks a release |
+| `.shipwright/agent_docs/build_dashboard.md` | `session_scoped` | nobody — embeds one session's run id, and the default branch has no run |
+| `.shipwright/agent_docs/session_handoff.md` | `session_scoped` | nobody — same |
+| `.shipwright/agent_docs/triage_inbox.md` | `derives_from_tree` | nobody — refreshable, but outside the compliance directory and not recomputed by the release phase. Excluded by scope pin, not by classification |
+| `shipwright_test_results.json` | `run_written` | nobody — a run WRITES it and nothing can recompute it (trg-ad29a709) |
+
+Registry + classification: `shared/scripts/lib/compliance_refresh.py`
+(`unclassified()` fails a test on any `DERIVED_SNAPSHOTS` member with no class, so
+eligibility is declared and never inferred from a file shape). Producer:
+`shared/scripts/tools/compliance_refresh_produce.py` (fixpoint loop, failed-pass
+detection, content floor). Delivery: `shared/scripts/tools/refresh_compliance_docs.py`
+(`--stage` · `--pr` · `--restore`).
+
+**The release regenerates them twice, and the second one must lose.**
+`orchestrator update-step --step changelog --status complete` (Step 8) runs
+`run_compliance_update(root, "changelog")`, whose `PHASE_REPORTS["changelog"]`
+covers the whole set — *after* the release commit, unstamped, at a different
+commit. The changelog skill therefore ends Step 8 with `refresh_compliance_docs.py
+--restore`, so the committed stamped copies win and the release does not end with
+a permanently dirty tree. Omitting that call reinstates the ordering defect this
+change removes, one step later.
+
+**The stamp.** Each markdown document's `Source-State:` banner carries
+`base=<commit>` and, for a release delivery, `release=<tag>`. Applied by the
+DELIVERER (`stamp_fixed_point`), not by the renderer: a renderer running inside an
+ordinary iterate has no release and no base, and inventing one is the failure this
+subject exists to remove. Both tokens are absent by default, so every other
+producer renders byte-identically to before and the documents do not go
+permanently dirty.
 
 **`.shipwright/triage.outbox.jsonl` is deliberately NOT a churn artifact** —
 it is GITIGNORED and per-tree, so it is never merged and never appears in
@@ -2507,18 +2554,18 @@ When a phase detects missing prerequisite artifacts, it should attempt to derive
 
 | Missing Artifact | Derived From | Used By |
 |---|---|---|
-| `.shipwright/designs/visual-guidelines.md` | CSS `:root` variables in `.shipwright/designs/screens/*.html` | Build (Browser Verify), Iterate (F2 Browser Verify), Test (Consistency) |
+| `.shipwright/designs/visual-guidelines.md` | CSS `:root` variables in `.shipwright/designs/screens/*.html` | Build (Browser Verify), Iterate (Browser Verify), Test (Consistency) |
 | `.shipwright/designs/screen-routes.json` | Mockup filenames + router config (`src/router.tsx`) | Test (Design Fidelity), Build (Design Fidelity) |
 | `.shipwright/planning/claude-plan-e2e.md` | `screen-routes.json` + `architecture.md` | Test (E2E Spec Generation) |
-| `dev_url` in build config | `CLAUDE.md` (`PORT=`), `package.json` scripts (`--port`) | Test (Smoke, E2E), Build (Browser Verify), Iterate (F2 Browser Verify — sub-iterate-runner) |
-| `playwright.config.ts` | Template + `dev_url` port substitution | Test (E2E), Build (Browser Verify), Iterate (F2 Browser Verify) |
+| `dev_url` in build config | `CLAUDE.md` (`PORT=`), `package.json` scripts (`--port`) | Test (Smoke, E2E), Build (Browser Verify), Iterate (Browser Verify — sub-iterate-runner) |
+| `playwright.config.ts` | Template + `dev_url` port substitution | Test (E2E), Build (Browser Verify), Iterate (Browser Verify) |
 
 ### Which Phases Auto-Generate
 
 | Phase | Can Auto-Generate |
 |---|---|
 | **Build** (Step 4.5) | `visual-guidelines.md`, `dev_url` detection |
-| **Iterate** (sub-iterate-runner F2) | `dev_url` detection (shared fallback chain with Build Step 4.5) |
+| **Iterate** (sub-iterate-runner Browser Verify) | `dev_url` detection (shared fallback chain with Build Step 4.5) |
 | **Test** (Step B3) | `visual-guidelines.md`, `screen-routes.json`, `claude-plan-e2e.md`, `dev_url`, `playwright.config.ts` |
 | **Plan** (Step 8) | `claude-plan-e2e.md` (if UI project, default enabled) |
 
@@ -2690,7 +2737,7 @@ when the decision-drop actually CARRIES the ADR (parses + `run_id` match +
 non-empty `decision`) or a `**Run-ID:**` line for the run is present in
 `decision_log.md` — an empty/placeholder drop (a silently-lost ADR) no longer
 passes. The `sub-iterate-runner` contract executes F3 + F5c as mandatory steps
-and self-runs this verifier before push (Step 4b). Origin:
+and self-runs this verifier before push (F6-verify). Origin:
 iterate-2026-07-20-runner-finalization-integrity.
 
 **Non-FR change classification (Phase 0a prep, Iterate C.1 enforce).**

@@ -1,0 +1,32 @@
+{
+  "success": true,
+  "provider": "openrouter",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviews": {
+    "gemini": {
+      "feedback": "SHIPWRIGHT_VERDICT: revise",
+      "via": "openrouter",
+      "status": "success"
+    },
+    "openai": {
+      "feedback": "- Category: bug  \n  Severity: medium  \n  File: `plugins/shipwright-compliance/scripts/lib/sbom_generator.py:526`  \n  Finding: The `StatusPreconditionError` handling path writes directly to `sys.stderr` without a guard. If stderr is closed or raises `BrokenPipeError`, the benign precondition miss escapes the dedicated handler into the surrounding outer exception path, making a healthy \u201ckept\u201d outcome appear as a producer failure. This violates AC-4\u2019s requirement that a precondition miss not be escalated into a noisy failure.  \n  Suggestion: Wrap this diagnostic write in `try/except Exception` (as the audit, phase-quality, drift, and GitHub paths do), then continue without adding an error or changing the dismissed count.\n\n- Category: bug  \n  Severity: medium  \n  File: `plugins/shipwright-compliance/scripts/lib/test_evidence.py:913`  \n  Finding: Like the SBOM producer, this refusal arm performs an unguarded `sys.stderr.write`. A broken stderr can cause a `StatusPreconditionError` refusal to escape its normal \u201ckept\u201d handling and reach the enclosing failure path, incorrectly turning an otherwise healthy concurrent operator decision into an error.  \n  Suggestion: Guard the stderr write and swallow reporting failures in this dedicated refusal arm, preserving `dismissed` and `errors` as unchanged for a precondition miss.\n\n- Category: edge-case  \n  Severity: low  \n  File: `shared/scripts/triage.py:632`  \n  Finding: `_normalize_expected` does not validate that each iterable member is a string before checking membership in `STATUSES`. An input such as `expected_status=([\"triage\"],)` can raise `TypeError` when `STATUSES` is set-like because the list is unhashable, rather than consistently rejecting invalid expected-status members with the documented `ValueError` contract.  \n  Suggestion: Check `isinstance(status, str)` before membership and raise `ValueError` for non-string members; then perform the known-status membership check.\n\nOverall assessment: The core in-lock precondition, return value, caller wiring, CLI race conversion, and integration coverage appear to satisfy the main specification. However, two automatic producers still allow a harmless refusal to become a failure through their diagnostic paths, so this should ship only with fixes.  \nSHIPWRIGHT_VERDICT: revise",
+      "via": "openrouter",
+      "status": "success"
+    }
+  },
+  "verdicts": {
+    "gemini": "revise",
+    "openai": "revise"
+  },
+  "statuses": {
+    "gemini": "success",
+    "openai": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: gemini=revise, openai=revise"
+  }
+}

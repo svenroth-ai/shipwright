@@ -351,7 +351,9 @@ class TestEmitUndeclaredTriage:
         monkeypatch.setattr(
             sbom_generator,
             "_import_triage_api",
-            lambda: (_broken_append, triage_api.mark_status, triage_api.read_all_items),
+            lambda: (_broken_append, triage_api.mark_status,
+                     triage_api.read_all_items,
+                     triage_api.StatusPreconditionError),
         )
         result = emit_undeclared_triage(tmp_path)
         assert result["appended"] == 0

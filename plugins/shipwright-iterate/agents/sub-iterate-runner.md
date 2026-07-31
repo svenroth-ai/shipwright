@@ -168,8 +168,9 @@ review for those.
    = `delegated_to_orchestrator`, never `skipped_silently`). **That
    limit is a fact about THIS subagent, not about iterates:** a
    standalone iterate spawns the cascade itself (SKILL.md Step 8) and
-   never reaches this contract. Per `campaign-mode.md` no loop step
-   spawns it, so **do not record the internal pass as having happened.**
+   never reaches this contract. The orchestrator runs it at `campaign-mode.md`
+   step **3f-bis**, before the merge — so **record the rows `not_run`**: that is
+   true when you write them, and 3f-bis promotes them with `--force`.
 
 2. External LLM code review:
 
@@ -255,23 +256,40 @@ was reached.
 
 ### Step 4: Finalization (F0–F6 + self-verify)
 
-Standard iterate finalization. **F3 (decision-drop) and F5c (iterate entry) are as mandatory
-as F5b** — separate steps `finalize_iterate.py` does NOT perform; F6-verify checks all three ran.
+Run the SAME F-phases a standalone iterate runs (SKILL.md → *Finalization*): a phase omitted here
+is omitted by every sub-iterate of every campaign, and no later phase fills it. **F3
+(decision-drop) and F5c (iterate entry) are as mandatory as F5b** — separate steps
+`finalize_iterate.py` does NOT perform; F6-verify checks all three ran.
 
 - **F0:** Fresh verification gate (full test suite).
+- **F0.5 (MANDATORY medium+):** End-to-end gate (`references/F0.5.md`) — RUN the surface, do not
+  merely author its spec. Fails closed when `surface != "none"` while `tests_run == 0`, and
+  `surface == "none"` needs a `justification`; F6-verify reds a medium+ run missing the block.
+- **Browser Verify** (MANDATORY when frontend changed; same gate as `shipwright-build` Step 8).
+  NOT an F-phase — labelled `F2` here until 2026-07-31, which is `architecture.md` everywhere
+  else; the collision hid F2's absence. Detect via `detect_frontend_changes.py --since "$(git
+  merge-base HEAD {branch_name})"` — if none, skip to F1. Else resolve the dev server
+  (`profile.dev_server` → `shipwright_build_config.json#dev_url` → `package.json` autodetect →
+  escalate) and run `dev_server.py start` → `playwright_setup.py` → `browser_verify.py`. On JS
+  errors: inline retry (no Agent tool), max 3 (screenshot + `console_errors` → fix → re-run);
+  still failing → `result.json` `status:"failed"` + DO NOT commit (orchestrator aggregates).
 - **F1:** Drift check (`artifact_sync.py`).
-- **F2:** Browser Verify (MANDATORY when frontend changed; same gate as `shipwright-build` Step 8).
-  Detect via `detect_frontend_changes.py --since "$(git merge-base HEAD {branch_name})"` — if none,
-  skip to F3. Else resolve the dev server (`profile.dev_server` → `shipwright_build_config.json#dev_url`
-  → `package.json` autodetect → escalate) and run `dev_server.py start` → `playwright_setup.py` →
-  `browser_verify.py`. On JS errors: inline retry (no Agent tool), max 3 (screenshot + `console_errors`
-  → fix → re-run); still failing → `result.json` `status:"failed"` + DO NOT commit (orchestrator aggregates).
+- **F2 (architecture.md):** update on structural impact — new route / component / schema /
+  service / write-surface / read-surface / convention (`references/F2.md`). No structural impact
+  = no edit, and F3a is where you say so.
 - **F3 (MANDATORY — decision-DROP, NOT `write_decision_log.py`):** record the ADR as a per-run
   drop keyed by `run_id` via `write_decision_drop.py` — exact command + 500-char field caps in
   `references/F3.md`. An iterate NEVER appends to `decision_log.md` directly (two worktrees would
   collide on `max(ADR)+1`; the F11 gate `check_iterate_no_direct_decision_log` fails it). The
   `ADR-NNN` is assigned at `/shipwright-changelog` release.
-- **F4:** Changelog bullet (append to `[Unreleased]` in CHANGELOG.md).
+- **F3a (MANDATORY — reflection):** append this run's learnings per `references/reflection.md`.
+  It is where a no-op F2 is justified and where a surprise becomes reusable.
+- **F4:** Changelog DROP via `write_changelog_drop.py` → `CHANGELOG-unreleased.d/<category>/` (`references/F4.md`). Do NOT append to `CHANGELOG.md [Unreleased]` directly — `/shipwright-changelog` aggregates the drops at
+  release, and a direct append is the split-brain F4.md warns about.
+- **F5 (MANDATORY small+):** write `iterate_latest` into `shipwright_test_results.json`
+  (`references/F5.md`). It is the PRODUCER of both the `test_completeness` ledger and the
+  `surface_verification` block F0.5 fills, and F6-verify reads them from exactly there — so a
+  sub-iterate that skips F5 fails its own gate. F5c then carries the ledger durably as well.
 - **F5b:** `finalize_iterate.py` records the `work_completed` event (idempotent per run_id) +
   regenerates compliance MDs / dashboard / handoff: `uv run
   "{shared_root}/scripts/tools/finalize_iterate.py" --project-root "{project_root}" --run-id

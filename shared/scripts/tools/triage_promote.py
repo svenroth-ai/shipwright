@@ -28,6 +28,7 @@ if str(_SCRIPTS_DIR) not in sys.path:
     sys.path.insert(0, str(_SCRIPTS_DIR))
 
 from triage import (  # noqa: E402
+    StatusPreconditionError,
     _outbox_path,
     _triage_path,
     mark_status,
@@ -40,7 +41,27 @@ _REASON_MAX_LEN = 500
 # Adjective per decided state. Read with .get: a KeyError HERE comes from the
 # VALIDATION path, which the CLI maps to "triage item not found" — a wrong,
 # quiet answer. The default stops a soft failure from lying.
-_DECIDABLE = {"dismissed": "dismissable", "snoozed": "deferrable"}
+_DECIDABLE = {
+    "dismissed": "dismissable",
+    "snoozed": "deferrable",
+    "promoted": "promotable",
+}
+
+
+def _not_triage_error(item_id: str, current: object, new_status: str) -> ValueError:
+    """The ONE wording for "this item is no longer open", both ways it is found.
+
+    The pre-check below reads the store unlocked, so the item can be decided in
+    the window between that read and the write; the store then refuses under its
+    own lock. Both paths raise from here, so the CLI's documented message and
+    exit code are identical whichever one fires and cannot drift apart
+    (external plan review, finding #9).
+    """
+    return ValueError(
+        f"item {item_id} has status={current!r}; only `triage` is "
+        f"{_DECIDABLE.get(new_status, 'decidable')} from this CLI "
+        f"(use mark_status for other transitions)"
+    )
 
 
 def _sanitize_single_line(raw: str, *, label: str, max_len: int) -> str:
@@ -140,20 +161,20 @@ def promote(
         raise KeyError(item_id)
     current = item.get("status")
     if current != "triage":
-        raise ValueError(
-            f"item {item_id} has status={current!r}; only `triage` is "
-            f"promotable from this CLI (use mark_status for other "
-            f"transitions)"
-        )
+        raise _not_triage_error(item_id, current, "promoted")
 
-    mark_status(
-        project_root,
-        item_id,
-        new_status="promoted",
-        by=by,
-        reason=reason_clean,
-        promoted_task_id=task_ref_clean,
-    )
+    try:
+        mark_status(
+            project_root,
+            item_id,
+            new_status="promoted",
+            by=by,
+            reason=reason_clean,
+            promoted_task_id=task_ref_clean,
+            expected_status="triage",
+        )
+    except StatusPreconditionError as exc:
+        raise _not_triage_error(item_id, exc.actual, "promoted") from exc
 
     return {
         "id": item_id,
@@ -186,14 +207,13 @@ def _decide_from_triage(
         raise KeyError(item_id)
     current = item.get("status")
     if current != "triage":
-        raise ValueError(
-            f"item {item_id} has status={current!r}; only `triage` is "
-            f"{_DECIDABLE.get(new_status, 'decidable')} from this CLI "
-            f"(use mark_status for other transitions)"
-        )
+        raise _not_triage_error(item_id, current, new_status)
 
-    mark_status(project_root, item_id, new_status=new_status, by=by,
-                reason=reason_clean)
+    try:
+        mark_status(project_root, item_id, new_status=new_status, by=by,
+                    reason=reason_clean, expected_status="triage")
+    except StatusPreconditionError as exc:
+        raise _not_triage_error(item_id, exc.actual, new_status) from exc
 
     return {
         "id": item_id,

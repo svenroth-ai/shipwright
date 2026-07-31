@@ -193,14 +193,14 @@
     {
       "path": "plugins/shipwright-compliance/scripts/lib/sbom_generator.py",
       "limit": 300,
-      "current": 523,
+      "current": 548,
       "state": "grandfathered",
       "adr": null
     },
     {
       "path": "plugins/shipwright-compliance/scripts/lib/test_evidence.py",
       "limit": 300,
-      "current": 907,
+      "current": 931,
       "state": "grandfathered",
       "adr": null
     },
@@ -277,14 +277,14 @@
     {
       "path": "plugins/shipwright-compliance/tests/test_sbom_generator.py",
       "limit": 300,
-      "current": 845,
+      "current": 847,
       "state": "exception",
       "adr": "ADR-098"
     },
     {
       "path": "plugins/shipwright-compliance/tests/test_test_evidence.py",
       "limit": 300,
-      "current": 575,
+      "current": 577,
       "state": "grandfathered",
       "adr": null
     },
@@ -319,9 +319,9 @@
     {
       "path": "plugins/shipwright-iterate/agents/sub-iterate-runner.md",
       "limit": 400,
-      "current": 479,
-      "state": "grandfathered",
-      "adr": null
+      "current": 497,
+      "state": "exception",
+      "adr": "ADR-119"
     },
     {
       "path": "plugins/shipwright-iterate/scripts/lib/classify_complexity.py",
@@ -557,7 +557,7 @@
     {
       "path": "shared/scripts/hooks/check_drift.py",
       "limit": 300,
-      "current": 432,
+      "current": 446,
       "state": "grandfathered",
       "adr": null
     },
@@ -606,7 +606,7 @@
     {
       "path": "shared/scripts/lib/phase_quality/_triage_bundle.py",
       "limit": 300,
-      "current": 308,
+      "current": 325,
       "state": "grandfathered",
       "adr": null
     },
@@ -753,7 +753,7 @@
     {
       "path": "shared/scripts/tools/triage_promote.py",
       "limit": 300,
-      "current": 304,
+      "current": 324,
       "state": "grandfathered",
       "adr": null
     },
@@ -823,7 +823,7 @@
     {
       "path": "shared/scripts/triage.py",
       "limit": 300,
-      "current": 701,
+      "current": 837,
       "state": "exception",
       "adr": "ADR-100"
     },

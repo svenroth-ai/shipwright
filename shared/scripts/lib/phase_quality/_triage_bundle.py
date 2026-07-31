@@ -219,6 +219,7 @@ def emit_phase_quality_backlog(
     """
     try:
         from triage import (  # noqa: PLC0415
+            StatusPreconditionError,
             append_triage_item_idempotent,
             mark_status,
             read_all_items,
@@ -250,12 +251,28 @@ def emit_phase_quality_backlog(
         open_backlog = []
 
     def _dismiss(item_id: str, reason: str) -> int:
+        # expected_status re-checks `open_backlog`'s status filter inside the
+        # store's lock: this list came from an UNLOCKED read, so an operator
+        # decision can have landed since (trg-93ceb2b0). A refusal leaves the
+        # item KEPT and out of the dismissed count — a normal outcome.
         try:
             mark_status(
                 project_root, item_id, new_status="dismissed",
                 by="phaseQualityBacklog", reason=reason,
+                expected_status="triage",
             )
             return 1
+        except StatusPreconditionError as exc:
+            # This helper is called from inside a `sum(...)`, and its own
+            # docstring promises every error is swallowed so the Stop hook
+            # stays non-blocking. An exception escaping the DIAGNOSTIC write
+            # (closed stderr, broken pipe) would abort the remaining dismisses
+            # and the append that follows them.
+            try:
+                sys.stderr.write(f"[phase-quality] {exc.kept_note}\n")
+            except Exception:  # noqa: BLE001 - reporting must never break the sweep
+                pass
+            return 0
         except Exception:  # noqa: BLE001
             return 0
 
