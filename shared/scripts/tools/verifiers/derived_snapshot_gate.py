@@ -34,7 +34,7 @@ from lib.derived_snapshots import (  # noqa: E402
     RESTORABLE_SNAPSHOTS,
 )
 from .common import CheckResult, Severity  # noqa: E402
-from .git_helpers import _iterate_changed_paths  # noqa: E402
+from .git_helpers import _branch_base_commit, _iterate_changed_paths  # noqa: E402
 
 __all__ = ["check_no_derived_snapshots_committed"]
 
@@ -55,6 +55,48 @@ def _restore_flags(offenders: list[str]) -> str:
     if set(offenders) - RESTORABLE_SNAPSHOTS:
         return "--staged"
     return "--staged --worktree"
+
+
+def _remedy(project_root: Path, commit_hash: str, offenders: list[str]) -> str:
+    """The instruction that actually clears this gate (trg-d0e4592e).
+
+    The restore source is the branch's **merge-base with the default branch** —
+    the state before the branch touched anything — resolved by the same
+    ``_branch_base_commit`` the offender list itself comes from, so the command
+    and the finding can never disagree about where the branch began.
+
+    It used to say ``--source=HEAD~1``, which is a **no-op on the very shape this
+    gate was taught to catch**. On a merge HEAD — the offender in an earlier
+    commit with an ``ensure_current`` merge on top — ``HEAD~1`` is the FIRST
+    PARENT, i.e. the branch's own pre-merge tip: precisely the commit carrying the
+    offending snapshot. The restore writes the offending content over itself, the
+    amend changes nothing the gate looks at, and the next run fails identically.
+    Following the printed instruction was a dead end, not a fix.
+
+    When no base resolves, **no command is printed at all**. A gate that already
+    misdirected an operator once does not get to guess a second commit; the
+    instruction is given in words instead, and clearing it stays possible.
+    """
+    base = _branch_base_commit(project_root, commit_hash)
+    if base and base == (commit_hash or "").strip():
+        # The commit is already CONTAINED in the trunk, so its own base is itself
+        # — and `--source=<itself>` restores the offending content over itself.
+        # That is trg-d0e4592e's exact shape returning through the side door
+        # (Stage-3 doubt D9): reachable by re-running the verifier against a
+        # commit that has since landed, which is an ordinary diagnostic. Fall
+        # through to words rather than print a command that cannot work.
+        base = None
+    if not base:
+        return (
+            "Fix: restore these paths to the state your branch forked from and "
+            "amend. No command is printed: the merge-base with the default branch "
+            "did not resolve here, and naming the wrong commit is exactly what "
+            "made the previous remedy a no-op on a merge HEAD"
+        )
+    return (
+        f"Fix: `git restore --source={base[:12]} {_restore_flags(offenders)} "
+        "-- <paths>` then amend"
+    )
 
 
 def check_no_derived_snapshots_committed(
@@ -87,16 +129,16 @@ def check_no_derived_snapshots_committed(
         )
 
     offenders = sorted({norm(p) for p in paths} & DERIVED_SNAPSHOTS)
-    # (see _restore_flags for why the remedy is not a fixed string)
+    # (see _restore_flags and _remedy for why the remedy is not a fixed string)
     if not offenders:
         return CheckResult(_NAME, True, f"{len(paths)} path(s), none derived")
 
     return CheckResult(
         _NAME, False,
         f"{len(offenders)} derived snapshot(s) committed: {', '.join(offenders)} — "
-        "these are regenerated from main after merge and must stay out of the PR "
+        "these are regenerated outside the iterate branch and must stay out of the PR "
         "(every iterate rewrites them, so N open PRs collide N(N-1)/2 times). "
-        f"Fix: `git restore --source=HEAD~1 {_restore_flags(offenders)} -- <paths>` "
-        "then amend; see shared/scripts/lib/derived_snapshots.py",
+        f"{_remedy(project_root, commit_hash, offenders)}; "
+        "see shared/scripts/lib/derived_snapshots.py",
         severity=Severity.ERROR.value,
     )

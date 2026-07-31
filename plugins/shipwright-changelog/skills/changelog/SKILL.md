@@ -90,27 +90,10 @@ Parse JSON output for git state, last tag, and unreleased commits.
 
 ## Step 0: Phase Session Context Recovery
 
-If the orchestrator handed you a `phaseTaskId` — i.e. `/shipwright-run` dispatched
-you as a phase-runner subagent — you are part of an active pipeline. Run this as your
-very first action:
-
-```bash
-uv run "${SHIPWRIGHT_PLUGIN_ROOT}/../../shared/scripts/tools/get_phase_context.py" \
-  --phase-task-id <phaseTaskId-from-context>
-```
-
-The tool prints structured JSON with `runId`, `phase`, `splitId`, `prerequisites`,
-`runConditions`, and a `skill_artifacts_to_read` list. Read those artifacts
-before proceeding so this phase session has full context for what came before.
-
-If NO `phaseTaskId` was handed to you, this is a standalone invocation —
-continue with Step 1 below as normal.
-
-**One resolver, one verdict.** This is the same tool your "Detect Invocation Mode" step
-already ran, so reuse that payload rather than re-deriving anything: its `mode` IS your
-`invocation_mode`. Pass `--phase <your phase>` so a token belonging to another phase is
-rejected, and if `mode` is `"error"` (exit 2) **STOP** — a dispatched phase must never
-fall back to standalone.
+If the orchestrator handed you a `phaseTaskId`, the `get_phase_context.py` call you
+already made in **Detect Invocation Mode** is the one this step needs — reuse that
+payload and read its `skill_artifacts_to_read` list before proceeding. No
+`phaseTaskId` → standalone; continue with Step 1.
 
 ---
 
@@ -270,22 +253,41 @@ If edit: apply changes and re-preview.
 
 ---
 
+## Step 5.5: Refresh the Compliance Evidence Documents
+
+The seven documents under `.shipwright/compliance/` ship *with* the release
+instead of standing frozen. Why, and every refusal: [compliance-evidence.md](references/compliance-evidence.md).
+
+```bash
+uv run "{shared_root}/scripts/tools/refresh_compliance_docs.py" \
+  --project-root "$(pwd)" --stage --release "v{version}"
+```
+
+`status: "ok"` → proceed. **Anything else → stop, do not tag.**
+
 ## Step 6: Commit and Tag
+
+Commit **by explicit pathspec** — never `.shipwright/compliance/`, which commits
+every tracked file under it and widens the pinned seven. Use Step 5.5's
+`evidence_pathspec`: it omits any path this project lacks, and a pathspec matching
+no file aborts the whole commit.
 
 ```bash
 git add CHANGELOG.md
 git add .shipwright/agent_docs/decision_log.md            # if Step 4 folded any decision-drops
-git add .shipwright/planning/adr/                         # if dirty — see note
-git commit -m "chore(release): v{version}"
+git add .shipwright/planning/adr/                         # if dirty - see below
+git commit -m "chore(release): v{version}" -- \
+  CHANGELOG.md .shipwright/agent_docs/decision_log.md .shipwright/planning/adr/ \
+  <every path from evidence_pathspec>
 git tag -a v{version} -m "Release v{version}"
+
+# `git commit -- <paths>` records the WORKTREE, not the index: a writer between
+# Step 5.5 and here substitutes unstamped bytes silently. Non-zero → do not tag.
+uv run "{shared_root}/scripts/tools/refresh_compliance_docs.py" \
+  --project-root "$(pwd)" --verify-commit "$(git rev-parse HEAD)"
 ```
 
-> **Stage `.shipwright/planning/adr/` whenever it is dirty.** Step 4's
-> `aggregate_decisions.py` refreshes `.shipwright/planning/adr/INDEX.md` on
-> **every** non-dry-run pass — including one that folds zero drops — so a
-> release can repair an index that had gone stale. Leaving that unstaged makes
-> the local drift guard pass against a repaired working tree while CI fails
-> against the committed one. A folder-level add is a no-op when nothing changed.
+> `.shipwright/planning/adr/` is a DIRECTORY pathspec deliberately, and leaving it unstaged breaks CI — both in [compliance-evidence.md](references/compliance-evidence.md).
 
 ---
 
@@ -300,14 +302,10 @@ gh pr create \
   --base main
 ```
 
-> **Parallel Iterate Handling**
->
-> - Multiple open PRs against the same default branch: rebase per PR is expected — no skill-logic change required.
-> - `gh pr merge --merge` vs `--squash`: the default stays `--merge`; `--squash` is optional for parallel-iterate PRs when linear history matters.
-> - Tag creation is single-writer (only the release-iterate tags a version) — no concurrency change needed.
-> - Conventional-Commit sort is deterministic: merge order does not affect changelog ordering.
-> - **`CHANGELOG.md [Unreleased]` is a merge hotspot.** Every iterate F4 appends to `[Unreleased]`. Two parallel iterates conflict on merge — the second PR rebases and resolves the bullet merge manually. Structural fix tracked as a `CHANGELOG-unreleased.d/` drop pattern bundled with the iterate_history file-per-iterate refactor.
-> - Full parallel-iterate conventions live in `/shipwright-iterate` B1a.
+> **Parallel iterates:** rebase-per-PR is expected, tagging is single-writer,
+> and `CHANGELOG.md [Unreleased]` is the one merge hotspot. Detail:
+> [release-workflow.md](references/release-workflow.md); full conventions live
+> in `/shipwright-iterate` B1a.
 
 **Autonomous mode:** After creating the PR, merge it immediately:
 ```bash
@@ -337,12 +335,8 @@ If no PR was created (on main), use `--detail "v{version} — tagged on main"`.
 
 **Phase complete — update pipeline state:**
 
-Iterate 12.4 wires the changelog plugin into the Minimum Phase
-Completion Canon at C1/C2/C3 only. **C4 is skipped by policy** —
-release tagging is process management, not an architectural decision.
-**C5 is not applicable** — this plugin IS the one that writes
-`[Unreleased]` prepends; appending to `[Unreleased]` after a release
-would pollute the next version.
+Canon C1/C2/C3 only — C4 and C5 are deliberately out; why:
+[release-workflow.md](references/release-workflow.md).
 
 ```bash
 : "${SHIPWRIGHT_RUN_ID:=changelog-v{version}-$(date +%Y%m%d-%H%M%S)}"
@@ -374,6 +368,11 @@ uv run "{shared_root}/scripts/tools/append_phase_history.py" \
 # push or a CHANGELOG drift blocks this call.
 uv run "{plugin_root}/../../plugins/shipwright-run/scripts/lib/orchestrator.py" \
   update-step --project-root "$(pwd)" --step changelog --status complete
+
+# update-step regenerates the seven evidence documents a SECOND time — unstamped,
+# at a different commit than the one just tagged. Put the committed copies back.
+uv run "{shared_root}/scripts/tools/refresh_compliance_docs.py" \
+  --project-root "$(pwd)" --restore
 ```
 
 **Print Summary:**
@@ -397,3 +396,5 @@ Tags + main pushed to origin
 
 - [conventional-commits.md](references/conventional-commits.md) — Parsing rules
 - [changelog-format.md](references/changelog-format.md) — Keep-a-Changelog format
+- [compliance-evidence.md](references/compliance-evidence.md) — The seven evidence documents at release
+- [release-workflow.md](references/release-workflow.md) — Parallel iterates; why the canon stops at C3

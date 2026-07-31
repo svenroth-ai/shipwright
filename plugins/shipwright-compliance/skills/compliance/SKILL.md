@@ -67,6 +67,11 @@ Accept these flags (pass through to `run_audit.py`):
 - `--only <groups>` — comma-separated group letters (e.g. `C,F,E`). Defaults to all.
 - `--format md|json|both` — output format. Default `both`.
 
+One flag is **not** passed through and is handled by this skill directly:
+
+- `--refresh-pr` — skip the audit entirely and run **Step 2c** instead: open a
+  documents-only pull request that brings the committed evidence up to date.
+
 ## Step 2: Run the Audit
 
 ```bash
@@ -93,6 +98,51 @@ and every evidence document discloses that date on its `Generated:` line. Withou
 this step those documents keep reporting the *previous* answer — often "never
 run" — right at the moment the operator asked for the check. Run it after **every**
 audit, including a failing one. It regenerates documents only; it commits nothing.
+
+## Step 2c: Open a Documents-Only PR (`--refresh-pr` only)
+
+The seven documents under `.shipwright/compliance/` are refreshed **at each
+release and on demand, not continuously** — an iterate branch must not carry them
+(a branch-local derivation reads the *branch's* history and an event log missing
+every concurrently-merging branch, so it is wrong for the default branch by
+construction; `check_no_derived_snapshots_committed` enforces it). This step is
+the on-demand half: when somebody needs the committed evidence current *between*
+releases, they run this and it goes through an ordinary reviewed pull request.
+
+Offer this whenever an audit reveals the committed documents are behind, and run
+it when the operator asks for fresh evidence. Requires a **clean checkout of an
+up-to-date default branch** — the tool refuses otherwise rather than repairing,
+because a refresh computed on top of unrelated local work describes the wrong
+tree no matter how carefully it is committed.
+
+**Reset the tree first.** Step 2b has just regenerated the five markdown
+documents, so the checkout is dirty — and it is dirtiest in exactly the case that
+triggers this offer, because documents that were *behind* are the ones Step 2b
+moves. Without this the preflight refuses every time it is actually needed:
+
+```bash
+uv run "{plugin_root}/../../shared/scripts/tools/refresh_compliance_docs.py" \
+  --project-root "$(pwd)" --restore
+
+uv run "{plugin_root}/../../shared/scripts/tools/refresh_compliance_docs.py" \
+  --project-root "$(pwd)" --pr
+```
+
+- `status: "pr_opened"` → report the URL in `pr`.
+- `status: "noop"` → the committed documents already match. Nothing to do.
+- `status: "refused"` → `detail` says what to fix first (dirty tree, or behind).
+- `status: "base_moved"` → the default branch advanced mid-run. The work is kept
+  on the local branch named in `detail`; re-run from a fresh base.
+- any other status → **do not work around it.** Each refusal exists because a
+  refresh that reports green while shipping frozen or emptied documents is worse
+  than one that stays frozen.
+
+**No credential beyond the operator's own `gh` login.** There is no bot, no
+deploy key, and no exception to the branch-protection rule anywhere in this path
+— that is the whole point of it. Never pass `--release`: a documents-only branch
+shipped with no release, and the tool refuses the combination rather than
+claiming one. Full rationale:
+`.shipwright/planning/iterate/2026-07-30-derived-snapshots-decision.md`.
 
 ## Step 3: Present Results
 

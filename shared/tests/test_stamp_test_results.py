@@ -128,7 +128,11 @@ class TestIdempotency:
         assert (project / RESULTS_REL).read_text(encoding="utf-8") == first
         block = _read(project)[BLOCK_KEY]
         assert BLOCK_KEY not in block
-        assert set(block) == {"run_id", "commit", "dirty"}
+        # `base` / `release` joined the block with the compliance-evidence refresh
+        # (iterate-2026-07-31-derived-docs-at-release). This producer resolves
+        # neither — they stay null, which is what unresolved must look like.
+        assert set(block) == {"run_id", "commit", "dirty", "base", "release"}
+        assert block["base"] is None and block["release"] is None
 
     def test_restamping_with_a_new_run_id_overwrites(self, project: Path):
         _run(project, "--run-id", RUN)

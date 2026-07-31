@@ -1,0 +1,39 @@
+{
+  "items": [
+    {
+      "name": "spec compliance",
+      "verdict": "pass",
+      "note": "All 13 ACs implemented and tested. Two plan claims turned out narrower than filed and are recorded as results, not dropped: the gate's secondary offender-list claim (already handled by the merge-base range) and the stamp delivery mechanism (moved off a subprocess env-var boundary onto the deliverer)."
+    },
+    {
+      "name": "tests",
+      "verdict": "pass",
+      "note": "26 new tests across 7 modules plus 3 amended contract tests. Delivery tests assert on observable artifacts (the git index, the commit's path set) rather than return values - which is the only reason the Stage-1 HIGH-1 defect was catchable at all."
+    },
+    {
+      "name": "error handling",
+      "verdict": "pass",
+      "note": "Every refusal is an explicit status the caller must branch on; none is swallowed. produce() restores the tree on refusal so rejected output cannot be picked up by a later git add. deliver_pr restores the operator's branch in a finally and every post-commit failure says where the work is instead of discarding it. converge rewinds producer inputs in a finally, so a raising generator cannot leave throwaway appends in the operator's event log."
+    },
+    {
+      "name": "security",
+      "verdict": "pass",
+      "note": "No new credential, no workflow, nothing under .github/. Both deliveries go through a reviewed PR; the on-demand one uses the operator's own gh login. All git/gh calls are argv lists. Values reaching a ref name or a banner are validated (safe_commit 7-40 hex, safe_run_id single token) and dropped rather than sanitised; a release value cannot forge a second banner token (pinned by test). capture skips symlinks rather than reading a target's bytes onto a public branch."
+    },
+    {
+      "name": "performance",
+      "verdict": "pass",
+      "note": "Bounded at 4 regeneration passes; the strict floor re-run happens only under --allow-shrink. No new network call on the release path."
+    },
+    {
+      "name": "conventions",
+      "verdict": "fail",
+      "note": "Five size-guideline crossings, disclosed rather than hidden. Source: source_state.py 307, compliance_refresh_produce.py 339, compliance_delivery.py 308, lib/compliance_refresh.py 303 (guideline 300). Runtime prompt: plugins/shipwright-changelog/skills/changelog/SKILL.md 446 (limit 400). Tests: test_compliance_refresh_produce.py 413, test_refresh_compliance_docs.py 300. None carries a bloat-baseline entry, so nothing ratchets and the pre-commit anti-ratchet passes; these are NEW crossings for the Group H detective audit and a reviewer should feel free to overrule the call. The growth is review-driven error handling rather than feature sprawl - the module count went 1 to 5 as the cascade landed 30+ findings, and each seam is a named subject (decisions / recompute-and-verify / what a document claims / delivery + PR protocol / CLI). The claim I am NOT making is that five modules was the right call at the start: gemini's over-production objection was correct about the draft it saw, and the right decomposition only became visible once the error handling existed. Everything else follows convention: the lib/tools split mirrors churn_merge/resolve_churn_conflicts, uv run entry points, Conventional Commits, unconditional sys.path inserts per ADR-045, and both CLAUDE.md doc rules (guide.md and hooks-and-pipeline.md) are honoured in the same diff."
+    },
+    {
+      "name": "affected boundaries",
+      "verdict": "pass",
+      "note": "Git index/worktree, GitHub via gh under the operator's own login, the Source-State text banner round-trip, and the subprocess boundary into update_compliance.py. Each was probed empirically rather than asserted - see the spec's Confidence Calibration. The env-var boundary the plan proposed was removed entirely."
+    }
+  ]
+}

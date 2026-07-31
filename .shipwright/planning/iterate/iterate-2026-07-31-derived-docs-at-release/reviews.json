@@ -1,0 +1,509 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-07-31-derived-docs-at-release",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 1,
+      "findings": [
+        {
+          "severity": null,
+          "category": "conventions",
+          "file": null,
+          "line": null,
+          "finding": "Five size-guideline crossings, disclosed rather than hidden. Source: source_state.py 307, compliance_refresh_produce.py 339, compliance_delivery.py 308, lib/compliance_refresh.py 303 (guideline 300). Runtime prompt: plugins/shipwright-changelog/skills/changelog/SKILL.md 446 (limit 400). Tests: test_compliance_refresh_produce.py 413, test_refresh_compliance_docs.py 300. None carries a bloat-baseline entry, so nothing ratchets and the pre-commit anti-ratchet passes; these are NEW crossings for the Group H detective audit and a reviewer should feel free to overrule the call. The growth is review-driven error handling rather than feature sprawl - the module count went 1 to 5 as the cascade landed 30+ findings, and each seam is a named subject (decisions / recompute-and-verify / what a document claims / delivery + PR protocol / CLI). The claim I am NOT making is that five modules was the right call at the start: gemini's over-production objection was correct about the draft it saw, and the right decomposition only became visible once the error handling existed. Everything else follows convention: the lib/tools split mirrors churn_merge/resolve_churn_conflicts, uv run entry points, Conventional Commits, unconditional sys.path inserts per ADR-045, and both CLAUDE.md doc rules (guide.md and hooks-and-pipeline.md) are honoured in the same diff.",
+          "suggestion": null,
+          "source": "self-review"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-07-31T09:50:37.628752+00:00",
+      "disposition": null,
+      "recorded_by": "iterate-skill-step-7",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 11,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "Reducibility / Over-production",
+          "file": null,
+          "line": null,
+          "finding": "Splitting a basic script into three files (`lib/compliance_refresh.py`, `tools/compliance_refresh_run.py`, `tools/refresh_compliance_docs.py`) to bypass a 300 LOC guideline is textbook over-engineering. This fragment hides a single, cohesive lifecycle operation (run a generator script until it stabilizes, check file sizes, then either `git add` or `gh pr create`) behind needless abstractions and module boundaries.",
+          "suggestion": "Combine these into a single `tools/refresh_compliance_docs.py` script. Length alone is acceptable for a sequential, strongly cohesive orchestration script with purely local logic.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "Edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The hard content floor (AC-5: \"never below half its committed size\") introduces a strict block against legitimate reductions. If a large deprecated feature is removed, a heavy dependency is dropped, or an audit log window naturally shifts, a document may legitimately shrink by more than 50%. As specified, this would permanently block a release because the generation script would reject the fixpoint.",
+          "suggestion": "Add a `--force` or `--bypass-content-floor` flag to the CLI tool so an operator can explicitly permit a valid, significant size reduction during a release.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "Risk / Dependency",
+          "file": null,
+          "line": null,
+          "finding": "Injecting `release=<tag>` at Step 5.5 (before the release commit) introduces a strict ordering paradox. In most git flows, the tag is created after the release commit is made (Step 6). If the orchestrator hasn't created the tag yet, runtime commands like `git describe` will fail or return the previous release tag.",
+          "suggestion": "Ensure the changelog skill steps explicitly pass the intended future tag (e.g., `v1.2.3`) down as an argument to the refresh script at Step 5.5, rather than the script trying to blindly read the current git repo state for a nonexistent tag.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "Approach",
+          "file": null,
+          "line": null,
+          "finding": "The spec states `test_workflow_token_permissions.py` will be kept. However, for Item 2 (on-demand docs PR), the delivery operates via `gh pr create` using \"the operator's own credential\". If this is run locally by operators, GitHub workflow permissions don't apply. If this is meant to be run via an on-demand workflow in GitHub Actions (which is common for \"on-demand\" tasks), relying on an operator's personal credential implies passing a User PAT, which is complex to secure and rotate compared to `GITHUB_TOKEN`.",
+          "suggestion": "Clarify if Item 2 runs strictly on local developer machines or inside CI. If in CI, use native GitHub token permissions over a personal credential to handle PR creation.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "The plan adds a pre-release refresh but does not account for the existing post-release `orchestrator update-step --step changelog --status complete` invocation, which already regenerates the same documents after the release commit. Unless that call is suppressed for these paths or run with the same fixed source-state inputs, it will rewrite the just-committed evidence in the worktree—potentially without `base=`/`release=` tokens and using the release commit’s history. This recreates the dirty-worktree/order defect the change is intended to fix.",
+          "suggestion": "Explicitly change the release flow so the later phase-completion operation does not regenerate this set, or give it an explicit “already refreshed”/skip mode. Add an integration test covering the entire release-skill sequence through the final `update-step`, asserting a clean worktree and that the committed evidence remains byte-identical afterward.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "release=<tag>` is not fully defined for the docs-only PR delivery. A release path can know the planned tag before making the release commit, but an on-demand branch off `origin/main` is not necessarily associated with a new release at all. Passing a current/latest tag would make the banner claim the documents “shipped with” a release they did not ship with; omitting it creates different semantics for the same producer.",
+          "suggestion": "Define the source-state contract separately for both deliveries before implementation. For example, make `release=` optional and omit it for a docs-only PR, or require an explicit existing release tag and validate that the selected base is that tag’s commit. Ensure the tool output and documentation explain the distinction, and add tests for both cases.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "git add -- <seven paths>` does not ensure that the release commit contains only the intended refresh changes. Any unrelated files already staged by an earlier release-skill step or operator action remain in the index and may be included by the eventual release commit. Conversely, the release commit legitimately needs `CHANGELOG.md`, so “stage exactly seven” alone does not define the final commit contents.",
+          "suggestion": "Make the commit boundary explicit: define the complete allowed path set for the release commit (the seven evidence paths plus the expected release artifacts such as `CHANGELOG.md`), inspect the staged diff immediately before commit, and fail on unexpected paths. Prefer an isolated/clean worktree for the skill where feasible. Test both pre-staged unrelated content and expected changelog content.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The `ci-security.json` exception can still ship evidence that is stale without making that fact visible in the committed evidence. AC-6 says the command reports that the frozen copy stood, but a reader of `main` sees only the old document—the original problem explicitly identifies lack of an on-document stale marker as the auditability failure. Tool output is not durable release evidence.",
+          "suggestion": "When CI-history refresh is unavailable, either fail the release if the product requires all seven documents current, or persist an explicit freshness/degraded-state indication in `ci-security.json` (including the source scan/commit and reason). At minimum, define an acceptable age and source-commit relationship for the “latest completed scan,” so an unrelated or very old successful scan is not silently treated as current.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The docs-only PR is based on a fetched `origin/main`, but `main` can advance between fetch, regeneration, push, and PR creation. The resulting PR may truthfully stamp an older `base=`, yet merge later with evidence already stale relative to its target branch. This is especially likely for an on-demand refresh intended to catch up after release activity.",
+          "suggestion": "Re-check the remote default-branch SHA immediately before push/PR creation and abort/retry regeneration if it changed. Also require normal PR checks or a merge-time refresh/rebase procedure to preserve the stated “current at merge” expectation.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "The proposed three-file producer/delivery split is reasonable, but the stated “pure decisions” module must not duplicate the existing authoritative definition of `DERIVED_SNAPSHOTS` or producer behavior. Two independently maintained path inventories would make AC-1’s unclassified-path protection incomplete when a new snapshot is added elsewhere.",
+          "suggestion": "Keep one authoritative snapshot registry and have the new classification/refresh-set logic consume it, failing closed for registry members without classification. The new helper should describe eligibility and delivery policy, not recreate existing generator path knowledge.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "security",
+          "file": null,
+          "line": null,
+          "finding": "The on-demand command crosses git and GitHub CLI boundaries using operator credentials and derived values such as branch names, tags, repository/default-branch names, and banner tokens. The plan does not state input validation or argument-safe subprocess invocation. A malformed environment value could corrupt a one-line provenance banner or alter a shell-composed command if implementation uses shell strings.",
+          "suggestion": "Invoke `git` and `gh` with argument arrays rather than shell interpolation; validate SHA as a full/abbreviated object ID and tag/branch values as single-line valid refs before placing them in banners or command arguments. Verify the fetched `origin` repository and resolved default branch before creating the PR.  Overall, the core “one producer, two deliveries” design is sound and appropriately avoids the protected-branch bypass, but the existing post-release regeneration and the undefined docs-only `release=` semantics need resolution before implementation. The staging boundary and CI-history degradation behavior should also be made durable and testable. SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-07-31T08:52:03.560990+00:00",
+      "disposition": null,
+      "recorded_by": "external_review.py",
+      "parse_status": "structured",
+      "raw_excerpt": "[gemini] Here is the review of the implementation approach for moving compliance document generation to the release phase.\n\n- **Category:** Reducibility / Over-production\n- **Severity:** High\n- **Finding:** Splitting a basic script into three files (`lib/compliance_refresh.py`, `tools/compliance_refresh_run.py`, `tools/refresh_compliance_docs.py`) to bypass a 300 LOC guideline is textbook over-engineering. This fragment hides a single, cohesive lifecycle operation (run a generator script until it stabilizes, check file sizes, then either `git add` or `gh pr create`) behind needless abstractions and module boundaries. \n- **Suggestion:** Combine these into a single `tools/refresh_compliance_docs.py` script. Length alone is acceptable for a sequential, strongly cohesive orchestration script with purely local logic.\n\n- **Category:** Edge-case\n- **Severity:** Medium\n- **Finding:** The hard content floor (AC-5: \"never below half its committed size\") introduces a strict block against legitimate reductions. If a large deprecated feature is removed, a heavy dependency is dropped, or an audit log window naturally shifts, a document may legitimately shrink by more than 50%. As specified, this would permanently block a release because the generation script would reject the fixpoint.\n- **Suggestion:** Add a `--force` or `--bypass-content-floor` flag to the CLI tool so an operator can explicitly permit a valid, significant size reduction during a release.\n\n- **Category:** Risk / Dependency\n- **Severity:** Medium\n- **Finding:** Injecting `release=<tag>` at Step 5.5 (before the release commit) introduces a strict ordering paradox. In most git flows, the tag is created *after* the release commit is made (Step 6). If the orchestrator hasn't created the tag yet, runtime commands like `git describe` will fail or return the *previous* release tag. \n- **Suggestion:** Ensure the changelog skill steps explicitly pass the *intended future tag* (e.g., `v1.2.3`) down as an argument to the […truncated]\n\n[openai] 1. **Category:** dependency  \n   **Severity:** high  \n   **Finding:** The plan adds a pre-release refresh but does not account for the existing post-release `orchestrator update-step --step changelog --status complete` invocation, which already regenerates the same documents after the release commit. Unless that call is suppressed for these paths or run with the same fixed source-state inputs, it will rewrite the just-committed evidence in the worktree—potentially without `base=`/`release=` tokens and using the release commit’s history. This recreates the dirty-worktree/order defect the change is intended to fix.  \n   **Suggestion:** Explicitly change the release flow so the later phase-completion operation does not regenerate this set, or give it an explicit “already refreshed”/skip mode. Add an integration test covering the entire release-skill sequence through the final `update-step`, asserting a clean worktree and that the committed evidence remains byte-identical afterward.\n\n2. **Category:** edge-case  \n   **Severity:** high  \n   **Finding:** `release=<tag>` is not fully defined for the docs-only PR delivery. A release path can know the planned tag before making the release commit, but an on-demand branch off `origin/main` is not necessarily associated with a new release at all. Passing a current/latest tag would make the banner claim the documents “shipped with” a release they did not ship with; omitting it creates different semantics for the same producer.  \n   **Suggestion:** Define the source-state contract separately for both deliveries before implementation. For example, make `release=` optional and omit it for a docs-only PR, or require an explicit existing release tag and validate that the selected base is that tag’s commit. Ensure the tool output and documentation explain the distinction, and add tests for both cases.\n\n3. **Category:** risk  \n   **Severity:** high  \n   **Finding:** `git add -- <seven paths>` does not ensure that the releas […truncated]"
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 13,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "correctness",
+          "file": "shared/scripts/tools/compliance_delivery.py",
+          "line": null,
+          "finding": "FAIL-OPEN: staged_difference returned [] both when nothing differed and when git FAILED, so a failed `git add` read as noop/exit 0 - green having shipped nothing. FIXED: returns None on either git failure; both deliveries map it to a stage_failed refusal. Pinned by two tests.",
+          "suggestion": "resolved in this diff",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "high",
+          "category": "correctness",
+          "file": "shared/scripts/lib/compliance_refresh.py",
+          "line": null,
+          "finding": "The on-demand commit subject `chore(compliance)` is the ONE subject audit_staleness.find_snapshot_commit deliberately refuses (its docstring says so verbatim - that is the hand-edit case Group E must catch). The docs-only PR would therefore make the next audit skip it, fall back to the previous release, and report the FRESHEST evidence as stale. FIXED: a Run-ID: trailer, which the audit does recognise; grep NOT widened. Pinned by a test.",
+          "suggestion": "resolved in this diff",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "security",
+          "file": "shared/scripts/tools/compliance_provenance.py",
+          "line": null,
+          "finding": "re.sub with a STRING replacement expands backslash escapes, and safe_run_id permits backslashes - so a release value carrying \n forged a second Source-State: line from outside banner_line's guarantee, and an unknown escape raised re.error inside the producer. FIXED: callable replacement. Two tests.",
+          "suggestion": "resolved in this diff",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "shared/scripts/tools/refresh_compliance_docs.py",
+          "line": null,
+          "finding": "No exception boundary: any raise left regenerated AND STAGED content behind (regenerate_tracked_snapshots stages what it writes), and deliver_pr's branch_failed return sat outside the try. FIXED: try/except around produce+deliver emitting status crashed, and an explicit restore on branch_failed.",
+          "suggestion": "resolved in this diff",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "shared/scripts/tools/compliance_delivery.py",
+          "line": null,
+          "finding": "AC-8b self-disabled on a git failure: _remote_tip returned '' when ls-remote failed and '' was read as 'the base did not move'. FIXED: returns None, which aborts with base_unverifiable.",
+          "suggestion": "resolved in this diff",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "shared/scripts/tools/compliance_refresh_produce.py",
+          "line": null,
+          "finding": "_rewind wrote the entry-time blob back over two APPEND-ONLY logs, destroying any line a concurrent producer appended during the run. FIXED: append_only mode restores only while the snapshot is still an exact prefix; documents keep the wholesale rewind.",
+          "suggestion": "resolved in this diff",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/scripts/tools/compliance_delivery.py",
+          "line": null,
+          "finding": "restore_to_head over-reported (every path whose checkout exited 0) and silently left a producer-CREATED path on disk. FIXED: reports what actually changed, and unlinks a path HEAD does not carry.",
+          "suggestion": "resolved in this diff",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/scripts/tools/compliance_delivery.py",
+          "line": null,
+          "finding": "The finally's branch restore was unverified and skipped a detached HEAD. FIXED: SHA fallback, returncode checked, returned_to/left_on recorded.",
+          "suggestion": "resolved in this diff",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/scripts/tools/compliance_delivery.py",
+          "line": null,
+          "finding": "preflight_pr compared two unchecked git outputs, so an unreadable repository PASSED (both empty compare equal). FIXED: explicit refusal naming which side failed.",
+          "suggestion": "resolved in this diff",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/scripts/tools/refresh_compliance_docs.py",
+          "line": null,
+          "finding": "--restore returned 0 unconditionally, so 'the stamped copies won' and 'the worktree still holds the unstamped regen' reported identically. FIXED: restore_incomplete + exit 1.",
+          "suggestion": "resolved in this diff",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "architecture",
+          "file": "shared/scripts/tools/compliance_refresh_produce.py",
+          "line": null,
+          "finding": "The sys.path bootstrap was CONDITIONAL while the sibling it mirrors inserts unconditionally - the ADR-045 collision that reads green locally and red in CI. FIXED in both new tools.",
+          "suggestion": "resolved in this diff",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/scripts/tools/compliance_refresh_produce.py",
+          "line": null,
+          "finding": "Windows note: head_blob reads the git blob while the payload holds worktree bytes, so under core.autocrlf the ratio floor is measured across a conversion boundary. Errs only in the safe direction today. ACCEPTED with the one-directional safety now stated.",
+          "suggestion": "resolved in this diff",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "shared/tests/test_compliance_refresh.py",
+          "line": null,
+          "finding": "test_the_branch_name_is_stable_for_the_same_base asserted f(x)==f(x), tautological for a pure function, and a date-stamped name would have passed it. FIXED: asserts the shape instead.",
+          "suggestion": "resolved in this diff",
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-07-31T09:20:10.648076+00:00",
+      "disposition": null,
+      "recorded_by": "shipwright-build:code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 14,
+      "findings": [
+        {
+          "severity": null,
+          "category": "reversibility",
+          "file": "shared/scripts/tools/compliance_refresh_produce.py",
+          "line": null,
+          "finding": "Claim under doubt: the change is correct as reviewed by stages 1 and 2 — D1 (high) DISPROVED: the append_only guard protected the case that cannot occur and ate the one it was written for - a concurrent APPEND leaves the snapshot as a prefix, so the guard passed and the append was overwritten. Zero tests touched append_only, and the one nearby test wrote its line BEFORE converge so it passed against the pre-fix code too. FIXED: an append-only log that changed at all is left alone (never destroy an appended line); the fixpoint survives because grade_snapshot is filtered out of every derived document and the triage appends are dedupKey-idempotent. converge.left_alone now surfaces what was skipped. Two new tests, one of which fails against the previous fix.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": null,
+          "category": "reversibility",
+          "file": "plugins/shipwright-changelog/skills/changelog/SKILL.md",
+          "line": null,
+          "finding": "Claim under doubt: the change is correct as reviewed by stages 1 and 2 — D2 (high) DISPROVED: `git commit -- <pathspec>` records the WORKTREE, not the index - so every check in this change (and every test) read something the release commit does not. Any writer between Step 5.5 and Step 6 substitutes unstamped bytes silently. That is HIGH-1 one step downstream. FIXED: a --verify-commit mode that reads `git show <sha>:<rel>`, wired into Step 6 before the tag is pushed, plus two tests.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": null,
+          "category": "reversibility",
+          "file": "shared/scripts/tools/compliance_delivery.py",
+          "line": null,
+          "finding": "Claim under doubt: the change is correct as reviewed by stages 1 and 2 — D3 (high) DISPROVED: restore_to_head read EVERY non-zero `git checkout` as 'unknown to HEAD' and then deleted the file and reported it as restored, exit 0. On Windows a file held open by an editor or an index.lock race is ordinary, so this deleted a COMMITTED evidence document. FIXED: `git cat-file -e HEAD:<rel>` asks the question instead of inferring it; a held path is `unresolved`, never deleted.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": null,
+          "category": "reversibility",
+          "file": "plugins/shipwright-compliance/skills/compliance/SKILL.md",
+          "line": null,
+          "finding": "Claim under doubt: the change is correct as reviewed by stages 1 and 2 — D4 (medium) DISPROVED: Step 2b regenerates the documents and Step 2c then refuses on a dirty tree - so --refresh-pr was unreachable in exactly the case that triggers the offer (documents behind => 2b moves them). FIXED: Step 2c runs --restore first.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": null,
+          "category": "reversibility",
+          "file": "shared/scripts/tools/refresh_compliance_docs.py",
+          "line": null,
+          "finding": "Claim under doubt: the change is correct as reviewed by stages 1 and 2 — D5 (medium) DISPROVED: the crash handler calls restore_to_head (HEAD-resetting) while produce argues never to reset to HEAD. ANSWERED rather than changed: a refusal holds produce's found-state snapshot and rewinds precisely; a crash has that frame gone and an unknown partial tree, where 'leave nothing untrusted staged' is the only guarantee left. The cost - an operator edit does not survive a crash - is now stated in the code.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": null,
+          "category": "reversibility",
+          "file": "shared/scripts/tools/compliance_refresh_produce.py",
+          "line": null,
+          "finding": "Claim under doubt: the change is correct as reviewed by stages 1 and 2 — D6 (medium) DISPROVED: shipwright_compliance_config.json is REWRITTEN, not appended to, so the prefix guard could never pass and it stayed dirty after every run including every refusal - which then blocked the next --pr on a change the operator never made. FIXED: append-only handling is now per PATH (APPEND_ONLY_INPUTS), not per call. New test.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": null,
+          "category": "reversibility",
+          "file": "shared/scripts/tools/refresh_compliance_docs.py",
+          "line": null,
+          "finding": "Claim under doubt: the change is correct as reviewed by stages 1 and 2 — D7 (medium) DISPROVED: commit_pathspec was not presence-filtered, so on a project that has never run a CI scan (no ci-security.json) the printed release command aborts with `fatal: pathspec did not match any files` and commits nothing. Every fixture commits all seven, so it was invisible. FIXED: filtered to present paths.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": null,
+          "category": "reversibility",
+          "file": "shared/scripts/tools/compliance_provenance.py",
+          "line": null,
+          "finding": "Claim under doubt: the change is correct as reviewed by stages 1 and 2 — D8 (medium) DISPROVED: ci_security staleness compared ISO-8601 LEXICALLY, but `git show %cI` renders in the committer's local offset while the scanner writes UTC - so a genuinely older scan reads as fresh whenever the offsets differ. FIXED: datetime.fromisoformat on both sides, compared as instants; a naive timestamp is refused rather than assumed UTC.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": null,
+          "category": "reversibility",
+          "file": "shared/scripts/tools/verifiers/derived_snapshot_gate.py",
+          "line": null,
+          "finding": "Claim under doubt: the change is correct as reviewed by stages 1 and 2 — D9 (medium) DISPROVED: when the commit is already contained in the trunk, _branch_base_commit returns the commit itself, so the remedy printed --source=<itself> - trg-d0e4592e's exact no-op returning through the side door, reachable by re-running the verifier against a landed commit. FIXED: base == commit falls through to the words-only branch.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": null,
+          "category": "reversibility",
+          "file": "shared/scripts/tools/compliance_delivery.py",
+          "line": null,
+          "finding": "Claim under doubt: the change is correct as reviewed by stages 1 and 2 — S1 (uncertain, treated as real) DISPROVED AS STATED: three of six --pr failure paths returned inside the try without restoring, and the finally then carried the producer's written-and-staged output onto the operator's branch. FIXED: restore_to_head on restore_failed, stage_failed and commit_failed.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": null,
+          "category": "reversibility",
+          "file": "docs/guide.md",
+          "line": null,
+          "finding": "Claim under doubt: the change is correct as reviewed by stages 1 and 2 — S3 (uncertain) ACCEPTED: triage_inbox.md is safe to exclude, but it is now the only tree-derived refreshable document with NO path to refresh, and nothing on its face says so. ANSWERED in docs/guide.md rather than by widening the set, which is the operator's scope pin.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": null,
+          "category": "reversibility",
+          "file": "plugins/shipwright-changelog/skills/changelog/references/compliance-evidence.md",
+          "line": null,
+          "finding": "Claim under doubt: the change is correct as reviewed by stages 1 and 2 — S6 (survived) ACCEPTED: the reference stated AC-13's justification unconditionally, but the second regeneration only happens on the standalone/legacy path - update-step is inert in a driven single_session run. CORRECTED, with the note that --restore is a no-op otherwise so running it unconditionally is still right.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": null,
+          "category": "reversibility",
+          "file": "shared/tests/test_refresh_compliance_docs.py",
+          "line": null,
+          "finding": "Claim under doubt: the change is correct as reviewed by stages 1 and 2 — Test quality (items 4 and 5) ACCEPTED: the tag-resolution scan covered too few files and missed plumbing beyond `describe`; and the --restore test passed when the file had been DELETED rather than restored, because the destructive branch also reported it in `restored`. Both strengthened.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": null,
+          "category": "reversibility",
+          "file": "shared/scripts/tools/compliance_refresh_produce.py",
+          "line": null,
+          "finding": "Claim under doubt: the change is correct as reviewed by stages 1 and 2 — Test quality (item 2) ACKNOWLEDGED, NOT FIXED: every refusal/rewind/floor test injects `regenerate` or stubs `converge`, so the real producer's side effects are never exercised - which is exactly why D6 was invisible. Row 14 of the ledger is relabelled honestly. Driving the real _update_compliance from a unit test needs a fixture project with a full .shipwright tree and is deferred rather than claimed.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-07-31T09:40:36.535351+00:00",
+      "disposition": null,
+      "recorded_by": "shipwright-build:doubt-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 4,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "bug",
+          "file": "shared/scripts/tools/compliance_refresh_produce.py:188-193",
+          "line": null,
+          "finding": "converge()` retains only the final pass’s `outcomes`. If pass 1 reports an errored/unknown producer outcome and pass 2 succeeds with unchanged output, the function returns a converged success and `produce()` sees only the successful final outcomes. This violates AC-4’s requirement that a pass with an errored producer leg fails the refresh.",
+          "suggestion": "Accumulate failed outcomes across every attempted pass (or immediately return a producer-failed result from `converge`) and have `produce()` refuse if any pass had a non-success outcome.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "spec",
+          "file": "shared/scripts/tools/compliance_refresh_produce.py:323-330",
+          "line": null,
+          "finding": "ci-security.json` producer failures are handled as ordinary fatal producer failures. If its refresh returns an error outcome, `failed_paths(outcomes)` includes `ci-security.json`, `produce()` returns `producer_failed`, and no `ci_security` report is emitted. AC-6 explicitly requires that when CI security cannot refresh, the frozen copy stands, the result says so, and this never fails the run.",
+          "suggestion": "Treat the CI-history path separately: preserve its committed/captured bytes when its producer fails, include a non-blocking unavailable/frozen provenance report, and continue the refresh if the tree-derived producers succeeded.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "bug",
+          "file": "shared/scripts/tools/refresh_compliance_docs.py:286-293",
+          "line": null,
+          "finding": "The `--stage` path has no clean-tree preflight, but on any production refusal it calls `restore_to_head()`, which resets both the worktree and index for all seven paths to `HEAD`. This discards pre-existing operator edits or staged changes to a compliance document, rather than restoring the state that existed before this tool ran. The implementation carefully snapshots producer inputs but does not provide equivalent protection for the documents it overwrites.",
+          "suggestion": "Snapshot the original worktree/index state of the refresh paths before production and restore that snapshot on refusal, or explicitly refuse `--stage` when any refresh path has pre-existing modifications.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "test",
+          "file": "shared/tests/test_compliance_refresh_produce.py:88-111",
+          "line": null,
+          "finding": "The AC-4 tests only provide a failed outcome as the final outcome returned by a mocked `converge()`. They do not exercise a multi-pass run where an earlier pass fails and a later pass succeeds, so the current loss of earlier failure outcomes passes all tests. Likewise, the CI tests cover stale/unreadable JSON but not a CI producer error, leaving the AC-6 non-blocking failure path untested.",
+          "suggestion": "Add integration-level tests using an injected producer that fails on pass 1 and succeeds on pass 2, and one where only `ci-security.json` reports an error while the six tree-derived paths succeed; both must verify the specified refusal/non-blocking behavior.  Overall assessment: ship-with-fixes. The delivery design is largely aligned with the specification, but the producer outcome handling currently violates two core safety requirements and the refusal cleanup can destroy operator work.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-07-31T09:00:36.199715+00:00",
+      "disposition": null,
+      "recorded_by": "external_review.py",
+      "parse_status": "partial",
+      "raw_excerpt": "[gemini]   gate prints resolves to the branch's merge-base — not HEAD~1 — and following it actually clears the gate.\"\n`_branch_base_commit` returns the merge base with the default branch (`origin/main` etc).\nIf `base` is used, the command printed is `git restore --source=<base> --staged --worktree -- <paths>`.\nThis restores to the merge base.\nWhen does `_branch_base_commit` return None? When the common ancestor can't be found (e.g. no origin/main).\nIn that case, the script prints an explanation.\nIs it correct? Yes.\n\nWait! Look at `deliver_stage` in `refresh_compliance_docs.py`.\n```python\n\n\n[openai] - Category: bug  \n  Severity: high  \n  File: `shared/scripts/tools/compliance_refresh_produce.py:188-193`  \n  Finding: `converge()` retains only the final pass’s `outcomes`. If pass 1 reports an errored/unknown producer outcome and pass 2 succeeds with unchanged output, the function returns a converged success and `produce()` sees only the successful final outcomes. This violates AC-4’s requirement that *a pass* with an errored producer leg fails the refresh.  \n  Suggestion: Accumulate failed outcomes across every attempted pass (or immediately return a producer-failed result from `converge`) and have `produce()` refuse if any pass had a non-success outcome.\n\n- Category: spec  \n  Severity: high  \n  File: `shared/scripts/tools/compliance_refresh_produce.py:323-330`  \n  Finding: `ci-security.json` producer failures are handled as ordinary fatal producer failures. If its refresh returns an error outcome, `failed_paths(outcomes)` includes `ci-security.json`, `produce()` returns `producer_failed`, and no `ci_security` report is emitted. AC-6 explicitly requires that when CI security cannot refresh, the frozen copy stands, the result says so, and this never fails the run.  \n  Suggestion: Treat the CI-history path separately: preserve its committed/captured bytes when its producer fails, include a non-blocking unavailable/frozen provenance report, and continue the refresh if the tree-derived producers succeeded.\n\n- Category: bug  \n  Severity: medium  \n  File: `shared/scripts/tools/refresh_compliance_docs.py:286-293`  \n  Finding: The `--stage` path has no clean-tree preflight, but on any production refusal it calls `restore_to_head()`, which resets both the worktree and index for all seven paths to `HEAD`. This discards pre-existing operator edits or staged changes to a compliance document, rather than restoring the state that existed before this tool ran. The implementation carefully snapshots producer inputs but does not provide equivalent protection for the  […truncated]"
+    }
+  },
+  "gates": {
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 4,
+      "findings": [
+        {
+          "severity": null,
+          "category": "spec-compliance",
+          "file": "shared/scripts/tools/refresh_compliance_docs.py",
+          "line": null,
+          "finding": "ROUND 1 (now fixed): deliver_stage never received the stamped payload, so the release path staged the generator's UNSTAMPED bytes while result.stamped listed all five markdown documents. The headline deliverable was silently absent and the run reported success. Fixed by extracting write_back() and passing payload to both deliveries; pinned by test_the_staged_bytes_are_the_STAMPED_ones, which reads the git INDEX rather than a return value and was verified non-vacuous by the reviewer. — spec: build item 3 + AC-9b - the Source-State banner gains base=/release=, and release= is emitted by the release delivery",
+          "suggestion": "build item 3 + AC-9b - the Source-State banner gains base=/release=, and release= is emitted by the release delivery",
+          "source": "spec-reviewer"
+        },
+        {
+          "severity": null,
+          "category": "spec-compliance",
+          "file": "shared/scripts/tools/compliance_refresh_produce.py",
+          "line": null,
+          "finding": "ROUND 1 (now fixed): the flag recorded only allow_shrink: true, so the output could not distinguish 'a document halved and we let it' from 'the flag was passed and never mattered'. Fixed: allow_shrink.waived names the covered paths via a strict re-run after the lenient one passes. — spec: AC-5 - --allow-shrink overrides the ratio floor and RECORDS that it did, naming the paths",
+          "suggestion": "AC-5 - --allow-shrink overrides the ratio floor and RECORDS that it did, naming the paths",
+          "source": "spec-reviewer"
+        },
+        {
+          "severity": null,
+          "category": "spec-compliance",
+          "file": "plugins/shipwright-changelog/skills/changelog/SKILL.md",
+          "line": null,
+          "finding": "ROUND 1 (now fixed): the skill committed the directory .shipwright/compliance/, which commits every tracked file under it - precisely the widening the pinned seven-file set exists to prevent. Fixed: eight literal paths in Step 6, plus test_release_pathspec_doc_sync.py asserting set equality with REFRESH_SET in both directions. — spec: AC-7 - the release commit uses the explicit pathspec the tool prints",
+          "suggestion": "AC-7 - the release commit uses the explicit pathspec the tool prints",
+          "source": "spec-reviewer"
+        },
+        {
+          "severity": null,
+          "category": "out-of-scope",
+          "file": "shared/scripts/tools/compliance_refresh_produce.py",
+          "line": null,
+          "finding": "ROUND 1 (now fixed): the producer reset shipwright_events.jsonl and .shipwright/triage.jsonl to HEAD before every pass, which cannot distinguish this run's throwaway appends from appends already in the tree. The --stage path has no clean-tree preflight, so a dirty event log - the normal mid-session state - would have been discarded. That is trg-ad29a709's defect in a different place. Fixed: snapshot the inputs once at entry and rewind to THAT snapshot between passes, in a finally. — spec: Affected Boundaries - the git operations this change may perform; and the spec's own classification of run-written artifacts as nobody's to regenerate",
+          "suggestion": "Affected Boundaries - the git operations this change may perform; and the spec's own classification of run-written artifacts as nobody's to regenerate",
+          "source": "spec-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-07-31T08:53:39.433727+00:00",
+      "disposition": null,
+      "recorded_by": "shipwright-build:spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    }
+  }
+}
