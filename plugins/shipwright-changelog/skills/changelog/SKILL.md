@@ -274,9 +274,18 @@ If edit: apply changes and re-preview.
 
 ```bash
 git add CHANGELOG.md
+git add .shipwright/agent_docs/decision_log.md            # if Step 4 folded any decision-drops
+git add .shipwright/planning/adr/                         # if dirty — see note
 git commit -m "chore(release): v{version}"
 git tag -a v{version} -m "Release v{version}"
 ```
+
+> **Stage `.shipwright/planning/adr/` whenever it is dirty.** Step 4's
+> `aggregate_decisions.py` refreshes `.shipwright/planning/adr/INDEX.md` on
+> **every** non-dry-run pass — including one that folds zero drops — so a
+> release can repair an index that had gone stale. Leaving that unstaged makes
+> the local drift guard pass against a repaired working tree while CI fails
+> against the committed one. A folder-level add is a no-op when nothing changed.
 
 ---
 

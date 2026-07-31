@@ -1,0 +1,83 @@
+{
+  "stage": "code-review",
+  "verdict": "REQUEST_CHANGES (all findings resolved or filed)",
+  "summary": "Two independent Stage-2 passes. Eleven findings accepted: ten fixed in this diff, one (the churn/merge register) filed as trg-1acb5304 with rationale.",
+  "review": [
+    {
+      "severity": "medium",
+      "id": "M1",
+      "file": "write_decision_drop.py / aggregate_decisions.py / rebuild_adr_index.py",
+      "finding": "LockTimeout is a RuntimeError, not an OSError, so the one failure mode the index lock exists for escaped every best-effort handler. At F3 it would have killed main() AFTER the drop was written, failing the whole finalize bundle; in aggregate() it would have aborted a release pass whose aggregation had already succeeded, under a message naming the wrong lock.",
+      "resolution": "fixed - all three sites catch (OSError, LockTimeout); test_f3_refresh_survives_a_lock_timeout added"
+    },
+    {
+      "severity": "medium",
+      "id": "M2/M3",
+      "file": "shared/scripts/lib/adr_index.py",
+      "finding": "Hand-rolled tmp+os.replace duplicated lib/atomic_write.durable_atomic_write, the repo's SSoT, and lost its Windows protection: os.replace raises PermissionError when any process holds the destination open (an editor, the WebUI, an indexer), losing the write. Path.write_text also translates newlines, so the LF-only render was written CRLF on Windows into a committed artifact.",
+      "resolution": "fixed - routed through durable_atomic_write (verbatim UTF-8 + retry + fsync); test_render_is_written_verbatim_lf_even_on_windows asserts bytes"
+    },
+    {
+      "severity": "medium",
+      "id": "M4",
+      "file": "shared/scripts/lib/adr_index.py",
+      "finding": "REGEN_COMMAND was monorepo-relative but is rendered into the committed INDEX.md header of every ADOPTED repo, which has no shared/ directory - the one documented remedy was unrunnable everywhere it actually ships.",
+      "resolution": "fixed - REGEN_COMMAND now carries the {shared_root} placeholder used by every other iterate-skill command; regen_command_resolved() gives a concrete path at runtime; test_regen_command_is_layout_independent added"
+    },
+    {
+      "severity": "medium",
+      "id": "churn",
+      "file": "shared/scripts/lib/churn_merge.py",
+      "finding": "INDEX.md is now regenerated on a branch, so two parallel ADR-writing iterates conflict; it is in no merge-reconciliation register, so ensure_current aborts.",
+      "resolution": "FILED as trg-1acb5304 - deferred deliberately: touching churn machinery trips cross_component, which mandates its own integration-coverage test. Fails loudly and safely, no corruption."
+    },
+    {
+      "severity": "low",
+      "id": "L1",
+      "finding": "durable_atomic_write's temp file lands in the TRACKED ADR folder that F6 now stages wholesale; a hard-killed run would leak it into a commit.",
+      "resolution": "fixed - /.shipwright/planning/adr/*.tmp added to the canonical gitignore template AND this repo's managed block (congruence test green)"
+    },
+    {
+      "severity": "low",
+      "id": "L2",
+      "finding": "F3 refreshes on every drop but F6 staged only 'if F3 wrote an ADR spec file', so a run that repaired a stale index left it unstaged - local guard green, CI red.",
+      "resolution": "fixed - F6.md and F3.md now say stage whenever dirty"
+    },
+    {
+      "severity": "low",
+      "id": "L3",
+      "finding": "_H1_RE stripped a closing '#' CommonMark would keep: '# Migrate to C#' rendered as 'Migrate to C'.",
+      "resolution": "fixed - closing run now requires preceding whitespace"
+    },
+    {
+      "severity": "low",
+      "id": "L4/L5",
+      "finding": "Redundant locks mkdir (file_lock creates its own parent); index lock acquired while holding the decision_log lock on two of three paths.",
+      "resolution": "mkdir removed; lock nesting left in place and documented - no inversion exists and hoisting would change the transaction boundary"
+    },
+    {
+      "severity": "low",
+      "id": "L6",
+      "finding": "One test patched by dotted string rather than module object (ADR-045), and a subprocess call decoded with the locale codec. The run's own self-review had claimed module-object patching throughout - true for one test, not the other.",
+      "resolution": "fixed - both patched by module object; encoding=utf-8 on the CLI subprocess calls. Self-review note corrected."
+    },
+    {
+      "severity": "low",
+      "id": "dead-code",
+      "finding": "Unreachable try/except ValueError around int() on a regex-guaranteed digit group, plus the constant that fed it.",
+      "resolution": "fixed - removed"
+    },
+    {
+      "severity": "low",
+      "id": "compat",
+      "finding": "AC8's import-compatibility promise covered only rebuild_adr_index; ADR_INDEX_FILENAME and ADR_SPEC_FOLDER stopped being importable from aggregate_decisions.",
+      "resolution": "fixed - both re-exported and listed in __all__"
+    },
+    {
+      "severity": "low",
+      "id": "windows-cli",
+      "finding": "Found while fixing the above: the new CLI printed an em-dash to stdout, which Python encodes as cp1252 on Windows, so any caller reading the pipe as UTF-8 raised UnicodeDecodeError (an unhandled thread exception in the test run).",
+      "resolution": "fixed - CLI output is ASCII-only"
+    }
+  ]
+}

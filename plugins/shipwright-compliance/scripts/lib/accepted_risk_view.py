@@ -38,6 +38,16 @@ _SHARED_SCRIPTS = Path(__file__).resolve().parents[4] / "shared" / "scripts"
 _TRIVYIGNORE_YAML_NAMES = (".trivyignore.yaml", ".trivyignore.yml")
 _TRIVYIGNORE_FLAT_NAME = ".trivyignore"
 
+#: Trivy's per-entry due date in the classic flat form: ``CVE-1 exp:2026-01-01``.
+#: The YAML form spells the same thing ``expired_at:``. Duplicated from
+#: ``accepted_risk_scan.FLAT_EXPIRY_FIELD`` for the same ADR-045 reason
+#: ``_coerce_date`` is duplicated below — this module must stay readable with no
+#: ``shared/scripts`` on ``sys.path``. ``test_both_parsers_agree_on_the_id`` and
+#: ``test_the_two_differ_only_by_dropping_lapsed_entries`` (in
+#: ``test_accepted_risk_view_parsing.py``) pin the two equal, so neither can
+#: drift alone.
+_FLAT_EXPIRY_FIELD = "exp:"
+
 SOURCE_REGISTERED_ACTIVE = "registered+active"
 SOURCE_REGISTERED_ONLY = "registered"
 SOURCE_UNREGISTERED = "unregistered"
@@ -114,16 +124,33 @@ def parse_trivyignore(project_root: Path | str) -> list[dict[str, Any]]:
             return out
     flat = root / _TRIVYIGNORE_FLAT_NAME
     if flat.is_file():
-        # Classic form: one id per line with `#` comments — NOT YAML.
+        # Classic form: whitespace-separated FIELDS with `#` comments — NOT
+        # YAML — where an optional `exp:YYYY-MM-DD` field carries the entry's
+        # own due date. So the id is the first non-`exp:` field, not the whole
+        # line, and the date is read rather than assumed absent. Taking the
+        # line verbatim made this parser disagree with the shared reader about
+        # what the id even is, which surfaced as TWO dashboard rows for one
+        # suppression, and left a lapsed flat entry rendering as not-expired —
+        # the exact row `EXPIRED - re-review` exists to raise.
         try:
             lines = flat.read_text(encoding="utf-8").splitlines()
         except OSError:
             return []
-        return [
-            {"id": stripped, "expired_at": None, "scope": []}
-            for raw in lines
-            if (stripped := raw.split("#", 1)[0].strip())
-        ]
+        out = []
+        for raw in lines:
+            fields = raw.split("#", 1)[0].split()
+            ident = next(
+                (f for f in fields if not f.startswith(_FLAT_EXPIRY_FIELD)), None)
+            if ident is None:
+                continue
+            out.append({
+                "id": ident,
+                "expired_at": next(
+                    (f[len(_FLAT_EXPIRY_FIELD):] for f in fields
+                     if f.startswith(_FLAT_EXPIRY_FIELD)), None),
+                "scope": [],
+            })
+        return out
     return []
 
 
@@ -146,7 +173,25 @@ def accepted_risk_rows(
     """
     shared = _load_shared()
     trivy = parse_trivyignore(project_root)
-    trivy_by_id = {e["id"]: e for e in trivy}
+    # Trivy legitimately repeats an `id` with different `paths` — that is what
+    # scoping an ignore entry looks like. Fold duplicates onto the LATEST
+    # expiry, because that is the date which actually governs whether anything
+    # is still suppressed for that id. Last-wins would let a narrow, already-
+    # lapsed entry render the whole id as EXPIRED while a sibling still
+    # suppresses (iterate-2026-07-31-accepted-risk-gate-holes, doubt review).
+    trivy_by_id: dict[str, Any] = {}
+    for entry in trivy:
+        prior = trivy_by_id.get(entry["id"])
+        if prior is None:
+            trivy_by_id[entry["id"]] = entry
+            continue
+        prior_date = _coerce_date(prior.get("expired_at"))
+        this_date = _coerce_date(entry.get("expired_at"))
+        # An entry with no expiry never lapses, so it wins outright.
+        if prior_date is None:
+            continue
+        if this_date is None or this_date > prior_date:
+            trivy_by_id[entry["id"]] = entry
 
     if shared is None:
         note = (
@@ -156,7 +201,7 @@ def accepted_risk_rows(
         rows = [
             _row(rid=e["id"], target="trivy-ignore", rule=e["id"],
                  expires=(d.isoformat() if (d := _coerce_date(e["expired_at"])) else ""),
-                 expired=bool(d and d < now), ref="", statement="",
+                 expired=bool(d and d <= now), ref="", statement="",
                  source=SOURCE_REGISTERED_ACTIVE)
             for e in trivy
         ]
@@ -169,7 +214,13 @@ def accepted_risk_rows(
         return [], f"accepted-risk register is INVALID and was not read: {exc}"
 
     try:
-        discovered = scan.discovered_suppressions(project_root)
+        # `now` is threaded in, not left to the wall clock: a Trivy ignore entry
+        # whose own `expired_at` has lapsed is no longer a live suppression, so
+        # "is it active?" must be answered against the SAME date this render is
+        # computed for. Without it the row's expiry and its active/inactive
+        # state could disagree, and a fixed-date test would change answer once
+        # its fixture's date passed.
+        discovered = scan.discovered_suppressions(project_root, now=now)
     except Exception:  # noqa: BLE001 - never let the dashboard crash on this
         discovered = {}
 
@@ -190,14 +241,42 @@ def accepted_risk_rows(
         ))
 
     # Suppressions nobody recorded — surfaced as drift, never as "accepted".
-    for target, rules in sorted(discovered.items()):
-        for rule in sorted(rules - recorded_rules.get(target, set())):
-            entry = trivy_by_id.get(rule, {})
+    #
+    # Trivy rows are drawn from the FILE, not from discovery. Discovery answers
+    # "is this suppression in effect *today*", and since
+    # iterate-2026-07-31-accepted-risk-gate-holes it correctly drops an entry
+    # whose own `expired_at` has lapsed. That is the right answer for the drift
+    # GATE and the wrong one for this table: a lapsed entry is exactly the one
+    # an operator must see, flagged `EXPIRED - re-review`, which is the signal
+    # this section was built to give (see the `accepted_risks` module docstring).
+    # Sourcing these rows from discovery would make them vanish on the day they
+    # start to matter. Discovery still decides `source` above — whether a
+    # RECORDED acceptance is actually wired up — which is a different question.
+    unrecorded: dict[str, set[str]] = {
+        target: rules - recorded_rules.get(target, set())
+        for target, rules in discovered.items()
+    }
+    trivy_target = accepted_risks.TARGET_TRIVY_IGNORE
+    unrecorded.setdefault(trivy_target, set()).update(
+        set(trivy_by_id) - recorded_rules.get(trivy_target, set())
+    )
+    for target, rules in sorted(unrecorded.items()):
+        for rule in sorted(rules):
+            # Only a Trivy row may take its date from the Trivy file. A semgrep
+            # rule whose name happened to equal an ignore id would otherwise
+            # render that entry's expiry as its own.
+            entry = trivy_by_id.get(rule, {}) if target == trivy_target else {}
             parsed = _coerce_date(entry.get("expired_at"))
             rows.append(_row(
                 rid=rule, target=target, rule=rule,
                 expires=parsed.isoformat() if parsed else "",
-                expired=bool(parsed and parsed < now), ref="", statement="",
+                # `<=`, not `<`: this is a TRIVY date, so it takes Trivy's rule
+                # (lapsed FROM the date), not the register's (`Acceptance.
+                # is_expired`, active ON its date). Using `<` here made the
+                # dashboard say "not expired" for the one day the gate had
+                # already stopped counting the suppression — the single day an
+                # operator most needs the EXPIRED flag.
+                expired=bool(parsed and parsed <= now), ref="", statement="",
                 source=SOURCE_UNREGISTERED,
             ))
     return rows, None

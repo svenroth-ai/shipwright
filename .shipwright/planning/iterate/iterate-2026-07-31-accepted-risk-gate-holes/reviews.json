@@ -1,0 +1,353 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-07-31-accepted-risk-gate-holes",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-07-31T08:06:52.073128+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 9,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "Risk",
+          "file": null,
+          "line": null,
+          "finding": "The Verification runner command explicitly omits the compliance plugin tests, contradicting your own Test Strategy warning that \"Running only `shared/tests` here would be a false green, since step 4 lands in the compliance plugin.\"",
+          "suggestion": "Update the Verification runner command or add a second verification step to ensure `plugins/shipwright-compliance/tests/test_accepted_risk_view.py` is executed to validate AC-6 and the `now` threading.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "Edge Case",
+          "file": null,
+          "line": null,
+          "finding": "Flat format line splitting (e.g., `parts = line.split()`) could raise an `IndexError` on blank lines or lines containing only whitespace if the file reader does not",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "Changing `reconcile()` to return discovered suppressions changes an existing function contract solely to avoid a second read. Any existing call site, test helper, or downstream consumer expecting its current return shape can break, and this is not accounted for in the plan.",
+          "suggestion": "Audit all `reconcile()` callers before changing its return value. Prefer passing a precomputed `discovered` value into `reconcile()` (or adding an optional parameter) if that preserves its existing public contract; otherwise, update every caller and add a compatibility-focused test.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The proposed expiry behavior must precisely match Trivy’s handling of malformed and unusual `exp:` / `expired_at` values. The plan intentionally treats an unparseable expiry as active, but the supplied Trivy-source probe establishes the valid-date boundary, not clearly Trivy’s invalid-date behavior for both formats. A mismatch could recreate the core security problem: the gate calls an entry active while Trivy no longer applies it (or rejects the ignore file).",
+          "suggestion": "Verify Trivy’s actual behavior for malformed YAML expiry values and malformed flat `exp:` fields, either from the relevant parser/error path or an executable Trivy probe. Implement and test the same outcome, including whether parsing failure retains the ID, drops it, or makes the scan fail.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "now` should be resolved once per discovery operation, not independently by each underlying reader. Otherwise a check that runs over a date boundary can classify sources using different dates, yielding an inconsistent reconciliation result.",
+          "suggestion": "In `discovered_suppressions`, set `effective_now = now or date.today()` once, then pass that same value to every source reader. Have CLI `check` use that single discovery result for both reconciliation and reporting.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "The stated verification command runs only the `shared/tests` suite, while the plan correctly identifies a required behavioral change in `plugins/shipwright-compliance/tests`. This leaves the dashboard determinism change outside the declared surface-verification evidence.",
+          "suggestion": "Update verification to run the two pytest roots as separate commands, consistent with ADR-044, and record both results in the evidence artifact. For example, run the shared tests first and the compliance-plugin view tests in a distinct invocation.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The flat-file parsing proposal needs to retain existing Trivy-compatible handling for blank lines, comment lines, leading whitespace, inline comments, and metadata field ordering. “Take field 0 as the id and honour an `exp:` field” is directionally right, but insufficiently explicit for a hand-authored third-party format.",
+          "suggestion": "Preserve current comment/blank-line semantics and add focused cases for leading whitespace, comments, and an `exp:` field not in a fixed position. Parse tokens rather than relying on a particular spacing layout, and only interpret a complete `exp:YYYY-MM-DD` token as expiry metadata.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "The documentation change is phrased as “an absent register no longer passes,” which contradicts AC-2: an absent register with no live suppressions must still exit successfully. This could cause operators to create empty registers unnecessarily or misunderstand a clean result.",
+          "suggestion": "Document the precise rule: a missing register is treated as an empty register and is reconciled normally; it fails only when live discovered suppressions are unrecorded.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "security",
+          "file": null,
+          "line": null,
+          "finding": "The change correctly closes false-success paths, but it relies on reimplementing a subset of Trivy’s ignore-file interpretation. Future Trivy syntax changes or semantic changes can silently diverge again.",
+          "suggestion": "Keep the parser deliberately narrow and documented as matching the currently supported Trivy forms, and add a short source/version reference near the parsing logic. The boundary tests should remain tied to Trivy’s defined semantics rather than to locally invented expiry rules.  Overall, the core approach is sound: removing the missing-register bypass and excluding scanner-lapsed ignores from active discovery directly address the reported holes without schema expansion. Resolve the `reconcile()` compatibility risk, validate malformed-expiry parity with Trivy, and ensure both test roots are included in verification before landing.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-07-31T07:40:46.873575+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[gemini] - Category: Risk\n- Severity: high\n- Finding: The Verification runner command explicitly omits the compliance plugin tests, contradicting your own Test Strategy warning that \"Running only `shared/tests` here would be a false green, since step 4 lands in the compliance plugin.\"\n- Suggestion: Update the Verification runner command or add a second verification step to ensure `plugins/shipwright-compliance/tests/test_accepted_risk_view.py` is executed to validate AC-6 and the `now` threading.\n\n- Category: Edge Case\n- Severity: medium\n- Finding: Flat format line splitting (e.g., `parts = line.split()`) could raise an `IndexError` on blank lines or lines containing only whitespace if the file reader does not\n\n[openai] 1. **Category: risk**  \n   **Severity: medium**  \n   **Finding:** Changing `reconcile()` to return discovered suppressions changes an existing function contract solely to avoid a second read. Any existing call site, test helper, or downstream consumer expecting its current return shape can break, and this is not accounted for in the plan.  \n   **Suggestion:** Audit all `reconcile()` callers before changing its return value. Prefer passing a precomputed `discovered` value into `reconcile()` (or adding an optional parameter) if that preserves its existing public contract; otherwise, update every caller and add a compatibility-focused test.\n\n2. **Category: edge-case**  \n   **Severity: medium**  \n   **Finding:** The proposed expiry behavior must precisely match Trivy’s handling of malformed and unusual `exp:` / `expired_at` values. The plan intentionally treats an unparseable expiry as active, but the supplied Trivy-source probe establishes the valid-date boundary, not clearly Trivy’s invalid-date behavior for both formats. A mismatch could recreate the core security problem: the gate calls an entry active while Trivy no longer applies it (or rejects the ignore file).  \n   **Suggestion:** Verify Trivy’s actual behavior for malformed YAML expiry values and malformed flat `exp:` fields, either from the relevant parser/error path or an executable Trivy probe. Implement and test the same outcome, including whether parsing failure retains the ID, drops it, or makes the scan fail.\n\n3. **Category: edge-case**  \n   **Severity: low**  \n   **Finding:** `now` should be resolved once per discovery operation, not independently by each underlying reader. Otherwise a check that runs over a date boundary can classify sources using different dates, yielding an inconsistent reconciliation result.  \n   **Suggestion:** In `discovered_suppressions`, set `effective_now = now or date.today()` once, then pass that same value to every source reader. Have CLI `check` use that single […truncated]"
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 9,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "shared/scripts/tools/accepted_risks_cli.py",
+          "line": null,
+          "finding": "The new failure mode is reported with a message written for a different cause, and its advice is wrong. A lapsed ignore entry now produces STALE: 'remove the register entry, or restore the suppression.' For this iterate's own motivating scenario (register renewed, ignore-file date left in the past) the correct action is 'renew the ignore file's date too' - following the printed advice deletes an acceptance that is doing its job. Dated, not hypothetical: this repo's ar-2026-06-22-otel-baggage-dev-only has register expires 2026-12-22 and .trivyignore.yaml expired_at 2026-12-22, so on 2026-12-22 UTC check goes red with misleading STALE text while expire reports 'none past due' the same day. ar-2026-07-28-brace-expansion-dev-only repeats it on 2027-01-28.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "plugins/shipwright-compliance/scripts/lib/accepted_risk_view.py",
+          "line": null,
+          "finding": "The dashboard applies the REGISTER's boundary rule (parsed < now) to a TRIVY date, so on the lapse date itself the two consumers contradict each other. The gate drops an expired_at 2026-06-28 entry on 2026-06-28 while the row rendered for that same entry reports expired=False - affirmatively saying 'not expired' about a suppression the scanner has already stopped applying, for exactly the one day the operator most needs the flag. Same on the degraded branch. A new inter-consumer disagreement introduced by this diff.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "plugins/shipwright-compliance/tests/test_accepted_risk_view.py",
+          "line": null,
+          "finding": "The drift pin asserts something weaker than it looks: `assert theirs <= mine` is satisfied by an empty theirs, by mine gaining arbitrary extra ids, and by expiry-semantics drift. Its real strength rested on two exact-equality asserts over a single 5-line fixture, omitting every input class where the two ~14-line duplicated parsers could still drift silently.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "architecture",
+          "file": "plugins/shipwright-compliance/scripts/lib/accepted_risk_view.py",
+          "line": null,
+          "finding": "unrecorded.setdefault('trivy-ignore', set()) hardcodes the target string where accepted_risks.TARGET_TRIVY_IGNORE is in scope. Because the keys on the other side of the merge come from that constant, a rename would silently split the dashboard's Trivy rows into two buckets rather than failing loudly.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/tests/test_accepted_risks_register.py",
+          "line": null,
+          "finding": "test_deleting_the_register_cannot_silence_this_repos_gate silently depends on this repo continuing to have a live suppression. If that stops being true (a good outcome) the test fails with a message asserting the very precondition that has become false.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/scripts/accepted_risk_scan.py",
+          "line": null,
+          "finding": "The docstring claims to mirror Trivy's rule exactly, but Trivy's clock.Now(ctx) is local time while this resolves today_utc(), so on a non-UTC runner the two can disagree by up to a day. The UTC choice is correct and justified; the gap is the unqualified mirror claim.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "security",
+          "file": "shared/scripts/accepted_risk_scan.py",
+          "line": null,
+          "finding": "The fail-safe 'unparseable expiry keeps the entry ACTIVE' is right for the flat form but permissive for YAML: Trivy unmarshals expired_at into a time.Time, so a malformed value makes it reject the WHOLE ignore file and suppress nothing, while the gate counts that entry and its siblings as live suppressions.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "architecture",
+          "file": ".shipwright/compliance/test-traceability.json",
+          "line": null,
+          "finding": "The diff renames two tests listed by node id in the tracked traceability artifact and adds a new test file that appears nowhere in it, so the untagged-test census references node ids that no longer resolve.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "docs/security-ci-setup.md",
+          "line": null,
+          "finding": "The inserted dashboard paragraph is immediately followed by the pre-existing one on the same subject, which then reads as if introducing the dashboard for the first time.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-07-31T08:35:35.973325+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 12,
+      "findings": [
+        {
+          "severity": "high",
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "the one-day boundary divergence is pre-existing and out of scope",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "high",
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "STALE has two causes and each now gets advice that fits it (AC-10)",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "AC-8/AC-11: a lapsed entry stays visible, flagged EXPIRED, agreeing with the gate",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "'both parsers are now aligned and pinned equal'",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "AC-9: 'one suppression renders as exactly one dashboard row'",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "the new lapsed set routes cause-specific advice correctly",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "the date.min trick yields 'every id written down'",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "the reader sees the suppressions actually in effect in the Trivy ignore file",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "the absent-register change is safe for a real consuming repo",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "the ledger's evidence column names tests that exist",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "ledger row 4 stays tested",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "the Stage-1/Stage-2 dispositions",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-07-31T08:59:02.285276+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": "openrouter",
+      "completed_at": "2026-07-31T08:21:26.233703+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "unstructured",
+      "raw_excerpt": "[gemini] ```\nNo, wait. Neither diff shows `_coerce_date` definition in `accepted_risk_view.py`. But you can see it used:\n```python\n            parsed = _coerce_date(entry.get(\"expired_at\"))\n```\nIt existed already. So that's unchanged.\n\nLet's look closely at `parse_trivyignore`:\n```python\n        out = []\n        for raw in lines:\n            fields = raw.split(\"#\", 1)[0].split()\n            ident = next(\n                (f for f in fields if not f.startswith(_FLAT_EXPIRY_FIELD)), None)\n            if ident is None:\n                continue\n```\nIn `shared/scripts/accepted_risk\n\n[openai] No concrete defects found in the changed implementation.\n\nThe diff removes the missing-register bypass and reconciles against an empty register, implements expiry-aware Trivy discovery for both YAML and flat forms, threads injected `now` through dashboard discovery, and preserves lapsed ignore-file rows for dashboard visibility. The added tests exercise CLI exit behavior, stale/unrecorded drift, expiry boundaries, flat parsing, and dashboard row behavior.\n\nOverall assessment: ship-as-is.  \nSHIPWRIGHT_VERDICT: approve"
+    }
+  },
+  "gates": {
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-07-31T08:19:45.555485+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    }
+  }
+}

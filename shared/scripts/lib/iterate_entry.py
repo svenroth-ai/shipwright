@@ -69,6 +69,9 @@ class IterateEntry(TypedDict, total=False):
     date: str  # ISO-8601 UTC, ``...Z`` form for new writes
     type: Literal["feature", "change", "bug"]
     complexity: Literal["trivial", "small", "medium", "large"]
+    # Stage-1 provenance of `complexity`; absent before 2026-07-31, so readers
+    # must not assume it. Contract + rationale: references/F5c.md.
+    prior_source: Literal["keyword", "history", "default"]
     branch: str
     spec: str | None
     tests_passed: bool

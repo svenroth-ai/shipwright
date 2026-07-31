@@ -53,12 +53,17 @@ class TestRoundTripWithRealWriter:
 
     def test_jumbled_writes_sorted_window_median(self, tmp_path, shared_writer):
         # 25 entries with sequential dates written in a jumbled but
-        # deterministic order; the 5 oldest are trivial. The reader must
-        # sort by (date, run_id) and take the last HISTORY_WINDOW=20:
-        # 13 medium + 7 small → median medium.
+        # deterministic order. The reader must sort by (date, run_id) and take
+        # the last HISTORY_WINDOW=20.
         specs = []
+        # Levels are chosen so the assertion still DISCRIMINATES under the
+        # `small` prior ceiling: the correct window (the 20 newest, i=5..24 →
+        # 7 trivial + 13 small) medians to `small`, while a reader that took
+        # the 20 OLDEST (i=0..19 → 12 trivial + 8 small) would median to
+        # `trivial`. Using `medium` here would put both branches above the cap
+        # and both would read back `small` — a test that cannot fail.
         for i in range(25):
-            cx = ("trivial" if i < 5 else "small" if i < 12 else "medium")
+            cx = "trivial" if i < 12 else "small"
             specs.append((
                 f"iterate-2026-05-{i + 1:02d}-rt-{i:03d}",
                 f"2026-05-{i + 1:02d}T10:00:00Z",
@@ -75,10 +80,10 @@ class TestRoundTripWithRealWriter:
                 "tests_passed": True,
             })
         result = load_history_prior(tmp_path)
-        assert result["prior"] == "medium"
+        assert result["prior"] == "small"
         assert result["n"] == HISTORY_WINDOW
         classified = classify(FALLTHROUGH_MSG, project_root=tmp_path)
-        assert classified["estimate"] == "medium"
+        assert classified["estimate"] == "small"
         assert classified["signals"]["prior_source"] == "history"
 
     def test_real_field_entry_shape_parses(self, tmp_path, shared_writer):
@@ -145,7 +150,8 @@ class TestCli:
         seeded_root(tmp_path, ["medium"] * 5)
         out = self.run_cli("--message", FALLTHROUGH_MSG,
                            "--project-root", str(tmp_path))
-        assert out["estimate"] == "medium"
+        # Discriminates against the no-flag path, which stays `trivial`.
+        assert out["estimate"] == "small"
         assert out["signals"]["prior_source"] == "history"
 
     def test_without_flag_old_behaviour(self):

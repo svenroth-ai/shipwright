@@ -19,12 +19,16 @@ reason — see ``accepted_risks.STATIC_TARGETS``.
 from __future__ import annotations
 
 import re
+from datetime import date
 from pathlib import Path
+from typing import Any
 
 from accepted_risks import (
     TARGET_SEMGREP_RULE,
     TARGET_SEMGREP_TOGGLE,
     TARGET_TRIVY_IGNORE,
+    coerce_date,
+    today_utc,
 )
 from gh_action_tag_owner import (
     ACCEPT_GH_ACTION_TAGS_ENV,
@@ -42,6 +46,10 @@ SECURITY_WORKFLOW_REL = Path(".github/workflows/security.yml")
 
 #: Env var carrying the wholesale rule-exclusion list (comma-separated).
 EXCLUDE_RULES_ENV = "SHIPWRIGHT_SEMGREP_EXCLUDE_RULES"
+
+#: Trivy's per-entry expiry field in the classic flat form: ``CVE-1 exp:2026-01-01``.
+#: The YAML form spells the same thing ``expired_at:``.
+FLAT_EXPIRY_FIELD = "exp:"
 
 #: Targeted extraction of `KEY: value` env lines. ``yaml.safe_load`` is NOT used
 #: on a GitHub Actions workflow: an unquoted ``if: ${{ ... }}`` opens a YAML flow
@@ -81,8 +89,85 @@ def read_workflow_env(project_root: Path | str) -> dict[str, str]:
     return out
 
 
-def read_trivyignore_ids(project_root: Path | str) -> set[str]:
-    """Suppressed ids from whichever ``.trivyignore`` form the repo uses."""
+def _is_lapsed(raw_expiry: Any, now: date) -> bool:
+    """True once Trivy has STOPPED applying an entry with this due date.
+
+    Mirrors Trivy's own rule rather than its prose (``pkg/result/ignore.go``)::
+
+        !finding.ExpiredAt.IsZero() && finding.ExpiredAt.Before(clock.Now(ctx))
+
+    ``ExpiredAt`` parses with layout ``2006-01-02`` — midnight — so any real
+    ``now`` on the date itself is already past it. In date terms an entry lapses
+    **from** its ``expired_at``, which is deliberately one day earlier than
+    :meth:`accepted_risks.Acceptance.is_expired`. The two are NOT the same
+    question and must not be unified: that one asks when the register's own
+    re-review falls due, this one asks what the scanner is doing today.
+
+    No date — or one that does not parse — means "no expiry" and keeps the entry
+    active. That is the fail-safe direction: an entry counted as active merely
+    has to be recorded, whereas one wrongly counted as absent would report a
+    live suppression as STALE and send the operator to delete a register entry
+    that is doing its job.
+
+    Two disclosed limits of the mirror:
+
+    * **Clock.** Trivy's ``clock.Now(ctx)`` is local time; this resolves
+      ``today_utc()``. So on a non-UTC runner the two can disagree for at most
+      one day. Deliberate — ``today_utc``'s own docstring gives the reason: the
+      register must not flip expired/active between a CI runner and a laptop.
+    * **Unparseable dates are over-counted in the YAML form.** Trivy unmarshals
+      ``expired_at`` into a ``time.Time``, so ``expired_at: whenever`` makes it
+      reject the WHOLE ignore file and suppress nothing; keeping the entry
+      active is permissive there. The flat form genuinely tolerates a malformed
+      ``exp:``. Not corrected here — the failure contract for a structurally
+      invalid ignore file is out of scope for
+      iterate-2026-07-31-accepted-risk-gate-holes and filed on its own.
+    """
+    if raw_expiry is None:
+        return False
+    parsed = coerce_date(raw_expiry)
+    return parsed is not None and parsed <= now
+
+
+def _flat_id(raw_line: str, now: date) -> str | None:
+    """The still-active id on one classic ``.trivyignore`` line, if any.
+
+    Trivy's flat form is whitespace-separated fields with ``#`` comments, the
+    optional ``exp:YYYY-MM-DD`` field carrying the entry's own expiry::
+
+        CVE-2019-14697 exp:2023-01-01
+
+    The comment is stripped BEFORE splitting, so a blank, whitespace-only or
+    comment-only line yields nothing instead of becoming a discovered
+    suppression. The id is the first non-``exp:`` field — previously the whole
+    line was taken verbatim, so an entry carrying an expiry could never match a
+    register ``rule`` at all.
+    """
+    fields = raw_line.split("#", 1)[0].split()
+    if not fields:
+        return None
+    expiry = next(
+        (f[len(FLAT_EXPIRY_FIELD):] for f in fields
+         if f.startswith(FLAT_EXPIRY_FIELD)),
+        None,
+    )
+    if _is_lapsed(expiry, now):
+        return None
+    return next((f for f in fields if not f.startswith(FLAT_EXPIRY_FIELD)), None)
+
+
+def read_trivyignore_ids(
+    project_root: Path | str, *, now: date | None = None
+) -> set[str]:
+    """Suppressed ids from whichever ``.trivyignore`` form the repo uses.
+
+    An entry whose OWN due date has lapsed is omitted, because Trivy has stopped
+    applying it: counting it would let the gate report the register "reconciled"
+    against a suppression that is no longer in effect, which is precisely the
+    state that renewing only the register's date produces
+    (iterate-2026-07-31-accepted-risk-gate-holes).
+    """
+    now = now or today_utc()
     root = Path(project_root)
     for name in TRIVYIGNORE_YAML_NAMES:
         path = root / name
@@ -99,6 +184,7 @@ def read_trivyignore_ids(project_root: Path | str) -> set[str]:
                 str(e["id"])
                 for e in (doc.get("vulnerabilities") or [])
                 if isinstance(e, dict) and e.get("id")
+                and not _is_lapsed(e.get("expired_at"), now)
             }
     flat = root / TRIVYIGNORE_FLAT_NAME
     if flat.is_file():
@@ -108,14 +194,14 @@ def read_trivyignore_ids(project_root: Path | str) -> set[str]:
         except OSError:
             return set()
         return {
-            stripped
-            for raw in lines
-            if (stripped := raw.split("#", 1)[0].strip())
+            found for raw in lines if (found := _flat_id(raw, now)) is not None
         }
     return set()
 
 
-def discovered_suppressions(project_root: Path | str) -> dict[str, set[str]]:
+def discovered_suppressions(
+    project_root: Path | str, *, now: date | None = None
+) -> dict[str, set[str]]:
     """The three reconcilable ``target`` channels, keyed by target.
 
     Exactly the Trivy ignore ids, ``SHIPWRIGHT_SEMGREP_EXCLUDE_RULES`` and the
@@ -124,7 +210,14 @@ def discovered_suppressions(project_root: Path | str) -> dict[str, set[str]]:
     than rules and has no ``target``, as does an inline ``# nosemgrep``. An
     entry registered for either matches no discovered suppression, which is the
     *stale* half of the both-directions gate and fails the build.
+
+    ``now`` is resolved ONCE here and passed down, so a caller that supplies its
+    own date (the compliance dashboard does) gets an answer derived entirely
+    from it and one straddling midnight cannot answer two different ways within
+    a single operation. Only the Trivy channel carries per-entry expiry; the
+    semgrep env vars have none and are never filtered by it.
     """
+    now = now or today_utc()
     env = read_workflow_env(project_root)
     # Comma-separated — mirrors semgrep_tailoring._resolve_exclude_rule_ids.
     exclude_rules = {
@@ -137,7 +230,7 @@ def discovered_suppressions(project_root: Path | str) -> dict[str, set[str]]:
         toggles.add(ACCEPT_GH_ACTION_TAGS_ENV)
 
     return {
-        TARGET_TRIVY_IGNORE: read_trivyignore_ids(project_root),
+        TARGET_TRIVY_IGNORE: read_trivyignore_ids(project_root, now=now),
         TARGET_SEMGREP_RULE: exclude_rules,
         TARGET_SEMGREP_TOGGLE: toggles,
     }
