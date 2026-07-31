@@ -1,0 +1,73 @@
+{
+  "stage": "code-review",
+  "verdict": "APPROVE (after two rounds)",
+  "review": [
+    {
+      "severity": "medium",
+      "file": "shared/scripts/tools/integrate_regenerate.py",
+      "finding": "git add ran check=True, so a failed stage would raise CalledProcessError in the post-merge window where the module contract promises a structured status and an intact merge.",
+      "resolution": "fixed - check=False, adr-index-stage-failed step + stderr"
+    },
+    {
+      "severity": "medium",
+      "file": "shared/scripts/tools/integrate_regenerate.py",
+      "finding": "the index was refreshed and staged BEFORE the outcomes failure check, so the regenerate_failed rollback left a staged INDEX.md and falsified its documented never-leaves-a-dirty-tree invariant. Invisible to existing rollback tests because their fixture has no ADR folder.",
+      "resolution": "fixed - the whole block moved below the if failed: return; AC4 still holds because the restore is still earlier"
+    },
+    {
+      "severity": "medium",
+      "file": "shared/tests/test_adr_index_churn_integration.py",
+      "finding": "test_the_regenerated_index_survives_the_derived_restore passed with the feature fully reverted: main never touched the index, so the merged tree kept branch B copy regardless of the refresh, and the stated ordering guard was unreachable.",
+      "resolution": "fixed - DELETED; AC4 carried by the membership test plus the real cascade test"
+    },
+    {
+      "severity": "low",
+      "file": "shared/scripts/lib/churn_merge.py",
+      "finding": "Detail in ADR-118 referenced an ADR that did not exist; 117 was already taken by an unrelated run.",
+      "resolution": "fixed - ADR-118 written in this diff and the index regenerated to list it"
+    },
+    {
+      "severity": "low",
+      "file": "shared/scripts/tools/integrate_regenerate.py",
+      "finding": "the comment claimed CI drift guard reds the next run, but that guard is a monorepo test not scaffolded into adopted repos, where the exemption removes the only line-level detector.",
+      "resolution": "fixed - scoping stated in the comment and in ADR-118 Consequences"
+    },
+    {
+      "severity": "low",
+      "file": "shared/tests/test_adr_index_churn_integration.py",
+      "finding": "assertion excluded a phantom status token conflict that integrate() cannot return, and let regenerate_failed through.",
+      "resolution": "fixed - assert status == ok"
+    },
+    {
+      "severity": "low",
+      "file": "shared/scripts/lib/churn_merge.py",
+      "finding": "the same rationale written four times; file sat at exactly 300/300 with no baseline entry, so the next entry would cross into an H1 finding.",
+      "resolution": "fixed - trimmed to a pointer; 297 lines, headroom restored"
+    },
+    {
+      "severity": "low",
+      "file": "shared/scripts/tools/integrate_regenerate.py",
+      "finding": "step token adr-index-regenerated emitted on every merge including the byte-identical no-op, reading as the index changed when it means the refresh ran.",
+      "resolution": "fixed - renamed adr-index-refreshed"
+    },
+    {
+      "severity": "low",
+      "file": "shared/scripts/tools/integrate_regenerate.py",
+      "finding": "delta round: after the restore the stage-failure branch also ends stale, but its stderr named neither the end state nor the remedy, unlike its sibling.",
+      "resolution": "fixed - message names the rewind, the staleness and regen_command_resolved()"
+    },
+    {
+      "severity": "low",
+      "file": "shared/scripts/tools/integrate_regenerate.py",
+      "finding": "delta round: never leave it modified-but-unstaged overclaimed, since the restore is itself check=False and the dominant trigger can fail it too.",
+      "resolution": "fixed - wording softened, adr-index-restore-failed step added"
+    },
+    {
+      "severity": "low",
+      "file": "shared/tests/test_adr_index_churn_integration.py",
+      "finding": "delta round: the failure-path test did not assert the run overall status, the one false-green class a mutation check cannot reach - a future change making the branch terminal would keep it green.",
+      "resolution": "fixed - assert status == ok added"
+    }
+  ],
+  "summary": "Two rounds. Round 1: 8 findings (3 medium, 5 low), all fixed. Delta round on the post-approval change: 3 low, all folded in. Reviewer confirmed the restore-to-HEAD decision with a stronger rationale than the original - nothing else in the flow would ever clean a dirty index, so it would block the branch outright."
+}

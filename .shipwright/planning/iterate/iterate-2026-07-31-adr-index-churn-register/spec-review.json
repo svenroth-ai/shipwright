@@ -1,0 +1,6 @@
+{
+  "stage": "spec-compliance",
+  "verdict": "PASS",
+  "spec_citations": [],
+  "summary": "First pass REJECT on two divergences: the machine-parsed Affected Boundaries row named the abandoned consumer (regenerate_tracked_snapshots) and the test docstring copied the same dead chain; also caught that ADR-117 was already taken by an unrelated run. All fixed, plus three non-gating items (vacuous restore test, missing conflict assertion, doc scope note). Re-review PASS: AC1-AC6 all satisfied, integration test verified as a real end-to-end proof against four independent break-modes."
+}

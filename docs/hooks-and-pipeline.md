@@ -138,10 +138,14 @@ artifact has exactly one documented resolution strategy:
 | `.shipwright/agent_docs/build_dashboard.md` | **regenerate** |
 | `.shipwright/agent_docs/session_handoff.md` | **regenerate** |
 | `.shipwright/agent_docs/triage_inbox.md` | **regenerate** |
+| `.shipwright/planning/adr/INDEX.md` | **regenerate** (re-derived from the MERGED ADR folder listing by `lib.adr_index.rebuild_adr_index`, so a row added on each side survives). The one entry here that the BRANCH legitimately carries — iterate F3 refreshes it so its row ships in the same commit as its ADR (iterate-2026-07-31-adr-index-producer), which is exactly what created this conflict class (trg-1acb5304). Re-deriving is correct by construction, not a heuristic: the index is a pure function of the folder, and after the merge the folder holds both sides' ADR files. Deliberately **not** a `DERIVED_SNAPSHOTS` member (that register is for views that are *wrong* when derived on a branch) and **not** `merge=union` (union would concatenate two sorted lists into an unsorted one with a duplicated header). **Scope note:** unlike every other `regenerate` row this one is NOT produced by `regenerate_tracked_snapshots` — it is refreshed by `integrate_regenerate.regenerate_after_merge`, after `restore_derived_to_head`, so the integration path covers it but the manual `resolve_churn_conflicts.py --mode regenerate` escape hatch does not. Refresh that case with `uv run {shared_root}/scripts/tools/rebuild_adr_index.py --project-root .`. |
 | `shipwright_test_results.json` | **ours** (PR-owned snapshot) |
 
-> **Since iterate-2026-07-27-derived-snapshots-off-branch these eleven rows
-> describe a path an iterate no longer takes.** The strategies above remain the
+> **Since iterate-2026-07-27-derived-snapshots-off-branch the eleven
+> `DERIVED_SNAPSHOTS` rows above describe a path an iterate no longer takes.**
+> (The `.shipwright/planning/adr/INDEX.md` row is the exception and is *not* one
+> of them — an iterate branch deliberately DOES carry the index, which is why it
+> needed registering at all.) The strategies above remain the
 > documented behaviour of `resolve_churn_conflicts` — a legacy branch, a
 > non-worktree flow, or the post-merge refresh producer still uses them — but an
 > iterate branch **no longer carries any of them**, so on that path they cannot
