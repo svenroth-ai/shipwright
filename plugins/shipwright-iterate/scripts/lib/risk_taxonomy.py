@@ -78,15 +78,45 @@ RISK_TAXONOMY = {
         # break Lighthouse score without anyone noticing until the next
         # full pipeline. Patterns match prompt keywords; diff-driven
         # detection uses TOUCHES_BUILD_FILE_PATTERNS via touches_build_files().
+        # Python inputs added by iterate-2026-07-31-it5-classification-
+        # calibration (trg-496e63a7): this surface is what actually fires at
+        # SKILL.md Step E, so widening only the diff-driven file patterns
+        # would have left the classifier blind on the path that runs.
+        #
+        # `requirements` DEMANDS a `.txt` filename. This is an IREB
+        # requirements-engineering framework — a bare `requirements` pattern
+        # would raise touches_build on ordinary prose about requirement
+        # catalogues, on most iterates in this repo.
         "patterns": [
+            # JavaScript / TypeScript
             r"package\.json", r"package-lock\.json",
             r"yarn\.lock", r"pnpm-lock\.yaml", r"bun\.lockb",
             r"npm-shrinkwrap\.json",
             r"next\.config\.", r"vite\.config\.",
             r"tailwind\.config\.", r"webpack\.config\.",
             r"rollup\.config\.", r"tsconfig\.json",
+            # Python. Each name is wrapped in TOKEN guards, not \b, so the
+            # message surface matches a whole FILENAME the way the diff
+            # surface does. `\b` alone is not enough in either direction:
+            # `my-requirements.txt`, `requirements.txt.bak`, `uv.lock.bak`,
+            # `setup.py.bak` and `setup.python` all satisfy `\b` and are not
+            # build inputs. `(?<![\w.-])` rejects a prefix, `(?![\w.-])`
+            # rejects a further extension.
+            r"(?<![\w.-])uv\.lock(?![\w.-])",
+            r"(?<![\w.-])poetry\.lock(?![\w.-])",
+            r"(?<![\w.-])pipfile(\.lock)?(?![\w.-])",
+            r"(?<![\w.-])pyproject\.toml(?![\w.-])",
+            r"(?<![\w.-])setup\.py(?![\w.-])",
+            r"(?<![\w.-])setup\.cfg(?![\w.-])",
+            r"(?<![\w.-])requirements[\w.-]*\.txt(?![\w.-])",
         ],
         "min_complexity": "small",
+        # NOTE — for a Python change the enforced layer is largely a no-op by
+        # its own skip-rules (no dev_url -> skip Lighthouse, no build
+        # artifacts -> skip bundle). What is load-bearing there is the `small`
+        # minimum plus the flag itself, which turns on "Full Code Review —
+        # only if risk flags" at trivial/small. Written down so nobody reads a
+        # Lighthouse promise into a lockfile bump.
         "enforces": ["performance_test_layer"],
     },
     "touches_io_boundary": {

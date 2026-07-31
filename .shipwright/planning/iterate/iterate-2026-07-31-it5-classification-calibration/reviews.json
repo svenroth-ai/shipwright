@@ -1,0 +1,371 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-07-31-it5-classification-calibration",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-07-31T08:02:08.944324+00:00",
+      "disposition": null,
+      "recorded_by": "iterate-session",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 11,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "There is a hard contradiction between §0 and ACs 4–6 that will block your commit. §0 claims `test_classify_complexity.py` will not be touched because it currently doesn't test Python inputs, thereby avoiding the need for an IT-0 baseline bump limit. However, AC-4, AC-5, and AC-6 explicitly demand asserting new matching logic for those exact inputs. Adding these assertions to the grandfathered file (capped at 317 lines) will trip the bloat baseline hook immediately.",
+          "suggestion": "Re-add the `test_classify_complexity.py` baseline bump back into IT-0. You cannot satisfy the ACs without adding test code, and splitting these specific tests into a fragmented secondary test file just to dodge a baseline hook is anti-pattern.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "Cross-platform configuration drift. The plan targets `fnmatch` for matching `TOUCHES_BUILD_BASENAME_GLOBS` and mandates Windows separator support in AC-4. Standard Python `fnmatch.fnmatch()` evaluates based on the host",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "The central safety argument for capping history-derived complexity at `small` depends on Stage 2 recovering genuinely broader changes. However, the proposed recovery is a mandatory instruction in `references/iteration-planning.md`, not an enforced classification path. A skipped, incomplete, or incorrectly executed Quick Scout would now allow a cross-component change to remain `small`, bypassing integration/cross-layer checks, the review floor, and spec/plan gates that the prior incidentally triggered.",
+          "suggestion": "Make the diff-driven detector results an enforceable input to final complexity selection, not solely a Scout checklist item. Persist the file list and detector results in the run record, require Stage 2 to record them before complexity is locked, and fail or retain the conservative tier when required detector evidence is absent. Add end-to-end tests proving that a no-keyword change touching multiple components, CI/supply-chain files, IO boundaries, and Python build inputs reaches the intended floor and activates the corresponding phases.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "fnmatch` over an `os.path.basename()` result will not satisfy AC-4’s Windows-separator requirement when tests run on Linux/macOS: `os.path.basename(\"dir\\\\uv.lock\")` treats the backslash as an ordinary character. Consequently, the proposed glob mechanism can miss Windows-style paths despite appearing correct for normal repository paths.",
+          "suggestion": "Normalize detector inputs to repository-style POSIX paths before basename extraction, or explicitly use `PureWindowsPath`/separator normalization for detection. Add tests for nested `\\`-separated paths for every literal and globbed Python build input, plus mixed-separator paths if those can enter the detector.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The proposed message regex, `requirements[\\w.-]\\.txt`, is not bounded. Depending on the existing matching API, it can match `my-requirements.txt`, `requirements.txt.bak`, or a filename embedded in a longer token—while the diff detector explicitly promises not to match these partial-basename cases. The plan’s prose-only guard does not address filename partial matches on the message surface.",
+          "suggestion": "Define message matching semantics explicitly and use filename/token boundaries appropriate to the current regex engine, for example boundaries that reject preceding/following filename characters (`[\\w.-]`). Escape literal-dot filenames such as `pyproject.toml` and `setup.py`, and add negative message tests paralleling AC-5, not merely the “requirements catalog” prose case.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "Recording `prior_source` in F5c changes the persisted iterate-entry shape. Although the writer accepts arbitrary `--entry-json` fields, the plan does not establish whether readers, schemas, snapshots, export tools, or cross-repository consumers validate or normalize those entries. A permissive writer does not prove compatibility with all readers.",
+          "suggestion": "Audit the schema/validation and all history readers before adding the field. Define `prior_source` as a stable enum with backward-compatible handling for historical entries that lack it, and add a round-trip test through the real F5c writer and history loader. Ensure unknown/missing values cannot accidentally be interpreted as a history-qualified entry when the deferred “keyword-only history” calibration is later implemented.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "AC-3 relies on “this repo’s real store,” whose rolling last-20/last-50 contents naturally change as iterates run. A test directly against that store will become time-dependent and may fail or silently stop testing the stated scenario after routine activity changes the median.",
+          "suggestion": "Preserve the measured real-store probe as evidence, but implement automated tests using fixed history fixtures representing cold start, trivial-dominated, medium-dominated, and all-large histories. Test the production store only as an optional diagnostic/integration probe with an asserted observation recorded for this run, not as the deterministic regression test.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "The proposed documentation drift protection is incomplete for the actual detector model. `TOUCHES_BUILD_FILE_PATTERNS` intentionally excludes `requirements.txt`, while `TOUCHES_BUILD_BASENAME_GLOBS` and `RISK_TAXONOMY` supply part of the effective trigger set. A bidirectional drift test against only `TOUCHES_BUILD_FILE_PATTERNS` can pass while docs omit globbed files or message detection diverges from diff detection.",
+          "suggestion": "Define one canonical effective Python build-input set for documentation/testing—derived from literals plus globs—and test all three representations: diff detector, message taxonomy, and the SKILL/docs trigger rows. Keeping the separate literal tuple and glob tuple is reasonable because of their different matching semantics; duplicating the actual input inventory across unrelated tests and docs is not.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "The consolidation explicitly warns that IT-5 changes which phases fire and must occur clearly before or after REQ-3, not during it. This mini-plan states that it is a lever for following iterates but does not explicitly declare its execution/merge boundary relative to REQ-3 or any already-running campaign work. The behavioral change can alter required gates and evidence expectations for work already in progress.",
+          "suggestion": "Make the scheduling decision a precondition of the iterate: either merge IT-5 before REQ-3 begins, or defer it until REQ-3 completes. Do not apply the new classifier to an already-created run/config without an explicit migration decision and recorded rationale.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "The stale-baseline correction is useful, but “this run does not touch `test_classify_complexity.py`” is not a sufficient bloat preflight for this change. New classifier behavior, history metadata, and path matching need regression coverage somewhere, and any edited or newly added oversized test/support file can independently trigger the stop-hook.",
+          "suggestion": "Before implementation, enumerate the actual planned changed files—including test fixtures and documentation drift tests—and run the bloat/ratchet preflight over that complete set. Update the anchor/evidence record to reflect that IT-5 is no longer blocked by the formerly missing baseline, avoiding stale sequencing assumptions for later orchestration.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "security",
+          "file": null,
+          "line": null,
+          "finding": "There is no new authentication, untrusted-input execution, or data-exposure surface in the proposed changes. The practical security-adjacent concern is reduced assurance: misclassification to `small` can suppress review and coverage gates for changes to sensitive workflow, dependency, or IO files.",
+          "suggestion": "Treat the enforced diff-driven floor in finding 1 as a security/assurance control as well as a calibration feature, and include workflow/dependency-file scenarios in the end-to-end phase-selection tests.  Overall, the diagnosis and the Python build-input split are sound, and the plan correctly avoids broadening into unmeasured ecosystems. It needs an enforceable—not documentation-only—Stage-2 recovery path plus path/regex and persisted-schema safeguards before the reduction in default process can be safely shipped. SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter:openai",
+      "completed_at": "2026-07-31T08:34:19.420368+00:00",
+      "disposition": null,
+      "recorded_by": "external_review.py",
+      "parse_status": "structured",
+      "raw_excerpt": "[gemini] Here is the review of the implementation approach for IT-5:\n\n- **Category**: dependency\n- **Severity**: high\n- **Finding**: There is a hard contradiction between §0 and ACs 4–6 that will block your commit. §0 claims `test_classify_complexity.py` will not be touched because it currently doesn't test Python inputs, thereby avoiding the need for an IT-0 baseline bump limit. However, AC-4, AC-5, and AC-6 explicitly demand asserting new matching logic for those exact inputs. Adding these assertions to the grandfathered file (capped at 317 lines) will trip the bloat baseline hook immediately.\n- **Suggestion**: Re-add the `test_classify_complexity.py` baseline bump back into IT-0. You cannot satisfy the ACs without adding test code, and splitting these specific tests into a fragmented secondary test file just to dodge a baseline hook is anti-pattern.\n\n- **Category**: edge-case\n- **Severity**: medium\n- **Finding**: Cross-platform configuration drift. The plan targets `fnmatch` for matching `TOUCHES_BUILD_BASENAME_GLOBS` and mandates Windows separator support in AC-4. Standard Python `fnmatch.fnmatch()` evaluates based on the host\n\n[openai] 1. **Category:** risk  \n   **Severity:** high  \n   **Finding:** The central safety argument for capping history-derived complexity at `small` depends on Stage 2 recovering genuinely broader changes. However, the proposed recovery is a mandatory instruction in `references/iteration-planning.md`, not an enforced classification path. A skipped, incomplete, or incorrectly executed Quick Scout would now allow a cross-component change to remain `small`, bypassing integration/cross-layer checks, the review floor, and spec/plan gates that the prior incidentally triggered.  \n   **Suggestion:** Make the diff-driven detector results an enforceable input to final complexity selection, not solely a Scout checklist item. Persist the file list and detector results in the run record, require Stage 2 to record them before complexity is locked, and fail or retain the conservative tier when required detector evidence is absent. Add end-to-end tests proving that a no-keyword change touching multiple components, CI/supply-chain files, IO boundaries, and Python build inputs reaches the intended floor and activates the corresponding phases.\n\n2. **Category:** edge-case  \n   **Severity:** high  \n   **Finding:** `fnmatch` over an `os.path.basename()` result will not satisfy AC-4’s Windows-separator requirement when tests run on Linux/macOS: `os.path.basename(\"dir\\\\uv.lock\")` treats the backslash as an ordinary character. Consequently, the proposed glob mechanism can miss Windows-style paths despite appearing correct for normal repository paths.  \n   **Suggestion:** Normalize detector inputs to repository-style POSIX paths before basename extraction, or explicitly use `PureWindowsPath`/separator normalization for detection. Add tests for nested `\\`-separated paths for every literal and globbed Python build input, plus mixed-separator paths if those can enter the detector.\n\n3. **Category:** edge-case  \n   **Severity:** medium  \n   **Finding:** The proposed message regex, `requirem […truncated]"
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 14,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "plugins/shipwright-iterate/tests/test_complexity_history.py",
+          "line": 52,
+          "finding": "test_median_even_takes_lower_middle became vacuous under the new ceiling: seed [small,small,medium,medium] gives lower-middle=small and upper-middle=medium, which the clamp rewrites to small, so flipping (len-1)//2 to len//2 kept the suite green and the documented lower-middle tie-break was pinned by nothing.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "plugins/shipwright-iterate/tests/test_complexity_history.py",
+          "line": 175,
+          "finding": "test_run_id_tiebreak_decides_window_cutoff became vacuous: correct drop and wrong drop both medianed at or above small and clamped to small, leaving the (date, run_id) tie-break unpinned by any test.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "plugins/shipwright-iterate/tests/test_complexity_history.py",
+          "line": 90,
+          "finding": "Comment claimed n discriminates the window; n only proves a window was applied, and it cited a tiebreak test that no longer discriminated.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "plugins/shipwright-iterate/scripts/lib/risk_taxonomy.py",
+          "line": 101,
+          "finding": "pipfile(\\.lock)?\\b optional group is inert because \\b matches before the dot.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "plugins/shipwright-iterate/scripts/lib/risk_detectors.py",
+          "line": 72,
+          "finding": "Comment claimed whole-basename anchoring that held only on the diff surface; the message surface fired on my-requirements.txt.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "plugins/shipwright-iterate/scripts/lib/risk_detectors.py",
+          "line": 90,
+          "finding": "touches_build_files did not strip git core.quotePath quoting, though _normalize_ci_path solved it 120 lines below; a non-ASCII path yields basename 'requirements.txt\"' and the detector silently stays down.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "plugins/shipwright-iterate/tests/test_classify_complexity_perf.py",
+          "line": 116,
+          "finding": "Glob meta-test guarded only against a leftover *; a future ? or [seq] glob would be probed as a literal containing the wildcard and self-match.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "plugins/shipwright-iterate/tests/test_classify_complexity_perf.py",
+          "line": 158,
+          "finding": "Requirements-family test probed only deploy/{name}; the new glob branch was never exercised with a Windows separator or at depth.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "docs/guide.md",
+          "line": 1718,
+          "finding": "Guide said the working effect is 'the small floor plus mandatory code review', but touches_build enforces only performance_test_layer; mandatory_review is the wording other rows use for a different enforcement.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "plugins/shipwright-iterate/tests/test_complexity_history.py",
+          "line": 272,
+          "finding": "seeded_root was inert setup in the repaired keyword-branch test.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "architecture",
+          "file": ".shipwright/agent_docs/conventions.md",
+          "line": 408,
+          "finding": "Layer-1 conventions doc still records the classifier convention as 'clamped to medium'.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": ".shipwright/compliance/test-traceability.json",
+          "line": 6284,
+          "finding": "Derived traceability artifact still names two renamed test node ids and lacks the new FR-01.11 tests.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "plugins/shipwright-iterate/scripts/lib/risk_taxonomy.py",
+          "line": 102,
+          "finding": "pyproject.toml/setup.py/setup.cfg on the MESSAGE surface may fire on prose that merely quotes the filename, partly restoring ceremony this same diff removes. Reviewer measured today's impact as nil (1 of 26 corpus prompts names it, estimate unchanged).",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "architecture",
+          "file": "plugins/shipwright-iterate/scripts/lib/risk_detectors.py",
+          "line": 79,
+          "finding": "touches_build_files has no in-repo production caller; the diff-driven half is contract surface, the message half is what runs in-session.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": "code-reviewer",
+      "completed_at": "2026-07-31T08:29:57.424422+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 7,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "hidden-coupling",
+          "file": "plugins/shipwright-iterate/skills/iterate/SKILL.md",
+          "line": null,
+          "finding": "The compensating mechanism is degraded BY this change: Repo Scout is Thorough at medium and Quick at small, and Quick Scout omits the cross-split and shared-component steps. Moving ~84% of runs to small weakens Stage 2 exactly where the asymmetry argument starts relying on it. Circular.",
+          "suggestion": "FIXED, not rebutted — Quick Scout now carries a MANDATORY diff-driven detector step (is_cross_component_change / is_ci_supplychain_change / is_io_boundary_change / touches_build_files over the file list it already builds) plus the cross-split check. cross_component floors at medium, so a genuine cross-component diff now reaches medium from the DIFF at Stage 2 — a stronger route than the message-keyword accident it replaces, and it also closes the pre-existing hole at trivial. Pinned by test_complexity_calibration_docs.py, mutation-verified.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "high",
+          "category": "boundary-contract",
+          "file": "plugins/shipwright-iterate/scripts/lib/complexity_history.py",
+          "line": null,
+          "finding": "The stated reason for rejecting the cheaper alternative is factually false in both halves: append_iterate_entry.py is limit 300 / current 436 (not 425/425), and its CLI splats **extra from --entry-json with no allowlist, so recording prior_source costs zero lines there. Only the backfill-blackout reason survives.",
+          "suggestion": "CONFIRMED and FIXED — verified independently (baseline entry reads current 436; file is 436 lines; the splat is at the --entry-json handler). Both halves retracted in the module comment and in spec §1; the rejection now rests on the backfill blackout alone. Going further: F5c NOW RECORDS prior_source (references/F5c.md), so the alternative is deferred rather than rejected, and becomes implementable once the window fills.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "blast-radius",
+          "file": "plugins/shipwright-iterate/skills/iterate/SKILL.md",
+          "line": null,
+          "finding": "'84% of runs' is the history window's COMPOSITION, not the flip-rate. The share of runs that actually move medium->small is the no-keyword fraction, which nothing records — so the change's own blast radius is unmeasurable, before and after.",
+          "suggestion": "FIXED both ways — SKILL.md now states the 84%/14%/2% composition explicitly and says in terms that it is not the flip-rate; and recording prior_source at F5c makes the flip-rate countable from the next runs onward.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "hidden-coupling",
+          "file": "shared/scripts/tools/verifiers/integration_coverage.py",
+          "line": null,
+          "finding": "check_integration_coverage is advertised NON-dodgeable but returns a green SKIP on recorded complexity BEFORE its recompute-from-diff. cross_component fires at Stage 1 from message keywords only, so this change raises the hit-rate of a pre-existing hole.",
+          "suggestion": "VERIFIED TRUE (read the early-return). Mitigated at the cause rather than the symptom: the new Quick Scout detector step raises cross_component from the diff at Stage 2, which floors the run at medium and makes the verifier run. The verifier's own complexity gate is left to IT-3 (F11 fail-open paths) and filed as triage rather than changed here mid-flight — the anchor's explicit risk note is that gate changes must not ride along.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "reversibility",
+          "file": "shared/scripts/tools/verifiers/layer_coverage.py",
+          "line": null,
+          "finding": "removal_coverage is documented as running at ALL complexities, but its infra-failure handling is complexity-gated: at small a missing --commit, an unresolvable base ref or a collector exception turns from blocking ERROR into a green SKIP.",
+          "suggestion": "VERIFIED and ENUMERATED in the spec's give-up table; filed to IT-3 as a fail-open path rather than fixed here (same reason as above — it is an F11 verifier, not this run's subject).",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "blast-radius",
+          "file": "docs/guide.md",
+          "line": null,
+          "finding": "Neither the spec nor the guide enumerated what a run gives up when it lands small instead of medium; the guide presented the cap as a pure de-biasing fix.",
+          "suggestion": "FIXED — the spec now carries a full give-up table (7 verifier/gate rows + the Phase Matrix rows), and guide.md states the reduction in plain language alongside the four remaining routes to medium.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "boundary-contract",
+          "file": "plugins/shipwright-iterate/tests/test_touches_build_python_inputs_sync.py",
+          "line": null,
+          "finding": "The AC-7 drift test was untracked and so absent from the reviewed diff; if never git-added, AC-7 ships as nothing.",
+          "suggestion": "FIXED — F6 stages it by explicit path and the staged file list is verified before commit. The review diff was also regenerated from the index so both later reviewers saw all 11 files.",
+          "source": "doubt-reviewer"
+        }
+      ],
+      "provider": "doubt-reviewer",
+      "completed_at": "2026-07-31T08:31:20.830964+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": "openrouter:openai",
+      "completed_at": "2026-07-31T08:30:54.892985+00:00",
+      "disposition": null,
+      "recorded_by": "external_review.py",
+      "parse_status": "unstructured",
+      "raw_excerpt": "[gemini] inputs_sync.py`:\n    ```python\n    @pytest.mark.covers(\"FR-01.11\")\n    def test_every_filename_the_skill_row_names_actually_fires():\n        ...\n        candidates = [\n            t for t in tokens\n            if t and \".\" in t and \"/\" not in t and \" \" not in t\n            and not t.startswith(\".\")\n        ]\n        assert candidates, \"no filename-like tokens parsed out of the row\"\n\n        fills = (\"js\", \"ts\", \"-dev\", \"_prod\", \"json\", \"yaml\")\n        ...\n    ```\n    SKILL.md changes:\n    ```markdown\n    | `touches_build` | the build\n\n[openai] No concrete defects found. The prior ceiling is correctly reduced to `small`, Python build inputs are covered on both diff and message detection surfaces, documentation and export surfaces are updated, and the added tests exercise the acceptance criteria including false-positive guards and documentation drift.\n\nOverall assessment: ship-as-is.\n\nSHIPWRIGHT_VERDICT: approve"
+    }
+  },
+  "gates": {
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": "spec-reviewer",
+      "completed_at": "2026-07-31T08:13:37.391914+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    }
+  }
+}

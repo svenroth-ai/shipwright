@@ -10,6 +10,8 @@ import json
 import sys
 from pathlib import Path
 
+import pytest
+
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from _complexity_test_helpers import (  # noqa: E402
@@ -41,31 +43,60 @@ class TestLoadHistoryPrior:
         seeded_root(tmp_path, ["small", "small", "medium"])
         assert load_history_prior(tmp_path)["prior"] == "small"
 
-    def test_median_odd_upper(self, tmp_path):
+    def test_median_above_ceiling_is_capped(self, tmp_path):
+        # Median is `medium`, but the fall-through may not reach the tier that
+        # buys a spec + mini-plan + approval gate + external plan review.
         seeded_root(tmp_path, ["small", "medium", "medium"])
-        assert load_history_prior(tmp_path)["prior"] == "medium"
+        assert load_history_prior(tmp_path)["prior"] == "small"
 
     def test_median_even_takes_lower_middle(self, tmp_path):
         # Conservative choice, documented in the module: on even counts the
         # lower of the two middle values wins.
-        seeded_root(tmp_path, ["small", "small", "medium", "medium"])
+        #
+        # Levels sit BELOW the ceiling deliberately: with the old
+        # (small, small, medium, medium) seed the clamp rewrote the upper
+        # middle to small too, so flipping `(len-1)//2` to `len//2` kept the
+        # suite green. Here lower = trivial, upper = small.
+        seeded_root(tmp_path, ["trivial", "trivial", "small", "small"])
+        assert load_history_prior(tmp_path)["prior"] == "trivial"
+
+    def test_clamped_to_small(self, tmp_path):
+        # The prior alone must never reach medium (nor the large escape hatch).
+        seeded_root(tmp_path, ["large"] * 5)
         assert load_history_prior(tmp_path)["prior"] == "small"
 
-    def test_clamped_to_medium(self, tmp_path):
-        # The prior alone must never route into the large escape hatch.
-        seeded_root(tmp_path, ["large"] * 5)
-        assert load_history_prior(tmp_path)["prior"] == "medium"
+    @pytest.mark.parametrize("history", [
+        ["large"] * 5,
+        ["medium"] * 5,
+        ["medium", "large", "medium", "large", "medium"],
+        ["small", "medium", "large"],
+        ["trivial", "medium", "medium", "large", "large"],
+    ])
+    def test_prior_never_exceeds_small_whatever_the_history(
+            self, tmp_path, history):
+        """AC-1 — the ceiling holds for every composition, not just all-large.
+
+        This is the ratchet-breaker: a history dominated by the prior's OWN
+        past output can no longer lift the fall-through, because the only
+        levels it can return are trivial and small.
+        """
+        seeded_root(tmp_path, history)
+        assert load_history_prior(tmp_path)["prior"] in ("trivial", "small")
 
     def test_trivial_median_not_lifted(self, tmp_path):
         # No lower clamp: a genuinely trivial-heavy history stays trivial.
+        # AC-2 — the lower half stays adaptive; only the route UP is closed.
         seeded_root(tmp_path, ["trivial"] * 5)
         assert load_history_prior(tmp_path)["prior"] == "trivial"
 
     def test_window_takes_most_recent(self, tmp_path):
-        # 5 oldest are trivial, HISTORY_WINDOW newest are medium → medium.
-        seeded_root(tmp_path, ["trivial"] * 5 + ["medium"] * HISTORY_WINDOW)
+        # 5 oldest trivial, HISTORY_WINDOW newest small. NOTE: `n` only proves
+        # a window was applied (20, not 25) — it cannot say WHICH 20, and an
+        # oldest-20 reader would also median to small here. Recency itself is
+        # pinned by test_jumbled_writes_sorted_window_median.
+        seeded_root(tmp_path, ["trivial"] * 5 + ["small"] * HISTORY_WINDOW)
         result = load_history_prior(tmp_path)
-        assert result["prior"] == "medium"
+        assert result["prior"] == "small"
         assert result["n"] == HISTORY_WINDOW
 
     def test_filter_valid_first_then_window(self, tmp_path):
@@ -89,7 +120,8 @@ class TestLoadHistoryPrior:
         (d / "iterate-2026-03-01-no-date.json").write_text(
             json.dumps(bad), encoding="utf-8")
         result = load_history_prior(tmp_path)
-        assert result["prior"] == "medium"
+        # `n` is the discriminator for the skip; the level is capped at small.
+        assert result["prior"] == "small"
         assert result["n"] == 3
 
     def test_unparseable_date_is_skipped(self, tmp_path):
@@ -97,7 +129,8 @@ class TestLoadHistoryPrior:
         write_entry(tmp_path, "iterate-2026-03-02-bad-date",
                     "not-a-date", "large")
         result = load_history_prior(tmp_path)
-        assert result["prior"] == "medium"
+        # `n` is the discriminator for the skip; the level is capped at small.
+        assert result["prior"] == "small"
         assert result["n"] == 3
 
     def test_naive_date_assumed_utc(self, tmp_path):
@@ -137,7 +170,8 @@ class TestLoadHistoryPrior:
                 encoding="utf-8",
             )
         result = load_history_prior(tmp_path)
-        assert result["prior"] == "medium"
+        # `n` is the discriminator for the skip; the level is capped at small.
+        assert result["prior"] == "small"
         assert result["n"] == 3
 
     def test_run_id_tiebreak_decides_window_cutoff(self, tmp_path):
@@ -154,17 +188,23 @@ class TestLoadHistoryPrior:
                                "complexity": cx, "type": "change",
                                "branch": "b", "tests_passed": True})
 
-        # run-a00 (medium) must be the one dropped → 10 small + 10 medium
-        # remain → lower-middle median = small.
+        # run-a00 (small) must be the one dropped → 10 trivial + 10 small
+        # remain → lower-middle median = trivial. A reader that drops a
+        # `trivial` instead leaves 9 trivial + 11 small → median small.
+        #
+        # Levels sit BELOW the ceiling deliberately: with the original
+        # small/medium pair both the correct and the wrong drop clamped to
+        # `small`, leaving the (date, run_id) tie-break pinned by nothing —
+        # no other test exercises it (the roundtrip uses distinct dates).
         (d / "zzz.json").write_text(
-            entry("iterate-2026-07-01-a00", "medium"), encoding="utf-8")
+            entry("iterate-2026-07-01-a00", "small"), encoding="utf-8")
         for i in range(1, 21):
-            cx = "small" if i <= 10 else "medium"
+            cx = "trivial" if i <= 10 else "small"
             (d / f"a{i:02d}.json").write_text(
                 entry(f"iterate-2026-07-01-b{i:02d}", cx), encoding="utf-8")
         result = load_history_prior(tmp_path)
         assert result["n"] == HISTORY_WINDOW
-        assert result["prior"] == "small"
+        assert result["prior"] == "trivial"
 
     def test_oversized_file_skipped(self, tmp_path):
         seeded_root(tmp_path, ["small"] * 3)
@@ -185,17 +225,34 @@ class TestClassifyPrecedence:
     def test_fallthrough_uses_history(self, tmp_path):
         seeded_root(tmp_path, ["medium"] * 5)
         result = classify(FALLTHROUGH_MSG, project_root=tmp_path)
-        assert result["estimate"] == "medium"
+        assert result["estimate"] == "small"
         assert result["signals"]["prior_source"] == "history"
-        assert result["signals"]["history_prior"] == "medium"
+        # The signal reports the EFFECTIVE prior — the capped level that was
+        # actually used, never the raw median it was derived from.
+        assert result["signals"]["history_prior"] == "small"
         assert result["signals"]["history_n"] == 5
 
     def test_keyword_beats_history(self, tmp_path):
-        seeded_root(tmp_path, ["large"] * 5)  # clamps to medium anyway
+        seeded_root(tmp_path, ["large"] * 5)  # capped to small
         result = classify(KEYWORD_MSG, project_root=tmp_path)
         assert result["estimate"] == "medium"
         assert result["signals"]["prior_source"] == "keyword"
         assert result["signals"]["history_prior"] is None
+
+    def test_measured_history_no_longer_manufactures_medium(self, tmp_path):
+        """AC-3 — the regression this run exists to fix.
+
+        Seeds the window measured on this repo 2026-07-31 (17 medium / 3
+        small, the composition that produced 84% medium classifications) and
+        asserts a no-keyword change is no longer bought a medium phase set.
+        Hermetic on purpose: reading the live store would make the assertion
+        drift with the store it is meant to pin.
+        """
+        seeded_root(tmp_path, ["small"] * 3 + ["medium"] * 17)
+        result = classify("add a missing docstring", project_root=tmp_path)
+        assert result["estimate"] == "small"
+        assert result["signals"]["prior_source"] == "history"
+        assert result["risk_flags"] == []
 
     def test_fallthrough_without_history_is_default(self, tmp_path):
         result = classify(FALLTHROUGH_MSG, project_root=tmp_path)
@@ -211,11 +268,24 @@ class TestClassifyPrecedence:
                     "cross_split", "has_sync_config"):
             assert key in result["signals"]
 
-    def test_risk_floor_does_not_cap_history_prior(self, tmp_path):
+    def test_risk_floor_does_not_cap_a_higher_scope_estimate(self, tmp_path):
+        """The floor is a floor, not a cap — asserted on the KEYWORD branch.
+
+        This previously used the history branch (prior `medium` over a floor of
+        `small`). With the prior capped at `small` that scenario is unreachable
+        by construction: the prior can no longer sit above any floor. The
+        property still matters and is still reachable through a keyword match,
+        so the assertion moves there rather than being dropped.
+        """
         seeded_root(tmp_path, ["medium"] * 5)
-        # 'login' fires touches_auth (floor small); prior medium must win.
-        result = classify("fix the broken login redirect handling",
+        # 'new endpoint' → medium keyword; 'login' fires touches_auth, which
+        # floors at small. max(medium, small) must stay medium.
+        result = classify("add a new endpoint for the login redirect handling",
                           project_root=tmp_path)
+        assert result["signals"]["prior_source"] == "keyword"
+        # Makes the seeding load-bearing rather than decorative: a present
+        # history is short-circuited by the keyword match, never consulted.
+        assert result["signals"]["history_prior"] is None
         assert result["estimate"] == "medium"
         assert "touches_auth" in result["risk_flags"]
 
