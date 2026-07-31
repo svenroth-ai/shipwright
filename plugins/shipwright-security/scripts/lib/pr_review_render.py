@@ -15,7 +15,8 @@ import re
 
 from pr_review_diff_filter import MAX_DIFF_CHARS
 
-__all__ = ["build_pr_meta", "nothing_reviewed_summary", "render_comment", "safe_path"]
+__all__ = ["build_pr_meta", "nothing_reviewed_summary", "render_comment",
+           "safe_path", "strip_display_unsafe"]
 
 # Rendered into a Markdown comment AND an LLM prompt, so strip what could break
 # out of a code span, read as formatting, or start a fresh line.
@@ -34,8 +35,24 @@ __all__ = ["build_pr_meta", "nothing_reviewed_summary", "render_comment", "safe_
 # in an escaping fix.
 # Braces are stripped too: a path literally named `{DIFF}` is legal, and the
 # prompt template is placeholder-based.
-_UNSAFE_IN_DISPLAY = re.compile(
-    "[\x00-\x1f\x7f-\x9f`{}\u200b-\u200f\u2028\u2029\u202a-\u202e\u2066-\u2069\ufeff]")
+# Two concerns, kept apart because they have different sinks.
+#
+# The first is terminal- and tokenizer-safety: a character that a reader's
+# terminal, a Markdown renderer or a tokenizer treats as a line break or a
+# direction change. Every sink needs it. Stripping C0 also means a `gh` error
+# can never carry a newline into an Actions log and forge a `::error::`
+# workflow command out of it.
+_CONTROL_AND_INVISIBLE = (
+    "\x00-\x1f\x7f-\x9f\u200b-\u200f\u2028\u2029\u202a-\u202e\u2066-\u2069\ufeff")
+# The second is Markdown/prompt-safety, and it applies only where the text is
+# rendered INTO a comment or a prompt template: a backtick opens a code span, and
+# a path may legally be named `{DIFF}`. A stderr line has neither problem, and
+# blanking its braces would corrupt the `gh` JSON error it most often carries \u2014
+# the one thing AC8 asks the run to say out loud.
+_MARKDOWN_UNSAFE = "`{}"
+
+_CONTROL_ONLY = re.compile(f"[{_CONTROL_AND_INVISIBLE}]")
+_UNSAFE_IN_DISPLAY = re.compile(f"[{_CONTROL_AND_INVISIBLE}{_MARKDOWN_UNSAFE}]")
 
 # The metadata block sits OUTSIDE the fence in the user template, so a rendered
 # name is unfenced prose in the prompt. `_path_list` bounds how MANY names are
@@ -45,6 +62,23 @@ _MAX_RENDERED_PATH = 160
 
 
 _TRUNCATION_MARKER = "…(truncated)"
+
+
+def strip_display_unsafe(text: str) -> str:
+    """Make arbitrary text safe to print into a log a human reads in a terminal.
+
+    The control-and-invisible half of the alphabet, with neither the Markdown
+    half nor the length bound `safe_path` applies. Its caller is
+    `pr_review_dismiss._inert`, whose payload is a `gh` error: it needs the
+    line-break and direction characters gone, and it needs its braces and
+    backticks intact, because `{"message": "Not Found"}` rendered as
+    `?"message": "Not Found"?` is the run failing to say what happened.
+
+    Exported rather than re-declared per sink so no sink grows its own, weaker
+    class — the enumeration test on `_UNSAFE_IN_DISPLAY` covers this one too,
+    since both are built from `_CONTROL_AND_INVISIBLE`.
+    """
+    return _CONTROL_ONLY.sub("?", str(text or ""))
 
 
 def safe_path(path: str) -> str:
@@ -224,8 +258,9 @@ def render_comment(
         lines += [
             f"> ⚠️ **This PR exceeded the {MAX_DIFF_CHARS:,}-character review limit**, so the "
             "review is **partial** and the check **fails closed**: a human must review "
-            "this PR before merge (a maintainer can apply the `skip-pr-review` label "
-            "after a manual look).",
+            "this PR before merge. A maintainer can apply the `skip-pr-review` label "
+            "after a manual look — note that this greens the check but does **not** "
+            "retract the change-request above, which has to be dismissed by hand.",
             ">",
             *(f"> {d}" for d in detail),
             "",

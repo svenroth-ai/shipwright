@@ -1,0 +1,15 @@
+{
+  "stage": "spec-compliance",
+  "verdict": "PASS",
+  "rounds": 3,
+  "spec_citations": [],
+  "summary": "Round 1 REJECT on two divergences: AC6's 'the refusal is printed, never swallowed silently' clause was implemented but not pinned (all three refusal tests passed a null logger, so deleting the reporting left the suite green), and section 4 specified a dismissal request with event=DISMISS and a message text that neither matched the shipped call, justified by a probe P6 the spec's register did not contain. Round 2 PASS after both were fixed — the reporting is pinned by three tests whose failure was confirmed against pr_review_dismiss.py:154-155 and :181, and section 4 was corrected to the shipped single-field request with P6 recorded. Round 3 re-reviewed because AC5 itself was rewritten after the code-reviewer established that GitHub stamps a review's commit_id at submission time. Verdict: STRENGTHENED, not relaxed — the new antecedent is a strict superset of the old one, the consequent is unchanged, the code conjoins the old term rather than replacing it, all three terms are pinned by independently isolating tests, and the new test would have FAILED the code approved in round 2. AC1-AC8 all satisfied, each by code with at least one test that fails if the behaviour is removed; AC2, AC3 and AC6 strengthened in round 3. Test-module split verified lossless.",
+  "acceptance_criteria": {
+    "AC1": "satisfied", "AC2": "satisfied", "AC3": "satisfied", "AC4": "satisfied",
+    "AC5": "satisfied", "AC6": "satisfied", "AC7": "satisfied", "AC8": "satisfied"
+  },
+  "non_blocking_observations": [
+    "Section 3's Anchoring paragraph told the head-anchoring story alone (stale rather than contradictory) — corrected in the same working tree.",
+    "read_reviewed_head is called without the belt-and-braces try/except that wraps dismiss_own_stale_verdicts; it cannot raise today, so AC6 holds by construction, but the two never-raises functions are guarded asymmetrically."
+  ]
+}

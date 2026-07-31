@@ -123,3 +123,95 @@ class TestReviewState:
                             lambda *a, **k: _Proc(1, "", "rate limited"))
         with pytest.raises(RuntimeError, match="rate limited"):
             G.post_pr_review_state(1, "o/r", "block", "nope")
+
+
+class TestListReviews:
+
+    def test_it_reads_one_merged_array(self, monkeypatch):
+        # gh 2.92 merges the pages itself — measured against PR #446.
+        monkeypatch.setattr(G.subprocess, "run",
+                            lambda *a, **k: _Proc(0, '[{"id": 1}, {"id": 2}]'))
+        assert [r["id"] for r in G.list_pr_reviews(1, "o/r")] == [1, 2]
+
+    def test_it_reads_arrays_concatenated_one_per_page(self, monkeypatch):
+        # …and older releases emit one array per page, back to back. Reading
+        # only the first would silently review half the PR's history and, with
+        # it, silently leave half the stale verdicts in place.
+        monkeypatch.setattr(G.subprocess, "run",
+                            lambda *a, **k: _Proc(0, '[{"id": 1}]\n[{"id": 2}]'))
+        assert [r["id"] for r in G.list_pr_reviews(1, "o/r")] == [1, 2]
+
+    def test_it_asks_for_every_page(self, monkeypatch):
+        captured = {}
+        monkeypatch.setattr(G.subprocess, "run",
+                            lambda cmd, **k: (captured.update(cmd=cmd), _Proc(0, "[]"))[1])
+        G.list_pr_reviews(1, "o/r")
+        assert "--paginate" in captured["cmd"]
+
+    def test_a_failure_raises(self, monkeypatch):
+        monkeypatch.setattr(G.subprocess, "run", lambda *a, **k: _Proc(1, "", "403"))
+        with pytest.raises(RuntimeError, match="403"):
+            G.list_pr_reviews(1, "o/r")
+
+    def test_a_zero_exit_body_that_is_not_json_raises(self, monkeypatch):
+        # `gh` can exit 0 and still hand back something unparseable. It must
+        # raise here so the caller reports "could not read this pull request's
+        # reviews" rather than silently reading it as "no reviews", which would
+        # look exactly like a clean PR.
+        monkeypatch.setattr(G.subprocess, "run", lambda *a, **k: _Proc(0, "not json"))
+        with pytest.raises(ValueError):
+            G.list_pr_reviews(1, "o/r")
+
+    def test_an_error_object_instead_of_an_array_raises(self, monkeypatch):
+        # `gh` exits 0 and hands back `{"message": "Not Found"}`. Returning []
+        # here would report a pull request we could not read as one with no
+        # reviews — the caller would then say "this run's own review is not
+        # visible yet" and the reader would go looking in the wrong place.
+        monkeypatch.setattr(G.subprocess, "run",
+                            lambda *a, **k: _Proc(0, '{"message": "Not Found"}'))
+        with pytest.raises(ValueError, match="array"):
+            G.list_pr_reviews(1, "o/r")
+
+
+class TestDismissReview:
+
+    def test_it_sends_a_put_with_the_required_message(self, monkeypatch):
+        # Probed live: omitting `message` answers `422 "message" wasn't
+        # supplied` BEFORE any other validation, so a wrapper without it would
+        # never dismiss anything and the whole feature would sit silently in its
+        # best-effort failure path.
+        captured = {}
+        monkeypatch.setattr(G.subprocess, "run",
+                            lambda cmd, **k: (captured.update(cmd=cmd), _Proc(0))[1])
+        G.dismiss_pr_review(1, "o/r", 99, "superseded")
+        cmd = captured["cmd"]
+        assert "--method" in cmd and "PUT" in cmd
+        assert "repos/o/r/pulls/1/reviews/99/dismissals" in cmd
+        assert "message=superseded" in cmd
+
+    def test_it_does_not_send_the_undocumented_event_field(self, monkeypatch):
+        # The same probe showed `event=DISMISS` is accepted but changes nothing.
+        # Not part of the documented request, so not sent.
+        captured = {}
+        monkeypatch.setattr(G.subprocess, "run",
+                            lambda cmd, **k: (captured.update(cmd=cmd), _Proc(0))[1])
+        G.dismiss_pr_review(1, "o/r", 99, "superseded")
+        assert not any("event=" in str(part) for part in captured["cmd"])
+
+    def test_a_failure_raises(self, monkeypatch):
+        monkeypatch.setattr(G.subprocess, "run",
+                            lambda *a, **k: _Proc(1, "", "Validation Failed"))
+        with pytest.raises(RuntimeError, match="Validation Failed"):
+            G.dismiss_pr_review(1, "o/r", 99, "superseded")
+
+
+class TestHeadSha:
+
+    def test_it_returns_the_trimmed_sha(self, monkeypatch):
+        monkeypatch.setattr(G.subprocess, "run", lambda *a, **k: _Proc(0, "abc123\n"))
+        assert G.fetch_pr_head_sha(1, "o/r") == "abc123"
+
+    def test_a_failure_raises(self, monkeypatch):
+        monkeypatch.setattr(G.subprocess, "run", lambda *a, **k: _Proc(1, "", "gone"))
+        with pytest.raises(RuntimeError, match="gone"):
+            G.fetch_pr_head_sha(1, "o/r")

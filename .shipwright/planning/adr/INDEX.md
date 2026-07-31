@@ -43,4 +43,5 @@ _Regenerate:_ `uv run {shared_root}/scripts/tools/rebuild_adr_index.py --project
 - [ADR-114 — Report against what will exist, and assert only what you have evidence for](114-report-what-will-exist-not-what-exists-yet.md)
 - [ADR-115 — The requirement write-back loop: one declaration, two call sites](115-requirement-writeback-loop.md)
 - [ADR-116 — A derived view needs a producer on the path that changes it](116-adr-index-has-a-producer.md)
+- [ADR-117 — A passing Tier-3 review retracts its own superseded verdicts](117-retract-your-own-superseded-verdict.md)
 - [Archive — Agent-Doc Update Backlog (verbatim)](_archive-agent-doc-updates.md)
