@@ -1,0 +1,1 @@
+`/shipwright-compliance --refresh-pr` opens a documents-only pull request that brings the committed compliance evidence up to date between releases — same checks and same visibility as any other change, under the operator's own `gh` login. No bot, no deploy key, no exception to the branch-protection rule.

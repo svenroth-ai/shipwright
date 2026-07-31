@@ -100,13 +100,19 @@ class TestBlockRoundTrip:
         # The JSON side keeps the FULL sha — that is the side a gate compares.
         assert to_block(state)["commit"] == SHA
 
-    def test_block_keys_are_the_declared_three(self):
-        assert set(to_block(SourceState()).keys()) == {"run_id", "commit", "dirty"}
+    def test_block_keys_are_the_declared_five(self):
+        # `base` and `release` joined the block with the compliance-evidence
+        # refresh (iterate-2026-07-31-derived-docs-at-release). Additive: every
+        # reader uses .get(), and a pre-refresh block reads them as unresolved.
+        assert set(to_block(SourceState()).keys()) == {
+            "run_id", "commit", "dirty", "base", "release",
+        }
 
     def test_unresolved_fields_serialise_as_null_not_omitted(self):
         # AC7: absent must be visibly absent, never quietly dropped.
         block = to_block(SourceState())
-        assert block == {"run_id": None, "commit": None, "dirty": None}
+        assert block == {"run_id": None, "commit": None, "dirty": None,
+                         "base": None, "release": None}
 
     @pytest.mark.parametrize("junk", [
         None, [], "x", 7,
