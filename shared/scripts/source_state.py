@@ -16,24 +16,23 @@ SHA-primary alternative, and the total resolution contract:
 ``.shipwright/planning/iterate/2026-07-27-artifact-state-stamping.md``.
 
 **Owns the shape, not the policy.** :class:`SourceState`, the banner form, the JSON
-block form. Git resolution — the half that reads the real code version — lives in the
-sibling leaf ``source_state_git.py`` so neither module carries two subjects. Event-log resolution stays with the compliance
-collector, which reads the run id off the *same* work event that produces a
-document's ``Generated:`` timestamp — a second "latest run" implementation here
-would drift and break that guarantee. Nothing here enforces anything; refusing a
-mismatched artifact belongs to the sibling cards owning those gates
-(``trg-12b4cf3f``, ``trg-a1fd8125``).
+block form. Git resolution — the half that reads the real code version — lives in
+the sibling leaf ``source_state_git.py`` so neither module carries two subjects.
+Event-log resolution stays with the compliance collector, which reads the run id
+off the *same* work event that produces a document's ``Generated:`` timestamp — a
+second "latest run" implementation here would drift and break that guarantee.
+Nothing here enforces anything; refusing a mismatched artifact belongs to the
+sibling cards owning those gates (``trg-12b4cf3f``, ``trg-a1fd8125``).
 
 **What is code-resolved, exactly.** ``commit`` and ``dirty`` are read from git by
-this module — they are the pair that binds a record to a *code version*, which is
-the card's actual complaint. ``run_id`` is **declared by the caller**: the run knows
-its own id and passes it, exactly as the ``Run-ID:`` commit trailer and
-``build_dashboard.md``'s ``| Run:`` marker are also written from the run's own
-knowledge. Stated plainly because the campaign's verdict on the neighbouring
-``mode: standalone`` field was that "stamping that field is instruction, not code" —
-so claiming *every* value here is code-resolved would repeat the very overclaim
-this campaign exists to remove. A caller that declares a wrong run id is not
-detected; that would need a gate, which is the sibling cards' scope.
+this module — the pair that binds a record to a *code version*, which is the card's
+actual complaint. ``run_id`` (and ``base``/``release``) are **declared by the
+caller**, exactly as the ``Run-ID:`` commit trailer and ``build_dashboard.md``'s
+``| Run:`` marker are. Stated plainly because the campaign's verdict on the
+neighbouring ``mode: standalone`` field was that "stamping that field is
+instruction, not code" — claiming *every* value here is code-resolved would repeat
+the overclaim this campaign exists to remove. A caller that declares a wrong value
+is not detected; that needs a gate, which is the sibling cards' scope.
 """
 
 from __future__ import annotations
@@ -56,7 +55,7 @@ BANNER_STRIP_RE = re.compile(r"(?m)^Source-State:.*\n?")
 #: Top-level key in ``shipwright_test_results.json``.
 BLOCK_KEY = "source_state"
 
-#: Rendered when the run id could not be resolved. An explicit token, because a
+#: Rendered when the run id could not be resolved — an explicit token, because a
 #: blank ``run=`` reads as a rendering bug rather than as honest absence.
 UNKNOWN_RUN = "(unknown)"
 
@@ -79,6 +78,16 @@ _BANNER_RUN_RE = re.compile(r"\brun=(\S+)")
 _COMMIT_RE = re.compile(r"[0-9a-fA-F]{7,40}")
 _COMMIT_TOKEN = "commit="
 
+#: The fixed point an artifact names instead of pretending to be live. ``base=`` is
+#: NOT ``commit=``: that one is the code version at production time, which for a
+#: branch-local regeneration is the branch's own HEAD and says nothing about which
+#: state the document describes. No "distance from the trunk" token — a number
+#: written into a file is false one merge later. ``release=`` is emitted only by a
+#: release delivery; a documents-only refresh shipped with no release, and naming
+#: the latest tag would claim a membership it does not have.
+_BASE_TOKEN = "base="
+_RELEASE_TOKEN = "release="
+
 #: ``dirty`` is three-valued and the banner says which: modified, clean, or — by
 #: emitting neither token — "git could not answer". Collapsing clean into unknown
 #: would lose exactly the distinction this stamp exists to make.
@@ -100,13 +109,20 @@ class SourceState:
     #: Tracked files modified relative to HEAD at production time. ``None`` when
     #: git could not answer. See :func:`resolve_git_state` for the exact meaning.
     dirty: bool | None = None
+    #: The fixed point — both unresolved unless a shipped refresh set them.
+    base: str | None = None
+    release: str | None = None
 
     def abbreviated(self) -> SourceState:
-        """This state with the commit shortened to the banner's width — the exact
-        round-trip target for :func:`banner_line` → :func:`parse_banner_line`."""
-        if not self.commit:
-            return self
-        return replace(self, commit=self.commit[:SHORT_SHA_LEN])
+        """Commit and base shortened to the banner's width — the round-trip target
+        for :func:`banner_line` → :func:`parse_banner_line`. ``release`` is a tag,
+        never abbreviated: half a version number is a different version."""
+        short = {
+            field: value[:SHORT_SHA_LEN]
+            for field, value in (("commit", self.commit), ("base", self.base))
+            if value
+        }
+        return replace(self, **short) if short else self
 
 
 def safe_run_id(value: Any) -> str | None:
@@ -166,11 +182,27 @@ def banner_line(state: SourceState) -> str:
     commit = safe_commit(state.commit)
     if commit:
         parts.append(f"{_COMMIT_TOKEN}{commit[:SHORT_SHA_LEN]}")
+    base = safe_commit(state.base)
+    if base:
+        parts.append(f"{_BASE_TOKEN}{base[:SHORT_SHA_LEN]}")
+    release = safe_run_id(state.release)
+    if release:
+        parts.append(f"{_RELEASE_TOKEN}{release}")
     if state.dirty is True:
         parts.append(_DIRTY_TOKEN)
     elif state.dirty is False:
         parts.append(_CLEAN_TOKEN)
     return f"{BANNER_PREFIX} " + " ".join(parts)
+
+
+def _first_valid(ordered: list[str], token: str, validate) -> str | None:
+    """First value carried by ``token`` that ``validate`` accepts, else ``None``.
+
+    Ordered, not a ``set``: set iteration is hash-randomised, so a line carrying
+    two such tokens would parse differently run to run, and taking the first
+    *yielded* value could hand back ``None`` while a valid one sat later."""
+    values = (validate(tok[len(token):]) for tok in ordered if tok.startswith(token))
+    return next((value for value in values if value), None)
 
 
 def parse_banner_line(text: str) -> SourceState | None:
@@ -193,16 +225,11 @@ def parse_banner_line(text: str) -> SourceState | None:
     # Exact TOKEN match, never a substring: a run id may legitimately contain the
     # word — a SIMPLIFY-mode run is called `...-cleanup` — and a substring test
     # would read `dirty=None` back as `False`, i.e. silently assert "clean" about a
-    # tree git was never asked about.
-    # Ordered, not a set: `set` iteration is hash-randomised, so a line carrying two
-    # commit= tokens parsed differently run to run — and taking the FIRST yielded
-    # value could hand back None while a valid token sat later in the line.
+    # tree git was never asked about. See `_first_valid` for why order matters.
     ordered = line.split()
-    commit = next(
-        (c for c in (safe_commit(tok[len(_COMMIT_TOKEN):])
-                     for tok in ordered if tok.startswith(_COMMIT_TOKEN)) if c),
-        None,
-    )
+    commit = _first_valid(ordered, _COMMIT_TOKEN, safe_commit)
+    base = _first_valid(ordered, _BASE_TOKEN, safe_commit)
+    release = _first_valid(ordered, _RELEASE_TOKEN, safe_run_id)
     tokens = set(ordered)
     if _DIRTY_TOKEN in tokens:
         dirty: bool | None = True
@@ -210,7 +237,8 @@ def parse_banner_line(text: str) -> SourceState | None:
         dirty = False
     else:
         dirty = None
-    return SourceState(run_id=safe_run_id(run), commit=commit, dirty=dirty)
+    return SourceState(run_id=safe_run_id(run), commit=commit, dirty=dirty,
+                       base=base, release=release)
 
 
 def strip_banner(text: str) -> str:
@@ -230,6 +258,9 @@ def to_block(state: SourceState) -> dict[str, Any]:
         # Validated like the other two: a non-bool would serialise as itself and read
         # back as None, so the block would not round-trip (AC6).
         "dirty": state.dirty if isinstance(state.dirty, bool) else None,
+        # Full 40-hex here (the banner abbreviates); the block is what a gate compares.
+        "base": safe_commit(state.base),
+        "release": safe_run_id(state.release),
     }
 
 
@@ -247,6 +278,8 @@ def from_block(block: Any) -> SourceState:
         run_id=safe_run_id(block.get("run_id")),
         commit=safe_commit(block.get("commit")),
         dirty=dirty if isinstance(dirty, bool) else None,
+        base=safe_commit(block.get("base")),  # absent pre-refresh → unresolved
+        release=safe_run_id(block.get("release")),
     )
 
 
