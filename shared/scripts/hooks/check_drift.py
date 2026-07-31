@@ -291,6 +291,7 @@ def _emit_drift_to_triage(
         if scripts_dir not in sys.path:
             sys.path.insert(0, scripts_dir)
         from triage import (  # noqa: PLC0415
+            StatusPreconditionError,
             append_triage_item_idempotent,
             mark_status,
             read_all_items,
@@ -358,13 +359,26 @@ def _emit_drift_to_triage(
             if dk in current_keys:
                 continue
             try:
+                # expected_status re-checks the `status == "triage"` filter
+                # above INSIDE the store's lock — this loop read the store
+                # unlocked, so an operator decision can have landed since
+                # (trg-93ceb2b0). A refusal means the item is KEPT, which is a
+                # normal outcome and not a failure.
                 mark_status(
                     project_root,
                     item["id"],
                     new_status="dismissed",
                     by="driftDetector",
                     reason="driftResolved",
+                    expected_status="triage",
                 )
+            except StatusPreconditionError as exc:
+                # Guarded: a failure escaping this DIAGNOSTIC write would hit
+                # the outer handler and abandon the rest of the resolve pass.
+                try:
+                    sys.stderr.write(f"[drift] {exc.kept_note}\n")
+                except Exception:  # noqa: BLE001 - reporting never stops the pass
+                    pass
             except Exception as exc:  # noqa: BLE001
                 sys.stderr.write(
                     f"[drift] resolve mark_status failed for "

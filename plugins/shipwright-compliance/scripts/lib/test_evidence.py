@@ -648,18 +648,27 @@ _LAYER_TRIAGE: dict[str, tuple[str, str]] = {
 
 
 def _import_triage_api():
-    """Lazy import of triage helpers (mirrors sbom_generator pattern)."""
+    """Lazy import of triage helpers (mirrors sbom_generator pattern).
+
+    All four names come off the SAME module object, so the ``except`` arm
+    cannot bind a different ``triage`` and silently miss every refusal
+    (external plan review, finding #3). A ``triage`` that predates
+    ``expected_status`` disables this producer via the ``AttributeError`` arm
+    rather than half-working (doubt review, doubt 2).
+    """
     if str(_SHARED_SCRIPTS) not in sys.path:
         sys.path.insert(0, str(_SHARED_SCRIPTS))
     try:
-        from triage import (  # noqa: PLC0415
-            append_triage_item_idempotent,
-            mark_status,
-            read_all_items,
-        )
-        return append_triage_item_idempotent, mark_status, read_all_items
-    except ImportError:
-        return None, None, None
+        import triage  # noqa: PLC0415
+        # Every name off the SAME module object, INSIDE the same try, so the
+        # `except` arm cannot bind a different `triage` (finding #3).
+        return (triage.append_triage_item_idempotent, triage.mark_status,
+                triage.read_all_items, triage.StatusPreconditionError)
+    except (ImportError, AttributeError):
+        # AttributeError too: a `triage` predating `expected_status` must
+        # disable this producer CLEANLY rather than half-work - see the note
+        # in audit/triage_bundle.py (doubt review, doubt 2).
+        return None, None, None, None
 
 
 def _failing_layers(tr) -> tuple[list[tuple[str, int, int, int]], set[str]]:
@@ -802,7 +811,8 @@ def emit_test_failure_triage(
     Returns ``{"appended": N, "dismissed": N, "error"?: str}``.
     """
     project_root = Path(project_root).resolve()
-    append_idempotent, mark_status_fn, read_all_items = _import_triage_api()
+    (append_idempotent, mark_status_fn, read_all_items,
+     precondition_error) = _import_triage_api()
     if append_idempotent is None:
         return {
             "appended": 0,
@@ -888,14 +898,28 @@ def emit_test_failure_triage(
                 # operator can decide.
                 continue
             try:
+                # This loop read the store UNLOCKED; expected_status re-checks
+                # the `status == "triage"` filter under the store's own lock so
+                # an operator decision is not overwritten (trg-93ceb2b0).
                 mark_status_fn(
                     project_root,
                     item["id"],
                     new_status="dismissed",
                     by="testEvidence",
                     reason="testEvidenceResolved",
+                    expected_status="triage",
                 )
                 dismissed += 1
+            except precondition_error as exc:
+                # Decided since the read — KEPT. Out of `dismissed` AND out of
+                # `errors`: a healthy interleaving is not a broken run. GUARDED
+                # for the same reason as the sbom arm — an exception escaping
+                # this diagnostic write would reach the outer handler and turn
+                # the benign outcome into a producer failure after all.
+                try:
+                    sys.stderr.write(f"[test-evidence] {exc.kept_note}\n")
+                except Exception:  # noqa: BLE001 - reporting never fails the run
+                    pass
             except Exception as exc:  # noqa: BLE001
                 errors.append(f"dismiss:{item.get('id', '?')}:{type(exc).__name__}")
     except Exception as exc:  # noqa: BLE001

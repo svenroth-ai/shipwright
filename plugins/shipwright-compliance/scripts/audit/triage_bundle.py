@@ -30,29 +30,43 @@ _SEVERITY_MAP = {
 
 
 def _triage_api():
-    """(append_idempotent, mark_status, read_all_items, should_route_to_outbox).
+    """(append_idempotent, mark_status, read_all_items, should_route_to_outbox,
+    StatusPreconditionError).
 
-    Returns a 4-tuple of (None, None, None, None) when the shared triage module
-    can't be imported (best-effort producer — never blocks the audit).
+    Returns a 5-tuple of ``None`` when the shared triage module can't be
+    imported (best-effort producer — never blocks the audit).
+
+    The exception class is carried out of the SAME import as ``mark_status``
+    rather than imported separately: under this repo's plugin sys.path layout a
+    second import could bind a different ``triage`` module object, and an
+    ``except`` against that other class object would silently miss every
+    precondition refusal (external plan review, finding #3).
     """
     shared_scripts = Path(__file__).resolve().parents[4] / "shared" / "scripts"
     if str(shared_scripts) not in sys.path:
         sys.path.insert(0, str(shared_scripts))
     try:
-        from triage import (  # noqa: PLC0415
-            append_triage_item_idempotent,
-            mark_status,
-            read_all_items,
-            should_route_to_outbox,
-        )
+        import triage  # noqa: PLC0415
         return (
-            append_triage_item_idempotent,
-            mark_status,
-            read_all_items,
-            should_route_to_outbox,
+            triage.append_triage_item_idempotent,
+            triage.mark_status,
+            triage.read_all_items,
+            triage.should_route_to_outbox,
+            # Every name off the SAME module object, INSIDE the same try, so
+            # the `except` arm cannot bind a different `triage` and miss every
+            # refusal (external plan review, finding #3).
+            triage.StatusPreconditionError,
         )
-    except ImportError:
-        return None, None, None, None
+    except (ImportError, AttributeError):
+        # AttributeError too: a `triage` predating `expected_status` (a
+        # partially-synced plugin cache already bound in `sys.modules`) must
+        # disable this producer CLEANLY. A fallback exception class was tried
+        # and removed - it did not defend the skew it named, because the call
+        # site still passes `expected_status=`, so an old `mark_status` raises
+        # TypeError on EVERY flip, the refusal arm never matches, and the
+        # dismiss path dies silently. One visible failure mode beats two
+        # invisible ones (doubt review, doubt 2).
+        return None, None, None, None, None
 
 
 def _normalize_fails(report: Any) -> list[dict[str, str]]:
@@ -131,7 +145,8 @@ def emit_compliance_backlog(
 
     Best-effort: returns ``{"appended","dismissed","open_fails"}``.
     """
-    append_idempotent, mark_status_fn, read_all_items, route = _triage_api()
+    (append_idempotent, mark_status_fn, read_all_items, route,
+     precondition_error) = _triage_api()
     if append_idempotent is None:
         return {"appended": 0, "dismissed": 0, "open_fails": 0}
 
@@ -168,11 +183,24 @@ def emit_compliance_backlog(
             # or tracked), so a no-longer-passed ``to_outbox`` flag can't split
             # the status from its append. The append below still routes by
             # ``to_outbox`` (idle-main background → outbox).
+            # expected_status re-checks `open_compliance`'s status filter under
+            # the store's lock — that list came from an UNLOCKED read, so an
+            # operator decision can have landed since (trg-93ceb2b0).
             mark_status_fn(
                 project_root, item_id, new_status="dismissed",
                 by="complianceBacklog", reason=reason,
+                expected_status="triage",
             )
             return 1
+        except precondition_error as exc:  # the item was decided — KEPT, not failed
+            # Called from inside a `sum(...)`, and this producer is documented
+            # best-effort. An exception escaping the DIAGNOSTIC write would
+            # abort the remaining dismisses and the append after them.
+            try:
+                sys.stderr.write(f"[compliance] {exc.kept_note}\n")
+            except Exception:  # noqa: BLE001 - reporting must never break the sweep
+                pass
+            return 0
         except Exception:  # noqa: BLE001
             return 0
 
