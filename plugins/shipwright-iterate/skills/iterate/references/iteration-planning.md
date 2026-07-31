@@ -11,8 +11,31 @@ Consolidated protocol for: Repo Scout, Mini-Plan, Escape Hatch, External LLM Rev
 ### Quick Scout (trivial/small estimate)
 1. Read `shipwright_sync_config.json` — identify affected FRs
 2. Check affected file count (glob or git diff preview)
-3. Verify risk flags from Stage 1 are accurate
-4. Output: confirm estimate or upgrade
+3. **Run the diff-driven detectors over that file list** and apply their
+   floors — `is_cross_component_change`, `is_ci_supplychain_change`,
+   `is_io_boundary_change`, `touches_build_files` (all importable from
+   `classify_complexity` / `risk_detectors`). **This step is load-bearing, not
+   a nicety.** Stage 1 has no diff: it fires `cross_component` and the rest
+   only from *message* keywords, so a change that touches `hooks.json` or
+   `churn_merge.py` without naming it raises nothing. `cross_component` floors
+   at **medium**, and the F11 verifier `check_integration_coverage` returns a
+   green SKIP whenever the recorded complexity is below medium — it recomputes
+   the flag from the diff, but only after that complexity gate, so the flag's
+   advertised non-dodgeability does not survive a low estimate. The file list
+   from step 2 is already in hand; this is the first point in the run where a
+   diff-shaped signal exists at all.
+4. Verify risk flags from Stage 1 are accurate
+5. Check if the change crosses split boundaries (cheap: the FRs from step 1)
+6. Output: confirm estimate or upgrade
+
+> **Why Quick Scout carries these two steps.** The fall-through prior is capped
+> at `small` (SKILL.md §E), so most no-keyword runs now arrive here rather than
+> at Thorough Scout. The cap's whole justification is that under-classification
+> is recoverable *at Stage 2* — which is only true if the Stage 2 that actually
+> runs can still see cross-component and cross-split changes. Steps 3 and 5
+> are what make that true; without them the recovery mechanism would have been
+> weakened by the same change that started relying on it
+> (iterate-2026-07-31-it5-classification-calibration, doubt review objection 1).
 
 ### Thorough Scout (medium estimate)
 All of Quick Scout, plus:

@@ -1,0 +1,101 @@
+{
+  "stage": "doubt",
+  "gating": "advisory-must-address",
+  "trigger": "irreversible-operations + async/concurrency (a new mutating GitHub API call on a required merge gate)",
+  "verdict": "advisory — addressed",
+  "summary": "11 doubts: 2 high, 6 medium, 3 low. The over-reach direction — where the design concentrated its effort — SURVIVED a determined attempt to break it: CRLF and trailing whitespace, a null/empty/marker-only body, near-miss namespaces, uppercase hex, a 33-character nonce, a planted anchor, a deleted user object, and the model echoing a marker out of the PR's own diff were all refused. So was the claim that housekeeping can never move the exit code or the required check. What did NOT survive was the completeness claim, in exactly the place the run is named for.",
+  "survived": [
+    "It can never dismiss a review that is not its own — attacked via CRLF, trailing whitespace, null/empty/marker-only bodies, quoted markers, near-miss namespaces, uppercase hex, a 33-char nonce, a planted anchor, a deleted user object, and model-echoed markers. The only residual is another GitHub App under the same github-actions[bot] login independently emitting this tool's private 32-hex marker as its final line, which requires implementing our token format.",
+    "It can never change the required check or the exit code — traced end to end including the nothing-reviewed and truncation early returns; the only escapes are a BaseException or a print failure inside main's own handler."
+  ],
+  "doubts": [
+    {
+      "id": "D1",
+      "severity": "high",
+      "lens": "boundary-and-contract",
+      "file": "plugins/shipwright-security/scripts/lib/pr_review_dismiss.py",
+      "disproof_attempt": "The `current_commit` skip reads `commit_id` with the meaning the module spends eight docstring lines refuting. Consequence: a same-head re-review cannot retract this reviewer's own earlier block (and the `labeled` trigger makes same-head re-runs the commonest superseding event this repo produces), and a block a concurrent run posted while the head was here outlives every re-run until a new commit lands. Not listed in the spec at all.",
+      "what_would_resolve_it": "ADDRESSED as the reviewer's option (b) — named, not silently kept. The suggested fix (allow a same-head candidate with a strictly older review `id`) was REJECTED with reasons now in the code and in spec §5b(a): re-running the review is cheap and model output is not deterministic, so clearing a same-head block once a later run passes would let any verdict be re-rolled away by re-reviewing until it agrees. That is a worse failure than a stuck merge. The code comment now reads the skip as 'MIGHT still describe the head', not 'does'."
+    },
+    {
+      "id": "D2",
+      "severity": "high",
+      "lens": "reversibility",
+      "file": "plugins/shipwright-security/scripts/lib/pr_review_dismiss.py",
+      "disproof_attempt": "`PUT …/dismissals` has no inverse, ledger row 27 admits the live behaviour is untested, and there is no kill switch short of a revert PR.",
+      "what_would_resolve_it": "REBUTTED with reasons, recorded in spec §5b. Blast radius is ZERO on the day this merges and grows only over reviews this same code has itself stamped — ownership requires our marker and no review in existence carries one, so the first thing it can dismiss is a change-request this code posted after shipping, guarded by the identity chain Stage 3 could not break. An env gate was considered and not built: it is inert until the workflow passes it, and `.github/workflows/**` is IT-9's tree, so it would read as a safety feature while being none. Recorded as a follow-up beside the other two workflow items."
+    },
+    {
+      "id": "D3",
+      "severity": "medium",
+      "lens": "concurrency-and-ordering",
+      "file": "plugins/shipwright-security/scripts/lib/pr_review_dismiss.py",
+      "disproof_attempt": "No retry when this run's own review is not yet visible in the listing; GitHub REST is not guaranteed read-after-write across a POST then a separate GET. The whole feature is one replication-lag miss from a silent no-op indistinguishable from the defect.",
+      "what_would_resolve_it": "RECORDED, not built (spec §5b, §6.4). The failure is self-healing — the next qualifying run clears the backlog — but it is indistinguishable from the defect while it lasts, which is why it is written down rather than left to be discovered."
+    },
+    {
+      "id": "D4",
+      "severity": "medium",
+      "lens": "hidden-coupling",
+      "file": "plugins/shipwright-security/scripts/lib/pr_review_dismiss.py",
+      "disproof_attempt": "Every decline path reports to the stderr of a job that still exits 0, so the required check goes green and a maintainer must open a PASSING run's logs to find the explanation. FR-01.17 (E)4 asks for the reasons where merge deciders read them. The §1 silence is relocated, not removed.",
+      "what_would_resolve_it": "ACCEPTED as a real incompleteness, recorded. Not fixed here: writing to the PR needs either a second comment (the first is posted before the cleanup runs) or a workflow-level annotation, and the honest version of both belongs with the workflow work in IT-9."
+    },
+    {
+      "id": "D5",
+      "severity": "medium",
+      "lens": "hidden-coupling",
+      "file": "plugins/shipwright-security/scripts/lib/pr_review_render.py",
+      "disproof_attempt": "Option D is not an edge case: `skip-pr-review` is the reviewer's OWN advertised escape hatch, printed on every truncation block. Applying it re-runs the chain, takes the needs_review=false branch, and never clears the change-request the truncation posted — so a maintainer following the printed instruction lands in the defect this run removes.",
+      "what_would_resolve_it": "FIXED, in the half that is in scope. The truncation notice now says the label greens the check but does NOT retract the change-request, which has to be dismissed by hand. Pinned by `test_the_truncation_notice_does_not_promise_an_unblock`. Restated in spec §5b(c); the workflow half stays with IT-9."
+    },
+    {
+      "id": "D6",
+      "severity": "medium",
+      "lens": "boundary-and-contract",
+      "file": "plugins/shipwright-security/tests/test_pr_review_stale_verdicts.py",
+      "disproof_attempt": "The ledger's flagship mutation-verified test survives a DUPLICATE-read mutation: `order[:2]` is a prefix slice, and `fake_head` returned one constant so `cleanup_sha == reviewed_sha` compared a value with itself. Keep the pre-diff read, add a second one at the cleanup, and the three-term guard collapses to two while every test stays green.",
+      "what_would_resolve_it": "FIXED and re-verified by mutation. The assertion is now exact (`order == ['head','diff']`) plus a count assertion, and `fake_head` returns a different sha per call. The duplicate-read mutation now fails 2 tests (was: 0)."
+    },
+    {
+      "id": "D7",
+      "severity": "medium",
+      "lens": "boundary-and-contract",
+      "file": "plugins/shipwright-security/scripts/lib/pr_review_dismiss.py",
+      "disproof_attempt": "The nonce's unguessability is the stated security argument for the anchor, and every past nonce is PUBLISHED in a review body. Swapping `secrets.token_hex` for `uuid1().hex` or `random.getrandbits` leaves both nonce tests green.",
+      "what_would_resolve_it": "FIXED — `test_it_comes_from_the_cryptographic_source` monkeypatches `D.secrets.token_hex` and asserts `new_nonce()` routes through it with 16 bytes."
+    },
+    {
+      "id": "D8",
+      "severity": "medium",
+      "lens": "boundary-and-contract",
+      "file": "plugins/shipwright-security/tests/_pr_review_fixtures.py",
+      "disproof_attempt": "Zero fixtures resemble the encoding of the data being parsed. Real bodies come back with CRLF; `_own_marker` survives only because of a trailing `.strip()`. Delete that as a tidy-up and all 27 ledger behaviours stay green while the feature dies completely against live GitHub, emitting the misleading 'not visible yet' message.",
+      "what_would_resolve_it": "FIXED — new `crlf_body()` fixture and `test_a_body_as_github_actually_returns_it_is_recognised`, asserting the CRLF form is recognised as both anchor and candidate. The `.strip()`'s load-bearing role is now named in the docstring."
+    },
+    {
+      "id": "D9",
+      "severity": "low",
+      "lens": "boundary-and-contract",
+      "file": "plugins/shipwright-security/scripts/tools/pr_review.py",
+      "disproof_attempt": "`stamp_review_body` was called inside the `for` statement's iterable tuple, which Python evaluates before entering the body — i.e. outside the try that implements the best-effort contract. Structural rather than live (no input was found that makes it raise), but it is the one new call outside the guard.",
+      "what_would_resolve_it": "FIXED — hoisted above the loop with a comment naming why."
+    },
+    {
+      "id": "D10",
+      "severity": "low",
+      "lens": "hidden-coupling",
+      "file": "plugins/shipwright-security/scripts/lib/pr_review_dismiss.py",
+      "disproof_attempt": "Post-review drift: after the `_CONTROL_ONLY` split, `_inert`'s docstring still claimed it reuses the same alphabet and that a sink with its own regex ends up weaker — it now IS narrower, on purpose. The sanitiser test module said the same. And the enumeration test covered only `_UNSAFE_IN_DISPLAY`, so a direct narrowing of `_CONTROL_ONLY` would pass.",
+      "what_would_resolve_it": "FIXED — both docstrings rewritten to state the narrowing and why (a blanked-brace `gh` JSON error is the run failing to say what happened), and `test_its_alphabet_is_the_union_minus_exactly_the_markdown_three` pins the narrower class against the enumerated union."
+    },
+    {
+      "id": "D11",
+      "severity": "low",
+      "lens": "reversibility",
+      "file": "plugins/shipwright-security/scripts/lib/pr_review_render.py",
+      "disproof_attempt": "The working tree drifted mid-review; Stages 1 and 2 passed against a state no longer on disk.",
+      "what_would_resolve_it": "ADDRESSED — the diff was regenerated after every change and the final tree re-verified (886 passed, ruff clean, every touched file within the 300-line guideline). The drift was the `_CONTROL_ONLY` split, which Stage 2 itself asked for in the same round."
+    }
+  ]
+}

@@ -1,0 +1,1 @@
+the F5c iterate entry records `prior_source` (`keyword` | `history` | `default`), so the complexity ladder records why a tier was chosen and not only what. Without it, how often the history prior decided a run was unmeasurable in either direction.

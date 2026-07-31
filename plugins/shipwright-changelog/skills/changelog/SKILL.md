@@ -91,9 +91,9 @@ Parse JSON output for git state, last tag, and unreleased commits.
 ## Step 0: Phase Session Context Recovery
 
 If the orchestrator handed you a `phaseTaskId`, the `get_phase_context.py` call you
-already made in **Detect Invocation Mode** is the same one this step needs — reuse
-that payload rather than re-deriving anything. Read its `skill_artifacts_to_read`
-list before proceeding. No `phaseTaskId` → standalone; continue with Step 1.
+already made in **Detect Invocation Mode** is the one this step needs — reuse that
+payload and read its `skill_artifacts_to_read` list before proceeding. No
+`phaseTaskId` → standalone; continue with Step 1.
 
 ---
 
@@ -256,37 +256,38 @@ If edit: apply changes and re-preview.
 ## Step 5.5: Refresh the Compliance Evidence Documents
 
 The seven documents under `.shipwright/compliance/` ship *with* the release
-instead of standing frozen. Why, and what every refusal means:
-[compliance-evidence.md](references/compliance-evidence.md).
+instead of standing frozen. Why, and every refusal: [compliance-evidence.md](references/compliance-evidence.md).
 
 ```bash
-uv run "{shared_root}/scripts/tools/refresh_compliance_docs.py"   --project-root "$(pwd)" --stage --release "v{version}"
+uv run "{shared_root}/scripts/tools/refresh_compliance_docs.py" \
+  --project-root "$(pwd)" --stage --release "v{version}"
 ```
 
 `status: "ok"` → proceed. **Anything else → stop, do not tag.**
 
 ## Step 6: Commit and Tag
 
-Commit **by explicit pathspec** — never `.shipwright/compliance/`, which would
-commit every tracked file under it and widen the pinned seven. Use the paths
-Step 5.5 printed in `evidence_pathspec` (it omits any this project does not have,
-and a pathspec matching no file aborts the whole commit).
+Commit **by explicit pathspec** — never `.shipwright/compliance/`, which commits
+every tracked file under it and widens the pinned seven. Use Step 5.5's
+`evidence_pathspec`: it omits any path this project lacks, and a pathspec matching
+no file aborts the whole commit.
 
 ```bash
 git add CHANGELOG.md
 git add .shipwright/agent_docs/decision_log.md            # if Step 4 folded any decision-drops
-git add .shipwright/planning/adr/                         # if dirty — see below
-git commit -m "chore(release): v{version}" --   CHANGELOG.md .shipwright/agent_docs/decision_log.md .shipwright/planning/adr/   <every path from evidence_pathspec>
+git add .shipwright/planning/adr/                         # if dirty - see below
+git commit -m "chore(release): v{version}" -- \
+  CHANGELOG.md .shipwright/agent_docs/decision_log.md .shipwright/planning/adr/ \
+  <every path from evidence_pathspec>
 git tag -a v{version} -m "Release v{version}"
 
-# `git commit -- <paths>` records the WORKTREE, not the index, so a writer
-# between Step 5.5 and here substitutes unstamped bytes silently. Non-zero
-# here means: do not push the tag.
-uv run "{shared_root}/scripts/tools/refresh_compliance_docs.py"   --project-root "$(pwd)" --verify-commit "$(git rev-parse HEAD)"
+# `git commit -- <paths>` records the WORKTREE, not the index: a writer between
+# Step 5.5 and here substitutes unstamped bytes silently. Non-zero → do not tag.
+uv run "{shared_root}/scripts/tools/refresh_compliance_docs.py" \
+  --project-root "$(pwd)" --verify-commit "$(git rev-parse HEAD)"
 ```
 
-> `.shipwright/planning/adr/` is staged as a DIRECTORY deliberately, unlike the
-> evidence paths — see [compliance-evidence.md](references/compliance-evidence.md).
+> `.shipwright/planning/adr/` is a DIRECTORY pathspec deliberately, and leaving it unstaged breaks CI — both in [compliance-evidence.md](references/compliance-evidence.md).
 
 ---
 

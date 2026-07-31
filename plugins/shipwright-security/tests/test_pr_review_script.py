@@ -87,6 +87,14 @@ def _wire(monkeypatch, *, review_json=None, diff="diff --git a b\n+x\n", raise_c
         pr_review, "post_pr_review_state",
         lambda pr, repo, decision, summary: posted.update(state=decision),
     )
+    # Clearing this reviewer's superseded verdicts talks to `gh`, and so does
+    # reading the head it needs. Patched here only to keep this suite offline —
+    # WHEN the cleanup may run is pinned in test_pr_review_stale_verdicts.py.
+    monkeypatch.setattr(pr_review, "read_reviewed_head", lambda pr, repo: "headsha")
+    monkeypatch.setattr(
+        pr_review, "dismiss_own_stale_verdicts",
+        lambda pr, repo, *, nonce, reviewed_sha: None,
+    )
     return posted
 
 

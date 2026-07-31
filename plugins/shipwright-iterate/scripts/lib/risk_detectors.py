@@ -13,9 +13,19 @@ the ``shared.contracts.iterate`` cross-plugin contract, the test plugin's
 boundary-coverage report, and the detector tests — keep resolving them from
 their original home). New consumers may import from here directly.
 
+**These detectors have no in-repo production caller.** SKILL.md Step E runs the
+classifier with ``--message`` only, so within a session it is the *message*
+patterns in ``RISK_TAXONOMY`` that decide a risk flag; the functions here are
+**contract surface** for ``shared.contracts.iterate`` consumers and for the
+Repo Scout, which runs them over the changed-file list at Stage 2
+(``references/iteration-planning.md``). Widening one surface without the other
+therefore changes nothing a run can observe — the mistake
+iterate-2026-07-31-it5-classification-calibration was written to avoid.
+
 Stable surface
 --------------
-* :func:`touches_build_files` / :data:`TOUCHES_BUILD_FILE_PATTERNS`
+* :func:`touches_build_files` / :data:`TOUCHES_BUILD_FILE_PATTERNS` +
+  :data:`TOUCHES_BUILD_BASENAME_GLOBS`
 * :func:`is_io_boundary_change` / :data:`IO_BOUNDARY_FILE_PATTERNS`
 * :func:`is_cross_component_change` / :data:`CROSS_COMPONENT_FILE_PATTERNS`
 * :func:`is_ci_supplychain_change` / :data:`CI_SUPPLYCHAIN_FILE_PATTERNS`
@@ -24,9 +34,27 @@ Stable surface
 from __future__ import annotations
 
 import re
+# fnmatchCASE, not fnmatch: plain fnmatch runs os.path.normcase first, so on
+# Windows it lowercases and `REQUIREMENTS.TXT` would fire there and not on
+# Linux. A risk gate must not depend on the operating system it runs on, and
+# the exact-basename half of this detector is case-sensitive already.
+from fnmatch import fnmatchcase
 
-# File-glob patterns for diff-driven touches_build detection (basename match).
+# Exact basenames for diff-driven touches_build detection.
+#
+# JS *and* Python build inputs. The list was JS-only until
+# iterate-2026-07-31-it5-classification-calibration, so in this Python monorepo
+# a dependency change raised no risk flag at all — `uv.lock`, `poetry.lock`,
+# `requirements*.txt`, `Pipfile.lock` and `pyproject.toml` were invisible to a
+# detector whose documented job is "dependency / build-config changes"
+# (trg-496e63a7).
+#
+# Scope is deliberately JS + Python: those are the measured finding and this
+# repo's stack. Rust / Go / Ruby / PHP inputs are NOT added — widening to
+# ecosystems nobody has measured here is guessing, and a wrong entry costs a
+# false risk flag on every future iterate that touches the file.
 TOUCHES_BUILD_FILE_PATTERNS = (
+    # JavaScript / TypeScript
     "package.json", "package-lock.json", "yarn.lock",
     "pnpm-lock.yaml", "bun.lockb", "npm-shrinkwrap.json",
     "next.config.js", "next.config.ts", "next.config.mjs", "next.config.cjs",
@@ -35,20 +63,67 @@ TOUCHES_BUILD_FILE_PATTERNS = (
     "webpack.config.js", "webpack.config.ts",
     "rollup.config.js", "rollup.config.ts", "rollup.config.mjs",
     "tsconfig.json",
+    # Python — `pyproject.toml` is the direct counterpart of `package.json`,
+    # so omitting it would reproduce the same blindness one level up.
+    "uv.lock", "poetry.lock", "Pipfile", "Pipfile.lock",
+    "pyproject.toml", "setup.py", "setup.cfg",
 )
+
+# Basename GLOBS, for the build-input families whose names cannot be
+# enumerated as literals (`requirements.txt`, `requirements-dev.txt`,
+# `requirements_prod.txt`, …).
+#
+# Kept separate from TOUCHES_BUILD_FILE_PATTERNS on purpose: that tuple's
+# contract is exact-basename matching, pinned by
+# `test_touches_build_files_does_not_match_partial_basename`
+# (`my-package.json` must NOT fire), and its meta-test instantiates every entry
+# as a literal filename. Folding wildcards in would make both silently
+# meaningless. fnmatch anchors the whole basename, so `my-requirements.txt` and
+# `requirements.txt.bak` do not fire here — and, since the token guards added
+# to the RISK_TAXONOMY message patterns in the same change, they do not fire on
+# the message surface either. The two surfaces agree on whole-filename
+# matching; that parity is asserted, not assumed
+# (test_a_longer_token_containing_a_build_input_does_not_fire).
+TOUCHES_BUILD_BASENAME_GLOBS = (
+    "requirements*.txt",
+)
+
+
+def _normalize_diff_path(path: str) -> str:
+    """Repo-relative POSIX path, as every diff-driven detector needs it.
+
+    `git` quotes non-ASCII paths by default (core.quotePath), so a path can
+    arrive wrapped in double quotes. A leading quote defeats a `^` anchor, and
+    a trailing one corrupts the basename — both make a detector silently stay
+    down. Shared by the CI-supply-chain and build detectors so the two cannot
+    drift apart on what a path is.
+    """
+    norm = path.replace("\\", "/").strip()
+    if len(norm) >= 2 and norm.startswith('"') and norm.endswith('"'):
+        norm = norm[1:-1]
+    return norm
 
 
 def touches_build_files(changed_files: list[str]) -> bool:
     """Return True if any changed file matches a build-touching pattern.
 
     Diff-driven detection — caller passes `git diff --name-only` output.
-    Match is by basename only (path-agnostic).
+    Match is by basename only (path-agnostic): an exact hit in
+    TOUCHES_BUILD_FILE_PATTERNS, or an fnmatch hit in
+    TOUCHES_BUILD_BASENAME_GLOBS.
     """
     if not changed_files:
         return False
     for path in changed_files:
-        name = path.replace("\\", "/").rsplit("/", 1)[-1]
+        # Strip git's core.quotePath wrapping BEFORE taking the basename: a
+        # non-ASCII path arrives as `"tools/tempf\303\266rderung/uv.lock"`, and
+        # the trailing quote would otherwise leave a basename of `uv.lock"`
+        # that matches neither the tuple nor the glob — the detector silently
+        # staying down on exactly the paths most likely to be overlooked.
+        name = _normalize_diff_path(path).rsplit("/", 1)[-1]
         if name in TOUCHES_BUILD_FILE_PATTERNS:
+            return True
+        if any(fnmatchcase(name, g) for g in TOUCHES_BUILD_BASENAME_GLOBS):
             return True
     return False
 
@@ -163,15 +238,6 @@ CI_SUPPLYCHAIN_FILE_PATTERNS = (
 )
 
 
-def _normalize_ci_path(path: str) -> str:
-    """Repo-relative POSIX path. `git` quotes non-ASCII paths by default
-    (core.quotePath), and a leading quote would defeat the `^` anchor."""
-    norm = path.replace("\\", "/").strip()
-    if len(norm) >= 2 and norm.startswith('"') and norm.endswith('"'):
-        norm = norm[1:-1]
-    return norm
-
-
 def is_ci_supplychain_change(changed_files: list[str] | None) -> bool:
     """Return True if any changed file is part of the CI supply-chain trust
     boundary (workflows, the dependency-updater config, composite actions).
@@ -183,7 +249,7 @@ def is_ci_supplychain_change(changed_files: list[str] | None) -> bool:
     if not changed_files:
         return False
     for path in changed_files:
-        normalized = _normalize_ci_path(path)
+        normalized = _normalize_diff_path(path)
         for pattern in CI_SUPPLYCHAIN_FILE_PATTERNS:
             if re.search(pattern, normalized):
                 return True

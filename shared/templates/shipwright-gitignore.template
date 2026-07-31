@@ -93,6 +93,11 @@
 # events.jsonl (campaign + sub_iterate_id event extras). Already-tracked campaigns
 # stay tracked (gitignore affects only untracked paths).
 /.shipwright/planning/iterate/campaigns/
+# The ADR index is written through `durable_atomic_write`, which stages a
+# same-directory temp file before the rename. `/.shipwright/planning/` is
+# re-included wholesale above, and F6 stages that folder with a directory-level
+# `git add`, so a temp left behind by a hard-killed run would be COMMITTED.
+/.shipwright/planning/adr/*.tmp
 # Defensive (non-anchored): a stray nested `.shipwright/locks/` (e.g. a bloat
 # marker written by a hook whose cwd != repo-root) must never leak. The
 # root-anchored `/.shipwright/*` above misses nested copies. The real fix is the

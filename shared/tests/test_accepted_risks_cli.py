@@ -87,9 +87,29 @@ class TestCliInProcess:
         assert "no drift" in out
         assert "register entr" in out
 
-    def test_check_without_register_is_a_noop(self, tmp_path, capsys):
+    def test_check_without_register_says_so_and_still_reconciles(
+            self, tmp_path, capsys):
+        """No register + no suppressions is clean — but say WHY it was clean.
+
+        Silence would read the same as it did when the gate skipped the
+        comparison outright; the operator has to be able to tell "reconciled
+        against an empty record" from "did not look".
+        """
         assert cli.cmd_check(_repo(tmp_path, register=None)) == 0
-        assert "nothing to reconcile" in capsys.readouterr().out
+        out = capsys.readouterr().out
+        assert "no register" in out
+        assert "reconciling" in out and "no drift" in out
+
+    def test_check_without_register_reports_a_live_suppression(
+            self, tmp_path, capsys):
+        root = _repo(
+            tmp_path, register=None,
+            workflow_env="          SHIPWRIGHT_SEMGREP_EXCLUDE_RULES: some.live.rule\n",
+        )
+        assert cli.cmd_check(root) == 1, (
+            "deleting the register must not silence a live suppression")
+        out = capsys.readouterr().out
+        assert "UNRECORDED" in out and "some.live.rule" in out
 
     def test_check_reports_stale_entry(self, tmp_path, capsys):
         root = _repo(tmp_path, register=_register("gone.rule.id",
@@ -170,9 +190,19 @@ def test_main_fails_closed_on_a_malformed_register(tmp_path):
     assert "invalid" in proc.stderr.lower()
 
 
-def test_main_is_a_noop_without_a_register(tmp_path):
+def test_main_without_a_register_passes_only_when_nothing_is_suppressed(tmp_path):
     proc = _run(_repo(tmp_path, register=None), "check")
-    assert proc.returncode == 0, "an absent register is a legacy repo, not an error"
+    assert proc.returncode == 0, "a fresh repo suppresses nothing and is not an error"
+
+
+def test_main_without_a_register_exits_nonzero_on_a_live_suppression(tmp_path):
+    root = _repo(
+        tmp_path, register=None,
+        workflow_env="          SHIPWRIGHT_SEMGREP_EXCLUDE_RULES: some.live.rule\n",
+    )
+    proc = _run(root, "check")
+    assert proc.returncode == 1, proc.stdout + proc.stderr
+    assert "UNRECORDED" in proc.stdout
 
 
 @pytest.mark.parametrize("command", ["check", "expire"])
