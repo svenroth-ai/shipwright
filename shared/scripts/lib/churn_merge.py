@@ -65,11 +65,17 @@ CI_SECURITY_SUMMARY = ".shipwright/compliance/ci-security.json"
 #: ``--theirs`` in iterate #391.)
 TEST_TRACEABILITY = ".shipwright/compliance/test-traceability.json"
 
+#: The ADR spec folder's generated index — the one entry an iterate BRANCH
+#: legitimately carries, which is what created this conflict class. Resolved like
+#: a DERIVED_MD (``--theirs``, then re-derive). Why: ADR-118 + the doc table row.
+ADR_INDEX = ".shipwright/planning/adr/INDEX.md"
+
 #: Everything the resolver may auto-resolve. A conflict outside this set aborts.
 #: NOTE: ``.shipwright/agent_docs/architecture.md`` is intentionally absent
 #: (curated prose — must reach a human; folds external-review G4/O1).
 CHURN_ALLOWLIST: frozenset[str] = DERIVED_MDS | {
     EVENTS_LOG, TEST_RESULTS, TRIAGE_LOG, CI_SECURITY_SUMMARY, TEST_TRACEABILITY,
+    ADR_INDEX,
 }
 
 #: Per-campaign status boards (campaign 2026-06-07-tracked-campaign-status, S3)
