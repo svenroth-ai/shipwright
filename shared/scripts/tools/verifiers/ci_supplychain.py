@@ -46,8 +46,7 @@ from .git_blob_read import (  # noqa: E402
     content_fingerprint,
     worktree_bytes_reader,
 )
-from .git_helpers import _run_git  # noqa: E402
-from .integration_coverage import _iterate_changed_paths  # noqa: E402
+from .git_helpers import _iterate_changed_paths, _run_git  # noqa: E402
 
 # Self-contained copy of ``risk_detectors.CI_SUPPLYCHAIN_FILE_PATTERNS`` so this
 # load-bearing verifier never cross-plugin-imports the iterate-plugin lib
@@ -194,9 +193,12 @@ def check_ci_supplychain_ack(
             "the CI trust boundary as untouched",
         )
     changed = _iterate_changed_paths(project_root, commit)
-    # `[]` reaches us from the merge-commit fallback (`git show --name-only` prints
-    # no filenames for a merge), which is indistinguishable from "diff unavailable".
-    if not changed:
+    # `is None`, not `not changed`. The branch-view helper now signals ignorance as
+    # None, so `[]` means one thing only: this branch has no net change vs the trunk.
+    # Refusing on that would hard-FAIL a commit-then-revert branch with a message
+    # naming a cause that did not occur and no remedy that clears it. Ignorance still
+    # refuses — that posture is deliberate here and stricter than the sibling gates'.
+    if changed is None:
         return CheckResult(
             name, False,
             f"cannot obtain the diff for {commit[:8]} — refusing to certify "

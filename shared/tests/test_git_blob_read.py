@@ -37,7 +37,7 @@ from tools.verifiers.git_blob_read import (  # noqa: E402
     content_fingerprint,
     worktree_bytes_reader,
 )
-from tools.verifiers.integration_coverage import _iterate_changed_paths  # noqa: E402
+from tools.verifiers.git_helpers import _iterate_changed_paths  # noqa: E402
 
 _WF = ".github/workflows/ci.yml"
 

@@ -1,11 +1,10 @@
-"""Real-git half of the derived-snapshot suite: `integrate` and the F11 gate
+"""What `integrate` DOES to the derived snapshots, on real git
 (iterate-2026-07-27-derived-snapshots-off-branch).
 
-The unit half — the registry and `restore_derived_to_head` — is in
-test_derived_snapshots.py. The run-written path is its own subject and its own pair of
-files: test_derived_snapshots_run_written.py (unit) and
-test_run_written_ledger_integrate.py (real git). Helpers come from test_integrate_main
-rather than being duplicated, the same way test_integrate_main_commit_failures does.
+Three neighbours, one subject each: test_derived_snapshots.py is the registry and
+`restore_derived_to_head` as units; test_derived_snapshot_gate.py is what F11 SEES
+afterwards; test_run_written_ledger_integrate.py is the ledger carve-out. Helpers come
+from test_integrate_main rather than being duplicated.
 
 What these pin, beyond "the snapshot is absent": a BEHIND branch must still merge.
 F5a/F5b regenerate the snapshots mid-run and F6 no longer commits them, so they sit
@@ -128,83 +127,3 @@ def test_a_behind_branch_still_merges_and_the_run_stays_evidenced(
     entry = f'{{"run_id": "{_RUN_ID}", "type": "change"}}\n'
     _write(wt, f".shipwright/agent_docs/iterates/{_RUN_ID}.json", entry)
     assert check_build_dashboard_has_run_id(wt, _RUN_ID).is_skipped
-
-
-# --- the F11 gate -----------------------------------------------------------
-
-def test_gate_catches_a_derived_snapshot_that_reached_the_commit(git_origin_repo) -> None:
-    """F6's add-list is prose; this is the mechanism. A stray `git add -A` is the
-    realistic way the conflict class comes back, so the gate must SEE it."""
-    from tools.verifiers.derived_snapshot_gate import check_no_derived_snapshots_committed
-
-    work, _origin = git_origin_repo
-    _set_repo_identity(work)
-    _write(work, "app.py", "real change\n")
-    _write(work, _DASH, "a derived view that should not be here\n")
-    _git(work, "add", "-A")  # the stray blanket add
-    _git(work, "commit", "-m", "feat: something, plus an accident")
-
-    result = check_no_derived_snapshots_committed(work, _RUN_ID, "HEAD")
-
-    assert result.ok is False
-    assert _DASH in result.detail
-    # ERROR, not WARNING — external review's point: F11 runs the verifier WITHOUT
-    # --strict, so a warning here is indistinguishable from no check at all and the
-    # stray commit merges anyway. A thing called a gate has to gate.
-    from tools.verifiers.common import Severity
-    assert result.severity == Severity.ERROR.value
-
-
-def test_gate_passes_a_commit_that_touches_only_real_files(git_origin_repo) -> None:
-    from tools.verifiers.derived_snapshot_gate import check_no_derived_snapshots_committed
-
-    work, _origin = git_origin_repo
-    _set_repo_identity(work)
-    _write(work, "app.py", "real change\n")
-    _git(work, "add", "--", "app.py")
-    _git(work, "commit", "-m", "feat: source only")
-
-    assert check_no_derived_snapshots_committed(work, _RUN_ID, "HEAD").ok is True
-
-
-def test_gate_skips_rather_than_invents_when_it_cannot_read_the_commit(git_origin_repo) -> None:
-    """Fail-open on an unreadable repo — the same posture as the other
-    commit-scoped iterate checks. A gate that manufactures findings from a bad
-    ref trains people to ignore it."""
-    from tools.verifiers.derived_snapshot_gate import check_no_derived_snapshots_committed
-
-    work, _origin = git_origin_repo
-    _set_repo_identity(work)
-
-    assert check_no_derived_snapshots_committed(work, _RUN_ID, "").is_skipped
-    assert check_no_derived_snapshots_committed(work, _RUN_ID, "no-such-ref").is_skipped
-
-
-# --- the remedy the gate prints (trg-ad29a709) -------------------------------
-
-def test_the_remedy_never_offers_worktree_for_a_run_written_path():
-    """The gate's own instructions must not destroy the ledger the carve-out saves.
-
-    `git restore --staged --worktree` on `shipwright_test_results.json` resets the file
-    on disk to its pre-iterate state, wiping the block F5 just wrote — trg-ad29a709
-    verbatim, reachable by following this gate's printed remedy, which is exactly what
-    an operator copies under time pressure. Unstaging alone clears the gate.
-    """
-    from lib.churn_merge import TEST_RESULTS
-    from tools.verifiers.derived_snapshot_gate import _restore_flags
-
-    assert _restore_flags([TEST_RESULTS]) == "--staged"
-    # ...and mixed offenders take the safe flag too: one run-written path in the list
-    # is enough, because the operator pastes ONE command for all of them.
-    assert _restore_flags([TEST_RESULTS, ".shipwright/compliance/sbom.md"]) == "--staged"
-
-
-def test_the_remedy_still_cleans_the_worktree_for_derived_paths():
-    """The other branch, pinned so a future edit cannot quietly drop `--worktree` for
-    the paths where it is correct: a derived snapshot left dirty keeps the tree unclean
-    and a later merge can refuse."""
-    from tools.verifiers.derived_snapshot_gate import _restore_flags
-
-    assert _restore_flags([".shipwright/compliance/sbom.md"]) == "--staged --worktree"
-    assert _restore_flags([".shipwright/compliance/dashboard.md",
-                           ".shipwright/agent_docs/triage_inbox.md"]) == "--staged --worktree"

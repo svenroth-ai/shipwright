@@ -154,6 +154,20 @@ artifact has exactly one documented resolution strategy:
 > `shared/scripts/lib/derived_snapshots.py`. Gate:
 > `verifiers/derived_snapshot_gate.check_no_derived_snapshots_committed`.
 >
+> **That gate's subject is the BRANCH, not the commit at the tip — and it was not,
+> for a while.** F11 runs `ensure_current` *before* the verifier and then hands the
+> verifier `--commit "$(git rev-parse HEAD)"`. On a branch that was behind, HEAD is
+> by then the MERGE the integrate just made, and a merge commit's changed-path set
+> does not contain what the iterate's own commit carried. Measured on PR #493: the
+> merge showed 5 paths and 0 forbidden ones while the commit below it carried 11.
+> Eight of `main`'s last forty commits carry a forbidden derived path; five of those
+> landed *after* this gate went live. It is why `shipwright_test_results.json` still
+> moves on `main`, which is what falsified the premise behind the run-written
+> carve-out above. Every gate asking "what did this branch change?" therefore reads
+> `git_helpers._iterate_changed_paths` (merge-base…HEAD), and an EMPTY answer is
+> reported **skipped**, never clean — a merge HEAD reports no paths, so "clean"
+> cannot be told from "blind".
+>
 > **Ten of the eleven, not all eleven** (trg-ad29a709). The restore resets
 > `RESTORABLE_SNAPSHOTS` — everything a producer can RE-DERIVE.
 > `shipwright_test_results.json` is excluded, because the run WRITES it (the F5
@@ -324,6 +338,15 @@ or merges stale (Group-E staleness noise). The contract:
   `integrate_main`) BEFORE arming auto-merge: if the branch is behind
   `origin/<default>` it merges + regenerates first (clean no-op if current), so the
   PR always arms from a current, already-regenerated tree.
+  **Consequence every later check must respect:** running it first means the
+  verifier's `--commit HEAD` can be a MERGE commit rather than the iterate's own, so
+  a commit-scoped gate is blind to what the branch actually contributed. Ask
+  `git_helpers._iterate_changed_paths`, not `_commit_changed_paths` — see the
+  derived-snapshot note in the write-matrix section for the measurement.
+  As of 2026-07-30 the `main-protection` ruleset no longer sets
+  `strict_required_status_checks_policy`, so being behind is no longer a *merge*
+  requirement — `ensure_current` still integrates when it is, which is why the
+  ordering consequence stands rather than going away.
 - **The integration is verified, not just performed
   (iterate-2026-07-27-no-silent-revert).** Requiring branches to be current is what
   *forces* the integration — it does not make the resolution correct, and a

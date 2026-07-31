@@ -261,7 +261,11 @@ def test_integration_coverage_reads_the_per_run_entry_after_a_restore(tmp_path, 
         encoding="utf-8",
     )
     # A cross-component path in the commit, and no shared results file at all.
-    monkeypatch.setattr(ic, "_commit_changed_paths",
+    # `_iterate_changed_paths`, not `_commit_changed_paths`: the branch-view helper
+    # moved to git_helpers, and it is what check_integration_coverage calls. Patching
+    # the name it no longer holds would raise AttributeError; patching it in
+    # git_helpers would work but hides WHICH seam this test is pinning.
+    monkeypatch.setattr(ic, "_iterate_changed_paths",
                         lambda *_a, **_k: ["shared/scripts/tools/integrate_main.py"])
     assert not (tmp_path / "shipwright_test_results.json").exists()
 

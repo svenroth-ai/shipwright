@@ -23,7 +23,7 @@ if str(_SCRIPTS_ROOT) not in sys.path:
 from lib.iterate_entry import find_entry_by_run_id  # noqa: E402
 
 from .common import CheckResult, Severity  # noqa: E402
-from .git_helpers import _commit_changed_paths, _run_git  # noqa: E402
+from .git_helpers import _iterate_changed_paths  # noqa: E402
 
 
 # --- cross_component integration-coverage gate ------------------------------
@@ -50,31 +50,6 @@ def _is_cross_component(changed_files: list[str] | None) -> bool:
             if re.search(pat, norm):
                 return True
     return False
-
-
-def _iterate_changed_paths(project_root: Path, commit: str) -> list[str] | None:
-    """All paths the iterate branch changed vs its merge-base with the default
-    branch — the robust full-branch view (NOT one commit), so the gate sees a
-    cross-component edit even if it landed in an earlier commit than HEAD. Falls
-    back to the single-commit paths when the merge-base can't be resolved."""
-    if not commit:
-        return None
-    rc, ref, _ = _run_git(project_root, "rev-parse", "--abbrev-ref", "origin/HEAD")
-    base_ref = ref.strip() if rc == 0 and ref.strip().startswith("origin/") else "origin/main"
-    rc, mb, _ = _run_git(project_root, "merge-base", base_ref, commit)
-    if rc == 0 and mb.strip():
-        # core.quotePath=false: by default git QUOTES a non-ASCII path and escapes
-        # its bytes octally (`"…r\303\251sum\303\251-check.yml"`). Consumers then
-        # hold a name that addresses no file, so a content read returns "absent" on
-        # BOTH sides and a content fingerprint over it becomes content-independent —
-        # a measured false-green in the CI supply-chain gate
-        # (iterate-2026-07-28-ci-ack-per-run-home, Stage-3 doubt review). Same idiom
-        # as `lib/worktree_isolation.py`.
-        rc2, out, _ = _run_git(project_root, "-c", "core.quotePath=false",
-                               "diff", "--name-only", f"{mb.strip()}..{commit}")
-        if rc2 == 0:
-            return [ln.strip() for ln in out.splitlines() if ln.strip()]
-    return _commit_changed_paths(project_root, commit)
 
 
 def check_integration_coverage(project_root: Path, run_id: str, commit_hash: str = "") -> CheckResult:
