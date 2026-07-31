@@ -58,6 +58,10 @@ from .pr_delivery_host import HOST_ERRORS
 #: pushing to this branch, and looping forever would hide that.
 MAX_ATTEMPTS = 3
 
+#: The fields the pre-merge re-read needs. A named constant rather than two adjacent string
+#: literals inside the argv list, where implicit concatenation reads as a missing comma.
+_PRE_MERGE_FIELDS = "state,headRefName,baseRefName,headRefOid,url,mergeStateStatus"
+
 
 def self_merge(
     pr_url: str,
@@ -197,9 +201,7 @@ def self_merge(
                                               "merge a commit the verifier rejected")
             verified.add(pinned)
             steps.append(f"verified the PR head {pinned[:12]}")
-        fresh = host.call_json(["pr", "view", pr_url, "--json",
-                                "state,headRefName,baseRefName,headRefOid,url,"
-                                "mergeStateStatus"],
+        fresh = host.call_json(["pr", "view", pr_url, "--json", _PRE_MERGE_FIELDS],
                                cwd=project_root)
         if fresh is None:
             steps.append("could not re-read the PR before merging")

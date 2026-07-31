@@ -738,13 +738,17 @@ _Where the work detail lives_ at the end of this document.
   impossible to determine. A change to the requirements that touches no
   requirement at all is still reported as undetermined for a person to settle,
   never passed in silence. (iterate-2026-07-27-name-the-blocker)
-- (E) Given a finished change whose code host cannot be asked to merge it
-  automatically — the branch it merges into has no protection, or the host's
-  automatic-merge setting is switched off — when the change is delivered, then it is
-  merged once every check the host actually ran has passed, instead of being left
-  open for a person to merge by hand. Where the host merely refuses for the moment,
-  waiting continues as before; where the situation cannot be read at all, the
-  previous behaviour is kept.
+- (E) Given a finished change whose code host cannot be asked to merge it automatically
+  because the branch it merges into is **not protected**, when the change is delivered,
+  then it is merged once every check the host actually ran has passed, instead of being
+  left open for a person to merge by hand. Where the host merely refuses for the moment,
+  waiting continues as before; where the situation cannot be read at all, the previous
+  behaviour is kept. (iterate-2026-07-31-f11-delivery-truth)
+- (E) Given the branch it merges into **is** protected and only the host's automatic-merge
+  setting is switched off, when the change is delivered, then it is reported as not
+  delivered and the one setting to change is named — a protected branch's required reviews
+  and checks are not something to merge past on the strength of the tests run on the
+  author's own machine, however the host words its refusal.
   (iterate-2026-07-31-f11-delivery-truth)
 - (E) Given a change was merged by the tool rather than by the host, when delivery
   is reported, then the report names who merged it and how many checks the host
@@ -752,9 +756,10 @@ _Where the work detail lives_ at the end of this document.
   machine can never read as one the host confirmed.
   (iterate-2026-07-31-f11-delivery-truth)
 - (E) Given a project would rather nothing was ever merged on its behalf, when that
-  preference is recorded, then the tool only ever asks the host to merge, and a
-  change it cannot get merged is reported as not delivered straight away rather than
-  waited on. (iterate-2026-07-31-f11-delivery-truth)
+  preference is recorded, then the tool only ever asks the host to merge, and a change it
+  cannot get merged is reported as not delivered **straight away** rather than waited on —
+  because waiting for a merge that nobody will perform is not waiting, it is stalling.
+  (iterate-2026-07-31-f11-delivery-truth)
 - (E) Given a change fell behind the work it merges into while it was waiting, when
   the tool merges it, then it is first brought up to date and checked again, and what
   gets merged is exactly what was checked — never a stale copy, and never a newer one

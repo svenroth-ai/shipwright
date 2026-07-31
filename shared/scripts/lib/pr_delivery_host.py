@@ -101,8 +101,14 @@ class Host:
     one member can never leave another talking to the real GitHub.
     """
 
-    gh: object = gh
-    gh_json: object = gh_json
+    # All six default to None, and :meth:`default` is the ONLY wiring point. Storing the
+    # functions as field defaults would put them on the CLASS as well, where a function is
+    # a descriptor — `Host.gh(args)` would silently bind `Host` as the first argument. It
+    # does not happen through an instance (the instance attribute shadows the class one),
+    # but a safety that depends on the reader knowing that rule is not a safety, and CodeQL
+    # reads it the same way a careful reader would.
+    gh: object = None
+    gh_json: object = None
     capability: object = None
     verify: object = None
     refresh: object = None

@@ -256,3 +256,25 @@ def test_host_errors_covers_every_shape_an_ordinary_failure_takes():
     for exc in (RuntimeError, OSError, subprocess.SubprocessError,
                 subprocess.TimeoutExpired, ValueError):
         assert issubclass(exc, host.HOST_ERRORS), exc
+
+
+def test_the_production_bundle_actually_works_end_to_end(monkeypatch):
+    """The gap CodeQL pointed at. `Host.default()` was never driven through `call()` by any
+    test — every other test hand-builds a Host with its own callables, so a defect in how
+    the production bundle resolves its members would have been invisible."""
+    seen = []
+    monkeypatch.setattr(host, "gh", lambda args, cwd=None: seen.append(list(args)) or _Proc(0))
+    bundle = host.Host.default(repo="o/r")
+    bundle.call(["pr", "view", "7"])
+    assert seen == [["pr", "view", "7", "--repo", "o/r"]]
+
+
+def test_no_bundle_member_is_a_class_attribute_that_could_bind():
+    """A function stored as a dataclass field DEFAULT also lands on the class, where a
+    function is a descriptor — `Host.gh(args)` would bind `Host` as the first argument. The
+    instance attribute shadows it, so nothing breaks today; a safety that depends on the
+    reader knowing that rule is not a safety."""
+    for member in ("gh", "gh_json", "capability", "verify", "refresh", "head_sha"):
+        assert getattr(host.Host, member) is None, (
+            f"Host.{member} is a class-level callable — wire it in Host.default() instead"
+        )
