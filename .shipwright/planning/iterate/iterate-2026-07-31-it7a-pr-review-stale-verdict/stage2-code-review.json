@@ -1,0 +1,106 @@
+{
+  "section": "iterate-2026-07-31-it7a-pr-review-stale-verdict",
+  "stage": "code-review",
+  "verdict": "APPROVED",
+  "rounds": 3,
+  "summary": "Round 1 CHANGES REQUESTED with three mediums and five lows; round 2 APPROVE-ONCE-R1-AND-R2-LAND; round 3 APPROVED, every fix re-derived rather than taken on trust. The decisive finding was that GitHub assigns a review's commit_id at SUBMISSION time, not at the commit whose diff was read — so the original head guard proved only 'the head has not moved since I posted' and a run that reviewed X while the head advanced to Z would have retracted a live verdict about the intermediate commit Y.",
+  "resolved": [
+    {
+      "id": "R1-round1",
+      "severity": "medium",
+      "category": "correctness",
+      "file": "plugins/shipwright-security/scripts/lib/pr_review_dismiss.py",
+      "finding": "The AC5 head-anchor did not prove what it claimed: commit_id is stamped at submission, not at the reviewed commit.",
+      "resolution": "read_reviewed_head() before fetch_pr_diff, threaded through; select_stale_verdicts requires reviewed_sha == head_sha == anchor.commit_id; None refuses everything."
+    },
+    {
+      "id": "R2-round1",
+      "severity": "medium",
+      "category": "security",
+      "file": "plugins/shipwright-security/scripts/lib/pr_review_dismiss.py",
+      "finding": "A candidate needed only ANY well-formed marker plus login equality, so another workflow under the same github-actions[bot] login that echoed PR-authored text could be dismissed.",
+      "resolution": "_own_marker() matches the whole token as the LAST line of the body, for anchor and candidate alike."
+    },
+    {
+      "id": "R3-round1",
+      "severity": "medium",
+      "category": "correctness",
+      "file": "plugins/shipwright-security/tests/test_pr_review_dismiss.py",
+      "finding": "test_an_anchor_that_is_not_a_bot stayed green with the guard it names deleted.",
+      "resolution": "Also asserts 'not visible' in sel.reason, which is false once an anchor is found."
+    },
+    {
+      "id": "R4-round1",
+      "severity": "low",
+      "category": "correctness",
+      "file": "plugins/shipwright-security/tests/test_pr_review_dismiss.py",
+      "finding": "The malformed-shape fixture never reached the code it named, and a malformed row would have voided the whole sweep while misnaming the cause.",
+      "resolution": "Real CHANGES_REQUESTED fixture reaching int(None); per-row containment counting skipped['unreadable']."
+    },
+    {
+      "id": "R5-round1",
+      "severity": "low",
+      "category": "correctness",
+      "file": "plugins/shipwright-security/scripts/lib/pr_review_gh.py",
+      "finding": "_decode_pages had no test for AC6's 'returns unparseable output'.",
+      "resolution": "Two cases added; and after external review the non-array page now RAISES rather than reading as no-reviews."
+    },
+    {
+      "id": "R6-round1",
+      "severity": "low",
+      "category": "security",
+      "file": "plugins/shipwright-security/tests/test_pr_review_stale_verdicts.py",
+      "finding": "The key-leak test asserted a security property on an unreachable branch while the real sink printed raw gh stderr.",
+      "resolution": "Renamed to name the belt-and-braces handler; the real sink now scrubs via the shared sanitiser and is pinned."
+    },
+    {
+      "id": "R7-round1",
+      "severity": "low",
+      "category": "readability",
+      "file": "plugins/shipwright-security/scripts/lib/pr_review_gh.py",
+      "finding": "The stated reason for raw_decode over --jq was factually wrong (gh's --jq is embedded gojq, not an external binary) and self-contradicted fifteen lines below.",
+      "resolution": "Replaced with the real reason: --paginate applies the filter per page, so --jq yields NDJSON that still needs reassembling."
+    },
+    {
+      "id": "R8-round1",
+      "severity": "low",
+      "category": "readability",
+      "file": "plugins/shipwright-security/tests/test_pr_review_script.py",
+      "finding": "Dead capture added to a shared fixture.",
+      "resolution": "Reverted."
+    },
+    {
+      "id": "R1-round2",
+      "severity": "medium",
+      "category": "correctness",
+      "file": "plugins/shipwright-security/scripts/tools/pr_review.py",
+      "finding": "Nothing pinned that read_reviewed_head is called BEFORE fetch_pr_diff; moving it would silently collapse the three-term guard back to the original defect with all tests green.",
+      "resolution": "Call order recorded and asserted by test_the_head_is_read_before_the_diff_is_fetched; mutation-verified (1 failed / 11 passed)."
+    },
+    {
+      "id": "R2-round2",
+      "severity": "medium",
+      "category": "architecture",
+      "file": "plugins/shipwright-security/tests/test_pr_review_dismiss_calls.py",
+      "finding": "Reducibility D/T, contract-complete: the module split copied the whole fixture block verbatim — a size budget met on paper.",
+      "resolution": "tests/_pr_review_fixtures.py holds one definition; both modules import it."
+    }
+  ],
+  "recorded_note": "pr_review_dismiss.py is at 298 lines against the 300 source budget. Not crossed, so no shipwright_bloat_baseline.json entry is required by this diff, but the next edit to that module needs an entry before it merges, or a split.",
+  "review": [
+    {
+      "severity": "low",
+      "category": "readability",
+      "file": "plugins/shipwright-security/scripts/lib/pr_review_render.py",
+      "finding": "Consolidating onto _UNSAFE_IN_DISPLAY made the log sink inherit the Markdown half of the alphabet, so a gh JSON error rendered with its braces blanked — undermining AC8's deliverable. Also noted a net security GAIN from the same consolidation: stripping C0 stops a gh error carrying a newline into an Actions log and forging a ::error:: command.",
+      "suggestion": "TAKEN after the review: the class is split into _CONTROL_AND_INVISIBLE and _MARKDOWN_UNSAFE, _UNSAFE_IN_DISPLAY is their union so safe_path and its enumeration test are byte-identical, and strip_display_unsafe uses only the first. Pinned by test_a_gh_json_error_survives_legible and test_a_newline_cannot_forge_a_workflow_command."
+    },
+    {
+      "severity": "low",
+      "category": "readability",
+      "file": "plugins/shipwright-security/scripts/lib/pr_review_dismiss.py",
+      "finding": "Reducibility D, advisory: four emit-and-return sequences could share a local helper, saving ~5 lines.",
+      "suggestion": "DECLINED, on the reviewer's own reasoning — a closure that both logs and returns hides a side effect behind something that reads like a constructor, and four explicit exits each naming their reason is the clearer shape."
+    }
+  ]
+}

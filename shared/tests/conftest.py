@@ -98,11 +98,11 @@ def _isolate_github_pr_api(monkeypatch):
 
 @pytest.fixture(autouse=True)
 def _sweep_tests_unset_ci(request, monkeypatch):
-    # Sweep/D2V suites run the REAL outbox sweep, which no-ops under `$CI`
-    # (`ci_without_optin` safety); they assert it COMMITS, so must run as a local
-    # iterate ($CI unset). `$CI=true` → 44 false skips (PR #172). Prefix = the whole
-    # test_sweep* FAMILY. A guard test re-sets CI in its own body (after this fixture).
-    if request.path.name.startswith(("test_sweep", "test_d2v_empirical_gate")):
+    # Suites that must run as a LOCAL ITERATE ($CI unset). Sweep/D2V: the real sweep
+    # no-ops under `$CI` (`ci_without_optin`) while they assert it COMMITS (44 false
+    # skips, PR #172). Triage-routing (2026-07-31): `should_route_to_outbox` is False
+    # under `$CI` too. A guard test re-sets CI in its own body (after this fixture).
+    if request.path.name.startswith(("test_sweep", "test_d2v_empirical_gate", "test_triage_outbox", "test_github_triage_prompt_artifact")):
         monkeypatch.delenv("CI", raising=False)
 
 

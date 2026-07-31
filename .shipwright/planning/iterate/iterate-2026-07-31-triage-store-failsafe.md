@@ -229,6 +229,28 @@ time, which is exactly the duplication class the audit already flagged (findings
      production and re-running: `_f1_record`'s error branch disabled → a git failure
      reports `ok` (the false-clean, reproduced); `ci_active()` pinned False → 4
      integration tests fail; pinned True → the 4 opposite-direction tests fail.
+  10. *Does the suite pass in CI's ENVIRONMENT, not just mine?* **Finding: no — and I
+     had this exact lesson on file and did not apply it.** Every local run had `$CI`
+     unset; CI sets `CI=true`, and ten tests failed there while green here. Two causes,
+     both mine: (a) seven of my tests drive `reconcile_main_triage` / the sweep, which
+     no-op under `$CI` (`ci_without_optin`) — the repo already had an autouse
+     `_sweep_tests_unset_ci` fixture for exactly this, keyed on a filename prefix my
+     modules did not match; (b) AC-9 makes `should_route_to_outbox` False under `$CI`,
+     which broke THREE pre-existing tests asserting the idle-main → outbox contract.
+     Those were not wrong before — `$CI` was simply irrelevant to routing until this
+     change, so they now have to say which environment they describe. Fixed by
+     extending that one fixture and documenting the second reason beside the first.
+     The rule, which the existing fixture's own comment already implied: **a gate keyed
+     on the environment must be verified IN that environment before it is wired.**
+  11. *Am I running the command CI runs?* **Finding: no, twice over.** Beyond the
+     `$CI` variable (probe #10), CI invokes `shared/tests` with
+     `-m 'not slow and not cross_plugin'` while my local runs used the default
+     `-m 'not slow'` — and `-m` OVERRIDES addopts rather than composing with it. That
+     ran four `cross_plugin` suites CI deliberately excludes (they hard-fail from a
+     `shared/tests` session by ADR-044 design and must run under their owning plugin),
+     and I briefly read them as regressions. They are untouched by this branch:
+     `git diff dcf85f87...HEAD` on that file is empty. Both mistakes are the same one —
+     trusting a local result from a different command than the gate runs.
   8. *How many copies of the CI helper are there?* **Finding: four, not the three the
      audit claims** — `gitattributes_selfheal`, `gitignore_selfheal`,
      `reconcile_triage`, `sweep_outbox`.

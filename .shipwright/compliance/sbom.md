@@ -1,8 +1,8 @@
 # Software Bill of Materials (SBOM)
 
-Generated: 2026-07-31T10:12:05.929799+00:00 (dependency versions resolved from uv.lock)
-Source-State: run=iterate-2026-07-31-triage-store-failsafe
-Consistency-audit: last run 2026-07-28 (3 days earlier) — FAIL
+Generated: 2026-07-28T12:18:44.236199+00:00 (dependency versions resolved from uv.lock)
+Source-State: run=iterate-2026-07-28-docs-placement-rule
+Consistency-audit: never run
 
 ## Summary
 
@@ -11,8 +11,8 @@ Consistency-audit: last run 2026-07-28 (3 days earlier) — FAIL
 | Runtime dependencies | 6 (deduplicated) |
 | Dev dependencies | 5 |
 | Total packages | 11 |
-| Licenses resolved | 11 / 11 |
-| Unique licenses | 3 (Apache-2.0, MIT, PSFL) |
+| Licenses resolved | 8 / 11 |
+| Unique licenses | 2 (Apache-2.0, MIT) |
 | Copyleft licenses | 0 |
 
 ## License Distribution
@@ -20,20 +20,20 @@ Consistency-audit: last run 2026-07-28 (3 days earlier) — FAIL
 ```mermaid
 pie title License Distribution (all 11 packages)
     "MIT" : 6
-    "Apache-2.0" : 4
-    "PSFL" : 1
+    "Apache-2.0" : 2
+    "unknown" : 3
 ```
 
 ## Runtime Dependencies
 
 | Package | Version | License |
 |---------|---------|---------|
-| defusedxml | 0.7.1 | PSFL |
-| google-genai | 1.68.0 | Apache-2.0 |
+| defusedxml | 0.7.1 | - |
+| google-genai | 1.68.0 | - |
 | jsonschema | 4.26.0 | MIT |
 | openai | 2.30.0 | Apache-2.0 |
 | pyyaml | 6.0.3 | MIT |
-| requests | 2.33.0 | Apache-2.0 |
+| requests | 2.33.0 | - |
 
 ## Dev Dependencies
 
@@ -47,5 +47,5 @@ pie title License Distribution (all 11 packages)
 
 ## License Compliance
 
-No license concerns: all 11 packages resolved (0 unknown, 0 copyleft).
+**3 dependency(ies) could not be resolved in this scan** - license unverified; verify before distribution.
 

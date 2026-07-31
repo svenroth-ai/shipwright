@@ -41,7 +41,10 @@ def _timeout(*_a, **_k):
 
 
 @pytest.fixture
-def repo(git_origin_repo):
+def repo(git_origin_repo, monkeypatch):
+    # These drive the REAL sweep / reconcile, which no-op under `$CI`
+    # (`ci_without_optin`) — green locally, ten false failures in CI.
+    monkeypatch.delenv("CI", raising=False)
     work, _origin = git_origin_repo
     h.set_identity(work)
     return work

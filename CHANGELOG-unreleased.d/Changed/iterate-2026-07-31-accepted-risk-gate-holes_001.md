@@ -1,0 +1,1 @@
+A `STALE` accepted-risk record now names its cause: a lapsed ignore entry says renew BOTH dates, an unparseable ignore file says fix the syntax first and explicitly not to delete records, and only a genuinely removed suppression advises removing the register entry.

@@ -12,6 +12,7 @@ uv run "{shared_root}/scripts/tools/append_iterate_entry.py" \
   --entry-json '{
     "type": "{feature|change|bug}",
     "complexity": "{trivial|small|medium|large}",
+    "prior_source": "{keyword|history|default}",
     "branch": "iterate/{short-description}",
     "spec": "{path to iterate spec or null}",
     "tests_passed": true,
@@ -21,6 +22,23 @@ uv run "{shared_root}/scripts/tools/append_iterate_entry.py" \
     "declared_removals": [ {"path": "...", "reason": "..."} ]
   }'
 ```
+
+**`prior_source` records WHERE this run's Stage-1 estimate came from** —
+verbatim from `classify_complexity`'s `signals.prior_source` (`keyword` = a
+scope word matched, `history` = the capped history prior decided it, `default` =
+cold start). Additive and optional: `append_iterate_entry.py` splats
+`--entry-json` with no allowlist, so nothing in the writer changes, and readers
+ignore keys they do not know.
+
+It exists because the complexity ladder could not previously be *audited*. The
+store records the final complexity but never why it was chosen, so "the prior
+decided 84% of runs" was unmeasurable in either direction — before or after the
+2026-07-31 cap that moved the fall-through to `small`. With this field the
+no-keyword share becomes countable, and the better calibration (median over
+keyword-classified runs only, so history cannot feed on its own output) becomes
+implementable once ~20 entries carry it. Until then `complexity_history.py`
+deliberately does not filter on it — a filter over zero qualifying entries
+would return no prior at all and drop the fall-through to bare `trivial`.
 
 **Carry the three evidence blocks here, not only in
 `shipwright_test_results.json`.** An iterate does not commit that file, so the copy

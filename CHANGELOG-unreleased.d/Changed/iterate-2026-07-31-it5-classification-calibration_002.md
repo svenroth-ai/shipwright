@@ -1,0 +1,1 @@
+Quick Scout (Stage 2 at trivial/small) now runs the diff-driven risk detectors over its changed-file list and keeps the cross-split check. Stage 1 never sees a diff, so this is the only point where a diff-shaped signal can reach the estimate before complexity locks.

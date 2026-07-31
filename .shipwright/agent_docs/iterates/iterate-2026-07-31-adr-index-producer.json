@@ -1,0 +1,198 @@
+{
+  "run_id": "iterate-2026-07-31-adr-index-producer",
+  "date": "2026-07-31T08:24:21.536319Z",
+  "event_at": "2026-07-31T05:50:52.994375+00:00",
+  "type": "change",
+  "complexity": "medium",
+  "branch": "iterate/adr-index-producer",
+  "spec": ".shipwright/planning/iterate/iterate-2026-07-31-adr-index-producer.md",
+  "tests_passed": true,
+  "adr": "iterate-2026-07-31-adr-index-producer",
+  "test_completeness": {
+    "status": "complete",
+    "behaviors": [
+      {
+        "behavior": "F3 drop write refreshes INDEX.md in the worktree",
+        "disposition": "tested",
+        "evidence": "test_f3_drop_write_refreshes_the_index PASSED"
+      },
+      {
+        "behavior": "Release pass refreshes with zero drops",
+        "disposition": "tested",
+        "evidence": "test_aggregate_refreshes_with_zero_drops PASSED"
+      },
+      {
+        "behavior": "--dry-run writes nothing",
+        "disposition": "tested",
+        "evidence": "test_aggregate_dry_run_writes_nothing PASSED"
+      },
+      {
+        "behavior": "Label read from the ADR's own H1, ADR-NNN prefix stripped",
+        "disposition": "tested",
+        "evidence": "test_title_comes_from_the_h1_heading + test_adr_number_prefix_is_stripped_in_every_observed_style[4] PASSED"
+      },
+      {
+        "behavior": "Falls back to the filename slug when there is no heading",
+        "disposition": "tested",
+        "evidence": "test_falls_back_to_the_slug_when_there_is_no_heading PASSED"
+      },
+      {
+        "behavior": "Duplicate ADR numbers both listed",
+        "disposition": "tested",
+        "evidence": "test_duplicate_numbers_both_appear PASSED"
+      },
+      {
+        "behavior": "Row order stable against title edits (ties break on filename)",
+        "disposition": "tested",
+        "evidence": "test_tie_order_is_stable_against_title_edits PASSED"
+      },
+      {
+        "behavior": "Drift guard fails on a stale index",
+        "disposition": "tested",
+        "evidence": "test_drift_guard_actually_fails_on_a_stale_index PASSED"
+      },
+      {
+        "behavior": "Committed INDEX.md matches the render",
+        "disposition": "tested",
+        "evidence": "test_committed_index_is_not_stale + test_every_adr_file_in_this_repo_is_listed PASSED"
+      },
+      {
+        "behavior": "_template-* excluded from the index",
+        "disposition": "tested",
+        "evidence": "test_the_template_is_excluded PASSED"
+      },
+      {
+        "behavior": "Markdown link metacharacters in a title are escaped",
+        "disposition": "tested",
+        "evidence": "test_link_metacharacters_in_a_title_are_escaped PASSED"
+      },
+      {
+        "behavior": "aggregate_decisions.rebuild_adr_index import path preserved",
+        "disposition": "tested",
+        "evidence": "test_rebuild_is_importable_from_aggregate_decisions PASSED"
+      },
+      {
+        "behavior": "Missing ADR folder is a strict no-op (no dir, no empty index)",
+        "disposition": "tested",
+        "evidence": "test_missing_folder_is_a_strict_noop + test_cli_on_a_repo_without_adrs_creates_nothing PASSED"
+      },
+      {
+        "behavior": "A failed F3 refresh does not fail the drop",
+        "disposition": "tested",
+        "evidence": "test_f3_refresh_is_best_effort_and_warns PASSED"
+      },
+      {
+        "behavior": "A failed F3 refresh warns naming the regen command",
+        "disposition": "tested",
+        "evidence": "test_f3_refresh_is_best_effort_and_warns PASSED"
+      },
+      {
+        "behavior": "## is not read as the title",
+        "disposition": "tested",
+        "evidence": "test_h2_is_not_read_as_the_title PASSED"
+      },
+      {
+        "behavior": "Headings inside fenced code blocks are skipped",
+        "disposition": "tested",
+        "evidence": "test_heading_inside_a_fenced_code_block_is_not_the_title + test_tilde_fenced_code_block_is_also_skipped PASSED"
+      },
+      {
+        "behavior": "Headings inside YAML front matter are skipped",
+        "disposition": "tested",
+        "evidence": "test_heading_inside_yaml_front_matter_is_not_the_title PASSED"
+      },
+      {
+        "behavior": "ADR-1040 is not mis-stripped to ADR-104",
+        "disposition": "tested",
+        "evidence": "test_four_digit_number_is_not_mis_stripped PASSED"
+      },
+      {
+        "behavior": "A prefix-only heading falls back to the slug",
+        "disposition": "tested",
+        "evidence": "test_heading_that_is_only_a_prefix_falls_back_to_the_slug PASSED"
+      },
+      {
+        "behavior": "Index write is atomic; a failure leaves the old file intact",
+        "disposition": "tested",
+        "evidence": "test_failed_write_leaves_the_previous_index_intact PASSED"
+      },
+      {
+        "behavior": "The regen CLI regenerates the index",
+        "disposition": "tested",
+        "evidence": "test_cli_regenerates_the_index PASSED"
+      },
+      {
+        "behavior": "The command named in the drift message exists",
+        "disposition": "tested",
+        "evidence": "test_regen_command_names_a_script_that_exists PASSED"
+      },
+      {
+        "behavior": "AC1 end-to-end: the row ships in the SAME COMMIT as the ADR",
+        "disposition": "tested",
+        "evidence": "test_index_row_ships_in_the_same_commit_as_the_adr PASSED (git show HEAD:)"
+      },
+      {
+        "behavior": "A longer fence is not closed by a shorter one",
+        "disposition": "tested",
+        "evidence": "test_longer_fence_is_not_closed_by_a_shorter_one PASSED"
+      },
+      {
+        "behavior": "A backslash before ] cannot break out of the link label",
+        "disposition": "tested",
+        "evidence": "test_backslash_before_a_bracket_cannot_break_out_of_the_label PASSED"
+      },
+      {
+        "behavior": "A ) in a filename does not truncate the destination",
+        "disposition": "tested",
+        "evidence": "test_destination_with_parens_uses_angle_brackets + test_ordinary_filenames_are_not_angle_wrapped PASSED"
+      },
+      {
+        "behavior": "The regen command is layout-independent for adopted repos",
+        "disposition": "tested",
+        "evidence": "test_regen_command_is_layout_independent PASSED"
+      },
+      {
+        "behavior": "The render is LF in BYTES, not just via read_text",
+        "disposition": "tested",
+        "evidence": "test_render_is_written_verbatim_lf_even_on_windows PASSED"
+      },
+      {
+        "behavior": "A LockTimeout does not fail the F3 drop",
+        "disposition": "tested",
+        "evidence": "test_f3_refresh_survives_a_lock_timeout PASSED"
+      },
+      {
+        "behavior": "Nothing transient is left in the tracked ADR folder",
+        "disposition": "tested",
+        "evidence": "test_rebuild_leaves_nothing_but_the_index_in_the_adr_folder PASSED"
+      },
+      {
+        "behavior": "_archive-* is NOT delisted; only _template-* is skipped",
+        "disposition": "tested",
+        "evidence": "test_the_skip_does_not_swallow_real_underscore_files PASSED"
+      },
+      {
+        "behavior": "F6's add path is derived from F6.md, not restated",
+        "disposition": "tested",
+        "evidence": "test_f6_add_list_names_the_adr_folder + _f6_adr_add_path PASSED"
+      }
+    ],
+    "counts": {
+      "testable": 33,
+      "tested": 33,
+      "untestable": 0,
+      "untested_testable": 0
+    },
+    "enumeration_basis": {
+      "acs": 8,
+      "covered_acs": 8
+    }
+  },
+  "surface_verification": {
+    "surface": "cli",
+    "exit_code": 0,
+    "tests_run": 22,
+    "runner": "uv run pytest shared/tests/test_adr_index_producers.py shared/tests/test_adr_index_writing.py -q"
+  },
+  "declared_removals": []
+}

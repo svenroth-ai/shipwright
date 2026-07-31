@@ -7,5 +7,424 @@
   "branch": "iterate/triage-store-failsafe",
   "spec": ".shipwright/planning/iterate/iterate-2026-07-31-triage-store-failsafe.md",
   "tests_passed": true,
-  "adr": "iterate-2026-07-31-triage-store-failsafe"
+  "adr": "iterate-2026-07-31-triage-store-failsafe",
+  "test_completeness": {
+    "status": "complete",
+    "behaviors": [
+      {
+        "id": "b01",
+        "behavior": "a store truncated mid multi-byte sequence READS instead of raising",
+        "disposition": "tested",
+        "category": "unit",
+        "evidence": "test_triage_store_failsafe.py::test_read_text_verbatim_survives_truncated_multibyte"
+      },
+      {
+        "id": "b02",
+        "behavior": "the verbatim contract (CRLF, no invented newline) survives the decode change",
+        "disposition": "tested",
+        "category": "unit",
+        "evidence": "test_triage_store_failsafe.py::test_read_text_verbatim_preserves_crlf_and_adds_no_newline"
+      },
+      {
+        "id": "b03",
+        "behavior": "has_header ANSWERS on a truncated-multibyte store instead of raising",
+        "disposition": "tested",
+        "category": "unit",
+        "evidence": "test_triage_store_failsafe.py::test_ensure_header_survives_a_truncated_multibyte_store"
+      },
+      {
+        "id": "b04",
+        "behavior": "has_header is TOTAL: a bare JSON scalar answers, never raises",
+        "disposition": "tested",
+        "category": "unit",
+        "evidence": "test_triage_store_failsafe.py::test_bare_json_scalar_first_line_answers_rather_than_raising"
+      },
+      {
+        "id": "b05",
+        "behavior": "append_quarantine round-trips an UNDECODABLE line",
+        "disposition": "tested",
+        "category": "unit",
+        "evidence": "test_triage_store_failsafe.py::test_quarantine_round_trips_an_undecodable_line"
+      },
+      {
+        "id": "b06",
+        "behavior": "atomic_write stays STRICT on both sides; a surrogate str is refused",
+        "disposition": "tested",
+        "category": "unit",
+        "evidence": "test_triage_delivery_failsafe.py::test_the_primitive_still_refuses_a_surrogate_str"
+      },
+      {
+        "id": "b07",
+        "behavior": "the triage callers carry the leniency themselves (bytes)",
+        "disposition": "tested",
+        "category": "unit",
+        "evidence": "test_triage_delivery_failsafe.py::test_the_triage_callers_carry_the_leniency_themselves"
+      },
+      {
+        "id": "b08",
+        "behavior": "header prepend preserves the pre-existing bytes and line endings",
+        "disposition": "tested",
+        "category": "unit",
+        "evidence": "test_triage_store_failsafe.py::test_ensure_header_prepend_preserves_crlf_bytes"
+      },
+      {
+        "id": "b09",
+        "behavior": "a failed header prepend leaves the original store intact",
+        "disposition": "tested",
+        "category": "unit",
+        "evidence": "test_triage_store_failsafe.py::test_ensure_header_prepend_is_atomic"
+      },
+      {
+        "id": "b10",
+        "behavior": "ensure_header stays idempotent",
+        "disposition": "tested",
+        "category": "unit",
+        "evidence": "test_triage_store_failsafe.py::test_ensure_header_is_still_idempotent"
+      },
+      {
+        "id": "b11",
+        "behavior": "a created header matches what the REAL appender writes",
+        "disposition": "tested",
+        "category": "unit",
+        "evidence": "test_triage_store_failsafe.py::test_created_header_matches_what_the_appender_actually_writes"
+      },
+      {
+        "id": "b12",
+        "behavior": "an all-CRLF store survives an LF append and still folds",
+        "disposition": "tested",
+        "category": "integration",
+        "evidence": "test_main_tree_git_timeout_paths.py::test_an_all_crlf_store_survives_an_lf_append_and_folds"
+      },
+      {
+        "id": "b13",
+        "behavior": "an append made DURING the commit window survives the GC",
+        "disposition": "tested",
+        "category": "integration",
+        "evidence": "test_sweep_outbox_gc_reread.py::test_append_during_commit_window_is_not_deleted_by_the_gc (verified RED first)"
+      },
+      {
+        "id": "b14",
+        "behavior": "the re-read does not weaken the GC: a delivered line is still dropped",
+        "disposition": "tested",
+        "category": "integration",
+        "evidence": "test_sweep_outbox_gc_reread.py::test_delivered_line_is_still_gcd_when_an_append_races"
+      },
+      {
+        "id": "b15",
+        "behavior": "an unreadable file is treated as UNTERMINATED (fail-closed)",
+        "disposition": "tested",
+        "category": "unit",
+        "evidence": "test_triage_store_failsafe.py::test_unreadable_file_is_treated_as_unterminated"
+      },
+      {
+        "id": "b16",
+        "behavior": "missing and empty stay safely appendable (fail-closed is not fail-always)",
+        "disposition": "tested",
+        "category": "unit",
+        "evidence": "test_triage_store_failsafe.py::test_missing_and_empty_stay_safely_appendable"
+      },
+      {
+        "id": "b17",
+        "behavior": "the cost of a wrong True is nil — the reader skips the blank line",
+        "disposition": "tested",
+        "category": "unit",
+        "evidence": "test_triage_store_failsafe.py::test_blank_line_from_a_defensive_prefix_is_skipped_by_the_reader"
+      },
+      {
+        "id": "b18",
+        "behavior": "run_git_soft reports a timeout as a failed process, not an exception",
+        "disposition": "tested",
+        "category": "unit",
+        "evidence": "test_store_git_timeout_paths.py::test_run_git_soft_reports_a_timeout_as_a_failed_process"
+      },
+      {
+        "id": "b19",
+        "behavior": "run_git_soft passes an ordinary outcome through untouched",
+        "disposition": "tested",
+        "category": "unit",
+        "evidence": "test_store_git_timeout_paths.py::test_run_git_soft_passes_a_normal_result_through"
+      },
+      {
+        "id": "b20",
+        "behavior": "_op_in_progress answers YES when it cannot tell — in BOTH loops",
+        "disposition": "tested",
+        "category": "unit",
+        "evidence": "test_store_git_timeout_paths.py::test_op_in_progress_says_yes_when_it_cannot_tell + ::test_op_in_progress_says_yes_when_only_the_gitpath_probe_times_out (mutation-checked)"
+      },
+      {
+        "id": "b21",
+        "behavior": "the sweep SKIPS rather than raising out of setup step 5",
+        "disposition": "tested",
+        "category": "integration",
+        "evidence": "test_store_git_timeout_paths.py::test_sweep_skips_when_the_guard_times_out"
+      },
+      {
+        "id": "b22",
+        "behavior": "a diff --cached timeout is NOT read as 'there is a staged delta'",
+        "disposition": "tested",
+        "category": "integration",
+        "evidence": "test_store_git_timeout_paths.py::test_staged_probe_timeout_does_not_read_as_a_staged_delta"
+      },
+      {
+        "id": "b23",
+        "behavior": "a commit timeout is reported as commit_timeout",
+        "disposition": "tested",
+        "category": "integration",
+        "evidence": "test_store_git_timeout_paths.py::test_commit_timeout_is_reported_structurally"
+      },
+      {
+        "id": "b24",
+        "behavior": "delivered_membership GCs nothing on timeout (its documented safe answer)",
+        "disposition": "tested",
+        "category": "unit",
+        "evidence": "test_store_git_timeout_paths.py::test_delivered_membership_gcs_nothing_on_timeout"
+      },
+      {
+        "id": "b25",
+        "behavior": "reconcile_triage returns a structured commit_timeout instead of crashing",
+        "disposition": "tested",
+        "category": "integration",
+        "evidence": "test_main_tree_git_timeout_paths.py::test_reconcile_commit_timeout_returns_a_structured_error"
+      },
+      {
+        "id": "b26",
+        "behavior": "reconcile_triage returns read_failed on a decode-class ValueError",
+        "disposition": "tested",
+        "category": "integration",
+        "evidence": "test_main_tree_git_timeout_paths.py::test_reconcile_read_failure_is_structured_not_raised"
+      },
+      {
+        "id": "b27",
+        "behavior": "_has_drift is INDETERMINATE on any git failure, not just a timeout",
+        "disposition": "tested",
+        "category": "unit",
+        "evidence": "test_main_tree_git_timeout_paths.py::test_has_drift_timeout_is_an_error_not_no_drift + ::test_has_drift_is_indeterminate_on_ANY_git_failure"
+      },
+      {
+        "id": "b28",
+        "behavior": "_head_line_set returns None rather than an empty HEAD set",
+        "disposition": "tested",
+        "category": "unit",
+        "evidence": "test_main_tree_git_timeout_paths.py::test_head_line_set_timeout_is_an_error_not_an_empty_head"
+      },
+      {
+        "id": "b29",
+        "behavior": "sweep_drift REFUSES instead of claiming main_tracked_no_head_blob",
+        "disposition": "tested",
+        "category": "integration",
+        "evidence": "test_main_tree_git_timeout_paths.py::test_unreadable_head_refuses_instead_of_claiming_no_blob"
+      },
+      {
+        "id": "b30",
+        "behavior": "_index_diverged stays fail-closed under timeout",
+        "disposition": "tested",
+        "category": "unit",
+        "evidence": "test_main_tree_git_timeout_paths.py::test_index_probe_timeout_refuses"
+      },
+      {
+        "id": "b31",
+        "behavior": "two failed HEAD reads never license the restore that destroys drift",
+        "disposition": "tested",
+        "category": "integration",
+        "evidence": "test_main_tree_git_timeout_paths.py::test_two_failed_head_reads_do_not_read_as_unchanged (mutation-checked: pre-fix returns 'adopted', i.e. checkout ran)"
+      },
+      {
+        "id": "b32",
+        "behavior": "a killed git checkout reports the log may be PARTIALLY restored",
+        "disposition": "tested",
+        "category": "unit",
+        "evidence": "sweep_drift returns main_tracked_restore_timeout; the old message promised a recovery the next plan cannot perform"
+      },
+      {
+        "id": "b33",
+        "behavior": "a git failure reports an error, not a clean tree",
+        "disposition": "tested",
+        "category": "unit",
+        "evidence": "test_artifact_sync_drift_failsafe.py::test_git_failure_reports_error_not_clean"
+      },
+      {
+        "id": "b34",
+        "behavior": "the error result keeps the published key shape",
+        "disposition": "tested",
+        "category": "unit",
+        "evidence": "test_artifact_sync_drift_failsafe.py::test_error_result_keeps_the_published_shape"
+      },
+      {
+        "id": "b35",
+        "behavior": "'no sync config' stays a no-op, distinct from a failure",
+        "disposition": "tested",
+        "category": "unit",
+        "evidence": "test_artifact_sync_drift_failsafe.py::test_missing_sync_config_is_not_an_error"
+      },
+      {
+        "id": "b36",
+        "behavior": "the git diff is routed through run_git with check=False",
+        "disposition": "tested",
+        "category": "unit",
+        "evidence": "test_artifact_sync_drift_failsafe.py::test_git_diff_is_routed_through_run_git_with_check_false"
+      },
+      {
+        "id": "b37",
+        "behavior": "a non-Latin-1 path decodes for real (no stub, quotepath=false)",
+        "disposition": "tested",
+        "category": "integration",
+        "evidence": "test_artifact_sync_drift_failsafe.py::test_git_diff_decodes_a_non_latin1_path_for_real"
+      },
+      {
+        "id": "b38",
+        "behavior": "an ImportError from the lazy seam reaches the structured result",
+        "disposition": "tested",
+        "category": "unit",
+        "evidence": "test_artifact_sync_drift_failsafe.py::test_import_error_from_the_lazy_seam_reaches_the_structured_result"
+      },
+      {
+        "id": "b39",
+        "behavior": "F1 reports an errored artifact_sync as failed, not ok",
+        "disposition": "tested",
+        "category": "unit",
+        "evidence": "shared/scripts/tools/tests/test_finalize_bundle_f1_record.py::test_f1_record_reports_a_git_failure_as_failed (mutation-checked)"
+      },
+      {
+        "id": "b40",
+        "behavior": "a clean run stays ok; real drift stays drift; an empty error string does not hijack",
+        "disposition": "tested",
+        "category": "unit",
+        "evidence": "shared/scripts/tools/tests/test_finalize_bundle_f1_record.py (3 further tests)"
+      },
+      {
+        "id": "b41",
+        "behavior": "the CLI exit codes stay distinct: 0 clean / 1 drift / 2 undetermined",
+        "disposition": "tested",
+        "category": "unit",
+        "evidence": "test_artifact_sync_drift_failsafe.py::test_main_exits_2_when_it_could_not_determine_drift + _0_ + _1_"
+      },
+      {
+        "id": "b42",
+        "behavior": "the _f1_record tests are immune to test-collection ORDER",
+        "disposition": "tested",
+        "category": "integration",
+        "evidence": "relocated to shared/scripts/tools/tests where no competing `tools` package exists; verified in four orderings that previously failed"
+      },
+      {
+        "id": "b43",
+        "behavior": "a one-commit / shallow repo is a NO-OP, not a finalization abort",
+        "disposition": "tested",
+        "category": "integration",
+        "evidence": "test_artifact_sync_drift_failsafe.py::test_a_one_commit_repo_is_a_no_op_not_a_finalization_abort"
+      },
+      {
+        "id": "b44",
+        "behavior": "a genuine git failure is STILL an error",
+        "disposition": "tested",
+        "category": "unit",
+        "evidence": "test_artifact_sync_drift_failsafe.py::test_a_real_git_failure_is_still_an_error"
+      },
+      {
+        "id": "b45",
+        "behavior": "an UNKNOWN ref stays a loud error",
+        "disposition": "tested",
+        "category": "integration",
+        "evidence": "test_artifact_sync_drift_failsafe.py::test_an_unknown_ref_is_an_error_not_missing_history"
+      },
+      {
+        "id": "b46",
+        "behavior": "a MALFORMED revision expression on a resolvable base stays an error",
+        "disposition": "tested",
+        "category": "integration",
+        "evidence": "test_artifact_sync_drift_failsafe.py::test_a_malformed_revision_expression_is_an_error"
+      },
+      {
+        "id": "b47",
+        "behavior": "ancestry forms are recognised but junk is not",
+        "disposition": "tested",
+        "category": "unit",
+        "evidence": "test_artifact_sync_drift_failsafe.py::test_ancestry_forms_are_recognised_but_junk_is_not"
+      },
+      {
+        "id": "b48",
+        "behavior": "a repo with enough history still compares normally",
+        "disposition": "tested",
+        "category": "unit",
+        "evidence": "test_artifact_sync_drift_failsafe.py::test_enough_history_still_compares_normally"
+      },
+      {
+        "id": "b49",
+        "behavior": "an unobstructed write records ZERO retries",
+        "disposition": "tested",
+        "category": "unit",
+        "evidence": "test_triage_delivery_failsafe.py::test_unobstructed_write_records_zero_retries"
+      },
+      {
+        "id": "b50",
+        "behavior": "the counter increments once per retry actually performed",
+        "disposition": "tested",
+        "category": "unit",
+        "evidence": "test_triage_delivery_failsafe.py::test_counter_increments_when_a_retry_actually_happens"
+      },
+      {
+        "id": "b51",
+        "behavior": "reset zeroes the counter",
+        "disposition": "tested",
+        "category": "unit",
+        "evidence": "test_triage_delivery_failsafe.py::test_reset_zeroes_the_counter"
+      },
+      {
+        "id": "b52",
+        "behavior": "WITHOUT CI an idle default branch DOES route to the outbox (the control)",
+        "disposition": "tested",
+        "category": "integration",
+        "evidence": "test_triage_delivery_failsafe.py::test_without_ci_an_idle_default_branch_DOES_route_to_the_outbox"
+      },
+      {
+        "id": "b53",
+        "behavior": "a card filed under CI routes to the TRACKED store",
+        "disposition": "tested",
+        "category": "integration",
+        "evidence": "test_triage_delivery_failsafe.py::test_ci_routes_to_the_tracked_store + 6 truthy spellings, on a REAL origin repo"
+      },
+      {
+        "id": "b54",
+        "behavior": "a falsy $CI still routes to the outbox (not a kill switch)",
+        "disposition": "tested",
+        "category": "integration",
+        "evidence": "test_triage_delivery_failsafe.py::test_falsy_ci_still_routes_to_the_outbox"
+      },
+      {
+        "id": "b55",
+        "behavior": "all four consumers delegate; no module re-declares _CI_TRUTHY",
+        "disposition": "tested",
+        "category": "unit",
+        "evidence": "test_triage_delivery_failsafe.py::test_every_ci_predicate_delegates_to_the_shared_leaf ($CI driven through 4 values)"
+      },
+      {
+        "id": "b56",
+        "behavior": "ci_env has no intra-package imports (ADR-045)",
+        "disposition": "tested",
+        "category": "unit",
+        "evidence": "test_triage_delivery_failsafe.py::test_shared_leaf_has_no_intra_package_imports (AST, not grep)"
+      },
+      {
+        "id": "b57",
+        "behavior": "the CI guard COMPOSES across all four auto-commit consumers on real git",
+        "disposition": "tested",
+        "category": "integration",
+        "evidence": "test_ci_predicate_composition_integration.py (7 tests; mutation-checked BOTH directions; asserts a real COMMIT was not created)"
+      }
+    ],
+    "counts": {
+      "total": 57,
+      "tested": 57,
+      "untestable": 0,
+      "untested_testable": 0,
+      "integration": 19
+    },
+    "ledger_path": ".shipwright/planning/iterate/iterate-2026-07-31-triage-store-failsafe.md"
+  },
+  "surface_verification": {
+    "surface": "cli",
+    "tests_run": 75,
+    "exit_code": 0,
+    "evidence_path": ".shipwright/runs/iterate-2026-07-31-triage-store-failsafe/surface_verification.json",
+    "detail": "The seven behaviour modules this change adds, driven end to end against REAL git, REAL worktrees and the REAL canonical triage lock — including the deterministic data-loss repro (an unlocked append during the commit window) and the four-consumer CI-guard composition test."
+  }
 }

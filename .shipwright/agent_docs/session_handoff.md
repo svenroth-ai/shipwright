@@ -1,39 +1,39 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-07-31-triage-store-failsafe"
+run_id: "iterate-2026-07-28-docs-placement-rule"
 phase: "iterate"
-reason: "iterate: fail-safe fixes to the triage-store primitives (S1 of IT-1)"
-timestamp: "2026-07-31T10:12:33.870577+00:00"
+reason: "iterate: docs/ placement rule + remove one generated artifact and five finished records"
+timestamp: "2026-07-28T12:18:50.089137+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-07-31 10:12:33 UTC
+> Auto-generated 2026-07-28 12:18:50 UTC
 
 ## Session Info
 
-- **Session ID**: 2be17459-8c65-48ac-8fdc-83f4bc0acc54
-- **Timestamp**: 2026-07-31 10:12:33 UTC
-- **Reason**: iterate: fail-safe fixes to the triage-store primitives (S1 of IT-1)
+- **Session ID**: 7c6c7b07-d3a2-4c91-ba4e-fab3535b5067
+- **Timestamp**: 2026-07-28 12:18:50 UTC
+- **Reason**: iterate: docs/ placement rule + remove one generated artifact and five finished records
 
 ## Last Iterate
 
-- **Run ID**: iterate-2026-07-31-triage-store-failsafe
-- **Date**: 2026-07-31T10:12:27.535131Z
-- **Type**: bug
+- **Run ID**: iterate-2026-07-28-docs-placement-rule
+- **Date**: 2026-07-28T12:18:44.151571Z
+- **Type**: change
 - **Complexity**: medium
-- **Branch**: iterate/triage-store-failsafe
-- **ADR**: iterate-2026-07-31-triage-store-failsafe
+- **Branch**: iterate/docs-placement-rule
+- **ADR**: iterate-2026-07-28-docs-placement-rule
 - **Tests passed**: True
-- **Spec**: .shipwright/planning/iterate/iterate-2026-07-31-triage-store-failsafe.md
+- **Spec**: .shipwright/planning/iterate/iterate-2026-07-28-docs-placement-rule.md
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/triage-store-failsafe
-- **Run ID**: `iterate-2026-07-31-triage-store-failsafe`
-- **Spec**: .shipwright/planning/iterate/iterate-2026-07-31-triage-store-failsafe.md
-- **Complexity**: medium (locked)
-- **External Review Marker**: missing
+- **Branch**: iterate/docs-placement-rule
+- **Run ID**: iterate-2026-07-28-docs-placement-rule
+- **Spec**: .shipwright/planning/iterate/iterate-2026-07-28-docs-placement-rule.md
+- **Complexity**: medium · **spec_impact:** none · **affected_frs:** [] ·
+- **External Review Marker**: completed (external_review_state.json @ 2026-07-28T11:58:04)
 
 ### Mandatory replay on Resume
 
@@ -51,8 +51,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/triage-store-failsafe
-- **Last Commit**: 61a5d902 chore(triage): sweep 6 outbox append(s) into branch
+- **Branch**: iterate/docs-placement-rule
+- **Last Commit**: 7ec426a2 chore(triage): sweep 54 outbox append(s) into branch
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -68,17 +68,17 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 | Event | Type | Source | Date |
 |-------|------|--------|------|
-| evt-f2b18035 | grade_snapshot | — | 2026-07-31 |
-| evt-c1fa2062 | grade_snapshot | — | 2026-07-31 |
-| evt-32f80e5b | work_completed | iterate (iterate: fail-safe fixes to the triage-store primitives (S1 of IT-1)) | 2026-07-31 |
-| evt-9c4a3a36 | grade_snapshot | — | 2026-07-31 |
-| evt-e690f499 | work_completed | iterate (iterate: the derived-snapshot gate sees the branch, not the tip) | 2026-07-31 |
+| evt-003a4ccb | grade_snapshot | — | 2026-07-28 |
+| evt-a25fc820 | work_completed | iterate (iterate: docs/ placement rule + remove one generated artifact and five finished records) | 2026-07-28 |
+| evt-7963d51e | grade_snapshot | — | 2026-07-28 |
+| evt-2df150c5 | work_completed | iterate (Make a conditional session policy gating subagents a question asked before Stage 1 rather than a silent not_run at F11, and define what a real blocker is.) | 2026-07-28 |
+| evt-5f7e67f6 | grade_snapshot | — | 2026-07-28 |
 
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 413
-- **Last iterate**: change — iterate: fail-safe fixes to the triage-store primitives (S1 of IT-1) (2026-07-31)
+- **Total work events**: 400
+- **Last iterate**: change — iterate: docs/ placement rule + remove one generated artifact and five finished records (2026-07-28)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
 ## Recent Decisions
