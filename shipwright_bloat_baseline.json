@@ -319,9 +319,9 @@
     {
       "path": "plugins/shipwright-iterate/agents/sub-iterate-runner.md",
       "limit": 400,
-      "current": 479,
-      "state": "grandfathered",
-      "adr": null
+      "current": 497,
+      "state": "exception",
+      "adr": "ADR-119"
     },
     {
       "path": "plugins/shipwright-iterate/scripts/lib/classify_complexity.py",

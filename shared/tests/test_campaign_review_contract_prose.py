@@ -1,48 +1,29 @@
-"""Prose guards for the CAMPAIGN review contract — the runner, its schema, `campaign-mode.md`.
+"""Prose guards for the CAMPAIGN review contract — the runner and its schema.
 
 Split from the standalone half by ARTIFACT (external plan review, gemini #2).
 These pin that the runner records each pass under the name of whoever
-performed it, that `delegated_to_skill` is deprecated rather than deleted, and
-that `campaign-mode.md` describes a step that can actually happen.
+performed it, and that `delegated_to_skill` is deprecated rather than deleted.
+
+The step-3f-bis guards live in `test_campaign_step_3f_bis.py`; shared helpers
+in `_campaign_prose_harness.py`.
 """
 
 from __future__ import annotations
 
 import json
-import re
+import sys
 from pathlib import Path
 
-REPO_ROOT = Path(__file__).resolve().parents[2]
-_ITERATE = REPO_ROOT / "plugins" / "shipwright-iterate"
-_SKILL_DIR = _ITERATE / "skills" / "iterate"
+sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-REVIEWS_DOC = _SKILL_DIR / "references" / "iteration-reviews.md"
-CAMPAIGN_DOC = _SKILL_DIR / "references" / "campaign-mode.md"
-RUNNER_DOC = _ITERATE / "agents" / "sub-iterate-runner.md"
-RUNNER_SCHEMA = _ITERATE / "agents" / "sub_iterate_runner_contract.schema.json"
-
-
-def _norm(text: str) -> str:
-    """Normalise markdown so wording is asserted, not layout.
-
-    Unlike the sibling helper in `test_review_cascade_decoupled.py`, underscores
-    are PRESERVED: half of what this module asserts is CLI flags
-    (`--review-type external_code`), and stripping `_` as markdown emphasis
-    silently turned every such assertion into one that could never match.
-    """
-    text = text.replace("—", "-").replace("’", "'").replace("§", "")
-    text = re.sub(r"^[ \t]*>[ \t]?", " ", text, flags=re.MULTILINE)
-    text = re.sub(r"[*`]+", "", text)
-    return re.sub(r"\s+", " ", text).strip().lower()
-
-
-def _section(doc: Path, heading: str, *, stop: str = "\n### ") -> str:
-    """The body of one `###` section, up to the next same-level heading."""
-    text = doc.read_text(encoding="utf-8")
-    start = text.index(heading)
-    rest = text[start + len(heading):]
-    end = rest.find(stop)
-    return heading + (rest if end < 0 else rest[:end])
+from _campaign_prose_harness import (  # noqa: E402
+    CAMPAIGN_DOC,
+    REVIEWS_DOC,
+    RUNNER_DOC,
+    RUNNER_SCHEMA,
+    norm as _norm,
+    section as _section,
+)
 
 # --- AC4: the runner records under the right name ---------------------------
 
@@ -156,16 +137,38 @@ def test_campaign_doc_drops_the_impossible_parallel_claim():
     )
 
 
-def test_campaign_doc_states_the_residual_gap_honestly():
-    """Until the before-merge cascade lands, campaign sub-iterates get the
-    external review only. The doc must say so rather than imply coverage."""
+def test_campaign_doc_no_longer_declares_the_cascade_absent():
+    """The gap this used to pin is CLOSED by step 3f-bis.
+
+    Until `iterate-2026-07-31-it7b-campaign-cascade` this module asserted the
+    OPPOSITE — that campaign-mode.md said "the internal cascade does not run"
+    and that the external review "carries the code pass alone". Both were true
+    and both had to be stated, because a doc implying coverage it did not have
+    is worse than one admitting the hole. Now the delegate ADR-029 named has a
+    step, so the same honesty requirement inverts: the doc must not keep
+    telling readers the cascade is absent when it runs at 3f-bis.
+    """
     norm = _norm(CAMPAIGN_DOC.read_text(encoding="utf-8"))
-    assert "the internal cascade does not run" in norm, (
-        "campaign-mode.md must state that the internal cascade does not "
-        "currently run for sub-iterates"
+    assert "the internal cascade does not run" not in norm, (
+        "campaign-mode.md still declares the internal cascade absent, but "
+        "3f-bis runs it — a reader would skip the step they are owed"
     )
-    assert "carries the code pass alone" in norm, (
-        "…and that the external review carries it alone. The earlier "
-        "assertion (`\"external\" in norm`) was true before this change too — "
-        "campaign-mode.md has always mentioned the External Plan Review."
+    assert "carries the code pass alone" not in norm, (
+        "the external review no longer carries the code pass alone; "
+        "code-reviewer runs at 3f-bis"
     )
+
+
+def test_campaign_doc_names_where_the_delegated_cascade_runs():
+    """ADR-029 named the orchestrator the delegate on 2026-05-04 and gave it no
+    step for three months. The doc must say WHERE the delegate acts, not merely
+    that one exists — naming a delegate without a step IS the original defect.
+    """
+    norm = _norm(CAMPAIGN_DOC.read_text(encoding="utf-8"))
+    assert "3f-bis" in norm, (
+        "campaign-mode.md must name the step where the delegated cascade runs"
+    )
+    for role in ("spec-reviewer", "code-reviewer", "doubt-reviewer"):
+        assert role in norm, f"the cascade step must name {role}"
+
+

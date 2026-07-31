@@ -1,0 +1,1 @@
+A campaign sub-iterate now runs the same finalization phases as a standalone iterate. The runner contract was missing the end-to-end gate (F0.5), the architecture-doc update (F2), reflection (F3a) and the test-results producer (F5) that the completeness and surface gates read — and its F4 step told every sub-iterate to append to CHANGELOG.md, which the reference forbids.
