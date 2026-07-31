@@ -1,0 +1,104 @@
+{
+  "run_id": "iterate-2026-07-31-adr-index-churn-register",
+  "date": "2026-07-31T14:22:05.343252Z",
+  "event_at": "2026-07-31T10:38:35.040422+00:00",
+  "type": "change",
+  "complexity": "medium",
+  "branch": "iterate/adr-index-churn-register",
+  "spec": ".shipwright/planning/iterate/iterate-2026-07-31-adr-index-churn-register.md",
+  "tests_passed": true,
+  "adr": "iterate-2026-07-31-adr-index-churn-register",
+  "test_completeness": {
+    "status": "complete",
+    "behaviors": [
+      {
+        "behavior": "INDEX.md conflict classifies resolvable not blocking (AC1)",
+        "disposition": "tested",
+        "evidence": "test_the_index_is_registered_as_resolvable_churn PASSED"
+      },
+      {
+        "behavior": "Two parallel ADR iterates both keep their row (AC1-AC4)",
+        "disposition": "tested",
+        "evidence": "test_two_parallel_adr_iterates_both_keep_their_row PASSED (real git, real integrate_main.integrate)",
+        "category": "integration"
+      },
+      {
+        "behavior": "The merge really conflicted - --theirs was taken, not a clean 3-way",
+        "disposition": "tested",
+        "evidence": "same test: merge commit index == mainline side"
+      },
+      {
+        "behavior": "The committed index is re-derived from the MERGED folder (AC2)",
+        "disposition": "tested",
+        "evidence": "same test: equals generator output over the merged tree"
+      },
+      {
+        "behavior": "The re-derive runs on the real path, which passes only=set() (AC3)",
+        "disposition": "tested",
+        "evidence": "same test goes red if the call moves back inside regenerate_tracked_snapshots"
+      },
+      {
+        "behavior": "The index is not a DERIVED_SNAPSHOTS member so the restore cannot rewind it (AC4)",
+        "disposition": "tested",
+        "evidence": "test_the_index_is_not_a_derived_snapshot PASSED"
+      },
+      {
+        "behavior": "A failed refresh is reported in the run result, not swallowed",
+        "disposition": "tested",
+        "evidence": "test_a_failed_index_refresh_is_reported_not_swallowed PASSED"
+      },
+      {
+        "behavior": "The run stays fail-soft (status ok) on a failed refresh",
+        "disposition": "tested",
+        "evidence": "same test, status assertion"
+      },
+      {
+        "behavior": "A failed stage leaves no dirty index",
+        "disposition": "tested",
+        "evidence": "test_a_failed_stage_leaves_no_dirty_index PASSED (mutation-verified)"
+      },
+      {
+        "behavior": "A failed stage leaves the stale --theirs copy, not something else",
+        "disposition": "tested",
+        "evidence": "same test: mainline row present, branch row absent"
+      },
+      {
+        "behavior": "Doc-sync stays 1:1 in both directions (AC5)",
+        "disposition": "tested",
+        "evidence": "test_churn_merge_doc_sync PASSED"
+      },
+      {
+        "behavior": "Existing churn classify/dedup/validate rules still hold",
+        "disposition": "tested",
+        "evidence": "test_churn_merge.py 30 PASSED"
+      },
+      {
+        "behavior": "Existing resolver + integrate behavior unchanged",
+        "disposition": "tested",
+        "evidence": "test_resolve_churn_conflicts.py + test_integrate_main.py PASSED"
+      }
+    ],
+    "counts": {
+      "testable": 13,
+      "tested": 13,
+      "untestable": 0,
+      "untested_testable": 0
+    },
+    "enumeration_basis": {
+      "acs": 6,
+      "covered_acs": 6
+    }
+  },
+  "surface_verification": {
+    "surface": "cli",
+    "exit_code": 0,
+    "tests_run": 35,
+    "runner": "uv run pytest shared/tests/test_adr_index_churn_integration.py shared/tests/test_churn_merge.py -q"
+  },
+  "declared_removals": [
+    {
+      "path": "shared/tests/test_adr_index_churn_integration.py::test_the_regenerated_index_survives_the_derived_restore",
+      "reason": "Deleted during code review: it passed with the feature fully reverted (main never touched the index, so the merged tree kept branch B's copy regardless of the refresh) and its stated ordering guard was unreachable. AC4 is carried by test_the_index_is_not_a_derived_snapshot plus the real cascade test."
+    }
+  ]
+}

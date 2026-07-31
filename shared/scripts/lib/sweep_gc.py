@@ -20,16 +20,24 @@ import json
 from pathlib import Path
 
 from lib.churn_merge import TRIAGE_LOG
+from lib.git_base import run_git_soft
 from lib.sweep_text import normalized_set
-from lib.worktree_isolation import run_git
 
 
 def delivered_membership(main_root: Path, default_branch: str) -> tuple[set[str], set[str]]:
     """Read ``origin/<default>:<triage>`` and parse it into the ``(append_ids, text)``
     GC anchors. An outbox line is safe to drop only once reachable from ``origin``.
-    ``check=False`` so a missing ref / file yields ``(set(), set())`` — nothing GC'd
-    (fail-safe; a non-delivered id always survives)."""
-    proc = run_git(["show", f"origin/{default_branch}:{TRIAGE_LOG}"], cwd=main_root, check=False)
+    A non-zero exit yields ``(set(), set())`` — nothing GC'd (fail-safe; a
+    non-delivered id always survives).
+
+    Via :func:`lib.git_base.run_git_soft`, so a TIMEOUT lands in that same fail-safe
+    branch instead of raising. This runs inside the sweep's canonical triage lock and
+    on the ``setup_iterate_worktree`` step-5 path, where an escaping ``TimeoutExpired``
+    aborts setup after ``git worktree add`` has already succeeded. "Could not read
+    origin" and "origin has nothing" call for the identical, already-safe answer:
+    drop nothing.
+    """
+    proc = run_git_soft(["show", f"origin/{default_branch}:{TRIAGE_LOG}"], cwd=main_root)
     if proc.returncode != 0:
         return set(), set()
     return parse_delivered(normalized_set(proc.stdout))

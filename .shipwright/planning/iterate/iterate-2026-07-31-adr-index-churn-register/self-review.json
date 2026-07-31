@@ -1,0 +1,44 @@
+{
+  "items": [
+    {
+      "name": "Spec Compliance",
+      "verdict": "pass",
+      "note": "AC1-AC6 each implemented and tested; AC3 satisfied by placement rather than a documented exception after the first design was found to be unreachable on the real path."
+    },
+    {
+      "name": "Error Handling",
+      "verdict": "pass",
+      "note": "Fail-soft by design and never silent: refresh failure, stage failure and restore failure each append their own step the caller returns. check=False everywhere in the post-merge window, per the module contract that nothing there may raise."
+    },
+    {
+      "name": "Security Basics",
+      "verdict": "pass",
+      "note": "No network, no secrets, no user input. Only new surface is reading an already-committed ADR folder and writing one file inside it."
+    },
+    {
+      "name": "Test Quality",
+      "verdict": "pass",
+      "note": "5 tests, all real-git through the actual integrate_main.integrate with no stubbed regenerator. The stage-failure fix was mutation-checked (replacing the restore with pass turns it RED). One test that passed with the feature reverted was DELETED rather than patched."
+    },
+    {
+      "name": "Performance Basics",
+      "verdict": "pass",
+      "note": "One extra folder scan per integrate merge; negligible against the git and network work already in that phase."
+    },
+    {
+      "name": "Naming & Structure",
+      "verdict": "pass",
+      "note": "Placement moved to integrate_regenerate after the bloat gate showed resolve_churn_conflicts.py sits exactly at its ADR-099 ceiling; churn_merge.py trimmed 300 -> 297 so headroom is restored rather than consumed."
+    },
+    {
+      "name": "Affected Boundaries",
+      "verdict": "pass",
+      "note": "Registry <-> doc table (doc-sync 1:1 both directions) and the producer/consumer pair, corrected after Stage 1 caught the row naming an abandoned consumer. That table is machine-parsed into the compliance artifact, so a false row would have shipped a false traceability record."
+    },
+    {
+      "name": "Test Hygiene Probe",
+      "verdict": "pass",
+      "note": "No skips, no xfails. cross_component fires on this diff, so the F11 integration-coverage gate applies and is satisfied by a category:integration behavior. UTF-8 forced on git reads (cp1252 mangles the em-dash in every index row)."
+    }
+  ]
+}

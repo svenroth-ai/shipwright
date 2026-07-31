@@ -189,17 +189,22 @@ def should_route_to_outbox(project_root: Path | str) -> bool:
     (2) ``current_branch == default_branch`` (idle main, not an ``iterate/*``
     branch whose writes ship in the PR — branch-based, NOT ``is_worktree``).
     Every no-origin repo, non-default branch, and git error fail safe to tracked.
+    (3) NEVER under CI: a runner meets both conditions, and the gitignored outbox
+    dies with it (``trg-6af8dc72``; rationale in :mod:`lib.ci_env`).
     """
     try:
         scripts_dir = str(Path(__file__).resolve().parent)
         if scripts_dir not in sys.path:
             sys.path.insert(0, scripts_dir)
+        from lib.ci_env import ci_active  # noqa: PLC0415
         from lib.worktree_isolation import (  # noqa: PLC0415
             current_branch,
             default_branch,
             run_git,
         )
 
+        if ci_active():
+            return False
         root = Path(project_root)
         has_origin = (
             run_git(["remote", "get-url", "origin"], cwd=root, check=False).returncode
@@ -308,8 +313,8 @@ def _append_line(project_root: Path | str, line: str, *, to_outbox: bool) -> Non
     # the PREVIOUS writer left a trailing newline, or two records land on one physical
     # line. Runs inside the caller's canonical lock (every call site holds it).
     needs_separator = _load_jsonl_records().ends_without_newline(path)
-    # FIX A: gitignored outbox → newline="" keeps LF on all platforms (D2 ADR).
-    with open(path, "a", encoding="utf-8", newline="" if to_outbox else None) as fp:
+    # newline="": LF on all platforms, for BOTH stores (FIX A/D2 + this run's AC-2).
+    with open(path, "a", encoding="utf-8", newline="") as fp:
         if needs_separator:
             fp.write("\n")
         fp.write(line)

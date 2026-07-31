@@ -49,7 +49,10 @@ def test_f11_defines_delivered_as_merged_and_kills_shoot_and_forget() -> None:
     # esac to AFTER `case "$?" in` so we slice the delivery-watch block, not the arm.
     cstart = text.index('case "$?" in')
     block = text[cstart:text.index("esac", cstart)]
-    for case in ("2)", "3)", "4)", "*)"):
+    # 5) 6) 7) were added with the delivery ladder
+    # (iterate-2026-07-31-f11-delivery-truth); an unpinned exit code is one a future
+    # edit can silently turn into a fall-through that claims delivery.
+    for case in ("2)", "3)", "4)", "5)", "6)", "7)", "*)"):
         seg = block[block.index(case):]
         seg = seg[:seg.index(";;")]
         assert "exit 1" in seg, (

@@ -823,7 +823,7 @@
     {
       "path": "shared/scripts/triage.py",
       "limit": 300,
-      "current": 696,
+      "current": 701,
       "state": "exception",
       "adr": "ADR-100"
     },

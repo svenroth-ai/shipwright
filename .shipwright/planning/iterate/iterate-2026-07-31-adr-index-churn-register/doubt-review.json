@@ -1,0 +1,37 @@
+{
+  "stage": "doubt",
+  "gating": "advisory-must-address",
+  "verdict": "SHIP",
+  "doubts": [
+    {
+      "severity": "medium",
+      "lens": "boundary-contract",
+      "claim_under_doubt": "the stage-failure message describes the state it left",
+      "disproof_attempt": "The print sat OUTSIDE the restore if, so on the restore-failed path both halves were false: the file was NOT rewound (it holds correct re-derived content) and is NOT stale, it is modified-but-unstaged - and the prescribed remedy (regenerate) rewrites the same bytes and cannot clear it. Same class integrate_merge.py documents as rated HIGH by external review.",
+      "what_would_resolve_it": "FIXED - the message now branches on the checkout return and names the real state plus a remedy that works (git add / git checkout HEAD --)"
+    },
+    {
+      "severity": "low",
+      "lens": "boundary-contract",
+      "claim_under_doubt": "failure is recorded in steps, never only on stderr",
+      "disproof_attempt": "No gate reads the tokens: F11 branches on ensure_current exit code and all three failure branches return status ok -> exit 0. Technically true, functionally empty; in an adopted repo the stderr line really is the only signal.",
+      "what_would_resolve_it": "FIXED - ADR-118 and the code comment now say exactly this and name a gate that reads the tokens as a follow-up"
+    },
+    {
+      "severity": "low",
+      "lens": "boundary-contract",
+      "claim_under_doubt": "the stage-failure test pins the fail-soft outcome",
+      "disproof_attempt": "It asserted the tree was clean but not that the committed index is the stale --theirs copy, so a future change that cleaned by reverting more than intended stays green.",
+      "what_would_resolve_it": "FIXED - asserts mainline row present and this branch row ABSENT"
+    }
+  ],
+  "refuted": [
+    "N-way / repeated ensure_current losing or duplicating a row - the re-derive is a full folder scan keyed on filesystem identity, not a delta, and a stale index self-heals on the next integrate",
+    "a row pointing at a file not in the tree - doubly closed by the .tmp suffix filter and .gitignore",
+    "is_derived_churn exemption hiding a regression - the byte-exact drift guard is strictly more precise than a line-level check on a wholesale-regenerated file",
+    "an unrecoverable repository state - nothing deleted, no history rewritten, merge commit intact by construction, every branch one command from clean",
+    "consumer-repo blast radius being worse than before - a recoverable stale view beats the previous hard ensure_current stop, and it fixes the pr_self_merge rung too",
+    "a sixth way the integration test passes with the feature broken - every mutation traced turns it red"
+  ],
+  "note": "The reviewer reported it had no Bash despite the prompt offering it, and said so rather than implying execution; findings are source-traced."
+}

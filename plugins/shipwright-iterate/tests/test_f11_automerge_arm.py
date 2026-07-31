@@ -10,14 +10,23 @@ open, never fail the whole iterate run).
 These assertions pin the four properties that make the arm safe:
 
 1. The arm call exists with the exact flags `--auto --squash --delete-branch`.
-2. It is guarded to `iterate/*` branches (the `case … iterate/*)` glob).
-3. It is fail-soft (a `||` fallback, and NOT `|| exit`/hard failure).
+2. It is guarded to `iterate/*` branches.
+3. It is fail-soft — a refusal is classified, never a hard exit.
 4. The Kern SKILL.md F11 one-liner advertises the arm so the index does
    not drift from the reference.
 
-It is content drift-protection, mirroring `test_skill_step_6_rules_present.py`
-and `test_skill_references_link.py` — the agent only executes what the
-prose says, so the prose is the implementation.
+**Where they live moved; the properties did not**
+(iterate-2026-07-31-f11-delivery-truth). Arming used to be a shell block in this
+prose. It is now the first rung of `shared/scripts/tools/deliver_pr.py`, because
+whether anything will EVER merge the PR is only answerable from how the arm turned
+out — and on an unprotected base the answer is "nothing will", which prose alone
+could not act on. So these tests pin the arm against the code that performs it, and
+pin the prose against still delegating to that code.
+
+The behavioural half — exact flags, fail-soft, campaign defer — is also asserted in
+`shared/tests/test_deliver_pr.py`, which can drive the real function. This root only
+reads text, because `import lib.pr_delivery` from a plugin test root resolves against
+the plugin's OWN `lib` package (ADR-045).
 """
 
 from __future__ import annotations
@@ -32,8 +41,36 @@ F11_PATH = ITERATE_SKILL / "references" / "F11.md"
 SKILL_PATH = ITERATE_SKILL / "SKILL.md"
 
 
+DRIVER_PATH = (
+    Path(__file__).resolve().parents[3]
+    / "shared" / "scripts" / "tools" / "deliver_pr.py"
+)
+
+
 def _f11_text() -> str:
     return F11_PATH.read_text(encoding="utf-8")
+
+
+PREDICATE_PATH = (
+    Path(__file__).resolve().parents[3]
+    / "shared" / "scripts" / "lib" / "pr_delivery.py"
+)
+
+
+def _predicate_text() -> str:
+    """The pure permission decisions the driver consults, as text."""
+    assert PREDICATE_PATH.is_file(), f"delivery decisions missing at {PREDICATE_PATH}"
+    return PREDICATE_PATH.read_text(encoding="utf-8")
+
+
+def _driver_text() -> str:
+    """The delivery driver's SOURCE, read as text rather than imported.
+
+    Importing it here would pull `lib.pr_delivery` in against the iterate plugin's
+    own `lib` package (ADR-045). The assertions that need real behaviour live in
+    `shared/tests/test_deliver_pr.py`, which has the right test root for them."""
+    assert DRIVER_PATH.is_file(), f"delivery driver missing at {DRIVER_PATH}"
+    return DRIVER_PATH.read_text(encoding="utf-8")
 
 
 def _join_line_continuations(text: str) -> str:
@@ -47,15 +84,31 @@ def test_f11_reference_exists() -> None:
 
 
 def test_arm_call_present_with_exact_flags() -> None:
-    """The auto-merge arm must call `gh pr merge … --auto --squash
-    --delete-branch` (the spec's exact flag set)."""
-    text = _join_line_continuations(_f11_text())
+    """The exact flag set, pinned in the code that now issues it."""
     assert re.search(
-        r"gh pr merge\s+\S+\s+--auto\s+--squash\s+--delete-branch", text
+        r'"pr",\s*"merge",\s*pr_url,\s*"--auto",\s*"--squash",\s*"--delete-branch"',
+        _driver_text(),
     ), (
-        "F11.md must arm auto-merge with "
-        "`gh pr merge \"$pr_url\" --auto --squash --delete-branch` "
-        "after `gh pr create`."
+        "deliver_pr.py must arm auto-merge with exactly "
+        "`gh pr merge <pr_url> --auto --squash --delete-branch`."
+    )
+
+
+def test_f11_delegates_delivery_and_keeps_no_second_arm_of_its_own() -> None:
+    """The prose hands delivery to the driver. It must NOT also carry a shell arm:
+    two arms in two places is precisely the drift this file exists to prevent."""
+    text = _f11_text()
+    assert "deliver_pr.py" in text, (
+        "F11.md must run deliver_pr.py, which arms and then decides who merges."
+    )
+    executable = [
+        ln for ln in _join_line_continuations(text).splitlines()
+        if "gh pr merge" in ln and "--auto" in ln
+        and not ln.lstrip().startswith(("#", "*", "-", "1.", "2.", "3.", ">"))
+    ]
+    assert not executable, (
+        "F11.md must no longer arm auto-merge in shell — the driver owns it: "
+        + "; ".join(executable)
     )
 
 
@@ -64,28 +117,45 @@ def test_arm_is_guarded_to_iterate_branches() -> None:
     human PR never self-arms."""
     text = _f11_text()
     assert "iterate/*" in text, (
-        "F11.md auto-merge arm must be guarded to `iterate/*` branches "
-        "(e.g. a `case \"$branch\" in iterate/*)` glob) — a manual PR "
-        "must never self-arm."
+        "F11.md must state that ONLY `iterate/*` branches are armed — a manual "
+        "human PR must never self-arm."
+    )
+    assert '--head-branch "iterate/{slug}"' in text, (
+        "the driver must be told which branch is this run's, so it can refuse to "
+        "merge a PR that is not the one this run opened."
+    )
+    driver = _driver_text()
+    assert "wrong_pr(" in driver, (
+        "the driver must check the PR is this run's before ANY mutating call. The check is "
+        "`wrong_pr` rather than `identity_problem` on purpose: identity_problem also "
+        "rejects a non-OPEN PR, and reading the terminal state first meant a MERGED PR "
+        "short-circuited to exit 0 with no identity check at all (Stage 3)."
+    )
+    # …and it must come BEFORE the terminal-state read, not after it.
+    assert driver.index("wrong_pr(") < driver.index("terminal_state_result("), (
+        "identity must be checked before the terminal state is read, or any merged PR in "
+        "the repository can be reported as this run's delivery."
     )
 
 
 def test_arm_is_fail_soft_not_hard_exit() -> None:
-    """`gh pr merge --auto` must be fail-soft: a `||` fallback that warns
-    and leaves the PR open, never `|| exit` / a hard failure that would
-    break F11 for every future iterate when the repo setting is off."""
-    text = _join_line_continuations(_f11_text())
-    arm_lines = [
-        ln for ln in text.splitlines()
-        if "--auto --squash --delete-branch" in ln
-    ]
-    assert arm_lines, "no auto-merge arm line found to check fail-soft"
-    for ln in arm_lines:
-        assert "||" in ln, (
-            "auto-merge arm must have a `||` fail-soft fallback: " + ln
-        )
-        assert not re.search(r"\|\|\s*exit\b", ln), (
-            "auto-merge arm must NOT hard-exit on failure (`|| exit`): " + ln
+    """A refusal must be CLASSIFIED, never fatal.
+
+    The old `|| echo WARN` became `classify_arm_outcome`, which is strictly more
+    than fail-soft: it also decides whether anything can ever merge this PR. What
+    must not come back is an arm whose failure ends the run — a missing repo setting
+    cannot be allowed to break every future iterate."""
+    driver = _driver_text()
+    assert "classify_arm_outcome(" in driver, (
+        "deliver_pr.py must classify the arm's outcome rather than treating a "
+        "non-zero exit as fatal."
+    )
+    arm_block = driver[driver.index('"--auto"'):]
+    arm_block = arm_block[:arm_block.index("self_merging")]
+    for fatal in ("raise ", "sys.exit"):
+        assert fatal not in arm_block, (
+            "an arm refusal must not raise or exit — it is an INPUT to the ladder: "
+            + arm_block[:200]
         )
 
 
@@ -112,6 +182,16 @@ def test_skill_index_line_advertises_arm() -> None:
     assert "--auto" in row and "iterate/" in row, (
         "Kern SKILL.md F11 index row must advertise the `--auto` arm and "
         "its `iterate/`-only scope: " + row
+    )
+    # The index must name the tool that actually delivers, or it sends a reader to a
+    # step that no longer exists. Stage 1 review caught the row still naming
+    # `watch_pr_delivery.py` while F11.md had moved on.
+    assert "deliver_pr.py" in row, (
+        "the F11 index row must name deliver_pr.py as the delivery step: " + row
+    )
+    assert "watch_pr_delivery.py" not in row, (
+        "the F11 index row must not still present the read-only watcher as the "
+        "delivery step: " + row
     )
 
 
@@ -158,17 +238,44 @@ def test_f11_arm_respects_campaign_defer() -> None:
     can defer arming (`=0`) and let the orchestrator merge each PR in turn.
     Substring presence is not enough — pin the exact condition and that it
     precedes the arm."""
-    text = _f11_text()
-    assert '"${SHIPWRIGHT_ITERATE_AUTOMERGE:-1}" = "0"' in text, (
-        "F11.md must gate the arm on an explicit "
-        '`if [ "${SHIPWRIGHT_ITERATE_AUTOMERGE:-1}" = "0" ]` check (default ON=1 '
-        "so single iterates are unchanged)."
+    driver = _driver_text()
+    # The driver consults ONE predicate rather than re-parsing the variable itself —
+    # two readers of one switch is how they drift (Stage 2 review asked for this
+    # consolidation, so pin the shape it asked for, not the literal it replaced).
+    assert "campaign_defers(" in driver, (
+        "deliver_pr.py must honour the campaign defer through "
+        "`lib.pr_delivery.campaign_defers`."
     )
-    gate_pos = text.index("SHIPWRIGHT_ITERATE_AUTOMERGE:-1")
-    arm_pos = text.index("--auto --squash --delete-branch")
+    gate_pos = driver.index("campaign_defers(")
+    arm_pos = driver.index('"--auto"')
     assert gate_pos < arm_pos, (
-        "the campaign-defer gate must WRAP the arm (appear before it) so =0 skips it."
+        "the campaign-defer gate must precede the arm so =0 skips it entirely."
     )
-    assert "DEFERRED" in text, (
-        "the deferred (=0) branch must NOT arm — it echoes a DEFERRED notice."
+    assert "campaign_defer" in driver, (
+        "the deferred branch must be NAMED, not implicit — under a campaign it skips "
+        "both the arm and the self-merge rung."
+    )
+
+    # The predicate itself: it must read THAT variable, and only the literal "0" may
+    # defer, so a standalone iterate with the variable unset is unchanged.
+    predicate = _predicate_text()
+    assert "def campaign_defers(" in predicate, "the campaign predicate moved again"
+    body = predicate[predicate.index("def campaign_defers("):]
+    body = body[:body.index("\ndef ", 1)]
+    assert "SHIPWRIGHT_ITERATE_AUTOMERGE" in body, (
+        "the campaign predicate must read SHIPWRIGHT_ITERATE_AUTOMERGE."
+    )
+    assert '== "0"' in body, (
+        "the defer must trigger on the literal 0 only, so an unset variable leaves "
+        "single iterates unchanged."
+    )
+    # And it must also suppress the self-merge rung, not only the arm.
+    permission = predicate[predicate.index("def self_merge_allowed("):]
+    assert "SHIPWRIGHT_ITERATE_AUTOMERGE" in permission, (
+        "a campaign must suppress the self-merge rung too — a sub-iterate merging "
+        "itself would break the one-PR-at-a-time invariant the defer exists to hold."
+    )
+    assert "SHIPWRIGHT_ITERATE_SELF_MERGE" in _f11_text(), (
+        "F11.md must document the self-merge switch, since it decides whether an "
+        "un-armable PR is delivered or reported as not-delivered."
     )

@@ -1,0 +1,33 @@
+{
+  "success": true,
+  "provider": "openrouter",
+  "degraded": false,
+  "reviews_succeeded": 1,
+  "reviews": {
+    "gemini": {
+      "feedback": "integrate` integrates `main` into `wt_b`, simulating what happens when an iterate branch runs ensure_current (which calls integrate). As shown: \"B then integrates main\".\n\nLet's check `lib.adr_index.refresh_best_effort()`. Wait, does it return an error warning string if it fails?\n\"index_warning = refresh_best_effort(project_root)\"\nIn `lib.adr_index`, `refresh_best_effort` returns `str | None`. If it works it returns `None`, if it fails it returns string.\n\nWait, does `integrate_regenerate.py` return the `steps` anywhere?\nIn python, lists are passed by reference, so `steps.append(...)` modifies the list in place!",
+      "via": "openrouter",
+      "status": "degraded",
+      "reason": "provider reported the reply was cut off (finish_reason=length)"
+    },
+    "openai": {
+      "feedback": "- Category: bug\n- Severity: medium\n- File: `shared/scripts/tools/integrate_regenerate.py:132-144`\n- Finding: If `refresh_best_effort()` successfully rewrites `INDEX.md` but `git add` fails (for example, due to an `index.lock` or an ignored-path configuration), the rewritten index remains as an unstaged working-tree change. The code records `adr-index-stage-failed` but does not restore the pre-refresh file. This contradicts the stated fail-soft/clean-tree behavior and can cause a later unrelated commit to accidentally include the stale regenerated index.\n- Suggestion: On `git add` failure, restore `ADR_INDEX` to its pre-refresh contents (or defer replacing the working-tree file until staging is known to succeed). Add a test that forces `git add` to fail and asserts that `git diff -- ADR_INDEX` is clean afterward.\n\nOverall assessment: The normal conflict-resolution and re-derivation path appears to satisfy AC1\u2013AC6, including meaningful real-git integration coverage. However, the staged-write failure path leaves repository state dirty and should be corrected before shipping.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "openrouter",
+      "status": "success"
+    }
+  },
+  "verdicts": {
+    "gemini": "unavailable",
+    "openai": "revise"
+  },
+  "statuses": {
+    "gemini": "degraded",
+    "openai": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": false,
+    "requires_resolution": true,
+    "reason": "only one reviewer answered \u2014 gemini did not (gemini=unavailable, openai=revise)"
+  }
+}

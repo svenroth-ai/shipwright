@@ -44,8 +44,17 @@ def read_text_verbatim(path: Path) -> str:
     NOT ``Path.read_text(..., newline="")``: that keyword is Python 3.13+ only, while the
     shared scripts run on the CONSUMING project's interpreter (>= 3.11). It took every
     iterate down mid-setup once already (#367).
+
+    ``errors="surrogateescape"``, for the same reason :func:`lib.jsonl_records.read_jsonl_records`
+    uses it and stated first: an interrupted append truncates the store mid multi-byte
+    sequence, and a STRICT decode turns that into a ``UnicodeDecodeError`` out of every
+    caller. This one is called from ``setup_iterate_worktree`` step 5 — i.e. AFTER
+    ``git worktree add`` has already succeeded — so a raise there orphans the worktree it
+    just created. Surrogate escapes also round-trip: re-encoding with the same error
+    handler reproduces the original bytes, so a repair pass can still recover them, which
+    a lossy ``errors="replace"`` would prevent.
     """
     if not path.exists():
         return ""
-    with path.open("r", encoding="utf-8", newline="") as fh:
+    with path.open("r", encoding="utf-8", newline="", errors="surrogateescape") as fh:
         return fh.read()

@@ -37,11 +37,12 @@ Two limits of this, stated so the retry is not mistaken for closure:
     every ``update_step``) remains a deliberate trade-off recorded there, not
     something this closes — under sustained polling a writer can still burn the
     whole budget and fail.
-  * A retry that SUCCEEDS is silent. Nothing counts or reports it, so this
-    module cannot tell you that the unlocked-reader assumption is degrading;
-    it only stops that degradation from costing a write. Wiring an actual
-    signal out of a primitive with 30 call sites is a design decision, tracked
-    separately rather than smuggled in here.
+  * A retry that succeeds is COUNTED but not reported. :func:`sharing_violation_retries`
+    exposes the tally (card ``trg-0a294ef3``); deliberately a counter only, with no
+    warning and no log line, because a warning has no consumer while a counter does —
+    a test can assert an unobstructed write retries zero times. The residual limit is
+    that nothing pushes it at you: a caller has to ask, so this module still will not
+    volunteer that the unlocked-reader assumption is degrading.
 
 ``atomic_write`` is a unique top-level module name (like ``file_lock``), so it
 imports cleanly both as ``lib.atomic_write`` (when ``shared/scripts`` is on the
@@ -53,11 +54,41 @@ from __future__ import annotations
 import contextlib
 import os
 import tempfile
+import threading
 import time
 from pathlib import Path
 
 __all__ = ["durable_atomic_write", "durable_read_bytes", "durable_read_text",
-           "REPLACE_RETRY_BUDGET_SECONDS", "READ_RETRY_BUDGET_SECONDS"]
+           "REPLACE_RETRY_BUDGET_SECONDS", "READ_RETRY_BUDGET_SECONDS",
+           "sharing_violation_retries", "reset_sharing_violation_retries"]
+
+#: Sharing-violation retries this process has performed. Rationale and the residual
+#: limit are in the module docstring's second bullet (card ``trg-0a294ef3``).
+_retry_count = 0
+_retry_count_lock = threading.Lock()
+
+
+def sharing_violation_retries() -> int:
+    """Retries performed so far by this process (replace + read paths combined).
+
+    One counter, not two: both paths are silent in exactly the same way, and the
+    question a caller actually asks is "did this primitive have to retry at all?".
+    """
+    with _retry_count_lock:
+        return _retry_count
+
+
+def reset_sharing_violation_retries() -> None:
+    """Zero the counter — for tests that need a clean baseline."""
+    global _retry_count
+    with _retry_count_lock:
+        _retry_count = 0
+
+
+def _note_retry() -> None:
+    global _retry_count
+    with _retry_count_lock:
+        _retry_count += 1
 
 #: Windows codes seen when someone else has the destination open. Measured on
 #: Windows 11: a plain reader, a memory-mapped holder (what AV/indexers do) and
@@ -100,6 +131,19 @@ def durable_atomic_write(path: Path | str, data: str | bytes) -> None:
     ``str`` is encoded UTF-8 and written verbatim — no newline translation, no
     invented trailing newline — so callers keep full control of line endings
     and serialization (each keeps its own ``json.dumps(...)`` line).
+
+    The encode is STRICT, and both this and :func:`durable_read_text` stay that way
+    on the same reasoning: this primitive has ~35 callers writing git-tracked JSON
+    that is read back strictly, and none of them has a repair pass. A lone surrogate
+    (a path decoded by the OS with ``surrogateescape``, say) must fail HERE, where
+    the caller knows what it was writing — not persist invalid UTF-8 into a tracked
+    artifact and relocate the crash to every future reader of it.
+
+    The triage store legitimately DOES round-trip undecodable bytes, because its
+    readers decode with ``surrogateescape``. Those callers encode themselves and pass
+    ``bytes`` (see ``sweep_outbox``, ``reconcile_triage``, ``sweep_quarantine``,
+    ``triage_header``), so the leniency lives with the two modules that need it
+    instead of on a primitive shared by thirty-five that do not.
 
     Sequence: write to a same-directory temp file → ``fsync`` it → ``os.replace``
     onto ``path`` (atomic on POSIX; on Windows retried past a concurrent reader,
@@ -170,6 +214,7 @@ def _retry_past_sharing_violations(operation, budget_seconds: float):
             remaining = min(deadline - time.monotonic(), budget_seconds)
             if remaining <= 0:
                 raise
+            _note_retry()
             time.sleep(min(delay, remaining))
             delay = min(delay * 2, _RETRY_MAX_SLEEP_SECONDS)
 
@@ -180,7 +225,8 @@ def _replace_retrying_sharing_violations(tmp: str, path: Path) -> None:
                                    REPLACE_RETRY_BUDGET_SECONDS)
 
 
-def durable_read_text(path: Path | str, *, encoding: str = "utf-8") -> str:
+def durable_read_text(path: Path | str, *, encoding: str = "utf-8",
+                      errors: str = "strict") -> str:
     """Read a file whose publisher may be mid-``os.replace``.
 
     The mirror image of the write side, and needed for the same reason. When a
@@ -196,10 +242,21 @@ def durable_read_text(path: Path | str, *, encoding: str = "utf-8") -> str:
     read it through here. A file that stays unreadable past the budget still
     raises, so a genuine permissions problem is not hidden — it is just no
     longer confused with a neighbour's in-flight publish.
+
+    ``errors`` is explicit and callable but stays **strict**, deliberately NOT
+    mirroring the writer's ``surrogateescape``: no triage-store reader goes through
+    here (each does its own ``open``/``read_bytes``), while all four real callers
+    ``json.loads`` a run-config / phase-history file. Lenient would be harmful there —
+    ``config_io`` catches ``JSONDecodeError`` and returns ``{}``, read as "first run,
+    no config yet", whereas a strict ``UnicodeDecodeError`` is a ``ValueError`` and
+    NOT a ``JSONDecodeError``, so it escapes that handler and fails loudly (see
+    ``test_read_gives_up_loudly_rather_than_inventing_an_empty_config``). A
+    triage-side caller can pass ``surrogateescape`` the day one exists.
     """
     target = Path(path)
     return _retry_past_sharing_violations(
-        lambda: target.read_text(encoding=encoding), READ_RETRY_BUDGET_SECONDS)
+        lambda: target.read_text(encoding=encoding, errors=errors),
+        READ_RETRY_BUDGET_SECONDS)
 
 
 def durable_read_bytes(path: Path | str) -> bytes:
