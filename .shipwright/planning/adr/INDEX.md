@@ -45,4 +45,5 @@ _Regenerate:_ `uv run {shared_root}/scripts/tools/rebuild_adr_index.py --project
 - [ADR-116 — A derived view needs a producer on the path that changes it](116-adr-index-has-a-producer.md)
 - [ADR-117 — A passing Tier-3 review retracts its own superseded verdicts](117-retract-your-own-superseded-verdict.md)
 - [ADR-118 — A view the branch carries needs a merge register, not a snapshot register](118-a-branch-carried-view-needs-a-merge-register.md)
+- [ADR-119 — Bloat exception — `plugins/shipwright-iterate/agents/sub-iterate-runner.md` raised to 497-LOC](119-bloat-exception-runner-finalization-parity.md)
 - [Archive — Agent-Doc Update Backlog (verbatim)](_archive-agent-doc-updates.md)

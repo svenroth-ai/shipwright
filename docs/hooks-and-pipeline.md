@@ -2554,18 +2554,18 @@ When a phase detects missing prerequisite artifacts, it should attempt to derive
 
 | Missing Artifact | Derived From | Used By |
 |---|---|---|
-| `.shipwright/designs/visual-guidelines.md` | CSS `:root` variables in `.shipwright/designs/screens/*.html` | Build (Browser Verify), Iterate (F2 Browser Verify), Test (Consistency) |
+| `.shipwright/designs/visual-guidelines.md` | CSS `:root` variables in `.shipwright/designs/screens/*.html` | Build (Browser Verify), Iterate (Browser Verify), Test (Consistency) |
 | `.shipwright/designs/screen-routes.json` | Mockup filenames + router config (`src/router.tsx`) | Test (Design Fidelity), Build (Design Fidelity) |
 | `.shipwright/planning/claude-plan-e2e.md` | `screen-routes.json` + `architecture.md` | Test (E2E Spec Generation) |
-| `dev_url` in build config | `CLAUDE.md` (`PORT=`), `package.json` scripts (`--port`) | Test (Smoke, E2E), Build (Browser Verify), Iterate (F2 Browser Verify — sub-iterate-runner) |
-| `playwright.config.ts` | Template + `dev_url` port substitution | Test (E2E), Build (Browser Verify), Iterate (F2 Browser Verify) |
+| `dev_url` in build config | `CLAUDE.md` (`PORT=`), `package.json` scripts (`--port`) | Test (Smoke, E2E), Build (Browser Verify), Iterate (Browser Verify — sub-iterate-runner) |
+| `playwright.config.ts` | Template + `dev_url` port substitution | Test (E2E), Build (Browser Verify), Iterate (Browser Verify) |
 
 ### Which Phases Auto-Generate
 
 | Phase | Can Auto-Generate |
 |---|---|
 | **Build** (Step 4.5) | `visual-guidelines.md`, `dev_url` detection |
-| **Iterate** (sub-iterate-runner F2) | `dev_url` detection (shared fallback chain with Build Step 4.5) |
+| **Iterate** (sub-iterate-runner Browser Verify) | `dev_url` detection (shared fallback chain with Build Step 4.5) |
 | **Test** (Step B3) | `visual-guidelines.md`, `screen-routes.json`, `claude-plan-e2e.md`, `dev_url`, `playwright.config.ts` |
 | **Plan** (Step 8) | `claude-plan-e2e.md` (if UI project, default enabled) |
 
@@ -2729,7 +2729,7 @@ when the decision-drop actually CARRIES the ADR (parses + `run_id` match +
 non-empty `decision`) or a `**Run-ID:**` line for the run is present in
 `decision_log.md` — an empty/placeholder drop (a silently-lost ADR) no longer
 passes. The `sub-iterate-runner` contract executes F3 + F5c as mandatory steps
-and self-runs this verifier before push (Step 4b). Origin:
+and self-runs this verifier before push (F6-verify). Origin:
 iterate-2026-07-20-runner-finalization-integrity.
 
 **Non-FR change classification (Phase 0a prep, Iterate C.1 enforce).**
