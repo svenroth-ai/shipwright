@@ -37,6 +37,7 @@ from __future__ import annotations
 
 import argparse
 import sys
+from datetime import date
 from pathlib import Path
 
 _SCRIPTS_ROOT = Path(__file__).resolve().parents[1]
@@ -45,6 +46,7 @@ if str(_SCRIPTS_ROOT) not in sys.path:
 
 from accepted_risks import (  # noqa: E402
     STATIC_TARGETS,
+    TARGET_TRIVY_IGNORE,
     RegisterError,
     load_register,
     register_exists,
@@ -73,10 +75,35 @@ __all__ = [
 ]
 
 
+def _ignore_file_exists(project_root: Path | str) -> bool:
+    """Whether ANY Trivy ignore-file form is present on disk.
+
+    Distinguishes "no ignore file" from "an ignore file that yielded nothing",
+    which the reader reports identically as an empty set.
+    """
+    root = Path(project_root)
+    names = (*TRIVYIGNORE_YAML_NAMES, TRIVYIGNORE_FLAT_NAME)
+    return any((root / name).is_file() for name in names)
+
+
 def reconcile(project_root: Path | str) -> dict:
-    """Both-directions comparison of register vs reality."""
+    """Both-directions comparison of register vs reality.
+
+    An ABSENT register reconciles as an empty one rather than being skipped:
+    ``load_register`` already returns ``[]`` for it, and the question this gate
+    asks is "is every live suppression recorded?", never "does a file exist?".
+    """
     entries = load_register(project_root)
     discovered = discovered_suppressions(project_root)
+
+    # `date.min` predates every date a repo would realistically write, so the
+    # expiry filter drops nothing: this is every id in the ignore file, lapsed
+    # or not. Subtracting the live ones leaves the lapsed ones. A stale record
+    # has three very different causes needing different advice — see
+    # `_format_check`; `ignore_unreadable` separates the third from the others.
+    written_down = read_trivyignore_ids(project_root, now=date.min)
+    lapsed = written_down - discovered[TARGET_TRIVY_IGNORE]
+    ignore_unreadable = _ignore_file_exists(project_root) and not written_down
 
     registered: dict[str, set[str]] = {t: set() for t in STATIC_TARGETS}
     unchecked: list = []
@@ -96,6 +123,9 @@ def reconcile(project_root: Path | str) -> dict:
 
     return {
         "entries": entries,
+        "discovered": discovered,
+        "lapsed": lapsed,
+        "ignore_unreadable": ignore_unreadable,
         "unrecorded": unrecorded,
         "stale": stale,
         "unchecked": unchecked,
@@ -114,6 +144,41 @@ def _format_check(result: dict) -> list[str]:
             "the suppression."
         )
     for target, rule in result["stale"]:
+        if target == TARGET_TRIVY_IGNORE and result.get("ignore_unreadable"):
+            # THIRD cause, and the most destructive one to get wrong: the ignore
+            # file is there but yielded nothing, so it probably does not parse.
+            # The reader reports that identically to "no suppressions", which
+            # would otherwise print remove-the-record for every Trivy acceptance
+            # in the register — deleting real records over a YAML typo.
+            lines.append(
+                f"STALE       {target}: {rule}\n"
+                "    An ignore file is present but yielded NO entries — it most "
+                "likely does not parse. Nothing can be concluded about this "
+                "record until that is fixed.\n"
+                "    Fix: check the ignore file's syntax first. Do NOT remove "
+                "register entries on the strength of this line."
+            )
+            continue
+        if target == TARGET_TRIVY_IGNORE and rule in result.get("lapsed", ()):
+            # The entry IS still in the ignore file — its own due date has
+            # passed, so the scanner has stopped applying it. Telling the
+            # operator to "remove the register entry" here would delete an
+            # acceptance that is doing its job, which is the exact outcome
+            # `_is_lapsed`'s fail-safe exists to avoid. This is not a corner
+            # case: a register `expires` and an ignore `expired_at` set to the
+            # SAME day lapse a day apart (the register is active ON its date,
+            # Trivy's entry is not), so a diligently paired acceptance lands
+            # here for one day at every renewal.
+            lines.append(
+                f"STALE       {target}: {rule}\n"
+                "    The register claims this is accepted, and the ignore entry "
+                "is still in the file — but its own expiry (expired_at: / exp:) "
+                "has passed, so the scanner already stopped suppressing it.\n"
+                "    Fix: renew BOTH dates (the ignore entry's and the "
+                "register's), or remove both. Note they lapse a day apart: an "
+                "ignore entry expires ON its date, a register entry AFTER its."
+            )
+            continue
         lines.append(
             f"STALE       {target}: {rule}\n"
             "    The register claims this is accepted, but no such suppression "
@@ -124,20 +189,28 @@ def _format_check(result: dict) -> list[str]:
 
 
 def cmd_check(project_root: Path) -> int:
-    if not register_exists(project_root):
-        print(
-            f"accepted-risks: no register at {project_root} - nothing to reconcile.\n"
-            "  (An absent register is a legacy/fresh repo, not an error.)"
-        )
-        return 0
     result = reconcile(project_root)
+    n_entries = len(result["entries"])
+    n_checked = sum(len(v) for v in result["discovered"].values())
 
-    n_checked = sum(len(v) for v in discovered_suppressions(project_root).values())
-    print(
-        f"accepted-risks check: {len(result['entries'])} register entr"
-        f"{'y' if len(result['entries']) == 1 else 'ies'}, "
-        f"{n_checked} source-controlled suppression(s) reconciled."
-    )
+    if register_exists(project_root):
+        print(
+            f"accepted-risks check: {n_entries} register entr"
+            f"{'y' if n_entries == 1 else 'ies'}, "
+            f"{n_checked} source-controlled suppression(s) reconciled."
+        )
+    else:
+        # Reconciled anyway. Returning success on the missing FILE — as this
+        # gate used to, before discovering anything — meant deleting the
+        # register silenced it while every suppression it recorded stayed live.
+        # A fresh repo still passes, because it suppresses nothing; it now does
+        # so by comparison rather than by exemption
+        # (iterate-2026-07-31-accepted-risk-gate-holes).
+        print(
+            f"accepted-risks check: no register at {project_root} - "
+            f"reconciling {n_checked} source-controlled suppression(s) "
+            "against an empty record."
+        )
     # Never let "not checkable offline" read as "checked and clean".
     for entry in result["unchecked"]:
         print(

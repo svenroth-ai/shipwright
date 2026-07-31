@@ -1,0 +1,1 @@
+The compliance dashboard keeps listing a lapsed Trivy ignore entry, flagged `EXPIRED — re-review`, rather than hiding it the way the gate does; it also folds a repeated ignore id onto its latest expiry so a path-scoped duplicate cannot render a still-suppressing finding as expired.
