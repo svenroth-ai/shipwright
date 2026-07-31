@@ -45,11 +45,16 @@ PYTHON_BUILD_GLOBS = ("requirements*.txt",)
 
 
 def _risk_taxonomy_row() -> str:
-    """The `touches_build` row of the SKILL.md Risk Taxonomy table."""
+    """The `touches_build` row of the SKILL.md Risk Taxonomy table.
+
+    Ends in `raise`, not `pytest.fail`: the latter is `NoReturn` at runtime but
+    static analysis does not model that, so the declared `-> str` kept an
+    implicit `return None` path (CodeQL 1299 on the first push of this PR).
+    """
     for line in SKILL_PATH.read_text(encoding="utf-8").splitlines():
         if line.startswith("| `touches_build`"):
             return line
-    pytest.fail("SKILL.md Risk Taxonomy has no `touches_build` row")
+    raise AssertionError("SKILL.md Risk Taxonomy has no `touches_build` row")
 
 
 def _trigger_cell() -> str:
