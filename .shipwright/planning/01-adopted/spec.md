@@ -738,6 +738,32 @@ _Where the work detail lives_ at the end of this document.
   impossible to determine. A change to the requirements that touches no
   requirement at all is still reported as undetermined for a person to settle,
   never passed in silence. (iterate-2026-07-27-name-the-blocker)
+- (E) Given a finished change whose code host cannot be asked to merge it
+  automatically — the branch it merges into has no protection, or the host's
+  automatic-merge setting is switched off — when the change is delivered, then it is
+  merged once every check the host actually ran has passed, instead of being left
+  open for a person to merge by hand. Where the host merely refuses for the moment,
+  waiting continues as before; where the situation cannot be read at all, the
+  previous behaviour is kept.
+  (iterate-2026-07-31-f11-delivery-truth)
+- (E) Given a change was merged by the tool rather than by the host, when delivery
+  is reported, then the report names who merged it and how many checks the host
+  actually ran — so a delivery resting only on the checks run on the author's own
+  machine can never read as one the host confirmed.
+  (iterate-2026-07-31-f11-delivery-truth)
+- (E) Given a project would rather nothing was ever merged on its behalf, when that
+  preference is recorded, then the tool only ever asks the host to merge, and a
+  change it cannot get merged is reported as not delivered straight away rather than
+  waited on. (iterate-2026-07-31-f11-delivery-truth)
+- (E) Given a change fell behind the work it merges into while it was waiting, when
+  the tool merges it, then it is first brought up to date and checked again, and what
+  gets merged is exactly what was checked — never a stale copy, and never a newer one
+  that arrived in between. (iterate-2026-07-31-f11-delivery-truth)
+- (E) Given the check that a change's record names the run now finishing, when the
+  two names differ only in punctuation or in characters that cannot be seen, then
+  they count as the same name — so the check can never report a mismatch while
+  showing the same name on both sides of it.
+  (iterate-2026-07-31-f11-delivery-truth)
 
 <a id="fr-0112"></a>
 ### FR-01.12 — /shipwright-preview

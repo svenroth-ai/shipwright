@@ -411,12 +411,42 @@ a GitHub Action post-merge regen (host-specific); untracking the snapshots (brea
 (iterate-2026-06-12-delivery-watch).** Arming `gh pr merge --auto` and walking
 away is "shoot and forget": a Required Check can fail afterward and the PR sits
 BLOCKED, un-merged, red. F11's final step runs
-`shared/scripts/tools/watch_pr_delivery.py`, which polls
-`gh pr view --json state,mergeStateStatus,statusCheckRollup,url,baseRefName` until
-the PR is
+`shared/scripts/tools/deliver_pr.py`, which polls
+`gh pr view --json state,mergeStateStatus,statusCheckRollup,url,baseRefName,headRefOid,headRefName`
+until the PR is
 `merged` (delivered), a Required Check fails (STOP — diagnose/fix/re-push/re-watch),
 the PR is closed, or the poll times out while pending (keep watching, not "done").
 A `needs:`-skipped Tier-1/2 `PR Review` counts as a pass.
+
+**Who merges is decided by what the host can do
+(iterate-2026-07-31-f11-delivery-truth).** On a base *without* branch protection
+`gh pr merge --auto` cannot be armed at all — `Protected branch rules not configured
+for this branch`, measured on throwaway PR #501 — and the old watcher then only
+watched, so **every** iterate on such a repo ended not-delivered after the
+1800-second timeout. A private repo on GitHub Free cannot have rulesets, so it could
+never be delivered to. `deliver_pr.py` therefore confirms the PR is this run's (the arm is itself
+mutating — it merges and deletes a branch once green), arms, and if the arm is refused
+classifies *why* from two facts readable without admin rights: `allow_auto_merge` on
+the repository, and `protected` on the base branch (`protected` rather than
+`/rules/branches/…`, because that endpoint reports rulesets only and a
+classic-protection repo answers `[]` while arming works). `protected: false` ⇒ arming can never succeed ⇒ deliver here: wait for green →
+`ensure_current` → **verify the head that will merge** →
+`gh pr merge --squash --match-head-commit <verified-sha>` → confirm `MERGED`, and delete
+the remote ref separately (gh's `--delete-branch` would check out the default branch
+*inside the iterate worktree*). A base that is protected while `allow_auto_merge` is off
+is **exit 6**, deliberately: the protection expresses requirements an operator-token
+merge may bypass, and the remedy is one repository setting. Anything else — an unreadable fact, a draft, a conflict — stays transient
+and keeps watching, so the change only adds outcomes. Self-merge is on by default,
+`SHIPWRIGHT_ITERATE_SELF_MERGE=0` disables it (unparseable values fail closed), and a
+campaign's `SHIPWRIGHT_ITERATE_AUTOMERGE=0` suppresses both arming and self-merge.
+Two invariants the ladder must keep: **what merges is what was verified** (F11 runs
+the verifier before the watch, so a mid-wait refresh is re-verified and the merge is
+pinned) and **checks do not vanish** (a freshly pushed head's empty rollup must not
+read as "green, zero checks"). The pure decisions live in
+`shared/scripts/lib/pr_delivery.py`, the host calls in
+`shared/scripts/lib/pr_delivery_host.py`; `watch_pr_delivery.py` stays the read-only
+diagnostic (`--once`), because a tool a human runs to ask "why is this stuck?" must
+not be able to merge.
 
 **A pending verdict names its blockers
 (iterate-2026-07-27-name-the-blocker).** "Timed out" is not a cause. PR #439 sat

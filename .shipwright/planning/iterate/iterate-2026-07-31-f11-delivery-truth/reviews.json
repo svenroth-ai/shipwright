@@ -1,0 +1,289 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-07-31-f11-delivery-truth",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-07-31T08:46:36.781974+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": "openrouter",
+      "completed_at": "2026-07-31T08:06:06.438650+00:00",
+      "disposition": null,
+      "recorded_by": "external-prose",
+      "parse_status": "unstructured",
+      "raw_excerpt": "External plan review, mode=iterate, provider=openrouter (2 of 2 reached).\nVerdicts: gemini=approve, openai=revise. Contradiction: none (agree within one step).\n\nopenai HIGH x3:\n 1 dependency — a new tool plus prose wires nothing; exit 6 needs a handler in every caller.\n 2 approach  — \"no rulesets\" is not evidence auto-merge is impossible; classic branch\n   protection answers [] while arming works. Limit `unavailable` to definitive conditions.\n 3 edge-case — race on PR head AND base between verification and merge; pin the head SHA\n   and use the host's conditional-head merge.\nopenai MED x4: 4 BEHIND/UNKNOWN/post-push settling unmapped; 5 default-on self-merge widens\n token authority, validate PR identity + fail closed on a bad switch value; 6 reuse the\n watcher's rollup logic instead of re-implementing, prove ready_is_terminal=False unchanged;\n 7 clip() TRUNCATES at 120 chars — comparing clipped values would accept two distinct long ids.\ngemini MED x2 / LOW x2: transient UNKNOWN mergeability; base advances during verification;\n pass --run-id through to re-verification; draft-PR arm failure must classify as transient.\n\nDisposition: ALL eleven folded into the plan; none declined. Two changed the design shape —\n`protected` (readable without admin, covers rulesets AND classic) replaced the rulesets\ndiscriminator, and a non-truncating canonical_run_id was split from the display clip().\nFull table: iterate spec section 6.\n"
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 12,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "correctness",
+          "file": "shared/scripts/lib/pr_readiness.py",
+          "line": null,
+          "finding": "The 'checks do not vanish' floor was a COUNT starting at 0, so (a) the first poll merged an empty-but-CLEAN rollup before Actions had created its check runs, and (b) three checks reporting where three were seen before passed even when the refreshed base had grown to five.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "high",
+          "category": "architecture",
+          "file": "shipwright_bloat_baseline.json",
+          "line": null,
+          "finding": "Three test files crossed the 300-line source limit with no baseline entry, which the Group H audit fails HIGH after merge.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "shared/scripts/lib/pr_readiness.py",
+          "line": null,
+          "finding": "readiness fell through to GREEN for any unrecognised mergeStateStatus, so a new enum member would license a merge on no evidence.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "shared/scripts/lib/pr_readiness.py",
+          "line": null,
+          "finding": "DIRTY was bucketed with BLOCKED, so a branch that conflicted after another iterate merged polled to the 1800s timeout even though ensure_current is the remedy and is already wired into this ladder.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "shared/scripts/lib/pr_self_merge.py",
+          "line": null,
+          "finding": "The pin guaranteed less than it read: --match-head-commit pins whatever the PR head IS, so a commit pushed by anyone else during the wait would have been pinned and merged unverified.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "shared/scripts/lib/pr_self_merge.py",
+          "line": null,
+          "finding": "The pre-merge re-read ran a PR merged in the meantime through the OPEN-only identity check and returned a REFUSAL, aborting the iterate over a PR that was merged and green.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "shared/scripts/lib/pr_delivery_host.py",
+          "line": null,
+          "finding": "No subprocess call had a timeout. timeout_seconds bounds the polling clock, which is consulted only AFTER a fetch returns, so a hung gh escaped every stated bound and the run neither delivered nor failed.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "shared/scripts/lib/pr_delivery_host.py",
+          "line": null,
+          "finding": "'Never raises' was false: a missing gh is an OSError, a blank-stdout zero exit a JSONDecodeError, a null rollup entry an AttributeError — all escaped the except RuntimeError sites as tracebacks instead of the documented exit 5.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "security",
+          "file": "shared/scripts/tools/deliver_pr.py",
+          "line": null,
+          "finding": "--repo was omitted on every mutating call while the watcher passed it, and identity compared branch NAMES only — so a fork and its upstream both matched and the arm could act on one repository while the watch watched another.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "performance",
+          "file": "shared/scripts/lib/pr_self_merge.py",
+          "line": null,
+          "finding": "timeout_seconds was spent per attempt, silently making --timeout-seconds 1800 a 5400-second block.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "architecture",
+          "file": "shared/scripts/tools/deliver_pr.py",
+          "line": null,
+          "finding": "Six loose host callables whose defaults disagreed: capability closed over the MODULE-level gh_json, so faking gh_json alone still fired real gh api calls at the operator's live GitHub.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/scripts/tools/deliver_pr.py",
+          "line": null,
+          "finding": "The campaign predicate had two readers of one switch; the structural-marker comment claimed a gating the code did not do; render_pair blamed truncation for every collision; the invisible class was missing SOFT HYPHEN, WORD JOINER, BOM and the grapheme joiner; two assertions could not fail; the composition harness would HANG rather than fail on a non-terminating implementation; one ledger citation named a test that no longer existed.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-07-31T10:20:53.080096+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 11,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "boundary & contract",
+          "file": null,
+          "line": null,
+          "finding": "\"Never trust the exit code alone — re-read the state\"",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "high",
+          "category": "reversibility",
+          "file": null,
+          "line": null,
+          "finding": "\"the head is also compared with the local HEAD this run verified\"",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "high",
+          "category": "hidden coupling & blast radius",
+          "file": null,
+          "line": null,
+          "finding": "\"What merges is what was verified\"",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "high",
+          "category": "boundary & contract",
+          "file": null,
+          "line": null,
+          "finding": "\"step 0: is this PR even ours? Before anything mutating\"",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "concurrency & ordering",
+          "file": null,
+          "line": null,
+          "finding": "\"the refresh happens immediately before it\"",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "boundary & contract",
+          "file": null,
+          "line": null,
+          "finding": "\"Case B needs no branch of its own ... the host refuses our merge if they are unmet\"",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "hidden coupling & blast radius",
+          "file": null,
+          "line": null,
+          "finding": "The merge is a remote-only operation",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "boundary & contract",
+          "file": null,
+          "line": null,
+          "finding": "\"how many checks the host actually ran\"",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "reversibility",
+          "file": null,
+          "line": null,
+          "finding": "\"The wall-clock budget is spent ONCE across all attempts\"",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "boundary & contract",
+          "file": null,
+          "line": null,
+          "finding": "no false-PASS in canonical_run_id",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "hidden coupling & blast radius",
+          "file": null,
+          "line": null,
+          "finding": "a refusal names the right cause",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-07-31T10:21:41.646302+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": "openrouter",
+      "completed_at": "2026-07-31T10:27:06.126774+00:00",
+      "disposition": null,
+      "recorded_by": "external-prose",
+      "parse_status": "unstructured",
+      "raw_excerpt": "External CODE review, mode=code, provider=openrouter.\nVerdicts: openai=revise (5 findings), gemini=DEGRADED (reply truncated by the provider at\nfinish_reason=length — its visible portion raised the same Host.default binding point as\nopenai's, and is treated as a real finding rather than discarded).\n\nopenai HIGH x2:\n 1 spec — an arm failure with allow_auto_merge=False and base_protected=True classifies\n   ARM_SETTING_OFF (exit 6) while the spec's own case table still promised a self-merge\n   fallback for case B. A genuine code-vs-spec divergence.\n   DISPOSITION: the CODE is right and the SPEC was stale. The narrowing came from Stage 3\n   (a protected base carries required reviews an operator-token merge may bypass, and the\n   remedy is one checkbox), and F11.md/guide.md/hooks-and-pipeline.md had already been\n   updated — section 2's case table had not. Spec corrected; the narrowing stands and is\n   surfaced to the operator in the run summary.\n 2 security — the structural-marker path returned ARM_UNAVAILABLE even when BOTH facts read\n   permissively, so an error STRING alone could route a PROTECTED PR into self-merge. That\n   is precisely the hole the Stage-3 narrowing exists to close.\n   DISPOSITION: FIXED. A marker match can no longer promote past `base_protected is True`;\n   there it yields ARM_SETTING_OFF (report, do not merge). Case C still works when only one\n   fact is readable, because the marker itself asserts the base has no protection.\n   Tests: test_pr_delivery::test_permissive_facts_plus_a_structural_marker_stays_blocked_on_a_protected_base,\n   ::test_a_structural_marker_still_carries_an_unprotected_or_unreadable_base.\n\nopenai MEDIUM x3:\n 3 bug — head_before was read AFTER ensure_current ran, so the unparseable-guard comparison\n   could never detect the commit it exists to detect. FIXED (read before), and the test\n   helper's call ordering was corrected with it.\n 4 bug — the successful self-merge result dropped the watch verdict's checks_passed, so\n   summary() fell back to the observed count and called every observed check \"passing\",\n   re-opening the Stage-3 skipped-is-not-evidence finding. FIXED: checks_passed is carried\n   through the loop and into the delivered result.\n 5 test — no test asserted \"permissive facts + arm failure => blocked\" or the protected-base\n   fallback. FIXED by the two tests named under finding 2, plus\n   test_auto_merge_off_on_a_PROTECTED_base_is_not_self_merge_eligible and the integration\n   test test_a_protected_base_whose_setting_is_off_is_reported_not_merged.\n\ngemini (degraded/truncated) — Host.default() aliased the module-level functions rather than\nBINDING capability to the bundle's own gh_json, so the docstring's guarantee depended on\nevery call site remembering `reader=host.gh_json`. FIXED with functools.partial, so the\nbinding is a property of the factory and cannot be forgotten.\n\nNothing was declined. Two findings changed behaviour (the marker/protected interaction and\nthe checks_passed carry-through); one corrected the spec rather than the code, explicitly.\n"
+    }
+  },
+  "gates": {
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-07-31T09:24:35.377455+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    }
+  }
+}

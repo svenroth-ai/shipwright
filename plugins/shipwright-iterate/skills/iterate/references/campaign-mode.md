@@ -109,7 +109,10 @@ If campaign directory doesn't exist yet:
    # (Arming is for standalone iterates; here it would race the serial sequence
    # and re-introduce the multi-open-PR cascade.) The runners inherit this env;
    # their F11 brings the branch current + pushes but leaves the PR for the
-   # orchestrator to merge.
+   # orchestrator to merge. Since iterate-2026-07-31-f11-delivery-truth this ONE
+   # variable also suppresses the delivery ladder's self-merge rung: a sub-iterate
+   # that merged itself when the host could not arm would break exactly the
+   # one-PR-at-a-time invariant this defer exists to hold.
    export SHIPWRIGHT_ITERATE_AUTOMERGE=0
    ```
 

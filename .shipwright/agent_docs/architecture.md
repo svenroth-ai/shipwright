@@ -168,10 +168,13 @@ Triage tab; `refresh_ci_security.py` folds the latest `security.yml` findings in
 a tracked `.shipwright/compliance/ci-security.json` that lights the compliance
 dashboard's CI-Security section and the Control-Grade Security dimension.
 
-**Auto-merge.** With all Required Checks green (and GHAS review threads
-resolved), iterate F11 brings the branch current through `integrate_main` and
-arms `gh pr merge --auto --squash`; "delivered" means merged + green, verified by
-`watch_pr_delivery.py` (no shoot-and-forget).
+**Delivery.** With all Required Checks green (and GHAS review threads resolved), iterate
+F11 brings the branch current through `integrate_main` and hands the PR to
+`deliver_pr.py`, the capability ladder: it confirms the PR is this run's, arms
+`gh pr merge --auto --squash`, and — where the host structurally *cannot* arm, i.e. the
+base branch is unprotected — waits for green, refreshes, verifies the head that will
+merge and merges it pinned to that commit. "Delivered" means merged + green either way (no
+shoot-and-forget). `watch_pr_delivery.py` remains the read-only diagnostic.
 
 ## See also
 

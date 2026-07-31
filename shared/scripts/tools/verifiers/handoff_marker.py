@@ -53,6 +53,10 @@ _CONTROL_RANGES: tuple[tuple[int, int], ...] = (
     (0x200B, 0x200F),  # zero-width space/joiners, LTR/RTL marks
     (0x202A, 0x202E),  # bidi embeddings + overrides (Trojan-Source)
     (0x2066, 0x2069),  # bidi isolates
+    (0x00AD, 0x00AD),  # SOFT HYPHEN — invisible, and `str.split()` does not collapse it
+    (0x034F, 0x034F),  # COMBINING GRAPHEME JOINER
+    (0x2060, 0x2060),  # WORD JOINER
+    (0xFEFF, 0xFEFF),  # ZERO WIDTH NO-BREAK SPACE / BOM
 )
 _CONTROL_CHARS_RE = re.compile(
     "[" + "".join(f"{chr(lo)}-{chr(hi)}" for lo, hi in _CONTROL_RANGES) + "]"
@@ -115,6 +119,59 @@ def clip(value: str) -> str:
     return value if len(value) <= MAX_MARKER_CHARS else value[:MAX_MARKER_CHARS] + "…"
 
 
+def canonical_run_id(value: str) -> str:
+    """One run id reduced to the form two sources may be COMPARED in.
+
+    Deliberately NOT :func:`clip`. Comparing what was rendered is the right
+    instinct — the F11 freshness check compared raw values while rendering clipped
+    ones, so every difference `clip` erases produced a warning that named the same
+    run on both sides of its own "not" (iterate-2026-07-31-f11-delivery-truth).
+    But `clip` also TRUNCATES at :data:`MAX_MARKER_CHARS`, and canonicalizing
+    through it would call two distinct long ids equal — trading a false WARN for a
+    false PASS, which is strictly worse. So this shares `clip`'s character class
+    and nothing else.
+
+    Only the stated equivalences are applied:
+
+    * surrounding whitespace — a caller's ``--run-id "x "`` names the same run;
+    * ONE pair of wrapping backticks — the shape the card reported;
+    * the control / bidi / zero-width class, which is invisible by definition, so
+      two values differing only there would render identically.
+
+    Case and interior punctuation are left alone: an over-eager normalizer would
+    launder real drift into a pass, which is the failure this check exists to
+    catch. A LONE backtick is likewise left in place — it is not a pair, and a
+    malformed value should stay visibly malformed rather than be silently repaired
+    into a match.
+    """
+    text = _CONTROL_CHARS_RE.sub("", str(value)).strip()
+    if len(text) >= 2 and text.startswith("`") and text.endswith("`"):
+        text = text[1:-1].strip()
+    return text
+
+
+def render_pair(left: str, right: str) -> tuple[str, str]:
+    """Two values for one message, guaranteed to READ as different when they ARE.
+
+    :func:`clip` truncates, so two ids differing only past the display cap render
+    identically — which would reproduce the self-refuting sentence one step
+    further out instead of removing it. When that happens, say where the
+    difference sits rather than showing the same words twice.
+    """
+    shown_left, shown_right = clip(left), clip(right)
+    if shown_left == shown_right and left != right:
+        # Say WHICH way they collide. `clip` both truncates AND collapses whitespace, so
+        # attributing every collision to truncation told an operator the difference lay
+        # past character 120 for two 30-character ids that differed by a non-breaking
+        # space (Stage 2). Only claim truncation when something was actually truncated.
+        truncated = max(len(clip_input) for clip_input in (str(left), str(right))) > MAX_MARKER_CHARS
+        shown_left += (
+            f" (differs beyond the {MAX_MARKER_CHARS} characters shown)" if truncated
+            else " (differs only in whitespace or characters that cannot be seen)"
+        )
+    return shown_left, shown_right
+
+
 def warn(name: str, detail: str) -> CheckResult:
     """A WARNING-severity finding — the handoff is advisory, never load-bearing."""
     return CheckResult(name, False, detail, severity=Severity.WARNING.value)
@@ -128,8 +185,10 @@ def skip(name: str, detail: str) -> CheckResult:
 __all__ = [
     "MAX_MARKER_CHARS",
     "Handoff",
+    "canonical_run_id",
     "clip",
     "read_handoff",
+    "render_pair",
     "skip",
     "warn",
 ]
