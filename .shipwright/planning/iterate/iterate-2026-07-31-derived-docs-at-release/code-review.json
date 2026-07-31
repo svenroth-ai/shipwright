@@ -1,0 +1,97 @@
+{
+  "section": "iterate-2026-07-31-derived-docs-at-release",
+  "review_type": "full-review",
+  "review": [
+    {
+      "severity": "high",
+      "category": "correctness",
+      "file": "shared/scripts/tools/compliance_delivery.py",
+      "finding": "FAIL-OPEN: staged_difference returned [] both when nothing differed and when git FAILED, so a failed `git add` read as noop/exit 0 - green having shipped nothing. FIXED: returns None on either git failure; both deliveries map it to a stage_failed refusal. Pinned by two tests.",
+      "suggestion": "resolved in this diff"
+    },
+    {
+      "severity": "high",
+      "category": "correctness",
+      "file": "shared/scripts/lib/compliance_refresh.py",
+      "finding": "The on-demand commit subject `chore(compliance)` is the ONE subject audit_staleness.find_snapshot_commit deliberately refuses (its docstring says so verbatim - that is the hand-edit case Group E must catch). The docs-only PR would therefore make the next audit skip it, fall back to the previous release, and report the FRESHEST evidence as stale. FIXED: a Run-ID: trailer, which the audit does recognise; grep NOT widened. Pinned by a test.",
+      "suggestion": "resolved in this diff"
+    },
+    {
+      "severity": "medium",
+      "category": "security",
+      "file": "shared/scripts/tools/compliance_provenance.py",
+      "finding": "re.sub with a STRING replacement expands backslash escapes, and safe_run_id permits backslashes - so a release value carrying \n forged a second Source-State: line from outside banner_line's guarantee, and an unknown escape raised re.error inside the producer. FIXED: callable replacement. Two tests.",
+      "suggestion": "resolved in this diff"
+    },
+    {
+      "severity": "medium",
+      "category": "correctness",
+      "file": "shared/scripts/tools/refresh_compliance_docs.py",
+      "finding": "No exception boundary: any raise left regenerated AND STAGED content behind (regenerate_tracked_snapshots stages what it writes), and deliver_pr's branch_failed return sat outside the try. FIXED: try/except around produce+deliver emitting status crashed, and an explicit restore on branch_failed.",
+      "suggestion": "resolved in this diff"
+    },
+    {
+      "severity": "medium",
+      "category": "correctness",
+      "file": "shared/scripts/tools/compliance_delivery.py",
+      "finding": "AC-8b self-disabled on a git failure: _remote_tip returned '' when ls-remote failed and '' was read as 'the base did not move'. FIXED: returns None, which aborts with base_unverifiable.",
+      "suggestion": "resolved in this diff"
+    },
+    {
+      "severity": "medium",
+      "category": "correctness",
+      "file": "shared/scripts/tools/compliance_refresh_produce.py",
+      "finding": "_rewind wrote the entry-time blob back over two APPEND-ONLY logs, destroying any line a concurrent producer appended during the run. FIXED: append_only mode restores only while the snapshot is still an exact prefix; documents keep the wholesale rewind.",
+      "suggestion": "resolved in this diff"
+    },
+    {
+      "severity": "low",
+      "category": "correctness",
+      "file": "shared/scripts/tools/compliance_delivery.py",
+      "finding": "restore_to_head over-reported (every path whose checkout exited 0) and silently left a producer-CREATED path on disk. FIXED: reports what actually changed, and unlinks a path HEAD does not carry.",
+      "suggestion": "resolved in this diff"
+    },
+    {
+      "severity": "low",
+      "category": "correctness",
+      "file": "shared/scripts/tools/compliance_delivery.py",
+      "finding": "The finally's branch restore was unverified and skipped a detached HEAD. FIXED: SHA fallback, returncode checked, returned_to/left_on recorded.",
+      "suggestion": "resolved in this diff"
+    },
+    {
+      "severity": "low",
+      "category": "correctness",
+      "file": "shared/scripts/tools/compliance_delivery.py",
+      "finding": "preflight_pr compared two unchecked git outputs, so an unreadable repository PASSED (both empty compare equal). FIXED: explicit refusal naming which side failed.",
+      "suggestion": "resolved in this diff"
+    },
+    {
+      "severity": "low",
+      "category": "correctness",
+      "file": "shared/scripts/tools/refresh_compliance_docs.py",
+      "finding": "--restore returned 0 unconditionally, so 'the stamped copies won' and 'the worktree still holds the unstamped regen' reported identically. FIXED: restore_incomplete + exit 1.",
+      "suggestion": "resolved in this diff"
+    },
+    {
+      "severity": "low",
+      "category": "architecture",
+      "file": "shared/scripts/tools/compliance_refresh_produce.py",
+      "finding": "The sys.path bootstrap was CONDITIONAL while the sibling it mirrors inserts unconditionally - the ADR-045 collision that reads green locally and red in CI. FIXED in both new tools.",
+      "suggestion": "resolved in this diff"
+    },
+    {
+      "severity": "low",
+      "category": "correctness",
+      "file": "shared/scripts/tools/compliance_refresh_produce.py",
+      "finding": "Windows note: head_blob reads the git blob while the payload holds worktree bytes, so under core.autocrlf the ratio floor is measured across a conversion boundary. Errs only in the safe direction today. ACCEPTED with the one-directional safety now stated.",
+      "suggestion": "resolved in this diff"
+    },
+    {
+      "severity": "low",
+      "category": "readability",
+      "file": "shared/tests/test_compliance_refresh.py",
+      "finding": "test_the_branch_name_is_stable_for_the_same_base asserted f(x)==f(x), tautological for a pure function, and a date-stamped name would have passed it. FIXED: asserts the shape instead.",
+      "suggestion": "resolved in this diff"
+    }
+  ]
+}

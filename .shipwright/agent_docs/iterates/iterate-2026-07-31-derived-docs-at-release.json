@@ -1,0 +1,210 @@
+{
+  "run_id": "iterate-2026-07-31-derived-docs-at-release",
+  "date": "2026-07-31T10:23:03.774465Z",
+  "event_at": "2026-07-31T05:50:52.994375+00:00",
+  "type": "change",
+  "complexity": "medium",
+  "branch": "iterate/derived-docs-at-release",
+  "spec": ".shipwright/planning/iterate/2026-07-31-derived-docs-at-release.md",
+  "tests_passed": true,
+  "adr": "iterate-2026-07-31-derived-docs-at-release",
+  "test_completeness": {
+    "status": "complete",
+    "counts": {
+      "testable": 32,
+      "tested": 32,
+      "untestable": 2,
+      "untested_testable": 0
+    },
+    "enumeration_basis": {
+      "acs": 13,
+      "covered_acs": 13
+    },
+    "behaviors": [
+      {
+        "behavior": "Every DERIVED_SNAPSHOTS path carries an explicit classification; an unclassified one fails a test",
+        "disposition": "tested",
+        "evidence": "test_compliance_refresh.py::test_every_derived_snapshot_carries_a_classification PASSED"
+      },
+      {
+        "behavior": "The refresh set is exactly the compliance directory (seven); literal and prefix rule agree",
+        "disposition": "tested",
+        "evidence": "test_compliance_refresh.py::test_refresh_set_is_exactly_the_compliance_directory PASSED"
+      },
+      {
+        "behavior": "Every exclusion is named with a reason; no session-scoped or run-written path can enter",
+        "disposition": "tested",
+        "evidence": "test_compliance_refresh.py::test_every_non_refreshed_snapshot_is_excluded_by_name_with_a_reason PASSED"
+      },
+      {
+        "behavior": "Regeneration reaches a fixpoint; a producer that never settles is refused",
+        "disposition": "tested",
+        "evidence": "test_compliance_refresh_produce.py::test_a_stable_producer_converges_on_the_second_pass and ::test_a_producer_that_never_settles_fails_rather_than_committing_a_pass PASSED",
+        "category": "integration"
+      },
+      {
+        "behavior": "ci-security.json is outside the fixpoint claim",
+        "disposition": "tested",
+        "evidence": "test_compliance_refresh_produce.py::test_convergence_ignores_a_moving_ci_security PASSED"
+      },
+      {
+        "behavior": "A failed pass is not a pass that found nothing (closed success vocabulary)",
+        "disposition": "tested",
+        "evidence": "test_compliance_refresh_produce.py::test_an_all_error_pass_is_reported_as_a_failure_not_a_fixpoint PASSED"
+      },
+      {
+        "behavior": "A failure in ANY pass fails the run, not only the last one",
+        "disposition": "tested",
+        "evidence": "test_compliance_refresh_produce.py::test_a_failure_in_an_EARLIER_pass_still_fails_the_run PASSED"
+      },
+      {
+        "behavior": "Content floor: an emptied document blocks the refresh",
+        "disposition": "tested",
+        "evidence": "test_compliance_refresh_produce.py::test_an_emptied_document_blocks_the_refresh PASSED"
+      },
+      {
+        "behavior": "--allow-shrink waives the ratio floor and NAMES the paths it covered",
+        "disposition": "tested",
+        "evidence": "test_compliance_refresh_produce.py::test_allow_shrink_waives_the_ratio_floor_and_records_that_it_did PASSED"
+      },
+      {
+        "behavior": "--allow-shrink never waives the empty floor",
+        "disposition": "tested",
+        "evidence": "test_compliance_refresh_produce.py::test_allow_shrink_never_waives_an_emptied_document PASSED"
+      },
+      {
+        "behavior": "A path missing from the payload is blocked, not skipped",
+        "disposition": "tested",
+        "evidence": "test_compliance_refresh_produce.py::test_a_path_missing_from_the_payload_is_blocked_not_skipped PASSED"
+      },
+      {
+        "behavior": "capture skips a symlink instead of reading through it",
+        "disposition": "tested",
+        "evidence": "test_compliance_refresh_produce.py::test_capture_skips_a_symlink_rather_than_reading_through_it PASSED (CI hard-fails the Windows skip)"
+      },
+      {
+        "behavior": "ci-security reports class, scan and staleness; unknown is not fresh; never fails the run",
+        "disposition": "tested",
+        "evidence": "test_compliance_refresh_stamp.py, 5 ci-security tests PASSED"
+      },
+      {
+        "behavior": "A ci-security producer failure never fails the run; a tree-derived one beside it still does",
+        "disposition": "tested",
+        "evidence": "test_compliance_refresh_produce.py::test_a_ci_security_producer_failure_never_fails_the_run and ::test_a_tree_derived_failure_alongside_ci_security_still_refuses PASSED"
+      },
+      {
+        "behavior": "A concurrent append to an append-only input is never destroyed, and the path is reported",
+        "disposition": "tested",
+        "evidence": "test_compliance_input_state.py::test_a_CONCURRENT_append_during_a_pass_is_never_destroyed PASSED"
+      },
+      {
+        "behavior": "A rewritten producer config IS rewound (append-only handling is per path, not per call)",
+        "disposition": "tested",
+        "evidence": "test_compliance_input_state.py::test_a_rewritten_producer_config_IS_rewound PASSED"
+      },
+      {
+        "behavior": "Producer inputs are rewound even when a pass raises",
+        "disposition": "tested",
+        "evidence": "test_compliance_input_state.py::test_the_inputs_are_rewound_even_when_a_pass_raises PASSED"
+      },
+      {
+        "behavior": "A refusal restores an operator's edit rather than resetting to HEAD",
+        "disposition": "tested",
+        "evidence": "test_compliance_input_state.py::test_a_refusal_restores_an_operator_edit_rather_than_resetting_to_head PASSED"
+      },
+      {
+        "behavior": "A left-alone producer input reaches the operator in the result",
+        "disposition": "tested",
+        "evidence": "test_compliance_input_state.py::test_a_left_alone_input_reaches_the_operator PASSED"
+      },
+      {
+        "behavior": "The banner round-trips base= and release=; both absent renders byte-identically to before",
+        "disposition": "tested",
+        "evidence": "test_source_state_fixed_point.py, 12 tests PASSED"
+      },
+      {
+        "behavior": "The stamp touches markdown only; the two .json members and banner-less files are untouched",
+        "disposition": "tested",
+        "evidence": "test_compliance_refresh_stamp.py, 5 stamp tests PASSED"
+      },
+      {
+        "behavior": "A release value cannot forge a second banner line through the substitution, and an unknown escape does not raise",
+        "disposition": "tested",
+        "evidence": "test_compliance_refresh_stamp.py::test_a_release_value_cannot_forge_a_second_banner_line_through_re_sub PASSED"
+      },
+      {
+        "behavior": "The STAGED bytes are the stamped ones, read back out of the git index",
+        "disposition": "tested",
+        "evidence": "test_refresh_compliance_docs.py::test_the_staged_bytes_are_the_STAMPED_ones PASSED",
+        "category": "integration"
+      },
+      {
+        "behavior": "The COMMIT carries the stamp, read from git show <sha>:<rel> rather than the index",
+        "disposition": "tested",
+        "evidence": "test_refresh_compliance_docs.py::test_verify_commit_reads_the_COMMIT_and_catches_an_unstamped_one and ::test_verify_commit_passes_on_a_commit_that_really_carries_the_stamp PASSED",
+        "category": "integration"
+      },
+      {
+        "behavior": "release= only on a release delivery; --pr with --release is refused; the version is never read from git",
+        "disposition": "tested",
+        "evidence": "test_refresh_compliance_docs.py::test_pr_and_release_together_are_refused and ::test_the_release_version_is_never_resolved_from_git PASSED"
+      },
+      {
+        "behavior": "Staging reports only what differed; a failed git add is a refusal, never 'nothing to do'",
+        "disposition": "tested",
+        "evidence": "test_refresh_compliance_docs.py::test_a_failed_git_add_is_not_reported_as_nothing_to_do and ::test_staged_difference_distinguishes_clean_from_blind PASSED"
+      },
+      {
+        "behavior": "The evidence pathspec is presence-filtered and names only the seven",
+        "disposition": "tested",
+        "evidence": "test_refresh_compliance_docs.py::test_stage_hands_back_a_pathspec_that_bounds_the_release_commit PASSED"
+      },
+      {
+        "behavior": "The release skill duplicates no evidence path and still commits the release artifacts",
+        "disposition": "tested",
+        "evidence": "test_release_pathspec_doc_sync.py, 4 tests PASSED"
+      },
+      {
+        "behavior": "The docs-only PR carries ONLY the seven; returns to the starting branch; noop when unchanged; aborts on a moved or unverifiable base; preflight refuses a dirty or behind checkout",
+        "disposition": "tested",
+        "evidence": "test_compliance_delivery.py, 7 tests PASSED",
+        "category": "integration"
+      },
+      {
+        "behavior": "The docs-only commit carries the Run-ID trailer the staleness audit recognises",
+        "disposition": "tested",
+        "evidence": "test_compliance_refresh.py::test_the_docs_commit_carries_the_trailer_the_staleness_audit_recognises PASSED"
+      },
+      {
+        "behavior": "restore_to_head asks whether HEAD carries a path rather than inferring it, and reports what actually moved",
+        "disposition": "tested",
+        "evidence": "test_refresh_compliance_docs.py::test_restore_mode_needs_no_producer_and_reports_what_it_moved PASSED"
+      },
+      {
+        "behavior": "Gate remedy: the printed command clears the gate on a merge HEAD; no base and already-on-trunk both print words rather than a wrong --source; the finding survives; run-written offenders never get --worktree",
+        "disposition": "tested",
+        "evidence": "test_derived_snapshot_gate_remedy.py, 6 tests PASSED",
+        "category": "integration"
+      },
+      {
+        "behavior": "gh pr create itself",
+        "disposition": "untestable",
+        "reason_code": "requires-external-nondeterministic-service",
+        "reason": "the one call that reaches GitHub; substituted through _gh_pr_create so everything up to and including the commit IS tested"
+      },
+      {
+        "behavior": "The prose in guide.md, hooks-and-pipeline.md and the two SKILL.md files",
+        "disposition": "untestable",
+        "reason_code": "requires-manual-visual-judgment",
+        "reason": "the machine-checkable claims inside it (no duplicated evidence path; the release artifacts still committed) are covered by test_release_pathspec_doc_sync.py"
+      }
+    ]
+  },
+  "surface_verification": {
+    "surface": "cli",
+    "tests_run": 30,
+    "exit_code": 0,
+    "evidence_path": ".shipwright/runs/iterate-2026-07-31-derived-docs-at-release/surface_verification.json",
+    "detail": "The real CLI driven end to end against real git repositories: test_refresh_compliance_docs (main(--stage --release) writing and staging, read back out of the git index AND out of the commit), test_compliance_delivery (the on-demand PR protocol, with a stray file and a triage append planted and proven absent from the commit), and test_derived_snapshot_gate_remedy (the printed remedy EXECUTED against a merge HEAD, then the gate re-run)."
+  }
+}

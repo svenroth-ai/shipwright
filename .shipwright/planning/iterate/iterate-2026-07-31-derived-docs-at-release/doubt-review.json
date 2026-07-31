@@ -1,0 +1,89 @@
+{
+  "stage": 3,
+  "doubts": [
+    {
+      "claim_under_doubt": "the change is correct as reviewed by stages 1 and 2",
+      "disproof_attempt": "D1 (high) DISPROVED: the append_only guard protected the case that cannot occur and ate the one it was written for - a concurrent APPEND leaves the snapshot as a prefix, so the guard passed and the append was overwritten. Zero tests touched append_only, and the one nearby test wrote its line BEFORE converge so it passed against the pre-fix code too. FIXED: an append-only log that changed at all is left alone (never destroy an appended line); the fixpoint survives because grade_snapshot is filtered out of every derived document and the triage appends are dedupKey-idempotent. converge.left_alone now surfaces what was skipped. Two new tests, one of which fails against the previous fix.",
+      "file": "shared/scripts/tools/compliance_refresh_produce.py",
+      "lens": "reversibility"
+    },
+    {
+      "claim_under_doubt": "the change is correct as reviewed by stages 1 and 2",
+      "disproof_attempt": "D2 (high) DISPROVED: `git commit -- <pathspec>` records the WORKTREE, not the index - so every check in this change (and every test) read something the release commit does not. Any writer between Step 5.5 and Step 6 substitutes unstamped bytes silently. That is HIGH-1 one step downstream. FIXED: a --verify-commit mode that reads `git show <sha>:<rel>`, wired into Step 6 before the tag is pushed, plus two tests.",
+      "file": "plugins/shipwright-changelog/skills/changelog/SKILL.md",
+      "lens": "reversibility"
+    },
+    {
+      "claim_under_doubt": "the change is correct as reviewed by stages 1 and 2",
+      "disproof_attempt": "D3 (high) DISPROVED: restore_to_head read EVERY non-zero `git checkout` as 'unknown to HEAD' and then deleted the file and reported it as restored, exit 0. On Windows a file held open by an editor or an index.lock race is ordinary, so this deleted a COMMITTED evidence document. FIXED: `git cat-file -e HEAD:<rel>` asks the question instead of inferring it; a held path is `unresolved`, never deleted.",
+      "file": "shared/scripts/tools/compliance_delivery.py",
+      "lens": "reversibility"
+    },
+    {
+      "claim_under_doubt": "the change is correct as reviewed by stages 1 and 2",
+      "disproof_attempt": "D4 (medium) DISPROVED: Step 2b regenerates the documents and Step 2c then refuses on a dirty tree - so --refresh-pr was unreachable in exactly the case that triggers the offer (documents behind => 2b moves them). FIXED: Step 2c runs --restore first.",
+      "file": "plugins/shipwright-compliance/skills/compliance/SKILL.md",
+      "lens": "reversibility"
+    },
+    {
+      "claim_under_doubt": "the change is correct as reviewed by stages 1 and 2",
+      "disproof_attempt": "D5 (medium) DISPROVED: the crash handler calls restore_to_head (HEAD-resetting) while produce argues never to reset to HEAD. ANSWERED rather than changed: a refusal holds produce's found-state snapshot and rewinds precisely; a crash has that frame gone and an unknown partial tree, where 'leave nothing untrusted staged' is the only guarantee left. The cost - an operator edit does not survive a crash - is now stated in the code.",
+      "file": "shared/scripts/tools/refresh_compliance_docs.py",
+      "lens": "reversibility"
+    },
+    {
+      "claim_under_doubt": "the change is correct as reviewed by stages 1 and 2",
+      "disproof_attempt": "D6 (medium) DISPROVED: shipwright_compliance_config.json is REWRITTEN, not appended to, so the prefix guard could never pass and it stayed dirty after every run including every refusal - which then blocked the next --pr on a change the operator never made. FIXED: append-only handling is now per PATH (APPEND_ONLY_INPUTS), not per call. New test.",
+      "file": "shared/scripts/tools/compliance_refresh_produce.py",
+      "lens": "reversibility"
+    },
+    {
+      "claim_under_doubt": "the change is correct as reviewed by stages 1 and 2",
+      "disproof_attempt": "D7 (medium) DISPROVED: commit_pathspec was not presence-filtered, so on a project that has never run a CI scan (no ci-security.json) the printed release command aborts with `fatal: pathspec did not match any files` and commits nothing. Every fixture commits all seven, so it was invisible. FIXED: filtered to present paths.",
+      "file": "shared/scripts/tools/refresh_compliance_docs.py",
+      "lens": "reversibility"
+    },
+    {
+      "claim_under_doubt": "the change is correct as reviewed by stages 1 and 2",
+      "disproof_attempt": "D8 (medium) DISPROVED: ci_security staleness compared ISO-8601 LEXICALLY, but `git show %cI` renders in the committer's local offset while the scanner writes UTC - so a genuinely older scan reads as fresh whenever the offsets differ. FIXED: datetime.fromisoformat on both sides, compared as instants; a naive timestamp is refused rather than assumed UTC.",
+      "file": "shared/scripts/tools/compliance_provenance.py",
+      "lens": "reversibility"
+    },
+    {
+      "claim_under_doubt": "the change is correct as reviewed by stages 1 and 2",
+      "disproof_attempt": "D9 (medium) DISPROVED: when the commit is already contained in the trunk, _branch_base_commit returns the commit itself, so the remedy printed --source=<itself> - trg-d0e4592e's exact no-op returning through the side door, reachable by re-running the verifier against a landed commit. FIXED: base == commit falls through to the words-only branch.",
+      "file": "shared/scripts/tools/verifiers/derived_snapshot_gate.py",
+      "lens": "reversibility"
+    },
+    {
+      "claim_under_doubt": "the change is correct as reviewed by stages 1 and 2",
+      "disproof_attempt": "S1 (uncertain, treated as real) DISPROVED AS STATED: three of six --pr failure paths returned inside the try without restoring, and the finally then carried the producer's written-and-staged output onto the operator's branch. FIXED: restore_to_head on restore_failed, stage_failed and commit_failed.",
+      "file": "shared/scripts/tools/compliance_delivery.py",
+      "lens": "reversibility"
+    },
+    {
+      "claim_under_doubt": "the change is correct as reviewed by stages 1 and 2",
+      "disproof_attempt": "S3 (uncertain) ACCEPTED: triage_inbox.md is safe to exclude, but it is now the only tree-derived refreshable document with NO path to refresh, and nothing on its face says so. ANSWERED in docs/guide.md rather than by widening the set, which is the operator's scope pin.",
+      "file": "docs/guide.md",
+      "lens": "reversibility"
+    },
+    {
+      "claim_under_doubt": "the change is correct as reviewed by stages 1 and 2",
+      "disproof_attempt": "S6 (survived) ACCEPTED: the reference stated AC-13's justification unconditionally, but the second regeneration only happens on the standalone/legacy path - update-step is inert in a driven single_session run. CORRECTED, with the note that --restore is a no-op otherwise so running it unconditionally is still right.",
+      "file": "plugins/shipwright-changelog/skills/changelog/references/compliance-evidence.md",
+      "lens": "reversibility"
+    },
+    {
+      "claim_under_doubt": "the change is correct as reviewed by stages 1 and 2",
+      "disproof_attempt": "Test quality (items 4 and 5) ACCEPTED: the tag-resolution scan covered too few files and missed plumbing beyond `describe`; and the --restore test passed when the file had been DELETED rather than restored, because the destructive branch also reported it in `restored`. Both strengthened.",
+      "file": "shared/tests/test_refresh_compliance_docs.py",
+      "lens": "reversibility"
+    },
+    {
+      "claim_under_doubt": "the change is correct as reviewed by stages 1 and 2",
+      "disproof_attempt": "Test quality (item 2) ACKNOWLEDGED, NOT FIXED: every refusal/rewind/floor test injects `regenerate` or stubs `converge`, so the real producer's side effects are never exercised - which is exactly why D6 was invisible. Row 14 of the ledger is relabelled honestly. Driving the real _update_compliance from a unit test needs a fixture project with a full .shipwright tree and is deferred rather than claimed.",
+      "file": "shared/scripts/tools/compliance_refresh_produce.py",
+      "lens": "reversibility"
+    }
+  ]
+}

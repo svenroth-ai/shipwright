@@ -1,0 +1,30 @@
+{
+  "stage": 1,
+  "verdict": "approve",
+  "spec_citations": [
+    {
+      "kind": "spec-compliance",
+      "spec_ref": "build item 3 + AC-9b - the Source-State banner gains base=/release=, and release= is emitted by the release delivery",
+      "divergence": "ROUND 1 (now fixed): deliver_stage never received the stamped payload, so the release path staged the generator's UNSTAMPED bytes while result.stamped listed all five markdown documents. The headline deliverable was silently absent and the run reported success. Fixed by extracting write_back() and passing payload to both deliveries; pinned by test_the_staged_bytes_are_the_STAMPED_ones, which reads the git INDEX rather than a return value and was verified non-vacuous by the reviewer.",
+      "diff_location": "shared/scripts/tools/refresh_compliance_docs.py"
+    },
+    {
+      "kind": "spec-compliance",
+      "spec_ref": "AC-5 - --allow-shrink overrides the ratio floor and RECORDS that it did, naming the paths",
+      "divergence": "ROUND 1 (now fixed): the flag recorded only allow_shrink: true, so the output could not distinguish 'a document halved and we let it' from 'the flag was passed and never mattered'. Fixed: allow_shrink.waived names the covered paths via a strict re-run after the lenient one passes.",
+      "diff_location": "shared/scripts/tools/compliance_refresh_produce.py"
+    },
+    {
+      "kind": "spec-compliance",
+      "spec_ref": "AC-7 - the release commit uses the explicit pathspec the tool prints",
+      "divergence": "ROUND 1 (now fixed): the skill committed the directory .shipwright/compliance/, which commits every tracked file under it - precisely the widening the pinned seven-file set exists to prevent. Fixed: eight literal paths in Step 6, plus test_release_pathspec_doc_sync.py asserting set equality with REFRESH_SET in both directions.",
+      "diff_location": "plugins/shipwright-changelog/skills/changelog/SKILL.md"
+    },
+    {
+      "kind": "out-of-scope",
+      "spec_ref": "Affected Boundaries - the git operations this change may perform; and the spec's own classification of run-written artifacts as nobody's to regenerate",
+      "divergence": "ROUND 1 (now fixed): the producer reset shipwright_events.jsonl and .shipwright/triage.jsonl to HEAD before every pass, which cannot distinguish this run's throwaway appends from appends already in the tree. The --stage path has no clean-tree preflight, so a dirty event log - the normal mid-session state - would have been discarded. That is trg-ad29a709's defect in a different place. Fixed: snapshot the inputs once at entry and rewind to THAT snapshot between passes, in a finally.",
+      "diff_location": "shared/scripts/tools/compliance_refresh_produce.py"
+    }
+  ]
+}
