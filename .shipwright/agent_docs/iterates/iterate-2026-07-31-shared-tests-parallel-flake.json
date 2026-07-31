@@ -51,11 +51,16 @@
         "disposition": "untestable",
         "reason_code": "covered-by-existing-test",
         "reason": "test_dev_server_b4_surface_parity.py already guards the surface and is additive-only (missing = names not hasattr), so a private addition cannot trip it; a new test would assert the same list twice."
+      },
+      {
+        "behavior": "The proxy restores shared/scripts on sys.path when it is absent",
+        "disposition": "tested",
+        "evidence": "test_dev_server_windows_npm.py::test_lazy_resolve_restores_shared_scripts_on_sys_path_when_absent PASSED; added after the CI diff-coverage gate caught __init__.py:87 as unexecuted (state.py inserts the path first, so the guard never fires in a normal process). dev_server/__init__.py now 22/22 statements, 100%."
       }
     ],
     "counts": {
-      "testable": 8,
-      "tested": 7,
+      "testable": 9,
+      "tested": 8,
       "untestable": 1,
       "untested_testable": 0
     },

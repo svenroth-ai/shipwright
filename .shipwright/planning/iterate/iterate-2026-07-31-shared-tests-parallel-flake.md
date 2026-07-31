@@ -360,9 +360,12 @@ and untouched, one repaired, three new.
 | 5 | `_start_one` leaves `npm` unresolved on posix | `tested` | the original, **unchanged** assertion in `test_start_one_does_not_resolve_on_unix` |
 | 6 | `_start_one` resolves `npm` → `npm.cmd` on Windows | `tested` | `test_start_one_resolves_npm_on_windows`, untouched |
 | 7 | `_SCRIPTS_DIR` equals the `pathlib` expression it replaced | `tested` | `test_scripts_dir_matches_the_pathlib_derivation_it_replaced`; **demonstrated to bite** — a bogus value fails it (1 failed) where it previously left all tests green |
-| 8 | The public surface is unchanged by the new private name | `untestable` — `covered-by-existing-test` | `test_dev_server_b4_surface_parity.py` — verified additive-only (`missing = ... not hasattr`), so private additions cannot trip it |
+| 8 | The proxy restores `shared/scripts` on `sys.path` when it is absent | `tested` | `test_lazy_resolve_restores_shared_scripts_on_sys_path_when_absent` — added after CI; see below |
+| 9 | The public surface is unchanged by the new private name | `untestable` — `covered-by-existing-test` | `test_dev_server_b4_surface_parity.py` — verified additive-only (`missing = ... not hasattr`), so private additions cannot trip it |
 
-**0 testable-but-untested.** 8 rows against 7 ACs.
+**0 testable-but-untested.** 9 rows against 7 ACs.
+
+**Row 8 was missing until CI failed the build.** The first version of this ledger claimed 0 testable-but-untested while `__init__.py:87` — the `sys.path.insert` under the proxy's guard — was never executed by any test. It is dead in a normally imported process, because `state.py` inserts that path first (Stage 2 said so, and it was recorded as a follow-up rather than read as a coverage gap). The diff-coverage gate caught it at 66.7% and blocked the merge, which is the gate doing exactly its job: a line I touched was unverified. Fixed by exercising the branch — the proxy must not be a free-rider on `state.py` — not by deleting it. `dev_server/__init__.py` is now 22/22 statements.
 
 **Row 7 was wrong until Stage 2 falsified it.** It read `untestable`, on the
 reasoning that a bad `_SCRIPTS_DIR` would break the deferred import. It does not:

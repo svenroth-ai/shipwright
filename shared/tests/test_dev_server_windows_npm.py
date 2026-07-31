@@ -202,6 +202,32 @@ def test_lazy_resolve_does_no_platform_sensitive_work_on_first_call(monkeypatch)
     assert dev_server.resolve_executable is not dev_server._lazy_resolve_executable
 
 
+def test_lazy_resolve_restores_shared_scripts_on_sys_path_when_absent(monkeypatch):
+    """The proxy is self-sufficient about `sys.path`, not a free-rider on state.py.
+
+    `dev_server/state.py` inserts `shared/scripts` at import, so in a normally
+    imported process the proxy's `if _SCRIPTS_DIR not in sys.path` guard never
+    fires and the insert underneath it is dead — which is precisely why it needs
+    its own test rather than being assumed covered. The diff-coverage gate caught
+    that line as unexecuted; the honest answer is to exercise the branch, because
+    nothing in the contract says state.py must keep doing the proxy's job.
+
+    Take the entry out and the proxy must put it back, before its deferred import
+    needs it.
+    """
+    monkeypatch.setattr(dev_server, "resolve_executable",
+                        dev_server._lazy_resolve_executable)
+    # A fresh list, so monkeypatch restores the real sys.path object at teardown
+    # and the proxy's insert cannot leak into the rest of the session.
+    monkeypatch.setattr(sys, "path",
+                        [p for p in sys.path if p != dev_server._SCRIPTS_DIR])
+    assert dev_server._SCRIPTS_DIR not in sys.path
+
+    dev_server.resolve_executable("npm")
+
+    assert sys.path[0] == dev_server._SCRIPTS_DIR
+
+
 def test_importing_dev_server_leaves_lib_cmd_resolver_unbound():
     """The `lib.cmd_resolver` import must stay DEFERRED — and only that.
 
