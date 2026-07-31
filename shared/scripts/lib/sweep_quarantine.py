@@ -132,25 +132,24 @@ def append_quarantine(
     """Durably append ``lines`` (each wrapped with ``quarantined_at`` / ``reason`` /
     ``original``) to the quarantine log. ``now`` overridable for deterministic tests."""
     ts = now or datetime.now(timezone.utc).isoformat()
-    # NOT ``Path.read_text(..., newline="")``: that keyword only exists on Python
-    # 3.13+, while the shared scripts run on the CONSUMING project's interpreter
-    # (pyproject: requires-python >= 3.11). It raised TypeError on 3.11/3.12 and
-    # took setup_iterate_worktree.py down with it — after the worktree was already
-    # created, so every iterate in such a project aborted mid-setup. ``newline=""``
-    # is load-bearing here (the log's existing EOLs must survive the round-trip),
-    # so open the file explicitly instead of dropping it.
-    if path.exists():
-        with path.open(encoding="utf-8", newline="") as fh:
-            existing = fh.read()
-    else:
-        existing = ""
+    # Read BYTES. The previous text read needed an explicit ``newline=""`` open (the
+    # log's existing EOLs must survive the round-trip, and ``Path.read_text(newline=)``
+    # is 3.13+ only, which once took setup_iterate_worktree.py down AFTER the worktree
+    # was already created). Bytes answer that and one more: this runs on the same
+    # interrupted-write path as the rest of the sweep, and a strict decode of a store
+    # truncated mid multi-byte sequence would raise straight out of step 5. Nothing is
+    # decoded here, so nothing can fail to decode or be re-encoded differently.
+    existing = path.read_bytes() if path.exists() else b""
     records = [
         json.dumps({"quarantined_at": ts, "reason": reason, "original": ln}, ensure_ascii=False)
         for ln in lines
     ]
     out = existing
-    if out and not out.endswith("\n"):
-        out += "\n"
-    out += "\n".join(records) + "\n"
+    if out and not out.endswith(b"\n"):
+        out += b"\n"
+    # ``surrogateescape`` on the way out too: a quarantined line reached us through a
+    # surrogate-escaped read, so a strict encode here would crash on exactly the
+    # corrupt line the quarantine exists to preserve. This restores its original bytes.
+    out += ("\n".join(records) + "\n").encode("utf-8", errors="surrogateescape")
     path.parent.mkdir(parents=True, exist_ok=True)
     durable_atomic_write(path, out)

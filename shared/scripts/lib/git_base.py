@@ -16,6 +16,15 @@ from pathlib import Path
 
 DEFAULT_GIT_TIMEOUT = 15.0
 
+#: Generous budget for a git call that fires this repo's pre-commit hooks, whose
+#: cold ``uv run`` routinely exceeds :data:`DEFAULT_GIT_TIMEOUT` on a fresh worktree.
+HOOK_GIT_TIMEOUT = 120.0
+
+#: Conventional shell exit code for "killed by a timeout". :func:`run_git_soft`
+#: reports it so a timeout reaches a caller's existing ``returncode != 0`` branch
+#: instead of raising past it.
+TIMEOUT_RETURNCODE = 124
+
 
 class GitError(RuntimeError):
     """Non-zero exit from a git call invoked with ``check=True``."""
@@ -65,6 +74,40 @@ def run_git(
             f"(exit {proc.returncode}): {err.strip()!r}"
         )
     return subprocess.CompletedProcess(["git", *args], proc.returncode, out, err)
+
+
+def run_git_soft(
+    args: list[str],
+    *,
+    cwd: Path,
+    timeout: float = DEFAULT_GIT_TIMEOUT,
+) -> subprocess.CompletedProcess[str]:
+    """:func:`run_git` that REPORTS a timeout instead of raising it.
+
+    For callers inside a critical section whose contract is "never raises for an
+    expected condition" — the triage sweep, the GC membership read, the main-tree
+    reconcile. Those held the canonical triage lock and wrapped only their
+    ``commit``, so ``add`` / ``diff --cached`` / ``show`` ran bare on the 15 s
+    default. Two things made that worse than slow: :func:`run_git` KILLS the
+    process on timeout, which strands ``.git/index.lock``; and an escaping
+    ``TimeoutExpired`` aborts ``setup_iterate_worktree`` step 5 *after*
+    ``git worktree add`` has already succeeded, orphaning the new worktree.
+
+    A timeout comes back as a failed :class:`subprocess.CompletedProcess` carrying
+    :data:`TIMEOUT_RETURNCODE`, so every existing ``returncode != 0`` branch
+    reports it as the structured error it always was, with no new control flow.
+    Always ``check=False``: raising ``GitError`` would defeat the purpose.
+    """
+    try:
+        return run_git(args, cwd=cwd, check=False, timeout=timeout)
+    except subprocess.TimeoutExpired:
+        return subprocess.CompletedProcess(
+            ["git", *args],
+            TIMEOUT_RETURNCODE,
+            "",
+            f"git {args[0] if args else '?'} timed out after {timeout}s "
+            f"(process killed; a stale .git/index.lock may need clearing)",
+        )
 
 
 # -----------------------------------------------------------------------------

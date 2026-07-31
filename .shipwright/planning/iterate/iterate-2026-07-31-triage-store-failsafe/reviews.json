@@ -1,0 +1,199 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-07-31-triage-store-failsafe",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-07-31T09:42:54.528827+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-07-31T09:44:36.647706+00:00",
+      "disposition": "Mini-Plan reviewed inside the iterate spec by spec-reviewer across three Stage-1 rounds (it is a spec section, not a separate artifact). No separate --mode plan run: the external-review budget went to --mode code, which is the stronger check for a BUG-path change whose plan is seven mechanical steps and whose entire risk is in the code. Skill rule: external LLM review at medium+ — satisfied in code mode, recorded under external_code.",
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 6,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "correctness",
+          "file": "shared/scripts/lib/triage_header.py",
+          "line": null,
+          "finding": "has_header still did a strict read_text one call BEFORE the write that was fixed, so ensure_header still raised UnicodeDecodeError - and the diff's own comment claimed the class had been removed from that module. Made MORE reachable by the (then) lenient writer, which could persist a byte the strict reader refuses.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "high",
+          "category": "correctness",
+          "file": "shared/scripts/lib/atomic_write.py",
+          "line": null,
+          "finding": "Flipping durable_read_text's DEFAULT to surrogateescape was a fail-open regression with NO beneficiary: no triage-store reader goes through it, while all four real callers json.loads a run-config file where config_io maps JSONDecodeError to {} - read by its caller as 'first run, no config yet'.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "shared/scripts/lib/reconcile_triage.py",
+          "line": null,
+          "finding": "Six bare run_git calls remained on the 15s default, two of them INSIDE the canonical lock in the operator's MAIN tree, where a killed process strands .git/index.lock.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "architecture",
+          "file": "shared/scripts/artifact_sync.py",
+          "line": null,
+          "finding": "A module-level 'from lib.git_base import run_git' in a shared/scripts top-level module is the ADR-045 anti-pattern, and the justifying comment inverted the lazy mitigation it claimed to mirror.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "test",
+          "file": "shared/tests/test_triage_delivery_failsafe.py",
+          "line": null,
+          "finding": "test_git_diff_is_bounded_and_utf8 asserted NEITHER property in its name - it stubbed run_git, which is where both live, and captured a timeout value it never asserted.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/scripts/lib/triage_header.py",
+          "line": null,
+          "finding": "The header EOL was decoupled from the appender's on Windows, and has_header read the WHOLE append-only log to inspect line 1 on every tracked append.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-07-31T09:44:22.728570+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 7,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "concurrency & ordering",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: AC-6: _op_in_progress answers yes when it cannot tell — The rebase-merge / rebase-apply / BISECT_LOG loop treated TIMEOUT_RETURNCODE as 'continue', so a timeout returned False and the sweep would commit into an in-progress rebase - where the old bare run_git crashed loudly. A rebase sets NONE of the pseudo-refs the first loop checks, so the second loop is the only detector. The existing test patched every call to 124, so the first loop short-circuited and the second never executed.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "high",
+          "category": "hidden coupling & blast radius",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: the surrogateescape ENCODE only affects input that would otherwise have raised — durable_atomic_write has ~35 callers writing git-tracked JSON that is read back strictly, none with a repair pass. A lone surrogate would silently persist invalid UTF-8 and relocate the crash to every future reader. The beneficiary analysis applied to the read side was never applied to the write side.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "boundary & contract",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: AC-7 is additive for F1 — HEAD~1..HEAD on a one-commit or shallow repo exits 128 -> error -> F1 failed -> the whole finalization bundle aborts, for a repo whose only sin is being new.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "hidden coupling & blast radius",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: the deferred _append_line change is out of scope for AC-2 — _append_line wrote os.linesep, so on Windows the AC-2 benefit lasted exactly one append before reconcile rewrote the whole log. Row 48's test asserted os.linesep on both sides - a tautology that would have gone RED once the code became correct.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "boundary & contract",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: ledger rows 44 and 49 are tested — No test drove _has_drift or _head_line_set to None, and none raised ImportError from the lazy seam; the cited tests hit neighbouring branches.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "boundary & contract",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: detect_drift always returns a structured result — _nothing_to_compare_against made three run_git calls OUTSIDE the try/except - reintroducing the very hole the ImportError widening had just closed, one statement later.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "hidden coupling & blast radius",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: the _append_line EOL change is covered — Measured: this repo's tracked store is 1145/1145 CRLF, and only a FRESH store was tested. Every reader was traced and could not be broken - a coverage gap on the most load-bearing write, not a defect.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-07-31T09:44:22.848894+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": "openrouter:gpt-5.6-terra",
+      "completed_at": "2026-07-31T09:44:49.778173+00:00",
+      "disposition": null,
+      "recorded_by": "external-review",
+      "parse_status": "unstructured",
+      "raw_excerpt": "External code review — openrouter (gpt-5.6-terra + gemini-3.1-pro-preview), 4 rounds.\n\nGPT (success in 3 of 4 rounds) raised 6 actionable findings, ALL addressed:\nR1: (a) `_nothing_to_compare_against` downgraded a typo'd ref to a no-op, reintroducing\n    the false-clean AC-7 closes. (b) the AC-9 CI-routing tests ran on a plain tmp_path\n    where should_route_to_outbox already returns False via the no-origin path, so they\n    passed with OR without the guard — measured and confirmed vacuous.\nR2: (c) `HEAD~bogus` — a MALFORMED suffix on a resolvable base still slipped through\n    the base-resolution check.\nR3: (d) detect_drift caught FileNotFoundError but not other OSError (a non-runnable\n    git raises PermissionError). (e) `_has_drift` special-cased only TIMEOUT_RETURNCODE,\n    so any other non-zero `git status` left stdout empty and reported a confident\n    \"no drift\" from an unanswered probe.\n\nDISCARDED as subset artifacts, not acted on: R3 also claimed \"the diff adds only\n_f1_record tests\" and R4 returned only \"AC-N is not implemented (no change in diff)\"\nfindings. Both are true of the SLICE and false of the change — the documented\nnarrowed-diff failure mode. Labelled rather than actioned.\n\nGemini: DEGRADED in all 4 rounds (finish_reason=length — reply-side truncation, not\ninput size; narrowing the diff did not help). Not counted as a pass. Its two quoted\nblocks were hand-inspected instead: (1) the GC survivor rewrite's handling of a\nconcurrently appended line — it is not in `quarantined_text`, so it survives, which is\nAC-3 and is pinned by test_append_during_commit_window_is_not_deleted_by_the_gc\n(verified RED first); (2) blank lines surviving when nothing else changed — true,\nharmless (every reader skips blank lines), and unchanged from the pre-diff gate.\n"
+    }
+  },
+  "gates": {
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-07-31T08:15:25.951469+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    }
+  }
+}

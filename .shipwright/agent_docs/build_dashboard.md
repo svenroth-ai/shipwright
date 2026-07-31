@@ -1,11 +1,23 @@
 # Project Activity Dashboard
-> Updated: 2026-07-28 12:18 UTC | Session: 7c6c7b07-d3a2-4c91-ba4e-fab3535b5067 | Run: iterate-2026-07-28-docs-placement-rule
+> Updated: 2026-07-31 10:12 UTC | Session: 2be17459-8c65-48ac-8fdc-83f4bc0acc54 | Run: iterate-2026-07-31-triage-store-failsafe
 
-## Recent Changes (400 iterations)
+## Recent Changes (413 iterations)
 
 | Type | Description | Tests | Commit | FRs | Date |
 |------|-------------|-------|--------|-----|------|
+| change | iterate: fail-safe fixes to the triage-store primitives (S1 of IT-1) | 0/0 |  | tooling | 2026-07-31 |
+| change | iterate: the derived-snapshot gate sees the branch, not the tip | 7621/7637 |  | tooling | 2026-07-31 |
+| change | iterate: the run's own ledger survives finalization | 12622/12651 |  | tooling | 2026-07-30 |
+| change | iterate: pin the quoting contract the PR-review path filter relies on | 812/819 (7 skipped) |  | tooling | 2026-07-29 |
+| change | iterate: the CI supply-chain ack gets a home that is not a derived snapshot | 6839/6851 (12 skipped) |  | tooling | 2026-07-28 |
+| change | iterate: close the six open GitHub code-scanning alerts (3 root causes) | 7858/7881 (23 skipped) |  | tooling | 2026-07-28 |
+| change | F5c stamps event_at from latest_event_dt so Canon C3's same-phase clock check runs for the iterate phase; the known-bound paragraph is removed from all five places it was written down, and the maintainer's name leaves five live files that used it as prose rather than authorship metadata. | 12334/12359 (25 skipped) |  | tooling | 2026-07-28 |
+| change | iterate: the review cascade is a standing request in CLAUDE.md; workflows are not | 7815/7831 (16 skipped) |  | FR-01.02, FR-01.11, FR-01.13 | 2026-07-28 |
+| change | iterate: F11 verifies the run it is checking | 10806/10806 |  | FR-01.11 | 2026-07-28 |
+| change | iterate: main repairs itself — attribution, diagnosis package, repair procedure | 0/0 |  | FR-01.19 | 2026-07-28 |
+| change | Correct grade_snapshot attribution: a named branch is branch by name, ancestry only for detached HEAD; refuse asserted attribution on the amendment channel; restate the consumer contract so branch snapshots are not plotted on the default branch's trend. | 0/0 |  | FR-01.10 | 2026-07-28 |
 | change | iterate: docs/ placement rule + remove one generated artifact and five finished records | 0/0 |  | docs | 2026-07-28 |
+| change | iterate: IT-0 hygiene sweep — reconcile the bloat baseline, trim CLAUDE.md, record test totals at F5b, and point the security-named gate at the security scan | 12237/12262 (25 skipped) |  | compliance | 2026-07-28 |
 | change | Make a conditional session policy gating subagents a question asked before Stage 1 rather than a silent not_run at F11, and define what a real blocker is. | 0/0 |  | FR-01.11 | 2026-07-28 |
 | change | Stamp every grade_snapshot with the tree it measured (lineage / branch / merge-base), so the Control-Grade trend can be filtered to one lineage instead of plotting a mixture of worktrees. | 0/0 |  | FR-01.10 | 2026-07-28 |
 | change | Bump pyasn1 to 0.6.4 (CVE-2026-59885/59886) and record a scoped, expiring acceptance for CVE-2026-14257 (brace-expansion, dev-only perf runner) in both registers, guarded by a new dependency-floor test. | 11282/11282 |  | infra | 2026-07-28 |
@@ -18,6 +30,7 @@
 | change | iterate: a branch may not quietly revert merged work | 0/0 |  | FR-01.11 | 2026-07-27 |
 | change | iterate: post-merge review follow-up for the triage defer surface | 0/0 |  | FR-01.14 | 2026-07-27 |
 | bug | iterate: a PR must not be able to forge a file boundary in its own diff | 0/0 |  | FR-01.17 | 2026-07-28 |
+| change | iterate: Canon C3 asks whether THIS phase left the handover note | 0/0 |  | FR-01.01 | 2026-07-28 |
 | change | iterate: raise the PR-review diff cap, cut at a file boundary, name what went unreviewed | 0/0 |  | FR-01.17 | 2026-07-27 |
 | change | iterate: an audit that checked nothing is not recorded | 0/0 |  | compliance | 2026-07-27 |
 | change | iterate: refuse a multi-root pytest session instead of failing 21 unrelated tests | 0/0 |  | tooling | 2026-07-27 |
@@ -407,7 +420,7 @@
 | change | post-adoption framework cleanup (Sub-1A through 1D) | 225/225 | 3db485b | FR-01.01, FR-01.02, FR-01.03 | 2026-05-02 |
 
 ## Test Status
-Last run: 2026-07-28 | Unit: 6458/6474 | Integration: 422/422 | Smoke: not_run | (iterate)
+Last run: 2026-07-31 | Smoke: n/a | (iterate)
 
 ## Pipeline
 

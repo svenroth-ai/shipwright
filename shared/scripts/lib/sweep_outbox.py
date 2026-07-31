@@ -33,8 +33,6 @@ which also quarantines orphan-status lines) is byte-compatible with
 
 from __future__ import annotations
 
-import os
-import subprocess
 import sys
 from pathlib import Path
 
@@ -46,19 +44,19 @@ if str(_SCRIPTS_ROOT) not in sys.path:
 import triage  # noqa: E402  — canonical lock + outbox path SSoT
 from lib.atomic_write import durable_atomic_write  # noqa: E402
 from lib.churn_merge import TRIAGE_LOG  # noqa: E402
+from lib.ci_env import ci_active  # noqa: E402
+from lib.git_base import HOOK_GIT_TIMEOUT, TIMEOUT_RETURNCODE, run_git_soft  # noqa: E402
 from lib.sweep_drift import commit_main_tracked_drift, plan_main_tracked_drift  # noqa: E402
 from lib.sweep_gc import delivered_membership, is_delivered  # noqa: E402
 from lib.sweep_quarantine import append_quarantine, decide as quarantine_decide, quarantine_path  # noqa: E402
 from lib.sweep_result import SweepResult, sweep_warnings  # noqa: E402,F401  (re-export: callers import both from here)
 from lib.sweep_text import normalize_lines, read_text_verbatim  # noqa: E402
-from lib.worktree_isolation import run_git  # noqa: E402
-
-#: Truthy spellings of ``$CI`` that disable the auto-commit unless ``allow_ci``.
-_CI_TRUTHY = frozenset({"1", "true", "yes", "on"})
 
 
 def _ci_active() -> bool:
-    return os.environ.get("CI", "").strip().lower() in _CI_TRUTHY
+    """Delegates to the shared leaf — see :mod:`lib.ci_env` for why this is not
+    a local copy."""
+    return ci_active()
 
 
 def _op_in_progress(root: Path) -> bool:
@@ -66,10 +64,23 @@ def _op_in_progress(root: Path) -> bool:
     ``root`` — committing into a half-finished operation would corrupt it.
     Mirrors :func:`lib.reconcile_triage._op_in_progress`."""
     for ref in ("MERGE_HEAD", "CHERRY_PICK_HEAD", "REVERT_HEAD"):
-        if run_git(["rev-parse", "--verify", "--quiet", ref], cwd=root, check=False).returncode == 0:
+        probe = run_git_soft(["rev-parse", "--verify", "--quiet", ref], cwd=root)
+        if probe.returncode == 0:
+            return True
+        # A timeout leaves the tree's state UNKNOWN. Reporting "no operation in
+        # progress" would let the sweep commit into a half-finished merge on the
+        # strength of a question we never got an answer to, so say yes and skip.
+        if probe.returncode == TIMEOUT_RETURNCODE:
             return True
     for rel in ("rebase-merge", "rebase-apply", "BISECT_LOG"):
-        probe = run_git(["rev-parse", "--git-path", rel], cwd=root, check=False)
+        probe = run_git_soft(["rev-parse", "--git-path", rel], cwd=root)
+        # A timeout must NOT fall into the `continue` below: `continue` means "this
+        # marker is absent", which is a definite answer to a question git never
+        # answered. A rebase sets none of the pseudo-refs above, so this loop is the
+        # ONLY thing that detects one — reading a timeout as absence here is what
+        # would let the commit land inside a half-finished rebase.
+        if probe.returncode == TIMEOUT_RETURNCODE:
+            return True
         if probe.returncode != 0:
             continue
         p = Path(probe.stdout.strip())
@@ -83,7 +94,7 @@ def _has_staged_changes(root: Path) -> bool:
     """True when ANYTHING is staged in ``root``'s index. We skip rather than risk
     a ``git commit -- <triage>`` interacting with a user's staged WIP (AC-3 of
     reconcile)."""
-    return run_git(["diff", "--cached", "--quiet"], cwd=root, check=False).returncode != 0
+    return run_git_soft(["diff", "--cached", "--quiet"], cwd=root).returncode != 0
 
 
 def sweep_outbox_to_branch(
@@ -131,7 +142,9 @@ def sweep_outbox_to_branch(
             return SweepResult(status="skipped", reason=plan.reason)
 
         outbox_raw = read_text_verbatim(outbox_path)
-        outbox_lines_norm, outbox_eol = normalize_lines(outbox_raw)
+        # The EOL is deliberately NOT kept from this read — the survivor write below
+        # takes it from its own re-read, so it reflects the file as it stands then.
+        outbox_lines_norm, _ = normalize_lines(outbox_raw)
         # The planned drift joins the outbox VIRTUALLY: the sweep decides against the log it
         # WOULD produce, and only then does anything get written. Adopting first would move
         # the operator's data out of the tracked log into a gitignored buffer and only then
@@ -185,8 +198,13 @@ def sweep_outbox_to_branch(
         committed_subject = ""
         if deduped_text != worktree_raw:
             worktree_triage.parent.mkdir(parents=True, exist_ok=True)
-            durable_atomic_write(worktree_triage, deduped_text)
-            add = run_git(["add", "--", TRIAGE_LOG], cwd=worktree_path, check=False)
+            # Encoded HERE, not by the primitive: this text came through
+            # `read_text_verbatim`'s surrogateescape decode, so it may carry bytes a
+            # strict encode would reject. The leniency belongs to this store, not to
+            # a primitive thirty-five non-triage callers share.
+            durable_atomic_write(
+                worktree_triage, deduped_text.encode('utf-8', errors='surrogateescape'))
+            add = run_git_soft(["add", "--", TRIAGE_LOG], cwd=worktree_path)
             if add.returncode != 0:
                 return SweepResult(status="error", reason=f"add_failed: {add.stderr.strip()[:300]}", adopted=adopted)
             # FIX D (D2 review cascade): gate the commit on a REAL staged delta.
@@ -195,22 +213,27 @@ def sweep_outbox_to_branch(
             # treats as NO change; committing then fails "nothing to commit" → a
             # spurious ``error``. No staged delta → git no-op → ``no_change`` (the
             # GC still runs). ``--quiet`` exits 0 when there is NO staged diff.
-            staged = run_git(
-                ["diff", "--cached", "--quiet", "--", TRIAGE_LOG],
-                cwd=worktree_path, check=False,
+            staged = run_git_soft(
+                ["diff", "--cached", "--quiet", "--", TRIAGE_LOG], cwd=worktree_path,
             )
+            # A timeout must NOT fall through to the ``!= 0`` branch below, which
+            # means "there IS a staged delta" — that would read an unknown state as a
+            # definite one and commit on the strength of it.
+            if staged.returncode == TIMEOUT_RETURNCODE:
+                return SweepResult(
+                    status="error", reason="git_timeout: diff --cached", adopted=adopted,
+                )
             if staged.returncode != 0:
                 subject = f"chore(triage): sweep {swept} outbox append(s) into branch"
                 # The commit fires the bloat pre-commit hook, whose cold ``uv run``
                 # on a brand-new worktree routinely exceeds run_git's 15s default —
                 # give it a generous timeout and map a timeout to a structured
                 # error rather than letting it crash setup (never raises into setup).
-                try:
-                    commit = run_git(
-                        ["commit", "-m", subject, "--", TRIAGE_LOG],
-                        cwd=worktree_path, check=False, timeout=120.0,
-                    )
-                except subprocess.TimeoutExpired:
+                commit = run_git_soft(
+                    ["commit", "-m", subject, "--", TRIAGE_LOG],
+                    cwd=worktree_path, timeout=HOOK_GIT_TIMEOUT,
+                )
+                if commit.returncode == TIMEOUT_RETURNCODE:
                     return SweepResult(status="error", reason="commit_timeout", adopted=adopted)
                 if commit.returncode != 0:
                     return SweepResult(status="error", reason=f"commit_failed: {commit.stderr.strip()[:300]}", adopted=adopted)
@@ -221,16 +244,42 @@ def sweep_outbox_to_branch(
         # rewrite; OpenAI review). FIX B: membership is by semantic ``id`` for
         # append lines (drift-immune) + stripped text for status/unparseable lines.
         delivered_ids, delivered_text = delivered_membership(main_root, default_branch)
-        survivors = [
-            ln for ln in outbox_lines
-            if not is_delivered(ln.strip(), delivered_ids, delivered_text)
-        ]
-        gc_dropped = len(outbox_lines) - len(survivors)
+
+        # RE-READ the outbox HERE rather than reusing the read from the top of the
+        # section. Everything between the two — the drift adoption's own durable write,
+        # ``git add``, ``git diff --cached`` and a ``git commit`` budgeted 120 s — is a
+        # window in which a writer that does NOT hold the canonical lock can append.
+        # Such a writer is real and documented in this repo: ``triage_repair.py`` records
+        # that the WebUI uses ``proper-lockfile``, which does not compose with the Python
+        # byte lock, and the WebUI is the operator's primary dismiss surface.
+        #
+        # The sibling ``sweep_drift.commit_main_tracked_drift`` re-reads the outbox inside
+        # this very section for exactly this reason ("A process lock cannot stop an
+        # external `git commit` or an editor") and PRESERVES such an append — and writing
+        # the survivors from the stale list then deleted it again a hundred lines later.
+        # Two halves of one critical section disagreeing is the whole bug.
+        current_lines, outbox_eol = normalize_lines(read_text_verbatim(outbox_path))
+        # Quarantined candidates are still ON DISK — ``append_quarantine`` writes the
+        # quarantine log, not the outbox — so this rewrite is what removes them, and a
+        # re-read would otherwise resurrect them.
+        quarantined_text = {ln.strip() for ln in decision.candidates} if quarantined else set()
+
+        survivors: list[str] = []
+        gc_dropped = 0
+        for ln in current_lines:
+            stripped = ln.strip()
+            if not stripped or stripped in quarantined_text:
+                continue
+            if is_delivered(stripped, delivered_ids, delivered_text):
+                gc_dropped += 1
+                continue
+            survivors.append(ln)
         # Rewrite the outbox when GC trimmed delivered lines OR quarantine removed orphans
-        # this run (``outbox_lines`` is already the trimmed set).
+        # this run.
         if gc_dropped or quarantined:
             survivor_text = (outbox_eol.join(survivors) + outbox_eol) if survivors else ""
-            durable_atomic_write(outbox_path, survivor_text)
+            durable_atomic_write(
+                outbox_path, survivor_text.encode('utf-8', errors='surrogateescape'))
 
         if not committed_subject:
             # Nothing folded into the branch (every outbox line already tracked);

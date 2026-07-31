@@ -1,31 +1,40 @@
 # Commit Change Log
 
-Generated: 2026-07-28T12:18:44.236199+00:00
-Source-State: run=iterate-2026-07-28-docs-placement-rule
-Consistency-audit: never run
-Total commits: 1261
+Generated: 2026-07-31T10:12:05.929799+00:00
+Source-State: run=iterate-2026-07-31-triage-store-failsafe
+Consistency-audit: last run 2026-07-28 (3 days earlier) — FAIL
+Total commits: 1282
 
 ## Commit Distribution
 
 ```mermaid
 pie title Commit Types
-    "fix" : 373
-    "feat" : 352
+    "fix" : 382
+    "feat" : 354
     "chore" : 256
-    "docs" : 150
+    "docs" : 152
     "refactor" : 78
-    "test" : 31
-    "ci" : 11
+    "test" : 32
+    "ci" : 18
     "other" : 9
     "build" : 1
 ```
 
 ## Changes by Type
 
-### Fixes (fix) — 373 commits
+### Fixes (fix) — 382 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-07-31 | iterate | the derived-snapshot gate sees the branch, not the tip (#503) | dcf85f874e8e |
+| 2026-07-30 | iterate | the run's own ledger survives finalization (#502) | a3e625fc2e16 |
+| 2026-07-29 | iterate | F11 verifies the run it is checking, and Stage 1 records itself (#498) | c1caa23d86bb |
+| 2026-07-29 | iterate | the CI supply-chain ack leaves the snapshot that erased it, and binds content for every filename (#499) | c6ce9b2e1bee |
+| 2026-07-28 | security | the sanitiser spells its alphabet in escapes, not in the characters it strips (#495) | 0fdf875c2c38 |
+| 2026-07-28 | iterate | the iterate ledger stamps the clock C3 reads, and no prose speaks for a maintainer by name (#494) | 841761cc79f7 |
+| 2026-07-28 | compliance | a gate named for security reads the security scan, and F5b records the run's test totals (#492) | 8b7b6eb7e759 |
+| 2026-07-28 | iterate | the phase canon asks whether THIS phase left the note (#491) | d03c300c3ecf |
+| 2026-07-28 | compliance | a grade snapshot tells the truth about its own subject (#490) | 3ed41047c2f4 |
 | 2026-07-28 | iterate | "cannot run" must not mean "was never asked" (#489) | bcc7a5901d53 |
 | 2026-07-28 | iterate | the revert check stops accusing an edit and a deletion it did not make (#488) | e4db51544224 |
 | 2026-07-28 | security | the reviewer ends a diff line where git does, and nowhere else (#487) | d9bc7d90cc07 |
@@ -400,10 +409,12 @@ pie title Commit Types
 | 2026-03-21 | — | rename skill folders for clean slash commands | 5a8d77658fab |
 | 2026-03-20 | — | update README attribution to svenroth.ai | dd5de7f7d6ab |
 
-### Features (feat) — 352 commits
+### Features (feat) — 354 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-07-29 | iterate | a red shared branch names the commit that broke it (#497) | 24a56158f38a |
+| 2026-07-28 | review | the review cascade is a standing request; workflows still ask (#496) | bbdd2ada8f36 |
 | 2026-07-28 | security | the coverage manifest decides, instead of being reported (Part 2 of 2) (#486) | d373ac400920 |
 | 2026-07-27 | build | stop on a mockup-vs-section contradiction; allow a recorded shared touch (3/3) (#465) | ea2ad4bfab15 |
 | 2026-07-27 | design | a feedback round declares what it changed about the requirements (2/3) (#464) | 4da3f66526b5 |
@@ -761,7 +772,7 @@ pie title Commit Types
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
-| 2026-07-28 | triage | sweep 54 outbox append(s) into branch | 7ec426a2ed01 |
+| 2026-07-31 | triage | sweep 6 outbox append(s) into branch | 61a5d902d3c5 |
 | 2026-07-27 | triage | follow-up card for requiring the checks that gate nothing | 7387b2796960 |
 | 2026-07-26 | review | default external-review GPT model to gpt-5.6-terra (#435) | 8d750a5fc7af |
 | 2026-07-24 | security | stage full compliance write-set in Step 7.5 finalizer (#434) | 5da96ebe8561 |
@@ -1018,10 +1029,12 @@ pie title Commit Types
 | 2026-03-28 | — | add shipwright-run uv.lock | ef1cc1ad180c |
 | 2026-03-20 | — | initial commit with spec and task list | 07ca9c1de51c |
 
-### Documentation (docs) — 150 commits
+### Documentation (docs) — 152 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-07-28 | planning | the quoted directive stops tripping the prompt scanner | 07cd445538db |
+| 2026-07-28 | — | docs/ holds what someone wrote for someone to read (#493) | bebdc9a37e7e |
 | 2026-07-28 | planning | record the confirmed admin bypass and the 11-commit drift | 6bb11960b39c |
 | 2026-07-28 | planning | triage-delivery audit findings + queue/refresh handover | 1f8364b68017 |
 | 2026-07-27 | guide | the finalization walkthrough ends at delivery, not at arming (#462) | eea6e1643388 |
@@ -1256,10 +1269,11 @@ pie title Commit Types
 | 2026-03-30 | env | consolidate plugin env vars into single .env.local | 4a9267b522fb |
 | 2026-03-28 | — | unify decision log to shared ADR format across all phases | 2851babbbcfa |
 
-### Tests (test) — 31 commits
+### Tests (test) — 32 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-07-29 | security | the path filter's reliance on git quoting is written down, not assumed (#500) | bbfdb5b91990 |
 | 2026-07-27 | shared | split the source-state suite along its three seams (#449) | ecade7e6225e |
 | 2026-07-22 | traceability | normalize an inline dynamic import to clear a benign prompt-scan finding (#426) | 4a0b6d025cb7 |
 | 2026-07-19 | requirements | golden corpus freezing discovery + parser behaviour, bugs included (#403) | 76d97ec06fe6 |
@@ -1292,10 +1306,17 @@ pie title Commit Types
 | 2026-04-11 | — | complete test phase — 299 unit tests, 5 E2E tests, smoke PASS | e843d458942d |
 | 2026-04-11 | e2e | set up Playwright with E2E specs and smoke test results | cba0fd6e9012 |
 
-### CI/CD (ci) — 11 commits
+### CI/CD (ci) — 18 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-07-30 | probe | a deploy key can write to main; probe removes itself | 86a948ac4add |
+| 2026-07-30 | probe | can a deploy key write to protected main? | 97c9eb93d7cc |
+| 2026-07-29 | probe | remove the Actions-bypass probe | 8f28d73b0c06 |
+| 2026-07-29 | probe | measure whether the Actions app can bypass main-protection | 55b628aacf7b |
+| 2026-07-29 | probe | remove the throwaway token probe | 1e4dd9095498 |
+| 2026-07-29 | probe | separate token-write refusal from ruleset refusal | 2a5b7d35e4c0 |
+| 2026-07-29 | probe | can the refresh token write to the protected branch? | ab91f6b543dc |
 | 2026-07-06 | coverage | flip the diff-coverage gate to hard-block (< 80% changed-line coverage blocks merge) (#330) | d22111eac8c6 |
 | 2026-07-06 | coverage | prove the diff-coverage gate bites via a tested --fail-under entrypoint (Phase-4 hardening) (#328) | ec73bfffb9de |
 | 2026-07-06 | coverage | diff-coverage warn-only --fail-under=80 gate (Phase 4) (#324) | 881b1281e866 |
@@ -1332,7 +1353,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 1261 |
+| Total commits | 1282 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 1261 |
+| Human-authored commits | 1282 |
 

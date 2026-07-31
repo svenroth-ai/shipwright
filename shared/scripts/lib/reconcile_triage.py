@@ -19,7 +19,6 @@ and it serializes against background producers via the canonical triage lock.
 
 from __future__ import annotations
 
-import os
 import subprocess
 import sys
 from dataclasses import dataclass, field
@@ -33,10 +32,9 @@ if str(_SCRIPTS_ROOT) not in sys.path:
 import triage  # noqa: E402  — reuse the canonical producer lock (see _triage_lock)
 from lib.atomic_write import durable_atomic_write  # noqa: E402
 from lib.churn_merge import TRIAGE_LOG, dedup_triage_lines, validate_triage_text  # noqa: E402
-from lib.worktree_isolation import GitError, main_repo_root, run_git  # noqa: E402
-
-#: Truthy spellings of ``$CI`` that disable the auto-commit unless ``allow_ci``.
-_CI_TRUTHY = frozenset({"1", "true", "yes", "on"})
+from lib.ci_env import ci_active  # noqa: E402
+from lib.git_base import HOOK_GIT_TIMEOUT, TIMEOUT_RETURNCODE, run_git_soft  # noqa: E402
+from lib.worktree_isolation import GitError, main_repo_root  # noqa: E402
 
 
 @dataclass
@@ -66,7 +64,9 @@ class ReconcileResult:
 
 
 def _ci_active() -> bool:
-    return os.environ.get("CI", "").strip().lower() in _CI_TRUTHY
+    """Delegates to the shared leaf — see :mod:`lib.ci_env` for why this is not
+    a local copy."""
+    return ci_active()
 
 
 def _op_in_progress(main_root: Path) -> bool:
@@ -76,10 +76,22 @@ def _op_in_progress(main_root: Path) -> bool:
     # resolve; rebase-merge/rebase-apply and BISECT_LOG are git-dir FILES, so
     # they must be probed by path (rev-parse --verify can't resolve a file).
     for ref in ("MERGE_HEAD", "CHERRY_PICK_HEAD", "REVERT_HEAD"):
-        if run_git(["rev-parse", "--verify", "--quiet", ref], cwd=main_root, check=False).returncode == 0:
+        probe = run_git_soft(["rev-parse", "--verify", "--quiet", ref], cwd=main_root)
+        if probe.returncode == 0:
+            return True
+        # Unknown state must not read as "no operation in progress" — that would
+        # commit into a half-finished merge on an unanswered question.
+        if probe.returncode == TIMEOUT_RETURNCODE:
             return True
     for rel in ("rebase-merge", "rebase-apply", "BISECT_LOG"):
-        probe = run_git(["rev-parse", "--git-path", rel], cwd=main_root, check=False)
+        probe = run_git_soft(["rev-parse", "--git-path", rel], cwd=main_root)
+        # A timeout must NOT fall into the `continue` below: `continue` means "this
+        # marker is absent", which is a definite answer to a question git never
+        # answered. A rebase sets none of the pseudo-refs above, so this loop is the
+        # ONLY thing that detects one — reading a timeout as absence here is what
+        # would let the commit land inside a half-finished rebase.
+        if probe.returncode == TIMEOUT_RETURNCODE:
+            return True
         if probe.returncode != 0:
             continue
         # --git-path may return a relative (``.git/...``) OR absolute path
@@ -92,7 +104,8 @@ def _op_in_progress(main_root: Path) -> bool:
 
 
 def _is_detached(main_root: Path) -> bool:
-    return run_git(["symbolic-ref", "--quiet", "HEAD"], cwd=main_root, check=False).returncode != 0
+    # Any non-zero, timeout included, reads as detached → the caller skips.
+    return run_git_soft(["symbolic-ref", "--quiet", "HEAD"], cwd=main_root).returncode != 0
 
 
 def _has_staged_changes(main_root: Path) -> bool:
@@ -101,19 +114,37 @@ def _has_staged_changes(main_root: Path) -> bool:
     if ``triage.jsonl`` itself is staged, committing a hand-staged index state we
     never validated. The drift we act on is always UNSTAGED background appends,
     so a non-empty index means "not our case" → no-op (AC-3)."""
-    return run_git(["diff", "--cached", "--quiet"], cwd=main_root, check=False).returncode != 0
+    # Any non-zero, timeout included, reads as "something is staged" → skip.
+    return run_git_soft(["diff", "--cached", "--quiet"], cwd=main_root).returncode != 0
 
 
-def _has_drift(main_root: Path) -> bool:
-    out = run_git(["status", "--porcelain", "--", TRIAGE_LOG], cwd=main_root, check=False).stdout
-    return bool(out.strip())
+def _has_drift(main_root: Path) -> bool | None:
+    """True/False, or ``None`` when git could not be asked.
+
+    ``None``, not ``False``, for EVERY failure: this runs inside the canonical lock in
+    the MAIN tree, and ``git status --porcelain`` refreshes the index (taking
+    ``.git/index.lock``). An unanswered probe reporting "no drift" would have the
+    caller return ``no_drift`` over a log that has some.
+    """
+    proc = run_git_soft(["status", "--porcelain", "--", TRIAGE_LOG], cwd=main_root)
+    if proc.returncode != 0:
+        # ANY non-zero, not just a timeout: `git status` has no legitimate non-zero
+        # outcome here, so a failure leaves stdout empty and `bool("")` would report a
+        # confident "no drift" from an unanswered probe (external review, GPT).
+        return None
+    return bool(proc.stdout.strip())
 
 
-def _head_line_set(main_root: Path) -> set[str]:
-    """Stripped non-blank lines of ``HEAD:<triage>`` (empty if absent). Used to
+def _head_line_set(main_root: Path) -> set[str] | None:
+    """Stripped non-blank lines of ``HEAD:<triage>`` (empty if absent, ``None`` when
+    git could not be asked). Used to
     count genuinely-new lines; comparison is whitespace-normalised so a CRLF vs
     LF difference doesn't inflate the count."""
-    proc = run_git(["show", f"HEAD:{TRIAGE_LOG}"], cwd=main_root, check=False)
+    proc = run_git_soft(["show", f"HEAD:{TRIAGE_LOG}"], cwd=main_root)
+    if proc.returncode == TIMEOUT_RETURNCODE:
+        # ``None``, not an empty set: empty means "HEAD holds nothing", which would
+        # count every existing line as newly folded and misreport the total.
+        return None
     if proc.returncode != 0:
         return set()
     return {ln.strip() for ln in proc.stdout.split("\n") if ln.strip()}
@@ -123,7 +154,8 @@ def _atomic_write(path: Path, text: str) -> None:
     """Write ``text`` verbatim (UTF-8, no newline translation) durably — tmp +
     fsync + os.replace — so a reader never sees a torn file and a crash never
     drops the content (shared :func:`durable_atomic_write`)."""
-    durable_atomic_write(path, text)
+    # surrogateescape: `text` came through this module's own surrogateescape read.
+    durable_atomic_write(path, text.encode('utf-8', errors='surrogateescape'))
 
 
 def reconcile_main_triage(
@@ -168,7 +200,10 @@ def reconcile_main_triage(
         return ReconcileResult(status="skipped", reason="detached_head")
     if _has_staged_changes(main_root):
         return ReconcileResult(status="skipped", reason="staged_changes")
-    if not _has_drift(main_root):
+    drift_probe = _has_drift(main_root)
+    if drift_probe is None:
+        return ReconcileResult(status="error", reason="git_timeout: status --porcelain")
+    if not drift_probe:
         return ReconcileResult(status="no_drift")
 
     # --- critical section: exclude background producers via the canonical
@@ -181,16 +216,28 @@ def reconcile_main_triage(
     triage_path = triage._triage_path(main_root)
     lock_path = triage._lock_path(main_root)
     with triage._FileLock(lock_path):
-        if not _has_drift(main_root):  # re-check under lock (a producer may have just committed-clean)
+        drift_probe = _has_drift(main_root)  # re-check under lock (a producer may have just committed-clean)
+        if drift_probe is None:
+            return ReconcileResult(status="error", reason="git_timeout: status --porcelain")
+        if not drift_probe:
             return ReconcileResult(status="no_drift")
         if not triage_path.exists():
             # Drift is a DELETION of the tracked log (or a sparse/partial
             # checkout). Don't auto-commit a deletion — leave it for the operator.
             return ReconcileResult(status="skipped", reason="triage_missing")
         try:
-            with triage_path.open("r", encoding="utf-8", newline="") as fh:
+            # ``errors="surrogateescape"`` for the same reason the sweep readers use it:
+            # an interrupted append truncates the log mid multi-byte sequence, and a
+            # STRICT decode raises ``UnicodeDecodeError`` — which is a ``ValueError``,
+            # NOT an ``OSError``, so it escaped the handler below and crashed the caller
+            # rather than producing the structured ``read_failed`` this path promises.
+            # ``ValueError`` is caught too, so any residual decode/seek failure lands in
+            # the structured result instead of propagating.
+            with triage_path.open(
+                "r", encoding="utf-8", newline="", errors="surrogateescape"
+            ) as fh:
                 raw = fh.read()
-        except OSError as exc:
+        except (OSError, ValueError) as exc:
             return ReconcileResult(status="error", reason=f"read_failed: {exc}")
 
         # Dedup FIRST (collapse byte-identical double-writes), THEN validate the
@@ -217,10 +264,15 @@ def reconcile_main_triage(
             _atomic_write(triage_path, deduped_text)
 
         # A dedup-only change may now match HEAD exactly → nothing to commit.
-        if not _has_drift(main_root):
+        drift_probe = _has_drift(main_root)
+        if drift_probe is None:
+            return ReconcileResult(status="error", reason="git_timeout: status --porcelain")
+        if not drift_probe:
             return ReconcileResult(status="no_drift")
 
         head = _head_line_set(main_root)
+        if head is None:
+            return ReconcileResult(status="error", reason="git_timeout: show HEAD")
         folded = sum(1 for ln in deduped if ln.strip() and ln.strip() not in head)
         subject = f"chore(triage): fold {folded} main-tree background append(s)"
         # ``git commit -- <path>`` commits the WORKING-TREE content of that path
@@ -228,9 +280,21 @@ def reconcile_main_triage(
         # _unrelated_staged already guaranteed no OTHER path is staged, so this
         # never sweeps up unrelated work nor drops an index-only delta of a file
         # that is, by the log's append-only nature, always a superset on disk.
-        commit = run_git(
-            ["commit", "-m", subject, "--", TRIAGE_LOG], cwd=main_root, check=False
+        # 120 s + a TimeoutExpired handler, mirroring the sibling sweep commit
+        # (``sweep_outbox``), which documents why: this commit fires the bloat
+        # pre-commit hook, whose cold ``uv run`` routinely exceeds run_git's 15 s
+        # default. Two consequences made the default actively dangerous HERE rather
+        # than merely slow: run_git kills the process on timeout, which strands
+        # ``.git/index.lock`` — and unlike the sweep, this commit runs in the MAIN
+        # tree, so the stranded lock blocks the operator's own repo, not a scratch
+        # worktree. There was also no handler at all, so it crashed the caller
+        # instead of returning the structured error every other path here returns.
+        commit = run_git_soft(
+            ["commit", "-m", subject, "--", TRIAGE_LOG],
+            cwd=main_root, timeout=HOOK_GIT_TIMEOUT,
         )
+        if commit.returncode == TIMEOUT_RETURNCODE:
+            return ReconcileResult(status="error", reason="commit_timeout")
         if commit.returncode != 0:
             return ReconcileResult(status="error", reason=f"commit_failed: {commit.stderr.strip()[:300]}")
         return ReconcileResult(status="committed", folded=folded, commit_subject=subject)

@@ -20,16 +20,14 @@ copy of that data sits in a file ``git clean -x`` deletes.
 
 The plan refuses (mutating NOTHING) unless it fully understands main's state:
 
-* **append-only prefix** — the working log's lines must START WITH HEAD's complete line
-  sequence, compared VERBATIM. A removed, edited (incl. whitespace-only), reordered,
-  emptied or deleted line is not drift we can reason about → ``main_tracked_diverged``.
-  A set-difference test would wave all of those through (external review).
-* **clean index** — a STAGED triage delta means restoring the working file alone would
-  leave the drift in the index, and a later commit on main would reintroduce it →
-  ``main_tracked_index_diverged``.
-* **well-formed drift** — every adoptable line must be a producer event, so adoption can
-  never poison the outbox with corruption whose source it then hides by rewriting the
-  tracked file → ``main_tracked_unparseable``.
+* **append-only prefix** — the working log must START WITH HEAD's complete line
+  sequence, compared VERBATIM (a set-difference test would wave through a removed,
+  edited, reordered or emptied line) → ``main_tracked_diverged``.
+* **clean index** — a STAGED delta means restoring the working file alone leaves the
+  drift in the index → ``main_tracked_index_diverged``.
+* **well-formed drift** — every adoptable line must be a producer event, so adoption
+  cannot poison the outbox with corruption whose source it then hides →
+  ``main_tracked_unparseable``.
 
 ``unrepairable`` is the third outcome and is NOT a refusal: a state we understand but
 cannot repair (no HEAD blob to restore to — e.g. local main is behind origin, or the
@@ -52,18 +50,20 @@ background producer never races the read-plan-commit transaction.
 
 from __future__ import annotations
 
-import json
 from dataclasses import dataclass, field
 from pathlib import Path
 
 from lib.atomic_write import durable_atomic_write
 from lib.churn_merge import TRIAGE_LOG
+from lib.git_base import TIMEOUT_RETURNCODE, run_git_soft
+from lib.sweep_drift_events import (  # noqa: F401  (re-export: existing importers)
+    _EVENTS,
+    _is_header,
+    _is_producer_event,
+    _parsed,
+    append_ids_of,
+)
 from lib.sweep_text import normalize_lines, read_text_verbatim
-from lib.worktree_isolation import run_git
-
-#: Producer event kinds a drift line may carry. Anything else is not a line this module
-#: is willing to move (and therefore not one it is willing to delete from the log either).
-_EVENTS = frozenset({"append", "status"})
 
 
 @dataclass(frozen=True)
@@ -110,50 +110,20 @@ class DriftResult:
     reason: str = ""
     adopted: int = 0
 
-
-def append_ids_of(lines: list[str]) -> frozenset[str]:
-    """Ids of every well-formed ``append`` event in ``lines``.
-
-    Only valid, unambiguous appends enter the universe (external review): a line that does
-    not parse, is not an object, or carries a non-``str`` id contributes nothing — it must
-    never protect a status from the orphan check.
-    """
-    ids: set[str] = set()
-    for line in lines:
-        obj = _parsed(line)
-        iid = obj.get("id") if obj else None
-        if obj and obj.get("event") == "append" and isinstance(iid, str):
-            ids.add(iid)
-    return frozenset(ids)
-
-
-def _parsed(line: str) -> dict | None:
-    if not line.strip():
-        return None
-    try:
-        obj = json.loads(line)
-    except (json.JSONDecodeError, ValueError):
-        return None
-    return obj if isinstance(obj, dict) else None
-
-
-def _is_producer_event(line: str) -> bool:
-    """True iff ``line`` is a well-formed triage producer event (append / status with a
-    str id) — the only shape adoption is willing to move."""
-    obj = _parsed(line)
-    return bool(obj) and obj.get("event") in _EVENTS and isinstance(obj.get("id"), str)
-
-
-def _is_header(line: str) -> bool:
-    obj = _parsed(line)
-    return bool(obj) and obj.get("schema") == "triage" and "v" in obj
+class _HeadUnreadable(RuntimeError):
+    """git could not be ASKED what HEAD holds, as distinct from HEAD genuinely having
+    no such blob. Caught in :func:`plan_main_tracked_drift` (never escapes)."""
 
 
 def _head_lines(main_root: Path) -> list[str] | None:
     """Lines of ``HEAD:<triage>`` in MAIN's tree VERBATIM, or ``None`` when there is no
     such blob. ``cwd=main_root`` is load-bearing: ``HEAD`` must be main's branch tip, NOT
     the iterate worktree's (external review)."""
-    proc = run_git(["show", f"HEAD:{TRIAGE_LOG}"], cwd=main_root, check=False)
+    proc = run_git_soft(["show", f"HEAD:{TRIAGE_LOG}"], cwd=main_root)
+    if proc.returncode == TIMEOUT_RETURNCODE:
+        # NOT ``None`` — the caller reports that as ``main_tracked_no_head_blob``, a
+        # diagnosis we did not earn, and it licenses PROCEEDING. We never read HEAD.
+        raise _HeadUnreadable("main_tracked_head_unreadable: git show timed out")
     if proc.returncode != 0:
         return None
     lines, _ = normalize_lines(proc.stdout)
@@ -161,12 +131,16 @@ def _head_lines(main_root: Path) -> list[str] | None:
 
 
 def _head_oid(main_root: Path) -> str:
-    return run_git(["rev-parse", "HEAD"], cwd=main_root, check=False).stdout.strip()
+    """HEAD's oid, or ``""`` when git could not tell us. Callers MUST read ``""`` as
+    "cannot prove HEAD is unchanged": two of them compare EQUAL, which would otherwise
+    pass for "nothing moved" on the strength of two failed reads."""
+    return run_git_soft(["rev-parse", "HEAD"], cwd=main_root).stdout.strip()
 
 
 def _index_diverged(main_root: Path) -> bool:
     """True when the triage log has a STAGED delta against HEAD."""
-    probe = run_git(["diff", "--cached", "--quiet", "--", TRIAGE_LOG], cwd=main_root, check=False)
+    # Any non-zero — timeout included — reads as DIVERGED, so the caller refuses.
+    probe = run_git_soft(["diff", "--cached", "--quiet", "--", TRIAGE_LOG], cwd=main_root)
     return probe.returncode != 0
 
 
@@ -190,7 +164,11 @@ def plan_main_tracked_drift(main_root: Path | str, outbox_path: Path) -> DriftPl
     # HEAD blob has content is not "no drift", it is the severest divergence there is —
     # every HEAD line is gone. Shortcutting would let the sweep proceed over a state it
     # never compared (external review).
-    head = _head_lines(main_root)
+    try:
+        head = _head_lines(main_root)
+    except _HeadUnreadable as exc:
+        # ``refused`` (STOP, retryable), not ``unrepairable`` (which licenses PROCEED).
+        return DriftPlan("refused", reason=str(exc), known_append_ids=known)
     if head is None:
         if not raw:
             return DriftPlan("no_drift", known_append_ids=known)
@@ -256,11 +234,14 @@ def commit_main_tracked_drift(
         buffered, outbox_eol = normalize_lines(read_text_verbatim(outbox_path))
         keep = [ln for ln in buffered if ln.strip()]
         outbox_path.parent.mkdir(parents=True, exist_ok=True)
-        durable_atomic_write(outbox_path, outbox_eol.join(keep + plan.fresh) + outbox_eol)
+        durable_atomic_write(outbox_path, (outbox_eol.join(keep + plan.fresh)
+                                           + outbox_eol).encode('utf-8', errors='surrogateescape'))
 
     # 2. Restore — but only if nothing moved under us. A process lock cannot stop an
     #    external `git commit` or an editor, so re-read both anchors first.
-    if _head_oid(main_root) != plan._head_oid or read_text_verbatim(triage_path) != plan._raw:
+    current_oid = _head_oid(main_root)
+    if (not current_oid or not plan._head_oid or current_oid != plan._head_oid
+            or read_text_verbatim(triage_path) != plan._raw):
         return DriftResult(
             "buffered",
             reason="main_tracked_changed_during_adopt: HEAD or the tracked log moved mid-repair "
@@ -270,7 +251,18 @@ def commit_main_tracked_drift(
     # git, not a hand-written file: the index guard proved index == HEAD, so `checkout --`
     # reproduces HEAD's exact bytes under core.autocrlf / .gitattributes. Guessing the EOL
     # from the working file rewrote the whole log as CRLF the moment one drift line was.
-    restore = run_git(["checkout", "--", TRIAGE_LOG], cwd=main_root, check=False)
+    restore = run_git_soft(["checkout", "--", TRIAGE_LOG], cwd=main_root)
+    if restore.returncode == TIMEOUT_RETURNCODE:
+        # run_git KILLS on timeout, so the log may be PARTIALLY written — "the next
+        # sweep completes the restore" would be false (the next plan sees a non-prefix
+        # and refuses `main_tracked_diverged` forever). Say what is true instead.
+        return DriftResult(
+            "buffered",
+            reason="main_tracked_restore_timeout: the drift is buffered in the outbox, but "
+                   "`git checkout` was killed mid-restore — the tracked log may be partially "
+                   "written; verify it before re-running",
+            adopted=len(plan.drift),
+        )
     if restore.returncode != 0:
         return DriftResult(
             "buffered",

@@ -1,0 +1,11 @@
+{
+  "run_id": "iterate-2026-07-31-triage-store-failsafe",
+  "date": "2026-07-31T10:12:27.535131Z",
+  "event_at": "2026-07-31T10:12:12.237523+00:00",
+  "type": "bug",
+  "complexity": "medium",
+  "branch": "iterate/triage-store-failsafe",
+  "spec": ".shipwright/planning/iterate/iterate-2026-07-31-triage-store-failsafe.md",
+  "tests_passed": true,
+  "adr": "iterate-2026-07-31-triage-store-failsafe"
+}

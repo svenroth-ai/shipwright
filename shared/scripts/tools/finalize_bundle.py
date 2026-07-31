@@ -88,12 +88,21 @@ def _f1_record(rr: RunResult) -> dict:
     """Interpret artifact_sync: drift is read from the stdout ``drift_detected``
     JSON, NOT the raw exit code — a crash also exits 1 (external-review MED)."""
     drift = None
+    data = None
     try:
         data = json.loads(rr.stdout)
         if isinstance(data, dict) and "drift_detected" in data:
             drift = bool(data["drift_detected"])
     except (json.JSONDecodeError, ValueError):
         drift = None
+    # An explicit ``error`` outranks the drift verdict. artifact_sync reports it when
+    # it could not read git at all, and it still carries ``drift_detected: False`` so
+    # the published shape stays stable — without this branch that False lands in the
+    # ``ok`` case below, and a git failure passes F1 as a clean tree.
+    if isinstance(data, dict) and data.get("error"):
+        return _capture(rr, status="failed",
+                        reason=f"artifact_sync could not determine drift: "
+                               f"{str(data['error'])[:200]}")
     if drift is True:
         return _capture(rr, status="drift",
                         reason="artifact_sync detected drift — update the affected "
