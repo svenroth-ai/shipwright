@@ -30,6 +30,11 @@ legacy or fresh repo and reads as empty; a present-but-malformed one fails
 closed. Collapsing the two would let one broken edit read as "all entries
 removed" and, downstream in ``alert_convergence``, license a mass-dismissal off
 a truncated file.
+
+**Absent is not exempt, either.** Reading as empty means the drift gate
+reconciles it *like* an empty register, not that it skips the comparison —
+otherwise deleting this file would silence the gate while every suppression it
+recorded stayed live (iterate-2026-07-31-accepted-risk-gate-holes).
 """
 
 from __future__ import annotations
@@ -127,10 +132,16 @@ def register_exists(project_root: Path | str) -> bool:
     return register_path(project_root).is_file()
 
 
-def _coerce_date(value: Any) -> date | None:
+def coerce_date(value: Any) -> date | None:
     """A ``date`` from a YAML date or an ISO ``YYYY-MM-DD`` string.
 
     ``datetime`` is checked first because it is a *subclass* of ``date``.
+
+    Public because ``accepted_risk_scan`` needs the same polymorphism for the
+    scanner's own due dates: PyYAML hands back a ``date`` for an unquoted
+    ``expired_at`` but a ``str`` for a quoted one, and the flat ``.trivyignore``
+    form can only ever yield a ``str``. One parser both leaves import, rather
+    than a third copy free to drift.
     """
     if isinstance(value, datetime):
         return value.date()
@@ -168,7 +179,7 @@ def _entry_error(entry: Any, index: int, seen: set[str]) -> str | None:
     if not isinstance(rule, str) or not rule.strip():
         return f"{where}: missing or empty 'rule' (the scanner-native id)"
 
-    if _coerce_date(entry.get("expires")) is None:
+    if coerce_date(entry.get("expires")) is None:
         return (
             f"{where}: 'expires' missing or not a YYYY-MM-DD date "
             "— an acceptance without a due date is a blanket suppression"
@@ -256,7 +267,7 @@ def load_register(project_root: Path | str) -> list[Acceptance]:
                 id=entry["id"],
                 target=entry["target"],
                 rule=entry["rule"],
-                expires=_coerce_date(entry["expires"]),  # validated above
+                expires=coerce_date(entry["expires"]),  # validated above
                 rationale_ref=entry["rationale_ref"],
                 statement=entry["statement"].strip(),
                 scope=dict(entry.get("scope") or {}),
