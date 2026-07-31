@@ -1,0 +1,44 @@
+{
+  "items": [
+    {
+      "name": "Spec Compliance",
+      "verdict": "pass",
+      "note": "AC1-AC8 and R1-R6 all have implementation + a named test. AC1/R6 initially shipped as documentation only; the Stage-1 spec-reviewer rejected it and both the F6.md add-list entry and the committed-content test (git show) were added before this checklist was closed."
+    },
+    {
+      "name": "Error Handling",
+      "verdict": "pass",
+      "note": "rebuild_adr_index: missing folder returns None (strict no-op, never mkdir); temp file cleaned in finally; OSError propagates to callers that can report it. write_decision_drop catches OSError ONLY and warns to stderr naming the index path and the regen command - a programming error still surfaces. read_adr_title returns None on OSError/UnicodeDecodeError so an unreadable ADR degrades to its slug rather than crashing the release pass."
+    },
+    {
+      "name": "Security Basics",
+      "verdict": "pass",
+      "note": "No network, no secrets, no user input. Only new external surface is reading .md files already in the repo and writing one file inside the ADR folder. Titles are escaped for markdown link syntax before rendering, so a crafted heading cannot forge a link target."
+    },
+    {
+      "name": "Test Quality",
+      "verdict": "pass",
+      "note": "38 tests. Non-tautological: the drift guard is proven to FAIL on a stale index (test_drift_guard_actually_fails_on_a_stale_index), tie-order stability is proven by mutating a title and re-rendering, and AC1 is asserted against committed content via git show rather than the working tree. Tests were written before the implementation and failed for the right reason (ModuleNotFoundError), then the two real-repo tests failed on the genuine stale index."
+    },
+    {
+      "name": "Performance Basics",
+      "verdict": "pass",
+      "note": "One extra folder scan (39 files) per F3 drop write and per release pass; each ADR file is read only until its first H1. Negligible against the git and network work already in those phases."
+    },
+    {
+      "name": "Naming & Structure",
+      "verdict": "pass",
+      "note": "Extraction to lib/adr_index.py follows ADR-102/ADR-103 precedent and fixes a backwards dependency (drop producer would otherwise import the aggregator that consumes its drops). aggregate_decisions.py shrank 303->261 LOC; write_decision_drop.py held at 299. The test file was split at the renderer/producers seam when it crossed 300 lines rather than left oversized."
+    },
+    {
+      "name": "Affected Boundaries",
+      "verdict": "pass",
+      "note": "Boundary is INDEX.md itself plus the new ADR-heading convention. Line endings were probed empirically first: core.autocrlf=true leaves the worktree CRLF while the render is LF, so all comparison happens in LF-space via read_text(), matching the gate_catalog drift-guard precedent. Round-trip proven byte-stable across two consecutive regenerations."
+    },
+    {
+      "name": "Test Hygiene Probe",
+      "verdict": "pass",
+      "note": "No skips, no xfails, no weakened assertions. The two real-repo tests guard with pytest.skip only when the ADR folder is absent (a genuine not-applicable for consumer checkouts), never to dodge a failure. ADR-045 probe run: plugins/shipwright-test collects 243 tests clean, so the new eager lib import widened no cross-plugin import surface. CORRECTION (post code-review): an earlier version of this note claimed monkeypatching was by MODULE OBJECT throughout. That was true of the os.replace test but NOT of the F3 best-effort test, which patched the dotted string 'tools.write_decision_drop.rebuild_adr_index'. The code-reviewer caught it; both now patch by module object."
+    }
+  ]
+}

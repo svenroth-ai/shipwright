@@ -1,0 +1,56 @@
+{
+  "stage": "doubt",
+  "gating": "advisory-must-address",
+  "verdict": "SHIP",
+  "doubts": [
+    {
+      "severity": "medium",
+      "claim_under_doubt": "AC1/AC5 are true at runtime once this merges",
+      "disproof_attempt": "The live plugin cache has neither rebuild_adr_index.py nor F6's ADR-folder add. `bash scripts/update-marketplace.sh` + `check_plugin_cache_sync.py --strict` is the step that makes AC1/AC5 true at runtime, not optional housekeeping. Exposure is bounded: the cache also lacks the new write_decision_drop.py, so a stale cache is internally consistent (old behaviour, no refresh, no staging). Carried as an explicit post-merge action.",
+      "what_would_resolve_it": "ACCEPTED - carried to F12",
+      "lens": "boundary-contract"
+    },
+    {
+      "severity": "low",
+      "claim_under_doubt": "the release pass's new index write is staged by someone",
+      "disproof_attempt": "changelog SKILL.md Step 6 now stages .shipwright/planning/adr/ (and decision_log.md) with the same reasoning as F6's L2 fix",
+      "what_would_resolve_it": "FIXED",
+      "lens": "boundary-contract"
+    },
+    {
+      "severity": "low",
+      "claim_under_doubt": "AC5 - the drift guard names the regeneration command",
+      "disproof_attempt": "the guard printed the literal {shared_root} placeholder; now uses regen_command_resolved()",
+      "what_would_resolve_it": "FIXED",
+      "lens": "boundary-contract"
+    },
+    {
+      "severity": "low",
+      "claim_under_doubt": "the _-prefix skip only excludes scaffolding",
+      "disproof_attempt": "REAL silent loss - _archive-agent-doc-updates.md is genuine content the previous index linked, and the blanket _ skip delisted it. Skip narrowed to _template-*; test_the_skip_does_not_swallow_real_underscore_files pins it. Index is 38 rows, not 37.",
+      "what_would_resolve_it": "FIXED",
+      "lens": "boundary-contract"
+    },
+    {
+      "severity": "low",
+      "claim_under_doubt": "a heading/filename ADR-number mismatch is recorded as a known limit",
+      "disproof_attempt": "the spec promised a record that did not exist; now documented in read_adr_title's docstring",
+      "what_would_resolve_it": "FIXED",
+      "lens": "boundary-contract"
+    },
+    {
+      "severity": "low",
+      "claim_under_doubt": "the commit-boundary test would catch an F6 staging regression",
+      "disproof_attempt": "the test now derives the add path from F6.md via _f6_adr_add_path() instead of restating it; that helper raises if F6 stops staging the folder",
+      "what_would_resolve_it": "FIXED",
+      "lens": "boundary-contract"
+    }
+  ],
+  "refuted": [
+    "F3 producer running in the wrong root - the drop/index root asymmetry is correct by construction; adr_spec_folder never calls resolve_main_repo_root, so a worktree run cannot mutate MAIN",
+    "heading parser mis-reading a real ADR - all 37 committed labels reproduce exactly, all four prefix styles strip cleanly, ordering is platform-independent",
+    "INDEX.md row anchors - no anchor-style link exists anywhere in the repo and list items were never anchor targets",
+    "dry-run / no-drop-dir writing anything - both return before the lock and before any mkdir"
+  ],
+  "summary": "Six doubts raised, five fixed in this diff, one (plugin-cache sync) carried to F12 as an explicit post-merge action. Four attacks refuted with evidence."
+}
