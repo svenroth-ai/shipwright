@@ -15,21 +15,18 @@ scaffolder's file-path loader and may ``from lib.* import`` at module scope.
 from __future__ import annotations
 
 import contextlib
-import os
 import subprocess
 from dataclasses import dataclass, field
 from pathlib import Path
 
 from lib.atomic_write import durable_atomic_write  # noqa: E402
+from lib.ci_env import ci_active  # noqa: E402
 from lib.gitattributes_union import (  # noqa: E402  (pure merge-logic SSoT)
     GITATTRIBUTES_PATH,
     UNION_PATHS,
     merge_into,
     missing_union_paths,
 )
-
-#: Truthy spellings of ``$CI`` that disable the auto-commit unless ``allow_ci``.
-_CI_TRUTHY = frozenset({"1", "true", "yes", "on"})
 
 
 @dataclass
@@ -56,7 +53,9 @@ class HealResult:
 
 
 def _ci_active() -> bool:
-    return os.environ.get("CI", "").strip().lower() in _CI_TRUTHY
+    """Delegates to the shared leaf — see :mod:`lib.ci_env` for why this is not
+    a local copy."""
+    return ci_active()
 
 
 def _atomic_write(path: Path, text: str) -> None:

@@ -20,7 +20,6 @@ on any commit failure, no-op in the monorepo where the block already exists).
 from __future__ import annotations
 
 import contextlib
-import os
 import subprocess
 import sys
 from dataclasses import dataclass, field
@@ -31,6 +30,7 @@ if str(_SCRIPTS_ROOT) not in sys.path:
     sys.path.insert(0, str(_SCRIPTS_ROOT))
 
 from lib.atomic_write import durable_atomic_write  # noqa: E402
+from lib.ci_env import ci_active  # noqa: E402
 from lib.gitignore_canon import plan_merge  # noqa: E402
 
 #: Where the canonical block lives in a managed repo (repo root).
@@ -43,9 +43,6 @@ MANAGED_MARKER_PATHS: tuple[str, ...] = (
     "shipwright_events.jsonl",
     ".shipwright/triage.jsonl",
 )
-
-#: Truthy spellings of ``$CI`` that disable the auto-commit unless ``allow_ci``.
-_CI_TRUTHY = frozenset({"1", "true", "yes", "on"})
 
 
 @dataclass
@@ -72,7 +69,9 @@ class HealResult:
 
 
 def _ci_active() -> bool:
-    return os.environ.get("CI", "").strip().lower() in _CI_TRUTHY
+    """Delegates to the shared leaf — see :mod:`lib.ci_env` for why this is not
+    a local copy."""
+    return ci_active()
 
 
 def _atomic_write(path: Path, text: str) -> None:

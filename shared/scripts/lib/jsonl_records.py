@@ -80,6 +80,19 @@ def ends_without_newline(path: Path | str) -> bool:
     ``-1`` from the end of an empty file raises ``OSError`` (external plan review,
     both reviewers). A file ending ``\\r\\n`` ends in ``\\n`` and so counts as
     already terminated; prefixing another newline would inject a blank line.
+
+    Anything ELSE that goes wrong returns True, i.e. "assume unterminated". This
+    function is the PREVENTION half of the module, so it must fail CLOSED, and the
+    two error directions are not symmetric:
+
+    * a wrong ``True`` prepends one newline, leaving a blank line that
+      :func:`read_jsonl_records` skips outright (``if not stripped: continue``);
+    * a wrong ``False`` lets the next writer append onto an unterminated line, and
+      the reader then loses BOTH records — the exact corruption documented at the
+      top of this module.
+
+    One blank line against two destroyed records is not a close call. Only the two
+    states that are genuinely appendable — absent and empty — return False.
     """
     path = Path(path)
     try:
@@ -88,10 +101,13 @@ def ends_without_newline(path: Path | str) -> bool:
         with path.open("rb") as fh:
             fh.seek(-1, 2)  # 2 == os.SEEK_END
             return fh.read(1) != b"\n"
-    except (OSError, ValueError):
-        # Missing, unreadable, or not seekable → treat as safely appendable. The
-        # append itself will surface any real I/O problem.
+    except FileNotFoundError:
+        # Nothing to append ONTO — the first write creates a well-formed file.
         return False
+    except (OSError, ValueError):
+        # Unreadable, not seekable, a race that deleted it mid-stat: we cannot
+        # prove the file is terminated, so we must not assume it is.
+        return True
 
 
 def split_records(line: str) -> tuple[list[dict], str]:
