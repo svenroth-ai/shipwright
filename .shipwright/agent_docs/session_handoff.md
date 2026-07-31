@@ -1,39 +1,38 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-07-28-docs-placement-rule"
+run_id: "iterate-2026-07-31-it7a-pr-review-stale-verdict"
 phase: "iterate"
-reason: "iterate: docs/ placement rule + remove one generated artifact and five finished records"
-timestamp: "2026-07-28T12:18:50.089137+00:00"
+reason: "iterate finalization"
+timestamp: "2026-07-31T09:23:55.300361+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-07-28 12:18:50 UTC
+> Auto-generated 2026-07-31 09:23:55 UTC
 
 ## Session Info
 
-- **Session ID**: 7c6c7b07-d3a2-4c91-ba4e-fab3535b5067
-- **Timestamp**: 2026-07-28 12:18:50 UTC
-- **Reason**: iterate: docs/ placement rule + remove one generated artifact and five finished records
+- **Session ID**: 9bba1d9a-069e-4169-a2d6-9bba924f2e47
+- **Timestamp**: 2026-07-31 09:23:55 UTC
+- **Reason**: iterate finalization
 
 ## Last Iterate
 
-- **Run ID**: iterate-2026-07-28-docs-placement-rule
-- **Date**: 2026-07-28T12:18:44.151571Z
+- **Run ID**: iterate-2026-07-31-it7a-pr-review-stale-verdict
+- **Date**: 2026-07-31T09:23:28.491615Z
 - **Type**: change
 - **Complexity**: medium
-- **Branch**: iterate/docs-placement-rule
-- **ADR**: iterate-2026-07-28-docs-placement-rule
+- **Branch**: iterate/it7a-pr-review-stale-verdict
+- **ADR**: iterate-2026-07-31-it7a-pr-review-stale-verdict
 - **Tests passed**: True
-- **Spec**: .shipwright/planning/iterate/iterate-2026-07-28-docs-placement-rule.md
+- **Spec**: .shipwright/planning/iterate/iterate-2026-07-31-it7a-pr-review-stale-verdict.md
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/docs-placement-rule
-- **Run ID**: iterate-2026-07-28-docs-placement-rule
-- **Spec**: .shipwright/planning/iterate/iterate-2026-07-28-docs-placement-rule.md
-- **Complexity**: medium · **spec_impact:** none · **affected_frs:** [] ·
-- **External Review Marker**: completed (external_review_state.json @ 2026-07-28T11:58:04)
+- **Branch**: iterate/it7a-pr-review-stale-verdict
+- **Run ID**: `iterate-2026-07-31-it7a-pr-review-stale-verdict`
+- **Spec**: .shipwright/planning/iterate/iterate-2026-07-31-it7a-pr-review-stale-verdict.md
+- **External Review Marker**: stale (predates spec (2026-07-31T08:44:42))
 
 ### Mandatory replay on Resume
 
@@ -51,8 +50,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/docs-placement-rule
-- **Last Commit**: 7ec426a2 chore(triage): sweep 54 outbox append(s) into branch
+- **Branch**: iterate/it7a-pr-review-stale-verdict
+- **Last Commit**: ac762081 chore(triage): sweep 8 outbox append(s) into branch
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -68,17 +67,17 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 | Event | Type | Source | Date |
 |-------|------|--------|------|
-| evt-003a4ccb | grade_snapshot | — | 2026-07-28 |
-| evt-a25fc820 | work_completed | iterate (iterate: docs/ placement rule + remove one generated artifact and five finished records) | 2026-07-28 |
-| evt-7963d51e | grade_snapshot | — | 2026-07-28 |
-| evt-2df150c5 | work_completed | iterate (Make a conditional session policy gating subagents a question asked before Stage 1 rather than a silent not_run at F11, and define what a real blocker is.) | 2026-07-28 |
-| evt-5f7e67f6 | grade_snapshot | — | 2026-07-28 |
+| evt-742d9538 | grade_snapshot | — | 2026-07-31 |
+| evt-e2c1d453 | work_completed | iterate (The Tier-3 PR reviewer retracts its own superseded change-requests when a later run passes, so a green pull request stops being held by a verdict about code that is gone.) | 2026-07-31 |
+| evt-9c4a3a36 | grade_snapshot | — | 2026-07-31 |
+| evt-e690f499 | work_completed | iterate (iterate: the derived-snapshot gate sees the branch, not the tip) | 2026-07-31 |
+| evt-0288af6a | grade_snapshot | — | 2026-07-30 |
 
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 400
-- **Last iterate**: change — iterate: docs/ placement rule + remove one generated artifact and five finished records (2026-07-28)
+- **Total work events**: 413
+- **Last iterate**: change — The Tier-3 PR reviewer retracts its own superseded change-requests when a later run passes, so a green pull request stops being held by a verdict about code that is gone. (2026-07-31)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
 ## Recent Decisions

@@ -1,60 +1,74 @@
 # Triage Inbox
 
-> Auto-generated 2026-07-28T09:01:05.419913Z. Items waiting for triage decision.
+> Auto-generated 2026-07-31T05:50:52.994375Z. Items waiting for triage decision.
 > Promote via WebUI Triage tab (when v1b lands) or `shared/scripts/tools/triage_promote.py --id <id> --task-ref EXT:<ref>`.
 
 ## Status summary
 
-- Total: 476
-- Triage: 20 | Promoted: 1 | Dismissed: 453 | Snoozed: 2
+- Total: 526
+- Triage: 23 | Promoted: 1 | Dismissed: 500 | Snoozed: 2
 
-## Top 20 items (severity-sorted)
-
-### Source: analysis (1 item)
-
-<a id="trg-57317128"></a>
-- **Plugin scope split: entry-point plugins (adopt/grade/run) global, 11 pipeline plugins project-scoped** `id=trg-57317128 | severity=medium | kind=improvement → P2/engineering`
-  - Scope the Shipwright marketplace correctly instead of enabling all ~14 plugins at user scope (they currently load /ship…
-  - Promote: `triage_promote.py --id trg-57317128 --task-ref EXT:<ref>`
+## Top 23 items (severity-sorted)
 
 ### Source: compliance (1 item)
 
-<a id="trg-965c563e"></a>
-- **Compliance: 5 open finding(s)** `id=trg-965c563e | severity=high | kind=compliance → P1/compliance`
-  - 5 open compliance finding(s): D/D1, D/D3, F/F6, H/H1, H/H2  - D/D1: Spec FR coverage in events — uncovered FRs — Must:…
+<a id="trg-1d752697"></a>
+- **Compliance: 4 open finding(s)** `id=trg-1d752697 | severity=high | kind=compliance → P1/compliance`
+  - 4 open compliance finding(s): D/D1, D/D3, H/H1, H/H2  - D/D1: Spec FR coverage in events — uncovered FRs — Must: FR-01.…
   - Launch payload (copy into a new Claude session):
     ```text
     /shipwright-compliance
     
-    Context: 5 open compliance finding(s): D/D1, D/D3, F/F6, H/H1, H/H2.
+    Context: 4 open compliance finding(s): D/D1, D/D3, H/H1, H/H2.
     Dashboard: .shipwright/compliance/dashboard.md
     Each finding + hint is listed in this item's detail.
     ```
-  - Promote: `triage_promote.py --id trg-965c563e --task-ref EXT:<ref>`
+  - Promote: `triage_promote.py --id trg-1d752697 --task-ref EXT:<ref>`
 
-### Source: iterate (1 item)
+### Source: f0-suite (1 item)
 
-<a id="trg-2f89afcf"></a>
-- **Adopted repos inherit derived-snapshots-off-branch without a refresh producer** `id=trg-2f89afcf | severity=high | kind=improvement → P1/engineering`
-  - shared/ syncs into the plugin-cache root that every adopted repo resolves, and the change lives in the iterate skill, s…
-  - Promote: `triage_promote.py --id trg-2f89afcf --task-ref EXT:<ref>`
+<a id="trg-f64d1c27"></a>
+- **[f0] shared/tests failed in parallel and passed alone - race or flaky test** `id=trg-f64d1c27 | severity=high | kind=bug → P1/engineering`
+  - shared/tests: red in parallel (rc 1), GREEN alone (rc 0). It IS on the suite.xdist allowlist, so the fan-out inside the…
+  - Launch payload (copy into a new Claude session):
+    ```text
+    /shipwright-iterate --type bug
+    
+    Context: F0 suite card f0-race:shared/tests. The test unit shared/tests failed while the units ran side by side and passed when re-run alone, so the gate stayed green and nothing else recorded it.
+    Reproduce alone (expect GREEN): uv run --with pytest --with pytest-mock --with diff-cover==10.3.0 pytest shared/tests -q -p no:cacheprovider -m 'not slow and not cross_plugin'
+    Reproduce in parallel (expect intermittent RED): uv run shared/scripts/tools/run_test_suite.py --project-root 'C:\01_Development\shipwright\.worktrees\derived-gate-sees-the-pr' --run-id iterate-2026-07-30-derived-gate-sees-the-pr
+    Establish whether it is a race between units or an unreliable test, fix the cause, and close this card. Never weaken or delete the test to make it pass.
+    ```
+  - Promote: `triage_promote.py --id trg-f64d1c27 --task-ref EXT:<ref>`
 
-### Source: manual (3 items)
+### Source: iterate-2026-07-31-adr-index-producer code review (1 item)
 
-<a id="trg-10aa91e3"></a>
-- **A grade snapshot cannot say whether the graded content matches the commit it names (dirty flag built, then withdrawn)** `id=trg-10aa91e3 | severity=medium | kind=improvement → P2/engineering`
-  - Root cause, unfixed by design: grade and score are computed from the WORKING tree while lineage and base can only be de…
-  - Promote: `triage_promote.py --id trg-10aa91e3 --task-ref EXT:<ref>`
+<a id="trg-1acb5304"></a>
+- **ADR INDEX.md has no merge-reconciliation entry for parallel iterates** `id=trg-1acb5304 | severity=medium | kind=improvement → P2/engineering`
+  - Since iterate-2026-07-31-adr-index-producer, .shipwright/planning/adr/INDEX.md is regenerated on a BRANCH at iterate F3…
+  - Promote: `triage_promote.py --id trg-1acb5304 --task-ref EXT:<ref>`
 
-<a id="trg-d190cc37"></a>
-- **WebUI Grade-Trend must group grade_snapshot by tree attribution, not plot every point** `id=trg-d190cc37 | severity=medium | kind=bug → P2/engineering`
-  - Producer side landed: every grade_snapshot now carries lineage (main\|branch\|unknown), branch and base (merge-base wit…
-  - Promote: `triage_promote.py --id trg-d190cc37 --task-ref EXT:<ref>`
+### Source: iterate-measurement (1 item)
 
-<a id="trg-1346abbd"></a>
-- **Stamp the C3 event anchor in the iterate ledger writer** `id=trg-1346abbd | severity=low | kind=improvement → P3/engineering`
-  - Canon C3 consults its clock only where a completion carries an event anchor. append_iterate_entry.py deliberately stamp…
-  - Promote: `triage_promote.py --id trg-1346abbd --task-ref EXT:<ref>`
+<a id="trg-6af8dc72"></a>
+- **Triage-Delivery: eine aus CI gefilte Karte landet im gitignorierten Outbox und erreicht niemanden (gehoert zu IT-1)** `id=trg-6af8dc72 | severity=medium | kind=bug → P2/engineering`
+  - GEHOERT ZU IT-1 (trg-4ebc928e, Triage-Store und Delivery haerten) - dort einhaengen, nicht separat abarbeiten.  MECHANI…
+  - Promote: `triage_promote.py --id trg-6af8dc72 --task-ref EXT:<ref>`
+
+### Source: manual (1 item)
+
+<a id="trg-012db453"></a>
+- **Derived compliance docs: build Weg B (release-time check-in + on-demand docs PR)** `id=trg-012db453 | severity=medium | kind=improvement → P2/engineering`
+  - DECIDED 2026-07-30 by the operator: Weg B, with the open question answered ("does anyone read the evidence on main cont…
+  - Evidence: `.shipwright/planning/iterate/2026-07-30-derived-snapshots-decision.md`
+  - Promote: `triage_promote.py --id trg-012db453 --task-ref EXT:<ref>`
+
+### Source: operator (1 item)
+
+<a id="trg-386bd01c"></a>
+- **ADR INDEX.md silently drifts: rebuild_adr_index runs only when there are decision-drops to fold** `id=trg-386bd01c | severity=low | kind=bug → P3/engineering`
+  - MECHANISM. aggregate_decisions.py calls rebuild_adr_index() only INSIDE aggregate()'s `if valid:` branch, i.e. exclusiv…
+  - Promote: `triage_promote.py --id trg-386bd01c --task-ref EXT:<ref>`
 
 ### Source: req3-campaign (3 items)
 
@@ -88,19 +102,42 @@
   - Evidence: `.shipwright/planning/campaigns/2026-07-23-req3-ac-evidence-ledger-mono.md`
   - Promote: `triage_promote.py --id trg-e9fa7c49 --task-ref EXT:<ref>`
 
-### Source: triage-consolidation-2026-07-28 (9 items)
+### Source: shipwright-webui iterate-2026-07-29-accepted-risk-ci-gate (external + Codex review) (2 items)
 
-<a id="trg-e3f79524"></a>
-- **IT-9 Host-Checks: Gates die nichts gaten, das Verdict-Label, und kein CI-Job auf Windows** `id=trg-e3f79524 | severity=high | kind=improvement → P1/engineering`
-  - SUPERSEDES trg-c7e5835b (das seinerseits trg-2f9865fb supersedete), KONSOLIDIERT zusaetzlich trg-9862202d + trg-80e3b3c…
-  - Evidence: `.shipwright/planning/iterate/2026-07-28-triage-consolidation.md`
-  - Promote: `triage_promote.py --id trg-e3f79524 --task-ref EXT:<ref>`
+<a id="trg-7d18bb0b"></a>
+- **SecFix-3 (monorepo, AUTONOMOUS-READY): accepted-risk gate - reconcile with no register, and honour the ignore-file expi…** `id=trg-7d18bb0b | severity=medium | kind=bug → P2/engineering`
+  - Filed from shipwright-webui, where the accepted-risk gate was first wired into CI (webui PR #332). SecFix-1..5 are one…
+  - Promote: `triage_promote.py --id trg-7d18bb0b --task-ref EXT:<ref>`
 
-<a id="trg-1a815ff2"></a>
-- **IT-7 Die Review-Maschinerie schliesst ihren Kreis: totes Verdict blockt ewig, Sub-Iterates ohne Cascade** `id=trg-1a815ff2 | severity=high | kind=bug → P1/engineering`
-  - KONSOLIDIERT trg-9e2ce202 + trg-71d7a4fa. ZWEI Iterates, ein Anker. 7a ZUERST und klein - trg-9e2ce202: wenn der Tier-3…
+<a id="trg-87174b37"></a>
+- **SecFix-5 (monorepo, NOT AUTONOMOUS - schema decision): should the accepted-risk register gain an entry type for inline…** `id=trg-87174b37 | severity=low | kind=improvement → P3/engineering`
+  - Filed from shipwright-webui. SecFix-1..5 are one family; this is the only member that must NOT run unattended, which is…
+  - Promote: `triage_promote.py --id trg-87174b37 --task-ref EXT:<ref>`
+
+### Source: triage-consolidation (3 items)
+
+<a id="trg-fc173418"></a>
+- **IT-7 (neu) Die Review-Maschinerie schliesst ihren Kreis: totes Verdict, fehlende Cascade, fehlender Architektur-Pass, s…** `id=trg-fc173418 | severity=high | kind=improvement → P1/engineering`
+  - SUPERSEDES trg-1a815ff2 - 7a und 7b inhaltlich UNVERAENDERT, zwei Mitglieder kommen dazu. KONSOLIDIERT zusaetzlich trg-…
+  - Promote: `triage_promote.py --id trg-fc173418 --task-ref EXT:<ref>`
+
+<a id="trg-515060a6"></a>
+- **IT-11 (neu nach dem Architektur-Review) Adoptierte Repos brauchen aktuelle Evidenz - aber wahrscheinlich OHNE Refresh-P…** `id=trg-515060a6 | severity=high | kind=improvement → P1/engineering`
+  - SUPERSEDES trg-c5b05f31. Grund fuer die Neufassung: der alte Text sagt 'die Entscheidung muss fallen, BEVOR der Refresh…
+  - Promote: `triage_promote.py --id trg-515060a6 --task-ref EXT:<ref>`
+
+<a id="trg-5387cafb"></a>
+- **IT-3b F11 sagt die Wahrheit ueber die ZUSTELLUNG: nie geliefert, und falsch gewarnt** `id=trg-5387cafb | severity=high | kind=improvement → P1/engineering`
+  - NACHFOLGER von IT-3 (trg-e3ca4314, geschlossen). Beide Befunde entstanden NACH dessen Abschluss und treffen exakt desse…
+  - Promote: `triage_promote.py --id trg-5387cafb --task-ref EXT:<ref>`
+
+### Source: triage-consolidation-2026-07-28 (7 items)
+
+<a id="trg-bd66b9b0"></a>
+- **IT-9 (neu) Host-Checks: Gates die nichts gaten, das Verdict-Label, kein Windows-CI, und der Tier der sich auf Autorscha…** `id=trg-bd66b9b0 | severity=high | kind=improvement → P1/engineering`
+  - SUPERSEDES trg-e3f79524 (das trg-c7e5835b supersedete, das trg-2f9865fb supersedete), KONSOLIDIERT zusaetzlich trg-51f6…
   - Evidence: `.shipwright/planning/iterate/2026-07-28-triage-consolidation.md`
-  - Promote: `triage_promote.py --id trg-1a815ff2 --task-ref EXT:<ref>`
+  - Promote: `triage_promote.py --id trg-bd66b9b0 --task-ref EXT:<ref>`
 
 <a id="trg-ffbf13de"></a>
 - **IT-5 Klassifikation und Risiko-Erkennung: 79 Prozent aller Laeufe sind faelschlich medium** `id=trg-ffbf13de | severity=high | kind=improvement → P1/engineering`
@@ -108,29 +145,23 @@
   - Evidence: `.shipwright/planning/iterate/2026-07-28-triage-consolidation.md`
   - Promote: `triage_promote.py --id trg-ffbf13de --task-ref EXT:<ref>`
 
-<a id="trg-e3ca4314"></a>
-- **IT-3 F11 sagt die Wahrheit ueber den Lauf, den es prueft: vier Fail-Open-Pfade im selben Gate** `id=trg-e3ca4314 | severity=high | kind=bug → P1/engineering`
-  - KONSOLIDIERT trg-81fbf8ed + trg-51a57370 + trg-64372769 + trg-ffddd6b9. Ein Blast Radius: shared/scripts/verifiers/ plu…
-  - Evidence: `.shipwright/planning/iterate/2026-07-28-triage-consolidation.md`
-  - Promote: `triage_promote.py --id trg-e3ca4314 --task-ref EXT:<ref>`
-
-<a id="trg-4bbbd233"></a>
-- **IT-2 Grade-Snapshot-Attribution und Event-Log-Integritaet: eine Ursache, sechs Nachbeben** `id=trg-4bbbd233 | severity=high | kind=bug → P1/engineering`
-  - KONSOLIDIERT trg-aea8c97e + trg-ca4fc0e7 + trg-1603000f + trg-5e945a39 + trg-465a2caf + trg-c97faa35 - alle sechs sind…
-  - Evidence: `.shipwright/planning/iterate/2026-07-28-triage-consolidation.md`
-  - Promote: `triage_promote.py --id trg-4bbbd233 --task-ref EXT:<ref>`
-
 <a id="trg-4ebc928e"></a>
 - **IT-1 Triage-Store und Delivery haerten: 3 verifizierte High plus ~29 Audit-Befunde** `id=trg-4ebc928e | severity=high | kind=bug → P1/engineering`
   - KONSOLIDIERT trg-7b6f13df + trg-93ceb2b0 + trg-51f8e2a1 + trg-0a294ef3. DREI Iterates unter EINEM Anker, interleaved-se…
   - Evidence: `.shipwright/planning/iterate/2026-07-28-triage-delivery-audit-FINDINGS.md`
   - Promote: `triage_promote.py --id trg-4ebc928e --task-ref EXT:<ref>`
 
-<a id="trg-71a381f5"></a>
-- **IT-0 Hygiene-Sweep: die Gates entsperren, die die naechste Arbeit blockieren** `id=trg-71a381f5 | severity=high | kind=compliance → P1/engineering`
-  - KONSOLIDIERT trg-8f022f38 + trg-17f53a39. Laeuft ALLEIN und ZUERST; IT-3, IT-5 und IT-7 haengen daran. GRUND (gemessen)…
+<a id="trg-66b45477"></a>
+- **IT-10 Plugin-Scope-Split: Einstiegs-Plugins global, 11 Pipeline-Plugins projekt-scoped** `id=trg-66b45477 | severity=medium | kind=improvement → P2/engineering`
+  - SUPERSEDES trg-57317128 - inhaltlich unveraendert, nur in das IT-Schema umbenannt, damit das Board einheitlich ist. Spe…
   - Evidence: `.shipwright/planning/iterate/2026-07-28-triage-consolidation.md`
-  - Promote: `triage_promote.py --id trg-71a381f5 --task-ref EXT:<ref>`
+  - Promote: `triage_promote.py --id trg-66b45477 --task-ref EXT:<ref>`
+
+<a id="trg-ac4fc684"></a>
+- **IT-2 (neu nach PR #490) Grade-Snapshot: Dirty-State erfassen statt messen, plus das Emissionsvolumen** `id=trg-ac4fc684 | severity=medium | kind=bug → P2/engineering`
+  - SUPERSEDES trg-4bbbd233 (angelegt 2026-07-28 ~11:00), KONSOLIDIERT trg-10aa91e3 + trg-d190cc37. Grund fuer die Neufassu…
+  - Evidence: `.shipwright/planning/iterate/2026-07-28-triage-consolidation.md`
+  - Promote: `triage_promote.py --id trg-ac4fc684 --task-ref EXT:<ref>`
 
 <a id="trg-e0a00235"></a>
 - **IT-8 Die lokale Entwicklungsschleife berichtet die Wahrheit (2 von 3 sind Dismiss-Kandidaten)** `id=trg-e0a00235 | severity=medium | kind=improvement → P2/engineering`

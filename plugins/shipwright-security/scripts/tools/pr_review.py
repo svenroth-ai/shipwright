@@ -60,6 +60,13 @@ from pr_review_lib import (  # noqa: E402
     truncate_diff,
 )
 from pr_review_diff_filter import count_sections  # noqa: E402
+# Clearing this reviewer's own superseded verdicts — the policy lives there.
+from pr_review_dismiss import (  # noqa: E402
+    dismiss_own_stale_verdicts,
+    new_nonce,
+    read_reviewed_head,
+    stamp_review_body,
+)
 # The two I/O boundaries each own a module — `gh` subprocess and OpenRouter HTTP.
 # Re-exported here so existing call sites and their monkeypatch targets
 # (`pr_review.fetch_pr_diff`, `pr_review.call_openrouter`, ...) are unchanged.
@@ -81,9 +88,11 @@ from pr_review_openrouter import (  # noqa: E402
 __all__ = [
     "EXIT_BLOCK", "EXIT_ERROR", "EXIT_OK", "MAX_DIFF_CHARS", "_redact",
     "build_messages", "build_pr_meta", "count_sections", "decision_to_exit",
-    "fetch_pr_diff", "filter_generated_paths", "load_prompts",
-    "nothing_reviewed_summary", "parse_review_response", "post_pr_comment",
-    "post_pr_review_state", "render_comment", "safe_path", "truncate_diff",
+    "dismiss_own_stale_verdicts", "fetch_pr_diff", "filter_generated_paths",
+    "load_prompts", "new_nonce", "nothing_reviewed_summary",
+    "parse_review_response", "post_pr_comment", "post_pr_review_state",
+    "read_reviewed_head", "render_comment", "safe_path", "stamp_review_body",
+    "truncate_diff",
     "call_openrouter", "DEFAULT_MODEL", "DEFAULT_TIMEOUT", "OPENROUTER_URL"]
 
 
@@ -96,19 +105,35 @@ def _fix_windows_encoding() -> None:
             pass
 
 
-def _post_verdict(args, api_key: str, body: str, decision: str, summary: str) -> None:
+def _post_verdict(args, api_key: str, body: str, decision: str, summary: str,
+                  nonce: str) -> bool:
     """Post the comment + review state. Best-effort: a posting failure must not
     flip the gate, which reflects the review outcome (the exit code), not the
     side-effect. Shared so every fail-closed path leaves the same trail — a red
-    check with no comment tells the reader nothing."""
+    check with no comment tells the reader nothing.
+
+    The review-state body is stamped with this run's nonce, which is how the
+    stale-verdict cleanup later recognises its OWN review among the PR's. Returns
+    whether that state landed: without it there is no anchor, and cleanup that
+    cannot identify itself must not guess.
+    """
+    # Stamped BEFORE the loop, not inside its iterable: Python builds that tuple
+    # before entering the body, so a `stamp_review_body` that raised would
+    # escape the try/except below — turning a passing review into exit 1 on the
+    # one call in this construct that the best-effort contract does not cover.
+    stamped = stamp_review_body(summary, nonce)
+    state_posted = True
     for fn, call_args, what in (
         (post_pr_comment, (args.pr_number, args.repo, body), "PR comment"),
-        (post_pr_review_state, (args.pr_number, args.repo, decision, summary), "review state"),
+        (post_pr_review_state, (args.pr_number, args.repo, decision, stamped), "review state"),
     ):
         try:
             fn(*call_args)
         except Exception as e:  # noqa: BLE001
             print(_redact(f"[pr_review] failed to post {what}: {e}", api_key), file=sys.stderr)
+            if fn is post_pr_review_state:
+                state_posted = False
+    return state_posted
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -130,12 +155,19 @@ def main(argv: list[str] | None = None) -> int:
         print("[pr_review] OPENROUTER_API_KEY is not set — cannot review.", file=sys.stderr)
         return EXIT_ERROR
     model = os.environ.get("SHIPWRIGHT_PR_REVIEW_MODEL", DEFAULT_MODEL)
+    # Minted before the first post, because EVERY posting path stamps it.
+    nonce = new_nonce()
 
     try:
         system_prompt, user_prompt = load_prompts(args.prompt_dir)
     except OSError as e:
         print(_redact(f"[pr_review] failed to read prompt dir: {e}", api_key), file=sys.stderr)
         return EXIT_ERROR
+
+    # The head as it stands just before the diff is read. A review's own
+    # `commit_id` is stamped when it is SUBMITTED, so it cannot say what was
+    # actually reviewed — and the cleanup below needs exactly that.
+    reviewed_sha = read_reviewed_head(args.pr_number, args.repo)
 
     try:
         diff = fetch_pr_diff(args.pr_number, args.repo)
@@ -175,7 +207,7 @@ def main(argv: list[str] | None = None) -> int:
                       render_comment({"decision": "block", "summary": summary},
                                      model="no model — nothing was sent",
                                      truncated=False,
-                                     excluded_generated=excluded), "block", summary)
+                                     excluded_generated=excluded), "block", summary, nonce)
         print(f"[pr_review] {summary}", file=sys.stderr)
         return EXIT_BLOCK
 
@@ -230,8 +262,8 @@ def main(argv: list[str] | None = None) -> int:
     body = render_comment(
         review, model=model, truncated=truncated, excluded_generated=excluded, **missing)
 
-    _post_verdict(args, api_key, body, effective_decision,
-                  str(review.get("summary", "")))
+    state_posted = _post_verdict(args, api_key, body, effective_decision,
+                                 str(review.get("summary", "")), nonce)
 
     if truncated:
         # Partial review fails closed — needs human (see comment above).
@@ -248,6 +280,17 @@ def main(argv: list[str] | None = None) -> int:
     exit_code = decision_to_exit(decision)
     if exit_code == EXIT_ERROR:
         print(f"[pr_review] unknown decision '{decision}' — treating as error.", file=sys.stderr)
+    if exit_code == EXIT_OK and state_posted:
+        # This run said yes, so its own earlier NOs about commits that are gone
+        # must stop holding the PR. Only on a passing verdict, and never
+        # allowed to change what the review earned — hence the outer guard as
+        # well as the ones inside.
+        try:
+            dismiss_own_stale_verdicts(args.pr_number, args.repo, nonce=nonce,
+                                       reviewed_sha=reviewed_sha)
+        except Exception as e:  # noqa: BLE001 — housekeeping never flips the gate
+            print(_redact(f"[pr_review] stale-verdict cleanup failed: {e}", api_key),
+                  file=sys.stderr)
     return exit_code
 
 

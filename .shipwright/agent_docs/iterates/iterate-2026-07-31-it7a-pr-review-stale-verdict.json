@@ -1,0 +1,188 @@
+{
+  "run_id": "iterate-2026-07-31-it7a-pr-review-stale-verdict",
+  "date": "2026-07-31T09:23:28.491615Z",
+  "event_at": "2026-07-31T05:50:52.994375+00:00",
+  "type": "change",
+  "complexity": "medium",
+  "branch": "iterate/it7a-pr-review-stale-verdict",
+  "spec": ".shipwright/planning/iterate/iterate-2026-07-31-it7a-pr-review-stale-verdict.md",
+  "tests_passed": true,
+  "adr": "iterate-2026-07-31-it7a-pr-review-stale-verdict",
+  "test_completeness": {
+    "status": "complete",
+    "behaviors": [
+      {
+        "behavior": "AC1 a passing run dismisses its own superseded change-requests",
+        "disposition": "tested",
+        "evidence": "test_it_dismisses_and_reports; test_own_marked_verdict_on_a_superseded_commit_is_selected"
+      },
+      {
+        "behavior": "AC1 the posted review body carries this run's nonce and the cleanup is handed that same nonce",
+        "disposition": "tested",
+        "evidence": "test_the_cleanup_looks_for_the_nonce_this_run_actually_posted"
+      },
+      {
+        "behavior": "AC1/AC5 the head is read BEFORE the diff is fetched",
+        "disposition": "tested",
+        "evidence": "test_the_head_is_read_before_the_diff_is_fetched (mutation-verified: move or duplicate the read -> red)"
+      },
+      {
+        "behavior": "AC2 a human's change-request is never dismissed, even carrying the marker",
+        "disposition": "tested",
+        "evidence": "test_a_humans_change_request"
+      },
+      {
+        "behavior": "AC2 an anchor that is not a Bot is refused",
+        "disposition": "tested",
+        "evidence": "test_an_anchor_that_is_not_a_bot"
+      },
+      {
+        "behavior": "AC3 another bot's change-request is never dismissed",
+        "disposition": "tested",
+        "evidence": "test_another_bots_change_request"
+      },
+      {
+        "behavior": "AC3 a marker quoted mid-body is not ownership (anchor and candidate)",
+        "disposition": "tested",
+        "evidence": "TestOwnershipIsPositional (3 cases)"
+      },
+      {
+        "behavior": "AC7 an unmarked change-request under the same shared login is never dismissed",
+        "disposition": "tested",
+        "evidence": "test_an_unmarked_verdict_under_the_same_shared_bot_login"
+      },
+      {
+        "behavior": "AC4 a change-request about the current commit is never dismissed",
+        "disposition": "tested",
+        "evidence": "test_a_verdict_about_the_commit_that_is_current"
+      },
+      {
+        "behavior": "AC4 a block / truncated / nothing-reviewed / unknown-decision run clears nothing",
+        "disposition": "tested",
+        "evidence": "TestItClearsOnlyAfterPassing (4 cases)"
+      },
+      {
+        "behavior": "AC5 reviewed != head, or stamped != head -> nothing dismissed",
+        "disposition": "tested",
+        "evidence": "test_anything_at_all_when_the_head_has_moved; test_a_run_that_reviewed_an_older_commit_clears_nothing"
+      },
+      {
+        "behavior": "AC5 an unreadable reviewed-head -> nothing dismissed",
+        "disposition": "tested",
+        "evidence": "test_an_unreadable_head_clears_nothing"
+      },
+      {
+        "behavior": "AC5 the head is re-confirmed before the first dismissal; moved or unreadable abandons the sweep",
+        "disposition": "tested",
+        "evidence": "TestTheHeadIsReconfirmedBeforeMutating (2 cases)"
+      },
+      {
+        "behavior": "AC5 with nothing to dismiss, no second head read is spent",
+        "disposition": "tested",
+        "evidence": "test_nothing_to_dismiss_costs_no_extra_head_read"
+      },
+      {
+        "behavior": "AC6 a listing / head / dismissal failure never flips the gate",
+        "disposition": "tested",
+        "evidence": "test_a_failing_cleanup_does_not_flip_the_gate; test_a_listing_failure_is_contained_and_named; test_one_refused_dismissal_does_not_stop_the_others"
+      },
+      {
+        "behavior": "AC6 unparseable or non-array listing output raises rather than reading as 'no reviews'",
+        "disposition": "tested",
+        "evidence": "test_a_zero_exit_body_that_is_not_json_raises; test_an_error_object_instead_of_an_array_raises"
+      },
+      {
+        "behavior": "AC6/AC8 every refusal is printed, never swallowed",
+        "disposition": "tested",
+        "evidence": "three *_contained_and_named tests (mutation-verified: drop the failed branch of _describe -> red)"
+      },
+      {
+        "behavior": "AC6 one malformed review row does not void the sweep",
+        "disposition": "tested",
+        "evidence": "test_a_malformed_entry_is_counted_and_the_rest_still_clear"
+      },
+      {
+        "behavior": "AC1 an already-dismissed review is not selected again (idempotent)",
+        "disposition": "tested",
+        "evidence": "test_an_already_dismissed_verdict_is_not_selected_again; F0.5 check 4 against live PR #446"
+      },
+      {
+        "behavior": "AC3 a marker echoed by the model is stripped before stamping",
+        "disposition": "tested",
+        "evidence": "test_a_marker_echoed_by_the_model_is_stripped_before_stamping"
+      },
+      {
+        "behavior": "AC1 an empty summary still yields a postable body",
+        "disposition": "tested",
+        "evidence": "test_an_empty_summary_still_yields_a_postable_body"
+      },
+      {
+        "behavior": "AC1 nonces are unique and match the pattern the selector accepts",
+        "disposition": "tested",
+        "evidence": "TestNonce (2 cases)"
+      },
+      {
+        "behavior": "AC1 the dismissal request sends PUT + the required message, and no event field",
+        "disposition": "tested",
+        "evidence": "TestDismissReview (3 cases), built on probe P6 (three real 422 responses)"
+      },
+      {
+        "behavior": "AC1 the listing decodes both the merged-array and concatenated-pages shapes",
+        "disposition": "tested",
+        "evidence": "TestListReviews (3 cases); F0.5 check 1 decodes 11 real reviews"
+      },
+      {
+        "behavior": "AC6/AC8 every emitted line is scrubbed at one choke point, whichever producer wrote it",
+        "disposition": "tested",
+        "evidence": "test_every_reported_line_is_scrubbed_wherever_the_text_came_from; TestStripDisplayUnsafe"
+      },
+      {
+        "behavior": "AC8 the report names what was dismissed, what was left alone and why",
+        "disposition": "tested",
+        "evidence": "test_it_says_why_when_it_dismisses_nothing; test_the_default_log_goes_to_stderr"
+      },
+      {
+        "behavior": "AC1 a body as GitHub actually returns it (CRLF) is recognised as anchor and candidate",
+        "disposition": "tested",
+        "evidence": "test_a_body_as_github_actually_returns_it_is_recognised"
+      },
+      {
+        "behavior": "AC1 the nonce comes from the cryptographic source, not just a 32-hex shape",
+        "disposition": "tested",
+        "evidence": "test_it_comes_from_the_cryptographic_source"
+      },
+      {
+        "behavior": "AC6 a non-object user aborts neither the candidate loop nor the anchor scan",
+        "disposition": "tested",
+        "evidence": "test_a_non_object_user_does_not_abort_the_sweep (x3); ..._cannot_break_the_anchor_scan_either (mutation-verified: restore `or {}` -> 4 red)"
+      },
+      {
+        "behavior": "AC8 the truncation notice does not promise an unblock the pipeline cannot deliver",
+        "disposition": "tested",
+        "evidence": "test_the_truncation_notice_does_not_promise_an_unblock"
+      },
+      {
+        "behavior": "AC6/AC8 the log sanitiser strips control/invisible only - gh JSON stays legible, a newline cannot forge a workflow command",
+        "disposition": "tested",
+        "evidence": "TestStripDisplayUnsafe (6 cases)"
+      },
+      {
+        "behavior": "AC1 the two read wrappers and the selector work against the LIVE GitHub API",
+        "disposition": "tested",
+        "evidence": "F0.5: 10 read-only checks against PR #446 - 11 real reviews decoded, real head read, selector refuses without an anchor, selects a real superseded verdict with one, and refuses again when the reviewed sha disagrees"
+      },
+      {
+        "behavior": "AC1 a dismissal actually taking effect against live GitHub",
+        "disposition": "untestable",
+        "evidence": "Probe P6 drove PUT .../dismissals three ways against an ALREADY-DISMISSED review and read the real 422s, which is what the request shape is built on. Clearing a LIVE verdict needs a real stale change-request on a real PR under the workflow's token; probe P2 shows it is permitted (dismissal_restriction.enabled=false, job holds pull-requests:write).",
+        "reason_code": "requires-external-nondeterministic-service"
+      }
+    ],
+    "counts": {
+      "total": 33,
+      "tested": 32,
+      "untestable": 1,
+      "untested_testable": 0
+    }
+  }
+}

@@ -1,0 +1,32 @@
+{
+  "success": true,
+  "provider": "openrouter",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviews": {
+    "openai": {
+      "feedback": "- Category: bug\n- Severity: medium\n- File: `plugins/shipwright-security/scripts/lib/pr_review_dismiss.py:111`\n- Finding: Malformed review rows can still abort the entire cleanup sweep, contrary to the specified requirement that one unexpected review shape be counted as `unreadable` and skipped. `_is_bot()` and `_login()` assume `review[\"user\"]` is a dict; a row such as `{\"user\": \"unexpected\", ...}` causes an `AttributeError` before the narrow `id` conversion handler at line 184. The outer orchestrator then reports a listing failure and dismisses none of the otherwise valid stale verdicts.\n- Suggestion: Treat a non-dict `user` value as an unreadable row rather than dereferencing it. Validate the required candidate fields in `select_stale_verdicts()` inside a per-row guard that increments `skipped[\"unreadable\"]` and continues.\n\n- Category: test\n- Severity: low\n- File: `plugins/shipwright-security/tests/test_pr_review_dismiss.py:255`\n- Finding: The malformed-row test only covers an invalid `id` (`None`), which is handled by the existing narrow conversion `try` block. It does not cover malformed nested API fields such as a non-object `user`, so the current sweep-aborting defect passes the suite despite the test and specification claiming malformed review rows are safely skipped.\n- Suggestion: Add cases with `user` as a string/list and with malformed required fields before and between valid candidates; assert the valid candidate is still selected and `unreadable` is counted.\n\nOverall, the implementation follows the primary ownership, head-pinning, and best-effort dismissal design, but its malformed-review handling does not meet the stated fail-safe sweep behavior. Ship with the defensive row validation and regression tests added.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "openrouter",
+      "status": "success"
+    },
+    "gemini": {
+      "feedback": "SHIPWRIGHT_VERDICT: approve",
+      "via": "openrouter",
+      "status": "success"
+    }
+  },
+  "verdicts": {
+    "openai": "revise",
+    "gemini": "approve"
+  },
+  "statuses": {
+    "openai": "success",
+    "gemini": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: gemini=approve, openai=revise"
+  }
+}
