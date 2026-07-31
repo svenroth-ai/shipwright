@@ -195,6 +195,16 @@ def preflight_pr(root: Path, result: dict) -> str | None:
     """
     default = _default_branch(root)
     result["default_branch"] = default
+    # A committer identity is a PRECONDITION, not something to discover at commit
+    # time. Without it `git commit` fails with "unable to auto-detect email
+    # address" — after the branch exists and the work is done, so the operator
+    # gets a `commit_failed` and a branch to clean up instead of one sentence up
+    # front. Measured: this is exactly how CI failed while every local run passed,
+    # because a developer's machine has an identity and a fresh runner does not.
+    if git(root, "var", "GIT_COMMITTER_IDENT").returncode != 0:
+        return ("git has no committer identity here, so the refresh commit would "
+                "fail — set user.name and user.email (this commit is yours, not a "
+                "bot's, which is why the tool does not supply one)")
     if git(root, "fetch", "origin", default).returncode != 0:
         return f"could not fetch origin/{default}"
     dirty = (git(root, "status", "--porcelain",

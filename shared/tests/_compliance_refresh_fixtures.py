@@ -67,6 +67,13 @@ def seed_repo(root: Path) -> Path:
     """
     root.mkdir(parents=True, exist_ok=True)
     git(root, "init", "-b", "main")
+    # REPO-LOCAL, not inherited. The tool's own git calls run with a plain
+    # environment, so a repo with no identity makes its commit fail with
+    # "unable to auto-detect email address". A developer machine hides that
+    # behind a global ~/.gitconfig and a fresh CI runner does not — which is
+    # precisely how these tests passed locally and failed in CI.
+    git(root, "config", "user.name", "Refresh Test")
+    git(root, "config", "user.email", "t@test.invalid")
     banner = banner_line(SourceState(run_id=RUN))
     for rel in sorted(REFRESH_SET):
         path = root / rel

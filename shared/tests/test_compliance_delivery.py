@@ -145,3 +145,40 @@ def test_a_clean_up_to_date_checkout_passes_preflight(cloned):
     result: dict = {}
     assert docs.preflight_pr(cloned, result) is None
     assert result["default_branch"] == "main"
+
+
+def test_a_missing_git_identity_is_refused_UP_FRONT(cloned, monkeypatch):
+    """The failure CI found, turned into a precondition.
+
+    Without an identity `git commit` fails with "unable to auto-detect email
+    address" — but only after the branch exists and the regeneration has run, so
+    the operator gets `commit_failed` plus a branch to clean up rather than one
+    sentence up front. Measured: every local run passed and CI failed, because a
+    developer machine has a global ~/.gitconfig and a fresh runner does not.
+
+    The absence is simulated at the git boundary rather than by unsetting config:
+    a test cannot remove the developer's global identity, and `git var` would keep
+    finding it. What is under test is the refusal, not git's config resolution.
+    """
+    real = docs.git
+
+    def no_identity(root, *args):
+        if args[:2] == ("var", "GIT_COMMITTER_IDENT"):
+            return subprocess.CompletedProcess(list(args), 128, "", "unable to auto-detect")
+        return real(root, *args)
+
+    monkeypatch.setattr(docs, "git", no_identity)
+
+    refusal = docs.preflight_pr(cloned, {})
+    assert refusal is not None
+    assert "committer identity" in refusal
+    # ...and it says whose commit it is, so nobody "fixes" this with a bot identity.
+    assert "not a bot" in refusal
+    # Nothing was created: the refusal lands before any branch exists.
+    assert "chore/compliance-docs" not in real(cloned, "branch", "--list").stdout
+
+
+def test_the_preflight_passes_when_git_can_name_a_committer(cloned):
+    """The other side of the same branch — otherwise the refusal above could be
+    unconditional and this file would not notice."""
+    assert docs.preflight_pr(cloned, {}) is None
