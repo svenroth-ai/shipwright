@@ -1,0 +1,94 @@
+{
+  "section": "iterate-2026-07-31-it1-s2-expected-status",
+  "verdict": "no high-severity findings; 11 lower findings",
+  "review": [
+    {
+      "severity": "medium",
+      "category": "security",
+      "file": "shared/scripts/triage.py",
+      "line": 584,
+      "finding": "item_id is interpolated raw into both the exception message and kept_note. read_all_items only requires isinstance(item_id, str) and never sanitizes, and .shipwright/triage.jsonl is a git-tracked file in a public repo, so a crafted append line with ANSI escapes or CR puts them on operator stderr from six producers. Second vector on the same line: repr() does not escape non-ASCII, so a non-ASCII actual raises UnicodeEncodeError on a Windows cp1252 stderr inside a diagnostic path.",
+      "suggestion": "Use ascii(self.item_id) and ascii(self.actual) in both f-strings - one word each, kills both vectors."
+    },
+    {
+      "severity": "medium",
+      "category": "correctness",
+      "file": "shared/tests/test_triage_precondition_callers.py",
+      "line": 55,
+      "finding": "Both drift pins have holes the spec claims they close. isinstance(node.func, ast.Name) only matches bare-name calls, so `import triage; triage.mark_status(...)` (an ast.Attribute) escapes BOTH the forward and reverse tests - and that is the idiomatic form. Separately the forward pin asserts the kwarg is present but never that it is non-None, and expected_status=None is the documented unconditional flip.",
+      "suggestion": "Match ast.Attribute with .attr in _CALL_NAMES too; assert the kwarg value is a Constant/Tuple, not None."
+    },
+    {
+      "severity": "low",
+      "category": "correctness",
+      "file": "shared/tests/test_triage_precondition_callers.py",
+      "line": 122,
+      "finding": "The reverse pin filters on ABSOLUTE path components, so a checkout under any directory named `tests` or `node_modules` skips every file and the test fails reporting all 8 registry entries stale. Also ast.parse over every .py means one unparseable file elsewhere ERRORs this unrelated test.",
+      "suggestion": "Use path.relative_to(_REPO_ROOT).parts; wrap ast.parse in except SyntaxError: continue."
+    },
+    {
+      "severity": "low",
+      "category": "correctness",
+      "file": "shared/scripts/lib/phase_quality/_triage_bundle.py",
+      "line": 266,
+      "finding": "Both _dismiss helpers previously could not raise (both arms return 0). The new arm puts an unguarded sys.stderr.write inside an except block, so a BrokenPipeError or encoding error now escapes _dismiss mid-sum(...), aborting the remaining dismissals and the subsequent append - contradicting the docstring promise that all errors are swallowed so the Stop hook stays non-blocking.",
+      "suggestion": "Guard the diagnostic write, or capture the note and write it after the try in its own guarded block."
+    },
+    {
+      "severity": "low",
+      "category": "architecture",
+      "file": "plugins/shipwright-compliance/scripts/lib/sbom_generator.py",
+      "line": 141,
+      "finding": "Adding StatusPreconditionError to the `from triage import (...)` list widens what an ImportError disables. All three loaders return all-None on ImportError and their callers then return zeros silently, so an older triage.py bound in sys.modules (plugin-cache skew is a documented failure mode here) now disables the ENTIRE compliance triage producer, not just the precondition. Before this change the same skew worked fine.",
+      "suggestion": "Resolve the class separately with a fallback so a version-skewed store degrades to 'no precondition' rather than 'no producer'."
+    },
+    {
+      "severity": "low",
+      "category": "correctness",
+      "file": "shared/tests/test_triage_precondition_callers.py",
+      "line": 231,
+      "finding": "AC-5 and the ledger claim 'the same message AND exit code', and external finding #9's resolution says the test asserts stdout/stderr and exit code. The test calls the library function triage_promote.dismiss and asserts only pytest.raises(ValueError, match=...). No CLI entry point is driven and no exit code or stream is asserted; the claim rests on inference from the exception type.",
+      "suggestion": "Drive a real CLI entry point through the race path and assert the exit code and the stream."
+    },
+    {
+      "severity": "low",
+      "category": "readability",
+      "file": "shared/tests/test_triage_precondition_callers.py",
+      "line": 90,
+      "finding": "Three tests assert less than their names promise: test_kept_note_carries_id_actual_and_expected_and_nothing_else has no negative assertion for the 'nothing else' half; test_the_producer_facing_text_is_ascii builds the exception from ASCII inputs so it can only fail if someone types a non-ASCII literal into the format string, proving nothing about the interpolated values where the hazard is; test_cli_still_promotes_and_defers_a_still_open_item never calls promote and its second assertion checks an append set no decision path touches.",
+      "suggestion": "Rename to match, or assert what the names claim - especially the ASCII one, which should use hostile input."
+    },
+    {
+      "severity": "low",
+      "category": "readability",
+      "file": "shared/tests/test_triage_precondition_callers.py",
+      "line": 242,
+      "finding": "sys.path.insert(0, str(_SHARED_SCRIPTS / 'tools')) is repeated unguarded inside three test bodies, growing sys.path on every call, while the two sibling new files use the module-scope guarded idiom. It also loads triage_promote as a flat module while test_triage_promote.py loads tools.triage_promote, giving one session two module objects for one file.",
+      "suggestion": "Use the module-scope guarded idiom once."
+    },
+    {
+      "severity": "low",
+      "category": "correctness",
+      "file": "shared/scripts/triage.py",
+      "line": 644,
+      "finding": "The annotation str | tuple[str, ...] | list[str] | None understates the contract - _normalize_expected accepts any iterable, and a set yields nondeterministic _expected_phrase() ordering. Separately -> str | None is wrong for a legacy append line whose status field is a non-str: Pass 1 copies it verbatim, so previous can be an int or dict.",
+      "suggestion": "Make the contract text match the code, or make the code match the contract."
+    },
+    {
+      "severity": "low",
+      "category": "efficiency",
+      "file": "shared/scripts/triage.py",
+      "line": 700,
+      "finding": "The lock section now parses each store twice - once via _append_ids_at and again inside read_all_items. In the per-item sweep loops this doubles both I/O and the hold time of the store's one canonical cross-process lock, on an O(N) loop. A private helper deriving tracked_ids, outbox_ids and the resolved status from a single _iter_raw_lines_at pair removes the duplicate parse at roughly zero net LOC.",
+      "suggestion": "Boy-scout suggestion bounded to the touched unit; non-blocking."
+    },
+    {
+      "severity": "low",
+      "category": "readability",
+      "file": "shared/scripts/github_triage/resolve.py",
+      "line": 34,
+      "finding": "_dismiss_if_open is spliced between two blocks of module-level constants (SOURCE above, _LEGACY_* below), splitting the constants section in half.",
+      "suggestion": "Move it below _LEGACY_MIGRATIONS."
+    }
+  ]
+}

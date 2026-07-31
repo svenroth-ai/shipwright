@@ -1,0 +1,56 @@
+{
+  "stage": "doubt",
+  "gating": "advisory-must-address",
+  "trigger": "async/concurrency + cross-plugin imports",
+  "doubts": [
+    {
+      "severity": "medium",
+      "lens": "concurrency & ordering",
+      "claim_under_doubt": "the RED counter-check proves the tests are bound to the production line, so AC-1's 'INSIDE the file lock' is verified",
+      "disproof_attempt": "No test in the change exercises two concurrent writers. Every barrier is a single-threaded wrapper: the operator's write COMPLETES before real_mark_status is entered. Concretely: hoist BOTH the residence probe and the precondition block above the `with _load_file_lock_cls()(...)` line - the natural 'do not take the lock just to discover it is a no-op' optimization. All ledger rows stay green: the byte-identity probe still sees no write; the unknown-id test still gets KeyError; the acquisition count still reads 1 on the allowed path; the AST pins are source-level. And the original race is fully reopened. The one property that distinguishes this fix from the CLI's pre-existing 'protects by luck' read-then-write is the only property with no test.",
+      "file": "shared/scripts/triage.py:706-730",
+      "what_would_resolve_it": "one pin that fails if the check leaves the lock - two subprocesses both flipping the same item with expected_status='triage' asserting exactly one status event lands, or a FileLock subclass that records held-state and asserts read_all_items ran while held"
+    },
+    {
+      "severity": "medium",
+      "lens": "boundary & contract",
+      "claim_under_doubt": "Stage-2 finding 5, 'fixed': the getattr fallback means a version-skewed store costs this producer its precondition, not its whole emit path",
+      "disproof_attempt": "The fallback defends the wrong half of the skew. Under the exact condition _NoPrecondition names - a triage module predating StatusPreconditionError - getattr yields _NoPrecondition, but the call site still passes the kwarg. An old mark_status has no such parameter, so EVERY flip raises TypeError. `except precondition_error` cannot catch it (_NoPrecondition is never raised), so it falls to `except Exception: return 0` - the entire auto-resolve half of these three producers goes silently dead, with dismissed: 0, no error key, and no diagnostic. That is strictly worse than 'merely lacked the precondition', which is what the comment and the docstring both claim. The fallback branch has zero tests.",
+      "file": "plugins/shipwright-compliance/scripts/audit/triage_bundle.py:32,69,190,196",
+      "what_would_resolve_it": "add except TypeError to the same arm, or drop the kwarg when the fallback is in play, plus a test pinning a pre-S2 triage module; or, if skew is judged unreachable, delete _NoPrecondition rather than ship a guard that does not guard"
+    },
+    {
+      "severity": "medium",
+      "lens": "hidden coupling & blast radius",
+      "claim_under_doubt": "Stage-2 re-verified that all eight baseline entries measure to their recorded value; 'six baseline bumps, measured, in the same commit'",
+      "disproof_attempt": "Four of the eight rows in the spec's bloat table are stale. Measured in the worktree: triage.py = 830 (spec says 818), _triage_bundle.py = 325 (spec: 317), sbom_generator.py = 545 (spec: 540), test_evidence.py = 927 (spec: 923). The COMMITTED shipwright_bloat_baseline.json carries the correct values, so no gate breaks and the commit is safe - but the spec's evidence table, the '+117' narrative for triage.py (it is +129), and its arithmetic are all wrong, and the Stage-2 record explicitly asserts these were independently re-measured. A review record that certifies four numbers that are off is the thing a later reader will trust.",
+      "file": ".shipwright/planning/iterate/2026-07-31-it1-s2-expected-status.md:149-156",
+      "what_would_resolve_it": "correct the four rows and the +117 prose to the committed values, and note which claim was re-derived vs copied"
+    },
+    {
+      "severity": "low",
+      "lens": "boundary & contract",
+      "claim_under_doubt": "ledger row: 'Without the StatusPreconditionError -> ValueError conversion this would escape as an unhandled exception rather than exit 2'",
+      "disproof_attempt": "False. StatusPreconditionError subclasses ValueError and triage_promote.main catches `except ValueError -> return 2`. Delete the entire except StatusPreconditionError -> _not_triage_error mapping and this test still returns 2 and still passes. It is green for a reason other than the one it states; the message half is what is actually load-bearing.",
+      "file": "shared/tests/test_triage_precondition_callers.py:200-220",
+      "what_would_resolve_it": "assert the stderr wording alongside the exit code, or restate the docstring to say what it really pins"
+    },
+    {
+      "severity": "low",
+      "lens": "reversibility",
+      "claim_under_doubt": "AC-3: mark_status returns the status its event replaced, so a real transition is distinguishable from a re-flip",
+      "disproof_attempt": "previous is a pre-write read; the function never checks that the appended event wins resolution. Pass 2 is ts-primary and _now_z() is a wall clock. Any existing status event with a ts >= now - an NTP step backwards, a foreign writer with a skewed clock, a hand-edited or imported line - makes the new event sort earlier and lose. mark_status then returns 'triage', the producer does resolved += 1, the item stays open, and every subsequent run appends another losing event that triage_gc cannot compact. Pre-existing, not introduced here, but AC-3's wording asserts more than the code delivers.",
+      "file": "shared/scripts/triage.py:717-746",
+      "what_would_resolve_it": "narrow AC-3's wording to 'the status the store held immediately before the append', or write the limitation down beside the return"
+    },
+    {
+      "severity": "low",
+      "lens": "hidden coupling & blast radius",
+      "claim_under_doubt": "Stage-2 finding 4, 'fixed': the diagnostic write is guarded at both sites",
+      "disproof_attempt": "Two of four new diagnostic writes were guarded; three remain unguarded and two of them sit in swallow-everything paths. github_triage/resolve.py:71 is inside _dismiss_if_open, whose contract is fail-soft per item, but a broken pipe there propagates out through resolve_stale's untried loop and aborts the remaining items. check_drift.py:376 sits in the per-item try inside the resolve loop; a stderr failure escapes to the outer handler and kills the rest of the resolve pass - the same shape finding 4 described, at a third site. accepted_risks_converge.py:169 uses an unguarded print(), though there it matches the neighbouring success line.",
+      "file": "shared/scripts/github_triage/resolve.py:71",
+      "what_would_resolve_it": "guard the two swallow-path writes the same way, or state that the guard was applied only where the helper is called from inside a sum() and the others are accepted"
+    }
+  ],
+  "summary": "The core guarantee HOLDS for cooperating Python writers in one project_root - could not break it via the outbox/tracked union, the ts-primary tiebreak, the tolerant reader, or the GC/sweep/reconcile rewrite paths, and could not make the refusal itself lose data or fail to converge. Six doubts, three medium."
+}

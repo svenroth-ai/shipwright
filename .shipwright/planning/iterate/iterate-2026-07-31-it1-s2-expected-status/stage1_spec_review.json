@@ -1,0 +1,6 @@
+{
+  "stage": "spec-compliance",
+  "verdict": "PASS",
+  "spec_citations": [],
+  "summary": "Re-review after fixes. All seven acceptance criteria are met, faithfully and in scope. The blocking finding (external-review resolution #4, the kept-item reporting contract) is genuinely fixed: the shape now lives once on StatusPreconditionError.kept_note and all seven arms use it, three of them now binding `as exc`. Findings 2, 3 and 4 are addressed. Scope pass against the real 2229-line diff found no production change outside the spec. Two low/nit residuals, both since fixed: the findings_count provenance parenthetical (8 = 1 Gemini + 7 GPT, not a parser tally of the summary) and a heading that said six files above an eight-row table. First-round verdict was REJECT on the reporting contract; this is the second-round verdict."
+}

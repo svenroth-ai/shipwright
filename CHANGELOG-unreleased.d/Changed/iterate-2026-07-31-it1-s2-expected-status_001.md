@@ -1,0 +1,1 @@
+`triage.mark_status` accepts `expected_status` and verifies it inside the lock it already holds; a mismatch raises the new `StatusPreconditionError` without writing anything, and the call returns the status it replaced instead of `None`. A status write that did not land can no longer be reported as one that did.

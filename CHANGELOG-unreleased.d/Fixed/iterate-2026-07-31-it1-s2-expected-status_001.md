@@ -1,0 +1,1 @@
+A decision you record on a triage entry is no longer overwritten by a background check that started before you made it. The check now leaves the entry exactly as you decided it - your reason included - reports it as one it kept, and does not count it among the ones it closed (`trg-93ceb2b0`).

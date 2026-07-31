@@ -142,16 +142,31 @@ def apply_plan(slug: str, plan, project_root: Path) -> int:
 def _apply_triage(plan, project_root: Path) -> int:
     if not plan.triage_dismiss:
         return 0
-    from triage import mark_status  # noqa: PLC0415 - absent in a bare test root
+    # Both names come from ONE import so the exception the store raises is the
+    # class this module catches — a second `triage` module object would make
+    # the `except` silently miss (external plan review, finding #3).
+    from triage import (  # noqa: PLC0415 - absent in a bare test root
+        StatusPreconditionError,
+        mark_status,
+    )
     failures = 0
     for entry, item in plan.triage_dismiss:
         try:
+            # The plan was built from an unlocked read; expected_status
+            # re-checks it under the store's lock so an acceptance never
+            # overwrites a decision a person recorded since (trg-93ceb2b0).
             mark_status(
                 project_root, item["id"], new_status="dismissed",
                 by=alert_convergence.TRIAGE_DISMISSER,
                 reason=alert_convergence.TRIAGE_REASON,
+                expected_status="triage",
             )
             print(f"  dismissed triage {item['id']} (accepted by {entry.id})")
+        except StatusPreconditionError as exc:
+            # Not a failure: the surface already moved on. Reported, not counted.
+            # stdout, not stderr — this command's whole report is stdout, and
+            # the `dismissed` line right above it goes there too.
+            print(f"  {exc.kept_note}")
         except Exception as exc:  # noqa: BLE001 - fail-soft per item
             failures += 1
             print(f"  FAILED   triage {item.get('id')}: {exc}", file=sys.stderr)

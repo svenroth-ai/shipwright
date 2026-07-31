@@ -558,6 +558,95 @@ def append_triage_item_idempotent(
 # Public API: mark status
 # ---------------------------------------------------------------------------
 
+class StatusPreconditionError(ValueError):
+    """``expected_status`` did not hold at write time — NOTHING was written.
+
+    Subclasses ``ValueError`` deliberately: the background producers already
+    catch broad exceptions, and ``triage_promote``'s CLI already maps
+    ``ValueError`` to exit 2, so neither contract moves.
+
+    ``expected`` is the NORMALIZED tuple and ``actual`` is the status the store
+    resolved to (``None`` when the item carries no resolvable status). Callers
+    report the skip from these attributes rather than re-reading the store,
+    which would simply race a second time.
+    """
+
+    def __init__(
+        self, item_id: str, expected: tuple[str, ...], actual: str | None
+    ) -> None:
+        self.item_id = item_id
+        self.expected = expected
+        self.actual = actual
+        # ASCII-only, and `ascii()` not `repr()` on the store-supplied values.
+        # This text reaches producer stderr, which on Windows is a cp1252
+        # console, so a non-ASCII byte here would raise INSIDE a diagnostic
+        # path. `item_id` is read straight out of a git-tracked JSONL file that
+        # any producer may append to, and the reader only checks it is a `str`
+        # — so it is untrusted display input, exactly like the title that once
+        # forged a row in the CLI listing (see `triage_promote`'s sanitizer).
+        # `ascii()` escapes control characters AND non-ASCII in one step.
+        super().__init__(
+            f"item {ascii(item_id)} has status={ascii(actual)}; expected "
+            f"{self._expected_phrase()}; no status event written"
+        )
+
+    def _expected_phrase(self) -> str:
+        # `expected` is validated against STATUSES, so it is already safe —
+        # `ascii()` anyway keeps one rule for the whole message.
+        return " or ".join(ascii(s) for s in self.expected)
+
+    @property
+    def kept_note(self) -> str:
+        """The ONE line every producer prints when it keeps an item.
+
+        Defined here, once, so the nine call sites cannot drift into nine
+        wordings — and so the three that only need `except ... as exc` cannot
+        quietly report less than the others. Carries id, actual and expected
+        and NOTHING else: never the item's reason text, never its payload
+        (external plan review, finding #7).
+        """
+        return (
+            f"kept {ascii(self.item_id)}: status is {ascii(self.actual)}, "
+            f"expected {self._expected_phrase()}"
+        )
+
+
+def _normalize_expected(expected_status: object) -> tuple[str, ...]:
+    """One status or several → a validated tuple.
+
+    A bare ``str`` is iterable, so testing ``previous not in expected_status``
+    against the raw argument would be a SUBSTRING test — both external plan
+    reviewers raised this independently. Normalizing here is what makes the
+    comparison set membership. Empty and unknown members are rejected, so a
+    typo cannot silently become a precondition nothing can satisfy.
+    """
+    if isinstance(expected_status, str):
+        expected = (expected_status,)
+    else:
+        try:
+            expected = tuple(expected_status)  # type: ignore[call-overload]
+        except TypeError as exc:
+            raise ValueError(
+                "expected_status must be a status or an iterable of statuses, "
+                f"got {type(expected_status).__name__}"
+            ) from exc
+    if not expected:
+        raise ValueError("expected_status must name at least one status")
+    for status in expected:
+        # The isinstance check is not redundant with the membership test.
+        # `STATUSES` is a TUPLE today, so `["triage"] not in STATUSES` compares
+        # by equality and already raises the documented ValueError — external
+        # code review reported a TypeError here and it did not reproduce. But
+        # the guarantee is a property of `STATUSES` being a sequence, not of
+        # this function; making `STATUSES` a set later would turn an unhashable
+        # member into a TypeError from a validator whose contract is ValueError.
+        if not isinstance(status, str) or status not in STATUSES:
+            raise ValueError(
+                f"unknown expected_status {status!r}; expected one of {STATUSES}"
+            )
+    return expected
+
+
 def mark_status(
     project_root: Path | str,
     item_id: str,
@@ -566,8 +655,29 @@ def mark_status(
     by: str,
     reason: str | None = None,
     promoted_task_id: str | None = None,
-) -> None:
+    expected_status: str | tuple[str, ...] | list[str] | None = None,
+) -> str | None:
     """Append a status event for an existing item (never mutates prior lines).
+
+    Returns the status this event REPLACED — ``None`` when the item carries no
+    resolvable status. It returned nothing before
+    iterate-2026-07-31-it1-s2-expected-status, which left a caller unable to
+    tell a real transition from a re-flip of an already-decided item.
+
+    ``expected_status`` makes the flip conditional: the item's currently
+    resolved status is compared against it INSIDE the lock this function
+    already holds for the write, and a mismatch raises
+    :class:`StatusPreconditionError` having written nothing. Omitted, the flip
+    is unconditional exactly as before. This is what stops a background
+    producer — which reads the store unlocked, filters ``status == "triage"``,
+    then flips each hit under a separate lock acquisition — from overwriting a
+    decision a person recorded in between (``trg-93ceb2b0``).
+
+    **The guarantee covers writers that cooperate with this lock.** The Command
+    Center uses ``proper-lockfile``, which does NOT compose with the Python
+    byte lock, so a WebUI write can still interleave with this critical
+    section. The precondition closes the Python producer/operator race — not
+    every race.
 
     **Write target is DERIVED (never a caller flag), under the lock:** idle main
     with a delivery path (`should_route_to_outbox` — origin + HEAD==default) →
@@ -581,12 +691,16 @@ def mark_status(
     Raises:
         FileNotFoundError: if NEITHER the tracked store NOR the outbox exists.
         KeyError: if `item_id` is not an `append` id in (tracked ∪ outbox).
-        ValueError: if `new_status` is not a known status.
+        ValueError: if `new_status` or `expected_status` is not a known status.
+        StatusPreconditionError: if `expected_status` did not hold (nothing written).
     """
     if new_status not in STATUSES:
         raise ValueError(
             f"unknown status {new_status!r}; expected one of {STATUSES}"
         )
+    # Argument validation before any I/O, so a bad precondition fails the same
+    # way whether or not the store happens to exist.
+    expected = None if expected_status is None else _normalize_expected(expected_status)
 
     if not _triage_path(project_root).exists() and not _outbox_path(project_root).exists():
         raise FileNotFoundError(
@@ -601,6 +715,26 @@ def mark_status(
         outbox_ids = _append_ids_at(_outbox_path(project_root))
         if item_id not in tracked_ids and item_id not in outbox_ids:
             raise KeyError(item_id)
+        # PREREQUISITE: `read_all_items` must stay LOCK-FREE. `FileLock` is not
+        # reentrant — a read side that acquired it would not raise here, it
+        # would HANG (msvcrt spin on Windows, blocking flock on POSIX). The
+        # test `test_mark_status_acquires_the_canonical_lock_exactly_once` is
+        # what turns that hang into a red test. Same in-lock read the dedup
+        # scan in `append_triage_item_idempotent` already does.
+        raw_previous = next(
+            (
+                it.get("status") for it in read_all_items(project_root)
+                if it.get("id") == item_id
+            ),
+            None,
+        )
+        # A legacy or hand-written append line can carry a non-str `status`
+        # (Pass 1 copies it verbatim). Collapsing that to None keeps the
+        # documented `str | None` return TRUE, and makes such an item refuse
+        # under ANY expected_status rather than be compared as some other type.
+        previous = raw_previous if isinstance(raw_previous, str) else None
+        if expected is not None and previous not in expected:
+            raise StatusPreconditionError(item_id, expected, previous)
         # Idle main → outbox (like append); else residence-derived. See docstring.
         to_outbox = should_route_to_outbox(project_root) or (item_id in outbox_ids and item_id not in tracked_ids)
 
@@ -615,6 +749,8 @@ def mark_status(
         }
         line = json.dumps(event, ensure_ascii=False, separators=(",", ":")) + "\n"
         _append_line(project_root, line, to_outbox=to_outbox)
+
+    return previous
 
 
 # ---------------------------------------------------------------------------
