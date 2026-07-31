@@ -325,10 +325,10 @@
       "status": "completed",
       "findings_count": 0,
       "findings": [],
-      "provider": null,
-      "completed_at": "2026-07-31T21:33:40.990140+00:00",
+      "provider": "shipwright-build:spec-reviewer (opus)",
+      "completed_at": "2026-07-31T22:07:39.321045+00:00",
       "disposition": null,
-      "recorded_by": "spec-reviewer subagent (opus)",
+      "recorded_by": "spec-reviewer",
       "parse_status": null,
       "raw_excerpt": null
     }
