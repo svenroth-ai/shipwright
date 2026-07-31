@@ -43,6 +43,7 @@ _SCRIPTS_ROOT = Path(__file__).resolve().parents[1]
 if str(_SCRIPTS_ROOT) not in sys.path:
     sys.path.insert(0, str(_SCRIPTS_ROOT))
 
+from lib.adr_index import refresh_best_effort  # noqa: E402
 from lib.iterate_entry import sanitize_run_id_for_filename  # noqa: E402
 from lib.repo_root import resolve_main_repo_root  # noqa: E402
 from tools.write_decision_log import (  # noqa: E402
@@ -276,6 +277,13 @@ def main(argv: list[str] | None = None) -> int:
         "at /shipwright-changelog release time.",
         file=sys.stderr,
     )
+
+    # Refresh INDEX.md at F3 so the index row ships in the SAME COMMIT as the ADR
+    # spec file. The drop lives next to the MAIN repo; the index is tracked in
+    # THIS checkout — hence --project-root, and F6 must `git add` it explicitly.
+    warning = refresh_best_effort(Path(args.project_root))
+    if warning:
+        print(f"WARNING: decision-drop written, but {warning}", file=sys.stderr)
     return 0
 
 

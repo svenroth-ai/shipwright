@@ -1,0 +1,1 @@
+The ADR index (`.shipwright/planning/adr/INDEX.md`) now refreshes when an iterate records its ADR, so a new ADR appears in the index in the same commit that adds it. Previously the index was only rebuilt as a side-effect of a release pass that had decision-drops to fold, so ADRs written by an iterate could stay unlisted indefinitely (10 were, here).
