@@ -1,7 +1,7 @@
 {
   "run_id": "iterate-2026-07-31-it7a-pr-review-stale-verdict",
-  "date": "2026-07-31T09:23:28.491615Z",
-  "event_at": "2026-07-31T05:50:52.994375+00:00",
+  "date": "2026-07-31T09:31:37.537773Z",
+  "event_at": "2026-07-31T09:23:55.300361+00:00",
   "type": "change",
   "complexity": "medium",
   "branch": "iterate/it7a-pr-review-stale-verdict",
@@ -184,5 +184,12 @@
       "untestable": 1,
       "untested_testable": 0
     }
+  },
+  "surface_verification": {
+    "surface": "cli",
+    "tests_run": 10,
+    "exit_code": 0,
+    "evidence_path": ".shipwright/runs/iterate-2026-07-31-it7a-pr-review-stale-verdict/surface_verification.json",
+    "detail": "The new `gh` boundary driven against the REAL GitHub API on PR #446, read-only by construction (dismiss_pr_review is never called). 10 checks: the paginated read decodes 11 real reviews with the fields the selector needs; the head read returns 043993ca and read_reviewed_head agrees; with no review of ours present the selector selects nothing and says 'not visible'; the five hand-cleared verdicts read DISMISSED, so probe P3 holds live; with our own anchor injected over the real rows nothing is selected; a real superseded change-request of ours IS selected; and the same row is refused once the reviewed sha disagrees."
   }
 }
