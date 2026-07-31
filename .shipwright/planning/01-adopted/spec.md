@@ -919,6 +919,19 @@ _Where the work detail lives_ at the end of this document.
   schedule work, set priorities by itself, or fix anything — the work list it
   feeds is a separate place, and a finding nobody has decided on stays open
   rather than expiring.
+- (E) Given a person has recorded a decision on an entry, when a background
+  check that started before that decision reaches the same entry and would
+  close it by itself, then it leaves the entry exactly as the person decided it
+  — their decision and their reason both stand, and no automatic decision is
+  written for that entry at all, so reading the record later shows only what
+  was actually decided. The check reports the entry as one it kept, and does
+  not count it among the ones it closed. This holds for every check that closes
+  entries by itself; it does not extend to a decision made at the very same
+  moment from a surface that does not take part in this coordination.
+- (E) Given anything asks for an entry's decision to be recorded, when that
+  request is turned down because the entry had already moved on, then the
+  caller is told so plainly and cannot mistake it for success — a decision that
+  was not recorded is never reported as one that was.
 
 <a id="fr-0115"></a>
 ### FR-01.15 — Cross-repo output contract

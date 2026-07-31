@@ -130,22 +130,31 @@ _CLUSTER_MIN_MEMBERS = 2
 def _import_triage_api():
     """Lazy import of the triage helpers (mirrors audit_detector pattern).
 
-    Returns ``(append_idempotent, mark_status, read_all_items)`` on
-    success or ``(None, None, None)`` if ``shared/scripts/`` isn't on
-    ``sys.path`` (e.g. in a minimal CI env without the monorepo layout).
+    Returns ``(append_idempotent, mark_status, read_all_items,
+    StatusPreconditionError)`` on success or all-``None`` if
+    ``shared/scripts/`` isn't on ``sys.path`` (e.g. in a minimal CI env without
+    the monorepo layout).
+
+    All four come off the SAME module object, so the ``except`` arm below
+    cannot bind a different ``triage`` and silently miss every refusal
+    (external plan review, finding #3). A ``triage`` that predates
+    ``expected_status`` disables this producer via the ``AttributeError`` arm
+    rather than half-working (doubt review, doubt 2).
     """
     shared_scripts = Path(__file__).resolve().parents[4] / "shared" / "scripts"
     if str(shared_scripts) not in sys.path:
         sys.path.insert(0, str(shared_scripts))
     try:
-        from triage import (  # noqa: PLC0415
-            append_triage_item_idempotent,
-            mark_status,
-            read_all_items,
-        )
-        return append_triage_item_idempotent, mark_status, read_all_items
-    except ImportError:
-        return None, None, None
+        import triage  # noqa: PLC0415
+        # Every name off the SAME module object, INSIDE the same try, so the
+        # `except` arm cannot bind a different `triage` (finding #3).
+        return (triage.append_triage_item_idempotent, triage.mark_status,
+                triage.read_all_items, triage.StatusPreconditionError)
+    except (ImportError, AttributeError):
+        # AttributeError too: a `triage` predating `expected_status` must
+        # disable this producer CLEANLY rather than half-work - see the note
+        # in audit/triage_bundle.py (doubt review, doubt 2).
+        return None, None, None, None
 
 
 def _shell_quote_workspace(workspace: str) -> str:
@@ -364,7 +373,8 @@ def emit_undeclared_triage(
     never crashes the compliance update pipeline.
     """
     project_root = Path(project_root).resolve()
-    append_idempotent, mark_status_fn, read_all_items = _import_triage_api()
+    (append_idempotent, mark_status_fn, read_all_items,
+     precondition_error) = _import_triage_api()
     if append_idempotent is None:
         return {
             "appended": 0,
@@ -500,14 +510,29 @@ def emit_undeclared_triage(
             if dk in current_keys:
                 continue
             try:
+                # This loop read the store UNLOCKED; expected_status re-checks
+                # the `status == "triage"` filter under the store's own lock so
+                # an operator decision is not overwritten (trg-93ceb2b0).
                 mark_status_fn(
                     project_root,
                     item["id"],
                     new_status="dismissed",
                     by="sbomGenerator",
                     reason="sbomResolved",
+                    expected_status="triage",
                 )
                 dismissed += 1
+            except precondition_error as exc:
+                # Decided since the read — KEPT. Left out of `dismissed` AND
+                # out of `errors`: a healthy interleaving must not make this
+                # run look broken. Reported on the same channel as the others,
+                # and GUARDED — an exception escaping this diagnostic write
+                # would reach the outer handler and turn the benign outcome
+                # into a producer failure after all.
+                try:
+                    sys.stderr.write(f"[sbom] {exc.kept_note}\n")
+                except Exception:  # noqa: BLE001 - reporting never fails the run
+                    pass
             except Exception as exc:  # noqa: BLE001
                 errors.append(f"dismiss:{item.get('id', '?')}:{type(exc).__name__}")
     except Exception as exc:  # noqa: BLE001
