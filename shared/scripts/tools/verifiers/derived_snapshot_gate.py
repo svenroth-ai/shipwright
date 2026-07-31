@@ -33,8 +33,8 @@ from lib.derived_snapshots import (  # noqa: E402
     DERIVED_SNAPSHOTS,
     RESTORABLE_SNAPSHOTS,
 )
-from tools.verifiers.common import CheckResult, Severity  # noqa: E402
-from tools.verifiers.git_helpers import _commit_changed_paths  # noqa: E402
+from .common import CheckResult, Severity  # noqa: E402
+from .git_helpers import _iterate_changed_paths  # noqa: E402
 
 __all__ = ["check_no_derived_snapshots_committed"]
 
@@ -75,10 +75,14 @@ def check_no_derived_snapshots_committed(
             severity=Severity.SKIPPED.value,
         )
 
-    paths = _commit_changed_paths(project_root, commit_hash)
+    paths = _iterate_changed_paths(project_root, commit_hash)
     if paths is None:
         return CheckResult(
-            _NAME, None, "skipped (commit not readable)",
+            _NAME, None,
+            "skipped — the branch diff is unavailable. An EMPTY answer lands here "
+            "too: `git show --name-only` prints nothing for a merge commit, so on a "
+            "merge HEAD with no resolvable merge-base 'clean' cannot be told from "
+            "'blind' — and this gate must never report the second as the first.",
             severity=Severity.SKIPPED.value,
         )
 

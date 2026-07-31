@@ -1,0 +1,227 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-07-30-derived-gate-sees-the-pr",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-07-31T05:51:51.097024+00:00",
+      "disposition": "superseded by the three-stage subagent cascade run in fresh context; each stage found a defect the previous had passed, which a self-review by the author would not have",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-07-31T05:51:51.194812+00:00",
+      "disposition": "iterate, not a /shipwright-plan phase \u2014 no plan document exists for a plan review to read",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 6,
+      "findings": [
+        {
+          "severity": "high",
+          "category": null,
+          "file": "shared/scripts/tools/verifiers/git_helpers.py",
+          "line": null,
+          "finding": "the base resolver promoted to canonical for five gates was the WEAKEST of five copies in the repo; a stale-but-live origin/HEAD yields an over-wide range and a false ERROR",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": null,
+          "file": "shared/scripts/tools/verifiers/decision_log_gate.py",
+          "line": null,
+          "finding": "the empty-list fix landed in one of four consumers while the helper's own docstring calls the blindness a property of the F11 ordering",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": null,
+          "file": "shared/scripts/tools/verifiers/derived_snapshot_gate.py",
+          "line": null,
+          "finding": "the SKIPPED message asserted a cause the code never verified",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": null,
+          "file": "shared/scripts/tools/verifiers/git_helpers.py",
+          "line": null,
+          "finding": "three unbounded git calls on five gates' critical path",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": null,
+          "file": "shared/scripts/tools/verifiers/derived_snapshot_gate.py",
+          "line": null,
+          "finding": "mixed absolute/relative imports in the one module whose subject is the ADR-045 trap",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": null,
+          "file": "shared/tests/test_derived_snapshot_gate.py",
+          "line": null,
+          "finding": "two coverage gaps: the real fallback was never exercised, and the origin/HEAD branch only in its benign form",
+          "suggestion": null,
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-07-31T05:51:37.181698+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 8,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "correctness",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: the scoring is VACUOUS with one candidate \u2014 all([]) is True, so a lone stale base is returned unscored, which is exactly the single-branch-clone shape of the motivating bug \u2014 the scoring is VACUOUS with one candidate \u2014 all([]) is True, so a lone stale base is returned unscored, which is exactly the single-branch-clone shape of the motivating bug",
+          "suggestion": "candidate pool widened (local refs + @{u}) so a lone candidate is almost never alone; more candidates can only narrow the base, never widen it. Pinned + negative-controlled.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: ci_supplychain collapses [] and None, and the comment licensing it was INVERTED by this diff \u2014 a commit-then-revert branch is hard-FAILED with a cause that did not occur \u2014 ci_supplychain collapses [] and None, and the comment licensing it was INVERTED by this diff \u2014 a commit-then-revert branch is hard-FAILED with a cause that did not occur",
+          "suggestion": "`is None` for the refusal; comment rewritten to what the code now does",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: test_an_empty_branch_diff_is_clean_not_blind never executed the branch it names \u2014 HEAD == base sent it down the on-the-trunk fallback with a 1-path answer \u2014 test_an_empty_branch_diff_is_clean_not_blind never executed the branch it names \u2014 HEAD == base sent it down the on-the-trunk fallback with a 1-path answer",
+          "suggestion": "the branch now commits and reverts, so the range is genuinely empty with HEAD ahead; asserts `0 path(s)` affirmatively",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: `merge-base --is-ancestor` rc=1 is DATA, but _run_git also returns 1 for a timeout \u2014 a dead probe reads as 'not an ancestor' and skips three ERROR gates at once \u2014 `merge-base --is-ancestor` rc=1 is DATA, but _run_git also returns 1 for a timeout \u2014 a dead probe reads as 'not an ancestor' and skips three ERROR gates at once",
+          "suggestion": "the ordering probe uses `rev-list --count`, where the answer is in stdout and a failure stays rc!=0",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: `base == commit` means CONTAINED in the trunk, not IS the trunk; the stated motivating case actually goes down the range path \u2014 `base == commit` means CONTAINED in the trunk, not IS the trunk; the stated motivating case actually goes down the range path",
+          "suggestion": "docstring corrected to what the condition means",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: the remaining _commit_changed_paths caller can still read [] from a merge as clean \u2014 the remaining _commit_changed_paths caller can still read [] from a merge as clean",
+          "suggestion": "left deliberately \u2014 its subject is the run's own event_commit, not HEAD; recorded rather than widened",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: mixed absolute/relative import leaves a free ADR-045 seam \u2014 mixed absolute/relative import leaves a free ADR-045 seam",
+          "suggestion": "both relative",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: up to 9 git subprocesses per gate, with origin/main probed twice \u2014 up to 9 git subprocesses per gate, with origin/main probed twice",
+          "suggestion": "candidates de-duplicated before the merge-base loop",
+          "source": "doubt-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-07-31T05:51:37.282841+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 2,
+      "findings": [
+        {
+          "severity": "high",
+          "category": null,
+          "file": "shared/scripts/tools/verifiers/git_helpers.py",
+          "line": null,
+          "finding": "treating @{u} as a trunk candidate lets a pushed PR branch select its OWN tip as the narrowest merge-base; the caller then reads base==commit as on-the-trunk and falls back to the single-commit view, reinstating the exact full-branch blindness this change removes",
+          "suggestion": "FIXED: @{u} removed from the candidate set. Reproduced first (base collapsed to HEAD), then pinned by test_the_branch_own_upstream_is_not_a_trunk_candidate with a negative control.",
+          "source": "external-prose"
+        },
+        {
+          "severity": "high",
+          "category": null,
+          "file": "shared/scripts/tools/verifiers/git_helpers.py",
+          "line": null,
+          "finding": "a single resolvable candidate is still accepted unscored, because all(...) over an empty rest is vacuously true \u2014 the stale-origin/master-after-a-rename shape produces exactly that",
+          "suggestion": "FIXED by counting RESOLUTIONS rather than distinct bases: the healthy case has three names agreeing on ONE base, so demanding two bases would skip every normal run; one name alone is refused and the caller skips. Pinned by test_an_UNCORROBORATED_lone_trunk_name_is_refused.",
+          "source": "external-prose"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-07-31T05:51:51.291655+00:00",
+      "disposition": null,
+      "recorded_by": "external-prose",
+      "parse_status": null,
+      "raw_excerpt": "openrouter, mode=code. gemini: DEGRADED both attempts (empty reply / finish_reason=length). openai (gpt-5.6-terra): 2 findings, both HIGH-class and both accepted. (1) `@{u}` as a trunk candidate lets a pushed PR branch pick its OWN tip as the narrowest base \u2014 the caller then reads base==commit as on-the-trunk and falls back to the single-commit view, reinstating the exact blindness this iterate removes. Reproduced (base collapsed to HEAD) before removing it; pinned by test_the_branch_own_upstream_is_not_a_trunk_candidate. (2) a lone resolvable candidate is still accepted unscored. Fixed by counting RESOLUTIONS rather than distinct bases \u2014 the healthy case has three names agreeing on one base, so demanding two BASES would skip every normal run; one name alone is refused. Both negative-controlled."
+    }
+  },
+  "gates": {
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-07-31T05:51:37.083435+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    }
+  }
+}

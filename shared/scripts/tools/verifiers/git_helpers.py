@@ -1,10 +1,16 @@
 """Generic git-invocation helpers shared across iterate verifier modules.
 
 Extracted from ``iterate_checks.py``
-(iterate-2026-06-13-risk-detector-extract) so the integration-coverage gate
-(``integration_coverage.py``) and the iterate finalization checks
-(``iterate_checks.py``) share ONE copy instead of duplicating the wrappers or
-forcing a circular import. All functions are read-only and never raise.
+(iterate-2026-06-13-risk-detector-extract) so the gates share ONE copy instead of
+duplicating the wrappers or forcing a circular import. Callers today:
+``integration_coverage``, ``derived_snapshot_gate``, ``ci_supplychain``,
+``decision_log_gate`` and ``iterate_checks``. All functions are read-only and
+never raise.
+
+Two ways to ask what changed, and picking the wrong one is a measured defect
+class: :func:`_commit_changed_paths` answers for ONE commit,
+:func:`_iterate_changed_paths` for the whole branch. A gate that runs at F11 wants
+the second — see its docstring for why.
 """
 
 from __future__ import annotations
@@ -64,3 +70,167 @@ def _commit_changed_paths(project_root: Path, commit: str) -> list[str] | None:
     if rc != 0:
         return None
     return [ln.strip() for ln in out.splitlines() if ln.strip()]
+
+
+#: Bounded like ``_git_available``: a wedged ``index.lock`` or a stalled filesystem
+#: must degrade to the documented fail-open skip, not hang F11 with no output.
+_GIT_TIMEOUT_SECONDS = 30.0
+
+
+def _branch_base_commit(project_root: Path, commit: str) -> str | None:
+    """Where this branch left the trunk — the NARROWEST merge-base, or ``None``.
+
+    Not "resolve the default branch, then merge-base against it". Naming the trunk is
+    the part that goes wrong, and it goes wrong while looking healthy:
+
+    - git never prunes ``refs/remotes/origin/master`` on an upstream master→main
+      rename, and ``origin/HEAD`` keeps symref'ing it. The name resolves. It is simply
+      no longer the trunk.
+    - a rewound or force-pushed default branch has the same shape.
+
+    Either way the merge-base lands back at the fork point, the range sweeps in
+    everything main did since, and a gate reports paths the branch never touched — at
+    ERROR severity, with a printed remedy that cannot clear them. Verifying that the
+    ref RESOLVES does not help: a stale ref resolves perfectly well. (Measured while
+    writing this: the first version of the guarding test pointed the symref at a
+    MISSING ref, which merely made ``merge-base`` fail and fall through, so it passed
+    against the unhardened code and proved nothing.)
+
+    So every candidate is scored instead of one being trusted: take the merge-base of
+    each, and keep the one all the others are ancestors of. That is the fork point
+    closest to ``commit`` — the narrowest honest range — and it is right for both the
+    stale-symref and the rewound-trunk case without needing to tell them apart.
+    """
+    rc, ref, _ = _run_git(project_root, "symbolic-ref", "--short",
+                          "refs/remotes/origin/HEAD", timeout=_GIT_TIMEOUT_SECONDS)
+    candidates: list[str] = []
+    if rc == 0 and ref.strip():
+        candidates.append(ref.strip())
+    # Every candidate must be a TRUNK name. More candidates is safer only under that
+    # condition, and the condition is the whole point — it is not "more is safer" in
+    # general. The loop keeps the NARROWEST base, so a non-trunk candidate does not
+    # merely add noise: it WINS, and the narrowest possible answer is the worst one.
+    #
+    # `@{u}` is the trap, and it was in this list until an external review caught it.
+    # A pushed PR branch tracks `origin/<its own name>`, so `merge-base(@{u}, HEAD)` is
+    # HEAD itself — the narrowest base of all. It wins, the caller reads `base == commit`
+    # as "already contained in the trunk", falls back to the single-commit view, and the
+    # blindness this whole change removes is back through the side door. Reproduced
+    # before removing it; pinned by test_the_branch_own_upstream_is_not_a_trunk_candidate.
+    #
+    # The local names stay: a branch is not called `main`, and if it genuinely is, the
+    # on-the-trunk fallback is the correct answer anyway. They are what give the scoring
+    # something to score against when only one remote ref resolves — the
+    # `--single-branch`-clone-after-a-rename shape, where the lone stale candidate would
+    # otherwise be returned unscored because `all(...)` over an empty rest is True.
+    candidates += ["origin/main", "origin/master", "main", "master"]
+    seen: set[str] = set()               # origin/HEAD usually names one of these,
+    candidates = [c for c in candidates  # and re-running merge-base on it buys nothing
+                  if not (c in seen or seen.add(c))]
+
+    bases: list[str] = []
+    resolved = 0
+    for cand in candidates:
+        rc, mb, _ = _run_git(project_root, "merge-base", cand, commit,
+                             timeout=_GIT_TIMEOUT_SECONDS)
+        if rc == 0 and mb.strip():
+            resolved += 1
+            if mb.strip() not in bases:
+                bases.append(mb.strip())
+    if not bases:
+        return None
+    if resolved == 1:
+        # Exactly ONE trunk name resolved, so nothing corroborates it — and an
+        # uncorroborated name is precisely the stale-`origin/master`-after-a-rename
+        # shape (a `--single-branch` clone with no local trunk either). Scoring cannot
+        # help: `all(...)` over an empty rest is vacuously true, so the lone base would
+        # be returned as if it had been checked.
+        #
+        # Count RESOLUTIONS, not distinct bases. In the healthy case `origin/HEAD`,
+        # `origin/main` and local `main` all resolve and all agree, which dedups to one
+        # base — demanding two BASES would skip every normal run. Two independent names
+        # agreeing is the corroboration; one name alone is a guess.
+        return None
+
+    def _is_ancestor(other: str, base: str) -> bool:
+        """``other`` is an ancestor of ``base``. Ambiguity is NOT read as "no".
+
+        ``merge-base --is-ancestor`` answers in the exit code: 0 yes, 1 no. But
+        ``_run_git`` also returns 1 for a timeout, a missing git or a bad spawn — so
+        this would be the first caller for which rc=1 is DATA rather than failure, and
+        reading a dead probe as a real "no" would conclude "the candidates are
+        unordered" and skip three ERROR gates at once. ``rev-list --count`` puts the
+        answer in STDOUT instead: rc=0 means git answered, and a count of 0 means
+        ancestor. A failure keeps rc!=0 and stays distinguishable.
+        """
+        rc, out, _ = _run_git(project_root, "rev-list", "--count", f"{base}..{other}",
+                              timeout=_GIT_TIMEOUT_SECONDS)
+        return rc == 0 and out.strip() == "0"
+
+    for base in bases:
+        # Keep the base every other base is an ancestor of: the one furthest DOWN the
+        # branch, so it yields the least history and cannot import mainline's work.
+        if all(_is_ancestor(other, base) for other in bases if other != base):
+            return base
+    # Unrelated candidates with no ordering between them: refuse rather than guess,
+    # because guessing wide is what produces the false accusation above.
+    return None
+
+
+def _iterate_changed_paths(project_root: Path, commit: str) -> list[str] | None:
+    """All paths the iterate branch changed vs its merge-base with the default
+    branch — the robust full-branch view (NOT one commit), so a gate sees an edit
+    even if it landed in an earlier commit than HEAD. Falls back to the
+    single-commit paths when the merge-base can't be resolved.
+
+    **Why any commit-scoped gate wants THIS and not** :func:`_commit_changed_paths`.
+    F11 runs ``ensure_current`` (integrate-if-behind) BEFORE the verifier, and the
+    verifier is invoked with ``--commit "$(git rev-parse HEAD)"``. When the branch
+    was behind, that integrate leaves a MERGE commit on top — and a merge commit's
+    changed-path set does not contain what the iterate's own commit carried.
+    Measured on PR #493: the merge commit showed 5 paths and 0 forbidden ones while
+    the iterate commit below it carried 11 forbidden derived snapshots, so
+    ``check_no_derived_snapshots_committed`` passed and they landed on main. Five of
+    main's last forty commits reached it that way, all after the gate went live.
+
+    Lives here rather than in one verifier because the blindness is a property of
+    the F11 ORDERING, not of any single check: it applies to every gate that asks
+    "what did this branch change?".
+
+    **``None`` means "I could not see", and that is not ``[]``.** An empty list from
+    the merge-base path is trustworthy: the branch genuinely has no net change. An
+    empty list from the FALLBACK is not — ``git show --name-only`` prints nothing for
+    a merge commit, so "clean" and "blind" arrive identically. Callers already treat
+    ``None`` as unavailable (skip, or fail in ``ci_supplychain``'s stricter posture),
+    so folding the blind case into it fixes every gate at once instead of each
+    re-deriving the distinction and getting it differently.
+    """
+    if not commit:
+        return None
+    base = _branch_base_commit(project_root, commit)
+    rc, head_sha, _ = _run_git(project_root, "rev-parse", commit,
+                               timeout=_GIT_TIMEOUT_SECONDS)
+    on_the_trunk = rc == 0 and base is not None and head_sha.strip() == base
+    # `merge-base(trunk, C) == C` means C is already CONTAINED in the trunk — not
+    # merely that C is its tip. Either way there is no branch range to measure
+    # (`base..commit` is empty), so "what did this branch add" is the wrong question
+    # and the commit view is the honest one. Note the stray-`git add -A`-onto-main
+    # case goes down the RANGE path instead: at F11 that commit is not pushed yet, so
+    # the base is origin/main's tip and the range holds it.
+    if base and not on_the_trunk:
+        # core.quotePath=false: by default git QUOTES a non-ASCII path and escapes
+        # its bytes octally (`"…r\303\251sum\303\251-check.yml"`). Consumers then
+        # hold a name that addresses no file, so a content read returns "absent" on
+        # BOTH sides and a content fingerprint over it becomes content-independent —
+        # a measured false-green in the CI supply-chain gate
+        # (iterate-2026-07-28-ci-ack-per-run-home, Stage-3 doubt review). Same idiom
+        # as `lib/worktree_isolation.py`.
+        rc2, out, _ = _run_git(project_root, "-c", "core.quotePath=false",
+                               "diff", "--name-only", f"{base}..{commit}",
+                               timeout=_GIT_TIMEOUT_SECONDS)
+        if rc2 == 0:
+            return [ln.strip() for ln in out.splitlines() if ln.strip()]
+    # No usable base, or the range failed. The single-commit view is all that is
+    # left, and on a merge commit it says nothing — so an empty answer HERE is
+    # ignorance, not cleanliness, and must not be handed out as a fact.
+    return _commit_changed_paths(project_root, commit) or None

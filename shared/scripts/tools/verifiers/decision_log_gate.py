@@ -32,7 +32,7 @@ from lib.iterate_entry import (  # noqa: E402
 )
 
 from .common import CheckResult, Severity  # noqa: E402
-from .integration_coverage import _iterate_changed_paths  # noqa: E402
+from .git_helpers import _iterate_changed_paths  # noqa: E402
 
 
 def _drop_carries_adr(drop_dir: Path, run_id: str) -> bool:
