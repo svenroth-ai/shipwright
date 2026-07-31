@@ -61,11 +61,13 @@ def repo(git_origin_repo):
 
 
 # Each entry: (label, callable taking the repo root) -> a SweepResult-like object
-# with .status. All four are the real production entry points.
+# with .status. All four are the real production entry points, referenced DIRECTLY
+# rather than wrapped in `lambda root: f(root)` — an unnecessary lambda, and CodeQL
+# was right to say so. Each already takes the root as its single positional argument.
 CONSUMERS = [
-    ("gitattributes_selfheal", lambda root: self_heal_gitattributes(root)),
-    ("gitignore_selfheal", lambda root: self_heal_gitignore(root)),
-    ("reconcile_triage", lambda root: reconcile_main_triage(root)),
+    ("gitattributes_selfheal", self_heal_gitattributes),
+    ("gitignore_selfheal", self_heal_gitignore),
+    ("reconcile_triage", reconcile_main_triage),
 ]
 
 
