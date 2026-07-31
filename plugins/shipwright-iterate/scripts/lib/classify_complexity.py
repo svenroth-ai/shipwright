@@ -29,8 +29,8 @@ from complexity_vocabulary import (  # noqa: E402, F401 — re-exported surface
 # from classify_complexity. SSoT for the patterns is risk_detectors.
 from risk_detectors import (  # noqa: E402, F401 — re-exported surface
     CI_SUPPLYCHAIN_FILE_PATTERNS, CROSS_COMPONENT_FILE_PATTERNS, IO_BOUNDARY_FILE_PATTERNS,
-    TOUCHES_BUILD_FILE_PATTERNS, is_ci_supplychain_change, is_cross_component_change,
-    is_io_boundary_change, touches_build_files,
+    TOUCHES_BUILD_BASENAME_GLOBS, TOUCHES_BUILD_FILE_PATTERNS, is_ci_supplychain_change,
+    is_cross_component_change, is_io_boundary_change, touches_build_files,
 )
 
 # Canonical risk taxonomy — one authoritative list, referenced by SKILL.md,

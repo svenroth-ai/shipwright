@@ -24,6 +24,7 @@ Stable surface
   the dict as immutable — a future iterate may freeze it via
   `MappingProxyType` if mutation becomes a real bug).
 * :data:`IO_BOUNDARY_FILE_PATTERNS` / :data:`TOUCHES_BUILD_FILE_PATTERNS`
+  / :data:`TOUCHES_BUILD_BASENAME_GLOBS`
   — the regex / glob lists the two detectors consult. Exported so
   consumers can render the detection rules in user-facing reports
   without duplicating them.
@@ -99,6 +100,7 @@ from classify_complexity import (  # type: ignore[import-not-found]  # noqa: E40
     CROSS_COMPONENT_FILE_PATTERNS,
     IO_BOUNDARY_FILE_PATTERNS,
     RISK_TAXONOMY,
+    TOUCHES_BUILD_BASENAME_GLOBS,
     TOUCHES_BUILD_FILE_PATTERNS,
     is_ci_supplychain_change,
     is_cross_component_change,
@@ -112,6 +114,7 @@ __all__ = [
     "CROSS_COMPONENT_FILE_PATTERNS",
     "IO_BOUNDARY_FILE_PATTERNS",
     "RISK_TAXONOMY",
+    "TOUCHES_BUILD_BASENAME_GLOBS",
     "TOUCHES_BUILD_FILE_PATTERNS",
     "is_ci_supplychain_change",
     "is_cross_component_change",
