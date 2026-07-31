@@ -366,7 +366,7 @@ Other references:
 - [docs/hooks-and-pipeline.md](docs/hooks-and-pipeline.md): hooks registry, context loading matrix, between-phase actions
 - [shared/glossary.md](shared/glossary.md): shared vocabulary across agents, hooks, subagents, and compliance audits (Allowlist / Ratchet / Producer / Canon-Gate / Action-Unit / Worktree-Isolation / F7b-Seal / …)
 - [shared/constitution.md](shared/constitution.md): ALWAYS / ASK FIRST / NEVER behavioral boundaries for all agents
-- [.shipwright/planning/adr/](.shipwright/planning/adr/): long-form ADR specs (auto-indexed in `INDEX.md` on every release)
+- [.shipwright/planning/adr/](.shipwright/planning/adr/): long-form ADR specs (auto-indexed in `INDEX.md`, labelled from each file's own `#` heading)
 - [shipwright-webui/docs/guide.md](https://github.com/svenroth-ai/shipwright-webui/blob/main/docs/guide.md): Command Center user guide (install, daily workflow, custom actions, autostart)
 - [CONTRIBUTING.md](CONTRIBUTING.md): contribution workflow and security model
 - [SECURITY.md](SECURITY.md): vulnerability disclosure
