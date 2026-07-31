@@ -84,6 +84,37 @@ class TestCorrelation:
         assert accepted_risk_rows(root, now=date(2027, 1, 1))[0][0]["expired"] is True
         assert accepted_risk_rows(root, now=_NOW)[0][0]["expired"] is False
 
+    def test_discovery_is_computed_against_the_passed_now(self, tmp_path):
+        """`source` must be derived from `now`, never from the wall clock.
+
+        The ignore entry expires 2026-12-22, so it is a live suppression before
+        that date and none after it. Reading the clock instead would make this
+        render change answer on 2026-12-22 for unchanged inputs — and would have
+        turned the fixed-date tests below into a time bomb.
+        """
+        root = _repo(tmp_path, register=_REGISTER, trivy=_TRIVYIGNORE)
+        before, _ = accepted_risk_rows(root, now=_NOW)
+        after, _ = accepted_risk_rows(root, now=date(2027, 1, 1))
+        assert before[0]["source"] == SOURCE_REGISTERED_ACTIVE
+        assert after[0]["source"] == SOURCE_REGISTERED_ONLY, (
+            "once Trivy stops applying the entry the acceptance is recorded but "
+            "no longer wired up — claiming it active would be the false green "
+            "the drift gate exists to prevent"
+        )
+
+    def test_a_lapsed_suppression_is_still_shown_not_dropped(self, tmp_path):
+        """Expiry-aware discovery must not make the row disappear.
+
+        A lapsed ignore entry is precisely the one an operator has to act on —
+        `EXPIRED - re-review`. Sourcing these rows from discovery would delete
+        them on the day they start to matter.
+        """
+        rows, _ = accepted_risk_rows(
+            _repo(tmp_path, trivy=_TRIVYIGNORE), now=date(2027, 1, 1))
+        assert [r["id"] for r in rows] == ["CVE-2026-54285"]
+        assert rows[0]["expired"] is True
+        assert rows[0]["source"] == SOURCE_UNREGISTERED
+
 
 class TestDegradation:
     def test_malformed_register_is_announced_not_silently_empty(self, tmp_path):
@@ -98,19 +129,9 @@ class TestDegradation:
         assert note is None
 
 
-class TestTrivyignoreForms:
-    def test_classic_flat_file_is_read(self, tmp_path):
-        (tmp_path / ".trivyignore").write_text(
-            "# comment\nCVE-2026-1\n\nCVE-2026-2\n", encoding="utf-8")
-        assert {e["id"] for e in parse_trivyignore(tmp_path)} == {
-            "CVE-2026-1", "CVE-2026-2"}
-
-    def test_yaml_form_carries_scope(self, tmp_path):
-        entries = parse_trivyignore(_repo(tmp_path, trivy=_TRIVYIGNORE))
-        assert entries[0]["scope"] == ["a/b"]
-
-    def test_missing_file_is_empty(self, tmp_path):
-        assert parse_trivyignore(tmp_path) == []
+# Ignore-file PARSING (parse_trivyignore, and its agreement with the gate's
+# own reader) lives in test_accepted_risk_view_parsing.py. This file owns
+# correlation, degradation and rendering.
 
 
 class TestRenderedSection:

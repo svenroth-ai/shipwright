@@ -1,0 +1,218 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-07-31-it7a-pr-review-stale-verdict",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-07-31T08:45:54.556684+00:00",
+      "disposition": null,
+      "recorded_by": "self",
+      "parse_status": "unstructured",
+      "raw_excerpt": "# Self-review — IT-7a\n\nThe eight-point checklist, run after implementation and before commit.\n\n### 1. Spec compliance — **pass**\nAC1–AC8 each have a code path and at least one test that fails if the behaviour\nis removed; the Test Completeness Ledger in the spec maps all 27 behaviours.\nNo feature beyond the ACs: the `needs_review=false` path, the exact\n`--head-sha`, and the `shipwright-webui` copy are all named in §6 as out of\nscope rather than built.\n\n### 2. Error handling — **pass**\nEvery new boundary is a `gh` subprocess. Each wrapper raises on a non-zero exit\nwith the stderr attached; `_decode_pages` raises on a page that is not an array\nrather than reading it as \"no reviews\". The orchestrator catches everything and\nconverts it to a reported, non-fatal report — and the caller wraps it again, so\nhousekeeping cannot reach the exit code by any route.\n\n### 3. Security basics — **pass, and this is the point of the change**\nThe untrusted input here is a review body written by another process out of a\npull request's own diff. Ownership is never inferred: a candidate needs a whole\n`MARKER_RE` token as the last line of its body, `user.type == \"Bot\"`, and login\nequality with an anchor identified by this run's own 128-bit nonce. A human's\nchange-request is structurally unreachable. No secret is handled: the\nOpenRouter key is never passed to `gh`, and the one sink that prints `gh` output\nruns it through the shared control-character sanitiser first, so an error cannot\ncarry a newline into an Actions log and forge a `::error::` command.\n\n### 4. Test quality — **pass**\nAssertions are on outcomes (what was dismissed, what was refused, what was\nprinted), never on internal state. Every AC has both directions. Two claims were\nverified by **mutation** rather than by reading: deleting the head-read ordering,\nand deleting the failure-report branch, each turn the suite red — both were\ngreen before the tests that now pin them.\n\n### 5. Performance basics — **pass**\nTwo extra `gh` calls on the passing path (list + head), plus one head\nre-confirmation that is skipped entirely when there is nothing to dismiss, plus\none `PUT` per stale verdict. No loop of calls over an unbounded set: the\ncandidate list is the pull request's own reviews, and `--paginate` is bounded by\nthat.\n\n### 6. Naming & structure — **pass**\nModule split follows the existing `pr_review_*` convention; the `gh` boundary\nkeeps only subprocess wrappers and the policy lives in `pr_review_dismiss`.\nEvery touched file is inside the 300-line guideline — three files were split or\ntrimmed during the run to keep it that way, and `test_pr_review_render.py` was\nleft untouched at exactly 300 by giving the new sanitiser tests their own module.\n\n### 7. Affected boundaries — **n/a for round-trip, with a probe run anyway**\nNo serialized on-disk format changes: nothing here reads or writes a config, a\nstate file, or an artifact, so `touches_io_boundary` does not fire and no\nround-trip test is owed. The boundary that *is* touched is the GitHub REST API,\nwhich has a producer (GitHub) and one consumer (this module). It was probed\nlive rather than assumed — P1 (the real shape of eleven review objects), P2\n(the ruleset that permits dismissal), P3 (a dismissed review reads `DISMISSED`),\nP4 (`gh 2.92` merges paginated arrays), P6 (three real `PUT` responses).\n\n### 8. Test hygiene probe — **pass**\n`uv run shared/scripts/tools/scan_test_hygiene.py --diff` → `no findings`.\nNo skip, no `skipif`, no quarantine annotation in any changed test file.\n"
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": "openrouter (openai=revise x2, gemini=degraded x2)",
+      "completed_at": "2026-07-31T08:44:42.899965+00:00",
+      "disposition": null,
+      "recorded_by": "external-review",
+      "parse_status": "unstructured",
+      "raw_excerpt": "# External plan review — IT-7a\n\nTwo rounds, `shared/scripts/tools/external_review.py --mode iterate`, provider\n`openrouter`. Both rounds returned `SHIPWRIGHT_VERDICT: revise` from the OpenAI\nreviewer; the Gemini reviewer was cut off by the provider both times\n(`finish_reason=length`), so `contradiction.requires_resolution` was raised on\nboth rounds for the same reason — only one reviewer answered.\n\n## Round 1 — verdict `revise`\n\n| # | Category | Severity | Finding | Disposition |\n|---|---|---|---|---|\n| 1 | security | **high** | The marker only chose the *anchor*; candidates were then matched on `user.login`. Every workflow in a repository posts as the same `github-actions[bot]`, so the rule would dismiss any other workflow's `CHANGES_REQUESTED` — the risk option B was rejected for, reintroduced. | **Accepted.** Candidates must now carry the marker themselves. The cost — verdicts posted before this shipped can never be attributed — was measured rather than assumed (probe P5: zero open pull requests, so that backlog is empty) and recorded as AC7. |\n| 2 | approach | medium | \"The newest marked bot review\" is not necessarily *this* invocation's review; a concurrent run can post between the state post and the list call. | **Accepted.** The marker carries a per-run 128-bit nonce, so the anchor is this invocation's own review. |\n| 3 | dependency | medium | `PUT …/dismissals` requires a `message`; a wrapper that omits it fails every time and parks the feature in its best-effort failure path. | **Accepted**, and settled empirically rather than from docs — probe **P6**. |\n| 4 | edge-case | low | `submitted_at <` is a weak ordering guard at GitHub's timestamp precision; ties would be mishandled. | **Accepted.** The timestamp comparison was dropped entirely in favour of anchoring on the commit. |\n| 5 | risk | low | Orchestration-level tests needed for listing failure, one refusal among several, malformed output, and `block` never listing. | **Accepted.** All four exist. |\n\n## Round 2 — verdict `revise`\n\n| # | Category | Severity | Finding | Disposition |\n|---|---|---|---|---|\n| 1 | edge-case | **high** | The head guard is not atomic with the dismissals; the head can move between selection and mutation. | **Accepted in part.** The head is re-confirmed once after selection and before the first dismissal. The irreducible residual (a force-push inside the loop, and the T0→T1 window) is recorded in §6 rather than claimed closed. |\n| 2 | dependency | medium | `event=DISMISS` is not part of the documented request; depending on undocumented acceptance is unnecessary. | **Accepted.** Probe P6 confirmed it is accepted but inert; it is not sent, and a test pins its absence. |\n| 3 | security | medium | Matching `MARKER_PREFIX` as a substring is weaker than matching a structured token. | **Accepted**, and taken further after Stage 2: the match is a whole-token `fullmatch` on the body's **last line**. |\n| 4 | edge-case | medium | The selection result should be structured, with categorised skip counts, or AC7's required diagnostic can be omitted while the safety behaviour is correct. | **Accepted, trimmed.** `StaleSelection.skipped` carries per-category counts (`human`, `unmarked`, `other_identity`, `current_commit`, `unreadable`), rendered by `_describe`. |\n| 5 | risk | medium | \"Best effort\" needs containment at the whole call boundary, not only around individual dismissals. | **Accepted.** The orchestrator never raises, and the caller wraps it again. |\n| 6 | approach | low | Read-after-write visibility: a just-posted review may not be listable yet; that benign no-op should be logged distinctly. | **Accepted.** \"this run's own review is not visible on the pull request yet\" is its own reason string. |\n\n## Gemini\n\nRound 1 produced one finding before truncation, and it was the decisive one:\n\n> Using `submitted_at < anchor.submitted_at` to determine staleness incorrectly\n> assumes execution order matches commit history. If a slow review run  […truncated]"
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 2,
+      "findings": [
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "plugins/shipwright-security/scripts/lib/pr_review_render.py",
+          "line": null,
+          "finding": "Consolidating onto _UNSAFE_IN_DISPLAY made the log sink inherit the Markdown half of the alphabet, so a gh JSON error rendered with its braces blanked — undermining AC8's deliverable. Also noted a net security GAIN from the same consolidation: stripping C0 stops a gh error carrying a newline into an Actions log and forging a ::error:: command.",
+          "suggestion": "TAKEN after the review: the class is split into _CONTROL_AND_INVISIBLE and _MARKDOWN_UNSAFE, _UNSAFE_IN_DISPLAY is their union so safe_path and its enumeration test are byte-identical, and strip_display_unsafe uses only the first. Pinned by test_a_gh_json_error_survives_legible and test_a_newline_cannot_forge_a_workflow_command.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "plugins/shipwright-security/scripts/lib/pr_review_dismiss.py",
+          "line": null,
+          "finding": "Reducibility D, advisory: four emit-and-return sequences could share a local helper, saving ~5 lines.",
+          "suggestion": "DECLINED, on the reviewer's own reasoning — a closure that both logs and returns hides a side effect behind something that reads like a constructor, and four explicit exits each naming their reason is the clearer shape.",
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-07-31T08:46:59.503281+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 11,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "boundary-and-contract",
+          "file": "plugins/shipwright-security/scripts/lib/pr_review_dismiss.py",
+          "line": null,
+          "finding": "The `current_commit` skip reads `commit_id` with the meaning the module spends eight docstring lines refuting. Consequence: a same-head re-review cannot retract this reviewer's own earlier block (and the `labeled` trigger makes same-head re-runs the commonest superseding event this repo produces), and a block a concurrent run posted while the head was here outlives every re-run until a new commit lands. Not listed in the spec at all.",
+          "suggestion": "ADDRESSED as the reviewer's option (b) — named, not silently kept. The suggested fix (allow a same-head candidate with a strictly older review `id`) was REJECTED with reasons now in the code and in spec §5b(a): re-running the review is cheap and model output is not deterministic, so clearing a same-head block once a later run passes would let any verdict be re-rolled away by re-reviewing until it agrees. That is a worse failure than a stuck merge. The code comment now reads the skip as 'MIGHT still describe the head', not 'does'.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "high",
+          "category": "reversibility",
+          "file": "plugins/shipwright-security/scripts/lib/pr_review_dismiss.py",
+          "line": null,
+          "finding": "`PUT …/dismissals` has no inverse, ledger row 27 admits the live behaviour is untested, and there is no kill switch short of a revert PR.",
+          "suggestion": "REBUTTED with reasons, recorded in spec §5b. Blast radius is ZERO on the day this merges and grows only over reviews this same code has itself stamped — ownership requires our marker and no review in existence carries one, so the first thing it can dismiss is a change-request this code posted after shipping, guarded by the identity chain Stage 3 could not break. An env gate was considered and not built: it is inert until the workflow passes it, and `.github/workflows/**` is IT-9's tree, so it would read as a safety feature while being none. Recorded as a follow-up beside the other two workflow items.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "concurrency-and-ordering",
+          "file": "plugins/shipwright-security/scripts/lib/pr_review_dismiss.py",
+          "line": null,
+          "finding": "No retry when this run's own review is not yet visible in the listing; GitHub REST is not guaranteed read-after-write across a POST then a separate GET. The whole feature is one replication-lag miss from a silent no-op indistinguishable from the defect.",
+          "suggestion": "RECORDED, not built (spec §5b, §6.4). The failure is self-healing — the next qualifying run clears the backlog — but it is indistinguishable from the defect while it lasts, which is why it is written down rather than left to be discovered.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "hidden-coupling",
+          "file": "plugins/shipwright-security/scripts/lib/pr_review_dismiss.py",
+          "line": null,
+          "finding": "Every decline path reports to the stderr of a job that still exits 0, so the required check goes green and a maintainer must open a PASSING run's logs to find the explanation. FR-01.17 (E)4 asks for the reasons where merge deciders read them. The §1 silence is relocated, not removed.",
+          "suggestion": "ACCEPTED as a real incompleteness, recorded. Not fixed here: writing to the PR needs either a second comment (the first is posted before the cleanup runs) or a workflow-level annotation, and the honest version of both belongs with the workflow work in IT-9.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "hidden-coupling",
+          "file": "plugins/shipwright-security/scripts/lib/pr_review_render.py",
+          "line": null,
+          "finding": "Option D is not an edge case: `skip-pr-review` is the reviewer's OWN advertised escape hatch, printed on every truncation block. Applying it re-runs the chain, takes the needs_review=false branch, and never clears the change-request the truncation posted — so a maintainer following the printed instruction lands in the defect this run removes.",
+          "suggestion": "FIXED, in the half that is in scope. The truncation notice now says the label greens the check but does NOT retract the change-request, which has to be dismissed by hand. Pinned by `test_the_truncation_notice_does_not_promise_an_unblock`. Restated in spec §5b(c); the workflow half stays with IT-9.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "boundary-and-contract",
+          "file": "plugins/shipwright-security/tests/test_pr_review_stale_verdicts.py",
+          "line": null,
+          "finding": "The ledger's flagship mutation-verified test survives a DUPLICATE-read mutation: `order[:2]` is a prefix slice, and `fake_head` returned one constant so `cleanup_sha == reviewed_sha` compared a value with itself. Keep the pre-diff read, add a second one at the cleanup, and the three-term guard collapses to two while every test stays green.",
+          "suggestion": "FIXED and re-verified by mutation. The assertion is now exact (`order == ['head','diff']`) plus a count assertion, and `fake_head` returns a different sha per call. The duplicate-read mutation now fails 2 tests (was: 0).",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "boundary-and-contract",
+          "file": "plugins/shipwright-security/scripts/lib/pr_review_dismiss.py",
+          "line": null,
+          "finding": "The nonce's unguessability is the stated security argument for the anchor, and every past nonce is PUBLISHED in a review body. Swapping `secrets.token_hex` for `uuid1().hex` or `random.getrandbits` leaves both nonce tests green.",
+          "suggestion": "FIXED — `test_it_comes_from_the_cryptographic_source` monkeypatches `D.secrets.token_hex` and asserts `new_nonce()` routes through it with 16 bytes.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "boundary-and-contract",
+          "file": "plugins/shipwright-security/tests/_pr_review_fixtures.py",
+          "line": null,
+          "finding": "Zero fixtures resemble the encoding of the data being parsed. Real bodies come back with CRLF; `_own_marker` survives only because of a trailing `.strip()`. Delete that as a tidy-up and all 27 ledger behaviours stay green while the feature dies completely against live GitHub, emitting the misleading 'not visible yet' message.",
+          "suggestion": "FIXED — new `crlf_body()` fixture and `test_a_body_as_github_actually_returns_it_is_recognised`, asserting the CRLF form is recognised as both anchor and candidate. The `.strip()`'s load-bearing role is now named in the docstring.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "boundary-and-contract",
+          "file": "plugins/shipwright-security/scripts/tools/pr_review.py",
+          "line": null,
+          "finding": "`stamp_review_body` was called inside the `for` statement's iterable tuple, which Python evaluates before entering the body — i.e. outside the try that implements the best-effort contract. Structural rather than live (no input was found that makes it raise), but it is the one new call outside the guard.",
+          "suggestion": "FIXED — hoisted above the loop with a comment naming why.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "hidden-coupling",
+          "file": "plugins/shipwright-security/scripts/lib/pr_review_dismiss.py",
+          "line": null,
+          "finding": "Post-review drift: after the `_CONTROL_ONLY` split, `_inert`'s docstring still claimed it reuses the same alphabet and that a sink with its own regex ends up weaker — it now IS narrower, on purpose. The sanitiser test module said the same. And the enumeration test covered only `_UNSAFE_IN_DISPLAY`, so a direct narrowing of `_CONTROL_ONLY` would pass.",
+          "suggestion": "FIXED — both docstrings rewritten to state the narrowing and why (a blanked-brace `gh` JSON error is the run failing to say what happened), and `test_its_alphabet_is_the_union_minus_exactly_the_markdown_three` pins the narrower class against the enumerated union.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "reversibility",
+          "file": "plugins/shipwright-security/scripts/lib/pr_review_render.py",
+          "line": null,
+          "finding": "The working tree drifted mid-review; Stages 1 and 2 passed against a state no longer on disk.",
+          "suggestion": "ADDRESSED — the diff was regenerated after every change and the final tree re-verified (886 passed, ruff clean, every touched file within the 300-line guideline). The drift was the `_CONTROL_ONLY` split, which Stage 2 itself asked for in the same round.",
+          "source": "doubt-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-07-31T09:02:39.878726+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 2,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "bug",
+          "file": "plugins/shipwright-security/scripts/lib/pr_review_dismiss.py",
+          "line": 111,
+          "finding": "Malformed review rows can still abort the entire cleanup sweep, contrary to the specified requirement that one unexpected review shape be counted as `unreadable` and skipped. `_is_bot()` and `_login()` assume `review[\"user\"]` is a dict; a row such as `{\"user\": \"unexpected\", ...}` causes an `AttributeError` before the narrow `id` conversion handler at line 184. The outer orchestrator then reports a listing failure and dismisses none of the otherwise valid stale verdicts.",
+          "suggestion": "Treat a non-dict `user` value as an unreadable row rather than dereferencing it. Validate the required candidate fields in `select_stale_verdicts()` inside a per-row guard that increments `skipped[\"unreadable\"]` and continues.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "test",
+          "file": "plugins/shipwright-security/tests/test_pr_review_dismiss.py",
+          "line": 255,
+          "finding": "The malformed-row test only covers an invalid `id` (`None`), which is handled by the existing narrow conversion `try` block. It does not cover malformed nested API fields such as a non-object `user`, so the current sweep-aborting defect passes the suite despite the test and specification claiming malformed review rows are safely skipped.",
+          "suggestion": "Add cases with `user` as a string/list and with malformed required fields before and between valid candidates; assert the valid candidate is still selected and `unreadable` is counted.  Overall, the implementation follows the primary ownership, head-pinning, and best-effort dismissal design, but its malformed-review handling does not meet the stated fail-safe sweep behavior. Ship with the defensive row validation and regression tests added.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter (openai=revise, gemini=approve)",
+      "completed_at": "2026-07-31T09:08:47.522790+00:00",
+      "disposition": null,
+      "recorded_by": "external-review",
+      "parse_status": "partial",
+      "raw_excerpt": "[gemini] SHIPWRIGHT_VERDICT: approve\n\n[openai] - Category: bug\n- Severity: medium\n- File: `plugins/shipwright-security/scripts/lib/pr_review_dismiss.py:111`\n- Finding: Malformed review rows can still abort the entire cleanup sweep, contrary to the specified requirement that one unexpected review shape be counted as `unreadable` and skipped. `_is_bot()` and `_login()` assume `review[\"user\"]` is a dict; a row such as `{\"user\": \"unexpected\", ...}` causes an `AttributeError` before the narrow `id` conversion handler at line 184. The outer orchestrator then reports a listing failure and dismisses none of the otherwise valid stale verdicts.\n- Suggestion: Treat a non-dict `user` value as an unreadable row rather than dereferencing it. Validate the required candidate fields in `select_stale_verdicts()` inside a per-row guard that increments `skipped[\"unreadable\"]` and continues.\n\n- Category: test\n- Severity: low\n- File: `plugins/shipwright-security/tests/test_pr_review_dismiss.py:255`\n- Finding: The malformed-row test only covers an invalid `id` (`None`), which is handled by the existing narrow conversion `try` block. It does not cover malformed nested API fields such as a non-object `user`, so the current sweep-aborting defect passes the suite despite the test and specification claiming malformed review rows are safely skipped.\n- Suggestion: Add cases with `user` as a string/list and with malformed required fields before and between valid candidates; assert the valid candidate is still selected and `unreadable` is counted.\n\nOverall, the implementation follows the primary ownership, head-pinning, and best-effort dismissal design, but its malformed-review handling does not meet the stated fail-safe sweep behavior. Ship with the defensive row validation and regression tests added.\n\nSHIPWRIGHT_VERDICT: revise"
+    }
+  },
+  "gates": {
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-07-31T08:46:49.770579+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    }
+  }
+}

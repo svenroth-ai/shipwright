@@ -267,10 +267,35 @@ once an acceptance is past its re-review date. Both run in CI via
 `shared/tests/test_accepted_risks_register.py`, so the discipline is mechanical
 rather than conventional — an expiry nobody enforces is a comment.
 
+**Deleting the register does not switch the gate off.** A missing
+`shipwright_accepted_risks.yaml` no longer *bypasses* reconciliation — it is
+reconciled as an empty record. A fresh or legacy repo still passes, because it
+suppresses nothing and the comparison comes out clean; a repo that *has*
+suppressions now reports every one of them as `UNRECORDED` instead of passing
+silently. Removing the file to quiet the gate therefore makes it maximally loud,
+which is the point: the gate asks "is every live suppression recorded?", not
+"does a file exist?".
+
+**A suppression that has lapsed is not a suppression.** Both ignore-file forms
+carry a per-entry due date that Trivy itself honours — `expired_at:` in
+`.trivyignore.yaml`, an `exp:YYYY-MM-DD` field in the classic flat
+`.trivyignore` — and Trivy stops applying an entry from that date onward. `check`
+mirrors that rule, so an entry whose own date has passed counts as absent. If you
+renew the register's `expires` but leave the ignore file's date in the past, the
+entry now reports as `STALE`: the record claims an acceptance the scanner has
+already stopped honouring. Renew both, or neither.
+
+Note the two dates lapse a day apart — a register entry is still active **on**
+its `expires`, a Trivy entry is already inactive **on** its `expired_at` — so a
+pair set to the same day spends one day reported as `STALE`. The gate says so
+explicitly there and tells you to renew both, rather than to delete the record.
+
 The compliance dashboard renders the register with expiry status and the
 authority each acceptance rests on. A suppression with **no** register entry is
 rendered as drift, not as an accepted risk: being suppressed is not the same as
-being accepted.
+being accepted. It deliberately does **not** hide a lapsed ignore entry the way
+the gate does — it keeps listing it, flagged `EXPIRED — re-review`, because that
+is precisely the row somebody has to act on.
 
 **Not covered offline:** a `github-dismissal` acceptance. Its counterpart is live
 GitHub alert state rather than a file, so `check` reports it as *unchecked* (it

@@ -1,0 +1,1 @@
+Accepted-risk drift gate: an absent `shipwright_accepted_risks.yaml` no longer bypasses reconciliation. A fresh repo still passes (it suppresses nothing), but deleting the register in a repo that HAS suppressions now reports every one as `UNRECORDED` instead of exiting 0 silently.
