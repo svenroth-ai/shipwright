@@ -30,13 +30,44 @@ import os  # noqa: F401  -- re-exported for monkeypatch surface
 import subprocess  # noqa: F401  -- re-exported for patch() target
 import sys  # noqa: F401
 
+#: `shared/scripts`, resolved once at import time and deliberately WITHOUT
+#: `pathlib`: `pathlib` picks its flavour from the process-global `os.name` *at
+#: construction*, while `os.path` is bound to `ntpath`/`posixpath` when `os` is
+#: first imported and never re-dispatches. So this derivation cannot be broken by
+#: a faked platform — at import time or afterwards. Measured byte-identical to
+#: the `Path(__file__).resolve().parent.parent` it replaces, and pinned by
+#: `test_scripts_dir_matches_the_pathlib_derivation_it_replaced`.
+#:
+#: The old expression — `Path(__file__).resolve().parent.parent` — lived inside
+#: the lazy proxy and ran on its first call, which deferred a constant for no
+#: benefit and put pathlib somewhere a test could reach with `os.name` faked.
+#: Under a fake a pathlib path is a landmine end-to-end, and WHERE it detonates
+#: is version-dependent, so do not reason from one interpreter: on <=3.11
+#: `Path.__new__` checks `_flavour.is_supported` and **construction itself**
+#: raises; on >=3.12 construction slips past (it calls `object.__new__`) and the
+#: raise moves to the first DERIVATION — `.resolve()`, `.parent`, `/` — via
+#: `type(self)(...)`. Measured on both: `NotImplementedError: cannot instantiate
+#: 'PosixPath' on your system`. CI pins 3.11, `uv run` here picks 3.12+.
+#: The rule to carry away is simply: no pathlib in this function.
+#:
+#: It only fired when nothing had already burned the proxy, so it was green in
+#: serial order and red under xdist by worker assignment
+#: (f0-race:shared/tests, trg-f64d1c27).
+_SCRIPTS_DIR = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
+
 # ---------------------------------------------------------------------------
 # Lazy binding for resolve_executable (B3 lesson).
-# We DO NOT do `from lib.cmd_resolver import resolve_executable` at module
-# top because that mutates sys.modules['lib'] in the SHARED scripts path
-# and shadows plugin-local `lib/` packages later in the same pytest
-# session. Instead, bind a lazy proxy here that resolves on first call.
-# Tests can override via `monkeypatch.setattr(dev_server, "resolve_executable", ...)`.
+# We DO NOT do `from lib.cmd_resolver import resolve_executable` at module top;
+# bind a lazy proxy here that resolves on first call instead. Tests can override
+# via `monkeypatch.setattr(dev_server, "resolve_executable", ...)`.
+#
+# Note what this does and does not buy. It keeps `lib.cmd_resolver` out of
+# `sys.modules` at import, but `import dev_server` ALREADY binds `sys.modules
+# ['lib']` — `.state` is imported unconditionally below and does a module-scope
+# `from lib.atomic_write import ...`. So the package is not lib-safe, and lazy
+# import is not by itself an ADR-045 mitigation (`shared_lib_loader.py`:
+# "it is not enough"). Pinned, at its true value, by
+# `test_importing_dev_server_leaves_lib_cmd_resolver_unbound`.
 # ---------------------------------------------------------------------------
 
 def _lazy_resolve_executable(name: str) -> str:
@@ -46,12 +77,14 @@ def _lazy_resolve_executable(name: str) -> str:
     imports `lib.cmd_resolver.resolve_executable`, then rebinds the
     package attribute so subsequent calls go straight to the real
     function (no recursion through this proxy).
-    """
-    from pathlib import Path as _Path
 
-    scripts_dir = _Path(__file__).resolve().parent.parent
-    if str(scripts_dir) not in sys.path:
-        sys.path.insert(0, str(scripts_dir))
+    The proxy's own setup does no path arithmetic — `_SCRIPTS_DIR` is resolved at
+    import time (see its comment), so nothing here reads the process-global
+    `os.name`. The resolver it delegates to reads `os.name` deliberately; that is
+    the platform behaviour under test, not a hazard.
+    """
+    if _SCRIPTS_DIR not in sys.path:
+        sys.path.insert(0, _SCRIPTS_DIR)
     from lib.cmd_resolver import resolve_executable as _real  # noqa: E402
 
     # Rebind the package attribute so future calls skip this proxy. We

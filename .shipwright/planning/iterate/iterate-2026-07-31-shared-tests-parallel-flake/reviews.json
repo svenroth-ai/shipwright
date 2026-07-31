@@ -1,0 +1,236 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-07-31-shared-tests-parallel-flake",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-07-31T07:11:49.535325+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 5,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "Test-state pollution via `sys.modules` cache. By intentionally running the deferred `import lib.cmd_resolver` for the first time while `os.name` is monkeypatched to `'posix'`, `sys.modules['lib.cmd_resolver']` (and any other unimported transitive dependencies) will be populated/cached under the fake OS assumption. If `cmd_resolver` or its sub-modules perform any module-level OS evaluation (e.g. `IS_WIN = os.name == 'nt'`), that fake state will be permanently cached for the rest of the worker's lifespan, silently corrupting subsequent tests in that",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The claim that module import occurs while `os.name` is “necessarily” real is only true for the current test-import order. The hoist still constructs a bare `Path`, so importing `dev_server` after a test, plugin, or dynamic loader has patched `os.name` can still raise the same `NotImplementedError`; it merely moves the failure from first resolver call to module import.",
+          "suggestion": "Narrow the stated guarantee to the tested import order, or make path derivation independent of `pathlib`’s runtime flavour selection (while preserving the resolved-path semantics). At minimum, add a focused regression probe that imports/reloads `dev_server` after the platform fake, so this remaining boundary is explicit and intentionally accepted rather than implied away.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "The regression test deliberately performs a deferred import while process-global `os.name` is faked and depends on `shutil` already being imported by pytest/conftest. This is a hidden test-environment prerequisite, not an inherent property of the production code. A pytest/plugin/import-order change can make the test fail for an unrelated `shutil` fresh-import path, obscuring the regression it is intended to pin.",
+          "suggestion": "Make the prerequisite explicit in the test setup (for example, ensure the known dependency is imported before applying the global fake), or preferably eliminate the global `os.name` mutation through a narrow, module-local platform seam if that can be done without violating ADR-045. If retaining the current approach, document and test the prerequisite as part of the test’s setup rather than relying on incidental pytest imports.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "The ordinary CI workflow is Ubuntu-only, while AC3 is meaningful only on Windows. The test will pass on Linux even if the Windows-specific `Path` regression returns, so the normal CI signal does not enforce the key regression guarantee unless F0 is a required Windows-backed gate.",
+          "suggestion": "Confirm that the required pre-merge/F0 gate actually runs this file and the parallel `shared/tests` shape on Windows. If it does not, add or require a Windows validation job for this targeted test; otherwise the new regression pin is not continuously effective.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "security",
+          "file": null,
+          "line": null,
+          "finding": "No new security exposure is introduced. The `sys.path` insertion and deferred `lib` import retain their existing behavior, including the ADR-045-sensitive import ordering.",
+          "suggestion": "Preserve the current insertion-at-index-zero and membership-check behavior exactly as proposed, and avoid incidental import-order changes while applying the hoist.  Overall, hoisting the constant while retaining the deferred `lib.cmd_resolver` import is the right minimal production fix and appropriately keeps `shared/tests` parallelized. The remaining work is chiefly to make the Windows/global-platform-mocking test boundary and its required Windows verification reliable. SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-07-31T07:11:30.475037+00:00",
+      "disposition": null,
+      "recorded_by": "external_review.py",
+      "parse_status": "structured",
+      "raw_excerpt": "[gemini] **Findings:**\n\n*   **Risk**\n    *   **Severity**: Medium\n    *   **Finding**: Test-state pollution via `sys.modules` cache. By intentionally running the deferred `import lib.cmd_resolver` for the first time while `os.name` is monkeypatched to `'posix'`, `sys.modules['lib.cmd_resolver']` (and any other unimported transitive dependencies) will be populated/cached under the fake OS assumption. If `cmd_resolver` or its sub-modules perform any module-level OS evaluation (e.g. `IS_WIN = os.name == 'nt'`), that fake state will be permanently cached for the rest of the worker's lifespan, silently corrupting subsequent tests in that\n\n[openai] 1. **Category:** edge-case  \n   **Severity:** medium  \n   **Finding:** The claim that module import occurs while `os.name` is “necessarily” real is only true for the current test-import order. The hoist still constructs a bare `Path`, so importing `dev_server` *after* a test, plugin, or dynamic loader has patched `os.name` can still raise the same `NotImplementedError`; it merely moves the failure from first resolver call to module import.  \n   **Suggestion:** Narrow the stated guarantee to the tested import order, or make path derivation independent of `pathlib`’s runtime flavour selection (while preserving the resolved-path semantics). At minimum, add a focused regression probe that imports/reloads `dev_server` after the platform fake, so this remaining boundary is explicit and intentionally accepted rather than implied away.\n\n2. **Category:** dependency  \n   **Severity:** medium  \n   **Finding:** The regression test deliberately performs a deferred import while process-global `os.name` is faked and depends on `shutil` already being imported by pytest/conftest. This is a hidden test-environment prerequisite, not an inherent property of the production code. A pytest/plugin/import-order change can make the test fail for an unrelated `shutil` fresh-import path, obscuring the regression it is intended to pin.  \n   **Suggestion:** Make the prerequisite explicit in the test setup (for example, ensure the known dependency is imported before applying the global fake), or preferably eliminate the global `os.name` mutation through a narrow, module-local platform seam if that can be done without violating ADR-045. If retaining the current approach, document and test the prerequisite as part of the test’s setup rather than relying on incidental pytest imports.\n\n3. **Category:** risk  \n   **Severity:** medium  \n   **Finding:** The ordinary CI workflow is Ubuntu-only, while AC3 is meaningful only on Windows. The test will pass on Linux even if the Windows-specific  […truncated]"
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 7,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "shared/tests/test_dev_server_windows_npm.py",
+          "line": 163,
+          "finding": "The ADR-045 pin's docstring asserted an invariant the package already violates: dev_server/state.py does a module-scope `from lib.atomic_write import ...` reached via __init__.py, so `import dev_server` ALWAYS binds sys.modules['lib']. The test pinned a far narrower fact than it claimed.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "shared/scripts/dev_server/__init__.py",
+          "line": 52,
+          "finding": "AC5 was pinned by nothing. Ledger row 7 claimed a wrong _SCRIPTS_DIR would break the deferred import; it would not, because state.py already inserts shared/scripts into sys.path at import.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/tests/test_dev_server_windows_npm.py",
+          "line": 176,
+          "finding": "Subprocess probe embedded a path via r'{}'.format(); an apostrophe or backslash escape in the repo path would be a child SyntaxError.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/tests/test_dev_server_windows_npm.py",
+          "line": 184,
+          "finding": "subprocess.run(text=True) without encoding decodes with the host locale codec (cp1252 on the F0 host); a non-ASCII byte in a child traceback would raise UnicodeDecodeError in the parent.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "shared/scripts/dev_server/__init__.py",
+          "line": 33,
+          "finding": "Two adjacent rationale blocks overlapped, and the pre-existing banner repeated the sys.modules['lib'] claim shown false by finding 1.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "shared/scripts/dev_server/__init__.py",
+          "line": 71,
+          "finding": "Docstring claim 'nothing here reads os.name' is not literally true of the function - the tail call reaches cmd_resolver, which reads os.name by design.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "architecture",
+          "file": "shared/scripts/dev_server/state.py",
+          "line": 20,
+          "finding": "The same shared/scripts constant is derived two ways in one package (os.path here, pathlib in state.py), both inserting into sys.path.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-07-31T07:23:54.898957+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 5,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "boundary-contract",
+          "file": "shared/scripts/dev_server/__init__.py",
+          "line": 44,
+          "finding": "Claim under doubt: the shipped comment's account of how pathlib fails under a faked os.name — 'Constructing Path(x) is safe, only derivations raise' holds on 3.12 but is FALSE on 3.11, where Path.__new__ checks _flavour.is_supported so construction itself raises. Every CI workflow pins 3.11 via `uv python install 3.11`, while uv run locally picks 3.12+ - so the claim was measured on an interpreter the gate never uses. No behavioural break, because the fix removes pathlib from the lazy body outright; the damage is the invitation to write a bare Path() back in and ship a 3.11-only failure that is green locally and red on ubuntu-latest, which is the exact failure shape this iterate exists to remove.",
+          "suggestion": "RESOLVED. Verified on both interpreters (3.11.15 raises at construction, 3.12.13 does not), and with the pathlib derivation re-injected BOTH pins were confirmed to bite on 3.11 (2 failed). The comment and test docstring now give both versions and lead with the rule - no pathlib in this function - rather than either mechanism; the spec carries a version table.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "hidden-coupling",
+          "file": "shared/scripts/dev_server/spawn.py",
+          "line": 47,
+          "finding": "Claim under doubt: 'This fixes the class, not the instance: no code that fakes os.name can detonate the proxy any more.' — Three other Path(__file__) derivations survive in the same package: profile_config.py:98 and state.py:20 (module scope, so os.name is real when they run) and spawn.py:47, a runtime fallback reachable only when the package attribute is absent, which nothing does. All latent, none live - but the class is closed for one function, not for the package, and the spec listed spawn.py as merely 'read, not modified' while claiming otherwise.",
+          "suggestion": "RESOLVED in the record: claim narrowed to 'fixes the proxy', all three sites named, and added to the deferred follow-up rather than changed here - per the reviewer's own advice against a refactor inside a bug fix.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "reversibility",
+          "file": ".shipwright/planning/iterate/iterate-2026-07-31-shared-tests-parallel-flake.md",
+          "line": 336,
+          "finding": "Claim under doubt: Confidence Calibration probe: 'both under the 300-line budget (188 / 208)' — Measured on the shipped tree the files are larger - they grew again during the review rounds. The conclusion survives (both under 300; neither file is in shipwright_bloat_baseline.json, so no anti-ratchet exposure) but the spec elsewhere makes a virtue of re-measuring after the last edit, and this probe is exactly the thing it warns about.",
+          "suggestion": "RESOLVED. Re-measured after the final edits: 220 / 258, both inside the budget, recorded as its own probe.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "concurrency-ordering",
+          "file": "shared/tests/test_dev_server_windows_npm.py",
+          "line": 226,
+          "finding": "Claim under doubt: the subprocess pin's exact-stdout assertion only fails when the invariant is broken — It compared the child's ENTIRE stdout, so any interpreter-startup line - a printing sitecustomize/usercustomize, a chatty .pth in a future ephemeral uv env - would redden it with the code correct. No current environment does this (checked: -X importtime, PYTHONVERBOSE, warnings and pytest-cov all write elsewhere), so it is fragility rather than a live break, and it fails loud with stdout in the message.",
+          "suggestion": "RESOLVED. Compares the last three tokens instead, with the reason stated at the assertion.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "hidden-coupling",
+          "file": "shared/tests/test_atomic_write_windows_read_retry.py",
+          "line": 36,
+          "finding": "Claim under doubt: the new os.name fakes sit comfortably alongside the repo's standing rule — The rule is EXECUTABLE, not advisory: test_atomic_write_windows_read_retry.py scans source for the pattern, scoped to the three atomic_write files, so this file is outside it by construction rather than by exemption. A third precedent, test_playwright_setup_multiservice.py, resolves the same hazard by skipping on Linux with a TODO for an injectable is_windows() seam - the very alternative this spec rejects. The deviation is defensible; the gap was that nothing recorded the boundary, leaving two contradictory precedents for the next reader.",
+          "suggestion": "RESOLVED. The module docstring now names all three precedents, states why dev_server is the exception (the no-op under test lives in cmd_resolver, which reads os.name itself), and notes that the foreign-name fake preserves the cross-platform property the rule exists to protect.",
+          "source": "doubt-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-07-31T07:42:50.682734+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": "openrouter",
+      "completed_at": "2026-07-31T07:15:15.232607+00:00",
+      "disposition": null,
+      "recorded_by": "external_review.py",
+      "parse_status": "unstructured",
+      "raw_excerpt": "[gemini] <no review returned: provider returned an empty reply>\n\n[openai] No concrete defects found. The production change safely resolves the scripts directory at import time without eagerly importing `lib.cmd_resolver`, and the added tests exercise both the unprimed lazy-proxy path under a foreign `os.name` and the deferred-import requirement in a fresh interpreter.\n\nOverall assessment: ship-as-is; the implementation matches the specified approach and the regression tests would fail if the platform-sensitive path construction returned to the lazy body.\n\nSHIPWRIGHT_VERDICT: approve"
+    }
+  },
+  "gates": {
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-07-31T07:11:12.083215+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    }
+  }
+}

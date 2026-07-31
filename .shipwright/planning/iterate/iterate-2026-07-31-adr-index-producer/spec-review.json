@@ -1,0 +1,7 @@
+{
+  "stage": "spec-compliance",
+  "verdict": "PASS",
+  "spec_citations": [],
+  "summary": "Re-review after both blockers fixed. R6 now satisfied on all three obligations: F6.md:35 stages the ADR folder (naming INDEX.md, both-or-neither), F3.md documents it, and test_index_row_ships_in_the_same_commit_as_the_adr asserts the row out of `git show HEAD:` plus both paths in `git show --name-only`, with test_f6_add_list_names_the_adr_folder pinning the F6 line against silent regression. Ledger row 24 now backed by a real test. AC1-AC8 and R1-R6 all SATISFIED; four non-blocking items (guide.md/README wording, AC8 count, mini-plan duplication, Mini-Plan steps) fixed. First pass was REJECT on two blockers: (1) R6's F6 add-list obligation was documented in F3.md but absent from F6.md, the file the agent actually reads at staging time; (2) the only AC1 test asserted the working tree - verbatim the false-green R6 warned about - while ledger row 24 claimed a test that did not exist.",
+  "handover_to_stage_2": "INDEX.md.lock was gitignored in this repo only by a line OUTSIDE the managed block, and the canonical template whitelists /.shipwright/planning/ wholesale, so the new folder-level `git add` would have committed the lock in every adopted repo. FIXED before Stage 2: the lock moved to .shipwright/locks/adr_index.lock (the canonical, always-ignored home), pinned by test_rebuild_leaves_nothing_but_the_index_in_the_adr_folder."
+}

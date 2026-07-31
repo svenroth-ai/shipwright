@@ -1,0 +1,32 @@
+{
+  "success": true,
+  "provider": "openrouter",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviews": {
+    "openai": {
+      "feedback": "- Category: bug\n- Severity: medium\n- File: `shared/scripts/lib/adr_index.py:108-115`\n- Finding: Fenced-code detection does not preserve fence length. `_FENCE_RE` captures only the first three backticks/tilde characters, so an opening four-backtick fence (````) is treated as a three-backtick fence and incorrectly closed by a later ``` line. A subsequent `# heading` that is still inside the actual fenced block can then be selected as the ADR title, violating the requirement that titles be outside fenced code blocks.\n- Suggestion: Capture the complete opening fence run (for example, `` `{3,}` `` / `~{3,}`) and only close when the same fence character has a run at least as long as the opening fence. Add coverage for a four-or-more-character opening fence with a shorter apparent closing fence and an H1 inside the still-open block.\n\nOverall assessment: the implementation covers the producers, rendering behavior, drift guard, compatibility re-export, and commit staging path well, but the Markdown fence parser has a concrete title-extraction correctness hole. Ship with the fence-handling fix and corresponding test.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "openrouter",
+      "status": "success"
+    },
+    "gemini": {
+      "feedback": "SHIPWRIGHT_VERDICT: approve",
+      "via": "openrouter",
+      "status": "success"
+    }
+  },
+  "verdicts": {
+    "openai": "revise",
+    "gemini": "approve"
+  },
+  "statuses": {
+    "openai": "success",
+    "gemini": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: gemini=approve, openai=revise"
+  }
+}
