@@ -1,4 +1,4 @@
-# ADR-116 — A passing Tier-3 review retracts its own superseded verdicts
+# ADR-117 — A passing Tier-3 review retracts its own superseded verdicts
 
 - **Run ID:** `iterate-2026-07-31-it7a-pr-review-stale-verdict`
 - **Anchor:** `trg-fc173418` (IT-7), member 7a
