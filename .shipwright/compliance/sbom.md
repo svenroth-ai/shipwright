@@ -1,8 +1,8 @@
 # Software Bill of Materials (SBOM)
 
-Generated: 2026-07-28T12:18:44.236199+00:00 (dependency versions resolved from uv.lock)
-Source-State: run=iterate-2026-07-28-docs-placement-rule
-Consistency-audit: never run
+Generated: 2026-07-31T23:32:32.562993+00:00 (dependency versions resolved from uv.lock)
+Source-State: run=iterate-2026-07-31-review-record-spec-promotion
+Consistency-audit: last run 2026-07-28 (3 days earlier) — FAIL
 
 ## Summary
 
