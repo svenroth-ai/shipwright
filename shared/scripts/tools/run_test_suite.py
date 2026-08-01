@@ -55,6 +55,7 @@ from scripts.tools.suite_units import (  # noqa: E402  (re-export: one import si
     INFRA,
     PASS,
     TEST_FAILURE,
+    UV_RUN,
     SuiteConfig,
     SuiteConfigError,
     Unit,
@@ -93,10 +94,9 @@ class SuiteResult:
     xdist_ids: tuple[str, ...] = field(default_factory=tuple)
 
 
-def build_command(unit: Unit, xdist_workers: int | None,
-                  report: Path | None = None) -> list[str]:
+def build_command(unit: Unit, xdist_workers: int | None, report: Path | None = None) -> list[str]:
     """argv only - never a shell string (config/paths must not reach a shell)."""
-    cmd = ["uv", "run", "--with", "pytest", "--with", "pytest-mock"]
+    cmd = [*UV_RUN, "--with", "pytest", "--with", "pytest-mock"]
     for dep in unit.extra_deps:
         cmd += ["--with", dep]
     if xdist_workers:
@@ -159,12 +159,12 @@ def warm_up(project_root: Path) -> None:
     """Create/sync the environment ONCE, serially, before 18 processes race for it.
 
     18 concurrent cold `uv run` calls contend on the shared uv cache (a documented
-    hardlink-race source on Windows). One warm serial call turns that into a no-op.
-    Best-effort: a failure here surfaces as a normal unit fault, not a crash.
+    hardlink-race source on Windows). One warm serial call turns that into a no-op, for
+    the interpreter UV_RUN pins. Best-effort: a failure here is a normal unit fault.
     """
     try:
         subprocess.run(  # nosec B603 - fixed argv, shell=False
-            ["uv", "run", "--with", "pytest", "python", "-c", "pass"],
+            [*UV_RUN, "--with", "pytest", "python", "-c", "pass"],
             cwd=project_root, capture_output=True, text=True, shell=False, timeout=600)
     except (OSError, subprocess.SubprocessError):
         pass

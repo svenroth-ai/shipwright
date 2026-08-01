@@ -12,6 +12,7 @@ Execution, the exit-code classes and the serial re-verify safety net live in
 from __future__ import annotations
 
 import json
+import re
 import sys
 from pathlib import Path
 
@@ -133,3 +134,34 @@ def test_operator_facing_strings_are_ascii_only():
         src = Path(module.__file__).read_text(encoding="utf-8")
         offenders = [ln for ln in src.splitlines() if not ln.isascii()]
         assert not offenders, f"non-ASCII in {module.__name__}: {offenders[:3]}"
+
+
+def test_no_uv_invocation_escapes_the_interpreter_pin():
+    """Guards the CLASS, not the three call sites that happen to exist today.
+
+    `build_command` shipped without `--python` and no test noticed, because every test
+    pinned the sites that were written rather than the rule they must follow. The three
+    argv tests would stay green if a FOURTH `uv run`/`uvx` were added unpinned — which
+    is exactly how this defect arrived. So: inside the F0 runner, `uv` is spelled
+    `UV_RUN` and nowhere else. `uvx` is refused outright; it takes no interpreter from
+    UV_RUN and would resolve an ambient one.
+
+    Quote-agnostic on purpose: an earlier cut matched only the double-quoted spelling,
+    so the ordinary `subprocess.run(['uv', 'run', ...])` slipped straight through while
+    every per-site test stayed green (external review). A guard for a recurrence mode
+    must not itself be defeated by choosing the other quote character.
+
+    Scoped to the same FOUR modules as the ASCII guard above, not the two that happened
+    to pass: narrowing a class guard to its known-good set is how the class stops being
+    guarded. Broadening it caught `suite_report.suite_command`, which composed a bare
+    `uv run` for the "reproduce the whole suite" line published in the tracked triage
+    card — the one place an unpinned command is actively misleading.
+    """
+    for module in (mod, run_mod, report_mod, race_mod):
+        for i, line in enumerate(Path(module.__file__).read_text(encoding="utf-8").splitlines(), 1):
+            if line.lstrip().startswith("#") or "UV_RUN = " in line:
+                continue  # the definition itself, and prose about it
+            assert not re.search(r"""['"]uvx?['"]""", line), (
+                f"{module.__name__}:{i} spells a uv invocation by hand: {line.strip()!r}. "
+                "Spread UV_RUN instead - a bare `uv run` resolves whatever interpreter the "
+                "directory happens to offer, which is the bug this module was fixed for.")

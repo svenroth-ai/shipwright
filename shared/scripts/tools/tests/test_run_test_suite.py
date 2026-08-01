@@ -31,9 +31,18 @@ from scripts.tools.run_test_suite import (
     ensure_xdist_available,
     run_suite,
 )
+# The interpreter pin's ONE owner (run_test_suite consumes it via UV_RUN, so asserting
+# against a re-export would only prove the re-export agrees with itself).
+from scripts.tools.suite_units import PYTHON_VERSION, SHARED_TEST_DIRS
 
 #: `uv run` exits 1 when it cannot build the env — pytest never ran (no report).
 _UV_FAULT_OUT = "error: Failed to resolve dependencies for pytest-xdist"
+
+
+class _Completed:
+    """Stand-in for a successful CompletedProcess (argv-capture tests)."""
+
+    returncode, stdout, stderr = 0, "", ""
 
 
 def _project(tmp_path: Path, plugins=("shipwright-alpha",)) -> Path:
@@ -72,6 +81,52 @@ def test_command_is_argv_never_a_shell_string(tmp_path):
     assert isinstance(cmd, list) and all(isinstance(a, str) for a in cmd)
 
 
+# --- AC1/AC2: every uv invocation names the interpreter CI judges the push with ---
+def test_every_unit_runs_the_interpreter_ci_pins(tmp_path):
+    """Without this, uv resolves per-DIRECTORY from ambient state.
+
+    Measured before the fix: the 14 plugin units built 3.13.13/3.12.13 while CI ran
+    3.11.15 — F0 green, CI red, every parity guard passing. A plugin dir is its own uv
+    project, so a root `.python-version` does NOT reach it; only the argv does.
+    """
+    units = discover_units(_project(tmp_path, plugins=("shipwright-alpha", "shipwright-beta")))
+    # Load-bearing, not decoration: without it the loop below passes vacuously on an
+    # empty list. DERIVED, because a literal would make this interpreter test a second
+    # owner of a discovery fact and break it when a shared dir is added.
+    assert len(units) == 2 + len(SHARED_TEST_DIRS) + 1  # plugins + shared dirs + integration
+    for unit in units:
+        cmd = build_command(unit, None)
+        assert cmd[cmd.index("--python") + 1] == PYTHON_VERSION, unit.id
+
+
+def test_the_pin_is_an_argument_to_uv_not_to_pytest(tmp_path):
+    """`uv run --python X pytest ...` — after the `pytest` token it is pytest's flag."""
+    cmd = build_command(discover_units(_project(tmp_path))[0], None)
+    assert cmd.index("--python") < cmd.index("pytest")
+
+
+def test_warm_up_prebuilds_the_interpreter_the_units_will_use(monkeypatch, tmp_path):
+    """A warm-up on a DIFFERENT interpreter leaves every unit to cold-build its own —
+    re-creating the concurrent uv-cache contention warm_up exists to remove."""
+    seen = []
+    monkeypatch.setattr(mod.subprocess, "run",
+                        lambda cmd, **kw: seen.append(cmd) or _Completed())
+    mod.warm_up(tmp_path)
+    assert seen and seen[0][seen[0].index("--python") + 1] == PYTHON_VERSION
+
+
+def test_xdist_preflight_probes_the_pinned_interpreter(monkeypatch, tmp_path):
+    """It clears the units to fan out; a pre-flight answering for another interpreter
+    clears an environment that is not the one the units run in."""
+    import scripts.tools.suite_units as units_mod
+
+    seen = []
+    monkeypatch.setattr(units_mod.subprocess, "run",
+                        lambda cmd, **kw: seen.append(cmd) or _Completed())
+    ensure_xdist_available(SuiteConfig(xdist={"shared/tests": 8}), tmp_path)
+    assert seen and seen[0][seen[0].index("--python") + 1] == PYTHON_VERSION
+
+
 # --- AC11/AC12: exit-code classes, CPU budget, xdist pre-flight ---
 @pytest.mark.parametrize("rc,pytest_ran,expected", [
     (0, True, PASS),
@@ -106,8 +161,11 @@ def test_unprovisionable_xdist_is_an_actionable_error(monkeypatch, tmp_path):
         returncode, stderr = 1, "error: no solution found"
 
     monkeypatch.setattr(units_mod.subprocess, "run", lambda *a, **k: _Fail())
-    with pytest.raises(SuiteConfigError, match="pytest-xdist"):
+    with pytest.raises(SuiteConfigError, match="pytest-xdist") as exc:
         ensure_xdist_available(SuiteConfig(xdist={"shared/tests": 8}), tmp_path)
+    # This call needs xdist AND the pinned interpreter, so naming only one cause sends
+    # a machine that simply cannot provision 3.11 chasing the wrong problem.
+    assert PYTHON_VERSION in str(exc.value)
 
 
 def test_xdist_preflight_is_skipped_when_nothing_is_allowlisted(tmp_path):
