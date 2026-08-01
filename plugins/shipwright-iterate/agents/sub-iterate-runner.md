@@ -29,9 +29,8 @@ You receive these parameters in the prompt:
 
 1. Branch off `base_branch`, fetching first ONLY for a remote (serial) base so a
    stacked / `origin`-less run still works: serial (`origin/…`) → `git fetch origin && git checkout -b {branch_name} {base_branch}`; stacked (local base) → `git checkout -b {branch_name} {base_branch}`; first stacked (null base) → `git checkout -b {branch_name}`.
-3. Read `CLAUDE.md`, `.shipwright/agent_docs/`, existing specs, architecture docs
-4. Read the sub-iterate spec at `{sub_iterate_spec}`
-5. Read `shipwright_run_config.json` for project context
+2. Read `CLAUDE.md`, `.shipwright/agent_docs/`, existing specs + architecture docs, the
+   sub-iterate spec at `{sub_iterate_spec}`, and `shipwright_run_config.json`.
 
 ### Step 2: Classify Complexity
 
@@ -51,18 +50,45 @@ Execute the iterate build steps as defined in the sub-iterate spec:
 3. Run tests — all must pass
 4. If tests fail after 3 retries: return failure result
 
-### Step 3.5: External Plan Review (mandatory medium+, ADR-029)
+### Step 3.4: Diff-Driven Risk Re-Check (ALWAYS — runs before 3.5/3.7/3.8)
 
-After Build and before Finalization, run the external LLM plan review
-that the SKILL.md Step 4 (External LLM Review) gate requires for
-medium+ iterates. Mirror of `references/iteration-planning.md` Step 4
-flow with Branch A / Branch B / Branch C semantics.
+Step 2 classified from the spec **text** before code existed, so the diff-driven
+detectors — whose caller is the Stage-2 Repo Scout **you never reach** — could not
+fire. Re-decide here. **Why, in full:** `references/campaign-mode.md`.
 
-**Skip** when complexity is `trivial` or `small` AND no risk flag from
-the canonical taxonomy is set. Trivial/small without flag are below the
-gate.
+```bash
+uv run "{plugin_root}/scripts/lib/diff_risk_recheck.py" \
+  --project-root "{project_root}" --base-ref "{base_branch}" --run-id "{run_id}" \
+  --stage1-complexity "{step_2_complexity}" --stage1-flags "$(jq -r '.risk_flags|join(",")' <<<"$step2_json")"
+```
 
-**Run** when complexity is `medium` or higher. Procedure:
+Pass Step 2's flags as a COMMA list (a raw JSON array is tolerated) — seven canonical flags
+have no diff-driven detector, so they are UNIONED in; dropping them makes 3.5 skip cases the
+old rule ran. Change set = `{base_branch}` → **working tree**: you commit at F6, so a committed
+range is EMPTY here and the check would silently pass. **Capture stdout AND exit status.**
+
+1. **Exit 3 — STOP.** Do **not** write the CI acknowledgement yourself. Return the
+   escalation result-JSON with `reason_code: "ci_supplychain_requires_operator"` + the
+   reported `ci_paths`; commit nothing further. Once an operator records the ack for this
+   run id the command exits 0 (flag + paths still reported), so the handback terminates.
+2. **Exit 0 — adopt `effective_complexity`** for every remaining step; it only rises.
+   **F5c MUST record this value**, not Step 2's — the recorded tier is what every later reader
+   audits the run by, and `check_integration_coverage` reports an under-classified run against it.
+3. **Any other non-zero — the re-check did not run.** Return `status:"failed"` with
+   the CLI's `error`. NEVER continue on Step 2's stale estimate.
+4. Carry `risk_flags` into 3.5 / 3.7 / 3.8; record the block as `risk_recheck`.
+
+### Step 3.5: External Plan Review (mandatory medium+ OR risk flag OR diff > 100 LOC, ADR-029)
+
+After Step 3.4 and before Finalization, run the external LLM plan review the SKILL.md
+Step 4 (External LLM Review) gate requires for medium+ iterates. Mirror of
+`references/iteration-planning.md` Step 4 with Branch A / Branch B / Branch C semantics.
+
+**Trigger** — identical to Step 3.7's, from Step 3.4's `plan_review_required`:
+effective complexity `medium`+, OR any canonical risk flag, OR diff > 100 lines.
+Before alignment 3.5 lacked the diff-size arm 3.7 had, so a `small` unit skipped it.
+
+**Skip** only when none of the three hold. Procedure:
 
 ```bash
 uv run "{shared_root}/scripts/checks/check-external-review-keys.py"
@@ -70,30 +96,25 @@ uv run "{shared_root}/scripts/checks/check-external-review-keys.py"
 
 Parse the JSON. Then:
 
-- **Branch A — `available`** (keys present, not user-disabled):
+- **Branch A — `available`:**
 
   ```bash
-  uv run "{shared_root}/scripts/tools/external_review.py" \
-    --mode iterate \
-    --plan-file "{mini_plan_path}" \
-    --spec-file "{sub_iterate_spec}" \
+  uv run "{shared_root}/scripts/tools/external_review.py" --mode iterate \
+    --plan-file "{mini_plan_path}" --spec-file "{sub_iterate_spec}" \
     --plugin-root "{plugin_root}"
   ```
 
   Parse `reviews.gemini.feedback` + `reviews.openai.feedback`. Merge
-  high/medium-severity findings into the iterate ADR's
-  `External-Plan-Review-Findings` table. Address before proceeding to
-  Finalization, OR explicitly mark each as `accepted-and-fixed` /
-  `rejected-with-reason` in the ADR.
+  high/medium findings into the iterate ADR's
+  `External-Plan-Review-Findings` table, each `accepted-and-fixed` /
+  `rejected-with-reason`, before Finalization.
 
-- **Branch B — `missing_keys`:** runner is autonomous; cannot prompt
-  the operator. Log the gap and proceed; record the opt-out in the
-  iterate ADR with reason `missing_keys`. The campaign orchestrator
-  surfaces this back to the user at campaign-end.
+- **Branch B — `missing_keys`:** autonomous; cannot prompt. Log, proceed,
+  record the opt-out in the ADR with reason `missing_keys`; the orchestrator
+  surfaces it at campaign-end.
 
-- **Branch C — `user_disabled`:** `shipwright_iterate_config.json` →
-  `external_review.feedback_iterations: 0`. Print a notice and skip.
-  Record `skipped_config_disabled` in the iterate ADR.
+- **Branch C — `user_disabled`** (`external_review.feedback_iterations: 0`):
+  notice + skip; record `skipped_config_disabled` in the ADR.
 
 Always record the pass — writes the review record AND dual-writes the legacy
 marker. **Every pass here records its row** (`self` 3.6, `plan` here,
@@ -111,33 +132,23 @@ uv run "{shared_root}/scripts/tools/record_review_pass.py" record \
 
 ### Step 3.6: Self-Review (always, ADR-029 follow-up)
 
-After Step 3.5 (External Plan Review) and before Step 3.7 (Code Review
-Cascade). Mirror of `references/iteration-reviews.md` Section
-"Self-Review Checklist".
-
-**Always runs** — independent of complexity. Trivial changes hide
-trivial mistakes; small iterates accumulate.
+After Step 3.5 and before Step 3.7. Mirror of
+`references/iteration-reviews.md` Section "Self-Review Checklist".
+**Always runs**, independent of complexity — trivial changes hide trivial
+mistakes and small iterates accumulate.
 
 **Procedure:** walk the canonical 7-item checklist from
-`references/iteration-reviews.md`:
+`references/iteration-reviews.md` — 1. Spec Compliance · 2. Error Handling ·
+3. Security Basics · 4. Test Quality · 5. Performance Basics · 6. Naming &
+Structure · 7. **Affected Boundaries** (ADR-024 — were producer/consumer of
+any changed serialized format identified, AND a real round-trip probe run?
+See `references/round-trip-tests.md`).
 
-1. Spec Compliance
-2. Error Handling
-3. Security Basics
-4. Test Quality
-5. Performance Basics
-6. Naming & Structure
-7. **Affected Boundaries** (per ADR-024 — were producer/consumer of any
-   changed serialized format identified, AND was a real round-trip
-   probe run? See `references/round-trip-tests.md`.)
-
-For each item: pass or fail + 1-sentence explanation. Fix all failures
-before proceeding to Step 3.7. Output the 7-item block in the iterate
-ADR's "Self-Review" section using the format from
-`references/iteration-reviews.md`. The `reviews.self_review` field in
-the result-JSON contract records what fired. **Also record the `self`
-row** per `references/iteration-reviews.md` → "Recording each review
-pass" — F11 STOPs on any `pending` type and F6-verify runs that same
+Each item: pass/fail + one sentence. Fix every failure before Step 3.7, and
+output the 7-item block in the iterate ADR's "Self-Review" section in that
+file's format. `reviews.self_review` records what fired. **Also record the
+`self` row** (`references/iteration-reviews.md` → "Recording each review
+pass") — F11 STOPs on any `pending` type and F6-verify runs the same
 verifier, so an unrecorded `self` blocks the push.
 
 ### Step 3.7: Code Review Cascade (mandatory medium+ OR risk flag OR diff > 100 LOC, ADR-029)
@@ -162,15 +173,15 @@ review for those.
 **Procedure** when triggered:
 
 1. Internal reviewer cascade — `spec-reviewer` (HARD-GATE) →
-   `code-reviewer` → conditional `doubt-reviewer`. The runner has
-   `Read, Write, Edit, Bash, Glob, Grep` — no `Agent` tool — so it
-   CANNOT spawn them and delegates to the orchestrator (`reviews.code`
-   = `delegated_to_orchestrator`, never `skipped_silently`). **That
-   limit is a fact about THIS subagent, not about iterates:** a
-   standalone iterate spawns the cascade itself (SKILL.md Step 8) and
-   never reaches this contract. The orchestrator runs it at `campaign-mode.md`
-   step **3f-bis**, before the merge — so **record the rows `not_run`**: that is
-   true when you write them, and 3f-bis promotes them with `--force`.
+   `code-reviewer` → conditional `doubt-reviewer`. The runner's tools are
+   `Read, Write, Edit, Bash, Glob, Grep` — no `Agent` tool — so it CANNOT
+   spawn them and delegates to the orchestrator (`reviews.code` =
+   `delegated_to_orchestrator`, never `skipped_silently`). **That limit is a
+   fact about THIS subagent, not about iterates:** a standalone iterate spawns
+   the cascade itself (SKILL.md Step 8). The orchestrator runs it at
+   `campaign-mode.md` **3f-bis**, before the merge — so **record the rows
+   `not_run`**: true when you write them, and 3f-bis promotes them with
+   `--force`.
 
 2. External LLM code review:
 
@@ -189,8 +200,7 @@ review for those.
    ADR's `External-Code-Review-Findings` table. Same disposition
    pattern as Step 3.5.
 
-3. Record every row — **who did the work decides the name** (replaces
-   the marker call that closed `code` on item 2's outcome):
+3. Record every row — **who did the work decides the name:**
 
    | Review type | Actor | Status the RUNNER may write |
    |---|---|---|
@@ -201,101 +211,80 @@ review for those.
    The runner may **never** write `code` or `doubt` as `completed`, nor `spec`
    (Stage 1): it performed none. Commands: `references/iteration-reviews.md` → *Campaign sub-iterate rows*.
 
-The `reviews.code` and `reviews.external_code` fields in the
-result-JSON contract record what fired and what was deferred.
+`reviews.code` / `reviews.external_code` record what fired and what deferred.
 
 ### Step 3.8: Confidence Calibration (mandatory medium+ OR touches_io_boundary, ADR-029 follow-up)
 
-After Step 3.7 (Code Review Cascade) and before Step 4 (Finalization).
-Mirror of SKILL.md Step 7.5 — but where SKILL.md Step 7.5 only says
-"populate the spec's Confidence Calibration section", Step 3.8 in the
-runner contract requires **empirical probes**, not just section
-population. The pattern is from
-`references/confidence-anti-patterns.md`: the "are you confident?"
-question is unfalsifiable as written, but answerable as
-"run a probe and report the finding".
+After Step 3.7 and before Step 4. Mirror of SKILL.md Step 7.5 — but where that
+says "populate the spec's Confidence Calibration section", this requires
+**empirical probes**. Per `references/confidence-anti-patterns.md`, "are you
+confident?" is unfalsifiable as written and answerable only as "run a probe and
+report the finding".
 
-**Trigger conditions** (Step 3.8 fires if ANY hold):
+**Fires if ANY hold:** effective complexity (Step 3.4) is `medium`+ · risk flag
+`touches_io_boundary` is set · the user/orchestrator invokes a calibration probe
+("are you confident?" → run probes, never answer "yes" without an empirical
+anchor). **Skip** otherwise — Self-Review (3.6) is then the only review.
 
-- Complexity is `medium` or higher, OR
-- Risk flag `touches_io_boundary` is set, OR
-- The user (or orchestrator) explicitly invokes a calibration probe
-  (e.g. answers "are you confident?" → runner runs probes, never
-  answers "yes" without an empirical anchor).
+**Procedure:**
 
-**Skip** when none of the above hold. Trivial/small + no
-`touches_io_boundary` may skip — Self-Review (Step 3.6) is the only
-review for those.
+1. Identify boundaries touched (iterate-spec `## Affected Boundaries`, ADR-024).
+2. Run a REAL empirical probe per boundary: round-trip (producer→file→consumer)
+   per `references/round-trip-tests.md`; for human-edited formats the BOM, CRLF,
+   non-ASCII, inline-comment and empty-value probes in
+   `references/boundary-probes.md`.
+3. Apply the asymptote heuristic (`references/confidence-anti-patterns.md`): a
+   probe that finds a bug → fix → probe again; two consecutive no-finding probes
+   → exhausted, boundary calibrated. One finding plus zero further probes is a
+   contract violation — the asymptote is not reached.
+4. Record probes-run, findings, and edge-cases-not-probed (+ why acceptable) in
+   the iterate ADR's "Confidence Calibration" section.
 
-**Procedure** when triggered:
-
-1. Identify boundaries touched (cross-reference to the iterate-spec's
-   `## Affected Boundaries` section per ADR-024).
-
-2. Run an empirical probe per boundary. Probes must be REAL:
-   - Round-trip probe (producer→file→consumer), per
-     `references/round-trip-tests.md`.
-   - For human-edited formats: BOM, CRLF, non-ASCII, inline-comment,
-     empty value probes per `references/boundary-probes.md`.
-
-3. Apply the asymptote heuristic from
-   `references/confidence-anti-patterns.md`:
-   - If a probe finds a bug → fix → run another probe.
-   - Two consecutive probes with no findings → exhausted; declare
-     the boundary calibrated.
-   - One probe finding a bug + zero further probes is contract
-     violation — the asymptote is not yet reached.
-
-4. Record results in the iterate ADR's "Confidence Calibration"
-   section: probes-run list, findings list, edge-cases-not-probed +
-   why each is acceptable.
-
-The `reviews.confidence_calibration` field in the result-JSON contract
-records what fired, the number of probes, and whether the asymptote
-was reached.
+`reviews.confidence_calibration` records what fired, how many probes ran, and
+whether the asymptote was reached.
 
 ### Step 4: Finalization (F0–F6 + self-verify)
 
 Run the SAME F-phases a standalone iterate runs (SKILL.md → *Finalization*): a phase omitted here
-is omitted by every sub-iterate of every campaign, and no later phase fills it. **F3
-(decision-drop) and F5c (iterate entry) are as mandatory as F5b** — separate steps
-`finalize_iterate.py` does NOT perform; F6-verify checks all three ran.
+is omitted by every sub-iterate of every campaign, and no later phase fills it. **F3 (decision-drop)
+and F5c (iterate entry) are as mandatory as F5b** — separate steps `finalize_iterate.py` does NOT
+perform; F6-verify checks all three ran.
 
 - **F0:** Fresh verification gate (full test suite).
 - **F0.5 (MANDATORY medium+):** End-to-end gate (`references/F0.5.md`) — RUN the surface, do not
   merely author its spec. Fails closed when `surface != "none"` while `tests_run == 0`, and
   `surface == "none"` needs a `justification`; F6-verify reds a medium+ run missing the block.
 - **Browser Verify** (MANDATORY when frontend changed; same gate as `shipwright-build` Step 8).
-  NOT an F-phase — labelled `F2` here until 2026-07-31, which is `architecture.md` everywhere
-  else; the collision hid F2's absence. Detect via `detect_frontend_changes.py --since "$(git
-  merge-base HEAD {branch_name})"` — if none, skip to F1. Else resolve the dev server
+  NOT an F-phase — it was labelled `F2` here until 2026-07-31, which is `architecture.md`
+  everywhere else, and the collision hid F2's absence. Detect via `detect_frontend_changes.py
+  --since "$(git merge-base HEAD {branch_name})"`; none → skip to F1. Else resolve the dev server
   (`profile.dev_server` → `shipwright_build_config.json#dev_url` → `package.json` autodetect →
-  escalate) and run `dev_server.py start` → `playwright_setup.py` → `browser_verify.py`. On JS
-  errors: inline retry (no Agent tool), max 3 (screenshot + `console_errors` → fix → re-run);
-  still failing → `result.json` `status:"failed"` + DO NOT commit (orchestrator aggregates).
+  escalate), run `dev_server.py start` → `playwright_setup.py` → `browser_verify.py`. JS errors:
+  inline retry (no Agent tool), max 3 (screenshot + `console_errors` → fix → re-run); still
+  failing → `result.json` `status:"failed"` + DO NOT commit.
 - **F1:** Drift check (`artifact_sync.py`).
 - **F2 (architecture.md):** update on structural impact — new route / component / schema /
   service / write-surface / read-surface / convention (`references/F2.md`). No structural impact
   = no edit, and F3a is where you say so.
 - **F3 (MANDATORY — decision-DROP, NOT `write_decision_log.py`):** record the ADR as a per-run
-  drop keyed by `run_id` via `write_decision_drop.py` — exact command + 500-char field caps in
-  `references/F3.md`. An iterate NEVER appends to `decision_log.md` directly (two worktrees would
-  collide on `max(ADR)+1`; the F11 gate `check_iterate_no_direct_decision_log` fails it). The
+  drop keyed by `run_id` via `write_decision_drop.py` (command + 500-char field caps:
+  `references/F3.md`). An iterate NEVER appends to `decision_log.md` directly — two worktrees
+  collide on `max(ADR)+1` and the F11 gate `check_iterate_no_direct_decision_log` fails it.
   `ADR-NNN` is assigned at `/shipwright-changelog` release.
 - **F3a (MANDATORY — reflection):** append this run's learnings per `references/reflection.md`.
   It is where a no-op F2 is justified and where a surprise becomes reusable.
-- **F4:** Changelog DROP via `write_changelog_drop.py` → `CHANGELOG-unreleased.d/<category>/` (`references/F4.md`). Do NOT append to `CHANGELOG.md [Unreleased]` directly — `/shipwright-changelog` aggregates the drops at
-  release, and a direct append is the split-brain F4.md warns about.
+- **F4:** Changelog DROP via `write_changelog_drop.py` → `CHANGELOG-unreleased.d/<category>/`
+  (`references/F4.md`). NEVER append to `CHANGELOG.md [Unreleased]` directly — that is the
+  split-brain F4.md warns about; `/shipwright-changelog` aggregates drops at release.
 - **F5 (MANDATORY small+):** write `iterate_latest` into `shipwright_test_results.json`
-  (`references/F5.md`). It is the PRODUCER of both the `test_completeness` ledger and the
-  `surface_verification` block F0.5 fills, and F6-verify reads them from exactly there — so a
-  sub-iterate that skips F5 fails its own gate. F5c then carries the ledger durably as well.
-- **F5b:** `finalize_iterate.py` records the `work_completed` event (idempotent per run_id) +
-  regenerates compliance MDs / dashboard / handoff: `uv run
-  "{shared_root}/scripts/tools/finalize_iterate.py" --project-root "{project_root}" --run-id
-  "{run_id}" --event-extras-json "$extras"`. `$extras` = the `references/F5b.md` classification
-  fields **plus the campaign stamp** `"campaign":"{basename of campaign_path}"` +
-  `"sub_iterate_id":"{sub_iterate_id}"`.
+  (`references/F5.md`) — PRODUCER of both the `test_completeness` ledger and the
+  `surface_verification` block F0.5 fills, read from exactly there by F6-verify, so a
+  sub-iterate that skips F5 fails its own gate. F5c carries the ledger durably too.
+- **F5b:** `finalize_iterate.py` records `work_completed` (idempotent per run_id) + regenerates
+  compliance MDs / dashboard / handoff: `uv run "{shared_root}/scripts/tools/finalize_iterate.py"
+  --project-root "{project_root}" --run-id "{run_id}" --event-extras-json "$extras"`. `$extras` =
+  the `references/F5b.md` classification fields **plus the campaign stamp**
+  `"campaign":"{basename of campaign_path}"` + `"sub_iterate_id":"{sub_iterate_id}"`.
 - **F5c (MANDATORY — iterate entry):** append the per-iterate record via `append_iterate_entry.py`
   (exact `--entry-json` shape in `references/F5c.md`). `finalize_iterate.py` (F5b) does NOT write
   it — omitting F5c is what dropped `iterates/<run_id>.json` for 3 of 4 sub-iterates in
@@ -303,14 +292,14 @@ is omitted by every sub-iterate of every campaign, and no later phase fills it. 
 - **F6:** Commit (Conventional Commits). Explicit `git add` per-path (never `-A`; include
   `shipwright_events.jsonl` when tracked). Footer: `Run-ID: {run_id}` + `Co-Authored-By: Claude <noreply@anthropic.com>`.
 - **F6-verify (MANDATORY — do NOT skip):** run the SAME F11 verifier the orchestrator runs, against
-  your OWN commit — a red result is a build failure. NEVER push or return `status:"complete"` on red
-  (that is how 4 sub-iterates reported "clean F11" with their F3 drop + F5c entry silently missing):
+  your OWN commit — red is a build failure. NEVER push or return `status:"complete"` on red (that is
+  how 4 sub-iterates reported "clean F11" with F3 drop + F5c entry silently missing):
   ```bash
   uv run "{shared_root}/scripts/tools/verify_iterate_finalization.py" --run-id "{run_id}" \
     --project-root "{project_root}" --commit "$(git -C "{project_root}" rev-parse HEAD)"
   ```
-  A non-zero exit names the missing artifact — fix it, amend into the SAME F6 commit, re-verify until
-  green, then proceed to Step 5. Record the outcome in `result.json.finalization`.
+  Non-zero names the missing artifact — fix, amend into the SAME F6 commit, re-verify until green,
+  then Step 5. Record the outcome in `result.json.finalization`.
 
 **Skip F12 (Release Prompt)** — the campaign loop handles this once at the end.
 
@@ -338,11 +327,13 @@ Success:
   "branch": "{branch_name}",
   "tests_passed": 12,
   "tests_total": 12,
-  "complexity": "small",
+  "complexity": "medium",
   "changelog_bullet": "feat(auth): add MFA support",
   "decisions": [
     {"title": "Use TOTP for MFA", "rationale": "Industry standard, no SMS costs"}
   ],
+  "risk_recheck": {"risk_flags": ["cross_component"], "complexity_floor": "medium",
+    "stage1_complexity": "small", "effective_complexity": "medium", "upgraded": true, "plan_review_required": true, "diff_loc": 240},
   "finalization": {
     "f3_decision_drop": "written",
     "f5c_iterate_entry": "written",
@@ -384,14 +375,23 @@ Failure:
 }
 ```
 
-Escalation:
+Escalation — Step 2 (complexity large):
 ```json
 {
   "sub_iterate_id": "{sub_iterate_id}",
   "status": "escalated",
   "reason": "Complexity classified as large — requires manual intervention or split",
+  "reason_code": "complexity_large",
   "detected_complexity": "large"
 }
+```
+
+Escalation — Step 3.4 (CI trust boundary; `ci_paths` MUST be non-empty):
+```json
+{"sub_iterate_id": "{sub_iterate_id}", "status": "escalated",
+ "reason": "Diff touches the CI trust boundary; the ack names a posture decision an operator must choose",
+ "reason_code": "ci_supplychain_requires_operator", "detected_complexity": "medium",
+ "ci_paths": [".github/workflows/ci.yml"]}
 ```
 
 ## Safety Rules
