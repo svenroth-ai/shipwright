@@ -1,0 +1,11 @@
+{
+  "run_id": "iterate-2026-08-01-cache-contract-single-source",
+  "date": "2026-08-01T10:50:24.984100Z",
+  "event_at": "2026-08-01T08:22:40.522077+00:00",
+  "type": "bug",
+  "complexity": "small",
+  "branch": "iterate/cache-contract-single-source",
+  "spec": ".shipwright/planning/iterate/iterate-2026-08-01-cache-contract-single-source/reviews.json",
+  "tests_passed": true,
+  "adr": "iterate-2026-08-01-cache-contract-single-source"
+}

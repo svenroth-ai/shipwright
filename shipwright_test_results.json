@@ -1,276 +1,190 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-07-28-main-self-heal",
-    "date": "2026-07-28",
+    "run_id": "iterate-2026-08-01-cache-contract-single-source",
+    "date": "2026-08-01",
     "unit": {
       "status": "pass",
-      "passed": 1066,
+      "passed": 7165,
       "failed": 0,
-      "note": "Green and complete: integration-tests 422, shared/scripts/tests, shared/scripts/tools/tests, plugins/shipwright-iterate 521, and all 123 tests this iterate adds. shared/tests could not be completed in one local process - see degraded[]; CI runs it as a Required Check."
+      "errors": 0,
+      "skipped": 17,
+      "total": 7182,
+      "command": "uv run --extra dev pytest shared/tests -q",
+      "note": "shared/tests is the one root this change touches; ADR-044 forbids composing roots in one pytest process."
     },
     "integration": {
       "status": "pass",
-      "passed": 422,
-      "failed": 0
+      "note": "Covered inside shared/tests; no separate integration-tests root touched by this diff."
     },
     "e2e": {
       "status": "n/a",
-      "reason": "no browser surface; this is framework machinery (CLI + skill prose + CI workflow triggers)"
+      "note": "No web surface; F0.5 ran surface=cli."
     },
     "smoke": {
-      "status": "n/a",
-      "reason": "no startable server surface in this repo"
+      "status": "n/a"
     },
     "pgtap": {
-      "status": "n/a",
-      "reason": "no database"
+      "status": "n/a"
     },
     "design_fidelity": {
       "status": "n/a",
-      "reason": "no UI surface"
+      "note": "No UI."
     },
     "surface_verification": {
       "surface": "cli",
-      "tests_run": 8,
       "exit_code": 0,
-      "evidence_path": ".shipwright/runs/iterate-2026-07-28-main-self-heal/f05-surface/",
-      "detail": "Both CLIs driven against the REAL repository and the REAL gh/git. main_health.py: status green, exit 0, one API call, unknown[] empty. check_repair_safety.py: verdict 'review' on this very diff - the gate fired on its own author's changed assertion, which is the rule working. test_repair_gate_bites.py: 6 cases against throwaway git repositories, every weakening refused, the honest repair allowed."
+      "tests_run": 26,
+      "runner": "uv run --extra dev pytest shared/tests/test_plugin_cache_version_{resolution,robustness,pin}.py",
+      "note": "Exercises main() end to end (argv parsing, manifest resolution, verdict, exit code) plus the resolver."
     },
     "test_completeness": {
       "status": "complete",
       "behaviors": [
         {
-          "behavior": "AC-1 main runs are never cancelled (ci.yml + security.yml)",
+          "behavior": "The compared version dir is the one installed_plugins.json names, not the highest SemVer present",
           "disposition": "tested",
-          "evidence": "test_main_attribution_workflows::test_main_runs_are_never_cancelled[2] PASSED"
+          "evidence": "test_plugin_cache_version_resolution::test_a_stale_higher_version_does_not_become_the_comparison_target PASSED; ::test_it_follows_the_installed_dir_even_when_another_one_would_pass PASSED"
         },
         {
-          "behavior": "AC-1 main runs get a per-commit group so they do not queue",
+          "behavior": "The change is load-bearing: the pre-change resolver returns the OPPOSITE verdict on the identical fixture",
           "disposition": "tested",
-          "evidence": "test_main_attribution_workflows::test_main_runs_get_their_own_group_so_they_do_not_queue[2] PASSED"
+          "evidence": "test_plugin_cache_version_resolution::test_the_old_resolver_fails_the_very_same_fixture PASSED"
         },
         {
-          "behavior": "AC-2 bloat-check runs on merges; comments stay PR-only",
+          "behavior": "A manifest-named dir that does not exist is not_in_cache, never a silent fallback to another version",
           "disposition": "tested",
-          "evidence": "test_main_attribution_workflows (2 cases) PASSED"
+          "evidence": "test_plugin_cache_version_resolution::test_a_named_but_absent_install_dir_is_not_in_cache PASSED"
         },
         {
-          "behavior": "AC-2 base ref guarded against empty / all-zero / unresolvable",
+          "behavior": "With no manifest the highest cached version is used and version_basis says so",
           "disposition": "tested",
-          "evidence": "test_main_attribution_workflows::test_bloat_check_guards_every_shape_its_base_ref_can_take PASSED"
+          "evidence": "test_plugin_cache_version_resolution::test_no_installed_plugins_file_falls_back_to_highest_version PASSED"
         },
         {
-          "behavior": "AC-3 a PR run never masks the push-to-main run for the same sha",
+          "behavior": "A malformed manifest degrades to the fallback instead of crashing the session",
           "disposition": "tested",
-          "evidence": "test_main_health::test_pr_run_for_the_same_sha_never_masks_the_main_run PASSED"
+          "evidence": "test_plugin_cache_version_resolution::test_malformed_json_falls_back_instead_of_crashing PASSED"
         },
         {
-          "behavior": "AC-3 conclusion mapping; cancelled is inconclusive, not a pass",
+          "behavior": "A plugin absent from the manifest falls back",
           "disposition": "tested",
-          "evidence": "test_main_health (4 cases) PASSED"
+          "evidence": "test_plugin_cache_version_resolution::test_a_plugin_absent_from_the_manifest_falls_back PASSED"
         },
         {
-          "behavior": "AC-3 only the overlap class decides health",
+          "behavior": "A manifest entry carrying no installPath falls back",
           "disposition": "tested",
-          "evidence": "test_main_health::test_a_red_finding_class_workflow_does_not_make_the_commit_red PASSED"
+          "evidence": "test_plugin_cache_version_resolution::test_a_manifest_naming_no_install_path_falls_back PASSED"
         },
         {
-          "behavior": "AC-3 first bad = oldest red after the anchor; latest red reported too",
+          "behavior": "Every plugin record carries version_basis, on every status",
           "disposition": "tested",
-          "evidence": "test_main_health_attribution::test_first_bad_is_the_oldest_red_and_latest_red_is_reported_separately PASSED"
+          "evidence": "test_plugin_cache_version_resolution::test_every_plugin_record_carries_a_version_basis PASSED"
         },
         {
-          "behavior": "AC-3 gaps downgrade confidence; three refusals have distinct reason codes",
+          "behavior": "A plugin entry that is an object (entries[0] raises KeyError) falls back rather than crashing",
           "disposition": "tested",
-          "evidence": "test_main_health_attribution (6 cases) PASSED"
+          "evidence": "test_plugin_cache_version_robustness::test_a_plugin_entry_that_is_an_object_falls_back PASSED"
         },
         {
-          "behavior": "AC-3 unknown is never green, whatever failed",
+          "behavior": "A denied or unstatable candidate reads as unreadable, not absent",
           "disposition": "tested",
-          "evidence": "test_main_health_tool (4 cases: gh, git, no runs, running) PASSED"
+          "evidence": "test_plugin_cache_version_robustness::test_an_unstatable_candidate_is_unreadable_not_absent PASSED"
         },
         {
-          "behavior": "AC-3 a broken diagnosis call does not cost the verdict",
+          "behavior": "The absent/unreadable reason is probed on the CANDIDATE, not its parent",
           "disposition": "tested",
-          "evidence": "test_main_health_tool::test_a_broken_diagnosis_call_degrades_without_losing_the_verdict PASSED"
+          "evidence": "test_plugin_cache_version_robustness::test_the_resolver_probes_the_candidate_and_not_its_parent PASSED; MUTATION-VERIFIED: call site changed to _probe_missing_dir(candidate.parent) is CAUGHT (missed by the direct-call test, which is why this one goes through resolve_version_dir)"
         },
         {
-          "behavior": "AC-3 failing step from structured data; excerpt reduced, capped, redacted, untrusted",
+          "behavior": "A denied stat does not escape check_sync's documented no-exception-leaks contract",
           "disposition": "tested",
-          "evidence": "test_main_health_diagnosis (9 cases) PASSED"
+          "evidence": "test_plugin_cache_version_robustness::test_a_denied_stat_does_not_escape_the_resolver PASSED; MUTATION-VERIFIED: reverting os.path.isdir -> Path.is_dir is CAUGHT"
         },
         {
-          "behavior": "AC-3 a commit sha is not redacted as if it were a secret",
+          "behavior": "An installPath outside the given cache root is named in the basis rather than measured silently",
           "disposition": "tested",
-          "evidence": "test_main_health_diagnosis::test_a_commit_sha_is_not_mistaken_for_a_secret PASSED"
+          "evidence": "test_plugin_cache_version_robustness::test_an_install_path_outside_this_cache_root_is_named PASSED"
         },
         {
-          "behavior": "AC-3 main-advanced detected; older commits do not false-positive",
+          "behavior": "A guessed version dir is named on the DRIFT line",
           "disposition": "tested",
-          "evidence": "test_main_health_status (2 cases) PASSED"
+          "evidence": "test_plugin_cache_version_robustness::test_the_drift_line_names_it PASSED"
         },
         {
-          "behavior": "AC-3 a detected race downgrades the status instead of annotating it",
+          "behavior": "A guessed version dir is named on the GREEN line (the false-green half)",
           "disposition": "tested",
-          "evidence": "test_main_health_status::test_a_detected_race_downgrades_the_answer_it_does_not_just_annotate_it PASSED"
+          "evidence": "test_plugin_cache_version_robustness::test_the_green_line_names_it_too PASSED"
         },
         {
-          "behavior": "AC-3 monitored policy and real YAML agree, both directions",
+          "behavior": "A real manifest lookup prints no note, so the signal is not on 100% of the time",
           "disposition": "tested",
-          "evidence": "test_main_attribution_workflows (3 cases) PASSED"
+          "evidence": "test_plugin_cache_version_robustness::test_a_real_lookup_stays_silent PASSED"
         },
         {
-          "behavior": "AC-4 the start hook sits between cutting the worktree and loading context",
+          "behavior": "The manifest applies by default only to the cache root it describes",
           "disposition": "tested",
-          "evidence": "test_main_repair_hooks::test_the_start_hook_runs_right_after_the_worktree_is_cut PASSED"
+          "evidence": "test_plugin_cache_version_robustness::test_a_foreign_cache_root_gets_no_implied_manifest PASSED"
         },
         {
-          "behavior": "AC-4 the F11 hook runs before the arm",
+          "behavior": "An explicit --installed-plugins always wins",
           "disposition": "tested",
-          "evidence": "test_main_repair_hooks::test_the_f11_hook_runs_before_the_merge_is_armed PASSED"
+          "evidence": "test_plugin_cache_version_robustness::test_an_explicit_manifest_always_wins PASSED"
         },
         {
-          "behavior": "AC-4 both hooks say unknown is never green",
+          "behavior": "One verdict rests on ONE reading of the manifest (read once, not once per plugin)",
           "disposition": "tested",
-          "evidence": "test_main_repair_hooks::test_unknown_is_never_treated_as_green_at_either_hook PASSED"
+          "evidence": "test_plugin_cache_version_robustness::test_one_verdict_rests_on_one_reading_of_the_manifest PASSED"
         },
         {
-          "behavior": "AC-4 the green path costs exactly one API call",
+          "behavior": "Producer and checker read the same manifest path (derived from the Python side, not restated)",
           "disposition": "tested",
-          "evidence": "test_main_health_tool::test_the_green_path_costs_exactly_one_api_call PASSED"
+          "evidence": "test_plugin_cache_version_pin::test_the_sync_reads_the_manifest_this_module_reads PASSED"
         },
         {
-          "behavior": "AC-5 the procedure carries every repair step and stays in budget",
+          "behavior": "Producer and checker read the same keys and the same entry index",
           "disposition": "tested",
-          "evidence": "test_main_repair_hooks (3 cases) PASSED"
+          "evidence": "test_plugin_cache_version_pin::test_the_sync_reads_the_keys_this_module_reads PASSED"
         },
         {
-          "behavior": "AC-5 the repair is based on origin/main, not on this iterate's HEAD",
+          "behavior": "The lookup key is <plugin>@<marketplace> on both sides, separator and name",
           "disposition": "tested",
-          "evidence": "test_main_repair_hooks::test_the_repair_is_based_on_the_shared_branch_not_on_this_iterate PASSED"
+          "evidence": "test_plugin_cache_version_pin::test_the_lookup_key_is_built_the_same_way PASSED"
         },
         {
-          "behavior": "AC-6 every unambiguous coverage loss is blocked",
+          "behavior": "The sync's copy target IS the pinned _install_path output, not merely a function that still exists",
           "disposition": "tested",
-          "evidence": "test_assertion_weakening (12 cases incl. rename-out-of-collection) PASSED"
+          "evidence": "test_plugin_cache_version_pin::test_the_copy_target_is_the_pinned_function_s_output PASSED"
         },
         {
-          "behavior": "AC-6 the fences that would make the gate unusable hold",
+          "behavior": "The sync copies every plugin the check inspects (hardcoded array vs repo glob)",
           "disposition": "tested",
-          "evidence": "test_assertion_weakening (5 fence cases) PASSED"
+          "evidence": "test_plugin_cache_version_pin::test_the_sync_copies_every_plugin_the_check_inspects PASSED"
         },
         {
-          "behavior": "AC-6 a changed expectation is reported, never blocked",
+          "behavior": "Both sides agree on the cache root, which is DERIVED from MARKETPLACE_NAME rather than restated",
           "disposition": "tested",
-          "evidence": "test_assertion_weakening (3 cases) PASSED"
+          "evidence": "test_plugin_cache_version_pin::test_both_sides_agree_on_where_the_cache_lives PASSED"
         },
         {
-          "behavior": "AC-6 the gate bites through real git; the honest repair passes",
+          "behavior": "Existing check_sync callers that pass no manifest keep their prior behaviour (backward compatibility)",
           "disposition": "tested",
-          "evidence": "test_repair_gate_bites (6 cases, real throwaway repositories) PASSED"
-        },
-        {
-          "behavior": "AC-6 the CI step blocks, keys on the shared grammar, runs the checker from the BASE revision",
-          "disposition": "tested",
-          "evidence": "test_main_attribution_workflows (4 cases) PASSED"
-        },
-        {
-          "behavior": "AC-6 escalation classes and idempotency keys",
-          "disposition": "tested",
-          "evidence": "test_main_health_diagnosis (4 cases) PASSED"
-        },
-        {
-          "behavior": "AC-6 a red finding-class workflow gets its own non-green status",
-          "disposition": "tested",
-          "evidence": "test_main_health_status::test_a_failing_finding_class_workflow_is_reported_AND_changes_the_status PASSED"
-        },
-        {
-          "behavior": "AC-7 claim matching: branch, fork rejected, sha prefix, stale, failed attempts",
-          "disposition": "tested",
-          "evidence": "test_main_health_diagnosis (8 cases) PASSED"
-        },
-        {
-          "behavior": "AC-7 a same-SHA claim push is NOT a lock (the falsification create-ref rests on)",
-          "disposition": "tested",
-          "evidence": "test_repair_claim_is_atomic::test_pushing_the_claim_branch_before_working_is_NOT_a_lock PASSED"
-        },
-        {
-          "behavior": "AC-7 a push only rejects once histories diverged",
-          "disposition": "tested",
-          "evidence": "test_repair_claim_is_atomic::test_a_push_only_rejects_once_the_histories_have_diverged PASSED"
-        },
-        {
-          "behavior": "AC-7 the loser can read who holds the claim; a released claim lets the next through",
-          "disposition": "tested",
-          "evidence": "test_repair_claim_is_atomic (2 cases) PASSED"
-        },
-        {
-          "behavior": "AC-7 a branch-only claim reports staleness unknown, and stale once its PRs are closed",
-          "disposition": "tested",
-          "evidence": "test_main_health_diagnosis (2 cases) PASSED"
-        },
-        {
-          "behavior": "AC-7 releasing deletes the ref, not only the pull request",
-          "disposition": "tested",
-          "evidence": "test_main_repair_hooks::test_releasing_a_claim_deletes_the_ref_and_not_only_the_pull_request PASSED"
-        },
-        {
-          "behavior": "A repaired red further back is history; a red under a running tip is not",
-          "disposition": "tested",
-          "evidence": "test_main_health_attribution (2 cases) PASSED"
-        },
-        {
-          "behavior": "The retrieval limit is derived from the window, and saturation is reported",
-          "disposition": "tested",
-          "evidence": "test_main_health_status::test_run_limit_is_derived_from_the_window_not_fixed + attribution truncation cases PASSED"
-        },
-        {
-          "behavior": "An unreadable diff fails the safety gate closed rather than reporting clean",
-          "disposition": "tested",
-          "evidence": "test_repair_gate_bites::test_an_unreadable_base_fails_closed_rather_than_reporting_clean PASSED"
-        },
-        {
-          "behavior": "An agent actually OBEYS the two skill hooks at runtime",
-          "disposition": "untestable",
-          "reason_code": "covered-by-existing-test",
-          "note": "no test can compel a model to follow prose; that the prose exists, sits in the right place and says the right thing IS tested"
-        },
-        {
-          "behavior": "GitHub create-ref returns 422 for a duplicate claim; Actions' own step dispatch",
-          "disposition": "untestable",
-          "reason_code": "requires-external-nondeterministic-service",
-          "note": "host properties, not git ones. The git-side half is tested against a real remote; the gate's DECISION is tested through real git and its WIRING through parsed YAML"
+          "evidence": "30 pre-existing call sites across test_plugin_cache_sync{,_basis,_verdict,_shared_tree}.py \u2014 61 passed, 1 skipped (Windows symlink, pre-existing)"
         }
       ],
       "counts": {
-        "total": 40,
-        "tested": 38,
-        "untestable": 2,
-        "untested_testable": 0
+        "total": 26,
+        "tested": 26,
+        "untestable": 0,
+        "untested": 0
       },
-      "ledger_path": ".shipwright/planning/iterate/2026-07-28-main-self-heal.md"
+      "ledger_path": ".shipwright/planning/iterate/iterate-2026-08-01-cache-contract-single-source/reviews.json"
     },
     "degraded": [
       {
-        "condition": "local_f0_incomplete",
-        "detail": "shared/tests was terminated by the environment at 79%, then 94%, then 94% again - including one run deliberately detached from the session. ZERO failing tests in every attempt, and no Windows crash event for any of them. Memory pressure, a duplicated WebUI server and the pty idle-reaper were each investigated and FALSIFIED. The remainder of shared/tests is therefore unverified locally and is verified by CI as a Required Check on this PR."
-      },
-      {
-        "condition": "internal_review_cascade_lost",
-        "detail": "The Step-8 cascade was started twice and lost twice to the same environment fault. Substituted on the operator's instruction with two independent rounds of external_review.py --mode code, which returned 11 findings; 7 were fixed in-diff, three of them high."
+        "condition": "One pre-existing skip in test_plugin_cache_sync.py: symlinks are not creatable on this Windows runner. Present on main; unrelated to this change.",
+        "impact": "none"
       }
-    ],
-    "ci_supplychain_ack": {
-      "run_id": "iterate-2026-07-28-main-self-heal",
-      "paths_fingerprint": "5647ce7a00cfc1a31ebcfcfba56e5a41bbecb6c9fa8d80e3991ab2a7f0219d06",
-      "consistent_with": "ADR-118",
-      "statement": "Adds no action and changes no pin: the third-party setup-uv stays SHA-pinned and GitHub-owned actions stay on mutable tags, exactly as ADR-118 decided. Three trust-boundary changes, each narrowing rather than widening it. On main the concurrency group becomes per-commit with cancelling off (ci.yml, security.yml), so every merge is verified instead of a later one cancelling an earlier one's checks. bloat-check gains a push-to-main trigger with a guarded base ref (empty, all-zero and unresolvable bases are detected rather than diffed against). And ci.yml gains ONE gating step, conditional on the fix-main-* repair convention, which materialises its checker from pull_request.base.sha and runs THAT against the PR tree — so a repair pull request cannot be judged by a checker it just edited. Token permissions are unchanged: read-only at the top level, no job widens itself.",
-      "ci_paths": [
-        ".github/workflows/bloat-check.yml",
-        ".github/workflows/ci.yml",
-        ".github/workflows/security.yml"
-      ]
-    }
+    ]
   },
   "coverage": {
     "total": 80.2,
