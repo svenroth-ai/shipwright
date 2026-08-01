@@ -2140,7 +2140,27 @@ It automatically skips `.env.example`, test fixtures, lock files, and vendor dir
 
 ### Plugin-cache drift check
 
-After `git push` to the dev repo, plugin-side fixes (under `plugins/*`, `shared/scripts/`, any `SKILL.md`) do **not** auto-sync to the Claude Code runtime cache at `~/.claude/plugins/cache/shipwright/`. Without `bash scripts/update-marketplace.sh`, fixes land in the repo but never reach runtime. `scripts/check_plugin_cache_sync.py` compares the repo head against the lexically-latest cached plugin version via per-file SHA-256 and reports drift:
+After `git push` to the dev repo, plugin-side fixes (under `plugins/*`, `shared/scripts/`, any `SKILL.md`) do **not** auto-sync to the Claude Code runtime cache at `~/.claude/plugins/cache/shipwright/`. Without `bash scripts/update-marketplace.sh`, fixes land in the repo but never reach runtime. `scripts/check_plugin_cache_sync.py` compares the repo head against the cache via per-file SHA-256 and reports drift.
+
+**What "the tree" means — and why the two sides are established differently.** The repo side is **what git tracks** (`git ls-files`); the cache side is a **filesystem walk** minus build artefacts. That asymmetry is deliberate: the cache is copied from `~/.claude/plugins/marketplaces/shipwright`, a `git reset --hard origin/main` clone that holds exactly the tracked files, so "what git tracks" is precisely "what can ever reach the cache" — while the cache itself is not a git tree and has nothing to ask.
+
+Two measured failures forced it. A checkout you have worked in carries files the clone can never hold (`shared/.coverage`, four `.shipwright_toolcall_count`, one more — all gitignored); walking them made each a permanent phantom "missing from cache" and turned the mandatory `--strict` run permanently red, which is the surest way to get a detective check ignored. And no exclusion list stays correct as directories are added: a bare `build` component hid all 29 tracked files of `plugins/shipwright-build/skills/build/`, its `SKILL.md` included, from **both** sides — so the most-edited plugin-side file in the repo could never drift.
+
+Neither side uses an allowlist of extensions. Until 2026-08-01 the check compared seven suffixes, which left 44 of 1005 cached `shared/` files invisible: `shared/templates/` was 3/37 verified and `shared/prompts/` 3/9, both read from the cache at runtime and both able to vanish entirely under a green. Text is detected by content (a NUL byte means binary), so `.template` and extensionless prompt files still get CRLF→LF normalization and a Windows checkout does not false-drift against a Linux-synced cache. The cache-side skip set is `__pycache__` / `.git` / `.venv` / `.pytest_cache` / `node_modules` / `.in_use`; since only one side applies it, a meta-test asserts nothing git tracks lives under any of those names.
+
+A zero is never read as agreement. `git ls-files` exits 0 and prints nothing inside a repo that tracks nothing under the path, and a tree can list files of which none can be read (offline cloud placeholders, a disconnected mount). Both are reported as a refusal to establish a basis, not as "in sync".
+
+The cache carries three trees. Two are gated here, and a green means both were read:
+
+| Cache tree | Reached at runtime as | Holds | Gated |
+|---|---|---|---|
+| `<plugin>/<version>/` | `${CLAUDE_PLUGIN_ROOT}` | each installed plugin (newest SemVer version dir) | yes |
+| `shared/` | `${CLAUDE_PLUGIN_ROOT}/../../shared` | the shared tools every phase runs, including the F11 finalization verifier | yes |
+| `plugins/<plugin>/` | `${CLAUDE_PLUGIN_ROOT}/../../plugins/shipwright-X` | the cross-plugin mirror (a symlink on POSIX, a real copy on Windows) | not yet |
+
+**Reading the verdict.** `--json` carries `verified` (which trees this result actually covers), `ungated` (which it knowingly does not), and per record a `basis` of `git` or `walk (<why not git>)`. `status: ok` alone reads the same whether `shared/` was compared or skipped — that ambiguity was the original bug, and a machine consumer needs to be able to tell. The human lines say the same: the `ok` line names the ungated mirror, and both the `ok` and the WARN line name any basis that is not `git`. That last one matters on a drift: if git refuses (`safe.directory` on a UNC path or a container uid) the repo side reverts to walking, the gitignored generated files reappear as phantom missing-from-cache, and the printed remedy would send you re-syncing a cache that was never the problem. A `plugins/` directory that exists but cannot be listed is its own status rather than a green over zero plugins.
+
+Three things are reported without failing the gate. `cache_only_count` counts files the cache still has after the repo dropped them — deletions the sync has not propagated, which stay importable at runtime because `shared/scripts` is on `sys.path`. `unhashable_count` counts files git listed that could not be read; git states the expectation, so without it `tracked_count` would silently shrink to fit and a partial checkout would report `ok` over a partial basis. And an `.orphaned_at` advisory names every **gated** directory the cache manager has flagged for reaping; it prints only alongside drift, to explain it. On a healthy machine those markers are permanently present — all 8 top-level `shared/` subdirs carried one on a fully intact cache, re-written by a recurring sweep — because the marker means "not recognised as an installed plugin", true of `shared/` by construction. A warning that is on 100% of the time is indistinguishable from an incident. The reap itself is not missed: since this change a reap *is* drift.
 
 ```bash
 uv run scripts/check_plugin_cache_sync.py             # fail-soft WARN by default

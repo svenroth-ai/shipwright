@@ -32,7 +32,9 @@ After any plugin-side change, before you call it done:
 2. **`bash scripts/update-marketplace.sh`** — full file sync of `plugins/` +
    `shared/` into the installed cache (and cross-plugin symlinks).
 3. **`uv run scripts/check_plugin_cache_sync.py --strict`** — per-file SHA-256
-   drift check (CRLF-normalized). Exit 1 on any drift. Must be green.
+   drift check (CRLF-normalized) over the versioned plugin dirs AND the cached
+   `shared/` tree, where the F11 verifier lives. Exit 1 on any drift. Must be
+   green.
 4. **Restart the Claude Code session** to load the synced plugins.
 
 The Stop reminder hook surfaces this once per session. It files no triage item —
