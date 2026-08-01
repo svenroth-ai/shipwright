@@ -2532,9 +2532,39 @@ runs three guards:
 | `Contract surface (gate)` | `scripts/verify_contract_surface.py` | the bytes `grade.py --format json` and `analyze_codebase.py` actually emit still match the cross-repo contract this repo publishes |
 | `Sweep delivery surface (gate)` | `scripts/verify_sweep_delivery_surface.py` | an operator's triage dismiss survives the outbox sweep to origin instead of being quarantined away |
 
-The last two existed, were correct, and were referenced by no workflow until
-iterate-2026-07-27-checks-that-gate-nothing — they ran nowhere and gated
-nothing. Two rules follow from wiring them:
+All three are mirrored locally by `scripts/verify_local.py`, so a push does not
+have to learn about them from a red CI run:
+
+```bash
+uv run scripts/verify_local.py     # runs the three above, before you push
+```
+
+It drives each gate as a **subprocess**, with the command `ci.yml` uses verbatim
+— never by importing the checker. `check_ci_gate_coverage.py` mutates `sys.path`
+and does an eager `from lib.ci_gate_allowlist import …` at module scope, so
+importing it would bind `lib` for the whole interpreter and resolve differently
+under the plugin-vs-shared root split (ADR-045): green locally, red in CI. A
+lazy import only defers *which* `lib` binds; it does not make it safe.
+
+Two of `ci.yml`'s five guards are deliberately **not** mirrored, each recorded
+with its reason in `CI_ONLY_GATES`: `Repair-PR safety (gate)` materialises its
+checker from the PR's *base* revision precisely so a branch cannot vouch for
+itself, and `Diff coverage (gate)` belongs in the F0 suite runner that already
+produces coverage (tracked as `trg-392dc923`).
+`shared/tests/test_verify_local_ci_drift.py` pins both drift directions across
+every workflow and job — a bespoke guard that lands in neither registry fails
+there, and a local command that stops matching CI's fails per-gate.
+
+Two limits to keep in view. **A local pass is never a substitute for the host's
+re-check** (FR-01.17): CI runs a clean checkout on a pinned interpreter, which
+is a different question, and it vets the commit you *push* where this vets your
+*working tree* (it prints which, and warns when the tree is dirty). And
+**nothing invokes it for you** — no hook, no skill step, no workflow. Whether
+something should is `trg-486cb11c`.
+
+The two surface verifiers existed, were correct, and were referenced by no
+workflow until iterate-2026-07-27-checks-that-gate-nothing — they ran nowhere
+and gated nothing. Two rules follow from wiring them:
 
 - **Confirm a check passes locally before you make it block.** Wiring a red gate
   blocks every PR, starting with the one that wires it.
