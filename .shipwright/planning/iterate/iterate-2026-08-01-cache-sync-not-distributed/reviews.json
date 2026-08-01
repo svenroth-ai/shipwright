@@ -1,0 +1,172 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-08-01-cache-sync-not-distributed",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-01T08:17:21.472196+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-01T08:18:03.202832+00:00",
+      "disposition": "external LLM review is skip at small per the phase matrix (auto only at medium+); no mini-plan exists at small",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 9,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "architecture",
+          "file": "scripts/cache_tree_compare.py",
+          "line": 315,
+          "finding": "Unregistered bloat crossing that this diff deepens (limit 300). The Stop gate blocks on a TOUCHED file whose crossing is not in the baseline, and Group H1 reads it post-merge as a hook bypass. The crossing pre-exists this diff (301 before), but touching it arms the gate.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "scripts/cache_tree_compare.py",
+          "line": 179,
+          "finding": "The load-bearing asymmetry - filter the REPO side, never the cache side - had zero test coverage. Both branches carry the same predicate, making the DRY hoist into walk_tracked_files the obvious refactor; that would blind the cache side permanently while every existing test stayed green.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "architecture",
+          "file": "shared/tests/test_marketplace_excludes_python_version.py",
+          "line": 26,
+          "finding": "sys.path.insert(0, scripts) contradicts the convention stated twice for this exact directory (append, not prepend - ADR-045 lib-collision one directory over), and drops the idempotence guard the siblings use.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "shared/tests/test_marketplace_excludes_python_version.py",
+          "line": 69,
+          "finding": "The stated reason for not asserting the reverse direction was FALSE. 'Present on both sides' is not 'identical on both sides': diffs iterates repo hashes, so a filtered name can never be a diff and lands in cache_only, which sets no state and does not fail --strict. An over-broad entry therefore downgrades real content drift from blocking to advisory.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "shared/tests/test_marketplace_excludes_python_version.py",
+          "line": 73,
+          "finding": "The assertion scanned the WHOLE shell file while its docstring scoped the rule to copy blocks. A future -not -name in a PRUNE block would demand that name in NOT_DISTRIBUTED - producing exactly the over-broad entry the finding above describes.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "scripts/cache_tree_compare.py",
+          "line": 187,
+          "finding": "A new route to a zero-file green: if the filter ever empties a non-empty listing, tracked_count is 0 and state is ok - the 'a zero must never read as agreement' failure this module guards against twice elsewhere. Unreachable today, live the moment a broader entry joins.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "scripts/cache_tree_compare.py",
+          "line": 41,
+          "finding": "'still shows as cache_only and gets pruned' promised a consequence the code does not deliver: cache_only sets no state, so --strict exits 0 and nothing compels a re-sync.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "scripts/cache_tree_compare.py",
+          "line": 164,
+          "finding": "repo_tracked_files' docstring reasoned only about the COUNTED-not-dropped rule while the function now silently drops a third category.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "test-coverage",
+          "file": "shared/tests/test_marketplace_excludes_python_version.py",
+          "line": 75,
+          "finding": "The two-list pin covers only literal -name exclusions; *-globs and -not -path exclusions are unasserted prose claims about SKIP_SUFFIXES/SKIP_DIRS. Holds today; a future -not -name '*.log' or -not -path '*/docs/*' would reintroduce the bug undetected.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-08-01T08:18:02.887415+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-01T08:18:03.099719+00:00",
+      "disposition": "Stage 3 is conditional per iteration-reviews.md; ~35-line single-concern fix with no migration, concurrency or irreversible op. The code-reviewer's 9 findings were all addressed.",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-01T08:18:03.307576+00:00",
+      "disposition": "advisory at small per the phase matrix; the internal code review ran and its findings were fixed",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    }
+  },
+  "gates": {
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 1,
+      "findings": [
+        {
+          "severity": null,
+          "category": "unfaithful",
+          "file": null,
+          "line": null,
+          "finding": "FALSE. The pre-image is exactly 300 lines; both gate producers skip at `<= limit`, so the file was under the ceiling and correctly had no baseline entry. This diff grew it to 329 and CREATED the crossing, then registered it grandfathered in the same commit - self-clearing both the Stop gate and the anti-ratchet on a premise the diff itself disproves. The reviewer verified the pre-image three ways; the '301 before' figure the earlier code review used was a phantom-trailing-line rendering artifact. — spec: commit body: 'registered in the bloat baseline at 329 (grandfathered). The 300-crossing pre-existed this change'",
+          "suggestion": "commit body: 'registered in the bloat baseline at 329 (grandfathered). The 300-crossing pre-existed this change'",
+          "source": "spec-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-08-01T08:39:25.001113+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    }
+  }
+}
