@@ -1,0 +1,90 @@
+{
+  "run_id": "iterate-2026-08-01-verify-local-surface-gates",
+  "date": "2026-08-01T10:40:30.611526Z",
+  "event_at": "2026-08-01T08:26:45.209123+00:00",
+  "type": "feature",
+  "complexity": "small",
+  "branch": "iterate/verify-local-surface-gates",
+  "spec": "Spec/fleet-preconditions-brief.md",
+  "tests_passed": true,
+  "adr": "iterate-2026-08-01-verify-local-surface-gates",
+  "prior_source": "history",
+  "test_completeness": {
+    "status": "complete",
+    "behaviors": [
+      {
+        "behavior": "AC3 every registered gate runs even when an earlier one fails \u2014 one push fixes everything CI would reject",
+        "disposition": "tested",
+        "evidence": "test_verify_local.py::test_every_gate_runs_even_when_an_earlier_one_fails PASSED (mutation: inserting `break` reddens it)"
+      },
+      {
+        "behavior": "AC1 exit 0 when every mirrored gate passes",
+        "disposition": "tested",
+        "evidence": "test_verify_local.py::test_exit_code_is_zero_when_every_gate_passes PASSED"
+      },
+      {
+        "behavior": "AC2 exit non-zero when any gate fails",
+        "disposition": "tested",
+        "evidence": "test_verify_local.py::test_exit_code_is_nonzero_when_any_gate_fails PASSED"
+      },
+      {
+        "behavior": "AC2 the failing gate is named and its child output shown, so the summary is enough to start diagnosing",
+        "disposition": "tested",
+        "evidence": "test_verify_local.py::test_the_failing_gate_is_named_and_its_output_shown PASSED"
+      },
+      {
+        "behavior": "the run names the tree it vetted, and says 'dirty' vs 'clean' \u2014 the working-tree/pushed-commit divergence",
+        "disposition": "tested",
+        "evidence": "test_verify_local.py::test_the_run_names_the_tree_it_vetted + ::test_the_header_distinguishes_a_clean_tree_from_a_dirty_one PASSED (both branches on a throwaway git repo, so the verdict does not depend on the host tree)"
+      },
+      {
+        "behavior": "AC1 the real runner is what verify() uses by default \u2014 the join decomposition leaves open",
+        "disposition": "tested",
+        "evidence": "test_verify_local.py::test_the_real_runner_is_the_one_verify_uses_by_default PASSED"
+      },
+      {
+        "behavior": "children run with a UTF-8 environment (Windows locale-codec divergence from CI)",
+        "disposition": "tested",
+        "evidence": "test_verify_local.py::test_children_are_given_a_utf8_environment PASSED (reads PYTHONUTF8 back out of the child, so it falsifies on Linux CI too)"
+      },
+      {
+        "behavior": "run_command reports the child exit code and combined output; non-ASCII survives the round trip",
+        "disposition": "tested",
+        "evidence": "test_verify_local.py::test_the_subprocess_runner_reports_the_child_exit_code_and_output + ::test_the_subprocess_runner_round_trips_non_ascii_child_output PASSED"
+      },
+      {
+        "behavior": "AC5 no non-stdlib import in verify_local.py, function-local included (ADR-045)",
+        "disposition": "tested",
+        "evidence": "test_verify_local.py::test_verify_local_imports_only_the_standard_library PASSED (mutation: a lazy `from lib.ci_gate_allowlist import` reddens it)"
+      },
+      {
+        "behavior": "AC4 registry drift, both directions: every bespoke guard across every workflow registered exactly once; each local command equals CI's whole line; comment mentions (full-line AND trailing) do not enrol a step; CI-only entries carry a reason; registered scripts exist",
+        "disposition": "tested",
+        "evidence": "test_verify_local_ci_drift.py 10 tests PASSED (mutations: dropped gate, unregistered new CI gate, and a `--strict` added to ci.yml each fired the intended test; a trailing comment naming a checker fired NOTHING on the fixed code and fired on the reverted code)"
+      },
+      {
+        "behavior": "the wrapper never registers itself \u2014 the recursion trap that springs when someone wires it into a workflow",
+        "disposition": "tested",
+        "evidence": "test_verify_local_ci_drift.py::test_the_wrapper_never_registers_itself PASSED (mutation: registering it in LOCAL_GATES reddens it)"
+      }
+    ],
+    "counts": {
+      "testable": 11,
+      "tested": 11,
+      "untestable": 0,
+      "untested_testable": 0
+    },
+    "enumeration_basis": {
+      "acs": 6,
+      "covered_acs": 6
+    }
+  },
+  "surface_verification": {
+    "surface": "cli",
+    "runner": "uv run --extra dev pytest shared/tests/test_verify_local.py shared/tests/test_verify_local_ci_drift.py -q",
+    "exit_code": 0,
+    "tests_run": 21,
+    "evidence_path": "C:\\01_Development\\shipwright\\.worktrees\\verify-local-surface-gates\\.shipwright\\runs\\iterate-2026-08-01-verify-local-surface-gates\\surface_verification.log",
+    "timestamp": "2026-08-01T10:22:34.256Z"
+  }
+}
