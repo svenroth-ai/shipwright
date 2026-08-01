@@ -48,7 +48,7 @@ from ._iterate_latest import read_iterate_latest, stale_detail  # noqa: E402
 from .agent_doc_budget_check import check_agent_doc_budget  # noqa: E402,F401 — re-exported
 from .agent_doc_shape_check import check_agent_doc_shape  # noqa: E402,F401 — re-exported
 from .common import CheckResult, Severity  # noqa: E402
-from .git_helpers import _commit_changed_paths, _git_available, _run_git  # noqa: E402
+from .git_helpers import _git_available, _iterate_changed_paths, _run_git  # noqa: E402
 from .handoff_freshness import check_session_handoff_fresh  # noqa: E402, F401 — re-exported
 from .silent_revert import check_silent_revert_for_run  # noqa: E402, F401 — re-exported
 # ADR / decision-log integrity checks live in their own module (bloat
@@ -885,8 +885,8 @@ def check_spec_impact_recorded(
        ``none`` + a justification (``spec_impact_justification`` OR the FR-gate's
        equivalent ``none_reason``) → PASS; ``none`` without one → FAIL.
     2. Otherwise (``add``/``modify``/``remove`` or a legacy event with no
-       ``spec_impact``): the commit MUST have touched a
-       ``.shipwright/planning/**/spec.md`` file. If it did → PASS, else FAIL.
+       ``spec_impact``): the iterate's WORK up to ``event_commit`` — via
+       :func:`_iterate_changed_paths`, NOT one commit — must touch a planning spec.md.
 
     BUG iterates, intent-less entries, and runs whose entry is absent are
     SKIPPED — a bug fix need not touch the spec. Git-unavailable is SKIPPED.
@@ -946,32 +946,32 @@ def check_spec_impact_recorded(
         )
 
     # spec_impact add|modify|remove, or a legacy event with no spec_impact:
-    # the F7-referenced commit itself must have touched a planning spec.md.
+    # the branch this iterate built must have touched a planning spec.md.
     if not _git_available(project_root):
         return CheckResult(
-            name, True, "skipped (git unavailable — cannot inspect commit)",
+            name, True, "skipped (git unavailable — cannot inspect the branch)",
             severity=Severity.SKIPPED.value,
         )
-    changed = _commit_changed_paths(project_root, event_commit)
-    if changed is None:
+    changed = _iterate_changed_paths(project_root, event_commit)
+    if changed is None:  # "could not see" — NOT [] — so skip, never accuse
         return CheckResult(
             name, True,
-            f"skipped (could not read commit {event_commit[:8]})",
+            f"skipped — BLIND, not clean: no readable range or commit view at {event_commit[:8]} (a merge HEAD plus an uncorroborated trunk base reads empty; see _branch_base_commit)",
             severity=Severity.SKIPPED.value,
         )
     spec_files = [p for p in changed if _is_planning_spec(p)]
     if spec_files:
         return CheckResult(
             name, True,
-            f"spec_impact={spec_impact or 'unrecorded'}; commit touched "
-            f"{len(spec_files)} planning spec.md file(s)",
+            f"spec_impact={spec_impact or 'unrecorded'}; work up to "
+            f"{event_commit[:8]} touched {len(spec_files)} planning spec.md file(s)",
         )
     return CheckResult(
         name, False,
-        f"intent={intent} iterate but commit {event_commit[:8]} touched no "
-        ".shipwright/planning/**/spec.md and recorded no spec_impact=none — "
-        "classify the spec impact (ADD/MODIFY/REMOVE) or record "
-        "spec_impact=none with a justification",
+        f"intent={intent} iterate but this iterate's work up to {event_commit[:8]} "
+        f"({len(changed)} path(s)) touched no .shipwright/planning/**/spec.md and "
+        "recorded no spec_impact=none — classify the spec impact "
+        "(ADD/MODIFY/REMOVE) or record spec_impact=none with a justification",
     )
 
 
