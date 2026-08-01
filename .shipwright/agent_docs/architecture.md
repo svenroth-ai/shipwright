@@ -117,6 +117,22 @@ escapes the worktree.
 `scripts/update-marketplace.sh`; `scripts/check_plugin_cache_sync.py` detects
 drift. (End users consuming the published plugins do not need this step.)
 
+The cache carries three trees and the check gates two: the versioned plugin
+dirs and `shared/` (reached as `{plugin_root}/../../shared`, home of the F11
+verifier every iterate runs). The cross-plugin mirror `cache/plugins/<name>/`
+is knowingly ungated — `ensure_shared_cache._plugins_healthy` gates repair of
+all 14 mirrors behind a single sentinel file, so a gate built on it would
+inherit that weakness (trg-7d1d8437). **The two sides of the comparison are
+established differently by design:** the repo side is `git ls-files`, because
+the cache is copied from a `git reset --hard origin/main` clone that holds
+exactly the tracked files; the cache side is a filesystem walk minus build
+artefacts, because the cache is not a git tree. `scripts/cache_tree_compare.py`
+holds the primitives and `scripts/cache_sync_report.py` the rendering. A zero
+is never read as agreement — neither an empty `ls-files` listing nor a listing
+none of whose files can be read — and the verdict names which trees it covers
+(`verified`), which it does not (`ungated`), and how each was established
+(`basis`).
+
 **Secrets.** Secrets live exclusively in `<project_root>/.env.local`, scaffolded
 by `/shipwright-adopt` (ADR-021) and read by
 `shared/scripts/lib/env.py::load_shipwright_env` — the framework external-review
