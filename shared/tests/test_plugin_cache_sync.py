@@ -140,18 +140,18 @@ class TestCheckSync:
         # __pycache__ is ignored on both sides → no drift.
         assert result["status"] == "ok"
 
-    def test_skips_files_with_other_suffixes(self, tmp_path: Path):
+    def test_compares_every_suffix_rather_than_an_allowlist(self, tmp_path: Path):
+        # The syncer copies a .csv, so its absence from the cache IS drift.
         repo, cache = _setup(tmp_path)
         _seed_repo_plugin(repo, "shipwright-example", {
             "SKILL.md": "# x\n",
-            "data/test.csv": "should,not,count",
+            "data/test.csv": "should,count",
         })
         _seed_cache_plugin(cache, "shipwright-example", "0.1.0", {
             "SKILL.md": "# x\n",
-            # No CSV file in cache — but it's filtered out by suffix.
         })
         result = check_sync(repo_root=repo, cache_root=cache)
-        assert result["status"] == "ok"
+        assert result["status"] == "drift"
 
 
 class TestCliMain:
