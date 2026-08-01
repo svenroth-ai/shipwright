@@ -2689,9 +2689,17 @@ feature/change iterate `work_completed` event names no FR
 (`--affected-frs` / `--new-frs` both empty) and records no
 `--spec-impact none --spec-impact-justification`; and the post-commit audit
 `check_spec_impact_recorded` in `iterate_checks.py` FAILS the F11 verifier
-when the commit touched no `.shipwright/planning/**/spec.md` and no
-`spec_impact=none` was recorded. The compliance detective audit adds Group D
-check **D5** — feature/change events that landed with no FR linkage.
+when **the iterate's own work** touched no `.shipwright/planning/**/spec.md` and
+no `spec_impact=none` was recorded. It resolves that path set with
+`git_helpers._iterate_changed_paths`, per the commit-scoped-gate rule above —
+the merge-base range where a trunk base can be corroborated, the single commit
+otherwise. Until `iterate-2026-08-01-spec-impact-range-resolver` it always read
+the single commit, so a run that recorded `add`/`modify`/`remove` and whose HEAD
+was an integration merge FAILed even though its own commit had touched a
+spec.md. Note the range is anchored on the trunk, so under the `stacked`
+campaign strategy a predecessor unit's spec.md counts — see the gate's docstring
+and `test_spec_impact_range_limits.py`. The compliance detective audit adds
+Group D check **D5** — feature/change events that landed with no FR linkage.
 Origin: iterate-2026-05-16-spec-impact-gate.
 
 **Architecture-documentation gate (iterate, F11 canon).**

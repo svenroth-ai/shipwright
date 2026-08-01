@@ -1,0 +1,209 @@
+{
+  "run_id": "iterate-2026-08-01-cache-sync-shared-tree",
+  "date": "2026-08-01T01:28:05.466143Z",
+  "event_at": "2026-07-31T22:11:53.871884+00:00",
+  "type": "bug",
+  "complexity": "small",
+  "prior_source": "history",
+  "branch": "iterate/cache-sync-shared-tree",
+  "spec": null,
+  "tests_passed": true,
+  "adr": "iterate-2026-08-01-cache-sync-shared-tree",
+  "test_completeness": {
+    "status": "complete",
+    "behaviors": [
+      {
+        "behavior": "cache/shared/ is compared per-file (AC-1)",
+        "disposition": "tested",
+        "evidence": "test_plugin_cache_sync_shared_tree.py::test_in_sync_shared_tree_is_reported_ok_with_a_count PASSED"
+      },
+      {
+        "behavior": "a stale cached shared/ file is drift",
+        "disposition": "tested",
+        "evidence": "test_plugin_cache_sync_shared_tree.py::test_stale_shared_file_is_drift PASSED"
+      },
+      {
+        "behavior": "partial reap of the verifier tree, self-heal sentinel intact, is drift and --strict exits 1 (AC-2)",
+        "disposition": "tested",
+        "evidence": "test_plugin_cache_sync_shared_tree.py::test_partial_reap_of_the_verifier_tree_is_drift PASSED"
+      },
+      {
+        "behavior": "shared/ absent from the cache is not_in_cache drift",
+        "disposition": "tested",
+        "evidence": "test_plugin_cache_sync_shared_tree.py::test_shared_absent_from_cache_is_drift PASSED"
+      },
+      {
+        "behavior": "a repo with no shared/ reports n/a, not drift",
+        "disposition": "tested",
+        "evidence": "test_plugin_cache_sync_shared_tree.py::test_repo_without_a_shared_dir_reports_na_not_drift PASSED"
+      },
+      {
+        "behavior": "the tree is defined by exclusion, not a suffix allowlist: a .template missing from the cache is drift",
+        "disposition": "tested",
+        "evidence": "test_plugin_cache_sync_shared_tree.py::test_a_template_file_missing_from_the_cache_is_drift PASSED"
+      },
+      {
+        "behavior": "an extensionless prompt body is compared",
+        "disposition": "tested",
+        "evidence": "test_plugin_cache_sync_shared_tree.py::test_an_extensionless_prompt_body_is_compared PASSED"
+      },
+      {
+        "behavior": "CRLF is normalized by CONTENT, so newly-included .template files do not false-drift",
+        "disposition": "tested",
+        "evidence": "test_plugin_cache_sync_shared_tree.py::test_crlf_is_normalized_for_files_outside_any_suffix_list PASSED"
+      },
+      {
+        "behavior": "a directory named build is not treated as build output",
+        "disposition": "tested",
+        "evidence": "test_plugin_cache_sync_shared_tree.py::test_a_directory_named_build_is_not_treated_as_build_output PASSED"
+      },
+      {
+        "behavior": "build artifacts stay excluded on both sides",
+        "disposition": "tested",
+        "evidence": "test_plugin_cache_sync_shared_tree.py::test_build_artifacts_stay_excluded_on_both_sides PASSED"
+      },
+      {
+        "behavior": "the repo-side basis is git; a gitignored generated file is not phantom drift",
+        "disposition": "tested",
+        "evidence": "test_plugin_cache_sync_basis.py::test_a_gitignored_generated_file_is_not_phantom_drift PASSED"
+      },
+      {
+        "behavior": "a tracked file still drifts under the git basis",
+        "disposition": "tested",
+        "evidence": "test_plugin_cache_sync_basis.py::test_a_tracked_file_still_drifts_under_the_git_basis PASSED"
+      },
+      {
+        "behavior": "a non-git tree falls back to the walk and names the basis",
+        "disposition": "tested",
+        "evidence": "test_plugin_cache_sync_basis.py::test_a_non_git_tree_falls_back_and_says_so PASSED"
+      },
+      {
+        "behavior": "an empty ls-files listing over a non-empty dir is a refusal, not a green over zero files",
+        "disposition": "tested",
+        "evidence": "test_plugin_cache_sync_basis.py::test_a_repo_that_tracks_nothing_here_is_not_a_green_over_zero_files PASSED"
+      },
+      {
+        "behavior": "nothing readable over a non-empty listing is a refusal",
+        "disposition": "tested",
+        "evidence": "test_plugin_cache_sync_basis.py::test_nothing_readable_over_a_non_empty_listing_is_a_refusal PASSED"
+      },
+      {
+        "behavior": "a tracked file that cannot be read is counted, not dropped",
+        "disposition": "tested",
+        "evidence": "test_plugin_cache_sync_basis.py::test_a_tracked_file_that_cannot_be_read_is_counted_not_dropped PASSED"
+      },
+      {
+        "behavior": "not_in_cache still counts as verified (the basis WAS established)",
+        "disposition": "tested",
+        "evidence": "test_plugin_cache_sync_basis.py::test_a_cache_absent_tree_still_counts_as_verified PASSED"
+      },
+      {
+        "behavior": "the two bases cannot disagree: nothing git tracks lives under a SKIP_DIRS component",
+        "disposition": "tested",
+        "evidence": "test_plugin_cache_sync_basis.py::test_skip_dirs_hide_nothing_git_tracks PASSED",
+        "category": "integration"
+      },
+      {
+        "behavior": "a cache-only file is counted as an unpropagated deletion, not drift",
+        "disposition": "tested",
+        "evidence": "test_plugin_cache_sync_verdict.py::test_a_cache_only_file_is_counted_as_an_unpropagated_deletion PASSED"
+      },
+      {
+        "behavior": "the verdict names which trees it covers and which it does not (AC-3)",
+        "disposition": "tested",
+        "evidence": "test_plugin_cache_sync_verdict.py::test_the_verdict_names_which_trees_it_covers PASSED"
+      },
+      {
+        "behavior": "a repo without shared/ does not claim to have verified it",
+        "disposition": "tested",
+        "evidence": "test_plugin_cache_sync_verdict.py::test_a_repo_without_shared_does_not_claim_to_have_verified_it PASSED"
+      },
+      {
+        "behavior": "a stale cross-plugin mirror neither drifts nor joins the walk",
+        "disposition": "tested",
+        "evidence": "test_plugin_cache_sync_verdict.py::test_a_stale_mirror_neither_drifts_nor_joins_the_walk PASSED"
+      },
+      {
+        "behavior": "orphan markers are reported without failing the gate (AC-5)",
+        "disposition": "tested",
+        "evidence": "test_plugin_cache_sync_verdict.py::test_markers_are_reported_without_failing_the_gate PASSED"
+      },
+      {
+        "behavior": "an un-gated tree never crowds the gated one out of the advisory",
+        "disposition": "tested",
+        "evidence": "test_plugin_cache_sync_verdict.py::test_an_ungated_tree_never_crowds_out_the_gated_one PASSED"
+      },
+      {
+        "behavior": "a marker on a cached plugin base is reported",
+        "disposition": "tested",
+        "evidence": "test_plugin_cache_sync_verdict.py::test_a_marker_on_a_cached_plugin_is_reported PASSED"
+      },
+      {
+        "behavior": "the ok line names every tree it read, with a count and the ungated tree",
+        "disposition": "tested",
+        "evidence": "test_plugin_cache_sync_verdict.py::test_ok_line_names_every_tree_it_read PASSED"
+      },
+      {
+        "behavior": "the WARN line names the shared tree and the drifted filename",
+        "disposition": "tested",
+        "evidence": "test_plugin_cache_sync_verdict.py::test_warn_line_names_the_shared_tree_when_it_drifted PASSED"
+      },
+      {
+        "behavior": "the --json payload carries both trees",
+        "disposition": "tested",
+        "evidence": "test_plugin_cache_sync_verdict.py::test_json_payload_carries_both_trees PASSED"
+      },
+      {
+        "behavior": "both early-return statuses carry the documented shape (AC-4)",
+        "disposition": "tested",
+        "evidence": "test_plugin_cache_sync_verdict.py::test_early_return_statuses_carry_the_documented_shape PASSED"
+      },
+      {
+        "behavior": "--json mode keeps stderr clean",
+        "disposition": "tested",
+        "evidence": "test_plugin_cache_sync_verdict.py::test_json_mode_keeps_stderr_clean PASSED"
+      },
+      {
+        "behavior": "every suffix is compared rather than an allowlist",
+        "disposition": "tested",
+        "evidence": "test_plugin_cache_sync.py::test_compares_every_suffix_rather_than_an_allowlist PASSED"
+      },
+      {
+        "behavior": "the shipped CLI end-to-end against a real cache: in-sync exit 0, partial reap exit 1 naming the reaped file, skills/build drift, gitignored file not drift, absent cache no-op",
+        "disposition": "tested",
+        "evidence": "F0.5 surface_verification.json: surface=cli exit_code=0 tests_run=10",
+        "category": "integration"
+      },
+      {
+        "behavior": "the behaviour of the Claude Code cache manager itself (when it reaps a marked dir)",
+        "disposition": "untestable",
+        "reason_code": "requires-external-nondeterministic-service",
+        "reason": "the reap is performed by the closed-source Claude Code cache manager on its own schedule; the consequence is simulated on a copy of the real cache and pinned by the partial-reap test"
+      },
+      {
+        "behavior": "the 17 pre-existing behaviours of check_sync (SemVer selection, CRLF, symlink refusal, cache_root_absent, no_repo_plugins, fail-soft default, ...)",
+        "disposition": "untestable",
+        "reason_code": "covered-by-existing-test",
+        "reason": "shared/tests/test_plugin_cache_sync.py, 21 passed 1 skipped, untouched at its grandfathered size and still importing only check_sync/main"
+      }
+    ],
+    "counts": {
+      "testable": 32,
+      "tested": 32,
+      "untestable": 2,
+      "untested_testable": 0
+    },
+    "enumeration_basis": {
+      "acs": 5,
+      "covered_acs": 5
+    }
+  },
+  "surface_verification": {
+    "surface": "cli",
+    "tests_run": 10,
+    "exit_code": 0,
+    "runner": "uv run .shipwright/runs/iterate-2026-08-01-cache-sync-shared-tree/f05_cli_probe.py",
+    "evidence_path": ".shipwright/runs/iterate-2026-08-01-cache-sync-shared-tree/surface_verification.json"
+  },
+  "declared_removals": []
+}

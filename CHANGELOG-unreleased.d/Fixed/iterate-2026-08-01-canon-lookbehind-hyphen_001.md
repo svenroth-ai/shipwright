@@ -1,0 +1,1 @@
+The internal path check no longer flags a file as misplaced just because its folder name ends with the same word as a folder that was moved earlier — a plugin's own tests folder, for example. Genuinely misplaced paths are still caught, including ones written at the very start of a line.

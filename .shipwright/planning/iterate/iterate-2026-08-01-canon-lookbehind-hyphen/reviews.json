@@ -1,0 +1,337 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-08-01-canon-lookbehind-hyphen",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-01T00:04:29.060338+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 5,
+      "findings": [
+        {
+          "severity": "low",
+          "category": "Edge-case",
+          "file": null,
+          "line": null,
+          "finding": "Safely placing a hyphen in a regex character class can be finicky. While `r\"[\\w/.\\\\-]\"` correctly parses in Python's `re` module (because the `\\\\` resolves to a literal backslash, leaving the `-` at the end of the class where it is interpreted as a literal hyphen), it can look like an escaped hyphen to future maintainers or behave unexpectedly if refactored out of a raw string.",
+          "suggestion": "To make the literal hyphen structurally immune to escaping confusion or order-of-operation changes in the future,",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "The decision-reversal requirement is not assigned to a concrete artifact or implementation step. The plan says to “record the decision reversal,” but AC-7 specifically requires a decision drop naming `decision_log.md:571`, `decision_log.md:1353`, ADR-091, and the empirical measurement that invalidates their shared premise. Without identifying the destination and required contents, this acceptance criterion can be missed despite completing the code and test work.",
+          "suggestion": "Add an explicit step naming the decision-record file/section to update, and require it to cite all three prior records plus the probe-2/probe-3 results (1,855 dropped matches, five observed tokens, and no true legacy paths lost). Include that artifact in the verification evidence.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The described regression tests need to assert behavior for each migration and each separator pattern directly, rather than only asserting that a sample “trips no migration.” An aggregate no-match test can remain green if a migration’s pattern is accidentally removed, malformed, or no longer exercised. Similarly, the cited pre-existing test name, `test_manifest_includes_windows_separator_pattern`, does not by itself establish that all four bare POSIX and Windows references actually match.",
+          "suggestion": "Parameterize tests over every `ARTIFACT_MIGRATIONS` entry and assert all of the following against the live compiled patterns: `shipwright-<dirname>/x` and `shipwright-<dirname>\\\\x` do not match; `<dirname>/x` and `<dirname>\\\\x` do match; and `.shipwright/<dirname>/x` does not match. Include bare references at the beginning of the test string to preserve the start-of-line behavior explicitly.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "Adding `-` intentionally suppresses all `-<dirname>/` occurrences, including formatting where a hyphen is punctuation rather than part of a directory name (for example, a Markdown list or a prose fragment containing `-compliance/`). The probes establish that current dropped occurrences are benign, and AC-1 explicitly requires this behavior, so this is not a reason to reject the approach; however, it is a permanent semantic boundary of the lint rule.",
+          "suggestion": "State this intentional tradeoff in the revised registry comment or decision record: hyphen-preceded references are treated as name continuations by policy, backed by the current-tree census. This will prevent a later maintainer from interpreting the change as a universally safe path-boundary rule.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "The proposed character-class edit is appropriately minimal and preserves a crucial property: the new match set is a subset of the old one, so it cannot introduce new lint findings. The plan also correctly leaves quoted-literal patterns unchanged and retains start-of-line matching. No security-sensitive input handling, authorization behavior, or injection surface is changed by these static regex and allowlist updates.",
+          "suggestion": "Retain the selected approach; make the per-pattern tests and explicit decision-record update above mandatory before landing.  Overall, the regex change is sound, narrowly scoped, and supported by unusually strong corpus evidence. The plan needs a concrete AC-7 documentation step and non-vacuous per-migration match assertions before it is ready to ship. SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-07-31T23:33:33.737421+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[gemini] Here is the review of the implementation approach for the `canon-lookbehind-hyphen` fix.\n\n### Findings\n\n- **Category:** Edge-case\n- **Severity:** Low\n- **Finding:** Safely placing a hyphen in a regex character class can be finicky. While `r\"[\\w/.\\\\-]\"` correctly parses in Python's `re` module (because the `\\\\` resolves to a literal backslash, leaving the `-` at the end of the class where it is interpreted as a literal hyphen), it can look like an escaped hyphen to future maintainers or behave unexpectedly if refactored out of a raw string.\n- **Suggestion:** To make the literal hyphen structurally immune to escaping confusion or order-of-operation changes in the future,\n\n[openai] 1. **Category:** dependency  \n   **Severity:** medium  \n   **Finding:** The decision-reversal requirement is not assigned to a concrete artifact or implementation step. The plan says to “record the decision reversal,” but AC-7 specifically requires a decision drop naming `decision_log.md:571`, `decision_log.md:1353`, ADR-091, and the empirical measurement that invalidates their shared premise. Without identifying the destination and required contents, this acceptance criterion can be missed despite completing the code and test work.  \n   **Suggestion:** Add an explicit step naming the decision-record file/section to update, and require it to cite all three prior records plus the probe-2/probe-3 results (1,855 dropped matches, five observed tokens, and no true legacy paths lost). Include that artifact in the verification evidence.\n\n2. **Category:** edge-case  \n   **Severity:** medium  \n   **Finding:** The described regression tests need to assert behavior for each migration and each separator pattern directly, rather than only asserting that a sample “trips no migration.” An aggregate no-match test can remain green if a migration’s pattern is accidentally removed, malformed, or no longer exercised. Similarly, the cited pre-existing test name, `test_manifest_includes_windows_separator_pattern`, does not by itself establish that all four bare POSIX and Windows references actually match.  \n   **Suggestion:** Parameterize tests over every `ARTIFACT_MIGRATIONS` entry and assert all of the following against the live compiled patterns: `shipwright-<dirname>/x` and `shipwright-<dirname>\\\\x` do not match; `<dirname>/x` and `<dirname>\\\\x` do match; and `.shipwright/<dirname>/x` does not match. Include bare references at the beginning of the test string to preserve the start-of-line behavior explicitly.\n\n3. **Category:** risk  \n   **Severity:** low  \n   **Finding:** Adding `-` intentionally suppresses all `-<dirname>/` occurrences, including formatting where a hyph […truncated]"
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 6,
+      "findings": [
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "shared/tests/test_path_canon_windows.py",
+          "line": 83,
+          "finding": "Docstring left over from the abandoned wide-class design: '- is a legal intra-name character ..., so it belongs in the negative-lookbehind class'. The shipped fix deliberately does NOT put the hyphen in the class - that is precisely the variant this round replaced - and a maintainer who follows this instruction breaks eight parametrizations. The paragraph now argues against the code it documents.",
+          "suggestion": "Rewrite to describe the guard: a hyphen that CONTINUES a word is what makes the reference non-bare, which is why it is a separate (?<!\\w-) lookbehind rather than a class member.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "shared/tests/test_path_canon_windows.py",
+          "line": 187,
+          "finding": "Dangling reference to a deleted identifier: '_drop_hyphen_from_lookbehind'. That function is now _without_hyphen_guard and keys on the (?<!\\w-) substring, not on a character class. The surrounding prose and the test name are class-framed in the same stale way.",
+          "suggestion": "Point at _without_hyphen_guard, and rename the test to test_only_separator_patterns_carry_the_hyphen_guard.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/scripts/lib/artifact_migrations.py",
+          "line": 443,
+          "finding": "Surviving comment is now false: 'The sibling regression test carries the same strings + the bare compliance migration name, so it is exempt here too'. Under the shipped patterns that file trips nothing, and the entry is doubly redundant since shared/tests/** already covers it.",
+          "suggestion": "Drop the entry and the sentence that justifies it, or add it to _RETIRED_EXEMPTIONS so the per-file measurement proves the claim.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "shared/tests/test_artifact_path_canon_manifest_allowlist.py",
+          "line": 17,
+          "finding": "Same stale claim from the other side: the module NOTE says it is 'itself allowlisted in that migration' because it quotes hyphen-suffixed paths. The whole point of the fix is that quoting such a path no longer trips anything, so the note describes a dependency the file no longer has.",
+          "suggestion": "Reduce to the part that is still true - the file identifies migrations by behaviour or canonical prefix - and drop the self-allowlisting rationale.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/tests/test_artifact_path_canon_manifest_allowlist.py",
+          "line": 200,
+          "finding": "The no-git affordance mismatch is only half closed. The .split() shredding is gone, but _git_tracked_files() returns [] outside a git checkout and the test then fails with 'no longer tracked' for all seven files. The gate it mirrors skips with an explicit message. A misleading failure is worse than the raise it replaced.",
+          "suggestion": "Mirror the gate: pytest.skip('git ls-files unavailable - running outside a git checkout') before the loop.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": ".shipwright/agent_docs/iterates/",
+          "line": 1,
+          "finding": "Operational trap this change deliberately preserves. The narrow guard keeps a bare -<dirname>/ MATCHING - that is its advantage - and .shipwright/agent_docs/iterates/*.json is git-tracked, .json is in _LINT_EXTENSIONS, and the compliance ALLOWLIST does not cover iterates/**. A decision drop or F5c entry for THIS run that quotes the old behaviour as a bare hyphen-prefixed segment would turn the repo-wide lint red on the next unrelated iterate, with no escape hatch (JSON cannot carry the inline marker).",
+          "suggestion": "When writing the F5c entry and the decision drop, refer to the segment as 'hyphen-suffixed plugin path' rather than writing the literal.",
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-08-01T00:38:28.624036+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 10,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "SURVIVES",
+          "file": ".shipwright/agent_docs/decision_log.md",
+          "line": 1157,
+          "finding": "Claim under doubt: The change reverses a decision recorded THREE times, and all three rest on one empirical premise that the measurement falsifies. — Grepped the decision log for every rejection of this fix rather than trusting the spec's enumeration. Found a FOURTH: ADR-080 (iterate-2026-05-23-post-merge-hygiene), decision_log.md:1157 — 'Regex tightening to add - to the negative-lookbehind class — would silently allow real legacy paths after a hyphen (e.g. pre-planning/)'. That is a different axis from breadth, and the shipped (?<!\\w-) suppresses pre-planning/ exactly as the wide class would, so narrowing buys nothing against it. ADR-080 is also the record that granted the finalize_security_compliance.py exemption this diff retires — the most on-point rejection in the tree.",
+          "suggestion": "ACCEPTED and verified at source. AC-7 now requires naming EVERY prior rejection and answering each on its own grounds rather than to a count; the rejection table carries ADR-080; Design Notes answers it: pre-planning is a DIFFERENT directory from planning, path segments are atomic, so a substring match was never a path reference — which is the same confusion that made plugins/shipwright-compliance/ read as compliance/. Checked empirically: exactly two directories in the tree end in -<migrated dirname> (plugins/shipwright-compliance and .shipwright/compliance/skill-compliance), both legitimate; no pre-planning exists.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "SURVIVES",
+          "file": "shared/tests/test_artifact_path_canon_manifest_allowlist.py",
+          "line": 63,
+          "finding": "Claim under doubt: A retired exemption cannot come back unexamined — 'a retired entry must stay out of EVERY migration's allowlist' is pinned. — Found a revert-shaped change that keeps the board green: re-add docs/guide.md to ALLOWLIST['compliance'] AND delete that one string from the hand-written _RETIRED_EXEMPTIONS tuple in the same diff. Nothing else records the list — the ALLOWLIST comment points AT the test file, so the two records are circular. Probe 8's mutation only flipped the regex lookbehinds, never the allowlist half, so '13 tests fail' says nothing about this direction.",
+          "suggestion": "PARTIALLY CLOSED, limit disclosed. Added a count assertion (len == 7) so a silent one-line deletion fails and the edit becomes visible and reviewable. This is a speed bump, not a proof — any hand-maintained list has this property — and the test comment says so in those words rather than implying the hole is closed.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "SURVIVES",
+          "file": ".shipwright/planning/iterate/iterate-2026-08-01-canon-lookbehind-hyphen.md",
+          "line": 188,
+          "finding": "Claim under doubt: The reversal is justified by measurement — 1,840 dropped lines, four tokens, zero true positives lost. — The measurement is real but it is a `compliance` measurement generalised to four migrations. An independent census of [A-Za-z0-9_]-(planning|designs|agent_docs)[/\\\\] over the worktree returns five occurrences, all prose — including artifact_migrations.py:43, the comment THIS DIFF ADDED. So the reported shipwright-planning/ (1) is the fix's own text measured on a post-fix tree, and the other three migrations have zero pre-existing false positives. Three of four migrations are weakened on a semantic argument alone.",
+          "suggestion": "ACCEPTED. Design Notes now carries an explicit 'Honest limit of the measurement' paragraph stating that the census is a compliance census, that the single planning hit is this change's own comment, and that for planning/designs/agent_docs the fix rests on the argument rather than on data. The argument is unchanged and sound; the record no longer implies measurement it does not have.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": null,
+          "category": "REFUTED",
+          "file": "shared/scripts/lib/iterate_entry.py",
+          "line": 67,
+          "finding": "Claim under doubt: The F5c entry at .shipwright/agent_docs/iterates/<run_id>.json is the unmarkable artifact that motivated the fix — the first one to cite a compliance-plugin test had no escape hatch. — IterateEntry is a closed TypedDict of scalars (iterate_entry.py:67-88) with no prose field; spec is always a planning path, adr a bare run_id, branch iterate/<slug>. Scanned all 55 tracked entries with the pre-fix patterns: zero matches. So the writer cannot emit an entry citing a compliance-plugin test, and the load-bearing answer to 'what changed since 2026-05' is wrong.",
+          "suggestion": "REFUTED BY EVIDENCE, and the reviewer's own probe understated the schema. The entry key set is ['adr','branch','complexity','date','declared_removals','degraded','event_at','prior_source','run_id','spec','surface_verification','test_completeness','tests_passed','type'] — test_completeness is a nested ledger whose behaviors[*].evidence is FREE-FORM prose naming the test that proves each behavior (confirmed in iterate-2026-07-30-derived-gate-sees-the-pr.json). That is precisely the field that can carry plugins/shipwright-<x>/tests/... The zero-match result across 52 entries is consistent with the report that this was the FIRST such entry, not evidence that one is impossible. Spec updated with the mechanism so the claim is checkable rather than assertable.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "SURVIVES",
+          "file": "shared/scripts/lib/artifact_migrations.py",
+          "line": 17,
+          "finding": "Claim under doubt: Registering a new migration at status `pending` is a Layer-1 no-op, so the four-step registration pattern is unchanged. — Both new structural tests parametrize over ARTIFACT_MIGRATIONS in full, not the active subset. After this diff, appending a pending migration whose separator patterns lack the guard reddens the shared/tests root immediately, at registration, before the migration is active — contradicting artifact_migrations.py:17-24 and docs/hooks-and-pipeline.md:1187-1193.",
+          "suggestion": "ACCEPTED. All five new tests now parametrize over an _ACTIVE subset (in_progress|migrated), matching the lint's own scope, so a pending registration is unconstrained by them. This strictly reduces the registration contract rather than adding to it.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "SURVIVES",
+          "file": "shared/tests/test_artifact_path_canon_manifest_allowlist.py",
+          "line": 155,
+          "finding": "Claim under doubt: test_sample_shape_still_occurs_in_the_generated_manifest narrows the churn coupling to producer-controlled ids. — The narrowing is genuine, but the test hard-FAILS with no skip affordance on two conditions its siblings guard: a missing manifest, and a producer schema bump (it parses schema_version 3 / test_links 1.0.0 against a hard-coded shape and never reads the version). Either turns the whole shared/tests root red with a message pointing at path-canon drift rather than the real cause.",
+          "suggestion": "ACCEPTED. Missing manifest now skips, mirroring the siblings and carrying the test-hygiene marker. The empty-ids assertion now reports schema_version and collector_version and states plainly that it is a PRODUCER SHAPE change, not path-canon drift, with the remedy.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": null,
+          "category": "REFUTED",
+          "file": "shared/scripts/lib/artifact_migrations.py",
+          "line": 54,
+          "finding": "Claim under doubt: The new match set is a strict subset, so no true positive can be lost; every dropped match is a hyphen continuing a word. — Attacked the census rather than the algebra: [A-Za-z0-9_]-compliance[/\\\\] returns 2,031 occurrences across 161 files, all shipwright-compliance/ or skill-compliance/; the 16 files carrying skill-compliance/ are allowlisted, non-lintable, or guard-suppressed, and skill-compliance is a DIFFERENT dirname so it can never be a legacy compliance/ reference — a genuinely legacy compliance/skill-compliance/... still matches at offset 0.",
+          "suggestion": "no action — attack mounted and refuted",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": null,
+          "category": "REFUTED",
+          "file": "docs/guide.md",
+          "line": 2196,
+          "finding": "Claim under doubt: The seven retired exemptions measure zero, and removing them changes no other migration's behaviour. — Scanned all seven against all four migrations, both legs, chasing each hit to a line number. All suppressed, slash-preceded, or not the target literal. None of the seven appears in the planning, designs or agent_docs allowlists, so only the compliance scan changes.",
+          "suggestion": "no action — attack mounted and refuted",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": null,
+          "category": "REFUTED",
+          "file": "shared/scripts/lib/stale_artifact_detector.py",
+          "line": 66,
+          "finding": "Claim under doubt: old_path_patterns has exactly three consumers, all line-by-line — no whole-file consumer a 2-char lookbehind would behave differently for. — Enumerated every reference to old_path_patterns / ARTIFACT_MIGRATIONS / active_migrations. stale_artifact_detector.py and check_artifact_drift.py read only legacy_dirname/canonical/status and walk the filesystem; the integration tests and the other canon layers read names and dirnames only. No fourth consumer, no whole-file scanner anywhere.",
+          "suggestion": "no action — attack mounted and refuted",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": null,
+          "category": "REFUTED",
+          "file": ".gitignore",
+          "line": 188,
+          "finding": "Claim under doubt: .shipwright/agent_docs/iterates/**.json is not allowlisted, so a decision drop quoting a bare hyphen-prefixed segment would redden a future run. — Tried to refute the allowlist half and could not: .gitignore excludes only *.plan.json and *.phase_timings.jsonl, so <run_id>.json IS tracked; .json is in _LINT_EXTENSIONS; no glob in any of the four ALLOWLISTs reaches that directory. The claim is correct as stated.",
+          "suggestion": "Confirmed and honoured — F3/F5c prose uses 'hyphen-suffixed plugin path', never the bare literal.",
+          "source": "doubt-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-08-01T00:58:43.718541+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 3,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "spec",
+          "file": "n/a",
+          "line": null,
+          "finding": "AC-7 explicitly requires recording the decision reversal and its evidence by naming the three prior rejections in `decision_log.md` and/or ADR-091, but the diff contains no changes to the decision log or any ADR.",
+          "suggestion": "Update `decision_log.md` (and ADR-091 if applicable) to document the measurement and falsification of the prior premise, fulfilling AC-7 so the record remains accurate.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "spec",
+          "file": "shared/scripts/lib/artifact_migrations.py",
+          "line": 40,
+          "finding": "AC-7 is not implemented. The diff changes the regex and adds historical comments, but does not add the required decision drop recording the reversal, naming `decision_log.md:571`, `decision_log.md:1353`, and ADR-091, and documenting the measurement that disproves their shared “global weakening” premise. Code comments are not an auditable reversal of those prior decision records.",
+          "suggestion": "Add the required decision-log/ADR entry (or designated decision-drop artifact) that explicitly cites all three prior rejections and records the before/after measurement and lost-match census supporting the reversal.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "test",
+          "file": "shared/tests/test_artifact_path_canon_manifest_allowlist.py",
+          "line": 175,
+          "finding": "test_exemptions_the_fix_emptied_are_not_needed` claims to prove each removed exemption has zero lint findings, but `_migrations_tripped_by` only performs line-by-line regex checks. It does not invoke the production lint’s complete text-plus-AST scanning path, so it can disagree with the enforcement it purports to validate. The repository-wide lint test provides coverage today, but this targeted regression test would not independently detect an AST-only finding in a retired file.",
+          "suggestion": "Reuse or expose the production lint’s violation-scanning helper for these files, or invoke the relevant text and AST scanners directly, so the per-exemption assertion measures the same behavior as the gate.  Overall assessment: ship-with-fixes. The regex implementation and behavioral regression coverage address the core false positive, but the required auditable decision reversal is missing. SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-08-01T00:07:08.804006+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[gemini] - Category: spec\n- Severity: high\n- File: n/a\n- Finding: AC-7 explicitly requires recording the decision reversal and its evidence by naming the three prior rejections in `decision_log.md` and/or ADR-091, but the diff contains no changes to the decision log or any ADR.\n- Suggestion: Update `decision_log.md` (and ADR-091 if applicable) to document the measurement and falsification of the prior premise, fulfilling AC-7 so the record remains accurate.\n\nSHIPWRIGHT_VERDICT: revise\n\n[openai] - Category: spec\n- Severity: medium\n- File: shared/scripts/lib/artifact_migrations.py:40\n- Finding: AC-7 is not implemented. The diff changes the regex and adds historical comments, but does not add the required decision drop recording the reversal, naming `decision_log.md:571`, `decision_log.md:1353`, and ADR-091, and documenting the measurement that disproves their shared “global weakening” premise. Code comments are not an auditable reversal of those prior decision records.\n- Suggestion: Add the required decision-log/ADR entry (or designated decision-drop artifact) that explicitly cites all three prior rejections and records the before/after measurement and lost-match census supporting the reversal.\n\n- Category: test\n- Severity: low\n- File: shared/tests/test_artifact_path_canon_manifest_allowlist.py:175\n- Finding: `test_exemptions_the_fix_emptied_are_not_needed` claims to prove each removed exemption has zero lint findings, but `_migrations_tripped_by` only performs line-by-line regex checks. It does not invoke the production lint’s complete text-plus-AST scanning path, so it can disagree with the enforcement it purports to validate. The repository-wide lint test provides coverage today, but this targeted regression test would not independently detect an AST-only finding in a retired file.\n- Suggestion: Reuse or expose the production lint’s violation-scanning helper for these files, or invoke the relevant text and AST scanners directly, so the per-exemption assertion measures the same behavior as the gate.\n\nOverall assessment: ship-with-fixes. The regex implementation and behavioral regression coverage address the core false positive, but the required auditable decision reversal is missing.  \nSHIPWRIGHT_VERDICT: revise"
+    }
+  },
+  "gates": {
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 4,
+      "findings": [
+        {
+          "severity": null,
+          "category": "test-coverage",
+          "file": "shared/tests/test_artifact_path_canon_manifest_allowlist.py:175-190",
+          "line": null,
+          "finding": "The per-file pin measured with a local text-only helper while the gate runs text AND AST, so it proved text-zero rather than lint-zero for the four .py entries among the seven retired. RESOLVED (the reviewer read the file mid-patch): the test now loads the lint by path under a sentinel and runs both canon._text_violations and canon._ast_violations, measuring with the gate's own scanners. — spec: AC-5 / ledger row 10 — every retired exemption measures zero findings",
+          "suggestion": "AC-5 / ledger row 10 — every retired exemption measures zero findings",
+          "source": "spec-reviewer"
+        },
+        {
+          "severity": null,
+          "category": "record-honesty",
+          "file": "shared/scripts/lib/artifact_migrations.py:513-515",
+          "line": null,
+          "finding": "orchestrator.py was kept under AC-5's letter (its 2026-05 rationale named a PHASE-NAME basis as well as the hyphen one) but the corrected comment then conceded the phase-name basis is not live either, leaving an entry retained on a wording technicality with the record stating it has no basis at all. RESOLVED: the comment now gives a positive, precedented reason — the shim is the blast-radius twin of orchestrator_pkg/**, listed together so re-inlining the package cannot silently drop the exemption, which is the same no-broadening rule the B3/B5 split entries follow. — spec: AC-5 — entries with an independent basis are kept and their now-false rationale corrected",
+          "suggestion": "AC-5 — entries with an independent basis are kept and their now-false rationale corrected",
+          "source": "spec-reviewer"
+        },
+        {
+          "severity": null,
+          "category": "evidence-precision",
+          "file": ".shipwright/planning/iterate/iterate-2026-08-01-canon-lookbehind-hyphen.md:187-191",
+          "line": null,
+          "finding": "Probe 8 recorded '12 tests fail' from a mutation run over the two pin files only, which reads as evidence that the allowlist removals took effect when it is evidence only about the pins. The repo-wide test_no_legacy_artifact_paths[compliance-migrated] must also fail on a revert, since the seven de-allowlisted files all trip again. RESOLVED: re-ran the mutation across the full runner command — 13 fail, 0 after restore, with the predicted 13th present. Probe 8 now records 13, names why the 13th is the one that evidences the removals, and notes the six controls that correctly survive a revert. — spec: Confidence Calibration, Probe 8 — mutation check on the pins",
+          "suggestion": "Confidence Calibration, Probe 8 — mutation check on the pins",
+          "source": "spec-reviewer"
+        },
+        {
+          "severity": null,
+          "category": "deferred-artifact",
+          "file": ".shipwright/planning/iterate/iterate-2026-08-01-canon-lookbehind-hyphen/",
+          "line": null,
+          "finding": "The decision drop and the F0.5 evidence file are absent at Stage 1. Both are finalization-time artifacts (F3 and F0.5 respectively), so this is not a divergence in the code under review and does not affect the verdict — carried forward. The reviewer separately examined the AC-5 rewording between the two passes and judged it legitimate rather than a gate violation: it makes the criterion measurable rather than looser, narrows the retirement set in one direction while widening it in another, and the reversal is recorded in the open at Probes 5-8 and in the Asymptote paragraph. — spec: AC-7 — the decision reversal is recorded with its evidence; Verification — F0.5 evidence path",
+          "suggestion": "AC-7 — the decision reversal is recorded with its evidence; Verification — F0.5 evidence path",
+          "source": "spec-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-08-01T00:11:09.234876+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    }
+  }
+}
