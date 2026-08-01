@@ -1,22 +1,21 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-08-01-pin-python-311",
-    "date": "2026-08-01",
+    "run_id": "iterate-2026-07-28-main-self-heal",
+    "date": "2026-07-28",
     "unit": {
       "status": "pass",
-      "passed": 7318,
+      "passed": 1066,
       "failed": 0,
-      "note": "Measured counts for the two test roots this diff changes: shared/tests 7013 passed / 13 skipped / 26 deselected, and shared/scripts/tools/tests 305 passed / 6 skipped / 2 deselected. Zero failures in either. The full F0 suite additionally ran all 18 discovered units GREEN in 2.7 min; the runner reports per-unit PASS/FAIL, not per-unit counts, so the 7318 figure is the two roots actually counted rather than a repo-wide total."
+      "note": "Green and complete: integration-tests 422, shared/scripts/tests, shared/scripts/tools/tests, plugins/shipwright-iterate 521, and all 123 tests this iterate adds. shared/tests could not be completed in one local process - see degraded[]; CI runs it as a Required Check."
     },
     "integration": {
       "status": "pass",
-      "passed": 0,
-      "failed": 0,
-      "note": "integration-tests ran GREEN as one of the 18 F0 units; not separately counted."
+      "passed": 422,
+      "failed": 0
     },
     "e2e": {
       "status": "n/a",
-      "reason": "no browser surface; this is test-runner machinery and a shell distribution script"
+      "reason": "no browser surface; this is framework machinery (CLI + skill prose + CI workflow triggers)"
     },
     "smoke": {
       "status": "n/a",
@@ -32,109 +31,246 @@
     },
     "surface_verification": {
       "surface": "cli",
-      "tests_run": 57,
+      "tests_run": 8,
       "exit_code": 0,
-      "evidence_path": ".shipwright/runs/iterate-2026-08-01-pin-python-311/surface_verification.json",
-      "detail": "Drove the three pin-guard test files as one root (the one-root rule) via the real pytest. Beyond this gate, the decisive end-to-end evidence is the F0 run itself: all 15 venvs in the worktree now report version_info=3.11.15, where before the change 14 plugin venvs were 3.13.13/3.12.13."
+      "evidence_path": ".shipwright/runs/iterate-2026-07-28-main-self-heal/f05-surface/",
+      "detail": "Both CLIs driven against the REAL repository and the REAL gh/git. main_health.py: status green, exit 0, one API call, unknown[] empty. check_repair_safety.py: verdict 'review' on this very diff - the gate fired on its own author's changed assertion, which is the rule working. test_repair_gate_bites.py: 6 cases against throwaway git repositories, every weakening refused, the honest repair allowed."
     },
     "test_completeness": {
       "status": "complete",
       "behaviors": [
         {
-          "behavior": "build_command names the pin for every discovered unit",
+          "behavior": "AC-1 main runs are never cancelled (ci.yml + security.yml)",
           "disposition": "tested",
-          "evidence": "test_every_unit_runs_the_interpreter_ci_pins PASSED; mutation 1 (pin removed) FAILS it"
+          "evidence": "test_main_attribution_workflows::test_main_runs_are_never_cancelled[2] PASSED"
         },
         {
-          "behavior": "the pin is an argument to uv, not to pytest",
+          "behavior": "AC-1 main runs get a per-commit group so they do not queue",
           "disposition": "tested",
-          "evidence": "test_the_pin_is_an_argument_to_uv_not_to_pytest PASSED"
+          "evidence": "test_main_attribution_workflows::test_main_runs_get_their_own_group_so_they_do_not_queue[2] PASSED"
         },
         {
-          "behavior": "warm_up warms the pinned interpreter",
+          "behavior": "AC-2 bloat-check runs on merges; comments stay PR-only",
           "disposition": "tested",
-          "evidence": "test_warm_up_prebuilds_the_interpreter_the_units_will_use PASSED; mutation 1 FAILS it"
+          "evidence": "test_main_attribution_workflows (2 cases) PASSED"
         },
         {
-          "behavior": "ensure_xdist_available probes the pinned interpreter",
+          "behavior": "AC-2 base ref guarded against empty / all-zero / unresolvable",
           "disposition": "tested",
-          "evidence": "test_xdist_preflight_probes_the_pinned_interpreter PASSED; mutation 1 FAILS it"
+          "evidence": "test_main_attribution_workflows::test_bloat_check_guards_every_shape_its_base_ref_can_take PASSED"
         },
         {
-          "behavior": "the published triage-card suite command carries the pin",
+          "behavior": "AC-3 a PR run never masks the push-to-main run for the same sha",
           "disposition": "tested",
-          "evidence": "test_no_uv_invocation_escapes_the_interpreter_pin PASSED; mutation 9b (suite_report reverted) FAILS it"
+          "evidence": "test_main_health::test_pr_run_for_the_same_sha_never_masks_the_main_run PASSED"
         },
         {
-          "behavior": "no uv/uvx call site escapes UV_RUN, across 4 modules and both quote styles",
+          "behavior": "AC-3 conclusion mapping; cancelled is inconclusive, not a pass",
           "disposition": "tested",
-          "evidence": "test_no_uv_invocation_escapes_the_interpreter_pin PASSED; mutations 5 (4th site) and 9a (single-quoted) FAIL it"
+          "evidence": "test_main_health (4 cases) PASSED"
         },
         {
-          "behavior": "the xdist refusal names the interpreter as a possible cause",
+          "behavior": "AC-3 only the overlap class decides health",
           "disposition": "tested",
-          "evidence": "test_unprovisionable_xdist_is_an_actionable_error PASSED (asserts PYTHON_VERSION in the message)"
+          "evidence": "test_main_health::test_a_red_finding_class_workflow_does_not_make_the_commit_red PASSED"
         },
         {
-          "behavior": "the repo-root .python-version exists",
+          "behavior": "AC-3 first bad = oldest red after the anchor; latest red reported too",
           "disposition": "tested",
-          "evidence": "test_every_tracked_version_file_agrees_with_the_runner_pin PASSED; mutation 4 (root file deleted) FAILS it"
+          "evidence": "test_main_health_attribution::test_first_bad_is_the_oldest_red_and_latest_red_is_reported_separately PASSED"
         },
         {
-          "behavior": "every plugin carries its own .python-version",
+          "behavior": "AC-3 gaps downgrade confidence; three refusals have distinct reason codes",
           "disposition": "tested",
-          "evidence": "test_every_plugin_ci_runs_carries_its_own_version_file PASSED; mutation 3 (one deleted) FAILS it"
+          "evidence": "test_main_health_attribution (6 cases) PASSED"
         },
         {
-          "behavior": "all 15 version files equal the pin",
+          "behavior": "AC-3 unknown is never green, whatever failed",
           "disposition": "tested",
-          "evidence": "test_every_tracked_version_file_agrees_with_the_runner_pin PASSED; mutation 2 (pin -> 3.12) FAILS it"
+          "evidence": "test_main_health_tool (4 cases: gh, git, no runs, running) PASSED"
         },
         {
-          "behavior": "every workflow's uv python install equals the pin",
+          "behavior": "AC-3 a broken diagnosis call does not cost the verdict",
           "disposition": "tested",
-          "evidence": "test_runner_pins_the_interpreter_every_workflow_installs PASSED; mutation 6c (3.13) FAILS it"
+          "evidence": "test_main_health_tool::test_a_broken_diagnosis_call_degrades_without_losing_the_verdict PASSED"
         },
         {
-          "behavior": "an unparseable or quoted or expression pin FAILS instead of being skipped",
+          "behavior": "AC-3 failing step from structured data; excerpt reduced, capped, redacted, untrusted",
           "disposition": "tested",
-          "evidence": "same test; mutations 6a (quoted \"3.12\") and 6b (${{ matrix.python }}) FAIL it"
+          "evidence": "test_main_health_diagnosis (9 cases) PASSED"
         },
         {
-          "behavior": "a patch-level pin such as 3.11.15 is tolerated",
+          "behavior": "AC-3 a commit sha is not redacted as if it were a secret",
           "disposition": "tested",
-          "evidence": "same test; positive control with ci.yml pinned to 3.11.15 PASSES"
+          "evidence": "test_main_health_diagnosis::test_a_commit_sha_is_not_mistaken_for_a_secret PASSED"
         },
         {
-          "behavior": "any CI surface running this repo's Python must declare an interpreter",
+          "behavior": "AC-3 main-advanced detected; older commits do not false-positive",
           "disposition": "tested",
-          "evidence": "test_every_ci_surface_that_runs_python_declares_the_interpreter PASSED; mutations 7 and 10 FAIL it"
+          "evidence": "test_main_health_status (2 cases) PASSED"
         },
         {
-          "behavior": "a commented-out pin does not count as a declaration",
+          "behavior": "AC-3 a detected race downgrades the status instead of annotating it",
           "disposition": "tested",
-          "evidence": "same test; mutations 11 (trailing comment) and 11b (full-line comment) FAIL it"
+          "evidence": "test_main_health_status::test_a_detected_race_downgrades_the_answer_it_does_not_just_annotate_it PASSED"
         },
         {
-          "behavior": "every marketplace copy path excludes .python-version",
+          "behavior": "AC-3 monitored policy and real YAML agree, both directions",
           "disposition": "tested",
-          "evidence": "test_every_copy_path_excludes_the_version_file PASSED; mutation 8a FAILS it"
+          "evidence": "test_main_attribution_workflows (3 cases) PASSED"
         },
         {
-          "behavior": "prune paths do NOT exclude it, so a stale cached copy stays removable",
+          "behavior": "AC-4 the start hook sits between cutting the worktree and loading context",
           "disposition": "tested",
-          "evidence": "test_the_prune_paths_do_not_exclude_it PASSED; mutation 8b FAILS it"
+          "evidence": "test_main_repair_hooks::test_the_start_hook_runs_right_after_the_worktree_is_cut PASSED"
+        },
+        {
+          "behavior": "AC-4 the F11 hook runs before the arm",
+          "disposition": "tested",
+          "evidence": "test_main_repair_hooks::test_the_f11_hook_runs_before_the_merge_is_armed PASSED"
+        },
+        {
+          "behavior": "AC-4 both hooks say unknown is never green",
+          "disposition": "tested",
+          "evidence": "test_main_repair_hooks::test_unknown_is_never_treated_as_green_at_either_hook PASSED"
+        },
+        {
+          "behavior": "AC-4 the green path costs exactly one API call",
+          "disposition": "tested",
+          "evidence": "test_main_health_tool::test_the_green_path_costs_exactly_one_api_call PASSED"
+        },
+        {
+          "behavior": "AC-5 the procedure carries every repair step and stays in budget",
+          "disposition": "tested",
+          "evidence": "test_main_repair_hooks (3 cases) PASSED"
+        },
+        {
+          "behavior": "AC-5 the repair is based on origin/main, not on this iterate's HEAD",
+          "disposition": "tested",
+          "evidence": "test_main_repair_hooks::test_the_repair_is_based_on_the_shared_branch_not_on_this_iterate PASSED"
+        },
+        {
+          "behavior": "AC-6 every unambiguous coverage loss is blocked",
+          "disposition": "tested",
+          "evidence": "test_assertion_weakening (12 cases incl. rename-out-of-collection) PASSED"
+        },
+        {
+          "behavior": "AC-6 the fences that would make the gate unusable hold",
+          "disposition": "tested",
+          "evidence": "test_assertion_weakening (5 fence cases) PASSED"
+        },
+        {
+          "behavior": "AC-6 a changed expectation is reported, never blocked",
+          "disposition": "tested",
+          "evidence": "test_assertion_weakening (3 cases) PASSED"
+        },
+        {
+          "behavior": "AC-6 the gate bites through real git; the honest repair passes",
+          "disposition": "tested",
+          "evidence": "test_repair_gate_bites (6 cases, real throwaway repositories) PASSED"
+        },
+        {
+          "behavior": "AC-6 the CI step blocks, keys on the shared grammar, runs the checker from the BASE revision",
+          "disposition": "tested",
+          "evidence": "test_main_attribution_workflows (4 cases) PASSED"
+        },
+        {
+          "behavior": "AC-6 escalation classes and idempotency keys",
+          "disposition": "tested",
+          "evidence": "test_main_health_diagnosis (4 cases) PASSED"
+        },
+        {
+          "behavior": "AC-6 a red finding-class workflow gets its own non-green status",
+          "disposition": "tested",
+          "evidence": "test_main_health_status::test_a_failing_finding_class_workflow_is_reported_AND_changes_the_status PASSED"
+        },
+        {
+          "behavior": "AC-7 claim matching: branch, fork rejected, sha prefix, stale, failed attempts",
+          "disposition": "tested",
+          "evidence": "test_main_health_diagnosis (8 cases) PASSED"
+        },
+        {
+          "behavior": "AC-7 a same-SHA claim push is NOT a lock (the falsification create-ref rests on)",
+          "disposition": "tested",
+          "evidence": "test_repair_claim_is_atomic::test_pushing_the_claim_branch_before_working_is_NOT_a_lock PASSED"
+        },
+        {
+          "behavior": "AC-7 a push only rejects once histories diverged",
+          "disposition": "tested",
+          "evidence": "test_repair_claim_is_atomic::test_a_push_only_rejects_once_the_histories_have_diverged PASSED"
+        },
+        {
+          "behavior": "AC-7 the loser can read who holds the claim; a released claim lets the next through",
+          "disposition": "tested",
+          "evidence": "test_repair_claim_is_atomic (2 cases) PASSED"
+        },
+        {
+          "behavior": "AC-7 a branch-only claim reports staleness unknown, and stale once its PRs are closed",
+          "disposition": "tested",
+          "evidence": "test_main_health_diagnosis (2 cases) PASSED"
+        },
+        {
+          "behavior": "AC-7 releasing deletes the ref, not only the pull request",
+          "disposition": "tested",
+          "evidence": "test_main_repair_hooks::test_releasing_a_claim_deletes_the_ref_and_not_only_the_pull_request PASSED"
+        },
+        {
+          "behavior": "A repaired red further back is history; a red under a running tip is not",
+          "disposition": "tested",
+          "evidence": "test_main_health_attribution (2 cases) PASSED"
+        },
+        {
+          "behavior": "The retrieval limit is derived from the window, and saturation is reported",
+          "disposition": "tested",
+          "evidence": "test_main_health_status::test_run_limit_is_derived_from_the_window_not_fixed + attribution truncation cases PASSED"
+        },
+        {
+          "behavior": "An unreadable diff fails the safety gate closed rather than reporting clean",
+          "disposition": "tested",
+          "evidence": "test_repair_gate_bites::test_an_unreadable_base_fails_closed_rather_than_reporting_clean PASSED"
+        },
+        {
+          "behavior": "An agent actually OBEYS the two skill hooks at runtime",
+          "disposition": "untestable",
+          "reason_code": "covered-by-existing-test",
+          "note": "no test can compel a model to follow prose; that the prose exists, sits in the right place and says the right thing IS tested"
+        },
+        {
+          "behavior": "GitHub create-ref returns 422 for a duplicate claim; Actions' own step dispatch",
+          "disposition": "untestable",
+          "reason_code": "requires-external-nondeterministic-service",
+          "note": "host properties, not git ones. The git-side half is tested against a real remote; the gate's DECISION is tested through real git and its WIRING through parsed YAML"
         }
       ],
-      "untested_testable": 0,
-      "note": "17 behaviors, 0 testable-but-untested, against 7 acceptance criteria. No 'untestable' rows. The single candidate - 'uv actually resolves 3.11 at runtime' - is covered by ten real-subprocess probes recorded in the spec rather than filed as untestable: asserting it inside the F0 unit would make that unit depend on uv's interpreter-download service and on the exact patch build, i.e. a network-dependent non-deterministic assertion inside the very gate this run exists to make trustworthy."
+      "counts": {
+        "total": 40,
+        "tested": 38,
+        "untestable": 2,
+        "untested_testable": 0
+      },
+      "ledger_path": ".shipwright/planning/iterate/2026-07-28-main-self-heal.md"
     },
     "degraded": [
       {
-        "condition": "external_review_partial",
-        "detail": "Gemini returned finish_reason=length on BOTH external reviews (iterate mode and code mode), so each was recorded degraded/unavailable and only OpenAI answered. Per the standing rule a truncated reply is not a clean pass, so it is not counted as a second opinion. The GPT reviews were acted on in full: the iterate-mode review produced the 'absence is not agreement' CI guard and corrected an overstated warm_up claim; the code-mode review produced the comment-stripping fix and the quote-agnostic escape guard. Gemini's readable fragment raised only the 15-file duplication, which the operator had already decided and which AC6/AC7 address."
+        "condition": "local_f0_incomplete",
+        "detail": "shared/tests was terminated by the environment at 79%, then 94%, then 94% again - including one run deliberately detached from the session. ZERO failing tests in every attempt, and no Windows crash event for any of them. Memory pressure, a duplicated WebUI server and the pty idle-reaper were each investigated and FALSIFIED. The remainder of shared/tests is therefore unverified locally and is verified by CI as a Required Check on this PR."
+      },
+      {
+        "condition": "internal_review_cascade_lost",
+        "detail": "The Step-8 cascade was started twice and lost twice to the same environment fault. Substituted on the operator's instruction with two independent rounds of external_review.py --mode code, which returned 11 findings; 7 were fixed in-diff, three of them high."
       }
-    ]
+    ],
+    "ci_supplychain_ack": {
+      "run_id": "iterate-2026-07-28-main-self-heal",
+      "paths_fingerprint": "5647ce7a00cfc1a31ebcfcfba56e5a41bbecb6c9fa8d80e3991ab2a7f0219d06",
+      "consistent_with": "ADR-118",
+      "statement": "Adds no action and changes no pin: the third-party setup-uv stays SHA-pinned and GitHub-owned actions stay on mutable tags, exactly as ADR-118 decided. Three trust-boundary changes, each narrowing rather than widening it. On main the concurrency group becomes per-commit with cancelling off (ci.yml, security.yml), so every merge is verified instead of a later one cancelling an earlier one's checks. bloat-check gains a push-to-main trigger with a guarded base ref (empty, all-zero and unresolvable bases are detected rather than diffed against). And ci.yml gains ONE gating step, conditional on the fix-main-* repair convention, which materialises its checker from pull_request.base.sha and runs THAT against the PR tree — so a repair pull request cannot be judged by a checker it just edited. Token permissions are unchanged: read-only at the top level, no job widens itself.",
+      "ci_paths": [
+        ".github/workflows/bloat-check.yml",
+        ".github/workflows/ci.yml",
+        ".github/workflows/security.yml"
+      ]
+    }
   },
   "coverage": {
     "total": 80.2,
