@@ -117,6 +117,22 @@ escapes the worktree.
 `scripts/update-marketplace.sh`; `scripts/check_plugin_cache_sync.py` detects
 drift. (End users consuming the published plugins do not need this step.)
 
+The cache carries three trees and the check gates two: the versioned plugin
+dirs and `shared/` (reached as `{plugin_root}/../../shared`, home of the F11
+verifier every iterate runs). The cross-plugin mirror `cache/plugins/<name>/`
+is knowingly ungated — `ensure_shared_cache._plugins_healthy` gates repair of
+all 14 mirrors behind a single sentinel file, so a gate built on it would
+inherit that weakness (trg-7d1d8437). **The two sides of the comparison are
+established differently by design:** the repo side is `git ls-files`, because
+the cache is copied from a `git reset --hard origin/main` clone that holds
+exactly the tracked files; the cache side is a filesystem walk minus build
+artefacts, because the cache is not a git tree. `scripts/cache_tree_compare.py`
+holds the primitives and `scripts/cache_sync_report.py` the rendering. A zero
+is never read as agreement — neither an empty `ls-files` listing nor a listing
+none of whose files can be read — and the verdict names which trees it covers
+(`verified`), which it does not (`ungated`), and how each was established
+(`basis`).
+
 **Secrets.** Secrets live exclusively in `<project_root>/.env.local`, scaffolded
 by `/shipwright-adopt` (ADR-021) and read by
 `shared/scripts/lib/env.py::load_shipwright_env` — the framework external-review
@@ -185,6 +201,7 @@ _Existing user-facing documentation discovered by /shipwright-adopt._
 
 ## Architecture Updates
 > **One line per change** — always-loaded Layer-1 context, so every line costs tokens on every future iterate. Format: `- **<run_id|ADR-NNN>** (YYYY-MM-DD): <Impact> — <one sentence: what + key surface>. → decision_log (Run-ID/ADR)`. **Budget ≤ 600 chars; detail goes in the ADR / `.shipwright/planning/adr/`, not here.** Enforced repo-agnostically (incl. adopted repos) by the F11 verifier + `shared/scripts/tools/check_agent_doc_budget.py` (SSoT `lib.agent_doc_budget`); see `references/F2.md`. Bullet **shape** (a `run_id`|`ADR-NNN` anchor, an `<Impact> —` lead, and a `→` pointer — no `Campaign`/`sub_iterate`/free-text) is enforced from 2026-06-28 by `check_agent_doc_shape` (SSoT `lib.agent_doc_shape`); the release aggregator writes no duplicate `ADR-NNN` bullet — the run_id line is the single canonical entry. Full verbatim prose for compacted entries lives in [`../planning/adr/_archive-agent-doc-updates.md`](../planning/adr/_archive-agent-doc-updates.md). Routing (`lib.architecture_doc.IMPACT_TARGETS`): `convention`-impact → [`conventions.md`](conventions.md) `## Convention Updates`; only `component` / `data-flow` live here.
+- **iterate-2026-08-01-cache-sync-shared-tree** (2026-08-01): Component — `check_plugin_cache_sync` gains the cached `shared/` tree (1005 files, incl. the F11 verifier modules) and stops guessing what belongs in a tree: the repo side is `git ls-files` (the cache is a clone of exactly the tracked files), the cache side keeps the walk. New leaves `scripts/cache_tree_compare.py` + `scripts/cache_sync_report.py`; the verdict carries `verified`/`ungated`/`basis` and never reads a zero as agreement. Mirror stays ungated (trg-7d1d8437). → decision_log (Run-ID).
 - **iterate-2026-07-31-it1-s2-expected-status** (2026-07-31): Component — `triage.mark_status` gains keyword-only `expected_status`, checked against the resolved status INSIDE the lock it already held, so a background producer cannot overwrite a decision a person recorded between its unlocked read and its write (trg-93ceb2b0); a mismatch raises new public `StatusPreconditionError` having written nothing, and the call now RETURNS the status it replaced. All nine automatic flip sites and both operator-CLI ones pass it and report a miss as kept, never resolved. → decision_log (Run-ID).
 - **iterate-2026-07-31-derived-docs-at-release** (2026-07-31): Data-flow — the seven `.shipwright/compliance/` documents stop being frozen on the default branch: the release stages them (changelog Step 5.5, explicit pathspec, verified from the COMMIT not the index) and `/shipwright-compliance --refresh-pr` opens a documents-only PR in between — no credential with write access anywhere. New `lib/compliance_refresh.py` (declared per-path classification, unclassified fails a test) + four `tools/compliance_*` modules; `source_state` gains `base=`/`release=`. → decision_log (Run-ID).
 - **iterate-2026-07-31-triage-store-failsafe** (2026-07-31): Component — the triage store's git calls route through new `lib/git_base.run_git_soft` (timeout REPORTED as rc 124, not raised), so each call under the canonical lock takes a per-site fail-safe direction instead of killing git and stranding `.git/index.lock` — in `reconcile_triage`/`sweep_drift`, the operator's MAIN tree. New leaves `lib/ci_env.py` (ONE `$CI` predicate, was four; CI routes cards to the TRACKED store) and `lib/sweep_drift_events.py`. GC survivors come from a RE-READ after the commit window. → decision_log (Run-ID).
