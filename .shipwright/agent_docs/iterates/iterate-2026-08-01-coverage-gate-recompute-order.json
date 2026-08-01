@@ -1,0 +1,242 @@
+{
+  "run_id": "iterate-2026-08-01-coverage-gate-recompute-order",
+  "date": "2026-08-01T08:21:51.702179Z",
+  "event_at": "2026-07-31T22:11:53.871884+00:00",
+  "type": "change",
+  "complexity": "medium",
+  "branch": "iterate/coverage-gate-recompute-order",
+  "tests_passed": true,
+  "spec": ".shipwright/planning/iterate/2026-08-01-coverage-gate-recompute-order.md",
+  "adr": "iterate-2026-08-01-coverage-gate-recompute-order",
+  "prior_source": "keyword",
+  "risk_flags": [],
+  "test_completeness": {
+    "status": "complete",
+    "behaviors": [
+      {
+        "behavior": "git_context classifies a real work tree as work_tree",
+        "disposition": "tested",
+        "evidence": "test_check_integration_coverage_infra.py \u2014 every real-git test drives it PASSED",
+        "category": "unit"
+      },
+      {
+        "behavior": "git_context classifies a definitive English 'not a git repository' as not_git",
+        "disposition": "tested",
+        "evidence": "test_a_definitive_non_repo_answer_is_not_a_git_error PASSED",
+        "category": "unit"
+      },
+      {
+        "behavior": "git_context classifies a LOCALIZED non-git fatal as not_git via the structural fallback",
+        "disposition": "tested",
+        "evidence": "test_a_localized_non_repo_answer_is_still_not_a_git_error PASSED",
+        "category": "unit"
+      },
+      {
+        "behavior": "git_context classifies a localized failure INSIDE a real repo as git_error",
+        "disposition": "tested",
+        "evidence": "test_a_localized_failure_INSIDE_a_repo_is_a_git_error PASSED",
+        "category": "unit"
+      },
+      {
+        "behavior": "git_context classifies a synthesized failure (empty stderr: OSError/timeout) as git_error",
+        "disposition": "tested",
+        "evidence": "test_git_timeout_is_a_git_error_not_a_missing_repo PASSED",
+        "category": "unit"
+      },
+      {
+        "behavior": "a cross-component diff with no integration behavior ERRORs at trivial/small/medium/large",
+        "disposition": "tested",
+        "evidence": "test_cross_component_without_integration_behavior_fails_at_every_complexity[4 params] PASSED",
+        "category": "unit"
+      },
+      {
+        "behavior": "a cross-component diff WITH an integration behavior passes at all four complexities",
+        "disposition": "tested",
+        "evidence": "test_integration_behavior_satisfies_the_gate_at_every_complexity[4 params] PASSED",
+        "category": "unit"
+      },
+      {
+        "behavior": "a non-cross-component diff passes (unchanged common case)",
+        "disposition": "tested",
+        "evidence": "test_ok_when_change_is_not_cross_component PASSED",
+        "category": "unit"
+      },
+      {
+        "behavior": "a non-cross-component diff passes with NO iterate entry at all (newly reachable after the reorder)",
+        "disposition": "tested",
+        "evidence": "test_non_cross_component_passes_with_no_iterate_entry_at_all PASSED",
+        "category": "unit"
+      },
+      {
+        "behavior": "the flag is recomputed from the diff, not from any self-reported risk_flags",
+        "disposition": "tested",
+        "evidence": "test_recomputes_from_diff_not_self_report PASSED",
+        "category": "unit"
+      },
+      {
+        "behavior": "outside a git repository the gate SKIPs",
+        "disposition": "tested",
+        "evidence": "test_outside_a_git_repo_skips PASSED",
+        "category": "unit"
+      },
+      {
+        "behavior": "a git fault inside a repo ERRORs at every complexity",
+        "disposition": "tested",
+        "evidence": "test_git_subprocess_failure_errors_at_every_complexity[4 params] PASSED",
+        "category": "unit"
+      },
+      {
+        "behavior": "an absent --commit resolves HEAD and the gate still enforces",
+        "disposition": "tested",
+        "evidence": "test_absent_commit_falls_back_to_head_and_still_enforces PASSED",
+        "category": "unit"
+      },
+      {
+        "behavior": "an unresolvable HEAD with no --commit ERRORs",
+        "disposition": "tested",
+        "evidence": "test_unresolvable_head_without_commit_errors PASSED",
+        "category": "unit"
+      },
+      {
+        "behavior": "an unobtainable diff (None) ERRORs",
+        "disposition": "tested",
+        "evidence": "test_unobtainable_diff_errors PASSED",
+        "category": "unit"
+      },
+      {
+        "behavior": "an empty diff ([]) is a FACT and passes \u2014 not conflated with None",
+        "disposition": "tested",
+        "evidence": "test_empty_diff_is_not_unobtainable PASSED",
+        "category": "unit"
+      },
+      {
+        "behavior": "an invalid explicitly-supplied commit reaches the fail-closed path",
+        "disposition": "tested",
+        "evidence": "test_invalid_supplied_commit_reaches_the_fail_closed_path PASSED",
+        "category": "unit"
+      },
+      {
+        "behavior": "_floor_note claims a floor only when it can substantiate one (12 input shapes)",
+        "disposition": "tested",
+        "evidence": "test_floor_note_only_claims_a_floor_it_can_substantiate[12 params] PASSED",
+        "category": "unit"
+      },
+      {
+        "behavior": "a below-medium failure names the classification floor",
+        "disposition": "tested",
+        "evidence": "test_below_medium_failure_names_the_classification_floor[trivial,small] PASSED",
+        "category": "unit"
+      },
+      {
+        "behavior": "a medium/large failure makes no floor claim",
+        "disposition": "tested",
+        "evidence": "test_enforcing_complexity_makes_no_floor_claim[medium,large] PASSED",
+        "category": "unit"
+      },
+      {
+        "behavior": "an absent iterate entry still ERRORs and claims no floor",
+        "disposition": "tested",
+        "evidence": "test_absent_entry_still_fails_and_claims_no_floor PASSED",
+        "category": "unit"
+      },
+      {
+        "behavior": "a corrupt (invalid-JSON) entry file still ERRORs and claims no floor",
+        "disposition": "tested",
+        "evidence": "test_malformed_entry_still_fails_and_claims_no_floor PASSED",
+        "category": "unit"
+      },
+      {
+        "behavior": "a NON-UTF-8 entry file is absorbed and fails closed instead of raising",
+        "disposition": "tested",
+        "evidence": "test_non_utf8_entry_file_fails_closed_instead_of_raising PASSED",
+        "category": "unit"
+      },
+      {
+        "behavior": "a non-dict entry is treated as absent rather than raising AttributeError",
+        "disposition": "tested",
+        "evidence": "test_a_non_dict_entry_is_treated_as_absent PASSED",
+        "category": "unit"
+      },
+      {
+        "behavior": "the PER-RUN F5c entry ledger is preferred over the shared results file",
+        "disposition": "tested",
+        "evidence": "test_integration_coverage_reads_the_per_run_entry_after_a_restore PASSED (de-vacuumed this run: it previously hit the non-git SKIP and asserted nothing)",
+        "category": "integration"
+      },
+      {
+        "behavior": "a FOREIGN run's ledger in the shared file does not satisfy the gate",
+        "disposition": "tested",
+        "evidence": "test_a_foreign_runs_ledger_does_not_satisfy_the_gate PASSED",
+        "category": "integration"
+      },
+      {
+        "behavior": "this run's own ledger in the shared file DOES satisfy the gate",
+        "disposition": "tested",
+        "evidence": "test_this_runs_ledger_in_the_shared_file_still_satisfies_the_gate PASSED",
+        "category": "integration"
+      },
+      {
+        "behavior": "an unreadable/corrupt shared results file gives a DISTINCT error, not 'missing coverage'",
+        "disposition": "tested",
+        "evidence": "test_corrupt_results_json_is_distinct_failure PASSED",
+        "category": "integration"
+      },
+      {
+        "behavior": "the cheap remedy the failure text promises actually clears the gate below medium",
+        "disposition": "tested",
+        "evidence": "test_the_cheap_remedy_actually_works_below_medium[trivial,small] PASSED",
+        "category": "integration"
+      },
+      {
+        "behavior": "removal coverage: an infra gap ERRORs at every complexity (supersedes MUST-FIX 1)",
+        "disposition": "tested",
+        "evidence": "test_missing_commit_errors_at_every_complexity[4 params] PASSED",
+        "category": "unit"
+      },
+      {
+        "behavior": "removal coverage: a non-git project with NO commit still SKIPs (the ordering guard)",
+        "disposition": "tested",
+        "evidence": "test_non_git_project_with_no_commit_skips_rather_than_erroring[4 params] PASSED \u2014 written after a mutation probe showed the ordering was unpinned",
+        "category": "unit"
+      },
+      {
+        "behavior": "removal coverage: a git fault ERRORs at every complexity",
+        "disposition": "tested",
+        "evidence": "test_git_subprocess_failure_errors_at_every_complexity[4 params] PASSED",
+        "category": "unit"
+      },
+      {
+        "behavior": "cross-layer coverage keeps its medium+ SCOPE gate (unchanged by this run)",
+        "disposition": "tested",
+        "evidence": "test_cross_layer_still_skips_below_medium PASSED",
+        "category": "unit"
+      },
+      {
+        "behavior": "cross-layer coverage keeps its original commit-before-precheck order",
+        "disposition": "tested",
+        "evidence": "test_missing_commit_errors_at_medium_for_cross_layer PASSED",
+        "category": "unit"
+      },
+      {
+        "behavior": "the Phase Matrix Integration Coverage row is gated at every tier (cell-parsing, not substring)",
+        "disposition": "tested",
+        "evidence": "test_phase_matrix_integration_coverage_row PASSED \u2014 strengthened this run; the old substring assertion stayed green with a tier reverted to 'skip'",
+        "category": "unit"
+      }
+    ],
+    "counts": {
+      "total": 35,
+      "tested": 35,
+      "untestable": 0,
+      "untested_testable": 0
+    },
+    "ledger_path": ".shipwright/planning/iterate/iterate-2026-08-01-coverage-gate-recompute-order/"
+  },
+  "surface_verification": {
+    "surface": "cli",
+    "tests_run": 101,
+    "exit_code": 0,
+    "evidence_path": ".shipwright/runs/iterate-2026-08-01-coverage-gate-recompute-order/surface_verification.json",
+    "detail": "The real-git gate suites, which drive check_integration_coverage / check_removal_coverage / check_cross_layer_coverage end-to-end through actual git worktrees, the F5c entry store and the shared results file. Additionally the production surface itself \u2014 verify_iterate_finalization.py \u2014 was run by hand against this worktree: integration coverage reported OK (no cross-component machinery touched), removal coverage RAN and passed rather than skipping on an unknown complexity (the behaviour this change introduces), and cross-layer correctly skipped on scope. Its overall non-zero exit at that point was the expected pre-finalization state (no F5c entry, no commit, no changelog drop), not a defect."
+  }
+}

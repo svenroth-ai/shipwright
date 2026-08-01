@@ -278,8 +278,14 @@ def test_both_gates_registered_in_run_all_checks(tmp_path):
     assert any("cross-layer coverage" in n for n in names), names
 
 
-def test_gates_skip_cleanly_below_medium(tmp_path):
-    # A non-git, non-medium project → both gates SKIP (ok=True), never crash / false-fail.
+def test_gates_skip_cleanly_outside_a_git_repo(tmp_path):
+    # A NON-GIT project → both gates SKIP (ok=True), never crash / false-fail.
+    #
+    # Renamed from test_gates_skip_cleanly_below_medium
+    # (iterate-2026-08-01-coverage-gate-recompute-order): the old name claimed a
+    # property that change DELETED for removal_coverage (infra gaps now ERROR at
+    # every complexity), and it passed only because `tmp_path` is non-git — it never
+    # exercised the tier. Now named for what it actually pins.
     from tools.verifiers.layer_coverage import (
         check_cross_layer_coverage,
         check_removal_coverage,
