@@ -18,12 +18,16 @@ Consolidated protocol for: Repo Scout, Mini-Plan, Escape Hatch, External LLM Rev
    a nicety.** Stage 1 has no diff: it fires `cross_component` and the rest
    only from *message* keywords, so a change that touches `hooks.json` or
    `churn_merge.py` without naming it raises nothing. `cross_component` floors
-   at **medium**, and the F11 verifier `check_integration_coverage` returns a
-   green SKIP whenever the recorded complexity is below medium — it recomputes
-   the flag from the diff, but only after that complexity gate, so the flag's
-   advertised non-dodgeability does not survive a low estimate. The file list
-   from step 2 is already in hand; this is the first point in the run where a
-   diff-shaped signal exists at all.
+   at **medium** — that is a *classification* floor: it escalates the run, and
+   is not what decides whether the F11 gate enforces. The F11 verifier
+   `check_integration_coverage` recomputes the flag from the diff and enforces
+   at **every** complexity, so a detection missed here is still caught
+   mechanically at finalization (iterate-2026-08-01-coverage-gate-recompute-order).
+   **That is a backstop, not a substitute.** Being caught at F11 means being
+   blocked *after* the work is built, with the integration test still to write;
+   catching it here is what lets the run be scoped correctly from the start. The
+   file list from step 2 is already in hand; this is the first point in the run
+   where a diff-shaped signal exists at all.
 4. Verify risk flags from Stage 1 are accurate
 5. Check if the change crosses split boundaries (cheap: the FRs from step 1)
 6. Output: confirm estimate or upgrade

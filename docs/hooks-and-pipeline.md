@@ -548,12 +548,28 @@ unit-tested, the interaction unproven (the auto-merge churn cascade is the
 motivating class). The new `cross_component` risk flag
 (`classify_complexity.CROSS_COMPONENT_FILE_PATTERNS`: merge/churn/event-log
 resolver, Claude-Code hooks + hook fan-out, pipeline phase validators, campaign
-drain) requires, at medium+, a `category:"integration"` behavior in the Test
-Completeness Ledger — a real-scenario integration test proving the pieces compose
+drain) requires a `category:"integration"` behavior in the Test Completeness
+Ledger — a real-scenario integration test proving the pieces compose
 (reference `shared/tests/test_parallel_merge_cascade_integration.py`). NON-dodgeable:
 the F11 verifier `check_integration_coverage` RECOMPUTES the flag from the diff
 (merge-base..HEAD), not an agent-reported value, and STOPs without the behavior.
 The verifier keeps a drift-pinned local pattern copy so it never cross-plugin-imports.
+
+**The gate applies at EVERY complexity
+(iterate-2026-08-01-coverage-gate-recompute-order).** It originally ran at medium+
+only, which read as harmless because the flag carries `min_complexity: medium` —
+a *detected* cross-component change is already escalated to medium, so the gate
+fires. But that made the below-medium band reachable only when detection FAILED at
+classification time (Stage 1 sees the message, not the diff) and the Stage-2 Quick
+Scout detector step did not catch it — i.e. the recompute stood down in exactly the
+case it exists to backstop, gated on the self-reported label sitting one field over.
+`min_complexity` is now understood strictly as the *classification* escalation
+floor; gate enforcement is independent and diff-driven. The same run made
+`layer_coverage`'s infra failures (missing `--commit`, unresolvable base ref, git
+fault, collector/regen failure) fail closed at every complexity, superseding
+MUST-FIX 1's "SKIP below medium" — `check_removal_coverage` documented itself as
+running at all complexities while declining to conclude at most of them. Only a
+genuine non-git context still skips, in both gates.
 
 **The CI trust boundary needs an acknowledgement, not more review
 (iterate-2026-07-18-ci-supplychain-risk-flag, triage `trg-9509c2e8`).** Nothing in

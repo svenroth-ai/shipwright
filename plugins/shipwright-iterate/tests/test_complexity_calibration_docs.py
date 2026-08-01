@@ -8,9 +8,12 @@ load-bearing rather than explanatory, so they are pinned rather than trusted:
    cap's justification is that under-classification is recoverable at Stage 2 —
    which only holds if the Stage 2 that actually runs can still see
    cross-component changes. Stage 1 raises `cross_component` from *message*
-   keywords alone, and the F11 verifier `check_integration_coverage` green-SKIPs
-   below medium, so this step is the only place a diff-shaped signal reaches the
-   estimate. If it is edited out, the cap silently loses its safety net.
+   keywords alone, so this step is the only place a diff-shaped signal reaches
+   the ESTIMATE. The F11 verifier `check_integration_coverage` now enforces at
+   every complexity (iterate-2026-08-01-coverage-gate-recompute-order), so a
+   missed detection is still caught — but at finalization, after the work is
+   built. If this step is edited out, the cap loses the half of its safety net
+   that acts while the scoping decision is still cheap.
 
 2. **F5c records `prior_source`.** It is what makes the fall-through auditable
    at all, and what unblocks the better calibration (median over

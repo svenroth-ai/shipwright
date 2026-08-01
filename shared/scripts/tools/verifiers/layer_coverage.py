@@ -15,12 +15,21 @@ Both are RECOMPUTED from git + freshly-regenerated base/head manifests
 (``_layer_coverage_regen``), never from a self-reported ledger or the committed artifact —
 the same non-dodgeable posture as ``check_integration_coverage``.
 
-FAIL-CLOSED on infra failure (MUST-FIX 1): for a **medium/large** iterate, a missing
-``--commit``, an unresolvable base ref, a failed regeneration / collector load, or a
-verifier exception is an **ERROR (block)**, never a green SKIP — a gate that cannot run on
-an iterate it is meant to enforce must FAIL. Only **below medium** does an infra gap SKIP.
-``removal_coverage`` runs at **all** complexities (SHOULD-FIX 6 — a removal is never
-trivial); ``cross_layer_coverage`` runs at **medium+** only.
+FAIL-CLOSED on infra failure, at **every** complexity: a missing ``--commit``, an
+unresolvable base ref, a git subprocess failure/timeout, a failed regeneration / collector
+load, or a verifier exception is an **ERROR (block)**, never a green SKIP — a gate that
+cannot run on an iterate it is meant to enforce must FAIL. Only a genuine **non-git
+context** stands the gate down, and that is an inapplicable context rather than a failure.
+
+*This supersedes MUST-FIX 1's original "SKIPs below medium" carve-out
+(iterate-2026-08-01-coverage-gate-recompute-order).* ``removal_coverage`` documented itself
+as running at all complexities (SHOULD-FIX 6 — a removal is never trivial) while every
+infra path below medium returned a green SKIP: it ran, then declined to answer, in the
+colour of a pass. Deciding that on the run's own self-reported complexity label was the
+defect. ``cross_layer_coverage`` still runs at **medium+** only — that is a deliberate cost
+decision about SCOPE (regenerating base/head manifests with execution evidence is
+expensive), not an infra carve-out, and its scope gate returns before any infra path is
+reachable.
 
 FAIL-CLOSED reasoning (why these cannot false-green):
 * removal: the head manifest is regenerated from the HEAD checkout, so a stale test that
@@ -49,7 +58,7 @@ from ._layer_coverage_core import CrossLayerVerdict, evaluate_cross_layer  # noq
 from ._layer_coverage_regen import _merge_base, regenerate_base_head  # noqa: E402
 from ._layer_coverage_removal import RemovalVerdict, evaluate_removal  # noqa: E402
 from .common import CheckResult, Severity  # noqa: E402
-from .git_helpers import _run_git  # noqa: E402
+from .git_helpers import git_context  # noqa: E402
 
 _REMOVAL_NAME = "removal coverage (removed FR → orphaned tests)"
 _CROSS_LAYER_NAME = "cross-layer coverage (behaviour change → executed-passing layers)"
@@ -68,42 +77,52 @@ def _is_enforcing(complexity: str) -> bool:
     return complexity in ("medium", "large")
 
 
-def _git_context(project_root: Path) -> str:
-    """Tri-state git probe (coordinator FIX 1): ``work_tree`` | ``not_git`` | ``git_error``.
-
-    A binary ``_git_available`` conflates "not a git repo" (an inapplicable context → SKIP)
-    with a git SUBPROCESS failure/timeout on a real work-tree (a wedged index.lock / stalled
-    FS / >10s stall → an infra failure that must fail-CLOSED at medium+). Only a DEFINITIVE
-    non-git answer (rc 0 → not "true", or git ran and said "not a git repository") is
-    ``not_git``; a synthesized failure (OSError/timeout → rc 1, empty stderr) or any other
-    non-zero rc without that message is ``git_error``."""
-    rc, out, err = _run_git(project_root, "rev-parse", "--is-inside-work-tree", timeout=10.0)
-    if rc == 0:
-        return "work_tree" if out.strip() == "true" else "not_git"
-    if "not a git repository" in (err or "").lower() or "not a work tree" in (err or "").lower():
-        return "not_git"
-    return "git_error"
-
-
 def _git_precheck(name: str, project_root: Path, complexity: str) -> CheckResult | None:
-    """SKIP on a clean non-git context; ERROR (medium+) on a git subprocess failure/timeout;
-    ``None`` to proceed when it is a real work-tree."""
-    ctx = _git_context(project_root)
+    """SKIP on a clean non-git context; ERROR on a git subprocess failure/timeout;
+    ``None`` to proceed when it is a real work-tree.
+
+    The tri-state probe itself is ``git_helpers.git_context`` — it moved there so
+    ``integration_coverage`` could share one classification rather than growing a
+    second copy (iterate-2026-08-01-coverage-gate-recompute-order). Tests that
+    stub the git layer for this path must patch ``git_helpers._run_git``.
+    """
+    ctx = git_context(project_root)
     if ctx == "not_git":
         return _skip(name, "skipped (not a git work tree — git-diff enforcement N/A)")
-    if ctx == "git_error":
-        return _infra_result(name, complexity, "git probe failed/timed out (wedged index.lock / stalled FS)")
+    # Proceed only on an explicit work_tree — anything unrecognised must refuse, not
+    # fall through to the enforcing path as if the tree were healthy.
+    if ctx != "work_tree":
+        return _infra_result(
+            name, complexity,
+            "git could not answer whether this is a work tree (wedged index.lock, stalled FS, "
+            "`safe.directory` refusal, or git missing) — run "
+            "`git -C <project> rev-parse --is-inside-work-tree` for git's own message",
+        )
     return None
 
 
 def _infra_result(name: str, complexity: str, detail: str) -> CheckResult:
     """A regen infra FAILURE on a git repo (no commit / unresolvable base / collector or
-    archive failure / exception). Fail-CLOSED at medium+ (ERROR — block), a legitimate SKIP
-    below medium. Distinct from a non-git project, which is an inapplicable context, not a
-    failure — that always SKIPs (git-diff enforcement does not apply)."""
-    if _is_enforcing(complexity):
-        return CheckResult(name, False, f"cannot enforce this medium+ iterate: {detail}")
-    return _skip(name, f"skipped (complexity={complexity or 'unknown'}; {detail})")
+    archive failure / exception). Fail-CLOSED at EVERY complexity — ERROR, block.
+
+    SUPERSEDES MUST-FIX 1's "SKIP below medium"
+    (iterate-2026-08-01-coverage-gate-recompute-order). ``check_removal_coverage``
+    documents itself as running at all complexities because a removal is never
+    trivial, yet every infra path below medium returned a green SKIP: it ran, then
+    declined to answer, in the colour of a pass. "Runs" and "can conclude anything"
+    had drifted apart. A gate that cannot run on an iterate it is meant to enforce
+    must FAIL, and the recorded complexity — a self-reported label — is the wrong
+    thing to decide that on.
+
+    ``complexity`` stays in the signature and in the message: it is diagnostic, so
+    an operator reading a blocked trivial run can see what the run called itself.
+    Distinct from a non-git project, which is an inapplicable context rather than a
+    failure — that still SKIPs, via :func:`_git_precheck`, at every complexity.
+    """
+    return CheckResult(
+        name, False,
+        f"cannot enforce (complexity={complexity or 'unknown'}): {detail}",
+    )
 
 
 def _removal_suggest(display: str) -> str:
@@ -115,22 +134,29 @@ def _removal_suggest(display: str) -> str:
 
 def check_removal_coverage(project_root: Path, run_id: str, commit_hash: str = "") -> CheckResult:
     """Removal → orphan gate. Runs at ALL complexities (a removal is never trivial, SHOULD-FIX
-    6). Regenerates base+head (R3); an infra gap is ERROR at medium+, SKIP below (MUST-FIX 1);
-    a real un-retired test is a HARD FAIL at any complexity."""
+    6) — and now CONCLUDES at all of them: an infra gap is an ERROR at every complexity, not a
+    green SKIP below medium (iterate-2026-08-01-coverage-gate-recompute-order, superseding
+    MUST-FIX 1). Regenerates base+head (R3); a real un-retired test is a HARD FAIL at any
+    complexity; only a non-git context SKIPs."""
     name = _REMOVAL_NAME
     complexity = _complexity(project_root, run_id)
-    if not commit_hash:
-        return _infra_result(name, complexity, "no --commit supplied")
+    # Establish the git CONTEXT before asking for a commit. Ordering is
+    # load-bearing now that an infra gap ERRORs at every complexity: with the
+    # missing-commit branch first, a non-git project would hard-fail on a commit it
+    # was never going to have — a false-red introduced by the fail-closed change
+    # itself (iterate-2026-08-01-coverage-gate-recompute-order).
     precheck = _git_precheck(name, project_root, complexity)
     if precheck is not None:
         return precheck
+    if not commit_hash:
+        return _infra_result(name, complexity, "no --commit supplied")
     try:
         regen = regenerate_base_head(project_root, commit_hash, with_evidence=False)
         if regen is None:
             return _infra_result(name, complexity, "git unavailable / no base ref / collector unavailable")
         base, head, renames = regen
         verdict = evaluate_removal(base, head, renames)
-    except Exception as exc:  # noqa: BLE001 — surface as ERROR at medium+, never a silent crash
+    except Exception as exc:  # noqa: BLE001 — surface as ERROR at every complexity, never a silent crash
         return _infra_result(name, complexity, f"regeneration error: {type(exc).__name__}")
     return _removal_result(name, verdict)
 

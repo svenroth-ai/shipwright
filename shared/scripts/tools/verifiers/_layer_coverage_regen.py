@@ -17,7 +17,7 @@ otherwise the head manifest is built with EMPTY evidence (fail-closed → every 
 
 The collector lives in the compliance plugin. A shared verifier must not eagerly
 cross-plugin-import it (ADR-044), so the import is lazy + guarded here and only happens
-when a gate actually fires (medium+ complexity, git available, merge-base resolvable).
+when a gate actually fires (git available, merge-base resolvable, and — cross-layer only — medium+).
 """
 
 from __future__ import annotations
@@ -271,7 +271,7 @@ def regenerate_base_head(
     between the two gates (SHOULD-FIX 8); only the HEAD manifest is rebuilt per call so the
     cross-layer gate can fold in this run's evidence (``with_evidence``). Returns ``None`` when
     git is unavailable, no base ref resolves, the collector cannot load, or an archive fails —
-    every such case is an infrastructure gap the caller renders as ERROR (medium+) / SKIP."""
+    an infrastructure gap the caller renders as a blocking ERROR with no SKIP path left."""
     if not commit_hash or not _git_available(project_root):
         return None
     loaded = _load_collector()

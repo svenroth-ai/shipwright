@@ -13,11 +13,19 @@ degrade to "no hash" rather than propagating.
 
 from __future__ import annotations
 
-import hashlib
 import re
 import subprocess
+import sys
 from collections.abc import Iterable
-from pathlib import Path
+from pathlib import Path, PurePosixPath
+
+# APPEND, never insert: this directory holds top-level module names, and winning
+# resolution for the whole process is the ADR-045 collision class one dir over.
+if str(Path(__file__).resolve().parent) not in sys.path:
+    sys.path.append(str(Path(__file__).resolve().parent))
+
+# Re-exported: file_hash lived here until this module hit its 300-line ceiling.
+from cache_file_hash import file_hash  # noqa: E402,F401
 
 # The CACHE side's definition of "the tree": everything except these. A
 # seven-suffix ALLOWLIST here left 44 of 1005 cached shared/ files invisible
@@ -36,50 +44,17 @@ SKIP_DIRS = {"__pycache__", ".git", ".venv", ".pytest_cache", "node_modules",
              ".in_use"}
 SKIP_SUFFIXES = (".pyc", ".pyo")
 
+#: Files git TRACKS that `update-marketplace.sh` never copies — a third category beside
+#: SKIP_DIRS (tracked nowhere) and real drift. Filtered REPO-side only, so a stale
+#: cached copy still surfaces as `cache_only`. Keep entries NARROW: a filtered name can
+#: never be a diff, so an over-broad one downgrades content drift to an advisory count.
+#: Rationale + the pin against the shell: test_marketplace_excludes_python_version.py.
+NOT_DISTRIBUTED = frozenset({".python-version"})
+
 #: Written by the Claude Code cache manager into a directory it considers
 #: unreferenced, ahead of reaping it. Nothing in this repo writes it;
 #: :func:`find_orphan_markers` is the only reader.
 ORPHAN_MARKER = ".orphaned_at"
-
-
-def file_hash(path: Path) -> str | None:
-    """SHA-256 hex digest of a file, with CRLF→LF normalization for text.
-
-    Returns ``None`` if unreadable.
-
-    Reviewer-flagged Gemini-M1: a Windows checkout (CRLF) compared against a
-    Linux-synced cache (LF) would produce false drift on every text file.
-
-    Text is detected by CONTENT (a NUL byte in the first 8 KiB means binary),
-    not suffix — a suffix rule normalized only the old allowlist's seven names,
-    so it would have reported every ``.template`` and extensionless prompt file
-    as drifted forever once the walk began including them. Binary hashes
-    byte-exact in 64 KiB chunks.
-
-    The normalization is LOSSY for anything misclassified as text: two blobs
-    differing only in carriage-return bytes hash equal, so a wrong guess fails
-    toward a false GREEN. Nothing here is binary today; if that changes, the
-    sniff is what to revisit.
-
-    Reviewer-flagged OpenAI-M7 / Gemini-S3: refuse to follow symlinks. They
-    could escape the plugin root or form loops.
-    """
-    try:
-        if path.is_symlink():
-            return None
-        h = hashlib.sha256()
-        with path.open("rb") as fp:
-            head = fp.read(8192)
-            if b"\x00" in head:
-                h.update(head)
-                for chunk in iter(lambda: fp.read(65536), b""):
-                    h.update(chunk)
-                return h.hexdigest()
-            raw = head + fp.read()
-        h.update(raw.replace(b"\r\n", b"\n").replace(b"\r", b"\n"))
-        return h.hexdigest()
-    except OSError:
-        return None
 
 
 def walk_tracked_files(root: Path) -> dict[str, str]:
@@ -167,10 +142,24 @@ def repo_tracked_files(root: Path) -> tuple[dict[str, str], str, int]:
     hash is COUNTED, not dropped: shrinking ``tracked_count`` to match would
     let a partial checkout, an AV lock, a cloud placeholder or a submodule
     gitlink self-consistently report ``ok`` over a partial basis.
+
+    :data:`NOT_DISTRIBUTED` names ARE dropped: an unhashable file is of UNKNOWN state
+    (dropping it would hide a partial basis), a not-distributed one is KNOWN
+    not-comparable — a definitional narrowing, like :data:`SKIP_DIRS`.
     """
     listed, basis = _git_listing(root)
     if listed is None:
-        return walk_tracked_files(root), basis, 0
+        walked = {rel: d for rel, d in walk_tracked_files(root).items()
+                  if PurePosixPath(rel).name not in NOT_DISTRIBUTED}
+        return walked, basis, 0
+    # Dropped before hashing and before tracked_count: a file the sync never copies is
+    # not something the cache is missing, and counting it makes `ok` unreachable.
+    pre_filter = len(listed)
+    listed = [rel for rel in listed if PurePosixPath(rel).name not in NOT_DISTRIBUTED]
+    if pre_filter and not listed:
+        # A zero must never read as agreement (as _git_listing's own guard): an entry
+        # broad enough to empty a listing would yield tracked_count 0 and state `ok`.
+        return {}, f"{basis} (NOT_DISTRIBUTED filtered every tracked file)", pre_filter
     out: dict[str, str] = {}
     for rel in listed:
         digest = file_hash(root / rel)

@@ -3,9 +3,11 @@ the `cross_component` risk flag (iterate-2026-06-12-cross-component-gate).
 
 Mirrors `is_io_boundary_change`: a change touching the cross-component framework
 machinery (merge/churn/event-log resolver, Claude-Code hooks + hook fan-out,
-pipeline phase validators, campaign drain) trips the flag, which at medium+ forces
-an INTEGRATION-coverage behavior in the Test Completeness Ledger — the gap that let
-the merge-cascade fixes ship unit-tested but composition-unproven.
+pipeline phase validators, campaign drain) trips the flag, which forces an
+INTEGRATION-coverage behavior in the Test Completeness Ledger — the gap that let
+the merge-cascade fixes ship unit-tested but composition-unproven. The flag's
+`min_complexity: medium` escalates the RUN's classification; the F11 gate itself
+enforces at every complexity (iterate-2026-08-01-coverage-gate-recompute-order).
 """
 
 from __future__ import annotations

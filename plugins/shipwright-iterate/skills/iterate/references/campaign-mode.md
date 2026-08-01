@@ -308,3 +308,63 @@ If campaign directory doesn't exist yet:
 
 **When NOT using `--autonomous`:** skip this section entirely, proceed
 with normal single-iterate flow.
+
+---
+
+## Step 3.4 — Diff-Driven Risk Re-Check (runner contract)
+
+**The gap it closes.** A campaign unit classifies complexity exactly once, at
+runner Step 2, from the sub-iterate spec **text**, before any code exists.
+`classify()` takes `(message, sync_config_path, project_root)` and detects risk
+with `detect_risk_flags(message)` — a regex sweep over that message. The four
+*diff-driven* detectors in `risk_detectors.py` are imported by
+`classify_complexity` but never called by `classify()`; their documented caller
+is the **Stage-2 Repo Scout** (`iteration-planning.md`, Quick Scout step 3),
+which the runner never reaches. So `cross_component`,
+`touches_ci_supplychain` and the file-pattern halves of `touches_io_boundary` /
+`touches_build` are *structurally* unable to fire for a campaign unit.
+
+This is the same gap **3f-bis** already compensates for on the orchestrator
+side, and for the same stated reason. 3f-bis can only protect what happens
+*after* the runner returns; Step 3.4 protects what happens *inside* it.
+
+**Two consequences, and they differ.** `check_ci_supplychain_ack` applies at
+EVERY complexity and recomputes the flag from the diff, so a workflow-touching
+unit **hard-fails its own F6-verify** with an error naming an artifact nobody
+told it to produce. `check_integration_coverage` demands a `category:"integration"`
+behavior in the F5c ledger for the same diff. A unit that never learns the flag
+does not know to write one, and until 2026-08-01 that gate also green-SKIPped
+below `medium`, so an under-classified unit reported green without evaluating.
+That skip is gone (the gate now reads the ledger at every tier), but the unit is
+still blind: it cannot produce coverage for a flag it was never told about, and
+the recorded tier stays wrong. One dies loudly; the other passes quietly. Step
+3.4 fixes both by re-deciding from the real change set.
+
+**The change set is the working tree.** The runner commits at F6, *after* this
+step, so a `base...HEAD` range is empty here. The CLI therefore diffs
+`base_ref` → working tree (committed + staged + unstaged) and unions
+`git ls-files --others --exclude-standard` — a brand-new hook file appears in no
+diff at all. Getting this wrong reintroduces the exact blindness being removed.
+
+**Orchestrator handling of a CI escalation.** The runner returns
+`status: "escalated"` with `reason_code: "ci_supplychain_requires_operator"` and
+a non-empty `ci_paths`. No special-casing is needed at 3f: `escalated` is
+already a valid status (`autonomous_loop.VALID_STATUSES`), the whole result is
+persisted to `runs/{loop_id}/{id}/result.json`, and any non-`complete` status
+exits 3 → **STRICT-STOP** — no merge, no next unit, already-merged units stay
+durable. `campaign_progress.py` counts escalated units separately from failed
+ones, and `failure_reason` carries the escalation `reason` into `loop_state.json`,
+where the orchestrator (and the WebUI board) read it. The operator resolves it by recording the acknowledgement with
+`record_ci_supplychain_ack.py` — naming the posture decision the change agrees
+with — and re-running the unit. **The re-run must terminate, and that is why the
+CLI is ack-aware:** Build re-creates the same CI edit, so a re-check that only
+looked at the diff would escalate again, forever. A recorded ack *for this run id*
+therefore exits 0 while still reporting the flag and `ci_paths`. Presence is all
+Step 3.4 checks; `check_ci_supplychain_ack` still validates the ack's content, its
+run binding and the diff fingerprint at F11, so a bogus file buys nothing and a
+previous run's ack cannot license this diff. **The runner must never write that ack
+itself:**
+it certifies that a human reasoned about a trust-boundary change, and a runner
+authoring its own permission slip is precisely the failure the gate exists to
+catch (webui #285 reversed an accepted-risk posture unnoticed *through* a full
+medium iterate with external plan review).
