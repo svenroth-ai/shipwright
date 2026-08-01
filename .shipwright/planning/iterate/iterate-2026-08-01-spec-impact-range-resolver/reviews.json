@@ -1,0 +1,200 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-08-01-spec-impact-range-resolver",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-01T00:10:28.676547+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": "openrouter",
+      "completed_at": "2026-08-01T00:12:42.141803+00:00",
+      "disposition": null,
+      "recorded_by": "external-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 7,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "architecture",
+          "file": "shared/scripts/tools/verifiers/iterate_checks.py",
+          "line": 891,
+          "finding": "Anti-ratchet violation: file measured 1120 vs baseline current=1087 (ADR-093 exception). All 33 added lines were prose; the functional change is a one-token call swap. Pre-commit hook would block.",
+          "suggestion": "Shrink to <=1087 rather than bumping the baseline.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "shared/scripts/tools/verifiers/iterate_checks.py",
+          "line": 1003,
+          "finding": "Detail string over-claims 'this iterate's branch' in the two views where the subject is not the branch (single-commit fallback; branch prefix ending at event_commit), re-creating AC5's failure mode with the polarity flipped.",
+          "suggestion": "Name what was measured: 'this iterate's work up to <sha8>'.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "readability",
+          "file": "shared/tests/test_spec_impact_branch_range.py",
+          "line": 449,
+          "finding": "Assertion bans the word 'commit' rather than pinning a property, foreclosing the honest phrasing that fixes the over-claim.",
+          "suggestion": "Pin the exact old formulation instead.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/tests/test_spec_impact_branch_range.py",
+          "line": 288,
+          "finding": "Surviving mutation: 'if changed is None' -> 'if not changed' keeps the whole suite green, leaving the None-vs-[] distinction unpinned.",
+          "suggestion": "Add an empty-but-resolved-range test asserting FAIL.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "security",
+          "file": "shared/scripts/tools/verifiers/iterate_checks.py",
+          "line": 944,
+          "finding": "PRE-EXISTING: event_commit is self-reported and unvalidated against commit_hash.",
+          "suggestion": "Optional merge-base --is-ancestor check.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "docs/guide.md",
+          "line": 1704,
+          "finding": "guide.md still asserted the pre-change behaviour; CLAUDE.md names it explicitly.",
+          "suggestion": "Update the sentence.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "docs/hooks-and-pipeline.md",
+          "line": 2696,
+          "finding": "Inserted sentence left the paragraph un-rewrapped.",
+          "suggestion": "Re-wrap.",
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-08-01T00:11:10.643358+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 5,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "boundary & contract",
+          "file": "shared/scripts/tools/verifiers/iterate_checks.py:962",
+          "line": null,
+          "finding": "Claim under doubt: same class as the four #503 sibling conversions, so the widening is safe — Polarity is inverted: the four siblings use the changed set as a violation TRIGGER (widening = fail-safe); this gate uses it as compliance EVIDENCE (widening = fail-OPEN). Under the supported 'stacked' campaign strategy, unit N's range holds unit N-1's unmerged commits, so N-1's spec.md satisfies N's gate.",
+          "suggestion": "Run-ID intersection, or accept + pin + document.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "hidden coupling",
+          "file": "shared/scripts/tools/verifiers/git_helpers.py:142",
+          "line": null,
+          "finding": "Claim under doubt: SKIP is a strict improvement over accusing — On a non-main trunk (e.g. develop) _branch_base_commit resolves only one candidate and returns None, so the gate silently SKIPs where it previously FAILed. Not reachable in CI (no workflow invokes F11).",
+          "suggestion": "Make the skip say WHY.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "reversibility",
+          "file": "shared/tests/test_spec_impact_branch_range.py",
+          "line": null,
+          "finding": "Claim under doubt: Probe 5: the pre-commit hook cleared the bloat question — anti_ratchet blocks only paths already in the baseline, so the new 301-line test module was structurally invisible to it while exceeding LIMIT_SOURCE=300.",
+          "suggestion": "Trim or split.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "boundary & contract",
+          "file": "docs/hooks-and-pipeline.md; docs/guide.md; path-a-feature.md; path-b-change.md",
+          "line": null,
+          "finding": "Claim under doubt: the updated docs describe what the gate now does — Four docs asserted the unqualified 'merge-base range' / 'cannot hide it' wording that AC5 had just rejected for the code string; the fallback view reads exactly one commit and is the view every pre-existing test takes.",
+          "suggestion": "Qualify the prose.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "concurrency & ordering",
+          "file": ".shipwright/planning/iterate/iterate-2026-08-01-spec-impact-range-resolver.md",
+          "line": null,
+          "finding": "Claim under doubt: ledger has zero testable-but-untested behaviours; the fix is inert where the old behaviour was right — Foreign-commit widening and add-then-revert are both new behaviours and both absent from the ledger; Probe 3's inertness claim is scoped to four remote-less fixtures.",
+          "suggestion": "Add the rows, soften Probe 3.",
+          "source": "doubt-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-08-01T00:11:10.742320+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 1,
+      "findings": [
+        {
+          "severity": "low",
+          "category": "spec",
+          "file": "docs/guide.md",
+          "line": 1704,
+          "finding": "The documentation says the verifier measures “the iterate’s own work” and that it falls back to a single-commit view “and says so.” Both are inaccurate for the implemented behavior: under the accepted stacked-branch limitation, a predecessor’s `spec.md` can satisfy this run’s gate, and successful/failing single-commit fallback results only say “work up to `<sha>`” without identifying that the fallback view was used. This contradicts the explicitly documented limitation and can mislead operators about what the gate actually established.",
+          "suggestion": "Describe the subject consistently as “work up to the event anchor,” and either remove “and says so” or add result metadata indicating whether the branch-range or single-commit fallback view was used. Apply the same wording correction to `path-a-feature.md:188` and `path-b-change.md:82`, which also claim the work/spec is necessarily the current iterate’s own.  The functional resolver change and tests cover the stated merge, mainline, anchor, and unreadable-diff behaviors. However, the newly changed operator-facing documentation makes stronger claims than the accepted implementation guarantees, so ship with that correction first.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-08-01T00:12:50.106551+00:00",
+      "disposition": null,
+      "recorded_by": "external-review",
+      "parse_status": "partial",
+      "raw_excerpt": "[gemini] An audit of the code change against its specification reveals no defects. \n\nThe diff faithfully replaces the single-commit changed path lookup with the requested range resolver (`_iterate_changed_paths`) while preserving the load-bearing `event_commit` anchor constraint (AC1, AC3). Empty but clean ranges are handled as failures, and unreadable ranges fallback safely to the newly explicitly modeled `SKIPPED` branch (AC4), resolving the F11 integration-merge false positives. The messaging has been properly updated to describe the work range correctly (AC5). The accompanying suite of tests accurately exercises all required boundary and exception paths, including explicit pins for the accepted fail-open strategy (stacked strategy unit overlap).\n\nSHIPWRIGHT_VERDICT: approve\n\n[openai] - Category: spec\n- Severity: low\n- File: docs/guide.md:1704\n- Finding: The documentation says the verifier measures “the iterate’s own work” and that it falls back to a single-commit view “and says so.” Both are inaccurate for the implemented behavior: under the accepted stacked-branch limitation, a predecessor’s `spec.md` can satisfy this run’s gate, and successful/failing single-commit fallback results only say “work up to `<sha>`” without identifying that the fallback view was used. This contradicts the explicitly documented limitation and can mislead operators about what the gate actually established.\n- Suggestion: Describe the subject consistently as “work up to the event anchor,” and either remove “and says so” or add result metadata indicating whether the branch-range or single-commit fallback view was used. Apply the same wording correction to `path-a-feature.md:188` and `path-b-change.md:82`, which also claim the work/spec is necessarily the current iterate’s own.\n\nThe functional resolver change and tests cover the stated merge, mainline, anchor, and unreadable-diff behaviors. However, the newly changed operator-facing documentation makes stronger claims than the accepted implementation guarantees, so ship with that correction first.\n\nSHIPWRIGHT_VERDICT: revise"
+    }
+  },
+  "gates": {
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-01T00:10:21.098084+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    }
+  }
+}
