@@ -45,6 +45,9 @@ from pathlib import Path
 # top-level `tools`/`lib` package here would re-create the ADR-045 collision class.
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
+from scripts.tools.suite_coverage import (  # noqa: E402
+    compare_branch, final_exit_code, prepare_coverage, run_gate,
+)
 from scripts.tools.suite_race_triage import (  # noqa: E402
     emit_race_followups, resolve_commit,
 )
@@ -61,12 +64,12 @@ from scripts.tools.suite_units import (  # noqa: E402  (re-export: one import si
     Unit,
     discover_units,
     ensure_xdist_available,
+    instrument_for_coverage,
     load_suite_config,
 )
 
 _RC_TIMEOUT = 124        # conventional timeout rc; INFRA like any other fault
 _RC_SPAWN_FAILED = 126
-_RC_UNRECORDED_RACE = 3  # a race was observed but could NOT be written down
 
 #: how a unit recovered on its retry - purely for an honest operator message
 RETRY_SERIAL = "serial"   # a test failure that passed when run alone, without xdist
@@ -92,6 +95,10 @@ class SuiteResult:
     exit_code: int
     seconds: float
     xdist_ids: tuple[str, ...] = field(default_factory=tuple)
+    #: coverage data files the instrumented units were told to write. Empty means
+    #: "nothing to gate"; a NAMED file that never appeared means the measurement
+    #: evaporated - the gate must not confuse the two.
+    cov_files: tuple[str, ...] = ()
 
 
 def build_command(unit: Unit, xdist_workers: int | None, report: Path | None = None) -> list[str]:
@@ -102,7 +109,10 @@ def build_command(unit: Unit, xdist_workers: int | None, report: Path | None = N
     if xdist_workers:
         cmd += ["--with", "pytest-xdist"]  # provisioned, not assumed (AC12)
     cmd += ["pytest", unit.target, "-q", "-p", "no:cacheprovider"]
-    cmd += list(unit.markers)
+    # Coverage args go AFTER the markers: a CLI `-m` REPLACES the pyproject default,
+    # so anything wedged between `-m` and its expression would silently rewrite the
+    # shared tier's selection rather than add to it.
+    cmd += [*unit.markers, *unit.cov_args]
     if xdist_workers:
         cmd += ["-n", str(xdist_workers)]
     if report is not None:  # existence of this file PROVES pytest ran (see docstring)
@@ -161,10 +171,15 @@ def warm_up(project_root: Path) -> None:
     18 concurrent cold `uv run` calls contend on the shared uv cache (a documented
     hardlink-race source on Windows). One warm serial call turns that into a no-op, for
     the interpreter UV_RUN pins. Best-effort: a failure here is a normal unit fault.
+
+    `pytest-cov` is warmed too: coverage instrumentation adds it to nearly every unit's
+    env key, so leaving it out would re-create the very contention this exists to remove
+    on the first run after any pytest-cov release.
     """
     try:
         subprocess.run(  # nosec B603 - fixed argv, shell=False
-            [*UV_RUN, "--with", "pytest", "python", "-c", "pass"],
+            [*UV_RUN, "--with", "pytest", "--with", "pytest-cov",
+             "python", "-c", "pass"],
             cwd=project_root, capture_output=True, text=True, shell=False, timeout=600)
     except (OSError, subprocess.SubprocessError):
         pass
@@ -181,6 +196,12 @@ def _exec(unit: Unit, project_root: Path, xdist_workers: int | None, tmp_dir: Pa
     tmp_dir.mkdir(parents=True, exist_ok=True)
     for key in ("TMPDIR", "TEMP", "TMP"):  # units must not collide via shared temp state
         env[key] = str(tmp_dir)
+    # Per-unit data file, never a shared one: the pool runs these CONCURRENTLY. Popped
+    # first so an UNinstrumented unit cannot inherit an ambient COVERAGE_FILE from the
+    # operator's shell and scribble into someone else's tier.
+    env.pop("COVERAGE_FILE", None)
+    if unit.cov_file:
+        env["COVERAGE_FILE"] = unit.cov_file
     report = tmp_dir / "r.xml"
     started = time.time()
     try:
@@ -208,6 +229,7 @@ def run_suite(project_root: Path, config: SuiteConfig | None = None) -> SuiteRes
         config = load_suite_config(project_root, [u.id for u in units])
     ensure_xdist_available(config, project_root)  # every entry path, not just the CLI one
     warm_up(project_root)
+    units = instrument_for_coverage(units, project_root, prepare_coverage(project_root))
     budget = _Budget(cpu_budget(config))
     started = time.time()
 
@@ -258,7 +280,8 @@ def run_suite(project_root: Path, config: SuiteConfig | None = None) -> SuiteRes
 
     failed = [r for r in results if r.outcome != PASS]
     return SuiteResult(results, 1 if failed else 0, time.time() - started,
-                       tuple(config.xdist))
+                       tuple(config.xdist),
+                       tuple(u.cov_file for u in units if u.cov_file))
 
 
 def unrecorded_races(result: SuiteResult) -> list[UnitResult]:
@@ -287,13 +310,18 @@ def main() -> int:
     report = emit_race_followups(root, races, result.xdist_ids, run_id=args.run_id,
                                  commit=resolve_commit(root),
                                  suite_command=suite_command(root, args.run_id))
+    # Print the suite's own evidence FIRST: the gate below can take a minute, and a
+    # finished suite's results must not be withheld for it - nor lost if it is
+    # interrupted part-way through.
     for line in render_run_report(result) + render_retry_block(result, races, report):
         print(line)
-    # A race that could not be written down must not pass as GREEN. A run that is
-    # already RED keeps rc 1: it STOPs either way, and rc 3 would misdescribe it.
-    if report.failed and result.exit_code == 0:
-        return _RC_UNRECORDED_RACE
-    return result.exit_code
+    # The gate CI runs, run here: an under-tested diff STOPs the run instead of
+    # reddening a PR after the iterate has already reported done.
+    gate = run_gate(root, expected=result.cov_files, branch=compare_branch(root),
+                    suite_green=result.exit_code == 0)
+    for line in gate.lines:
+        print(line)
+    return final_exit_code(result.exit_code, report.failed, gate)
 
 
 if __name__ == "__main__":

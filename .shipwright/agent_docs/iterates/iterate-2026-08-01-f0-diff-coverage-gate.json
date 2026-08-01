@@ -1,0 +1,12 @@
+{
+  "run_id": "iterate-2026-08-01-f0-diff-coverage-gate",
+  "date": "2026-08-01T10:54:52.771153Z",
+  "event_at": "2026-08-01T08:26:45.209123+00:00",
+  "type": "feature",
+  "complexity": "medium",
+  "branch": "iterate/f0-diff-coverage-gate",
+  "spec": ".shipwright/planning/iterate/2026-08-01-f0-diff-coverage-gate.md",
+  "tests_passed": true,
+  "adr": "iterate-2026-08-01-f0-diff-coverage-gate",
+  "prior_source": "keyword"
+}

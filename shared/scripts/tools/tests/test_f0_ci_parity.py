@@ -204,3 +204,83 @@ def test_runner_discovers_every_plugin_ci_would_run():
     }
     assert expected <= discovered
     assert expected, "no plugin units discovered — the glob is broken"
+
+
+# --------------------------------------------------------------------------- #
+# Diff-coverage parity (iterate-2026-08-01-f0-diff-coverage-gate)
+# --------------------------------------------------------------------------- #
+_ACTION = _REPO_ROOT / ".github" / "actions" / "diff-coverage-gate" / "action.yml"
+
+
+def _action_default(field: str) -> str:
+    """The `default:` under an input in the composite action, read as text.
+
+    Text rather than a YAML parse on purpose: this file must fail when the action
+    changes shape, not silently return None and green the comparison.
+    """
+    text = _ACTION.read_text(encoding="utf-8")
+    block = text.split(f"\n  {field}:", 1)
+    assert len(block) == 2, f"{_ACTION.name} no longer declares an input {field!r}"
+    m = re.search(r"^\s+default:\s*'?\"?([^'\"\n]+)'?\"?\s*$", block[1], re.M)
+    assert m, f"input {field!r} in {_ACTION.name} declares no default"
+    return m.group(1).strip()
+
+
+@pytest.mark.skipif(not _ACTION.is_file(), reason="composite action not present")
+def test_local_gate_pins_the_same_diff_cover_as_ci():
+    """AC-3. F0 and CI must run the SAME gate, or the local mirror is theatre: an
+    unpinned or differently-pinned diff-cover can disagree on flags and exit codes,
+    which is precisely the disagreement this mirror exists to remove."""
+    from scripts.tools.suite_coverage import DIFF_COVER_VERSION
+
+    assert DIFF_COVER_VERSION == _action_default("diff-cover-version"), (
+        "the F0 gate and .github/actions/diff-coverage-gate pin different "
+        "diff-cover versions — F0 would certify a diff CI then rejects")
+
+
+@pytest.mark.skipif(not _ACTION.is_file(), reason="composite action not present")
+def test_local_gate_uses_the_same_threshold_as_ci():
+    from scripts.tools.suite_coverage import FAIL_UNDER
+
+    assert f"{FAIL_UNDER:g}" == _action_default("fail-under"), (
+        "the F0 gate and the CI action disagree on the coverage threshold")
+
+
+@pytest.mark.skipif(not _ACTION.is_file(), reason="composite action not present")
+def test_the_local_gate_command_matches_the_action_command():
+    """Pin the COMMAND SHAPE, not just the constants.
+
+    diff-cover takes its coverage files POSITIONALLY (`coverage_files [...]`), so
+    the ordering is semantic, not cosmetic: the action passes the XML immediately
+    after the pinned tool and the flags after that. Asserting only that each flag
+    exists somewhere would accept a reordering that made the local gate measure
+    something else, which is why the positions are asserted too.
+    """
+    from scripts.tools.suite_coverage import COVERAGE_XML, gate_argv
+
+    argv = gate_argv("origin/main")
+    body = _ACTION.read_text(encoding="utf-8")
+    assert 'uvx "diff-cover@${INPUT_DIFF_COVER_VERSION}"' in body, \
+        "the action no longer invokes a pinned uvx diff-cover — re-sync gate_argv"
+    assert argv[0] == "uvx" and argv[1].startswith("diff-cover@")
+    assert argv[2] == COVERAGE_XML, \
+        "the coverage file is positional in diff-cover; it must follow the tool"
+    for i, flag in enumerate(("--compare-branch=", "--fail-under="), start=3):
+        assert flag in body, f"the action no longer passes {flag}"
+        assert argv[i].startswith(flag), f"argv[{i}] is {argv[i]!r}, expected {flag}"
+    assert argv[5] == "--include-untracked", (
+        "the ONE deliberate divergence from the action, and it must stay deliberate: "
+        "F0 runs before the commit, so an added file is untracked and diff-cover "
+        "cannot see it without this")
+    assert len(argv) == 6, f"gate_argv grew an unpinned argument: {argv}"
+
+
+def test_ci_keeps_the_diff_coverage_gate_as_the_backstop(ci_text):
+    """The local gate is an accelerated PRE-gate, not a replacement. CI keeps the
+    three things a local run structurally cannot provide (a clean checkout, a
+    pinned environment, a checker materialised from the PR's base), so deleting
+    the CI step because "F0 covers it" would trade a 2 s check for that guarantee.
+    """
+    assert "./.github/actions/diff-coverage-gate" in ci_text, \
+        "ci.yml no longer runs the diff-coverage gate — the F0 mirror is a " \
+        "pre-gate and was never a substitute for it"
