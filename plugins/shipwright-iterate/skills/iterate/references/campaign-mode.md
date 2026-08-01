@@ -331,11 +331,14 @@ side, and for the same stated reason. 3f-bis can only protect what happens
 **Two consequences, and they differ.** `check_ci_supplychain_ack` applies at
 EVERY complexity and recomputes the flag from the diff, so a workflow-touching
 unit **hard-fails its own F6-verify** with an error naming an artifact nobody
-told it to produce. `check_integration_coverage` instead returns a green **SKIP**
-whenever the recorded complexity is below `medium` — and it reads that
-complexity from the **F5c entry** — so a hooks/churn-touching unit that recorded
-`small` reports green *without ever evaluating*. One dies loudly; the other
-passes silently. Step 3.4 fixes both by re-deciding from the real change set.
+told it to produce. `check_integration_coverage` demands a `category:"integration"`
+behavior in the F5c ledger for the same diff. A unit that never learns the flag
+does not know to write one, and until 2026-08-01 that gate also green-SKIPped
+below `medium`, so an under-classified unit reported green without evaluating.
+That skip is gone (the gate now reads the ledger at every tier), but the unit is
+still blind: it cannot produce coverage for a flag it was never told about, and
+the recorded tier stays wrong. One dies loudly; the other passes quietly. Step
+3.4 fixes both by re-deciding from the real change set.
 
 **The change set is the working tree.** The runner commits at F6, *after* this
 step, so a `base...HEAD` range is empty here. The CLI therefore diffs

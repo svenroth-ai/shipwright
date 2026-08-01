@@ -23,7 +23,6 @@ than calling `recheck()` in-process. Properties only a composed run can show:
 from __future__ import annotations
 
 import json
-import re
 import subprocess
 import sys
 from pathlib import Path
@@ -33,17 +32,20 @@ import pytest
 REPO_ROOT = Path(__file__).resolve().parent.parent
 CLI = REPO_ROOT / "plugins" / "shipwright-iterate" / "scripts" / "lib" / "diff_risk_recheck.py"
 
-def _verifier_evaluates_at() -> tuple[str, ...]:
-    """Read OUT OF the verifier source, not copied. A third hand-written replica
-    would let `("large",)` send every medium run back to a green SKIP while this
-    test stayed green — pinning the CLI to a copy instead of to the verifier."""
-    src = (
-        REPO_ROOT / "shared" / "scripts" / "tools" / "verifiers"
-        / "integration_coverage.py"
-    ).read_text(encoding="utf-8")
-    m = re.search(r"complexity not in \(([^)]*)\)", src)
-    assert m, "could not locate the complexity gate in integration_coverage.py"
-    return tuple(re.findall(r'"([a-z]+)"', m.group(1)))
+def _taxonomy_floor(flag: str) -> str:
+    """The floor the CANONICAL risk taxonomy assigns a flag.
+
+    Pinned against `risk_taxonomy.RISK_TAXONOMY` — the real SSoT for floors —
+    rather than a hand-copied constant. An earlier version of this test read the
+    threshold out of `check_integration_coverage`; while this branch was open,
+    main reordered that gate so it no longer reads complexity at all (it now
+    reads `test_completeness.behaviors` at every tier and keeps `_BELOW_MEDIUM`
+    only for a diagnostic note). Pinning the CLI to a gate that no longer
+    consults the value would assert nothing.
+    """
+    sys.path.insert(0, str(REPO_ROOT / "plugins" / "shipwright-iterate" / "scripts" / "lib"))
+    from risk_taxonomy import RISK_TAXONOMY
+    return RISK_TAXONOMY[flag]["min_complexity"]
 
 
 def _git(repo: Path, *args: str) -> None:
@@ -246,10 +248,14 @@ def test_escalation_result_matches_the_runner_contract_schema(repo: Path):
 
 @pytest.mark.integration
 @pytest.mark.covers("FR-01.11")
-def test_floor_unskips_the_integration_coverage_gate(repo: Path):
-    """Pins the two SSoTs together: the verifier recomputes `cross_component` only
-    AFTER a complexity gate that green-SKIPs below medium. If this floor drops below
-    that threshold the gate reports green without evaluating — silently."""
+def test_floor_matches_the_canonical_taxonomy(repo: Path):
+    """Pins the CLI floor to the risk taxonomy that DEFINES it.
+
+    `_DETECTORS` carries its own copy of each flag's floor. If that copy drifts
+    below the taxonomy, a cross-component campaign unit stops being forced to the
+    tier the flag is defined to require — silently, which is how the original
+    defect survived.
+    """
     hooks = repo / "shared" / "scripts" / "hooks"
     hooks.mkdir(parents=True)
     (hooks / "audit.py").write_text("# hook\n", encoding="utf-8")
@@ -258,13 +264,8 @@ def test_floor_unskips_the_integration_coverage_gate(repo: Path):
     _, out = run_cli(repo, stage1="trivial")
 
     assert "cross_component" in out["risk_flags"]
-    evaluates_at = _verifier_evaluates_at()
-    assert evaluates_at, "verifier threshold parsed as empty — the regex drifted"
-    assert out["effective_complexity"] in evaluates_at, (
-        f"floor {out['effective_complexity']!r} is not in the verifier's own "
-        f"evaluate-set {evaluates_at} — check_integration_coverage would return "
-        "a green SKIP for this change"
-    )
+    assert out["complexity_floor"] == _taxonomy_floor("cross_component")
+    assert out["effective_complexity"] == "medium"
 
 
 @pytest.mark.integration

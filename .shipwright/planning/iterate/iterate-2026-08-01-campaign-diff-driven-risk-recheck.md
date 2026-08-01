@@ -40,13 +40,17 @@ The runner never reaches Stage 2 (Repo Scout). So in campaign mode
    required to run against its own commit. The campaign unit dies at finalization
    with an error naming an artifact nobody told it to produce.
 
-2. **`cross_component` → silent stand-down.** `check_integration_coverage`
-   (`verifiers/integration_coverage.py:70`) returns a green **SKIP** when the
-   recorded complexity is not `medium`/`large`. Combined with the #506 fall-through
-   cap (`small`), a fleet unit touching hooks or the churn resolver records
-   `small`, and the gate reports green without ever evaluating. The gate reads
-   complexity from the **F5c entry** (`find_entry_by_run_id`), so the recorded
-   value is what decides.
+2. **`cross_component` → the unit cannot comply.** `check_integration_coverage`
+   demands a `category:"integration"` behavior in the F5c ledger for the same
+   diff. A unit that never learns the flag does not know to write one. When this
+   iterate began that gate ALSO green-SKIPped below `medium`, so an
+   under-classified unit reported green without evaluating; main removed that
+   skip on 2026-08-01 while this branch was open (the gate now reads the ledger
+   at every tier). **Corrected here rather than left standing:** the skip is no
+   longer the mechanism. What remains is that the unit is blind to the flag and
+   records the wrong tier — which Step 3.4 fixes, and which is why the
+   integration test now pins the CLI floor to `risk_taxonomy` (the SSoT that
+   still defines it) instead of to a gate that no longer reads complexity.
 
 Downstream, Step 3.5 (External Plan Review, `medium+ OR risk flag`) is a guaranteed
 skip for a no-keyword fleet unit, while Step 3.7 survives on its `OR diff > 100 LOC`
@@ -61,8 +65,12 @@ arm. That asymmetry is unintentional.
 - **AC2** — The runner contract gains **Step 3.4 — Diff-Driven Risk Re-Check**,
   placed after Build (Step 3) and before Step 3.5, so a diff exists when it runs.
   It raises the effective complexity to `max(stage-1 estimate, detector floor)`.
-- **AC3** — The upgraded complexity is what F5c records, so
-  `check_integration_coverage` stops green-SKIPping.
+- **AC3** — The upgraded complexity is what F5c records. *(Rationale corrected
+  mid-run: this originally read "so `check_integration_coverage` stops
+  green-SKIPping". Main removed that skip on 2026-08-01 while the branch was open.
+  The AC stands on its own — the recorded tier is what every later reader audits
+  the run by, and the gate still reports an under-classified run against it — but
+  the obsolete justification is not left standing.)*
 - **AC4** — `touches_ci_supplychain` makes the unit **stop and hand back**:
   `status: "escalated"` with a CI-specific reason code and the offending paths.
   The runner never writes its own CI acknowledgement. (Operator decision,

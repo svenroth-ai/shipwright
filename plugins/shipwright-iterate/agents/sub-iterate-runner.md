@@ -72,8 +72,8 @@ range is EMPTY here and the check would silently pass. **Capture stdout AND exit
    reported `ci_paths`; commit nothing further. Once an operator records the ack for this
    run id the command exits 0 (flag + paths still reported), so the handback terminates.
 2. **Exit 0 — adopt `effective_complexity`** for every remaining step; it only rises.
-   **F5c MUST record this value**, not Step 2's — `check_integration_coverage` reads
-   complexity from the F5c entry and green-SKIPs below `medium`.
+   **F5c MUST record this value**, not Step 2's — the recorded tier is what every later reader
+   audits the run by, and `check_integration_coverage` reports an under-classified run against it.
 3. **Any other non-zero — the re-check did not run.** Return `status:"failed"` with
    the CLI's `error`. NEVER continue on Step 2's stale estimate.
 4. Carry `risk_flags` into 3.5 / 3.7 / 3.8; record the block as `risk_recheck`.
