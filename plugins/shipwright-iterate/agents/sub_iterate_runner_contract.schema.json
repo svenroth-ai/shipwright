@@ -130,6 +130,21 @@
             }
           }
         },
+        "risk_recheck": {
+          "type": "object",
+          "description": "Post-Build diff-driven risk re-check (Step 3.4). Stage 1 classifies from the sub-iterate spec TEXT before code exists, so the diff-driven detectors (cross_component, touches_ci_supplychain, and the file-pattern halves of touches_io_boundary / touches_build) cannot fire for a campaign unit; Step 3.4 is the runner's Stage-2 equivalent. Optional for backwards-compat with pre-Step-3.4 result.json files, for the same reason `reviews` and `finalization` are optional — a schema that must still validate historical artifacts cannot enforce that a new mechanism ran. Execution is enforced by the runner contract and campaign-mode 3f-bis, not here.",
+          "required": ["effective_complexity"],
+          "properties": {
+            "risk_flags": { "type": "array", "items": { "type": "string" } },
+            "complexity_floor": { "type": "string", "enum": ["trivial", "small", "medium", "large"] },
+            "stage1_complexity": { "type": "string", "enum": ["trivial", "small", "medium", "large"] },
+            "effective_complexity": { "type": "string", "enum": ["trivial", "small", "medium", "large"] },
+            "upgraded": { "type": "boolean" },
+            "plan_review_required": { "type": "boolean" },
+            "changed_file_count": { "type": "integer", "minimum": 0 },
+            "diff_loc": { "type": "integer", "minimum": 0 }
+          }
+        },
         "finalization": {
           "type": "object",
           "description": "Finalization record (iterate-2026-07-20-runner-finalization-integrity). Records that F3 (decision-drop), F5c (iterate entry), and the F6-verify self-verifier ran. Optional for backwards-compat; when present, verifier.exit_code MUST be 0 for a status:complete result.",
@@ -180,10 +195,38 @@
         "sub_iterate_id": { "type": "string" },
         "status": { "type": "string", "const": "escalated" },
         "reason": { "type": "string" },
-        "detected_complexity": { "type": "string", "enum": ["large"] },
+        "reason_code": {
+          "type": "string",
+          "description": "Machine-readable escalation cause. `complexity_large` is the original Step 2 case. `ci_supplychain_requires_operator` is the Step 3.4 case: the diff touches the CI trust boundary (.github/workflows/**, dependency-updater config, composite actions, shipped CI templates), which check_ci_supplychain_ack gates at EVERY complexity. The runner hands back rather than writing its own acknowledgement — the ack names the recorded posture decision a change agrees with, and a machine authoring its own permission slip defeats the gate (operator decision 2026-08-01).",
+          "enum": ["complexity_large", "ci_supplychain_requires_operator"]
+        },
+        "detected_complexity": {
+          "type": "string",
+          "description": "Widened beyond the original `large`-only enum: a Step 3.4 CI escalation can occur at any complexity, and reporting the value the re-check computed is more useful than omitting the field. Historical large-only results stay valid.",
+          "enum": ["trivial", "small", "medium", "large"]
+        },
+        "ci_paths": {
+          "type": "array",
+          "description": "The CI trust-boundary files that forced the handback. Required and non-empty for a ci_supplychain_requires_operator escalation — an escalation naming no path is not actionable.",
+          "items": { "type": "string" }
+        },
         "partial_commit": { "type": ["string", "null"] }
       },
-      "additionalProperties": false
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "required": ["reason_code"],
+            "properties": {
+              "reason_code": { "const": "ci_supplychain_requires_operator" }
+            }
+          },
+          "then": {
+            "required": ["reason_code", "ci_paths"],
+            "properties": { "ci_paths": { "minItems": 1 } }
+          }
+        }
+      ]
     }
   }
 }

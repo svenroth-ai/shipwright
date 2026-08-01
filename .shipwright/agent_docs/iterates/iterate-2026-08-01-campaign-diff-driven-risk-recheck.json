@@ -1,0 +1,147 @@
+{
+  "run_id": "iterate-2026-08-01-campaign-diff-driven-risk-recheck",
+  "date": "2026-08-01T08:30:50.519953Z",
+  "event_at": "2026-08-01T08:26:45.209123+00:00",
+  "type": "change",
+  "complexity": "medium",
+  "branch": "iterate/campaign-diff-driven-risk-recheck",
+  "spec": ".shipwright/planning/iterate/iterate-2026-08-01-campaign-diff-driven-risk-recheck.md",
+  "tests_passed": true,
+  "adr": "iterate-2026-08-01-campaign-diff-driven-risk-recheck",
+  "prior_source": "history",
+  "test_completeness": {
+    "status": "complete",
+    "behaviors": [
+      {
+        "behavior": "Four diff-driven detectors fire from a path list",
+        "disposition": "tested",
+        "evidence": "test_cross_component_detected / test_ci_supplychain_detected / test_touches_build_detected / test_io_boundary_detected PASSED"
+      },
+      {
+        "behavior": "Flags sorted, de-duplicated, path-normalised (Windows + git-quoted)",
+        "disposition": "tested",
+        "evidence": "test_flags_are_sorted_and_deduped / test_windows_separators_normalized / test_quoted_non_ascii_path_still_fires PASSED"
+      },
+      {
+        "behavior": "Complexity floor uses canonical order and never lowers Stage 1",
+        "disposition": "tested",
+        "evidence": "test_cross_component_floors_at_medium / test_floor_never_lowers_stage1 / test_ordering_is_semantic_not_lexicographic PASSED"
+      },
+      {
+        "behavior": "Unknown Stage-1 complexity rejected at the boundary",
+        "disposition": "tested",
+        "evidence": "test_unknown_stage1_complexity_rejected PASSED"
+      },
+      {
+        "behavior": "Stage-1 flags UNIONED not replaced, including the JSON-array wire form",
+        "disposition": "tested",
+        "evidence": "test_stage1_flags_are_unioned_not_replaced / test_split_flags_accepts_both_separators_and_json_arrays / test_json_array_flags_survive_by_name_not_just_by_count PASSED"
+      },
+      {
+        "behavior": "plan_review_required mirrors Step 3.7 (medium+ / flag / >100 LOC, strict)",
+        "disposition": "tested",
+        "evidence": "test_plan_review_required_on_medium|risk_flag|large_diff / test_diff_loc_boundary_is_strictly_greater_than_100 PASSED"
+      },
+      {
+        "behavior": "CI change escalates with reason_code and only CI paths",
+        "disposition": "tested",
+        "evidence": "test_ci_supplychain_escalates / test_escalation_paths_list_only_ci_files / test_non_ci_flags_do_not_escalate PASSED"
+      },
+      {
+        "behavior": "A recorded ack for THIS run clears the stop; a different run ack does not",
+        "disposition": "tested",
+        "evidence": "test_recorded_ack_clears_the_stop_but_keeps_the_finding / test_main_exit_0_once_an_ack_exists / test_main_still_exits_3_when_the_ack_is_for_another_run PASSED"
+      },
+      {
+        "behavior": "numstat parsing: counts, binary dash, TAB/newline in path, rename refused",
+        "disposition": "tested",
+        "evidence": "test_parse_numstat_counts_added_and_deleted / test_parse_numstat_binary_files_count_zero / test_parse_numstat_handles_filename_with_newline / test_parse_numstat_rejects_rename_shaped_records PASSED"
+      },
+      {
+        "behavior": "Change set = fork point to working tree, unioned with untracked",
+        "disposition": "tested",
+        "evidence": "test_collect_change_set_unions_tracked_and_untracked / test_collect_change_set_prefers_merge_base_over_ref_tip / test_collect_change_set_falls_back_when_no_common_ancestor PASSED"
+      },
+      {
+        "behavior": "git failures RAISE (diff, ls-files, unresolvable ref) rather than fail open",
+        "disposition": "tested",
+        "evidence": "test_untracked_failure_raises_instead_of_silently_dropping / test_diff_failure_raises / test_unresolvable_base_ref_raises PASSED"
+      },
+      {
+        "behavior": "main() exit/stdout contract: 0, 3, 2-with-JSON; --base-ref defaults to HEAD",
+        "disposition": "tested",
+        "evidence": "test_main_exit_0_and_json_when_clean / test_main_exit_3_and_json_on_ci_escalation / test_main_exit_2_still_writes_json / test_main_defaults_base_ref_to_head PASSED"
+      },
+      {
+        "behavior": "Untracked lines counted; negative --diff-loc rejected",
+        "disposition": "tested",
+        "evidence": "test_untracked_lines_are_counted / test_untracked_binary_and_missing_files_count_zero / test_negative_diff_loc_rejected PASSED"
+      },
+      {
+        "behavior": "Uncommitted, unstaged and untracked work is seen end-to-end",
+        "disposition": "tested",
+        "evidence": "test_uncommitted_cross_component_change_is_detected / test_unstaged_change_is_detected / test_untracked_new_hook_is_detected PASSED (real git repo, real subprocess)",
+        "category": "integration"
+      },
+      {
+        "behavior": "A workflow moved OUT of the trust boundary still escalates",
+        "disposition": "tested",
+        "evidence": "test_moving_a_workflow_out_of_the_trust_boundary_still_escalates PASSED (real git mv; probe confirmed the pre-fix blind spot)",
+        "category": "integration"
+      },
+      {
+        "behavior": "A large untracked-only change trips the >100 LOC plan-review arm",
+        "disposition": "tested",
+        "evidence": "test_large_untracked_file_trips_the_diff_size_arm PASSED",
+        "category": "integration"
+      },
+      {
+        "behavior": "The returned floor lies inside the verifier own evaluate-set",
+        "disposition": "tested",
+        "evidence": "test_floor_unskips_the_integration_coverage_gate PASSED (threshold parsed out of integration_coverage.py, not copied)",
+        "category": "integration"
+      },
+      {
+        "behavior": "The escalation is expressible as a schema-valid escalated result",
+        "disposition": "tested",
+        "evidence": "test_escalation_result_matches_the_runner_contract_schema PASSED",
+        "category": "integration"
+      },
+      {
+        "behavior": "Detector and drift-pinned verifier copy agree on the same paths",
+        "disposition": "tested",
+        "evidence": "test_verifier_and_detector_agree_on_cross_component_paths PASSED",
+        "category": "integration"
+      },
+      {
+        "behavior": "Schema: risk_recheck optional; CI escalation needs non-empty ci_paths; legacy large still valid",
+        "disposition": "tested",
+        "evidence": "test_schema_has_risk_recheck_property / test_schema_rejects_ci_escalation_without_paths / test_schema_rejects_ci_escalation_with_empty_paths / test_schema_still_accepts_legacy_large_escalation PASSED"
+      },
+      {
+        "behavior": "Contract drift: Step 3.4 anchors, ordering, 497-line ceiling, campaign-mode prose",
+        "disposition": "tested",
+        "evidence": "test_sub_iterate_runner_step_3_4.py PASSED (assertions scoped to the Step 3.4 slice, not the whole document)"
+      },
+      {
+        "behavior": "Escalated unit keeps its reason; a complete unit never gains one",
+        "disposition": "tested",
+        "evidence": "test_ci_escalation_preserves_reason_and_strict_stops / test_complete_result_never_gains_a_failure_reason PASSED"
+      }
+    ],
+    "counts": {
+      "total": 22,
+      "tested": 22,
+      "untestable": 0,
+      "untested_testable": 0
+    },
+    "ledger_path": ".shipwright/planning/iterate/iterate-2026-08-01-campaign-diff-driven-risk-recheck.md"
+  },
+  "surface_verification": {
+    "surface": "cli",
+    "tests_run": 10,
+    "exit_code": 0,
+    "evidence_path": ".shipwright/runs/iterate-2026-08-01-campaign-diff-driven-risk-recheck/surface_verification.json",
+    "detail": "The CLI is exercised end-to-end against a REAL temporary git repository: uncommitted, unstaged and untracked change sets; a real git mv of a workflow out of the CI trust boundary; and the escalation shape validated against the runner result schema."
+  }
+}

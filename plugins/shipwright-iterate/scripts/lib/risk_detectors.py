@@ -13,13 +13,22 @@ the ``shared.contracts.iterate`` cross-plugin contract, the test plugin's
 boundary-coverage report, and the detector tests — keep resolving them from
 their original home). New consumers may import from here directly.
 
-**These detectors have no in-repo production caller.** SKILL.md Step E runs the
-classifier with ``--message`` only, so within a session it is the *message*
-patterns in ``RISK_TAXONOMY`` that decide a risk flag; the functions here are
-**contract surface** for ``shared.contracts.iterate`` consumers and for the
-Repo Scout, which runs them over the changed-file list at Stage 2
-(``references/iteration-planning.md``). Widening one surface without the other
-therefore changes nothing a run can observe — the mistake
+**Callers.** SKILL.md Step E runs the classifier with ``--message`` only, so at
+*Stage 1* it is still the message patterns in ``RISK_TAXONOMY`` that decide a
+risk flag — these functions are never consulted there. They are reached at
+Stage 2 by the Repo Scout, which runs them over the changed-file list
+(``references/iteration-planning.md``, Quick Scout step 3), by
+``shared.contracts.iterate`` consumers, and — since
+iterate-2026-08-01-campaign-diff-driven-risk-recheck — by
+:mod:`diff_risk_recheck`, the CLI the campaign ``sub-iterate-runner`` invokes at
+its contract Step 3.4. That last caller exists because the runner classifies once
+from the sub-iterate spec text and never reaches Stage 2, which left every
+detector below structurally unable to fire for a campaign unit.
+
+Note what that means for a change here: widening a pattern tuple only alters a
+run through one of those callers. Widening this surface *without* the matching
+message-keyword surface in ``RISK_TAXONOMY`` still changes nothing a Stage-1
+classification can observe — the mistake
 iterate-2026-07-31-it5-classification-calibration was written to avoid.
 
 Stable surface
