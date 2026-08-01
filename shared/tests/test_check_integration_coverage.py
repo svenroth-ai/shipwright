@@ -194,12 +194,14 @@ def test_absent_entry_still_fails_and_claims_no_floor(git_origin_repo, make_work
 def test_non_utf8_entry_file_fails_closed_instead_of_raising(git_origin_repo, make_worktree):
     """AC-11 says a malformed entry must be ABSENT, never fatal.
 
-    `lib/iterate_entry.py` catches only (JSONDecodeError, OSError), and
-    UnicodeDecodeError is a ValueError — so a non-UTF-8 entry file propagates out of
+    `lib/iterate_entry.py` used to catch only (JSONDecodeError, OSError), and
+    UnicodeDecodeError is a ValueError — so a non-UTF-8 entry file propagated out of
     `find_entry_by_run_id` and, since verify_iterate_finalization has no try/except
-    around run_all_checks, takes down the report for EVERY check rather than just
-    this one. The gate absorbs it at its own call site (`_read_entry`); fixing the
-    shared store is tracked as trg-06216b9f.
+    around run_all_checks, took down the report for EVERY check rather than just
+    this one. The store now skips such a file (trg-06216b9f,
+    test_iterate_entry_encoding.py); the gate ALSO absorbs it at its own call site
+    (`_read_entry`), so this case is pinned twice on purpose and the assertion holds
+    whichever layer answers first.
     """
     work, _o = git_origin_repo
     _set_repo_identity(work)
