@@ -18,6 +18,21 @@ from pathlib import Path
 
 SHARED_TEST_DIRS = ("shared/tests", "shared/scripts/tests", "shared/scripts/tools/tests")
 INTEGRATION_DIR = "integration-tests"
+#: The interpreter F0 must run, because it is the one CI judges the push with. Without
+#: it uv resolves per DIRECTORY from ambient state, and a plugin dir is its own uv
+#: project, so the repo-root `.python-version` never reaches it - measured on main
+#: @6d2b2013: 14 plugin units on 3.13.13 while every workflow ran 3.11.15, F0 green and
+#: CI red. ONE owner: the tracked `.python-version` files and every workflow's
+#: `uv python install` are pinned to this value by `tests/test_f0_ci_parity.py`.
+#: The PATCH level is deliberately unpinned: it floats on both sides, and pinning it
+#: would need re-pinning across five workflows on every 3.11.x release and eventually
+#: name a build uv has pruned. Do not "tighten" this to 3.11.x.
+PYTHON_VERSION = "3.11"
+#: Every uv invocation the F0 gate makes starts here, so the pin cannot be present at
+#: two call sites and forgotten at the third (build_command / warm_up / this module's
+#: ensure_xdist_available) - a pre-flight or warm-up on another interpreter answers for
+#: an environment the units never run in.
+UV_RUN = ("uv", "run", "--python", PYTHON_VERSION)
 #: A CLI ``-m`` REPLACES the pyproject default, so ``not slow`` must be restated.
 SHARED_MARKERS = ("-m", "not slow and not cross_plugin")
 #: One shared/scripts/tools test drives the real diff-cover gate (parity with ci.yml).
@@ -140,11 +155,13 @@ def ensure_xdist_available(config: SuiteConfig, project_root: Path) -> None:
     if not config.xdist:
         return
     proc = subprocess.run(  # nosec B603 - fixed argv, shell=False
-        ["uv", "run", "--with", "pytest-xdist", "python", "-c", "import xdist"],
+        [*UV_RUN, "--with", "pytest-xdist", "python", "-c", "import xdist"],
         cwd=project_root, capture_output=True, text=True, errors="replace", shell=False)
     if proc.returncode != 0:
         raise SuiteConfigError(
             f"suite.xdist is configured for {sorted(config.xdist)} but pytest-xdist "
-            f"cannot be provisioned here (uv exit {proc.returncode}). Fix the "
-            f"environment or remove the 'xdist' allowlist from {CONFIG_NAME}; do NOT "
-            f"let the run continue without it.\n{(proc.stderr or '').strip()[:300]}")
+            f"cannot be provisioned here, or the pinned interpreter {PYTHON_VERSION} "
+            f"could not be (uv exit {proc.returncode}) - this call needs both, so the "
+            f"stderr below says which. Fix the environment or remove the 'xdist' "
+            f"allowlist from {CONFIG_NAME}; do NOT let the run continue without it."
+            f"\n{(proc.stderr or '').strip()[:300]}")

@@ -157,12 +157,22 @@ for plugin in "${PLUGINS[@]}"; do
             cp "$file" "$target_file"
             ((changed++)) || true
         fi
+    # `.python-version` is EXCLUDED on purpose (iterate-2026-08-01-pin-python-311).
+    # Each plugin dir carries one so a contributor's `cd plugins/x && uv run pytest
+    # tests/` uses the 3.11 this repo's CI judges pushes with. That is a MONOREPO
+    # fact. Shipping it would make it an END-USER one: skills invoke `uv run --project
+    # {plugin_root}` (shipwright-plan/skills/plan/SKILL.md, 5 sites), and uv honours a
+    # version file in the --project dir - measured, 3.12.13 -> 3.11.15. Consumers
+    # declare `>=3.11` and must keep resolving whatever satisfies that; forcing an
+    # interpreter download on them, or failing where downloads are blocked, is not
+    # this repo's call to make.
     done < <(find "$src_dir" -type f \
         -not -path "*/__pycache__/*" \
         -not -path "*/.venv/*" \
         -not -path "*/.pytest_cache/*" \
         -not -path "*/.git/*" \
         -not -name "*.pyc" \
+        -not -name ".python-version" \
         -print0)
 
     # Remove files in cache that no longer exist in source
@@ -221,6 +231,7 @@ if [ -d "$SHARED_SRC" ]; then
         -not -path "*/.venv/*" \
         -not -path "*/.pytest_cache/*" \
         -not -name "*.pyc" \
+        -not -name ".python-version" \
         -print0)
 
     # Remove files in cache that no longer exist in source
@@ -281,6 +292,7 @@ sync_dir_from_to() {
         -not -path "*/.pytest_cache/*" \
         -not -path "*/.git/*" \
         -not -name "*.pyc" \
+        -not -name ".python-version" \
         -print0)
 }
 
