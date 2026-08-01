@@ -46,5 +46,6 @@ _Regenerate:_ `uv run {shared_root}/scripts/tools/rebuild_adr_index.py --project
 - [ADR-117 — A passing Tier-3 review retracts its own superseded verdicts](117-retract-your-own-superseded-verdict.md)
 - [ADR-118 — A view the branch carries needs a merge register, not a snapshot register](118-a-branch-carried-view-needs-a-merge-register.md)
 - [ADR-119 — Bloat exception — `plugins/shipwright-iterate/agents/sub-iterate-runner.md` raised to 497-LOC](119-bloat-exception-runner-finalization-parity.md)
+- [ADR-120 — The coverage gates ask the diff, not the recorded complexity](120-coverage-gates-ask-the-diff.md)
 - [ADR-120 — The plugin-cache check reads the index, not the disk](120-the-cache-check-reads-the-index-not-the-disk.md)
 - [Archive — Agent-Doc Update Backlog (verbatim)](_archive-agent-doc-updates.md)

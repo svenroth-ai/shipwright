@@ -1,0 +1,290 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-08-01-coverage-gate-recompute-order",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-01T07:04:24.540799+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": "openrouter:openai(+gemini degraded)",
+      "completed_at": "2026-08-01T06:36:07.251154+00:00",
+      "disposition": null,
+      "recorded_by": "external-review",
+      "parse_status": "unstructured",
+      "raw_excerpt": "External plan review (mode=iterate, provider=openrouter) — round 2 of 2.\nReviewers: openai = success (verdict: revise); gemini = degraded (reply cut off,\nfinish_reason=length) — recorded degraded, NOT counted as an approval.\n\nRound 1 verdict: revise (6 findings). Round 2 verdict: revise (7 findings), with\nthe direction affirmed verbatim: \"the enforcement direction and ordering are\nsound, and the plan correctly preserves the intentional non-git SKIP and\ncross-layer scope.\"\n\nROUND 2 FINDINGS (openai)\n\n1. dependency / medium — Promoting layer_coverage._git_context into\n   git_helpers.git_context() is sound reuse, but the plan does not specify the\n   helper's contract or import constraints: it must not introduce a\n   git_helpers -> layer_coverage cycle, change working-directory semantics, or\n   leave existing tests patching the old symbol. Grep for patches/imports of\n   _git_context, _git_precheck and _run_git; add focused tests for the shared\n   helper itself.\n\n2. edge-case / high — The plan does not say how git_context() reliably\n   distinguishes not_git from git_error. A simple rev-parse non-zero is\n   insufficient and stderr-text classification is brittle across git\n   versions/locales. Timeouts and subprocess exceptions must be captured by the\n   helper rather than escaping as an unstructured verifier exception. Preserve\n   the existing decision logic exactly when extracting; reserve not_git for the\n   verified outside-a-work-tree condition. Add exception/timeout tests.\n\n3. edge-case / medium — \"Missing or malformed iterate entry\" is addressed at the\n   return-value level, but the plan does not establish whether\n   find_entry_by_run_id can itself raise while parsing malformed entry data. A\n   precise boundary is needed between a corrupt results artifact (retains its\n   distinct ERROR) and a valid artifact containing an absent/malformed entry\n   (still produces the coverage finding). Normalize with isinstance(entry, dict);\n   test both, asserting different details and that neither becomes a SKIP.\n\n4. risk / medium — The replacement test set does not explicitly preserve\n   successful behavior after the reorder. Retain/add: matching path + valid\n   integration behavior passes; non-matching path passes even when no iterate\n   entry exists; corrupt-results remains an ERROR only once the gate is\n   applicable. Assert severity in each case.\n\n5. edge-case / medium — Commit handling covers absent --commit and unresolvable\n   HEAD, but not an invalid explicitly-supplied commit/base ref. That is a\n   realistic CI invocation error and must reach the same fail-closed None/ERROR\n   path rather than being treated as an empty diff. Verify the subprocess is\n   invoked with argument arrays rather than shell interpolation.\n\n6. approach / low — Updating the cross_component taxonomy prose while retaining\n   min_complexity: \"medium\" is necessary but potentially confusing: that field\n   still affects classification while the F11 gate now applies at every recorded\n   complexity after diff applicability is found. State directly that\n   min_complexity is the classification escalation floor while integration\n   coverage is independently diff-enforced at all complexities.\n\n7. security / low — No new material authorization or data-exposure surface. But\n   this change makes git invocation more central to blocking behavior; if commit\n   values originate from CLI input, unsafe command construction would turn\n   invalid-input handling into a command-injection risk. Confirm\n   git_helpers._run_git accepts an argv list with shell=False and that the HEAD\n   fallback uses the same path.\n\nROUND 1 FINDINGS (openai) — all dispositioned before round 2\n\n1. approach / high — ERROR vs FAIL status mismatch between AC and plan.\n2. edge-case / medium — rev-parse --git-dir non-zero conflates broken git with\n   non-repo, turning genuine infrastructure faults into a green skip.\n3. dependency / medium — _infra_result may have unreviewed callers.\n4. edge-case / me […truncated]"
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 11,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "correctness",
+          "file": "shared/tests/test_derived_snapshots.py",
+          "line": 236,
+          "finding": "test_integration_coverage_reads_the_per_run_entry_after_a_restore became VACUOUS: tmp_path is not a git work tree, so the new git_context probe returns not_git and the gate SKIPs, satisfying 'assert result.ok is True' without exercising the per-run-entry preference it exists to pin. FIXED: stubbed git_context to work_tree and strengthened the assertion to 'ok is True and not is_skipped'. Mutation-verified — removing the per-run entry preference now fails the test, where it passed before the fix.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "plugins/shipwright-iterate/skills/iterate/references/F5.md",
+          "line": 73,
+          "finding": "Stale 'At medium+' in the prose the agent executes when deciding what to put in the ledger — a small run would conclude no integration behavior is needed and then be blocked at F11 with the work already built. FIXED: rewritten to 'At every complexity' with the run-id citation, plus an explicit note that this is the one ledger obligation small does not buy out of.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "docs/guide.md",
+          "line": 1681,
+          "finding": "The primary user-facing small-vs-medium trade-off list still named integration coverage among the checks that report 'skipped' at small. Now false. FIXED: removed from the list and replaced with an explicit callout that integration coverage is the one check small does not get out of.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "shared/scripts/tools/verifiers/ci_supplychain.py",
+          "line": 168,
+          "finding": "(a) The docstring still contrasted itself with 'the cross_component gate's medium+ floor', which this change removed — and the iterate spec quotes that sentence as its evidence, so the diff invalidated its own cited authority. (b) integration_coverage claimed 'same posture as check_ci_supplychain_ack' while that gate still uses the binary rev-parse --git-dir probe, so the parity does not hold on the git-probe axis. FIXED (docstrings), DEFERRED (probe migration): the ci_supplychain parenthetical now records that the floors are aligned and carries an explicit NOTE that its git probe is still the binary form, i.e. the fail-open class git_context was extracted to remove; integration_coverage's claim is narrowed to 'same COMPLEXITY posture' with the divergence named. Migrating that third gate's probe is a behaviour change outside this card's scope and is filed as triage rather than smuggled in.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/scripts/tools/verifiers/_layer_coverage_regen.py",
+          "line": 274,
+          "finding": "Docstring still described its None return as rendered 'ERROR (medium+) / SKIP'; there is no SKIP path from it any more. FIXED, together with the module docstring. Compressed so the file stays at exactly its base 300 lines rather than growing a file already at the guideline.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/scripts/tools/verifiers/integration_coverage.py",
+          "line": 126,
+          "finding": "The new HEAD fallback called _run_git with no timeout while every other git probe on the path is bounded (10s / 30s). A stalled mount that had already answered the cached metadata probe would hang F11 with no report — the opposite of the fail-closed refusal the change exists to produce. FIXED: timeout=10.0 added, matching git_context; a timeout yields rc != 0 and lands on the existing 'HEAD is unresolvable' ERROR.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/scripts/tools/verifiers/integration_coverage.py",
+          "line": 150,
+          "finding": "A code comment asserted find_entry_by_run_id 'never raises', and the mini-plan recorded that as verified at code. False: lib/iterate_entry.py catches only (JSONDecodeError, OSError), and UnicodeDecodeError is a ValueError subclass, so a non-UTF-8 entry file propagates. FIXED (comment), DEFERRED (store fix): the comment now states the real invariant and names the UnicodeDecodeError path as pre-existing and fail-closed. The one-word store fix touches a shared reader used well beyond this gate and is filed as triage rather than made without its own test.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "architecture",
+          "file": "shared/scripts/tools/verifiers/git_helpers.py",
+          "line": 46,
+          "finding": "git_context returned a bare str and both callers branched on the two failure names then fell through to PROCEED — putting an unrecognised state on the fail-OPEN path, in a helper whose whole purpose is fail-closed classification. FIXED: return type pinned as Literal['work_tree','not_git','git_error'], the contract documented in the docstring, and BOTH callers inverted to proceed only on an explicit work_tree.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/scripts/tools/verifiers/integration_coverage.py",
+          "line": 182,
+          "finding": "At trivial the gate is unsatisfiable — the Test Completeness Ledger is auto-n/a there, so there are no behaviors to mark — but the remedy text offered only routes that cannot be performed at that tier. FIXED: _floor_note now names escalation to medium as the only executable route at trivial, and its docstring records why.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "shared/tests/test_layer_coverage_hardening.py",
+          "line": 102,
+          "finding": "Two non-git tests sweep four complexities although _git_precheck's not_git arm never reads complexity, so six of the eight cases cannot fail differentially — advertising mutation coverage the sweep does not provide. FIXED: sweep kept but documented as an invariant record rather than a differential guard, contrasted with the two sweeps below where the parameter genuinely is the guard.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/scripts/tools/verifiers/integration_coverage.py",
+          "line": 65,
+          "finding": "_floor_note's defensive normalization (str / strip / lower) was unpinned — every seeded entry is already a clean lowercase literal, so deleting it left the suite green and a legacy ' Small ' entry would silently lose its floor note. FIXED: added a 12-case direct unit test over {}, None, non-string values, ' SMALL ', 'TRIVIAL', medium and large, asserting both that a note appears exactly when substantiable and that it never claims a floor it cannot.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-08-01T07:34:32.595508+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 11,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "boundary-and-contract",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: the trivial remedy text is correct (Stage-2 finding 11: escalation is the only executable route at trivial) — False at source. check_integration_coverage reads only test_completeness.behaviors — never status, and since the reorder never complexity. check_test_completeness_ledger SKIPs at trivial so nothing validates the block's shape, and append_iterate_entry splats --entry-json extras verbatim. So a trivial run satisfies the gate by recording the behavior. The shipped operator text sent it to mid-flight escalation instead, buying an iterate spec, mini-plan, approval gate, external plan review and full test suite it did not need — the same species of overclaim this card exists to remove, reintroduced inside the fix's own remedy.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "high",
+          "category": "hidden-coupling",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: AC-10 is satisfied — the supersession is recorded — No decision drop for this run exists in either root, while four other 2026-08-01 runs have theirs. The artifact is gitignored, so it is structurally invisible to a diff-reading Stage-1 reviewer — an AC nobody can check by reading the diff.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "high",
+          "category": "hidden-coupling",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: the two deferrals are owned — reviews.json says both are 'filed as triage' — Neither card existed. Zero hits for UnicodeDecodeError, git_context or rev-parse --git-dir across the worktree triage store, the main-root store and the main-root outbox. Both deferrals were recorded ONLY as prose NOTEs inside the code they defer — precisely the 'carrying no owner' state this run's own spec header criticises about the IT-3 anchor. A false statement in a durable record.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "high",
+          "category": "boundary-and-contract",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: the gate is non-dodgeable at every complexity — The shared-results fallback read iterate_latest.test_completeness with NO run-id attribution, while its three siblings (check_test_completeness_ledger, check_surface_verification, silent_revert_declarations) all guard the same file with read_iterate_latest(...).is_current. On a branch behind main F11 restores that file to HEAD, so an unattributed read sees the PREVIOUS run's block — and a cross-component change passes green crediting someone else's integration test. This change widened that hole from medium+ to all four tiers while strengthening the docstring's non-dodgeability claim.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "hidden-coupling",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: AC-3 holds: not_git SKIPs at every complexity, preserving the CLI sandbox contract — git_context classified not_git ONLY by English substring match on stderr. In a non-git directory rev-parse exits 128, so the substring was the sole discriminator — and git uses gettext with Git-for-Windows shipping translations. On a localized install (this operator's environment is German) a genuine non-git directory returns a translated fatal, matches neither phrase, and classifies git_error: both gates then ERROR on a non-git project, inverting AC-3, and the CLI sandbox suite goes red on that machine while green here. The external plan review raised this and the disposition answered it by preserving the logic byte-for-byte, which does not address brittleness — and this change then promoted that classifier from 1 gate x 2 tiers to 2 gates x 4 tiers.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "boundary-and-contract",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: AC-9 — runtime prose matches the code — The NORMATIVE Phase Matrix became internally contradictory at trivial: 'Test Completeness Ledger | n/a (auto)' sits directly above 'Integration Coverage | if cross_component', and the only artifact that satisfies integration coverage is a Ledger behavior. The table is declared the single source of truth for phase selection, and the agent reads it long before it could see the _floor_note remedy.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "hidden-coupling",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: the vacuous-test class was swept — only test_derived_snapshots.py:236 was affected — A second survivor: test_layer_coverage_core.py::test_gates_skip_cleanly_below_medium asserts both gates SKIP on a bare tmp_path. It passes only because tmp_path is non-git and is completely blind to this change's core mutation — restore _is_enforcing inside _infra_result and it still passes. Its NAME and comment now assert a property the diff deleted for removal_coverage, so a reader grepping 'below medium' finds a green test claiming the opposite of the code.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "reversibility",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: the user-facing guide now matches the new behaviour — guide.md documented the integration-coverage half but was silent on the half most likely to surprise: removal_coverage infra failures now BLOCK at trivial and small. Separately 'Integration coverage is the one you do not get out of' was imprecise — removal coverage and check_ci_supplychain_ack also never stand down by level.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "concurrency-and-ordering",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: the new tests prove 'at every complexity' rather than sampling it — test_check_integration_coverage_infra.py's git_error sweep seeds no entry and returns before find_entry_by_run_id is reached, so all four parameterized cases are byte-identical and cannot fail differentially — advertising coverage it does not provide.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "reversibility",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: the newly-reachable git_error block is diagnosable — git_context discards stderr, and both callers printed a guessed cause list that omitted the two most likely real causes (safe.directory / dubious ownership, and a localized fatal). For a change whose thesis is 'a gate that cannot run must FAIL', the failure could not name why.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "concurrency-and-ordering",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: (reviewer's own hypothesis, SELF-REFUTED) the None-diff ERROR opens a new false-red class via the ensure_current merge commit — Refuted by the reviewer during construction: check_ci_supplychain_ack already runs at every complexity, uses the same _iterate_changed_paths, and already ERRORs on None — so that scenario already produces a red F11 today. This change adds a second identical block, not a new blocked class.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-08-01T08:06:13.295420+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 1,
+      "findings": [
+        {
+          "severity": null,
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "catch UnicodeDecodeError/ValueError around find_entry_by_run_id and treat the entry as unavailable; make _floor_note accept object | None and return no note unless isinstance(entry, dict).  ACCEPTED AND FIXED. This was a real gap between my own acceptance criterion and the code: AC-11 promises a malformed entry is absent rather than fatal, and I had deferred the store fix to triage while leaving the AC unqualified. Absorbed at THIS gate's call site via a new _read_entry helper (catching ValueError/OSError, which covers UnicodeDecodeError and JSONDecodeError) rather than by loosening a shared reader other callers depend on; the store fix stays tracked as trg-06216b9f. _floor_note now takes object | None and isinstance-guards. Fail-closed direction preserved: an unreadable entry means no self-report, and a cross-component diff still ERRORs.  2. test / medium — test_check_integration_coverage.py:162. The malformed-entry test covers invalid JSON only (whose store-reader path is intentionally skipped) and not the non-UTF-8 path or the non-dict entry AC-11 names, leaving a specified failure mode unvalidated.  ACCEPTED AND FIXED. Added test_non_utf8_entry_file_fails_closed_instead_of_raising (writes structurally valid JSON with a lone 0xff continuation byte) and test_a_non_dict_entry_is_treated_as_absent. Mutation-verified: removing the absorption makes the first fail with the exact UnicodeDecodeError the reviewer predicted.  3. spec / low — AC-10 requires an ADR decision drop via write_decision_drop.py keyed by the run id, superseding MUST-FIX 1 and SHOULD-FIX 6; the diff updates prose and comments but contains no drop artifact.  ACCEPTED — ordering, not omission. F3 runs during finalization, after this review step (Step 8 precedes F6 by design, so a review that runs later reviews shipped code). The drop is written at F3 naming both superseded decisions with the ci_supplychain contradiction as evidence. Also raised independently by the Stage-3 doubt reviewer, who accepted the same basis.  Overall assessment (reviewer): \"The core enforcement reorder, tri-state git handling, and removal-gate ordering are substantially implemented and well tested, but the explicit malformed-entry fail-closed contract and required supersession record need fixes before shipping.\"",
+          "suggestion": null,
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter:openai(+gemini degraded)",
+      "completed_at": "2026-08-01T08:10:07.579943+00:00",
+      "disposition": null,
+      "recorded_by": "external-review",
+      "parse_status": "structured",
+      "raw_excerpt": "External CODE review (mode=code, provider=openrouter). Subject: the code + prose\ndiff vs merge-base 6d2b2013 (shared/, plugins/, docs/ — 108,128 chars). The\nplanning artifacts were passed as --spec-file rather than diffed, so this is a\nreview of the change, not a narrowed subset chosen to beat truncation.\n\nReviewers: openai = success (verdict: revise); gemini = degraded (provider\nreturned an empty reply) — recorded degraded, NOT counted as an approval.\n\nFINDINGS\n\n1. bug / medium — integration_coverage.py:194. A malformed iterate entry can still\n   RAISE instead of producing the required blocking result. find_entry_by_run_id is\n   called without handling UnicodeDecodeError, which the adjacent comment itself\n   acknowledges the store does not catch. A non-UTF-8 entry file therefore aborts\n   the verifier rather than satisfying AC-11's requirement that malformed entries\n   \"not raise\" and still fail a cross-component diff. Additionally _floor_note\n   assumes entry has .get(), so a non-dict value raises AttributeError.\n   Suggestion: catch UnicodeDecodeError/ValueError around find_entry_by_run_id and\n   treat the entry as unavailable; make _floor_note accept object | None and return\n   no note unless isinstance(entry, dict).\n\n   ACCEPTED AND FIXED. This was a real gap between my own acceptance criterion and\n   the code: AC-11 promises a malformed entry is absent rather than fatal, and I had\n   deferred the store fix to triage while leaving the AC unqualified. Absorbed at\n   THIS gate's call site via a new _read_entry helper (catching ValueError/OSError,\n   which covers UnicodeDecodeError and JSONDecodeError) rather than by loosening a\n   shared reader other callers depend on; the store fix stays tracked as\n   trg-06216b9f. _floor_note now takes object | None and isinstance-guards.\n   Fail-closed direction preserved: an unreadable entry means no self-report, and a\n   cross-component diff still ERRORs.\n\n2. test / medium — test_check_integration_coverage.py:162. The malformed-entry test\n   covers invalid JSON only (whose store-reader path is intentionally skipped) and\n   not the non-UTF-8 path or the non-dict entry AC-11 names, leaving a specified\n   failure mode unvalidated.\n\n   ACCEPTED AND FIXED. Added test_non_utf8_entry_file_fails_closed_instead_of_raising\n   (writes structurally valid JSON with a lone 0xff continuation byte) and\n   test_a_non_dict_entry_is_treated_as_absent. Mutation-verified: removing the\n   absorption makes the first fail with the exact UnicodeDecodeError the reviewer\n   predicted.\n\n3. spec / low — AC-10 requires an ADR decision drop via write_decision_drop.py keyed\n   by the run id, superseding MUST-FIX 1 and SHOULD-FIX 6; the diff updates prose and\n   comments but contains no drop artifact.\n\n   ACCEPTED — ordering, not omission. F3 runs during finalization, after this review\n   step (Step 8 precedes F6 by design, so a review that runs later reviews shipped\n   code). The drop is written at F3 naming both superseded decisions with the\n   ci_supplychain contradiction as evidence. Also raised independently by the\n   Stage-3 doubt reviewer, who accepted the same basis.\n\nOverall assessment (reviewer): \"The core enforcement reorder, tri-state git\nhandling, and removal-gate ordering are substantially implemented and well tested,\nbut the explicit malformed-entry fail-closed contract and required supersession\nrecord need fixes before shipping.\"\n"
+    }
+  },
+  "gates": {
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-01T07:07:46.464997+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    }
+  }
+}

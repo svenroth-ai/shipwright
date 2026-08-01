@@ -26,8 +26,14 @@ def test_risk_taxonomy_row_present():
 def test_phase_matrix_integration_coverage_row():
     rows = [ln for ln in _SKILL.splitlines() if ln.startswith("| Integration Coverage")]
     assert rows, "no Integration Coverage row in the Phase Matrix"
-    # trivial/small skip, medium/large gated on cross_component
+    # Gated on `cross_component` at EVERY complexity — the F11 verifier recomputes
+    # the flag from the diff and no longer stands down below medium
+    # (iterate-2026-08-01-coverage-gate-recompute-order).
     assert "`cross_component`" in rows[0]
+    # No tier may be an unconditional skip: that was the dodge.
+    cells = [c.strip() for c in rows[0].strip().strip("|").split("|")[1:]]
+    assert len(cells) == 4, rows[0]
+    assert all(c == "if `cross_component`" for c in cells), cells
 
 
 def test_confidence_anti_patterns_has_integration_stopping_rule():

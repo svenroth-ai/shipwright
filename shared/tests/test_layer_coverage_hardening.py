@@ -1,7 +1,9 @@
 """Coordinator adversarial-panel hardening for the two enforcing F11 gates (TT5).
 
 Pins the fail-CLOSED integrity fixes the panel required: an infra gap ERRORs (never silently
-SKIPs) at medium+ (MUST-FIX 1); a wholesale FR-row deletion with a surviving test FAILs while
+SKIPs) — at EVERY complexity for ``removal_coverage`` since
+iterate-2026-08-01-coverage-gate-recompute-order, which superseded MUST-FIX 1's original
+"SKIPs below medium" carve-out; a wholesale FR-row deletion with a surviving test FAILs while
 a genuine relocation does NOT false-red (MUST-FIX 3); an unresolvable base ref ERRORs instead
 of narrowing the diff (MUST-FIX 4); and the evidence-freshness rejections. Real-git helpers +
 the corpus constants are reused from ``test_layer_coverage_gate_integration``.
@@ -54,41 +56,109 @@ def _seed(root: Path, run_id: str, complexity: str) -> None:
     }), encoding="utf-8")
 
 
-# --- MUST-FIX 1: infra gap ERRORs at medium+, SKIPs below --------------------
+# --- infra gaps ERROR at EVERY complexity ------------------------------------
+#
+# SUPERSEDES MUST-FIX 1's "SKIPs below medium"
+# (iterate-2026-08-01-coverage-gate-recompute-order). `check_removal_coverage`
+# documents itself as running at ALL complexities, but every infra path below
+# medium returned a green SKIP — so it ran and then declined to answer, in the
+# colour of a pass. The complexity branch is gone; only a genuine non-git context
+# still stands the gate down.
 
 
-def test_missing_commit_errors_at_medium_not_skip(tmp_path):
+@pytest.mark.parametrize("complexity", ("trivial", "small", "medium", "large"))
+def test_missing_commit_errors_at_every_complexity(tmp_path, complexity):
+    """Inside a REAL repo, so the assertion is about the missing commit rather than
+    about the context. A bare `tmp_path` would now SKIP on the non-git precheck —
+    correctly, but it would prove nothing about the commit branch below it."""
+    root = tmp_path / "repo"
+    _init(root)
+    _write(root, ".shipwright/planning/app/spec.md", _SPEC_ACTIVE)
+    _commit(root, "base")
+    _seed(root, "r", complexity)
+    r = check_removal_coverage(root, "r", "")  # no commit → cannot enforce
+    assert r.ok is False and not r.is_skipped, r.detail
+    assert "no --commit" in r.detail, r.detail
+
+
+def test_missing_commit_errors_at_medium_for_cross_layer(tmp_path):
+    """cross-layer keeps its ORIGINAL order (commit checked before the git context),
+    which this run deliberately did not touch — only `removal_coverage` needed the
+    reorder, because only it now ERRORs below medium. Pins the pre-existing
+    behaviour so the asymmetry is visible rather than accidental."""
     _seed(tmp_path, "r", "medium")
-    for fn in (check_removal_coverage, check_cross_layer_coverage):
-        r = fn(tmp_path, "r", "")  # no commit → cannot enforce a medium+ iterate
-        assert r.ok is False and not r.is_skipped, r.detail
+    r = check_cross_layer_coverage(tmp_path, "r", "")
+    assert r.ok is False and not r.is_skipped, r.detail
 
 
-def test_missing_commit_skips_below_medium(tmp_path):
+def test_cross_layer_still_skips_below_medium(tmp_path):
+    """UNCHANGED, and for a different reason than removal: cross-layer is medium+
+    by SCOPE (a deliberate cost decision), not by an infra carve-out. Its scope
+    gate returns before any `_infra_result` call is reachable."""
     _seed(tmp_path, "r", "small")
-    # removal runs at all complexities but a below-medium infra gap SKIPs (not ERROR).
-    assert check_removal_coverage(tmp_path, "r", "").is_skipped
-    assert check_cross_layer_coverage(tmp_path, "r", "").is_skipped  # cross-layer is medium+ only
+    assert check_cross_layer_coverage(tmp_path, "r", "").is_skipped
 
 
-def test_non_git_project_skips(tmp_path):
+@pytest.mark.parametrize("complexity", ("trivial", "small", "medium", "large"))
+def test_non_git_project_skips_at_every_complexity(tmp_path, complexity):
     # A CLEAN non-git context (git ran and said "not a work tree") is inapplicable for a
     # git-diff gate, so it SKIPs — distinct from a git subprocess failure (ERROR, below).
-    _seed(tmp_path, "r", "medium")
+    #
+    # The sweep here DOCUMENTS an invariant rather than guarding a regression:
+    # `_git_precheck`'s not_git arm never reads `complexity`, so the four cases are
+    # not differential. Contrast the two sweeps below, where restoring `_is_enforcing`
+    # in `_infra_result` genuinely turns trivial/small red — there the parameter IS
+    # the guard. Kept parameterized so the "at every complexity" claim is visible in
+    # the suite, not because it costs the mutation anything.
+    _seed(tmp_path, "r", complexity)
     r = check_removal_coverage(tmp_path, "r", "deadbeefdeadbeefdeadbeefdeadbeefdeadbeef")
     assert r.is_skipped, r.detail
 
 
-def test_git_subprocess_failure_errors_at_medium(tmp_path, monkeypatch):
-    # Coordinator FIX 1: a git SUBPROCESS failure/timeout (synthesized rc=1, empty stderr) on a
-    # medium+ iterate must ERROR (block) — NOT be conflated with a clean non-git SKIP (fail-open).
+@pytest.mark.parametrize("complexity", ("trivial", "small", "medium", "large"))
+def test_non_git_project_with_no_commit_skips_rather_than_erroring(tmp_path, complexity):
+    """The ORDERING guard, and the only test that exercises it.
+
+    `_git_precheck` must run BEFORE the missing-commit branch. Both conditions have
+    to hold at once for the order to be observable — a non-git project that is also
+    missing a commit. Every other non-git test supplies a fake sha, so it reaches
+    the precheck regardless of order and proves nothing about it.
+
+    Without this ordering the fail-closed change (infra gaps now ERROR at every
+    complexity) would hard-fail every non-git project on a commit it was never
+    going to have: a false-red manufactured by the fix itself. Caught by a mutation
+    probe — the suite passed 21/21 with the old order restored."""
+    _seed(tmp_path, "r", complexity)
+    r = check_removal_coverage(tmp_path, "r", "")
+    assert r.is_skipped, r.detail
+    assert "not a git work tree" in r.detail, r.detail
+
+
+@pytest.mark.parametrize("complexity", ("trivial", "small", "medium", "large"))
+def test_git_subprocess_failure_errors_at_every_complexity(tmp_path, monkeypatch, complexity):
+    # Coordinator FIX 1: a git SUBPROCESS failure/timeout (synthesized rc=1, empty stderr)
+    # must ERROR (block) — NOT be conflated with a clean non-git SKIP (fail-open).
+    # Patches `git_helpers._run_git`: the tri-state probe moved there as
+    # `git_context()` so `integration_coverage` could share it, and `git_context`
+    # resolves `_run_git` from its own module globals. Patching `lc._run_git` would
+    # now bind nothing and the test would assert against un-stubbed git.
+    import tools.verifiers.git_helpers as gh  # noqa: PLC0415
+    import tools.verifiers.layer_coverage as lc  # noqa: PLC0415
+
+    _seed(tmp_path, "r", complexity)
+    monkeypatch.setattr(gh, "_run_git", lambda *a, **k: (1, "", ""))  # OSError/timeout shape
+    r = lc.check_removal_coverage(tmp_path, "r", "deadbeefdeadbeefdeadbeefdeadbeefdeadbeef")
+    assert r.ok is False and not r.is_skipped, r.detail
+
+
+def test_git_subprocess_failure_errors_at_medium_for_cross_layer(tmp_path, monkeypatch):
+    import tools.verifiers.git_helpers as gh  # noqa: PLC0415
     import tools.verifiers.layer_coverage as lc  # noqa: PLC0415
 
     _seed(tmp_path, "r", "medium")
-    monkeypatch.setattr(lc, "_run_git", lambda *a, **k: (1, "", ""))  # OSError/timeout shape
-    for fn in (lc.check_removal_coverage, lc.check_cross_layer_coverage):
-        r = fn(tmp_path, "r", "deadbeefdeadbeefdeadbeefdeadbeefdeadbeef")
-        assert r.ok is False and not r.is_skipped, r.detail
+    monkeypatch.setattr(gh, "_run_git", lambda *a, **k: (1, "", ""))
+    r = lc.check_cross_layer_coverage(tmp_path, "r", "deadbeefdeadbeefdeadbeefdeadbeefdeadbeef")
+    assert r.ok is False and not r.is_skipped, r.detail
 
 
 # --- FIX 2: base resolves via the branch's upstream on an adopted non-main default ----

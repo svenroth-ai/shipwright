@@ -165,9 +165,20 @@ def check_ci_supplychain_ack(
     and the ack must be bound to this run and this change set — so neither
     omitting a self-report nor reusing an old ack works.
 
-    Applies at EVERY complexity on purpose (unlike the ``cross_component`` gate's
-    medium+ floor): a one-line workflow edit is still a trust-boundary change, and
-    a complexity floor would be the obvious way to dodge it.
+    Applies at EVERY complexity on purpose: a one-line workflow edit is still a
+    trust-boundary change, and a complexity floor would be the obvious way to dodge
+    it. This gate was the first to take that posture; the ``cross_component`` gate
+    carried a medium+ floor until iterate-2026-08-01-coverage-gate-recompute-order,
+    which cited the reasoning here and aligned it. The floors now agree — the only
+    remaining complexity scope in the family is ``cross_layer_coverage``'s, and that
+    one is a deliberate cost decision, not a dodge.
+
+    NOTE (tracked separately): the git probe below is still the BINARY
+    ``rev-parse --git-dir`` form, so a broken git binary / permission failure /
+    dubious-ownership refusal returns non-zero from inside a repo and green-SKIPs —
+    the fail-open class the tri-state ``git_helpers.git_context`` was extracted to
+    remove. Migrating this call site is a behaviour change to a third gate and was
+    left out of that card's scope on purpose.
     """
     name = "CI supply-chain acknowledgement"
     # Not a git repository at all → SKIP. This is NOT the "diff unobtainable" case:

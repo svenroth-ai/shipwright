@@ -237,7 +237,11 @@ producer→file→consumer probe; cross_component forces a components-compose pr
 Enforced NON-dodgeably — the F11 verifier `check_integration_coverage`
 (`shared/scripts/tools/verifiers/iterate_checks.py`) RECOMPUTES the flag from the
 actual diff (merge-base..HEAD), not from an agent-reported value, and STOPs a
-medium+ cross-component iterate that has no `category:"integration"` behavior.
+cross-component iterate that has no `category:"integration"` behavior — at
+**every** complexity, since the recorded complexity is a self-reported label and
+gating the recompute on it made the check stand down in exactly the
+missed-detection case it exists to catch
+(iterate-2026-08-01-coverage-gate-recompute-order).
 Reference pattern: `shared/tests/test_parallel_merge_cascade_integration.py`.
 
 The empirical machinery now covers all three axes: **depth** (asymptote),
