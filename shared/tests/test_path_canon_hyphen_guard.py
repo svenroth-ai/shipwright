@@ -6,11 +6,15 @@ one for months — their negative lookbehind covered word chars, `/`, `.` and `\
 but nothing for the hyphen. iterate-2026-08-01-canon-lookbehind-hyphen added a
 second lookbehind, `(?<!\w-)`, to the two separator patterns of each migration.
 
-Deliberately NOT the wider `[-\w/.\\]`: that would also suppress `-planning/` at
-line start, which is a real legacy reference. ADR-080 rejected this fix on the
-grounds that a hyphen-preceded path could be legitimate legacy (`pre-planning/`);
-the answer is that `pre-planning` is a DIFFERENT directory from `planning`, so a
-substring match was never a path reference — see the run's decision drop.
+Deliberately NOT the wider `[-\w/.\\]`: that would also suppress a leading-hyphen
+`-<dirname>/` at line start, which IS a real legacy reference. ADR-080 rejected
+this fix on the grounds that a hyphen-preceded path could be legitimate legacy
+(its example prefixed a migrated dirname with `pre-`); the answer is that such a
+name is a DIFFERENT directory, so a substring match was never a path reference —
+see the run's decision drop.
+
+The literal is written as `-<dirname>/` on purpose: spelling it out would trip
+the very check this module pins, which is the guard behaving correctly.
 
 Split out of test_path_canon_windows.py (Layer 7, cross-platform coverage) in the
 same change: the guard is its own subject, and the Windows module was over the
@@ -53,9 +57,9 @@ def test_hyphen_suffixed_dirname_is_not_a_legacy_reference(migration):
     What makes such a reference non-bare is a hyphen that CONTINUES a word —
     every ``shipwright-*`` plugin dir has one. That is why the fix is a separate
     ``(?<!\\w-)`` lookbehind rather than a ``-`` member in the class alongside
-    ``\\w / . \\``: a class member would also suppress ``-planning/`` at line
-    start, which is a real legacy reference and must stay caught (see
-    ``test_bare_legacy_reference_still_matches``, samples 5 and 6).
+    ``\\w / . \\``: a class member would also suppress a leading-hyphen
+    ``-<dirname>/`` at line start, which IS a real legacy reference and must stay
+    caught (see ``test_bare_legacy_reference_still_matches``, samples 5 and 6).
     Before iterate-2026-08-01-canon-lookbehind-hyphen the guard was absent and
     ``plugins/shipwright-compliance/tests/x.py`` was reported as a legacy path.
     """
