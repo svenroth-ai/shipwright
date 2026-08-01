@@ -1,11 +1,213 @@
 {
   "run_id": "iterate-2026-08-01-cache-heal-per-plugin",
-  "date": "2026-08-01T10:12:07.690434Z",
-  "event_at": "2026-08-01T07:34:46.307762+00:00",
+  "date": "2026-08-01T10:15:54.734198Z",
+  "event_at": "2026-08-01T10:12:15.123408+00:00",
   "type": "change",
   "complexity": "medium",
   "branch": "iterate/cache-heal-per-plugin",
   "spec": ".shipwright/planning/iterate/iterate-2026-08-01-cache-heal-per-plugin.md",
   "tests_passed": true,
-  "adr": "iterate-2026-08-01-cache-heal-per-plugin"
+  "adr": "iterate-2026-08-01-cache-heal-per-plugin",
+  "test_completeness": {
+    "status": "complete",
+    "behaviors": [
+      {
+        "behavior": "Partial plugin mirror behind a surviving shipwright-run sentinel is repaired",
+        "disposition": "tested",
+        "evidence": "test_ensure_shared_cache_partial_reap.py::test_heals_partial_plugin_mirror_behind_surviving_sentinel PASSED"
+      },
+      {
+        "behavior": "Partial shared/ tree behind a surviving project_root.py sentinel is repaired",
+        "disposition": "tested",
+        "evidence": "test_ensure_shared_cache_partial_reap.py::test_heals_partial_shared_tree_behind_surviving_sentinel PASSED"
+      },
+      {
+        "behavior": "Neither former short-circuit survives: both trees partial with BOTH sentinels alive, the real bootstrap run as a subprocess against a faithful cache+marketplace layout, both trees repaired - proves the walk, the health verdict and the copy compose",
+        "disposition": "tested",
+        "category": "integration",
+        "evidence": "test_ensure_shared_cache_partial_reap.py::test_neither_short_circuit_survives PASSED"
+      },
+      {
+        "behavior": "A whole cache stays a no-op despite cache-manager .in_use/.orphaned_at litter",
+        "disposition": "tested",
+        "evidence": "test_ensure_shared_cache_partial_reap.py::test_noop_when_cache_manager_markers_are_present PASSED"
+      },
+      {
+        "behavior": ".in_use per-PID refcounts are never mirrored into the cross-plugin tree",
+        "disposition": "tested",
+        "evidence": "test_ensure_shared_cache_partial_reap.py::test_noop_when_cache_manager_markers_are_present PASSED (second assertion)"
+      },
+      {
+        "behavior": "A foreign marketplace clone never decides completeness of our shared/",
+        "disposition": "tested",
+        "evidence": "test_ensure_shared_cache_partial_reap.py::test_a_foreign_marketplace_clone_never_decides_completeness PASSED (mutation-verified: reverting _same_name_shared fails it)"
+      },
+      {
+        "behavior": "A foreign marketplace clone still restores an absent shared/",
+        "disposition": "tested",
+        "evidence": "test_ensure_shared_cache_partial_reap.py::test_a_foreign_marketplace_clone_still_restores_an_absent_shared PASSED"
+      },
+      {
+        "behavior": "One unwritable mirror does not block the other thirteen",
+        "disposition": "tested",
+        "evidence": "test_ensure_shared_cache_partial_reap.py::test_one_unwritable_mirror_does_not_block_the_others PASSED"
+      },
+      {
+        "behavior": "A failed shared/ copy does not skip the plugins repair",
+        "disposition": "tested",
+        "evidence": "test_ensure_shared_cache_partial_reap.py::test_a_failed_shared_copy_does_not_skip_the_plugins_repair PASSED"
+      },
+      {
+        "behavior": "The walk is copytree-equivalent: ignored dirs pruned BEFORE descent, however deep",
+        "disposition": "tested",
+        "evidence": "test_ensure_shared_cache_walk.py::test_delivered_prunes_ignored_dirs_without_descending PASSED"
+      },
+      {
+        "behavior": "The walk drops ignored files by pattern (*.pyc, *.pyo, .orphaned_at)",
+        "disposition": "tested",
+        "evidence": "test_ensure_shared_cache_walk.py::test_delivered_drops_ignored_files_by_pattern PASSED"
+      },
+      {
+        "behavior": "Tri-state walk: a missing or non-directory root yields None, an empty dir yields set()",
+        "disposition": "tested",
+        "evidence": "test_ensure_shared_cache_walk.py::test_delivered_is_none_for_a_tree_that_is_not_there + ::test_delivered_returns_empty_set_for_an_empty_tree PASSED"
+      },
+      {
+        "behavior": "An unreadable source yields verdict None, never a false 'complete'",
+        "disposition": "tested",
+        "evidence": "test_ensure_shared_cache_walk.py::test_incomplete_is_none_when_the_source_cannot_be_read PASSED"
+      },
+      {
+        "behavior": "A MID-WALK OSError abandons the verdict rather than shortening the file set (covers the symlink/junction-loop case; loop behaviour measured on a real mklink /J junction: OSError at depth 18, 42 ms, no hang)",
+        "disposition": "tested",
+        "evidence": "test_ensure_shared_cache_walk.py::test_delivered_is_none_when_a_subdirectory_fails_mid_walk PASSED"
+      },
+      {
+        "behavior": "Extra files in the destination are not gaps",
+        "disposition": "tested",
+        "evidence": "test_ensure_shared_cache_walk.py::test_incomplete_ignores_extra_files_in_the_destination PASSED"
+      },
+      {
+        "behavior": "A directory standing where a file belongs counts as missing (exists() is type-blind; file-only sets are not)",
+        "disposition": "tested",
+        "evidence": "test_ensure_shared_cache_walk.py::test_incomplete_true_when_a_directory_stands_where_a_file_belongs PASSED"
+      },
+      {
+        "behavior": "An absent destination tree reads incomplete",
+        "disposition": "tested",
+        "evidence": "test_ensure_shared_cache_walk.py::test_incomplete_true_when_the_destination_tree_is_absent PASSED"
+      },
+      {
+        "behavior": "Version ordering is numeric, so 0.10.0 beats 0.2.0 as the repair source",
+        "disposition": "tested",
+        "evidence": "test_ensure_shared_cache_walk.py::test_version_key_orders_numerically_not_lexically + ::test_plugin_mirrors_picks_the_numerically_newest_version PASSED"
+      },
+      {
+        "behavior": "The dev --plugin-dir model yields no mirror pairs and stays a silent no-op",
+        "disposition": "tested",
+        "evidence": "test_ensure_shared_cache_walk.py::test_plugin_mirrors_yields_nothing_in_the_dev_repo_model + test_ensure_shared_cache_integration.py::test_dev_plugin_dir_model_is_noop PASSED"
+      },
+      {
+        "behavior": "The hook's ignore set stays a superset of cache_tree_compare.SKIP_DIRS + ORPHAN_MARKER",
+        "disposition": "tested",
+        "evidence": "test_ensure_shared_cache_ssot_pins.py::test_ignore_set_covers_every_cache_tree_compare_skip_dir + ::test_ignore_set_covers_the_orphan_marker PASSED"
+      },
+      {
+        "behavior": "The walk and every copytree share ONE ignore callable - the invariant that prevents a permanent phantom gap",
+        "disposition": "tested",
+        "evidence": "test_ensure_shared_cache_walk.py::test_the_walk_actually_consults_the_shared_ignore_callable + test_ensure_shared_cache_ssot_pins.py::test_every_copy_site_passes_the_shared_ignore_callable PASSED"
+      },
+      {
+        "behavior": "Fresh-install delivery and fail-open behaviour are unchanged",
+        "disposition": "tested",
+        "evidence": "test_ensure_shared_cache_integration.py::test_heals_shared_and_plugins_on_fresh_install + ::test_heals_plugins_without_marketplace_clone + ::test_fail_open_when_no_clone_and_no_run PASSED"
+      },
+      {
+        "behavior": "All 13 vendored copies stay byte-identical and registered as the FIRST SessionStart hook",
+        "disposition": "tested",
+        "evidence": "test_ensure_shared_cache_vendored.py (forward + reverse, 5 tests) PASSED"
+      },
+      {
+        "behavior": "A file that is PRESENT but truncated is not detected by the healer",
+        "disposition": "untestable",
+        "reason_code": "covered-by-existing-test",
+        "reason": "Presence-only is a measured decision: a content rule here re-copies 24 shared files every session (CRLF between clone and cache). ACCEPTED UNCOVERED GAP, not a delegation - check_plugin_cache_sync.py covers the shared tree's content only, does not cover the mirror tree, and is monorepo-only, so end users have no content check on either tree. Closing it is trg-5005bf57's job."
+      },
+      {
+        "behavior": "Real-cache walk latency (measured 189-229 ms; clean no-op, zero phantom gaps across all 14 mirrors and shared/)",
+        "disposition": "untestable",
+        "reason_code": "requires-external-nondeterministic-service",
+        "reason": "Depends on the host filesystem and the live ~/.claude plugin cache's size and contents; measured by probe, not assertable in CI."
+      },
+      {
+        "behavior": "The ignore set covers every name the PRODUCER (update-marketplace.sh) withholds, incl. .python-version",
+        "disposition": "tested",
+        "evidence": "test_ensure_shared_cache_ssot_pins.py::test_ignore_set_covers_every_name_the_PRODUCER_withholds PASSED (parses the script's own -not -name tokens)"
+      },
+      {
+        "behavior": "The ignore set covers cache_tree_compare.SKIP_SUFFIXES",
+        "disposition": "tested",
+        "evidence": "test_ensure_shared_cache_ssot_pins.py::test_ignore_set_covers_the_cache_tree_compare_skip_suffixes PASSED"
+      },
+      {
+        "behavior": "_version_key is equivalent to cache_tree_compare.version_key",
+        "disposition": "tested",
+        "evidence": "test_ensure_shared_cache_ssot_pins.py::test_version_key_is_equivalent_to_the_shared_implementation PASSED (11 names)"
+      },
+      {
+        "behavior": "Every copytree call site passes ignore=_IGNORE",
+        "disposition": "tested",
+        "evidence": "test_ensure_shared_cache_ssot_pins.py::test_every_copy_site_passes_the_shared_ignore_callable PASSED"
+      },
+      {
+        "behavior": "The walk actually consults the shared ignore callable, once per visited directory",
+        "disposition": "tested",
+        "evidence": "test_ensure_shared_cache_walk.py::test_the_walk_actually_consults_the_shared_ignore_callable PASSED"
+      },
+      {
+        "behavior": "The walk never ENTERS an ignored directory (prune before descent, not filter after)",
+        "disposition": "tested",
+        "evidence": "test_ensure_shared_cache_walk.py::test_delivered_never_enters_an_ignored_directory PASSED (records iterdir receivers)"
+      },
+      {
+        "behavior": "A mirror that is a SYMLINK is never written through - the POSIX syncer owns it and a stale link points at an OLDER installed version dir",
+        "disposition": "tested",
+        "evidence": "test_ensure_shared_cache_repair_isolation.py::test_heal_plugins_skips_a_mirror_that_is_a_symlink PASSED (cross-platform; its sanity assertion proves the mirror would otherwise be copied)"
+      },
+      {
+        "behavior": "End-to-end: a stale symlinked mirror does not corrupt the older installed version directory",
+        "disposition": "tested",
+        "evidence": "test_ensure_shared_cache_repair_isolation.py::test_a_symlinked_mirror_is_never_written_through - runs on Linux CI; SKIPPED on this Windows host (symlink creation needs a privilege not held, verified OSError 1314). The cross-platform guard pin above is the always-on coverage."
+      },
+      {
+        "behavior": "Path keys are case-folded on Windows only, and posix separators are preserved",
+        "disposition": "tested",
+        "evidence": "test_ensure_shared_cache_walk.py::test_delivered_lists_plain_files_relative_and_posix + ::test_delivered_prunes_ignored_dirs_without_descending PASSED - both failed against an os.path.normcase implementation that rewrote separators to backslashes"
+      },
+      {
+        "behavior": "A whole cache calls copytree ZERO times - AC3 asserted at the operation, not at the log line",
+        "disposition": "tested",
+        "evidence": "test_ensure_shared_cache_repair_isolation.py::test_a_whole_cache_calls_copytree_ZERO_times PASSED (counts copies; a copy-then-suppress implementation would pass the stderr-only test)"
+      }
+    ],
+    "counts": {
+      "testable": 33,
+      "tested": 33,
+      "untestable": 2,
+      "untested_testable": 0
+    },
+    "enumeration_basis": {
+      "acs": 8,
+      "covered_acs": 8
+    }
+  },
+  "surface_verification": {
+    "surface": "cli",
+    "runner": "uv run --extra dev pytest shared/tests/test_ensure_shared_cache_partial_reap.py shared/tests/test_ensure_shared_cache_repair_isolation.py shared/tests/test_ensure_shared_cache_integration.py shared/tests/test_ensure_shared_cache_ssot_pins.py -q",
+    "exit_code": 0,
+    "tests_run": 21,
+    "evidence_path": "C:\\01_Development\\shipwright\\.worktrees\\cache-heal-per-plugin\\.shipwright\\runs\\iterate-2026-08-01-cache-heal-per-plugin\\surface_verification.log",
+    "timestamp": "2026-08-01T10:09:53.533Z",
+    "attempts": 1
+  }
 }
