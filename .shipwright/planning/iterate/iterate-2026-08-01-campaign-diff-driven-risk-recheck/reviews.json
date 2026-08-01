@@ -1,0 +1,381 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-08-01-campaign-diff-driven-risk-recheck",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-01T08:12:43.788620+00:00",
+      "disposition": "7-item checklist walked. 1 Spec Compliance: pass (AC1-AC8, verified independently by Stage 1). 2 Error Handling: pass - every git failure raises rather than fail-open; main() returns 2 with parseable JSON. 3 Security Basics: pass - argument arrays never shell=True, -z NUL parsing, base ref resolved to a SHA; the CI trust boundary stops the unit rather than self-acking. 4 Test Quality: pass after Stage 3 removed two assertions that could not fail (whole-document grep; a hand-copied verifier threshold). 5 Performance: pass - two git calls plus a bounded read per untracked file. 6 Naming/Structure: pass - split into diff_risk_recheck (pure) + diff_change_set (git) so both stay under 300. 7 Affected Boundaries: pass - 5 boundaries enumerated in the spec, each probed; the git-porcelain boundary probe FOUND the rename blind spot.",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 13,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The CLI is expected to accept `diff_loc` in its pure function, but the plan only specifies using `git diff --name-only` to resolve the file list. The `--name-only` flag outputs just file paths, meaning there is no source data to compute `diff_loc` for Step 3.7 parity (AC5).",
+          "suggestion": "Modify the git command in the CLI's `main()` to use `git diff --numstat <base>...HEAD`. This outputs both the added/deleted line counts (to compute `diff_loc`) and the file paths in a single pass.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "The plan specifies using `git diff <base>...HEAD` (triple-dot). This specifically compares the merge base to the `HEAD` commit. If Step 3 (Build) modifies files in the working tree but does not commit them, the triple-dot diff will return an empty list and the re-check will silently pass.",
+          "suggestion": "Clarify the git state at Step 3.4. If changes are meant to be uncommitted at this stage, use `git diff <base>` (no dots, compares base to working tree) or `git diff HEAD` (compares current commit to working tree). If they are committed, `git diff <base>..HEAD` (double-dot) is safer for capturing all branch modifications.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "AC8 strictly forbids exceeding 497 lines in `sub-iterate-runner.md`. The plan's approach to add new Step 3.4 instructions is to \"Compress equivalent verbosity elsewhere.\" Delegating blind compression to the implementer risks silently breaking an unrelated system constraint or prompt instruction.",
+          "suggestion": "Identify and specify exactly which existing section of `sub-iterate-runner.md` should be pruned or consolidated (e.g., \"compress the formatting rules in Step 1\" or \"move XYZ detail to the reference doc\").",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "security",
+          "file": null,
+          "line": null,
+          "finding": "When passing file paths from the git CLI to the python subprocess, paths containing spaces, quotes, or unusual characters can cause parsing errors or argument injection if passed via shell expansion. The plan mentions testing these, but doesn't specify safe handling in the implementation.",
+          "suggestion": "Ensure the CLI uses `-z` (null-terminated) when invoking git commands (e.g., `git diff -z --numstat`), and avoids `shell=True` if executing subprocesses from within the Python wrapper.  Overall Assessment: The architecture logically fixes the lifecycle asymmetry by introducing a dedicated re-check pass without polluting the Stage-1 classifier, but requires revision to properly extract line-count data and guarantee working-tree changes aren't missed by the diff command.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The git-range design does not establish that Step 3.4 sees the files produced by Step 3. `git diff --name-only <base>...HEAD` only compares committed history; if Build leaves changes staged or unstaged—as is common before the runner’s final commit—the re-check will see no Build changes and reproduce the original failure.",
+          "suggestion": "Define the runner’s exact change-set invariant. Either require/checkpoint a Build commit before Step 3.4, or have the CLI explicitly collect the merge-base/HEAD range plus staged and unstaged working-tree changes, with deduplication. Add an integration case where the relevant file is modified but not committed before the re-check.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "The approach documents orchestrator handling of an `escalated` result, but does not identify or test the actual campaign-orchestrator consumer. Adding a schema branch and runner instructions is insufficient if the orchestrator currently treats any non-success result, CLI exit code `3`, or absent normal finalization artifacts as a failed unit.",
+          "suggestion": "Locate the concrete result ingestion/status-transition implementation and update it if necessary so that `status: \"escalated\"` is terminal-but-non-failed, preserves `reason_code` and `ci_paths`, and halts follow-on verification/acknowledgement work. Add a consumer-level test covering the CI escalation result, not only schema validation and documentation anchors.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "The CI escalation protocol is underspecified at the process boundary. The plan requires both JSON output and exit `3`, but does not say whether the runner must parse JSON on a non-zero exit, how it distinguishes expected escalation from malformed CLI failure, or whether an escalation can be emitted after a partial/invalid re-check. A conventional `set -e` shell runner could terminate as an error before writing `result.json`.",
+          "suggestion": "Specify a stable protocol: valid JSON is always written to stdout; exit `0` means continue, exit `3` means a valid CI escalation, and all other non-zero exits are operational failures. In Step 3.4, capture stdout and exit status explicitly, validate the JSON, and only translate a valid exit-3 result into the required escalated result shape. Test each path.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "diff_loc` is an input to `recheck()`, but the CLI’s source and semantics for it are not defined, particularly for `--changed-files`. AC1 requires the CLI to report diff LOC for both input modes. An explicit path list cannot reliably imply LOC without a diff base, a supplied count, or a defined file-content comparison.",
+          "suggestion": "Define an explicit CLI contract, such as `--base-ref` calculates LOC from the same change set and `--changed-files` requires `--diff-loc` (or a machine-readable per-file numstat input). Define treatment of binary files, renames, deletions, and added/deleted line totals, then add tests for those semantics.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "The test plan demonstrates detector output and a stated verifier threshold, but does not demonstrate the required runner-to-F5c-to-verifier behavior in AC3. In particular, the combined CI-and-hooks test escalates before normal F5c finalization, so it cannot prove that a non-CI `cross_component` change records `medium` and causes `check_integration_coverage` to evaluate rather than SKIP.",
+          "suggestion": "Add a separate non-CI cross-component fixture (for example, `hooks.json` only) that executes the normal success path, produces the F5c entry/result, and runs the real integration-coverage verifier to assert it is evaluated. Keep the workflow-path fixture solely for the escalation path.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "Complexity merging is described as `max(stage-1 estimate, detector floor)` without defining validation and ordering. String comparison would be wrong for complexity names, and accepting an unexpected Stage-1 value could produce an invalid F5c record or schema failure after code has already been built.",
+          "suggestion": "Reuse the canonical complexity enum/order from the classification subsystem, validate Stage-1 complexity at the CLI boundary, and make the mapping from each detector flag to its floor explicit and tested. Ensure the emitted effective complexity is always one accepted by both the F5c format and result schema.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "security",
+          "file": null,
+          "line": null,
+          "finding": "The CLI consumes repository-controlled filenames and invokes git. The proposed line-oriented `git diff --name-only` is not robust for valid filenames containing newlines, and unsafe command construction could allow a path or ref beginning with `-` to be interpreted as an option. The planned quoted/non-ASCII test does not cover this parsing boundary.",
+          "suggestion": "Invoke git with an argument array rather than a shell; use NUL-delimited output (`--name-only -z`) and robust decoding; normalize separators only for detector matching while retaining original paths for reporting; and validate/resolve `--base-ref` before use. Add filenames containing spaces, leading dashes, and embedded newlines to parser tests where platform support permits.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "Because both result branches use `additionalProperties: false`, merely adding optional properties does not ensure the new mechanism was executed. A `success` result can remain schema-valid while silently omitting `risk_recheck`; likewise an `escalated` result could omit the CI evidence unless those fields are required for the relevant variant. This weakens AC4 and AC6’s intended enforcement.",
+          "suggestion": "Make `success.risk_recheck` required for post-change campaign runs. Model CI escalation as a constrained schema variant—at minimum requiring the CI-specific `reason_code`, non-empty `ci_paths`, and the detected/effective complexity fields required by consumers. Add negative schema tests for omitted required fields and unregistered fields.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The plan does not state whether detector evaluation, reported paths, and LOC use the same normalized and deduplicated changed-file set. Renames, duplicate inputs, deleted matching files, and platform separators can otherwise yield inconsistent flags, offending paths, and counts.",
+          "suggestion": "Establish one canonical normalized file-set inside the CLI, retain a deterministic original-path representation for JSON output, and add focused tests for rename/deletion and duplicate explicit-file inputs.  Overall, the separate re-check CLI is a sound, appropriately scoped solution and avoids contaminating Stage-1 classification. The plan needs a precise post-Build diff boundary, explicit non-zero escalation handling, and real orchestration/F5c composition coverage before it is safe to implement. SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-08-01T06:29:01.251364+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[gemini] Here is the review of the implementation approach.\n\n- **Category:** edge-case\n- **Severity:** high\n- **Finding:** The CLI is expected to accept `diff_loc` in its pure function, but the plan only specifies using `git diff --name-only` to resolve the file list. The `--name-only` flag outputs just file paths, meaning there is no source data to compute `diff_loc` for Step 3.7 parity (AC5).\n- **Suggestion:** Modify the git command in the CLI's `main()` to use `git diff --numstat <base>...HEAD`. This outputs both the added/deleted line counts (to compute `diff_loc`) and the file paths in a single pass. \n\n- **Category:** risk\n- **Severity:** medium\n- **Finding:** The plan specifies using `git diff <base>...HEAD` (triple-dot). This specifically compares the merge base to the `HEAD` commit. If Step 3 (Build) modifies files in the working tree but does not commit them, the triple-dot diff will return an empty list and the re-check will silently pass.\n- **Suggestion:** Clarify the git state at Step 3.4. If changes are meant to be uncommitted at this stage, use `git diff <base>` (no dots, compares base to working tree) or `git diff HEAD` (compares current commit to working tree). If they are committed, `git diff <base>..HEAD` (double-dot) is safer for capturing all branch modifications.\n\n- **Category:** approach\n- **Severity:** medium\n- **Finding:** AC8 strictly forbids exceeding 497 lines in `sub-iterate-runner.md`. The plan's approach to add new Step 3.4 instructions is to \"Compress equivalent verbosity elsewhere.\" Delegating blind compression to the implementer risks silently breaking an unrelated system constraint or prompt instruction.\n- **Suggestion:** Identify and specify exactly which existing section of `sub-iterate-runner.md` should be pruned or consolidated (e.g., \"compress the formatting rules in Step 1\" or \"move XYZ detail to the reference doc\").\n\n- **Category:** security\n- **Severity:** low\n- **Finding:** When passing file paths from the git CLI to th […truncated]\n\n[openai] 1. **Category:** edge-case  \n   **Severity:** high  \n   **Finding:** The git-range design does not establish that Step 3.4 sees the files produced by Step 3. `git diff --name-only <base>...HEAD` only compares committed history; if Build leaves changes staged or unstaged—as is common before the runner’s final commit—the re-check will see no Build changes and reproduce the original failure.  \n   **Suggestion:** Define the runner’s exact change-set invariant. Either require/checkpoint a Build commit before Step 3.4, or have the CLI explicitly collect the merge-base/HEAD range *plus* staged and unstaged working-tree changes, with deduplication. Add an integration case where the relevant file is modified but not committed before the re-check.\n\n2. **Category:** dependency  \n   **Severity:** high  \n   **Finding:** The approach documents orchestrator handling of an `escalated` result, but does not identify or test the actual campaign-orchestrator consumer. Adding a schema branch and runner instructions is insufficient if the orchestrator currently treats any non-success result, CLI exit code `3`, or absent normal finalization artifacts as a failed unit.  \n   **Suggestion:** Locate the concrete result ingestion/status-transition implementation and update it if necessary so that `status: \"escalated\"` is terminal-but-non-failed, preserves `reason_code` and `ci_paths`, and halts follow-on verification/acknowledgement work. Add a consumer-level test covering the CI escalation result, not only schema validation and documentation anchors.\n\n3. **Category:** approach  \n   **Severity:** medium  \n   **Finding:** The CI escalation protocol is underspecified at the process boundary. The plan requires both JSON output and exit `3`, but does not say whether the runner must parse JSON on a non-zero exit, how it distinguishes expected escalation from malformed CLI failure, or whether an escalation can be emitted after a partial/invalid re-check. A conventional `set -e` shell ru […truncated]"
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 12,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "correctness",
+          "file": "plugins/shipwright-iterate/agents/sub-iterate-runner.md",
+          "line": 85,
+          "finding": "plan_review_required saw only the four diff-driven flags; seven canonical flags (touches_auth, touches_rls, touches_middleware, touches_migrations, touches_billing, touches_shared_infra, touches_public_api) have no diff-driven detector, so a touches_auth unit at small went from RUNNING the plan review under the old rule to SKIPPING it — a regression introduced by this change.",
+          "suggestion": "Add --stage1-flags and UNION into risk_flags before computing plan_review_required.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "high",
+          "category": "security",
+          "file": "plugins/shipwright-iterate/scripts/lib/diff_risk_recheck.py",
+          "line": 231,
+          "finding": "git diff --numstat has rename detection ON by default and emits only the NEW path, so renaming .github/workflows/security.yml to security.yml.disabled raises no CI flag and an autonomous unit can disable a security workflow.",
+          "suggestion": "Pass --no-renames; the rename branch of parse_numstat_z then becomes dead and can be deleted with the bug.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "high",
+          "category": "test-coverage",
+          "file": "plugins/shipwright-iterate/tests/test_diff_risk_recheck.py",
+          "line": 1,
+          "finding": "The <80% diff-coverage gate will likely BLOCK: _git, collect_change_set and main (~27 of ~83 new statements) are exercised only via subprocess, which measures 0%. The documented process contract is therefore untested.",
+          "suggestion": "Add in-process tests monkeypatching _git by MODULE OBJECT (ADR-045).",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "plugins/shipwright-iterate/scripts/lib/diff_risk_recheck.py",
+          "line": 227,
+          "finding": "Base ref resolved to its own tip, not merge-base(HEAD, base_ref); a concurrent origin/main advance makes upstream files read as this unit's and can STRICT-STOP the campaign citing ci_paths it never touched.",
+          "suggestion": "Resolve via git merge-base, falling back to rev-parse.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "plugins/shipwright-iterate/scripts/lib/diff_risk_recheck.py",
+          "line": 235,
+          "finding": "A non-zero git ls-files is silently swallowed — fail-OPEN on the leg that exists to see brand-new hook files.",
+          "suggestion": "Raise RuntimeError.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "plugins/shipwright-iterate/scripts/lib/diff_risk_recheck.py",
+          "line": 86,
+          "finding": "_dedupe returned originals and detection ran on them, but only two of four detectors self-normalise, so a quoted non-ASCII path leaves cross_component down. O9 not actually delivered.",
+          "suggestion": "One normalized set drives detection, counting and reporting.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "plugins/shipwright-iterate/agents/sub-iterate-runner.md",
+          "line": 60,
+          "finding": "base_branch is NULL for the first stacked sub-iterate, producing --base-ref \"\" and exit 2; and Step 3.4 gave no instruction for a non-0/non-3 exit, so a runner could continue on Step 2's stale estimate.",
+          "suggestion": "Default --base-ref to HEAD; add an explicit failure branch to the contract.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "plugins/shipwright-iterate/tests/test_diff_risk_recheck.py",
+          "line": 261,
+          "finding": "The rename fixture is not a shape git emits, so the test passed for the wrong reason.",
+          "suggestion": "Use the real shape.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/scripts/lib/autonomous_loop.py",
+          "line": 331,
+          "finding": "_validate_result does not apply the schema, so a complete result carrying a stray top-level reason would now write failure_reason onto a GREEN unit.",
+          "suggestion": "Scope the fallback to non-complete.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "plugins/shipwright-iterate/skills/iterate/references/campaign-mode.md",
+          "line": 353,
+          "finding": "Claims failure_reason reaches 'the board', but no in-repo consumer reads it.",
+          "suggestion": "State the verifiable claim.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "plugins/shipwright-iterate/scripts/lib/diff_risk_recheck.py",
+          "line": 71,
+          "finding": "_DETECTORS types the callables as object; one assertion tests a Python builtin rather than the module.",
+          "suggestion": "Callable alias; drop the tautology.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "plugins/shipwright-iterate/scripts/lib/diff_risk_recheck.py",
+          "line": 235,
+          "finding": "git diff prints repo-root-relative paths while ls-files prints cwd-relative ones.",
+          "suggestion": "Add --full-name.",
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-08-01T08:13:44.587239+00:00",
+      "disposition": "Stage-2 code-reviewer (opus). 12 findings, 3 HIGH — ALL accepted and fixed. HIGH-1 was a regression this change introduced; HIGH-2 the rename blind spot, confirmed by empirical probe; HIGH-3 the diff-coverage gap.",
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 6,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "reversibility",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: an operator can resolve a CI escalation and the unit can then land — recheck() sets escalate.required from ci_paths with no ack-awareness and main() has no escape hatch, while campaign-mode.md tells the operator to record the ack and re-run the unit. A re-run replays Build, which re-creates the same CI edit, which escalates again. The loop does not terminate.",
+          "suggestion": "make the CLI ack-aware, or delete the re-run instruction",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "high",
+          "category": "hidden coupling",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: AC3 — the upgraded complexity is what F5c records — Nothing reads result.json.risk_recheck; _validate_result never applies the schema; risk_recheck is optional by design. A runner that gets effective_complexity=medium and writes Step 2's small into F5c produces a fully GREEN run, because check_integration_coverage green-SKIPs at small. The gate that would catch the non-compliance is the one the non-compliance switches off. AC4 is genuinely enforced; AC3 is advisory prose.",
+          "suggestion": "an F11 check comparing risk_recheck.effective_complexity to the F5c complexity, or an explicit ADR concession",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "hidden coupling",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: the runner is told clearly enough to record the upgraded value — The Success example models the mistake: complexity: small sits four lines above effective_complexity: medium. F5c.md still presents complexity as the Stage-1 output.",
+          "suggestion": "make the example self-consistent; add a line to F5c.md",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "boundary & contract",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: Stage-1 flags survive the union — classify_complexity emits risk_flags as a JSON ARRAY; the natural interpolation gives [\"touches_auth\"], and _split_flags yields ['[\"touches_auth\"']. plan_review_required still fires on bool(flags) so AC5 survives, but Step 3.8's NAMED touches_io_boundary lookup misses. The test passes because it hands recheck() a clean Python list — the fake, not the wire format.",
+          "suggestion": "show the jq extraction in the contract and tolerate JSON punctuation",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "boundary & contract",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: the C7 fix is drift-protected — test_step_3_4_tells_the_runner_what_to_do_on_an_operational_failure CANNOT FAIL: it greps the WHOLE document for status:\"failed\", already satisfied by the pre-existing Browser Verify bullet. Delete Step 3.4's item entirely and it stays green.",
+          "suggestion": "slice the doc to the Step 3.4 section and assert inside it",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "hidden coupling",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: test_floor_unskips_the_integration_coverage_gate pins the two SSoTs together — It compares against VERIFIER_EVALUATES_AT, a THIRD hand-copied constant in the test file. Narrow the real gate to ('large',) and every medium run green-SKIPs while this test stays green.",
+          "suggestion": "read the literal out of the verifier module",
+          "source": "doubt-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-08-01T08:14:11.682323+00:00",
+      "disposition": "Stage-3 doubt-reviewer (opus), advisory-must-address. 6 doubts (2 HIGH, 4 MEDIUM) — ALL addressed: CLI made ack-aware so the CI handback terminates; the self-contradicting Success example fixed; --stage1-flags hardened against the JSON-array wire format; two assertions that COULD NOT FAIL replaced (whole-document grep, hand-copied verifier threshold). The AC3-is-unenforced-prose doubt is accepted as a stated limitation with a triage follow-up, not silently dropped.",
+      "recorded_by": "doubt-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 2,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "bug",
+          "file": "plugins/shipwright-iterate/scripts/lib/diff_change_set.py:116-117",
+          "line": null,
+          "finding": "The working-tree change set includes untracked files, but `diff_loc` is computed solely from `git diff --numstat`. Git does not include untracked files in that output, so an untracked 101+ line file yields `diff_loc: 0`. A small, no-risk unit that creates a large untracked file can therefore skip Step 3.5 despite AC5 requiring review when the diff exceeds 100 LOC; the CLI also fails to report total LOC for its declared change set as required by AC1.",
+          "suggestion": "Include untracked-file line counts in `loc` (with a documented binary-file policy), or obtain a numstat representation that includes untracked files. Add an integration test with a >100-line untracked inert file asserting `diff_loc > 100` and `plan_review_required is True`.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": "plugins/shipwright-iterate/scripts/lib/diff_risk_recheck.py",
+          "line": 207,
+          "finding": "diff-loc` accepts negative values. In explicit-file-list mode, `--diff-loc -1` is emitted directly in the result despite the result schema requiring a non-negative value, and it can suppress the diff-size review trigger. This makes the CLI produce output that cannot be represented in the success result contract.",
+          "suggestion": "Validate `diff_loc >= 0` in `recheck()` (so both CLI and direct callers are covered) and return the existing JSON operational-error response for invalid input. Add tests for negative explicit `--diff-loc` and direct `recheck()` input.  Overall assessment: the core detector invocation, complexity ratchet, CI escalation, schema updates, and consumer handling are sound, but LOC accounting is incomplete for a change set that intentionally includes untracked files. Ship with the LOC fix before relying on the new Step 3.5 parity guarantee.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-08-01T08:14:23.435137+00:00",
+      "disposition": "External LLM code review, --mode code. openai returned 2 findings (verdict revise); gemini returned an unusable truncated response (degraded=false, 1 of 2 providers). BOTH openai findings accepted and fixed: (medium) diff_loc counted only git diff --numstat, which cannot see untracked files, so a change made entirely of NEW files reported diff_loc 0 and skipped AC5's >100-LOC arm — untracked_loc() added plus a real-repo 120-line test; (low) negative --diff-loc was accepted despite the schema requiring minimum 0 — now validated in recheck() so direct callers are covered too.",
+      "recorded_by": "external-review-json",
+      "parse_status": "partial",
+      "raw_excerpt": "[gemini] _risk_recheck.py\" \\\n+  --project-root \"{project_root}\" --base-ref \"{base_branch}\" --run-id \"{run_id}\" \\\n+  --stage1-complexity \"{step_2_complexity}\" --stage1-flags \"$(jq -r '.risk_flags|join(\",\")' <<<\"$step2_json\")\"\n+```\n```\nThis contradicts the review fix! The review fix says \"Contract passes `{step_2_risk_flags}`. Tests: `test_stage1_flags_are_unioned_not_replaced`.\"\nWait, if it was supposed to be `{step_2_risk_flags}`, the code actually has `<<<\"$step2_json\"\n\n[openai] - Category: bug\n- Severity: medium\n- File: `plugins/shipwright-iterate/scripts/lib/diff_change_set.py:116-117`\n- Finding: The working-tree change set includes untracked files, but `diff_loc` is computed solely from `git diff --numstat`. Git does not include untracked files in that output, so an untracked 101+ line file yields `diff_loc: 0`. A small, no-risk unit that creates a large untracked file can therefore skip Step 3.5 despite AC5 requiring review when the diff exceeds 100 LOC; the CLI also fails to report total LOC for its declared change set as required by AC1.\n- Suggestion: Include untracked-file line counts in `loc` (with a documented binary-file policy), or obtain a numstat representation that includes untracked files. Add an integration test with a >100-line untracked inert file asserting `diff_loc > 100` and `plan_review_required is True`.\n\n- Category: edge-case\n- Severity: low\n- File: `plugins/shipwright-iterate/scripts/lib/diff_risk_recheck.py:207`\n- Finding: `--diff-loc` accepts negative values. In explicit-file-list mode, `--diff-loc -1` is emitted directly in the result despite the result schema requiring a non-negative value, and it can suppress the diff-size review trigger. This makes the CLI produce output that cannot be represented in the success result contract.\n- Suggestion: Validate `diff_loc >= 0` in `recheck()` (so both CLI and direct callers are covered) and return the existing JSON operational-error response for invalid input. Add tests for negative explicit `--diff-loc` and direct `recheck()` input.\n\nOverall assessment: the core detector invocation, complexity ratchet, CI escalation, schema updates, and consumer handling are sound, but LOC accounting is incomplete for a change set that intentionally includes untracked files. Ship with the LOC fix before relying on the new Step 3.5 parity guarantee.\n\nSHIPWRIGHT_VERDICT: revise"
+    }
+  },
+  "gates": {
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-01T08:29:58.305632+00:00",
+      "disposition": "Stage-1 spec-reviewer HARD-GATE: PASS. AC1-AC8 each verified against the tree; all accepted-and-fixed dispositions delivered; O8's rejected half factually correct; no scope creep. Its 2 actionable non-gating observations were fixed before Stage 2 ran.",
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    }
+  }
+}
