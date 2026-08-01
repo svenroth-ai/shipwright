@@ -1,0 +1,11 @@
+{
+  "run_id": "iterate-2026-08-01-compliance-refresh-real-converge",
+  "date": "2026-08-01T10:51:21.832999Z",
+  "event_at": "2026-08-01T08:26:45.209123+00:00",
+  "type": "feature",
+  "complexity": "medium",
+  "branch": "iterate/compliance-refresh-real-converge",
+  "spec": ".shipwright/planning/iterate/2026-08-01-compliance-refresh-real-converge.md",
+  "tests_passed": true,
+  "adr": "iterate-2026-08-01-compliance-refresh-real-converge"
+}

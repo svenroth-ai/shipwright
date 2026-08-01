@@ -1,0 +1,318 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-08-01-compliance-refresh-real-converge",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-01T09:43:41.109599+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 9,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "The plan specifies a module-scoped fixture (`real_run`) but mentions passing `tmp` to `seed_repo`. In `pytest`, the `tmp` / `tmp_path` fixtures are function-scoped. Attempting to request a function-scoped fixture from a module-scoped fixture will cause pytest to hard-crash with a `ScopeMismatch` error before any tests run.",
+          "suggestion": "Inject `tmp_path_factory` (which is session-scoped) into your `real_run` fixture and use `root = tmp_path_factory.mktemp(\"real_producer_seed\")` to generate the directory for the module-scoped run.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The plan notes a ~14s local execution time against a 30s hardcoded timeout in the `_update_compliance` subprocess. Since the spec explicitly forbids touching production code, you cannot increase this timeout. GitHub Actions / CI runners can easily experience >2x CPU jitter, meaning this test introduces a high risk of random CI pipeline failures. While Step 5 makes the failure actionable, it still fails the build.",
+          "suggestion": "If CI flakiness occurs, you may be forced to either relax the \"no production code touched\" rule to allow reading a timeout-override environment variable (e.g., `COMPLIANCE_TIMEOUT=90`) in `update_compliance.py`, or restrict this test to run only on specific, provisioned runners rather than standard shared CI queues.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "Step 1 explicitly calls for \"unconditional inserts\" to `sys.path` in the module body. Modifying global process state at the module level leaks to all subsequently executed test modules running in the same pytest worker, potentially masking import errors elsewhere.",
+          "suggestion": "Wrap the ADR-045 `sys.path` inserts in a module-scoped, `autouse=True` fixture that `yield`s, and then `pop()` the inserted paths during teardown to keep the test worker clean.  Overall Assessment: The approach is conceptually excellent—driving the real subprocess boundary to eliminate assumptions is exactly the right way to close this test gap. However, the fixture scoping mismatch will prevent the test from running, requiring a minor structural revision.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The D6 assertion is only reliable if the recording wrapper captures the raw config bytes immediately after the real `regenerate` returns and before `converge()` performs its rewind. The plan says it captures `PRODUCER_STATE` “after each pass,” but that may be normalized state or may be captured after the caller has already restored inputs, allowing the “rewritten mid-run” check to pass without observing the whole-file rewrite.",
+          "suggestion": "Have the delegating wrapper read and retain the exact bytes of `shipwright_compliance_config.json` directly after calling `produce_mod.regenerate`. Assert at least one captured intermediate value differs from the seed and parses with `iterate` in `phases_covered`; separately assert the final on-disk bytes equal the seed bytes.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "“Every original log line is retained” needs a more precise assertion than membership or a simple prefix check. The plan correctly notes that triage can add a header before the seed content, but a set-membership assertion would miss deletion/reordering of duplicate lines, while a prefix assertion is known to be invalid.",
+          "suggestion": "Capture the original raw lines and assert they occur, byte-for-byte and in order, as an ordered subsequence of the final lines. Also compare newly added parsed JSONL records against the seed records, so “exactly three new `grade_snapshot` events” and “exactly one new `test-fail:unit` row” are measured as deltas rather than total counts.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "The test will run unmarked in the normal CI path despite taking roughly 14 seconds and allowing up to 30 seconds for each subprocess call. The measured local runtime is encouraging, but it does not establish that the normal CI job has enough remaining wall-clock headroom or that the compliance plugin and its SBOM-related prerequisites are always available there. A slow or resource-constrained runner could turn this into a recurring suite timeout rather than a useful producer failure.",
+          "suggestion": "Verify this exact module in the intended CI job/image, including its timeout budget and installed tooling. Keep it in CI as intended, but ensure the test failure includes the captured subprocess status/output and elapsed time rather than attributing every `error` outcome only to the two anticipated causes.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "_seed_project` depends on several discovery contracts beyond the named fixture contents: the test-result configuration must cause the tagged test module to be discovered, the event schema must be accepted by the grade collector, the SBOM leg must not require network resolution, and the subprocess must resolve the temporary repository root rather than the checkout root. These were exercised manually, but the plan does not explicitly make those fixture values self-contained or validate the fixture preconditions before the convergence assertions.",
+          "suggestion": "Build the fixture exclusively from fixed repository-local content and commands, with no dependency resolution/network path. Add focused seed sanity checks before `converge()`—for example, verify both FR IDs and the tagged test are discoverable in the seed, the JSONL records parse, and the seed config lacks `iterate`. This makes a malformed fixture fail as a fixture failure rather than producing opaque seven-document outcome failures.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "The wrapper is appropriate for observation, but it is still an explicitly injected `regenerate` callable. Without careful delegation and a separate default-argument test, a future edit could accidentally have the wrapper alter arguments, return values, or exception behavior and weaken the integration claim.",
+          "suggestion": "Make the wrapper a minimal `args, kwargs` pass-through with no exception handling or result transformation, record only snapshots in a `finally`/post-return arrangement that preserves behavior, and call `converge(..., regenerate=recording_wrapper)` only in the shared fixture. In the separate AC-7 test, inspect `converge`’s declared default directly and compare identity to `produce_mod.regenerate`.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "security",
+          "file": null,
+          "line": null,
+          "finding": "This change intentionally executes the real compliance subprocess against fixture-controlled files. That is appropriate for the integration objective, but fixture data must remain static and repository-owned; deriving fixture paths, commands, or configuration from ambient environment values would create an unnecessary command/configuration injection surface in CI.",
+          "suggestion": "Use fixed test-owned paths and literal fixture content, avoid shell-string command construction in the test, and scrub or avoid inheriting optional environment configuration that could redirect the compliance tool or dependency tooling. No new application-facing security exposure is otherwise apparent.  Overall, the approach is sound and directly exercises the missing producer path rather than simulating it. The main changes needed are to make the mid-pass config observation and append-only delta assertions unambiguous, and to validate the real CI runtime/prerequisites before relying on an unmarked subprocess integration test. SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-08-01T09:33:27.078580+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[gemini] Here is the review of your implementation approach:\n\n- **Category:** risk\n  **Severity:** high\n  **Finding:** The plan specifies a module-scoped fixture (`real_run`) but mentions passing `tmp` to `seed_repo`. In `pytest`, the `tmp` / `tmp_path` fixtures are function-scoped. Attempting to request a function-scoped fixture from a module-scoped fixture will cause pytest to hard-crash with a `ScopeMismatch` error before any tests run.\n  **Suggestion:** Inject `tmp_path_factory` (which is session-scoped) into your `real_run` fixture and use `root = tmp_path_factory.mktemp(\"real_producer_seed\")` to generate the directory for the module-scoped run.\n\n- **Category:** edge-case\n  **Severity:** medium\n  **Finding:** The plan notes a ~14s local execution time against a 30s hardcoded timeout in the `_update_compliance` subprocess. Since the spec explicitly forbids touching production code, you cannot increase this timeout. GitHub Actions / CI runners can easily experience >2x CPU jitter, meaning this test introduces a high risk of random CI pipeline failures. While Step 5 makes the failure *actionable*, it still fails the build.\n  **Suggestion:** If CI flakiness occurs, you may be forced to either relax the \"no production code touched\" rule to allow reading a timeout-override environment variable (e.g., `COMPLIANCE_TIMEOUT=90`) in `update_compliance.py`, or restrict this test to run only on specific, provisioned runners rather than standard shared CI queues. \n\n- **Category:** risk\n  **Severity:** low\n  **Finding:** Step 1 explicitly calls for \"unconditional inserts\" to `sys.path` in the module body. Modifying global process state at the module level leaks to all subsequently executed test modules running in the same pytest worker, potentially masking import errors elsewhere.\n  **Suggestion:** Wrap the ADR-045 `sys.path` inserts in a module-scoped, `autouse=True` fixture that `yield`s, and then `pop()` the inserted paths during teardown to keep the test worker clean. […truncated]\n\n[openai] 1. **Category:** edge-case  \n   **Severity:** medium  \n   **Finding:** The D6 assertion is only reliable if the recording wrapper captures the raw config bytes immediately after the real `regenerate` returns and before `converge()` performs its rewind. The plan says it captures `PRODUCER_STATE` “after each pass,” but that may be normalized state or may be captured after the caller has already restored inputs, allowing the “rewritten mid-run” check to pass without observing the whole-file rewrite.  \n   **Suggestion:** Have the delegating wrapper read and retain the exact bytes of `shipwright_compliance_config.json` directly after calling `produce_mod.regenerate`. Assert at least one captured intermediate value differs from the seed and parses with `iterate` in `phases_covered`; separately assert the final on-disk bytes equal the seed bytes.\n\n2. **Category:** edge-case  \n   **Severity:** medium  \n   **Finding:** “Every original log line is retained” needs a more precise assertion than membership or a simple prefix check. The plan correctly notes that triage can add a header before the seed content, but a set-membership assertion would miss deletion/reordering of duplicate lines, while a prefix assertion is known to be invalid.  \n   **Suggestion:** Capture the original raw lines and assert they occur, byte-for-byte and in order, as an ordered subsequence of the final lines. Also compare newly added parsed JSONL records against the seed records, so “exactly three new `grade_snapshot` events” and “exactly one new `test-fail:unit` row” are measured as deltas rather than total counts.\n\n3. **Category:** risk  \n   **Severity:** medium  \n   **Finding:** The test will run unmarked in the normal CI path despite taking roughly 14 seconds and allowing up to 30 seconds for each subprocess call. The measured local runtime is encouraging, but it does not establish that the normal CI job has enough remaining wall-clock headroom or that the compliance plugin and its SBOM- […truncated]"
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 11,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "correctness",
+          "file": "shared/tests/test_compliance_refresh_real_producer.py",
+          "line": null,
+          "finding": "Asserting all seven documents changed includes ci-security.json, whose only writer is gated on an authenticated gh. The CI shared/tests step exports no token, so the file stays byte-identical and the test would go RED in CI while green on the author's machine.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "high",
+          "category": "correctness",
+          "file": "shared/tests/test_compliance_refresh_real_producer.py",
+          "line": null,
+          "finding": "_update_compliance shells out without cwd=, so the child inherits the pytest process's cwd (the shipwright worktree) and gh api resolves {owner}/{repo} from THAT remote. The run was reaching the real GitHub repo three times, inside a 30s subprocess timeout. conftest's in-process gh stub cannot cross a subprocess boundary. seed_project's 'no network' docstring was false.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "shared/tests/test_compliance_refresh_real_producer.py",
+          "line": null,
+          "finding": "Under-assertion: the docstring names the empty-but-well-formed document as the failure guarded against, but four of six tree-derived documents were proven only to have changed bytes.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": null,
+          "line": null,
+          "finding": "_added() used a SET difference behind an exact-count assertion; a producer appending a line byte-identical to a seeded one would be silently dropped.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": null,
+          "line": null,
+          "finding": "Two assertions implied by the one above them (passes < MAX_PASSES after passes == 3; COMPLIANCE_CONFIG not in left_alone after an exact list equality).",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": null,
+          "line": null,
+          "finding": "passes == 3 pins another plugin's PHASE_REPORTS ordering with one pass of headroom; the docstring reasons about the drop direction but not the rise.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "architecture",
+          "file": null,
+          "line": null,
+          "finding": "~135 lines serving one consumer were placed in _compliance_refresh_fixtures.py, which six modules import.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "architecture",
+          "file": null,
+          "line": null,
+          "finding": "MANIFEST re-hardcoded lib.churn_merge.TEST_TRACEABILITY.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": null,
+          "line": null,
+          "finding": "Stale module docstring in _compliance_refresh_fixtures.py ('Three test modules'; six import it).",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "security",
+          "file": null,
+          "line": null,
+          "finding": "On an authenticated machine the run wrote real repository security findings into a retained pytest temp tree.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": null,
+          "line": null,
+          "finding": "Comments restating framework semantics (ScopeMismatch aside, sys.path teardown aside); assert_seed_is_sound re-read this module's own literals.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-08-01T10:11:27.452766+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 5,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: passes == 3 pins the rtm<-test-traceability ordering coupling — passes == 3 is load-bearing on the {\"rows\": [\"x\"]*40} manifest placeholder in seed_repo - a SHARED module six suites import, which this diff deliberately stopped touching. Pass 1's RTM renders '-' layer cells only because that seed is not a readable v3 manifest. Anyone who 'improves' the placeholder drops the run to 2 passes, and the failure message misdirects the reader to PHASE_REPORTS.",
+          "suggestion": "FIXED - assert_seed_is_sound now asserts the seeded manifest's schema_version != 3, naming seed_repo as the subject, and the pass-count failure message now lists 'the seeded manifest became readable' as a cause of the FEWER direction.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: AC-9: the run is hermetic - same result on any machine — Hermeticity was closed on gh and left open on origin/CI - the same failure class one layer down. triage.should_route_to_outbox sends appends to the GITIGNORED outbox unless $CI is set or the repo has no origin. Today both environments land on 'tracked' for two DIFFERENT reasons; adding an origin remote to the fixture (a realistic future edit, since _rtm_links wants one for real RTM links) turns three cases red locally and leaves them green in CI. lib/ci_env's own docstring records this exact trap already having bitten this feature.",
+          "suggestion": "FIXED - assert_seed_is_sound now asserts `not should_route_to_outbox(root)`, asserting the OUTCOME rather than the proxy. GITHUB_ENTERPRISE_TOKEN added to the cleared set. SHIPWRIGHT_SESSION_ID inheritance noted as benign (counted only, reaches no document).",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "cost-and-environment",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: One real converge run, module-scoped, shared by every test (~15s) — 'One converge run, module-scoped' is up to EIGHT runs under the repo's own F0 gate: shipwright_test_config.json gives shared/tests -n 8 with the default per-test distribution, so every worker holding one of the nine fixture consumers builds its own. The docstring's ~15s cost figure also contradicts the spec's post-hermeticity ~2.3s.",
+          "suggestion": "FIXED - docstring corrected to the measured 2.3s and states the cost is per xdist worker. Correctness unaffected (per-worker tmp roots, no shared state). The reviewer attacked the adjacent flake theory (8 concurrent runs vs the 30s timeout) and could not make it stick: ~40x headroom, and the failure mode is loud.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: The append-only logs are proven to have been exercised — len(after) > len(before) on the triage log is also satisfied by the schema header the store prepends - a fact this diff discovered for is_ordered_subsequence but did not carry over. A run whose only write was a dismissal would pass.",
+          "suggestion": "FIXED - the growth check now asserts added_records(...) is non-empty, counting RECORDS rather than lines.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "cost-and-environment",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: The fixture is independent of the developer machine — seed_repo neutralises missing git identity but not a hostile global config: commit.gpgsign=true or an ambient GIT_DIR breaks the seed. Pre-existing in seed_repo, but this diff is the first module to assert on git log output.",
+          "suggestion": "DOCUMENTED, not fixed - fixing means editing the shared fixtures module, re-coupling five suites to this change for a low-probability case whose failure is loud (CalledProcessError in the seed, not a skewed result). Named in the module docstring.",
+          "source": "doubt-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-08-01T10:31:55.285835+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 1,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "test",
+          "file": "shared/tests/test_compliance_refresh_real_producer.py:203-205",
+          "line": null,
+          "finding": "The schema-v3 manifest check only asserts that `requirements` has the same count as the seeded FR list. It never verifies that the manifest’s requirement nodes are for `FR-01.01` and `FR-01.02`. A broken producer could emit two stale or unrelated requirement nodes while the RTM independently lists the seeded FRs, and this test would still pass, despite AC-2 requiring a node per seeded FR.",
+          "suggestion": "Extract the requirement IDs from the schema-v3 manifest and assert they exactly match `set(FR_IDS)` (and, if the manifest schema exposes explicit node objects, assert each seeded FR has its corresponding node).  Overall assessment: The real-producer fixture, hermetic `gh` handling, rewind observation, and append-only assertions substantially implement the specification. However, the manifest assertion is incomplete for a stated AC-2 requirement and should be tightened before shipping.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-08-01T10:34:00.516223+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "partial",
+      "raw_excerpt": "[gemini]  is still the base: it commits the seven documents with plausible content.\"\nSo they exist.\n\nWhat about `docs_after`?\n```python\n        docs_after={rel: (root / rel).read_bytes() if (root / rel).is_file() else None\n                    for rel in sorted(REFRESH_SET)},\n```\nThis is safe against `FileNotFoundError`.\n\nLet's check `test_the_regenerated_documents_carry_real_derived_content`:\n```python\ndef test_the_regenerated_documents_carry_real_derived_content(real_run):\n    ...\n    rtm = (real_run.root / RTM).read_text(encoding=\"utf-8\")\n    assert all\n\n[openai] - Category: test\n- Severity: medium\n- File: `shared/tests/test_compliance_refresh_real_producer.py:203-205`\n- Finding: The schema-v3 manifest check only asserts that `requirements` has the same count as the seeded FR list. It never verifies that the manifest’s requirement nodes are for `FR-01.01` and `FR-01.02`. A broken producer could emit two stale or unrelated requirement nodes while the RTM independently lists the seeded FRs, and this test would still pass, despite AC-2 requiring a node per seeded FR.\n- Suggestion: Extract the requirement IDs from the schema-v3 manifest and assert they exactly match `set(FR_IDS)` (and, if the manifest schema exposes explicit node objects, assert each seeded FR has its corresponding node).\n\nOverall assessment: The real-producer fixture, hermetic `gh` handling, rewind observation, and append-only assertions substantially implement the specification. However, the manifest assertion is incomplete for a stated AC-2 requirement and should be tightened before shipping.\n\nSHIPWRIGHT_VERDICT: revise"
+    }
+  },
+  "gates": {
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-01T09:50:26.725051+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    }
+  }
+}
