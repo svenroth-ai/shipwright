@@ -1,0 +1,42 @@
+{
+  "run_id": "iterate-2026-08-01-f0-race-run-unit-measure",
+  "date": "2026-08-01T10:02:55.763761Z",
+  "event_at": "2026-08-01T08:26:45.209123+00:00",
+  "type": "bug",
+  "complexity": "small",
+  "branch": "iterate/f0-race-run-unit-measure",
+  "spec": "",
+  "tests_passed": true,
+  "adr": "iterate-2026-08-01-f0-race-run-unit-measure",
+  "test_completeness": {
+    "status": "complete",
+    "behaviors": [
+      {
+        "behavior": "trg-b3efe978 resolves to status=dismissed in the tracked triage store, leaving no open f0-race entry",
+        "disposition": "tested",
+        "evidence": "triage.read_all_items() post-write assertion: status=dismissed; open f0-race entries = none"
+      },
+      {
+        "behavior": "the 18-unit parallel F0 suite reports GREEN on this tree with zero retries of any kind",
+        "disposition": "tested",
+        "evidence": "4 independent parallel rounds (3 measurement + F0): 18/18 PASS each, 0 races, 0 retries, tree clean after each"
+      }
+    ],
+    "counts": {
+      "testable": 2,
+      "tested": 2,
+      "untestable": 0,
+      "untested_testable": 0
+    },
+    "enumeration_basis": {
+      "acs": 2,
+      "covered_acs": 2
+    }
+  },
+  "surface_verification": {
+    "surface": "none",
+    "tests_run": 0,
+    "exit_code": 0,
+    "justification": "Advisory at small with no touches_io_boundary and no UI (Phase Matrix). This run changes no executable code: the diff is one appended status line in the tracked triage store. The behaviour that WAS verified is recorded under test_completeness - four independent parallel F0 suite rounds plus a deterministic probe of the Windows atomic-write contract."
+  }
+}
