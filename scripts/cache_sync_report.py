@@ -13,7 +13,7 @@ import sys
 
 #: Named in every verdict, human and machine, so the deferral stays visible
 #: where the result is READ — not only in a docstring the operator won't open.
-UNGATED = "plugins/ mirror (trg-7d1d8437)"
+UNGATED = "plugins/ mirror (trg-5005bf57)"
 
 
 def _basis_note(records: list[dict]) -> str:

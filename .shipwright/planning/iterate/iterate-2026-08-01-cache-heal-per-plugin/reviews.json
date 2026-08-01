@@ -1,0 +1,80 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-08-01-cache-heal-per-plugin",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-01T09:20:55.443277+00:00",
+      "disposition": "7-point self-review. Two real findings, both fixed + tested: (1) the broad any-marketplace clone search was being used as the completeness authority, so a foreign marketplace's shared/ could be copied into this cache every session -> split into _same_name_shared (top-up) vs _find_marketplace_shared (restore), mutation-verified; (2) the shared/ copytree was unwrapped, so a failed shared copy skipped the plugins repair entirely -> isolated per tree and per mirror. Also confirmed fail-open, stdlib-only, LOC 299<300, ruff clean, and that _PLUGINS_SENTINEL left no dead references.",
+      "recorded_by": "iterate Step 7",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": "openrouter",
+      "completed_at": "2026-08-01T09:20:29.484746+00:00",
+      "disposition": "External iterate-mode plan review before implementation: openai verdict=revise (6 findings), gemini degraded (reply truncated). All 6 resolved in the spec's resolutions table prior to build.",
+      "recorded_by": "external_review.py --mode iterate",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-01T09:52:31.898374+00:00",
+      "disposition": "APPROVE conditional on 2 findings, both fixed. 10 findings (0 high, 3 medium, 7 low). Highest value: the ignore set was pinned against cache_tree_compare.SKIP_DIRS (the CHECKER) while update-marketplace.sh (the PRODUCER) withholds strictly more, incl. .python-version which all 14 plugins gained the same day - a latent phantom gap that would re-copy 1464 files every session once an install delivers one. Also: the trg id in architecture.md existed in no store; three stale references asserted the deleted _plugins_healthy still blocks the drift gate; two tests were weaker than their docstrings; _version_key equivalence unpinned. All fixed and re-tested.",
+      "recorded_by": "code-reviewer (Stage 2)",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-01T09:52:32.023449+00:00",
+      "disposition": "Advisory-must-address; all 10 doubts addressed. 2 high, 5 medium, 3 low; claim B (tri-state) survived, A/C/D/E/F did not. FIXED: symlinked mirror written through into an older installed version dir (high, POSIX-only, unreachable before this change); producer-vs-checker ignore parity (.python-version); Windows case folding. CORRECTED not fixed: the docs claimed ~200ms 'once per session' when the hook is registered in 12 plugins - real cost is 12x, now stated. DEFERRED with owners: fan-out serialization (trg-0c5af217, belongs with the hook-consolidation work, not inside 1 of 12 vendored copies); reaped-source basis and mirror-content coverage stated as assumptions (trg-5005bf57).",
+      "recorded_by": "doubt-reviewer (Stage 3)",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": "openrouter",
+      "completed_at": "2026-08-01T09:55:21.705245+00:00",
+      "disposition": "openai verdict=revise (3 findings), gemini degraded (truncated). GPT-1 (high, 'vendored copies not updated') is FALSE - an artifact of the diff supplied, which deliberately excluded plugins/*; all 12 copies are re-vendored and test_ensure_shared_cache_vendored.py passes. GPT-3 (low) ACCEPTED and fixed: the AC3 no-op test only proved the log line was absent, so a copy-then-suppress implementation would have passed - new test_a_whole_cache_calls_copytree_ZERO_times counts the copies. GPT-2 (medium, prerelease sorts newer than release) is REAL but latent and belongs to the shared cache_tree_compare.version_key that this hook is pinned EQUAL to; fixing one side would break the pin and split the convention - filed as trg-18da39b0. Gemini's truncated finding describes pre-existing unchanged behaviour (a sentinel-less shared/ has always fallen back to any clone), not a regression.",
+      "recorded_by": "external_review.py --mode code",
+      "parse_status": null,
+      "raw_excerpt": null
+    }
+  },
+  "gates": {
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-01T09:21:28.823310+00:00",
+      "disposition": "Stage-1 HARD-GATE. First pass REJECT with 3 citations (undeclared _same_name_shared design change; missing Test Completeness Ledger table + 2 untested isolation paths; unfiled follow-up). All 3 fixed, plus 2 non-blocking findings acted on (numeric _version_key - a real latent bug once the version pick became the completeness authority; fixture/hook ignore-set duplication). Re-review verdict PASS: AC1-AC8 present, faithful, in-scope.",
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    }
+  }
+}

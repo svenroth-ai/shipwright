@@ -1,0 +1,11 @@
+{
+  "run_id": "iterate-2026-08-01-cache-heal-per-plugin",
+  "date": "2026-08-01T10:12:07.690434Z",
+  "event_at": "2026-08-01T07:34:46.307762+00:00",
+  "type": "change",
+  "complexity": "medium",
+  "branch": "iterate/cache-heal-per-plugin",
+  "spec": ".shipwright/planning/iterate/iterate-2026-08-01-cache-heal-per-plugin.md",
+  "tests_passed": true,
+  "adr": "iterate-2026-08-01-cache-heal-per-plugin"
+}
