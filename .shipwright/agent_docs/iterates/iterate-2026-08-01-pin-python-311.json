@@ -108,5 +108,12 @@
       "acs": 7,
       "covered_acs": 7
     }
+  },
+  "surface_verification": {
+    "surface": "cli",
+    "tests_run": 57,
+    "exit_code": 0,
+    "evidence_path": ".shipwright/runs/iterate-2026-08-01-pin-python-311/surface_verification.json",
+    "detail": "Drove the three pin-guard test files as one root (the one-root rule) via the real pytest. The decisive end-to-end evidence is the F0 run itself: all 15 venvs in the worktree report version_info=3.11.15 after it, where 14 were 3.13.13/3.12.13 before."
   }
 }
