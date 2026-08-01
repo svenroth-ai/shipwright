@@ -1,0 +1,33 @@
+{
+  "success": true,
+  "provider": "openrouter",
+  "degraded": false,
+  "reviews_succeeded": 1,
+  "reviews": {
+    "openai": {
+      "feedback": "1. **Category:** dependency  \n   **Severity:** medium  \n   **Finding:** The decision-reversal requirement is not assigned to a concrete artifact or implementation step. The plan says to \u201crecord the decision reversal,\u201d but AC-7 specifically requires a decision drop naming `decision_log.md:571`, `decision_log.md:1353`, ADR-091, and the empirical measurement that invalidates their shared premise. Without identifying the destination and required contents, this acceptance criterion can be missed despite completing the code and test work.  \n   **Suggestion:** Add an explicit step naming the decision-record file/section to update, and require it to cite all three prior records plus the probe-2/probe-3 results (1,855 dropped matches, five observed tokens, and no true legacy paths lost). Include that artifact in the verification evidence.\n\n2. **Category:** edge-case  \n   **Severity:** medium  \n   **Finding:** The described regression tests need to assert behavior for each migration and each separator pattern directly, rather than only asserting that a sample \u201ctrips no migration.\u201d An aggregate no-match test can remain green if a migration\u2019s pattern is accidentally removed, malformed, or no longer exercised. Similarly, the cited pre-existing test name, `test_manifest_includes_windows_separator_pattern`, does not by itself establish that all four bare POSIX and Windows references actually match.  \n   **Suggestion:** Parameterize tests over every `ARTIFACT_MIGRATIONS` entry and assert all of the following against the live compiled patterns: `shipwright-<dirname>/x` and `shipwright-<dirname>\\\\x` do not match; `<dirname>/x` and `<dirname>\\\\x` do match; and `.shipwright/<dirname>/x` does not match. Include bare references at the beginning of the test string to preserve the start-of-line behavior explicitly.\n\n3. **Category:** risk  \n   **Severity:** low  \n   **Finding:** Adding `-` intentionally suppresses all `-<dirname>/` occurrences, including formatting where a hyphen is punctuation rather than part of a directory name (for example, a Markdown list or a prose fragment containing `-compliance/`). The probes establish that current dropped occurrences are benign, and AC-1 explicitly requires this behavior, so this is not a reason to reject the approach; however, it is a permanent semantic boundary of the lint rule.  \n   **Suggestion:** State this intentional tradeoff in the revised registry comment or decision record: hyphen-preceded references are treated as name continuations by policy, backed by the current-tree census. This will prevent a later maintainer from interpreting the change as a universally safe path-boundary rule.\n\n4. **Category:** approach  \n   **Severity:** low  \n   **Finding:** The proposed character-class edit is appropriately minimal and preserves a crucial property: the new match set is a subset of the old one, so it cannot introduce new lint findings. The plan also correctly leaves quoted-literal patterns unchanged and retains start-of-line matching. No security-sensitive input handling, authorization behavior, or injection surface is changed by these static regex and allowlist updates.  \n   **Suggestion:** Retain the selected approach; make the per-pattern tests and explicit decision-record update above mandatory before landing.\n\nOverall, the regex change is sound, narrowly scoped, and supported by unusually strong corpus evidence. The plan needs a concrete AC-7 documentation step and non-vacuous per-migration match assertions before it is ready to ship.  \nSHIPWRIGHT_VERDICT: revise",
+      "via": "openrouter",
+      "status": "success"
+    },
+    "gemini": {
+      "feedback": "Here is the review of the implementation approach for the `canon-lookbehind-hyphen` fix.\n\n### Findings\n\n- **Category:** Edge-case\n- **Severity:** Low\n- **Finding:** Safely placing a hyphen in a regex character class can be finicky. While `r\"[\\w/.\\\\-]\"` correctly parses in Python's `re` module (because the `\\\\` resolves to a literal backslash, leaving the `-` at the end of the class where it is interpreted as a literal hyphen), it can look like an escaped hyphen to future maintainers or behave unexpectedly if refactored out of a raw string.\n- **Suggestion:** To make the literal hyphen structurally immune to escaping confusion or order-of-operation changes in the future,",
+      "via": "openrouter",
+      "status": "degraded",
+      "reason": "provider reported the reply was cut off (finish_reason=length)"
+    }
+  },
+  "verdicts": {
+    "openai": "revise",
+    "gemini": "unavailable"
+  },
+  "statuses": {
+    "openai": "success",
+    "gemini": "degraded"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": false,
+    "requires_resolution": true,
+    "reason": "only one reviewer answered \u2014 gemini did not (gemini=unavailable, openai=revise)"
+  }
+}

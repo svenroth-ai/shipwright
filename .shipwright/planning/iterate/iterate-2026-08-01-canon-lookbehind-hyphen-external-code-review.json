@@ -1,0 +1,32 @@
+{
+  "success": true,
+  "provider": "openrouter",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviews": {
+    "gemini": {
+      "feedback": "- Category: spec\n- Severity: high\n- File: n/a\n- Finding: AC-7 explicitly requires recording the decision reversal and its evidence by naming the three prior rejections in `decision_log.md` and/or ADR-091, but the diff contains no changes to the decision log or any ADR.\n- Suggestion: Update `decision_log.md` (and ADR-091 if applicable) to document the measurement and falsification of the prior premise, fulfilling AC-7 so the record remains accurate.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "openrouter",
+      "status": "success"
+    },
+    "openai": {
+      "feedback": "- Category: spec\n- Severity: medium\n- File: shared/scripts/lib/artifact_migrations.py:40\n- Finding: AC-7 is not implemented. The diff changes the regex and adds historical comments, but does not add the required decision drop recording the reversal, naming `decision_log.md:571`, `decision_log.md:1353`, and ADR-091, and documenting the measurement that disproves their shared \u201cglobal weakening\u201d premise. Code comments are not an auditable reversal of those prior decision records.\n- Suggestion: Add the required decision-log/ADR entry (or designated decision-drop artifact) that explicitly cites all three prior rejections and records the before/after measurement and lost-match census supporting the reversal.\n\n- Category: test\n- Severity: low\n- File: shared/tests/test_artifact_path_canon_manifest_allowlist.py:175\n- Finding: `test_exemptions_the_fix_emptied_are_not_needed` claims to prove each removed exemption has zero lint findings, but `_migrations_tripped_by` only performs line-by-line regex checks. It does not invoke the production lint\u2019s complete text-plus-AST scanning path, so it can disagree with the enforcement it purports to validate. The repository-wide lint test provides coverage today, but this targeted regression test would not independently detect an AST-only finding in a retired file.\n- Suggestion: Reuse or expose the production lint\u2019s violation-scanning helper for these files, or invoke the relevant text and AST scanners directly, so the per-exemption assertion measures the same behavior as the gate.\n\nOverall assessment: ship-with-fixes. The regex implementation and behavioral regression coverage address the core false positive, but the required auditable decision reversal is missing.  \nSHIPWRIGHT_VERDICT: revise",
+      "via": "openrouter",
+      "status": "success"
+    }
+  },
+  "verdicts": {
+    "gemini": "revise",
+    "openai": "revise"
+  },
+  "statuses": {
+    "gemini": "success",
+    "openai": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: gemini=revise, openai=revise"
+  }
+}
