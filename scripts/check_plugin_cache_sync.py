@@ -21,10 +21,13 @@ below) leaves the SessionStart self-heal hook's sentinel intact, so nothing
 repairs it and F11 dies with ``ModuleNotFoundError``.
 
 A third tree, ``cache/plugins/<plugin>/`` (the cross-plugin mirror behind
-``{plugin_root}/../../plugins/shipwright-X``), is deliberately NOT compared
-here — see the triage item on ``ensure_shared_cache._plugins_healthy``, whose
-single-sentinel health check has the same surviving-sentinel weakness and wants
-fixing before a gate is built on top of it.
+``{plugin_root}/../../plugins/shipwright-X``), is not compared here. It once
+could not be: ``ensure_shared_cache`` judged that whole tree from a single
+sentinel file, so a gate on top of it would have inherited the weakness. Since
+iterate-2026-08-01-cache-heal-per-plugin the healer compares each tree's FILE
+SET against its repair source, so joining the mirror here is now plain follow-up
+work (``trg-5005bf57``) rather than a blocked one. The healer is not a
+substitute: it detects ABSENCE, this check detects STALENESS.
 
 ``.orphaned_at`` files are written by the Claude Code cache manager into
 directories it does not recognise as an installed plugin. Nothing in this repo
