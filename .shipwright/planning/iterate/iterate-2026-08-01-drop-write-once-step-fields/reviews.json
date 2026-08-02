@@ -1,0 +1,202 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-08-01-drop-write-once-step-fields",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-01T10:55:57.895587+00:00",
+      "disposition": null,
+      "recorded_by": "iterate-step-7",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-01T10:55:09.451716+00:00",
+      "disposition": "Phase Matrix: External LLM Review is skip at trivial/small (complexity=small, locked after Stage-2 Repo Scout). Mini-Plan is FEATURE-only and this is a CHANGE.",
+      "recorded_by": "iterate-phase-matrix",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 5,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "correctness",
+          "file": "shared/scripts/lib/phase_quality/_triage_bundle.py",
+          "line": 113,
+          "finding": "t.get('status') in ENGAGED_TASK_STATUSES raises TypeError: unhashable type when a phase_tasks[] entry carries a list/dict status. It escapes phase_is_engaged -> collect_in_scope_fails -> emit_phase_quality_backlog and is only caught by the Stop hook's aggregate-tail except, silently skipping the rolling phaseQuality:backlog emit for that Stop.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "architecture",
+          "file": "shared/scripts/lib/phase_quality/_triage_bundle.py",
+          "line": 46,
+          "finding": "ENGAGED_TASK_STATUSES was the only phase-task status vocabulary in the repo without a drift guard, and its only drift direction is 'audit FEWER' - the direction the module forbids. Adding e.g. 'cancelled' to the schema would silently omit it with no test red.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "high",
+          "category": "architecture",
+          "file": "shipwright_bloat_baseline.json",
+          "line": 607,
+          "finding": "Anti-Ratchet violation: _triage_bundle.py measured 413 lines against a baseline current of 325; the pre-commit hook refuses the commit and Group H3 flags it post-merge.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "shared/tests/test_phase_quality_v2_phase_tasks.py",
+          "line": 159,
+          "finding": "test_engaged_statuses_are_derived_from_the_map re-executed the module's own comprehension - a tautology. Flipping 'skipped': False to True left the whole suite green.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "shared/scripts/lib/phase_quality/_resolution.py",
+          "line": 34,
+          "finding": "Stale comment asserting an acyclicity invariant about an edge that no longer exists after the split; plus self-referential cross-refs inside _engagement.py, a missing ._engagement bullet in the package submodule map, and non-alphabetical import placement.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-08-01T10:54:58.110893+00:00",
+      "disposition": null,
+      "recorded_by": "shipwright-build:code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 7,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "boundary & contract",
+          "file": null,
+          "line": null,
+          "finding": "the new isinstance(data, dict) guard in resolve_source hardens the non-dict-config path",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "boundary & contract",
+          "file": null,
+          "line": null,
+          "finding": "AC-2 is preserved - a finished run stays iterate-only",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "boundary & contract",
+          "file": null,
+          "line": null,
+          "finding": "excluding awaiting_launch and skipped is safe",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "hidden coupling & blast radius",
+          "file": null,
+          "line": null,
+          "finding": "the union can only WIDEN engagement, never narrow it",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "hidden coupling & blast radius",
+          "file": null,
+          "line": null,
+          "finding": "the moved code is behavior-preserving and the module's contract is audit-MORE-never-fewer",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "boundary & contract",
+          "file": null,
+          "line": null,
+          "finding": "resolve_source's v1 read was mislabelling every audit of a genuinely orchestrated run",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "reversibility",
+          "file": null,
+          "line": null,
+          "finding": "tightening the _triage_bundle.py baseline entry 325 -> 240 is safe",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-08-01T10:54:58.359150+00:00",
+      "disposition": null,
+      "recorded_by": "shipwright-build:doubt-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-01T10:55:09.818620+00:00",
+      "disposition": "Phase Matrix: External LLM Review is skip at small. Internal cascade ran in full instead (spec HARD-GATE + code + doubt), across three rounds.",
+      "recorded_by": "iterate-phase-matrix",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-02T19:20:33.021809+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    }
+  },
+  "gates": {
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-01T10:54:49.892985+00:00",
+      "disposition": null,
+      "recorded_by": "shipwright-build:spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    }
+  }
+}

@@ -844,12 +844,28 @@ in `phase_tasks[]`:
 }
 ```
 
-> **`current_step` / `completed_steps` are WRITE-ONCE, NEVER-ADVANCED. Never key logic
-> on them.** `config_factory` stamps `current_step` at run creation (`"project"`) and
-> nothing in the v2 lifecycle moves it: `phase_task_lifecycle` advances `phase_tasks[]`
-> + `completed_phase_task_ids` + `status`, and that is the whole authority. They survive
-> only for legacy readers that key on their *presence* (`phase_quality.resolve_source`)
-> or render from them (compliance `mermaid.py`).
+> **`current_step` / `completed_steps` are WRITE-ONCE, NEVER-ADVANCED in a DRIVEN run.
+> Never key logic on them ALONE.** `config_factory` stamps `current_step` at run creation
+> (`"project"`) and nothing in the v2 lifecycle moves it: `phase_task_lifecycle` advances
+> `phase_tasks[]` + `completed_phase_task_ids` + `status`, and that is the whole authority.
+>
+> They are NOT dead fields, and the v1 `update_step` path *does* advance them — it is
+> merely inert on a driven run (the drivability guard). They are still written by
+> `shipwright-project`, by `shipwright-adopt` (which seeds `completed_steps` so an adopted
+> repo does not look like it skipped phases), and by that v1 path; and they are still read
+> by `compliance/mermaid.py` (dashboard phase strip), `generate_handoff_on_stop`,
+> `suggest_iterate`, `update_build_dashboard`, `state.detect_current_phase`,
+> `convert_configs_to_events`, and the `design` / `compliance` verifiers.
+>
+> **The rule for a reader is therefore: consult `phase_tasks[]` first, and fall back to
+> the v1 fields — do not read either one alone.** `phase_quality.resolve_source` and
+> `phase_quality.phase_is_engaged` were migrated to exactly that shape in
+> `iterate-2026-08-01-drop-write-once-step-fields`. They OR the two sources rather than
+> replacing v1, because `config_factory` marks a phase completed *standalone* as
+> `skipped` in `phase_tasks[]` while still listing it in `completed_steps` — so a
+> v2-only read would engage FEWER phases, and phase-quality's contract is "audit MORE,
+> never silently fewer". Dropping the fields is a campaign blocked on the readers above,
+> not a cleanup — owned by triage `trg-8d52a965` (successor to `trg-be24ff6f`).
 >
 > The phase skills used to derive "pipeline vs standalone" from
 > `status == "in_progress" AND current_step == <my phase>`, which is FALSE for every
@@ -1425,8 +1441,9 @@ at all, so it has no Stop hook.)
   `event_once.claim_once` guard (`.shipwright/.cache/stop-phasequality-<sid>.claim`,
   taken AFTER all no-op guards so a foreign/no-op invocation never consumes it);
   the rest skip. The winner resolves which phase(s) to audit from SESSION STATE
-  via `phase_quality.resolve_engaged_phases()` (run config `current_step` /
-  `completed_steps` / `status` + `events.jsonl`), **not** from
+  via `phase_quality.resolve_engaged_phases()` (run config `phase_tasks[]` —
+  the v2 authority — OR-ed with the v1 `current_step` / `completed_steps`, plus
+  `status` + `events.jsonl`), **not** from
   `CLAUDE_PLUGIN_ROOT`. The plugin root is now only a recognition gate
   (`phase_from_plugin_root(...) is None` → foreign-plugin no-op). This replaces
   the old "each plugin audits its own plugin-root phase" fan-out, which audited
