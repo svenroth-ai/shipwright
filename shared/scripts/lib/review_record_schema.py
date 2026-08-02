@@ -20,7 +20,7 @@ from typing import Any
 
 __all__ = [
     "ALL_STATUSES",
-    "GATE_TYPES",
+    "LEGACY_GATE_TYPES",
     "NEEDS_DISPOSITION",
     "RECORDABLE_TYPES",
     "REVIEW_TYPES",
@@ -37,46 +37,58 @@ __all__ = [
     "validate_record",
 ]
 
-#: Deliberately NOT bumped when ``gates`` was added, and that is the whole
-#: decision: every field it introduces is optional, a record without one reads
-#: exactly as it always did, and the ONE external consumer compares this number
-#: with a strict ``!==`` (``shipwright-webui``
-#: ``server/src/core/mission-context/review-record.ts:261``) and rejects
-#: anything else — so a bump would make the only reader stop understanding a
-#: file it understands fine. The guard a bump exists to arm is already armed
-#: below: ``validate_record`` refuses a version NEWER than it knows.
+#: Deliberately NOT bumped when ``gates`` was added, and NOT bumped when ``spec``
+#: was promoted out of it. The reason changed shape but not direction.
+#:
+#: It used to be that the ONE external consumer compared this number with a
+#: strict ``!==``, so a bump made the only reader stop understanding a file it
+#: understood fine. That reader now treats the number as a FLOOR (``>=``), which
+#: removes the old harm and adds no benefit: a bump would buy the consumer
+#: nothing, while ``validate_record`` below still refuses a version NEWER than
+#: it knows — so every plugin cache not yet updated becomes a casualty — and the
+#: consumer appends a user-visible "written by a newer Shipwright, so a pass may
+#: be missing" caveat to a record where nothing is missing.
+#:
+#: Bump when a reader must be STOPPED from misreading a reshaped entry. Adding a
+#: key to :data:`REVIEW_TYPES` is not that: it is additive, and the consumer
+#: renders what it does not recognise.
 SCHEMA_VERSION = 1
 
 #: Contract order — plan · code · doubt · external_code are the four types the
 #: webui Mission contract pins; ``self`` is the fifth, added because at trivial
 #: and small complexity the Self-Review is the ONLY review that runs, and a
 #: Review artifact showing four empty rows for the commonest case would be
-#: actively misleading.
+#: actively misleading. ``spec`` is Stage 1 of the cascade — the spec-compliance
+#: HARD-GATE. Without a row of its own, a ``code`` row sourced ``code-reviewer``
+#: is byte-identical whether Stage 1 passed first or was never spawned, which is
+#: exactly the not-run-versus-not-recorded distinction this artifact exists to
+#: abolish (``trg-64372769``).
 #:
-#: **This tuple is a cross-repo contract and may not grow.** The consumer
-#: rejects a ``reviews`` object carrying any key outside its own copy of these
-#: five (``review-record.ts:276``), and an invalid record does NOT degrade to the
-#: marker fallback — it renders as a data-integrity fault (``review-state.ts:240``).
-#: A sixth key here would therefore report every healthy record as corrupt. Gate
-#: stages go in :data:`GATE_TYPES` instead.
-REVIEW_TYPES = ("self", "plan", "code", "doubt", "external_code")
+#: **The tuple may GROW but never shrink or rename.** ``spec`` used to be parked
+#: in a sibling ``gates`` object because the consumer rejected a ``reviews`` key
+#: outside its own five, and an invalid record does NOT degrade to the marker
+#: fallback — it renders as a data-integrity fault (``review-state.ts``). The
+#: consumer lifted that pin in ``shipwright-webui`` ``ce21323e`` (PR #339): a
+#: key it does not recognise is now mapped and RENDERED as an extra row. It
+#: still requires the five it knows to be present, so growth is additive only.
+REVIEW_TYPES = ("self", "plan", "code", "doubt", "external_code", "spec")
 
-#: Review passes this repo's F11 gate requires that the pinned ``reviews``
-#: contract has no slot for. Stored in a sibling ``gates`` object the consumer
-#: does not inspect.
+#: Types a record may carry under the retired ``gates`` sibling — a READ
+#: vocabulary, never a write destination.
 #:
-#: ``spec`` is Stage 1 of the review cascade — the spec-compliance HARD-GATE the
-#: constitution calls first and blocking. Without a row of its own, a ``code``
-#: row sourced ``code-reviewer`` is byte-identical whether Stage 1 passed first
-#: or was never spawned, which is exactly the not-run-versus-not-recorded
-#: distinction this artifact exists to abolish (``trg-64372769``).
-#:
-#: Promotion into :data:`REVIEW_TYPES` — one line here, one there — becomes safe
-#: as soon as the webui ships a reader that tolerates unknown review types.
-GATE_TYPES = ("spec",)
+#: The seam existed for exactly one reason, stated in its own source: to hold
+#: passes "the pinned ``reviews`` contract has no slot for". That pin is gone,
+#: so a future gate stage goes straight into :data:`REVIEW_TYPES` and the seam
+#: comes down rather than lingering as an empty tuple pretending to be an
+#: extension point. What must survive is READING it: 12 git-tracked,
+#: never-evicted records carry ``gates.spec`` and are immutable by design.
+LEGACY_GATE_TYPES = ("spec",)
 
 #: Everything ``record_review_pass.py`` will accept for ``--review-type``.
-RECORDABLE_TYPES = REVIEW_TYPES + GATE_TYPES
+#: Identical to :data:`REVIEW_TYPES` now that the gate seam is retired; kept as
+#: its own name because "what the CLI accepts" and "what a record must carry"
+#: are different questions that were separate before and may separate again.
+RECORDABLE_TYPES = REVIEW_TYPES
 
 STATUS_PENDING = "pending"
 STATUS_COMPLETED = "completed"
@@ -215,13 +227,30 @@ def validate_record(
     reviews = record.get("reviews")
     if not isinstance(reviews, dict):
         return False, "reviews is not an object"
-    missing = [t for t in REVIEW_TYPES if t not in reviews]
+    # A type promoted out of the retired `gates` seam may legitimately be absent
+    # from `reviews`: 12 records on disk keep it under `gates`, and 53 predate
+    # the concept entirely. Requiring it here would make the F11 gate — which
+    # fails CLOSED — tell the operator to "repair or delete" 65 immutable,
+    # git-tracked review histories that are perfectly fine, which is precisely
+    # the failure the consumer's own tolerant reader was built to stop.
+    #
+    # This buys back-compat for READING history and nothing for a live run:
+    # `pending_types` counts an absent `spec` as unanswered in either section,
+    # so a run cannot dodge the row by simply not writing it.
+    missing = [
+        t for t in REVIEW_TYPES
+        if t not in reviews and t not in LEGACY_GATE_TYPES
+    ]
     if missing:
         return False, f"reviews is missing: {', '.join(missing)}"
     unknown = [t for t in reviews if t not in REVIEW_TYPES]
     if unknown:
         return False, f"reviews has unknown type(s): {', '.join(sorted(unknown))}"
+    # Only what is actually present — the tolerated absence above must not then
+    # be indexed, which would raise KeyError on every legacy record.
     for review_type in REVIEW_TYPES:
+        if review_type not in reviews:
+            continue
         err = validate_entry(review_type, reviews[review_type])
         if err:
             return False, err
@@ -229,29 +258,36 @@ def validate_record(
 
 
 def _validate_gates(gates: Any) -> tuple[bool, str | None]:
-    """The sibling ``gates`` object — optional, but strict when present.
+    """The retired ``gates`` sibling — optional, but strict when present.
 
-    Absence is valid: every record written before :data:`GATE_TYPES` existed has
-    no such key, and invalidating them would make the F11 gate report an
-    integrity fault on 64 merged runs that are perfectly fine. Optional here is
-    about READING history — a live run cannot use it to dodge the row, because
-    ``pending_types`` counts an absent gate as unanswered.
+    Nothing writes this object any more; :data:`LEGACY_GATE_TYPES` names what
+    old records put there. Absence is valid twice over now: records written
+    before the seam existed have no such key, and records written after its
+    retirement do not either. Invalidating either would make the F11 gate report
+    an integrity fault on runs that are perfectly fine. Optional here is about
+    READING history — a live run cannot use it to dodge the row, because
+    ``pending_types`` counts an absent entry as unanswered in both sections.
     """
     if gates is None:
         return True, None
     if not isinstance(gates, dict):
         return False, "gates is not an object"
-    # An UNKNOWN gate key is tolerated, unlike an unknown `reviews` key. That
-    # asymmetry is deliberate: `reviews` mirrors a cross-repo contract whose
-    # consumer rejects strangers, so strictness there protects the mirror.
-    # `gates` has no mirror, and `schema_version` is frozen at 1 by design — so
-    # rejecting strangers here would mean the day GATE_TYPES gains a second
-    # member, records from the new writer read as schema-INVALID to every reader
-    # still on the old constant, and the gate tells the operator to "repair or
-    # delete" an immutable, git-tracked, never-evicted review history that is
-    # perfectly fine. That is §1.3's failure mode reproduced inside this repo,
-    # and the plugin cache makes old-and-new readers routine (Stage-3 doubt).
-    for gate_type in GATE_TYPES:
+    # An UNKNOWN gate key is tolerated, unlike an unknown `reviews` key — but
+    # NOT for the reason that asymmetry originally had. "Strictness protects the
+    # mirror" was true while the consumer rejected strangers; it no longer does,
+    # which is the premise of the promotion, so that reason retires with the
+    # seam. What keeps `reviews` strict is a different claim: the consumer only
+    # DISPLAYS, so guessing costs it a wrong row, while this gate BLOCKS
+    # DELIVERY, so guessing costs a wrong verdict. Its price — every future
+    # REVIEW_TYPES growth needs this same transitional read path — is recorded
+    # in the iterate spec, not hidden (Stage-3 doubt, objection 4).
+    #
+    # `gates` carries no such tension: nothing writes it, so whatever a past
+    # writer left is history. Rejecting a key this constant does not list would
+    # make the fail-closed F11 gate tell the operator to "repair or delete" an
+    # immutable, git-tracked review history that is perfectly fine. Reading
+    # history strictly buys nothing and can only destroy it.
+    for gate_type in LEGACY_GATE_TYPES:
         if gate_type not in gates:
             continue
         err = validate_entry(gate_type, gates[gate_type], where=f"gates.{gate_type}")
