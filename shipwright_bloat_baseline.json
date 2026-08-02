@@ -604,13 +604,6 @@
       "adr": null
     },
     {
-      "path": "shared/scripts/lib/phase_quality/_triage_bundle.py",
-      "limit": 300,
-      "current": 325,
-      "state": "grandfathered",
-      "adr": null
-    },
-    {
       "path": "shared/scripts/lib/spec_parser.py",
       "limit": 300,
       "current": 350,
@@ -697,7 +690,7 @@
     {
       "path": "shared/scripts/tools/finalize_iterate.py",
       "limit": 300,
-      "current": 549,
+      "current": 564,
       "state": "exception",
       "adr": "ADR-096"
     },
@@ -718,7 +711,7 @@
     {
       "path": "shared/scripts/tools/record_event.py",
       "limit": 300,
-      "current": 769,
+      "current": 779,
       "state": "exception",
       "adr": "ADR-111"
     },
@@ -739,7 +732,7 @@
     {
       "path": "shared/scripts/tools/resolve_churn_conflicts.py",
       "limit": 300,
-      "current": 357,
+      "current": 368,
       "state": "exception",
       "adr": "ADR-099"
     },

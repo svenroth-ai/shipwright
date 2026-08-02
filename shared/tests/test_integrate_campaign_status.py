@@ -91,7 +91,8 @@ def _stub_derived_md_producers(monkeypatch) -> None:
     fires) but stub the heavy derived-MD producers to harmless non-error values
     (truthy relpaths that don't exist → not staged, never classified 'error')."""
     from tools import finalize_iterate
-    monkeypatch.setattr(finalize_iterate, "_update_compliance", lambda pr: ["ok"])
+    monkeypatch.setattr(finalize_iterate, "_update_compliance",
+                        lambda pr, run_id=None: ["ok"])
     monkeypatch.setattr(finalize_iterate, "_update_dashboard",
                         lambda *a, **k: ".shipwright/agent_docs/build_dashboard.md")
     monkeypatch.setattr(finalize_iterate, "_generate_handoff",

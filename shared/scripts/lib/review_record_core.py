@@ -12,15 +12,20 @@ therefore had nothing to read for three of five review types, and the two it
 could read were written to ONE shared, run-agnostic file that every run
 overwrote. This module is the missing durable half.
 
-**Keyed by type, not a list.** ``reviews`` is a dict over the five review types
-so "every type is represented" is structural rather than a convention a writer
-can forget, and so a type cannot appear twice. The sibling ``gates`` object holds
-the passes this repo's F11 gate requires that the pinned cross-repo ``reviews``
-contract has no slot for (today: ``spec``, the Stage-1 HARD-GATE) — see
-:data:`lib.review_record_schema.GATE_TYPES` for why it is not a sixth key. A type nobody has recorded yet
-reads ``pending`` — explicitly present and explicitly unanswered, which is the
-whole point of the artifact: an empty Review row must mean "genuinely not run",
-never "somebody forgot to write it down".
+**Keyed by type, not a list.** ``reviews`` is a dict over the review types so
+"every type is represented" is structural rather than a convention a writer can
+forget, and so a type cannot appear twice. A type nobody has recorded yet reads
+``pending`` — explicitly present and explicitly unanswered, which is the whole
+point of the artifact: an empty Review row must mean "genuinely not run", never
+"somebody forgot to write it down".
+
+**One write destination, two read locations.** ``spec`` was parked in a sibling
+``gates`` object while the cross-repo consumer rejected any ``reviews`` key
+outside its own five; that pin is gone and ``spec`` is now an ordinary review
+type. Records written before the promotion still carry it under ``gates`` and
+are immutable by design, so :func:`lib.review_record_legacy.read_sections` keeps looking there —
+permanently, not as a migration window. See
+:data:`lib.review_record_schema.LEGACY_GATE_TYPES`.
 
 **Immutability.** A review that reached a terminal status is not rewritable
 (:class:`ImmutableReviewError`) without an explicit ``force``. A record of what
@@ -39,9 +44,15 @@ from pathlib import Path
 from typing import Any
 
 from .atomic_write import durable_atomic_write
+from .review_record_legacy import (
+    WRITE_SECTION as _WRITE_SECTION,
+)
+from .review_record_legacy import (
+    drop_unanswered_legacy,
+    read_sections,
+)
 from .review_record_schema import (
     ALL_STATUSES,
-    GATE_TYPES,
     NEEDS_DISPOSITION,
     RECORDABLE_TYPES,
     REVIEW_TYPES,
@@ -53,18 +64,7 @@ from .review_record_schema import (
     validate_record,
 )
 
-
-def _section(review_type: str) -> str:
-    """Which top-level object a type is stored under.
-
-    ``reviews`` is the pinned cross-repo contract and may hold only the five
-    types the consumer knows; :data:`GATE_TYPES` live in the sibling ``gates``.
-    Routing in ONE place is what keeps the split from leaking into every caller.
-    """
-    return "gates" if review_type in GATE_TYPES else "reviews"
-
 __all__ = [
-    "GATE_TYPES",
     "ImmutableReviewError",
     "entry_for",
     "ReviewRecordError",
@@ -161,12 +161,16 @@ def make_entry(
 
 
 def new_record(run_id: str) -> dict[str, Any]:
-    """A record with every recordable type materialized as ``pending``."""
+    """A record with every recordable type materialized as ``pending``.
+
+    No ``gates`` key: the seam is retired, and an always-empty object would be a
+    standing invitation to the consumer's "recorded somewhere this version does
+    not read" caveat for passes that are not there.
+    """
     return {
         "schema_version": SCHEMA_VERSION,
         "run_id": run_id,
         "reviews": {t: make_entry(t, STATUS_PENDING) for t in REVIEW_TYPES},
-        "gates": {t: make_entry(t, STATUS_PENDING) for t in GATE_TYPES},
     }
 
 
@@ -177,8 +181,11 @@ def upsert_review(
     review_type = entry.get("review_type")
     if review_type not in RECORDABLE_TYPES:
         raise ReviewRecordError(f"unknown review_type: {review_type!r}")
-    section = _section(review_type)
-    existing = (record.get(section) or {}).get(review_type) or {}
+    # The immutability check reads BOTH sections while the write targets one.
+    # Checking only the write destination would let a new row silently shadow a
+    # terminal answer recorded under the retired seam — two answers for one
+    # pass, with the newer one winning by accident rather than by decision.
+    existing = entry_for(record, review_type)
     if not force and existing.get("status") in TERMINAL_STATUSES:
         raise ImmutableReviewError(
             f"{review_type} is already recorded as {existing['status']!r} and a "
@@ -186,38 +193,40 @@ def upsert_review(
             "genuinely wrong record"
         )
     updated = dict(record)
-    updated[section] = dict(record.get(section) or {})
-    updated[section][review_type] = entry
-    return updated
+    updated[_WRITE_SECTION] = dict(record.get(_WRITE_SECTION) or {})
+    updated[_WRITE_SECTION][review_type] = entry
+    return drop_unanswered_legacy(updated, review_type)
 
 
 def entry_for(record: dict[str, Any], review_type: str) -> dict[str, Any]:
-    """The recorded entry for ``review_type``, from whichever section owns it.
+    """The recorded entry for ``review_type``, from whichever section holds it.
 
-    Exported so no caller has to re-derive the routing. Two did — the CLI's
-    immutable-collision repair path and ``repair_companion`` — both reading
-    ``record["reviews"]`` directly, which would silently read ``{}`` for a gate
-    type and report "recorded as None" (Stage-2 code review). Not live today
-    (both require ``--marker-status``, which only the two MARKER_TYPES accept),
-    but two section-blind readers are the drift :func:`_section` exists to make
+    Exported so no caller has to re-derive the routing. Three did — the CLI's
+    immutable-collision repair path, ``repair_companion``, and the F11 gate's
+    Stage-1 ordering rule — all reading one section directly, which silently
+    reads ``{}`` for a type stored in the other and reports "recorded as None".
+    Section-blind readers are the drift :func:`lib.review_record_legacy.read_sections` exists to make
     unrepresentable.
     """
-    return (record.get(_section(review_type)) or {}).get(review_type) or {}
+    for section in read_sections(review_type):
+        entry = (record.get(section) or {}).get(review_type)
+        if entry:
+            return entry
+    return {}
 
 
 def pending_types(record: dict[str, Any]) -> list[str]:
     """Types that have not reached a terminal status — in contract order.
 
-    An ABSENT gate section counts as pending, not as absent-and-therefore-fine.
-    The optionality in ``validate_record`` exists so records written before
-    :data:`GATE_TYPES` stay readable; letting a live run inherit it would make
-    the new row dodgeable by simply not writing it (external plan review,
-    openai #1).
+    An entry absent from BOTH sections counts as pending, not as
+    absent-and-therefore-fine. The tolerance in ``validate_record`` exists so
+    records written before the promotion stay readable; letting a live run
+    inherit it would make the row dodgeable by simply not writing it (external
+    plan review, openai #1).
     """
     return [
         t for t in RECORDABLE_TYPES
-        if ((record.get(_section(t)) or {}).get(t) or {}).get(
-            "status", STATUS_PENDING) == STATUS_PENDING
+        if entry_for(record, t).get("status", STATUS_PENDING) == STATUS_PENDING
     ]
 
 

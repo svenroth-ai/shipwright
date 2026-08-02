@@ -26,7 +26,7 @@ from triage import append_triage_item, read_all_items  # noqa: E402
 
 OWNER_REPO = "acme/foo"
 
-# The conftest autouse fixture (_isolate_github_pr_api) replaces these module
+# The conftest autouse fixture (_isolate_live_gh_clients) replaces these module
 # attributes with no-op stubs. Capture the REAL functions at import (before any
 # test runs) so the fetch-level unit tests can opt back in via `real_pr_api`.
 _REAL_FETCH_OPEN_PRS = github_pr_api.fetch_open_prs

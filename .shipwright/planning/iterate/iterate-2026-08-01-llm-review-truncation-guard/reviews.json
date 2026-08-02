@@ -1,0 +1,208 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-08-01-llm-review-truncation-guard",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-01T09:56:55.056135+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 10,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "Approach",
+          "file": null,
+          "line": null,
+          "finding": "Modifying `sys.path` inside `llm_review.py` to resolve the dual-import hazard introduces dangerous global side effects. Adding `os.path.dirname(__file__)` to `sys.path` at runtime alters module resolution for the entire Python process, risking cross-contamination of standard library or local imports for any code running after `llm_review.py` is imported.",
+          "suggestion": "Do not mutate `sys.path`. Instead, use a `try/except ImportError` block to handle both contexts gracefully without side effects (e.g., `try: from lib.external_review_degraded import ... except ImportError: from external_review_degraded import ...`).",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "Edge Case",
+          "file": null,
+          "line": null,
+          "finding": "Sending `thinking_config` or `extra_body: {\"reasoning\": ...}` unconditionally on the OpenRouter and Gemini arms may cause 400 Bad Request errors if the model is overridden (via `SHIPWRIGHT_REVIEW_MODEL_`) to a non-reasoning model like `gpt-4o` or older Anthropic models. Providers often strictly validate request schemas and reject unknown keys.",
+          "suggestion": "Conditionally inject `extra_body` and `thinking_config` based on the requested model string (e.g., only if `\"gemini\"` or a known reasoning model is in the model name).",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "Reducibility",
+          "file": null,
+          "line": null,
+          "finding": "The \"drift pin\" test (AC-7) that asserts source files are \"free of hard-coded budget literals\" implies parsing source code (AST or Regex) in a test. This is brittle, over-engineered, and prone to false positives/negatives.",
+          "suggestion": "Drop the source-code parsing assertion. Unit testing the mock kwargs (verifying the constants are passed to the API) completely covers the requirement without needing to statically analyze Python files.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "Dependency",
+          "file": null,
+          "line": null,
+          "finding": "The approach utilizes `thinking_config` for native Gemini API calls, which is a very newly introduced parameter in the Google SDKs.",
+          "suggestion": "Verify that the project's lockfile/dependencies for `google-genai` (or `google-generativeai`) are recent enough to support the `thinking_config` parameter natively, and bump the dependency if required.  Overall Assessment: The empirical investigation into the token budget vs. reasoning cap is excellent and correctly identifies the dual-lever fix required, but the plan introduces a dangerous runtime path mutation and brittle static-analysis tests. Address the import strategy and conditionally guard the provider-specific API kwargs to make this safe to ship.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "The plan changes `llm_review` to emit `status: \"degraded\"`, but does not explicitly audit the Layer-3 adopt caller’s aggregation and gate logic. If `review_runner.py` treats any non-`\"failed\"` result as usable/approved, or assumes the old status set, this could preserve the fail-open under a different status value or cause an unexpected gate error.",
+          "suggestion": "Trace every consumer of `run_review()` and add a focused regression test at the `review_runner` boundary showing that a Gemini-only degraded result is not counted as approval and cannot satisfy the Layer-3 gate. Confirm how mixed outcomes (`success` + `degraded`, `failed` + `degraded`) affect top-level success and review summaries.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "The approach assumes `classify_reply` can correctly interpret metadata from all three provider response shapes. OpenRouter/OpenAI typically expose string finish reasons such as `\"length\"`, while direct Gemini SDKs may expose an enum or a different value such as `MAX_TOKENS`; Gemini text may also arrive through SDK-specific candidate/parts structures rather than a simple `content` string. Routing all arms through a shared classifier is sound only if their inputs are normalized first.",
+          "suggestion": "Define and test a small normalized reply contract passed into `classify_reply` (text plus normalized finish reason), or extend the classifier deliberately to support each provider’s native response form. Add direct-Gemini tests for its actual max-token finish-reason representation, empty/no-candidate responses, and a normal stop response—not only OpenRouter-shaped stubs.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "Raising `max_tokens` to 16000 applies to the direct OpenAI arm as well, despite no direct-provider probe. This can affect request cost, latency, provider/model completion limits, and existing timeout assumptions even when GPT did not previously truncate. The plan mentions the behavior is low risk but does not validate the operational limits of every configured model override.",
+          "suggestion": "Verify that each supported `SHIPWRIGHT_REVIEW_MODEL_` target and its direct client accept a 16000 completion budget, and confirm configured request timeouts remain appropriate. At minimum, add validation or a clear degraded/error path for providers that reject the budget, rather than allowing a provider-parameter error to become an opaque review failure.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The stated classification coverage only proves `\"length\"` with non-empty text and `\"stop\"` with empty text. Other practically degraded outcomes—missing `choices`/candidates, `content=None`, whitespace-only output, unknown/nonterminal finish reasons, safety/content-filter termination with partial text, and provider responses missing finish metadata—could still be incorrectly accepted or raise during review processing.",
+          "suggestion": "Make the success condition explicit: non-empty meaningful text plus a recognized normal completion reason. Treat missing, unknown, or non-normal termination metadata as degraded unless there is a provider-specific documented equivalent of normal completion. Add tests for `None`, whitespace, absent candidates, and a non-length abnormal finish reason.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "Mutating `sys.path` inside `llm_review.py` solves the immediate dual-import problem but is process-global and can mask module-resolution issues or load a same-named module from an unintended path. The planned dual-import test may also pass accidentally if imports share `sys.modules` state or one import’s path mutation assists the other.",
+          "suggestion": "Prefer package-relative import when loaded as `lib.llm_review`, with the file-anchored fallback only for the supported top-level `llm_review` invocation. Run each import-mode check in an isolated subprocess, or explicitly clear relevant `sys.modules` entries and restore `sys.path`, so AC-6 proves both modes independently.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "security",
+          "file": null,
+          "line": null,
+          "finding": "AC-8 requires resending a 209k-character real review prompt to OpenRouter and recording probe evidence. This is existing third-party review behavior rather than a new exposure class, but an ad hoc verification artifact can accidentally retain source/diff contents, model output, request headers, or account identifiers.",
+          "suggestion": "Record only the required aggregate metrics (`finish_reason`, visible-character count, reasoning-token count, model/config version, timestamp) in the run evidence. Do not persist the prompt, raw response, or credentials, and use the existing approved review-data handling path for the live probe.  Overall, the core fix is sound: explicitly constrain Gemini reasoning, retain adequate completion headroom, and classify truncation as degraded. It should be revised to validate downstream degraded-status semantics and provider-specific response normalization before implementation. SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-08-01T09:22:25.435004+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[gemini] Here is the review of the implementation approach.\n\n- **Category**: Approach\n- **Severity**: High\n- **Finding**: Modifying `sys.path` inside `llm_review.py` to resolve the dual-import hazard introduces dangerous global side effects. Adding `os.path.dirname(__file__)` to `sys.path` at runtime alters module resolution for the entire Python process, risking cross-contamination of standard library or local imports for any code running after `llm_review.py` is imported. \n- **Suggestion**: Do not mutate `sys.path`. Instead, use a `try/except ImportError` block to handle both contexts gracefully without side effects (e.g., `try: from lib.external_review_degraded import ... except ImportError: from external_review_degraded import ...`).\n\n- **Category**: Edge Case\n- **Severity**: Medium\n- **Finding**: Sending `thinking_config` or `extra_body: {\"reasoning\": ...}` unconditionally on the OpenRouter and Gemini arms may cause 400 Bad Request errors if the model is overridden (via `SHIPWRIGHT_REVIEW_MODEL_*`) to a non-reasoning model like `gpt-4o` or older Anthropic models. Providers often strictly validate request schemas and reject unknown keys.\n- **Suggestion**: Conditionally inject `extra_body` and `thinking_config` based on the requested model string (e.g., only if `\"gemini\"` or a known reasoning model is in the model name).\n\n- **Category**: Reducibility\n- **Severity**: Low\n- **Finding**: The \"drift pin\" test (AC-7) that asserts source files are \"free of hard-coded budget literals\" implies parsing source code (AST or Regex) in a test. This is brittle, over-engineered, and prone to false positives/negatives.\n- **Suggestion**: Drop the source-code parsing assertion. Unit testing the mock kwargs (verifying the constants are passed to the API) completely covers the requirement without needing to statically analyze Python files. \n\n- **Category**: Dependency\n- **Severity**: Low\n- **Finding**: The approach utilizes `thinking_config` for native Gemini API calls, which is […truncated]\n\n[openai] 1. **Category:** risk  \n   **Severity:** high  \n   **Finding:** The plan changes `llm_review` to emit `status: \"degraded\"`, but does not explicitly audit the Layer-3 adopt caller’s aggregation and gate logic. If `review_runner.py` treats any non-`\"failed\"` result as usable/approved, or assumes the old status set, this could preserve the fail-open under a different status value or cause an unexpected gate error.  \n   **Suggestion:** Trace every consumer of `run_review()` and add a focused regression test at the `review_runner` boundary showing that a Gemini-only degraded result is not counted as approval and cannot satisfy the Layer-3 gate. Confirm how mixed outcomes (`success` + `degraded`, `failed` + `degraded`) affect top-level success and review summaries.\n\n2. **Category:** dependency  \n   **Severity:** medium  \n   **Finding:** The approach assumes `classify_reply` can correctly interpret metadata from all three provider response shapes. OpenRouter/OpenAI typically expose string finish reasons such as `\"length\"`, while direct Gemini SDKs may expose an enum or a different value such as `MAX_TOKENS`; Gemini text may also arrive through SDK-specific candidate/parts structures rather than a simple `content` string. Routing all arms through a shared classifier is sound only if their inputs are normalized first.  \n   **Suggestion:** Define and test a small normalized reply contract passed into `classify_reply` (text plus normalized finish reason), or extend the classifier deliberately to support each provider’s native response form. Add direct-Gemini tests for its actual max-token finish-reason representation, empty/no-candidate responses, and a normal stop response—not only OpenRouter-shaped stubs.\n\n3. **Category:** risk  \n   **Severity:** medium  \n   **Finding:** Raising `max_tokens` to 16000 applies to the direct OpenAI arm as well, despite no direct-provider probe. This can affect request cost, latency, provider/model completion limits, and existing ti […truncated]"
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": "codex-subagent",
+      "completed_at": "2026-08-02T19:14:26.063246+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": "codex-subagent",
+      "completed_at": "2026-08-02T19:23:25.900173+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 4,
+      "findings": [
+        {
+          "severity": "low",
+          "category": "spec",
+          "file": "shared/scripts/lib/external_review_degraded.py",
+          "line": null,
+          "finding": "The implementation looks solid and strictly adheres to the specification, handling both import paradigms cleanly and adding the necessary reasoning guardrails without bleeding failure cases.",
+          "suggestion": "No changes needed.  SHIPWRIGHT_VERDICT: approve",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "bug",
+          "file": "line — `shared/scripts/tools/external_review.py:108` (`_KNOWN_PLACEHOLDERS` assignment in the `@ -90,6 +98,13` hunk)",
+          "line": null,
+          "finding": "The diff appends the entire planning/specification document after an opening double quote in `_KNOWN_PLACEHOLDERS = (\"{PLAN}\", \"{DIFF}\", \"…`)`. Because it spans physical lines without triple quotes or escapes, this is an unterminated string literal and makes `external_review.py` fail to import with `SyntaxError`. This breaks the external review CLI and prevents the new behavior from running.",
+          "suggestion": "Restore the assignment to the intended placeholder tuple, e.g. `_KNOWN_PLACEHOLDERS = (\"{PLAN}\", \"{DIFF}\", ...)`, and remove the accidentally injected specification text entirely.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "test",
+          "file": "line — `shared/tests/test_external_review_budget.py:108` (the prompt argument to `external_review.review_with_openrouter`)",
+          "line": null,
+          "finding": "The same large specification document was injected into a normal quoted test string (`\"u {PLAN} # Iterate …`) across unescaped newlines. This makes the test module syntactically invalid, so pytest cannot collect the newly added budget/parity tests. Consequently AC-1 through AC-4 and AC-7 are not actually verified by this change.",
+          "suggestion": "Replace the corrupted prompt literal with the intended short template (for example, `\"u {PLAN}\"`) and remove all injected document content.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "spec",
+          "file": "line — `.shipwright/planning/iterate/2026-08-01-llm-review-truncation-guard.md:124` (AC-8 / verification evidence requirement)",
+          "line": null,
+          "finding": "AC-8 requires aggregate live-provider evidence in `.shipwright/runs/iterate-2026-08-01-llm-review-truncation-guard/surface_verification.json`, but no such evidence file is included in the diff. The planning document asserts measured results, but it is not the required verification artifact and does not demonstrate that the shipped code/configuration was exercised.",
+          "suggestion": "Add the required aggregate-only verification artifact containing the shipped-configuration probe result (`finish_reason`, reasoning-token count, and visible-character count), without prompt, response, or credentials.  This change has the intended implementation structure for budgets, reasoning caps, classification, and Gemini fallback, but the accidental document injection makes both production code and its new test module unparsable. Block until the corrupted literals are removed and the required empirical evidence is recorded. SHIPWRIGHT_VERDICT: reject",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-08-01T09:59:43.648813+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[gemini] - Category: spec\n- Severity: low\n- File: `shared/scripts/lib/external_review_degraded.py`\n- Finding: The implementation looks solid and strictly adheres to the specification, handling both import paradigms cleanly and adding the necessary reasoning guardrails without bleeding failure cases.\n- Suggestion: No changes needed.\n\nSHIPWRIGHT_VERDICT: approve\n\n[openai] - Category: bug\n- Severity: high\n- File:line — `shared/scripts/tools/external_review.py:108` (`_KNOWN_PLACEHOLDERS` assignment in the `@ -90,6 +98,13` hunk)\n- Finding: The diff appends the entire planning/specification document after an opening double quote in `_KNOWN_PLACEHOLDERS = (\"{PLAN}\", \"{DIFF}\", \"…`)`. Because it spans physical lines without triple quotes or escapes, this is an unterminated string literal and makes `external_review.py` fail to import with `SyntaxError`. This breaks the external review CLI and prevents the new behavior from running.\n- Suggestion: Restore the assignment to the intended placeholder tuple, e.g. `_KNOWN_PLACEHOLDERS = (\"{PLAN}\", \"{DIFF}\", ...)`, and remove the accidentally injected specification text entirely.\n\n- Category: test\n- Severity: high\n- File:line — `shared/tests/test_external_review_budget.py:108` (the prompt argument to `external_review.review_with_openrouter`)\n- Finding: The same large specification document was injected into a normal quoted test string (`\"u {PLAN} # Iterate …`) across unescaped newlines. This makes the test module syntactically invalid, so pytest cannot collect the newly added budget/parity tests. Consequently AC-1 through AC-4 and AC-7 are not actually verified by this change.\n- Suggestion: Replace the corrupted prompt literal with the intended short template (for example, `\"u {PLAN}\"`) and remove all injected document content.\n\n- Category: spec\n- Severity: medium\n- File:line — `.shipwright/planning/iterate/2026-08-01-llm-review-truncation-guard.md:124` (AC-8 / verification evidence requirement)\n- Finding: AC-8 requires aggregate live-provider evidence in `.shipwright/runs/iterate-2026-08-01-llm-review-truncation-guard/surface_verification.json`, but no such evidence file is included in the diff. The planning document asserts measured results, but it is not the required verification artifact and does not demonstrate that the shipped code/configuration was exercised.\n- Suggestion: Add th […truncated]"
+    }
+  },
+  "gates": {
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": "codex-subagent",
+      "completed_at": "2026-08-02T19:05:06.618842+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    }
+  }
+}

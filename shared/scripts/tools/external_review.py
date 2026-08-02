@@ -77,7 +77,7 @@ from env import load_shipwright_env  # type: ignore[import-not-found]
 load_shipwright_env()
 
 from external_review_config import load_review_config, resolve_model  # noqa: E402
-from external_review_degraded import classify_reply, finalize_review_output, gemini_finish_reason, openai_finish_reason  # noqa: E402
+from external_review_degraded import DEFAULT_TIMEOUT_SECONDS, MAX_OUTPUT_TOKENS, classify_reply, finalize_review_output, gemini_finish_reason, gemini_generate, openai_finish_reason, openrouter_extra_body  # noqa: E402
 from external_review_prompts import (  # noqa: E402
     default_review_prompts,
     load_code_review_prompts,
@@ -88,6 +88,12 @@ from review_verdict import summarize_reviews  # noqa: E402
 
 
 OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1"
+
+
+def _import_genai():
+    """Lazy google-genai import (a seam so tests can substitute it)."""
+    from google import genai
+    return genai
 
 
 _KNOWN_PLACEHOLDERS = ("{PLAN}", "{DIFF}", "{SPEC}")
@@ -138,7 +144,7 @@ def review_with_openrouter(
         else:
             model_name = resolve_model(config, "openrouter_chatgpt")
 
-        timeout = config.get("llm_client", {}).get("timeout_seconds", 120)
+        timeout = config.get("llm_client", {}).get("timeout_seconds", DEFAULT_TIMEOUT_SECONDS)
 
         client = OpenAI(
             api_key=api_key,
@@ -154,7 +160,8 @@ def review_with_openrouter(
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": prompt},
             ],
-            max_tokens=4096,
+            max_tokens=MAX_OUTPUT_TOKENS,
+            extra_body=openrouter_extra_body(model_key),
         )
 
         return classify_reply(response.choices[0].message.content, openai_finish_reason(response), via="openrouter")
@@ -174,23 +181,15 @@ def review_with_gemini(
         return {"status": "skipped", "reason": "No GEMINI_API_KEY set"}
 
     try:
-        from google import genai
+        genai = _import_genai()
 
         model_name = resolve_model(config, "gemini")
-        client = genai.Client(api_key=api_key)
-
+        # http_options.timeout is MILLISECONDS; timeout_seconds is seconds.
+        client = genai.Client(api_key=api_key, http_options={"timeout": config.get("llm_client", {}).get("timeout_seconds", DEFAULT_TIMEOUT_SECONDS) * 1000})
         prompt = _render_user_prompt(user_prompt, plan, spec)
-
-        response = client.models.generate_content(
-            model=model_name,
-            contents=prompt,
-            config=genai.types.GenerateContentConfig(
-                system_instruction=system_prompt,
-                max_output_tokens=4096,
-            ),
-        )
-
-        return classify_reply(response.text, gemini_finish_reason(response), via="direct")
+        response, note = gemini_generate(genai, client, model_name, prompt, system_prompt)
+        out = classify_reply(response.text, gemini_finish_reason(response), via="direct")
+        return {**out, "reasoning_cap_dropped": note} if note else out
 
     except ImportError:
         return {"status": "error", "reason": "google-genai package not installed"}
@@ -210,7 +209,7 @@ def review_with_openai(
         from openai import OpenAI
 
         model_name = resolve_model(config, "chatgpt")
-        timeout = config.get("llm_client", {}).get("timeout_seconds", 120)
+        timeout = config.get("llm_client", {}).get("timeout_seconds", DEFAULT_TIMEOUT_SECONDS)
 
         client = OpenAI(api_key=api_key, timeout=timeout)
 
@@ -223,7 +222,7 @@ def review_with_openai(
                 {"role": "user", "content": prompt},
             ],
             # gpt-5.x rejects `max_tokens`; `max_completion_tokens` is required.
-            max_completion_tokens=4096,
+            max_completion_tokens=MAX_OUTPUT_TOKENS,
         )
 
         return classify_reply(response.choices[0].message.content, openai_finish_reason(response), via="direct")

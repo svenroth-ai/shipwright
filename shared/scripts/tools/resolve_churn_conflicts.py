@@ -265,6 +265,17 @@ def regenerate_tracked_snapshots(
     merge TOUCHED — scoped, NEVER glob-all (destructive on untouched)."""
     from tools import finalize_iterate  # canonical producers; zero-drift reuse
 
+    # This function regenerates up to three TRACKED derived MDs before reaching
+    # _update_compliance, so it owes the capture the same way finalize_iterate does
+    # — without it the regen's grade_snapshot would measure a tree this function
+    # already dirtied (trg-f5ae5371).
+    try:
+        from source_state_capture import capture_dirty
+        capture_dirty(project_root, run_id)
+    except Exception as exc:  # noqa: BLE001 — metadata must never block a merge
+        print(f"resolve_churn_conflicts: source-state capture failed: {exc}",
+              file=sys.stderr)
+
     session_id = session_id or os.environ.get("SHIPWRIGHT_SESSION_ID", "")
     targets = set(DERIVED_MDS) if only is None else set(only)
     stems = {Path(t).stem for t in targets}
@@ -282,7 +293,7 @@ def regenerate_tracked_snapshots(
         out[".shipwright/agent_docs/triage_inbox.md"] = finalize_iterate._snapshot_triage_runtime(project_root)
     if any(t in COMPLIANCE_MDS for t in targets):
         # One _update_compliance --phase iterate regenerates the 5 MDs + both .json snapshots (ci-security + test-traceability); both .json join the staged set here (mirror integrate_main's rollback) so a fresh re-derive isn't left modified-but-unstaged.
-        paths = finalize_iterate._update_compliance(project_root)
+        paths = finalize_iterate._update_compliance(project_root, run_id)
         for rel in sorted(COMPLIANCE_MDS | {CI_SECURITY_SUMMARY, TEST_TRACEABILITY}):
             out[rel] = "regenerated" if paths else "error"
 

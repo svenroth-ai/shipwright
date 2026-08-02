@@ -15,6 +15,8 @@ _LIB_DIR = Path(__file__).resolve().parents[1] / "scripts" / "lib"
 if str(_LIB_DIR) not in sys.path:
     sys.path.insert(0, str(_LIB_DIR))
 
+from external_review_degraded import DEFAULT_TIMEOUT_SECONDS, MAX_OUTPUT_TOKENS  # noqa: E402
+
 
 class _FakeMessage:
     def __init__(self, content):
@@ -62,7 +64,7 @@ def test_llm_review_openai_uses_max_completion_tokens(monkeypatch):
 
     assert result["status"] == "success"
     assert "max_tokens" not in captured
-    assert captured.get("max_completion_tokens") == 4096
+    assert captured.get("max_completion_tokens") == MAX_OUTPUT_TOKENS
 
 
 def test_run_review_success_is_false_when_no_leg_succeeds(monkeypatch):
@@ -77,6 +79,30 @@ def test_run_review_success_is_false_when_no_leg_succeeds(monkeypatch):
     result = llm_review.run_review("content", "context")
     assert result["provider"] == "none"
     assert result["success"] is False
+    assert result["partial"] is False
+    assert result["warnings"] == []
+
+
+def test_one_usable_leg_keeps_success_but_marks_the_result_partial(monkeypatch):
+    monkeypatch.setenv("OPENROUTER_API_KEY", "test")
+    import llm_review
+
+    def _leg(*_args):
+        model_key = _args[-2]
+        if model_key == "gemini":
+            return {
+                "status": "success",
+                "feedback": "review",
+                "reasoning_cap_dropped": "retried unbounded",
+            }
+        return {"status": "degraded", "feedback": "partial", "reason": "cut off"}
+
+    monkeypatch.setattr(llm_review, "_review_openrouter", _leg)
+    result = llm_review.run_review("content", "context")
+
+    assert result["success"] is True
+    assert result["partial"] is True
+    assert result["warnings"] == ["gemini: retried unbounded"]
 
 
 def test_default_models_match_shipping_config():
@@ -97,3 +123,25 @@ def test_default_models_match_shipping_config():
         if not key.startswith("_")
     }
     assert llm_review.DEFAULT_MODELS == shipped
+
+
+def test_default_timeout_matches_shipping_config():
+    """The two paths must wait the same length of time.
+
+    `external_review.py` reads `llm_client.timeout_seconds` from the shipping
+    config; `llm_review.run_review` takes a default parameter, and adopt never
+    passes one. Same drift shape as `test_default_models_match_shipping_config`
+    above — and newly load-bearing, because this change raised the output budget
+    4x, which raised generation time (measured 89.2s for a 10500-token
+    completion). A path left at the old 120s would turn a slow-but-complete
+    review into a timeout that returns nothing.
+    """
+    import inspect
+
+    import llm_review
+    from external_review_config import load_review_config
+
+    shipped = load_review_config()["llm_client"]["timeout_seconds"]
+    assert DEFAULT_TIMEOUT_SECONDS == shipped
+    default = inspect.signature(llm_review.run_review).parameters["timeout"].default
+    assert default == shipped

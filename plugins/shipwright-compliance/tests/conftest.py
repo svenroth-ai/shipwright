@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import os
 import shutil
 from pathlib import Path
 
@@ -10,6 +11,34 @@ import pytest
 
 FIXTURES_DIR = Path(__file__).parent / "fixtures"
 _TRACEABILITY_FIXTURES = FIXTURES_DIR / "traceability"
+
+#: Names ``source_state_capture.capture_dirty`` writes into the REAL ``os.environ``
+#: (trg-f5ae5371). ``update_compliance.main()`` is driven IN-PROCESS by tests here,
+#: so without this the first capture leaks into every later test and could answer
+#: for a tree it never measured (Stage-3 doubt D2). Mirrors the same fixture in
+#: ``shared/tests/conftest.py``.
+_SOURCE_STATE_CAPTURE_ENV = (
+    "SHIPWRIGHT_SOURCE_DIRTY",
+    "SHIPWRIGHT_SOURCE_DIRTY_RUN",
+    "SHIPWRIGHT_SOURCE_DIRTY_ROOT",
+)
+_SOURCE_STATE_CAPTURE_SLOT_PREFIX = "SHIPWRIGHT_SOURCE_DIRTY_SLOT_"
+
+
+@pytest.fixture(autouse=True)
+def _isolate_source_state_capture(monkeypatch):
+    """``setenv`` before ``delenv``: ``delenv`` on an absent name registers nothing
+    to restore, so the code's later writes would survive teardown."""
+    for name in _SOURCE_STATE_CAPTURE_ENV:
+        monkeypatch.setenv(name, "conftest-sentinel")
+        monkeypatch.delenv(name, raising=False)
+    for name in tuple(os.environ):
+        if name.startswith(_SOURCE_STATE_CAPTURE_SLOT_PREFIX):
+            monkeypatch.delenv(name, raising=False)
+    yield
+    for name in tuple(os.environ):
+        if name.startswith(_SOURCE_STATE_CAPTURE_SLOT_PREFIX):
+            os.environ.pop(name, None)
 
 
 def pytest_ignore_collect(collection_path: Path, config) -> bool:

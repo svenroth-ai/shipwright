@@ -1,0 +1,53 @@
+{
+  "stage": "code-quality",
+  "verdict": "CHANGES_REQUESTED",
+  "reviewer": "shipwright-build:code-reviewer",
+  "review": [
+    {
+      "severity": "medium",
+      "category": "correctness",
+      "file": "plugins/shipwright-iterate/scripts/lib/risk_taxonomy.py",
+      "line": 42,
+      "finding": "_filename_token interpolates its argument ungrouped, so a top-level alternation escapes BOTH guards: _filename_token(r'gemfile|gemfile\\.lock') compiles as ((?<![\\w.-])gemfile)|(gemfile\\.lock(?![\\w-])(?!\\.\\w)) — first branch has no trailing guard, second has no leading one. Confirmed at code: 'my-gemfile.lock' and 'gemfile.bak' both fire, while test_every_message_pattern_is_token_guarded stays green, because the raw string still starts and ends with the guards. An alternation is the natural way to write the Rust/Go/Ruby entries risk_detectors names as the deliberate next additions.",
+      "suggestion": "ACCEPTED-AND-FIXED. Argument wrapped in a non-capturing group: (?:{name}). The structural test's expected affixes now include the group, and test_the_helper_groups_its_argument pins the behaviour on the alternation shape itself. Mutation P1 (ungroup the argument) caught by 4 tests."
+    },
+    {
+      "severity": "medium",
+      "category": "correctness",
+      "file": "plugins/shipwright-iterate/scripts/lib/risk_taxonomy.py",
+      "line": 63,
+      "finding": "touches_middleware carries an unguarded next\\.config, so for the five config families every string this change refuses on touches_build still raises a risk flag from the same prompt with the same small floor and mandatory review — the message/diff disagreement survives under a different flag name and the observable classification outcome for 'rename my-next.config.ts' is unchanged by this diff. The spec's Out-of-Scope rationale for leaving those entries alone ('they match English keywords, not filenames') is false for all three entries it names: touches_middleware carries next\\.config, touches_auth carries middleware\\.ts and supabase/.*auth, touches_public_api carries route\\.ts.",
+      "suggestion": "ACCEPTED; rationale corrected, residue pinned, narrowing declined. The false claim is replaced with the measurement. Guarding touches_middleware is declined on a reason that survives the correction: it is a message-only flag with no diff-driven counterpart, so there is no second surface to agree with and no parity argument for narrowing it; over-firing there is the safe direction. test_a_refused_config_stem_still_raises_touches_middleware makes the residue a recorded decision rather than an oversight."
+    },
+    {
+      "severity": "low",
+      "category": "correctness",
+      "file": "plugins/shipwright-iterate/scripts/lib/risk_taxonomy.py",
+      "line": 42,
+      "finding": "A trailing '-' is ambiguous for exactly the reason a trailing '.' is — a further token in package.json-old, an English compound hyphen in 'a package.json-only change' — and received none of the analysis the '.' case got, although the guard's claim to correctness is that both halves were reasoned about. Newly extended to the twelve JS entries by this diff.",
+      "suggestion": "ACCEPTED-AND-MEASURED; no code change. Measured: 'package.json-only' and 'package.json-old' are False on BOTH surfaces, so cross-surface parity — the property this change is about — holds. The residue is between a message's phrasing and the diff it refers to, which no guard can close. Keeping '-' strict is additionally the parity-consistent choice, since the diff surface refuses 'package.json-old'. Recorded in the spec beside the trailing-'.' measurement, which is what the finding asked for."
+    },
+    {
+      "severity": "low",
+      "category": "architecture",
+      "file": "plugins/shipwright-iterate/tests/test_touches_build_surface_parity.py",
+      "line": 79,
+      "finding": "The new module re-implements four assertions that already exist verbatim in two sibling test files, including a failure message copied character-for-character, and touches_build message-surface coverage now lives in three files with no stated division of labour.",
+      "suggestion": "PARTIALLY ACCEPTED. A 'Division of labour' block now names all four files and their subjects, addressing the stated architectural cost. The suggested deletion of test_python_input_fires_on_both_surfaces from a sibling drift file is DECLINED: removing tests from a file unrelated to this defect is a refactor wearing a fix label (constitution — Surgical Changes), and the redundancy errs in the direction of more coverage, not less."
+    },
+    {
+      "severity": "low",
+      "category": "readability",
+      "file": "plugins/shipwright-iterate/scripts/lib/risk_taxonomy.py",
+      "line": 132,
+      "finding": "Review-process narration shipped three times — risk_taxonomy.py, the test docstrings, and risk_detectors.py all narrate a rejected draft that the spec in the same diff already records, against this repo's own rule that a record of finished work is deleted because git history keeps it.",
+      "suggestion": "ACCEPTED-AND-FIXED. Trimmed in all three places to the load-bearing sentence (the families require an extension because the diff surface holds only extensioned literals). That trim, plus splitting the parity module in two, is what kept every touched file under the 300-line limit."
+    }
+  ],
+  "post_fix_verification": {
+    "plugin_suite": "861 passed, 4 skipped",
+    "lint": "uvx ruff@0.15.15 check . — All checks passed",
+    "mutation_round_3": "7 mutations caught by 4/2/42/35/5/1/42 tests; risk_taxonomy.py restored byte-identical after each"
+  },
+  "reviewer_summary": "The guard itself is correct — all 19 constructed patterns traced by hand against the engine's backtracking with no break found in either direction on a realistic input; no ReDoS; unicode \\w only narrows the boundary; no consumer reads the pattern strings expecting literals. Two blocking findings (the ungrouped alternation, and the touches_middleware residue with a false supporting rationale) and three non-blocking. All five addressed above."
+}

@@ -68,7 +68,7 @@
       }
     }
   },
-  "regenerated_for": "S6 (requirements-catalog campaign) flips FV-2. Two sites move: D-layer stops emitting a positive coverage claim over an EMPTY requirement set, and D2's not-spec_frs guard moves below the staleness loop so zero spec FRs plus an FR-referencing event FAILs. Group I and D-orphan were deliberately left alone. The D-orphan falsifier -- whether the collector short-circuits before classifying tags on an empty set -- shipped OPEN and was CLOSED in review: it does not, and that is now a probe rather than an argument. No discovery or parse matrix cell changes; the flip is asserted by the prose probes.",
+  "regenerated_for": "The adopt review renderer now preserves the intentionally introduced degraded status and its partial feedback, changing only the source fingerprint of review_runner.run_review; requirements discovery behaviour is unchanged.",
   "schema_version": 1,
   "targets": {
     "disc._test_links_io.discover_specs": {
@@ -1697,8 +1697,8 @@
     },
     "disc.review_runner.run_review": {
       "kind": "source_only",
-      "sha256": "150ce84f70b301e8ae12fb5c0d5c82ff328cc954a06b2e630fa96e86ba244c65",
-      "source_lines": 114
+      "sha256": "9a2a1872a64d1178e2ac38b6b92a1244d5ce026aed0e9c5821ebbf35cdbaede0",
+      "source_lines": 119
     },
     "disc.rtm.collect_external_review_states": {
       "fixtures": {
