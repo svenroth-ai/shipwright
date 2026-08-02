@@ -1,0 +1,72 @@
+{
+  "stage": "doubt",
+  "gating": "advisory-must-address",
+  "trigger": "risk-gate semantics (classification narrowing) + cross-surface contract",
+  "reviewer_caveat": "no shell available to the reviewer; every regex verdict traced by hand and flagged as needing a probe. All were verified by the implementer before being accepted.",
+  "doubts": [
+    {
+      "claim_under_doubt": "The true-positive set is unchanged; every detector tuple entry still fires from a message.",
+      "disproof_attempt": "'a package.json-only bump' fired touches_build before this change (the old pattern was the wholly unguarded r'package\\.json') and fires nothing after it, because the intermediate trailing guard (?![\\w-]) rejects the hyphen. The whole taxonomy misses the string, so risk_flags goes from [touches_build] to []: no small floor, no performance_test_layer, and per iteration-reviews.md 'When Self-Review is Sufficient' no full code-reviewer either. The per-entry test cited as proof uses one hand-written template with the name at end-of-string, so it proves each entry fires in one syntactic position, not that the true-positive set is unchanged.",
+      "verdict": "REFUTED",
+      "severity": "high",
+      "disposition": "accepted-and-fixed",
+      "resolution": "Verified before accepting: before=True, now=[]. '-' removed from the trailing class; the guard is (?!\\w)(?!\\.\\w). Hyphen compounds fire again. Accepted cost: package.json-old also fires (over-firing, the preferred direction). Pinned by test_a_build_input_in_a_hyphen_compound_still_fires. Mutation Q1 caught by 30 tests, previously 0."
+    },
+    {
+      "claim_under_doubt": "The narrowing is safe because the diff surface already refuses these strings.",
+      "disproof_attempt": "Not true for every newly-refused string, and the method conflates the two things the change exists to separate. touches_build_files never receives prose tokens, it receives git diff paths. For 'package.json-only' the file being named is package.json, and the diff of such a change contains package.json, on which the diff surface returns True — so the surfaces disagree on the same real change, newly, in the unsafe direction. The diff also resolves the identical ambiguity three different ways: trailing '.' gets prose semantics, trailing '-' gets literal semantics, bare config stem gets literal semantics.",
+      "verdict": "REFUTED",
+      "severity": "high",
+      "disposition": "accepted-and-fixed",
+      "resolution": "Same root as the finding above; fixed by the same one-character change. The '.' and '-' cases are now decided by one stated rule: a following character either continues the name or extends it, or else it is prose."
+    },
+    {
+      "claim_under_doubt": "Ledger: 15 rows, 14 tested, 0 untested-testable.",
+      "disproof_attempt": "Every cited test exists and executes what it is cited for, and every param count is right. But the trailing-hyphen decision was taken by this diff and had no test and no ledger row, while the two other declined-narrowing decisions each got both. It is also invisible to the mutation evidence: mutating (?![\\w-]) to (?!\\w) fails ZERO behavioural tests, only the string-comparison guard.",
+      "verdict": "REFUTED",
+      "severity": "medium",
+      "disposition": "accepted-and-fixed",
+      "resolution": "The decision itself changed, and is now pinned behaviourally (29 params x 2). Ledger row 15 added; mutation Q1 added to round 4 and caught by 30 tests."
+    },
+    {
+      "claim_under_doubt": "self-review.json now describes the shipped implementation (Stage-1 finding 6 closed).",
+      "disproof_attempt": "It certifies the pre-Stage-2 implementation. Arithmetic: '157 cases' against the shipped 164 — exactly the two tests Stage 2 added; 'the new test file 282' where the split produced two files; risk_taxonomy.py 248 where the shipped file is 257; two mutation rounds where three were run; no mention of the non-capturing group. reviews.json corroborates by timestamp: self completed 10:04:27, code 10:21:24, never re-recorded.",
+      "verdict": "REFUTED",
+      "severity": "medium",
+      "disposition": "accepted-and-fixed",
+      "resolution": "Root cause is ordering, not arithmetic: the self-review was recorded before later stages changed the code, so it went stale twice. It is now regenerated LAST, after every code change, with every number re-measured from the tree."
+    },
+    {
+      "claim_under_doubt": "The observable classification outcome is unchanged for the five config families.",
+      "disproof_attempt": "touches_build enforces ['performance_test_layer']; touches_middleware enforces ['mandatory_review']. The flags go from [touches_middleware, touches_build] to [touches_middleware], so the enforces union loses performance_test_layer and the recorded risk_flags list changes. The test whose docstring asserts this checks only flag membership, not the property it claims.",
+      "verdict": "REFUTED",
+      "severity": "medium",
+      "disposition": "accepted-and-fixed",
+      "resolution": "Claim corrected in the spec, the Stage-2 disposition and the test docstring. The test now asserts the enforcement difference explicitly rather than implying it away."
+    },
+    {
+      "claim_under_doubt": "The shipped review record is an accurate ledger of the review that happened.",
+      "disproof_attempt": "reviews.json records the spec gate as findings_count 0, although Stage 1 rejected twice and raised 7 findings across three rounds. The 'only blocking findings are recorded' reading fails, because the code row records all five of its findings including three non-blocking lows.",
+      "verdict": "REFUTED",
+      "severity": "low",
+      "disposition": "accepted-and-fixed",
+      "resolution": "The round-3 citations are now carried in the spec-review payload's spec_citations and the row re-recorded, so findings_count reflects the review that happened."
+    },
+    {
+      "claim_under_doubt": "All 21 JS entries disagreed before; 0 disagree now.",
+      "disproof_attempt": "The 21 is right, but 'disagree' is measured over different populations in the two halves (tuple entries vs 15 hand-written probes), and unqualified '0 now' is false: the trailing-punctuation relaxation creates eight new literal-token divergences (pyproject.toml. fires from a message, touches_build_files returns False), which under the old symmetric guard had AGREED. The residue paragraph lists the next.config.foo and case residues but not this one.",
+      "verdict": "REFUTED",
+      "severity": "low",
+      "disposition": "accepted-and-fixed",
+      "resolution": "Both populations are now named in Root Cause and the punctuation divergence is listed with its rationale (a diff never contains a path ending in a sentence period)."
+    },
+    {
+      "claim_under_doubt": "The trailing guard rejects a further extension but allows sentence punctuation.",
+      "disproof_attempt": "Traced by hand through every backtracking path: package.json.bak, next.config.js.bak, webpack.config.js.orig, pipfile.locked, requirements.txt.bak, requirements-dev.txt.bak, setup.python, setup.pyc, package.json5 all correctly refused; comma, semicolon, question mark, paren, backtick, quote, slash, backslash, newline and a sentence-final period all correctly allowed. Only pathological cases behave oddly (package.json..bak fires).",
+      "verdict": "SURVIVES",
+      "severity": "none",
+      "disposition": "no action"
+    }
+  ],
+  "summary": "8 doubts, 7 REFUTED (2 high, 3 medium, 2 low), 1 SURVIVES. The load-bearing one is a single root: the trailing guard rejected '-' unconditionally, so a real dependency-change message lost its flag entirely — and the Stage-2 disposition that closed it without a code change was itself refuted. All seven refutations were verified empirically by the implementer (the reviewer had no shell) and fixed."
+}
