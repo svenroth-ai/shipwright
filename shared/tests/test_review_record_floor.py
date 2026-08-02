@@ -59,9 +59,10 @@ def _write_run(
         status = statuses.get(review_type, "completed")
         if status == "pending":
             continue                      # new_record already materialises it
-        # upsert_review, not a direct `record["reviews"][...]` write: `spec` is a
-        # gate row living in a sibling section, and routing is exactly what this
-        # helper must not re-implement.
+        # upsert_review, not a direct `record["reviews"][...]` write: section
+        # routing is exactly what this helper must not re-implement. (`spec` is
+        # an ordinary `reviews` key now, but reads still fall back to the
+        # retired `gates` sibling for older records.)
         record = upsert_review(record, make_entry(
             review_type, status,
             disposition=("the rule that applies" if status != "completed" else None),
