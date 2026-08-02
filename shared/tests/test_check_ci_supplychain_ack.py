@@ -163,8 +163,13 @@ def test_non_repo_skips_but_missing_commit_inside_a_repo_fails_closed(
     sandbox tests keep their contract). INSIDE a repo an absent commit IS an
     unobtainable diff — otherwise omitting one flag would bypass the gate entirely,
     making the cheaper input the safer one for a dodger.
+
+    Asserts ``is_skipped``, not merely ``ok``: a git fault already fails ``ok``, so
+    that is not what the old assertion missed. ``ok is True`` also holds for a real
+    PASS ("no CI supply-chain file touched"), so a fixture that quietly stopped being
+    a non-repo would have kept this test green while testing nothing (trg-20cc9ec8).
     """
-    assert cs.check_ci_supplychain_ack(tmp_path, _RUN, "").ok is True
+    assert cs.check_ci_supplychain_ack(tmp_path, _RUN, "").is_skipped
 
     work, _o = git_origin_repo
     _set_repo_identity(work)
