@@ -3,7 +3,7 @@
 - **Run ID:** iterate-2026-08-01-touches-build-token-boundary
 - **Type:** bug
 - **Complexity:** small
-- **Status:** draft
+- **Status:** implemented
 
 > Written although `small` does not buy an iterate spec. The trigger asked for
 > the trade-off below to be stated in the spec, so the spec exists to carry it.
@@ -320,6 +320,12 @@ comments and tests.
     `risk_taxonomy.py` restored byte-identical after each.
   - Full plugin suite: 898 passed, 4 skipped (201 in the two new modules).
     Integration: 439 passed, 7 deselected. `uvx ruff@0.15.15 check .`: clean.
+  - Codex takeover recheck after the final implementation commit: the 201
+    focused parity/guard tests passed and pinned Ruff was clean on every changed
+    Python file. Repeated canonical F0 attempts were terminated externally by
+    Windows with `0xC000013A` (`CONTROL_C_EXIT`) before pytest produced a result;
+    no failing test was observed. The serial PR CI is therefore the authoritative
+    clean-environment full-suite result for delivery.
 
 - **Test Completeness Ledger:**
 
