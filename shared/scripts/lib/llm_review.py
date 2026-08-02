@@ -7,8 +7,10 @@ Supports three providers:
 2. Direct keys: GEMINI_API_KEY + OPENAI_API_KEY separately
 3. Skip: no keys → review skipped gracefully
 
-Usage:
-    from lib.llm_review import run_review
+Usage — BOTH import names are live and supported (see the import block below):
+
+    from lib.llm_review import run_review   # shared/scripts on sys.path
+    from llm_review import run_review       # this directory on sys.path
 
     result = run_review(
         content="<code diff or plan>",
@@ -23,8 +25,60 @@ from __future__ import annotations
 import os
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
+# This module is imported under TWO names and both are live:
+#   * bare ``import llm_review``      — shipwright-adopt's Layer-3 review_runner,
+#                                       after putting this directory on sys.path
+#   * ``from lib.llm_review import …`` — shared/scripts/tools/review_assistant_ui_plan.py
+# A bare sibling import works only in the first case (ModuleNotFoundError in the
+# second); a ``lib.``-qualified one works only in the second. Try both rather
+# than mutating sys.path, which is a process-global side effect that would
+# change module resolution for every later import in the host process.
+#
+# TWO things this does NOT close, stated rather than implied:
+#   * The ``try`` branch trusts sys.path ORDER. In a process where another tree
+#     carrying a same-named module sits ahead of this directory, it binds that
+#     one silently and the ``except`` never fires. Accepted here because no
+#     such duplicate exists in this repo and the alternative — a sentinel
+#     spec_from_file_location loader, as in adopt's ``review_runner._discovery``
+#     — would break the ``_import_genai`` monkeypatch seam the tests rely on.
+#   * ``ModuleNotFoundError`` is used rather than ``ImportError`` on purpose: a
+#     PARTIAL or stale sibling (present, but missing a name) must fail loudly
+#     with its real message instead of silently retrying under the other name
+#     and possibly binding a second copy of the module this file exists to keep
+#     in lockstep. The plugin cache is documented to go stale that way.
+try:  # bare: this directory is on sys.path
+    from external_review_degraded import (
+        DEFAULT_TIMEOUT_SECONDS,
+        MAX_OUTPUT_TOKENS,
+        classify_reply,
+        gemini_finish_reason,
+        gemini_generate,
+        openai_finish_reason,
+        openrouter_extra_body,
+    )
+except ModuleNotFoundError as exc:  # package-qualified: shared/scripts is on sys.path
+    if exc.name != "external_review_degraded":
+        raise
+    from lib.external_review_degraded import (  # type: ignore[no-redef]
+        DEFAULT_TIMEOUT_SECONDS,
+        MAX_OUTPUT_TOKENS,
+        classify_reply,
+        gemini_finish_reason,
+        gemini_generate,
+        openai_finish_reason,
+        openrouter_extra_body,
+    )
+
 
 OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1"
+
+
+def _import_genai():
+    """Import google-genai lazily (kept as a seam so tests can substitute it)."""
+    from google import genai
+
+    return genai
+
 
 # Default models — can be overridden via config dict
 DEFAULT_MODELS = {
@@ -61,9 +115,14 @@ def _review_openrouter(
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": prompt},
             ],
-            max_tokens=4096,
+            max_tokens=MAX_OUTPUT_TOKENS,
+            extra_body=openrouter_extra_body(model_key),
         )
-        return {"status": "success", "feedback": response.choices[0].message.content, "via": "openrouter"}
+        return classify_reply(
+            response.choices[0].message.content,
+            openai_finish_reason(response),
+            via="openrouter",
+        )
 
     except ImportError:
         return {"status": "error", "reason": "openai package not installed"}
@@ -81,21 +140,17 @@ def _review_gemini(
         return {"status": "skipped", "reason": "No GEMINI_API_KEY set"}
 
     try:
-        from google import genai
+        genai = _import_genai()
 
         model_name = models.get("gemini", DEFAULT_MODELS["gemini"])
-        client = genai.Client(api_key=api_key)
+        # http_options.timeout is MILLISECONDS (google-genai); `timeout` is
+        # seconds. Bounds the call — and so bounds gemini_generate's retry.
+        client = genai.Client(api_key=api_key, http_options={"timeout": timeout * 1000})
         prompt = user_prompt.replace("{CONTENT}", content).replace("{CONTEXT}", context)
 
-        response = client.models.generate_content(
-            model=model_name,
-            contents=prompt,
-            config=genai.types.GenerateContentConfig(
-                system_instruction=system_prompt,
-                max_output_tokens=4096,
-            ),
-        )
-        return {"status": "success", "feedback": response.text, "via": "direct"}
+        response, note = gemini_generate(genai, client, model_name, prompt, system_prompt)
+        out = classify_reply(response.text, gemini_finish_reason(response), via="direct")
+        return {**out, "reasoning_cap_dropped": note} if note else out
 
     except ImportError:
         return {"status": "error", "reason": "google-genai package not installed"}
@@ -127,9 +182,13 @@ def _review_openai(
             ],
             # gpt-5.x rejects `max_tokens` on the direct Chat Completions API;
             # `max_completion_tokens` is the supported replacement.
-            max_completion_tokens=4096,
+            max_completion_tokens=MAX_OUTPUT_TOKENS,
         )
-        return {"status": "success", "feedback": response.choices[0].message.content, "via": "direct"}
+        return classify_reply(
+            response.choices[0].message.content,
+            openai_finish_reason(response),
+            via="direct",
+        )
 
     except ImportError:
         return {"status": "error", "reason": "openai package not installed"}
@@ -157,7 +216,7 @@ def run_review(
     system_prompt: str | None = None,
     user_prompt: str | None = None,
     models: dict | None = None,
-    timeout: int = 120,
+    timeout: int = DEFAULT_TIMEOUT_SECONDS,
 ) -> dict:
     """Run external LLM review with Gemini + OpenAI in parallel.
 
@@ -169,8 +228,8 @@ def run_review(
         models: Model name overrides (optional).
         timeout: API timeout in seconds.
 
-    Returns:
-        {"success": bool, "provider": str, "reviews": {"gemini": {...}, "openai": {...}}}
+    Returns usable ``success`` plus ``partial`` / ``warnings``: one complete
+    leg remains usable without representing a degraded peer as a clean pass.
     """
     if not system_prompt:
         system_prompt = "You are a senior software engineer reviewing code for quality, security, and correctness."
@@ -225,8 +284,17 @@ def run_review(
             "openai": {"status": "skipped", "reason": "No API keys configured"},
         }
 
+    success = any(r.get("status") == "success" for r in reviews.values())
+    warnings = [
+        f"{name}: {r['reasoning_cap_dropped']}"
+        for name, r in reviews.items() if r.get("reasoning_cap_dropped")
+    ]
+    partial = success and (bool(warnings) or any(
+        r.get("status") == "degraded" for r in reviews.values()))
     return {
-        "success": any(r.get("status") == "success" for r in reviews.values()),
+        "success": success,
+        "partial": partial,
+        "warnings": warnings,
         "provider": provider,
         "reviews": reviews,
     }

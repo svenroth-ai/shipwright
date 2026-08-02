@@ -7,8 +7,8 @@ was recorded `status: "success"` and only a human reading the text downstream
 noticed nothing had been reviewed. Same class as the rest of this change —
 success reported, nothing delivered.
 
-**Only signals the provider itself gives.** An empty answer, and a
-provider-declared truncation (`finish_reason` of `length` / `MAX_TOKENS`).
+**Only signals the provider itself gives.** An empty answer, truncation, or a
+known abnormal terminal reason such as `content_filter` / Gemini `SAFETY`.
 Deliberately no prose heuristics: a classifier guessing whether text "reads like
 a review" would eventually reject a real one, and a review gate that rejects real
 reviews is worse than one that occasionally lets a bad one through — the
@@ -94,8 +94,20 @@ def test_a_missing_finish_reason_stays_neutral():
     assert classify_reply("a real review", "", via="direct")["status"] == "success"
 
 
+def test_known_abnormal_finish_reasons_are_degraded():
+    reasons = (
+        "content_filter", "MAX_TOKENS", "SAFETY", "RECITATION", "LANGUAGE",
+        "OTHER", "BLOCKLIST", "PROHIBITED_CONTENT", "SPII",
+        "MALFORMED_FUNCTION_CALL", "IMAGE_SAFETY", "IMAGE_PROHIBITED_CONTENT",
+        "NO_IMAGE", "IMAGE_RECITATION", "IMAGE_OTHER", "UNEXPECTED_TOOL_CALL",
+        "TOO_MANY_TOOL_CALLS", "tool_calls", "function_call",
+    )
+    for reason in reasons:
+        assert classify_reply("partial", reason, via="direct")["status"] == "degraded"
+
+
 def test_an_unknown_finish_reason_stays_neutral():
-    assert classify_reply("a real review", "content_filter", via="direct")["status"] == "success"
+    assert classify_reply("a real review", "future_reason", via="direct")["status"] == "success"
 
 
 # --- reading finish_reason off each provider's response -----------------------

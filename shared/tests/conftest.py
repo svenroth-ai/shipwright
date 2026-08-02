@@ -8,7 +8,7 @@ import sys
 from pathlib import Path
 
 import pytest
-
+pytest_plugins = ("shared.tests.source_state_capture_isolation",)
 # Add shared scripts to path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "scripts"))
 
