@@ -131,10 +131,14 @@ def test_orchestrator_promotes_the_delegated_rows_and_the_gate_accepts_it(
         (campaign_root / ".shipwright" / "planning" / "iterate" / RUN_ID
          / "reviews.json").read_text(encoding="utf-8")
     )
-    assert record["gates"]["spec"]["status"] == "completed", (
-        "Stage 1 lives under `gates`, not `reviews` — the five `reviews` keys "
-        "are a pinned cross-repo contract the webui refuses to read if a sixth "
-        "appears"
+    assert record["reviews"]["spec"]["status"] == "completed", (
+        "Stage 1 is an ordinary `reviews` key since the promotion; it lived "
+        "under a sibling `gates` object only while the webui refused to read a "
+        "record carrying a sixth key"
+    )
+    assert "gates" not in record, (
+        "the retired seam is not written, and a pending legacy row is dropped "
+        "once the real answer lands"
     )
     for review_type in ("code", "doubt"):
         assert record["reviews"][review_type]["status"] == "completed"

@@ -82,7 +82,10 @@ def test_recording_every_type_makes_the_gate_pass(project, tmp_path):
 
     record = json.loads(record_path(project, RUN_ID).read_text(encoding="utf-8"))
     reviews = record["reviews"]
-    assert record["gates"]["spec"]["status"] == "completed"
+    # `spec` is an ordinary review key since the promotion; the retired `gates`
+    # seam is not written at all any more.
+    assert reviews["spec"]["status"] == "completed"
+    assert "gates" not in record
     assert reviews["code"]["findings"][0]["severity"] == "high"
     assert reviews["code"]["findings"][0]["source"] == "code-reviewer"
     assert reviews["doubt"]["findings"][0]["category"] == "reversibility"

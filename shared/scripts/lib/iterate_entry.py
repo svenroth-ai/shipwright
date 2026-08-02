@@ -267,14 +267,14 @@ def _read_legacy_array(project_root: Path) -> list[dict[str, Any]]:
 
     Tolerant: absent file or absent field returns an empty list. Malformed
     JSON returns an empty list and the caller is responsible for surfacing
-    the corruption via logs / verifier signals.
-    """
+    the corruption via logs / verifier signals. ``UnicodeDecodeError`` is caught here as in
+    :func:`_read_iterates_dir`, but SILENTLY: an undecodable config drops the array."""
     config_path = project_root / RUN_CONFIG_NAME
     if not config_path.exists():
         return []
     try:
         data = json.loads(config_path.read_text(encoding="utf-8"))
-    except (json.JSONDecodeError, OSError):
+    except (json.JSONDecodeError, OSError, UnicodeDecodeError):
         return []
     raw = data.get("iterate_history")
     if not isinstance(raw, list):
@@ -285,10 +285,10 @@ def _read_legacy_array(project_root: Path) -> list[dict[str, Any]]:
 def _read_iterates_dir(project_root: Path) -> list[dict[str, Any]]:
     """Read all canonical iterate entry files under ``.shipwright/agent_docs/iterates/``.
 
-    Corrupt or oversized files are skipped with a diagnostic on stderr so
-    one bad file cannot wedge the whole reader. The caller can detect the
-    skip via a non-empty corrupt-count signal exposed by the CLI wrapper.
-    """
+    A corrupt file is skipped with a ``_logger.warning``, so one bad file cannot wedge the
+    reader and the loss is announced (oversized ones ``_is_entry_file`` drops silently).
+    **Not valid UTF-8 is corrupt, not fatal**: decoding precedes parsing and a
+    ``UnicodeDecodeError`` is a ``ValueError``, so it escaped both arms (trg-06216b9f)."""
     directory = iterates_dir(project_root)
     if not directory.is_dir():
         return []
@@ -298,7 +298,7 @@ def _read_iterates_dir(project_root: Path) -> list[dict[str, Any]]:
             continue
         try:
             data = json.loads(path.read_text(encoding="utf-8"))
-        except (json.JSONDecodeError, OSError) as exc:
+        except (json.JSONDecodeError, OSError, UnicodeDecodeError) as exc:
             _logger.warning("skip corrupt entry file %s: %s", path.name, exc)
             continue
         if isinstance(data, dict):

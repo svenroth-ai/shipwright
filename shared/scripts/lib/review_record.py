@@ -12,15 +12,19 @@ therefore had nothing to read for three of five review types, and the two it
 could read were written to ONE shared, run-agnostic file that every run
 overwrote. This is the missing durable half.
 
-**Keyed by type, not a list.** ``reviews`` is a dict over the five review types
-so "every type is represented" is structural rather than a convention a writer
-can forget, and so a type cannot appear twice. The sibling ``gates`` object holds
-the passes this repo's F11 gate requires that the pinned cross-repo ``reviews``
-contract has no slot for (today: ``spec``, the Stage-1 HARD-GATE) — see
-:data:`lib.review_record_schema.GATE_TYPES` for why it is not a sixth key. A type nobody has recorded yet
-reads ``pending`` — explicitly present and explicitly unanswered, which is the
-whole point of the artifact: an empty Review row must mean "genuinely not run",
-never "somebody forgot to write it down".
+**Keyed by type, not a list.** ``reviews`` is a dict over the review types so
+"every type is represented" is structural rather than a convention a writer can
+forget, and so a type cannot appear twice. A type nobody has recorded yet reads
+``pending`` — explicitly present and explicitly unanswered, which is the whole
+point of the artifact: an empty Review row must mean "genuinely not run", never
+"somebody forgot to write it down".
+
+**One write destination, two read locations.** ``spec`` was parked in a sibling
+``gates`` object while the cross-repo consumer rejected any ``reviews`` key
+outside its own five; that pin is gone (``shipwright-webui`` ``ce21323e``) and
+``spec`` is now an ordinary review type. Records written before the promotion
+still carry it under ``gates`` and are immutable by design, so reads keep
+looking there — see :data:`lib.review_record_schema.LEGACY_GATE_TYPES`.
 
 **Immutability.** A review that reached a terminal status is not rewritable
 (:class:`ImmutableReviewError`) without an explicit ``force``. A record of what
@@ -63,7 +67,7 @@ from .review_record_ops import (
 )
 from .review_record_schema import (
     ALL_STATUSES,
-    GATE_TYPES,
+    LEGACY_GATE_TYPES,
     RECORDABLE_TYPES,
     REVIEW_TYPES,
     SCHEMA_VERSION,
@@ -78,7 +82,7 @@ from .review_record_schema import (
 
 __all__ = [
     "ALL_STATUSES",
-    "GATE_TYPES",
+    "LEGACY_GATE_TYPES",
     "RECORDABLE_TYPES",
     "REVIEW_TYPES",
     "SCHEMA_VERSION",
