@@ -1,0 +1,33 @@
+{
+  "success": true,
+  "provider": "openrouter",
+  "degraded": false,
+  "reviews_succeeded": 1,
+  "reviews": {
+    "openai": {
+      "feedback": "No concrete defects found. The absolute `--verbosity=-1` override correctly neutralizes configured verbosity while retaining configured `addopts`, and the added subprocess tests cover positive, zero, negative verbosity configurations, marker filtering, and non-pytest behavior.\n\nOverall assessment: ship-as-is.\n\nSHIPWRIGHT_VERDICT: approve",
+      "via": "openrouter",
+      "status": "success"
+    },
+    "gemini": {
+      "feedback": null,
+      "via": "openrouter",
+      "status": "degraded",
+      "reason": "provider returned an empty reply"
+    }
+  },
+  "verdicts": {
+    "openai": "approve",
+    "gemini": "unavailable"
+  },
+  "statuses": {
+    "openai": "success",
+    "gemini": "degraded"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": false,
+    "requires_resolution": true,
+    "reason": "only one reviewer answered — gemini did not (gemini=unavailable, openai=approve)"
+  }
+}
