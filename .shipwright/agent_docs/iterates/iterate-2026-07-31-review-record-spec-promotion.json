@@ -1,7 +1,7 @@
 {
   "run_id": "iterate-2026-07-31-review-record-spec-promotion",
-  "date": "2026-07-31T23:32:32.469410Z",
-  "event_at": "2026-07-31T14:22:17.466872+00:00",
+  "date": "2026-08-02T18:10:36.980396Z",
+  "event_at": "2026-07-31T23:32:38.909412+00:00",
   "type": "change",
   "complexity": "medium",
   "branch": "iterate/review-record-spec-promotion",
@@ -121,5 +121,11 @@
       "untested_testable": 0
     },
     "ledger_path": ".shipwright/planning/iterate/2026-07-31-review-record-spec-promotion.md"
-  }
+  },
+  "declared_removals": [
+    {
+      "path": "shared/tests/test_campaign_cascade_record_roundtrip.py",
+      "reason": "Four lines that origin/main gained after the fork are replaced, not reverted: the assertion `record['gates']['spec']` and its comment 'Stage 1 lives under gates, not reviews - the five reviews keys are a pinned cross-repo contract the webui refuses to read if a sixth appears'. That statement is exactly what this iterate makes false - the webui shipped a reader that renders unknown review types (ce21323e), so spec is now an ordinary reviews key. The test keeps the same subject and asserts the new truth (reviews.spec completed, plus no gates key, since a still-pending legacy row is superseded when the real answer lands). Nobody's work is lost; the claim it encoded was retired by this change."
+    }
+  ]
 }
