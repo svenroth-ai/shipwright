@@ -25,6 +25,9 @@ Submodule layout:
   skill-compliance dashboards.
 * :mod:`._bloat_findings` — bloat-baseline summary for the project-wide
   Compliance Dashboard.
+* :mod:`._engagement` — Layer-1 phase-applicability gate (run-config +
+  event-log predicate, incl. the v2 ``phase_tasks[]`` vocabulary).
+* :mod:`._triage_bundle` — the rolling phase-quality backlog action-unit.
 
 Design rules:
 
@@ -73,6 +76,10 @@ from ._dashboard_render import (
     rewrite_session_findings_summary,
     write_quality_dashboard_file,
 )
+from ._engagement import (
+    load_engagement_inputs,
+    phase_is_engaged,
+)
 from ._findings import (
     already_audited,
     apply_skip_override,
@@ -109,8 +116,6 @@ from ._triage_bundle import (
     DASHBOARD_REL,
     collect_in_scope_fails,
     emit_phase_quality_backlog,
-    load_engagement_inputs,
-    phase_is_engaged,
 )
 
 
