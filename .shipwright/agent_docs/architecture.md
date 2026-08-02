@@ -168,7 +168,12 @@ action-units (dedup-keyed, auto-resolve scoped so a failed fetch never
 mass-resolves):
 
 - code-scanning / Dependabot / secret-scanning alerts + the latest failed
-  default-branch CI run per workflow (`github_api.py`, `github_triage/`).
+  default-branch CI run per workflow (`github_api.py`, `github_triage/`). A CI
+  unit is emitted only for a workflow the repo still has: the runs feed reports
+  what a workflow *did*, never what it *is*, so the lifecycle state is read per
+  failing workflow from `actions/workflows/{id}` (`github_workflow_api.py`) and
+  a `deleted` one is dropped. An unestablished state keeps the finding —
+  over-filtering here would hide real CI breakage.
 - `gh-security:{owner}/{repo}` — when GHAS Code Scanning is unavailable (typical
   on private repos), it falls back to the `security.yml` `security-scan-results`
   artifact (freshness-gated), parsing `findings.json`/SARIF directly.
