@@ -35,7 +35,6 @@ sys.path.insert(0, str(_SHARED))
 
 from scripts.tools.suite_units import UV_RUN
 
-_RUNNER = _SHARED / "scripts" / "tools" / "run_test_suite.py"
 _HAS_GIT = shutil.which("git") is not None
 _HAS_UV = shutil.which("uv") is not None
 _GIT_ENV = {

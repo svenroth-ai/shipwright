@@ -148,10 +148,10 @@ def verdict(*, eligible: int, branch: str | None, combine_rc: int | None = None,
             and DIFF_COVER_THRESHOLD_MESSAGE in detail):
         return GateResult(GATE_FAILED, [
             f"diff-coverage: FAILED - changed lines below {FAIL_UNDER:g}% covered.",
-            "  Add tests for the changed lines named above; do not lower the "
+            "  Add tests for the changed lines named above; do not lower the " +
             "threshold.",
-            "  If those lines ARE covered by tests that SKIP on this machine "
-            "(missing bash/npm/docker/gh, a platform guard), that is the cause: "
+            "  If those lines ARE covered by tests that SKIP on this machine " +
+            "(missing bash/npm/docker/gh, a platform guard), that is the cause: " +
             "this gate can be stricter than CI, which runs them."])
     if gate_rc != 0:
         return GateResult(GATE_FAILED, [

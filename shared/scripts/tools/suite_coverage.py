@@ -69,6 +69,26 @@ _RESET_ATTEMPTS = 4
 _RESET_BACKOFF = 0.25
 
 
+def _lock_coverage_handle(handle: Any) -> None:
+    """Acquire the platform lock without leaking a branch-local import."""
+    if os.name == "nt":
+        import msvcrt
+        msvcrt.locking(handle.fileno(), msvcrt.LK_NBLCK, 1)
+    else:
+        import fcntl
+        fcntl.flock(handle.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+
+
+def _unlock_coverage_handle(handle: Any) -> None:
+    """Release the platform lock using an import owned by this call."""
+    if os.name == "nt":
+        import msvcrt
+        msvcrt.locking(handle.fileno(), msvcrt.LK_UNLCK, 1)
+    else:
+        import fcntl
+        fcntl.flock(handle.fileno(), fcntl.LOCK_UN)
+
+
 @contextmanager
 def coverage_run_lock(project_root: Path):
     """Exclude a second F0 from reset through gate without leaving stale locks.
@@ -85,12 +105,7 @@ def coverage_run_lock(project_root: Path):
             handle.write(b"0")
             handle.flush()
         handle.seek(0)
-        if os.name == "nt":
-            import msvcrt
-            msvcrt.locking(handle.fileno(), msvcrt.LK_NBLCK, 1)
-        else:
-            import fcntl
-            fcntl.flock(handle.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+        _lock_coverage_handle(handle)
     except (ImportError, OSError) as exc:
         try:
             handle.close()
@@ -104,10 +119,7 @@ def coverage_run_lock(project_root: Path):
     finally:
         try:
             handle.seek(0)
-            if os.name == "nt":
-                msvcrt.locking(handle.fileno(), msvcrt.LK_UNLCK, 1)
-            else:
-                fcntl.flock(handle.fileno(), fcntl.LOCK_UN)
+            _unlock_coverage_handle(handle)
         finally:
             handle.close()
 
