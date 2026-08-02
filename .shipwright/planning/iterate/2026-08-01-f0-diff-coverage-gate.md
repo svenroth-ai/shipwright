@@ -162,6 +162,7 @@ XML → diff-cover) is exercised end-to-end by AC-8 instead.
   | P6 | **Pre-hardening real F0 on this repo** | 18/18 units GREEN in 6.7 min and 97% over 166 changed lines. This established the cost and coverage baseline; the final F11 run supersedes its old multi-diff line-set evidence with the private-index path. |
   | P7 | Same run, missing-data check | Every instrumented unit wrote its data file: no `missing_data` refusal fired, so the new fail-closed check does **not** false-STOP a healthy run. |
   | P8 | Post-integration race E2E + full integration root | The pre-existing race-followup E2E now creates the real `origin/main`, committed Python-3.11 lockfile, and ignored runtime state that permanent F0 requires. The focused proof passed 1/1 and the complete integration root passed 444/444 (2 deselected) in 106.94 s. Production fingerprinting remained fail-closed. |
+  | P9 | **Final canonical F0 after origin/main integration** | 18/18 units GREEN in 4.3 min. Pinned diff-cover 10.3.0 measured 335 changed lines at 93% (22 missing) against refreshed `origin/main`, above the 80% gate. |
 
   **The two E2E layers are load-bearing for AC-3b**: the CLI fixture leaves its new
   implementation uncommitted, while the direct real-tool E2E adds a ten-line dirty
@@ -177,8 +178,9 @@ XML → diff-cover) is exercised end-to-end by AC-8 instead.
   semantics-preserving parallelism fix to take; narrowing the measured source or
   diverging from CI would weaken the gate. On 2026-08-02 the maintainer explicitly
   accepted this conservative cost after that diagnosis, given the observed 29%
-  CI-failure rate and 1.18 additional CI cycles per branch. F11 still records one
-  canonical warm full-suite measurement before delivery.
+  CI-failure rate and 1.18 additional CI cycles per branch. The final F11 warm
+  full-suite measurement completed in 4.3 min with all 18 units green and 93%
+  diff coverage over 335 changed lines.
 
 - **Test Completeness Ledger** — 17 ACs, 39 behaviours, **0 untested-testable**:
 
@@ -233,9 +235,9 @@ XML → diff-cover) is exercised end-to-end by AC-8 instead.
     live runs whose output could have refuted the fix — rather than re-reading the
     code. The CLI E2E and mixed-state real-tool E2E are the refutation-resistant evidence.
   - **Coverage (breadth).** 39 ledger rows, every one `tested`, zero
-    untested-testable, zero `untestable`. Independently corroborated by the gate
-    measuring its own diff at 97 % (166 changed lines, 4 missed) — a number produced
-    by the tool, not by me.
+    untested-testable, zero `untestable`. Independently corroborated by the final
+    gate measuring its own diff at 93% (335 changed lines, 22 missed) — a number
+    produced by the pinned tool, not by me.
   - **Integration composition.** `cross_component` does **not** fire on this file
     list (verified with `is_cross_component_change` at Stage 2 of the Repo Scout, and
     the F11 verifier recomputes it from the diff independently). The composition that
