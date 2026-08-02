@@ -1,0 +1,77 @@
+{
+  "run_id": "iterate-2026-08-01-cache-heal-per-plugin",
+  "mode": "iterate",
+  "success": true,
+  "provider": "openrouter",
+  "degraded": false,
+  "reviews_succeeded": 1,
+  "verdicts": {
+    "gemini": "unavailable",
+    "openai": "revise"
+  },
+  "statuses": {
+    "gemini": "degraded",
+    "openai": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": false,
+    "requires_resolution": true,
+    "reason": "only one reviewer answered - gemini did not (gemini=unavailable, openai=revise)"
+  },
+  "gemini": {
+    "status": "degraded",
+    "reason": "provider reported the reply was cut off (finish_reason=length)",
+    "partial_finding": "High / Approach - contradiction in how the shared/ tree is checked: the spec says 'replace both sentinels with a delivered-file-set comparison' but the mini-plan retains _shared_healthy as the gate. If the main gate keeps using the sentinel for shared, a partial shared/ reap still short-circuits and remains unfixed (the exact ADR-120 failure ...[truncated]"
+  },
+  "openai": {
+    "status": "success",
+    "verdict": "revise",
+    "findings": [
+      {
+        "id": "GPT-1",
+        "category": "approach",
+        "severity": "high",
+        "finding": "delivered(src) - delivered(dst) only detects absent paths, but the plan claims it also repairs truncated files. A truncated destination file is still present, so no overlay copy is triggered.",
+        "resolution": "Accepted; scoped out with evidence. Probed the live cache: comparing sizes between the marketplace clone and cached shared/ reports 24 of 1015 files differing (scripts/lib/__init__.py 29 vs 28 - one CRLF byte). A content rule here would re-copy them every session. Truncation detection belongs to check_plugin_cache_sync.py, which CRLF-normalizes before hashing. Claim removed from the spec; limitation stated explicitly and carried as ledger row 23."
+      },
+      {
+        "id": "GPT-2",
+        "category": "approach",
+        "severity": "medium",
+        "finding": "The walk must be copytree-equivalent: _IGNORE called at every source directory, ignored directory names pruned before recursion. A generic rglob() descends into .in_use before excluding it.",
+        "resolution": "Accepted. _delivered() is an explicit top-down stack traversal calling _IGNORE(str(current), names) on each directory's own child names and pruning directories before descent. Pinned by test_delivered_prunes_ignored_dirs_without_descending."
+      },
+      {
+        "id": "GPT-3",
+        "category": "edge-case",
+        "severity": "medium",
+        "finding": "Swallowing OSError per-dir can turn an incomplete scan into a false healthy result; an under-counted source hides missing destination files.",
+        "resolution": "Accepted. _delivered() returns None (never a short set) on any enumeration failure; _incomplete() propagates it. Both call sites use identity comparisons (is True / is not True), so unknown neither claims health nor copies."
+      },
+      {
+        "id": "GPT-4",
+        "category": "risk",
+        "severity": "medium",
+        "finding": "The early no-op condition must use shared completeness, not _shared_healthy; otherwise a surviving shared sentinel can still suppress the new check.",
+        "resolution": "Accepted. The combined early return is deleted; _plugins_healthy is removed entirely and _heal_plugins is called unconditionally (self-no-op'ing). Pinned by test_neither_short_circuit_survives, which leaves BOTH sentinels alive with a different non-sentinel file missing from each tree."
+      },
+      {
+        "id": "GPT-5",
+        "category": "edge-case",
+        "severity": "medium",
+        "finding": "Path existence alone is insufficient when the destination has the wrong entry type (a directory where a file belongs, a broken symlink).",
+        "resolution": "Accepted, and free. Both sides are built by the same file-only walk and compared as sets, so a directory or broken symlink at a file's path is simply absent from the destination set and counts as a gap. No exists() call remains in the code. Pinned by test_incomplete_true_when_a_directory_stands_where_a_file_belongs."
+      },
+      {
+        "id": "GPT-6",
+        "category": "security",
+        "severity": "low",
+        "finding": "The new always-run tree walker expands routine interaction with marketplace/cache content, including possible links; keep traversal and relative-path construction rooted.",
+        "resolution": "Accepted. Paths are always derived via relative_to(root); non-file entries are never recorded. Symlinked directories ARE followed, matching copytree(symlinks=False), which is the behaviour being mirrored."
+      }
+    ],
+    "overall": "Delivered-file-set comparison is the right direction and the shared-tree expansion is justified, but the implementation needs a precise copytree-equivalent walker and a decision on whether 'partial' includes truncated/type-corrupted files."
+  },
+  "note": "All six findings were resolved BEFORE implementation. The resolutions table lives in the iterate spec; the Stage-1 spec-reviewer independently verified GPT-2/3/5 against the code."
+}
