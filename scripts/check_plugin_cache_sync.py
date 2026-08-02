@@ -45,9 +45,15 @@ is passed (which exits 1 on any drift).
 CI-safe: when ``~/.claude/`` doesn't exist (typical in CI runners), the script
 no-ops with status ``cache_root_absent``.
 
+The compared version directory is the one ``installed_plugins.json`` names — the same file
+``update-marketplace.sh`` writes into — falling back to the highest cached version, and
+saying which, when that manifest cannot be read. Resolving it independently of the sync is
+how a plugin came to report drift that no re-sync could clear (P2.06).
+
 Usage:
     uv run scripts/check_plugin_cache_sync.py [--strict] [--json]
     uv run scripts/check_plugin_cache_sync.py --cache-root <path> --repo-root <path>
+        [--installed-plugins <path>]
 """
 
 from __future__ import annotations
@@ -66,6 +72,19 @@ _HERE = str(Path(__file__).resolve().parent)
 if _HERE not in sys.path:
     sys.path.append(_HERE)
 
+from cache_install_resolve import (  # noqa: E402
+    default_cache_root as _default_cache_root,
+)
+from cache_install_resolve import (  # noqa: E402
+    load_manifest,
+    manifest_for,
+    resolve_version_dir,
+)
+
+#: `installed_plugins=None` means "deliberately no authority"; OMITTING it means "you decide".
+#: Without the distinction the library entry point kept the pre-change heuristic as its
+#: default — right for the tmp roots tests use, wrong for the one tree in production.
+_UNSET = object()
 from cache_sync_report import (  # noqa: E402
     UNGATED as _UNGATED,
 )
@@ -77,14 +96,11 @@ from cache_sync_report import (  # noqa: E402
 from cache_tree_compare import (  # noqa: E402
     compare_tree,
     find_orphan_markers,
-    latest_cache_version_dir,
 )
 
 _SHARED_DIR = "shared"
 
 
-def _default_cache_root() -> Path:
-    return Path.home() / ".claude" / "plugins" / "cache" / "shipwright"
 
 
 def _default_repo_root() -> Path:
@@ -131,13 +147,20 @@ def _result(status: str, cache_root: Path, **extra) -> dict:
             "cache_root": str(cache_root), **extra}
 
 
-def check_sync(*, repo_root: Path, cache_root: Path) -> dict:
+def check_sync(*, repo_root: Path, cache_root: Path, installed_plugins=_UNSET) -> dict:
     """Compare the cache trees this check owns against the repo.
+
+    ``installed_plugins`` is the manifest deciding WHICH version dir the sync writes into.
+    OMIT it and it is inferred from ``cache_root`` (:func:`manifest_for`) — the real manifest
+    for the real cache, none for anything else, so production is right by default and a tmp
+    root stays hermetic. Pass ``None`` to force the older highest-SemVer heuristic. Either
+    way the rule used is recorded per plugin as ``version_basis``.
 
     Returns a structured dict, with every key present on every status:
     - ``status``: ``ok`` | ``drift`` | ``cache_root_absent`` | ``no_repo_plugins``
       | ``plugins_unreadable``
-    - ``plugins``: per-plugin records for ``cache/<plugin>/<version>/``
+    - ``plugins``: per-plugin records for ``cache/<plugin>/<version>/``, each carrying
+      ``version_basis`` — ``installed_plugins`` or a ``latest (…)`` string naming the reason
     - ``shared``: one record for ``cache/shared/`` (``state: "n/a"`` when the
       repo has no ``shared/`` — only the monorepo does, and its absence
       elsewhere is not a finding)
@@ -159,6 +182,12 @@ def check_sync(*, repo_root: Path, cache_root: Path) -> dict:
     if repo_plugins is None:
         return _result("plugins_unreadable", cache_root, drifted_count=1)
 
+    if installed_plugins is _UNSET:
+        installed_plugins = manifest_for(None, cache_root)
+    # Read ONCE for the whole verdict: re-reading per plugin let a rewrite by
+    # `claude plugin install` land mid-loop and split one report across two manifests.
+    manifest = load_manifest(installed_plugins)
+
     drifted = 0
     plugins: list[dict] = []
     verified: list[str] = []
@@ -168,7 +197,8 @@ def check_sync(*, repo_root: Path, cache_root: Path) -> dict:
 
     for plugin_dir in repo_plugins:
         plugin_cache = cache_root / plugin_dir.name
-        version_dir, reason = latest_cache_version_dir(plugin_cache)
+        version_dir, reason, version_basis = resolve_version_dir(
+            plugin_cache, plugin_dir.name, installed_plugins, manifest=manifest)
         if reason == "unreadable":
             # Do NOT hand this to compare_tree: it would report every repo file
             # as missing from the cache, a number it never measured.
@@ -188,6 +218,9 @@ def check_sync(*, repo_root: Path, cache_root: Path) -> dict:
                 # is the most severe one there is.
                 scopes.append(plugin_cache)
         record["plugin"] = plugin_dir.name
+        # On every record, including `unreadable`: a verdict that does not say which rule
+        # chose the tree it rests on cannot be audited (the rule `basis` already follows).
+        record["version_basis"] = version_basis
         plugins.append(record)
         if record["state"] != "ok":
             drifted += 1
@@ -225,13 +258,22 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Plugin-cache vs repo sync check")
     parser.add_argument("--repo-root", default=str(_default_repo_root()))
     parser.add_argument("--cache-root", default=str(_default_cache_root()))
+    parser.add_argument("--installed-plugins", default=None,
+                        help="Manifest naming each plugin's live version dir — the same "
+                             "file update-marketplace.sh syncs into. Defaults to the real "
+                             "one only when --cache-root is also the real one. Falls back "
+                             "to the highest cached version when absent or unreadable.")
     parser.add_argument("--strict", action="store_true",
                         help="Exit 1 on any drift (default: fail-soft WARN, exit 0).")
     parser.add_argument("--json", action="store_true",
                         help="Emit structured JSON on stdout instead of human prose.")
     args = parser.parse_args(argv)
 
-    result = check_sync(repo_root=Path(args.repo_root), cache_root=Path(args.cache_root))
+    # Only the EXPLICIT flag is passed; omitting it lets check_sync infer, so the CLI and a
+    # library caller cannot end up with two different defaults.
+    result = check_sync(repo_root=Path(args.repo_root), cache_root=Path(args.cache_root),
+                        **({"installed_plugins": Path(args.installed_plugins)}
+                           if args.installed_plugins else {}))
     status = result["status"]
 
     if args.json:

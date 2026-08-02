@@ -32,6 +32,21 @@ def _basis_note(records: list[dict]) -> str:
     return f"; basis: {', '.join(sorted(bases))}" if bases else ""
 
 
+def _version_basis_note(records: list[dict]) -> str:
+    """Say so when a compared directory was GUESSED rather than looked up.
+
+    Same rule as :func:`_basis_note`, applied to the other thing a verdict rests on: not
+    how the repo side was read, but WHICH cache directory was read at all. Normally that
+    comes from ``installed_plugins.json`` — the file the sync itself writes into — and
+    saying so would be noise. When that lookup fails the check falls back to the highest
+    cached version, which is the sync's target only by coincidence, and the printed remedy
+    ("re-run update-marketplace.sh") is then the wrong instruction: re-syncing writes to
+    the installed directory and cannot change the one being compared.
+    """
+    bases = {r.get("version_basis", "") for r in records} - {"installed_plugins", "", "n/a"}
+    return f"; version dir chosen by {', '.join(sorted(bases))}" if bases else ""
+
+
 def print_ok(result: dict) -> None:
     """Name every tree that was read, and count only what was truly compared.
 
@@ -54,7 +69,11 @@ def print_ok(result: dict) -> None:
         extra += f"; {stale} cache file(s) with no repo counterpart"
     if unhashable:
         extra += f"; {unhashable} tracked file(s) could not be read"
-    extra += _basis_note(records)
+    # On the GREEN branch too, and for the same reason `_basis_note` is: this is the
+    # false-green half of the very symptom being fixed. A fresh higher version dir that
+    # happens to match the repo reads as "in sync" while the tree runtime actually loads is
+    # the stale installed one — an ok over a directory nobody runs.
+    extra += _basis_note(records) + _version_basis_note(records)
     print(
         f"plugin-cache-sync: ok — {len(result['plugins'])} plugin(s) "
         f"and {shared_part} in sync. Not gated: {UNGATED}{extra}"
@@ -62,7 +81,8 @@ def print_ok(result: dict) -> None:
 
 
 def print_drift(result: dict) -> None:
-    basis = _basis_note([result["shared"], *result["plugins"]])
+    records = [result["shared"], *result["plugins"]]
+    basis = _basis_note(records) + _version_basis_note(records)
     print(
         f"plugin-cache-sync: WARN — {result['drifted_count']} tree(s) drifted. "
         f"Run scripts/update-marketplace.sh to re-sync{basis}.",
