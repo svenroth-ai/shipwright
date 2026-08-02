@@ -20,7 +20,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "scripts"))
 
 import subprocess  # noqa: E402
 
-from source_state_git import resolve_git_state  # noqa: E402
+from source_state_git import resolve_git_root, resolve_git_state  # noqa: E402
 
 RUN = "iterate-2026-07-27-artifact-state-stamping"
 
@@ -51,6 +51,14 @@ def repo(tmp_path: Path) -> Path:
 
 
 class TestGitResolution:
+    def test_repo_root_is_the_same_from_a_subdirectory(self, repo: Path):
+        child = repo / "nested" / "child"
+        child.mkdir(parents=True)
+        assert resolve_git_root(child) == repo.resolve()
+
+    def test_non_repo_has_no_git_root(self, tmp_path: Path):
+        assert resolve_git_root(tmp_path) is None
+
     def test_clean_repo_resolves_head_and_not_dirty(self, repo: Path):
         state = resolve_git_state(repo, run_id=RUN)
         assert state.run_id == RUN

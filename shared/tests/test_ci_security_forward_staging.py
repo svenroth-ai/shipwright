@@ -50,7 +50,7 @@ def test_regenerate_stages_ci_security_when_rewritten(git_origin_repo, monkeypat
 
     fresh = '{"critical": 3, "generated_at": "fresh-scan"}\n'
 
-    def fresh_scan(project_root):
+    def fresh_scan(project_root, run_id=None):
         # update_compliance.py's refresh_ci_security rewrote the summary from a
         # fresh security.yml run; iterdir returns the whole compliance/ dir.
         (Path(project_root) / _CI_SEC).write_text(fresh, encoding="utf-8")
@@ -77,7 +77,8 @@ def test_regenerate_does_not_stage_unchanged_ci_security(git_origin_repo, monkey
     _git(work, "commit", "-m", "seed ci-security")
 
     # compliance ran (truthy paths) but did not touch ci-security.json.
-    monkeypatch.setattr(finalize_iterate, "_update_compliance", lambda pr: ["ok"])
+    monkeypatch.setattr(finalize_iterate, "_update_compliance",
+                        lambda pr, run_id=None: ["ok"])
 
     out = rcc.regenerate_tracked_snapshots(work, "iterate-x", only={_DASH})
 
@@ -113,7 +114,7 @@ def test_ci_security_fresh_scan_reaches_followup_commit(git_origin_repo, make_wo
     fresh = '{"critical": 9, "generated_at": "fresh-scan"}\n'
     _stub_derived_md_producers(monkeypatch)  # heavy agent-doc producers → harmless success
 
-    def fresh_scan(project_root):
+    def fresh_scan(project_root, run_id=None):
         # a fresh security.yml run rewrote the summary DURING regen — the exact
         # CR-1 forward-staging scenario (overrides the _stub's no-op _update_compliance).
         (Path(project_root) / _CI_SEC).write_text(fresh, encoding="utf-8")
@@ -121,7 +122,7 @@ def test_ci_security_fresh_scan_reaches_followup_commit(git_origin_repo, make_wo
 
     ran = {"scan": False}
 
-    def tracking_scan(project_root):
+    def tracking_scan(project_root, run_id=None):
         ran["scan"] = True
         return fresh_scan(project_root)
 

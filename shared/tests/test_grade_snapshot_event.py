@@ -171,7 +171,7 @@ class TestGradeSnapshotAttributionCannotBeAsserted:
     fails if someone adds them back.
     """
 
-    @pytest.mark.parametrize("key", ["lineage", "branch", "base"])
+    @pytest.mark.parametrize("key", ["lineage", "branch", "base", "dirty"])
     def test_an_amendment_cannot_overlay_attribution(self, key):
         """The door the original producer audit missed.
 

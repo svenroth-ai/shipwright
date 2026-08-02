@@ -88,18 +88,76 @@ class TestGradeAndScore:
         assert with_commit["commit"] == "deadbeef"
 
 
-def test_attribution_keys_cover_everything_the_resolver_emits():
-    """The refusal list must not drift behind the projection.
+#: Tree-derived keys ``apply_grade_snapshot`` stamps ITSELF, outside the
+#: ``lineage_fields`` projection. ``dirty`` is captured before the producer writes
+#: and handed in (trg-f5ae5371) rather than resolved by the lineage resolver, but it
+#: is derived from the tree just the same — so it is refused just the same. Adding a
+#: name here must be a deliberate act, which is why the set is written out rather
+#: than computed.
+_SELF_STAMPED_ATTRIBUTION = {"dirty"}
 
-    ``ATTRIBUTION_KEYS`` is what `event_amended --fields` refuses; `lineage_fields`
-    is what actually reaches the log. They are maintained by hand in two modules,
-    and this iterate had to *remember* to keep them aligned — a future field added
-    to one and not the other would be assertable again, which is the exact hole
-    the refusal exists to close (internal code review, medium).
+
+def test_attribution_keys_cover_everything_derived_from_the_tree():
+    """The refusal list must not drift behind what actually reaches the log.
+
+    ``ATTRIBUTION_KEYS`` is what `event_amended --fields` refuses. What reaches the
+    log is the `lineage_fields` projection PLUS the fields this module stamps on its
+    own. They are maintained by hand across three modules, and each iterate has had
+    to *remember* to keep them aligned — a future field added to one and not the
+    other would be assertable again, which is the exact hole the refusal exists to
+    close (internal code review, medium).
     """
     from tree_lineage import TreeLineage, lineage_fields
 
-    assert set(lineage_fields(TreeLineage("branch", "b", "abcdef1"))) == ATTRIBUTION_KEYS
+    projected = set(lineage_fields(TreeLineage("branch", "b", "abcdef1")))
+    assert projected | _SELF_STAMPED_ATTRIBUTION == ATTRIBUTION_KEYS
+    assert not projected & _SELF_STAMPED_ATTRIBUTION, (
+        "a key is now emitted by BOTH routes — decide which one owns it")
+
+
+class TestDirtyIsSuppliedNotMeasured:
+    """``dirty`` says whether the tree held uncommitted work when the grade was
+    measured. It is handed in, because by the time this module runs the producer has
+    already rewritten tracked documents and a measurement here would read ``true`` on
+    a pristine tree (trg-f5ae5371)."""
+
+    @pytest.mark.parametrize("value", [True, False])
+    def test_stamps_the_supplied_value(self, repo: Path, value: bool):
+        event: dict = {}
+        apply_grade_snapshot(event, grade="A", score=90, project_root=repo,
+                             dirty=value)
+        assert event["dirty"] is value
+
+    def test_omits_the_key_when_unknown(self, repo: Path):
+        """Absent must stay absent: a snapshot that cannot say whether its tree was
+        clean must not claim it was."""
+        event = {"dirty": True}
+        apply_grade_snapshot(event, grade="A", score=90, project_root=repo)
+        assert "dirty" not in event
+
+    def test_explicit_unknown_removes_a_stale_value(self, repo: Path):
+        """Re-shaping a reused event cannot retain an earlier capture."""
+        event = {"dirty": False}
+        apply_grade_snapshot(event, grade="A", score=90, project_root=repo,
+                             dirty=None)
+        assert "dirty" not in event
+
+    @pytest.mark.parametrize("bad", ["true", 1, 0, "", [], {}])
+    def test_a_non_bool_never_reaches_the_durable_log(self, repo: Path, bad):
+        """The log is read cross-repo; a truthy non-bool would serialise as itself
+        and read back as something no consumer has a rule for."""
+        event = {"dirty": True}
+        apply_grade_snapshot(event, grade="A", score=90, project_root=repo,
+                             dirty=bad)
+        assert "dirty" not in event
+
+    def test_dirty_is_refused_as_an_amendment(self):
+        """AC6 — an amendment able to set ``dirty: false`` could launder a
+        work-in-progress measurement into one claiming a committed state."""
+        from grade_snapshot_shape import reject_asserted_attribution
+
+        with pytest.raises(ValueError, match="dirty"):
+            reject_asserted_attribution({"dirty": False})
 
 
 class TestAttributionIsUnavoidable:

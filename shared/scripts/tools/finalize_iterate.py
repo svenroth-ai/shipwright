@@ -162,8 +162,13 @@ def _update_dashboard(project_root: Path, session_id: str, run_id: str) -> str |
         return None
 
 
-def _update_compliance(project_root: Path) -> list[str]:
-    """Regenerate compliance reports. Returns list of written paths."""
+def _update_compliance(project_root: Path, run_id: str | None = None) -> list[str]:
+    """Regenerate compliance reports. Returns list of written paths.
+
+    The environment carries the dirtiness captured at Step 0; ``run_id`` carries the
+    identity that makes it readable, since a subprocess honours a capture only when
+    the run ids match (trg-f5ae5371).
+    """
     # _SCRIPTS_DIR = shared/scripts → parent.parent = repo root
     compliance_plugin = _SCRIPTS_DIR.parent.parent / "plugins" / "shipwright-compliance"
     script = compliance_plugin / "scripts" / "tools" / "update_compliance.py"
@@ -175,7 +180,8 @@ def _update_compliance(project_root: Path) -> list[str]:
         result = subprocess.run(
             [sys.executable, str(script),
              "--project-root", str(project_root),
-             "--phase", "iterate"],
+             "--phase", "iterate",
+             *(["--run-id", run_id] if run_id else [])],
             capture_output=True, text=True, timeout=30,
         )
         if result.returncode == 0:
@@ -383,7 +389,8 @@ def run(
 ) -> dict:
     """Run all finalization steps. Returns structured result dict.
 
-    Order: (1) record the ``work_completed`` event into events.jsonl —
+    Order: (0) capture the tree's dirtiness before anything here writes. (1)
+    record the ``work_completed`` event into events.jsonl —
     ``commit=""`` in the common F5b-pre case, patched later via
     :func:`attach_commit_after_finalize`; ``event_extras`` supplies the
     F11-mandated fields (``intent``/``spec_impact``/``affected_frs``/
@@ -402,6 +409,14 @@ def run(
     session_id = os.environ.get("SHIPWRIGHT_SESSION_ID", "unknown")
     result: dict = {"steps": {}, "project_root": str(project_root)}
 
+    # Step 0: must precede Step 1's write to the TRACKED event log — why, and how
+    # the value travels, in source_state_capture's module docstring (trg-f5ae5371).
+    try:
+        from source_state_capture import capture_dirty
+        capture_dirty(project_root, run_id)
+    except Exception as exc:  # noqa: BLE001 — metadata must never block finalization
+        print(f"[finalize_iterate] source-state capture failed: {exc}", file=sys.stderr)
+
     # Step 1: record the work_completed event BEFORE compliance regen so
     # the regenerated MDs include the iterate's own event.
     event_id = _record_event(
@@ -413,7 +428,7 @@ def run(
         result["steps"]["event"] = {"skipped": True, "reason": "record_event failed"}
 
     # Step 2: regenerate compliance MDs (consume the event recorded above).
-    compliance_paths = _update_compliance(project_root)
+    compliance_paths = _update_compliance(project_root, run_id)
     result["steps"]["compliance"] = (
         {"written": compliance_paths} if compliance_paths else {"skipped": True}
     )

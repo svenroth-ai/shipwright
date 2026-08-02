@@ -38,6 +38,23 @@ def _cap_detail(detail: str) -> str:
 # Workflow-run conclusions that count as a failure worth triaging.
 _FAILED_CONCLUSIONS = frozenset({"failure", "startup_failure", "timed_out"})
 
+# Workflow lifecycle states that make a failed run unactionable. A DELETED
+# workflow's file is gone from the default branch — its runs remain in history,
+# but nobody can fix it, re-run it, or make it green, so a card for it is an
+# unfixable P1 (trg-9b1a1286, workflow 322548704).
+#
+# `disabled_manually` / `disabled_inactivity` / `disabled_fork` are deliberately
+# ABSENT: a disabled workflow's file still exists, so an operator can re-enable
+# it and fix the failure. Filtering those would suppress real work.
+_GONE_WORKFLOW_STATES = frozenset({"deleted"})
+
+# Ceiling on state lookups per import. Each is a serial `gh` subprocess running
+# BEFORE the other four feeds, so an unbounded run risks exhausting the hook
+# budget and killing the import before ANY finding of ANY class is written —
+# exactly when main is broadly red. Past the cap a run is simply KEPT, so this
+# degrades to the pre-fix behaviour for the tail: fail-open here too.
+_MAX_STATE_LOOKUPS = 20
+
 
 def secrets_action_unit(
     *,
@@ -142,14 +159,61 @@ def ci_action_unit(run: dict, *, owner_repo: str | None) -> dict | None:
     }
 
 
-def latest_failed_ci_runs(runs: list[dict]) -> list[dict]:
+def _lookup_id(run: dict) -> int | None:
+    """The run's workflow id, or ``None`` when no lookup can be made for it.
+    ``bool`` is rejected explicitly: it is an ``int`` subclass, never an id."""
+    workflow_id = run.get("workflow_id")
+    if isinstance(workflow_id, bool) or not isinstance(workflow_id, int):
+        return None
+    return workflow_id
+
+
+def _workflow_is_gone(workflow_id: int, fetcher) -> bool:
+    """True only when the code host positively states the workflow is gone.
+
+    Fail-OPEN everywhere else — a fetcher that returns nothing, a fetcher that
+    raises. Over-filtering silently hides real CI breakage, so "unknown" must
+    always mean "keep". The guard sits per workflow, which is what keeps one
+    broken lookup from disabling filtering for the others.
+
+    The raising branch is silent by design: this module is I/O-free, and the
+    production fetcher (``github_workflow_api.fetch_workflow_state``) already
+    writes its own stderr line whenever it cannot establish a state. Only an
+    injected test fake reaches the ``except`` at all.
+    """
+    try:
+        state = fetcher(workflow_id)
+    except Exception:  # noqa: BLE001 — a lookup fault must never abort an import
+        return False
+    return isinstance(state, str) and state.lower() in _GONE_WORKFLOW_STATES
+
+
+def latest_failed_ci_runs(
+    runs: list[dict],
+    *,
+    workflow_state_fetcher=None,
+) -> list[dict]:
     """Reduce raw workflow runs (newest first) to the latest *concluded* run
-    per workflow, keeping only those whose conclusion is a failure.
+    per workflow, keeping only those whose conclusion is a failure AND whose
+    workflow the repository still has.
 
     In-progress runs (``conclusion is None``) are skipped so a pending run
     never hides a workflow's last real result. Branch scope is set by the
     caller — the producer calls ``fetch_workflow_runs(default_branch())``
     so this helper sees only default-branch runs by construction.
+
+    ``workflow_state_fetcher`` is an optional ``(workflow_id) -> str | None``
+    callable — in production ``github_workflow_api.fetch_workflow_state``. When
+    it is ``None`` no state filtering happens at all, which keeps the original
+    single-argument contract of this re-exported public helper intact. The
+    fetcher is injected rather than imported so this module keeps its "pure
+    functions, no I/O" property; the same shape backs
+    ``resolve.resolve_pr_ci(..., pr_state_fetcher=...)``.
+
+    The state lookup runs AFTER the reduction, so it costs at most one call per
+    workflow whose *latest* run failed — never one per raw run (up to 100 per
+    import), and never one for a workflow that is green — and at most
+    ``_MAX_STATE_LOOKUPS`` in total.
     """
     seen: set = set()
     failed: list[dict] = []
@@ -163,7 +227,22 @@ def latest_failed_ci_runs(runs: list[dict]) -> list[dict]:
         seen.add(workflow)
         if str(conclusion).lower() in _FAILED_CONCLUSIONS:
             failed.append(run)
-    return failed
+    if workflow_state_fetcher is None:
+        return failed
+    kept: list[dict] = []
+    lookups = 0
+    for run in failed:
+        workflow_id = _lookup_id(run)
+        # The budget counts LOOKUPS, not runs: a run we cannot ask about spends
+        # nothing, so a batch of malformed ids can never exhaust the cap and
+        # leave a genuinely deleted workflow unexamined behind them.
+        if workflow_id is None or lookups >= _MAX_STATE_LOOKUPS:
+            kept.append(run)
+            continue
+        lookups += 1
+        if not _workflow_is_gone(workflow_id, workflow_state_fetcher):
+            kept.append(run)
+    return kept
 
 
 def pr_ci_action_unit(pr_info: dict, *, owner_repo: str | None) -> dict | None:

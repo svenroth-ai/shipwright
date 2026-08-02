@@ -844,12 +844,28 @@ in `phase_tasks[]`:
 }
 ```
 
-> **`current_step` / `completed_steps` are WRITE-ONCE, NEVER-ADVANCED. Never key logic
-> on them.** `config_factory` stamps `current_step` at run creation (`"project"`) and
-> nothing in the v2 lifecycle moves it: `phase_task_lifecycle` advances `phase_tasks[]`
-> + `completed_phase_task_ids` + `status`, and that is the whole authority. They survive
-> only for legacy readers that key on their *presence* (`phase_quality.resolve_source`)
-> or render from them (compliance `mermaid.py`).
+> **`current_step` / `completed_steps` are WRITE-ONCE, NEVER-ADVANCED in a DRIVEN run.
+> Never key logic on them ALONE.** `config_factory` stamps `current_step` at run creation
+> (`"project"`) and nothing in the v2 lifecycle moves it: `phase_task_lifecycle` advances
+> `phase_tasks[]` + `completed_phase_task_ids` + `status`, and that is the whole authority.
+>
+> They are NOT dead fields, and the v1 `update_step` path *does* advance them — it is
+> merely inert on a driven run (the drivability guard). They are still written by
+> `shipwright-project`, by `shipwright-adopt` (which seeds `completed_steps` so an adopted
+> repo does not look like it skipped phases), and by that v1 path; and they are still read
+> by `compliance/mermaid.py` (dashboard phase strip), `generate_handoff_on_stop`,
+> `suggest_iterate`, `update_build_dashboard`, `state.detect_current_phase`,
+> `convert_configs_to_events`, and the `design` / `compliance` verifiers.
+>
+> **The rule for a reader is therefore: consult `phase_tasks[]` first, and fall back to
+> the v1 fields — do not read either one alone.** `phase_quality.resolve_source` and
+> `phase_quality.phase_is_engaged` were migrated to exactly that shape in
+> `iterate-2026-08-01-drop-write-once-step-fields`. They OR the two sources rather than
+> replacing v1, because `config_factory` marks a phase completed *standalone* as
+> `skipped` in `phase_tasks[]` while still listing it in `completed_steps` — so a
+> v2-only read would engage FEWER phases, and phase-quality's contract is "audit MORE,
+> never silently fewer". Dropping the fields is a campaign blocked on the readers above,
+> not a cleanup — owned by triage `trg-8d52a965` (successor to `trg-be24ff6f`).
 >
 > The phase skills used to derive "pipeline vs standalone" from
 > `status == "in_progress" AND current_step == <my phase>`, which is FALSE for every
@@ -1425,8 +1441,9 @@ at all, so it has no Stop hook.)
   `event_once.claim_once` guard (`.shipwright/.cache/stop-phasequality-<sid>.claim`,
   taken AFTER all no-op guards so a foreign/no-op invocation never consumes it);
   the rest skip. The winner resolves which phase(s) to audit from SESSION STATE
-  via `phase_quality.resolve_engaged_phases()` (run config `current_step` /
-  `completed_steps` / `status` + `events.jsonl`), **not** from
+  via `phase_quality.resolve_engaged_phases()` (run config `phase_tasks[]` —
+  the v2 authority — OR-ed with the v1 `current_step` / `completed_steps`, plus
+  `status` + `events.jsonl`), **not** from
   `CLAUDE_PLUGIN_ROOT`. The plugin root is now only a recognition gate
   (`phase_from_plugin_root(...) is None` → foreign-plugin no-op). This replaces
   the old "each plugin audits its own plugin-root phase" fan-out, which audited
@@ -2393,7 +2410,7 @@ The unified event log (`shipwright_events.jsonl`) is written to by these compone
 | Test SKILL.md (Step 5) | `test_run` | Full test suite executed | unit/e2e/smoke layer counts |
 | Deploy SKILL.md (Step 5) | `phase_completed` (phase=deploy) | Deploy smoke test passed | Deploy URL via `--detail` |
 | Changelog SKILL.md (Step 7) | `phase_completed` (phase=changelog) | PR created or tag pushed | Version + PR URL via `--detail` |
-| Compliance `_grade_snapshot.py` | `grade_snapshot` | Every Control-Grade dashboard regen (M-Pre-3) | `grade` + `score`, plus the tree attribution below. One per regen, unconditionally |
+| Compliance `_grade_snapshot.py` | `grade_snapshot` | Every Control-Grade dashboard regen (M-Pre-3) | `grade` + `score`, plus the tree attribution below (incl. `dirty`, captured before any producer in the run wrote — at `update_compliance` entry, or earlier still at `finalize_iterate` entry, whichever came first). One per regen, unconditionally |
 
 All events share common fields: `v` (schema version), `id` (UUID-based), `ts` (ISO timestamp), `type`, and optional `session`.
 
@@ -2405,6 +2422,7 @@ A Control Grade is a property of a **tree state**, not of the repository in the 
 | `lineage` | `"main"` — the checked-out branch **is** the default branch (or, for a *detached* HEAD only, HEAD is an ancestor of it). `"branch"` — any named non-default branch, **regardless of ancestry**. `"unknown"` — the producer ran and could not tell (no git, not a repo, no commits, no resolvable default branch, or a detached HEAD whose ancestry is unobtainable). |
 | `branch` | Short branch name; **absent** when HEAD is detached, unresolvable, longer than 255 chars, or carrying control characters. |
 | `base` | Merge-base of HEAD with the default branch. Lowercase hex, **7–64 chars** (not fixed at 40: a SHA-256 repository must keep its attribution, so do not validate for SHA-1 width). **Absent** when unobtainable (shallow clone, unrelated histories). Read rule 3 before using it. |
+| `dirty` | Boolean. Whether the tree held **uncommitted tracked changes when the producer that measured it started, before it wrote anything**. Not "when the run began": an iterate is clean at run start and legitimately holds uncommitted source by the time it finalizes, and `dirty` describes the latter. `false` = tracked content did not deviate from the checked-out commit; it does **not** say that `base` is that commit on branch lineage. `true` = tracked content differed from the checked-out commit — the normal, correct value for an iterate's own pre-F6 regen. **Absent** = the event predates the field (everything before `iterate-2026-08-01-grade-snapshot-dirty-capture`) *or* git could not answer; both mean "do not conclude anything". Read rule 5. |
 
 Five rules a consumer must honour:
 
@@ -2412,9 +2430,17 @@ Five rules a consumer must honour:
 2. **`base` is a common ancestor *reachable from* the default branch — nothing stronger.** It is not promised to sit on the default branch's **first-parent** chain (merge commits and criss-cross history break that). Use general ancestry / topological position, never a first-parent index.
 3. **A `lineage: "branch"` snapshot is NOT a point on the default branch's trend — do not plot it there.** It measures `base` *plus an unmerged change set*, so placing it at `base`'s coordinate asserts that its grade describes `base`, which is false; and N concurrent iterates branched from one tip all carry the **same** `base`, so "keep the latest per base" silently discards the rest. Branch snapshots answer a different question — *did this branch move the grade relative to what it forked from* — which is a per-branch delta (`base` vs. this measurement), not a timeline point. Only `lineage: "main"` snapshots belong on the trend.
 4. **Do not order the trend by `ts`.** `ts` is when the measurement was *taken*. For a `"main"` snapshot on a detached checkout of an older commit, `ts` is now while the subject is historical; `base` places it correctly.
-5. **`base` names a commit, not the graded content — and on the main path it is the *previous* commit.** `grade`/`score` are computed from the **working tree**; `lineage`/`base` can only be derived from **committed** state, and nothing reconciles them. Where HEAD is an ancestor of the default ref, `merge-base(HEAD, default) == HEAD`, so a pre-commit regen stamps the commit it has not made yet — the same limitation for which `commit` was rejected outright. There is currently **no field that tells you whether the two agree**: a `dirty` flag was built for this and withdrawn before shipping, because every automatic producer writes tracked artifacts (its own regenerated documents, and an event appended just before it) *before* the snapshot is emitted, so the flag read `true` on pristine trees and would have marked every main-lineage point provisional. Tracked as `trg-10aa91e3`; until then treat `base` as "the commit this measurement was taken near", not "the commit this score describes".
+5. **`dirty` qualifies the working tree against HEAD, not against `base`.** `grade`/`score` are computed from the **working tree**; `lineage`/`base` can only be derived from **committed** state. `dirty: false` says there were no tracked deviations from the checked-out commit at capture time. Only where `base == HEAD` — for example, HEAD is an ancestor of the default ref — does that also let `base` describe the tracked graded content. For `lineage: "branch"`, `base` is the merge-base and may predate committed branch changes even when `dirty` is false; rule 3 still applies. `dirty: true` says the working tree differed from HEAD, so treat `base` only as the nearby common-ancestor coordinate. **Absent `dirty` is not `false`**; it carries no assurance at all. Untracked files are outside this field by definition.
 
-Attribution is **derived** from the tree on disk, and no CLI route can assert it: neither producer takes it as input, and `record_event.py --type event_amended --fields` refuses the attribution keys (that generic mutator was the door the first producer audit missed — `apply_amendments` overlays fields with a blind merge, so without the refusal an amendment could overlay `lineage`). Two honest limits: this is not tamper-evidence — arbitrary Python may call `apply_grade_snapshot` and `append_event` with different roots — and **the *measurement* is still caller-supplied**: `--grade`/`--score` are free-text, so a hand-run `record_event.py` on the default branch mints a correctly-attributed point around a grade nobody computed. Resolution is best-effort and never fails a compliance regen: shape + attribution live in the shared SSOT `shared/scripts/grade_snapshot_shape.py` (with `shared/scripts/tree_lineage.py` doing the git work), used by both the compliance emitter and `record_event.py --type grade_snapshot`.
+   **How it is obtained, and why it could not be measured.** The value is **captured at the producer's entry, before it writes anything**, and passed through (`shared/scripts/source_state_capture.py`). Measuring it when the snapshot is emitted is the implementation that was built and **withdrawn before shipping**: every automatic producer writes *tracked* files first — `update_compliance` rewrites six documents, and `finalize_iterate` appends `work_completed` to the tracked event log just before calling it — so the flag read `true` on pristine trees (evidenced on four producers; reproduced with zero uncommitted source) and would have marked every main-lineage point provisional. An exclusion list was rejected too: hanging it off `DERIVED_SNAPSHOTS` is structurally wrong, since that register deliberately keeps the event log and `triage.jsonl` *out* and the two answer different questions. The distinction that fixes it: **a producer's own writes are the output of the measurement, not its input.**
+
+   `capture_dirty` is first-call-wins and bound to a run id **and a tree**, with a readable current-capture mirror in `SHIPWRIGHT_SOURCE_DIRTY` / `SHIPWRIGHT_SOURCE_DIRTY_RUN` / `SHIPWRIGHT_SOURCE_DIRTY_ROOT` and a hashed per-run/per-tree environment slot that preserves earlier roots when one process serves several. Subprocesses inherit both, so `update_compliance` (spawned by `finalize_iterate` with `--run-id`) reads the parent's pre-write answer rather than measuring a tree the parent has since dirtied. An explicit `--run-id` beats the ambient `SHIPWRIGHT_RUN_ID`. **A producer that writes tracked files before spawning the regen owes a `capture_dirty` call at its own entry** — without one, its snapshot reverts to the withdrawn behaviour. Wired today: `finalize_iterate`, `resolve_churn_conflicts.regenerate_tracked_snapshots`, and `update_compliance` itself.
+
+   **Two limits worth knowing before you compare snapshots.** (a) *How far back the value reaches is not recorded.* It describes the tree when the **earliest** capturer in that process tree started — `finalize_iterate` Step 0, `regenerate_tracked_snapshots` entry, or `update_compliance` entry — and the event does not say which, so two snapshots' `dirty` values are not strictly comparable instants. A `converge()` refresh runs several regens off one pass-1 capture, all stamped with it. (b) *It counts any tracked modification, not only source* — a derived artifact written by a **sibling** process counts, which is the known residual `trg-709828ad`: in a pipeline run the phase's own `record_event.py` is a sibling of the later regen, not an ancestor, so its single tracked append can still read as tree dirt. Both limits bias toward `true`, the conservative direction.
+
+`lineage`/`branch`/`base` are **derived** from the tree on disk, and no route can assert them: neither producer takes them as input, and `record_event.py --type event_amended --fields` refuses all four attribution keys (that generic mutator was the door the first producer audit missed — `apply_amendments` overlays fields with a blind merge, so without the refusal an amendment could overlay `lineage`).
+
+**`dirty` is weaker, and the difference matters.** It is the one attribution field a *producer* supplies rather than the shape module resolving it, and that is forced — it is the only one whose honest value cannot be observed at emit time. Closing the amendment door does **not** make it unassertable: exporting `SHIPWRIGHT_SOURCE_DIRTY=0` with a matching `SHIPWRIGHT_SOURCE_DIRTY_RUN` (and `SHIPWRIGHT_SOURCE_DIRTY_ROOT`) stamps `dirty: false` onto the durable log from a filthy tree in one command, with no amendment involved. So `dirty` carries the same "not tamper-evidence" caveat as `grade`/`score` themselves: it is protected against *accidental* laundering by a later mutator, not against a caller who sets out to assert it. Treat it as a producer's honest report, not a proof. Two honest limits: this is not tamper-evidence — arbitrary Python may call `apply_grade_snapshot` and `append_event` with different roots — and **the *measurement* is still caller-supplied**: `--grade`/`--score` are free-text, so a hand-run `record_event.py` on the default branch mints a correctly-attributed point around a grade nobody computed. Resolution is best-effort and never fails a compliance regen: shape + attribution live in the shared SSOT `shared/scripts/grade_snapshot_shape.py` (with `shared/scripts/tree_lineage.py` doing the git work), used by both the compliance emitter and `record_event.py --type grade_snapshot`.
 
 > **Where `main`-lineage snapshots come from.** Every `PHASE_REPORTS` entry in `update_compliance.py` includes `dashboard`, and that branch emits — so **every** compliance regen produces a snapshot, not only an iterate's. In a `/shipwright-run` or adopted project the orchestrator regenerates after each completed phase **on the default branch**, so `lineage: "main"` is the normal case there. In *this* monorepo it is not: every regen happens inside an iterate worktree, and a main-tree append is never committed, so `main`-lineage snapshots are rare-to-absent on `main`. Do not read either situation as universal — filter on the field, do not assume its distribution.
 

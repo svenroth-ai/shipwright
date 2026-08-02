@@ -50,7 +50,7 @@ def project(tmp_path, monkeypatch):
     (tmp_path / ".shipwright" / "compliance").mkdir(parents=True)
     (tmp_path / "shipwright_events.jsonl").write_text("", encoding="utf-8")
     # keep the run() fast + focused on Step 6 (campaign_status).
-    monkeypatch.setattr(finalize_iterate, "_update_compliance", lambda pr: [])
+    monkeypatch.setattr(finalize_iterate, "_update_compliance", lambda pr, run_id=None: [])
     monkeypatch.setattr(finalize_iterate, "_update_dashboard", lambda *a, **k: None)
     monkeypatch.setattr(finalize_iterate, "_generate_handoff", lambda *a, **k: None)
     monkeypatch.setattr(finalize_iterate, "_snapshot_triage_runtime", lambda pr: "skipped")
