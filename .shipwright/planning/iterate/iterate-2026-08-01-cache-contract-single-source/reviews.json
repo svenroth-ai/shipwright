@@ -223,10 +223,47 @@
     "spec": {
       "review_type": "spec",
       "status": "completed",
-      "findings_count": 0,
-      "findings": [],
+      "findings_count": 4,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "spec-compliance",
+          "file": "shared/tests/test_plugin_cache_version_pin.py",
+          "line": 275,
+          "finding": "The pin covers 2 of the 4 shared literals bidirectionally. The expected manifest path and key format are hard-coded on the TEST side instead of being derived from default_installed_plugins_path() / plugin_key(), so a PYTHON-side rename leaves the pin green while the halves diverge — the same class the card exists to close, and the half that fails silently (the check reads a key nothing writes, falls back, stays green).",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "documentation",
+          "file": "scripts/check_plugin_cache_sync.py",
+          "line": 45,
+          "finding": "The module Usage block and docs/guide.md:2166-2168 both enumerate the flag set; neither mentions the new --installed-plugins.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "accuracy",
+          "file": "shared/tests/test_plugin_cache_version_resolution.py",
+          "line": 111,
+          "finding": "A docstring claims '14 repo files reported missing'; the fixture has one.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "consistency",
+          "file": "shared/tests/test_plugin_cache_version_resolution.py",
+          "line": 57,
+          "finding": "The new module re-implements _seed/_write instead of reusing shared/tests/cache_sync_fixtures.seed_repo_and_cache, which the three sibling cache-sync modules use. A reason is given (multi-version dirs, one deliberately empty) — Stage 2's call.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        }
+      ],
       "provider": null,
-      "completed_at": "2026-08-01T10:25:56.620672+00:00",
+      "completed_at": "2026-08-01T10:57:26.804054+00:00",
       "disposition": null,
       "recorded_by": "shipwright-build:spec-reviewer",
       "parse_status": null,
