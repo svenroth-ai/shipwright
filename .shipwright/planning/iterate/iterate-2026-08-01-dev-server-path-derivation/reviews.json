@@ -126,6 +126,18 @@
       "recorded_by": "external_review.py",
       "parse_status": "unstructured",
       "raw_excerpt": "[gemini] SHIPWRIGHT_VERDICT: approve\n\n[openai] No concrete defects found. The change centralizes the sole `__file__`-based derivation and guarded `sys.path` insertion in `_paths.py`, derives profiles from that scripts anchor, preserves the deliberate eager `lib.atomic_write` import ordering, and introduces no unsafe eager absolute `lib` imports. The added tests exercise anchor equivalence, insertion idempotency/front placement, and import behavior under faked platform state.\n\nOverall assessment: ship-as-is.\n\nSHIPWRIGHT_VERDICT: approve"
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-02T21:51:41.779462+00:00",
+      "disposition": "Stage 1 HARD-GATE APPROVE: no spec divergence. End state verified in the files; shim exclusion judged correct; behavior preservation and ADR-045 confirmed. 4 LOW comment-accuracy findings (not spec divergences) were fixed before Stage 2 ran.",
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
     }
   },
   "gates": {
