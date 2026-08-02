@@ -48,28 +48,26 @@ def test_gate_argv_mirrors_the_ci_composite_action():
     """AC-3 shape. The version/threshold are pinned against action.yml itself by
     test_f0_ci_parity; here we pin the COMMAND, so a local run and CI cannot
     diverge on flags."""
-    argv = gate_argv("origin/main")
+    argv = gate_argv("origin/main", diff_file="worktree.diff")
     assert argv[:2] == ["uvx", f"diff-cover@{DIFF_COVER_VERSION}"]
     assert argv[2] == COVERAGE_XML
     assert "--compare-branch=origin/main" in argv
     assert f"--fail-under={FAIL_UNDER:g}" in argv
 
 
-def test_gate_argv_measures_files_the_iterate_has_not_committed_yet():
+def test_gate_argv_uses_one_coherent_final_worktree_diff():
     """The one deliberate divergence from the CI action, and the reason for it.
 
-    F0 runs BEFORE F6 (the commit), so every file the iterate ADDS is untracked —
-    and diff-cover reads git, which by default cannot see them. Without this flag a
-    diff of mostly-new modules is scored over the few tracked lines it happens to
-    touch, and a diff of ONLY new files measures nothing and reports a confident
-    100%: the under-covered case the gate exists for, passing locally and reddening
-    CI. The action needs no such flag because it runs on a committed PR head.
+    F0 runs BEFORE F6, so the final tree can span committed, staged, unstaged and
+    untracked changes. The private-index producer makes those one snapshot instead
+    of asking diff-cover to union hunks numbered against different revisions.
     """
-    assert "--include-untracked" in gate_argv("origin/main")
+    assert "--diff-file=worktree.diff" in gate_argv(
+        "origin/main", diff_file="worktree.diff")
 
 
 def test_gate_argv_carries_the_resolved_branch_not_a_hardcoded_one():
-    argv = gate_argv("origin/trunk")
+    argv = gate_argv("origin/trunk", diff_file="worktree.diff")
     assert "--compare-branch=origin/trunk" in argv
     assert "--compare-branch=origin/main" not in argv
 
@@ -86,7 +84,7 @@ def test_combine_argv_delegates_to_the_one_combiner():
 
 
 def test_both_argvs_are_lists_never_shell_strings():
-    for argv in (gate_argv("origin/main"), combine_argv()):
+    for argv in (gate_argv("origin/main", diff_file="worktree.diff"), combine_argv()):
         assert isinstance(argv, list)
         assert all(isinstance(tok, str) for tok in argv)
         assert not any(tok in ("&&", "||", ";", "|") for tok in argv)
@@ -119,7 +117,8 @@ def test_a_failed_combine_fails_closed():
 
 def test_below_threshold_fails_and_says_what_to_do():
     res = verdict(eligible=3, branch="origin/main", combine_rc=0, xml_exists=True,
-                  gate_rc=DIFF_COVER_BELOW_THRESHOLD)
+                  gate_rc=DIFF_COVER_BELOW_THRESHOLD,
+                  detail="Failure. Coverage is below 80%.")
     assert res.exit_code == GATE_FAILED
     joined = " ".join(res.lines)
     assert "Add tests" in joined
@@ -155,6 +154,7 @@ def test_an_unresolvable_compare_branch_fails_closed_with_a_fix():
     joined = " ".join(res.lines)
     assert "compare branch" in joined
     assert "git fetch" in joined, "the refusal must name the command that fixes it"
+    assert "canonical remote" in joined
 
 
 # --------------------------------------------------------------------------- #

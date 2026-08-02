@@ -52,6 +52,7 @@ _RUNNER_FILES = (
     "scripts/tools/run_test_suite.py",
     "scripts/tools/suite_coverage.py",
     "scripts/tools/suite_coverage_rules.py",
+    "scripts/tools/suite_worktree_diff.py",
     "scripts/tools/suite_report.py",
     "scripts/tools/suite_race_triage.py",
     "scripts/tools/suite_units.py",
@@ -121,7 +122,7 @@ def _synth_repo(root: Path) -> None:
 
     # THE CHANGE UNDER TEST: a new, entirely untested function. Left UNCOMMITTED on
     # purpose — that is the state F0 actually runs in (it fires before F6), and it
-    # is what `--include-untracked` exists to make visible.
+    # is what the private-index `--diff-file` exists to make visible coherently.
     _write(plug / "scripts" / "m.py",
            "def a():\n    return 1\n\n\ndef b():\n    return 2\n\n\ndef c():\n    return 3\n")
 

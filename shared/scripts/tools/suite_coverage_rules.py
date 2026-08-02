@@ -33,6 +33,9 @@ DIFF_COVER_VERSION = "10.3.0"
 #: MUST equal that action's `fail-under` default (and
 #: `control_grade._DIFF_COV_WARN_THRESHOLD`). Same guard.
 FAIL_UNDER = 80.0
+# diff-cover's rc=1 is load-bearing only together with this pinned-version text:
+# uvx itself may also return 1. A version bump must revalidate both as one contract.
+DIFF_COVER_THRESHOLD_MESSAGE = f"Failure. Coverage is below {FAIL_UNDER:g}%."
 #: Per-tier coverage data lands here; `combine_coverage.py` folds it into one
 #: repo-relative XML. Both are gitignored, so F0 never dirties the tree.
 DATA_DIR = ".cov-data"
@@ -62,41 +65,38 @@ class GateResult:
 # --------------------------------------------------------------------------- #
 # Pure argv builders
 # --------------------------------------------------------------------------- #
-def gate_argv(branch: str) -> list[str]:
-    """The composite action's command, plus ONE deliberate divergence.
+def gate_argv(branch: str, *, diff_file: str,
+              coverage_file: str = COVERAGE_XML) -> list[str]:
+    """The composite action's command, plus one local-snapshot divergence.
 
     Same pinned uvx, same combined XML, same threshold, and diff-cover's default
     `--diff-range-notation` of `...` makes this a MERGE-BASE diff, so a moved trunk
     cannot inflate the changed-line set. Relative paths, resolved by `cwd=`.
 
-    **`--include-untracked` is the divergence, and it is what makes the two agree.**
-    diff-cover reads git, and F0 runs BEFORE F6 - the commit - so every file the
-    iterate ADDS is untracked and, by default, INVISIBLE to it. Without this flag a
-    diff consisting largely of new modules is scored over the few tracked lines it
-    happens to touch, and a diff of only new files measures nothing at all and
-    reports a confident 100%: precisely the under-covered case the gate exists for,
-    passing locally and reddening CI. The CI action needs no such flag because it
-    runs on a committed PR head where nothing is untracked. Diverging here is
-    therefore not drift - it is what makes the LINE SETS equal, which is the thing
-    parity is actually about. `.gitignore` is honoured (diff-cover shells
-    `git ls-files --exclude-standard --others`), so `.cov-data/` and `coverage.xml`
-    exclude themselves.
+    **`--diff-file` is the divergence that makes the line sets coherent.** F0 runs
+    before F6, so its final snapshot spans committed, staged, unstaged and untracked
+    state. diff-cover's default union numbers those hunks against different file
+    revisions. The caller instead stages the final working tree into a private index
+    rooted at the merge base and passes that one diff. `git add -A` includes untracked
+    and excludes ignored files, while the real index and HEAD stay untouched. CI
+    needs no diff file because its final snapshot is already one commit.
     """
-    return [
-        "uvx", f"diff-cover@{DIFF_COVER_VERSION}", COVERAGE_XML,
+    argv = [
+        "uvx", f"diff-cover@{DIFF_COVER_VERSION}", coverage_file,
         f"--compare-branch={branch}", f"--fail-under={FAIL_UNDER:g}",
-        "--include-untracked",
+        f"--diff-file={diff_file}",
     ]
+    return argv
 
 
-def combine_argv() -> list[str]:
+def combine_argv(*, output: str = COVERAGE_XML) -> list[str]:
     """ci.yml's Combine step, with F0's interpreter pin. Not a second combiner:
     `combine_coverage.py` remains the only implementation, because a plugin unit
     records `scripts/...` relative to its own CWD and only that tool knows which
     plugin to remap it onto."""
     return [
         *UV_RUN, "--with", "coverage", _COMBINER,
-        "--project-root", ".", "--data-dir", DATA_DIR, "--output", COVERAGE_XML,
+        "--project-root", ".", "--data-dir", DATA_DIR, "--output", output,
     ]
 
 
@@ -123,9 +123,10 @@ def verdict(*, eligible: int, branch: str | None, combine_rc: int | None = None,
         return GateResult(GATE_PASSED, [f"diff-coverage: n/a - {why}."])
     if branch is None:
         return GateResult(GATE_FAILED, [
-            "diff-coverage: FAILED - no compare branch found (looked for "
-            f"origin/HEAD, then {_FALLBACK_BRANCH}).",
-            "  Fix: git fetch origin, or push the default branch, then re-run."])
+            f"diff-coverage: FAILED - CI compare branch {_FALLBACK_BRANCH} "
+            "does not resolve.",
+            "  Fix: ensure origin is the canonical remote CI uses, run "
+            "git fetch origin main, then re-run."])
     if missing:
         # `eligible` counts UNITS and the combiner counts DATA FILES, so a unit that
         # wrote nothing is invisible to both: the combine succeeds, the XML omits
@@ -143,7 +144,8 @@ def verdict(*, eligible: int, branch: str | None, combine_rc: int | None = None,
         return GateResult(GATE_FAILED, [
             f"diff-coverage: FAILED - {eligible} unit(s) were instrumented but "
             "no combined coverage.xml was produced.", f"  {detail}".rstrip()])
-    if gate_rc == DIFF_COVER_BELOW_THRESHOLD:
+    if (gate_rc == DIFF_COVER_BELOW_THRESHOLD
+            and DIFF_COVER_THRESHOLD_MESSAGE in detail):
         return GateResult(GATE_FAILED, [
             f"diff-coverage: FAILED - changed lines below {FAIL_UNDER:g}% covered.",
             "  Add tests for the changed lines named above; do not lower the "

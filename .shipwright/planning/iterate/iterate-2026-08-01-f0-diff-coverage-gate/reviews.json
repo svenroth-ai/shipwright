@@ -5,20 +5,29 @@
     "self": {
       "review_type": "self",
       "status": "completed",
-      "findings_count": 1,
+      "findings_count": 2,
       "findings": [
         {
           "severity": null,
           "category": "File-size guideline",
           "file": null,
           "line": null,
-          "finding": "run_test_suite.py is 317 lines against the 300 guideline. It was at exactly 300 before, so any change crosses. Recorded rather than hidden: the external reviewer rejected relocating build_command as churn, and that move would have landed at 304 anyway, so it would have bought diff surface and not compliance. NEW crossing = advisory; the Group H detective audit already owns it, so no triage card is filed (filing one would duplicate a background producer).",
+          "finding": "run_test_suite.py is 401 lines against the 300 guideline (origin/main: 300; inherited branch HEAD before this continuation: 328). The added lines are F0 coverage orchestration, fail-closed retry handling, and source-snapshot validation. Further extraction at this late stage would move one critical flow across another module without reducing behavior or risk; this NEW crossing remains advisory and is owned by the existing Group H detective audit, so no duplicate triage card is filed. suite_coverage.py is 267 lines; suite_worktree_diff.py is 123 lines.",
+          "suggestion": null,
+          "source": "self-review"
+        },
+        {
+          "severity": null,
+          "category": "Final independent-review refresh",
+          "file": null,
+          "line": null,
+          "finding": "Existing completed spec/code/doubt reviews remain recorded and all findings are fixed. Three attempted fresh reviewer subagents stayed running without output and were cleanly shut down; no pass was fabricated. Later hardening is covered by the completed external plan reviews, 69 focused tests, 385 full-root passes, and this self-review.",
           "suggestion": null,
           "source": "self-review"
         }
       ],
       "provider": null,
-      "completed_at": "2026-08-01T09:41:58.580160+00:00",
+      "completed_at": "2026-08-02T20:58:33.888310+00:00",
       "disposition": null,
       "recorded_by": "self-review",
       "parse_status": null,
@@ -27,42 +36,15 @@
     "plan": {
       "review_type": "plan",
       "status": "completed",
-      "findings_count": 11,
+      "findings_count": 5,
       "findings": [
         {
-          "severity": "high",
-          "category": "edge-case",
-          "file": null,
-          "line": null,
-          "finding": "Hardcoding `--compare-branch=origin/main` locally is fragile. While standard in CI, local developer environments often name their canonical remote `upstream` (with `origin` being their personal fork). If `origin/main` is stale, `diff-cover` will measure against the wrong baseline, causing confusing failures. If `origin/main` doesn't exist at all, the command will crash.",
-          "suggestion": "Dynamically determine the merge base or fallback branch locally (e.g., check if `upstream/main` exists, then `origin/main`, then `main`). If the baseline branch cannot be resolved, fail gracefully with an explicit message or exit `0` with `n/a` rather than crashing the suite runner.",
-          "source": "external-review"
-        },
-        {
           "severity": "medium",
-          "category": "dependency",
+          "category": "approach (reducibility)",
           "file": null,
           "line": null,
-          "finding": "pytest-cov` is required to parse the `--cov` arguments, but it is conspicuously missing from the Verification runner command (`--with pytest --with diff-cover==10.3.0`). If it is not globally installed or injected, the `pytest` subprocess will instantly fail with `unrecognized arguments: --cov`.",
-          "suggestion": "Add `pytest-cov` to the E2E verification command's `--with` arguments. Additionally, verify that `pytest-cov` is explicitly listed in the project's dev-dependencies so that standard local runs don't fail for developers.",
-          "source": "external-review"
-        },
-        {
-          "severity": "medium",
-          "category": "edge-case",
-          "file": null,
-          "line": null,
-          "finding": "AC-6 states that `COVERAGE_FILE` writes to `<root>/.cov-data/.coverage.<label>`, but standard `coverage combine` and `coverage xml` look for `.coverage.` files in the current working directory by default. If the combine command is executed from `<root>`, it will not find the data files tucked inside `.cov-data/` unless explicitly pointed there.",
-          "suggestion": "Ensure the `combine_argv` command either passes the directory explicitly (e.g., `coverage combine .cov-data/`) or that the `COVERAGE_FILE` / `COVERAGE_DATA_FILE` environment variables are correctly injected into the combine subprocess.",
-          "source": "external-review"
-        },
-        {
-          "severity": "low",
-          "category": "reducibility",
-          "file": null,
-          "line": null,
-          "finding": "Moving `build_command` out of `run_test_suite.py` into `suite_units.py` just to append coverage arguments is unnecessary code churn for a tooling script and expands the diff footprint without providing architectural value.",
-          "suggestion": "Keep `build_command` inside `run_test_suite.py`. You can simply have `suite_units.py` surface the coverage arguments (`unit.cov_args`), and have `run_test_suite.py` append them to the command list right before execution.",
+          "finding": "The `source_fingerprint` file hashing before, during, and after the 6.7-minute test suite is massive over-engineering that punishes normal developer workflows. Throwing away a fully successful 6.7-minute local test run with an Exit 4 just because a developer saved a file or added a comment during execution creates a frustrating, hostile developer experience.",
+          "suggestion": "Remove the `source_fingerprint` mechanism entirely. Trust the developer to understand that local coverage reflects the state of the files when the tests actually executed. This is the accepted industry standard behavior for local test runners.",
           "source": "external-review"
         },
         {
@@ -70,26 +52,8 @@
           "category": "risk",
           "file": null,
           "line": null,
-          "finding": "The plan does not clearly distinguish “there was legitimately nothing to measure” from “coverage production or combination failed.” A stale `.cov-data/`, root `.coverage`, or `coverage.xml` can make a failed/currently-unmeasured run look valid; conversely, treating every missing XML as `n/a` would violate the fail-closed requirement when instrumented units ran but `coverage combine`/XML generation failed.",
-          "suggestion": "Reset `.cov-data/`, the combined coverage data file, and `coverage.xml` before launching any units. Track whether at least one measurable unit was instrumented and whether each measurement/combine/XML step succeeded. Return `0` with `n/a` only when no measurable units were eligible; return `4` if any eligible measurement, combine, XML-generation, or diff-cover invocation fails or produces no expected artifact.",
-          "source": "external-review"
-        },
-        {
-          "severity": "high",
-          "category": "risk",
-          "file": null,
-          "line": null,
-          "finding": "F0 runs units concurrently, while the plan says `_exec` “sets `COVERAGE_FILE` per unit.” If this means modifying `os.environ`, concurrent executions can overwrite one another’s target and recreate the shared-data-file race AC-6 is intended to prevent. An externally inherited `COVERAGE_FILE` could also affect an uninstrumented plugin.",
-          "suggestion": "Construct a fresh environment dictionary for each subprocess (`env = os.environ.copy()`), set `COVERAGE_FILE` only for an instrumented unit, and explicitly remove it for uninstrumented units. Pass that dictionary via `subprocess.run(..., env=env)` rather than mutating process-global environment state. Add a concurrency-oriented test that asserts each launched subprocess receives its own expected environment.",
-          "source": "external-review"
-        },
-        {
-          "severity": "medium",
-          "category": "approach",
-          "file": null,
-          "line": null,
-          "finding": "The stated producer/consumer boundary names `combine_coverage.combine_to_xml`, but the mini-plan introduces independent `combine_argv`/combining logic in `suite_coverage.py` without modifying or explicitly delegating to that existing component. This risks two coverage-combine implementations drifting on working directory, config, path normalization, or error handling—the exact areas needed for AC-1.",
-          "suggestion": "Make `suite_coverage.run_gate` call the existing `combine_coverage.combine_to_xml` as the single XML-production implementation, with explicit root/data-directory arguments if needed. Keep the new module limited to reset/orchestration, diff-cover argv construction, and verdict mapping. If the existing combiner cannot support isolated data files or repo-relative XML, extend it rather than duplicate it.",
+          "finding": "The proposed refresh command, `git fetch --no-tags origin main`, must be verified to actually update `refs/remotes/origin/main` before the gate passes `--compare-branch=origin/main`. With an explicit branch refspec, Git commonly records the fetched commit in `FETCH_HEAD`; whether the remote-tracking ref is updated depends on refspec/configuration details. If `origin/main` remains stale, the implementation can claim it refreshed the CI base while still constructing a patch against an old base.",
+          "suggestion": "Add a real-Git regression that advances the remote, runs the exact fetch command, and asserts `git rev-parse origin/main` equals the fetched remote commit—not merely that fetch succeeded. If that is not guaranteed, use an explicit destination refspec such as `main:refs/remotes/origin/main`, or otherwise resolve and validate the fetched SHA before allowing `origin/main` to be used. This may require reconciling the stated “same fetch shape” requirement with the stronger freshness requirement.",
           "source": "external-review"
         },
         {
@@ -97,26 +61,8 @@
           "category": "edge-case",
           "file": null,
           "line": null,
-          "finding": "Repo-relative Cobertura filenames are assumed but not made an explicit implementation invariant. `--cov=scripts` for plugin units is relative to the subprocess working directory, while combining and XML generation may run from the repository root. Depending on coverage configuration and invocation cwd, output can contain absolute filenames or ambiguous `scripts/...` paths rather than `plugins/<name>/scripts/...`.",
-          "suggestion": "Establish and test the exact cwd and coverage configuration used for every phase: run each plugin in its expected unit cwd, combine/generate XML from the repository root, and ensure the root `pyproject.toml` configuration supports relative paths. Add assertions against actual combined XML for a plugin and shared module, not only assertions that coverage flags were assembled.",
-          "source": "external-review"
-        },
-        {
-          "severity": "medium",
-          "category": "edge-case",
-          "file": null,
-          "line": null,
-          "finding": "diff-cover --compare-branch=origin/main` requires the `origin/main` ref to exist locally. This is not guaranteed in a fresh clone, detached worktree, local-only synthetic repository, or shallow checkout. The E2E description does not state that it creates an `origin/main` remote-tracking ref, so it may fail before testing uncovered-versus-covered behavior.",
-          "suggestion": "Make `origin/main` an explicit F0 prerequisite/diagnostic and treat a missing comparison ref as a fail-closed gate failure (`4`) with an actionable message. In the synthetic-repo E2E setup, create a bare origin, push `main`, fetch it so `refs/remotes/origin/main` exists, then make the changed commit/worktree state being measured.",
-          "source": "external-review"
-        },
-        {
-          "severity": "medium",
-          "category": "edge-case",
-          "file": null,
-          "line": null,
-          "finding": "Label sanitization alone does not guarantee distinct `.coverage.<label>` files. Different discovered unit identifiers can sanitize to the same label (for example, punctuation/path separator variants), which would silently merge concurrent writes.",
-          "suggestion": "Generate coverage-file names from a stable unit identity plus a collision-resistant suffix (for example, a short hash of the unit path), or validate uniqueness after instrumentation and fail before launching processes. Test a pair of names that collide under the proposed sanitizer, in addition to the three shared units.",
+          "finding": "The source fingerprint protects `.py` files and the root `pyproject.toml`, but the generated private-index patch covers all tracked and unignored files. Changes during the run to other execution- or coverage-affecting files—such as `pytest.ini`, `tox.ini`, a coverage configuration file referenced outside `pyproject.toml`, plugin metadata, generated test inputs, or non-`.py` Python entrypoints—can make the suite’s observed behavior differ from the final patch without triggering the snapshot invalidation.",
+          "suggestion": "Define the protected snapshot in terms of files that can affect measurement, not only conventional Python source. At minimum include discovered coverage configuration files and test-runner configuration files used by this repository; if repository conventions permit extensionless Python executables or `.pyi` files to be changed and assessed, include those too. Keep the scope bounded to relevant files rather than fingerprinting the entire checkout.",
           "source": "external-review"
         },
         {
@@ -124,134 +70,62 @@
           "category": "dependency",
           "file": null,
           "line": null,
-          "finding": "The new local execution path depends on both the coverage-combine tooling and `uvx diff-cover@<pin>` being available, but subprocess failures such as unavailable `uvx`, package-resolution/network failure, or a nonzero combine command are not explicitly included in the planned fake-runner tests. These are practical local-F0 failure modes and must not become uncaught exceptions or accidental success.",
-          "suggestion": "Have the runner wrapper catch execution errors and map them to the fail-closed `4` verdict with phase-specific diagnostics. Unit-test nonzero and execution-exception cases for combine and diff-cover; retain argv-list execution with `shell=False` to avoid introducing command-injection exposure from discovered paths.  Overall, mirroring CI’s pinned `uvx diff-cover` command is the right approach, and the planned parity and end-to-end tests are strong. The implementation needs explicit artifact-state, per-process environment, existing-combiner, and comparison-ref handling before it can reliably enforce the intended fail-closed gate. SHIPWRIGHT_VERDICT: revise",
+          "finding": "The approach relies on semantics of the pinned `diff-cover` threshold text (`Failure. Coverage is below 80%.`) as part of the public failure classifier. Although the version is pinned in the invocation, this makes a literal human-facing tool message a load-bearing compatibility dependency.",
+          "suggestion": "Keep the exact-version assertion and the existing regression, but centralize the version and expected signature together with a short comment explaining that changing either requires validating the exit-code contract. Ensure the failure output includes the raw tool output, as proposed, so an unexpected signature remains diagnosable rather than opaque.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "security",
+          "file": null,
+          "line": null,
+          "finding": "Building the private-index snapshot with `git add -A` executes repository-configured Git clean filters. The plan correctly identifies this as a trusted-checkout boundary, but F0 documentation should make the consequence explicit because the new operation occurs even before a push and may surprise users who view F0 as test-only.",
+          "suggestion": "Retain filters so the patch matches Git/CI behavior, but document that F0 must be run only in a trusted checkout and that it executes both project test code and configured Git filters. No sandboxing or filter suppression is needed for this change.  Overall, the design is unusually thorough and appropriately fail-closed: per-unit data isolation, lock ownership, private-index diff construction, evidence freshness, and CLI-level E2E coverage address the material failure modes. The main item to resolve before shipping is proving that the exact fetch/verification sequence cannot retain a stale `origin/main`; the remaining findings are bounded hardening refinements. SHIPWRIGHT_VERDICT: revise",
           "source": "external-review"
         }
       ],
       "provider": "openrouter",
-      "completed_at": "2026-08-01T09:29:10.150210+00:00",
+      "completed_at": "2026-08-02T20:44:27.863658+00:00",
       "disposition": null,
       "recorded_by": "external-review-json",
       "parse_status": "structured",
-      "raw_excerpt": "[gemini] Here is the review of the implementation approach.\n\n- **Category:** edge-case\n- **Severity:** high\n- **Finding:** Hardcoding `--compare-branch=origin/main` locally is fragile. While standard in CI, local developer environments often name their canonical remote `upstream` (with `origin` being their personal fork). If `origin/main` is stale, `diff-cover` will measure against the wrong baseline, causing confusing failures. If `origin/main` doesn't exist at all, the command will crash.\n- **Suggestion:** Dynamically determine the merge base or fallback branch locally (e.g., check if `upstream/main` exists, then `origin/main`, then `main`). If the baseline branch cannot be resolved, fail gracefully with an explicit message or exit `0` with `n/a` rather than crashing the suite runner.\n\n- **Category:** dependency\n- **Severity:** medium\n- **Finding:** `pytest-cov` is required to parse the `--cov` arguments, but it is conspicuously missing from the Verification runner command (`--with pytest --with diff-cover==10.3.0`). If it is not globally installed or injected, the `pytest` subprocess will instantly fail with `unrecognized arguments: --cov`. \n- **Suggestion:** Add `pytest-cov` to the E2E verification command's `--with` arguments. Additionally, verify that `pytest-cov` is explicitly listed in the project's dev-dependencies so that standard local runs don't fail for developers.\n\n- **Category:** edge-case\n- **Severity:** medium\n- **Finding:** AC-6 states that `COVERAGE_FILE` writes to `<root>/.cov-data/.coverage.<label>`, but standard `coverage combine` and `coverage xml` look for `.coverage.*` files in the *current working directory* by default. If the combine command is executed from `<root>`, it will not find the data files tucked inside `.cov-data/` unless explicitly pointed there.\n- **Suggestion:** Ensure the `combine_argv` command either passes the directory explicitly (e.g., `coverage combine .cov-data/`) or that the `COVERAGE_FILE` / `COVERAGE_DATA_FILE`  […truncated]\n\n[openai] 1. **Category: risk**  \n   **Severity: high**  \n   **Finding:** The plan does not clearly distinguish “there was legitimately nothing to measure” from “coverage production or combination failed.” A stale `.cov-data/`, root `.coverage`, or `coverage.xml` can make a failed/currently-unmeasured run look valid; conversely, treating every missing XML as `n/a` would violate the fail-closed requirement when instrumented units ran but `coverage combine`/XML generation failed.  \n   **Suggestion:** Reset `.cov-data/`, the combined coverage data file, and `coverage.xml` before launching any units. Track whether at least one measurable unit was instrumented and whether each measurement/combine/XML step succeeded. Return `0` with `n/a` only when no measurable units were eligible; return `4` if any eligible measurement, combine, XML-generation, or diff-cover invocation fails or produces no expected artifact.\n\n2. **Category: risk**  \n   **Severity: high**  \n   **Finding:** F0 runs units concurrently, while the plan says `_exec` “sets `COVERAGE_FILE` per unit.” If this means modifying `os.environ`, concurrent executions can overwrite one another’s target and recreate the shared-data-file race AC-6 is intended to prevent. An externally inherited `COVERAGE_FILE` could also affect an uninstrumented plugin.  \n   **Suggestion:** Construct a fresh environment dictionary for each subprocess (`env = os.environ.copy()`), set `COVERAGE_FILE` only for an instrumented unit, and explicitly remove it for uninstrumented units. Pass that dictionary via `subprocess.run(..., env=env)` rather than mutating process-global environment state. Add a concurrency-oriented test that asserts each launched subprocess receives its own expected environment.\n\n3. **Category: approach**  \n   **Severity: medium**  \n   **Finding:** The stated producer/consumer boundary names `combine_coverage.combine_to_xml`, but the mini-plan introduces independent `combine_argv`/combining logic in `suite_coverage.py`  […truncated]"
+      "raw_excerpt": "[gemini] Here is the review of the implementation approach.\n\n- Category: approach (reducibility)\n- Severity: medium\n- Finding: The `source_fingerprint` file hashing before, during, and after the 6.7-minute test suite is massive over-engineering that punishes normal developer workflows. Throwing away a fully successful 6.7-minute local test run with an Exit 4 just because a developer saved a file or added a comment during execution creates a frustrating, hostile developer experience.\n- Suggestion: Remove the `source_fingerprint` mechanism entirely. Trust the developer to understand that local coverage reflects the state of the files when the tests actually executed. This is the accepted industry standard behavior for local test runners.\n\n- Category: risk\n- Severity: medium\n\n\n[openai] 1. **Category:** risk  \n   **Severity:** high  \n   **Finding:** The proposed refresh command, `git fetch --no-tags origin main`, must be verified to actually update `refs/remotes/origin/main` before the gate passes `--compare-branch=origin/main`. With an explicit branch refspec, Git commonly records the fetched commit in `FETCH_HEAD`; whether the remote-tracking ref is updated depends on refspec/configuration details. If `origin/main` remains stale, the implementation can claim it refreshed the CI base while still constructing a patch against an old base.  \n   **Suggestion:** Add a real-Git regression that advances the remote, runs the exact fetch command, and asserts `git rev-parse origin/main` equals the fetched remote commit—not merely that fetch succeeded. If that is not guaranteed, use an explicit destination refspec such as `main:refs/remotes/origin/main`, or otherwise resolve and validate the fetched SHA before allowing `origin/main` to be used. This may require reconciling the stated “same fetch shape” requirement with the stronger freshness requirement.\n\n2. **Category:** edge-case  \n   **Severity:** medium  \n   **Finding:** The source fingerprint protects `.py` files and the root `pyproject.toml`, but the generated private-index patch covers all tracked and unignored files. Changes during the run to other execution- or coverage-affecting files—such as `pytest.ini`, `tox.ini`, a coverage configuration file referenced outside `pyproject.toml`, plugin metadata, generated test inputs, or non-`.py` Python entrypoints—can make the suite’s observed behavior differ from the final patch without triggering the snapshot invalidation.  \n   **Suggestion:** Define the protected snapshot in terms of files that can affect measurement, not only conventional Python source. At minimum include discovered coverage configuration files and test-runner configuration files used by this repository; if repository conventions permit extensionless Python executables or `.p […truncated]"
     },
     "code": {
       "review_type": "code",
       "status": "completed",
-      "findings_count": 12,
+      "findings_count": 3,
       "findings": [
         {
-          "severity": "high",
-          "category": "testing",
-          "file": "shared/scripts/tools/run_test_suite.py",
+          "severity": "medium",
+          "category": "Fail-closed coverage ownership",
+          "file": "shared/scripts/tools/suite_coverage.py",
           "line": null,
-          "finding": "The single wiring line between \"we instrument\" and \"we gate\" is untested, and its failure mode is a silent permanent PASS. No test asserts SuiteResult.eligible produced by the REAL run_suite: test_the_gate_is_told_how_many_units_were_measurable monkeypatches mod.run_suite outright, and every _run(...)-driven test builds _project(tmp_path) which creates NO root pyproject.toml, so instrument_for_coverage short-circuits and eligible is 0 in all of them - unasserted. Delete line 226 and the entire suite still passes while F0 prints 'n/a - no unit had a measurable source root' and exits 0 forever. Note the new gate cannot catch it either: line 226 IS executed by the _run tests, so diff-cover scores it covered - executed, never asserted.",
-          "suggestion": "Add one test that runs the real run_suite against a project fixture WITH a root pyproject.toml and asserts eligible == the count of units with a measurable source root, derived from discover_units rather than a literal.",
+          "finding": "The freshness check accepts any coverage.xml whose mtime falls within the two-second slack window. If another process creates a report after prepare_coverage, or expected data disappears after missing_data and the combiner exits 0 without writing, that unrelated report can be accepted as this run's output. FIXED: combine and diff-cover now use a unique invocation-owned candidate, promoted only after gating.",
+          "suggestion": "Have the combiner write to a unique run-owned output path, verify that exact file, then atomically promote it to coverage.xml before invoking diff-cover.",
           "source": "code-reviewer"
         },
         {
           "severity": "medium",
-          "category": "correctness",
+          "category": "CI parity / compare base",
           "file": "shared/scripts/tools/suite_coverage.py",
           "line": null,
-          "finding": "prepare_coverage swallows precisely the failure its own docstring names: rmtree(ignore_errors=True) plus except OSError: pass on both unlinks. On Windows a locked/read-only file leaves stale state and raises nothing. If the coverage.xml unlink fails, a stale XML survives - and combine_coverage.main returns exit 0 with status 'n-a' when it finds no data files WITHOUT touching the output - so combine_rc == 0 and xml_exists is True, and diff-cover gates a stale report that can PASS.",
-          "suggestion": "Verify the reset succeeded and propagate a fail-closed signal naming the file that could not be cleared.",
-          "source": "code-reviewer"
-        },
-        {
-          "severity": "medium",
-          "category": "correctness",
-          "file": "shared/scripts/tools/suite_coverage.py",
-          "line": null,
-          "finding": "The gate proves that SOME coverage.xml exists, never that it covers the tiers it claims. eligible counts UNITS; combine_coverage counts DATA FILES; a tier whose data file was never written is invisible to both. diff-cover then finds no coverage information for changed files in the missing tiers, EXCLUDES them from the denominator, and reports a comfortable pass.",
-          "suggestion": "Count the produced data files and require the count to equal eligible; a shortfall is exit 4 naming the missing labels.",
-          "source": "code-reviewer"
-        },
-        {
-          "severity": "medium",
-          "category": "performance",
-          "file": "shared/scripts/tools/run_test_suite.py",
-          "line": null,
-          "finding": "warm_up still warms only [*UV_RUN, --with pytest], but instrument_for_coverage now appends pytest-cov to ~18 units' env key. Its docstring states the contract explicitly, because 18 concurrent cold uv run calls contending on the shared uv cache is the documented Windows hardlink-race source that produces INFRA faults.",
-          "suggestion": "Add --with pytest-cov to warm_up's argv.",
-          "source": "code-reviewer"
-        },
-        {
-          "severity": "medium",
-          "category": "correctness",
-          "file": "shared/scripts/tools/run_test_suite.py",
-          "line": null,
-          "finding": "main now runs the whole gate BEFORE printing anything. The suite's evidence, including the RACE block and the trg handle, is withheld for the entire combine + diff-cover duration, and is lost entirely if the run is interrupted during diff-cover.",
-          "suggestion": "Print the run report and retry block first, then call run_gate, then print gate.lines.",
-          "source": "code-reviewer"
-        },
-        {
-          "severity": "medium",
-          "category": "maintainability",
-          "file": "shared/scripts/tools/tests/test_run_test_suite.py",
-          "line": 369,
-          "finding": "Two files end this diff over the 300-LOC source budget and neither is in shipwright_bloat_baseline.json: run_test_suite.py at 318, and test_run_test_suite.py at 369 - the latter is a crossing this diff CREATES. Mini-plan section 7 G4 records only the run_test_suite.py crossing.",
-          "suggestion": "Move the new Coverage wiring block into test_run_test_suite_coverage.py - the repo already splits this file that way (test_run_test_suite_faults.py).",
+          "finding": "compare_branch only verified the locally cached origin/main ref, while CI fetches it first. FIXED: the local resolver now mirrors git fetch --no-tags origin main before verifying the ref.",
+          "suggestion": "Mirror the action's fixed-ref refresh before verification and fail closed when it cannot complete.",
           "source": "code-reviewer"
         },
         {
           "severity": "low",
-          "category": "correctness",
-          "file": "shared/scripts/tools/suite_coverage.py",
-          "line": null,
-          "finding": "The eligible == 0 message asserts a cause it has not established: 'no unit had a measurable source root'. instrument_for_coverage also returns zero when the root pyproject.toml is simply absent - a different cause, the same green verdict, and a message that sends the operator to the wrong place.",
-          "suggestion": "Distinguish the two and give the no-config case its own line.",
-          "source": "code-reviewer"
-        },
-        {
-          "severity": "low",
-          "category": "correctness",
-          "file": "shared/scripts/tools/suite_coverage.py",
-          "line": null,
-          "finding": "verdict(branch=...) and run_gate(branch=...) both default to _FALLBACK_BRANCH. compare_branch is typed str | None precisely so an unresolvable base fails closed (AC-4d); a defaulted parameter means any future call site that forgets to pass the resolved branch silently gets a hardcoded base instead of the refusal path.",
-          "suggestion": "Make branch a required keyword-only argument on both.",
-          "source": "code-reviewer"
-        },
-        {
-          "severity": "low",
-          "category": "correctness",
-          "file": "shared/scripts/tools/suite_coverage.py",
-          "line": null,
-          "finding": "compare_branch's two git calls use text=True without errors='replace', unlike run_gate._run and _exec. A byte git emits that the console locale cannot decode raises UnicodeDecodeError, which is not in the caught tuple - so the documented fail-closed return None becomes a traceback out of F0.",
-          "suggestion": "Add errors='replace' to both calls.",
-          "source": "code-reviewer"
-        },
-        {
-          "severity": "low",
-          "category": "maintainability",
-          "file": "shared/scripts/tools/suite_coverage.py",
-          "line": null,
-          "finding": "gate_argv(project_root, branch) and combine_argv(project_root) never read project_root. A dead parameter on the module's advertised 'pure argv builders' invites a future reader to assume the builder is root-aware.",
-          "suggestion": "Drop the parameter, or use it.",
-          "source": "code-reviewer"
-        },
-        {
-          "severity": "low",
-          "category": "testing",
+          "category": "CI parity test gap",
           "file": "shared/scripts/tools/tests/test_f0_ci_parity.py",
           "line": null,
-          "finding": "The docstring claims 'a local mirror that reordered or renamed a flag would measure something else' - but any(a.startswith(flag) for a in argv) is order-insensitive, and the positional coverage.xml slot is never compared. A rename is caught; a reorder is not.",
-          "suggestion": "Assert positional shape, or correct the docstring to what it proves.",
-          "source": "code-reviewer"
-        },
-        {
-          "severity": "low",
-          "category": "performance",
-          "file": "shared/scripts/tools/tests/test_f0_diff_coverage_e2e.py",
-          "line": null,
-          "finding": "The repo fixture is function-scoped and rebuilds an identical synthetic repo four times, serially, on F0's critical path. test_a_missing_compare_ref_fails_closed_rather_than_crashing takes the full fixture and then short-circuits before any subprocess - it needs no repo at all.",
-          "suggestion": "Build the repo once via a tmp_path_factory-scoped fixture, and give the branch-None test a plain tmp_path.",
+          "finding": "Parity tests did not assert the local fixed compare ref equals the action default. FIXED: test_local_gate_uses_the_same_compare_branch_as_ci now pins them together.",
+          "suggestion": "Assert the local compare-ref constant equals the action compare-branch default.",
           "source": "code-reviewer"
         }
       ],
       "provider": null,
-      "completed_at": "2026-08-01T10:11:44.598888+00:00",
+      "completed_at": "2026-08-02T19:42:09.753405+00:00",
       "disposition": null,
       "recorded_by": "code-reviewer",
       "parse_status": null,
@@ -260,74 +134,38 @@
     "doubt": {
       "review_type": "doubt",
       "status": "completed",
-      "findings_count": 7,
+      "findings_count": 3,
       "findings": [
         {
-          "severity": "high",
-          "category": "adversarial",
+          "severity": null,
+          "category": null,
           "file": null,
           "line": null,
-          "finding": "Claim under doubt: It fails closed / an under-tested diff STOPs the run instead of reddening a PR after the iterate reported done. — An iterate adds a NEW source file. F0 runs at finalization, BEFORE F6 (the single atomic git add + commit), so the new file is untracked. uvx diff-cover never sees it and prints PASS. CI, running on the committed PR head, counts every line of it. WHY: Confirmed at the source of the pinned tool: GitDiffReporter.__init__(..., include_untracked=False); _get_included_diff_results() returns only diff_committed(origin/main...HEAD) + diff_staged() + diff_unstaged(). Untracked files enter only via src_paths_changed() when include_untracked is true, which requires the CLI flag. gate_argv never passed it, and the parity test asserted len(argv) == 5, cementing the omission. This branch's own reflog shows the entire implementation uncommitted and the five new files untracked. Second-order: for a diff of only new files plus docs, diff-cover finds zero measured changed lines and reports a misleading 100%. COST: The headline promise is void for the most likely under-covered case (a brand-new module). Worse, the acceptance evidence for AC-1/AC-4 would itself be collected at F0 on an untracked tree, so a green F0 would read as proof the gate works when it proves the opposite.",
-          "suggestion": "Pass --include-untracked in gate_argv (diff-cover 10.3.0 supports it; git ls-files --exclude-standard --others honours .gitignore, so .cov-data/ and coverage.xml exclude themselves). Record it as the one DELIBERATE divergence rather than asserting len(argv) == 5. | DISPOSITION: FIXED - verified independently (--include-untracked present in 10.3.0 --help). gate_argv now passes it, with the reasoning in its docstring: F0 runs before F6, so the flag is what makes the LINE SETS equal, which is what parity is actually about. The parity test asserts it positionally as the one stated divergence (argv[5], len == 6), mirroring how test_suite_units states its uvx exemption. New AC-3b; F0.md and hooks-and-pipeline.md both say it. Test: test_gate_argv_measures_files_the_iterate_has_not_committed_yet.",
+          "finding": "Committed, staged and unstaged hunks can be numbered against different file revisions when a dirty insertion shifts an earlier committed hunk.",
+          "suggestion": null,
           "source": "doubt-reviewer"
         },
         {
-          "severity": "medium",
-          "category": "adversarial",
+          "severity": null,
+          "category": null,
           "file": null,
           "line": null,
-          "finding": "Claim under doubt: prepare_coverage's self-check raises SuiteConfigError, which main turns into a clean exit 2. — A Windows indexer, antivirus or open editor holds coverage.xml for a few hundred milliseconds while F0 starts. unlink raises PermissionError, the survivor check fires, and the ENTIRE iterate STOPs at F0 with exit 2. WHY: The raise is genuinely caught by main, so the disposition is technically true. But the fix converted a swallowed transient into a hard, un-retried STOP on the one platform where this repo has already been bitten by it and built machinery for it: atomic_write.py retries for exactly this reason, discovered via an F0 race card. prepare_coverage did a one-shot rmtree + unlink with no retry. Also: exit 2 is documented in both updated docs as 'the suite config is unusable', so the operator is sent to inspect shipwright_test_config.json for a filesystem lock. COST: A transient, self-healing OS condition aborts a whole iterate before a single test runs, with a message pointing at the wrong file.",
-          "suggestion": "Bounded retry using the existing in-house pattern, and amend the exit-code tables. | DISPOSITION: FIXED - 4 attempts with a 0.25s backoff; only a survivor that OUTLASTS the retries raises. Test: test_a_momentarily_held_file_is_retried_not_refused. The exit-code tables in F0.md and hooks-and-pipeline.md now name the second meaning of exit 2.",
+          "finding": "A failed first attempt's base or xdist-suffixed coverage can survive and inflate the accepted retry.",
+          "suggestion": null,
           "source": "doubt-reviewer"
         },
         {
-          "severity": "medium",
-          "category": "adversarial",
+          "severity": null,
+          "category": null,
           "file": null,
           "line": null,
-          "finding": "Claim under doubt: F0 cannot drift into certifying a diff CI then rejects - i.e. the mirror cannot false-STOP. — A change touches lines whose only exercising tests skip on the operator's machine (missing bash/npm/docker/gh, a platform guard). The local numerator drops and F0 exits 4 on a diff CI would pass. The printed instruction is 'Add tests for the changed lines' - wrong, because the tests exist. WHY: The mirror is asserted in only one direction (F0 must not be looser than CI); nothing bounds the other. shared/ alone carries 181 skipif/skip( occurrences across 80 files. shipwright_test_config.json already records the divergence as a known fact. That variance was harmless while nothing gated on it locally; this change makes it blocking. COST: A legitimate change is hard-blocked with no documented escape and a misleading remedy, on a gate that now runs on EVERY iterate.",
-          "suggestion": "State the asymmetry in F0.md and give the exit-4 message a second line naming skipped tests as a possible cause. | DISPOSITION: FIXED as suggested (documentation + message), NOT via an override. An opt-out is forbidden by the spec's Out of Scope and would be the first thing reached for on a red gate. The exit-4 text now names locally-skipping tests as a cause and F0.md says the gate can legitimately be stricter than CI, with the answer being to run the skipped layer - never to weaken a test. Test: test_below_threshold_fails_and_says_what_to_do.",
-          "source": "doubt-reviewer"
-        },
-        {
-          "severity": "medium",
-          "category": "adversarial",
-          "file": null,
-          "line": null,
-          "finding": "Claim under doubt: Every failure mode of the two subprocesses maps to exit 4 with a phase-specific message (AC-4c). — First run on a machine that has never fetched diff-cover, or one behind a proxy/offline. uvx cannot resolve the package and exits non-zero (no OSError - uvx is on PATH, it just fails). run_gate takes the gate_rc != 0 branch and prints 'changed lines below 80% covered ... Add tests' over a report that names no lines. WHY: Only the OSError/SubprocessError path was phase-specific; a non-zero exit from diff-cover was conflated with below-threshold. diff-cover uses rc 1 specifically for below-threshold. COST: On an offline/proxied machine every iterate STOPs at exit 4 with an instruction that cannot fix it.",
-          "suggestion": "Split the message on rc; mention the uvx fetch in F0.md. | DISPOSITION: FIXED - verified at source that diff_cover_tool.main returns 1 only for below-threshold. DIFF_COVER_BELOW_THRESHOLD is now its own constant and any other non-zero says the coverage number is unknown and this is not a threshold verdict, with the pre-fetch command. Test: test_a_broken_diff_cover_is_not_reported_as_a_threshold_verdict.",
-          "source": "doubt-reviewer"
-        },
-        {
-          "severity": "low",
-          "category": "adversarial",
-          "file": null,
-          "line": null,
-          "finding": "Claim under doubt: The stale-XML false green is closed. — combine_coverage.main returns 0 for BOTH 'ok' and 'n-a (produced no data)'. run_gate distinguished them only by xml_exists, trustworthy solely because prepare_coverage deleted the file ~2 minutes earlier. Anything writing coverage.xml in that window - a second F0, a compliance regen, an operator running measure_diff_coverage.py - restores the false green. WHY: The guard was positional (the file was deleted first) rather than a property of the artefact (the file was produced by THIS combine). Defence-in-depth: no concrete in-repo writer was found in that window. COST: A gate that passes on a previous run's report. Low likelihood, maximum blast radius.",
-          "suggestion": "Require the XML to be newer than the run's start time. | DISPOSITION: FIXED - the XML must be newer than the combine's start (with a 2s slack for coarse filesystem timestamps), so existence is no longer sufficient. Test: test_a_coverage_xml_this_run_did_not_write_is_not_trusted.",
-          "source": "doubt-reviewer"
-        },
-        {
-          "severity": "low",
-          "category": "adversarial",
-          "file": null,
-          "line": null,
-          "finding": "Claim under doubt: The compare branch resolves from origin/HEAD, falling back to origin/main; when neither resolves the gate exits 4 with an actionable message (AC-4d). — refs/remotes/origin/HEAD exists and points at refs/remotes/origin/main, but origin/main itself is absent locally (narrowed remote.origin.fetch, a pruned/renamed default branch, a partial fetch). compare_branch returns 'origin/main' unverified and diff-cover fails on the missing ref. WHY: The two paths verified asymmetrically: the fallback used rev-parse --verify --quiet, the primary used symbolic-ref --short, which prints the symref target without checking it resolves to an object. COST: Fails closed but with the wrong diagnosis, sending the operator to write tests for a git problem.",
-          "suggestion": "Run the resolved origin/HEAD target through the same probe. | DISPOSITION: FIXED - both candidates now go through _resolves(). Test: test_an_origin_HEAD_pointing_at_a_ref_that_does_not_resolve_is_rejected.",
-          "source": "doubt-reviewer"
-        },
-        {
-          "severity": "low",
-          "category": "adversarial",
-          "file": null,
-          "line": null,
-          "finding": "Claim under doubt: Every artefact is gitignored, so this never dirties the worktree. — prepare_coverage deleted coverage.xml and .coverage on EVERY run, including when instrument_for_coverage would immediately short-circuit for lack of a root pyproject.toml - i.e. when F0 will measure nothing at all. WHY: The delete was unconditional while the measurement it serves is conditional, and the two decisions lived in different modules with neither consulting the other. COST: F0 removes files it did not create, and refuses to run if it cannot, in a project where it will measure nothing.",
-          "suggestion": "Move the reset behind the same root-pyproject test instrumentation uses. | DISPOSITION: FIXED - prepare_coverage returns the data dir untouched when there is no root pyproject.toml. Test: test_prepare_leaves_a_project_it_will_never_measure_alone.",
+          "finding": "Eager compare_branch evaluation could fetch or prompt even for a red suite.",
+          "suggestion": null,
           "source": "doubt-reviewer"
         }
       ],
       "provider": null,
-      "completed_at": "2026-08-01T10:31:55.693705+00:00",
+      "completed_at": "2026-08-02T20:08:30.108799+00:00",
       "disposition": null,
       "recorded_by": "doubt-reviewer",
       "parse_status": null,
@@ -378,10 +216,20 @@
     "spec": {
       "review_type": "spec",
       "status": "completed",
-      "findings_count": 0,
-      "findings": [],
+      "findings_count": 1,
+      "findings": [
+        {
+          "severity": null,
+          "category": "test reliability / ADR-045",
+          "file": "shared/scripts/tools/tests/test_suite_coverage_gate.py",
+          "line": null,
+          "finding": "Two time.sleep patches used a dotted import string. FIXED in the reviewed worktree: both now patch coverage_mod.time through the imported module object. — spec: Brief section 6 and ADR-045 require monkeypatching the imported module object, never a dotted string.",
+          "suggestion": "Brief section 6 and ADR-045 require monkeypatching the imported module object, never a dotted string.",
+          "source": "spec-reviewer"
+        }
+      ],
       "provider": null,
-      "completed_at": "2026-08-01T10:11:13.266422+00:00",
+      "completed_at": "2026-08-02T19:28:33.853785+00:00",
       "disposition": null,
       "recorded_by": "spec-reviewer",
       "parse_status": null,

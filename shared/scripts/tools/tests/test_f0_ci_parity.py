@@ -247,6 +247,19 @@ def test_local_gate_uses_the_same_threshold_as_ci():
 
 
 @pytest.mark.skipif(not _ACTION.is_file(), reason="composite action not present")
+def test_local_gate_uses_the_same_compare_branch_as_ci():
+    from scripts.tools.suite_coverage import _FALLBACK_BRANCH
+
+    assert _FALLBACK_BRANCH == _action_default("compare-branch"), (
+        "the F0 gate and the CI action disagree on the merge-base ref")
+
+
+def test_the_documented_scratch_directory_is_actually_ignored():
+    lines = (_REPO_ROOT / ".gitignore").read_text(encoding="utf-8").splitlines()
+    assert "/.scratch/" in lines
+
+
+@pytest.mark.skipif(not _ACTION.is_file(), reason="composite action not present")
 def test_the_local_gate_command_matches_the_action_command():
     """Pin the COMMAND SHAPE, not just the constants.
 
@@ -258,7 +271,7 @@ def test_the_local_gate_command_matches_the_action_command():
     """
     from scripts.tools.suite_coverage import COVERAGE_XML, gate_argv
 
-    argv = gate_argv("origin/main")
+    argv = gate_argv("origin/main", diff_file="worktree.diff")
     body = _ACTION.read_text(encoding="utf-8")
     assert 'uvx "diff-cover@${INPUT_DIFF_COVER_VERSION}"' in body, \
         "the action no longer invokes a pinned uvx diff-cover — re-sync gate_argv"
@@ -268,10 +281,9 @@ def test_the_local_gate_command_matches_the_action_command():
     for i, flag in enumerate(("--compare-branch=", "--fail-under="), start=3):
         assert flag in body, f"the action no longer passes {flag}"
         assert argv[i].startswith(flag), f"argv[{i}] is {argv[i]!r}, expected {flag}"
-    assert argv[5] == "--include-untracked", (
+    assert argv[5] == "--diff-file=worktree.diff", (
         "the ONE deliberate divergence from the action, and it must stay deliberate: "
-        "F0 runs before the commit, so an added file is untracked and diff-cover "
-        "cannot see it without this")
+        "F0's private-index diff makes committed and dirty changes one final snapshot")
     assert len(argv) == 6, f"gate_argv grew an unpinned argument: {argv}"
 
 

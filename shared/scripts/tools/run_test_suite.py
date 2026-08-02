@@ -46,8 +46,10 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
 from scripts.tools.suite_coverage import (  # noqa: E402
-    compare_branch, final_exit_code, prepare_coverage, run_gate,
+    GATE_FAILED, GATE_PASSED, GateResult, build_worktree_diff, compare_branch,
+    coverage_run_lock, final_exit_code, prepare_coverage, run_gate,
 )
+from scripts.tools.suite_worktree_diff import source_fingerprint  # noqa: E402
 from scripts.tools.suite_race_triage import (  # noqa: E402
     emit_race_followups, resolve_commit,
 )
@@ -220,6 +222,25 @@ def _exec(unit: Unit, project_root: Path, xdist_workers: int | None, tmp_dir: Pa
     return proc.returncode, out, time.time() - started, report.exists()
 
 
+def _clear_failed_attempt_coverage(unit: Unit) -> None:
+    """Discard coverage from an attempt whose verdict was not accepted.
+
+    pytest-cov/xdist may suffix ``COVERAGE_FILE``. Combining a failed parallel
+    attempt with its authoritative retry can cover lines the successful retry never
+    executed and false-green the gate, so both the base and exact suffix family go.
+    """
+    if not unit.cov_file:
+        return
+    base = Path(unit.cov_file)
+    candidates = [base, *base.parent.glob(f"{base.name}.*")]
+    for path in candidates:
+        try:
+            path.unlink(missing_ok=True)
+        except OSError as exc:
+            raise SuiteConfigError(
+                f"could not discard failed-attempt coverage {path}: {exc}") from exc
+
+
 def run_suite(project_root: Path, config: SuiteConfig | None = None) -> SuiteResult:
     units = discover_units(project_root)
     if not units:
@@ -265,6 +286,7 @@ def run_suite(project_root: Path, config: SuiteConfig | None = None) -> SuiteRes
             unit = by_id[res.unit_id]
             keep_xdist = res.outcome == INFRA
             workers = config.xdist.get(res.unit_id) if keep_xdist else None
+            _clear_failed_attempt_coverage(unit)
             # Capture the REAL retry argv: a follow-up card that guesses the command
             # is an attractive but unreliable "reproduce me".
             res.retry_cmd = reproduce_command(unit.cwd, build_command(unit, workers))
@@ -294,6 +316,73 @@ def unrecorded_races(result: SuiteResult) -> list[UnitResult]:
     return [r for r in result.results if r.race and r.retry_kind == RETRY_SERIAL]
 
 
+def _source_snapshot_error(root: Path, expected: str | None) -> str:
+    current, error = source_fingerprint(root)
+    if error:
+        return error
+    if current != expected:
+        return ("Python sources or test/coverage configuration changed while "
+                "coverage was being measured; re-run F0 on the final working tree")
+    return ""
+
+
+def _gate_green_suite(root: Path, result: SuiteResult,
+                      source_before: str | None) -> GateResult:
+    error = _source_snapshot_error(root, source_before)
+    if error:
+        return GateResult(GATE_FAILED, [f"diff-coverage: FAILED - {error}."])
+    branch = compare_branch(root)
+    if branch is None:
+        return run_gate(root, expected=result.cov_files, branch=None,
+                        diff_file=None, suite_green=True)
+    error = _source_snapshot_error(root, source_before)
+    if error:
+        return GateResult(GATE_FAILED, [f"diff-coverage: FAILED - {error}."])
+    diff_file, diff_error = build_worktree_diff(root, branch)
+    error = diff_error or _source_snapshot_error(root, source_before)
+    if error:
+        return GateResult(GATE_FAILED, [f"diff-coverage: FAILED - {error}."])
+    gate = run_gate(root, expected=result.cov_files, branch=branch,
+                    diff_file=diff_file, suite_green=True)
+    error = _source_snapshot_error(root, source_before)
+    return (GateResult(GATE_FAILED, [f"diff-coverage: FAILED - {error}."])
+            if error else gate)
+
+
+def _run_locked(root: Path, run_id: str | None) -> int:
+    """The full reset -> suite -> combine -> gate critical section."""
+    source_before, fingerprint_error = source_fingerprint(root)
+    result = run_suite(root)
+    # Record BEFORE reporting and before ANY return: a red sibling must never skip it.
+    races = unrecorded_races(result)
+    report = emit_race_followups(root, races, result.xdist_ids, run_id=run_id,
+                                 commit=resolve_commit(root),
+                                 suite_command=suite_command(root, run_id))
+    # Print the suite's own evidence FIRST: the gate below can take a minute, and a
+    # finished suite's results must not be withheld for it - nor lost if it is
+    # interrupted part-way through.
+    for line in render_run_report(result) + render_retry_block(result, races, report):
+        print(line)
+    # The gate CI runs, run here: an under-tested diff STOPs the run instead of
+    # reddening a PR after the iterate has already reported done. A red suite (or
+    # higher-priority evidence-recording failure) must not fetch, prompt, or hang.
+    if result.exit_code != 0:
+        gate = run_gate(root, expected=result.cov_files, branch=None, diff_file=None,
+                        suite_green=False)
+    elif report.failed:
+        gate = GateResult(GATE_PASSED, [
+            "diff-coverage: skipped - race evidence could not be recorded."])
+    else:
+        if fingerprint_error:
+            gate = GateResult(GATE_FAILED, [
+                f"diff-coverage: FAILED - {fingerprint_error}."])
+        else:
+            gate = _gate_green_suite(root, result, source_before)
+    for line in gate.lines:
+        print(line)
+    return final_exit_code(result.exit_code, report.failed, gate)
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description="Run the F0 test suite (parallel units).")
     ap.add_argument("--project-root", default=".", type=Path)
@@ -301,27 +390,11 @@ def main() -> int:
     args = ap.parse_args()
     root = args.project_root.resolve()
     try:
-        result = run_suite(root)
+        with coverage_run_lock(root):
+            return _run_locked(root, args.run_id)
     except SuiteConfigError as exc:
         print(f"ERROR: {exc}", file=sys.stderr)
         return 2
-    # Record BEFORE reporting and before ANY return: a red sibling must never skip it.
-    races = unrecorded_races(result)
-    report = emit_race_followups(root, races, result.xdist_ids, run_id=args.run_id,
-                                 commit=resolve_commit(root),
-                                 suite_command=suite_command(root, args.run_id))
-    # Print the suite's own evidence FIRST: the gate below can take a minute, and a
-    # finished suite's results must not be withheld for it - nor lost if it is
-    # interrupted part-way through.
-    for line in render_run_report(result) + render_retry_block(result, races, report):
-        print(line)
-    # The gate CI runs, run here: an under-tested diff STOPs the run instead of
-    # reddening a PR after the iterate has already reported done.
-    gate = run_gate(root, expected=result.cov_files, branch=compare_branch(root),
-                    suite_green=result.exit_code == 0)
-    for line in gate.lines:
-        print(line)
-    return final_exit_code(result.exit_code, report.failed, gate)
 
 
 if __name__ == "__main__":

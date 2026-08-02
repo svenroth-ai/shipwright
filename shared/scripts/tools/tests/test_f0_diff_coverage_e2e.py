@@ -36,6 +36,7 @@ from scripts.tools.suite_coverage import (
     DATA_DIR,
     GATE_FAILED,
     GATE_PASSED,
+    build_worktree_diff,
     run_gate,
 )
 from scripts.tools.suite_units import UV_RUN
@@ -167,8 +168,10 @@ def test_an_uncovered_changed_line_fails_the_gate(repo, capsys):
     """AC-8, fail half. `b()` is added and never executed: its changed lines are
     measured at 0%, which is below the threshold."""
     _measure(repo, call_b=False)
+    diff_file, error = build_worktree_diff(repo, "origin/main")
+    assert diff_file is not None, error
     res = run_gate(repo, expected=_expected(repo), suite_green=True,
-                   branch="origin/main")
+                   branch="origin/main", diff_file=diff_file)
     assert res.exit_code == GATE_FAILED, "\n".join(res.lines)
     assert any("FAILED" in line for line in res.lines)
 
@@ -177,8 +180,10 @@ def test_covering_the_changed_line_passes_the_gate(repo):
     """AC-8, pass half. Same diff, same command — only the coverage differs, which
     is what makes the fail above attributable to coverage and not to setup."""
     _measure(repo, call_b=True)
+    diff_file, error = build_worktree_diff(repo, "origin/main")
+    assert diff_file is not None, error
     res = run_gate(repo, expected=_expected(repo), suite_green=True,
-                   branch="origin/main")
+                   branch="origin/main", diff_file=diff_file)
     assert res.exit_code == GATE_PASSED, "\n".join(res.lines)
 
 
@@ -188,7 +193,10 @@ def test_the_combined_xml_is_repo_relative_so_diff_cover_can_match_it(repo):
     `scripts/m.py` here would mean diff-cover silently measures nothing for every
     plugin — a false green no other test would catch."""
     _measure(repo, call_b=False)
-    run_gate(repo, expected=_expected(repo), suite_green=True, branch="origin/main")
+    diff_file, error = build_worktree_diff(repo, "origin/main")
+    assert diff_file is not None, error
+    run_gate(repo, expected=_expected(repo), suite_green=True, branch="origin/main",
+             diff_file=diff_file)
     xml = (repo / COVERAGE_XML).read_text(encoding="utf-8")
     assert f'filename="plugins/{_PLUGIN}/scripts/m.py"' in xml, xml[:900]
     # ...and the tier that must NOT be remapped survives in the same combined XML,
@@ -198,10 +206,30 @@ def test_the_combined_xml_is_repo_relative_so_diff_cover_can_match_it(repo):
     assert 'filename="shared/s.py"' in xml, xml[:900]
 
 
+def test_line_shifting_uncommitted_edits_use_one_coherent_final_snapshot(repo):
+    """A committed hunk and a later dirty insertion use different line coordinates
+    in diff-cover's default three-diff union. The temporary-index diff must score
+    the final working-tree coordinates CI will see after F6."""
+    module = repo / "plugins" / _PLUGIN / "scripts" / "m.py"
+    original = module.read_text(encoding="utf-8")
+    try:
+        module.write_text("".join(f"# shift {i}\n" for i in range(10)) + original,
+                          encoding="utf-8")
+        _measure(repo, call_b=False)
+        diff_file, error = build_worktree_diff(repo, "origin/main")
+        assert diff_file is not None, error
+        res = run_gate(repo, expected=_expected(repo), suite_green=True,
+                       branch="origin/main", diff_file=diff_file)
+        assert res.exit_code == GATE_FAILED, "\n".join(res.lines)
+    finally:
+        module.write_text(original, encoding="utf-8")
+
+
 def test_a_missing_compare_ref_fails_closed_rather_than_crashing(tmp_path):
     """AC-4d: an unresolvable base must STOP with an actionable message, never pass
     and never raise. Takes no repo — it refuses before touching git at all, and
     building one would only slow F0 down."""
-    res = run_gate(tmp_path, expected=["x"], suite_green=True, branch=None)
+    res = run_gate(tmp_path, expected=["x"], suite_green=True, branch=None,
+                   diff_file=None)
     assert res.exit_code == GATE_FAILED
     assert any("git fetch" in line for line in res.lines)

@@ -31,12 +31,15 @@ lines sit on the refusal paths.
 
 from __future__ import annotations
 
+import os
 import shutil
 import subprocess  # nosec B404 - fixed argv, shell=False; no user-supplied strings
 import time
 from collections.abc import Sequence
+from contextlib import contextmanager
 from pathlib import Path
 from typing import Any, Callable
+from uuid import uuid4
 
 from scripts.tools.suite_coverage_rules import (  # noqa: F401  (re-export: one import site)
     COVERAGE_XML,
@@ -55,14 +58,58 @@ from scripts.tools.suite_coverage_rules import (  # noqa: F401  (re-export: one 
     verdict,
 )
 from scripts.tools.suite_units import SuiteConfigError
+from scripts.tools.suite_worktree_diff import (  # noqa: F401
+    build_worktree_diff,
+    controlled_git_env,
+)
 
 #: A held file usually clears in milliseconds; a few short retries turn the common
 #: transient into a no-op without letting a genuine leftover through.
 _RESET_ATTEMPTS = 4
 _RESET_BACKOFF = 0.25
-#: Filesystem timestamp granularity (FAT / network shares are coarse), so a report
-#: this run genuinely wrote is never mistaken for a leftover.
-_MTIME_SLACK = 2.0
+
+
+@contextmanager
+def coverage_run_lock(project_root: Path):
+    """Exclude a second F0 from reset through gate without leaving stale locks.
+
+    The persistent zero-byte-ish file is only the OS lock's rendezvous point; the
+    lock belongs to the open handle, so a crashed process releases it automatically.
+    Its ``.coverage*`` name is already ignored by this repository.
+    """
+    path = Path(project_root) / ".coverage.f0.lock"
+    try:
+        handle = path.open("a+b")
+        handle.seek(0)
+        if handle.read(1) == b"":
+            handle.write(b"0")
+            handle.flush()
+        handle.seek(0)
+        if os.name == "nt":
+            import msvcrt
+            msvcrt.locking(handle.fileno(), msvcrt.LK_NBLCK, 1)
+        else:
+            import fcntl
+            fcntl.flock(handle.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+    except (ImportError, OSError) as exc:
+        try:
+            handle.close()
+        except (NameError, OSError):
+            pass
+        raise SuiteConfigError(
+            "could not acquire the F0 coverage lock; another F0 may be running "
+            f"in {project_root} ({exc})") from exc
+    try:
+        yield
+    finally:
+        try:
+            handle.seek(0)
+            if os.name == "nt":
+                msvcrt.locking(handle.fileno(), msvcrt.LK_UNLCK, 1)
+            else:
+                fcntl.flock(handle.fileno(), fcntl.LOCK_UN)
+        finally:
+            handle.close()
 
 
 # --------------------------------------------------------------------------- #
@@ -70,25 +117,24 @@ _MTIME_SLACK = 2.0
 # --------------------------------------------------------------------------- #
 def compare_branch(project_root: Path,
                    runner: Callable[..., Any] = subprocess.run) -> str | None:
-    """The base to diff against: whatever `origin/HEAD` points at, else
-    `origin/main` if that ref exists, else None.
+    """Return CI's declared compare ref when it resolves, otherwise fail closed.
 
-    Resolved rather than hardcoded because the default branch is not `main`
-    everywhere, and a wrong base silently measures the wrong lines. Deliberately
-    NOT a search across remote names - this repo pushes to `origin` and
-    `setup_iterate_worktree.py` branches off a freshly fetched `origin/<default>`,
-    so `origin` is the evidence-backed case; guessing at `upstream` would be
-    speculation.
+    The composite action defaults to ``origin/main``. Preferring ``origin/HEAD``
+    locally would stop being a mirror as soon as that symref pointed elsewhere:
+    local F0 and CI would measure different merge-base line sets. The fixed ref is
+    therefore the contract, not a guess at the remote's current default branch.
 
     `errors="replace"` like every other subprocess here: a byte the console locale
     cannot decode would raise UnicodeDecodeError, which is NOT in the caught tuple
     and would turn this fail-closed `None` into a traceback out of F0.
     """
     def _git(*args: str) -> subprocess.CompletedProcess | None:
+        root = Path(project_root).resolve()
         try:
             return runner(  # nosec B603 - fixed argv, shell=False
-                ["git", *args], cwd=str(project_root), capture_output=True,
-                text=True, errors="replace", shell=False)
+                ["git", "-C", str(root), *args], cwd=str(root), capture_output=True,
+                text=True, errors="replace", shell=False, timeout=120,
+                env=controlled_git_env())
         except (OSError, subprocess.SubprocessError):
             return None
 
@@ -96,15 +142,12 @@ def compare_branch(project_root: Path,
         probe = _git("rev-parse", "--verify", "--quiet", ref)
         return probe is not None and probe.returncode == 0
 
-    # BOTH candidates are verified to resolve to an object. `symbolic-ref` prints its
-    # target without checking it exists, so a narrowed refspec or a pruned default
-    # branch would hand back a name diff-cover then fails on - fail-closed either way,
-    # but reported as "add tests" instead of "fetch the base".
-    head = _git("symbolic-ref", "--short", "refs/remotes/origin/HEAD")
-    if head is not None and head.returncode == 0:
-        target = (head.stdout or "").strip()
-        if target and _resolves(target):
-            return target
+    # Mirror the action before trusting the remote-tracking ref. A resolving but
+    # stale origin/main can select another merge base and silently certify a line
+    # set CI never sees. The action uses this exact targeted fetch shape.
+    fetched = _git("fetch", "--no-tags", "origin", "main")
+    if fetched is None or fetched.returncode != 0:
+        return None
     return _FALLBACK_BRANCH if _resolves(_FALLBACK_BRANCH) else None
 
 
@@ -157,7 +200,7 @@ def prepare_coverage(project_root: Path) -> Path:
 
 
 def run_gate(project_root: Path, *, expected: Sequence[str], suite_green: bool,
-             branch: str | None,
+             branch: str | None, diff_file: Path | None,
              runner: Callable[..., Any] = subprocess.run) -> GateResult:
     """Combine the per-unit data, then run the pinned diff-cover over it.
 
@@ -175,6 +218,9 @@ def run_gate(project_root: Path, *, expected: Sequence[str], suite_green: bool,
     if eligible == 0 or branch is None:
         return verdict(eligible=eligible, branch=branch,
                        no_config=not (project_root / "pyproject.toml").is_file())
+    if diff_file is None:
+        return GateResult(GATE_FAILED, [
+            "diff-coverage: FAILED - no coherent working-tree diff was produced."])
     absent = missing_data(expected)
     if absent:
         return verdict(eligible=eligible, branch=branch, missing=absent)
@@ -188,32 +234,34 @@ def run_gate(project_root: Path, *, expected: Sequence[str], suite_green: bool,
             return None, f"could not run {phase}: {exc}"
         return proc.returncode, ((proc.stdout or "") + (proc.stderr or "")).strip()
 
-    started = time.time()
-    combine_rc, combine_out = _run(combine_argv(), "coverage combine")
+    # The candidate is owned by THIS invocation. Root coverage.xml is a public
+    # artefact and another tool may write it concurrently; it is never trusted as
+    # combine evidence or used as this run's diff-cover input.
+    candidate = (project_root / DATA_DIR / f"combined-{uuid4().hex}.xml").resolve()
+    combine_rc, combine_out = _run(
+        combine_argv(output=str(candidate)), "coverage combine")
     if combine_rc is None:
         return GateResult(GATE_FAILED, [f"diff-coverage: FAILED - {combine_out}"])
-    # Not merely "a coverage.xml exists" but "THIS combine wrote one". Otherwise a
-    # concurrent writer (a second F0, a compliance regen) between the reset and here
-    # re-opens the stale-report false green from another door - `combine_coverage`
-    # returns 0 for "n/a, no data" WITHOUT touching the output.
-    # One `stat` inside try/except, not `is_file()` then `stat()`: this module
-    # explicitly contemplates a concurrent coverage writer, so between those two
-    # calls the report can vanish - and an OSError escaping here would be a
-    # traceback out of F0 on the one path whose entire job is to fail closed.
-    xml = project_root / COVERAGE_XML
     try:
-        xml_exists = xml.stat().st_mtime >= started - _MTIME_SLACK
+        candidate.stat()
+        xml_exists = True
     except OSError:
         xml_exists = False
     if combine_rc != 0 or not xml_exists:
         return verdict(eligible=eligible, branch=branch, combine_rc=combine_rc,
                        xml_exists=xml_exists, detail=combine_out[-400:])
 
-    gate_rc, gate_out = _run(gate_argv(branch), "diff-cover")
+    gate_rc, gate_out = _run(gate_argv(
+        branch, coverage_file=str(candidate), diff_file=str(diff_file)), "diff-cover")
     if gate_rc is None:
         return GateResult(GATE_FAILED, [f"diff-coverage: FAILED - {gate_out}"])
+    try:
+        os.replace(candidate, project_root / COVERAGE_XML)
+    except OSError as exc:
+        return GateResult(GATE_FAILED, [
+            f"diff-coverage: FAILED - could not publish this run's coverage.xml: {exc}"])
     res = verdict(eligible=eligible, branch=branch, combine_rc=0, xml_exists=True,
-                  gate_rc=gate_rc)
+                  gate_rc=gate_rc, detail=gate_out[-400:])
     # ALWAYS surface diff-cover's own report: on a failure it names the files and
     # lines, and on a pass it is the evidence the gate actually ran.
     return GateResult(res.exit_code, [*gate_out.splitlines(), *res.lines])
