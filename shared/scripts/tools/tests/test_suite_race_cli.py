@@ -55,6 +55,7 @@ def _run(monkeypatch, root, *results, exit_code=0, argv=()):
     """Drive main() with a stubbed suite; returns (rc, captured stdout)."""
     result = SuiteResult(list(results), exit_code, 12.0, _XDIST)
     monkeypatch.setattr(mod, "run_suite", lambda *a, **k: result)
+    monkeypatch.setattr(mod, "source_fingerprint", lambda *a, **k: ("stable", ""))
     monkeypatch.setattr(sys, "argv",
                         ["run_test_suite.py", "--project-root", str(root), *argv])
     return mod.main()
