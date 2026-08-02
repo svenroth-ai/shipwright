@@ -15,7 +15,12 @@ it", not to mirror that database.
 - failed default-branch CI    -> ``gh-ci:{workflow_id}`` (one unit per
   failing workflow; dedup key drops the ``head_sha`` so the payload is
   stable across reruns and links to the workflow PAGE URL, not a single
-  run).
+  run). Only workflows the repo STILL HAS produce a unit: a ``deleted``
+  workflow keeps its run history, so filtering on conclusion alone minted
+  cards nobody could fix (trg-9b1a1286). The lifecycle state is read per
+  workflow via ``github_workflow_api.fetch_workflow_state``; an
+  unestablished state keeps the finding, because over-filtering here would
+  hide real CI breakage.
 
 Dedup keys remain stable and namespaced; ``match_commit=False`` +
 ``window_seconds=None`` so a finding stays exactly one open inbox item
