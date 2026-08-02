@@ -260,6 +260,13 @@ def test_integration_coverage_reads_the_per_run_entry_after_a_restore(tmp_path, 
         }),
         encoding="utf-8",
     )
+    # `tmp_path` is not a git work tree, and since
+    # iterate-2026-08-01-coverage-gate-recompute-order the gate probes the git
+    # context FIRST and skips a non-git project. Without this stub the call below
+    # returns that SKIP and `ok is True` passes having exercised nothing — the
+    # per-run-entry preference this test exists to pin would be deletable with the
+    # suite green. Caught by the Stage-2 code review of that same change.
+    monkeypatch.setattr(ic, "git_context", lambda _root: "work_tree")
     # A cross-component path in the commit, and no shared results file at all.
     # `_iterate_changed_paths`, not `_commit_changed_paths`: the branch-view helper
     # moved to git_helpers, and it is what check_integration_coverage calls. Patching
@@ -271,4 +278,5 @@ def test_integration_coverage_reads_the_per_run_entry_after_a_restore(tmp_path, 
 
     result = ic.check_integration_coverage(tmp_path, run_id, "deadbeef")
 
-    assert result.ok is True, result.detail
+    # `not is_skipped` is load-bearing: a stand-down must never satisfy this test.
+    assert result.ok is True and not result.is_skipped, result.detail

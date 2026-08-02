@@ -1,0 +1,1 @@
+Whether a directory is a git repository is now decided without relying on English error text. git ships translations, so on a localised install a genuine non-git project produced an unrecognised message and would have been blocked outright instead of skipped.

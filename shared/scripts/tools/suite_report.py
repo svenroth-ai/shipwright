@@ -31,7 +31,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
-from scripts.tools.suite_units import INFRA, PASS, TEST_FAILURE  # noqa: E402
+from scripts.tools.suite_units import INFRA, PASS, TEST_FAILURE, UV_RUN  # noqa: E402
 
 #: dedup-key namespace for the race producer (one OPEN entry per unit)
 DEDUP_PREFIX = "f0-race:"
@@ -91,9 +91,11 @@ def suite_command(project_root, run_id: str | None = None) -> str:
 
     A hard-coded `--project-root .` is wrong for every run launched from anywhere
     but the project root, and a Fix-now command that quietly targets the wrong tree
-    is worse than none.
+    is worse than none. Same reasoning pins the interpreter: this string is published
+    in a tracked triage card, and a card that resolves a different Python than the run
+    it claims to reproduce is the plausible-looking substitute this docstring refuses.
     """
-    argv = ["uv", "run", _RUNNER, "--project-root", str(project_root)]
+    argv = [*UV_RUN, _RUNNER, "--project-root", str(project_root)]
     if run_id:
         argv += ["--run-id", run_id]
     return shlex.join(argv)

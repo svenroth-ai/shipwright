@@ -79,7 +79,8 @@ differences:
    step `always` for CHANGE — that is load-bearing. Scope size is a
    reason the update is *small*, not a reason to skip it. The F11
    verifier (`check_spec_impact_recorded`) FAILS a feature/change
-   iterate whose commit touched no `spec.md` without a recorded
-   `spec_impact=none`.
+   iterate whose **work up to the recorded commit** touched no `spec.md`
+   without a recorded `spec_impact=none` — measured over the merge-base
+   range where a trunk base can be corroborated, the single commit otherwise.
 4. If `shipwright_sync_config.json` exists, update mappings to reflect
    any file moves or renames.

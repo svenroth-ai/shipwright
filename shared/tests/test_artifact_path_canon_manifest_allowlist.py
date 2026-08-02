@@ -1,81 +1,265 @@
-"""Regression: the generated requirement→test manifest is exempt from the
-Layer-1 artifact-path-canon lint.
+"""Regression: a hyphen-suffixed plugin path is not a legacy artifact reference.
 
-Context (iterate-2026-07-16-collector-test-roots): once the monorepo opts into
-scanning plugins/*/tests + shared/tests (via traceability.test_roots in
-shipwright_compliance_config.json), the test_links collector emits a
-.shipwright/compliance/test-traceability.json manifest whose test ids include
-plugins/shipwright-compliance/tests/... paths. The compliance migration's path
-regex false-matches the -compliance/ segment (`-` is not in the negative
-lookbehind). update_compliance regenerates + commits the manifest on every
-iterate finalize, so without the allowlist the NEXT unrelated iterate's canon
-lint would go red on ~1000 such ids.
+History. The Layer-1 canon regexes carried a negative lookbehind covering word
+chars, ``/``, ``.`` and ``\\`` — but not a hyphen continuing a word. So any
+directory whose name ENDS in a migrated dirname after a hyphen read as a bare
+legacy reference, and the generated requirement-to-test manifest (whose ids are
+all ``plugins/shipwright-compliance/tests/...``) false-flagged on ~1000 lines.
+The workaround was a per-file exemption, and this module existed to prove the
+false positive was real so the exemption stayed justified.
 
-The manifest is a generated, per-iterate-regenerated churn artifact (same exempt
-class as change-history.md / shipwright_test_results.json), so the fix is an
-allowlist entry, not an inline marker (JSON has no comment syntax).
+iterate-2026-08-01-canon-lookbehind-hyphen fixed the root cause instead: the two
+separator patterns now also carry ``(?<!\\w-)``. So the module's subject is
+inverted — it now pins that the false positive is GONE, that the fix is what
+removes it (a mutation test, so the assertion cannot pass vacuously), and that
+the exemptions retired on that basis stay retired.
 
-NOTE ON THIS FILE: it deliberately references the -compliance/ path segment and
-the bare compliance migration name, which trip the compliance migration's own
-regex — so this file is itself allowlisted in the compliance migration (same
-class as test_artifact_path_canon.py). It is written to carry NO other bare
-migration-name literal, and it identifies migrations by BEHAVIOR (regex match),
-never by name, so it trips no other migration.
+NOTE ON THIS FILE: it identifies migrations by BEHAVIOR or by canonical prefix,
+never by a bare name literal, so it trips no migration of its own accord. (It
+quotes hyphen-suffixed plugin paths freely — that is the very thing the fix made
+harmless, and this file measures zero findings because of it.)
 """
 from __future__ import annotations
 
-import fnmatch
+import json
 import re
+from pathlib import Path
+
+import pytest
 
 # shared/tests/conftest.py inserts shared/scripts into sys.path.
-from lib.artifact_migrations import ALLOWLIST, ARTIFACT_MIGRATIONS  # noqa: E402
+from lib.artifact_migrations import (  # noqa: E402
+    ALLOWLIST,
+    ARTIFACT_MIGRATIONS,
+    INLINE_MARKER,
+)
+
+# The lint itself — imported as a sibling module of this package, so these
+# assertions measure with the GATE's own scanners rather than a local
+# re-implementation that could drift from it.
+from .test_artifact_path_canon import (  # noqa: E402
+    _ast_violations,
+    _git_tracked_files,
+    _text_violations,
+)
+
+_REPO_ROOT = Path(__file__).resolve().parents[2]
 
 MANIFEST = ".shipwright/compliance/test-traceability.json"
-# A representative manifest-rendered test id (carries the -compliance/ segment).
+# A representative manifest-rendered test id (carries the hyphen-suffixed dir).
 _SAMPLE_TEST_ID = "plugins/shipwright-compliance/tests/test_test_links_config_roots.py::test_x"
 
+# The shape every manifest id of that kind has: a plugin dir whose name is
+# hyphen-suffixed with a migrated dirname. Used to prove _SAMPLE_TEST_ID still
+# represents what the producer actually emits.
+_HYPHENATED_PLUGIN_ID = re.compile(r"plugins/shipwright-[a-z_]+/tests/")
 
-def _path_matches_any(rel_path: str, patterns) -> bool:
-    """Mirror of the canon lint's allowlist match (POSIX glob on path or basename)."""
-    for pat in patterns:
-        pat_posix = pat.replace("\\", "/")
-        if fnmatch.fnmatch(rel_path, pat_posix) or fnmatch.fnmatch(
-            rel_path.rsplit("/", 1)[-1], pat_posix
-        ):
-            return True
-    return False
+# The guard the fix added to the two separator patterns.
+_HYPHEN_GUARD = r"(?<!\w-)"
+
+# Exemptions iterate-2026-08-01-canon-lookbehind-hyphen retired: each measured
+# non-zero BEFORE the fix and zero AFTER, and each recorded the hyphen-suffixed
+# plugin path as its only basis.
+_RETIRED_EXEMPTIONS = (
+    "scripts/install.sh",
+    "shared/glossary.md",
+    "plugins/shipwright-security/scripts/tools/finalize_security_compliance.py",
+    "shared/scripts/markdown_table.py",
+    "shared/scripts/tools/__init__.py",
+    "plugins/shipwright-compliance/scripts/audit/audit_adapters.py",
+    "docs/guide.md",
+)
+
+# Exemptions the fix ALSO emptied but which keep a standing basis of their own.
+# The two bases are NOT the same, so they are recorded separately: the manifest
+# is regenerated by update_compliance on every finalize, so a legacy ref in it
+# could not be fixed in place; the bloat baseline is a committed JSON register
+# that is edited deliberately but, being JSON, cannot carry an inline marker.
+_RETAINED_EXEMPTIONS = (
+    MANIFEST,
+    "shipwright_bloat_baseline.json",
+)
+
+
+def _active_migrations() -> list[dict]:
+    return [m for m in ARTIFACT_MIGRATIONS if m["status"] in ("in_progress", "migrated")]
+
+
+def _compiled() -> list[tuple[dict, list[re.Pattern]]]:
+    """Migrations paired with their compiled patterns (compiled once)."""
+    return [(m, [re.compile(p) for p in m["old_path_patterns"]])
+            for m in _active_migrations()]
 
 
 def _migrations_tripped_by(text: str) -> list[dict]:
     """Every active migration whose own path patterns match `text`.
 
-    Identifies migrations by behavior, not by literal name, so this test file
-    carries no bare migration-name string that the canon lint would flag.
+    Scans LINE BY LINE and honours ``INLINE_MARKER``, exactly as the lint's
+    ``_text_violations`` does — a whole-text regex would report a marked line as
+    a violation and disagree with the gate it is meant to describe.
+
+    Text leg only; the AST leg is exercised where it matters, in
+    ``test_exemptions_the_fix_emptied_are_not_needed``.
     """
-    tripped = []
-    for m in ARTIFACT_MIGRATIONS:
-        if m["status"] not in ("in_progress", "migrated"):
-            continue
-        if any(re.compile(p).search(text) for p in m["old_path_patterns"]):
-            tripped.append(m)
-    return tripped
+    lines = [ln for ln in text.splitlines() if INLINE_MARKER not in ln]
+    return [m for m, patterns in _compiled()
+            if any(p.search(ln) for p in patterns for ln in lines)]
 
 
-def test_manifest_content_really_trips_a_migration() -> None:
-    """Non-vacuity: prove the FP the allowlist guards against is REAL — a
-    manifest-rendered plugin test id trips at least one migration's canon regex."""
+def _without_hyphen_guard(pattern: str) -> str | None:
+    """*pattern* with the hyphen guard removed, or ``None`` if it carries none.
+
+    Reconstructs the pre-fix pattern so a test can prove the guard is what does
+    the work, rather than asserting the outcome and hoping.
+    """
+    if _HYPHEN_GUARD not in pattern:
+        return None
+    return pattern.replace(_HYPHEN_GUARD, "", 1)
+
+
+def test_manifest_content_trips_no_migration() -> None:
+    """A manifest-rendered plugin test id is a real source path, so no migration
+    may flag it as a legacy artifact reference."""
     tripped = _migrations_tripped_by(MANIFEST + "\n" + _SAMPLE_TEST_ID)
-    assert tripped, (
-        "expected the manifest's rendered content to false-match at least one "
-        "migration regex — if it no longer does, the allowlist may be redundant"
+    assert not tripped, (
+        "a hyphen-suffixed plugin path is being reported as a legacy artifact "
+        f"reference by {[m['canonical'] for m in tripped]} — the separator "
+        "patterns have lost their hyphen guard"
     )
 
 
-def test_manifest_is_allowlisted_in_every_migration_it_trips() -> None:
-    """The manifest must be exempt in each migration its content actually trips,
-    so a regenerated manifest never fails the Layer-1 canon lint downstream."""
-    for m in _migrations_tripped_by(MANIFEST + "\n" + _SAMPLE_TEST_ID):
-        assert _path_matches_any(MANIFEST, ALLOWLIST.get(m["name"], [])), (
-            f"{MANIFEST} is not allowlisted for a migration its content trips "
-            f"(canonical: {m['canonical']}) — the next iterate's canon lint would fail"
+def test_the_hyphen_guard_is_what_clears_the_manifest_content() -> None:
+    """Non-vacuity: prove the sample is still CAPABLE of tripping, and that the
+    hyphen guard is what stops it.
+
+    Without this, `test_manifest_content_trips_no_migration` would keep passing
+    if the sample stopped containing a hyphen-suffixed path at all.
+    """
+    text = MANIFEST + "\n" + _SAMPLE_TEST_ID
+    mutated_hits = []
+    for m in _active_migrations():
+        for pattern in m["old_path_patterns"]:
+            mutant = _without_hyphen_guard(pattern)
+            if mutant is None:
+                continue
+            if re.compile(mutant).search(text):
+                mutated_hits.append((m["name"], mutant))
+    assert mutated_hits, (
+        "removing the hyphen guard no longer makes the sample trip — either the "
+        "fix was reverted in a shape this mutation cannot express, or the sample "
+        "no longer carries a hyphen-suffixed path. Either way this file is "
+        "asserting nothing."
+    )
+
+
+def test_sample_shape_still_occurs_in_the_generated_manifest() -> None:
+    """The hand-written sample must keep representing what the producer emits.
+
+    Scans only the producer-controlled test ids, NOT the raw file. The manifest
+    also carries operator-authored prose (FR titles, spec paths); asserting the
+    whole file trips nothing would re-create in a test exactly the coupling the
+    exemption exists to prevent — an unrelated iterate's regenerated prose could
+    turn this root red with no escape hatch, which is the failure
+    iterate-2026-07-16-collector-test-roots already paid for.
+    """
+    manifest = _REPO_ROOT / MANIFEST
+    if not manifest.is_file():
+        # Mirror the affordance the sibling tests carry. The manifest is tracked,
+        # so CI always has it; a checkout without it is missing input, not drift.
+        pytest.skip(f"{MANIFEST} absent — cannot judge sample drift")  # test-hygiene: allow-silent-skip (missing tracked producer output; CI always has it)
+    assert _HYPHENATED_PLUGIN_ID.search(_SAMPLE_TEST_ID), (
+        "the sample no longer has the shape it is meant to represent"
+    )
+    doc = json.loads(manifest.read_text(encoding="utf-8"))
+    # Ids live in two places: per-requirement `tests` ({layer: [{id, path}]})
+    # and the flat `untagged_tests` list.
+    ids = set(doc.get("untagged_tests") or [])
+    for req in (doc.get("requirements") or {}).values():
+        for entries in (req.get("tests") or {}).values():
+            for entry in entries:
+                ids.update(str(v) for k, v in entry.items() if k in ("id", "path"))
+    assert ids, (
+        f"extracted no test ids from {MANIFEST} "
+        f"(schema_version={doc.get('schema_version')!r}, "
+        f"collector_version={doc.get('collector_version')!r}). This is a PRODUCER "
+        "SHAPE change, not path-canon drift — re-derive the extraction above "
+        "against the new schema."
+    )
+    ids = sorted(ids)
+    assert any(_HYPHENATED_PLUGIN_ID.search(i) for i in ids), (
+        f"{MANIFEST} no longer renders hyphen-suffixed plugin test ids — the "
+        "sample above has drifted from the producer and needs re-deriving"
+    )
+    tripped = _migrations_tripped_by("\n".join(ids))
+    assert not tripped, (
+        f"real manifest test ids are flagged by {[m['canonical'] for m in tripped]}"
+    )
+
+
+def test_exemptions_the_fix_emptied_are_not_needed() -> None:
+    """Per-entry proof for the exemptions this fix retired, measured with BOTH
+    of the gate's legs.
+
+    The repo-wide `test_no_legacy_artifact_paths` is the actual enforcement — it
+    scans these files for real now that they are no longer exempt. This test
+    states the claim per file, so re-adding an exemption cannot pass unexamined.
+    """
+    tracked = _git_tracked_files()
+    if not tracked:
+        # Mirror the gate's own affordance. Without this the test reports
+        # "no longer tracked" for all seven files, which is a misleading
+        # failure rather than an honest absence of input.
+        pytest.skip("git ls-files unavailable — running outside a git checkout")  # test-hygiene: allow-silent-skip (non-git-checkout affordance, mirrors test_artifact_path_canon; CI is always a git checkout)
+    for rel in _RETIRED_EXEMPTIONS:
+        assert rel in tracked, f"{rel} is no longer tracked — re-derive this list"
+        path = _REPO_ROOT / rel
+        findings = []
+        for m, patterns in _compiled():
+            findings += _text_violations(rel, path, patterns)
+            findings += _ast_violations(rel, path, m["ast_check_string"])
+        assert not findings, (
+            f"{rel} still yields {len(findings)} finding(s) "
+            f"({sorted({f['mode'] for f in findings})}) — its exemption was "
+            "removed on the measured basis that the hyphen fix emptied it, and "
+            "that basis no longer holds"
         )
+
+
+def test_retained_exemptions_stay_allowlisted_and_retired_ones_stay_out() -> None:
+    """Replaces the allowlist-membership guard this module used to carry.
+
+    Without it nothing asserts that the generated manifest is still exempt — and
+    its regeneration on every finalize is exactly what made an unrelated iterate
+    go red before (iterate-2026-07-16-collector-test-roots).
+    """
+    # Resolve the owning migration from the manifest's own canonical location,
+    # so this module still carries no bare migration-name literal.
+    owning = [m for m in _active_migrations()
+              if MANIFEST.startswith(m["canonical"] + "/")]
+    assert len(owning) == 1, (
+        f"could not resolve the migration that owns {MANIFEST} — got {owning}"
+    )
+    entries = ALLOWLIST.get(owning[0]["name"], [])
+    # Speed bump, and honestly no more than that: `_RETIRED_EXEMPTIONS` is a
+    # hand-written list guarded by the test that owns it, so re-adding an entry
+    # AND deleting its string here would pass. Pinning the count makes that a
+    # visible, reviewable edit rather than a silent one-line deletion.
+    assert len(_RETIRED_EXEMPTIONS) == 7, (
+        "the retired-exemption list changed size. That is a decision, not a "
+        "refactor — record why in the ALLOWLIST comment and the run's ADR."
+    )
+    for rel in _RETAINED_EXEMPTIONS:
+        assert rel in entries, (
+            f"{rel} lost its exemption. It cannot carry an inline marker (JSON), "
+            "so a regeneration or a deliberate edit would fail the canon lint on "
+            "an unrelated run."
+        )
+    # A retired entry must stay out of EVERY migration's allowlist, not just the
+    # one that owns the manifest — six of the seven are not compliance-specific.
+    for m in _active_migrations():
+        for rel in _RETIRED_EXEMPTIONS:
+            assert rel not in ALLOWLIST.get(m["name"], []), (
+                f"{rel} was re-added to the {m['canonical']} allowlist. It "
+                "measures zero findings; if that changed, record the new basis "
+                "rather than restoring a rationale the root-cause fix removed."
+            )

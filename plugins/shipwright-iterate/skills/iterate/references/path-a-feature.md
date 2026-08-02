@@ -185,8 +185,11 @@ If no boundaries touched: write `n/a` with one-line justification.}
 3. **NONE is a classification that must be *justified*, not a default.**
    The Phase Matrix marks this step `always` for FEATURE — that is
    load-bearing. The F11 finalization verifier FAILS a feature/change
-   iterate whose commit touched no `spec.md` unless `spec_impact=none` +
-   a justification was recorded at F7.
+   iterate whose **work up to the recorded commit** touched no `spec.md`
+   unless `spec_impact=none` + a justification was recorded at F7. It reads
+   the merge-base range where a trunk base can be corroborated (the single
+   commit otherwise), so an integration merge at HEAD normally does not hide
+   the spec.md your own commit carried.
 4. If `shipwright_sync_config.json` exists, add/update mappings for the
    affected files.
 

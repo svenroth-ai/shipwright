@@ -321,7 +321,7 @@ def cmd_record(args: argparse.Namespace) -> int:
                 unit["finished_at"] = _now_iso()
                 unit["commit"] = result.get("commit")
                 unit["branch"] = result.get("branch", unit.get("branch"))
-                unit["failure_reason"] = result.get("error")
+                unit["failure_reason"] = result.get("error") or (result.get("reason") if result.get("status") != "complete" else None)  # escalated carries `reason`, not `error`; scoped so a complete unit never gains one
 
                 runs_dir = Path(".shipwright/runs") / state["loop_id"] / unit["id"]
                 runs_dir.mkdir(parents=True, exist_ok=True)

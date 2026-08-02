@@ -1,0 +1,1 @@
+The checks that run on your machine before a push now use the same Python version the automated checks use. Previously the two could differ, so a change could look fine locally and then fail in CI for no reason you could see.

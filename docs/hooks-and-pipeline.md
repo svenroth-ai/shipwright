@@ -548,12 +548,28 @@ unit-tested, the interaction unproven (the auto-merge churn cascade is the
 motivating class). The new `cross_component` risk flag
 (`classify_complexity.CROSS_COMPONENT_FILE_PATTERNS`: merge/churn/event-log
 resolver, Claude-Code hooks + hook fan-out, pipeline phase validators, campaign
-drain) requires, at medium+, a `category:"integration"` behavior in the Test
-Completeness Ledger — a real-scenario integration test proving the pieces compose
+drain) requires a `category:"integration"` behavior in the Test Completeness
+Ledger — a real-scenario integration test proving the pieces compose
 (reference `shared/tests/test_parallel_merge_cascade_integration.py`). NON-dodgeable:
 the F11 verifier `check_integration_coverage` RECOMPUTES the flag from the diff
 (merge-base..HEAD), not an agent-reported value, and STOPs without the behavior.
 The verifier keeps a drift-pinned local pattern copy so it never cross-plugin-imports.
+
+**The gate applies at EVERY complexity
+(iterate-2026-08-01-coverage-gate-recompute-order).** It originally ran at medium+
+only, which read as harmless because the flag carries `min_complexity: medium` —
+a *detected* cross-component change is already escalated to medium, so the gate
+fires. But that made the below-medium band reachable only when detection FAILED at
+classification time (Stage 1 sees the message, not the diff) and the Stage-2 Quick
+Scout detector step did not catch it — i.e. the recompute stood down in exactly the
+case it exists to backstop, gated on the self-reported label sitting one field over.
+`min_complexity` is now understood strictly as the *classification* escalation
+floor; gate enforcement is independent and diff-driven. The same run made
+`layer_coverage`'s infra failures (missing `--commit`, unresolvable base ref, git
+fault, collector/regen failure) fail closed at every complexity, superseding
+MUST-FIX 1's "SKIP below medium" — `check_removal_coverage` documented itself as
+running at all complexities while declining to conclude at most of them. Only a
+genuine non-git context still skips, in both gates.
 
 **The CI trust boundary needs an acknowledgement, not more review
 (iterate-2026-07-18-ci-supplychain-risk-flag, triage `trg-9509c2e8`).** Nothing in
@@ -2457,9 +2473,39 @@ runs three guards:
 | `Contract surface (gate)` | `scripts/verify_contract_surface.py` | the bytes `grade.py --format json` and `analyze_codebase.py` actually emit still match the cross-repo contract this repo publishes |
 | `Sweep delivery surface (gate)` | `scripts/verify_sweep_delivery_surface.py` | an operator's triage dismiss survives the outbox sweep to origin instead of being quarantined away |
 
-The last two existed, were correct, and were referenced by no workflow until
-iterate-2026-07-27-checks-that-gate-nothing — they ran nowhere and gated
-nothing. Two rules follow from wiring them:
+All three are mirrored locally by `scripts/verify_local.py`, so a push does not
+have to learn about them from a red CI run:
+
+```bash
+uv run scripts/verify_local.py     # runs the three above, before you push
+```
+
+It drives each gate as a **subprocess**, with the command `ci.yml` uses verbatim
+— never by importing the checker. `check_ci_gate_coverage.py` mutates `sys.path`
+and does an eager `from lib.ci_gate_allowlist import …` at module scope, so
+importing it would bind `lib` for the whole interpreter and resolve differently
+under the plugin-vs-shared root split (ADR-045): green locally, red in CI. A
+lazy import only defers *which* `lib` binds; it does not make it safe.
+
+Two of `ci.yml`'s five guards are deliberately **not** mirrored, each recorded
+with its reason in `CI_ONLY_GATES`: `Repair-PR safety (gate)` materialises its
+checker from the PR's *base* revision precisely so a branch cannot vouch for
+itself, and `Diff coverage (gate)` belongs in the F0 suite runner that already
+produces coverage (tracked as `trg-392dc923`).
+`shared/tests/test_verify_local_ci_drift.py` pins both drift directions across
+every workflow and job — a bespoke guard that lands in neither registry fails
+there, and a local command that stops matching CI's fails per-gate.
+
+Two limits to keep in view. **A local pass is never a substitute for the host's
+re-check** (FR-01.17): CI runs a clean checkout on a pinned interpreter, which
+is a different question, and it vets the commit you *push* where this vets your
+*working tree* (it prints which, and warns when the tree is dirty). And
+**nothing invokes it for you** — no hook, no skill step, no workflow. Whether
+something should is `trg-486cb11c`.
+
+The two surface verifiers existed, were correct, and were referenced by no
+workflow until iterate-2026-07-27-checks-that-gate-nothing — they ran nowhere
+and gated nothing. Two rules follow from wiring them:
 
 - **Confirm a check passes locally before you make it block.** Wiring a red gate
   blocks every PR, starting with the one that wires it.
@@ -2582,6 +2628,7 @@ uv run "{shared_root}/scripts/tools/run_test_suite.py" \
 | Aspect | Rule |
 |---|---|
 | **Unit selection** | **Discovered**, never hardcoded — the same rule as `ci.yml` (`plugins/*/` with `pyproject.toml` + `tests/`, the three `shared/` test dirs, `integration-tests/`). A new plugin is included automatically. Drift guard: `shared/scripts/tools/tests/test_f0_ci_parity.py` fails if `ci.yml` stops using that rule. |
+| **Interpreter** | Every `uv run` the runner makes carries `--python`, pinned once as `suite_units.PYTHON_VERSION` (spread via `UV_RUN` at all three call sites) and mirrored by a tracked `.python-version` at the repo root **and** in each plugin dir — a plugin dir is its own uv project, so the root file never reaches it. Without the pin `uv` resolves per DIRECTORY from ambient state: measured on `main` @ `6d2b2013`, F0 ran the 14 plugin units on 3.13.13/3.12.13 while every workflow ran 3.11.15 — F0 green, CI red, and the parity guard silent because it pinned unit *selection*, never the interpreter. Drift guard: `test_f0_ci_parity.py` fails if the argv pin, any version file, or any workflow's `uv python install` disagrees; `test_suite_units.py` fails if a new `uv`/`uvx` call site bypasses `UV_RUN`. The patch level floats on both sides on purpose. |
 | **Parallelism** | Units run as parallel processes (they are already isolated processes — ADR-044). |
 | **xdist** | **Per-unit OPT-IN** via `suite.xdist` in `shipwright_test_config.json`. A global `-n auto` is FORBIDDEN. **`shipwright-compliance` must stay off the allowlist** — it is not xdist-safe (shared-state races in `test_test_evidence.py`). |
 | **"pytest ran?"** | PROVEN by the JUnit report file, never guessed from output prose (`uv run` also exits 1 when it fails to build the env; pytest pluralises `error`→`errors`, so a fixture-level race would be misread). rc 1 + report = test failure; rc 1 + no report = infra fault. |
@@ -2696,9 +2743,17 @@ feature/change iterate `work_completed` event names no FR
 (`--affected-frs` / `--new-frs` both empty) and records no
 `--spec-impact none --spec-impact-justification`; and the post-commit audit
 `check_spec_impact_recorded` in `iterate_checks.py` FAILS the F11 verifier
-when the commit touched no `.shipwright/planning/**/spec.md` and no
-`spec_impact=none` was recorded. The compliance detective audit adds Group D
-check **D5** — feature/change events that landed with no FR linkage.
+when **the iterate's own work** touched no `.shipwright/planning/**/spec.md` and
+no `spec_impact=none` was recorded. It resolves that path set with
+`git_helpers._iterate_changed_paths`, per the commit-scoped-gate rule above —
+the merge-base range where a trunk base can be corroborated, the single commit
+otherwise. Until `iterate-2026-08-01-spec-impact-range-resolver` it always read
+the single commit, so a run that recorded `add`/`modify`/`remove` and whose HEAD
+was an integration merge FAILed even though its own commit had touched a
+spec.md. Note the range is anchored on the trunk, so under the `stacked`
+campaign strategy a predecessor unit's spec.md counts — see the gate's docstring
+and `test_spec_impact_range_limits.py`. The compliance detective audit adds
+Group D check **D5** — feature/change events that landed with no FR linkage.
 Origin: iterate-2026-05-16-spec-impact-gate.
 
 **Architecture-documentation gate (iterate, F11 canon).**

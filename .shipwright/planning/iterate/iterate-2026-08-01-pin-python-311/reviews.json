@@ -1,0 +1,282 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-08-01-pin-python-311",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-01T06:45:40.381020+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 4,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "The stated CI parity contract is broader than the evidence and proposed guard. Two workflows (`codeql.yml` and `pr-review.yml`) do not install Python, while AC5 says the runner pin must match “what every workflow’s `uv python install` names.” A guard that only compares existing `uv python install` occurrences can pass when a workflow that runs Python/uv has no explicit interpreter setup at all.",
+          "suggestion": "Define the authoritative CI scope precisely: identify every workflow/job that executes the F0-equivalent test units or invokes `uv run` for Python tests. Require each such job to explicitly install/use 3.11, or intentionally exclude non-test workflows in the parity test with a documented reason. Make the guard fail for an in-scope Python test workflow that lacks an explicit 3.11 declaration, rather than treating absence as agreement.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The warm-up does not establish that all 18 units can resolve and execute under 3.11. The 14 plugins are separate uv projects with separate environments; a root-cwd warm-up can only warm the root environment. A plugin can still fail on its first 3.11 resolution because of a lockfile, marker, or transitive dependency issue even though its project metadata says `>=3.11`.",
+          "suggestion": "Before landing, validate a clean worktree with no relevant `.venv` directories and run the complete discovered F0 suite under the new commands. In particular, confirm all plugin units provision successfully on 3.11 and that concurrent first-run provisioning does not produce cache/venv contention failures. Update the risk wording so it does not imply the single warm-up prebuilds all plugin environments.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "Pinning changes the local failure mode for contributors whose environment prohibits uv downloads or has no usable 3.11 interpreter. Previously, such machines could run F0 on an ambient 3.12/3.13; after this change they will fail before tests run. That is the intended correctness trade-off, but the failure may be reported as an F0 infrastructure error and be confusing in offline or enterprise-managed environments.",
+          "suggestion": "Document the prerequisite and remediation in the F0/operator documentation: install or make available Python 3.11 (for example, `uv python install 3.11`) before running F0. Ensure the existing failure output preserves uv’s actionable interpreter-install error rather than replacing it with a generic runner failure.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "The proposed “one owner” protection can become tautological if the argv test and parity test both merely consume `suite_units.UV_RUN`. In that form, refactoring the constant could preserve the tests while producing an invalid command prefix or removing the explicit argument from the constructed command path.",
+          "suggestion": "Keep `UV_RUN` as the implementation owner, but make the tests independently inspect behavior: assert the final `build_command()` token sequence contains `uv`, `run`, `--python`, `3.11` in valid uv option position; independently assert the constant/workflow/version-file value is `3.11`. For version files, assert the exact expected root-plus-14-plugin path set, not only that all currently tracked files agree.  Overall, argv pinning plus scoped `.python-version` files is the correct solution and appropriately preserves reproducible retry commands. The plan needs a tighter definition and enforcement of the CI authority, plus clean-worktree validation across all separate plugin projects before it is ready. SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-08-01T07:15:30.494803+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "partial",
+      "raw_excerpt": "[gemini] *\n        *   Does `uv` require `.python-version` to be exactly just the version string (e.g., `3.11`)?\n        *   Yes.\n        *   But look at the duplication: 15 `.python-version` files. If you bump the Python version to 3.12 in the future, you have to update 15 files.\n        *   The author added a test: \"The 15 version files cannot drift apart. A guard asserts every tracked .python-version holds the same value\". This mitigates the maintenance burden by failing CI loudly if you miss one.\n        *   Is there a way to avoid 15 files *without* converting to a uv workspace?\n        *   No,\n\n[openai] 1. **Category: dependency**  \n   **Severity: medium**  \n   **Finding:** The stated CI parity contract is broader than the evidence and proposed guard. Two workflows (`codeql.yml` and `pr-review.yml`) do not install Python, while AC5 says the runner pin must match “what every workflow’s `uv python install` names.” A guard that only compares existing `uv python install` occurrences can pass when a workflow that runs Python/uv has no explicit interpreter setup at all.  \n   **Suggestion:** Define the authoritative CI scope precisely: identify every workflow/job that executes the F0-equivalent test units or invokes `uv run` for Python tests. Require each such job to explicitly install/use 3.11, or intentionally exclude non-test workflows in the parity test with a documented reason. Make the guard fail for an in-scope Python test workflow that lacks an explicit 3.11 declaration, rather than treating absence as agreement.\n\n2. **Category: edge-case**  \n   **Severity: medium**  \n   **Finding:** The warm-up does not establish that all 18 units can resolve and execute under 3.11. The 14 plugins are separate uv projects with separate environments; a root-cwd warm-up can only warm the root environment. A plugin can still fail on its first 3.11 resolution because of a lockfile, marker, or transitive dependency issue even though its project metadata says `>=3.11`.  \n   **Suggestion:** Before landing, validate a clean worktree with no relevant `.venv` directories and run the complete discovered F0 suite under the new commands. In particular, confirm all plugin units provision successfully on 3.11 and that concurrent first-run provisioning does not produce cache/venv contention failures. Update the risk wording so it does not imply the single warm-up prebuilds all plugin environments.\n\n3. **Category: risk**  \n   **Severity: low**  \n   **Finding:** Pinning changes the local failure mode for contributors whose environment prohibits uv downloads or has no usable 3.11 inter […truncated]"
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 9,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "correctness",
+          "file": ".python-version",
+          "line": 1,
+          "finding": "The 15 .python-version files are untracked, so the PR would ship none of them and CI would fail the root existence assertion - the exact F0-green/CI-red shape this run exists to close.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "shared/scripts/tools/tests/test_f0_ci_parity.py",
+          "line": 89,
+          "finding": "The workflow-scan regex matched only a bare major.minor and SKIPPED any form it could not parse rather than failing. A quoted version, a matrix expression, a .yaml filename, or the .github/actions tree would all have read as full parity.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "shared/scripts/tools/suite_units.py",
+          "line": 32,
+          "finding": "Nothing failed when a FOURTH uv call site was added unpinned - the exact rot direction that produced this defect, since build_command shipped without an interpreter pin and no test noticed.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "architecture",
+          "file": "shared/scripts/tools/run_test_suite.py",
+          "line": 1,
+          "finding": "The runner Claude Code actually executes is the plugin-cache copy, so the fix is inert at runtime until update-marketplace.sh runs. check_plugin_cache_sync.py --strict cannot confirm it, because per trg-8f7387d3 it never compares the cache's shared/ tree.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "shared/scripts/tools/tests/test_f0_ci_parity.py",
+          "line": 78,
+          "finding": "The test bound the ci_text fixture and never read it, telling a reader the opposite of the surfaces it actually scans.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "shared/scripts/tools/tests/test_run_test_suite.py",
+          "line": 93,
+          "finding": "The unit-count assertion is load-bearing (it stops the loop passing vacuously) but hard-coded a discovery fact this file does not own.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "architecture",
+          "file": "docs/hooks-and-pipeline.md",
+          "line": 2582,
+          "finding": "The F0 rules table mirrors the F0.md bullets one-for-one; the interpreter rule landed only in F0.md, so the document CLAUDE.md names as the single source of truth under-described the gate.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/scripts/tools/suite_units.py",
+          "line": 158,
+          "finding": "On a machine that cannot provision 3.11, ensure_xdist_available refuses with a message naming pytest-xdist as the cause - a pre-existing message newly reachable for a new reason.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": null,
+          "category": "correctness",
+          "file": "shared/scripts/tools/suite_units.py",
+          "line": 26,
+          "finding": "Pinning the minor version rather than the patch is correct, but a future reader might tighten it.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-08-01T06:58:52.783876+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 7,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "boundary",
+          "file": null,
+          "line": null,
+          "finding": "hard-coding 3.11 is monorepo-scoped",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "boundary",
+          "file": null,
+          "line": null,
+          "finding": "AC3/AC4 - a tracked .python-version makes bare 'uv run' resolve 3.11 even against an existing venv that already satisfies >=3.11",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "boundary",
+          "file": null,
+          "line": null,
+          "finding": "'inside the F0 runner, uv is spelled UV_RUN and nowhere else'",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "coupling",
+          "file": null,
+          "line": null,
+          "finding": "the workflow guard is symmetric with the root-file existence assertion",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "reversibility",
+          "file": null,
+          "line": null,
+          "finding": "'the re-resolve is not an infra fault' fully characterises the side effect",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "coupling",
+          "file": null,
+          "line": null,
+          "finding": "the root-cause mechanism as stated",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "boundary",
+          "file": null,
+          "line": null,
+          "finding": "'CI has no interpreter drift'",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-08-01T07:15:22.015923+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 2,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "test",
+          "file": "shared/scripts/tools/tests/test_f0_ci_parity.py",
+          "line": 97,
+          "finding": "The CI interpreter-presence and version checks search raw workflow text, including comments. A workflow can run an unpinned active `uv run` while containing `# uv python install 3.11`; that comment satisfies both `\"uv python install\" in ...` and the version regex, so both guards pass even though CI has reverted to ambient interpreter selection. This undermines AC5’s requirement that removing CI’s effective pin fails the guard.",
+          "suggestion": "Inspect executable `run:` script content rather than arbitrary YAML text, at minimum excluding shell/YAML comments before matching. Add a regression fixture or mutation test with a commented-out install and active `uv run` to prove it fails.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "test",
+          "file": "shared/scripts/tools/tests/test_suite_units.py",
+          "line": 136,
+          "finding": "The claimed “no uv invocation escapes” guard only rejects the exact double-quoted source fragments `\"uv\"` and `\"uvx\"`. A new unpinned call written idiomatically as `subprocess.run(['uv', 'run', ...])` (or assembled through a variable) bypasses the check entirely, while all three newly added per-site pin tests remain green. Thus the stated protection against the exact recurrence mode—a fourth unpinned call site—is not actually enforced.",
+          "suggestion": "Use an AST-based assertion targeting subprocess command construction/calls, or otherwise inspect both quote styles and command-list construction robustly. Add a negative test/source fixture demonstrating that a single-quoted bare `uv run` is rejected.  Overall assessment: The runtime pinning and version files implement the primary behavior correctly, but the anti-rot tests required by AC5 are bypassable in concrete, ordinary edits. Ship with fixes to make the guards enforce their advertised invariant. SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-08-01T07:15:22.116881+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "partial",
+      "raw_excerpt": "[gemini] ` and `.github/actions/*/*.y*ml`.\n```python\ndef _ci_surfaces() -> list[Path]:\n    \"\"\"Every file that can run this repo's Python in CI. `*.y*ml` because GitHub\n    accepts both spellings, and composite actions because they are CI too.\"\"\"\n    return sorted([*(_REPO_ROOT / \".github\" / \"workflows\").glob(\"*.y*ml\"),\n                   *(_REPO_ROOT / \".github\" / \"actions\").glob(\"*/action.y*ml\")])\n```\n\nWait, what about `test_every_tracked_version_file_agrees_with_the_runner_pin` in `test_f0_ci_parity.py`?\n\n[openai] - Category: test\n- Severity: medium\n- File: shared/scripts/tools/tests/test_f0_ci_parity.py:97\n- Finding: The CI interpreter-presence and version checks search raw workflow text, including comments. A workflow can run an unpinned active `uv run` while containing `# uv python install 3.11`; that comment satisfies both `\"uv python install\" in ...` and the version regex, so both guards pass even though CI has reverted to ambient interpreter selection. This undermines AC5’s requirement that removing CI’s effective pin fails the guard.\n- Suggestion: Inspect executable `run:` script content rather than arbitrary YAML text, at minimum excluding shell/YAML comments before matching. Add a regression fixture or mutation test with a commented-out install and active `uv run` to prove it fails.\n\n- Category: test\n- Severity: medium\n- File: shared/scripts/tools/tests/test_suite_units.py:136\n- Finding: The claimed “no uv invocation escapes” guard only rejects the exact double-quoted source fragments `\"uv\"` and `\"uvx\"`. A new unpinned call written idiomatically as `subprocess.run(['uv', 'run', ...])` (or assembled through a variable) bypasses the check entirely, while all three newly added per-site pin tests remain green. Thus the stated protection against the exact recurrence mode—a fourth unpinned call site—is not actually enforced.\n- Suggestion: Use an AST-based assertion targeting subprocess command construction/calls, or otherwise inspect both quote styles and command-list construction robustly. Add a negative test/source fixture demonstrating that a single-quoted bare `uv run` is rejected.\n\nOverall assessment: The runtime pinning and version files implement the primary behavior correctly, but the anti-rot tests required by AC5 are bypassable in concrete, ordinary edits. Ship with fixes to make the guards enforce their advertised invariant.  \nSHIPWRIGHT_VERDICT: revise"
+    }
+  },
+  "gates": {
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-01T06:44:25.181305+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    }
+  }
+}

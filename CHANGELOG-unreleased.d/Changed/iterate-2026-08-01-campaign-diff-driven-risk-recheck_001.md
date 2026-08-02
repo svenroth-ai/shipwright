@@ -1,0 +1,1 @@
+iterate campaign mode: the external plan review now fires on the same conditions as the code-review cascade (medium+, any risk flag, or a diff over 100 lines). It previously lacked the diff-size arm, which combined with the flag blindness above to make it a guaranteed skip for fleet units.

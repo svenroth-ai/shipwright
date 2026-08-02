@@ -1,0 +1,1 @@
+The cross-component integration-coverage gate now enforces at every complexity, not only medium+. It reads the actual diff first, so a change that touches shared framework machinery is caught even when the run was classified below the level that used to be required. Clearing it does not mean escalating the run -- record the integration behaviour in the run's own entry.

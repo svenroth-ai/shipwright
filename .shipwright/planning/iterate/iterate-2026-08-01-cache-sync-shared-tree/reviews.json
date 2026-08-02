@@ -1,0 +1,343 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-08-01-cache-sync-shared-tree",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-07-31T23:48:13.921826+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-07-31T23:48:24.216017+00:00",
+      "disposition": "Phase Matrix: External LLM Review is 'skip' at small complexity (auto only at medium+); no mini-plan exists at small for a BUG path, so there is no plan artifact to review.",
+      "recorded_by": "iterate-skill",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 9,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "scripts/cache_tree_compare.py",
+          "line": 148,
+          "finding": "The orphan advisory's top-5 truncation systematically hides the markers that motivated the feature. Measured against the live cache: 22 .orphaned_at markers exist - 14 under plugins/shipwright-*/ (the mirror tree this check explicitly declares out of scope) and 8 under shared/*, including shared/scripts, the exact directory whose reap broke F11. sorted() puts every plugins/... entry before any shared/... entry, and _print_orphan_advisory shows markers[:5]. On the machine where the incident was measured the operator sees five mirror-tree paths and is never told that shared/scripts is flagged.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "scripts/check_plugin_cache_sync.py",
+          "line": 185,
+          "finding": "The advisory prescribes a remedy that cannot clear it, so it becomes permanent noise. update-marketplace.sh Step 3 deletes cache-only files under shared/, so the 8 shared markers clear. But Step 4's sync_dir_from_to has no removal loop, so the 14 plugins/shipwright-*/.orphaned_at markers survive every sync forever - an always-on warning is indistinguishable from a real one.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "scripts/cache_tree_compare.py",
+          "line": 30,
+          "finding": "Catalog X (dead code, justification removed). TRACKED_SUFFIXES and TEXT_SUFFIXES are byte-identical tuples, so file_hash's binary branch is unreachable from walk_tracked_files. The ORIGINAL docstring said so explicitly; the extraction deleted that clause, so a reader sees a live-looking branch with no way to learn it is dead.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "architecture",
+          "file": "shared/tests/test_plugin_cache_sync_shared_tree.py",
+          "line": 38,
+          "finding": "sys.path asymmetry: the module under test appends and documents why (ADR-045); the new test insert(0)s. scripts/hooks/ has no __init__.py, so `hooks` resolves as a namespace package whose portion list is built in sys.path order, and three other modules in the same shared/tests root import it. Resolves correctly today only because scripts/hooks/ holds no .py file.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/tests/test_plugin_cache_sync_shared_tree.py",
+          "line": 146,
+          "finding": "assert \"mirrors\" not in result is near-vacuous - no code has ever produced a key by that name, so it can only fail if someone adds that exact string literal. If the mirror were later folded into plugins, or keyed `mirror`, this passes.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/tests/test_plugin_cache_sync_shared_tree.py",
+          "line": 200,
+          "finding": "test_early_return_statuses_carry_the_documented_shape says 'statuses' but exercises only cache_root_absent; no_repo_plugins has no shape assertion. Separately, main's suppression of the orphan advisory under --json is untested; a regression there would corrupt every --json consumer's stdout/stderr split silently.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "scripts/check_plugin_cache_sync.py",
+          "line": 139,
+          "finding": "drifted += record[\"state\"] != \"ok\" adds a bool to an int. Correct, but arithmetic on a truth value reads as a typo, and it is the one place where the counter driving the exit code is set.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "scripts/cache_tree_compare.py",
+          "line": 33,
+          "finding": "Docstring became false in the same diff that wrote it: 'Nothing in this repo reads or writes them' - find_orphan_markers, twelve lines below, reads them. Repeated at check_plugin_cache_sync.py and in docs/guide.md.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "performance",
+          "file": "scripts/cache_tree_compare.py",
+          "line": 147,
+          "finding": "(a) find_orphan_markers rglobs the ENTIRE cache root including the plugins/ mirror the check does not compare - on Windows that is a real copy, so all 14 plugin trees get walked a second time. (b) compare_tree's not_in_cache branch hashes the whole repo tree BEFORE discovering the cache side is absent; the old code short-circuited.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-07-31T23:57:00.752128+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 20,
+      "findings": [
+        {
+          "severity": "high",
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: a green from this gate means the shared/ tree was verified — TRACKED_SUFFIXES was a seven-suffix allowlist, so .template and extensionless files were invisible. Measured on the live cache: 44 of 1005 shared/ files unverified — shared/templates/ 3/37, shared/prompts/{code,pr,iterate}_reviewer/ 0/6. Both are read FROM THE CACHE at runtime (step-7-scaffolding.md loads templates/rules/*.md.template; external_review_prompts._DEFAULT_PROMPTS_ROOT resolves cache/shipwright/shared/prompts/). Either directory could vanish entirely under a green, and external_review_prompts._load falls back to ('', '') silently.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "high",
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: the gate's definition of a tree matches update-marketplace.sh's — SKIP_DIRS matched the bare component `build`, so all 29 git-tracked files of plugins/shipwright-build/skills/build/ — SKILL.md and the whole references/ tree — were dropped from BOTH sides and could never drift. Measured: 0 of 29 walked. The diff's own comment vouched for this as safe build output.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "high",
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: measured after: zero false positives — That measurement was taken in the clean worktree. The main checkout carries six gitignored generated files inside the compared trees (shared/.coverage, shared/.shipwright_toolcall_count, plugins/shipwright-iterate/.coverage, and three more counters). The cache is synced from a git reset --hard clone and can never hold them, so the exclusion walk made each a permanent phantom missing-from-cache: five trees drifted, --strict exit 1, and the printed remedy could not clear one of them. The mandatory --strict run would have been permanently red.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "high",
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: a zero-file basis can no longer render as agreement — `git ls-files` exits 0 and prints nothing when the path is inside a repo tracking nothing there (git init on an unzipped download; a copy of plugins/ inside an unrelated checkout). Treated as success it returns an empty dict, compare_tree computes no diffs, and the record is `ok` at --strict exit 0 — the same confident-green-over-nothing as the unreadable plugins/ dir, and a regression the walk basis could not produce.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: the same rule is applied at both places a zero can enter — The guard sat at the LISTING step only. If git lists 1005 files and none hash (offline cloud placeholders, a disconnected mount, an AV quarantine, an all-gitlink tree), repo_tracked_files returns ({}, 'git', 1005) and compare_tree agrees with everything: ok, --strict exit 0.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: verified is unaffected because the record is not ok — True for plugins, false for shared: round 3's guard was written on the plugins side only, and round 5 added a second `unreadable` producer on the unguarded shared path. So on the exact scenario the new guard was built for, the payload still said verified: ['plugins','shared'] while the shared record said no basis was established.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: the OK line was fixed so it no longer overclaims — The prose was fixed; the machine-readable verdict was not. `status: ok` reads the same whether shared/ was compared or skipped as n/a, and --strict keys only on status, so every non-human consumer got the pre-fix guarantee. Separately _repo_plugin_dirs swallowed OSError into [], so an unlistable plugins/ printed 'ok - 0 plugin(s) in sync' at exit 0.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: cache-only files are deliberately not drift, and that is harmless — compare_tree iterated repo-side keys only, so a DELETION never surfaced. shared/scripts is on sys.path at runtime, so a module dropped from the repo but surviving in the cache is still importable and still executes. This repo has five verifier modules devoted to catching removed code; the cache gate was blind to exactly that class.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: the orphan advisory warns about what matters — Measured always-on: all 8 top-level subdirs of a fully intact cached shared/ carried a marker, re-written by a recurring sweep after each re-sync removed them, because the marker means 'not recognised as an installed plugin' — permanently true of shared/. It is not a reap prediction. And it added no detection power the tree comparison now has, since a partial reap IS drift.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: the involuntary fallback is no longer silent — print_ok named it, but an involuntary fallback's characteristic outcome is DRIFT, not ok. On a safe.directory refusal the repo side reverts to walking, the gitignored files reappear as phantom drift, and the operator reads a remedy — re-run update-marketplace.sh — that cannot put .coverage into a cache. The visibility fix landed on the branch where the fallback is least likely and was absent from the branch where it produces the misdiagnosis it was written to prevent.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: the documentation matches the shipped mechanism — docs/guide.md was untouched in rounds 3 and 4, so it still documented the v5 exclusion walk for BOTH sides. Its central sentence was false for the half that changed, and a reader following it would predict shared/.coverage gets compared and the run goes red — the opposite of what the code now does. Four smaller staleness items alongside. This is the iterate's own defect class: a document claiming a mechanism the code does not use.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: SKIP_DIRS is safe because nothing tracked lives under those names — Correct today, but structural: before the switch both sides used the same rule, so a SKIP_DIRS name could only cause a symmetric blind spot. Now the repo side asks git and the cache side applies SKIP_DIRS, so if anything under those components ever becomes tracked it is permanent unclearable drift — the H2 failure mode with the sign flipped. The invariant was enforced by a comment.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: three of the four weak-assertion fixes were made — They were not in the diff. Reported as fixed while the artifact still contained the original assertions — the same claiming-coverage-you-do-not-have failure one level up, on a change whose subject is exactly that.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: the extraction is behaviour-preserving, proven by a 1,521-file differential test — The differential covered walk_tracked_files and version_key only. It could not see that latest_cache_version_dir gained a try/except the original lacked (turning an unreadable cached plugin into a confident not_in_cache with a fabricated missing-file count), nor the deliberate sample sort change.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: content-sniffing is a strict improvement — It is, but the NUL heuristic is a false-GREEN risk: a binary file with no NUL in its first 8 KiB gets CRLF normalization applied before hashing, which is lossy, so two distinct blobs can hash equal.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: tracked-but-unhashable files can be safely dropped — Under the walk there was no expectation to violate. Under git there is: git states how many files should be there, so dropping them shrinks tracked_count to match and a partial checkout self-consistently reports ok over a partial basis. Also hides submodule gitlinks, which hash to None.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: the test suite exercises the shipped behaviour — Only the basis tests called git init; every other test ran on a non-git tmp_path, so the production basis was covered by three tests while the iterate's substantive behaviours were pinned against the basis production never uses.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: every return carries the full documented shape — basis and cache_only_count were absent from _shared_na() and from the unreadable plugin record, so a consumer asserting on shared['basis'] — the key added so a consumer could tell how the verdict was established — would KeyError on four statuses.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: the APPEND-not-insert(0) reasoning protects the host process — Half the mechanism was wrong: both scripts/hooks/ and shared/scripts/hooks/ lack __init__.py, so both are namespace-package PORTIONS, and a portion cannot shadow another portion — Python unions them. Only the top-level module names could shadow.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: the two test files were split cleanly — _write and _seed were duplicated verbatim across two files in the same pytest root — the split traded a length rule for a duplication, and the second file's _seed docstring described the first file's concern.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-08-01T00:50:51.397302+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-07-31T23:48:24.366014+00:00",
+      "disposition": "Phase Matrix: External LLM Review is 'skip' at small complexity. Escalation ladder not triggered - the internal cascade ran in full (spec-reviewer PASS after two rejects, code-reviewer, doubt-reviewer), so the mandatory-external fallback for a declined cascade does not apply.",
+      "recorded_by": "iterate-skill",
+      "parse_status": null,
+      "raw_excerpt": null
+    }
+  },
+  "gates": {
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-07-31T23:46:44.672877+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    }
+  }
+}

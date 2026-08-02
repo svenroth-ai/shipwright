@@ -1,296 +1,302 @@
 #!/usr/bin/env python3
 """Detect drift between the local plugin cache and the repo HEAD.
 
-Iterate C.3 (ADR-061) — closes the open gap from CLAUDE.md's
-"plugin-side fixes silently never take effect" learning: changes
-under ``plugins/*`` and ``shared/scripts/`` aren't auto-synced to
-the runtime cache at ``~/.claude/plugins/cache/shipwright/`` unless
-``scripts/update-marketplace.sh`` is run. Iterates 7-11 all had
-plugin-side fixes that landed in the dev repo but never reached
-runtime because the sync step was skipped.
+Iterate C.3 (ADR-061) — closes the open gap from CLAUDE.md's "plugin-side fixes
+silently never take effect" learning: changes under ``plugins/*`` and
+``shared/scripts/`` aren't auto-synced to the runtime cache at
+``~/.claude/plugins/cache/shipwright/`` unless ``scripts/update-marketplace.sh``
+is run. Iterates 7-11 all had plugin-side fixes that landed in the dev repo but
+never reached runtime because the sync step was skipped.
 
-This script walks every ``plugins/shipwright-*`` directory under
-the repo root, locates the corresponding latest version directory
-under the cache, and compares each tracked file by SHA-256. Drift
-surfaces as a WARN line on stderr; exit code is 0 except when
-``--strict`` is passed (which exits 1 on any drift).
+Two of the cache's trees are compared, and a green means both were read:
 
-CI-safe: when ``~/.claude/`` doesn't exist (typical in CI runners),
-the script no-ops with status ``cache_root_absent``.
+- ``cache/<plugin>/<version>/`` — the installed plugins;
+- ``cache/shared/``            — reached as ``{plugin_root}/../../shared``, and
+  the home of the F11 finalization verifier every iterate runs.
+
+Only the first was compared until 2026-08-01, so ``--strict`` could print
+"all 14 plugin(s) in sync" with the whole of ``shared/scripts/`` deleted from
+the cache. That is not a hypothetical: a partial reap (see ``.orphaned_at``
+below) leaves the SessionStart self-heal hook's sentinel intact, so nothing
+repairs it and F11 dies with ``ModuleNotFoundError``.
+
+A third tree, ``cache/plugins/<plugin>/`` (the cross-plugin mirror behind
+``{plugin_root}/../../plugins/shipwright-X``), is deliberately NOT compared
+here — see the triage item on ``ensure_shared_cache._plugins_healthy``, whose
+single-sentinel health check has the same surviving-sentinel weakness and wants
+fixing before a gate is built on top of it.
+
+``.orphaned_at`` files are written by the Claude Code cache manager into
+directories it does not recognise as an installed plugin. Nothing in this repo
+writes them; this check is their only reader. They are NOT a reap prediction —
+measured 2026-08-01, all 8 top-level subdirs of a fully intact cached
+``shared/`` carried one, re-written by a recurring sweep after each re-sync
+removed them, because "not referenced by ``installed_plugins.json``" is
+permanently true of ``shared/`` by construction. So they never set exit 1, and
+the human advisory prints only alongside drift, where it explains WHY a tree
+lost files. ``orphan_markers`` is in the ``--json`` payload unconditionally.
+
+Drift surfaces as a WARN line on stderr; exit code is 0 except when ``--strict``
+is passed (which exits 1 on any drift).
+
+CI-safe: when ``~/.claude/`` doesn't exist (typical in CI runners), the script
+no-ops with status ``cache_root_absent``.
+
+The compared version directory is the one ``installed_plugins.json`` names — the same file
+``update-marketplace.sh`` writes into — falling back to the highest cached version, and
+saying which, when that manifest cannot be read. Resolving it independently of the sync is
+how a plugin came to report drift that no re-sync could clear (P2.06).
 
 Usage:
     uv run scripts/check_plugin_cache_sync.py [--strict] [--json]
     uv run scripts/check_plugin_cache_sync.py --cache-root <path> --repo-root <path>
+        [--installed-plugins <path>]
 """
 
 from __future__ import annotations
 
 import argparse
-import hashlib
 import json
-import re
 import sys
 from pathlib import Path
 
-# Files we compare. The plugin-cache sync ships SKILL.md, scripts,
-# hooks, agents, references, schemas. We DON'T compare __pycache__,
-# .pyc, or anything under .git/.venv/etc. — those are build artifacts.
-_TRACKED_SUFFIXES = (".py", ".md", ".json", ".sh", ".ps1", ".yml", ".yaml")
-_SKIP_DIRS = {"__pycache__", ".git", ".venv", "venv", "node_modules",
-              ".pytest_cache", "dist", "build"}
+# Reach the sibling module when imported by something that hasn't already put
+# this dir on the path. APPEND, never insert(0): prepending would let these
+# top-level module names win resolution inside any host process that imports
+# us (the ADR-045 lib-collision failure mode, one directory over). Nothing
+# here needs precedence.
+_HERE = str(Path(__file__).resolve().parent)
+if _HERE not in sys.path:
+    sys.path.append(_HERE)
+
+from cache_install_resolve import (  # noqa: E402
+    default_cache_root as _default_cache_root,
+)
+from cache_install_resolve import (  # noqa: E402
+    load_manifest,
+    manifest_for,
+    resolve_version_dir,
+)
+
+#: `installed_plugins=None` means "deliberately no authority"; OMITTING it means "you decide".
+#: Without the distinction the library entry point kept the pre-change heuristic as its
+#: default — right for the tmp roots tests use, wrong for the one tree in production.
+_UNSET = object()
+from cache_sync_report import (  # noqa: E402
+    UNGATED as _UNGATED,
+)
+from cache_sync_report import (  # noqa: E402
+    print_drift,
+    print_ok,
+    print_orphan_advisory,
+)
+from cache_tree_compare import (  # noqa: E402
+    compare_tree,
+    find_orphan_markers,
+)
+
+_SHARED_DIR = "shared"
 
 
-def _default_cache_root() -> Path:
-    return Path.home() / ".claude" / "plugins" / "cache" / "shipwright"
 
 
 def _default_repo_root() -> Path:
     return Path(__file__).resolve().parent.parent
 
 
-# Text suffixes get line-ending normalization (CRLF → LF) before hash
-# so a Windows checkout vs a Linux cache doesn't produce false drift
-# (reviewer-flagged Gemini-M1). Binary-style suffixes don't normalize.
-_TEXT_SUFFIXES = (".py", ".md", ".json", ".sh", ".ps1", ".yml", ".yaml")
+def _repo_plugin_dirs(plugins_dir: Path) -> list[Path] | None:
+    """Repo plugin dirs, or ``None`` when the dir exists but can't be listed.
 
-
-def _file_hash(path: Path) -> str | None:
-    """SHA-256 hex digest of a file, with CRLF→LF normalization for text.
-
-    Returns ``None`` if unreadable.
-
-    Reviewer-flagged Gemini-M1: a Windows checkout (CRLF) compared
-    against a Linux-synced cache (LF) would produce false drift on
-    every text file. Solution: open text-suffix files in text mode
-    with ``newline=""`` and re-encode line-by-line as UTF-8 with `\\n`
-    separators before hashing. Non-text suffixes (none currently in
-    ``_TRACKED_SUFFIXES``, but the path stays open for future
-    additions) hash byte-exact in 64 KiB chunks.
-
-    Reviewer-flagged OpenAI-M7 / Gemini-S3: refuse to follow
-    symlinks. They could escape the plugin root or form loops.
+    ``None`` is NOT the empty list. Swallowing the OSError into ``[]`` made an
+    unreadable ``plugins/`` print "ok — 0 plugin(s) … in sync" and exit 0; the
+    pre-extraction code had no guard there and at least crashed loudly.
     """
     try:
-        if path.is_symlink():
-            return None
-        h = hashlib.sha256()
-        if path.suffix.lower() in _TEXT_SUFFIXES:
-            # Text mode with `newline=None` translates `\r\n` and `\r`
-            # to `\n` on read (universal newline mode), so the hash is
-            # invariant across CRLF / LF / CR checkouts.
-            with path.open("r", encoding="utf-8", errors="replace", newline=None) as fp:
-                for line in fp:
-                    h.update(line.encode("utf-8"))
-        else:
-            with path.open("rb") as fp:
-                for chunk in iter(lambda: fp.read(65536), b""):
-                    h.update(chunk)
-        return h.hexdigest()
+        entries = sorted(plugins_dir.iterdir())
     except OSError:
         return None
+    return [p for p in entries if p.is_dir() and p.name.startswith("shipwright-")]
 
 
-def _walk_tracked_files(root: Path) -> dict[str, str]:
-    """Return {relative_posix_path: sha256} for files under root.
+def _shared_na() -> dict:
+    """A fresh not-applicable record.
 
-    Skips ``_SKIP_DIRS`` and files whose suffix isn't in
-    ``_TRACKED_SUFFIXES``. Defensive: any OSError /
-    PermissionError raised mid-traversal short-circuits this
-    plugin's hash dict but doesn't propagate (reviewer-flagged
-    Gemini truncated finding on `rglob` PermissionError + OpenAI's
-    "isolate filesystem errors").
+    A factory, not a module constant: a shared ``sample`` list would be one
+    ``.append()`` away from leaking between results.
     """
-    out: dict[str, str] = {}
-    if not root.is_dir():
-        return out
-    try:
-        entries = list(root.rglob("*"))
-    except OSError:
-        return out
-    for entry in entries:
-        try:
-            if not entry.is_file():
-                continue
-            rel_parts = entry.relative_to(root).parts
-        except OSError:
-            continue
-        if any(part in _SKIP_DIRS for part in rel_parts):
-            continue
-        if entry.suffix.lower() not in _TRACKED_SUFFIXES:
-            continue
-        digest = _file_hash(entry)
-        if digest is None:
-            continue
-        rel = entry.relative_to(root).as_posix()
-        out[rel] = digest
-    return out
+    return {"state": "n/a", "basis": "n/a", "tracked_count": 0, "diff_count": 0,
+            "missing_in_cache_count": 0, "cache_only_count": 0,
+            "unhashable_count": 0, "sample": []}
 
 
-_SEMVER_RE = re.compile(r"^(\d+)\.(\d+)\.(\d+)(.*)$")
+def _result(status: str, cache_root: Path, **extra) -> dict:
+    """Every return carries the full documented shape, on every status.
 
-
-def _version_key(name: str) -> tuple:
-    """Numeric-tuple sort key for SemVer-shaped dir names.
-
-    Reviewer-flagged Gemini-S1 + OpenAI-M2: pure lexical sort puts
-    `0.10.0` before `0.2.0` (since `'1' < '2'`). Parse the
-    leading ``MAJOR.MINOR.PATCH`` triplet as ints; any pre-release /
-    suffix stays as a string tail. Non-SemVer names fall back to
-    plain string sort via a sentinel low tuple.
+    The early-return statuses used to omit ``shared`` / ``orphan_markers``
+    entirely, so a ``--json`` consumer got a payload the docstring denied.
     """
-    m = _SEMVER_RE.match(name)
-    if not m:
-        # Sort non-SemVer names before any real version.
-        return (-1, -1, -1, name)
-    major, minor, patch = int(m.group(1)), int(m.group(2)), int(m.group(3))
-    return (major, minor, patch, m.group(4) or "")
+    return {"status": status, "drifted_count": 0, "plugins": [],
+            "shared": _shared_na(), "orphan_markers": [],
+            # A machine consumer must be able to tell WHICH trees a green
+            # covers. `status: ok` alone is the pre-fix guarantee, because it
+            # reads the same whether shared/ was compared or skipped as n/a.
+            "verified": [], "ungated": [_UNGATED],
+            "cache_root": str(cache_root), **extra}
 
 
-def _latest_cache_version_dir(plugin_cache_root: Path) -> Path | None:
-    """Pick the newest version subdir under a cached plugin.
+def check_sync(*, repo_root: Path, cache_root: Path, installed_plugins=_UNSET) -> dict:
+    """Compare the cache trees this check owns against the repo.
 
-    The cache layout is ``<cache_root>/<plugin-name>/<version>/...``.
-    Uses SemVer-aware sort so `0.10.0` > `0.2.0` (reviewer-flagged
-    Gemini-S1 + OpenAI-M2).
-    """
-    if not plugin_cache_root.is_dir():
-        return None
-    versions = sorted(
-        (p for p in plugin_cache_root.iterdir() if p.is_dir()),
-        key=lambda p: _version_key(p.name),
-    )
-    if not versions:
-        return None
-    return versions[-1]
+    ``installed_plugins`` is the manifest deciding WHICH version dir the sync writes into.
+    OMIT it and it is inferred from ``cache_root`` (:func:`manifest_for`) — the real manifest
+    for the real cache, none for anything else, so production is right by default and a tmp
+    root stays hermetic. Pass ``None`` to force the older highest-SemVer heuristic. Either
+    way the rule used is recorded per plugin as ``version_basis``.
 
+    Returns a structured dict, with every key present on every status:
+    - ``status``: ``ok`` | ``drift`` | ``cache_root_absent`` | ``no_repo_plugins``
+      | ``plugins_unreadable``
+    - ``plugins``: per-plugin records for ``cache/<plugin>/<version>/``, each carrying
+      ``version_basis`` — ``installed_plugins`` or a ``latest (…)`` string naming the reason
+    - ``shared``: one record for ``cache/shared/`` (``state: "n/a"`` when the
+      repo has no ``shared/`` — only the monorepo does, and its absence
+      elsewhere is not a finding)
+    - ``orphan_markers``: cache-relative dirs flagged for reaping (advisory)
+    - ``verified``: which trees this verdict actually covers
+    - ``ungated``: which it knowingly does not
+    - ``drifted_count``: total drifted records across both compared trees
 
-def check_sync(
-    *,
-    repo_root: Path,
-    cache_root: Path,
-) -> dict:
-    """Compare every ``plugins/shipwright-*`` against its cache equivalent.
-
-    Returns a structured dict:
-    - ``status``: ``ok`` | ``drift`` | ``cache_root_absent`` |
-      ``no_repo_plugins``.
-    - ``plugins``: per-plugin records with the drift state.
-    - ``drifted_count``: total plugins with drift.
-
-    Best-effort: no exception leaks out; OSError on cache traversal
-    is treated as "plugin not in cache".
+    Best-effort: no exception leaks out; OSError on cache traversal is treated
+    as "not in cache".
     """
     plugins_dir = repo_root / "plugins"
     if not cache_root.is_dir():
-        return {"status": "cache_root_absent", "plugins": [], "drifted_count": 0,
-                "cache_root": str(cache_root)}
+        return _result("cache_root_absent", cache_root)
     if not plugins_dir.is_dir():
-        return {"status": "no_repo_plugins", "plugins": [], "drifted_count": 0}
+        return _result("no_repo_plugins", cache_root)
 
-    results: list[dict] = []
+    repo_plugins = _repo_plugin_dirs(plugins_dir)
+    if repo_plugins is None:
+        return _result("plugins_unreadable", cache_root, drifted_count=1)
+
+    if installed_plugins is _UNSET:
+        installed_plugins = manifest_for(None, cache_root)
+    # Read ONCE for the whole verdict: re-reading per plugin let a rewrite by
+    # `claude plugin install` land mid-loop and split one report across two manifests.
+    manifest = load_manifest(installed_plugins)
+
     drifted = 0
-    for plugin_dir in sorted(plugins_dir.iterdir()):
-        if not plugin_dir.is_dir() or not plugin_dir.name.startswith("shipwright-"):
-            continue
-        plugin_name = plugin_dir.name
-        plugin_cache = cache_root / plugin_name
-        cache_version_dir = _latest_cache_version_dir(plugin_cache)
-        if cache_version_dir is None:
-            results.append({
-                "plugin": plugin_name,
-                "state": "not_in_cache",
-                "detail": f"no cached version under {plugin_cache}",
-            })
-            drifted += 1
-            continue
+    plugins: list[dict] = []
+    verified: list[str] = []
+    # Only the trees compared below are scanned for reap markers, so the
+    # advisory can never fill up with un-gated paths (see find_orphan_markers).
+    scopes: list[Path] = []
 
-        repo_hashes = _walk_tracked_files(plugin_dir)
-        cache_hashes = _walk_tracked_files(cache_version_dir)
-        # Drift = ANY repo file whose cache equivalent is missing or
-        # hashes differently. Files in cache but not in repo are
-        # operator/plugin-side artifacts (e.g. cached pyproject
-        # lockfile) and don't count as drift.
-        diffs = [
-            rel for rel in repo_hashes
-            if cache_hashes.get(rel) != repo_hashes[rel]
-        ]
-        missing_in_cache = [
-            rel for rel in repo_hashes if rel not in cache_hashes
-        ]
-        # Reviewer-flagged OpenAI-L12: include scan-context counts so
-        # the operator can tell trivial from significant drift.
-        if diffs:
-            results.append({
-                "plugin": plugin_name,
-                "state": "drift",
-                "cache_version": cache_version_dir.name,
-                "tracked_count": len(repo_hashes),
-                "diff_count": len(diffs),
-                "missing_in_cache_count": len(missing_in_cache),
-                "sample": diffs[:5],
-            })
-            drifted += 1
+    for plugin_dir in repo_plugins:
+        plugin_cache = cache_root / plugin_dir.name
+        version_dir, reason, version_basis = resolve_version_dir(
+            plugin_cache, plugin_dir.name, installed_plugins, manifest=manifest)
+        if reason == "unreadable":
+            # Do NOT hand this to compare_tree: it would report every repo file
+            # as missing from the cache, a number it never measured.
+            record = {"state": "unreadable", "basis": "n/a", "tracked_count": 0,
+                      "diff_count": 0, "missing_in_cache_count": 0,
+                      "cache_only_count": 0, "unhashable_count": 0,
+                      "sample": [], "detail": f"cannot list {plugin_cache}"}
         else:
-            results.append({
-                "plugin": plugin_name,
-                "state": "ok",
-                "cache_version": cache_version_dir.name,
-                "tracked_count": len(repo_hashes),
-            })
+            record = compare_tree(plugin_dir, version_dir)
+            if version_dir is None:
+                record["detail"] = f"no cached version under {plugin_cache}"
+            else:
+                record["cache_version"] = version_dir.name
+                # Scope the marker scan at the PLUGIN base, not the version
+                # dir: the cache manager writes `.orphaned_at` one level above
+                # too, and that marker — "the whole plugin is up for reaping" —
+                # is the most severe one there is.
+                scopes.append(plugin_cache)
+        record["plugin"] = plugin_dir.name
+        # On every record, including `unreadable`: a verdict that does not say which rule
+        # chose the tree it rests on cannot be audited (the rule `basis` already follows).
+        record["version_basis"] = version_basis
+        plugins.append(record)
+        if record["state"] != "ok":
+            drifted += 1
+    # Only when EVERY plugin was actually compared. A record refused as
+    # `unreadable` never reached compare_tree, and folding it in here would
+    # reinstate — one level down — the overclaim `verified` exists to prevent.
+    if plugins and all(p["state"] != "unreadable" for p in plugins):
+        verified.append("plugins")
 
-    status = "drift" if drifted else "ok"
-    return {
-        "status": status,
-        "drifted_count": drifted,
-        "plugins": results,
-        "cache_root": str(cache_root),
-    }
+    repo_shared = repo_root / _SHARED_DIR
+    if repo_shared.is_dir():
+        cache_shared = cache_root / _SHARED_DIR
+        shared = compare_tree(repo_shared, cache_shared)
+        scopes.append(cache_shared)
+        # Same guard as the plugins one above. `not_in_cache` still counts as
+        # verified — the repo side WAS established and the cache side was
+        # determined to be absent, which is a finding. Only `unreadable` means
+        # no basis was established at all, and claiming to cover a tree whose
+        # own record says that is the overclaim `verified` exists to prevent.
+        if shared["state"] != "unreadable":
+            verified.append("shared")
+        if shared["state"] != "ok":
+            drifted += 1
+    else:
+        shared = _shared_na()
+
+    return _result(
+        "drift" if drifted else "ok", cache_root,
+        drifted_count=drifted, plugins=plugins, shared=shared,
+        verified=verified, orphan_markers=find_orphan_markers(cache_root, scopes),
+    )
 
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Plugin-cache vs repo sync check")
     parser.add_argument("--repo-root", default=str(_default_repo_root()))
     parser.add_argument("--cache-root", default=str(_default_cache_root()))
+    parser.add_argument("--installed-plugins", default=None,
+                        help="Manifest naming each plugin's live version dir — the same "
+                             "file update-marketplace.sh syncs into. Defaults to the real "
+                             "one only when --cache-root is also the real one. Falls back "
+                             "to the highest cached version when absent or unreadable.")
     parser.add_argument("--strict", action="store_true",
                         help="Exit 1 on any drift (default: fail-soft WARN, exit 0).")
     parser.add_argument("--json", action="store_true",
                         help="Emit structured JSON on stdout instead of human prose.")
     args = parser.parse_args(argv)
 
-    result = check_sync(
-        repo_root=Path(args.repo_root),
-        cache_root=Path(args.cache_root),
-    )
+    # Only the EXPLICIT flag is passed; omitting it lets check_sync infer, so the CLI and a
+    # library caller cannot end up with two different defaults.
+    result = check_sync(repo_root=Path(args.repo_root), cache_root=Path(args.cache_root),
+                        **({"installed_plugins": Path(args.installed_plugins)}
+                           if args.installed_plugins else {}))
+    status = result["status"]
 
     if args.json:
         print(json.dumps(result, indent=2))
+    elif status == "cache_root_absent":
+        print(f"plugin-cache-sync: skip — {result['cache_root']} doesn't exist (CI?)")
+    elif status == "no_repo_plugins":
+        # Reviewer-flagged code-review-M2: AC-4 says this state must be a
+        # no-op-friendly return, not a drift warning. The repo has no
+        # `plugins/` dir at all → nothing to compare against.
+        print("plugin-cache-sync: skip — no plugins/ dir in repo")
+    elif status == "plugins_unreadable":
+        print(f"plugin-cache-sync: ERROR — {Path(args.repo_root) / 'plugins'} "
+              f"exists but cannot be listed; nothing was compared.", file=sys.stderr)
+    elif status == "ok":
+        print_ok(result)
+    elif status == "drift":
+        print_drift(result)
+        # Only here: on a green these markers are permanently present and
+        # would be pure noise (see _print_orphan_advisory).
+        print_orphan_advisory(result.get("orphan_markers", []))
     else:
-        status = result["status"]
-        if status == "cache_root_absent":
-            print(f"plugin-cache-sync: skip — {result['cache_root']} doesn't exist (CI?)")
-        elif status == "no_repo_plugins":
-            # Reviewer-flagged code-review-M2: AC-4 says this state must
-            # be a no-op-friendly return, not a drift warning. The repo
-            # has no `plugins/` dir at all → nothing to compare against.
-            print("plugin-cache-sync: skip — no plugins/ dir in repo")
-        elif status == "ok":
-            print(f"plugin-cache-sync: ok — all {len(result['plugins'])} plugin(s) in sync")
-        elif status == "drift":
-            print(
-                f"plugin-cache-sync: WARN — {result['drifted_count']} plugin(s) drifted. "
-                f"Run scripts/update-marketplace.sh to re-sync.",
-                file=sys.stderr,
-            )
-            for entry in result["plugins"]:
-                if entry["state"] in ("drift", "not_in_cache"):
-                    print(f"  - {entry['plugin']}: {entry}", file=sys.stderr)
-        else:
-            # Unknown status — print a diagnostic but don't fail.
-            print(f"plugin-cache-sync: unknown status {status!r}", file=sys.stderr)
+        # Unknown status — print a diagnostic but don't fail.
+        print(f"plugin-cache-sync: unknown status {status!r}", file=sys.stderr)
 
-    if args.strict and result["status"] == "drift":
-        return 1
-    return 0
+    return 1 if (args.strict and status in ("drift", "plugins_unreadable")) else 0
 
 
 if __name__ == "__main__":

@@ -1,0 +1,95 @@
+{
+  "run_id": "iterate-2026-08-01-spec-impact-range-resolver",
+  "date": "2026-08-01T00:33:14.504212Z",
+  "event_at": "2026-08-01T00:32:16.821912+00:00",
+  "type": "bug",
+  "complexity": "medium",
+  "branch": "iterate/spec-impact-range-resolver",
+  "spec": ".shipwright/planning/iterate/iterate-2026-08-01-spec-impact-range-resolver.md",
+  "tests_passed": true,
+  "adr": "iterate-2026-08-01-spec-impact-range-resolver",
+  "prior_source": "keyword",
+  "test_completeness": {
+    "status": "complete",
+    "behaviors": [
+      {
+        "behavior": "AC1 gate PASSES when the branch's own commit touched a spec.md and HEAD is an integration merge",
+        "disposition": "tested",
+        "evidence": "test_spec_impact_branch_range::test_the_gate_sees_a_spec_md_carried_by_an_earlier_commit PASSED"
+      },
+      {
+        "behavior": "AC2 gate is not satisfied by a spec.md that arrived from mainline through the merge",
+        "disposition": "tested",
+        "evidence": "test_spec_impact_branch_range::test_the_gate_is_not_satisfied_by_a_spec_md_that_came_from_MAIN PASSED"
+      },
+      {
+        "behavior": "AC3 multi-commit contract unchanged - answer anchored at the F7-referenced commit",
+        "disposition": "untestable",
+        "reason_code": "covered-by-existing-test",
+        "evidence": "test_verify_iterate_finalization::test_spec_impact_resolves_event_by_run_id_in_multi_commit_iterate PASSED, unmodified"
+      },
+      {
+        "behavior": "AC4 an unobtainable diff is SKIPPED, never FAILed and never passed",
+        "disposition": "tested",
+        "evidence": "test_spec_impact_range_limits::test_a_diff_the_gate_cannot_obtain_is_SKIPPED_not_failed and ::test_a_merge_head_with_no_corroborated_base_is_SKIPPED_not_failed PASSED"
+      },
+      {
+        "behavior": "AC5 detail names the iterate's work, not the commit",
+        "disposition": "tested",
+        "evidence": "_assert_names_the_work_not_the_commit, called from the AC1 and AC2 tests PASSED"
+      },
+      {
+        "behavior": "the range resolver is genuinely the one called (no silent revert to _commit_changed_paths)",
+        "disposition": "tested",
+        "evidence": "test_spec_impact_branch_range::test_the_gate_reads_the_branch_range_not_the_single_commit PASSED"
+      },
+      {
+        "behavior": "an empty-but-RESOLVED range still FAILs - None and [] stay distinct",
+        "disposition": "tested",
+        "evidence": "test_spec_impact_range_limits::test_an_empty_but_trustworthy_range_still_FAILS PASSED (kills the 'is None' -> 'not changed' mutation)"
+      },
+      {
+        "behavior": "ACCEPTED FAIL-OPEN: a foreign commit's spec.md inside the range satisfies the gate (stacked strategy)",
+        "disposition": "tested",
+        "evidence": "test_spec_impact_range_limits::test_a_spec_md_from_a_FOREIGN_commit_in_the_range_satisfies_the_gate PASSED - pins a known weakness so it cannot drift silently"
+      },
+      {
+        "behavior": "the BLIND skip announces itself, so a silent ERROR gate is visible in the F11 report",
+        "disposition": "tested",
+        "evidence": "asserted in test_spec_impact_range_limits::test_a_diff_the_gate_cannot_obtain_is_SKIPPED_not_failed PASSED"
+      },
+      {
+        "behavior": "add-then-revert of a spec.md within the branch now FAILs (net-zero range)",
+        "disposition": "untestable",
+        "reason_code": "covered-by-existing-test",
+        "evidence": "same code path as the empty-range test; a dedicated fixture would assert git diff semantics, not this gate's logic"
+      },
+      {
+        "behavior": "the production CLI entry point reports the gate correctly end-to-end",
+        "disposition": "tested",
+        "evidence": "F0.5 surface_verification, 5 assertions against verify_iterate_finalization.py, exit 0"
+      }
+    ],
+    "counts": {
+      "behaviors": 11,
+      "tested": 9,
+      "untestable": 2,
+      "untested_testable": 0
+    },
+    "enumeration_basis": {
+      "acs": 5,
+      "covered_acs": 5,
+      "note": "AC1-AC5 in the iterate spec; rows 6-11 are additional behaviours review added"
+    }
+  },
+  "surface_verification": {
+    "surface": "cli",
+    "runner": "uv run python C:/Users/SvenRoth/AppData/Local/Temp/claude/C--01-Development-shipwright/b2ea85f0-8b5c-4c89-95df-2d30439b5126/scratchpad/f05_e2e_driver.py",
+    "exit_code": 0,
+    "tests_run": 5,
+    "evidence_path": "C:\\01_Development\\shipwright\\.worktrees\\spec-impact-range-resolver\\.shipwright\\runs\\iterate-2026-08-01-spec-impact-range-resolver\\surface_verification.log",
+    "timestamp": "2026-08-01T00:30:31.829Z",
+    "detail": "Drove the REAL production entry point - verify_iterate_finalization.py, the exact CLI F11 invokes - against a purpose-built repo whose HEAD is a real integration merge. Asserted the gate's own report line reads OK with '1 planning spec.md' and 'work up to', and separately asserted the merge commit's own --name-only does NOT list the spec.md, so a green result cannot come from a fixture that got easy. 5 assertions, exit 0."
+  },
+  "declared_removals": []
+}

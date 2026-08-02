@@ -155,6 +155,14 @@ RISK_TAXONOMY = {
         # RECOMPUTES the flag from the diff via CROSS_COMPONENT_FILE_PATTERNS. The
         # composition axis the boundary/app-surface machinery missed. These message
         # patterns are anchored Run-Summary hints; the diff path is primary.
+        #
+        # `min_complexity` below is the CLASSIFICATION escalation floor — what a
+        # detected cross-component change forces the RUN to be classified as. It is
+        # NOT an enforcement floor for the F11 gate, which applies at every
+        # complexity (iterate-2026-08-01-coverage-gate-recompute-order). Coupling
+        # the two meant the recompute was reached only for runs that had already
+        # self-reported into the enforcing band, so it stood down in precisely the
+        # missed-detection case it exists to backstop.
         "patterns": [
             r"\bcross.?component\b",
             r"\bmerge machinery\b",

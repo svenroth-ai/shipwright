@@ -16,6 +16,7 @@ the second — see its docstring for why.
 from __future__ import annotations
 
 from pathlib import Path
+from typing import Literal
 
 
 def _run_git(
@@ -41,6 +42,69 @@ def _run_git(
         return proc.returncode, proc.stdout, proc.stderr
     except (OSError, ValueError, subprocess.TimeoutExpired):
         return 1, "", ""
+
+
+def git_context(project_root: Path) -> Literal["work_tree", "not_git", "git_error"]:
+    """Tri-state git probe: ``work_tree`` | ``not_git`` | ``git_error``.
+
+    Callers MUST proceed only on an explicit ``work_tree`` and treat every other
+    value as a refusal. Branching on the two failure names and falling through
+    otherwise puts an unrecognised state on the fail-OPEN path — the one direction
+    this classification exists to close. The return type is pinned in the signature
+    for the same reason.
+
+    A binary "did git exit 0" answer conflates "not a git repo" (an inapplicable
+    context → SKIP) with a git SUBPROCESS failure on a real work tree (a wedged
+    ``index.lock``, a stalled filesystem, a broken git binary, a permission
+    failure, corrupt repo metadata, or a >10s stall). The second is an
+    infrastructure failure that must fail CLOSED — reading it as "not a repo"
+    green-skips a gate from inside the repository it was meant to enforce.
+
+    Only a DEFINITIVE non-git answer is ``not_git``: rc 0 with stdout that is not ``true``,
+    or git ran and said so on stderr. A synthesized failure (``_run_git`` maps OSError /
+    ValueError / TimeoutExpired to ``(1, "", "")``) or any other non-zero rc without that
+    stderr message is ``git_error``, so an exception can never escape unstructured.
+
+    That first clause is a RULE, not a sample: ANY context where git exits 0 without printing
+    ``true`` is ``not_git``, so a caller migrating off ``rev-parse --git-dir`` (rc only) now
+    SKIPs where it proceeded — a bare repo, a ``.git`` dir, a ``GIT_WORK_TREE`` elsewhere,
+    whatever else is in that set. Accepted as for the non-repo SKIP: nothing to merge.
+
+    Lives here rather than in one verifier because both ``layer_coverage`` (which
+    first drew the distinction) and ``integration_coverage`` need the same
+    classification, and two copies would drift
+    (iterate-2026-08-01-coverage-gate-recompute-order).
+    """
+    rc, out, err = _run_git(
+        project_root, "rev-parse", "--is-inside-work-tree", timeout=10.0
+    )
+    if rc == 0:
+        return "work_tree" if out.strip() == "true" else "not_git"
+    lowered = (err or "").lower()
+    if "not a git repository" in lowered or "not a work tree" in lowered:
+        return "not_git"
+    # EMPTY stderr means git never ran at all: `_run_git` synthesizes (1, "", "") for
+    # OSError / ValueError / TimeoutExpired. That is unambiguously environmental, and
+    # must stay git_error no matter what the filesystem looks like.
+    if not lowered.strip():
+        return "git_error"
+    # git RAN and said something this parser does not recognise. The English
+    # substrings above are not sufficient alone: git uses gettext and Git-for-Windows
+    # ships translations, so a localized install returns a translated `fatal:` for a
+    # genuine non-git dir — classifying that git_error would turn the documented SKIP
+    # into a hard block on every non-git project. Answer structurally instead:
+    # `--show-toplevel` succeeding proves a repo IS there (so the failure was
+    # environmental), and no `.git` anywhere up the tree is the locale-independent
+    # form of "not a repository". Filesystem errors stay fail-CLOSED.
+    rc2, _, _ = _run_git(project_root, "rev-parse", "--show-toplevel", timeout=10.0)
+    if rc2 == 0:
+        return "git_error"
+    try:
+        root = Path(project_root).resolve()
+        has_git = any((c / ".git").exists() for c in (root, *root.parents))
+    except OSError:
+        return "git_error"
+    return "git_error" if has_git else "not_git"
 
 
 def _git_available(project_root: Path, timeout: float | None = 10.0) -> bool:

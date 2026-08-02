@@ -46,7 +46,7 @@ from .git_blob_read import (  # noqa: E402
     content_fingerprint,
     worktree_bytes_reader,
 )
-from .git_helpers import _iterate_changed_paths, _run_git  # noqa: E402
+from .git_helpers import _iterate_changed_paths, _run_git, git_context  # noqa: E402
 
 # Self-contained copy of ``risk_detectors.CI_SUPPLYCHAIN_FILE_PATTERNS`` so this
 # load-bearing verifier never cross-plugin-imports the iterate-plugin lib
@@ -165,20 +165,40 @@ def check_ci_supplychain_ack(
     and the ack must be bound to this run and this change set — so neither
     omitting a self-report nor reusing an old ack works.
 
-    Applies at EVERY complexity on purpose (unlike the ``cross_component`` gate's
-    medium+ floor): a one-line workflow edit is still a trust-boundary change, and
-    a complexity floor would be the obvious way to dodge it.
-    """
+    Applies at EVERY complexity on purpose: a one-line workflow edit is still a
+    trust-boundary change, and a complexity floor would be the obvious way to dodge
+    it. This gate was the first to take that posture; the ``cross_component`` gate
+    carried a medium+ floor until iterate-2026-08-01-coverage-gate-recompute-order,
+    which cited the reasoning here and aligned it. The floors now agree — the only
+    remaining complexity scope in the family is ``cross_layer_coverage``'s, and that
+    one is a deliberate cost decision, not a dodge.
+
+    Infra failures fail CLOSED at every complexity too: a gate that stands down when it
+    cannot see is dodgeable by breaking its eyes. This was the last of the three
+    ``git_context`` consumers on the binary ``rev-parse --git-dir`` probe (trg-20cc9ec8);
+    those three agree now, while ``_git_available``'s five callers still carry the old
+    conflation and are trg-4183acd3."""
     name = "CI supply-chain acknowledgement"
-    # Not a git repository at all → SKIP. This is NOT the "diff unobtainable" case:
-    # a real iterate always finalizes inside a repo, and running F11 outside one
-    # leaves nothing to merge, so it is not a viable evasion path. Keeping it a SKIP
-    # also preserves the sandbox contract the CLI tests rely on (a non-repo tmp dir
-    # where every git-dependent check stands down).
-    rc, _, _ = _run_git(project_root, "rev-parse", "--git-dir")
-    if rc != 0:
-        return CheckResult(name, True, "skipped (not a git repository)",
+    # Tri-state, not "did git exit 0": a broken binary / `safe.directory` refusal /
+    # permission failure / corrupt metadata / wedged index.lock all return non-zero from
+    # INSIDE a repo, and reading that as "not a repo" green-SKIPped this gate on an infra
+    # fault while printing "not a git repository" about a directory that was one. Only a
+    # DEFINITIVE non-git answer stands it down (that SKIP keeps the CLI sandbox contract).
+    ctx = git_context(project_root)
+    if ctx == "not_git":
+        return CheckResult(name, True, "skipped (not a git work tree)",
                            severity=Severity.SKIPPED.value)
+    # Proceed only on an EXPLICIT work_tree: branching on `== "git_error"` and falling
+    # through otherwise would make an unrecognised state fail OPEN, the one direction
+    # this helper exists to prevent.
+    if ctx != "work_tree":
+        return CheckResult(
+            name, False,
+            "git could not answer whether this is a work tree — common causes: a wedged "
+            "index.lock, a stalled filesystem, a `safe.directory` / dubious-ownership "
+            "refusal, or git missing from PATH. Run `git -C <project> rev-parse "
+            "--is-inside-work-tree` to see git's own message. Refusing to certify the "
+            "CI trust boundary as untouched.")
     # An absent --commit, INSIDE a repo, is an unobtainable diff. Every sibling check
     # SKIPs here, which would make omitting one flag a total bypass of this gate —
     # the cheaper input must not be the safer one for a dodger. Resolve HEAD instead.
