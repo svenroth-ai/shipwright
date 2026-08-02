@@ -72,28 +72,28 @@ def _isolate_scanner_environment(monkeypatch):
 
 
 @pytest.fixture(autouse=True)
-def _isolate_github_pr_api(monkeypatch):
-    """Neutralise the live PR-CI fetchers by default
-    (iterate-2026-06-11-automerge-gh-pr-ci-producer).
+def _isolate_live_gh_clients(monkeypatch):
+    """Neutralise every live ``gh`` client ``import_findings`` reaches for.
 
-    ``github_triage.import_findings`` now fetches open PRs + per-PR check-runs.
-    ``gh api`` substitutes ``{owner}/{repo}`` from the cwd's git remote — so an
-    un-stubbed fetch in a test running inside the shipwright worktree would hit
-    the REAL repo (non-deterministic, network-bound). Default everything to "no
-    open PRs / fetch unavailable" so existing consumer tests stay hermetic; the
-    dedicated ``test_github_triage_pr_ci`` suite re-stubs these explicitly.
-    """
+    ``gh api`` substitutes ``{owner}/{repo}`` from the cwd's git remote, so an
+    un-stubbed fetch inside the shipwright worktree hits the REAL repo. Each
+    default is that client's "unavailable" value, which every consumer treats as
+    fail-open, so stubbing changes no pre-existing expectation. Guarded per
+    client: one shared ``try`` would let a failed second import silently leave
+    the first live. No ``raising=False`` — the import succeeded, so a missing
+    attribute means a rename, which must fail loudly not leave a dead stub."""
     try:
         import github_pr_api  # noqa: PLC0415
+        monkeypatch.setattr(github_pr_api, "fetch_open_prs", lambda: None)
+        monkeypatch.setattr(github_pr_api, "fetch_pr_check_runs", lambda head_sha: None)
+        monkeypatch.setattr(github_pr_api, "fetch_pr_state", lambda pr_number: None)
     except ImportError:
-        return
-    monkeypatch.setattr(github_pr_api, "fetch_open_prs", lambda: None, raising=False)
-    monkeypatch.setattr(
-        github_pr_api, "fetch_pr_check_runs", lambda head_sha: None, raising=False
-    )
-    monkeypatch.setattr(
-        github_pr_api, "fetch_pr_state", lambda pr_number: None, raising=False
-    )
+        pass
+    try:
+        import github_workflow_api  # noqa: PLC0415
+        monkeypatch.setattr(github_workflow_api, "fetch_workflow_state", lambda workflow_id: None)
+    except ImportError:
+        pass
 
 
 @pytest.fixture(autouse=True)

@@ -1,0 +1,234 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-07-31-review-record-spec-promotion",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-07-31T22:31:01.848289+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-07-31T22:50:12.137316+00:00",
+      "disposition": "external review ran in --mode code against the built diff, which folds the Step 3.5 mini-plan review; a separate plan pass would review a plan the diff already supersedes",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 8,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "shared/tests/test_review_record_evidence_floor.py",
+          "line": 144,
+          "finding": "RESOLVED. test_an_unanswered_spec_row_blocks_like_any_other_type went vacuous the moment spec joined REVIEW_TYPES: its blanket loop closed the very row it leaves open, and its 'spec' assertion was then satisfied by 'spec-reviewer' inside a DIFFERENT failure message (the code-review floor). Since validate_record now permanently tolerates an absent reviews.spec, pending_types is the sole enforcement that a live run cannot dodge the Stage-1 row, and this was its only gate-level pin.",
+          "suggestion": "Fixed: the loop skips spec, and the assertion pair is 'still unanswered' (the pending branch's exclusive wording) plus 'spec'. Re-review confirmed _remediation contains no occurrence of 'spec', so the substring escape hatch is shut rather than narrowed.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "shared/scripts/lib/review_record_core.py",
+          "line": 66,
+          "finding": "RESOLVED. The reviews-then-gates precedence in _read_sections is behaviour but was untested: every fixture put spec in exactly one section, so inverting the tuple kept the whole suite green. Both-present is reachable via --force and via a record in flight at rollout.",
+          "suggestion": "Fixed: added test_a_reviews_row_wins_over_a_legacy_gates_row, built through the real --force route. Verified by MUTATION - with the order flipped exactly this test fails and the other 12 pass; restored, all 13 pass.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "architecture",
+          "file": ".shipwright/planning/iterate/2026-07-31-review-record-spec-promotion.md",
+          "line": 127,
+          "finding": "RESOLVED. AC10 named the webui redeploy but omitted the plugin-cache re-sync. A reviews.spec record is valid only under the new validate_record; the cache does not auto-sync, and this run's own committed record already carries the new shape. Independently raised by the external review (openai, verdict revise).",
+          "suggestion": "Fixed: AC10 names both readers and a new subsection explains the second. Both go in the PR body; auto-merge is not armed.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "shared/scripts/tools/verifiers/review_record_floor.py",
+          "line": 237,
+          "finding": "RESOLVED. The `or \"absent\"` fallback became unreachable once the guard returns None for a falsy entry_for.",
+          "suggestion": "Fixed: removed, with a comment stating the unreachability argument.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "shared/tests/test_review_record_floor.py",
+          "line": 62,
+          "finding": "RESOLVED. Three in-tree comments still described the retired gates seam as current (here, test_audit_e2e_integration.py:110, test_review_record.py:64).",
+          "suggestion": "Fixed: all three reworded; the audit_e2e fixture is now labelled as a deliberate pre-promotion back-compat shape.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/tests/test_review_record_spec_promotion.py",
+          "line": 181,
+          "finding": "RESOLVED. Splitting the old combined test dropped the immutability pin for a terminal reviews.spec on the new ordinary path.",
+          "suggestion": "Fixed: added test_a_terminal_reviews_spec_is_immutable_on_the_ordinary_path as a dedicated test rather than a parametrize axis, so it can carry the note about composing with the precedence test.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "shared/tests/test_review_record_roundtrip.py",
+          "line": 163,
+          "finding": "RESOLVED. A subset assertion strictly implied by the exact-list assertion above it.",
+          "suggestion": "Fixed: deleted.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "shared/scripts/lib/review_record_core.py",
+          "line": 210,
+          "finding": "RESOLVED. upsert_review preserves an existing gates key, so a run in flight at rollout ships reviews.spec beside a stale gates.spec - the shape new_record omits gates to avoid.",
+          "suggestion": "Fixed: comment added explaining this is deliberate (immutable history) and inert rather than ambiguous, because precedence makes the reviews row authoritative. Re-review noted the two fixes hold each other up.",
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-07-31T22:52:23.203716+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 8,
+      "findings": [
+        {
+          "severity": "high",
+          "category": null,
+          "file": ".shipwright/planning/iterate/2026-07-31-review-record-spec-promotion-MINIPLAN.md",
+          "line": 49,
+          "finding": "Claim under doubt: Rollback = revert the commit. — It is not a rollback. shared/scripts does not auto-sync to the plugin cache and no reverse step was named. Revert WITHOUT re-sync leaves runtime and repo disagreeing about a git-tracked artifact with no detector, because the only corpus check is itself deleted by the revert. Revert WITH re-sync makes every record written in the window permanently unreadable, offering exactly the two exits this artifact forbids: repair or delete. Reverting also DELETES this run's own reviews.json - the file _committed_check exists to guarantee cannot vanish. RESOLVED: the section was rewritten. The supported undo is FIX-FORWARD - a new commit restoring the old vocabulary while KEEPING the read path, then update-marketplace.sh, then check_plugin_cache_sync.py --strict. Both failed revert branches are documented so nobody re-derives them.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": null,
+          "file": ".shipwright/planning/iterate/2026-07-31-review-record-spec-promotion-MINIPLAN.md",
+          "line": 51,
+          "finding": "Claim under doubt: That window is bounded by the PR not being auto-merged and by the revert being a same-day operation. — That is an assumption about the operator, not a property of the system. Not arming auto-merge bounds WHEN the merge happens; it bounds nothing about how many records the new producer writes afterwards. No counter, no ceiling, no detector. RESOLVED: replaced with the actual bound - every iterate run between the cache sync and any undo - and labelled a residual rather than a mitigation.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": null,
+          "file": "shared/scripts/lib/review_record_core.py",
+          "line": 210,
+          "finding": "Claim under doubt: Preserving a legacy gates row is inert, not ambiguous, because entry_for's precedence makes the reviews row authoritative. — True in the producer, false in the only consumer the change exists to serve. unreadPassCount walks every record-level key outside KNOWN_RECORD_KEYS and counts any value carrying a review_type, so a record with BOTH reviews.spec and gates.spec renders the spec row AND appends 'this run also recorded 1 review pass somewhere this version does not read'. It tells the reader a pass is missing from the list it just showed them. Reachable in the rollout window via a record init'ed by the old plugin cache. RESOLVED IN CODE, not merely documented: upsert_review now drops a still-PENDING legacy row once the real answer is written (new lib/review_record_legacy.py::drop_unanswered_legacy). Pending is the absence of an answer, so nothing is destroyed; a TERMINAL legacy row is never touched. Two new tests pin both directions.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": null,
+          "file": "shared/scripts/lib/review_record_schema.py",
+          "line": 246,
+          "finding": "Claim under doubt: reviews stays strict because strictness protects the cross-repo mirror. — The mirror stopped rejecting strangers - that is the entire premise of this iterate. The sentence was reworded but the inference under it was never re-derived, so the change repeals the reason and keeps the conclusion. Consequence: the producer is now the strictest reader of its own format, and every future REVIEW_TYPES growth needs the same transitional read path, because old and new plugin caches coexist by design. LEGACY_GATE_TYPES is a name-keyed exemption for one key, not a mechanism. PARTIALLY RESOLVED, deliberately: the false justification is deleted and replaced with the one that holds - the consumer DISPLAYS so guessing costs a wrong row, this gate BLOCKS DELIVERY so guessing costs a wrong verdict. The recurring cost is stated in the spec under 'The strictness we kept, and what it costs' instead of hidden, and the relax-unknown alternative is FILED as triage trg-ee440345. Changing a fail-closed validator after three review stages passed on the current design belongs in its own iterate.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": null,
+          "file": ".shipwright/planning/iterate/2026-07-31-review-record-spec-promotion.md",
+          "line": 127,
+          "finding": "Claim under doubt: AC10 discharges the deployment risk. — Three problems. (a) It is discharged by prose and checked by nobody - the external review raised exactly this and returned 'revise'. (b) The two preconditions are not interchangeable and were listed as a set: the cache sync must FOLLOW the merge because it turns the producer on, while the webui redeploy must PRECEDE the existence of the first new-shape record. (c) That record already exists pre-merge - this run's own reviews.json is in the worktree, and the webui resolves live-run artifacts from the registered worktree, so framing the redeploy as a MERGE precondition is late by one commit. RESOLVED: AC10 is now an ordered four-step table with a named verification for each - re-run the 536-file marker grep for the redeploy, paste check_plugin_cache_sync.py --strict output for the cache sync. The pre-merge exposure is stated and was CHECKED: this worktree does not appear in the webui's projects.json or sdk-sessions.json, so it is not observable here, though it would be for a tracked run.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": null,
+          "file": "shared/tests/test_iterate_skill_prose.py",
+          "line": 143,
+          "finding": "Claim under doubt: AC9 swept every place that describes the retired contract as current. — A fourth stale docstring survives, in a file the diff does not touch: it asserts the consumer 'rejects an unknown key AND a bumped schema_version' as present tense. Both of its assertions survive the rewrite, so nothing goes red - which is exactly why it was missed. RESOLVED: the docstring now says the contract is looser, not gone - the two guards were lifted in ce21323e, and what did NOT change is that an invalid record still renders as a data-integrity fault rather than falling back to the markers, which is why the test still exists.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": null,
+          "file": ".shipwright/planning/iterate/2026-07-31-review-record-spec-promotion.md",
+          "line": 16,
+          "finding": "Claim under doubt: shipwright-webui origin/main is ce21323e. — The tip has moved to 01b25b17. The substantive claim holds, but the identifier a future reader will use to re-check the mirror is wrong in four places. RESOLVED after re-verifying both facts - ce21323e is still an ancestor of origin/main and the tolerant reader is present at the current tip. The spec now names ce21323e as the commit that INTRODUCED the reader, not the branch tip.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": null,
+          "file": "shared/scripts/tools/verifiers/review_record_check.py",
+          "line": 127,
+          "finding": "Claim under doubt: A live run could reach a GREEN F11 with spec never answered, now that validate_record permanently tolerates its absence. — COULD NOT BREAK IT, and this is recorded because a failed attack is evidence. Attacked close-missing (targets come from pending_types, so spec is always in the batch), --force (upsert_review reads entry_for across BOTH sections before the immutability check), a hand-edited record with reviews.spec deleted (validate_record accepts it, but pending_types reports it pending and the gate blocks), a terminal gates.spec with no reviews.spec (passes, but it is a written, schema-validated, evidence-checked answer - identical in cost to fabricating reviews.spec, and the module already concedes it cannot defeat deliberate fabrication), and every early return in check_review_record. The tolerance genuinely buys reading and nothing else. The webui claim was also verified independently against the merged TypeScript rather than our summary: version floor, strangers rendered, pinned five still required, key regex, MAX_REVIEW_TYPES and MAX_KNOWN_RECORD_SCHEMA_VERSION all match the four mirror constants in our test.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-07-31T23:13:04.812175+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 1,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "spec",
+          "file": ".shipwright/planning/iterate/2026-07-31-review-record-spec-promotion.md:124-130 - the AC10 entry is only restated as an acceptance criterion; the diff contains no PR body or merge-control evidence naming both required rollout actions, nor evidence that auto-merge is disabled. This is a hard release precondition, not documentation-only: the currently deployed webui and a stale plugin c […truncated]",
+          "line": null,
+          "finding": "Before merging, add the required PR description/checklist explicitly naming (1) webui rebuild and redeploy and (2) bash scripts/update-marketplace.sh followed by check_plugin_cache_sync.py --strict, and ensure auto-merge is not enabled. Record completion/verification in the PR rather than treating the spec's statement of the requirement as fulfillment.  Overall assessment: the code and tests appear to implement the schema/read-path transition correctly, but the known deployment-skew precondition is not discharged in this change and can immediately break deployed readers. Ship with fixes only after AC10 is concretely satisfied in the PR workflow.  SHIPWRIGHT_VERDICT: revise",
+          "suggestion": null,
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-07-31T22:49:58.644290+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "partial",
+      "raw_excerpt": "[gemini] TRUNCATED MID-REASONING, no verdict emitted. The fragment that survived was working through whether the 53 pre-gates records break the F11 gate, and had reached the correct conclusion that they are merged history rather than live runs, so check_review_record never evaluates them. No finding was stated.\n\n[openai] - Category: spec\n- Severity: high\n- File: .shipwright/planning/iterate/2026-07-31-review-record-spec-promotion.md:124-130 - the AC10 entry is only restated as an acceptance criterion; the diff contains no PR body or merge-control evidence naming both required rollout actions, nor evidence that auto-merge is disabled. This is a hard release precondition, not documentation-only: the currently deployed webui and a stale plugin cache both reject the newly committed reviews.spec shape, causing false fail-closed review-record failures or unreadable webui records.\n- Suggestion: Before merging, add the required PR description/checklist explicitly naming (1) webui rebuild and redeploy and (2) bash scripts/update-marketplace.sh followed by check_plugin_cache_sync.py --strict, and ensure auto-merge is not enabled. Record completion/verification in the PR rather than treating the spec's statement of the requirement as fulfillment.\n\nOverall assessment: the code and tests appear to implement the schema/read-path transition correctly, but the known deployment-skew precondition is not discharged in this change and can immediately break deployed readers. Ship with fixes only after AC10 is concretely satisfied in the PR workflow.\n\nSHIPWRIGHT_VERDICT: revise"
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-07-31T22:33:13.701411+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    }
+  }
+}

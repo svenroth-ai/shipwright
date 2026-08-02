@@ -19,6 +19,7 @@ from __future__ import annotations
 import sys
 
 import github_api
+import github_workflow_api
 from triage import append_triage_item_idempotent, should_route_to_outbox
 
 from .mappers import ci_action_unit, latest_failed_ci_runs, secrets_action_unit
@@ -70,7 +71,10 @@ def import_findings(project_root) -> dict:
     owner_repo = github_api.owner_repo(project_root)
 
     raw_runs = github_api.fetch_workflow_runs(github_api.default_branch())
-    ci_runs = None if raw_runs is None else latest_failed_ci_runs(raw_runs)
+    # Runs say what a workflow DID, never what it IS (trg-9b1a1286).
+    ci_runs = None if raw_runs is None else latest_failed_ci_runs(
+        raw_runs, workflow_state_fetcher=github_workflow_api.fetch_workflow_state
+    )
 
     cs_alerts = github_api.fetch_code_scanning_alerts()
     db_alerts = github_api.fetch_dependabot_alerts()
@@ -173,11 +177,7 @@ def import_findings(project_root) -> dict:
         if ss_alerts is not None
         else None
     )
-    ci_units = (
-        [ci_action_unit(run, owner_repo=owner_repo) for run in ci_runs]
-        if ci_runs is not None
-        else []
-    )
+    ci_units = [ci_action_unit(r, owner_repo=owner_repo) for r in (ci_runs or [])]
 
     resolvable_prefixes: set[str] = set()
     current_keys: set[str] = set()

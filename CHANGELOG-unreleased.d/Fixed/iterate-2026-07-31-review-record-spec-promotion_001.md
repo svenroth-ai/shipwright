@@ -1,0 +1,1 @@
+The rule that a code review cannot be recorded as done unless the spec review passed first would have stopped firing silently once the `gates` object was no longer written. It now keys on whether the spec row is present at all, in either location.
