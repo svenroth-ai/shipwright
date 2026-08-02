@@ -31,10 +31,11 @@ from ._constants import PLUGIN_TO_PHASE  # noqa: E402
 from lib.project_root import is_shipwright_project  # noqa: E402
 from lib.events_log import resolve_events_path  # noqa: E402
 from lib.jsonl_records import read_jsonl_records  # noqa: E402
-# Engagement predicate lives in _triage_bundle; importing it here is one-way and
-# acyclic (_triage_bundle does not import _resolution) and keeps
-# resolve_engaged_phases next to the other session-state resolvers.
-from ._triage_bundle import (  # noqa: E402
+# Engagement predicate lives in _engagement, which imports nothing from this
+# package — so the edge is one-way and acyclic — and keeps resolve_engaged_phases
+# next to the other session-state resolvers.
+from ._engagement import (  # noqa: E402
+    has_phase_tasks,
     load_engagement_inputs,
     phase_is_engaged,
 )
@@ -147,14 +148,22 @@ def resolve_run_id(project_root: Path, session_id: str) -> str:
     2. ``events.jsonl`` latest ``run_started`` event
     3. ``SHIPWRIGHT_LOOP_ID`` + ``SHIPWRIGHT_LOOP_UNIT_ID``
     4. ``session_id`` itself (standalone)
+
+    The ``isinstance(data, dict)`` check is load-bearing: valid JSON that is not
+    an object (``[1, 2]``, ``null``) made ``data.get`` raise ``AttributeError``,
+    which the ``except`` below does not catch. This runs FIRST in the Stop hook,
+    outside its per-phase ``try`` and after the once-per-Stop claim is taken — so
+    that raise killed the audit for EVERY phase and the sibling invocations then
+    no-oped on the burned claim.
     """
     run_config = project_root / "shipwright_run_config.json"
     if run_config.exists():
         try:
             data = json.loads(run_config.read_text(encoding="utf-8"))
-            run_id = data.get("run_id")
-            if isinstance(run_id, str) and run_id:
-                return run_id
+            if isinstance(data, dict):
+                run_id = data.get("run_id")
+                if isinstance(run_id, str) and run_id:
+                    return run_id
         except (json.JSONDecodeError, OSError):
             pass
 
@@ -194,6 +203,13 @@ def resolve_source(project_root: Path, phase: str) -> str:
     Used for operator telemetry — does not gate any logic. ``iterate`` is
     always tagged regardless of orchestrated state because iterate runs
     on a separate finalize path.
+
+    "Driven" is read from the v2 ``phase_tasks[]`` authority OR the v1
+    ``current_step``. The v1 field alone was not enough for one narrow shape: a
+    ``/shipwright-run`` created over a pipeline already completed standalone gets
+    ``current_step: None`` (``config_factory`` couples that to ``status:
+    complete``), and was then stamped ``standalone`` despite being orchestrated.
+    An explicit ``standalone: true`` marker still outranks both.
     """
     if phase == "iterate":
         return "iterate"
@@ -204,11 +220,13 @@ def resolve_source(project_root: Path, phase: str) -> str:
         data = json.loads(run_config.read_text(encoding="utf-8"))
     except (json.JSONDecodeError, OSError):
         return "standalone"
+    if not isinstance(data, dict):
+        return "standalone"
     if data.get("standalone") is True:
         return "standalone"
-    if not data.get("current_step"):
-        return "standalone"
-    return "orchestrator"
+    if has_phase_tasks(data) or data.get("current_step"):
+        return "orchestrator"
+    return "standalone"
 
 
 def _canonical_phases() -> list[str]:
@@ -226,9 +244,10 @@ def _engagement_evidence_unreadable(project_root: Path) -> bool:
     """``True`` iff the event log EXISTS but cannot be read (partial flush / OSError).
 
     A genuinely ABSENT event log is NOT "unreadable" — cfg-based engagement
-    (status / current_step / completed_steps) still applies, so absence must not
-    trigger fail-open. Only an existing-but-unreadable log counts as insufficient
-    evidence. Any resolver error is treated as unreadable (conservative).
+    (status / phase_tasks[] / current_step / completed_steps) still applies, so
+    absence must not trigger fail-open. Only an existing-but-unreadable log counts
+    as insufficient evidence. Any resolver error is treated as unreadable
+    (conservative).
     """
     try:
         ev_path = resolve_events_path(project_root)
