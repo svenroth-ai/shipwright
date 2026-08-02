@@ -152,7 +152,9 @@ def test_scripts_dir_matches_the_pathlib_derivation_it_replaced():
     needs its own test because nothing else notices a wrong value —
     `dev_server/state.py` already inserts `shared/scripts` into `sys.path` at
     import, so the proxy's deferred `lib.cmd_resolver` import resolves through
-    THAT entry no matter what this constant holds. Measured: setting it to
+    THAT entry no matter what this constant holds. Measured: setting it (in
+    `_paths.py`, which now owns the derivation — monkeypatching the package-level
+    re-export no longer reaches `_ensure_scripts_on_path`) to
     "/nope/does/not/exist" leaves every other test in this file green, while the
     proxy inserts the bogus path at `sys.path[0]` — a live shadowing hazard. So a
     dirname-count slip in a future refactor would ship silently.
@@ -205,11 +207,11 @@ def test_lazy_resolve_does_no_platform_sensitive_work_on_first_call(monkeypatch)
 def test_lazy_resolve_restores_shared_scripts_on_sys_path_when_absent(monkeypatch):
     """The proxy is self-sufficient about `sys.path`, not a free-rider on state.py.
 
-    `dev_server/state.py` inserts `shared/scripts` at import, so in a normally
-    imported process the proxy's `if _SCRIPTS_DIR not in sys.path` guard never
-    fires and the insert underneath it is dead — which is precisely why it needs
-    its own test rather than being assumed covered. The diff-coverage gate caught
-    that line as unexecuted; the honest answer is to exercise the branch, because
+    `dev_server/state.py` puts `shared/scripts` on `sys.path` at import, so in a
+    normally imported process the guard inside `_ensure_scripts_on_path` never
+    fires when the proxy calls it — which is precisely why this needs its own
+    test rather than being assumed covered. The diff-coverage gate caught that
+    line as unexecuted; the honest answer is to exercise the branch, because
     nothing in the contract says state.py must keep doing the proxy's job.
 
     Take the entry out and the proxy must put it back, before its deferred import

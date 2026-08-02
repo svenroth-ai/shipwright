@@ -1,0 +1,145 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-08-01-dev-server-path-derivation",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-02T19:18:33.117815+00:00",
+      "disposition": "Final 7-point self-review: one __file__ derivation and one guarded sys.path.insert remain; shared/profiles derives from the shared/scripts anchor; 4 new characterization tests each killed its intended mutation, including spawn fallback; 88 targeted tests, shared/tests 7146 passed, all 18 F0 roots green, behavior snapshot verified, repo-wide ruff clean; ADR-045 checked with package-relative imports only and no new eager lib.X binding.",
+      "recorded_by": "iterate-agent",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-01T10:27:13.505101+00:00",
+      "disposition": "Phase Matrix: Mini-Plan is 'FEATURE only' at small complexity and this is a CHANGE (Path B, SIMPLIFY sub-mode); External LLM Review of a PLAN is 'skip' at small. No plan artifact was produced, so there is nothing for a plan review to read. The external CODE cascade did fire on its own 100-line trigger and is recorded separately as external_code=completed.",
+      "recorded_by": "iterate-agent",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 5,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "shared/tests/test_dev_server_windows_npm.py",
+          "line": 357,
+          "finding": "test_importing_dev_server_does_no_pathlib_path_arithmetic faked os.name BEFORE pathlib was first imported in the child, which defused the landmine it means to detect. On 3.11 _PosixFlavour.is_supported / _WindowsFlavour.is_supported are CLASS attributes evaluated once at pathlib import time from os.name; Path.__new__ then picks a class from the CURRENT os.name and checks that class's flag, so under a fake applied first the two agree and construction never raises. With the old derivation restored the mutation still reddened a Windows host by accident (PosixPath parses C:\\... as one component so parents[1] raises IndexError) but would have passed clean on ubuntu-latest, where ci.yml runs - inert on the gate that runs most often.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/tests/test_dev_server_windows_npm.py",
+          "line": 339,
+          "finding": "Docstring asserted a mechanism the test did not exercise, and named 'PosixPath' (the Windows-host direction only) as if it were the cross-platform behaviour.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "shared/tests/test_dev_server_windows_npm.py",
+          "line": 368,
+          "finding": "assert on bool(_SCRIPTS_DIR)/bool(_PROFILES_DIR) could not fail independently of the returncode assert above it - truthiness of a non-empty string proves only that the attributes exist, not that the derivations survived the fake.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "shared/scripts/dev_server/_paths.py",
+          "line": 3,
+          "finding": "Opening paragraph mis-stated its own census twice: 'neither name below' (there are three) and 'the three submodules that need the path on sys.path' (profile_config.py needs only _PROFILES_DIR).",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "shared/tests/test_dev_server_windows_npm.py",
+          "line": 156,
+          "finding": "Pre-existing docstring's reproduction recipe went stale: the proxy now reads _paths._SCRIPTS_DIR, so monkeypatching the package-level re-export no longer reproduces the shadowing experiment.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-08-01T10:05:58.993902+00:00",
+      "disposition": null,
+      "recorded_by": "shipwright-build:code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 2,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "hidden coupling & blast radius",
+          "file": "shared/tests/test_dev_server_windows_npm.py",
+          "line": null,
+          "finding": "Claim under doubt: this is a behavior-preserving SIMPLIFY with no gate impact — DISPROVED. shared/tests/test_dev_server_windows_npm.py went 285 -> 393 lines. bloat_baseline.limit_for() gives .py files LIMIT_SOURCE=300, should_skip() does not skip shared/tests, and the file has no shipwright_bloat_baseline.json entry - a NEW crossing, 94 lines over, created by this diff. bloat_gate_on_stop.py:274 BLOCKS Stop for any session whose marker is inside the 1h TTL, and Group H raises it post-merge. Not a CI failure (bloat-check.yml makes new crossings advisory) and not a pre-commit block (anti_ratchet.py: files outside the baseline are advisory) - which is exactly why it is easy to ship past. In-tree precedent: test_dev_server_b4_surface_parity.py:8-12 exists as a separate file for precisely this situation.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "boundary & contract",
+          "file": "shared/tests/test_dev_server_path_anchors.py",
+          "line": null,
+          "finding": "Claim under doubt: test_importing_dev_server_does_no_pathlib_path_arithmetic is platform-symmetric — NOT disproved today, but its greenness rests on an unstated invariant. The child fakes os.name BEFORE importing dev_server, so every stdlib module the chain first-imports evaluates its module-scope platform branch under the fake - and the fake is 'posix' on the Windows F0 host but 'nt' on ci.yml's ubuntu-latest, so the two hosts execute different branches. Checked against CPython 3.11.15: the only module-scope os.name platform-imports reachable are shutil.py:37-40 (pre-imported, documented) and urllib/request.py:1682's nturl2path via health.py - and nturl2path is pure-Python and ships on Linux, so the ubuntu direction survives. Safe today, but one module-scope import away from ubuntu-only-red: ctypes/util.py:7 is `if os.name == \"nt\"`. The docstring enumerated the three modules to pre-import but never stated the rule that generated the list.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-08-01T10:23:47.467845+00:00",
+      "disposition": null,
+      "recorded_by": "shipwright-build:doubt-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": "openrouter",
+      "completed_at": "2026-08-01T10:27:25.136900+00:00",
+      "disposition": null,
+      "recorded_by": "external_review.py",
+      "parse_status": "unstructured",
+      "raw_excerpt": "[gemini] SHIPWRIGHT_VERDICT: approve\n\n[openai] No concrete defects found. The change centralizes the sole `__file__`-based derivation and guarded `sys.path` insertion in `_paths.py`, derives profiles from that scripts anchor, preserves the deliberate eager `lib.atomic_write` import ordering, and introduces no unsafe eager absolute `lib` imports. The added tests exercise anchor equivalence, insertion idempotency/front placement, and import behavior under faked platform state.\n\nOverall assessment: ship-as-is.\n\nSHIPWRIGHT_VERDICT: approve"
+    }
+  },
+  "gates": {
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-01T10:07:00.732503+00:00",
+      "disposition": "Stage 1 HARD-GATE APPROVE: no spec divergence. End state verified in the files; shim exclusion judged correct; behavior preservation and ADR-045 confirmed. 4 LOW comment-accuracy findings (not spec divergences) were fixed before Stage 2 ran.",
+      "recorded_by": "shipwright-build:spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    }
+  }
+}

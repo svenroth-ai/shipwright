@@ -1,0 +1,67 @@
+{
+  "run_id": "iterate-2026-08-01-dev-server-path-derivation",
+  "date": "2026-08-02T19:21:28.079191Z",
+  "event_at": "2026-08-01T08:26:45.209123+00:00",
+  "type": "change",
+  "complexity": "small",
+  "prior_source": "history",
+  "branch": "iterate/dev-server-path-derivation",
+  "spec": null,
+  "tests_passed": true,
+  "adr": "iterate-2026-08-01-dev-server-path-derivation",
+  "test_completeness": {
+    "status": "complete",
+    "behaviors": [
+      {
+        "behavior": "shared/scripts is derived once for the dev_server package and retains the value of the pathlib derivation it replaced",
+        "disposition": "tested",
+        "evidence": "test_dev_server_windows_npm.py::test_scripts_dir_matches_the_pathlib_derivation_it_replaced PASSED; final static census found one __file__ derivation"
+      },
+      {
+        "behavior": "the package has one guarded sys.path insertion that is idempotent and restores shared/scripts at the front",
+        "disposition": "tested",
+        "evidence": "test_dev_server_path_anchors.py::test_ensure_scripts_on_path_inserts_once_and_at_the_front PASSED; removing the guard made this test fail"
+      },
+      {
+        "behavior": "shared/profiles is derived from the shared/scripts anchor rather than an independent file walk",
+        "disposition": "tested",
+        "evidence": "test_dev_server_path_anchors.py::test_profiles_dir_matches_the_pathlib_derivation_it_replaced PASSED; changing the profile dirname made this test fail"
+      },
+      {
+        "behavior": "importing dev_server remains safe when os.name is faked and performs no module-scope pathlib path arithmetic",
+        "disposition": "tested",
+        "evidence": "test_dev_server_path_anchors.py::test_importing_dev_server_does_no_pathlib_path_arithmetic PASSED on the final tree; restoring the pathlib derivation made it fail"
+      },
+      {
+        "behavior": "spawn's package-attribute-absent fallback still restores shared/scripts before importing lib.cmd_resolver",
+        "disposition": "tested",
+        "evidence": "test_dev_server_path_anchors.py::test_spawn_fallback_puts_scripts_on_path_without_the_package_attribute PASSED; removing the fallback ensure call made it fail"
+      },
+      {
+        "behavior": "the refactor preserves observable behavior and does not add an eager ADR-045-sensitive lib.cmd_resolver binding",
+        "disposition": "tested",
+        "evidence": "behavior_snapshot verify VERIFIED; test_dev_server_windows_npm.py::test_importing_dev_server_leaves_lib_cmd_resolver_unbound PASSED; shared/tests 7146 passed and all 18 F0 roots passed"
+      }
+    ],
+    "counts": {
+      "testable": 6,
+      "tested": 6,
+      "untestable": 0,
+      "untested_testable": 0
+    },
+    "enumeration_basis": {
+      "acs": 5,
+      "covered_acs": 5
+    }
+  },
+  "surface_verification": {
+    "surface": "none",
+    "runner": "",
+    "exit_code": 0,
+    "tests_run": 0,
+    "evidence_path": ".shipwright/runs/iterate-2026-08-01-dev-server-path-derivation/surface_verification.json",
+    "timestamp": "2026-08-02T19:17:15.162Z",
+    "justification": "Behavior-preserving internal Python package path-anchor refactor; no startable or user-facing surface is changed."
+  },
+  "declared_removals": []
+}
