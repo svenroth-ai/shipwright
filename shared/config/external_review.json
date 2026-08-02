@@ -13,9 +13,10 @@
     "_comment": "Models for external review. OpenRouter models used when OPENROUTER_API_KEY is set (recommended). Direct models used with GEMINI_API_KEY/OPENAI_API_KEY. Override per-environment via SHIPWRIGHT_REVIEW_MODEL_GEMINI / _CHATGPT / _OPENROUTER_GEMINI / _OPENROUTER_CHATGPT (resolved by lib.external_review_config.resolve_model)."
   },
   "llm_client": {
-    "timeout_seconds": 120,
+    "timeout_seconds": 240,
     "max_retries": 3,
     "retry_codes": [429, 500, 503],
-    "_comment": "Timeout and retry settings for external LLM calls"
+    "_comment": "Timeout and retry settings for external LLM calls",
+    "_comment_timeout": "Raised 120 -> 240 in iterate-2026-08-01-llm-review-truncation-guard, because that run raised the output budget 4096 -> 16000 and a bigger budget takes longer to generate. Measured on a 209k-char review prompt against gemini-3.1-pro-preview: 89.2s elapsed for a 10500-token completion, i.e. only 30.8s of headroom under the old 120s. Leaving 120s would have converted the truncated-but-partial review this run fixes into a timeout that returns nothing at all. Keep this above the slowest observed completion, not just above the average."
   }
 }
