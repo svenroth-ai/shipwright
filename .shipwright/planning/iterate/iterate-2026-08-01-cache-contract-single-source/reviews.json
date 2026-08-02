@@ -1,0 +1,273 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-08-01-cache-contract-single-source",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 2,
+      "findings": [
+        {
+          "severity": null,
+          "category": "3. Edge cases",
+          "file": null,
+          "line": null,
+          "finding": "DEFECT IN MY OWN CHANGE, found here and fixed: the module deliberately separates `absent` (remedy: run the sync) from `unreadable` (remedy: fix permissions, and refuse to report a file count it never measured), and the first cut asked only candidate.is_dir(), which is False for BOTH - collapsing a distinction the original code spends a paragraph defending. Fixed via _probe_missing_dir; the doubt reviewer then showed the repair probed the parent rather than the candidate, and that Path.is_dir() re-raises PermissionError out of a function documented not to leak exceptions. Both corrected and mutation-verified.",
+          "suggestion": null,
+          "source": "self-review"
+        },
+        {
+          "severity": null,
+          "category": "4. Test quality and load-bearingness",
+          "file": null,
+          "line": null,
+          "finding": "DEFECT IN MY OWN TESTS, found here and fixed: _seed wrote no directory when its file map was empty, so the survivor version dir never existed and the first regression test passed for the wrong reason - both resolvers were selecting the same directory. Fixed by creating the directory unconditionally. Mutation testing subsequently confirmed the three load-bearing pins are caught when their production lines are reverted.",
+          "suggestion": null,
+          "source": "self-review"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-08-01T10:28:06.426729+00:00",
+      "disposition": null,
+      "recorded_by": "iterate-step-7",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-01T10:26:46.172599+00:00",
+      "disposition": "Phase Matrix: Mini-Plan and External LLM Review are medium+ phases; this run is complexity=small (Stage-1 history prior, Stage-2 Repo Scout confirmed, all four diff-driven risk detectors measured False), so no plan artifact exists to review.",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 8,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "scripts/cache_sync_report.py",
+          "line": 72,
+          "finding": "print_ok() never names a GUESSED version directory; _version_basis_note was wired into print_drift only. With installed_plugins.json missing or corrupt the human green reads 'ok - 14 plugin(s) in sync' with no hint the compared directory was picked by the heuristic this iterate declared unsafe. A false green is worse than a false red.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "scripts/cache_install_resolve.py",
+          "line": 92,
+          "finding": "The shape-tolerance guard missed KeyError, so the detective check could crash: a manifest mapping a plugin key to an OBJECT makes entries[0] raise KeyError (a LookupError, not IndexError). The shell it mirrors uses a blanket `except Exception`, so the two halves had different tolerance.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "scripts/cache_install_resolve.py",
+          "line": 122,
+          "finding": "The absent/unreadable distinction re-probed the PARENT, answering 'can I list the plugin dir?' rather than why the candidate could not be seen. A candidate denied under a listable parent came back `absent`, and check_plugin_cache_sync then reported not_in_cache with missing_in_cache_count = every tracked file - a confident count over a directory it never measured.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "architecture",
+          "file": "docs/guide.md",
+          "line": 2157,
+          "finding": "The user-facing guide stated the opposite of shipped behaviour: the gated tree was still described as 'newest SemVer version dir', and neither version_basis nor --installed-plugins was documented. CLAUDE.md's Documentation Guide rule puts this in the same diff.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "scripts/cache_install_resolve.py",
+          "line": 98,
+          "finding": "The producer resolves an ABSOLUTE installPath; the checker keeps only the basename and re-joins it. Nothing recorded when those disagree, so a relocated cache or hand-edited manifest could be measured silently.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "architecture",
+          "file": "scripts/check_plugin_cache_sync.py",
+          "line": 247,
+          "finding": "--installed-plugins defaulted to the real manifest at parser-construction time, so every existing main([...]) test read the developer's machine state. Harmless only because fixtures use invented plugin names; the first test seeding a real name would go red locally and stay green in CI.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "shared/tests/test_plugin_cache_version_resolution.py",
+          "line": 156,
+          "finding": "test_an_unlistable_plugin_dir_stays_unreadable_not_absent monkeypatched latest_cache_version_dir and asserted a pass-through, verifying a stub rather than the behaviour its docstring claimed.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "scripts/cache_install_resolve.py",
+          "line": 40,
+          "finding": "The MARKETPLACE_NAME comment claimed it was 'the last component of the cache root', but nothing derived the cache root from it - a claim the code did not have.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-08-01T10:26:09.463146+00:00",
+      "disposition": null,
+      "recorded_by": "shipwright-build:code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 7,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "boundary-contract",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: _probe_missing_dir keeps 'absent' and 'unreadable' apart — The classifier sits behind candidate.is_dir(). (a) LIST denied but stat allowed: is_dir() is True, compare_tree runs, walk_tracked_files swallows the OSError and returns {}, so the record is drift with missing_in_cache_count == tracked_count - a fabricated count. (b) stat itself denied: Path.is_dir() RE-RAISES PermissionError (it only ignores ENOENT/ENOTDIR/EBADF/ELOOP), so it propagates out of check_sync, whose docstring promises no exception leaks out.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "high",
+          "category": "hidden-coupling",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: the unreadable test proves the probe asks the CANDIDATE, not its parent — The monkeypatch ignored its argument, so reverting the production line to os.scandir(candidate.parent) left both assertions green: the parent is listable, so the 'absent' arm fell through to the right answer for the wrong reason and the 'unreadable' arm was denied either way. The test was green against the precise defect it was written to pin, and never went through resolve_version_dir.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "boundary-contract",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: the pin makes a rename on either side impossible to miss — Two realistic edits break the contract with every pin test green. (1) The pin asserts the CONTENT of _install_path's body, never that Step 2's copy target is that function's output; consolidating to cache_target=\"$cache_base/$installed_version\" leaves the function defined and used by the symlink loop while producer and checker target different fields. (2) The sync iterates a hardcoded 14-name PLUGINS array; the checker globs plugins/shipwright-*. Nothing pins those sets - and this already cost once (shipwright-grade sat not_in_cache forever, decision_log.md:4112).",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "hidden-coupling",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: backward compatibility is a non-issue because the default preserves old behaviour — It preserves the BUG as the default for every caller that is not main(). check_sync(installed_plugins=None) against the REAL cache root silently uses the highest-SemVer heuristic - the defect this change removes. Harmless today (all callers are tests on tmp roots) but the library entry point now has a default that is wrong for its only production tree, and the next importer inherits it rather than deciding.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "concurrency-ordering",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: the verdict rests on one consistent reading of the manifest — installed_version_name re-read and re-parsed installed_plugins.json once per plugin (14 opens inside the loop). A rewrite by claude plugin install landing mid-loop yields one verdict mixing manifest v1, v2 and a half-written parse.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "boundary-contract",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: entries[0]['installPath'] is the directory runtime loads — The change proves the checker agrees with the SHELL (both take entries[0]). Nothing proves entries[0] is what Claude Code's runtime resolves; the value is a list in a manifest carrying version: 2. If it ever holds two entries and runtime binds the last, producer and checker are consistently wrong together with no signal anywhere.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "hidden-coupling",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: naming the fallback on the green line is signal, not noise — The reason string embedded the plugin name and _version_basis_note joins the deduped SET, so an offline/headless machine (a state update-marketplace.sh explicitly handles) would put up to 13 near-identical strings on one ok line - the failure print_orphan_advisory's own docstring argues against.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-08-01T10:26:09.724331+00:00",
+      "disposition": null,
+      "recorded_by": "shipwright-build:doubt-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-01T10:26:46.376333+00:00",
+      "disposition": "Phase Matrix: External LLM Review is auto at medium+ and Advisory below it; this run is complexity=small with no risk flags. The internal cascade (spec-reviewer, code-reviewer, doubt-reviewer) ran in full and all 15 findings were addressed in-diff.",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    }
+  },
+  "gates": {
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 4,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "spec-compliance",
+          "file": "shared/tests/test_plugin_cache_version_pin.py",
+          "line": 275,
+          "finding": "The pin covers 2 of the 4 shared literals bidirectionally. The expected manifest path and key format are hard-coded on the TEST side instead of being derived from default_installed_plugins_path() / plugin_key(), so a PYTHON-side rename leaves the pin green while the halves diverge — the same class the card exists to close, and the half that fails silently (the check reads a key nothing writes, falls back, stays green).",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "documentation",
+          "file": "scripts/check_plugin_cache_sync.py",
+          "line": 45,
+          "finding": "The module Usage block and docs/guide.md:2166-2168 both enumerate the flag set; neither mentions the new --installed-plugins.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "accuracy",
+          "file": "shared/tests/test_plugin_cache_version_resolution.py",
+          "line": 111,
+          "finding": "A docstring claims '14 repo files reported missing'; the fixture has one.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "consistency",
+          "file": "shared/tests/test_plugin_cache_version_resolution.py",
+          "line": 57,
+          "finding": "The new module re-implements _seed/_write instead of reusing shared/tests/cache_sync_fixtures.seed_repo_and_cache, which the three sibling cache-sync modules use. A reason is given (multi-version dirs, one deliberately empty) — Stage 2's call.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-08-01T10:57:26.804054+00:00",
+      "disposition": null,
+      "recorded_by": "shipwright-build:spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    }
+  }
+}

@@ -1,0 +1,299 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-08-01-verify-local-surface-gates",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 1,
+      "findings": [
+        {
+          "severity": null,
+          "category": "wired into a consumer",
+          "file": null,
+          "line": null,
+          "finding": "Nothing invokes verify_local.py — no hook, no skill step, no workflow. It delivers a runnable pre-flight, not an automatic one, so the CI round-trip it targets is unchanged until someone types the command. Left deliberately: installing a pre-push hook changes how every push in the repo behaves and is the operator's call under --autonomous. Recorded as trg-486cb11c and stated in the module docstring, CLAUDE.md and docs/hooks-and-pipeline.md.",
+          "suggestion": null,
+          "source": "self-review"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-08-01T10:28:45.409415+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-01T10:28:45.643263+00:00",
+      "disposition": "Phase Matrix (SKILL.md section 6, NORMATIVE): External LLM Review is 'skip' at trivial and small; this run is small with risk_flags=[] (all four diff-driven detectors returned False on the real changed-file list). Not an operator decline and not a capability limit.",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 11,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "correctness",
+          "file": "shared/tests/test_verify_local.py",
+          "line": 63,
+          "finding": "FALSE RED, repo-wide: _GUARD_SCRIPT.search searches the RAW run body, which for `run: |` blocks includes shell # comment lines. ci.yml's 'Run shared tests' carries 34 comment lines; one mentioning a checker enrols that TEST step as an unregisterable guard and fails the reverse-drift test on EVERY PR.",
+          "suggestion": "Strip comments before matching, mirroring test_checks_that_gate.py:69.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "shared/tests/test_verify_local.py",
+          "line": 121,
+          "finding": "Forward-drift asserts SUBSTRING containment while verify_local.py:57 and the docs claim 'byte-identical'/'verbatim'. ci.yml growing `--strict` keeps the test green while the wrapper runs the weaker command and reports PASS on a push CI rejects.",
+          "suggestion": "Assert line equality.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "shared/tests/test_verify_local.py",
+          "line": 68,
+          "finding": "Reverse-drift reads only the python-checks job. A guard added in a NEW job (then marked Required) is invisible; verify_local keeps printing full coverage.",
+          "suggestion": "Enumerate guard steps across ALL jobs.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "shared/tests/test_verify_local.py",
+          "line": 148,
+          "finding": "_STDLIB_ONLY is an exact enumeration of today's imports, so any NEW stdlib import (`import os`) fails with a message blaming ADR-045 — a violation that is not there.",
+          "suggestion": "Use sys.stdlib_module_names.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "shared/tests/test_verify_local.py",
+          "line": 250,
+          "finding": "The non-ASCII test asserts only the ASCII half; the arrow, the entire subject, is never asserted. Dropping encoding='utf-8' keeps it green.",
+          "suggestion": "Assert the non-ASCII characters survive.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "architecture",
+          "file": "shared/tests/test_verify_local.py",
+          "line": 42,
+          "finding": "Three-way duplication with test_checks_that_gate.py (_REQUIRED_JOB, YAML step access, a third definition of 'is this a gate step'). Re-implementing the mechanics is what produced the comment-leak bug.",
+          "suggestion": "Share the ci.yml step-reading helper.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "scripts/verify_local.py",
+          "line": 92,
+          "finding": "Only two of three gates reconfigure their stdio; check_ci_gate_coverage.py prints em-dashes and does not. On Windows a child writing to a PIPE encodes with the locale codec, so a failing CI-gate guard prints mojibake. Also no timeout, unlike both neighbours (900/600).",
+          "suggestion": "Force the child encoding via env; add a timeout.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "scripts/verify_local.py",
+          "line": 7,
+          "finding": "The '~5 s' cost claim is unverified locally and looks optimistic; verify_contract_surface drives grade.py over the whole monorepo.",
+          "suggestion": "Measure on the Windows host and quote the real number.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/tests/test_verify_local.py",
+          "line": 187,
+          "finding": "_fake keys off Path(command[2]).stem and defaults unrecognised commands to PASS, so a Gate.command shape change fails misdirected rather than at the seam.",
+          "suggestion": "Match against LOCAL_GATES; raise on unrecognised.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "architecture",
+          "file": "shared/tests/test_verify_local.py",
+          "line": 45,
+          "finding": "The file enforcing 'never bind repo modules by sys.path' loads its own subject via sys.path.append; the repo convention for this job is spec_from_file_location.",
+          "suggestion": "Load via spec_from_file_location.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "scripts/verify_local.py",
+          "line": 100,
+          "finding": "echo=print is a test-only seam with one production caller; capsys already provides it.",
+          "suggestion": "Drop the echo parameter; assert via capsys.",
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-08-01T10:27:59.690157+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 12,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "blast radius",
+          "file": "scripts/verify_local.py",
+          "line": null,
+          "finding": "Claim under doubt: this removes the round-trip tail the docstring describes — verify_local is referenced by no hook, no SKILL.md step, no F-phase and no workflow - only prose and its own tests. The cited failures came from iterate runs, and agents execute steps, not prose. The diff ships a correct tool with no consumer.",
+          "suggestion": "scripts/hooks/pre-push (core.hooksPath already points there), or an F0 step guarded on the file existing",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "boundary",
+          "file": "scripts/verify_local.py",
+          "line": null,
+          "finding": "Claim under doubt: a PASS here means CI would pass — all three gates read the working tree; a fix left unstaged is vetted locally and never pushed. Untracked test dirs cause the inverse false red.",
+          "suggestion": "print HEAD sha + dirty-file count; warn when dirty",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "boundary",
+          "file": "scripts/verify_contract_surface.py",
+          "line": null,
+          "finding": "Claim under doubt: forcing PYTHONIOENCODING makes the child readable — it does not touch locale.getpreferredencoding(); verify_contract_surface.py's two subprocess.run(..., text=True) calls have no encoding= and decode grade.py's UTF-8 stderr as cp1252 on Windows -> UnicodeDecodeError, green in CI",
+          "suggestion": "set PYTHONUTF8=1",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "concurrency",
+          "file": "scripts/verify_local.py",
+          "line": null,
+          "finding": "Claim under doubt: the timeout prevents an indefinite wait — subprocess.run kills only uv; on Windows it then calls communicate() with no timeout, blocking on pipes held by surviving grandchildren",
+          "suggestion": "Popen + communicate(timeout=) + kill the process tree",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "hidden coupling",
+          "file": "shared/tests/test_verify_local_ci_drift.py",
+          "line": null,
+          "finding": "Claim under doubt: a checker named in a comment cannot enrol a step — _run_body strips only lines whose first non-space char is '#'. A TRAILING shell comment mentioning any check_*/verify_*.py enrols that step and reddens every PR.",
+          "suggestion": "strip from the first whitespace-preceded '#'; add the trailing case",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "hidden coupling",
+          "file": "shared/tests/test_verify_local_ci_drift.py",
+          "line": null,
+          "finding": "Claim under doubt: the reverse-drift test catches the next guard that lands — it reads ci.yml only (7 workflows exist, 2 more Required); a workflow-call job has no steps; an unnamed step is skipped; _GUARD_SCRIPT needs a literal scripts/ segment",
+          "suggestion": "scan all workflows; fail loudly on a job with no steps that is not a uses: call",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "hidden coupling",
+          "file": "shared/tests/test_verify_local_ci_drift.py",
+          "line": null,
+          "finding": "Claim under doubt: the registry is self-consistent — _GUARD_SCRIPT matches scripts/verify_local.py itself. Wiring the tool into ci.yml forces registration; registering it in LOCAL_GATES makes verify() spawn itself recursively.",
+          "suggestion": "assert no Gate.script is verify_local.py",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "boundary",
+          "file": "scripts/verify_local.py",
+          "line": null,
+          "finding": "Claim under doubt: CI_ONLY_GATES records a reason, so coverage cannot silently shrink — the only assertion is len > 30, and the deferred entry cites card 'P1-b' which appears nowhere in the repo, so nothing will ever sweep it",
+          "suggestion": "cite a resolvable triage id; distinguish structural from deferred",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "boundary",
+          "file": "docs/hooks-and-pipeline.md",
+          "line": null,
+          "finding": "Claim under doubt: docs point the reader at the drift contract — two citations name test_verify_local.py; both drift directions live in test_verify_local_ci_drift.py",
+          "suggestion": "fix both citations",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "boundary",
+          "file": "CLAUDE.md",
+          "line": null,
+          "finding": "Claim under doubt: measured 6 s on Windows — measured from inside .worktrees/<slug>, which contains no .worktrees; grade.py's walkers exclude .venv but NOT .worktrees, and CLAUDE.md documents running from the repo root",
+          "suggestion": "re-measure from the main clone or drop the absolute figure",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "concurrency",
+          "file": "shared/tests/test_verify_local_ci_drift.py",
+          "line": null,
+          "finding": "Claim under doubt: each guard is registered exactly once — _guard_steps returns a dict keyed by step name; two jobs with the same step name silently keep the last",
+          "suggestion": "assert no duplicate names",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "boundary",
+          "file": "shared/tests/test_verify_local.py",
+          "line": null,
+          "finding": "Claim under doubt: the ADR-045 test proves the checkers are never imported — ImportFrom with level > 0 is skipped and importlib.import_module is not an import node; the test proves 'no static absolute non-stdlib import'",
+          "suggestion": "state the scope in the docstring",
+          "source": "doubt-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-08-01T10:28:00.012452+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-01T10:28:45.881634+00:00",
+      "disposition": "Same rule: at small with no risk flags the external review pass is not triggered by the Phase Matrix. The internal cascade DID run in full (spec HARD-GATE, code, doubt) under the CLAUDE.md standing grant, and its 23 findings were addressed rather than deferred.",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    }
+  },
+  "gates": {
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-01T10:27:59.227944+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    }
+  }
+}

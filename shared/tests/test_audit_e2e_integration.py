@@ -107,9 +107,9 @@ def _seed(
         f"# Build Dashboard\nrun_id: {run_id}\n", encoding="utf-8"
     )
 
-    # review record — every pass closed, so the review-record gate is green and
-    # the block under test stays the only red flag. `spec` lives in the sibling
-    # `gates` object, which the cross-repo consumer does not read.
+    # review record — every pass closed, so the gate is green and the block under
+    # test stays the only red flag. Deliberately the PRE-PROMOTION shape (`spec`
+    # under the retired `gates` sibling), so it doubles as a back-compat exercise.
     def _row(review_type):
         return {
             "review_type": review_type, "status": "completed", "findings_count": 0,
