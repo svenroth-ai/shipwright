@@ -1,0 +1,45 @@
+{
+  "recorded": "LAST, after every code change from all three internal stages and the external cascade. Recording it earlier is what made it certify a superseded implementation twice (Stage-1 finding 6, Stage-3 finding 15). Every number below was re-measured from the tree at record time, not carried forward.",
+  "items": [
+    {
+      "name": "Spec Compliance",
+      "verdict": "pass",
+      "note": "AC-1..AC-9 implemented and pinned. Three extensions beyond the bare finding are declared in the spec with their measurements rather than smuggled: the trailing guard is (?!\\w)(?!\\.\\w) so neither sentence punctuation nor a compound hyphen suppresses the flag; the five config families require an extension so the message surface cannot fire where the diff surface would not; and the requirements*.txt fragment matches the glob's alphabet ([^\\s/\\\\]*) rather than a narrower one. Each of the three replaced a claim that a reviewer disproved."
+    },
+    {
+      "name": "Error Handling",
+      "verdict": "n/a",
+      "note": "Pure regex construction. `_filename_token` is total (str in, str out), no I/O, no external calls, no nullable boundary. The module is a data registry."
+    },
+    {
+      "name": "Security Basics",
+      "verdict": "pass",
+      "note": "No user input reaches SQL or HTML; no secrets. The relevant risk for a regex change is catastrophic backtracking, since detect_risk_flags runs over an attacker-influenceable prompt: no quantifier is nested inside another, and the leading lookbehind kills interior start positions. Measured on adversarial input (3k/12k/48k chars): 3.4/5.1/17.6 ms — linear. The widened `[^\\s/\\\\]*` cannot cross whitespace, so it is bounded by a single token rather than by the message."
+    },
+    {
+      "name": "Test Quality",
+      "verdict": "pass",
+      "note": "201 cases across two modules (190 parity + 11 guard-construction), asserting outcomes rather than internals, and asserting BOTH surfaces wherever a test's name claims both. Four mutation rounds against the production regex; the final round mutated the shipped shape seven ways — reinstate the hyphen rejection, ungroup the helper argument, drop the extension guard, revert to the symmetric guard, drop the leading lookbehind, make the config extension optional, unguard one JS entry — caught by 30/4/42/64/42/2/5 tests, with risk_taxonomy.py restored byte-identical after each. The 30 is the one that matters: before Stage 3, that mutation was caught by ZERO behavioural tests, which is how the false negative it represents survived my own review."
+    },
+    {
+      "name": "Performance Basics",
+      "verdict": "pass",
+      "note": "Same shape as before — this entry contributes the same 19 `re.search` calls it did before the change (guards were added to existing patterns; none added or removed). `detect_risk_flags` loops the whole taxonomy, so 19 is per-entry, not per-classification. Patterns are cached by the `re` module. No loops added, no I/O."
+    },
+    {
+      "name": "Naming & Structure",
+      "verdict": "pass",
+      "note": "`_filename_token` is private and lives in the module that owns the registry it guards; 19 call sites, so not a premature single-use abstraction. Four files touched: risk_taxonomy.py 279 lines, risk_detectors.py 272, test_touches_build_surface_parity.py 285, test_touches_build_guard_construction.py 155 — all under the 300-line limit. The two test modules are a deliberate split along the seam their docstrings describe (agreement between surfaces vs. how the guard is built), made when the single module crossed 300."
+    },
+    {
+      "name": "Affected Boundaries",
+      "verdict": "n/a",
+      "note": "No serialized format is produced or consumed. `is_io_boundary_change` returns False for the changed file set; the diff is regex literals, one helper, comments, decision-memory prose and tests."
+    },
+    {
+      "name": "Test Hygiene Probe",
+      "verdict": "pass",
+      "note": "`scan_test_hygiene.py --diff` reported no findings (exit 0), re-run after the split. Neither new module contains a skip, a conditional skip or a focused test."
+    }
+  ]
+}

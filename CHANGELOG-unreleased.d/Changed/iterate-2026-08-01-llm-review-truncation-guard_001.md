@@ -1,0 +1,1 @@
+`llm_client.timeout_seconds` raised 120 -> 240. The larger output budget takes longer to generate — measured at 89.2s for a 10500-token completion, leaving only 30.8s of headroom under the old timeout — so the previous value would have converted a partial review into no review at all.

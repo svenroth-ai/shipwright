@@ -1,0 +1,115 @@
+{
+  "stage": "spec-compliance",
+  "verdict": "PASS",
+  "rounds": 3,
+  "spec_citations": [
+    {
+      "spec_ref": "AC-6 / root cause — 'the config families keep the extension optional; bare next.config still fires'",
+      "divergence": "ROUND 1 (REJECT): the replaced `next\\.config\\.` required a trailing dot, so a bare stem never fired; writing the families `next\\.config(\\.\\w+)?` added five message triggers with no diff-surface counterpart, under a premise about the old regex that was never executed",
+      "kind": "unfaithful",
+      "diff_location": "plugins/shipwright-iterate/scripts/lib/risk_taxonomy.py"
+    },
+    {
+      "spec_ref": "AC-5 — 'every pattern is token-guarded structurally'",
+      "divergence": "ROUND 1 (REJECT): the structural test asserted only the leading guard, so a message-only pattern could still fire on `cargo.toml.bak`",
+      "kind": "incomplete",
+      "diff_location": "plugins/shipwright-iterate/tests/test_touches_build_surface_parity.py"
+    },
+    {
+      "spec_ref": "Spec Impact / decision memory",
+      "divergence": "ROUND 1 (REJECT): conventions.md still recommended the symmetric `(?![\\w.-])` guard this run disproved, instructing the next agent to reinstate the bug",
+      "kind": "unfaithful",
+      "diff_location": ".shipwright/agent_docs/conventions.md"
+    },
+    {
+      "spec_ref": "test module docstring",
+      "divergence": "ROUND 1 (low): said '15 JS build inputs' where the tuple's JS half is 21",
+      "kind": "unfaithful",
+      "diff_location": "plugins/shipwright-iterate/tests/test_touches_build_surface_parity.py"
+    },
+    {
+      "spec_ref": "Ledger row 7b — 'fires on both surfaces'",
+      "divergence": "ROUND 2 (REJECT): the cited test asserted only the message surface, so the literal CONFIG_STEMS list half-covered the tuple-shrink case it exists to catch",
+      "kind": "unfaithful",
+      "diff_location": "plugins/shipwright-iterate/tests/test_touches_build_surface_parity.py"
+    },
+    {
+      "spec_ref": "Stage-1 finding 6 disposition — 'rewritten against the shipped code'",
+      "divergence": "ROUND 2 (REJECT): self-review.json still certified the rejected implementation, naming a test that exists nowhere and whose name asserts what AC-6 forbids",
+      "kind": "unfaithful",
+      "diff_location": ".shipwright/planning/iterate/iterate-2026-08-01-touches-build-token-boundary/self-review.json"
+    },
+    {
+      "spec_ref": "conventions.md SUPERSEDES pointer",
+      "divergence": "ROUND 2 (low): an empty inline code span where the discriminator belongs — a Bash heredoc had eaten the escape",
+      "kind": "unfaithful",
+      "diff_location": ".shipwright/agent_docs/conventions.md"
+    },
+    {
+      "spec_ref": "conventions.md — 'all 21 JS patterns unguarded'",
+      "divergence": "ROUND 3 (low, non-blocking): 21 is the tuple's JS entry count; the unguarded JS message patterns numbered 12",
+      "kind": "unfaithful",
+      "diff_location": ".shipwright/agent_docs/conventions.md"
+    },
+    {
+      "spec_ref": "spec — per-family extension aside",
+      "divergence": "ROUND 3 (low, non-blocking): named two deviations as if complete; five families have three distinct extension sets",
+      "kind": "incomplete",
+      "diff_location": ".shipwright/planning/iterate/iterate-2026-08-01-touches-build-token-boundary.md"
+    },
+    {
+      "spec_ref": "self-review.json Performance Basics",
+      "divergence": "ROUND 3 (nit): '19 re.search calls per classification' — 19 is per-entry; detect_risk_flags loops the whole taxonomy",
+      "kind": "unfaithful",
+      "diff_location": ".shipwright/planning/iterate/iterate-2026-08-01-touches-build-token-boundary/self-review.json"
+    }
+  ],
+  "findings": [
+    {
+      "severity": "low",
+      "round": 3,
+      "location": "conventions.md:27",
+      "claim": "'all 21 JS patterns unguarded'",
+      "reality": "21 is the JS entry count of TOUCHES_BUILD_FILE_PATTERNS; the unguarded JS message patterns numbered 12.",
+      "blocking": false,
+      "disposition": "accepted-and-fixed — reworded to 'the ENTIRE JS half of the entry'"
+    },
+    {
+      "severity": "low",
+      "round": 3,
+      "location": "iterate spec, parity-is-not-enumeration paragraph",
+      "claim": "named only two per-family extension deviations, reading as the complete set",
+      "reality": "measured sets are next {js,ts,mjs,cjs}, vite {js,ts,mjs}, rollup {js,ts,mjs}, tailwind {js,ts}, webpack {js,ts}",
+      "blocking": false,
+      "disposition": "accepted-and-fixed — all five enumerated, and the irregularity now carries the argument against enumerating"
+    },
+    {
+      "severity": "nit",
+      "round": 3,
+      "location": "self-review.json, Performance Basics",
+      "claim": "'19 re.search calls per classification'",
+      "reality": "19 is per-entry; detect_risk_flags loops the whole taxonomy",
+      "blocking": false,
+      "disposition": "accepted-and-fixed — note rescoped to per-entry"
+    }
+  ],
+  "rounds_history": [
+    {
+      "round": 1,
+      "verdict": "REJECT",
+      "findings": "1 high (undeclared widening: config families made bare stems fire with no diff counterpart, defended by an unexecuted premise about the prior regex), 2 medium (structural test asserted only the leading guard; conventions.md still recommended the disproved symmetric guard), 1 low (docstring said 15 where the tuple's JS half is 21)"
+    },
+    {
+      "round": 2,
+      "verdict": "REJECT",
+      "findings": "findings 1-4 confirmed resolved; 2 new rejects of one class - a ledger row cited a test asserting only one of the two surfaces its name promised, and self-review.json still certified the rejected implementation; 1 low (empty code span in the conventions.md supersede pointer)"
+    },
+    {
+      "round": 3,
+      "verdict": "PASS",
+      "findings": "AC-1..AC-7 all met, Spec Impact none verified at source against FR-01.11; behaviour walked by hand incl. backtracking cases; no regression in the pre-existing suites; 3 non-blocking accuracy nits, all since fixed"
+    }
+  ],
+  "summary": "PASS. AC-1..AC-7 all met and Spec Impact `none` verified at source (FR-01.11 is capability-level; no AC describes what counts as naming a build input, and the SKILL.md row documents trigger paths, which are unchanged). The guards were walked by hand rather than trusted, including the backtracking cases next.config.js.bak and webpack.config.js.orig. No scope creep: _filename_token exists to satisfy AC-5 and the conventions.md entries are the run's required reflection output. Three non-blocking accuracy nits recorded and subsequently fixed. Code-reviewer may proceed.",
+  "note_on_citations": "All ten are recorded, blocking and non-blocking alike, and all are fixed. The round-3 verdict is PASS; these are the findings that got it there."
+}

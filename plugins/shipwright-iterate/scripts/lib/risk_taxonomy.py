@@ -12,6 +12,60 @@ resolving it from there.
 
 from __future__ import annotations
 
+
+def _filename_token(name: str) -> str:
+    """Wrap a filename regex so it matches a WHOLE filename, not a substring.
+
+    The message surface matches prose; the diff surface matches an exact
+    basename. They must agree on what counts as *naming* a build input, and
+    the only reliable way to keep them agreeing is to apply the guard by
+    construction — applying it by hand is what produced the defect this helper
+    exists to close: iterate-2026-07-31-it5-classification-calibration added
+    guards to the Python patterns it was introducing (an external review had
+    found that bare ``\\b`` is not a filename boundary, since ``.`` satisfies
+    it) and left the older, wholly unguarded JS patterns alone. All 21 JS build
+    inputs then disagreed across the two surfaces.
+
+    ``(?<![\\w.-])`` rejects a prefix, so ``my-package.json`` is not
+    ``package.json``.
+
+    The trailing guard is ``(?!\\w)(?!\\.\\w)`` rather than the symmetric
+    ``(?![\\w.-])``, and the asymmetry is the whole design. A following
+    character says one of three things:
+
+    * a word character continues the NAME — ``setup.python`` is not
+      ``setup.py``. Rejected by ``(?!\\w)``.
+    * a ``.`` plus a word character adds an EXTENSION — ``package.json.bak``
+      is a different file. Rejected by ``(?!\\.\\w)``.
+    * anything else is PROSE around the filename — a sentence-ending ``.`` in
+      "confined to package.json.", a compound hyphen in "a package.json-only
+      bump", a comma, a backtick. The file is still what is being named, so
+      these must fire.
+
+    Both rejections were measured, in the direction that matters. The
+    symmetric ``(?![\\w.-])`` this replaced suppressed the sentence-final case
+    (`add a dependency to pyproject.toml.` raised nothing), and an
+    intermediate ``(?![\\w-])`` suppressed the hyphen case (`a
+    package.json-only bump` raised nothing, having fired before the guards
+    existed at all). Each is a false NEGATIVE on a risk gate — the unsafe
+    direction — so `-` is deliberately NOT in the class. The cost is that
+    ``package.json-old`` fires; over-firing buys a spurious ``small`` floor,
+    under-firing loses the gate.
+
+    ``name`` is wrapped in a non-capturing group. Without it, ``|`` — which has
+    the lowest precedence in the regex grammar — would split the guards across
+    branches: ``gemfile|gemfile\\.lock`` would compile as
+    ``((?<![\\w.-])gemfile)|(gemfile\\.lock(?!\\w)(?!\\.\\w))``, leaving the
+    first branch with no trailing guard and the second with no leading one.
+    That is both defects this helper exists to prevent, reintroduced by a call
+    that reads as correct — and a purely structural check of the returned
+    string still sees the guards at both ends. An alternation is the obvious
+    way to write the Rust/Go/Ruby entries ``risk_detectors`` names as the
+    deliberate next additions, so this is one token against a live trap.
+    """
+    return rf"(?<![\w.-])(?:{name})(?!\w)(?!\.\w)"
+
+
 # --- Canonical Risk Taxonomy ---
 # One authoritative list. Referenced by SKILL.md, references, and tests.
 
@@ -87,28 +141,57 @@ RISK_TAXONOMY = {
         # requirements-engineering framework — a bare `requirements` pattern
         # would raise touches_build on ordinary prose about requirement
         # catalogues, on most iterates in this repo.
+        #
+        # EVERY name below goes through `_filename_token()`, JS and Python
+        # alike — one entry, one matching rule. Half-guarding is the defect
+        # this list carried: `my-package.json` and `package.json.bak` raised
+        # touches_build from a message while the diff surface refused them
+        # (pinned by test_touches_build_files_does_not_match_partial_basename).
+        # Parity is asserted, not assumed, in
+        # tests/test_touches_build_surface_parity.py — and it is parity on
+        # TOKEN BOUNDARIES only: the surfaces disagree on case by decision
+        # (`detect_risk_flags` lowercases prose, the diff half is
+        # `fnmatchcase`), which that file pins too.
+        #
+        # The config families REQUIRE an extension (`next\.config\.\w+`),
+        # because the diff surface holds only extensioned literals
+        # (`next.config.js|ts|mjs|cjs`) and returns False for a bare
+        # `next.config`. Making the extension optional would add five message
+        # triggers with no diff-surface counterpart — the disagreement this
+        # entry exists to remove. It is `\w+` rather than the four literals on
+        # purpose: those per-family sets are irregular, and mirroring them here
+        # would inherit five allowlists that drift silently.
         "patterns": [
             # JavaScript / TypeScript
-            r"package\.json", r"package-lock\.json",
-            r"yarn\.lock", r"pnpm-lock\.yaml", r"bun\.lockb",
-            r"npm-shrinkwrap\.json",
-            r"next\.config\.", r"vite\.config\.",
-            r"tailwind\.config\.", r"webpack\.config\.",
-            r"rollup\.config\.", r"tsconfig\.json",
-            # Python. Each name is wrapped in TOKEN guards, not \b, so the
-            # message surface matches a whole FILENAME the way the diff
-            # surface does. `\b` alone is not enough in either direction:
-            # `my-requirements.txt`, `requirements.txt.bak`, `uv.lock.bak`,
-            # `setup.py.bak` and `setup.python` all satisfy `\b` and are not
-            # build inputs. `(?<![\w.-])` rejects a prefix, `(?![\w.-])`
-            # rejects a further extension.
-            r"(?<![\w.-])uv\.lock(?![\w.-])",
-            r"(?<![\w.-])poetry\.lock(?![\w.-])",
-            r"(?<![\w.-])pipfile(\.lock)?(?![\w.-])",
-            r"(?<![\w.-])pyproject\.toml(?![\w.-])",
-            r"(?<![\w.-])setup\.py(?![\w.-])",
-            r"(?<![\w.-])setup\.cfg(?![\w.-])",
-            r"(?<![\w.-])requirements[\w.-]*\.txt(?![\w.-])",
+            _filename_token(r"package\.json"),
+            _filename_token(r"package-lock\.json"),
+            _filename_token(r"yarn\.lock"),
+            _filename_token(r"pnpm-lock\.yaml"),
+            _filename_token(r"bun\.lockb"),
+            _filename_token(r"npm-shrinkwrap\.json"),
+            _filename_token(r"next\.config\.\w+"),
+            _filename_token(r"vite\.config\.\w+"),
+            _filename_token(r"tailwind\.config\.\w+"),
+            _filename_token(r"webpack\.config\.\w+"),
+            _filename_token(r"rollup\.config\.\w+"),
+            _filename_token(r"tsconfig\.json"),
+            # Python
+            _filename_token(r"uv\.lock"),
+            _filename_token(r"poetry\.lock"),
+            _filename_token(r"pipfile(\.lock)?"),
+            _filename_token(r"pyproject\.toml"),
+            _filename_token(r"setup\.py"),
+            _filename_token(r"setup\.cfg"),
+            # `[^\s/\\]*`, not `[\w.-]*`: the diff surface matches this family
+            # with the fnmatch glob `requirements*.txt`, whose `*` accepts ANY
+            # character. `[\w.-]*` accepted a narrower alphabet, so
+            # `requirements#.txt`, `requirements+extra.txt` and
+            # `requirements@dev.txt` fired from a diff and not from a message —
+            # the same cross-surface disagreement one alphabet over, found by
+            # external review. Whitespace and path separators stay excluded so
+            # the class cannot run across a sentence ("the requirements … see
+            # notes.txt") or swallow a directory.
+            _filename_token(r"requirements[^\s/\\]*\.txt"),
         ],
         "min_complexity": "small",
         # NOTE — for a Python change the enforced layer is largely a no-op by
