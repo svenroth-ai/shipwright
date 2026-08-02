@@ -1,0 +1,123 @@
+{
+  "run_id": "iterate-2026-08-01-compliance-refresh-real-converge",
+  "date": "2026-08-02T18:17:27.524449Z",
+  "event_at": "2026-08-01T10:57:19.306162+00:00",
+  "type": "feature",
+  "complexity": "medium",
+  "prior_source": "history",
+  "branch": "iterate/compliance-refresh-real-converge",
+  "spec": ".shipwright/planning/iterate/2026-08-01-compliance-refresh-real-converge.md",
+  "tests_passed": true,
+  "adr": "iterate-2026-08-01-compliance-refresh-real-converge",
+  "test_completeness": {
+    "status": "complete",
+    "behaviors": [
+      {
+        "behavior": "The real regenerate_tracked_snapshots -> _update_compliance chain runs and all seven paths report a success outcome",
+        "disposition": "tested",
+        "category": "integration",
+        "evidence": "test_compliance_refresh_real_producer.py::test_the_real_producer_reports_success_for_all_seven PASSED"
+      },
+      {
+        "behavior": "The six tree-derived documents change against their committed seed, and none is deleted",
+        "disposition": "tested",
+        "category": "integration",
+        "evidence": "::test_the_real_producer_rewrites_every_tree_derived_document PASSED"
+      },
+      {
+        "behavior": "ci-security.json keeps its committed bytes when its source is unreachable, still reports success, and does not break the run",
+        "disposition": "tested",
+        "category": "integration",
+        "evidence": "::test_ci_security_is_left_frozen_when_its_source_is_unreachable PASSED"
+      },
+      {
+        "behavior": "The regenerated documents carry real derived content: both FR ids in the RTM, the seed's two commits in change-history, the seeded dependency in the SBOM, a v3 manifest whose requirement ids match the seed with no untagged tests",
+        "disposition": "tested",
+        "category": "integration",
+        "evidence": "::test_the_regenerated_documents_carry_real_derived_content PASSED"
+      },
+      {
+        "behavior": "A fixpoint is reached in exactly 3 passes, strictly under MAX_PASSES",
+        "disposition": "tested",
+        "category": "integration",
+        "evidence": "::test_the_real_producer_needs_three_passes_to_settle PASSED"
+      },
+      {
+        "behavior": "The rewritten producer config ends byte-identical, and was really rewritten mid-run (D6)",
+        "disposition": "tested",
+        "category": "integration",
+        "evidence": "::test_the_rewritten_config_ends_exactly_where_it_started PASSED; mutation-verified - re-adding the config to APPEND_ONLY_INPUTS turns exactly this case red"
+      },
+      {
+        "behavior": "Both append-only logs keep every line they started with, in order, and each gained a record",
+        "disposition": "tested",
+        "category": "integration",
+        "evidence": "::test_the_append_only_logs_keep_every_line_they_started_with PASSED"
+      },
+      {
+        "behavior": "An append-only input that moved is reported to the operator, and a rewritten one is not",
+        "disposition": "tested",
+        "category": "integration",
+        "evidence": "::test_the_inputs_left_alone_are_exactly_the_two_logs_that_moved PASSED"
+      },
+      {
+        "behavior": "The producer's own appends (one grade_snapshot per pass, one dedup'd triage row) do not break the fixpoint",
+        "disposition": "tested",
+        "category": "integration",
+        "evidence": "::test_the_producers_own_appends_do_not_break_the_fixpoint PASSED"
+      },
+      {
+        "behavior": "converge's regenerate parameter still defaults to the real producer",
+        "disposition": "tested",
+        "evidence": "::test_converge_still_defaults_to_the_real_producer PASSED"
+      },
+      {
+        "behavior": "An unsound seed, a readable seeded manifest, an un-neutralised gh, or outbox-routed triage fails as a FIXTURE fault before the producer runs",
+        "disposition": "tested",
+        "category": "integration",
+        "evidence": "assert_seed_is_sound runs inside the real_run fixture and gates the nine cases that consume it"
+      },
+      {
+        "behavior": "The run is hermetic - same result with gh authenticated and logged out",
+        "disposition": "tested",
+        "category": "integration",
+        "evidence": "measured both ways: 10 passed each, identical documents; runtime fell 14s -> 2.3s once the network calls stopped"
+      },
+      {
+        "behavior": "The ci-security.json content narrowing stays a stated boundary rather than a gap",
+        "disposition": "untestable",
+        "reason_code": "covered-by-existing-test",
+        "reason": "test_compliance_refresh.py::test_ci_security_is_outside_the_fixpoint_claim already asserts TREE_DERIVED == REFRESH_SET - {CI_SECURITY_SUMMARY}; a second copy would be a verbatim duplicate"
+      }
+    ],
+    "counts": {
+      "testable": 13,
+      "tested": 12,
+      "untestable": 1,
+      "untested_testable": 0
+    },
+    "enumeration_basis": {
+      "acs": 9,
+      "covered_acs": 9
+    }
+  },
+  "surface_verification": {
+    "surface": "cli",
+    "runner": "uv run --python 3.11 --extra dev pytest shared/tests/test_compliance_refresh_real_producer.py -v",
+    "exit_code": 0,
+    "tests_run": 10,
+    "evidence_path": "C:\\01_Development\\shipwright\\.worktrees\\compliance-refresh-real-converge\\.shipwright\\runs\\iterate-2026-08-01-compliance-refresh-real-converge\\surface_verification.log",
+    "timestamp": "2026-08-01T10:38:45.979Z",
+    "attempts": 1
+  },
+  "declared_removals": [
+    {
+      "path": ".shipwright/agent_docs/iterates/iterate-2026-07-27-handoff-tally-and-gate-honesty.json",
+      "reason": "Evicted by the canonical F5c 50-entry retention window; the run remains in git history and shipwright_events.jsonl."
+    },
+    {
+      "path": ".shipwright/agent_docs/iterates/iterate-2026-07-27-pr-review-diff-cap.json",
+      "reason": "Evicted by the canonical F5c 50-entry retention window; the run remains in git history and shipwright_events.jsonl."
+    }
+  ]
+}
