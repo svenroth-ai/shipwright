@@ -376,23 +376,37 @@ Every review pass writes its result to the run's review record:
 .shipwright/planning/iterate/{run_id}/reviews.json
 ```
 
-Six types, all materialized up front, each closed by the pass that owns it:
+Six types under `reviews`, all materialized up front, each closed by the pass
+that owns it: `self` · `plan` · `code` · `doubt` · `external_code` · `spec`.
 
-* `reviews` — `self` · `plan` · `code` · `doubt` · `external_code`
-* `gates` — `spec`
+**`spec` used to live in a sibling `gates` object, and no longer does.** The
+`reviews` object is a CROSS-REPO contract, and the webui consumer
+(`shipwright-webui` `server/src/core/mission-context/review-record.ts`) used to
+reject a record whose `schema_version` differed by strict `!==`, or whose
+`reviews` carried any key outside its own five — while an invalid record does
+**not** fall back to the marker view: it renders every row as a data-integrity
+fault (`review-state.ts`). A sixth key would therefore have reported every
+healthy record as corrupt, so `spec` was parked outside everything the consumer
+inspected.
 
-**Why two objects, and why `spec` is not simply a sixth `reviews` key.** The
-`reviews` object is a pinned CROSS-REPO contract. The webui consumer
-(`shipwright-webui` `server/src/core/mission-context/review-record.ts`) rejects a
-record whose `schema_version` differs by strict `!==` (`:261`) or whose `reviews`
-carries any key outside its own five (`:276`) — and an invalid record does **not**
-fall back to the marker view: it renders all five rows as a data-integrity fault
-(`review-state.ts:240`). So a sixth `reviews` key, or a version bump, would make
-every healthy record report as corrupt in the Mission view. `gates` sits outside
-everything the consumer inspects, so it is additive and `schema_version` stays
-`1`. Promoting `spec` into `reviews` is a one-line change on each side once the
-webui ships a tolerant reader — that is the cross-repo half, not a blocker for
-this one.
+That reader shipped its tolerant half in `ce21323e` (PR #339): the version is now
+a **floor** (`>=`) and an unrecognised `reviews` key is rendered as an extra row
+instead of rejected. `spec` was promoted on the strength of it. Two consequences
+that are not obvious:
+
+* **`schema_version` stays `1`.** A floor makes a bump worthless to the consumer,
+  while `validate_record` still rejects a version newer than its own constant —
+  so a bump only creates casualties among plugin caches that have not updated.
+* **Records written before the promotion keep `spec` under `gates`,** and are
+  read from there permanently. They are immutable and git-tracked; 65 of them
+  existed at promotion time and not one carried `spec` under `reviews`. Without
+  that read path this repo's own fail-closed F11 gate would have called all 65
+  corrupt.
+
+**Deployment, not merge, is the gate.** This plugin auto-updates through the
+marketplace cache; the webui is hand-deployed. A new producer against an
+un-redeployed webui makes every row render "could not be read", which is false
+under version skew.
 
 **Stage 1 can now prove it ran.** `spec-reviewer` closes `spec`; `code-reviewer`
 closes `code`; `doubt-reviewer` closes `doubt`. The gate enforces the cascade's
@@ -423,9 +437,10 @@ indistinguishable from one nobody earned — and that no longer greens the gate.
 
 **F11 stops the run while any type is still `pending`** (small+; skipped at
 trivial), so an empty Review row in the Mission view always means "genuinely not
-run", never "nobody wrote it down". An **absent** `gates` object counts as
-`spec` pending: the schema tolerates its absence so records written before it
-existed stay readable, and a live run gets nothing from that. The reviewers
+run", never "nobody wrote it down". A `spec` row absent from **both** sections
+counts as pending: the schema tolerates the absence so older records stay
+readable, and a live run gets nothing from that — it cannot dodge the row by
+declining to write it. The reviewers
 already return structured JSON; before this record existed it survived only as
 ADR prose and was thrown away.
 

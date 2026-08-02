@@ -120,6 +120,22 @@ drift. (End users consuming the published plugins do not need this step.)
 The cache carries three trees and the check gates two: the versioned plugin
 dirs and `shared/` (reached as `{plugin_root}/../../shared`, home of the F11
 verifier every iterate runs). The cross-plugin mirror `cache/plugins/<name>/`
+remains ungated **by the drift check**, but no longer for the original reason:
+`ensure_shared_cache` judged each tree from one sentinel file, so a gate built
+on it would have inherited that weakness (trg-7d1d8437). Since
+`iterate-2026-08-01-cache-heal-per-plugin` the healer compares each tree's
+**file set** against its repair source, so the mirror is soundly repaired and
+joining it to the drift check is now a plain follow-up rather than a blocked
+one (filed as `trg-5005bf57`). Note the two answer different questions and the
+healer cannot replace the check: the healer detects **absence** (presence-only,
+because the clone and the cache differ in line endings), the check detects
+**staleness** (CRLF-normalized content hashes). **The two sides of the comparison are
+verifier every iterate runs). **Which version dir is compared is the sync's
+answer, not a second opinion:** both sides read
+`~/.claude/plugins/installed_plugins.json`, so a surviving stale dir cannot make
+the sync report "up to date" while the check reports drift (P2.06). The check
+falls back to the highest cached version when that manifest is unreadable and
+records which rule it used as `version_basis`. The cross-plugin mirror `cache/plugins/<name>/`
 is knowingly ungated — `ensure_shared_cache._plugins_healthy` gates repair of
 all 14 mirrors behind a single sentinel file, so a gate built on it would
 inherit that weakness (trg-7d1d8437). **The two sides of the comparison are
@@ -201,6 +217,9 @@ _Existing user-facing documentation discovered by /shipwright-adopt._
 
 ## Architecture Updates
 > **One line per change** — always-loaded Layer-1 context, so every line costs tokens on every future iterate. Format: `- **<run_id|ADR-NNN>** (YYYY-MM-DD): <Impact> — <one sentence: what + key surface>. → decision_log (Run-ID/ADR)`. **Budget ≤ 600 chars; detail goes in the ADR / `.shipwright/planning/adr/`, not here.** Enforced repo-agnostically (incl. adopted repos) by the F11 verifier + `shared/scripts/tools/check_agent_doc_budget.py` (SSoT `lib.agent_doc_budget`); see `references/F2.md`. Bullet **shape** (a `run_id`|`ADR-NNN` anchor, an `<Impact> —` lead, and a `→` pointer — no `Campaign`/`sub_iterate`/free-text) is enforced from 2026-06-28 by `check_agent_doc_shape` (SSoT `lib.agent_doc_shape`); the release aggregator writes no duplicate `ADR-NNN` bullet — the run_id line is the single canonical entry. Full verbatim prose for compacted entries lives in [`../planning/adr/_archive-agent-doc-updates.md`](../planning/adr/_archive-agent-doc-updates.md). Routing (`lib.architecture_doc.IMPACT_TARGETS`): `convention`-impact → [`conventions.md`](conventions.md) `## Convention Updates`; only `component` / `data-flow` live here.
+- **iterate-2026-08-01-cache-heal-per-plugin** (2026-08-01): Component — the SessionStart cache healer stops judging a tree by one sentinel file: `ensure_shared_cache` compares each tree's delivered FILE SET against its repair source via a tri-state, copytree-equivalent walk sharing copytree's own ignore callable, so a partial reap is repaired, not read as healthy. `_plugins_healthy` and the combined early return are gone; only the same-name clone judges completeness; a symlinked mirror is never written through. Presence, never content. Re-vendored to 12 plugins. → decision_log (Run-ID).
+- **iterate-2026-07-31-review-record-spec-promotion** (2026-08-01): Component — `spec` becomes an ordinary sixth `reviews` key now the webui renders unknown types (`ce21323e`), retiring the `gates` seam as a WRITE destination; new `lib/review_record_legacy.py` owns the permanent READ fallback (`reviews` → `gates`) and supersedes a still-pending legacy row, so 65 immutable records stay valid. `SCHEMA_VERSION` stays 1. The Stage-1 guard re-keys off "`spec` absent from BOTH sections" — on `gates` it would have died silently. → decision_log (Run-ID).
+- **iterate-2026-08-01-cache-contract-single-source** (2026-08-01): Component — the cache check stops resolving the plugin version dir independently of the sync: both now read `installed_plugins.json`, so a surviving stale dir can no longer make `update-marketplace.sh` report "up to date" while `--strict` reports every file missing (P2.06). New leaf `scripts/cache_install_resolve.py`; records `version_basis` per plugin and names a fallback on BOTH the ok and drift lines. → decision_log (Run-ID).
 - **iterate-2026-08-01-cache-sync-shared-tree** (2026-08-01): Component — `check_plugin_cache_sync` gains the cached `shared/` tree (1005 files, incl. the F11 verifier modules) and stops guessing what belongs in a tree: the repo side is `git ls-files` (the cache is a clone of exactly the tracked files), the cache side keeps the walk. New leaves `scripts/cache_tree_compare.py` + `scripts/cache_sync_report.py`; the verdict carries `verified`/`ungated`/`basis` and never reads a zero as agreement. Mirror stays ungated (trg-7d1d8437). → decision_log (Run-ID).
 - **iterate-2026-07-31-it1-s2-expected-status** (2026-07-31): Component — `triage.mark_status` gains keyword-only `expected_status`, checked against the resolved status INSIDE the lock it already held, so a background producer cannot overwrite a decision a person recorded between its unlocked read and its write (trg-93ceb2b0); a mismatch raises new public `StatusPreconditionError` having written nothing, and the call now RETURNS the status it replaced. All nine automatic flip sites and both operator-CLI ones pass it and report a miss as kept, never resolved. → decision_log (Run-ID).
 - **iterate-2026-07-31-derived-docs-at-release** (2026-07-31): Data-flow — the seven `.shipwright/compliance/` documents stop being frozen on the default branch: the release stages them (changelog Step 5.5, explicit pathspec, verified from the COMMIT not the index) and `/shipwright-compliance --refresh-pr` opens a documents-only PR in between — no credential with write access anywhere. New `lib/compliance_refresh.py` (declared per-path classification, unclassified fails a test) + four `tools/compliance_*` modules; `source_state` gains `base=`/`release=`. → decision_log (Run-ID).
