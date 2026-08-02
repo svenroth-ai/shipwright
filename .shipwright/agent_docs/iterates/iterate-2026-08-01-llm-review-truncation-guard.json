@@ -227,6 +227,14 @@
       "tests_run": 3,
       "result": "3 passed",
       "timestamp": "2026-08-02T19:08:11.048Z"
+    },
+    {
+      "root": "integration-tests",
+      "runner": "uv run pytest integration-tests -q --junitxml=.shipwright/runs/iterate-2026-08-01-llm-review-truncation-guard/f11-integration-tests.xml",
+      "exit_code": 0,
+      "tests_run": 422,
+      "result": "422 passed",
+      "timestamp": "2026-08-02T21:08:06.547Z"
     }
   ],
   "live_provider_probe": {
