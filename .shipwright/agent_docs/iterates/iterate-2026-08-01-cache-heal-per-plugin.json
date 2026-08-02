@@ -1,7 +1,7 @@
 {
   "run_id": "iterate-2026-08-01-cache-heal-per-plugin",
-  "date": "2026-08-01T10:15:54.734198Z",
-  "event_at": "2026-08-01T10:12:15.123408+00:00",
+  "date": "2026-08-02T17:58:56.583763Z",
+  "event_at": "2026-08-01T11:29:19.367693+00:00",
   "type": "change",
   "complexity": "medium",
   "branch": "iterate/cache-heal-per-plugin",
@@ -188,11 +188,21 @@
         "behavior": "A whole cache calls copytree ZERO times - AC3 asserted at the operation, not at the log line",
         "disposition": "tested",
         "evidence": "test_ensure_shared_cache_repair_isolation.py::test_a_whole_cache_calls_copytree_ZERO_times PASSED (counts copies; a copy-then-suppress implementation would pass the stderr-only test)"
+      },
+      {
+        "behavior": "main() branch reachability driven IN-PROCESS: fresh install, top-up from our own clone, whole-cache no-op, no-clone advisory, foreign-clone restore, dev --plugin-dir model, non-JSON stdin, and the outer fail-open guard",
+        "disposition": "tested",
+        "evidence": "test_ensure_shared_cache_main_inprocess.py (8 tests) PASSED - subprocess tests are invisible to coverage, so these make the same branches measurable without weakening the composition proof"
+      },
+      {
+        "behavior": "Every except-OSError fail-open branch: unclassifiable entry mid-walk, unreadable DESTINATION, unreadable marketplaces dir, unreadable cache root, one unlistable plugin dir, a mirror whose copy raises, and a failing shared/ copy still reaching the plugins repair; the normal no-usable-clone return is covered separately",
+        "disposition": "tested",
+        "evidence": "test_ensure_shared_cache_error_paths.py PASSED: 7 tests cover the hook's 7 syntactic except-OSError sites; an 8th separately covers the normal no-usable-clone return"
       }
     ],
     "counts": {
-      "testable": 33,
-      "tested": 33,
+      "testable": 35,
+      "tested": 35,
       "untestable": 2,
       "untested_testable": 0
     },

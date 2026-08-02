@@ -310,6 +310,43 @@ Run `--mode code` after the cascade (openrouter; gemini truncated, openai
 | GPT-2 | med | `_version_key` sorts `1.0.0-rc1` AFTER `1.0.0` (`"-rc1" > ""`), so a prerelease would be chosen as the repair authority | **Real, latent, deliberately not fixed here.** Every installed plugin in the live cache carries a plain `MAJOR.MINOR.PATCH` and one version each, so it is unreachable today. More importantly the defect belongs to `cache_tree_compare.version_key`, which this hook's key is pinned **equal** to — fixing one side only would break the pin and split the convention. Filed as `trg-18da39b0` covering both implementations and the pin together |
 | Gemini | high (truncated) | A sentinel-less cached `shared/` falls back to a foreign clone, restoring foreign code | **Pre-existing and unchanged.** `if not _shared_healthy(...): source = _find_marketplace_shared(...)` is byte-identical to the old code; this diff narrows the *completeness* path to the same-name clone only, it does not widen the restore path. Not a regression introduced here |
 
+## CI gate: the subprocess-coverage blind spot
+
+The first push went red on **Diff coverage (gate)** — 83 changed lines, 25
+missing, **69%** against an 80% floor. Worth recording because my first
+diagnosis was wrong and the wrong fix was nearly shipped.
+
+**Wrong diagnosis.** The change re-vendors 12 byte-identical copies; those are
+92% of its measured changed lines and are never imported, so the obvious reading
+was "the copies tank the ratio, exclude them" — and I edited
+`[tool.coverage.run] omit` to do exactly that. Reading the actual CI log instead
+showed diff-cover listed **one** file: the canonical hook. The copies are absent
+from `coverage.xml` entirely (never imported, not under `source`), so they were
+never counted. The `omit` widened a repo-wide gate for no reason and was
+reverted.
+
+**Real cause.** The canonical hook sat at 56% because the integration and
+partial-reap suites drive it as a **subprocess**, and a shell-out test measures
+0% of what it exercises. `main()` — 50 statements — had no in-process caller at
+all. Several `except OSError` fail-open branches were likewise unmeasured; the
+existing mid-walk test already covered `_delivered()`'s `iterdir()` handler
+in-process.
+
+**Fix.** Two modules that drive the same code in-process, without weakening the
+subprocess proof (which remains authoritative for composition, because only a
+real process exercises the `Path(__file__)` walk):
+`…_main_inprocess.py` points the loaded module's `__file__` at a hook inside a
+fake cache tree — `main()` reads it from module globals at call time, so the
+real function runs over the real fixtures and coverage attributes to the
+canonical file; `…_error_paths.py` covers the fail-open guards. 56% → **99%**
+(only `sys.exit(main())` under the `__main__` guard remains), and the gate tool
+run locally reports **100% of 84 changed lines, 0 missing**.
+
+**Generalisable:** a vendored, subprocess-invoked hook is invisible to
+changed-line coverage twice over. The measurement gap is not evidence the code
+is untested — but it is evidence nothing *measured* it, and the two are easy to
+confuse in opposite directions.
+
 ## Test Completeness Ledger
 
 Every behavior this diff introduces or changes. **testable ⇒ tested**;
@@ -350,6 +387,8 @@ Every behavior this diff introduces or changes. **testable ⇒ tested**;
 | 32 | End-to-end: a stale symlinked mirror does not corrupt the older installed version dir | `tested` | `…_repair_isolation.py::test_a_symlinked_mirror_is_never_written_through` — **runs on Linux CI only**; skipped on Windows, where creating a symlink needs a privilege this host lacks (verified `OSError 1314`). Row 31 is the cross-platform pin |
 | 33 | Path keys are case-folded on Windows only, and separators stay posix | `tested` | `…_walk.py::test_delivered_lists_plain_files_relative_and_posix` + `::test_delivered_prunes_ignored_dirs_without_descending` — both failed against an `os.path.normcase` implementation that rewrote separators |
 | 34 | A whole cache calls `copytree` **zero** times (AC3 at the operation, not the log line) | `tested` | `…_repair_isolation.py::test_a_whole_cache_calls_copytree_ZERO_times` — the subprocess test can only see stderr, so a copy-then-suppress implementation would have passed it |
+| 35 | `main()` branch reachability is measured in-process without replacing the subprocess composition proof | `tested` | `test_ensure_shared_cache_main_inprocess.py` — 8 tests: fresh install, same-name top-up, whole-cache no-op, no-clone advisory, foreign-clone restore, dev model, malformed stdin, outer fail-open guard |
+| 36 | Every `except OSError` fail-open branch returns unknown/continues rather than producing a false-healthy verdict or aborting another repair | `tested` | `test_ensure_shared_cache_error_paths.py` — 7 tests cover the 7 syntactic handlers: classification/stat failure, unreadable destination/marketplaces/cache/plugin dirs, per-mirror copy failure and shared-copy isolation; an 8th test separately covers the normal no-usable-clone return |
 | 23 | A **truncated** (present but short) file is not detected | `untestable` | `covered-by-existing-test` — presence-only is a measured decision: a content rule here re-copies 24 shared files every session (CRLF). **Accepted uncovered gap, not a delegation** (DOUBT-7): `check_plugin_cache_sync.py` covers the *shared* tree's content only, does not cover the mirror tree at all, and is monorepo-only — so end users have no content check on either tree. Closing it is `trg-5005bf57`'s job |
 | 24 | Real-cache walk latency (~53 ms plugins / ~33 ms shared) | `untestable` | `requires-external-nondeterministic-service` — depends on the host filesystem and the live cache's size; measured by probe, not assertable in CI |
 
@@ -382,7 +421,12 @@ Every behavior this diff introduces or changes. **testable ⇒ tested**;
      tri-state turns that into `None`, and the hook makes no claim and no copy
      (42 ms, exit 0). POSIX terminates the same way via ELOOP/PATH_MAX.
      Generalised into a mid-walk-failure test rather than left to luck.*
-- **Test Completeness Ledger:** the 24-row table in the "Test Completeness
+- 9. **Post-CI verification after adding the measurable in-process paths:**
+     targeted cache tests **122 passed / 2 skipped**; final full F0 rerun after
+     integrating current `main` **7259 passed / 18 skipped / 0 failed**; Ruff
+     and `verify_local.py` green;
+     diff-cover **100% of 84 changed lines / 0 missing**.
+- **Test Completeness Ledger:** the 37-behavior table in the "Test Completeness
   Ledger" section above — every behavior `tested` or `untestable` with a
   closed-vocabulary `reason_code`; 0 untested-testable.
 - **Confidence-pattern check:**
