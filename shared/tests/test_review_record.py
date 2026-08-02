@@ -41,10 +41,12 @@ def project(tmp_path):
 # --- shape (AC2) ------------------------------------------------------------
 
 
-def test_new_record_materializes_all_five_types_as_pending():
+def test_new_record_materializes_every_type_as_pending():
     rec = new_record(RUN_ID)
     assert set(rec["reviews"]) == set(REVIEW_TYPES)
-    assert len(REVIEW_TYPES) == 5
+    # Six since `spec` was promoted out of the retired `gates` seam. Asserted as
+    # a literal so growth is a decision someone makes here, not a side effect.
+    assert len(REVIEW_TYPES) == 6
     for review_type in REVIEW_TYPES:
         entry = rec["reviews"][review_type]
         assert entry["status"] == "pending"
@@ -59,8 +61,8 @@ def test_pending_types_lists_only_unclosed_types():
     from lib.review_record import RECORDABLE_TYPES
 
     rec = new_record(RUN_ID)
-    # RECORDABLE_TYPES: the gate rows are materialised pending too, so "every
-    # type is represented" keeps meaning every type a run must answer for.
+    # RECORDABLE_TYPES rather than a literal list, so "every type is
+    # represented" keeps meaning every type a run must answer for.
     assert set(pending_types(rec)) == set(RECORDABLE_TYPES)
     rec = upsert_review(rec, make_entry("self", "completed"))
     assert "self" not in pending_types(rec)

@@ -40,9 +40,11 @@ def _project(tmp_path, complexity="medium"):
 
 def _complete_record(project, **overrides):
     record = new_record(RUN_ID)
-    # RECORDABLE_TYPES, not REVIEW_TYPES: `spec` is a gate row and is unanswered
-    # until closed like any other pass, so a fixture that skipped it would make
-    # every test here fail on the pending row rather than on its own subject.
+    # Every recordable type, `spec` included: it is unanswered until closed like
+    # any other pass, so a fixture that skipped it would make every test here
+    # fail on the pending row rather than on its own subject. (`RECORDABLE_TYPES`
+    # is now an alias of `REVIEW_TYPES` — the two separated while `spec` lived in
+    # the retired `gates` seam, and may separate again.)
     for review_type in RECORDABLE_TYPES:
         status = overrides.get(review_type, "completed")
         record = upsert_review(

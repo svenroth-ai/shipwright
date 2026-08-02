@@ -1,0 +1,1 @@
+The Stage-1 spec review is now an ordinary key in the review record's `reviews` object instead of a sibling `gates` object, so the Command Center shows it as a sixth row alongside the other five passes. Records written before the change keep working unchanged.

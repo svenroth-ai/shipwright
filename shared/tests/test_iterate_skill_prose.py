@@ -141,9 +141,14 @@ def test_the_withdrawn_code_row_shape_stays_warned_against():
 
 
 def test_the_reviews_object_is_documented_as_a_cross_repo_contract():
-    """Why `spec` is not simply a sixth `reviews` key. Measured, not assumed:
-    the consumer rejects an unknown key AND a bumped schema_version, and does
-    not fall back to the markers — it renders an integrity fault instead."""
+    """`reviews` is a CROSS-REPO contract and the doc must keep saying so.
+
+    `spec` IS a sixth `reviews` key now — the consumer lifted its
+    reject-unknown-keys and pin-the-version guards in `shipwright-webui`
+    `ce21323e`. What did NOT change, and is why this test still exists, is that
+    an invalid record does not fall back to the marker view: it renders as a
+    data-integrity fault. The contract is looser, not gone.
+    """
     norm = _norm(REVIEWS_DOC.read_text(encoding="utf-8"))
     assert "cross-repo contract" in norm
     assert "data-integrity fault" in norm

@@ -2776,13 +2776,21 @@ Trivial iterates emit an auto `n/a` line and skip the hard gate.
   `recorded_by` naming an adapter other than `none`. `--status completed` with
   `--from` omitted produces a row with none of them (`trg-51a57370`). Measured
   before shipping: 45 of 45 real records already carry evidence.
-- **Stage 1 has its own row and the cascade's order is enforced.** `spec` lives
-  in the record's sibling `gates` object — NOT as a sixth `reviews` key, because
-  the webui consumer rejects an unknown key *and* a bumped `schema_version`, and
-  renders an invalid record as a data-integrity fault rather than degrading to
-  the markers. A `code` row recorded `completed` while `spec` is not `completed`
-  FAILS: Stage 2 cannot legitimately have run without its HARD-GATE
-  (`trg-64372769`). `external_code` is outside that rule by design.
+- **Stage 1 has its own row and the cascade's order is enforced.** `spec` is an
+  ordinary sixth `reviews` key. It lived in a sibling `gates` object while the
+  webui consumer rejected an unknown key *and* a bumped `schema_version`,
+  rendering an invalid record as a data-integrity fault rather than degrading to
+  the markers; that reader now treats the version as a floor and renders review
+  types it does not recognise (`shipwright-webui` `ce21323e`), so `spec` was
+  promoted. `schema_version` deliberately stays `1`. Records written before the
+  promotion keep `spec` under `gates` and are still read from there — they are
+  immutable, so the fallback is permanent, not a migration window. A `code` row
+  recorded `completed` while `spec` is not `completed` FAILS: Stage 2 cannot
+  legitimately have run without its HARD-GATE (`trg-64372769`). The ordering
+  check exempts only a record that carries no `spec` row in *either* section —
+  keying it on "no `gates` key", as it once did, would have silently stopped
+  firing for every record written after the promotion. `external_code` is
+  outside the rule by design.
 - **A missing F5c entry fails, it does not skip.** The complexity comes from
   that entry, so without it the gate cannot know what to enforce, and "I could
   not tell" must not be reported as "not applicable".
