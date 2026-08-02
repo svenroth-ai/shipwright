@@ -1,7 +1,7 @@
 {
   "run_id": "iterate-2026-08-01-f0-diff-coverage-gate",
-  "date": "2026-08-02T20:59:32.329256Z",
-  "event_at": "2026-08-01T10:55:02.320720+00:00",
+  "date": "2026-08-02T22:05:29.128596Z",
+  "event_at": "2026-08-02T20:17:25.070096+00:00",
   "type": "feature",
   "complexity": "medium",
   "prior_source": "keyword",
@@ -183,9 +183,9 @@
         "evidence": "test_compare_branch_uses_ci_origin_main_even_when_origin_HEAD_differs + test_compare_branch_returns_origin_main_when_it_resolves + test_compare_branch_refreshes_a_stale_origin_main_before_using_it + test_compare_fetch_cannot_prompt_or_wait_without_a_bound + test_compare_branch_is_None_when_no_base_exists + test_a_dangling_origin_HEAD_falls_back_to_a_valid_origin_main + test_missing_merge_base_names_the_shallow_history_fix PASSED"
       },
       {
-        "behavior": "End to end with the REAL pinned diff-cover: uncovered fails, covered passes, mixed committed plus dirty line shifts use final coordinates, both tiers combine repo-relative, and the CLI returns 4 then 0",
+        "behavior": "End to end with the REAL pinned diff-cover: uncovered fails, covered passes, mixed committed plus dirty line shifts use final coordinates, both tiers combine repo-relative, the CLI returns 4 then 0, and the existing race-followup path remains green under the permanent gate",
         "disposition": "tested",
-        "evidence": "test_an_uncovered_changed_line_fails_the_gate + test_covering_the_changed_line_passes_the_gate + test_line_shifting_uncommitted_edits_use_one_coherent_final_snapshot + test_the_combined_xml_is_repo_relative_so_diff_cover_can_match_it + test_the_f0_cli_stops_on_an_under_covered_diff_then_passes_once_covered PASSED",
+        "evidence": "test_an_uncovered_changed_line_fails_the_gate + test_covering_the_changed_line_passes_the_gate + test_line_shifting_uncommitted_edits_use_one_coherent_final_snapshot + test_the_combined_xml_is_repo_relative_so_diff_cover_can_match_it + test_the_f0_cli_stops_on_an_under_covered_diff_then_passes_once_covered + test_the_runner_records_a_real_race_and_never_auto_closes_it PASSED; full integration root 444 passed, 2 deselected",
         "category": "integration"
       },
       {
@@ -241,6 +241,30 @@
     {
       "path": ".shipwright/agent_docs/iterates/iterate-2026-07-27-merge-state-vocabulary.json",
       "reason": "F5c 50-entry retention eviction; full history remains in shipwright_events.jsonl and git history"
+    },
+    {
+      "path": ".shipwright/agent_docs/iterates/iterate-2026-07-27-changelog-aggregator-idempotency.json",
+      "reason": "F5c 50-entry retention eviction after origin/main integration; full history remains in shipwright_events.jsonl and git history"
+    },
+    {
+      "path": ".shipwright/agent_docs/iterates/iterate-2026-07-27-checks-that-gate-nothing.json",
+      "reason": "F5c 50-entry retention eviction after origin/main integration; full history remains in shipwright_events.jsonl and git history"
+    },
+    {
+      "path": ".shipwright/agent_docs/iterates/iterate-2026-07-27-no-silent-revert.json",
+      "reason": "F5c 50-entry retention eviction after origin/main integration; full history remains in shipwright_events.jsonl and git history"
+    },
+    {
+      "path": ".shipwright/agent_docs/iterates/iterate-2026-07-27-review-floor-not-chained.json",
+      "reason": "F5c 50-entry retention eviction after origin/main integration; full history remains in shipwright_events.jsonl and git history"
+    },
+    {
+      "path": ".shipwright/agent_docs/iterates/iterate-2026-07-27-run-unit-parallel-race.json",
+      "reason": "F5c 50-entry retention eviction after origin/main integration; full history remains in shipwright_events.jsonl and git history"
+    },
+    {
+      "path": ".shipwright/agent_docs/iterates/iterate-2026-07-27-triage-defer-review-followup.json",
+      "reason": "F5c 50-entry retention eviction after origin/main integration; full history remains in shipwright_events.jsonl and git history"
     }
   ]
 }
