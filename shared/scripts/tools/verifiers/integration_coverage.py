@@ -67,16 +67,16 @@ _BELOW_MEDIUM = ("trivial", "small")
 def _read_entry(project_root: Path, run_id: str) -> dict | None:
     """This run's F5c entry, or ``None`` when it cannot be read.
 
-    ``find_entry_by_run_id`` returns ``dict | None`` for SHAPE, but it can still
-    RAISE: ``lib/iterate_entry.py`` catches only ``(JSONDecodeError, OSError)``, and
-    ``UnicodeDecodeError`` is a ``ValueError`` — so a non-UTF-8 entry file (a write
-    torn mid-multibyte-sequence, a cp1252 editor save) propagates and takes down the
-    whole F11 report, not just this check.
+    The store itself no longer raises on an undecodable file: ``lib/iterate_entry.py``
+    catches ``UnicodeDecodeError`` alongside ``(JSONDecodeError, OSError)`` since
+    trg-06216b9f, so a non-UTF-8 entry file (a write torn mid-multibyte-sequence, a
+    cp1252 editor save) is skipped at the source instead of taking down the whole F11
+    report. This absorption was added while that fix was still deferred and is KEPT
+    deliberately: AC-11 requires a malformed entry to be *absent*, never fatal, and
+    this gate should not silently depend on a shared reader's error policy staying
+    put. It is a belt-and-braces guard, not the primary fix.
 
-    AC-11 requires a malformed entry to be *absent*, never fatal, so the refusal is
-    absorbed HERE rather than by loosening a shared reader other callers depend on.
-    Fixing the store itself is tracked as trg-06216b9f. Absorbing it is safe in the
-    fail-closed direction: the caller then holds no self-report, and a
+    Either way the direction is fail-closed: the caller holds no self-report, and a
     cross-component diff still ERRORs.
     """
     try:
@@ -148,12 +148,14 @@ def check_integration_coverage(project_root: Path, run_id: str, commit_hash: str
     message content (see :func:`_floor_note`), never control flow.
 
     Infra failures fail CLOSED at every complexity: only a genuine non-git context
-    stands the gate down. Same COMPLEXITY posture as
-    :func:`~.ci_supplychain.check_ci_supplychain_ack`, whose docstring named this
-    gate's old floor as the contrast — deliberately narrowed to that axis, because
-    that gate still uses the binary ``rev-parse --git-dir`` probe and this one uses
-    the tri-state :func:`~.git_helpers.git_context`, so the two do NOT yet agree on
-    what a git fault inside a repo means.
+    stands the gate down. Same posture as
+    :func:`~.ci_supplychain.check_ci_supplychain_ack` on BOTH axes now — complexity
+    and git faults: that gate was migrated off the binary ``rev-parse --git-dir``
+    probe onto the same tri-state :func:`~.git_helpers.git_context` (trg-20cc9ec8).
+    **Scoped to the three ``git_context`` consumers, deliberately** — the binary
+    conflation is NOT gone from the repo. ``git_helpers._git_available`` still answers
+    it the old way for five callers, one of which (``check_spec_impact_recorded``) is
+    an F11 ERROR gate that green-SKIPs on it; migrating those is trg-4183acd3.
     """
     name = "integration coverage (cross-component)"
     # Tri-state, not "did git exit 0": a broken binary / permission failure /
