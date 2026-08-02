@@ -1,0 +1,80 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-08-01-cache-heal-per-plugin",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-01T09:20:55.443277+00:00",
+      "disposition": "7-point self-review. Two real findings, both fixed + tested: (1) the broad any-marketplace clone search was being used as the completeness authority, so a foreign marketplace's shared/ could be copied into this cache every session -> split into _same_name_shared (top-up) vs _find_marketplace_shared (restore), mutation-verified; (2) the shared/ copytree was unwrapped, so a failed shared copy skipped the plugins repair entirely -> isolated per tree and per mirror. Also confirmed fail-open, stdlib-only, LOC 299<300, ruff clean, and that _PLUGINS_SENTINEL left no dead references.",
+      "recorded_by": "iterate Step 7",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": "openrouter",
+      "completed_at": "2026-08-01T09:20:29.484746+00:00",
+      "disposition": "External iterate-mode plan review before implementation: openai verdict=revise (6 findings), gemini degraded (reply truncated). All 6 resolved in the spec's resolutions table prior to build.",
+      "recorded_by": "external_review.py --mode iterate",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-02T18:19:43.398946+00:00",
+      "disposition": "Approved the in-process coverage tests after current-main integration.",
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-02T18:19:50.293447+00:00",
+      "disposition": "Passed adversarial review with no remaining objections.",
+      "recorded_by": "doubt-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": "openrouter",
+      "completed_at": "2026-08-01T09:55:21.705245+00:00",
+      "disposition": "openai verdict=revise (3 findings), gemini degraded (truncated). GPT-1 (high, 'vendored copies not updated') is FALSE - an artifact of the diff supplied, which deliberately excluded plugins/*; all 12 copies are re-vendored and test_ensure_shared_cache_vendored.py passes. GPT-3 (low) ACCEPTED and fixed: the AC3 no-op test only proved the log line was absent, so a copy-then-suppress implementation would have passed - new test_a_whole_cache_calls_copytree_ZERO_times counts the copies. GPT-2 (medium, prerelease sorts newer than release) is REAL but latent and belongs to the shared cache_tree_compare.version_key that this hook is pinned EQUAL to; fixing one side would break the pin and split the convention - filed as trg-18da39b0. Gemini's truncated finding describes pre-existing unchanged behaviour (a sentinel-less shared/ has always fallen back to any clone), not a regression.",
+      "recorded_by": "external_review.py --mode code",
+      "parse_status": null,
+      "raw_excerpt": null
+    }
+  },
+  "gates": {
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-02T18:18:55.681315+00:00",
+      "disposition": "Initial post-CI evidence review rejected imprecise exception-path claims; wording and ledger were corrected, then re-review passed.",
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    }
+  }
+}
