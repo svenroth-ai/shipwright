@@ -48,7 +48,7 @@ class TestDeletionsAndUnreadableTrees:
         repo, cache = _seed(tmp_path, shared=files, cache_shared=files)
         result = check_sync(repo_root=repo, cache_root=cache)
         assert result["verified"] == ["plugins", "shared"]
-        assert result["ungated"] and "trg-7d1d8437" in result["ungated"][0]
+        assert result["ungated"] and "trg-5005bf57" in result["ungated"][0]
 
     def test_a_repo_without_shared_does_not_claim_to_have_verified_it(
             self, tmp_path: Path):
@@ -62,11 +62,16 @@ class TestTheCrossPluginMirrorIsOutOfScope:
     """The third cache tree is deliberately not gated here — yet.
 
     ``cache/plugins/<name>/`` backs ``../../plugins/shipwright-X``. Gating it
-    needs ``ensure_shared_cache._plugins_healthy`` fixed first: it tests ONE
-    sentinel (``shipwright-run/scripts/lib/phase_task_lifecycle.py``), so a
-    mirror missing while that file survives is never healed — the same
-    surviving-sentinel weakness this iterate closes for ``shared/``. Building a
-    green on top of that would restate the bug one tree over. Tracked in triage.
+    once needed ``ensure_shared_cache._plugins_healthy`` fixed first — it judged
+    all 14 mirrors from ONE sentinel file, so a green built on it would have
+    restated the bug one tree over. That blocker is gone since
+    iterate-2026-08-01-cache-heal-per-plugin: the healer now compares each
+    tree's FILE SET against its repair source. Joining the mirror here is now
+    plain follow-up work, tracked as ``trg-5005bf57``.
+
+    The healer does not make this check redundant: it detects ABSENCE
+    (presence-only, because clone and cache differ in line endings), while this
+    check detects STALENESS (CRLF-normalised content hashes).
     """
 
     def test_a_stale_mirror_neither_drifts_nor_joins_the_walk(self, tmp_path: Path):
@@ -160,7 +165,7 @@ class TestTheGreenLineDoesNotOverclaim:
         out = capsys.readouterr().out
         assert "shared" in out, "an OK that never mentions shared/ overclaims"
         assert "3 files" in out, "the count proves the tree was walked"
-        assert "trg-7d1d8437" in out, "the un-gated tree is named where it is read"
+        assert "trg-5005bf57" in out, "the un-gated tree is named where it is read"
 
     def test_warn_line_names_the_shared_tree_when_it_drifted(
             self, tmp_path: Path, capsys):

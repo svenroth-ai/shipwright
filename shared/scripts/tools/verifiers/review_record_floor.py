@@ -16,6 +16,7 @@ from __future__ import annotations
 
 
 from lib.review_payloads import ADAPTERS  # noqa: E402
+from lib.review_record import entry_for  # noqa: E402
 
 from .common import CheckResult
 
@@ -213,21 +214,30 @@ def stage_one_precedes_stage_two(record: dict, run_id: str = "") -> CheckResult 
     (Stage-2 code review). ``--status completed`` with ``--from`` omitted
     produces exactly the empty shape AC-2 rejects for ``code``.
     """
-    if "gates" not in record:
-        # A record written BEFORE `gates` existed cannot answer this question,
-        # and every exit available to it is bad: invent evidence for `spec`,
-        # --force-rewrite a real `code` row to not_run and destroy its findings,
-        # or delete the record. Every run in flight at merge time is in exactly
-        # that state, and its `code` row is already terminal and immutable. The
-        # ordering rule applies to cascades that could have recorded Stage 1
-        # (Stage-3 doubt).
+    spec_entry = entry_for(record, "spec")
+    if not spec_entry:
+        # A record that carries no `spec` row in EITHER section cannot answer
+        # this question, and every exit available to it is bad: invent evidence
+        # for `spec`, --force-rewrite a real `code` row to not_run and destroy
+        # its findings, or delete the record. Its `code` row is already terminal
+        # and immutable. The ordering rule applies to cascades that could have
+        # recorded Stage 1 (Stage-3 doubt).
+        #
+        # This asks whether the record can ANSWER, not which section it uses.
+        # The predecessor asked `"gates" not in record`, which meant the same
+        # thing only while `gates` was the sole home of `spec`. Once `spec` was
+        # promoted and the seam retired, every NEW record also lacks the key —
+        # so that guard would have waved through every run from then on and this
+        # HARD-GATE ordering rule would have stopped firing silently, with all
+        # tests still green (`test_review_record_stage_one_guard.py`).
         return None
     reviews = record.get("reviews", {}) or {}
-    gates = record.get("gates") or {}
     if str((reviews.get("code") or {}).get("status", "")) != "completed":
         return None
-    spec_entry = gates.get("spec") or {}
-    spec_status = str(spec_entry.get("status", "")) or "absent"
+    # No `or "absent"` fallback: the guard above already returned for every
+    # record that carries no `spec` row, so an empty status is unreachable here
+    # and the message vocabulary should match the reachable states.
+    spec_status = str(spec_entry.get("status", ""))
     # `--run-id` is REQUIRED by the CLI, so a remediation that omits it exits 2
     # on usage — the "blocks with no way forward" trap, twice over.
     how = (f"`{_TOOL} record --run-id {run_id or '<run-id>'} --review-type spec "
