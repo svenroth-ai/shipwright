@@ -1224,8 +1224,10 @@ Properties:
   Claim generations are immutable; completion is a separate owner-only O_EXCL
   file, never an in-place rewrite. TTL age starts at that completion file's
   mtime, not at the earlier claim election. The healer and ready guard share
-  that TTL constant, so a resumed session cannot treat an expired done
-  generation as ready while the healer advances its successor. Advancement
+  that TTL constant and accept up to one second of negative apparent age from
+  filesystem timestamp rounding; a completion farther in the future remains
+  expired. A resumed session therefore cannot treat an expired done generation
+  as ready while the healer advances its successor. Advancement
   creates a token-derived immutable successor claim only after matching
   completion expires — no shared
   claim pathname is deleted, and a running owner is never declared stale from

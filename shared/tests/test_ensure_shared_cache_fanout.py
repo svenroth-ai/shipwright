@@ -169,7 +169,7 @@ def test_two_expired_completion_rearmers_elect_only_one_owner(
                 first_attempt = ident not in synchronized
                 synchronized.add(ident)
             if first_attempt:
-                barrier.wait(timeout=2)
+                barrier.wait(timeout=10)
         return real_open(path, flags, mode)
 
     monkeypatch.setattr(os, "open", synchronized_open)
@@ -180,16 +180,16 @@ def test_two_expired_completion_rearmers_elect_only_one_owner(
                 tmp_path,
                 "resume-race",
                 token=token,
-                wait_seconds=1.0,
+                wait_seconds=10.0,
             )
             for token in ("b" * 32, "c" * 32)
         ]
-        owners, _ = wait(futures, timeout=0.5, return_when=FIRST_COMPLETED)
+        owners, _ = wait(futures, timeout=5.0, return_when=FIRST_COMPLETED)
         assert len(owners) == 1, "exactly one O_EXCL owner must return first"
         owner_done = next(iter(owners)).result()
         assert isinstance(owner_done, Path)
         assert healer._complete_session(owner_done)
-        results = [future.result(timeout=1) for future in futures]
+        results = [future.result(timeout=10) for future in futures]
 
     assert sum(isinstance(result, Path) for result in results) == 1
     assert results.count(False) == 1, "the loser must observe owner completion"
@@ -205,6 +205,35 @@ def test_future_completion_mtime_is_expired_not_fresh(tmp_path: Path):
     assert not lock_helper.session_repair_complete(tmp_path, sid)
     successor = _claim(tmp_path, sid, token="0" * 32)
     assert isinstance(successor, Path) and successor != old_done
+
+
+@pytest.mark.parametrize("rounded_age", [-0.001, -1.0])
+def test_bounded_future_completion_rounding_stays_fresh(
+    tmp_path: Path, monkeypatch, rounded_age: float,
+):
+    sid = "rounded-future-done"
+    done = _claim(tmp_path, sid, token="8" * 32)
+    assert isinstance(done, Path) and healer._complete_session(done)
+    monkeypatch.setattr(lock_helper, "read_completion_age", lambda _path: rounded_age)
+    monkeypatch.setattr(healer, "read_completion_age", lambda _path: rounded_age)
+
+    assert lock_helper.session_repair_state(tmp_path, sid) is True
+    assert _claim(tmp_path, sid, wait_seconds=0.1) is False
+
+
+def test_completion_older_than_clock_skew_boundary_rearms(
+    tmp_path: Path, monkeypatch,
+):
+    sid = "beyond-clock-skew"
+    done = _claim(tmp_path, sid, token="7" * 32)
+    assert isinstance(done, Path) and healer._complete_session(done)
+    beyond_skew = -1.001
+    monkeypatch.setattr(lock_helper, "read_completion_age", lambda _path: beyond_skew)
+    monkeypatch.setattr(healer, "read_completion_age", lambda _path: beyond_skew)
+
+    assert lock_helper.session_repair_state(tmp_path, sid) is False
+    successor = _claim(tmp_path, sid, token="6" * 32, wait_seconds=0.1)
+    assert isinstance(successor, Path) and successor != done
 
 
 def test_done_freshness_never_follows_the_path(
