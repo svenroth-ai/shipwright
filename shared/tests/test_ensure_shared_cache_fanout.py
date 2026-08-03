@@ -4,8 +4,10 @@ from __future__ import annotations
 
 import importlib.util
 import os
+import sys
 import threading
 import time
+import types
 from concurrent.futures import FIRST_COMPLETED, ThreadPoolExecutor, wait
 from pathlib import Path
 
@@ -22,6 +24,40 @@ lock_helper = importlib.import_module("cache_repair_lock")
 
 def _claim(root: Path, sid: object, **kwargs):
     return healer._claim_session(root, sid, **kwargs)
+
+
+def test_reader_acquire_requests_shared_lease(tmp_path: Path, monkeypatch):
+    observed: list[tuple[Path, float, bool]] = []
+
+    def acquire(path: Path, wait_seconds: float, *, exclusive: bool):
+        observed.append((path, wait_seconds, exclusive))
+        return 17
+
+    monkeypatch.setattr(lock_helper, "_acquire_cache_lock", acquire)
+    path = tmp_path / "lease"
+
+    assert lock_helper.acquire_cache_read_lock(path, 0.25) == 17
+    assert observed == [(path, 0.25, False)]
+
+
+def test_windows_reader_unlock_uses_its_byte_offset(monkeypatch):
+    calls: list[tuple[object, ...]] = []
+    fake_msvcrt = types.ModuleType("msvcrt")
+    fake_msvcrt.LK_UNLCK = 7
+    fake_msvcrt.locking = lambda *args: calls.append(("locking", *args))
+    monkeypatch.setitem(sys.modules, "msvcrt", fake_msvcrt)
+    monkeypatch.setattr(lock_helper.os, "name", "nt")
+    monkeypatch.setattr(
+        lock_helper.os, "lseek",
+        lambda *args: calls.append(("lseek", *args)),
+    )
+
+    lock_helper.unlock_cache_lock((11, 4))
+
+    assert calls == [
+        ("lseek", 11, 4, os.SEEK_SET),
+        ("locking", 11, 7, 1),
+    ]
 
 
 def test_one_owner_and_waiter_returns_only_after_completion(tmp_path: Path):
