@@ -22,11 +22,12 @@ _NEGATIONS = ("not implemented", "not available", "not yet", "planned",
               "no-op", "no longer")
 
 
-def _command_line(text: str, doc: str) -> str:
+def _command_line(text: str, doc: str, verb: str = "defer") -> str:
     """The one line that documents the command — a bounded slice, so a
     negation cannot hide just outside an arbitrary character window."""
-    lines = [ln for ln in text.splitlines() if "triage_cli.py defer" in ln]
-    assert lines, f"{doc}: documents no `triage_cli.py defer` command"
+    command = f"triage_cli.py {verb}"
+    lines = [ln for ln in text.splitlines() if command in ln]
+    assert lines, f"{doc}: documents no `{command}` command"
     return " ".join(lines).lower()
 
 
@@ -54,3 +55,32 @@ def test_the_documents_describe_the_defer_subcommand() -> None:
         line = _command_line(text, doc)
         assert "--reason" in line, line
         assert not any(n in line for n in _NEGATIONS), line
+
+
+def test_the_documents_describe_the_revisit_date_and_the_un_park_command() -> None:
+    """The same pin, moved forward with the surface it protects.
+
+    iterate-2026-08-01-triage-defer-lifecycle made the revisit date REQUIRED and
+    added `unpark`. Every document that teaches `defer` must teach both, or an
+    operator following it writes a command that is refused — and all three of
+    these documents previously stated, correctly at the time, that nothing
+    reversed a deferral. A doc that still says so is now wrong, which is exactly
+    the drift this file exists to catch.
+    """
+    targets = {
+        "glossary.md": (_WORKTREE / "shared" / "glossary.md"),
+        "guide.md": (_WORKTREE / "docs" / "guide.md"),
+        "security-ci-setup.md": (_WORKTREE / "docs" / "security-ci-setup.md"),
+    }
+    for name, path in targets.items():
+        text = path.read_text(encoding="utf-8")
+        assert "--revisit" in _command_line(text, name), (
+            f"{name}: documents `defer` without the revisit date it now requires"
+        )
+        unpark_line = _command_line(text, name, "unpark")
+        assert "--reason" in unpark_line, (
+            f"{name}: documents `unpark` without its required reason"
+        )
+        assert "`trg-51f8e2a1`" not in text, (
+            f"{name}: still points at the card this run closed"
+        )

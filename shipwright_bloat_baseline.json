@@ -193,16 +193,16 @@
     {
       "path": "plugins/shipwright-compliance/scripts/lib/sbom_generator.py",
       "limit": 300,
-      "current": 548,
-      "state": "grandfathered",
-      "adr": null
+      "current": 550,
+      "state": "exception",
+      "adr": "ADR-121"
     },
     {
       "path": "plugins/shipwright-compliance/scripts/lib/test_evidence.py",
       "limit": 300,
-      "current": 931,
-      "state": "grandfathered",
-      "adr": null
+      "current": 932,
+      "state": "exception",
+      "adr": "ADR-121"
     },
     {
       "path": "plugins/shipwright-compliance/tests/test_audit_group_a5.py",
@@ -277,16 +277,16 @@
     {
       "path": "plugins/shipwright-compliance/tests/test_sbom_generator.py",
       "limit": 300,
-      "current": 847,
+      "current": 848,
       "state": "exception",
-      "adr": "ADR-098"
+      "adr": "ADR-121"
     },
     {
       "path": "plugins/shipwright-compliance/tests/test_test_evidence.py",
       "limit": 300,
-      "current": 577,
-      "state": "grandfathered",
-      "adr": null
+      "current": 578,
+      "state": "exception",
+      "adr": "ADR-121"
     },
     {
       "path": "plugins/shipwright-compliance/tests/test_test_evidence_synthesis.py",
@@ -557,9 +557,9 @@
     {
       "path": "shared/scripts/hooks/check_drift.py",
       "limit": 300,
-      "current": 446,
-      "state": "grandfathered",
-      "adr": null
+      "current": 449,
+      "state": "exception",
+      "adr": "ADR-121"
     },
     {
       "path": "shared/scripts/hooks/generate_handoff_on_stop.py",
@@ -606,9 +606,9 @@
     {
       "path": "shared/scripts/lib/phase_quality/_triage_bundle.py",
       "limit": 300,
-      "current": 325,
-      "state": "grandfathered",
-      "adr": null
+      "current": 326,
+      "state": "exception",
+      "adr": "ADR-121"
     },
     {
       "path": "shared/scripts/lib/spec_parser.py",
@@ -753,9 +753,9 @@
     {
       "path": "shared/scripts/tools/triage_promote.py",
       "limit": 300,
-      "current": 324,
-      "state": "grandfathered",
-      "adr": null
+      "current": 420,
+      "state": "exception",
+      "adr": "ADR-121"
     },
     {
       "path": "shared/scripts/tools/update_build_dashboard.py",
@@ -823,9 +823,9 @@
     {
       "path": "shared/scripts/triage.py",
       "limit": 300,
-      "current": 837,
+      "current": 882,
       "state": "exception",
-      "adr": "ADR-100"
+      "adr": "ADR-121"
     },
     {
       "path": "shared/scripts/validate_env.py",
@@ -1129,6 +1129,20 @@
       "adr": null
     },
     {
+      "path": "shared/tests/test_triage_defer.py",
+      "limit": 300,
+      "current": 366,
+      "state": "exception",
+      "adr": "ADR-121"
+    },
+    {
+      "path": "shared/tests/test_triage_precondition_registry.py",
+      "limit": 300,
+      "current": 331,
+      "state": "exception",
+      "adr": "ADR-121"
+    },
+    {
       "path": "shared/tests/test_triage_promote.py",
       "limit": 300,
       "current": 375,
@@ -1138,9 +1152,9 @@
     {
       "path": "shared/tests/test_triage_schema.py",
       "limit": 300,
-      "current": 488,
-      "state": "grandfathered",
-      "adr": null
+      "current": 558,
+      "state": "exception",
+      "adr": "ADR-121"
     },
     {
       "path": "shared/tests/test_triage_storage.py",

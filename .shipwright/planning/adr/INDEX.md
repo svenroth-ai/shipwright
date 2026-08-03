@@ -48,4 +48,5 @@ _Regenerate:_ `uv run {shared_root}/scripts/tools/rebuild_adr_index.py --project
 - [ADR-119 — Bloat exception — `plugins/shipwright-iterate/agents/sub-iterate-runner.md` raised to 497-LOC](119-bloat-exception-runner-finalization-parity.md)
 - [ADR-120 — The coverage gates ask the diff, not the recorded complexity](120-coverage-gates-ask-the-diff.md)
 - [ADR-120 — The plugin-cache check reads the index, not the disk](120-the-cache-check-reads-the-index-not-the-disk.md)
+- [ADR-121 — Bloat exception — the triage park lifecycle raises eleven guarded ceilings](121-bloat-triage-defer-lifecycle.md)
 - [Archive — Agent-Doc Update Backlog (verbatim)](_archive-agent-doc-updates.md)

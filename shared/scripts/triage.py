@@ -10,7 +10,7 @@ is authoritatively codified at ``shared/schemas/triage_item.schema.json``
 (iterate-2026-05-21-triage-producer-contract / ADR-054). Three event
 kinds share the file: a one-time header (line 1), ``append`` events
 (one per new triage item), and ``status`` events (one per
-Promote / Dismiss / Snooze). See the schema for the full field list
+Promote / Dismiss / Park / Un-park). See the schema for the full field list
 including optional `dedupKey`, `launchPayload`, `frId`, `suiteId`,
 `eventId`.
 
@@ -63,9 +63,18 @@ def _load_triage_header():
     return load_shared_lib("triage_header")
 
 
+def _load_triage_defer():
+    """Lazy `lib.triage_defer` (park lifecycle) — same ADR-045 constraint."""
+    return load_shared_lib("triage_defer")
+
+
 def __getattr__(name):  # PEP 562 — lazy `triage._FileLock`, no eager lib import
     if name == "_FileLock":
         return _load_file_lock_cls()
+    if name == "AUTO_RESOLVABLE_STATUSES":
+        # Re-exported so the seven auto-resolving producers read the one
+        # declared answer out of the module they already import.
+        return _load_triage_defer().AUTO_RESOLVABLE_STATUSES
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
 
 # ---------------------------------------------------------------------------
@@ -449,10 +458,9 @@ def append_triage_item_idempotent(
     UNION (`read_all_items`), so an open match in EITHER file suppresses the
     append regardless of where the new line lands.
 
-    Match = same `source` + `dedup_key` + (optionally) `commit` AND
-    status is `triage` (items already promoted / dismissed / snoozed
-    are not re-evaluated — operators get them back if the underlying
-    issue re-fires under a new id).
+    Match = same `source` + `dedup_key` + (optionally) `commit` AND effective
+    status is open or parked. A not-yet-due park suppresses regardless of the
+    recency window; dismissed/promoted items do not suppress a new finding.
 
     `window_seconds` controls the recency horizon:
 
@@ -460,7 +468,7 @@ def append_triage_item_idempotent(
       duplicates. Re-firing after the window appends a new item.
       Phase-Quality producer uses 24h to deliberately re-flag stale
       issues daily.
-    - ``None`` — no window check; any open `triage` item with the same
+    - ``None`` — no window check; any open or parked item with the same
       key suppresses the append, regardless of age. Compliance
       producer uses this because the same finding code is the same
       issue indefinitely until the operator resolves it.
@@ -476,14 +484,6 @@ def append_triage_item_idempotent(
     if not dedup_key:
         raise ValueError("dedup_key is required for idempotent append")
 
-    cutoff: float | None
-    if window_seconds is None:
-        cutoff = None
-    else:
-        cutoff = datetime.now(timezone.utc).timestamp() - window_seconds
-
-    # Build the new event payload up front so the critical section is
-    # tight — only the read + decision + write happen under lock.
     if severity not in SEVERITIES:
         raise ValueError(
             f"unknown severity {severity!r}; expected one of {SEVERITIES}"
@@ -498,57 +498,47 @@ def append_triage_item_idempotent(
     _check_optional_str("event_id", event_id)
 
     new_id = _generate_id()
-    ts = _now_z()
-    new_event = {
-        "event": "append",
-        "id": new_id,
-        "ts": ts,
-        "originalTs": ts,
-        "source": source,
-        "severity": severity,
-        "kind": kind,
-        "title": title,
-        "detail": detail,
-        "evidencePath": evidence_path,
-        "runId": run_id,
-        "commit": commit,
-        "dedupKey": dedup_key,
-        "launchPayload": launch_payload,
-        "frId": fr_id,
-        "suiteId": suite_id,
-        "eventId": event_id,
-        "status": "triage",
-        "suggestedPriority": suggest_priority_from_severity(severity),
-        "suggestedDomain": suggest_domain_from_source(source),
-    }
-    new_line = json.dumps(new_event, ensure_ascii=False, separators=(",", ":")) + "\n"
-
     with _load_file_lock_cls()(_lock_path(project_root)):
+        # One lock-bound instant governs expiry, the recency cutoff, and the
+        # event timestamp. Capturing any of them before lock acquisition lets
+        # contention across midnight make one append use two different days.
+        defer_policy = _load_triage_defer()
+        stamp = defer_policy.now_utc()
+        cutoff = (
+            None if window_seconds is None
+            else stamp.timestamp() - window_seconds
+        )
         # Dedup-scan under the same lock — readers see the merged (union) view.
-        for existing in read_all_items(project_root):
-            if existing.get("status") != "triage":
-                continue
-            if existing.get("source") != source:
-                continue
-            if existing.get("dedupKey") != dedup_key:
-                continue
-            if match_commit and existing.get("commit") != commit:
-                continue
-            if cutoff is None:
-                # Window-less dedup — any open match suppresses.
-                return None
-            original_ts = existing.get("originalTs") or existing.get("ts") or ""
-            try:
-                existing_dt = datetime.fromisoformat(
-                    original_ts.replace("Z", "+00:00")
-                )
-                if existing_dt.timestamp() >= cutoff:
-                    return None
-            except ValueError:
-                # Malformed ts → conservative: treat as recent, skip.
+        # One instant for the whole scan, so two candidates cannot be judged
+        # against different UTC days.
+        for existing in read_all_items(
+            project_root, now=stamp,
+        ):
+            if defer_policy.suppresses_reimport(
+                existing,
+                source=source,
+                dedup_key=dedup_key,
+                commit=commit,
+                match_commit=match_commit,
+                cutoff=cutoff,
+            ):
                 return None
 
-        # No duplicate — append.
+        # No duplicate — build and append using that SAME lock-bound instant.
+        ts = stamp.isoformat().replace("+00:00", "Z")
+        new_event = {
+            "event": "append", "id": new_id, "ts": ts, "originalTs": ts,
+            "source": source, "severity": severity, "kind": kind,
+            "title": title, "detail": detail, "evidencePath": evidence_path,
+            "runId": run_id, "commit": commit, "dedupKey": dedup_key,
+            "launchPayload": launch_payload, "frId": fr_id,
+            "suiteId": suite_id, "eventId": event_id, "status": "triage",
+            "suggestedPriority": suggest_priority_from_severity(severity),
+            "suggestedDomain": suggest_domain_from_source(source),
+        }
+        new_line = json.dumps(
+            new_event, ensure_ascii=False, separators=(",", ":"),
+        ) + "\n"
         _append_line(project_root, new_line, to_outbox=to_outbox)
 
     return new_id
@@ -656,6 +646,7 @@ def mark_status(
     reason: str | None = None,
     promoted_task_id: str | None = None,
     expected_status: str | tuple[str, ...] | list[str] | None = None,
+    revisit_at: str | None = None,
 ) -> str | None:
     """Append a status event for an existing item (never mutates prior lines).
 
@@ -669,9 +660,10 @@ def mark_status(
     already holds for the write, and a mismatch raises
     :class:`StatusPreconditionError` having written nothing. Omitted, the flip
     is unconditional exactly as before. This is what stops a background
-    producer — which reads the store unlocked, filters ``status == "triage"``,
-    then flips each hit under a separate lock acquisition — from overwriting a
-    decision a person recorded in between (``trg-93ceb2b0``).
+    producer — which reads unlocked, filters through
+    ``AUTO_RESOLVABLE_STATUSES``, then flips under a separate lock — from
+    overwriting a terminal dismiss/promote decision recorded in between
+    (``trg-93ceb2b0``). Park/re-park remain auto-resolvable by design.
 
     **The guarantee covers writers that cooperate with this lock.** The Command
     Center uses ``proper-lockfile``, which does NOT compose with the Python
@@ -688,16 +680,36 @@ def mark_status(
     residence-derived: outbox-only → outbox (no orphan/resurrect); tracked/both →
     tracked (TRACKED-PREFERRED: a worktree flip ships in the PR).
 
+    ``revisit_at`` (``YYYY-MM-DD``) is the day a parked entry returns to the
+    open list by itself; rules in :mod:`lib.triage_defer`. Accepted ONLY on a
+    ``snoozed`` flip and only as a real calendar date, so a malformed event
+    cannot acquire park semantics. OPTIONAL here although the CLI requires it —
+    the Command Center writes a date-less park and every pre-existing park has
+    none; those resolve parked-but-not-due. Unlike ``reason`` the key is OMITTED
+    when unset, so status lines carrying no park stay byte-identical.
+
     Raises:
         FileNotFoundError: if NEITHER the tracked store NOR the outbox exists.
         KeyError: if `item_id` is not an `append` id in (tracked ∪ outbox).
-        ValueError: if `new_status` or `expected_status` is not a known status.
+        ValueError: if `new_status` or `expected_status` is not a known status,
+            or `revisit_at` is malformed or given for a non-`snoozed` flip.
         StatusPreconditionError: if `expected_status` did not hold (nothing written).
     """
     if new_status not in STATUSES:
         raise ValueError(
             f"unknown status {new_status!r}; expected one of {STATUSES}"
         )
+    if revisit_at is not None:
+        if new_status != "snoozed":
+            raise ValueError(
+                f"revisit_at is park semantics and is accepted only on a "
+                f"'snoozed' flip, got {new_status!r}"
+            )
+        if _load_triage_defer().parse_revisit_date(revisit_at) is None:
+            raise ValueError(
+                f"revisit_at must be an exact YYYY-MM-DD calendar date, "
+                f"got {revisit_at!r}"
+            )
     # Argument validation before any I/O, so a bad precondition fails the same
     # way whether or not the store happens to exist.
     expected = None if expected_status is None else _normalize_expected(expected_status)
@@ -721,9 +733,12 @@ def mark_status(
         # test `test_mark_status_acquires_the_canonical_lock_exactly_once` is
         # what turns that hang into a red test. Same in-lock read the dedup
         # scan in `append_triage_item_idempotent` already does.
+        # `now` captured INSIDE the lock, so this precondition compares the same
+        # effective status the caller sees — an expired park included.
         raw_previous = next(
             (
-                it.get("status") for it in read_all_items(project_root)
+                it.get("status")
+                for it in read_all_items(project_root, now=_load_triage_defer().now_utc())
                 if it.get("id") == item_id
             ),
             None,
@@ -747,6 +762,8 @@ def mark_status(
             "reason": reason,
             "promotedTaskId": promoted_task_id,
         }
+        if revisit_at is not None:
+            event["revisitAt"] = revisit_at
         line = json.dumps(event, ensure_ascii=False, separators=(",", ":")) + "\n"
         _append_line(project_root, line, to_outbox=to_outbox)
 
@@ -757,11 +774,23 @@ def mark_status(
 # Public API: read (with status resolution)
 # ---------------------------------------------------------------------------
 
-def read_all_items(project_root: Path | str) -> list[dict]:
+def read_all_items(
+    project_root: Path | str, *, now: datetime | None = None,
+) -> list[dict]:
     """Return the resolved view: one dict per item, last-status-wins by
     file order. Items with status `triage` retain their original append
     fields; status flips overlay `status`, `ts`, plus optional
-    `reason`/`promotedTaskId`/`by` from the most recent status event.
+    `reason`/`promotedTaskId`/`by`/`revisitAt` from the most recent status event.
+
+    **Expired parks resolve as open (iterate-2026-08-01-triage-defer-lifecycle).**
+    A `snoozed` item whose `revisitAt` day has arrived reads `triage` here and
+    nothing is written to do it, so every consumer becomes correct at once.
+    Reading stays pure — the stored last event is still `snoozed`. Rules and
+    rationale: :mod:`lib.triage_defer`.
+
+    ``now`` is the aware instant every expiry question in THIS read is decided
+    by, normalized to UTC once. Callers holding the lock pass their own so
+    their read, suppression decision and precondition all agree.
 
     Returns `[]` when the file is missing or contains only the header
     (so consumers don't need a separate existence check).
@@ -776,6 +805,7 @@ def read_all_items(project_root: Path | str) -> list[dict]:
     single-file "later valid line wins by file order" contract. Both bugs were
     flagged by external review (OpenAI #5 / Gemini #1) and reproduced by probes.
     """
+    _defer = _load_triage_defer()
     raw_lines = [r for r in _iter_raw_lines(project_root) if isinstance(r, dict)]
 
     # Pass 1 — every append establishes a base record (union of both files).
@@ -793,6 +823,9 @@ def read_all_items(project_root: Path | str) -> list[dict]:
         item["statusBy"] = None
         item["statusReason"] = None
         item["promotedTaskId"] = None
+        # Revisit semantics belong only to a valid snoozed status event. The
+        # tolerant reader must not let a hand-edited append acquire them.
+        item[_defer.REVISIT_FIELD] = None
         resolved[item_id] = item
 
     # Pass 2 — overlay status flips. Order by (ts, file-order): timestamp is
@@ -826,12 +859,24 @@ def read_all_items(project_root: Path | str) -> list[dict]:
             continue
         item = resolved[item_id]
         new_status = raw.get("newStatus")
-        if new_status in STATUSES:
-            item["status"] = new_status
+        if new_status not in STATUSES:
+            # Tolerant means skip a damaged event, not apply half of it. An
+            # unknown status carrying revisitAt must not rewrite a valid park.
+            continue
+        item["status"] = new_status
         item["ts"] = raw.get("ts", item.get("ts"))
         item["statusBy"] = raw.get("by")
         item["statusReason"] = raw.get("reason")
+        # A valid later event replaces the date: a park takes its supplied
+        # value; un-park/dismiss/promote clear it even if a hand-edited event
+        # illegally carries park semantics.
+        item[_defer.REVISIT_FIELD] = (
+            raw.get(_defer.REVISIT_FIELD) if new_status == "snoozed" else None
+        )
         if raw.get("promotedTaskId") is not None:
             item["promotedTaskId"] = raw["promotedTaskId"]
 
-    return list(resolved.values())
+    stamp = now if now is not None else _defer.now_utc()
+    return _defer.apply_revisit_expiry(
+        list(resolved.values()), today=_defer.utc_date(stamp),
+    )

@@ -572,12 +572,13 @@ from iterate-2026-05-20):
 - **Dismiss** — `triage_cli.py dismiss <id> --reason <reason>` for
   false-positives / won't-fix. (Per-finding false-positives are
   dismissed on GitHub at SARIF level, not in the triage inbox.)
-- **Defer** — `triage_cli.py defer <id> --reason <reason>` for real work
-  that is deliberately not now. The item flips to `snoozed` and appears in
-  the CLI listing's deferred section rather than vanishing from it. Note for
-  action-units specifically: a deferred finding is NOT yet suppressed on the
-  next import, so the importer re-creates it as a new open item while the
-  deferred entry remains (`trg-51f8e2a1`).
+- **Defer** — `triage_cli.py defer <id> --reason <reason> --revisit
+  YYYY-MM-DD` for real work that is deliberately not now. The item flips to
+  `snoozed` and appears in every surface's deferred section rather than
+  vanishing from it. For action-units specifically: until the revisit date the
+  importer does NOT re-create the finding, and if the finding disappears in the
+  meantime the parked entry closes itself like an open one would.
+  `triage_cli.py unpark <id> --reason <reason>` reverses a deferral.
 
 ### Freshness window (Path A only)
 

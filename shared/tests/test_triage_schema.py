@@ -284,7 +284,7 @@ def _validate_against_schema(event: dict, schema: dict) -> list[str]:
     """Return jsonschema error messages (empty list = valid)."""
     import jsonschema
 
-    validator = jsonschema.Draft202012Validator(schema)
+    validator = jsonschema.Draft202012Validator(schema, format_checker=jsonschema.FormatChecker())
     return [e.message for e in validator.iter_errors(event)]
 
 
@@ -486,3 +486,73 @@ def test_status_event_schema_rejects_missing_by(triage_schema: dict) -> None:
     }
     errors = _validate_against_schema(bad, triage_schema)
     assert errors, "schema should reject missing `by` on status event"
+
+
+# ---------------------------------------------------------------------------
+# `revisitAt` — park semantics on the wire
+# (iterate-2026-08-01-triage-defer-lifecycle; AC-17 + AC-19a)
+#
+# The status event is `additionalProperties: false`, so the field had to be
+# declared; and a revisit date IS park semantics, so a conditional keeps it off
+# every other status. Without these cases the property could be deleted, or the
+# `if`/`then` dropped, with the whole suite green — which is how a malformed
+# `triage`/`dismissed` event could quietly acquire park semantics.
+# ---------------------------------------------------------------------------
+
+def _status_event(**over) -> dict:
+    base = {
+        "event": "status",
+        "id": "trg-deadbeef",
+        "ts": "2026-08-01T10:00:00Z",
+        "newStatus": "snoozed",
+        "by": "cli",
+        "reason": "not now",
+    }
+    base.update(over)
+    return base
+
+
+def test_a_park_may_carry_a_revisit_date(triage_schema: dict) -> None:
+    assert not _validate_against_schema(
+        _status_event(revisitAt="2026-09-01"), triage_schema,
+    )
+
+
+def test_a_park_may_still_be_written_without_one(triage_schema: dict) -> None:
+    """The Command Center writes exactly this, and every park predating the
+    change has none. Rejecting it here would make the store refuse its own
+    history."""
+    assert not _validate_against_schema(_status_event(), triage_schema)
+
+
+@pytest.mark.parametrize("status", ["triage", "dismissed", "promoted"])
+def test_no_other_status_may_carry_a_revisit_date(
+    triage_schema: dict, status: str,
+) -> None:
+    assert _validate_against_schema(
+        _status_event(newStatus=status, revisitAt="2026-09-01"), triage_schema,
+    ), f"schema should reject revisitAt on newStatus={status}"
+
+
+@pytest.mark.parametrize(
+    "bad", ["2026-9-1", "2026-02-30", "01-09-2026", "2026-09-01T00:00:00Z", "soon", ""],
+)
+def test_a_revisit_date_must_look_like_a_date(
+    triage_schema: dict, bad: str,
+) -> None:
+    assert _validate_against_schema(
+        _status_event(revisitAt=bad), triage_schema,
+    ), f"schema should reject revisitAt={bad!r}"
+
+
+@pytest.mark.parametrize("status", ["triage", "dismissed", "promoted"])
+def test_the_revisit_rule_does_not_constrain_the_reason(
+    triage_schema: dict, status: str,
+) -> None:
+    """`unpark` writes a `triage` event carrying WHY it was reversed. The
+    conditional above must scope to `revisitAt` alone — an `if`/`then` written
+    one level too wide would forbid that and make un-parking unrecordable."""
+    assert not _validate_against_schema(
+        _status_event(newStatus=status, reason="parked by mistake"),
+        triage_schema,
+    )

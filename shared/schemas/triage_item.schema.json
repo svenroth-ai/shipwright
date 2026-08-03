@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://shipwright.local/schemas/triage_item.schema.json",
   "title": "Shipwright Triage JSONL Wire Format",
-  "description": "Codifies the line-level wire shape of `<project>/.shipwright/triage.jsonl` — the pre-backlog triage inbox. Three event kinds share the file: a one-time header (line 1), append events (one per new triage item), and status events (one per Promote/Dismiss/Snooze). Producers go through `shared/scripts/triage.py::append_triage_item` or `::append_triage_item_idempotent`; consumers (`triage_cli.py`, `aggregate_triage.py`, WebUI Triage tab) read via `read_all_items` which collapses status events into the latest per id.",
+  "description": "Codifies the line-level wire shape of `<project>/.shipwright/triage.jsonl` — the pre-backlog triage inbox. Three event kinds share the file: a one-time header (line 1), append events (one per new triage item), and status events (one per Promote / Dismiss / Park / Un-park). Producers go through `shared/scripts/triage.py::append_triage_item` or `::append_triage_item_idempotent`; consumers (`triage_cli.py`, `aggregate_triage.py`, WebUI Triage tab) read via `read_all_items` which collapses status events into the latest per id.",
   "oneOf": [
     { "$ref": "#/$defs/header" },
     { "$ref": "#/$defs/append" },
@@ -120,7 +120,7 @@
     },
     "status": {
       "type": "object",
-      "description": "A status flip — Promote / Dismiss / Snooze emitted by `triage.mark_status` (via `triage_cli.py`, WebUI, or `triage_promote.py`).",
+      "description": "A status flip — Promote / Dismiss / Snooze / Un-park emitted by `triage.mark_status` (via `triage_cli.py`, WebUI, or `triage_promote.py`).",
       "required": ["event", "id", "ts", "newStatus", "by"],
       "additionalProperties": false,
       "properties": {
@@ -130,7 +130,7 @@
         "newStatus": {
           "type": "string",
           "enum": ["triage", "promoted", "dismissed", "snoozed"],
-          "description": "Includes `triage` because `mark_status` accepts re-flipping to `triage` as an idempotent no-op (see `STATUSES` tuple and the test_all_statuses_accepted_by_mark_status parametrization)."
+          "description": "Includes `triage` for Un-park and because `mark_status` accepts direct re-flipping to `triage` as an idempotent no-op (see `STATUSES` and the status parametrization tests)."
         },
         "by": {
           "type": "string",
@@ -143,8 +143,24 @@
         "promotedTaskId": {
           "type": ["string", "null"],
           "description": "Set when newStatus=`promoted` — references the created ExternalTask (e.g. `EXT:foo-001`)."
+        },
+        "revisitAt": {
+          "type": "string",
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+          "format": "date",
+          "description": "The day a parked entry should return to the open list, `YYYY-MM-DD` (iterate-2026-08-01-triage-defer-lifecycle). Due from 00:00:00 UTC on that date: `triage.read_all_items` resolves such an entry as `triage` from then on, WITHOUT writing a second event — a park expiring is not a decision anybody made. Unlike `reason` and `promotedTaskId` this key is OMITTED rather than written null when it does not apply, so every status line written before this change stays byte-identical. Absent or unreadable resolves as parked-but-not-due, which is the conservative direction: a damaged date must neither re-open an entry silently nor bury it."
         }
-      }
+      },
+      "allOf": [
+        {
+          "$comment": "A revisit date is park semantics, so it may appear ONLY on a `snoozed` event. Without this, a malformed or hostile `triage`/`dismissed`/`promoted` line could carry one (external plan review, round 2). Scoped to `revisitAt` alone — `reason` stays unconditioned, which is what lets `unpark` record why it re-opened an entry.",
+          "if": {
+            "required": ["newStatus"],
+            "not": { "properties": { "newStatus": { "const": "snoozed" } } }
+          },
+          "then": { "not": { "required": ["revisitAt"] } }
+        }
+      ]
     },
     "_isoZ": {
       "type": "string",

@@ -1,0 +1,163 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-08-01-triage-defer-lifecycle",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-03T06:34:39.782231+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 7,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "Expired parks returning to the \"open\" list may become invisible if the open list is capped. While AC-22 carefully defines a total order for the",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The ordering definition is still not fully executable despite AC-22 calling it total. “Then by severity” does not state the direction or define behavior for unknown/malformed severity values. If severity is an enum with a non-lexical priority order, independently implemented renderers could produce different parked subsets at the cap boundary.",
+          "suggestion": "Define and centralize an explicit severity rank and direction (for example, critical → high → medium → low, with unknown last), and have the shared sort-key helper handle absent/invalid severity deterministically before the final ID tie-breaker.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "list --json` changes from a top-level array to an object envelope. The plan documents the Command Center fixture and says repository searches found no executable local consumers, but this remains a hard break for shell scripts, CI jobs, external integrations, and unpublished consumers that invoke the CLI directly. A `contractVersion` inside an incompatible top-level shape does not let an old consumer detect the version before it has already failed array parsing.",
+          "suggestion": "Ensure the release/PR notes prominently call out the breaking CLI contract and include a concrete before/after migration example. If the CLI has a documented stability policy or external distribution channel, consider an explicit compatibility mode such as `--json-version 1` for one deprecation window; otherwise, explicitly record that the accepted operator decision is an immediate breaking change.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "The proposed `triage_defer.py` module is reasonable, but its listed contents mix four separate concerns: date parsing/expiry, dedup policy, auto-resolver policy, and display cap configuration. This is not currently needless abstraction, but it risks becoming a generic “defer miscellany” module whose dependencies grow with each policy addition.",
+          "suggestion": "Keep the module narrowly documented as the canonical deferred-lifecycle policy module, and avoid making it a dumping ground. In particular, keep rendering-specific formatting/escaping in the renderer and have the module expose only lifecycle values and pure ordering/date helpers. The shared cap constant is justified because two renderers must agree.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The plan says “now” is read once at the store boundary, but it should explicitly guarantee that the same UTC instant is used for every part of a union read: tracked JSONL, outbox JSONL, status resolution, dedup checks, and any returned `revisitDue` fields. Otherwise an item at the UTC-day boundary could resolve differently within one `read_all_items`/append operation depending on which source or phase reads it.",
+          "suggestion": "Make `read_all_items(now_utc: datetime | None = None)` capture/default `now_utc` exactly once and pass it unchanged through both union-source resolution and revisit helpers. For append/idempotency operations, capture the instant inside the lock and use that same value for the read, suppression decision, and expected-status evaluation. Add a midnight-boundary test covering tracked/outbox split entries.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "Build order step 10 still says “Triage card for the Command Center consumer” even though step 0 says the card is already filed and the preceding review narrative says the duplicate step was removed. This is contradictory execution guidance and can produce a duplicate card or obscure which card must be linked in the PR.",
+          "suggestion": "Remove build step 10 and replace it with a verification/docs step that confirms `trg-731cd03c` is linked from the PR, implementation notes, and any contract-change test/documentation.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "security",
+          "file": null,
+          "line": null,
+          "finding": "AC-20 and AC-25 appropriately cover hostile stored values on human renderers, but the implementation should ensure the new JSON path uses a real JSON serializer for every field and never constructs JSON via interpolation. Raw `revisitAt` is intentionally exposed to machine consumers, including potentially hostile hand-edited content.",
+          "suggestion": "Keep JSON generation exclusively through `json.dumps`/the existing structured serializer, add a JSON test containing quotes, control characters, and newline payloads in `revisitAt` and `reason`, and verify the output parses while the human views render only canonical dates/placeholders and escaped text.  Overall, the core approach is sound: deriving expiry in the resolved read model, preserving the append-only decision log, and centralizing auto-close eligibility correctly address the lifecycle requirements. The remaining changes are implementation-precision and contract-management refinements rather than reasons to change the design.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-08-01T09:37:32.571868+00:00",
+      "disposition": null,
+      "recorded_by": "external_review.py",
+      "parse_status": "structured",
+      "raw_excerpt": "[gemini] This is a highly mature, well-defended implementation plan. The decision to make expiry pure/derived via `read_all_items` (Decision 1) instead of using a sweep is exactly the right architectural choice, and the careful auditing of auto-resolvers (Decision 4) shows a deep understanding of the domain. \n\nHowever, there is one UX/visibility edge case regarding how expired items behave once they cross back over to the open list, which risks defeating the purpose of the feature.\n\nHere are the findings:\n\n- **Category:** edge-case\n- **Severity:** medium\n- **Finding:** Expired parks returning to the \"open\" list may become invisible if the open list is capped. While AC-22 carefully defines a total order for the\n\n[openai] 1. **Category:** edge-case  \n   **Severity:** medium  \n   **Finding:** The ordering definition is still not fully executable despite AC-22 calling it total. “Then by severity” does not state the direction or define behavior for unknown/malformed severity values. If severity is an enum with a non-lexical priority order, independently implemented renderers could produce different parked subsets at the cap boundary.  \n   **Suggestion:** Define and centralize an explicit severity rank and direction (for example, critical → high → medium → low, with unknown last), and have the shared sort-key helper handle absent/invalid severity deterministically before the final ID tie-breaker.\n\n2. **Category:** risk  \n   **Severity:** medium  \n   **Finding:** `list --json` changes from a top-level array to an object envelope. The plan documents the Command Center fixture and says repository searches found no executable local consumers, but this remains a hard break for shell scripts, CI jobs, external integrations, and unpublished consumers that invoke the CLI directly. A `contractVersion` inside an incompatible top-level shape does not let an old consumer detect the version before it has already failed array parsing.  \n   **Suggestion:** Ensure the release/PR notes prominently call out the breaking CLI contract and include a concrete before/after migration example. If the CLI has a documented stability policy or external distribution channel, consider an explicit compatibility mode such as `--json-version 1` for one deprecation window; otherwise, explicitly record that the accepted operator decision is an immediate breaking change.\n\n3. **Category:** approach  \n   **Severity:** low  \n   **Finding:** The proposed `triage_defer.py` module is reasonable, but its listed contents mix four separate concerns: date parsing/expiry, dedup policy, auto-resolver policy, and display cap configuration. This is not currently needless abstraction, but it risks becoming a generic “defer m […truncated]"
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-03T06:21:10.662008+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-03T06:33:27.186472+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 2,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": "shared/scripts/triage.py",
+          "line": 876,
+          "finding": "read_all_items(..., now=...)` uses `stamp.date()` directly without requiring an aware UTC datetime. A caller supplying an aware non-UTC value (or a naive value) resolves expiry according to that caller’s local calendar day, not UTC as AC-3a/AC-21 require. For example, `2026-09-01T00:30+14:00` is still August 31 UTC but would reopen a September-1 park early.",
+          "suggestion": "Validate that supplied `now` is timezone-aware and normalize it with `now.astimezone(timezone.utc)` before deriving `today`; reject naive values.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "test",
+          "file": "shared/tests/test_triage_defer_cli.py:118-125",
+          "line": null,
+          "finding": "The malformed-date CLI test verifies only exit code and unchanged status. AC-6 requires the refusal message to name the accepted `YYYY-MM-DD` form, but a regression to a generic parse error would still pass this test.",
+          "suggestion": "Assert that `result.stderr` contains `YYYY-MM-DD` for every invalid-date case (and preferably that the raw hostile input is not reflected unsafely).  Overall assessment: the lifecycle implementation substantially covers the specified behavior and has strong coverage, but UTC normalization at the public store-read boundary should be fixed and the CLI contract test tightened before shipping. SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-08-03T06:06:16.927110+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "partial",
+      "raw_excerpt": "[gemini]  \n```python\n    status = item.get(\"status\")\n    if not is_auto_resolvable(status): # status is \"triage\", which is in (\"triage\", \"snoozed\"), so True\n        return False\n    ...\n    if status == \"snoozed\" or item.get(DUE_FIELD) is True:\n        return True\n```\nWait! If an item's park has expired (`DUE_FIELD is True`), its `status` is `\"triage\"`, so it passes `not is_auto_resolvable`.\nThen `item.get(DUE_FIELD) is True` is evaluated, and it returns `True` immediately, skipping the `cutoff` check!\nBut\n\n[openai] - Category: edge-case  \n  Severity: medium  \n  File: shared/scripts/triage.py:876  \n  Finding: `read_all_items(..., now=...)` uses `stamp.date()` directly without requiring an aware UTC datetime. A caller supplying an aware non-UTC value (or a naive value) resolves expiry according to that caller’s local calendar day, not UTC as AC-3a/AC-21 require. For example, `2026-09-01T00:30+14:00` is still August 31 UTC but would reopen a September-1 park early.  \n  Suggestion: Validate that supplied `now` is timezone-aware and normalize it with `now.astimezone(timezone.utc)` before deriving `today`; reject naive values.\n\n- Category: test  \n  Severity: low  \n  File: shared/tests/test_triage_defer_cli.py:118-125  \n  Finding: The malformed-date CLI test verifies only exit code and unchanged status. AC-6 requires the refusal message to name the accepted `YYYY-MM-DD` form, but a regression to a generic parse error would still pass this test.  \n  Suggestion: Assert that `result.stderr` contains `YYYY-MM-DD` for every invalid-date case (and preferably that the raw hostile input is not reflected unsafely).\n\nOverall assessment: the lifecycle implementation substantially covers the specified behavior and has strong coverage, but UTC normalization at the public store-read boundary should be fixed and the CLI contract test tightened before shipping.  \nSHIPWRIGHT_VERDICT: revise"
+    }
+  },
+  "gates": {
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-02T18:53:38.475805+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    }
+  }
+}

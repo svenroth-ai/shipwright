@@ -28,8 +28,8 @@ if str(_SHARED_SCRIPTS) not in sys.path:
 
 import triage  # noqa: E402
 
-#: Producers that read the store UNLOCKED, filter `status == "triage"`, then
-#: flip. Every `mark_status` call in these files MUST carry the precondition.
+#: Producers that read UNLOCKED, filter statuses per call site, then flip.
+#: Every `mark_status` call in these files MUST carry the resolved precondition.
 AUTOMATIC_PRODUCERS = (
     "shared/scripts/github_triage/resolve.py",
     "shared/scripts/hooks/check_drift.py",
@@ -47,6 +47,71 @@ AUTOMATIC_PRODUCERS = (
 OPERATOR_PRODUCERS = ("shared/scripts/tools/triage_promote.py",)
 
 _CALL_NAMES = {"mark_status", "mark_status_fn"}
+
+#: Named status sets a flip site may pass instead of an inline literal.
+#:
+#: The pin used to demand a literal, because at the time every site hardcoded
+#: `"triage"` and a bare name could have been anything — including the
+#: documented unconditional `None`. iterate-2026-08-01-triage-defer-lifecycle
+#: gave the producers ONE declared answer to "which statuses may I close?"
+#: (`AUTO_RESOLVABLE_STATUSES`), which is the opposite of drift, so refusing
+#: names outright would now push sites back to copied literals.
+#:
+#: A name is accepted only if it is on this list AND
+#: :func:`_resolve_status_set` proves it is a non-empty set of real statuses
+#: containing no `None`. That is strictly stronger than the old literal rule:
+#: a literal was never checked against `triage.STATUSES` at all.
+_VETTED_STATUS_NAMES = {
+    "AUTO_RESOLVABLE_STATUSES",
+    "DEFERRABLE_STATUSES",
+    "UNPARKABLE_STATUSES",
+    "_MIGRATION_STATUSES",
+}
+
+
+def _literal_statuses(node: ast.AST) -> tuple | None:
+    """The statuses of a literal `expected_status`, or None if not a literal."""
+    if isinstance(node, ast.Constant):
+        return None if node.value is None else (node.value,)
+    if isinstance(node, (ast.Tuple, ast.List)):
+        if not all(isinstance(e, ast.Constant) for e in node.elts):
+            return None
+        return tuple(e.value for e in node.elts)
+    return None
+
+
+def _resolve_status_set(name: str) -> tuple:
+    """The runtime value behind a vetted name.
+
+    Resolved from `lib.triage_defer`, which is where all four live (the github
+    migration's own constant is a copy of the same shape and is checked as a
+    literal below). Executing rather than parsing is the point: a constant
+    renamed to something meaningless would still parse.
+    """
+    if name == "_MIGRATION_STATUSES":
+        # This is deliberately the producer's real value, not a duplicate.
+        # Hard-coding ("triage",) here made the pin stay green if the producer
+        # drifted — exactly the mutation this registry exists to catch.
+        from github_triage import resolve  # noqa: PLC0415
+
+        return tuple(resolve._MIGRATION_STATUSES)
+    from lib import triage_defer  # noqa: PLC0415
+
+    return tuple(getattr(triage_defer, name))
+
+
+def test_a_partly_dynamic_literal_is_not_certified() -> None:
+    value = ast.parse('(\"triage\", dynamic_status)', mode="eval").body
+    assert _literal_statuses(value) is None
+
+
+def _enclosing_function(tree: ast.AST, call: ast.Call) -> ast.FunctionDef | None:
+    for node in ast.walk(tree):
+        if isinstance(node, ast.FunctionDef) and any(
+            child is call for child in ast.walk(node)
+        ):
+            return node
+    return None
 
 
 def _called_name(node: ast.Call) -> str | None:
@@ -67,17 +132,35 @@ def _called_name(node: ast.Call) -> str | None:
     return None
 
 
-def _flip_calls(path: Path) -> list[ast.Call]:
+def _parse(path: Path) -> ast.AST | None:
     try:
-        tree = ast.parse(path.read_text(encoding="utf-8"))
+        return ast.parse(path.read_text(encoding="utf-8"))
     except SyntaxError:
         # An unparseable file elsewhere in the repo is someone else's failure;
         # it must not turn THIS test red and hide a real registry drift.
+        return None
+
+
+def _flip_calls_in(tree: ast.AST | None) -> list[ast.Call]:
+    """Flip calls from a tree the CALLER already parsed.
+
+    Takes the tree rather than the path on purpose: `_statuses_behind` compares
+    AST nodes by identity to find a call's enclosing function, and re-parsing
+    the same file yields a second set of node objects for which every `is`
+    comparison is false. That silently turned the parameter-following branch
+    into "resolves nothing" — caught here because that branch then failed
+    closed, which is the direction it was written to fail in.
+    """
+    if tree is None:
         return []
     return [
         node for node in ast.walk(tree)
         if isinstance(node, ast.Call) and _called_name(node) in _CALL_NAMES
     ]
+
+
+def _flip_calls(path: Path) -> list[ast.Call]:
+    return _flip_calls_in(_parse(path))
 
 
 @pytest.mark.parametrize("rel", AUTOMATIC_PRODUCERS + OPERATOR_PRODUCERS)
@@ -89,7 +172,9 @@ def test_every_registered_flip_passes_a_real_expected_status(rel: str) -> None:
     pass this pin, and still have the original race. The value must be a real
     one — a literal status or a tuple of them.
     """
-    calls = _flip_calls(_REPO_ROOT / rel)
+    path = _REPO_ROOT / rel
+    tree = _parse(path)
+    calls = _flip_calls_in(tree)
     assert calls, f"{rel} no longer flips status — update the registry"
     for call in calls:
         kwargs = {kw.arg: kw.value for kw in call.keywords}
@@ -101,10 +186,69 @@ def test_every_registered_flip_passes_a_real_expected_status(rel: str) -> None:
             f"{rel}:{call.lineno} passes expected_status=None, which is the "
             f"unconditional flip — the race is still open there"
         )
-        assert isinstance(value, (ast.Constant, ast.Tuple, ast.List)), (
-            f"{rel}:{call.lineno} passes a non-literal expected_status; this "
-            f"pin can no longer tell whether the race is closed"
+        statuses = _statuses_behind(tree, rel, call, value)
+        assert statuses, (
+            f"{rel}:{call.lineno} passes an expected_status this pin cannot "
+            f"resolve to a real status set; the race may still be open there"
         )
+        unknown = [s for s in statuses if s not in triage.STATUSES]
+        assert not unknown, (
+            f"{rel}:{call.lineno} expects status(es) {unknown} that the store "
+            f"does not define — the precondition can never hold"
+        )
+
+
+def _statuses_behind(
+    tree: ast.AST, rel: str, call: ast.Call, value: ast.AST,
+) -> tuple:
+    """Resolve one `expected_status` argument to the statuses it really means.
+
+    Three shapes, in order of how much work each needs:
+
+    1. a literal — read straight off the AST, as this pin always did;
+    2. a **vetted name** — resolved at runtime and checked, so `AUTO_RESOLVABLE_
+       STATUSES` is accepted while an arbitrary variable still is not;
+    3. a **parameter of the enclosing function** — the shape `triage_promote.
+       _transition(allowed=…)` and `github_triage._dismiss_if_open(expected=…)`
+       introduced when three transitions started sharing one body. The pin
+       follows it out to every in-module caller and resolves what each passes,
+       so a caller that supplied something unvetted still fails here.
+
+    Returns the union of the statuses found, or `()` when nothing resolves —
+    which the caller treats as a failure, so an unrecognised shape is refused
+    rather than waved through.
+    """
+    literal = _literal_statuses(value)
+    if literal:
+        return literal
+    if not isinstance(value, ast.Name):
+        return ()
+    if value.id in _VETTED_STATUS_NAMES:
+        return _resolve_status_set(value.id)
+    func = _enclosing_function(tree, call)
+    if func is None or value.id not in {a.arg for a in func.args.args + func.args.kwonlyargs}:
+        return ()
+    # EVERY supplier must resolve, not merely one of them. A union that
+    # accepted any single good caller let a sibling pass something unvetted and
+    # still go green — found by mutating one call site and watching this pin
+    # stay green, which is the only way that kind of hole ever shows up.
+    found: list[str] = []
+    for default in func.args.kw_defaults + func.args.defaults:
+        if isinstance(default, ast.Name) and default.id in _VETTED_STATUS_NAMES:
+            found.extend(_resolve_status_set(default.id))
+    for node in ast.walk(tree):
+        if not (isinstance(node, ast.Call) and _called_name(node) == func.name):
+            continue
+        for kw in node.keywords:
+            if kw.arg != value.id:
+                continue
+            supplied = _literal_statuses(kw.value) or ()
+            if isinstance(kw.value, ast.Name) and kw.value.id in _VETTED_STATUS_NAMES:
+                supplied = _resolve_status_set(kw.value.id)
+            if not supplied:
+                return ()  # one unresolvable caller fails the whole site
+            found.extend(supplied)
+    return tuple(found)
 
 
 @pytest.mark.parametrize("rel", AUTOMATIC_PRODUCERS)

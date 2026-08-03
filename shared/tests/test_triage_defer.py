@@ -31,9 +31,15 @@ from triage import (  # noqa: E402
     mark_status,
     read_all_items,
 )
+from tools import triage_promote  # noqa: E402
 from tools.triage_promote import defer, dismiss  # noqa: E402
 
 TRIAGE_CLI = _SHARED_SCRIPTS / "tools" / "triage_cli.py"
+
+#: Far enough out that no run of this suite can straddle it, so "parked" here
+#: always means "parked and not yet due" (iterate-2026-08-01-triage-defer-
+#: lifecycle made a park time-bounded; before it, a park had no date at all).
+FUTURE = "2099-01-01"
 
 
 def _cli(project: Path, *args: str) -> subprocess.CompletedProcess[str]:
@@ -70,10 +76,12 @@ def _only(project: Path) -> dict:
 # ---------------------------------------------------------------------------
 
 def test_defer_records_the_decision_and_its_reason(project: Path, item: str) -> None:
-    result = defer(project, item_id=item, reason="waiting on upstream fix")
+    result = defer(project, item_id=item, reason="waiting on upstream fix",
+                   revisit_at=FUTURE)
     assert result == {
         "id": item, "previousStatus": "triage",
         "newStatus": "snoozed", "reason": "waiting on upstream fix",
+        "revisitAt": FUTURE,
     }
     stored = _only(project)
     assert stored["status"] == "snoozed"
@@ -88,7 +96,16 @@ def test_defer_refuses_a_reason_that_says_nothing(
     """A deferral without a stated reason is not a decision (AC-2)."""
     before = _store(project)
     with pytest.raises(ValueError):
-        defer(project, item_id=item, reason=reason)
+        defer(project, item_id=item, reason=reason, revisit_at=FUTURE)
+    assert _store(project) == before
+
+
+def test_defer_helper_refuses_a_missing_revisit_date_without_writing(
+    project: Path, item: str,
+) -> None:
+    before = _store(project)
+    with pytest.raises(ValueError, match="revisit_at is required"):
+        defer(project, item_id=item, reason="later", revisit_at=None)  # type: ignore[arg-type]
     assert _store(project) == before
 
 
@@ -96,34 +113,68 @@ def test_defer_refuses_control_characters_in_the_reason(
     project: Path, item: str,
 ) -> None:
     with pytest.raises(ValueError, match="control character"):
-        defer(project, item_id=item, reason="park\x1b]2;evil\x07it")
+        defer(project, item_id=item, reason="park\x1b]2;evil\x07it",
+              revisit_at=FUTURE)
 
 
-@pytest.mark.parametrize("already", ["dismissed", "snoozed", "promoted"])
-def test_defer_refuses_an_already_decided_item(
+@pytest.mark.parametrize("already", ["dismissed", "promoted"])
+def test_defer_refuses_an_item_whose_life_already_ended(
     project: Path, item: str, already: str,
 ) -> None:
-    """Asserted on the stored BYTES, not the resolved status.
+    """Asserted on the stored BYTES, not the resolved status — a status
+    assertion could pass for a guard that had been removed.
 
-    For ``already == "snoozed"`` a status assertion cannot fail: dropping the
-    guard would append a second `snoozed` event and the resolved status would
-    still read `snoozed`, so the test would stay green with the guard gone.
+    ``snoozed`` left this list in iterate-2026-08-01-triage-defer-lifecycle:
+    re-parking is now a supported correction, covered by the test below.
     """
     mark_status(project, item, new_status=already, by="x", reason="r")
     before = _store(project)
-    with pytest.raises(ValueError, match="only `triage` is"):
-        defer(project, item_id=item, reason="later")
+    with pytest.raises(ValueError, match="only `triage` or `snoozed` is"):
+        defer(project, item_id=item, reason="later", revisit_at=FUTURE)
     assert _store(project) == before
+
+
+def test_defer_accepts_an_already_parked_item_and_replaces_the_date(
+    project: Path, item: str,
+) -> None:
+    """A mistyped revisit date must be correctable without un-parking first."""
+    defer(project, item_id=item, reason="later", revisit_at="2098-01-01")
+    result = defer(project, item_id=item, reason="later still",
+                   revisit_at=FUTURE)
+    assert result["previousStatus"] == "snoozed"
+    assert _only(project)["revisitAt"] == FUTURE
+
+
+def test_defer_reports_the_status_it_replaced_inside_the_lock(
+    project: Path, item: str, monkeypatch,
+) -> None:
+    """A concurrent re-park is allowed, so the unlocked status may be stale."""
+    real_mark_status = triage_promote.mark_status
+    fired = False
+
+    def park_then_write(*args, **kwargs):
+        nonlocal fired
+        if not fired:
+            fired = True
+            mark_status(project, item, new_status="snoozed", by="other",
+                        reason="other park", revisit_at="2098-01-01")
+        return real_mark_status(*args, **kwargs)
+
+    monkeypatch.setattr(triage_promote, "mark_status", park_then_write)
+    result = defer(project, item_id=item, reason="mine", revisit_at=FUTURE)
+    assert result["previousStatus"] == "snoozed"
 
 
 def test_defer_unknown_id_raises_key_error(project: Path, item: str) -> None:
     with pytest.raises(KeyError):
-        defer(project, item_id="trg-deadbeef", reason="later")
+        defer(project, item_id="trg-deadbeef", reason="later",
+              revisit_at=FUTURE)
 
 
 def test_defer_without_a_store_raises_file_not_found(project: Path) -> None:
     with pytest.raises(FileNotFoundError):
-        defer(project, item_id="trg-deadbeef", reason="later")
+        defer(project, item_id="trg-deadbeef", reason="later",
+              revisit_at=FUTURE)
 
 
 def test_dismiss_is_unchanged_by_the_shared_extraction(
@@ -146,7 +197,8 @@ def test_dismiss_is_unchanged_by_the_shared_extraction(
 def test_cli_defer_records_the_operator_as_the_actor(
     project: Path, item: str,
 ) -> None:
-    result = _cli(project, "defer", item, "--reason", "revisit after v0.5")
+    result = _cli(project, "defer", item, "--reason", "revisit after v0.5",
+                 "--revisit", FUTURE)
     assert result.returncode == 0, result.stderr
     stored = _only(project)
     assert stored["status"] == "snoozed"
@@ -155,7 +207,11 @@ def test_cli_defer_records_the_operator_as_the_actor(
     assert "deferred" in result.stderr
 
 
-@pytest.mark.parametrize("extra", [[], ["--reason", "  "]])
+@pytest.mark.parametrize(
+    "extra", [[], ["--reason", "  ", "--revisit", FUTURE],
+              ["--reason", "real reason"]],
+    ids=["nothing", "blank-reason", "no-revisit-date"],
+)
 def test_cli_defer_refuses_and_writes_nothing_without_a_real_reason(
     project: Path, item: str, extra: list[str],
 ) -> None:
@@ -171,7 +227,8 @@ def test_cli_leaves_the_store_untouched_when_it_refuses(
 ) -> None:
     """Both decisions reject an unknown id the same way (plan review #11)."""
     before = _store(project)
-    result = _cli(project, verb, "trg-deadbeef", "--reason", "later")
+    extra = ["--revisit", FUTURE] if verb == "defer" else []
+    result = _cli(project, verb, "trg-deadbeef", "--reason", "later", *extra)
     assert result.returncode == 2
     assert "not found" in result.stderr.lower()
     assert _store(project) == before
@@ -182,7 +239,8 @@ def test_cli_defer_refuses_an_already_decided_item(
 ) -> None:
     mark_status(project, item, new_status="dismissed", by="x", reason="r")
     before = _store(project)
-    result = _cli(project, "defer", item, "--reason", "later")
+    result = _cli(project, "defer", item, "--reason", "later",
+                     "--revisit", FUTURE)
     assert result.returncode == 2
     assert _store(project) == before
 
@@ -198,7 +256,8 @@ def test_list_shows_deferred_in_its_own_section_with_the_reason(
         project, source="phaseQuality", severity="low", kind="bug",
         title="still open", detail="d",
     )
-    defer(project, item_id=item, reason="waiting on upstream")
+    defer(project, item_id=item, reason="waiting on upstream",
+          revisit_at=FUTURE)
     out = _cli(project, "list").stdout
     assert "Deferred" in out
     assert "waiting on upstream" in out
@@ -218,7 +277,7 @@ def test_list_says_nothing_about_deferral_when_there_is_none(
 def test_list_with_only_deferred_items_still_reports_no_open_work(
     project: Path, item: str,
 ) -> None:
-    defer(project, item_id=item, reason="later")
+    defer(project, item_id=item, reason="later", revisit_at=FUTURE)
     out = _cli(project, "list").stdout
     assert "No open triage items" in out
     assert "Deferred" in out and item in out
@@ -275,24 +334,33 @@ def test_a_stored_newline_cannot_forge_a_listing_row(
     assert "\t" not in out
 
 
-def test_list_json_stays_open_only_when_an_item_is_deferred(
+def test_list_json_now_carries_the_deferred_entry_in_its_own_section(
     project: Path, item: str,
 ) -> None:
-    """AC-6 — the machine contract stays open-only.
+    """The machine contract SEPARATES the two, it no longer omits one.
 
-    Pins only that the array stays open-only. The Command Center deep-equals a
-    committed snapshot that a human regenerates, and no CI job in either
-    repository re-runs this command — so ANY other drift here, including a
-    renamed field, is caught by neither side. The earlier "byte-for-byte"
-    wording overstated that badly.
+    This test asserted the opposite until iterate-2026-08-01-triage-defer-
+    lifecycle: `list --json` returned open entries only, so the Command Center
+    — which mirrors this contract in its own reader — showed a parked entry as
+    gone, while the glossary promised it was still there. Version 2 is a
+    deliberate break; WebUI-store consumer work is `trg-f2214310`.
+
+    Still true, and still worth stating: no CI job in either repository re-runs
+    this command against the Command Center's committed fixture, so drift here
+    is caught by neither side automatically.
     """
     open_id = append_triage_item(
         project, source="phaseQuality", severity="low", kind="bug",
         title="still open", detail="d",
     )
-    defer(project, item_id=item, reason="later")
+    defer(project, item_id=item, reason="later", revisit_at=FUTURE)
     result = _cli(project, "list", "--json")
     assert result.returncode == 0, result.stderr
     payload = json.loads(result.stdout)
-    assert [entry["id"] for entry in payload] == [open_id]
-    assert payload[0]["pendingDelivery"] is False
+    assert payload["contractVersion"] == 2
+    assert [entry["id"] for entry in payload["open"]] == [open_id]
+    assert payload["open"][0]["pendingDelivery"] is False
+    [parked] = payload["deferred"]
+    assert (parked["id"], parked["revisitAt"], parked["revisitDue"]) == (
+        item, FUTURE, False,
+    )
