@@ -89,5 +89,10 @@
     "timestamp": "2026-08-03T06:08:04.546Z",
     "attempts": 1
   },
-  "declared_removals": []
+  "declared_removals": [
+    {
+      "path": "docs/hooks-and-pipeline.md",
+      "reason": "Superseded origin/main's unconditional grade-snapshot cadence and pre-dedup consumer wording with the merged contract: automatic snapshots append only on an effective grade change, while dirty attribution remains preserved."
+    }
+  ]
 }
