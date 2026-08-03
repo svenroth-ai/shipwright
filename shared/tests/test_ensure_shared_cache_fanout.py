@@ -79,7 +79,7 @@ def test_two_expired_completion_rearmers_elect_only_one_owner(
     synchronized: set[int] = set()
     sync_lock = threading.Lock()
 
-    def synchronized_open(path, flags, mode=0o777):
+    def synchronized_open(path, flags, mode=0o600):
         if str(path).endswith(".next"):
             ident = threading.get_ident()
             with sync_lock:
@@ -154,7 +154,7 @@ def test_completion_swapped_to_symlink_before_open_is_rejected(
     real_open = os.open
     swapped = [False]
 
-    def swap_then_open(path, flags, mode=0o777):
+    def swap_then_open(path, flags, mode=0o600):
         if Path(path) == done and not swapped[0]:
             swapped[0] = True
             done.unlink()
@@ -199,7 +199,7 @@ def test_claim_swapped_to_symlink_between_open_and_validation_is_rejected(
     real_open = os.open
     swapped = [False]
 
-    def swap_then_open(path, flags, mode=0o777):
+    def swap_then_open(path, flags, mode=0o600):
         if Path(path) == claim and not swapped[0]:
             swapped[0] = True
             claim.unlink()

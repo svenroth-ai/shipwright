@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import json
+import os
 import subprocess
 import sys
 import time
@@ -13,13 +14,13 @@ try:
     from cache_repair_lock import (
         CACHE_LOCK_NAME,
         acquire_cache_read_lock,
-        release_cache_lock,
         session_event_key,
         session_repair_state,
+        unlock_cache_lock,
     )
 except (ImportError, OSError, SyntaxError):
     CACHE_LOCK_NAME = ".sessionstart-cache-repair.lock"
-    acquire_cache_read_lock = release_cache_lock = session_event_key = None
+    acquire_cache_read_lock = session_event_key = unlock_cache_lock = None
     session_repair_state = None
 
 _READY_WAIT_SECONDS = 10.0
@@ -141,7 +142,11 @@ def main() -> int:
         return return_code
     finally:
         if lock is not None:
-            release_cache_lock(lock)
+            descriptor = lock[0] if isinstance(lock, tuple) else lock
+            try:
+                unlock_cache_lock(lock)
+            finally:
+                os.close(descriptor)
 
 
 if __name__ == "__main__":

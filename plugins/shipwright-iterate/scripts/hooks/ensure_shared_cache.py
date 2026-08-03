@@ -5,12 +5,12 @@ import hashlib, json, os, re, secrets, shutil, sys, time
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 try:
-    from cache_repair_lock import CACHE_LOCK_NAME, CLAIM_TTL_SECONDS, acquire_cache_lock, observe_completion, read_claim_token, read_completion_age, release_cache_lock, session_event_key, session_repair_state
+    from cache_repair_lock import CACHE_LOCK_NAME, CLAIM_TTL_SECONDS, acquire_cache_lock, observe_completion, read_claim_token, read_completion_age, session_event_key, session_repair_state, unlock_cache_lock
 except (ImportError, OSError, SyntaxError):
     CLAIM_TTL_SECONDS = 30.0
     CACHE_LOCK_NAME = ".sessionstart-cache-repair.lock"
     acquire_cache_lock = observe_completion = read_claim_token = read_completion_age = None
-    release_cache_lock = session_event_key = session_repair_state = None
+    session_event_key = session_repair_state = unlock_cache_lock = None
 _SHARED_SENTINEL = ("scripts", "lib", "project_root.py")
 _IGNORE_NAMES = ("__pycache__", "*.pyc", "*.pyo", ".venv", ".pytest_cache",
                  ".git", "node_modules", ".in_use", ".orphaned_at",
@@ -285,7 +285,10 @@ def main(payload: object = None, participant: str = "") -> int:
                     print("shipwright: cache repair incomplete; completion not "
                           "published", file=sys.stderr)
             if isinstance(cache_lock, int):
-                release_cache_lock(cache_lock)
+                try:
+                    unlock_cache_lock(cache_lock)
+                finally:
+                    os.close(cache_lock)
     except Exception as exc:  # never block a session
         print(f"shipwright: ensure_shared_cache skipped ({exc!r})", file=sys.stderr)
     return 0

@@ -244,18 +244,25 @@ def acquire_cache_read_lock(
     return _acquire_cache_lock(path, wait_seconds, exclusive=False)
 
 
-def release_cache_lock(handle: int | tuple[int, int]) -> None:
+def unlock_cache_lock(handle: int | tuple[int, int]) -> None:
+    """Release the OS lease while leaving descriptor ownership to the caller."""
     fd, offset = handle if isinstance(handle, tuple) else (handle, 0)
+    if os.name == "nt":
+        import msvcrt
+
+        os.lseek(fd, offset, os.SEEK_SET)
+        length = 1 if isinstance(handle, tuple) else _WINDOWS_LOCK_BYTES
+        msvcrt.locking(fd, msvcrt.LK_UNLCK, length)
+    else:
+        import fcntl
+
+        fcntl.flock(fd, fcntl.LOCK_UN)
+
+
+def release_cache_lock(handle: int | tuple[int, int]) -> None:
+    """Release the OS lease and close its descriptor."""
+    fd = handle[0] if isinstance(handle, tuple) else handle
     try:
-        if os.name == "nt":
-            import msvcrt
-
-            os.lseek(fd, offset, os.SEEK_SET)
-            length = 1 if isinstance(handle, tuple) else _WINDOWS_LOCK_BYTES
-            msvcrt.locking(fd, msvcrt.LK_UNLCK, length)
-        else:
-            import fcntl
-
-            fcntl.flock(fd, fcntl.LOCK_UN)
+        unlock_cache_lock(handle)
     finally:
         os.close(fd)

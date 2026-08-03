@@ -290,7 +290,7 @@ def test_dead_claim_owner_is_recovered_before_consumers(tmp_path: Path):
         [
             sys.executable,
             "-c",
-            "import os,sys; p=sys.argv[1]; "
+            "import os,sys; p=sys.argv[1]; " +
             "fd=os.open(p,os.O_CREAT|os.O_EXCL|os.O_WRONLY,0o600); "
             "os.write(fd,b'f'*32); os.fsync(fd); os.close(fd); os._exit(17)",
             str(dead_claim),
