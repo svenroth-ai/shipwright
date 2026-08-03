@@ -143,10 +143,14 @@ def _audit_section(project_root: Path) -> str:
 def test_regenerating_twice_leaves_the_disclosure_byte_identical(project: Path):
     """Determinism through the real generator, not just the render function.
 
-    Asserted on the disclosure specifically rather than on whole documents: each
-    dashboard regen appends a ``grade_snapshot`` event to the event log, so parts
-    of the dashboard legitimately move between regens. That is pre-existing
-    generator behaviour; what must not move is anything this change introduced.
+    Asserted on the disclosure specifically rather than on whole documents: a
+    dashboard regen may append a ``grade_snapshot`` event to the event log, so
+    parts of the dashboard can legitimately move between regens. That is
+    pre-existing generator behaviour; what must not move is anything this change
+    introduced. (Since iterate-2026-08-01-grade-snapshot-dedup a second regen
+    over unchanged data appends nothing, so this narrow assertion is now
+    conservative rather than necessary — kept because the reason it guards
+    against still applies whenever the grade does move.)
     """
     _run(RUN_AUDIT, project)
     _regenerate(project)
