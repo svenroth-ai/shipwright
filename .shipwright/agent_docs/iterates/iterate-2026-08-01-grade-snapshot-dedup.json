@@ -93,6 +93,10 @@
     {
       "path": "docs/hooks-and-pipeline.md",
       "reason": "Superseded origin/main's unconditional grade-snapshot cadence and pre-dedup consumer wording with the merged contract: automatic snapshots append only on an effective grade change, while dirty attribution remains preserved."
+    },
+    {
+      "path": "shared/tests/test_compliance_refresh_real_producer.py",
+      "reason": "Superseded origin/main's pre-dedup fixpoint assertion requiring one automatic grade_snapshot per regeneration pass: the first pass now appends once and later unchanged passes preserve that exact event."
     }
   ]
 }
