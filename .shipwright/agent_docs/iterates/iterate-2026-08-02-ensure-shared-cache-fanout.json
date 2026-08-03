@@ -122,6 +122,14 @@
     {
       "path": ".shipwright/agent_docs/iterates/iterate-2026-07-28-silent-revert-false-positives.json",
       "reason": "F5c's 50-entry retention evicted this oldest recency-cache entry after integrating current main; its history remains in git and shipwright_events.jsonl."
+    },
+    {
+      "path": "shared/tests/test_ensure_shared_cache_fanout.py",
+      "reason": "The repair intentionally replaces the synthetic race test's too-short timeout budgets so coverage instrumentation cannot exhaust them before the elected owner publishes completion; the owner/waiter assertions remain unchanged."
+    },
+    {
+      "path": ".shipwright/planning/iterate/iterate-2026-08-02-ensure-shared-cache-fanout/reviews.json",
+      "reason": "The repair intentionally replaces the original cascade timestamps with the completed spec, code, and doubt reviews of the test-only main-CI repair."
     }
   ]
 }
