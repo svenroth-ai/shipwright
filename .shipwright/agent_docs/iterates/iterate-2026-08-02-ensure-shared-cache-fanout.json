@@ -16,7 +16,12 @@
       {
         "behavior": "One winner and eleven waiters serialize one SessionStart fan-out",
         "disposition": "tested",
-        "evidence": "shared/tests/test_ensure_shared_cache_fanout.py and integration-tests/test_ensure_shared_cache_fanout.py passed"
+        "evidence": "dynamic installed-participant barrier plus real 12-process repair and healthy fan-outs passed with exactly one scanner"
+      },
+      {
+        "behavior": "A detected concurrent cohort joins before the elected healer scans while isolated invocation remains bounded",
+        "disposition": "tested",
+        "evidence": "active installed_plugins plus exact command-token hooks.json peer selection ignores stale, substring-only, and non-command cache entries; non-object manifests use bounded fallback; exact-empty observer and joined-before-return units passed; the former fixed-delay Main regression passed in the 22-scenario subprocess module and complete integration root"
       },
       {
         "behavior": "Waiters return only after token-specific winner completion",
@@ -47,7 +52,7 @@
         "behavior": "Real 12-process repair completes both cache trees before dependent consumers run",
         "disposition": "tested",
         "category": "integration",
-        "evidence": "post-fix F0.5 ran the complete integration root: 465 passed, 2 deselected"
+        "evidence": "post-fix F0.5 ran the complete integration root: 466 passed, 2 deselected"
       },
       {
         "behavior": "Canonical helpers and 12 vendored copies remain identical with exact healer/guard command chains",
@@ -66,9 +71,9 @@
       }
     ],
     "counts": {
-      "total": 10,
-      "testable": 10,
-      "tested": 10,
+      "total": 11,
+      "testable": 11,
+      "tested": 11,
       "untestable": 0,
       "untested_testable": 0
     },
@@ -82,9 +87,9 @@
     "surface": "cli",
     "runner": "uv run --with pytest --with pytest-mock --with pytest-cov pytest integration-tests/ -q -p no:cacheprovider --cov=shared --cov-config=pyproject.toml --cov-report=",
     "exit_code": 0,
-    "tests_run": 465,
+    "tests_run": 466,
     "evidence_path": ".shipwright/runs/iterate-2026-08-02-ensure-shared-cache-fanout/surface_verification.log",
-    "timestamp": "2026-08-03T21:17:39.564Z",
+    "timestamp": "2026-08-03T22:48:33.054Z",
     "attempts": 1
   },
   "declared_removals": [
@@ -246,7 +251,15 @@
     },
     {
       "path": ".shipwright/agent_docs/iterates/iterate-2026-08-02-ensure-shared-cache-fanout.json",
-      "reason": "The repair intentionally replaces this run's pre-repair 9-behavior and 21-test evidence with the evidence-first 10-behavior ledger and canonical post-fix 465-test surface result."
+      "reason": "The repair intentionally refreshes this run's ledger to 11 tested behaviors and the canonical post-fix 466-test surface result."
+    },
+    {
+      "path": "shared/tests/test_ensure_shared_cache_fanout_join.py",
+      "reason": "The repair intentionally adds focused, skip-free contracts for safe observation queries and the dynamic installed-participant join barrier."
+    },
+    {
+      "path": "integration-tests/test_ensure_shared_cache_fanout.py",
+      "reason": "The repair intentionally makes the subprocess fixture model Claude's authoritative installed_plugins.json and active SessionStart hook registration."
     }
   ]
 }
