@@ -1,13 +1,15 @@
 #!/usr/bin/env python3
 """Render `.shipwright/agent_docs/triage_inbox.md` from `.shipwright/triage.jsonl`.
 
-AC-2: collapses history per id (last-status-wins by file order, see
-triage.read_all_items), filters to status=="triage", sorts by
-(severity_rank, originalTs DESC) for the top-50 cap, groups by source,
-emits the promote-action hint per item.
+Collapses history per id (last-status-wins by file order, see
+``triage.read_all_items``), renders open items by source under the existing
+top-50 rule, and renders still-parked items in their own capped section with
+revisit date, reason, and un-park hint. Expired parks already resolve as open in
+the reader, so every surface receives the same effective status.
 
-Markdown escaping (MED-10 from external review): pipe, leading hash,
-triple-backtick collapsed; long fields truncated.
+Untrusted Markdown text is HTML-escaped and CommonMark punctuation is
+backslash-escaped; code spans choose a delimiter longer than stored backtick
+runs. Long fields are truncated.
 
 Hook context: invoked from `shared/scripts/hooks/aggregate_triage_on_stop.py`
 as the LAST Stop hook (after producers — see hooks.json ordering).
@@ -19,6 +21,7 @@ Usage:
 from __future__ import annotations
 
 import argparse
+import html
 import sys
 from pathlib import Path
 
@@ -27,6 +30,9 @@ if str(_SCRIPTS_DIR) not in sys.path:
     sys.path.insert(0, str(_SCRIPTS_DIR))
 
 from lib.events_log import latest_event_dt  # noqa: E402
+from lib.triage_render import clip as _truncate  # noqa: E402
+from lib.triage_render_md import code_span as _code_span, escape_md as _escape_md  # noqa: E402
+from lib.triage_render_md import render_deferred_markdown  # noqa: E402
 from lib.tty_sanitize import strip_control_chars as _strip_control_chars  # noqa: E402
 
 from triage import (  # noqa: E402
@@ -41,46 +47,18 @@ TRIAGE_MD_REL = Path(_AGENT_DOCS_DIRNAME) / "triage_inbox.md"
 TRIAGE_MD_FILENAME = "triage_inbox.md"
 
 TOP_N = 50
-FIELD_TRUNCATE_AT = 120
+
+# `_escape_md` and `_truncate` moved to `lib/triage_render*` in
+# iterate-2026-08-01-triage-defer-lifecycle and are imported above under their
+# old local names. Two reasons, both load-bearing: this file is at its ADR-090
+# ceiling and the deferred section it now renders had to be paid for, and the
+# TTY renderer already carried a byte-identical clip under a different name —
+# one function means the two views of one record cannot drift apart.
 
 
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
-
-def _escape_md(text: str) -> str:
-    """Escape Markdown-active characters for inline rendering.
-
-    - `|` → `\\|` so list-bullet rendering inside a future table column
-      stays intact
-    - leading `#` → `\\#` so a title starting with `#` isn't promoted to
-      a heading
-    - triple-backtick `` ``` `` collapses to a single backtick so a
-      producer's prose can't escape into a code fence
-    - newlines → space (single-line bullet rendering)
-    """
-    if text is None:
-        return ""
-    text = str(text)
-    # collapse triple-backticks first (so the per-char escape doesn't
-    # re-split them)
-    text = text.replace("```", "`")
-    text = text.replace("|", r"\|")
-    # collapse newlines to spaces for the inline bullet
-    text = text.replace("\r\n", " ").replace("\n", " ").replace("\r", " ")
-    if text.startswith("#"):
-        text = "\\" + text
-    return text
-
-
-def _truncate(text: str, limit: int = FIELD_TRUNCATE_AT) -> str:
-    if text is None:
-        return ""
-    text = str(text)
-    if len(text) <= limit:
-        return text
-    return text[: limit - 1].rstrip() + "…"
-
 
 def _fence_opener(payload: str) -> str:
     """Pick a backtick-fence opener long enough to contain ``payload``.
@@ -143,31 +121,37 @@ def _render_item(item: dict) -> list[str]:
     (`[FAIL → trg-XXX](triage_inbox.md#trg-XXX)`). VS Code's preview, GitHub,
     and CommonMark all honor this. Iterate B0 (2026-05-21).
     """
-    item_id = item.get("id", "")
-    severity = item.get("severity", "")
-    kind = item.get("kind", "")
-    # F31 (SECURITY): strip control chars from title/detail/evidence before
-    # _escape_md (which only neutralizes pipe/newline/hash, not TTY escapes).
-    title = _truncate(_escape_md(_strip_control_chars(str(item.get("title", "")))))
-    detail = _truncate(_escape_md(_strip_control_chars(str(item.get("detail", "")))))
-    priority = item.get("suggestedPriority") or suggest_priority_from_severity(severity)
-    domain = item.get("suggestedDomain") or suggest_domain_from_source(
-        item.get("source", "")
+    item_id = str(item.get("id") or "")
+    anchor_id = html.escape(
+        _strip_control_chars(item_id).replace("\r", " ").replace("\n", " "),
+        quote=True,
     )
-    evidence = _truncate(_escape_md(_strip_control_chars(str(item.get("evidencePath") or ""))))
-
+    severity = item.get("severity", "")
+    source = item.get("source", "")
+    kind = item.get("kind", "")
+    # F31: escape_md owns control/newline stripping plus Markdown/HTML escaping.
+    title = _truncate(_escape_md(item.get("title", "")))
+    detail = _truncate(_escape_md(item.get("detail", "")))
+    safe_severity = severity if isinstance(severity, str) and severity in SEVERITY_RANK else "info"
+    priority = item.get("suggestedPriority") or suggest_priority_from_severity(safe_severity)
+    domain = item.get("suggestedDomain") or suggest_domain_from_source(
+        source if isinstance(source, str) else ""
+    )
+    evidence = _truncate(_strip_control_chars(str(item.get("evidencePath") or "")))
+    metadata = (
+        f"id={item_id} | severity={severity} | kind={kind} → "
+        f"{priority}/{domain}"
+    )
     lines = [
-        f'<a id="{item_id}"></a>' if item_id else "",
-        f"- **{title}** `id={item_id} | severity={severity} | kind={kind} → "
-        f"{priority}/{domain}`",
+        f'<a id="{anchor_id}"></a>' if item_id else "",
+        f"- **{title}** {_code_span(metadata)}",
         f"  - {detail}" if detail else "",
     ]
     if evidence:
-        lines.append(f"  - Evidence: `{evidence}`")
+        lines.append(f"  - Evidence: {_code_span(evidence)}")
     lines.extend(_render_launch_payload(item))
-    lines.append(
-        f"  - Promote: `triage_promote.py --id {item_id} --task-ref EXT:<ref>`"
-    )
+    command = f"triage_promote.py --id {item_id} --task-ref EXT:<ref>"
+    lines.append(f"  - Promote: {_code_span(command)}")
     return [L for L in lines if L]
 
 
@@ -197,21 +181,20 @@ def _summary_counts(items: list[dict]) -> dict[str, int]:
 
 def _sort_key(item: dict) -> tuple[int, str]:
     """Sort by severity_rank asc (critical first), originalTs desc (newest first)."""
-    rank = SEVERITY_RANK.get(item.get("severity", "info"), 99)
-    # Negate by reversing the ISO string — string sort works because
-    # ISO-8601 is lexicographically ordered
+    severity = item.get("severity", "info")
+    rank = SEVERITY_RANK.get(severity, 99) if isinstance(severity, str) else 99
+    # Reverse the ISO string; ISO-8601 is lexicographically ordered.
     original_ts = item.get("originalTs") or item.get("ts") or ""
-    # Tuple: lower rank first; for same rank, newer ts first → reverse-string
     return (rank, _reverse_iso(original_ts))
 
 
-def _reverse_iso(ts: str) -> str:
+def _reverse_iso(ts: object) -> str:
     """Return a key that sorts newest-first within stable severity rank.
 
     Uses string complement trick: '9' - digit per char. Falls back to
     plain string if the input is malformed.
     """
-    if not ts:
+    if not isinstance(ts, str) or not ts:
         return ""
     try:
         return "".join(
@@ -230,6 +213,10 @@ def render_markdown(items: list[dict], *, now: str) -> str:
     counts = _summary_counts(items)
     triage_items = [it for it in items if it.get("status") == "triage"]
     triage_items.sort(key=_sort_key)
+    # A park whose revisit date has arrived already resolved to `triage` in
+    # `read_all_items`, so it is in the list above; what remains here is the
+    # genuinely-still-parked set.
+    deferred_items = [it for it in items if it.get("status") == "snoozed"]
 
     out: list[str] = []
     out.append("# Triage Inbox")
@@ -252,6 +239,10 @@ def render_markdown(items: list[dict], *, now: str) -> str:
     if not triage_items:
         out.append("No triage items pending. ✓")
         out.append("")
+        # Still emitted: "nothing open" and "nothing at all" are different
+        # answers, and showing a parked entry as a bare count in the summary
+        # above is exactly what made a deferred finding read as gone.
+        out.extend(render_deferred_markdown(deferred_items, SEVERITY_RANK))
         return "\n".join(out) + "\n"
 
     # Info-severity items are collapsed into a <details> block at the end
@@ -273,12 +264,17 @@ def render_markdown(items: list[dict], *, now: str) -> str:
         # Group by source while preserving severity sort within each group
         by_source: dict[str, list[dict]] = {}
         for it in rendered:
-            by_source.setdefault(it.get("source", "unknown"), []).append(it)
+            source = str(it.get("source") or "unknown")
+            by_source.setdefault(source, []).append(it)
 
         # Source order: alphabetical for stable diffs
         for source in sorted(by_source.keys()):
             group = by_source[source]
-            out.append(f"### Source: {source} ({len(group)} item{'s' if len(group) != 1 else ''})")
+            heading = _escape_md(source)
+            out.append(
+                f"### Source: {heading} "
+                f"({len(group)} item{'s' if len(group) != 1 else ''})"
+            )
             out.append("")
             for it in group:
                 out.extend(_render_item(it))
@@ -300,6 +296,8 @@ def render_markdown(items: list[dict], *, now: str) -> str:
             out.append("")
         out.append("</details>")
         out.append("")
+
+    out.extend(render_deferred_markdown(deferred_items, SEVERITY_RANK))
 
     return "\n".join(out) + "\n"
 

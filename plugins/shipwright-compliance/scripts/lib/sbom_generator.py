@@ -131,11 +131,12 @@ def _import_triage_api():
     """Lazy import of the triage helpers (mirrors audit_detector pattern).
 
     Returns ``(append_idempotent, mark_status, read_all_items,
-    StatusPreconditionError)`` on success or all-``None`` if
+    AUTO_RESOLVABLE_STATUSES, StatusPreconditionError)`` on success or
+    an all-``None`` 5-tuple if
     ``shared/scripts/`` isn't on ``sys.path`` (e.g. in a minimal CI env without
     the monorepo layout).
 
-    All four come off the SAME module object, so the ``except`` arm below
+    All five come off the SAME module object, so the ``except`` arm below
     cannot bind a different ``triage`` and silently miss every refusal
     (external plan review, finding #3). A ``triage`` that predates
     ``expected_status`` disables this producer via the ``AttributeError`` arm
@@ -149,12 +150,13 @@ def _import_triage_api():
         # Every name off the SAME module object, INSIDE the same try, so the
         # `except` arm cannot bind a different `triage` (finding #3).
         return (triage.append_triage_item_idempotent, triage.mark_status,
-                triage.read_all_items, triage.StatusPreconditionError)
+                triage.read_all_items, triage.AUTO_RESOLVABLE_STATUSES,
+                triage.StatusPreconditionError)
     except (ImportError, AttributeError):
         # AttributeError too: a `triage` predating `expected_status` must
         # disable this producer CLEANLY rather than half-work - see the note
         # in audit/triage_bundle.py (doubt review, doubt 2).
-        return None, None, None, None
+        return None, None, None, None, None
 
 
 def _shell_quote_workspace(workspace: str) -> str:
@@ -351,7 +353,7 @@ def emit_undeclared_triage(
       (sub-iterate A) so membership drift reuses the SAME id (no churn);
       the bucket dismisses only when its last member resolves.
 
-    Auto-dismiss: any currently-``triage`` ``source="sbom"`` item whose
+    Auto-dismiss: any open or parked ``source="sbom"`` item whose
     ``dedupKey`` is NOT in this run's ``current_keys`` is marked
     ``dismissed`` with ``reason="sbomResolved"``. ``current_keys``
     includes:
@@ -362,7 +364,7 @@ def emit_undeclared_triage(
          workspace joins a cluster (external-review HIGH: OpenAI #1 /
          Gemini #1; preserves AC-7 back-compat).
 
-    Previously promoted / dismissed items stay terminal.
+    Promoted / dismissed items stay terminal.
 
     Window-less idempotent dedup (``window_seconds=None``).
 
@@ -374,7 +376,7 @@ def emit_undeclared_triage(
     """
     project_root = Path(project_root).resolve()
     (append_idempotent, mark_status_fn, read_all_items,
-     precondition_error) = _import_triage_api()
+     AUTO_RESOLVABLE_STATUSES, precondition_error) = _import_triage_api()
     if append_idempotent is None:
         return {
             "appended": 0,
@@ -496,7 +498,7 @@ def emit_undeclared_triage(
         for item in read_all_items(project_root):
             if item.get("source") != _TRIAGE_SOURCE:
                 continue
-            if item.get("status") != "triage":
+            if item.get("status") not in AUTO_RESOLVABLE_STATUSES:
                 continue
             dk = item.get("dedupKey")
             if not isinstance(dk, str):
@@ -511,7 +513,7 @@ def emit_undeclared_triage(
                 continue
             try:
                 # This loop read the store UNLOCKED; expected_status re-checks
-                # the `status == "triage"` filter under the store's own lock so
+                # the status filter above under the store's own lock so
                 # an operator decision is not overwritten (trg-93ceb2b0).
                 mark_status_fn(
                     project_root,
@@ -519,7 +521,7 @@ def emit_undeclared_triage(
                     new_status="dismissed",
                     by="sbomGenerator",
                     reason="sbomResolved",
-                    expected_status="triage",
+                    expected_status=AUTO_RESOLVABLE_STATUSES,
                 )
                 dismissed += 1
             except precondition_error as exc:

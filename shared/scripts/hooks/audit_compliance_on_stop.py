@@ -16,15 +16,14 @@ Stop contract (mirrors ``audit_phase_quality_on_stop.py``):
 - **Greenfield-safe** — silent no-op off a Shipwright-managed project.
 - **Disabled when** ``SHIPWRIGHT_COMPLIANCE_AUDIT_ON_STOP=0``.
 
-CRITICAL SAFETY GATE — full-coverage-before-dismiss: ``mirror_findings_to_triage``
-auto-dismisses any currently-``triage`` compliance item whose ``check_id``
-is absent from THIS run's failures. The dismiss is *groupless*: a
-crashed/skipped group's findings vanish and its triage items would be
-wrongly dismissed (running only group F would dismiss B7/B2). So we run
-the FULL audit (groups A-I) with ``emit_to_triage=False``, verify every
-group ran (no ``import_gate_error``), and ONLY THEN mirror. Partial
-coverage → skip mirroring (never a false dismiss) + stderr diagnostic.
-Strictly safer than ``run_audit.py``'s unconditional emit.
+CRITICAL SAFETY GATE — full-coverage-before-dismiss: the rolling compliance
+backlog closes or refreshes open-or-parked auto-resolvable action-units absent
+from THIS run's failures; promoted/dismissed decisions stay terminal. The
+dismiss is *groupless*: a crashed/skipped group's findings vanish and its item
+would be wrongly dismissed. So we run the FULL audit (groups A-I) with
+``emit_to_triage=False``, verify every group ran (no ``import_gate_error``), and
+ONLY THEN emit. Partial coverage → skip mirroring (never a false dismiss) +
+stderr diagnostic. Strictly safer than ``run_audit.py``'s unconditional emit.
 
 Wire AFTER finalize + phase_quality and BEFORE ``aggregate_triage_on_stop``:
 

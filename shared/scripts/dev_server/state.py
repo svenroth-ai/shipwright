@@ -12,14 +12,18 @@ dev_server versions.
 from __future__ import annotations
 
 import json
-import sys
 from pathlib import Path
 
+from ._paths import _ensure_scripts_on_path
 from .profile_config import _DEFAULT_SERVICE, STATE_FILE, STATE_VERSION
 
-_SCRIPTS_ROOT = Path(__file__).resolve().parents[1]  # shared/scripts
-if str(_SCRIPTS_ROOT) not in sys.path:
-    sys.path.insert(0, str(_SCRIPTS_ROOT))
+# `lib.atomic_write` is imported EAGERLY below, so `shared/scripts` has to be on
+# `sys.path` before that line runs. This is the call that puts it there for a
+# normally imported process — `__init__.py` imports `.state` unconditionally, so
+# it lands before the lazy proxy is ever reached. Keeping the import eager is
+# deliberate: making it lazy would only defer WHICH `lib` binds, not make the
+# package lib-safe (ADR-045; `shared_lib_loader.py` — "it is not enough").
+_ensure_scripts_on_path()
 
 from lib.atomic_write import durable_atomic_write  # noqa: E402
 

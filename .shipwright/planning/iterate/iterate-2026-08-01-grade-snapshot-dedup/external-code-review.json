@@ -1,0 +1,33 @@
+{
+  "success": true,
+  "provider": "openrouter",
+  "degraded": false,
+  "reviews_succeeded": 1,
+  "reviews": {
+    "gemini": {
+      "feedback": "The implementation correctly shifts from unconditional appending to a lock-scoped deduplication scan that preserves the `main`/`branch` lineage context. However, there is a concrete correctness bug and a missed edge-case raised by the external reviewer that the diff fails to guard against. \n\n- **Category:** edge-case / bug\n- **Severity:** medium\n- **File:** `shared/scripts/lib/event_dedup.py:127`\n- **Finding:** The external reviewer explicitly warned that `last_grade_snapshot` assumes every entry parsed from the JSONL file is a `dict` (e.g. `event.get(\"type\")`), and that if a user manually amends a line to be a syntactically valid JSON array (e.g",
+      "via": "openrouter",
+      "status": "degraded",
+      "reason": "provider reported the reply was cut off (finish_reason=length)"
+    },
+    "openai": {
+      "feedback": "- Category: spec  \n  Severity: low  \n  File: plugins/shipwright-compliance/scripts/lib/_grade_snapshot.py:142  \n  Finding: The unchanged-grade emitter result contains an extra `lineage` field: `{\"appended\": 0, **skipped, \"lineage\": ...}`. AC1 defines the emitter result as the helper’s exact `{reason, grade, score}` payload with `appended: 0` added; it does not permit adding emitter-specific metadata. The corresponding new test explicitly requires this extra field, so it validates a result shape that differs from the specified contract.  \n  Suggestion: Return only `{\"appended\": 0, **skipped}` for this skip path, and update the test to assert the specified payload by equality.\n\n- Category: regression  \n  Severity: medium  \n  File: shared/scripts/lib/event_dedup.py:163-190  \n  Finding: Moving `has_commit` and `has_phase_event` changes their dependency binding from `tools.record_event.read_events` to `lib.event_dedup.read_events`. Re-exporting the functions from `record_event` preserves their names but not the historical monkeypatch seam: a caller/test that monkeypatches `tools.record_event.read_events` will no longer affect either predicate. This contradicts the stated requirement that historical monkeypatching behavior remains unchanged, and can cause existing lifecycle/idempotency tests or embedding callers to read the real log unexpectedly.  \n  Suggestion: Preserve the `record_event.read_events` seam, such as by retaining thin `record_event` wrappers that call its module-level `read_events`, or make the extracted predicates accept an injected reader/events collection and have `record_event` pass its re-exported reader.\n\n- Category: edge-case  \n  Severity: low  \n  File: shared/scripts/lib/event_dedup.py:117-121  \n  Finding: `comparable_grade` only catches `OverflowError`, despite AC3d requiring that comparison never raise and specifically calling for `TypeError`, `ValueError`, and `OverflowError` to be handled. While ordinary JSON-decoded `int`/`float` values generally only need the overflow guard, this public helper accepts arbitrary `dict` events and an `int`/`float` subclass can raise `TypeError` or `ValueError` from `__float__`; that exception escapes the lock and causes the best-effort emitter to lose the snapshot.  \n  Suggestion: Catch `(TypeError, ValueError, OverflowError)` around conversion and finiteness normalization, returning `None` for all failures; add a test using a numeric subclass whose `__float__` raises.\n\nOverall assessment: ship-with-fixes. The core lineage-class, opt-in, lock-scoped deduplication implementation is sound, but the result-shape contract and backward-compatible predicate monkeypatching need correction before shipping.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "openrouter",
+      "status": "success"
+    }
+  },
+  "verdicts": {
+    "gemini": "unavailable",
+    "openai": "revise"
+  },
+  "statuses": {
+    "gemini": "degraded",
+    "openai": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": false,
+    "requires_resolution": true,
+    "reason": "only one reviewer answered — gemini did not (gemini=unavailable, openai=revise)"
+  }
+}

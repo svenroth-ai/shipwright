@@ -1,0 +1,111 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-08-01-dev-server-path-derivation",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-03T07:53:09.759526+00:00",
+      "disposition": "Eight-point self-review PASS after the authorized PID repair",
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-01T10:27:13.505101+00:00",
+      "disposition": "Phase Matrix: Mini-Plan is 'FEATURE only' at small complexity and this is a CHANGE (Path B, SIMPLIFY sub-mode); External LLM Review of a PLAN is 'skip' at small. No plan artifact was produced, so there is nothing for a plan review to read. The external CODE cascade did fire on its own 100-line trigger and is recorded separately as external_code=completed.",
+      "recorded_by": "iterate-agent",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 2,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "shared/scripts/tools/verifiers/runtime_checks.py",
+          "line": 157,
+          "finding": "Initial review found that GetExitCodeProcess could misclassify a terminated process whose valid exit code is STILL_ACTIVE (259). Resolved before re-review by using SYNCHRONIZE plus WaitForSingleObject(handle, 0), where only WAIT_TIMEOUT means alive.",
+          "suggestion": "Resolved; the final reviewer confirmed GetExitCodeProcess is never invoked and every opened handle is closed.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "test-quality",
+          "file": "shared/tests/test_verifiers_runtime.py",
+          "line": 202,
+          "finding": "Initial review found that the no-signal dispatch test did not exercise Win32 wait states, API failures, access denial, or handle closure. Resolved before re-review with portable fake-kernel32 tests covering each state and DWORD-range rejection.",
+          "suggestion": "Resolved; the final reviewer confirmed the portable tests and the real Windows current-PID smoke test cover the required behavior.",
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-08-03T07:53:01.493604+00:00",
+      "disposition": "Stage 2 PASS after both medium findings were fixed and re-reviewed",
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-03T07:53:03.749918+00:00",
+      "disposition": "Stage 3 PASS after fixes and tracked PID-identity follow-up trg-06641ec3",
+      "recorded_by": "doubt-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": "openrouter",
+      "completed_at": "2026-08-03T07:53:07.283136+00:00",
+      "disposition": "OpenAI and Gemini both approved the current post-merge diff",
+      "recorded_by": "external-review-json",
+      "parse_status": "unstructured",
+      "raw_excerpt": "[gemini] The diff fulfills the acceptance criteria, preserves ADR-045 boundaries, and safely converts the Windows PID probe to a kernel32 process-handle wait without handle leaks. No correctness, security, test quality, or spec compliance issues were found. SHIPWRIGHT_VERDICT: approve\n\n[openai] No concrete defects found in the changed implementation. The refactor leaves one active __file__-based derivation and one guarded sys.path.insert, while the Windows PID path avoids os.kill, validates the DWORD range, maps handle wait states correctly, closes opened handles, and preserves POSIX behavior. SHIPWRIGHT_VERDICT: approve"
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-03T07:52:58.655274+00:00",
+      "disposition": "Stage 1 PASS on the full scope-expanded diff",
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    }
+  },
+  "gates": {
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-01T10:07:00.732503+00:00",
+      "disposition": "Stage 1 HARD-GATE APPROVE: no spec divergence. End state verified in the files; shim exclusion judged correct; behavior preservation and ADR-045 confirmed. 4 LOW comment-accuracy findings (not spec divergences) were fixed before Stage 2 ran.",
+      "recorded_by": "shipwright-build:spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    }
+  }
+}

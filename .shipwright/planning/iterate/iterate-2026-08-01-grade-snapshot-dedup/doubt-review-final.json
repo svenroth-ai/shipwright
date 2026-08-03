@@ -1,0 +1,7 @@
+{
+  "stage": "doubt",
+  "gating": "advisory-must-address",
+  "trigger": "concurrency-ordering,cross-module-boundary",
+  "doubts": [],
+  "summary": "Attempted to disprove amendment handling, corruption fail-open behavior under default warnings and -W error, lock ordering, lineage separation, CLI opt-out, hidden coupling, and commit bisectability; no concrete failure found."
+}

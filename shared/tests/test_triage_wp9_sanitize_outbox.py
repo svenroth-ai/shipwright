@@ -187,7 +187,7 @@ def test_defer_outbox_only_item(project: Path) -> None:
     testable behaviour was left untested.
     """
     item_id = _outbox_only_item(project)
-    result = defer(project, item_id=item_id, reason="later")
+    result = defer(project, item_id=item_id, reason="later", revisit_at="2099-01-01")
     assert result["newStatus"] == "snoozed"
     [item] = read_all_items(project)
     assert item["id"] == item_id and item["status"] == "snoozed"
@@ -196,7 +196,8 @@ def test_defer_outbox_only_item(project: Path) -> None:
 
 def test_defer_still_raises_filenotfound_when_neither_store_exists(project: Path) -> None:
     with pytest.raises(FileNotFoundError):
-        defer(project, item_id="trg-12345678", reason="x")
+        defer(project, item_id="trg-12345678", reason="x",
+              revisit_at="2099-01-01")
 
 
 def test_promote_still_raises_filenotfound_when_neither_store_exists(project: Path) -> None:

@@ -18,7 +18,7 @@ from typing import Any
 
 from .events_amend import apply_amendments  # noqa: F401 — re-exported SSOT
 from .events_log import resolve_events_path
-from .jsonl_records import read_jsonl_records
+from .jsonl_records import RecordRead, read_jsonl_records
 
 CONFIG_FILES = {
     "run": "shipwright_run_config.json",
@@ -138,13 +138,41 @@ def collect_all_build_sections(project_root: str | Path) -> dict[str, Any]:
 # Event log
 # ---------------------------------------------------------------------------
 
+def read_events_result(project_root: str | Path) -> RecordRead:
+    """Read events plus the explicit corrupt-fragment side channel.
+
+    Callers that make an absence-based decision must inspect ``corrupt``: a
+    recovered prefix is useful for reporting, but it is not proof that no newer
+    record existed in the unreadable remainder.
+    """
+    path = resolve_events_path(project_root)
+    result = read_jsonl_records(path)
+    for frag in result.corrupt:
+        # ASCII-only: surfaces on Windows cp1252 consoles.
+        warnings.warn(
+            f"Corrupt event at {EVENT_FILE}:{frag.line_no} "
+            f"({len(frag.text)} bytes unrecoverable), skipping that fragment; "
+            f"the rest of the line was recovered.",
+            stacklevel=2,
+        )
+    return result
+
+
 def read_events(project_root: str | Path) -> list[dict[str, Any]]:
     """Read all events from the JSONL log. Tolerant — RECOVERS concatenated records.
 
-    Worktree-aware: resolves the canonical (main-repo) event log via
-    ``resolve_events_path`` so the build dashboard renderer, run from inside
-    a ``/shipwright-iterate`` worktree at F5b, reads the full event history
-    rather than an absent/empty worktree-local copy.
+    Per-tree: ``resolve_events_path`` is a literal ``project_root / EVENT_FILE``
+    join, so from inside a ``/shipwright-iterate`` worktree this reads the
+    WORKTREE'S OWN log — the same file the iterate's F6 commits — not the main
+    repo's. (This docstring used to claim the opposite, describing a main-repo
+    redirect that ``iterate-2026-05-29-events-jsonl-worktree-commit`` removed
+    because it orphaned the ``work_completed`` event outside the iterate PR. The
+    claim outlived the behaviour and was corrected in
+    ``iterate-2026-08-01-grade-snapshot-dedup``, whose dedup reads through here
+    and whose external plan review reasoned from the stale text.)
+
+    The practical consequence for callers: a worktree's log carries history as of
+    its checkout, plus its own appends — never a sibling worktree's unmerged ones.
 
     A line holding several concatenated records yields ALL of them rather than
     none (iterate-2026-07-18-events-jsonl-record-boundary). This reader used to
@@ -160,16 +188,4 @@ def read_events(project_root: str | Path) -> list[dict[str, Any]]:
 
     Contract + rationale: ``lib/jsonl_records.py``.
     """
-    path = resolve_events_path(project_root)
-    if not path.exists():
-        return []
-    result = read_jsonl_records(path)
-    for frag in result.corrupt:
-        # ASCII-only: surfaces on Windows cp1252 consoles.
-        warnings.warn(
-            f"Corrupt event at {EVENT_FILE}:{frag.line_no} "
-            f"({len(frag.text)} bytes unrecoverable), skipping that fragment; "
-            f"the rest of the line was recovered.",
-            stacklevel=2,
-        )
-    return result.records
+    return read_events_result(project_root).records

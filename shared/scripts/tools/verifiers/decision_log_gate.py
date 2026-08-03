@@ -102,12 +102,19 @@ def check_adr_in_iterate_history(project_root: Path, run_id: str) -> CheckResult
         # dir against the main repo, or the pending-drop branch never
         # matches and a freshly-written ADR is reported missing.
         drop_root = resolve_main_repo_root(project_root) or project_root
-        drop_dir = drop_root / ".shipwright" / "agent_docs" / "decision-drops"
+        drop_dirs = [
+            drop_root / ".shipwright" / "agent_docs" / "decision-drops"
+        ]
+        local_drop_dir = (
+            project_root / ".shipwright" / "agent_docs" / "decision-drops"
+        )
+        if local_drop_dir != drop_dirs[0]:
+            drop_dirs.append(local_drop_dir)
         # Accept run-id ADR identity ONLY when the drop actually CARRIES the ADR
         # (parses + run_id match + non-empty decision) OR a matching Run-ID line
         # is present in decision_log.md. An empty/placeholder drop no longer
         # passes — that is the shape of a silently-lost ADR.
-        if _drop_carries_adr(drop_dir, adr_id):
+        if any(_drop_carries_adr(drop_dir, adr_id) for drop_dir in drop_dirs):
             return CheckResult(
                 name, True,
                 f"{adr_id}: decision-drop carries the ADR (pending aggregation)",

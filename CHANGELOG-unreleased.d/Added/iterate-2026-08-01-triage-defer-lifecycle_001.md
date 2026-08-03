@@ -1,0 +1,1 @@
+Add lifecycle-complete triage parking with mandatory revisit dates, expiry, producer self-close, all-surface visibility, un-park, and capped human views. BREAKING triage_cli.py list --json: before [...open items]; after {"contractVersion":2,"open":[...],"deferred":[...]}. Command Center follow-up: trg-f2214310 in the shipwright-webui triage store.

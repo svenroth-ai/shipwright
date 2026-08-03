@@ -84,14 +84,12 @@ def test_github_resolver_still_counts_a_landed_dismiss(tmp_path: Path) -> None:
     )["statusBy"] == "githubImporter"
 
 
-def test_phase_quality_dismiss_keeps_a_decided_item(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    """Executes `_triage_bundle._dismiss`'s `except StatusPreconditionError` arm.
+def _phase_quality_race(tmp_path: Path, monkeypatch, decision: str, **extra):
+    """Run the phase-quality resolver with a decision landing mid-flight.
 
     The decision must land AFTER the producer built `open_backlog` and BEFORE
     its write. Deciding up front would instead filter the item out of
-    `open_backlog` entirely, so `_dismiss` would never be called and this test
+    `open_backlog` entirely, so `_dismiss` would never be called and the test
     would pass with the fix reverted — which is exactly how a ledger row comes
     to say "tested" about a line no test executes.
     """
@@ -101,27 +99,59 @@ def test_phase_quality_dismiss_keeps_a_decided_item(
         tmp_path, source="phaseQuality", severity="high", kind="bug",
         title="t", detail="d", dedup_key=bundle.BACKLOG_PREFIX + "deadbeef",
     )
-
     real_mark_status = triage.mark_status
     fired = []
 
     def barrier(*args, **kwargs):
         if not fired:
             fired.append(True)
-            real_mark_status(tmp_path, item_id, new_status="snoozed",
-                             by="operator", reason="revisit after the refactor")
+            real_mark_status(tmp_path, item_id, new_status=decision,
+                             by="operator", reason="a person decided this",
+                             **extra)
         return real_mark_status(*args, **kwargs)
 
     monkeypatch.setattr(triage, "mark_status", barrier)
-
-    # No fails in scope → the resolver wants to dismiss every open backlog item.
+    # No fails in scope → the resolver wants to close every open backlog item.
     result = bundle.emit_phase_quality_backlog(tmp_path, run_id=None, commit=None)
     assert fired, "the producer never attempted a write — barrier never fired"
-    assert result["dismissed"] == 0
     item = next(i for i in read_all_items(tmp_path) if i["id"] == item_id)
-    assert (item["status"], item["statusBy"], item["statusReason"]) == (
-        "snoozed", "operator", "revisit after the refactor",
+    return result, item
+
+
+def test_phase_quality_dismiss_keeps_an_item_a_person_dismissed(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Executes `_triage_bundle._dismiss`'s `except StatusPreconditionError` arm.
+
+    The `trg-93ceb2b0` guarantee, intact: a decision that ENDS an entry's life
+    is never overwritten by a producer's machine reason, and the refusal is
+    reported as KEPT rather than counted or filed as an error.
+    """
+    result, item = _phase_quality_race(tmp_path, monkeypatch, "dismissed")
+    assert result["dismissed"] == 0
+    assert (item["statusBy"], item["statusReason"]) == (
+        "operator", "a person decided this",
     )
+
+
+def test_phase_quality_still_closes_an_item_a_person_parked_mid_flight(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A PARK in the race window does NOT stop the close — and that is decided.
+
+    This test asserted the opposite until iterate-2026-08-01-triage-defer-
+    lifecycle. The operator decision of 2026-07-27 is that a parked entry closes
+    automatically when its underlying finding disappears, exactly like an open
+    one; the producer here knows something the parker did not, namely that the
+    finding is gone. So `AUTO_RESOLVABLE_STATUSES` deliberately narrows what
+    `expected_status` protects to the two decisions that END an entry's life,
+    and the sibling test above pins that half.
+    """
+    result, item = _phase_quality_race(
+        tmp_path, monkeypatch, "snoozed", revisit_at="2099-01-01",
+    )
+    assert result["dismissed"] == 1
+    assert (item["status"], item["statusBy"]) == ("dismissed", "phaseQualityBacklog")
 
 
 # --------------------------------------------------------------------------
@@ -171,8 +201,8 @@ def test_cli_still_promotes_and_defers_a_still_open_item(tmp_path: Path) -> None
     """The precondition must not break either ordinary operator path.
 
     Both verbs, because they take different routes into the store: `defer`
-    goes through `_decide_from_triage`, `promote` has its own body that also
-    writes `promotedTaskId`.
+    goes through the shared `_transition`, `promote` has its own body that
+    also writes `promotedTaskId`.
     """
     import triage_promote
 
@@ -182,7 +212,8 @@ def test_cli_still_promotes_and_defers_a_still_open_item(tmp_path: Path) -> None
             title="t", detail="d",
         )
 
-    deferred = triage_promote.defer(tmp_path, item_id=_seed(), reason="later")
+    deferred = triage_promote.defer(tmp_path, item_id=_seed(), reason="later",
+                                    revisit_at="2099-01-01")
     assert deferred["newStatus"] == "snoozed"
 
     promoted_id = _seed()

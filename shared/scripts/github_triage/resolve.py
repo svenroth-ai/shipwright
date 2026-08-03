@@ -1,21 +1,25 @@
 """Auto-resolve + legacy-migration sweeps.
 
 Consumer-side helpers, split out of ``consumer.py`` so each file stays
-under the 300-LOC budget. Both functions iterate the triage inbox and
-mark items dismissed:
+under the 300-LOC budget. Three sweeps iterate the triage inbox and mark
+eligible items dismissed:
 
-- ``_resolve_stale`` — ADR-052 auto-resolve. An OPEN action-unit item is
-  stale when (a) its dedup key belongs to one of the three owned prefixes,
+- ``resolve_stale`` — ADR-052 action-unit auto-resolve. An open or parked item
+  is stale when (a) its dedup key belongs to an owned prefix,
   (b) that prefix's fetch SUCCEEDED this run, and (c) the key is absent
   from the current finding set. Scoped strictly to OWNED prefixes —
   other producers' items are left alone.
-- ``_migrate_legacy_items`` — one-shot migration from the iterate-2026-05-19
+- ``resolve_pr_ci`` — the PR-CI-specific state machine: an open or parked item
+  closes when checks recover or the PR is confirmed merged/closed, but an
+  unreadable PR state is kept for a later cycle.
+- ``migrate_legacy_items`` — one-shot migration from the iterate-2026-05-19
   per-finding model. Per-source-gated: a failed fetch for source X leaves
   source-X legacy items UNTOUCHED, even if other sources succeeded
   (review finding #3). Idempotent — items already dismissed / promoted /
-  snoozed are skipped (review finding #12).
+  snoozed are skipped (review finding #12); migration is deliberately not an
+  auto-resolver, so it does not inherit the parked-item widening above.
 
-Both helpers fail-soft on per-item ``mark_status`` errors (write to
+All three sweeps fail-soft on per-item ``mark_status`` errors (write to
 stderr, continue). The orchestrator wraps each sweep in its own
 exception handler so a catastrophic failure can't take down the import.
 """
@@ -24,11 +28,24 @@ from __future__ import annotations
 
 import sys
 
-from triage import StatusPreconditionError, mark_status, read_all_items
+from triage import (
+    AUTO_RESOLVABLE_STATUSES,
+    StatusPreconditionError,
+    mark_status,
+    read_all_items,
+)
 
 from .producer import _OWNED_PREFIXES, PREFIX_PR_CI
 
 SOURCE = "github"
+
+#: What the one-shot legacy migration may touch — OPEN entries only.
+#: Deliberately NOT `AUTO_RESOLVABLE_STATUSES`: that widening is about a
+#: finding DISAPPEARING, and a schema migration is not that. Its own docstring
+#: has recorded since review finding #12 that skipping decided entries is the
+#: point, and it shares `_dismiss_if_open` with two callers that DO widen —
+#: which is why the helper takes the set as an argument rather than knowing it.
+_MIGRATION_STATUSES = ("triage",)
 
 
 # Legacy per-finding prefixes from iterate-2026-05-19. Migrated on the
@@ -56,14 +73,22 @@ def _report(line: str) -> None:
         pass
 
 
-def _dismiss_if_open(project_root, item_id: str, *, reason: str, label: str) -> int:
-    """Dismiss ONE item, but only while it is still open. Returns 1 iff it landed.
+def _dismiss_if_open(
+    project_root, item_id: str, *, reason: str, label: str,
+    expected: tuple[str, ...] = AUTO_RESOLVABLE_STATUSES,
+) -> int:
+    """Dismiss ONE item, but only from a status in ``expected``. 1 iff it landed.
 
-    Every sweep in this module reads the store UNLOCKED, filters
-    ``status == "triage"``, then flips each hit under its own separate lock
-    acquisition. ``expected_status="triage"`` re-checks that filter inside the
-    store's lock, so a decision a person recorded in the meantime is not
-    overwritten by this producer's machine reason (``trg-93ceb2b0``).
+    Every sweep in this module reads the store UNLOCKED, filters on status,
+    then flips each hit under its own separate lock acquisition.
+    ``expected_status`` re-checks that filter inside the store's lock, so a
+    decision a person recorded in the meantime is not overwritten by this
+    producer's machine reason (``trg-93ceb2b0``).
+
+    ``expected`` defaults to open-OR-parked: a parked entry closes itself
+    when its finding disappears, exactly like an open one (operator decision
+    of 2026-07-27). The legacy migration passes ``_MIGRATION_STATUSES``
+    instead — see the note there.
 
     A refusal is a NORMAL outcome, not a failure: the item is reported KEPT and
     left out of the resolved count, so the count describes the store rather than
@@ -72,7 +97,7 @@ def _dismiss_if_open(project_root, item_id: str, *, reason: str, label: str) -> 
     try:
         mark_status(
             project_root, item_id, new_status="dismissed",
-            by="githubImporter", reason=reason, expected_status="triage",
+            by="githubImporter", reason=reason, expected_status=expected,
         )
         return 1
     except StatusPreconditionError as exc:
@@ -93,7 +118,7 @@ def resolve_stale(
     resolvable_prefixes: set[str],
     current_keys: set[str],
 ) -> int:
-    """Dismiss this producer's stale OPEN action-unit items.
+    """Dismiss this producer's stale open or parked action-unit items.
 
     An item is stale when its dedup key belongs to one of the three owned
     action-unit prefixes, that prefix's fetch SUCCEEDED this run, and the
@@ -103,7 +128,8 @@ def resolve_stale(
     """
     resolved = 0
     for item in read_all_items(project_root):
-        if item.get("source") != SOURCE or item.get("status") != "triage":
+        if (item.get("source") != SOURCE
+                or item.get("status") not in AUTO_RESOLVABLE_STATUSES):
             continue
         dedup_key = item.get("dedupKey") or ""
         prefix = next(
@@ -149,7 +175,7 @@ def migrate_legacy_items(
                 break
             migrated += _dismiss_if_open(
                 project_root, item["id"], reason="schemaMigration",
-                label="legacy migration",
+                label="legacy migration", expected=_MIGRATION_STATUSES,
             )
             break  # one prefix per item
     return migrated
@@ -175,7 +201,7 @@ def resolve_pr_ci(
     - still in ``open_pr_numbers`` but not failing → ``prChecksResolved``
     - gone from the open set → ``pr_state_fetcher(n)``: merged → ``prMerged``;
       confirmed closed → ``prClosed``; UNKNOWN (fetch failed / ambiguous) →
-      KEEP OPEN and retry next cycle. Refusing to guess ``prClosed`` from an
+      KEEP AS-IS and retry next cycle. Refusing to guess ``prClosed`` from an
       unfetchable state prevents mis-resolving a still-open PR that an incomplete
       open-set fetch could have omitted (external review HIGH).
 
@@ -183,7 +209,8 @@ def resolve_pr_ci(
     """
     resolved = 0
     for item in read_all_items(project_root):
-        if item.get("source") != SOURCE or item.get("status") != "triage":
+        if (item.get("source") != SOURCE
+                or item.get("status") not in AUTO_RESOLVABLE_STATUSES):
             continue
         dedup_key = item.get("dedupKey") or ""
         if not dedup_key.startswith(PREFIX_PR_CI):

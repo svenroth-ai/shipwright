@@ -7,15 +7,19 @@ whose PID isn't live.
 
 from __future__ import annotations
 
+import ctypes
 import json
 import os
 from pathlib import Path
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
+import pytest
+from tools.verifiers import runtime_checks
 from tools.verifiers.common import Severity
 from tools.verifiers.runtime_checks import (
     _pid_is_alive,
     _replay_task_states,
+    _windows_pid_is_alive,
     check_no_zombie_running_tasks,
     run_all_checks,
 )
@@ -196,3 +200,75 @@ def test_pid_is_alive_zero_and_negative_false():
 def test_pid_is_alive_current_process_true():
     # Our own PID is always alive while the test runs.
     assert _pid_is_alive(os.getpid()) is True
+
+
+def test_pid_is_alive_windows_does_not_send_console_signal():
+    with (
+        patch.object(runtime_checks, "_WINDOWS", True),
+        patch.object(runtime_checks, "_windows_pid_is_alive", return_value=True) as probe,
+        patch.object(runtime_checks.os, "kill") as kill,
+    ):
+        assert _pid_is_alive(os.getpid()) is True
+    probe.assert_called_once_with(os.getpid())
+    kill.assert_not_called()
+
+
+def _probe_with_fake_kernel32(kernel32, *, last_error=0, pid=12345):
+    with (
+        patch.object(ctypes, "WinDLL", return_value=kernel32, create=True),
+        patch.object(ctypes, "set_last_error", create=True),
+        patch.object(
+            ctypes,
+            "get_last_error",
+            return_value=last_error,
+            create=True,
+        ),
+    ):
+        return _windows_pid_is_alive(pid)
+
+
+@pytest.mark.parametrize(
+    ("wait_result", "expected"),
+    [
+        (258, True),  # WAIT_TIMEOUT: process is still running
+        (0, False),  # WAIT_OBJECT_0: process has terminated
+        (0xFFFFFFFF, False),  # WAIT_FAILED: liveness is not proven
+    ],
+)
+def test_windows_pid_probe_uses_wait_state_and_closes_handle(wait_result, expected):
+    kernel32 = MagicMock()
+    kernel32.OpenProcess.return_value = 321
+    kernel32.WaitForSingleObject.return_value = wait_result
+
+    assert _probe_with_fake_kernel32(kernel32) is expected
+
+    kernel32.WaitForSingleObject.assert_called_once_with(321, 0)
+    kernel32.GetExitCodeProcess.assert_not_called()
+    kernel32.CloseHandle.assert_called_once_with(321)
+
+
+@pytest.mark.parametrize(
+    ("last_error", "expected"),
+    [
+        (5, True),  # ERROR_ACCESS_DENIED proves the process exists
+        (87, False),  # ERROR_INVALID_PARAMETER: no such process
+    ],
+)
+def test_windows_pid_probe_handles_open_process_failures(last_error, expected):
+    kernel32 = MagicMock()
+    kernel32.OpenProcess.return_value = 0
+
+    assert _probe_with_fake_kernel32(kernel32, last_error=last_error) is expected
+
+    kernel32.WaitForSingleObject.assert_not_called()
+    kernel32.CloseHandle.assert_not_called()
+
+
+def test_windows_pid_probe_rejects_values_that_do_not_fit_a_dword():
+    kernel32 = MagicMock()
+
+    assert _probe_with_fake_kernel32(kernel32, pid=(1 << 32) + os.getpid()) is False
+    with patch.object(runtime_checks, "_WINDOWS", True):
+        assert _pid_is_alive((1 << 32) + os.getpid()) is False
+
+    kernel32.OpenProcess.assert_not_called()
