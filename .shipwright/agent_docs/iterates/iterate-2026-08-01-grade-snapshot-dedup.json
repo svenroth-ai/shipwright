@@ -1,0 +1,102 @@
+{
+  "run_id": "iterate-2026-08-01-grade-snapshot-dedup",
+  "date": "2026-08-03T05:27:51.849158Z",
+  "event_at": "2026-08-01T08:26:45.209123+00:00",
+  "type": "change",
+  "complexity": "medium",
+  "prior_source": "history",
+  "branch": "iterate/grade-snapshot-dedup",
+  "spec": ".shipwright/planning/iterate/iterate-2026-08-01-grade-snapshot-dedup.md",
+  "tests_passed": true,
+  "adr": "iterate-2026-08-01-grade-snapshot-dedup",
+  "test_completeness": {
+    "status": "complete",
+    "behaviors": [
+      {
+        "behavior": "AC1 unchanged grade and score in the same resolved lineage are suppressed with the exact skip payload",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_grade_snapshot_dedup.py::TestTheDedupItself::test_an_unchanged_grade_is_suppressed and plugins/shipwright-compliance/tests/test_grade_snapshot_regen.py::TestGradeSnapshotEmission::test_a_regen_that_changes_nothing_appends_nothing PASSED"
+      },
+      {
+        "behavior": "AC1b grade semantics require both the opt-in flag and grade_snapshot event type",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_grade_snapshot_dedup.py::TestDedupIsOptIn::test_the_flag_does_not_apply_grade_semantics_to_other_types PASSED"
+      },
+      {
+        "behavior": "AC2 and AC3e a changed or effectively amended grade/score appends and a real transition is never swallowed",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_grade_snapshot_dedup.py::test_a_changed_grade_or_score_appends, test_a_real_transition_is_never_swallowed, and test_an_amended_predecessor_preserves_the_effective_transition PASSED; malformed amendment fail-open covered in test_grade_snapshot_dedup_never_raises.py"
+      },
+      {
+        "behavior": "AC3 identical values from different main and branch lineages append independently",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_grade_snapshot_dedup.py::test_the_same_value_from_a_different_lineage_class_appends PASSED"
+      },
+      {
+        "behavior": "AC3b unresolved, invalid, or non-string lineage values never establish comparability",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_grade_snapshot_dedup.py::test_an_unresolvable_lineage_is_never_comparable parametrized cases PASSED"
+      },
+      {
+        "behavior": "AC3c reverse scanning finds the newest snapshot of the same lineage despite intervening event types or the other lineage",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_grade_snapshot_dedup.py::test_alternating_lineage_classes_still_dedup and test_intervening_events_of_other_types_do_not_defeat_dedup PASSED"
+      },
+      {
+        "behavior": "AC3d malformed records, corrupt lines under default and error warning policies, numeric subclasses, booleans, non-finite scores, and non-object entries never raise or suppress",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_grade_snapshot_dedup_never_raises.py::TestTheComparisonNeverRaises full parametrized suite PASSED"
+      },
+      {
+        "behavior": "AC4 duplicate scan and append share one checkout-local lock while stale-tree residual behavior remains explicit",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_grade_snapshot_dedup.py::test_the_dedup_scan_and_the_append_share_one_lock and test_a_stale_tree_still_appends_a_value_recorded_elsewhere PASSED"
+      },
+      {
+        "behavior": "AC5 the manual record_event grade_snapshot route remains unconditional and historical reader monkeypatch seams remain effective",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_grade_snapshot_dedup.py::test_the_replay_route_still_appends_an_identical_snapshot and test_record_event_reader_monkeypatch_seam_is_preserved PASSED"
+      },
+      {
+        "behavior": "AC6 automatic compliance regeneration emits one snapshot for a transition and none for an unchanged second regeneration",
+        "disposition": "tested",
+        "category": "integration",
+        "evidence": "plugins/shipwright-compliance/tests/test_grade_snapshot_regen.py::TestComplianceRegenComposition::test_a_second_regen_over_unchanged_data_adds_nothing PASSED"
+      },
+      {
+        "behavior": "AC7 event reading remains checkout-local and attribution survives the durable write-read boundary",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_grade_snapshot_event.py::test_attribution_survives_the_round_trip_with_declared_types and shared/tests/test_grade_snapshot_dedup.py::test_last_grade_snapshot_reads_the_events_it_is_given PASSED"
+      }
+    ],
+    "counts": {
+      "testable": 11,
+      "tested": 11,
+      "untestable": 0,
+      "untested_testable": 0
+    },
+    "enumeration_basis": {
+      "acs": 11,
+      "covered_acs": 11
+    }
+  },
+  "surface_verification": {
+    "surface": "cli",
+    "runner": "uv run pytest shared/tests/test_grade_snapshot_dedup.py shared/tests/test_grade_snapshot_dedup_never_raises.py shared/tests/test_grade_snapshot_event.py shared/tests/test_finalize_iterate_idempotency.py -q",
+    "exit_code": 0,
+    "tests_run": 85,
+    "evidence_path": ".shipwright/runs/iterate-2026-08-01-grade-snapshot-dedup/surface_verification.log",
+    "timestamp": "2026-08-03T06:08:04.546Z",
+    "attempts": 1
+  },
+  "declared_removals": [
+    {
+      "path": "docs/hooks-and-pipeline.md",
+      "reason": "Superseded origin/main's unconditional grade-snapshot cadence and pre-dedup consumer wording with the merged contract: automatic snapshots append only on an effective grade change, while dirty attribution remains preserved."
+    },
+    {
+      "path": "shared/tests/test_compliance_refresh_real_producer.py",
+      "reason": "Superseded origin/main's pre-dedup fixpoint assertion requiring one automatic grade_snapshot per regeneration pass: the first pass now appends once and later unchanged passes preserve that exact event."
+    }
+  ]
+}

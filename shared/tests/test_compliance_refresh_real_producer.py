@@ -270,15 +270,30 @@ def test_the_inputs_left_alone_are_exactly_the_two_logs_that_moved(real_run):
 
 def test_the_producers_own_appends_do_not_break_the_fixpoint(real_run):
     """``APPEND_ONLY_INPUTS`` argues that the fixpoint survives its own carve-out:
-    ``grade_snapshot`` events are filtered out of the change history, and the
-    triage appends carry a ``dedupKey`` so they land once and are absorbed from
-    pass 2 on. Both halves are driven here rather than reasoned about."""
+    unchanged ``grade_snapshot`` events and triage appends carrying a
+    ``dedupKey`` both land once and are absorbed from pass 2 on. Both halves are
+    driven here rather than reasoned about."""
     added = {rel: added_records(real_run.inputs_before[rel], real_run.root / rel)
              for rel in (EVENTS_LOG, TRIAGE_LOG)}
     grades = [e for e in added[EVENTS_LOG] if e.get("type") == "grade_snapshot"]
-    assert len(grades) == real_run.passes, (
-        f"expected one grade_snapshot per pass, got {len(grades)} over "
-        f"{real_run.passes} passes"
+
+    def grade_snapshots(raw: bytes | None) -> list[dict]:
+        assert raw is not None
+        events = [json.loads(line) for line in raw.decode("utf-8").splitlines()]
+        return [event for event in events
+                if isinstance(event, dict)
+                and event.get("type") == "grade_snapshot"]
+
+    assert grade_snapshots(real_run.inputs_before[EVENTS_LOG]) == []
+    per_pass_grades = [grade_snapshots(state[EVENTS_LOG])
+                       for state in real_run.per_pass]
+    assert per_pass_grades == [grades] * real_run.passes, (
+        "the first pass must append one grade_snapshot and unchanged later "
+        f"passes must preserve that exact event; observed {per_pass_grades}"
+    )
+    assert len(grades) == 1, (
+        f"the unchanged grade_snapshot landed {len(grades)} times over "
+        f"{real_run.passes} passes; it must be absorbed from pass 2 on"
     )
     failures = [t for t in added[TRIAGE_LOG]
                 if t.get("dedupKey") == FAILING_LAYER_DEDUP_KEY]
