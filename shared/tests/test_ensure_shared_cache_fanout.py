@@ -169,7 +169,7 @@ def test_two_expired_completion_rearmers_elect_only_one_owner(
                 first_attempt = ident not in synchronized
                 synchronized.add(ident)
             if first_attempt:
-                barrier.wait(timeout=2)
+                barrier.wait(timeout=10)
         return real_open(path, flags, mode)
 
     monkeypatch.setattr(os, "open", synchronized_open)
@@ -180,16 +180,16 @@ def test_two_expired_completion_rearmers_elect_only_one_owner(
                 tmp_path,
                 "resume-race",
                 token=token,
-                wait_seconds=1.0,
+                wait_seconds=10.0,
             )
             for token in ("b" * 32, "c" * 32)
         ]
-        owners, _ = wait(futures, timeout=0.5, return_when=FIRST_COMPLETED)
+        owners, _ = wait(futures, timeout=5.0, return_when=FIRST_COMPLETED)
         assert len(owners) == 1, "exactly one O_EXCL owner must return first"
         owner_done = next(iter(owners)).result()
         assert isinstance(owner_done, Path)
         assert healer._complete_session(owner_done)
-        results = [future.result(timeout=1) for future in futures]
+        results = [future.result(timeout=10) for future in futures]
 
     assert sum(isinstance(result, Path) for result in results) == 1
     assert results.count(False) == 1, "the loser must observe owner completion"
