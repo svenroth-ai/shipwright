@@ -60,6 +60,53 @@ def test_windows_reader_unlock_uses_its_byte_offset(monkeypatch):
     ]
 
 
+def test_claim_reader_rejects_missing_oversized_and_non_ascii_tokens(tmp_path: Path):
+    missing = tmp_path / "missing.claim"
+    oversized = tmp_path / "oversized.claim"
+    non_ascii = tmp_path / "non-ascii.claim"
+    oversized.write_bytes(b"a" * 65)
+    non_ascii.write_bytes(b"\xff")
+
+    assert lock_helper.read_claim_token(missing) is False
+    assert lock_helper.read_claim_token(oversized) is None
+    assert lock_helper.read_claim_token(non_ascii) is None
+
+
+def test_opened_regular_rejects_metadata_errors(
+    tmp_path: Path, monkeypatch,
+):
+    path = tmp_path / "claim"
+    path.write_bytes(b"token")
+    descriptor = os.open(path, os.O_RDONLY)
+    try:
+        monkeypatch.setattr(
+            lock_helper.os, "fstat",
+            lambda _descriptor: (_ for _ in ()).throw(OSError("denied")),
+        )
+        assert lock_helper._opened_regular_at_path(path, descriptor) is False
+    finally:
+        os.close(descriptor)
+
+
+def test_completion_observer_reports_duplicate_and_open_failure(
+    tmp_path: Path, monkeypatch,
+):
+    done = tmp_path / "generation.done"
+    assert lock_helper.observe_completion(done, "participant") is True
+    assert lock_helper.observe_completion(done, "participant") is False
+
+    monkeypatch.setattr(
+        lock_helper.os, "open",
+        lambda *_args: (_ for _ in ()).throw(PermissionError("denied")),
+    )
+    assert lock_helper.observe_completion(done, "other-participant") is None
+
+
+@pytest.mark.parametrize("session_id", [None, "", "unknown"])
+def test_repair_state_rejects_invalid_identity(tmp_path: Path, session_id: object):
+    assert lock_helper.session_repair_state(tmp_path, session_id) is None
+
+
 def test_one_owner_and_waiter_returns_only_after_completion(tmp_path: Path):
     owner_done = _claim(tmp_path, "session-1", token="1" * 32)
     assert isinstance(owner_done, Path)
