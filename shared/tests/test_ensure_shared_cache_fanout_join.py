@@ -81,7 +81,7 @@ def test_detected_fanout_waits_for_all_installed_hook_participants(
         cache, participants[0],
     ) == participants
     joined = threading.Event()
-    errors: list[BaseException] = []
+    errors: list[Exception] = []
 
     def join_fanout() -> None:
         try:
@@ -90,7 +90,7 @@ def test_detected_fanout_waits_for_all_installed_hook_participants(
                 if lock_helper.observe_completion(done, participant) is not True:
                     raise AssertionError(f"observation failed for {participant}")
             joined.set()
-        except BaseException as exc:
+        except Exception as exc:
             errors.append(exc)
 
     joiner = threading.Thread(target=join_fanout)
