@@ -30,31 +30,40 @@ non-ASCII, which on the retry path would abort the very gate this keeps green (#
 from __future__ import annotations
 
 import argparse
-import concurrent.futures as cf
 import os
 import subprocess  # nosec B404 - fixed argv, shell=False; no user-supplied strings
 import sys
 import tempfile
-import threading
 import time
+from contextlib import contextmanager
 from dataclasses import dataclass, field
 from pathlib import Path
+from typing import TextIO
+from uuid import uuid4
 
 # Resolve `shared/` so this file imports the sibling under the SAME dotted name the
 # tests use (scripts.tools.*) -> one module object, not two. Binding the generic
 # top-level `tools`/`lib` package here would re-create the ADR-045 collision class.
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
-from scripts.tools.suite_coverage import (  # noqa: E402
-    GATE_FAILED, GATE_PASSED, GateResult, build_worktree_diff, compare_branch,
-    coverage_run_lock, final_exit_code, prepare_coverage, run_gate,
+from scripts.tools.suite_budget import (  # noqa: E402
+    Budget as _Budget, heartbeat_while as _heartbeat_while,
+    run_parallel as _run_parallel,
 )
+from scripts.tools.suite_coverage import (  # noqa: E402
+    GATE_FAILED, GATE_PASSED, GateResult, coverage_run_lock, final_exit_code,
+    prepare_coverage, run_gate,
+)
+from scripts.tools.suite_gate_runtime import gate_green_suite  # noqa: E402
 from scripts.tools.suite_worktree_diff import source_fingerprint  # noqa: E402
 from scripts.tools.suite_race_triage import (  # noqa: E402
     emit_race_followups, resolve_commit,
 )
 from scripts.tools.suite_report import (  # noqa: E402
     render_retry_block, render_run_report, reproduce_command, suite_command,
+)
+from scripts.tools.suite_host_resources import (  # noqa: E402
+    HostLeaseError, f0_cpu_lease, normalize_cpu_weight, uv_warmup_lease,
 )
 from scripts.tools.suite_units import (  # noqa: E402  (re-export: one import site)
     INFRA,
@@ -136,47 +145,15 @@ def classify(rc: int, pytest_ran: bool = False) -> str:
 
 
 def cpu_budget(config: SuiteConfig | None) -> int:
-    if config is not None and config.max_workers:
-        return config.max_workers
-    return max(1, (os.cpu_count() or 2) - 2)
-
-
-class _Budget:
-    """Outer pool and inner xdist workers draw from ONE budget (no oversubscription).
-
-    Liveness comes from the clamp in ``acquire``: no unit can ever ask for more than the
-    whole budget, so the wait predicate is always eventually satisfiable.
-    """
-
-    def __init__(self, total: int) -> None:
-        self.total = max(1, total)
-        self._used = 0
-        self._cond = threading.Condition()
-
-    def acquire(self, weight: int) -> int:
-        weight = max(1, min(weight, self.total))
-        with self._cond:
-            while self._used + weight > self.total:
-                self._cond.wait()
-            self._used += weight
-        return weight
-
-    def release(self, weight: int) -> None:
-        with self._cond:
-            self._used -= weight
-            self._cond.notify_all()
+    return normalize_cpu_weight(config.max_workers if config is not None else None)
 
 
 def warm_up(project_root: Path) -> None:
     """Create/sync the environment ONCE, serially, before 18 processes race for it.
 
-    18 concurrent cold `uv run` calls contend on the shared uv cache (a documented
-    hardlink-race source on Windows). One warm serial call turns that into a no-op, for
-    the interpreter UV_RUN pins. Best-effort: a failure here is a normal unit fault.
-
-    `pytest-cov` is warmed too: coverage instrumentation adds it to nearly every unit's
-    env key, so leaving it out would re-create the very contention this exists to remove
-    on the first run after any pytest-cov release.
+    One serial call avoids Windows hardlink races from concurrent cold `uv run` calls.
+    Best-effort: failure remains a normal unit fault. `pytest-cov` is included because
+    coverage instrumentation adds it to nearly every unit environment key.
     """
     try:
         subprocess.run(  # nosec B603 - fixed argv, shell=False
@@ -241,18 +218,35 @@ def _clear_failed_attempt_coverage(unit: Unit) -> None:
                 f"could not discard failed-attempt coverage {path}: {exc}") from exc
 
 
-def run_suite(project_root: Path, config: SuiteConfig | None = None) -> SuiteResult:
+def resolve_suite_config(project_root: Path) -> SuiteConfig:
+    units = discover_units(project_root)
+    if not units:
+        raise SuiteConfigError(
+            f"no test units discovered under {project_root} - check --project-root.")
+    return load_suite_config(project_root, [u.id for u in units])
+
+
+def run_suite(project_root: Path, config: SuiteConfig | None = None, *,
+              budget_total: int | None = None, preflight: bool = True,
+              heartbeat_seconds: float = 30.0, run_id: str | None = None,
+              stream: TextIO | None = None) -> SuiteResult:
     units = discover_units(project_root)
     if not units:
         raise SuiteConfigError(  # a suite that runs nothing must never report GREEN
             f"no test units discovered under {project_root} - check --project-root.")
     if config is None:
         config = load_suite_config(project_root, [u.id for u in units])
-    ensure_xdist_available(config, project_root)  # every entry path, not just the CLI one
-    warm_up(project_root)
+    if preflight:
+        ensure_xdist_available(config, project_root)
+        warm_up(project_root)
     units = instrument_for_coverage(units, project_root, prepare_coverage(project_root))
-    budget = _Budget(cpu_budget(config))
+    requested_budget = budget_total if budget_total is not None else config.max_workers
+    budget = _Budget(normalize_cpu_weight(requested_budget))
     started = time.time()
+
+    def _xdist_workers(unit_id: str) -> int | None:
+        requested = config.xdist.get(unit_id)
+        return min(requested, budget.total) if requested else None
 
     # ignore_cleanup_errors: a leaked temp file (a still-open handle on Windows) must
     # never turn a GREEN suite into a traceback - that would be a false STOP. Short path
@@ -262,7 +256,7 @@ def run_suite(project_root: Path, config: SuiteConfig | None = None) -> SuiteRes
 
         def _one(indexed: tuple[int, Unit]) -> UnitResult:
             idx, unit = indexed
-            workers = config.xdist.get(unit.id)
+            workers = _xdist_workers(unit.id)
             weight = budget.acquire(workers or 1)
             try:  # a unit may never fan out wider than the budget it holds
                 rc, out, secs, ran = _exec(unit, project_root, weight if workers else None,
@@ -271,8 +265,10 @@ def run_suite(project_root: Path, config: SuiteConfig | None = None) -> SuiteRes
                 budget.release(weight)
             return UnitResult(unit.id, classify(rc, ran), rc, secs, out)
 
-        with cf.ThreadPoolExecutor(max_workers=max(1, len(units))) as pool:
-            results = list(pool.map(_one, enumerate(units)))
+        results = _run_parallel(
+            units, _one, heartbeat_seconds=heartbeat_seconds,
+            run_id=run_id, stream=stream,
+        )
 
         # Retries - AFTER the pool drains, so "serially" is literally true, and in a clean
         # temp dir. A TEST failure is re-run WITHOUT xdist (the authoritative old-F0 shape).
@@ -280,18 +276,26 @@ def run_suite(project_root: Path, config: SuiteConfig | None = None) -> SuiteRes
         # usage error, unprovisionable xdist) reproduces and still fails - only a transient
         # concurrency-induced fault recovers.
         by_id = {u.id: u for u in units}
+        completed_units = sum(res.outcome == PASS for res in results)
         for idx, res in enumerate(results):
             if res.outcome == PASS:
                 continue
             unit = by_id[res.unit_id]
             keep_xdist = res.outcome == INFRA
-            workers = config.xdist.get(res.unit_id) if keep_xdist else None
+            workers = _xdist_workers(res.unit_id) if keep_xdist else None
             _clear_failed_attempt_coverage(unit)
             # Capture the REAL retry argv: a follow-up card that guesses the command
             # is an attractive but unreliable "reproduce me".
             res.retry_cmd = reproduce_command(unit.cwd, build_command(unit, workers))
-            rc, out, _, ran = _exec(unit, project_root, workers,
-                                    tmp_root / "s" / f"u{idx}", config.timeout_seconds)
+            with _heartbeat_while(
+                    heartbeat_seconds=heartbeat_seconds, run_id=run_id,
+                    completed=completed_units, total=len(units),
+                    initial_completed=len(results),
+                    phase="serial-retry",
+                    unit_id=res.unit_id, stream=stream):
+                rc, out, _, ran = _exec(unit, project_root, workers,
+                                        tmp_root / "s" / f"u{idx}",
+                                        config.timeout_seconds)
             res.serial_rc = rc
             if classify(rc, ran) == PASS:
                 res.race = True  # keep the FIRST output: it is the evidence
@@ -299,6 +303,7 @@ def run_suite(project_root: Path, config: SuiteConfig | None = None) -> SuiteRes
                 res.retry_kind = RETRY_INFRA if keep_xdist else RETRY_SERIAL
             else:
                 res.outcome, res.output = classify(rc, ran), out
+            completed_units += 1
 
     failed = [r for r in results if r.outcome != PASS]
     return SuiteResult(results, 1 if failed else 0, time.time() - started,
@@ -316,43 +321,27 @@ def unrecorded_races(result: SuiteResult) -> list[UnitResult]:
     return [r for r in result.results if r.race and r.retry_kind == RETRY_SERIAL]
 
 
-def _source_snapshot_error(root: Path, expected: str | None) -> str:
-    current, error = source_fingerprint(root)
-    if error:
-        return error
-    if current != expected:
-        return ("Python sources or test/coverage configuration changed while "
-                "coverage was being measured; re-run F0 on the final working tree")
-    return ""
-
-
 def _gate_green_suite(root: Path, result: SuiteResult,
                       source_before: str | None) -> GateResult:
-    error = _source_snapshot_error(root, source_before)
-    if error:
-        return GateResult(GATE_FAILED, [f"diff-coverage: FAILED - {error}."])
-    branch = compare_branch(root)
-    if branch is None:
-        return run_gate(root, expected=result.cov_files, branch=None,
-                        diff_file=None, suite_green=True)
-    error = _source_snapshot_error(root, source_before)
-    if error:
-        return GateResult(GATE_FAILED, [f"diff-coverage: FAILED - {error}."])
-    diff_file, diff_error = build_worktree_diff(root, branch)
-    error = diff_error or _source_snapshot_error(root, source_before)
-    if error:
-        return GateResult(GATE_FAILED, [f"diff-coverage: FAILED - {error}."])
-    gate = run_gate(root, expected=result.cov_files, branch=branch,
-                    diff_file=diff_file, suite_green=True)
-    error = _source_snapshot_error(root, source_before)
-    return (GateResult(GATE_FAILED, [f"diff-coverage: FAILED - {error}."])
-            if error else gate)
+    return gate_green_suite(root, result, source_before, fingerprint=source_fingerprint)
 
 
-def _run_locked(root: Path, run_id: str | None) -> int:
-    """The full reset -> suite -> combine -> gate critical section."""
+@contextmanager
+def _run_host_leased_suite(root: Path, run_id: str | None):
+    """Serialize uv setup, then hold the CPU grant through the F0 verdict."""
     source_before, fingerprint_error = source_fingerprint(root)
-    result = run_suite(root)
+    config = resolve_suite_config(root)
+    with uv_warmup_lease(root, run_id=run_id):
+        ensure_xdist_available(config, root)
+        warm_up(root)
+    with f0_cpu_lease(root, config, run_id=run_id) as grant:
+        result = run_suite(root, config, budget_total=grant.weight,
+                           preflight=False, run_id=run_id)
+        yield result, source_before, fingerprint_error
+
+
+def _finish_locked(root: Path, run_id: str | None, result: SuiteResult,
+                   source_before: str | None, fingerprint_error: str | None) -> int:
     # Record BEFORE reporting and before ANY return: a red sibling must never skip it.
     races = unrecorded_races(result)
     report = emit_race_followups(root, races, result.xdist_ids, run_id=run_id,
@@ -383,16 +372,27 @@ def _run_locked(root: Path, run_id: str | None) -> int:
     return final_exit_code(result.exit_code, report.failed, gate)
 
 
+def _run_locked(root: Path, run_id: str | None) -> int:
+    """The full reset -> suite -> combine -> gate critical section."""
+    with _run_host_leased_suite(root, run_id) as leased:
+        result, source_before, fingerprint_error = leased
+        return _finish_locked(root, run_id, result, source_before, fingerprint_error)
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description="Run the F0 test suite (parallel units).")
     ap.add_argument("--project-root", default=".", type=Path)
-    ap.add_argument("--run-id", default=None, help="stamped onto any follow-up filed")
+    ap.add_argument("--run-id", default=None,
+                    help="stable diagnostic id; generated when omitted")
     args = ap.parse_args()
     root = args.project_root.resolve()
+    run_id = args.run_id or f"f0-{uuid4().hex}"
+    if args.run_id is None:
+        print(f"F0 invocation: run_id={run_id}")
     try:
         with coverage_run_lock(root):
-            return _run_locked(root, args.run_id)
-    except SuiteConfigError as exc:
+            return _run_locked(root, run_id)
+    except (SuiteConfigError, HostLeaseError) as exc:
         print(f"ERROR: {exc}", file=sys.stderr)
         return 2
 
