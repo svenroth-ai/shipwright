@@ -26,6 +26,8 @@ import time
 from pathlib import Path
 from typing import Any
 
+from ._paths import _ensure_scripts_on_path
+
 
 def _resolve_via_pkg(name: str) -> str:
     """Call the package-bound `resolve_executable`.
@@ -44,9 +46,7 @@ def _resolve_via_pkg(name: str) -> str:
         # we are already in a test that explicitly imported dev_server,
         # so the cache pollution would have already happened upstream
         # if it were going to. This is the safe fallback path.
-        scripts_dir = Path(__file__).resolve().parent.parent
-        if str(scripts_dir) not in sys.path:
-            sys.path.insert(0, str(scripts_dir))
+        _ensure_scripts_on_path()
         from lib.cmd_resolver import resolve_executable as _real  # noqa: E402
         return _real(name)
     return fn(name)

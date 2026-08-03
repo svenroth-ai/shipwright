@@ -1,0 +1,11 @@
+{
+  "stage": "Stage-3 doubt-reviewer re-review",
+  "verdict": "PASS",
+  "doubts": [],
+  "resolved_doubts": [
+    "Run evidence and changelog now describe the operator-authorized Path-C PID addition.",
+    "Windows PIDs outside 1..0xFFFFFFFF are rejected before OpenProcess and covered by regression.",
+    "Numeric PID reuse is a pre-existing best-effort limitation requiring a producer-backed identity contract; tracked separately as trg-06641ec3."
+  ],
+  "disposition": "All Stage-3 doubts were fixed or rebutted with a concrete tracked follow-up."
+}

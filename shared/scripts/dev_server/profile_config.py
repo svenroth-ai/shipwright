@@ -22,6 +22,8 @@ from pathlib import Path
 from typing import Any
 from urllib.parse import urlparse
 
+from ._paths import _PROFILES_DIR
+
 # Re-imported in __init__.py for the package-level surface.
 from .validation import _validate_services
 
@@ -88,14 +90,16 @@ def _expand_env(value: Any) -> Any:
 # ---------------------------------------------------------------------------
 
 def _profiles_dir() -> Path:
-    """Resolve the shared/profiles directory relative to this script.
+    """Resolve the shared/profiles directory.
 
-    Walks up from this submodule: dev_server/profile_config.py →
-    dev_server/ → scripts/ → shared/ → shared/profiles. The original
-    `dev_server.py` lived at scripts/dev_server.py (one level shallower),
-    so we walk one extra step here to land on the same directory.
+    The location is `_paths._PROFILES_DIR`, derived once for the whole
+    package from `_SCRIPTS_DIR` rather than by a second walk up from this
+    submodule's own `__file__` — one dirname count to be right instead of two
+    that can drift. The `Path` wrap happens here, at the call site, because
+    callers do `profiles_dir / f"{name}.json"` and tests monkeypatch this
+    function to return a `tmp_path`; `_paths` itself stays pathlib-free.
     """
-    return Path(__file__).resolve().parent.parent.parent / "profiles"
+    return Path(_PROFILES_DIR)
 
 
 def _load_profile_data(profile_name: str | None) -> dict | None:
