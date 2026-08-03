@@ -5,27 +5,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "uv run \"${CLAUDE_PLUGIN_ROOT}/scripts/hooks/ensure_shared_cache.py\""
-          },
-          {
-            "type": "command",
-            "command": "uv run \"${CLAUDE_PLUGIN_ROOT}/../../shared/scripts/hooks/capture_session_id.py\""
-          },
-          {
-            "type": "command",
-            "command": "uv run \"${CLAUDE_PLUGIN_ROOT}/../../shared/scripts/hooks/check_drift.py\""
-          },
-          {
-            "type": "command",
-            "command": "uv run \"${CLAUDE_PLUGIN_ROOT}/../../shared/scripts/hooks/check_artifact_drift.py\""
-          },
-          {
-            "type": "command",
-            "command": "uv run \"${CLAUDE_PLUGIN_ROOT}/../../shared/scripts/hooks/import_github_findings.py\""
-          },
-          {
-            "type": "command",
-            "command": "uv run \"${CLAUDE_PLUGIN_ROOT}/../../shared/scripts/hooks/session_start_using_shipwright.py\""
+            "command": "uv run \"${CLAUDE_PLUGIN_ROOT}/scripts/hooks/run_if_cache_ready.py\" \"${CLAUDE_PLUGIN_ROOT}/../../shared/scripts/hooks/capture_session_id.py\" \"${CLAUDE_PLUGIN_ROOT}/../../shared/scripts/hooks/check_drift.py\" \"${CLAUDE_PLUGIN_ROOT}/../../shared/scripts/hooks/check_artifact_drift.py\" \"${CLAUDE_PLUGIN_ROOT}/../../shared/scripts/hooks/import_github_findings.py\" \"${CLAUDE_PLUGIN_ROOT}/../../shared/scripts/hooks/session_start_using_shipwright.py\""
           }
         ]
       }

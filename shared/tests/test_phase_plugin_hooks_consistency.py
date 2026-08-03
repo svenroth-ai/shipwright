@@ -63,11 +63,15 @@ def _hook_commands(hook_block: list[dict]) -> list[str]:
                 tokens = shlex.split(cmd, posix=True)
             except ValueError:
                 tokens = cmd.split()
+            scripts: list[str] = []
             for token in tokens:
                 last = token.replace("\\", "/").rsplit("/", 1)[-1]
                 if last.endswith(".py") or last.endswith(".sh"):
-                    out.append(last)
-                    break
+                    scripts.append(last)
+            if scripts:
+                # A consolidated ready guard precedes all logical target scripts.
+                out.extend(scripts[1:] if scripts[0] == "run_if_cache_ready.py"
+                           else scripts)
     return out
 
 
@@ -92,7 +96,6 @@ def _hook_script_paths(hook_block: list[dict], plugin: str) -> list[Path]:
                     continue
                 norm = norm.replace("${CLAUDE_PLUGIN_ROOT}", str(plugin_root).replace("\\", "/"))
                 out.append(Path(norm).resolve())
-                break
     return out
 
 
@@ -117,14 +120,10 @@ def _load_hooks(plugin: str) -> dict:
 
 @pytest.mark.parametrize("plugin", PHASE_PLUGINS)
 def test_session_start_chain(plugin):
-    """ensure_shared_cache runs FIRST (it heals ../../shared), capture_session_id
-    before the hooks that need SHIPWRIGHT_SESSION_ID."""
+    """The consolidated wrapper preserves capture-before-consumer order."""
     cmds = _hook_commands(_load_hooks(plugin).get("SessionStart") or [])
     assert cmds, f"{plugin}: no SessionStart hooks"
-    assert cmds[0] == "ensure_shared_cache.py", (
-        f"{plugin}: ensure_shared_cache.py must run FIRST so every later "
-        f"../../shared/* hook resolves; got {cmds}"
-    )
+    assert cmds[0] == "capture_session_id.py", f"{plugin}: wrong order: {cmds}"
     assert "capture_session_id.py" in cmds, f"{plugin}: missing capture_session_id.py"
     assert "check_artifact_drift.py" in cmds, f"{plugin}: missing check_artifact_drift.py"
     assert cmds.index("check_artifact_drift.py") > cmds.index("capture_session_id.py"), (

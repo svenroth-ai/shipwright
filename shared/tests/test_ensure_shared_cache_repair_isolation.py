@@ -169,10 +169,14 @@ def test_heal_plugins_skips_a_mirror_that_is_a_symlink(tmp_path: Path, monkeypat
     monkeypatch.setattr(Path, "is_symlink",
                         lambda self: self == dst or real_is_symlink(self))
 
-    assert hook._heal_plugins(cache_sw, cache_sw / "plugins") is False, (
+    readiness = []
+    assert hook._heal_plugins(
+        cache_sw, cache_sw / "plugins", readiness,
+    ) is False, (
         "a mirror reported as a symlink was still copied into — the syncer owns "
         "it, and a stale link points at an OLDER installed version directory"
     )
+    assert readiness == [False], "an unverified symlink mirror must not publish ready"
     assert not (dst / "scripts").exists(), "the healer wrote through the link"
 
 
