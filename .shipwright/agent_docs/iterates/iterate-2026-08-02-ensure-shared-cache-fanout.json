@@ -243,6 +243,10 @@
     {
       "path": "plugins/shipwright-run/scripts/hooks/ensure_shared_cache.py",
       "reason": "The repair intentionally replaces the zero-skew freshness boundary with a shared one-second filesystem timestamp-rounding tolerance while keeping larger future completions expired."
+    },
+    {
+      "path": ".shipwright/agent_docs/iterates/iterate-2026-08-02-ensure-shared-cache-fanout.json",
+      "reason": "The repair intentionally replaces this run's pre-repair 9-behavior and 21-test evidence with the evidence-first 10-behavior ledger and canonical post-fix 465-test surface result."
     }
   ]
 }
