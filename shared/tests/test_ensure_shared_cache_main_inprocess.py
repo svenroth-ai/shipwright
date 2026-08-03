@@ -21,7 +21,10 @@ from __future__ import annotations
 
 import io
 import sys
+from collections import Counter
 from pathlib import Path
+
+import pytest
 
 _HERE = Path(__file__).resolve().parent
 if str(_HERE) not in sys.path:
@@ -54,12 +57,12 @@ def _place(cache_sw: Path) -> Path:
     return here
 
 
-def _drive(monkeypatch, cache_sw: Path, capsys):
+def _drive(monkeypatch, cache_sw: Path, capsys, payload: str = "{}"):
     """Run the real ``main()`` as if invoked from a hook inside ``cache_sw``."""
     hook = hook_module()
     here = _place(cache_sw)
     monkeypatch.setattr(hook, "__file__", str(here))
-    monkeypatch.setattr(sys, "stdin", io.StringIO("{}"))
+    monkeypatch.setattr(sys, "stdin", io.StringIO(payload))
     rc = hook.main()
     return rc, capsys.readouterr().err
 
@@ -109,6 +112,32 @@ def test_main_is_a_silent_noop_on_a_whole_cache(tmp_path, monkeypatch, capsys):
     assert "update-marketplace" not in err
 
 
+def test_healthy_coordinated_main_walks_each_tree_once(
+    tmp_path, monkeypatch, capsys,
+):
+    hook = hook_module()
+    cache_sw, mp_shared = cache_and_marketplace(tmp_path)
+    make_shared(mp_shared)
+    make_shared(cache_sw / "shared")
+    install_run(cache_sw)
+    _place(cache_sw)
+    mirror_all(cache_sw)
+    seen: list[Path] = []
+    real_delivered = hook._delivered
+
+    def measured(root: Path):
+        seen.append(root)
+        return real_delivered(root)
+
+    monkeypatch.setattr(hook, "_delivered", measured)
+    rc, err = _drive(
+        monkeypatch, cache_sw, capsys, '{"session_id":"healthy-scan"}',
+    )
+
+    assert rc == 0 and "self-healed" not in err
+    assert seen and max(Counter(seen).values()) == 1
+
+
 def test_main_advises_when_shared_cannot_be_restored(tmp_path, monkeypatch, capsys):
     """No clone anywhere: plugins/ still heals, shared/ gets the actionable note."""
     cache_sw, _mp = cache_and_marketplace(tmp_path)   # marketplaces/ never created
@@ -122,17 +151,40 @@ def test_main_advises_when_shared_cannot_be_restored(tmp_path, monkeypatch, caps
     assert "update-marketplace.sh" in err
 
 
+def test_main_withholds_completion_when_shared_has_no_authoritative_source(
+    tmp_path, monkeypatch, capsys,
+):
+    cache_sw, _mp = cache_and_marketplace(tmp_path)
+    make_shared(cache_sw / "shared")
+    install_run(cache_sw)
+    _place(cache_sw)
+    mirror_all(cache_sw)
+
+    rc, err = _drive(
+        monkeypatch, cache_sw, capsys, '{"session_id":"unverified-shared"}',
+    )
+
+    claims = cache_sw / ".sessionstart-claims"
+    assert rc == 0
+    assert not list(claims.glob("*.done"))
+    assert "completion not published" in err
+
+
 def test_main_restores_shared_from_a_foreign_clone_by_scanning(tmp_path, monkeypatch, capsys):
-    """The broad fallback: no same-name clone, so the scan finds another one."""
+    """The broad fallback repairs from another clone but cannot publish readiness."""
     cache_sw, _mp = cache_and_marketplace(tmp_path)
     foreign = tmp_path / ".claude" / "plugins" / "marketplaces" / "someone-else" / "shared"
     make_shared(foreign)
     install_run(cache_sw)
 
-    rc, err = _drive(monkeypatch, cache_sw, capsys)
+    rc, err = _drive(
+        monkeypatch, cache_sw, capsys, '{"session_id":"foreign-restore"}',
+    )
 
     assert rc == 0
     assert (cache_sw / "shared" / SHARED_SENTINEL).is_file()
+    assert not list((cache_sw / ".sessionstart-claims").glob("*.done"))
+    assert "completion not published" in err
 
 
 def test_main_is_fail_open_when_everything_below_it_raises(tmp_path, monkeypatch, capsys):
@@ -151,6 +203,78 @@ def test_main_is_fail_open_when_everything_below_it_raises(tmp_path, monkeypatch
 
     assert rc == 0, "fail-open: the hook must never block a session"
     assert "skipped" in err and "simulated non-OSError fault" in err
+
+
+def test_main_never_publishes_completion_after_copy_failure(
+    tmp_path, monkeypatch, capsys,
+):
+    hook = hook_module()
+    cache_sw, mp_shared = cache_and_marketplace(tmp_path)
+    make_shared(mp_shared)
+    install_run(cache_sw)
+
+    def fail_copy(*_args, **_kwargs):
+        raise OSError("transient copy failure")
+
+    monkeypatch.setattr(hook.shutil, "copytree", fail_copy)
+    rc, err = _drive(
+        monkeypatch, cache_sw, capsys, '{"session_id":"copy-failure"}',
+    )
+
+    claims = cache_sw / hook._CLAIM_DIRNAME
+    assert rc == 0
+    assert list(claims.glob("*.claim"))
+    assert not list(claims.glob("*.done"))
+    assert "completion not published" in err
+
+
+@pytest.mark.parametrize("unreadable", ["cache-root", "installed-plugin"])
+def test_main_never_publishes_completion_after_plugin_enumeration_failure(
+    tmp_path, monkeypatch, capsys, unreadable,
+):
+    hook = hook_module()
+    cache_sw, mp_shared = cache_and_marketplace(tmp_path)
+    make_shared(mp_shared)
+    make_shared(cache_sw / "shared")
+    install_run(cache_sw)
+    _place(cache_sw)
+    mirror_all(cache_sw)
+    denied = cache_sw if unreadable == "cache-root" else cache_sw / "shipwright-run"
+    real_iterdir = Path.iterdir
+
+    def guarded_iterdir(path: Path):
+        if path == denied:
+            raise PermissionError("enumeration denied")
+        return real_iterdir(path)
+
+    monkeypatch.setattr(Path, "iterdir", guarded_iterdir)
+    rc, err = _drive(
+        monkeypatch, cache_sw, capsys,
+        f'{{"session_id":"enumeration-{unreadable}"}}',
+    )
+
+    claims = cache_sw / hook._CLAIM_DIRNAME
+    assert rc == 0
+    assert not list(claims.glob("*.done"))
+    assert "completion not published" in err
+
+
+def test_main_never_repairs_without_global_writer_lease(
+    tmp_path, monkeypatch, capsys,
+):
+    hook = hook_module()
+    cache_sw, mp_shared = cache_and_marketplace(tmp_path)
+    make_shared(mp_shared)
+    install_run(cache_sw)
+    monkeypatch.setattr(hook, "acquire_cache_lock", lambda _path: None)
+    rc, err = _drive(
+        monkeypatch, cache_sw, capsys, '{"session_id":"lock-failure"}',
+    )
+
+    assert rc == 0
+    assert not (cache_sw / "shared").exists()
+    assert not (cache_sw / "plugins").exists()
+    assert "writer lock unavailable" in err
 
 
 def test_main_is_a_noop_in_the_dev_plugin_dir_model(tmp_path, monkeypatch, capsys):

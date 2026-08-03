@@ -20,6 +20,7 @@ from pathlib import Path
 REPO = Path(__file__).resolve().parents[2]
 _REPO = REPO  # back-compat alias for readers of this module
 CANONICAL = REPO / "shared" / "templates" / "hooks" / "ensure_shared_cache.py"
+LOCK_HELPER = CANONICAL.with_name("cache_repair_lock.py")
 
 
 def hook_module():
@@ -132,6 +133,7 @@ def place_hook(cache_sw: Path) -> Path:
     script = vdir / "scripts" / "hooks" / "ensure_shared_cache.py"
     script.parent.mkdir(parents=True, exist_ok=True)
     script.write_bytes(CANONICAL.read_bytes())
+    script.with_name("cache_repair_lock.py").write_bytes(LOCK_HELPER.read_bytes())
     return script
 
 

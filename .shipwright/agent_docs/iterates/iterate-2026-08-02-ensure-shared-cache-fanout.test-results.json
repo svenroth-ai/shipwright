@@ -1,0 +1,152 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-08-02-ensure-shared-cache-fanout",
+    "date": "2026-08-02",
+    "unit": {
+      "status": "passed",
+      "passed": 12916,
+      "total": 12963,
+      "note": "The canonical F0 runner was KeyboardInterrupted, so its 18 pytest roots were rerun separately on Python 3.11. The large shared root used four disjoint same-root shards; all roots passed with 47 skips, and the final manifest/root-lock regressions passed in the affected-root rerun."
+    },
+    "integration": {
+      "status": "passed",
+      "passed": 465,
+      "total": 465
+    },
+    "pgtap": {
+      "status": "passed",
+      "passed": 21,
+      "total": 21
+    },
+    "e2e": {
+      "status": "not_run",
+      "passed": 0,
+      "total": 0
+    },
+    "design_fidelity": {
+      "status": "not_run",
+      "passed": 0,
+      "total": 0
+    },
+    "smoke": {
+      "status": "skipped"
+    },
+    "surface_verification": {
+      "run_id": "iterate-2026-08-02-ensure-shared-cache-fanout",
+      "surface": "cli",
+      "runner": "uv run --python 3.11 --with pytest --with pytest-mock --with pytest-xdist pytest integration-tests/test_ensure_shared_cache_fanout.py -q -p no:cacheprovider -n 8",
+      "exit_code": 0,
+      "tests_run": 21,
+      "evidence_path": ".shipwright/runs/iterate-2026-08-02-ensure-shared-cache-fanout/surface_verification.log",
+      "timestamp": "2026-08-03T16:52:53.745Z",
+      "attempts": 1
+    },
+    "test_completeness": {
+      "run_id": "iterate-2026-08-02-ensure-shared-cache-fanout",
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "One winner and eleven waiters serialize one SessionStart fan-out",
+          "disposition": "tested",
+          "evidence": "unit and real-process fan-out suites passed"
+        },
+        {
+          "behavior": "Waiters return only after token-specific winner completion",
+          "disposition": "tested",
+          "evidence": "owner/waiter and fenced successor tests passed"
+        },
+        {
+          "behavior": "Healthy fan-out scans once and copies zero files",
+          "disposition": "tested",
+          "evidence": "real-process PID trace asserts one scanner and zero copies"
+        },
+        {
+          "behavior": "Malformed identity and coordination failures remain safe and fail-open",
+          "disposition": "tested",
+          "evidence": "negative-path and lock-timeout suites passed"
+        },
+        {
+          "behavior": "Expired completion re-arms without delete/ABA while running owners are preserved",
+          "disposition": "tested",
+          "evidence": "TTL, future-mtime, live-owner, and immutable-successor tests passed"
+        },
+        {
+          "behavior": "Real repair completes both trees before consumers run",
+          "disposition": "tested",
+          "category": "integration",
+          "evidence": "21 subprocess fan-out scenarios passed under eight xdist workers"
+        },
+        {
+          "behavior": "Canonical and 12 vendored copies retain exact safe manifest chains",
+          "disposition": "tested",
+          "evidence": "byte-parity, path-existence, exact-token, mutation, and single-group gates passed"
+        },
+        {
+          "behavior": "Observation markers remain generation- and participant-specific without amplifying Windows path length",
+          "disposition": "tested",
+          "evidence": "bounded marker-name regression and full xdist integration root passed"
+        },
+        {
+          "behavior": "Replacing the claim directory cannot split the global reader/writer lease",
+          "disposition": "tested",
+          "evidence": "real-directory replacement and symlink redirection regressions passed or platform-skipped"
+        }
+      ],
+      "counts": {
+        "total": 9,
+        "testable": 9,
+        "tested": 9,
+        "untestable": 0,
+        "untested_testable": 0
+      },
+      "enumeration_basis": {
+        "acs": 6,
+        "covered_acs": 6
+      }
+    },
+    "declared_removals": [
+      {
+        "path": ".shipwright/agent_docs/iterates/iterate-2026-07-27-changelog-aggregator-idempotency.json",
+        "reason": "F5c's 50-entry retention evicted this oldest recency-cache entry while adding the current run; its history remains in git and shipwright_events.jsonl."
+      },
+      {
+        "path": ".shipwright/agent_docs/iterates/iterate-2026-07-27-checks-that-gate-nothing.json",
+        "reason": "F5c's 50-entry retention evicted this oldest recency-cache entry while adding the current run; its history remains in git and shipwright_events.jsonl."
+      },
+      {
+        "path": ".shipwright/agent_docs/iterates/iterate-2026-07-27-derived-snapshots-off-branch.json",
+        "reason": "F5c's 50-entry retention evicted this oldest recency-cache entry while adding the current run; its history remains in git and shipwright_events.jsonl."
+      },
+      {
+        "path": ".shipwright/agent_docs/iterates/iterate-2026-07-27-no-silent-revert.json",
+        "reason": "F5c's 50-entry retention evicted this oldest recency-cache entry while adding the current run; its history remains in git and shipwright_events.jsonl."
+      },
+      {
+        "path": ".shipwright/agent_docs/iterates/iterate-2026-07-27-review-floor-not-chained.json",
+        "reason": "F5c's 50-entry retention evicted this oldest recency-cache entry while adding the current run; its history remains in git and shipwright_events.jsonl."
+      },
+      {
+        "path": ".shipwright/agent_docs/iterates/iterate-2026-07-27-run-unit-parallel-race.json",
+        "reason": "F5c's 50-entry retention evicted this oldest recency-cache entry while adding the current run; its history remains in git and shipwright_events.jsonl."
+      },
+      {
+        "path": ".shipwright/agent_docs/iterates/iterate-2026-07-27-triage-defer-review-followup.json",
+        "reason": "F5c's 50-entry retention evicted this oldest recency-cache entry while adding the current run; its history remains in git and shipwright_events.jsonl."
+      }
+    ],
+    "degraded": []
+  },
+  "coverage": {
+    "total": 80.2,
+    "measured_tier": "repo",
+    "source": "combined coverage.xml (all plugins + shared + integration)",
+    "measured_at": "2026-07-04T00:00:00Z"
+  },
+  "source_state": {
+    "run_id": "iterate-2026-08-02-ensure-shared-cache-fanout",
+    "commit": "099b5ec814c5da79cc5ca955e8ea7a5f6fc62a62",
+    "dirty": true,
+    "base": null,
+    "release": null
+  }
+}

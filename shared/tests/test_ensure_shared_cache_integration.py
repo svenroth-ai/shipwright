@@ -54,6 +54,21 @@ def test_heals_shared_and_plugins_on_fresh_install(tmp_path: Path):
     assert "shared" in result.stderr and "plugins" in result.stderr
 
 
+def test_missing_local_lock_helper_exits_zero_without_mutating(tmp_path: Path):
+    cache_sw, mp_shared = cache_and_marketplace(tmp_path)
+    make_shared(mp_shared)
+    install_run(cache_sw)
+    script = place_hook(cache_sw)
+    script.with_name("cache_repair_lock.py").unlink()
+
+    result = run(script)
+
+    assert result.returncode == 0
+    assert "writer lock unavailable" in result.stderr
+    assert not (cache_sw / "shared").exists()
+    assert not (cache_sw / "plugins").exists()
+
+
 def test_heals_plugins_without_marketplace_clone(tmp_path: Path):
     # No clone made -> shared cannot heal, but plugins/ heals from the installed dirs.
     cache_sw, _mp = cache_and_marketplace(tmp_path)
@@ -105,6 +120,9 @@ def test_dev_plugin_dir_model_is_noop(tmp_path: Path):
     script = repo / "plugins" / "shipwright-build" / "scripts" / "hooks" / "ensure_shared_cache.py"
     script.parent.mkdir(parents=True, exist_ok=True)
     script.write_bytes(CANONICAL.read_bytes())
+    script.with_name("cache_repair_lock.py").write_bytes(
+        CANONICAL.with_name("cache_repair_lock.py").read_bytes(),
+    )
 
     result = run(script)
 
