@@ -1,0 +1,142 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-08-02-ensure-shared-cache-fanout",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-03T17:22:01.985289+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 7,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "A fixed stale timeout can reclaim a legitimate slow owner and reopen concurrent copying.",
+          "suggestion": "Never time-reclaim a running claim; distinguish completion from liveness.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "Concurrent stale rearm and mutable completion state need atomic arbitration.",
+          "suggestion": "Let O_EXCL arbitrate re-election and publish completion as a separate atomic sentinel. SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "Ownership needs a fencing token so an old owner cannot complete or clean up a newer election.",
+          "suggestion": "Use an immutable claim plus token-specific atomic completion sentinel.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "The coordination directory must be common to all 12 hooks and outside both repaired trees.",
+          "suggestion": "Place it under the cache marketplace root with owner-only creation where supported.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "Raw session-id sanitization can collide or exceed filesystem limits.",
+          "suggestion": "Use a bounded cryptographic digest of the original id.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "Hook-only process completion does not directly test each plugin's next shared import.",
+          "suggestion": "Add an immediate post-healer consumer to every process in the 12-process integration scenario.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "Targeted evidence must include both deterministic unit and subprocess suites.",
+          "suggestion": "Run both commands in F0.5 evidence. SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-08-02T21:24:10.769652+00:00",
+      "disposition": null,
+      "recorded_by": "external_review.py",
+      "parse_status": "structured",
+      "raw_excerpt": "[gemini] Category: risk\nSeverity: high\nFinding: A fixed stale timeout can reclaim a legitimate slow owner and reopen concurrent copying.\nSuggestion: Never time-reclaim a running claim; distinguish completion from liveness.\n\nCategory: edge-case\nSeverity: medium\nFinding: Concurrent stale rearm and mutable completion state need atomic arbitration.\nSuggestion: Let O_EXCL arbitrate re-election and publish completion as a separate atomic sentinel.\nSHIPWRIGHT_VERDICT: revise\n\n[openai] Category: approach\nSeverity: high\nFinding: Ownership needs a fencing token so an old owner cannot complete or clean up a newer election.\nSuggestion: Use an immutable claim plus token-specific atomic completion sentinel.\n\nCategory: dependency\nSeverity: medium\nFinding: The coordination directory must be common to all 12 hooks and outside both repaired trees.\nSuggestion: Place it under the cache marketplace root with owner-only creation where supported.\n\nCategory: edge-case\nSeverity: medium\nFinding: Raw session-id sanitization can collide or exceed filesystem limits.\nSuggestion: Use a bounded cryptographic digest of the original id.\n\nCategory: risk\nSeverity: medium\nFinding: Hook-only process completion does not directly test each plugin's next shared import.\nSuggestion: Add an immediate post-healer consumer to every process in the 12-process integration scenario.\n\nCategory: dependency\nSeverity: low\nFinding: Targeted evidence must include both deterministic unit and subprocess suites.\nSuggestion: Run both commands in F0.5 evidence.\nSHIPWRIGHT_VERDICT: revise"
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-03T17:21:01.737338+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-03T17:21:06.210727+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": "openrouter",
+      "completed_at": "2026-08-03T17:21:10.380552+00:00",
+      "disposition": null,
+      "recorded_by": "external_review.py",
+      "parse_status": "unstructured",
+      "raw_excerpt": "[gemini] SHIPWRIGHT_VERDICT: approve\n\n[openai] No concrete defects found in the supplied implementation. The coordination protocol, immutable token/done handling, global reader/writer lease, fail-open paths, consolidated wrapper behavior, and vendoring/manifest gates align with the stated acceptance criteria. The added unit and subprocess integration tests exercise the relevant winner/loser, recovery, readiness, lock, aggregation, and zero-copy behavior rather than merely invoking the code.\n\nOverall assessment: ship-as-is.\n\nSHIPWRIGHT_VERDICT: approve"
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-03T17:20:54.775333+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    }
+  }
+}

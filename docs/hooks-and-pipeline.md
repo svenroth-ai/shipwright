@@ -951,8 +951,9 @@ MASTER writes shipwright_run_config.json (mode: single_session), then LOOPS:
    +--> loop until terminal: complete | failed | needs_validation
 ```
 
-Phase plugins keep their ordinary SessionStart chain (`ensure_shared_cache`,
-`capture_session_id`, `check_artifact_drift`, `session_start_using_shipwright`) and
+Phase plugins keep their ordinary SessionStart behavior (one cache-ready wrapper
+runs `ensure_shared_cache`, `capture_session_id`, `check_artifact_drift`, and
+`session_start_using_shipwright` in order) and
 their ordinary Stop chain (`audit_phase_quality_on_stop`, `generate_handoff_on_stop`,
 `bloat_gate_on_stop`, …). What they no longer carry is the phase-claim trio — and, for
 all 8 phase plugins, the `UserPromptSubmit` event entirely (`phase_user_prompt_validate`
@@ -1044,7 +1045,8 @@ with **no** `{"hooks": {...}}` wrapper, and/or object-form matchers
 > The removal also emptied the `UserPromptSubmit` event in all 8 (the validator
 > was its only entry), so those plugins no longer register that event at all.
 > The per-plugin tables below show each plugin's hooks; the shared chain every
-> plugin still inherits is `ensure_shared_cache` → `capture_session_id` →
+> plugin still inherits is one `run_if_cache_ready` command that performs
+> `ensure_shared_cache` and then runs `capture_session_id` →
 > `check_artifact_drift` → `session_start_using_shipwright` on `SessionStart`.
 
 ### Fan-out consolidation (once-per-event guard)
@@ -1064,6 +1066,7 @@ SessionStart/Stop, **not** multi-fire PostToolUse). Guarded hooks:
 
 | Hook | Event | Behavior |
 |---|---|---|
+| `ensure_shared_cache` | SessionStart | stdlib-only O_EXCL election keyed by a digest of the payload session/event generation; one winner scans/heals, 11 losers wait for its token-specific atomic completion sentinel; a plugin-local ready guard skips later cache-dependent hooks if the bounded wait ends without readiness |
 | `audit_phase_quality_on_stop` | Stop | claim + **session-state phase resolver** (see its section) |
 | `generate_handoff_on_stop` | Stop | claim first-wins — 11× identical handoff/dashboard regen → once |
 | `check_artifact_drift` | SessionStart | claim around the scan + `additionalContext` emit → once (distinct `sessionstart-drift` claim key from `capture_session_id`'s injection claim) |
@@ -1089,10 +1092,16 @@ across the fan-out, sequential + parallel, per-session isolation).
 
 ### Shared Hook: ensure_shared_cache.py (marketplace-install self-heal)
 
-**Canonical:** `shared/templates/hooks/ensure_shared_cache.py`, **vendored**
-byte-identically into every hook-bearing plugin's `scripts/hooks/` and invoked as
-the **first** `SessionStart` hook via
-`${CLAUDE_PLUGIN_ROOT}/scripts/hooks/ensure_shared_cache.py`.
+**Canonical:** `shared/templates/hooks/ensure_shared_cache.py` plus its
+plugin-local stdlib helpers `cache_repair_lock.py` and
+`run_if_cache_ready.py`, all **vendored** byte-identically into every
+hook-bearing plugin's `scripts/hooks/`. Each plugin registers exactly one
+`SessionStart` command: `run_if_cache_ready.py` joins the healer election in
+process, waits for the session's completed claim tip, acquires a reader lease,
+then runs every former SessionStart target sequentially in its original manifest
+order. It merges their schema-valid `additionalContext` strings into one
+SessionStart JSON envelope. There is no separate healer/guard process boundary
+whose causal relationship must be inferred from an identical payload.
 
 **Why it exists.** Every other plugin hook reaches shared code through
 `${CLAUDE_PLUGIN_ROOT}/../../shared/...`, i.e. a sibling `shared/` two levels
@@ -1168,23 +1177,94 @@ Properties:
   14 mirrors and would have turned this hook into a 1464-file copy on every
   session start. Verified against the live cache: complete on all 14 mirrors and
   on `shared/`, i.e. a clean no-op;
-- **~200 ms per invocation, ×12 per session start** — four `stat` walks (both
-  sides of both trees, ~4 400 entries), measured on the live cache. Claude Code
-  fires SessionStart from **every** hook-bearing plugin with no active-plugin
-  filter, so all 12 vendored copies run, each in its own `uv run` process. The
-  old sentinel check was ~1 stat, so the fan-out was free; a completeness check
-  is not. Nothing blocks on it (fail-open, and the walks are concurrent), but
-  the honest number is 12 × 200 ms of I/O, not 200 ms.
+- **~200 ms once for the normal cohort, never concurrent** — four `stat` walks (both sides
+  of both trees, ~4 400 entries), measured on the live cache. Claude Code still
+  fires all 12 vendored wrappers, but an O_EXCL claim under the cache marketplace
+  root elects one scanner/healer. The other 11 wait for the winner's
+  token-specific completion sentinel, so their ordered SessionStart targets
+  cannot import from a tree while it is being copied. If an active repair
+  outlives all bounded waits, the healer still exits 0, but the plugin-local
+  ready wrapper skips that invocation's cache-dependent targets instead of
+  letting them import an unfinished tree. The winning chain runs them normally
+  after completion; a later SessionStart retries the skipped fail-open work. A
+  bounded SHA-256 digest names the claim, never the raw payload. Its event key
+  combines only immutable stdin values: the raw `session_id`, SessionStart `source`,
+  and transcript path, serialized as ASCII-escaped canonical JSON before
+  hashing. It never stats a payload-controlled path, so all 12
+  parallel invocations derive the same key even while the transcript changes.
+  A later `resume`/`compact` source gets a distinct verdict. Every generation
+  also records immutable, hashed participant-observation markers while a
+  generation is still running. The marker's fixed-size digest covers the
+  generation filename and participant identity together; raw identity text is
+  never placed in the pathname, avoiding Windows path-length amplification. A participant observed before completion belongs
+  to that fan-out and skips; one already present, or one first arriving only
+  after completion, advances an immutable successor immediately, even inside the
+  30-second TTL. Each participant is the plugin's single `plugin:sessionstart`
+  wrapper, so no unused per-target authorization can survive into a repeated
+  event. The elected owner grants a 100 ms join window before scanning, keeping
+  the normal concurrent fan-out at one scanner while making a delayed or
+  previously absent wrapper fail safely into a new generation. Each wrapper
+  joins before it trusts readiness, so it cannot open a target on stale
+  completion. Each election has a random fencing token so a late old owner
+  cannot complete a newer one.
 
-  **Consequence, and it is not only cost.** When a heal *is* needed, all 12
-  invocations reach the same verdict and copy onto the same destination
-  concurrently, with `copyfile` truncating and no temp+rename — while sibling
-  hooks in other plugins' SessionStart arrays are importing from that same
-  tree. The old `dst.exists()` skip made concurrent copying nearly impossible;
-  a completeness check makes it the normal path. Serializing the fan-out (the
-  `event_once.claim_once` pattern this repo already uses for exactly this
-  hazard) belongs with the hook-fan-out work, not inside one of 12 vendored
-  copies of one hook — tracked as `trg-0c5af217`.
+  Claude's payload has no event-unique field, so an arbitrarily delayed member of
+  one fan-out is indistinguishable from the first member of a later event with
+  byte-identical payload. The protocol resolves that ambiguity toward safety: a
+  post-completion arrival may cause a sequential successor scan. The cache-global
+  writer lease lives directly under the stable marketplace cache root, outside
+  the replaceable claim directory. Replacing that metadata directory therefore
+  cannot create a second reader/writer lock domain: concurrent scans/copies stay impossible, and the normal
+  co-scheduled 12-process path remains one scan as pinned by the subprocess test.
+
+  Claim generations are immutable; completion is a separate owner-only O_EXCL
+  file, never an in-place rewrite. TTL age starts at that completion file's
+  mtime, not at the earlier claim election. The healer and ready guard share
+  that TTL constant, so a resumed session cannot treat an expired done
+  generation as ready while the healer advances its successor. Advancement
+  creates a token-derived immutable successor claim only after matching
+  completion expires — no shared
+  claim pathname is deleted, and a running owner is never declared stale from
+  wall time alone. Completion is published only after a second completeness
+  scan proves both comparable destinations ready. Existing `shared/` is not
+  declared ready without its enumerable same-marketplace authoritative source, and a
+  plugin-mirror symlink is ready only when it resolves exactly to the selected
+  installed version. A plugin-local stdlib OS file
+  lease (`cache_repair_lock.py`) additionally serializes actual scan/copy work
+  across *different* session ids and is released automatically on process exit.
+  A timed-out claimant recovers the observed token under that global lease: a
+  live owner finishes first; a killed owner releases the lease and one peer
+  repairs before consumers continue. Lease acquisition itself has a five-second
+  monotonic deadline, so a live wedged owner cannot hang all SessionStarts. The
+  ready wrapper closes the corresponding consumer side of that timeout. It
+  invokes the healer first, then polls for the completed tip for ten seconds
+  without holding a reader lease, so a later writer can enter. Once ready, it
+  holds a shared reader lease for every target hook's full ordered run; readers
+  from the 12 chains remain concurrent, while a
+  writer cannot enter between validation and import. If the bounded reader wait
+  expires, the guard warns, exits 0, and never opens the cache-dependent target.
+  Missing identity or an unsafe/unreadable
+  session-claim boundary takes the old fail-open route but still requires the
+  global lease. If that lease itself is unavailable, the hook exits 0 with a
+  warning and performs no scan or mutation. Target stderr is preserved; valid
+  SessionStart contexts are merged and invalid stdout is warned/skipped. The `--plugin-dir` dev model creates
+  neither claims nor a lock.
+
+  Claim tokens and completion freshness are read once through nonblocking/no-follow
+  descriptors, validated as single-link regular files by descriptor and pathname
+  identity; completion age comes from `fstat()` on that descriptor. The global
+  lease receives the same descriptor/path validation
+  before Windows can size it or either platform can lock it. Symlink, reparse,
+  FIFO, hard-link, replacement, and other unsafe boundaries therefore degrade to the
+  fail-open/no-mutation path rather than following or blocking on them.
+
+  The tiny claim/done/participant files are cache-lifetime metadata: they are deliberately
+  not deleted by a concurrent SessionStart hook, because pathname deletion is
+  the ABA race this protocol excludes; cache replacement removes them. The
+  protocol becomes active after all hook-bearing plugins are updated. Both the
+  repo sync and marketplace update workflow update the full set before session
+  restart; restarting midway through a plugin-by-plugin update is unsupported,
+  because an already-installed old hook cannot understand a new claim protocol.
 
 Composition is pinned by `shared/tests/test_ensure_shared_cache_integration.py`
 (fresh-install delivery: `shared/` from the clone and `plugins/` from the
@@ -1192,7 +1272,23 @@ installed dirs; `plugins/` heals with no clone; idempotent no-op; fail-open;
 dev-model no-op) and `shared/tests/test_ensure_shared_cache_partial_reap.py`
 (the surviving-sentinel cases, both trees, both former short-circuits, and the
 cache-manager-litter no-op). Layout builders are shared via the sibling
-`shared/tests/ensure_shared_cache_fixtures.py`.
+`shared/tests/ensure_shared_cache_fixtures.py`. Coordination is pinned by
+`shared/tests/test_ensure_shared_cache_fanout.py` (ownership, wait ordering,
+token fencing, immutable completed-only successor election, bounded digest,
+dead-owner recovery, descriptor/path validation, participant re-arm, and
+fail-open boundary paths, including fixed-size observation-marker naming) plus
+  `integration-tests/test_ensure_shared_cache_fanout.py` (12 real consolidated wrapper processes,
+one repair, immediate guarded shared/mirror consumers, a killed claim owner, two
+different sessions contending for one cache-global writer lease, and an
+  11-second live writer whose losing chain waits at the ready wrapper rather than
+  importing early, a held writer whose incomplete chain is skipped, ordered
+  multi-target execution with one merged JSON result, including an
+  expired prior completion followed by another partial reap, and a fresh startup
+  completion followed by a resume-source reap, plus partial reaps followed by
+  the identical payload inside the completion TTL from both a prior and a
+  previously absent participant; 21 subprocess scenarios total). Malformed but
+  JSON-decodable target output is warned and omitted without aborting later
+  targets; the first non-zero target status is retained after the full chain.
 
 ### Shared Hook: capture_session_id.py
 

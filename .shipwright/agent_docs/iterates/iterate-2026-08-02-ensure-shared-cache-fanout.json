@@ -1,0 +1,115 @@
+{
+  "run_id": "iterate-2026-08-02-ensure-shared-cache-fanout",
+  "date": "2026-08-03T17:17:11.991808Z",
+  "event_at": "2026-08-03T17:00:17.868461+00:00",
+  "type": "change",
+  "complexity": "medium",
+  "prior_source": "keyword",
+  "branch": "iterate/ensure-shared-cache-fanout",
+  "spec": ".shipwright/planning/iterate/iterate-2026-08-02-ensure-shared-cache-fanout.md",
+  "tests_passed": true,
+  "adr": "iterate-2026-08-02-ensure-shared-cache-fanout",
+  "test_completeness": {
+    "run_id": "iterate-2026-08-02-ensure-shared-cache-fanout",
+    "status": "complete",
+    "behaviors": [
+      {
+        "behavior": "One winner and eleven waiters serialize one SessionStart fan-out",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_ensure_shared_cache_fanout.py and integration-tests/test_ensure_shared_cache_fanout.py passed"
+      },
+      {
+        "behavior": "Waiters return only after token-specific winner completion",
+        "disposition": "tested",
+        "evidence": "owner/waiter ordering and fenced successor-election tests passed"
+      },
+      {
+        "behavior": "A healthy 12-process fan-out scans once and copies zero files",
+        "disposition": "tested",
+        "evidence": "real-process PID trace asserts one scanner and zero copies"
+      },
+      {
+        "behavior": "Malformed identity and unavailable coordination remain fail-open without overlapping cache mutation",
+        "disposition": "tested",
+        "evidence": "malformed-input, unavailable-lock, timeout-owner, and fallback-readiness tests passed"
+      },
+      {
+        "behavior": "Completed generations re-arm without delete/ABA while running owners are never time-reclaimed",
+        "disposition": "tested",
+        "evidence": "TTL, future-mtime, live-owner, and immutable-successor tests passed"
+      },
+      {
+        "behavior": "Real 12-process repair completes both cache trees before dependent consumers run",
+        "disposition": "tested",
+        "category": "integration",
+        "evidence": "21 real subprocess fan-out scenarios passed under eight xdist workers via F0.5 CLI surface verification"
+      },
+      {
+        "behavior": "Canonical helpers and 12 vendored copies remain identical with exact healer/guard command chains",
+        "disposition": "tested",
+        "evidence": "byte-parity, path-existence, exact-token, mutation, and single-SessionStart-group gates passed"
+      },
+      {
+        "behavior": "Observation markers remain generation- and participant-specific without amplifying Windows path length",
+        "disposition": "tested",
+        "evidence": "bounded marker-name regression and full xdist integration root passed"
+      },
+      {
+        "behavior": "Replacing the claim directory cannot split the global reader/writer lease",
+        "disposition": "tested",
+        "evidence": "real-directory replacement and symlink redirection regressions passed or platform-skipped"
+      }
+    ],
+    "counts": {
+      "total": 9,
+      "testable": 9,
+      "tested": 9,
+      "untestable": 0,
+      "untested_testable": 0
+    },
+    "enumeration_basis": {
+      "acs": 6,
+      "covered_acs": 6
+    }
+  },
+  "surface_verification": {
+    "run_id": "iterate-2026-08-02-ensure-shared-cache-fanout",
+    "surface": "cli",
+    "runner": "uv run --python 3.11 --with pytest --with pytest-mock --with pytest-xdist pytest integration-tests/test_ensure_shared_cache_fanout.py -q -p no:cacheprovider -n 8",
+    "exit_code": 0,
+    "tests_run": 21,
+    "evidence_path": ".shipwright/runs/iterate-2026-08-02-ensure-shared-cache-fanout/surface_verification.log",
+    "timestamp": "2026-08-03T16:52:53.745Z",
+    "attempts": 1
+  },
+  "declared_removals": [
+    {
+      "path": ".shipwright/agent_docs/iterates/iterate-2026-07-27-changelog-aggregator-idempotency.json",
+      "reason": "F5c's 50-entry retention evicted this oldest recency-cache entry while adding the current run; its history remains in git and shipwright_events.jsonl."
+    },
+    {
+      "path": ".shipwright/agent_docs/iterates/iterate-2026-07-27-checks-that-gate-nothing.json",
+      "reason": "F5c's 50-entry retention evicted this oldest recency-cache entry while adding the current run; its history remains in git and shipwright_events.jsonl."
+    },
+    {
+      "path": ".shipwright/agent_docs/iterates/iterate-2026-07-27-derived-snapshots-off-branch.json",
+      "reason": "F5c's 50-entry retention evicted this oldest recency-cache entry while adding the current run; its history remains in git and shipwright_events.jsonl."
+    },
+    {
+      "path": ".shipwright/agent_docs/iterates/iterate-2026-07-27-no-silent-revert.json",
+      "reason": "F5c's 50-entry retention evicted this oldest recency-cache entry while adding the current run; its history remains in git and shipwright_events.jsonl."
+    },
+    {
+      "path": ".shipwright/agent_docs/iterates/iterate-2026-07-27-review-floor-not-chained.json",
+      "reason": "F5c's 50-entry retention evicted this oldest recency-cache entry while adding the current run; its history remains in git and shipwright_events.jsonl."
+    },
+    {
+      "path": ".shipwright/agent_docs/iterates/iterate-2026-07-27-run-unit-parallel-race.json",
+      "reason": "F5c's 50-entry retention evicted this oldest recency-cache entry while adding the current run; its history remains in git and shipwright_events.jsonl."
+    },
+    {
+      "path": ".shipwright/agent_docs/iterates/iterate-2026-07-27-triage-defer-review-followup.json",
+      "reason": "F5c's 50-entry retention evicted this oldest recency-cache entry while adding the current run; its history remains in git and shipwright_events.jsonl."
+    }
+  ]
+}
