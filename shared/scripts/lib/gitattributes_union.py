@@ -1,4 +1,4 @@
-"""Pure merge-logic SSoT for the append-log ``merge=union`` ``.gitattributes`` driver.
+"""Pure merge-logic SSoT for Shipwright-managed ``.gitattributes`` rules.
 
 The monorepo root ``.gitattributes`` declares ``merge=union`` for the two
 append-only JSONL logs (``shipwright_events.jsonl``, ``.shipwright/triage.jsonl``)
@@ -7,7 +7,9 @@ bullet-prepended by parallel iterates (``CURATED_DOC_UNION_PATHS``), so concurre
 appends auto-line-union instead of producing conflict markers. That protection was
 **monorepo-local** — so every adopted repo (WebUI, leadwright, any end-user
 project) fell back to git's default conflict behavior. This module is the single
-source of merge logic that lands it everywhere:
+source of merge logic that lands it everywhere. The fragment also marks immutable
+per-run test evidence ``-text -diff`` so Git preserves its exact bytes and does
+not apply text whitespace diagnostics:
 
 * :func:`merge_into` — pure, idempotent merge of the union fragment into an
   existing ``.gitattributes`` (never clobbers user entries). Consumed by the
@@ -54,10 +56,18 @@ CURATED_DOC_UNION_PATHS: tuple[str, ...] = (
     ".shipwright/agent_docs/conventions.md",
 )
 
-#: Every path the rendered ``.gitattributes`` fragment declares (both categories).
-#: The fragment / ``merge_into`` / ``missing_union_paths`` operate over THIS; only
-#: the managed-repo probe stays on ``UNION_PATHS`` (the JSONL logs).
+#: Every path receiving ``merge=union`` (both union categories). The managed-repo
+#: probe stays on ``UNION_PATHS`` (the JSONL logs).
 ALL_UNION_PATHS: tuple[str, ...] = (*UNION_PATHS, *CURATED_DOC_UNION_PATHS)
+
+#: Immutable JSON evidence is intentionally NOT a Git text file: source EOL bytes
+#: are part of the evidence contract and must survive ``core.autocrlf``.
+NON_TEXT_PATHS: tuple[str, ...] = (
+    "/.shipwright/agent_docs/iterates/*.test-results.json",
+)
+
+#: Every path/pattern declared by the managed fragment.
+ALL_MANAGED_PATHS: tuple[str, ...] = (*ALL_UNION_PATHS, *NON_TEXT_PATHS)
 
 #: First line of the template — the sentinel that marks our managed block, so a
 #: partial backfill appends only the missing lines without a duplicate header.
@@ -106,6 +116,18 @@ def _declares_union(text: str, path: str) -> bool:
     return False
 
 
+def _declares_exact_bytes(text: str, path: str) -> bool:
+    """True when ``text`` disables normalization and text diffs for ``path``."""
+    for raw in text.splitlines():
+        line = raw.strip()
+        if not line or line.startswith("#"):
+            continue
+        toks = line.split()
+        if toks and toks[0] == path and {"-text", "-diff"} <= set(toks[1:]):
+            return True
+    return False
+
+
 def missing_union_paths(text: str | None) -> list[str]:
     """The subset of :data:`ALL_UNION_PATHS` not yet declared in ``text`` (both the
     JSONL append-logs and the curated agent-docs — the full fragment coverage)."""
@@ -113,20 +135,28 @@ def missing_union_paths(text: str | None) -> list[str]:
     return [p for p in ALL_UNION_PATHS if not _declares_union(body, p)]
 
 
+def missing_managed_paths(text: str | None) -> list[str]:
+    """Every union or exact-byte pattern absent from the managed fragment."""
+    body = text or ""
+    missing = missing_union_paths(body)
+    missing.extend(p for p in NON_TEXT_PATHS if not _declares_exact_bytes(body, p))
+    return missing
+
+
 def merge_into(existing_text: str | None) -> tuple[str, bool]:
     """Idempotently merge the union fragment into ``existing_text``.
 
-    Returns ``(merged_text, changed)``. ``changed`` is False when every union
-    line is already present (round-trip stable: ``merge_into(merge_into(x)[0])``
+    Returns ``(merged_text, changed)``. ``changed`` is False when every managed
+    rule is already present (round-trip stable: ``merge_into(merge_into(x)[0])``
     reports ``changed=False``). An empty / whitespace-only / ``None`` input is
     treated as "no file" → the full template is returned. An existing file with
-    user entries is preserved verbatim; only the missing union lines (under the
+    user entries is preserved verbatim; only missing managed rules (under the
     managed marker, added once) are appended, with the file's existing EOL style.
     """
     if not existing_text or not existing_text.strip():
         return load_fragment(), True
 
-    missing = missing_union_paths(existing_text)
+    missing = missing_managed_paths(existing_text)
     if not missing:
         return existing_text, False
 
@@ -134,7 +164,10 @@ def merge_into(existing_text: str | None) -> tuple[str, bool]:
     block_lines: list[str] = []
     if MANAGED_MARKER not in existing_text:
         block_lines.append(MANAGED_MARKER)
-    block_lines.extend(_union_line(p) for p in missing)
+    block_lines.extend(
+        f"{p} -text -diff" if p in NON_TEXT_PATHS else _union_line(p)
+        for p in missing
+    )
 
     core = existing_text.rstrip("\r\n")
     merged = core + eol + eol + eol.join(block_lines) + eol

@@ -26,8 +26,8 @@ from tools.append_iterate_entry import (
     ITERATE_RETENTION,
     IterateAppendError,
     _apply_retention,
-    append_iterate_entry,
 )
+from shared.tests._iterate_entry_helpers import append_iterate_entry, summary_files as _summary_files
 
 
 # ---------------------------------------------------------------------------
@@ -166,7 +166,7 @@ class TestMigration:
         assert result["migrated"] is True
 
         # 5 legacy + 1 new = 6 files.
-        dir_files = sorted(iterates_dir(tmp_path).glob("iterate-*.json"))
+        dir_files = _summary_files(tmp_path)
         assert len(dir_files) == 6
 
         config = _load_config(tmp_path)
@@ -216,7 +216,7 @@ class TestMigration:
 
         append_iterate_entry(tmp_path, _canonical_entry(slug="new"))
 
-        dir_files = sorted(iterates_dir(tmp_path).glob("iterate-*.json"))
+        dir_files = _summary_files(tmp_path)
         run_ids = sorted(
             json.loads(p.read_text())["run_id"] for p in dir_files
         )
@@ -255,7 +255,7 @@ class TestMigration:
 
         config_after_crash = _load_config(tmp_path)
         assert config_after_crash[MIGRATION_STATE_KEY] == "in_progress"
-        partial = list(iterates_dir(tmp_path).glob("iterate-*.json"))
+        partial = _summary_files(tmp_path)
         assert 1 <= len(partial) < 4, "at least one file written before fault"
 
         # Remove the fault and run again — recovery path should complete.
@@ -264,7 +264,7 @@ class TestMigration:
 
         config_recovered = _load_config(tmp_path)
         assert config_recovered[MIGRATION_STATE_KEY] == "complete"
-        final_files = sorted(iterates_dir(tmp_path).glob("iterate-*.json"))
+        final_files = _summary_files(tmp_path)
         assert len(final_files) == 4  # 3 legacy + 1 new
         assert len({json.loads(p.read_text())["run_id"] for p in final_files}) == 4
 
@@ -314,7 +314,7 @@ class TestRetention:
             entry["date"] = f"2026-05-{day:02d}T{hour:02d}:00:00Z"
             append_iterate_entry(tmp_path, entry)
 
-        dir_files = list(iterates_dir(tmp_path).glob("iterate-*.json"))
+        dir_files = _summary_files(tmp_path)
         assert len(dir_files) == ITERATE_RETENTION
 
     def test_retention_does_not_prune_during_migration(self, tmp_path):
@@ -339,7 +339,7 @@ class TestRetention:
             _canonical_entry(slug="new", date="2026-05-01T00:00:00Z"),
         )
 
-        dir_files = list(iterates_dir(tmp_path).glob("iterate-*.json"))
+        dir_files = _summary_files(tmp_path)
         # 60 legacy + 1 new = 61 pre-retention, retention trims to 50.
         # The RETENTION call WILL trim — but only the oldest legacy ones.
         assert len(dir_files) == ITERATE_RETENTION
@@ -402,7 +402,7 @@ class TestQuarantine:
         # Valid legacy + new still landed in main dir.
         dir_run_ids = {
             json.loads(p.read_text())["run_id"]
-            for p in iterates_dir(tmp_path).glob("iterate-*.json")
+            for p in _summary_files(tmp_path)
         }
         assert "iterate-2026-04-23-good" in dir_run_ids
         assert "iterate-2026-04-23-new" in dir_run_ids
@@ -429,7 +429,7 @@ class TestQuarantine:
 
         dir_run_ids = {
             json.loads(p.read_text())["run_id"]
-            for p in iterates_dir(tmp_path).glob("iterate-*.json")
+            for p in _summary_files(tmp_path)
         }
         # Only the non-conflicting legacy + new survive.
         assert dir_run_ids == {
@@ -459,7 +459,7 @@ class TestQuarantine:
 
         dir_run_ids = {
             json.loads(p.read_text())["run_id"]
-            for p in iterates_dir(tmp_path).glob("iterate-*.json")
+            for p in _summary_files(tmp_path)
         }
         # The conflicting run_id must NOT appear on the canonical path.
         assert "iterate-2026-04-23-triple" not in dir_run_ids
@@ -495,7 +495,7 @@ class TestQuarantine:
 
         dir_run_ids = {
             json.loads(p.read_text())["run_id"]
-            for p in iterates_dir(tmp_path).glob("iterate-*.json")
+            for p in _summary_files(tmp_path)
         }
         assert "iterate-2026-04-23-capitalized" in dir_run_ids
 

@@ -51,15 +51,14 @@ from .common import CheckResult, Severity  # noqa: E402
 from .git_helpers import _git_available, _iterate_changed_paths, _run_git  # noqa: E402
 from .handoff_freshness import check_session_handoff_fresh  # noqa: E402, F401 — re-exported
 from .silent_revert import check_silent_revert_for_run  # noqa: E402, F401 — re-exported
-# ADR / decision-log integrity checks live in their own module (bloat
-# extraction); re-imported here so run_all_checks + the verify_iterate_finalization
-# wrapper + the tests keep resolving them from iterate_checks.
+# Re-export extracted decision-log checks for the wrapper and tests.
 from .decision_log_gate import (  # noqa: E402, F401 — re-exported surface
     check_adr_in_iterate_history,
     check_iterate_no_direct_decision_log,
 )
 from .review_record_check import check_review_record  # noqa: E402
-# The private names are re-exported so the drift-pin tests
+from .test_results_evidence_check import check_test_results_backfill, check_test_results_evidence  # noqa: E402,F401
+# Private names are re-exported so the drift-pin tests
 # ``test_ci_supplychain_patterns_sync`` / ``test_cross_component_patterns_sync``
 # keep resolving ``ic._CI_SUPPLYCHAIN_PATTERNS`` / ``ic._is_cross_component``.
 from .ci_supplychain import (  # noqa: E402, F401 — re-exported surface
@@ -1058,6 +1057,7 @@ def run_all_checks(
     """Run the full iterate check list and return results in stable order."""
     return [
         check_iterate_history_has_run_id(project_root, run_id),
+        check_test_results_evidence(project_root, run_id, commit_hash), check_test_results_backfill(project_root, run_id, commit_hash),
         check_events_has_commit(project_root, commit_hash, run_id=run_id) if commit_hash or run_id else CheckResult(
             "events.jsonl has commit", True, "skipped (no --commit or --run-id supplied)"
         ),

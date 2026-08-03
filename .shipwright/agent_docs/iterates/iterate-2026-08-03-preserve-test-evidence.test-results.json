@@ -1,0 +1,324 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-08-03-preserve-test-evidence",
+    "date": "2026-08-03",
+    "unit": {
+      "status": "pass",
+      "failed": 0,
+      "errors": 0,
+      "suites": [
+        {
+          "id": "shared/tests",
+          "status": "pass",
+          "passed_executions": 7551,
+          "skipped": 17,
+          "deselected": 1,
+          "execution_note": "The KeyboardInterrupt fallback partition covered all 533 top-level test files and the nested tools test. Counts are executions rather than unique tests because the import bootstrap was deliberately repeated in two isolated partitions and the interrupted chunk-4 partition was replaced by file-level runs.",
+          "junit_provenance": ".shipwright/runs/iterate-2026-08-03-preserve-test-evidence/f0-shared-chunk-{0,1,20-23,30-33,41-43,50-53,6,7,400-416}.xml plus f0-shared-nested.xml",
+          "coverage_provenance": ".cov-data/.coverage.shared-chunk-* and .cov-data/.coverage.shared-nested"
+        },
+        {
+          "id": "shared/scripts/tests",
+          "status": "pass",
+          "passed": null,
+          "result_provenance": "The canonical F0 unit returned green and wrote fresh .cov-data/.coverage.shared-scripts-tests before the aggregate runner was interrupted; its temporary per-unit JUnit file was not retained by that interrupted runner."
+        },
+        {
+          "id": "shared/scripts/tools/tests",
+          "status": "pass",
+          "passed": null,
+          "result_provenance": "The canonical F0 unit returned green and wrote fresh .cov-data/.coverage.shared-scripts-tools-tests before the aggregate runner was interrupted; focused evidence, backfill, and CLI tests also passed separately."
+        },
+        {
+          "id": "plugins/shipwright-adopt/tests",
+          "status": "pass",
+          "passed": null,
+          "coverage_provenance": ".cov-data/.coverage.shipwright-adopt"
+        },
+        {
+          "id": "plugins/shipwright-build/tests",
+          "status": "pass",
+          "passed": null,
+          "coverage_provenance": ".cov-data/.coverage.shipwright-build"
+        },
+        {
+          "id": "plugins/shipwright-changelog/tests",
+          "status": "pass",
+          "passed": null,
+          "coverage_provenance": ".cov-data/.coverage.shipwright-changelog"
+        },
+        {
+          "id": "plugins/shipwright-compliance/tests",
+          "status": "pass",
+          "passed": 1614,
+          "failed": 0,
+          "errors": 0,
+          "skipped": 5,
+          "junit_provenance": ".shipwright/runs/iterate-2026-08-03-preserve-test-evidence/f0-compliance-split.xml",
+          "coverage_provenance": ".cov-data/.coverage.shipwright-compliance"
+        },
+        {
+          "id": "plugins/shipwright-deploy/tests",
+          "status": "pass",
+          "passed": null,
+          "coverage_provenance": ".cov-data/.coverage.shipwright-deploy"
+        },
+        {
+          "id": "plugins/shipwright-design/tests",
+          "status": "pass",
+          "passed": null,
+          "coverage_provenance": ".cov-data/.coverage.shipwright-design"
+        },
+        {
+          "id": "plugins/shipwright-grade/tests",
+          "status": "pass",
+          "passed": null,
+          "coverage_provenance": ".cov-data/.coverage.shipwright-grade"
+        },
+        {
+          "id": "plugins/shipwright-iterate/tests",
+          "status": "pass",
+          "passed": null,
+          "coverage_provenance": ".cov-data/.coverage.shipwright-iterate"
+        },
+        {
+          "id": "plugins/shipwright-plan/tests",
+          "status": "pass",
+          "passed": null,
+          "coverage_provenance": ".cov-data/.coverage.shipwright-plan"
+        },
+        {
+          "id": "plugins/shipwright-project/tests",
+          "status": "pass",
+          "passed": null,
+          "coverage_provenance": ".cov-data/.coverage.shipwright-project"
+        },
+        {
+          "id": "plugins/shipwright-run/tests",
+          "status": "pass",
+          "passed": null,
+          "coverage_provenance": ".cov-data/.coverage.shipwright-run"
+        },
+        {
+          "id": "plugins/shipwright-security/tests",
+          "status": "pass",
+          "passed": null,
+          "coverage_provenance": ".cov-data/.coverage.shipwright-security"
+        },
+        {
+          "id": "plugins/shipwright-test/tests",
+          "status": "pass",
+          "passed": null,
+          "coverage_provenance": ".cov-data/.coverage.shipwright-test"
+        }
+      ],
+      "failure_reasons": [],
+      "skip_reasons": [
+        {
+          "count": 10,
+          "reason": "Symlink or reparse-point creation is unavailable for this Windows account.",
+          "tests": [
+            "shared.tests.test_finalize_campaign_status::test_run_skips_symlinked_status_target",
+            "shared.tests.test_path_canon_windows::test_scan_handles_symlinked_legacy_dir",
+            "shared.tests.test_plugin_cache_sync.TestSymlinkSkip::test_symlinked_file_is_skipped",
+            "shared.tests.test_ensure_shared_cache_repair_isolation::test_a_symlinked_mirror_is_never_written_through",
+            "shared.tests.test_iterate_test_results_evidence::test_existing_symlink_target_is_rejected",
+            "shared.tests.test_iterate_test_results_evidence::test_symlinked_evidence_parent_is_rejected",
+            "shared.tests.test_compliance_input_state::test_capture_skips_a_symlink_rather_than_reading_through_it",
+            "shared.tests.test_audit_phase_quality::test_strict_ancestor_follows_symlinks",
+            "shared.tests.test_audit_phase_quality::test_explicit_opt_in_symlink_resolution",
+            "tests.test_test_links_config_roots::test_iter_test_files_skips_broken_symlink_without_crashing"
+          ]
+        },
+        {
+          "count": 4,
+          "reason": "Compliance security-gate symlink cases require symlink privileges unavailable on this host.",
+          "tests": [
+            "tests.test_security_gate_symlinks::test_symlink_to_a_clean_summary_is_followed_and_allows",
+            "tests.test_security_gate_symlinks::test_symlink_to_a_dirty_summary_is_followed_and_blocks",
+            "tests.test_security_gate_symlinks::test_symlink_to_a_directory_blocks",
+            "tests.test_security_gate_symlinks::test_a_dangling_symlink_blocks_rather_than_reading_as_absent"
+          ]
+        },
+        {
+          "count": 4,
+          "reason": "The legacy gitignore migration parameter is already migrated.",
+          "tests": [
+            "shared.tests.test_gitignore_canon::test_legacy_entry_present_during_in_progress[planning]",
+            "shared.tests.test_gitignore_canon::test_legacy_entry_present_during_in_progress[designs]",
+            "shared.tests.test_gitignore_canon::test_legacy_entry_present_during_in_progress[agent_docs]",
+            "shared.tests.test_gitignore_canon::test_legacy_entry_present_during_in_progress[compliance]"
+          ]
+        },
+        {
+          "count": 1,
+          "reason": "got empty parameter set for campaign_dir",
+          "test": "shared.tests.test_campaign_status_backfill::test_existing_campaign_regenerates_without_downgrade[NOTSET]"
+        },
+        {
+          "count": 1,
+          "reason": "captured sample artifact absent (run captured in main repo only)",
+          "test": "shared.tests.test_github_api_artifact::test_real_findings_sample_parses"
+        },
+        {
+          "count": 1,
+          "reason": "no waiver label in this workflow",
+          "test": "shared.tests.test_pr_review_fail_closed::test_waiver_cannot_cover_a_change_to_the_checks[path1]"
+        },
+        {
+          "count": 1,
+          "reason": "google-genai not installed in this root",
+          "test": "shared.tests.test_external_review_gemini_budget::test_real_sdk_accepts_the_config_shape_we_send"
+        },
+        {
+          "count": 1,
+          "reason": "Deselected on Windows because os.kill(os.getpid(), 0) terminates the pytest process before JUnit finalization on this platform.",
+          "test": "shared.tests.test_verifiers_runtime::test_pid_is_alive_current_process_true"
+        }
+      ]
+    },
+    "integration": {
+      "status": "pass",
+      "passed": null,
+      "failed": 0,
+      "errors": 0,
+      "result_provenance": "The canonical F0 integration-tests unit returned green and wrote fresh .cov-data/.coverage.integration-tests before the aggregate runner was interrupted. Cross-component F5c/F5b, Git, worktree, F6, and F11 paths were also exercised by focused integration tests."
+    },
+    "e2e": {
+      "status": "n/a",
+      "reason": "No browser or end-user web surface changed; the behavior surface is CLI and filesystem/Git finalization."
+    },
+    "smoke": {
+      "status": "pass",
+      "tests_run": 39,
+      "reason": "The F0.5 CLI surface runner invoked the evidence reader, current-run verifier, and historical backfill verifier end to end."
+    },
+    "pgtap": {
+      "status": "n/a",
+      "reason": "No PostgreSQL schema or database behavior is in scope."
+    },
+    "design_fidelity": {
+      "status": "n/a",
+      "reason": "No UI or visual design surface changed."
+    },
+    "surface_verification": {
+      "surface": "cli",
+      "runner": "uv run --python 3.11 --with pytest --with pytest-mock pytest shared/tests/test_iterate_test_results_evidence.py shared/tests/test_test_results_evidence_check.py shared/tests/test_test_results_backfill_check.py -q -p no:cacheprovider",
+      "tests_run": 39,
+      "exit_code": 0,
+      "attempts": 1,
+      "evidence_path": ".shipwright/runs/iterate-2026-08-03-preserve-test-evidence/surface_verification.json"
+    },
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "AC-1 exact current-run bytes are installed beside the compact summary",
+          "disposition": "tested",
+          "evidence": "test_exact_source_bytes_are_installed_unchanged plus real F5c finalization"
+        },
+        {
+          "behavior": "AC-2 every missing, malformed, ambiguous, or mismatched source fails before either write",
+          "disposition": "tested",
+          "evidence": "test_invalid_or_ambiguous_evidence_fails_closed, test_missing_current_snapshot_fails_closed, and test_f5c_rejects_foreign_current_snapshot_before_writing_either_artifact"
+        },
+        {
+          "behavior": "AC-3 same-byte retry is idempotent and different bytes cannot overwrite",
+          "disposition": "tested",
+          "evidence": "test_same_bytes_are_idempotent_but_different_bytes_never_overwrite and test_concurrent_different_bytes_never_replace_the_atomic_winner"
+        },
+        {
+          "behavior": "AC-4 F5c failure prevents F5b",
+          "disposition": "tested",
+          "evidence": "test_f5c_failure_stops_before_f5b"
+        },
+        {
+          "behavior": "AC-5 immutable evidence is committed while the mutable root snapshot remains excluded",
+          "disposition": "tested",
+          "evidence": "test_valid_evidence_committed_with_the_run_passes, test_valid_but_uncommitted_evidence_fails_f6_gate, exact-byte CRLF Git test, parallel-iterate staging integration, and real directory-level staging exclusion of evidence-install *.tmp crash residue from the managed Gitignore template"
+        },
+        {
+          "behavior": "AC-6 backfill accepts only evidence attributed to a durable matching summary",
+          "disposition": "tested",
+          "evidence": "test_backfill_gate_accepts_exact_commit_source_and_preexisting_summary plus missing-summary and changed-summary refusal tests"
+        },
+        {
+          "behavior": "AC-7 recoverable P1 history is source-proven and unavailable history is named without invention",
+          "disposition": "tested",
+          "evidence": "15 recovered artifacts pass test_results_backfill_check.py; 22 backfill verifier tests include strict staged/unstaged M-status parsing and rejection of A/D/R/U/??; the manifest records seven unavailable or rejected runs"
+        },
+        {
+          "behavior": "AC-8 compact summaries and event projection remain unchanged",
+          "disposition": "tested",
+          "evidence": "existing append/finalize/event tests and the full repository F0 suite"
+        },
+        {
+          "behavior": "AC-9 artifact-only and summary-only crash states repair deterministically while collisions fail",
+          "disposition": "tested",
+          "evidence": "test_artifact_only_crash_state_is_repaired_by_writing_the_summary and test_legacy_summary_only_state_is_repaired_from_validated_current_bytes"
+        },
+        {
+          "behavior": "AC-10 unsafe encodings, duplicate keys, symlinks/reparse paths, path-traversing IDs, unstable reads, inherited blobs, unreachable commits, and unavailable parents are refused",
+          "disposition": "tested",
+          "evidence": "validation matrix in test_iterate_test_results_evidence.py and 22 provenance/status cases in test_test_results_backfill_check.py"
+        }
+      ],
+      "counts": {
+        "total": 10,
+        "tested": 10,
+        "untestable": 0,
+        "untested_testable": 0
+      },
+      "ledger_path": ".shipwright/planning/iterate/2026-08-03-preserve-test-evidence.md"
+    },
+    "declared_removals": [],
+    "degraded": [
+      {
+        "condition": "f0_keyboard_interrupt_split",
+        "detail": "The canonical aggregate F0 runner was interrupted by the host after most units completed. Per the operator rule, shared/tests and shipwright-compliance were split into isolated JUnit/coverage runs. All resulting accepted segments passed; partial coverage files were removed before the CI-parity combine."
+      },
+      {
+        "condition": "windows_pid_probe_deselected",
+        "detail": "shared.tests.test_verifiers_runtime::test_pid_is_alive_current_process_true cannot complete on Windows because os.kill(os.getpid(), 0) terminates its own pytest process. The other 14 selected tests in that file passed; this pre-existing platform behavior is outside P1.11."
+      }
+    ]
+  },
+  "coverage": {
+    "status": "pass",
+    "total": 84.15,
+    "lines_valid": 49726,
+    "lines_covered": 41845,
+    "measured_tier": "repo",
+    "source": "coverage.xml combined by shared/scripts/tools/combine_coverage.py from 55 current .cov-data/.coverage.* files",
+    "diff": {
+      "status": "pass",
+      "percent": 89.0,
+      "threshold": 80.0,
+      "changed_lines": 425,
+      "missing_lines": 46,
+      "compare_branch": "origin/main",
+      "source_fingerprint_before": "8907a08f4f6ea394fd0898963d3f0d7a9a3a1f0abd4fb87a93b627defc94b1e0",
+      "source_fingerprint_after": "8907a08f4f6ea394fd0898963d3f0d7a9a3a1f0abd4fb87a93b627defc94b1e0"
+    },
+    "provenance": {
+      "python": "3.11.15",
+      "coverage_inputs": 55,
+      "partial_inputs_excluded": [
+        ".coverage.shared-tests",
+        ".coverage.shared-chunk-2",
+        ".coverage.shared-chunk-3",
+        ".coverage.shared-chunk-4",
+        ".coverage.shared-chunk-5",
+        ".coverage.shared-chunk-40"
+      ],
+      "measured_at": "2026-08-03T11:03:46.3340116Z"
+    }
+  },
+  "source_state": {
+    "run_id": "iterate-2026-08-03-preserve-test-evidence",
+    "commit": "76dc9621d872763052fa0d4ed9bc57a338b0c509",
+    "dirty": true,
+    "base": null,
+    "release": null
+  }
+}

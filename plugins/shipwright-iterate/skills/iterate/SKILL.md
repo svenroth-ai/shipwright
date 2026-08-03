@@ -288,7 +288,7 @@ Four fail-closed conditions enforced by `surface_verification.py` (orchestrator)
 | F4 | [F4](references/F4.md) | `write_changelog_drop.py` → one bullet per AC under `CHANGELOG-unreleased.d/<category>/` |
 | F5 | [F5](references/F5.md) | Latest-run state under `iterate_latest` in `shipwright_test_results.json` — incl. the `test_completeness` ledger block (small+) |
 | F5b | [F5b](references/F5b.md) | `finalize_iterate.py` — records `work_completed` (with `commit=""`) into **this worktree's** events.jsonl BEFORE compliance regen + handoff; F6 stages it (ships in the PR) |
-| F5c | [F5c](references/F5c.md) | `append_iterate_entry.py` → `.shipwright/agent_docs/iterates/<run_id>.json` atomically; 50-entry retention |
+| F5c | [F5c](references/F5c.md) | Validate current-run test results, install exact bytes as immutable `<run_id>.test-results.json`, then write the existing `<run_id>.json` summary; summary retention stays 50 |
 | F6 | [F6](references/F6.md) | Commit (Conventional Commits). Explicit `git add` per-path list — **incl. `shipwright_events.jsonl` when tracked**. NEVER `-A`. Footer: `Run-ID: {run_id}` + `Co-Authored-By: Claude <noreply@anthropic.com>` |
 | F6.5 | [F6.5](references/F6.5.md) | **SKIP in worktree flow** — event ships with `commit=""`. Legacy/non-worktree only: `finalize_iterate.py attach-commit …` |
 | F7 | [F7](references/F7.md) | Legacy/out-of-band `record_event.py`. Skip unless replaying / non-worktree. ADR-059 FR-gate applies to ALL iterates incl. BUG |

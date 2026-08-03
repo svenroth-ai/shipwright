@@ -55,13 +55,16 @@ from lib.iterate_entry import (  # noqa: E402
     MIGRATION_TS_KEY,
     RUN_CONFIG_NAME,
     entry_file_for,
-    iterates_dir,
     normalize_legacy_entry,
     now_utc_iso,
     quarantine_dir,
     read_iterate_entries,
     sort_key,
     validate_iterate_entry,
+)
+from lib.iterate_test_results import (  # noqa: E402
+    EvidenceError,
+    install_current_evidence,
 )
 
 
@@ -303,28 +306,23 @@ def append_iterate_entry(
     lock_timeout_seconds: float = 10.0,
     retention: int = ITERATE_RETENTION,
 ) -> dict[str, Any]:
-    """Append ``entry`` to the file-per-iterate store.
-
-    Returns a result dict:
-        {
-            "entry_path": ".shipwright/agent_docs/iterates/iterate-....json",
-            "migrated": True | False,
-            "quarantined_count": int,
-            "retention_deleted": int,
-        }
-    """
+    """Append ``entry`` and its mandatory current-run test-result evidence."""
     ok, err = validate_iterate_entry(entry, strict=True)
     if not ok:
         raise IterateAppendError(f"invalid entry: {err}")
 
     project_root = project_root.resolve()
-    iterates_dir(project_root).mkdir(parents=True, exist_ok=True)
     lock_path = (project_root / RUN_CONFIG_NAME).with_suffix(".json.lock")
 
     migrated = False
     quarantined_count = 0
 
     with file_lock(lock_path, timeout_seconds=lock_timeout_seconds):
+        try:
+            evidence_path, evidence_created = install_current_evidence(project_root, entry["run_id"])
+        except EvidenceError as exc:
+            raise IterateAppendError(str(exc)) from exc
+
         config = _load_config(project_root)
         state = config.get(MIGRATION_STATE_KEY)
 
@@ -348,6 +346,8 @@ def append_iterate_entry(
         "migrated": migrated,
         "quarantined_count": quarantined_count,
         "retention_deleted": retention_deleted,
+        "test_results_path": str(evidence_path.relative_to(project_root)),
+        "test_results_created": evidence_created,
     }
 
 

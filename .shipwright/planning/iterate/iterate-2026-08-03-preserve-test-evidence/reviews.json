@@ -1,0 +1,88 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-08-03-preserve-test-evidence",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-03T06:49:03.934967+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": "openrouter",
+      "completed_at": "2026-08-03T06:25:48.878410+00:00",
+      "disposition": null,
+      "recorded_by": "external-prose",
+      "parse_status": "unstructured",
+      "raw_excerpt": "Exit code: 0\nWall time: 30.6 seconds\nOutput:\n{\n  \"success\": true,\n  \"provider\": \"openrouter\",\n  \"degraded\": false,\n  \"reviews_succeeded\": 2,\n  \"reviews\": {\n    \"gemini\": {\n      \"feedback\": \"Here is the review of the implementation approach:\\n\\n- **Category:** Risk\\n- **Severity:** Medium\\n- **Finding:** Cross-file filesystem atomicity is not natively possible. The plan states it will write the new artifact \\\"In the same locked transaction as the existing F5c summary\\\". While a file lock prevents concurrent writes, if the process crashes or disk fills *between* writing the evidence file and appending the summary, the state becomes inconsistent. \\n- **Suggestion:** Explicitly sequence the operations: write and `fsync` the `<run_id>.test-results.json` file *first*, and only then append to the F5c summary ledger. A stranded evidence file without a summary is harmless, but a summary without its mandatory evidence file violates the new integrity checks.\\n\\n- **Category:** Risk\\n- **Severity:** Low\\n- **Finding:** Git repository bloat. Detailed test results (including coverage, pgTAP, and E2E output) can be quite large. Storing a new, uncompressed JSON file for every iterate run in `.shipwright/agent_docs/iterates/` will permanently increase the Git repository size over time.\\n- **Suggestion:** Verify the typical file size of `shipwright_test_results.json`. If it exceeds a few hundred kilobytes, consider minifying the JSON before writing the immutable copy, or ensuring that Git LFS or similar archiving is not necessary. (Note: AC-1 requires byte-for-byte identical copies, which precludes minification, so ensure the raw size is acceptable for long-term Git storage).\\n\\n- **Category:** Edge-case\\n- **Severity:** Low\\n- **Finding:** Memory overhead of validating large JSON files while preserving raw bytes. AC-1 requires the output to be \\\"byte-for-byte identical\\\", but AC-2 requires validating `iterate_latest.run_id`. Parsing a large JSON file entirely into memory just to check one field could cause unnecessary overhead.\\n- **Suggestion:** Read the file as binary, parse it using a standard JSON loader to validate the ID, but ensure the write operation uses the original binary buffer rather than re-serializing the JSON object (which would alter formatting and violate AC-1). \\n\\n- **Category:** Reducibility\\n- **Severity:** Low\\n- **Finding:** Over-production on the backfill tool. The mini-plan specifies adding a \\\"conservative backfill CLI\\\" with explicit candidate discovery, collision refusal, and a deterministic manifest.\\n- **Suggestion:** Since this is a one-time backfill script that will be executed immediately (Step 6) and likely never used again, avoid over-engineering it into a polished CLI with heavy argument parsing. A simple, procedural Python script with hardcoded paths/logic for this single execution is sufficient and materially less code.\\n\\n- **Category:** Dependency\\n- **Severity:** Low\\n- **Finding:** Dynamic staging in F6. The plan states F6 will stage the new file, but historically F6 might rely on static paths or `git add -u`. \\n- **Suggestion:** Ensure the F6 staging step is updated to explicitly track newly created, untracked files matching the glob `.shipwright/agent_docs/iterates/*.test-results.json`.\\n\\nOverall, this is a very sound and well-scoped approach that safely preserves test evidence without breaking the existing summary contract; the findings above are minor refinements to ensure filesystem safety and avoid over-engineering the one-time backfill.\\n\\nSHIPWRIGHT_VERDICT: approve\",\n      \"via\": \"openrouter\",\n      \"status\": \"success\"\n    },\n    \"openai\": {\n      \"feedback\": \"1. **Category:** approach  \\n   **Severity:** high  \\n   **Finding:** The plan describes a \\u201csame locked transaction,\\u201d but filesystem atomic replacement only makes each individual file atomic. A process crash, disk-full condition, or exception between writing `<run_id>.test-results.json`, `<run_id>.json`, and any […truncated]"
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-03T11:05:42.001867+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-03T11:05:42.104338+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 1,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "spec",
+          "file": "shared/scripts/tools/verifiers/test_results_backfill_check.py",
+          "line": 133,
+          "finding": "Worktree-source provenance accepts any non-empty `git status --porcelain` output, despite the manifest claiming `(M shipwright_test_results.json)` and the specification requiring an explicit `M`-only admissible dirty-state grammar. This can accept other states such as staged add/delete, rename/copy, conflict, or an untracked replacement in a manipulated worktree, allowing bytes that are not proven to be a run-written modification relative to that worktree’s checked-out commit.",
+          "suggestion": "Parse the porcelain-v1 status line(s) strictly and accept only the repository’s permitted modification representation for the tracked root snapshot (for example, exactly ` M shipwright_test_results.json` and/or `M  ...`, if both staged and unstaged modifications are intended). Reject multiple lines and every other status code before calling `read_current_evidence`.  Overall assessment: the core F5c evidence installation and retry/collision behavior appear to implement the intended design, but the backfill verifier does not enforce the required worktree provenance grammar. Ship with this fix before relying on the backfill as source-proven evidence.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-08-03T11:10:11.272805+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "partial",
+      "raw_excerpt": "[gemini] SHIPWRIGHT_VERDICT: approve\n\n[openai] - Category: spec\n- Severity: medium\n- File: `shared/scripts/tools/verifiers/test_results_backfill_check.py:133`\n- Finding: Worktree-source provenance accepts any non-empty `git status --porcelain` output, despite the manifest claiming `(M shipwright_test_results.json)` and the specification requiring an explicit `M`-only admissible dirty-state grammar. This can accept other states such as staged add/delete, rename/copy, conflict, or an untracked replacement in a manipulated worktree, allowing bytes that are not proven to be a run-written modification relative to that worktree’s checked-out commit.\n- Suggestion: Parse the porcelain-v1 status line(s) strictly and accept only the repository’s permitted modification representation for the tracked root snapshot (for example, exactly ` M shipwright_test_results.json` and/or `M  ...`, if both staged and unstaged modifications are intended). Reject multiple lines and every other status code before calling `read_current_evidence`.\n\nOverall assessment: the core F5c evidence installation and retry/collision behavior appear to implement the intended design, but the backfill verifier does not enforce the required worktree provenance grammar. Ship with this fix before relying on the backfill as source-proven evidence.\n\nSHIPWRIGHT_VERDICT: revise"
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-03T07:30:07.974397+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    }
+  }
+}

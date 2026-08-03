@@ -286,9 +286,9 @@ perform; F6-verify checks all three ran.
   the `references/F5b.md` classification fields **plus the campaign stamp**
   `"campaign":"{basename of campaign_path}"` + `"sub_iterate_id":"{sub_iterate_id}"`.
 - **F5c (MANDATORY — iterate entry):** append the per-iterate record via `append_iterate_entry.py`
-  (exact `--entry-json` shape in `references/F5c.md`). `finalize_iterate.py` (F5b) does NOT write
-  it — omitting F5c is what dropped `iterates/<run_id>.json` for 3 of 4 sub-iterates in
-  `2026-07-18-mission-artifacts`. `adr` MUST be the bare `run_id` (not `ADR-NNN`).
+  (shape: `references/F5c.md`); it fails closed unless F5's root snapshot belongs to this run,
+  then installs exact bytes as `iterates/<run_id>.test-results.json` before the summary. F6 stages
+  the iterates directory. `finalize_iterate.py` does not write either; `adr` is the bare `run_id`.
 - **F6:** Commit (Conventional Commits). Explicit `git add` per-path (never `-A`; include
   `shipwright_events.jsonl` when tracked). Footer: `Run-ID: {run_id}` + `Co-Authored-By: Claude <noreply@anthropic.com>`.
 - **F6-verify (MANDATORY — do NOT skip):** run the SAME F11 verifier the orchestrator runs, against

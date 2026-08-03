@@ -104,4 +104,7 @@
 # main_repo_root resolver in check_file_size + bloat_gate_on_stop
 # (iterate-2026-06-09); this is belt-and-suspenders.
 **/.shipwright/locks/
+# A hard kill during immutable evidence publication may leave the fsynced private
+# hard-link source behind. F6 stages iterates/ recursively; never stage that residue.
+/.shipwright/agent_docs/iterates/*.test-results.json.*.tmp
 # === END Shipwright canonical .shipwright artifact-ignore (managed) ===

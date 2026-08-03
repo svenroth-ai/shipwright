@@ -37,6 +37,7 @@ sys.path.insert(0, str(REPO_ROOT / "shared" / "scripts"))
 sys.path.insert(0, str(REPO_ROOT / "shared" / "scripts" / "tools"))
 
 from _c3_fixtures import EARLY, ITERATE_RUN, write_iterate_entry  # noqa: E402
+from shared.tests._iterate_entry_helpers import write_current_evidence  # noqa: E402
 from lib.canon_frontmatter import parse_canon_frontmatter  # noqa: E402
 from lib.iterate_entry import entry_file_for  # noqa: E402
 from lib.phase_history import latest_completion  # noqa: E402
@@ -62,6 +63,7 @@ def _project(root: Path) -> Path:
     (root / "shipwright_run_config.json").write_text(
         json.dumps({"phase_history": {}}), encoding="utf-8"
     )
+    write_current_evidence(root, ITERATE_RUN)
     return root
 
 

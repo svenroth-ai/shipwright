@@ -1,0 +1,137 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-07-28-docs-placement-rule",
+    "date": "2026-07-28",
+    "unit": {
+      "status": "passed",
+      "passed": 6458,
+      "total": 6474,
+      "skipped": 16
+    },
+    "integration": {
+      "status": "passed",
+      "passed": 422,
+      "total": 422,
+      "skipped": 0
+    },
+    "e2e": {
+      "status": "not_run",
+      "reason": "library/plugin monorepo - no web surface in this diff"
+    },
+    "smoke": {
+      "status": "not_run",
+      "reason": "no server surface"
+    },
+    "pgtap": {
+      "status": "not_run",
+      "reason": "no database"
+    },
+    "design_fidelity": {
+      "status": "not_run",
+      "reason": "no UI in this diff"
+    },
+    "surface_verification": {
+      "surface": "cli",
+      "tests_run": 22,
+      "exit_code": 0,
+      "runner": "uv run pytest shared/tests/test_gate_catalog_doc_sync.py shared/tests/test_gate_catalog.py shared/tests/test_artifact_path_canon.py -q"
+    },
+    "degraded": [
+      {
+        "condition": "internal code-review cascade not run",
+        "detail": "A standing session policy forbids spawning subagents. Recorded as code=not_run and doubt=not_run with dispositions naming the rule; the external code review ran instead (escalation ladder)."
+      },
+      {
+        "condition": "external code review partially degraded",
+        "detail": "Gemini returned a truncated response on --mode code; GPT-5.6 succeeded. Its one high-severity claim was refuted by executing --help."
+      }
+    ],
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "AC2 - the render lives at shared/config/gate_catalog.md and matches the catalogue",
+          "disposition": "tested",
+          "evidence": "test_gate_catalog_doc_sync.py::test_doc_exists + ::test_doc_matches_generated_catalog PASSED"
+        },
+        {
+          "behavior": "AC2/AC9 - the render cannot drift back under docs/",
+          "disposition": "tested",
+          "evidence": "NEW test_gate_catalog_doc_sync.py::test_doc_lives_beside_its_source PASSED - asserts the parent dir AND the absence of docs/gate-catalog.md"
+        },
+        {
+          "behavior": "AC3 - the drift test actually detects a stale render",
+          "disposition": "tested",
+          "evidence": "Mutation probe: appended a marker to the render -> test_doc_matches_generated_catalog FAILED; restored -> 3 passed. Executed, not assertion-read."
+        },
+        {
+          "behavior": "AC5 - catalogue integrity survives removing the maintainer name",
+          "disposition": "tested",
+          "evidence": "test_gate_catalog.py 15 passed, incl. test_known_sensitive_gates_have_confirmed_policies pinning both design gates"
+        },
+        {
+          "behavior": "AC7 - no legacy artifact path is reintroduced once the docs/migrations exemption is dropped",
+          "disposition": "tested",
+          "evidence": "test_artifact_path_canon.py 4 passed with the exemption removed. Caught two real violations in the new CLAUDE.md prose first and forced canonical spelling."
+        },
+        {
+          "behavior": "AC8 - deleting the dormant tool breaks no consumer",
+          "disposition": "tested",
+          "evidence": "Its test deleted with it; 6880 passed across three roots; repo-wide grep of .github/, Makefile*, every pyproject.toml, scripts/ found no caller"
+        },
+        {
+          "behavior": "AC6 - .gitignore semantics unchanged by comment removal",
+          "disposition": "tested",
+          "evidence": "test_gitignore_canon.py PASSED (in shared/tests) - only comment lines removed, no rule touched"
+        },
+        {
+          "behavior": "AC10 - the two surviving guides keep every code reference",
+          "disposition": "tested",
+          "evidence": "6 reference sites enumerated (constants.py MIGRATION_DOC, master_stop_check.py, router.py, run/SKILL.md, ADR-109, test_requirements_catalog_parsers.py); both targets verified present"
+        },
+        {
+          "behavior": "AC2 - the regeneration command a maintainer copies writes to the new path",
+          "disposition": "tested",
+          "evidence": "Probe: deleted the render, ran the documented command verbatim from repo root -> recreated at shared/config/, docs/gate-catalog.md NOT resurrected, drift test green"
+        },
+        {
+          "behavior": "AC12 - full suite and lint green",
+          "disposition": "tested",
+          "evidence": "shared/tests 6160 passed / integration-tests 422 passed / shared/scripts/tools/tests 298 passed; uvx ruff@0.15.15 check . -> All checks passed"
+        },
+        {
+          "behavior": "AC1/AC11 - the rule is stated in CLAUDE.md and the REQ-3 design points at the render that exists",
+          "disposition": "tested",
+          "evidence": "Verified by inspection: CLAUDE.md carries all three clauses incl. the '.shipwright/ is not a parking lot' clause; REQ-3 DESIGN has 1 hit for the new path and 0 for the old"
+        },
+        {
+          "behavior": "AC4 - the guide.md gate-policy section reads correctly to a non-expert",
+          "disposition": "untestable",
+          "reason_code": "requires-manual-visual-judgment",
+          "reason": "Prose aimed at a user. Its factual content is pinned by test_gate_catalog.py's policy assertions; whether it READS well is a human call."
+        }
+      ],
+      "counts": {
+        "testable": 11,
+        "tested": 11,
+        "untestable": 1,
+        "untested_testable": 0
+      },
+      "enumeration_basis": {
+        "acs": 12,
+        "covered_acs": 12
+      }
+    }
+  },
+  "coverage": {
+    "total": 80.2,
+    "measured_tier": "repo",
+    "source": "combined coverage.xml (all plugins + shared + integration)",
+    "measured_at": "2026-07-04T00:00:00Z"
+  },
+  "source_state": {
+    "run_id": "iterate-2026-07-28-docs-placement-rule",
+    "commit": "7ec426a2ed01636f16378619516447fea0ae90df",
+    "dirty": true
+  }
+}

@@ -54,6 +54,8 @@ from tools.verifiers.iterate_checks import (  # noqa: E402,F401
     check_removal_coverage,
     check_session_handoff_fresh,
     check_spec_impact_recorded,
+    check_test_results_backfill,
+    check_test_results_evidence,
     run_all_checks,
 )
 

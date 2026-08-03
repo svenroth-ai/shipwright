@@ -1,0 +1,313 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-07-27-pr-review-forged-boundary",
+    "date": "2026-07-28",
+    "unit": {
+      "status": "passed",
+      "passed": 6435,
+      "total": 6454,
+      "skipped": 19
+    },
+    "integration": {
+      "status": "passed",
+      "passed": 422,
+      "total": 422,
+      "skipped": 0
+    },
+    "e2e": {
+      "status": "not_run",
+      "reason": "library/plugin monorepo \u2014 no web surface in this diff"
+    },
+    "smoke": {
+      "status": "not_run",
+      "reason": "no server surface"
+    },
+    "pgtap": {
+      "status": "not_run",
+      "reason": "no database"
+    },
+    "design_fidelity": {
+      "status": "not_run",
+      "reason": "no UI in this diff"
+    },
+    "surface_verification": {
+      "surface": "cli",
+      "tests_run": 194,
+      "exit_code": 0,
+      "runner": "uv run pytest plugins/shipwright-security/tests/test_pr_review_script.py plugins/shipwright-security/tests/test_pr_review_forged_boundary.py plugins/shipwright-security/tests/test_pr_review_prompt_template.py plugins/shipwright-security/tests/test_pr_review_render.py plugins/shipwright-security/tests/test_pr_review_gh.py plugins/shipwright-security/tests/test_pr_review_filter.py plugins/shipwright-security/tests/test_pr_review_lib.py plugins/shipwright-security/tests/test_pr_review_openrouter.py plugins/shipwright-security/tests/test_pr_review_truncation.py -q --no-header"
+    },
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "AC1 \u2014 none of the nine characters Python breaks lines on can open a diff section",
+          "disposition": "tested",
+          "evidence": "tests/test_pr_review_forged_boundary.py::TestForgedSectionBoundary::test_a_forged_header_cannot_hide_a_line_from_the_reviewer (9 params)"
+        },
+        {
+          "behavior": "AC1 \u2014 a forged header cannot split a section at the size cap either",
+          "disposition": "tested",
+          "evidence": "tests/test_pr_review_forged_boundary.py::TestForgedSectionBoundary::test_a_forged_header_does_not_split_the_section (3 params)"
+        },
+        {
+          "behavior": "AC2 \u2014 the fetch asks for no text mode (text, encoding and errors all absent)",
+          "disposition": "tested",
+          "evidence": "tests/test_pr_review_gh.py::TestFetchPrDiff::test_it_does_not_ask_for_text_mode"
+        },
+        {
+          "behavior": "AC2 \u2014 a lone CR is still a CR when the parser sees it",
+          "disposition": "tested",
+          "evidence": "tests/test_pr_review_gh.py::TestFetchPrDiff::test_a_lone_cr_survives_the_fetch"
+        },
+        {
+          "behavior": "AC2 \u2014 undecodable bytes do not crash the gate",
+          "disposition": "tested",
+          "evidence": "tests/test_pr_review_gh.py::TestFetchPrDiff::test_undecodable_bytes_do_not_crash_the_gate"
+        },
+        {
+          "behavior": "AC3 \u2014 a genuine LF-anchored header still splits",
+          "disposition": "tested",
+          "evidence": "tests/test_pr_review_forged_boundary.py::TestForgedSectionBoundary::test_a_real_lf_header_still_splits"
+        },
+        {
+          "behavior": "AC3 \u2014 a real CRLF diff still parses, resolves paths and excludes",
+          "disposition": "tested",
+          "evidence": "tests/test_pr_review_forged_boundary.py::TestForgedSectionBoundary::test_a_crlf_diff_still_parses"
+        },
+        {
+          "behavior": "AC3 \u2014 the generated set still excludes what it excluded, minus lockfiles",
+          "disposition": "tested",
+          "evidence": "tests/test_pr_review_filter.py::TestIsGeneratedPath + ::TestFilterGeneratedPaths + ::TestReviewEvidenceExcluded"
+        },
+        {
+          "behavior": "AC4 \u2014 a fully-filtered PR fails closed, names what was filtered, never reaches the model",
+          "disposition": "tested",
+          "evidence": "tests/test_pr_review_script.py::TestMainOrchestration::test_a_fully_filtered_pr_fails_closed"
+        },
+        {
+          "behavior": "AC4 \u2014 an empty fetch fails closed",
+          "disposition": "tested",
+          "evidence": "tests/test_pr_review_script.py::TestMainOrchestration::test_an_empty_fetch_fails_closed"
+        },
+        {
+          "behavior": "AC4 \u2014 a header-less body fails closed",
+          "disposition": "tested",
+          "evidence": "tests/test_pr_review_script.py::TestMainOrchestration::test_a_headerless_body_fails_closed"
+        },
+        {
+          "behavior": "AC4 \u2014 count_sections counts only LF-anchored headers (the gate itself)",
+          "disposition": "tested",
+          "evidence": "tests/test_pr_review_forged_boundary.py::TestCountSections (7 params + forged case)"
+        },
+        {
+          "behavior": "AC5 \u2014 a PR mixing generated files with real source is reviewed, and the drop is disclosed",
+          "disposition": "tested",
+          "evidence": "tests/test_pr_review_script.py::TestMainOrchestration::test_an_ordinary_pr_with_some_generated_files_still_runs"
+        },
+        {
+          "behavior": "AC5 \u2014 a lockfile-only PR is reviewed rather than filtered to nothing",
+          "disposition": "tested",
+          "evidence": "tests/test_pr_review_script.py::TestMainOrchestration::test_a_lockfile_only_pr_is_reviewed_not_filtered_away"
+        },
+        {
+          "behavior": "AC5 \u2014 a dependency lockfile is not a generated path (7 lockfile flavours)",
+          "disposition": "tested",
+          "evidence": "tests/test_pr_review_filter.py::TestIsGeneratedPath::test_a_lockfile_is_NOT_generated"
+        },
+        {
+          "behavior": "AC6 \u2014 the unreviewed-file list reaches the MODEL, not only the PR comment",
+          "disposition": "tested",
+          "evidence": "tests/test_pr_review_script.py::TestMainOrchestration::test_an_oversized_diff_names_the_unreviewed_file_in_every_sink"
+        },
+        {
+          "behavior": "AC7 \u2014 a count mixing renames reports paths, not files",
+          "disposition": "tested",
+          "evidence": "tests/test_pr_review_render.py::TestRenderComment::test_a_mixed_count_is_reported_in_paths_not_files"
+        },
+        {
+          "behavior": "AC7 \u2014 paths and unnameable sections are counted apart, never summed",
+          "disposition": "tested",
+          "evidence": "tests/test_pr_review_render.py::TestBuildPrMeta::test_paths_and_unnameable_sections_are_counted_apart"
+        },
+        {
+          "behavior": "AC8 \u2014 a path named {DIFF} arriving via pr_meta is not expanded by the fill",
+          "disposition": "tested",
+          "evidence": "tests/test_pr_review_prompt_template.py::TestOnePassSubstitution::test_a_placeholder_arriving_via_pr_meta_is_not_expanded"
+        },
+        {
+          "behavior": "AC8 \u2014 the mirror case: {PR_META} inside the diff does not pull the metadata in",
+          "disposition": "tested",
+          "evidence": "tests/test_pr_review_prompt_template.py::TestOnePassSubstitution::test_a_placeholder_arriving_via_the_diff_is_not_expanded_either"
+        },
+        {
+          "behavior": "AC8 \u2014 a template missing either placeholder raises",
+          "disposition": "tested",
+          "evidence": "tests/test_pr_review_prompt_template.py::TestOnePassSubstitution::test_a_template_missing_a_placeholder_raises (3 params)"
+        },
+        {
+          "behavior": "AC8 \u2014 a broken template exits 2 redacted, not as a traceback",
+          "disposition": "tested",
+          "evidence": "tests/test_pr_review_script.py::TestMainOrchestration::test_a_broken_template_exits_2_redacted_not_as_a_traceback"
+        },
+        {
+          "behavior": "AC8 \u2014 the SHIPPED template carries both placeholders and no unknown one",
+          "disposition": "tested",
+          "evidence": "tests/test_pr_review_prompt_template.py::TestShippedTemplate (5 cases)"
+        },
+        {
+          "behavior": "AC8 \u2014 {DIFF} lands inside the untrusted fence, after {PR_META}",
+          "disposition": "tested",
+          "evidence": "tests/test_pr_review_prompt_template.py::TestShippedTemplate::test_diff_lands_inside_the_untrusted_fence"
+        },
+        {
+          "behavior": "AC8 \u2014 the CLI default and the workflow both name the guarded prompt dir",
+          "disposition": "tested",
+          "evidence": "tests/test_pr_review_prompt_template.py::TestCallersNameThisDirectory"
+        },
+        {
+          "behavior": "AC9 \u2014 _section_paths stops at the first @@, so hunk content mints no path",
+          "disposition": "tested",
+          "evidence": "tests/test_pr_review_forged_boundary.py::TestHunkContentCannotMintPaths::test_section_paths_stops_at_the_first_hunk"
+        },
+        {
+          "behavior": "AC9 \u2014 a minted path cannot flip an exclusion decision in either direction",
+          "disposition": "tested",
+          "evidence": "tests/test_pr_review_forged_boundary.py::TestHunkContentCannotMintPaths::test_a_minted_path_cannot_flip_an_exclusion_decision"
+        },
+        {
+          "behavior": "AC9 \u2014 a minted path reaches neither path list nor the model metadata",
+          "disposition": "tested",
+          "evidence": "tests/test_pr_review_forged_boundary.py::TestHunkContentCannotMintPaths::test_an_in_hunk_header_line_is_not_named_to_the_model_or_the_human"
+        },
+        {
+          "behavior": "AC9 \u2014 a genuine second section after a hunk still registers",
+          "disposition": "tested",
+          "evidence": "tests/test_pr_review_forged_boundary.py::TestHunkContentCannotMintPaths::test_a_real_second_section_after_a_hunk_still_registers"
+        },
+        {
+          "behavior": "Decision 7 \u2014 the three regenerated agent-docs and the two regenerated sub-dirs are still filtered",
+          "disposition": "tested",
+          "evidence": "tests/test_pr_review_filter.py::TestIsGeneratedPath::test_the_three_regenerated_agent_docs"
+        },
+        {
+          "behavior": "Decision 7 \u2014 the AUTHORED agent-docs are not filtered",
+          "disposition": "tested",
+          "evidence": "tests/test_pr_review_filter.py::TestIsGeneratedPath::test_authored_agent_docs_are_NOT_generated (6 names)"
+        },
+        {
+          "behavior": "Decision 7 \u2014 the regenerated set cannot drift from the repo's churn allowlist",
+          "disposition": "tested",
+          "evidence": "tests/test_pr_review_filter.py::TestIsGeneratedPath::test_the_regenerated_set_matches_the_repo_churn_allowlist"
+        },
+        {
+          "behavior": "Sanitiser \u2014 every character the splitter refuses to break on is neutralised here",
+          "disposition": "tested",
+          "evidence": "tests/test_pr_review_render.py::TestSafePath::test_every_character_the_splitter_refuses_to_break_on_is_neutralised_here (10 params)"
+        },
+        {
+          "behavior": "Sanitiser \u2014 bidi and zero-width controls are neutralised",
+          "disposition": "tested",
+          "evidence": "tests/test_pr_review_render.py::TestSafePath::test_invisible_and_bidi_controls_are_neutralised (6 params)"
+        },
+        {
+          "behavior": "Sanitiser \u2014 braces are stripped so a path cannot pose as a template token",
+          "disposition": "tested",
+          "evidence": "tests/test_pr_review_render.py::TestSafePath::test_braces_are_stripped_so_a_path_cannot_pose_as_a_placeholder"
+        },
+        {
+          "behavior": "Sanitiser \u2014 a rendered name is length-bounded, truncation marker included",
+          "disposition": "tested",
+          "evidence": "tests/test_pr_review_render.py::TestSafePath::test_a_rendered_name_is_length_bounded + ::test_a_name_at_the_bound_is_untouched"
+        },
+        {
+          "behavior": "Sanitiser \u2014 ordinary paths pass through unchanged",
+          "disposition": "tested",
+          "evidence": "tests/test_pr_review_render.py::TestSafePath::test_ordinary_paths_are_untouched"
+        },
+        {
+          "behavior": "Prompt hygiene \u2014 Markdown in a filtered path cannot inject into the comment or review state",
+          "disposition": "tested",
+          "evidence": "tests/test_pr_review_render.py::TestNothingReviewedSummary::test_markdown_in_a_path_cannot_inject_into_the_comment"
+        },
+        {
+          "behavior": "Prompt hygiene \u2014 more than ten filtered paths disclose the remainder",
+          "disposition": "tested",
+          "evidence": "tests/test_pr_review_render.py::TestNothingReviewedSummary::test_more_than_ten_filtered_paths_disclose_the_remainder"
+        },
+        {
+          "behavior": "Prompt hygiene \u2014 the untrusted-data warning precedes the names it governs",
+          "disposition": "tested",
+          "evidence": "tests/test_pr_review_render.py::TestBuildPrMeta::test_the_untrusted_warning_precedes_the_names"
+        },
+        {
+          "behavior": "Prompt hygiene \u2014 the model-facing names are code-spanned and bounded",
+          "disposition": "tested",
+          "evidence": "tests/test_pr_review_render.py::TestBuildPrMeta::test_model_facing_names_are_bounded_and_sanitised"
+        },
+        {
+          "behavior": "Disclosure \u2014 the exclusion notice no longer claims lockfiles are filtered",
+          "disposition": "tested",
+          "evidence": "tests/test_pr_review_render.py::TestRenderCommentExclusion::test_the_note_does_not_claim_lockfiles_are_filtered"
+        },
+        {
+          "behavior": "Disclosure \u2014 the fail-closed comment does not credit a model that was never called",
+          "disposition": "tested",
+          "evidence": "tests/test_pr_review_script.py::TestMainOrchestration::test_the_fail_closed_comment_does_not_credit_a_model"
+        },
+        {
+          "behavior": "Disclosure \u2014 the fail-closed summary distinguishes filtered-away from no-sections-at-all",
+          "disposition": "tested",
+          "evidence": "tests/test_pr_review_render.py::TestNothingReviewedSummary::test_a_fully_filtered_pr_names_what_was_filtered + ::test_a_headerless_diff_says_so_instead"
+        },
+        {
+          "behavior": "gh boundary \u2014 the comment body is encoded UTF-8, not by locale",
+          "disposition": "tested",
+          "evidence": "tests/test_pr_review_gh.py::TestPostComment::test_the_body_is_encoded_as_utf8_not_by_locale"
+        },
+        {
+          "behavior": "gh boundary \u2014 a failed review-state post is raised rather than discarded",
+          "disposition": "tested",
+          "evidence": "tests/test_pr_review_gh.py::TestReviewState::test_a_failure_is_raised_rather_than_discarded"
+        },
+        {
+          "behavior": "Transport \u2014 one timeout default, shared by the CLI flag and a direct call",
+          "disposition": "tested",
+          "evidence": "tests/test_pr_review_openrouter.py::TestDefaults::test_the_timeout_default_is_shared_with_the_cli + ::TestCallOpenRouter::test_the_default_timeout_is_passed_through"
+        },
+        {
+          "behavior": "Module split \u2014 every re-exported name still resolves through pr_review.<symbol>",
+          "disposition": "tested",
+          "evidence": "tests/test_pr_review_script.py::TestFileContract::test_every_re_exported_name_resolves"
+        },
+        {
+          "behavior": "Module split \u2014 the five modules are behaviour-preserving beyond the declared changes",
+          "disposition": "untestable",
+          "reason_code": "covered-by-existing-test",
+          "note": "A pure code move has no behaviour of its own to assert. It is covered by the 600-test plugin suite passing unchanged across the move, and by the re-export test above; a dedicated test would only restate them."
+        }
+      ],
+      "counts": {
+        "total": 48,
+        "tested": 47,
+        "untestable": 1,
+        "untested_testable": 0
+      }
+    },
+    "degraded": [
+      {
+        "condition": "external_review_partial",
+        "detail": "external_review.py: gemini returned an empty body on round 1 and finish_reason=length (truncated) on round 2, so only openai answered on both. Recorded degraded, not as a pass. Compensated by the full internal cascade (spec/code/doubt, opus) run on the same diff \u2014 Stage 1 REJECTed it with five blocking items before Stage 2 was allowed to run."
+      },
+      {
+        "condition": "leak_guard_baseline_amended",
+        "detail": "check_iterate_isolation flagged .shipwright/planning/iterate/HANDOVER-2026-07-28-silent-revert-false-positives.md as a main-tree leak. It is not from this run: the snapshot was taken 2026-07-27 18:36Z and the untracked file was written 2026-07-28 00:38 local by a different session, documenting iterate-2026-07-27-checks-that-gate-nothing. Added to the snapshot baseline with that attribution recorded in main_tree_snapshot.json; the file itself was left untouched."
+      }
+    ]
+  },
+  "coverage": {
+    "total": 80.2,
+    "measured_tier": "repo",
+    "source": "combined coverage.xml (all plugins + shared + integration)",
+    "measured_at": "2026-07-04T00:00:00Z"
+  }
+}

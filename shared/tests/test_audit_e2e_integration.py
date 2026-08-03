@@ -144,9 +144,9 @@ def _seed(
             results["iterate_latest"]["surface_verification"] = surface_block
         comp = completeness_block if completeness_block is not None else _VALID_COMPLETENESS
         results["iterate_latest"]["test_completeness"] = comp
-        (proj / "shipwright_test_results.json").write_text(
-            json.dumps(results, indent=2), encoding="utf-8"
-        )
+        raw = json.dumps(results, indent=2).encode()
+        (proj / "shipwright_test_results.json").write_bytes(raw)
+        (entry_path.parent / f"{run_id}.test-results.json").write_bytes(raw)
 
 
 def _run_verifier(proj: Path, run_id: str, commit: str = "abc123def456") -> tuple[int, str]:

@@ -1,0 +1,1 @@
+Preserve complete iterate test results as immutable run-specific evidence, fail finalization on missing or mismatched snapshots, and backfill 15 source-proven historical P1 snapshots without committing the mutable root snapshot.

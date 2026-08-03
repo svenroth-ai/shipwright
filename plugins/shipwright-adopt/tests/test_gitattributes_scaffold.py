@@ -23,6 +23,7 @@ from lib.gitattributes_scaffolder import scaffold_gitattributes
 
 UNION_EVENTS = "shipwright_events.jsonl merge=union"
 UNION_TRIAGE = ".shipwright/triage.jsonl merge=union"
+EVIDENCE_NON_TEXT = "/.shipwright/agent_docs/iterates/*.test-results.json -text -diff"
 
 
 @pytest.fixture
@@ -40,6 +41,7 @@ def test_scaffolds_when_absent(tmp_project: Path) -> None:
     assert result["path"] == str(ga)
     text = ga.read_text(encoding="utf-8")
     assert UNION_EVENTS in text and UNION_TRIAGE in text
+    assert EVIDENCE_NON_TEXT in text
 
 
 def test_merges_into_existing_preserving_user_entries(tmp_project: Path) -> None:
@@ -67,6 +69,7 @@ def test_already_present_is_noop(tmp_project: Path) -> None:
         f"*.png binary\n{UNION_EVENTS}\n{UNION_TRIAGE}\n"
         ".shipwright/agent_docs/architecture.md merge=union\n"
         ".shipwright/agent_docs/conventions.md merge=union\n"
+        f"{EVIDENCE_NON_TEXT}\n"
     )
     ga.write_text(pre, encoding="utf-8")
 
