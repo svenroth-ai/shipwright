@@ -17,6 +17,7 @@ _TOKEN_RE = re.compile(r"^[0-9a-f]{32}$")
 _WINDOWS_LOCK_BYTES = 65
 CACHE_LOCK_NAME = ".sessionstart-cache-repair.lock"
 CLAIM_TTL_SECONDS = 30.0
+COMPLETION_CLOCK_SKEW_SECONDS = 1.0
 
 
 def _opened_regular_at_path(path: Path, fd: int) -> bool:
@@ -159,7 +160,7 @@ def session_repair_state(cache_root: Path, session_id: object) -> bool | None:
         if age is None:
             return None
         assert isinstance(age, float)
-        return 0.0 <= age < CLAIM_TTL_SECONDS
+        return -COMPLETION_CLOCK_SKEW_SECONDS <= age < CLAIM_TTL_SECONDS
     return None
 
 

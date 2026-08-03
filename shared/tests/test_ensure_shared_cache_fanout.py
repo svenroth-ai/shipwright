@@ -207,6 +207,35 @@ def test_future_completion_mtime_is_expired_not_fresh(tmp_path: Path):
     assert isinstance(successor, Path) and successor != old_done
 
 
+@pytest.mark.parametrize("rounded_age", [-0.001, -1.0])
+def test_bounded_future_completion_rounding_stays_fresh(
+    tmp_path: Path, monkeypatch, rounded_age: float,
+):
+    sid = "rounded-future-done"
+    done = _claim(tmp_path, sid, token="8" * 32)
+    assert isinstance(done, Path) and healer._complete_session(done)
+    monkeypatch.setattr(lock_helper, "read_completion_age", lambda _path: rounded_age)
+    monkeypatch.setattr(healer, "read_completion_age", lambda _path: rounded_age)
+
+    assert lock_helper.session_repair_state(tmp_path, sid) is True
+    assert _claim(tmp_path, sid, wait_seconds=0.1) is False
+
+
+def test_completion_older_than_clock_skew_boundary_rearms(
+    tmp_path: Path, monkeypatch,
+):
+    sid = "beyond-clock-skew"
+    done = _claim(tmp_path, sid, token="7" * 32)
+    assert isinstance(done, Path) and healer._complete_session(done)
+    beyond_skew = -1.001
+    monkeypatch.setattr(lock_helper, "read_completion_age", lambda _path: beyond_skew)
+    monkeypatch.setattr(healer, "read_completion_age", lambda _path: beyond_skew)
+
+    assert lock_helper.session_repair_state(tmp_path, sid) is False
+    successor = _claim(tmp_path, sid, token="6" * 32, wait_seconds=0.1)
+    assert isinstance(successor, Path) and successor != done
+
+
 def test_done_freshness_never_follows_the_path(
     tmp_path: Path, monkeypatch,
 ):
