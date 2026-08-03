@@ -1,0 +1,32 @@
+{
+  "success": true,
+  "provider": "openrouter",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviews": {
+    "openai": {
+      "feedback": "No concrete defects found in the changed implementation. The refactor leaves one active __file__-based derivation and one guarded sys.path.insert, while the Windows PID path avoids os.kill, validates the DWORD range, maps handle wait states correctly, closes opened handles, and preserves POSIX behavior. SHIPWRIGHT_VERDICT: approve",
+      "via": "openrouter",
+      "status": "success"
+    },
+    "gemini": {
+      "feedback": "The diff fulfills the acceptance criteria, preserves ADR-045 boundaries, and safely converts the Windows PID probe to a kernel32 process-handle wait without handle leaks. No correctness, security, test quality, or spec compliance issues were found. SHIPWRIGHT_VERDICT: approve",
+      "via": "openrouter",
+      "status": "success"
+    }
+  },
+  "verdicts": {
+    "openai": "approve",
+    "gemini": "approve"
+  },
+  "statuses": {
+    "openai": "success",
+    "gemini": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: gemini=approve, openai=approve"
+  }
+}

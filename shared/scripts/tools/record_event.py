@@ -27,46 +27,44 @@ from datetime import datetime, timezone
 from pathlib import Path
 from uuid import uuid4
 
-# Wire up shared/scripts so `lib.events_log` resolves whether this file is
-# run as a script (`uv run .../record_event.py`) or imported as a module
-# (`tools.record_event` via finalize_iterate, `scripts.tools.record_event`
-# via tests) — both invocation paths are exercised in CI.
+# Wire shared/scripts for both direct execution and module imports
+# (`tools.record_event` / `scripts.tools.record_event`), both exercised in CI.
 _SCRIPTS_ROOT = Path(__file__).resolve().parents[1]  # shared/scripts
 if str(_SCRIPTS_ROOT) not in sys.path:
     sys.path.insert(0, str(_SCRIPTS_ROOT))
 
 from lib.events_log import resolve_events_path  # noqa: E402
-# grade_snapshot's shape + tree attribution, shared with the compliance emitter.
-# Top-level for the same ADR-045 reason as tests_block below.
+from lib.events_amend import apply_amendments  # noqa: E402
+# grade_snapshot shape + attribution; top-level for ADR-045 like tests_block.
 from grade_snapshot_shape import apply_grade_snapshot, reject_asserted_attribution  # noqa: E402
-# Shared skip-vs-fail SSOT (top-level, not under lib/, so the compliance plugin
-# can import it too without a lib-namespace collision — ADR-045).
+from source_state_capture import capture_dirty  # noqa: E402 — same ADR-045 placement
+# Shared skip-vs-fail SSOT; top-level avoids the ADR-045 lib collision.
 from tests_block import validate_tests_block  # noqa: E402
-# Re-export the single tolerant event-log reader (SSOT in lib.config) so module
-# attributes `record_event.read_events` / `from record_event import read_events`
-# keep resolving for callers and the F14 lifecycle test. Direction tools->lib.
-from lib.config import read_events  # noqa: E402,F401 — re-exported SSOT
-# Cross-platform append-log mutex (impl in lib/file_lock.py); aliased to the
-# historical private name so `record_event._FileLock` stays monkeypatchable
-# (F14 lifecycle test) and the `with _FileLock(...)` call sites resolve it.
+# Re-export the tolerant reader so `record_event.read_events` remains the F14
+# lifecycle-test and caller monkeypatch seam. Direction tools -> lib.
+from lib.config import read_events, read_events_result  # noqa: E402,F401 — re-exported SSOT
+# All append-dedup predicates; historical names remain exported below.
+from lib.event_dedup import (  # noqa: E402,F401 — re-exported surface
+    has_commit as _has_commit,
+    has_phase_event as _has_phase_event,
+    last_grade_snapshot,
+    unchanged_grade_skip,
+)
+# Keep the historical `_FileLock` alias monkeypatchable for the F14 lifecycle
+# test and existing `with _FileLock(...)` call sites.
 from lib.file_lock import FileLock as _FileLock  # noqa: E402
-# Writer-side newline probe — the record-boundary SSOT shared with triage.py.
 from lib.jsonl_records import ends_without_newline  # noqa: E402
-# SSOT for FR-classification (BP-1). The predicates the gates use moved to
-# lib/fr_gates.py with them; only these two are still consumed here.
-# ``_NONE_REASON_MAX_LEN`` is a deliberate re-export — test_fr_classification
-# pins it equal to the SSOT value, which is what stops the CLI's advertised cap
-# from drifting away from the one actually enforced.
+# FR-classification SSOT (BP-1); gate predicates moved to lib/fr_gates.py.
+# `_NONE_REASON_MAX_LEN` remains re-exported and drift-pinned by its test so the
+# CLI's advertised cap stays equal to the enforced one.
 from lib.fr_classification import (  # noqa: E402
     CHANGE_TYPE_VALUES as _CHANGE_TYPE_VALUES,  # noqa: F401 — drift-pinned re-export
     NONE_REASON_MAX_LEN as _NONE_REASON_MAX_LEN,  # noqa: F401 — drift-pinned re-export
     normalize_fr_impact as _normalize_fr_impact,
 )
-# Both FR gates live in lib/fr_gates.py. This file was already over the 300-LOC
-# limit, so the S0 gate was extracted rather than appended — and its sibling
-# classification gate moved with it, which ratchets this file DOWN (~820 -> ~720)
-# instead of merely holding the line. Re-exported under the historical private
-# names so every existing call site and test keeps resolving unchanged.
+# Both FR gates live in lib/fr_gates.py, extracted to ratchet this oversized file
+# down rather than append. Historical private names remain exported for callers
+# and tests.
 from lib.fr_gates import (  # noqa: E402,F401 — re-exported
     check_fr_existence,
     collect_known_fr_ids,
@@ -76,6 +74,14 @@ from lib.fr_gates import (  # noqa: E402,F401 — re-exported
 )
 
 SCHEMA_VERSION = 1
+
+
+def has_commit(project_root: Path, commit: str, section: str | None = None) -> bool:
+    return _has_commit(project_root, commit, section, reader=read_events)
+
+
+def has_phase_event(project_root: Path, phase: str, split_id: str | None = None) -> bool:
+    return _has_phase_event(project_root, phase, split_id, reader=read_events)
 
 
 # ---------------------------------------------------------------------------
@@ -139,42 +145,6 @@ def _parse_changed_files(raw: str) -> list[str]:
             if chunk:
                 parts.append(chunk.replace("\\", "/"))
     return parts
-
-
-def has_commit(project_root: Path, commit: str, section: str | None = None) -> bool:
-    """Check if a work_completed event with this commit (and section) already exists.
-
-    When *section* is provided, deduplication checks (section, commit) tuple.
-    This prevents collapsing multiple sections that share the same commit hash.
-    Without section, falls back to commit-only check (backwards compat).
-    """
-    for event in read_events(project_root):
-        if event.get("type") == "work_completed" and event.get("commit") == commit:
-            if section is None or event.get("section") == section:
-                return True
-    return False
-
-
-def has_phase_event(project_root: Path, phase: str, split_id: str | None = None) -> bool:
-    """Check if a phase_completed event for this ``(phase, splitId)`` already exists.
-
-    The dedup identity is the ``(phase, splitId)`` PAIR, not ``phase`` alone. A
-    multi-split pipeline phase (build/plan fan out one phase_task per split, all
-    sharing the same ``phase``) records ONE phase_completed per split, so the
-    tracked log keeps every split's end — the LAST split's end, which bounds the
-    true per-phase span, is no longer discarded by first-wins dedup. Per-split
-    duration bars derive from these; the per-phase span is min(start)..max(end).
-
-    A single-split phase carries ``splitId=None`` → dedups by ``(phase, None)``,
-    identical to the historical phase-only behavior (zero back-compat drift).
-    Origin: iterate-2026-07-11-phase-completed-per-split (per-split accuracy).
-    """
-    for event in read_events(project_root):
-        if (event.get("type") == "phase_completed"
-                and event.get("phase") == phase
-                and event.get("splitId") == split_id):
-            return True
-    return False
 
 
 def build_event(args: argparse.Namespace) -> dict:
@@ -371,8 +341,17 @@ def build_event(args: argparse.Namespace) -> dict:
         # Shape owned by grade_snapshot_shape (shared with the compliance
         # emitter): validation AND the tree attribution, which is derived from
         # --project-root and cannot be asserted by any caller.
-        apply_grade_snapshot(event, grade=args.grade, score=args.score,
-                             project_root=args.project_root, commit=args.commit)
+        #
+        # Dirtiness is captured here, not passed in, and that is correct on THIS
+        # route for the reason it is wrong on the compliance one: nothing has been
+        # written yet. Bound to SHIPWRIGHT_RUN_ID so an earlier capture in the same
+        # run is inherited rather than re-measured (trg-f5ae5371).
+        apply_grade_snapshot(
+            event, grade=args.grade, score=args.score,
+            project_root=args.project_root, commit=args.commit,
+            dirty=capture_dirty(args.project_root,
+                                os.environ.get("SHIPWRIGHT_RUN_ID")),
+        )
 
     return event
 
@@ -382,8 +361,9 @@ def append_event(project_root: Path, event: dict) -> str:
 
     Unconditional append — no dedup. Direct callers are single-writer
     (e.g. ``finalize_iterate`` emits a run-id-idempotent ``work_completed``).
-    Concurrent dedup (``phase_completed`` / by-commit) lives in
-    ``append_event_idempotent`` (deep-audit F14); the CLI routes through it.
+    Every dedup rule (``phase_completed``, by-commit, and the opt-in
+    ``grade_snapshot`` one) lives in ``append_event_idempotent`` (deep-audit
+    F14); the CLI and the compliance grade emitter both route through it.
 
     Resolves the per-tree event log via ``resolve_events_path``. Under a
     ``/shipwright-iterate`` run this is the worktree-local copy: the append
@@ -418,6 +398,7 @@ def append_event_idempotent(
     event: dict,
     *,
     deduplicate_by_commit: bool = False,
+    deduplicate_grade_snapshot: bool = False,
 ) -> tuple[str | None, dict | None]:
     """Scan-for-duplicate then append **inside one ``_FileLock``** (deep-audit F14).
 
@@ -430,7 +411,13 @@ def append_event_idempotent(
 
     Returns ``(event_id, None)`` on append, or ``(None, skip)`` where ``skip`` is
     a JSON-serialisable dict describing the duplicate (``reason`` + keys) so the
-    caller can render the existing ``skipped`` CLI output verbatim.
+    caller can render the existing ``skipped`` CLI output verbatim. A skip dict
+    carries no ``appended`` key — that is the compliance emitter's own result
+    vocabulary, added on top.
+
+    ``deduplicate_grade_snapshot`` is opt-in and defaults off, so existing and
+    manual/replay callers remain unconditional; only the compliance emitter
+    enables it.
     """
     path = resolve_events_path(project_root)
     lock_path = path.with_name(path.name + ".lock")
@@ -443,6 +430,21 @@ def append_event_idempotent(
             if has_commit(project_root, event["commit"], section=section):
                 return None, {"reason": "duplicate_commit",
                               "commit": event["commit"], "section": section}
+        if deduplicate_grade_snapshot and event.get("type") == "grade_snapshot":
+            # Corruption is explicit data, not inferred from whether warnings
+            # happen to raise. An older recovered match cannot prove that an
+            # unreadable newer fragment did not contain a transition.
+            try:
+                read_result = read_events_result(project_root)
+                prior = (
+                    [] if read_result.corrupt
+                    else apply_amendments(read_result.records)
+                )
+            except Exception:  # noqa: BLE001 - never lose a snapshot to read/fold
+                prior = []
+            unchanged = unchanged_grade_skip(event, prior)
+            if unchanged is not None:
+                return None, unchanged
         if event.get("type") == "phase_completed" and event.get("phase"):
             split_id = event.get("splitId")
             if has_phase_event(project_root, event["phase"], split_id):

@@ -1,0 +1,318 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-08-01-touches-build-token-boundary",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-01T10:42:48.290666+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-01T10:42:00.039080+00:00",
+      "disposition": "External LLM plan review is skipped at trivial/small per the SKILL.md Phase Matrix row 'External LLM Review'; it is auto only at medium+. This run is small, and the external CODE cascade ran separately on its own >100-line-diff trigger.",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 5,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "plugins/shipwright-iterate/scripts/lib/risk_taxonomy.py",
+          "line": 42,
+          "finding": "_filename_token interpolates its argument ungrouped, so a top-level alternation escapes BOTH guards: _filename_token(r'gemfile|gemfile\\.lock') compiles as ((?<![\\w.-])gemfile)|(gemfile\\.lock(?![\\w-])(?!\\.\\w)) — first branch has no trailing guard, second has no leading one. Confirmed at code: 'my-gemfile.lock' and 'gemfile.bak' both fire, while test_every_message_pattern_is_token_guarded stays green, because the raw string still starts and ends with the guards. An alternation is the natural way to write the Rust/Go/Ruby entries risk_detectors names as the deliberate next additions.",
+          "suggestion": "ACCEPTED-AND-FIXED. Argument wrapped in a non-capturing group: (?:{name}). The structural test's expected affixes now include the group, and test_the_helper_groups_its_argument pins the behaviour on the alternation shape itself. Mutation P1 (ungroup the argument) caught by 4 tests.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "plugins/shipwright-iterate/scripts/lib/risk_taxonomy.py",
+          "line": 63,
+          "finding": "touches_middleware carries an unguarded next\\.config, so for the five config families every string this change refuses on touches_build still raises a risk flag from the same prompt with the same small floor and mandatory review — the message/diff disagreement survives under a different flag name and the observable classification outcome for 'rename my-next.config.ts' is unchanged by this diff. The spec's Out-of-Scope rationale for leaving those entries alone ('they match English keywords, not filenames') is false for all three entries it names: touches_middleware carries next\\.config, touches_auth carries middleware\\.ts and supabase/.*auth, touches_public_api carries route\\.ts.",
+          "suggestion": "ACCEPTED; rationale corrected, residue pinned, narrowing declined. The false claim is replaced with the measurement. Guarding touches_middleware is declined on a reason that survives the correction: it is a message-only flag with no diff-driven counterpart, so there is no second surface to agree with and no parity argument for narrowing it; over-firing there is the safe direction. test_a_refused_config_stem_still_raises_touches_middleware makes the residue a recorded decision rather than an oversight.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "plugins/shipwright-iterate/scripts/lib/risk_taxonomy.py",
+          "line": 42,
+          "finding": "A trailing '-' is ambiguous for exactly the reason a trailing '.' is — a further token in package.json-old, an English compound hyphen in 'a package.json-only change' — and received none of the analysis the '.' case got, although the guard's claim to correctness is that both halves were reasoned about. Newly extended to the twelve JS entries by this diff.",
+          "suggestion": "ACCEPTED-AND-MEASURED; no code change. Measured: 'package.json-only' and 'package.json-old' are False on BOTH surfaces, so cross-surface parity — the property this change is about — holds. The residue is between a message's phrasing and the diff it refers to, which no guard can close. Keeping '-' strict is additionally the parity-consistent choice, since the diff surface refuses 'package.json-old'. Recorded in the spec beside the trailing-'.' measurement, which is what the finding asked for.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "architecture",
+          "file": "plugins/shipwright-iterate/tests/test_touches_build_surface_parity.py",
+          "line": 79,
+          "finding": "The new module re-implements four assertions that already exist verbatim in two sibling test files, including a failure message copied character-for-character, and touches_build message-surface coverage now lives in three files with no stated division of labour.",
+          "suggestion": "PARTIALLY ACCEPTED. A 'Division of labour' block now names all four files and their subjects, addressing the stated architectural cost. The suggested deletion of test_python_input_fires_on_both_surfaces from a sibling drift file is DECLINED: removing tests from a file unrelated to this defect is a refactor wearing a fix label (constitution — Surgical Changes), and the redundancy errs in the direction of more coverage, not less.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "plugins/shipwright-iterate/scripts/lib/risk_taxonomy.py",
+          "line": 132,
+          "finding": "Review-process narration shipped three times — risk_taxonomy.py, the test docstrings, and risk_detectors.py all narrate a rejected draft that the spec in the same diff already records, against this repo's own rule that a record of finished work is deleted because git history keeps it.",
+          "suggestion": "ACCEPTED-AND-FIXED. Trimmed in all three places to the load-bearing sentence (the families require an extension because the diff surface holds only extensioned literals). That trim, plus splitting the parity module in two, is what kept every touched file under the 300-line limit.",
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-08-01T10:21:24.325226+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 8,
+      "findings": [
+        {
+          "severity": "high",
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: The true-positive set is unchanged; every detector tuple entry still fires from a message. — 'a package.json-only bump' fired touches_build before this change (the old pattern was the wholly unguarded r'package\\.json') and fires nothing after it, because the intermediate trailing guard (?![\\w-]) rejects the hyphen. The whole taxonomy misses the string, so risk_flags goes from [touches_build] to []: no small floor, no performance_test_layer, and per iteration-reviews.md 'When Self-Review is Sufficient' no full code-reviewer either. The per-entry test cited as proof uses one hand-written template with the name at end-of-string, so it proves each entry fires in one syntactic position, not that the true-positive set is unchanged.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "high",
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: The narrowing is safe because the diff surface already refuses these strings. — Not true for every newly-refused string, and the method conflates the two things the change exists to separate. touches_build_files never receives prose tokens, it receives git diff paths. For 'package.json-only' the file being named is package.json, and the diff of such a change contains package.json, on which the diff surface returns True — so the surfaces disagree on the same real change, newly, in the unsafe direction. The diff also resolves the identical ambiguity three different ways: trailing '.' gets prose semantics, trailing '-' gets literal semantics, bare config stem gets literal semantics.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: Ledger: 15 rows, 14 tested, 0 untested-testable. — Every cited test exists and executes what it is cited for, and every param count is right. But the trailing-hyphen decision was taken by this diff and had no test and no ledger row, while the two other declined-narrowing decisions each got both. It is also invisible to the mutation evidence: mutating (?![\\w-]) to (?!\\w) fails ZERO behavioural tests, only the string-comparison guard.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: self-review.json now describes the shipped implementation (Stage-1 finding 6 closed). — It certifies the pre-Stage-2 implementation. Arithmetic: '157 cases' against the shipped 164 — exactly the two tests Stage 2 added; 'the new test file 282' where the split produced two files; risk_taxonomy.py 248 where the shipped file is 257; two mutation rounds where three were run; no mention of the non-capturing group. reviews.json corroborates by timestamp: self completed 10:04:27, code 10:21:24, never re-recorded.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: The observable classification outcome is unchanged for the five config families. — touches_build enforces ['performance_test_layer']; touches_middleware enforces ['mandatory_review']. The flags go from [touches_middleware, touches_build] to [touches_middleware], so the enforces union loses performance_test_layer and the recorded risk_flags list changes. The test whose docstring asserts this checks only flag membership, not the property it claims.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: The shipped review record is an accurate ledger of the review that happened. — reviews.json records the spec gate as findings_count 0, although Stage 1 rejected twice and raised 7 findings across three rounds. The 'only blocking findings are recorded' reading fails, because the code row records all five of its findings including three non-blocking lows.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: All 21 JS entries disagreed before; 0 disagree now. — The 21 is right, but 'disagree' is measured over different populations in the two halves (tuple entries vs 15 hand-written probes), and unqualified '0 now' is false: the trailing-punctuation relaxation creates eight new literal-token divergences (pyproject.toml. fires from a message, touches_build_files returns False), which under the old symmetric guard had AGREED. The residue paragraph lists the next.config.foo and case residues but not this one.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": null,
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: The trailing guard rejects a further extension but allows sentence punctuation. — Traced by hand through every backtracking path: package.json.bak, next.config.js.bak, webpack.config.js.orig, pipfile.locked, requirements.txt.bak, requirements-dev.txt.bak, setup.python, setup.pyc, package.json5 all correctly refused; comma, semicolon, question mark, paren, backtick, quote, slash, backslash, newline and a sentence-final period all correctly allowed. Only pathological cases behave oddly (package.json..bak fires).",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-08-01T10:41:17.191755+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 3,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "spec",
+          "file": "plugins/shipwright-iterate/scripts/lib/risk_taxonomy.py",
+          "line": 173,
+          "finding": "The `requirements[\\w.-]\\.txt` message pattern does not cover the full `requirements.txt` glob family used by the diff surface. For example, `touches_build_files([\"requirements#.txt\"])` matches the `requirements.txt` glob, while the message regex does not match because `#` is outside `[\\w.-]`. This violates AC-3 (and sentence-final AC-4) for valid glob-family instances, leaving a concrete cross-surface false negative.",
+          "suggestion": "Make the message regex represent the glob’s accepted basename language (for example, permit all non-path-separator characters between `requirements` and `.txt`, while retaining the outer token guard), or deliberately narrow the diff glob to the same character set.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "test",
+          "file": "plugins/shipwright-iterate/tests/test_touches_build_surface_parity.py",
+          "line": 65,
+          "finding": "_GLOB_INSTANCES` tests exactly one synthetic glob instance, `requirements-dev.txt`, and therefore cannot validate the required “each glob family instance” behavior. The current implementation passes all derived tests despite the real mismatch for filenames such as `requirements#.txt`; the test’s metacharacter check only ensures the generated probe is literal, not that the regex and glob accept the same family.",
+          "suggestion": "Parameterize representative valid glob matches including characters outside `[\\w.-]` (or derive/define the intended allowed filename alphabet) and assert both surfaces for each. This should catch the production mismatch above.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "spec",
+          "file": ".shipwright/planning/iterate/iterate-2026-08-01-touches-build-token-boundary/self-review.json",
+          "line": 27,
+          "finding": "The shipped self-review still describes the pre-split, pre-final-verification state: it refers to “157 cases in the new file,” reports only the first two mutation rounds, and later claims a single new test file of 282 lines. The diff instead ships two test modules and the specification states that the record was remeasured and includes mutation round 3. This leaves a Stage-2-consumed review artifact certifying stale evidence.",
+          "suggestion": "Regenerate the self-review against the final tree, naming both modules, their final case/line counts, and the final mutation round.  Overall assessment: ship-with-fixes. The core guard implementation is sound, but the glob-family parity guarantee is incomplete and its derived tests currently conceal the mismatch. SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-08-01T10:41:17.658388+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "partial",
+      "raw_excerpt": "[gemini] SHIPWRIGHT_VERDICT: approve\n\n[openai] - Category: spec\n- Severity: medium\n- File: plugins/shipwright-iterate/scripts/lib/risk_taxonomy.py:173\n- Finding: The `requirements[\\w.-]*\\.txt` message pattern does not cover the full `requirements*.txt` glob family used by the diff surface. For example, `touches_build_files([\"requirements#.txt\"])` matches the `requirements*.txt` glob, while the message regex does not match because `#` is outside `[\\w.-]`. This violates AC-3 (and sentence-final AC-4) for valid glob-family instances, leaving a concrete cross-surface false negative.\n- Suggestion: Make the message regex represent the glob’s accepted basename language (for example, permit all non-path-separator characters between `requirements` and `.txt`, while retaining the outer token guard), or deliberately narrow the diff glob to the same character set.\n\n- Category: test\n- Severity: medium\n- File: plugins/shipwright-iterate/tests/test_touches_build_surface_parity.py:65\n- Finding: `_GLOB_INSTANCES` tests exactly one synthetic glob instance, `requirements-dev.txt`, and therefore cannot validate the required “each glob family instance” behavior. The current implementation passes all derived tests despite the real mismatch for filenames such as `requirements#.txt`; the test’s metacharacter check only ensures the generated probe is literal, not that the regex and glob accept the same family.\n- Suggestion: Parameterize representative valid glob matches including characters outside `[\\w.-]` (or derive/define the intended allowed filename alphabet) and assert both surfaces for each. This should catch the production mismatch above.\n\n- Category: spec\n- Severity: low\n- File: .shipwright/planning/iterate/iterate-2026-08-01-touches-build-token-boundary/self-review.json:27\n- Finding: The shipped self-review still describes the pre-split, pre-final-verification state: it refers to “157 cases in the new file,” reports only the first two mutation rounds, and later claims a single new test file of 282 lines. The diff  […truncated]"
+    }
+  },
+  "gates": {
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 10,
+      "findings": [
+        {
+          "severity": null,
+          "category": "unfaithful",
+          "file": "plugins/shipwright-iterate/scripts/lib/risk_taxonomy.py",
+          "line": null,
+          "finding": "ROUND 1 (REJECT): the replaced `next\\.config\\.` required a trailing dot, so a bare stem never fired; writing the families `next\\.config(\\.\\w+)?` added five message triggers with no diff-surface counterpart, under a premise about the old regex that was never executed — spec: AC-6 / root cause — 'the config families keep the extension optional; bare next.config still fires'",
+          "suggestion": "AC-6 / root cause — 'the config families keep the extension optional; bare next.config still fires'",
+          "source": "spec-reviewer"
+        },
+        {
+          "severity": null,
+          "category": "incomplete",
+          "file": "plugins/shipwright-iterate/tests/test_touches_build_surface_parity.py",
+          "line": null,
+          "finding": "ROUND 1 (REJECT): the structural test asserted only the leading guard, so a message-only pattern could still fire on `cargo.toml.bak` — spec: AC-5 — 'every pattern is token-guarded structurally'",
+          "suggestion": "AC-5 — 'every pattern is token-guarded structurally'",
+          "source": "spec-reviewer"
+        },
+        {
+          "severity": null,
+          "category": "unfaithful",
+          "file": ".shipwright/agent_docs/conventions.md",
+          "line": null,
+          "finding": "ROUND 1 (REJECT): conventions.md still recommended the symmetric `(?![\\w.-])` guard this run disproved, instructing the next agent to reinstate the bug — spec: Spec Impact / decision memory",
+          "suggestion": "Spec Impact / decision memory",
+          "source": "spec-reviewer"
+        },
+        {
+          "severity": null,
+          "category": "unfaithful",
+          "file": "plugins/shipwright-iterate/tests/test_touches_build_surface_parity.py",
+          "line": null,
+          "finding": "ROUND 1 (low): said '15 JS build inputs' where the tuple's JS half is 21 — spec: test module docstring",
+          "suggestion": "test module docstring",
+          "source": "spec-reviewer"
+        },
+        {
+          "severity": null,
+          "category": "unfaithful",
+          "file": "plugins/shipwright-iterate/tests/test_touches_build_surface_parity.py",
+          "line": null,
+          "finding": "ROUND 2 (REJECT): the cited test asserted only the message surface, so the literal CONFIG_STEMS list half-covered the tuple-shrink case it exists to catch — spec: Ledger row 7b — 'fires on both surfaces'",
+          "suggestion": "Ledger row 7b — 'fires on both surfaces'",
+          "source": "spec-reviewer"
+        },
+        {
+          "severity": null,
+          "category": "unfaithful",
+          "file": ".shipwright/planning/iterate/iterate-2026-08-01-touches-build-token-boundary/self-review.json",
+          "line": null,
+          "finding": "ROUND 2 (REJECT): self-review.json still certified the rejected implementation, naming a test that exists nowhere and whose name asserts what AC-6 forbids — spec: Stage-1 finding 6 disposition — 'rewritten against the shipped code'",
+          "suggestion": "Stage-1 finding 6 disposition — 'rewritten against the shipped code'",
+          "source": "spec-reviewer"
+        },
+        {
+          "severity": null,
+          "category": "unfaithful",
+          "file": ".shipwright/agent_docs/conventions.md",
+          "line": null,
+          "finding": "ROUND 2 (low): an empty inline code span where the discriminator belongs — a Bash heredoc had eaten the escape — spec: conventions.md SUPERSEDES pointer",
+          "suggestion": "conventions.md SUPERSEDES pointer",
+          "source": "spec-reviewer"
+        },
+        {
+          "severity": null,
+          "category": "unfaithful",
+          "file": ".shipwright/agent_docs/conventions.md",
+          "line": null,
+          "finding": "ROUND 3 (low, non-blocking): 21 is the tuple's JS entry count; the unguarded JS message patterns numbered 12 — spec: conventions.md — 'all 21 JS patterns unguarded'",
+          "suggestion": "conventions.md — 'all 21 JS patterns unguarded'",
+          "source": "spec-reviewer"
+        },
+        {
+          "severity": null,
+          "category": "incomplete",
+          "file": ".shipwright/planning/iterate/iterate-2026-08-01-touches-build-token-boundary.md",
+          "line": null,
+          "finding": "ROUND 3 (low, non-blocking): named two deviations as if complete; five families have three distinct extension sets — spec: spec — per-family extension aside",
+          "suggestion": "spec — per-family extension aside",
+          "source": "spec-reviewer"
+        },
+        {
+          "severity": null,
+          "category": "unfaithful",
+          "file": ".shipwright/planning/iterate/iterate-2026-08-01-touches-build-token-boundary/self-review.json",
+          "line": null,
+          "finding": "ROUND 3 (nit): '19 re.search calls per classification' — 19 is per-entry; detect_risk_flags loops the whole taxonomy — spec: self-review.json Performance Basics",
+          "suggestion": "self-review.json Performance Basics",
+          "source": "spec-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-08-01T10:41:59.676157+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    }
+  }
+}

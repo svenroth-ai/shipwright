@@ -3,9 +3,13 @@
 
 ``grade_snapshot`` lands on the DURABLE, tracked ``shipwright_events.jsonl`` and
 is read cross-repo by the WebUI Ship's-Log. Two producers write it: the
-compliance emitter (``_grade_snapshot.emit_grade_snapshot``, once per
-Control-Grade regen) and the manual/replay CLI (``record_event.py --type
-grade_snapshot``). They previously built the event independently, so the CLI
+compliance emitter (``_grade_snapshot.emit_grade_snapshot``, on a Control-Grade
+regen that MOVES the grade) and the manual/replay CLI (``record_event.py --type
+grade_snapshot``, unconditionally). The two cadences differ on purpose:
+iterate-2026-08-01-grade-snapshot-dedup falsified the premise that "a regen is
+an explicit act" for the automatic emitter, but it holds for a hand-run replay,
+so only the emitter opts into dedup. The SHAPE below is identical either way —
+that is what this module exists to guarantee. They previously built the event independently, so the CLI
 enforced a score range the emitter did not, and a field added to one would
 silently not exist on the other.
 
@@ -41,7 +45,15 @@ from tree_lineage import LINEAGE_UNKNOWN, lineage_fields, resolve_tree_lineage
 #: branch imports it so the two cannot drift — that branch was the door the
 #: original producer audit missed
 #: (iterate-2026-07-28-grade-snapshot-honest-subject).
-ATTRIBUTION_KEYS = frozenset({"lineage", "branch", "base"})
+#:
+#: ``dirty`` belongs here because an amendment able to set ``dirty: false`` could
+#: launder a work-in-progress measurement into one that claims a committed state.
+#: Note what this does NOT buy, unlike the other three: ``dirty`` is producer-
+#: SUPPLIED, so closing the amendment door does not make it unassertable — exporting
+#: the capture's environment variables states it directly. This stops a later
+#: mutator REWRITING a value, not a caller who sets out to assert one
+#: (iterate-2026-08-01-grade-snapshot-dirty-capture, Stage-3 doubt D3).
+ATTRIBUTION_KEYS = frozenset({"lineage", "branch", "base", "dirty"})
 
 def reject_asserted_attribution(fields: dict[str, Any]) -> None:
     """Refuse an ``event_amended`` overlay that would assert attribution.
@@ -53,6 +65,12 @@ def reject_asserted_attribution(fields: dict[str, Any]) -> None:
     amendment-folding reader would honour it. Reproduced before the fix; this is
     the same shape as the ``tests``-block validation that already guards that
     branch for the same reason.
+
+    Note for whoever adds the next event type: the caller does not gate this on the
+    amended event's type, so these names are reserved **log-wide**, not just on a
+    ``grade_snapshot``. That was harmless while they were all as specific as
+    ``lineage``; ``dirty`` is a generic word another event type could plausibly
+    want. No event type carries a top-level ``dirty`` today.
     """
     asserted = ATTRIBUTION_KEYS & set(fields)
     if asserted:
@@ -69,6 +87,7 @@ def apply_grade_snapshot(
     score: float | None,
     project_root: Path | str,
     commit: str | None = None,
+    dirty: bool | None = None,
 ) -> dict[str, Any]:
     """Validate, then write the ``grade_snapshot`` payload into ``event``.
 
@@ -81,6 +100,17 @@ def apply_grade_snapshot(
     mislabel the snapshot. ``base`` (from the attribution below) is the field
     that answers "which tree", without that defect.
 
+    ``dirty`` says whether tracked content differed from HEAD when the grade was
+    measured. It does not make ``base`` identify that content on branch lineage,
+    where ``base`` is the merge-base rather than HEAD. It is
+    **supplied, not measured here**, and that is the whole point: by the time this
+    runs the producer has written its own output into the tree, so a measurement
+    taken now reads ``true`` on a pristine tree. Callers obtain it from
+    ``source_state_capture.capture_dirty`` at their entry
+    (``trg-f5ae5371``). Unlike the attribution below it is omitted when unknown
+    rather than stamped with a sentinel — a snapshot with no ``dirty`` key predates
+    the field or could not answer, and both mean "do not conclude anything".
+
     Attribution never fails the caller. A resolver that raises degrades to
     ``lineage="unknown"`` rather than taking down a compliance regen — the same
     best-effort posture as the rest of the emitter.
@@ -91,10 +121,18 @@ def apply_grade_snapshot(
     if not 0.0 <= score <= 100.0:
         raise ValueError(f"grade_snapshot --score must be in [0, 100], got {score}")
 
+    # Shape, do not merely overlay: an event dict may be reused or pre-populated.
+    # Unknown/invalid input means the durable key is absent, never that an older
+    # value survives from a previous shaping pass.
+    event.pop("dirty", None)
     event["grade"] = grade
     event["score"] = score
     if commit:
         event["commit"] = commit
+    # Strictly a bool: a truthy non-bool would serialise as itself onto a durable,
+    # cross-repo-read log and read back as something no consumer has a rule for.
+    if isinstance(dirty, bool):
+        event["dirty"] = dirty
 
     try:
         event.update(lineage_fields(resolve_tree_lineage(project_root)))

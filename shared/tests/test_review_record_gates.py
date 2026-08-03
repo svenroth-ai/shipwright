@@ -1,142 +1,85 @@
-"""AC-4 — Stage 1 (spec-reviewer) can prove it ran, without breaking the consumer.
+"""How the RETIRED `gates` sibling is validated in records that still carry it.
 
-`reviews` is a CROSS-REPO contract. The webui reader
-(`shipwright-webui` `server/src/core/mission-context/review-record.ts`) rejects a
-record whose `schema_version` differs by strict `!==` (:261) or whose `reviews`
-carries a key outside its own five (:276), and `review-state.ts:240` does **not**
-fall back to the marker view on an invalid record — it renders all five rows as a
-data-integrity fault. So the naive "sixth REVIEW_TYPES entry + schema bump" would
-report every healthy record as corrupt.
+`spec` lived here while the cross-repo consumer rejected any `reviews` key
+outside its own five. That pin is gone (`shipwright-webui` `ce21323e`) and
+`spec` is now an ordinary review type — see
+`test_review_record_spec_promotion.py`, which owns the promotion itself and the
+back-compat READ path.
 
-The gate stages therefore live in a sibling `gates` object. The tests below pin
-BOTH halves: that `spec` is really enforceable, and that the consumer's two
-guards still pass.
+What is left for this file is the object's own validation semantics, which
+outlive the seam because 12 git-tracked, never-evicted records carry
+`gates.spec` and are immutable by design. Nothing writes `gates` any more; these
+tests pin how it is READ.
 """
 
-import json
 import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))
 
 from lib.review_record import (  # noqa: E402
-    GATE_TYPES,
-    RECORDABLE_TYPES,
+    LEGACY_GATE_TYPES,
     REVIEW_TYPES,
-    SCHEMA_VERSION,
     STATUS_COMPLETED,
-    STATUS_NOT_RUN,
     make_entry,
     new_record,
-    pending_types,
-    read_record,
-    record_path,
-    upsert_review,
     validate_record,
-    write_record,
 )
 
 RUN = "iterate-2026-07-28-gates"
-REASON = "external route carried the pass; Stage 1 is not cascaded to providers"
 
-#: The five keys the cross-repo consumer knows. Hard-coded, NOT derived from
-#: REVIEW_TYPES — a test that reads the constant it is pinning cannot catch the
-#: constant changing.
+#: The five the consumer requires to be PRESENT. Hard-coded, NOT derived from
+#: REVIEW_TYPES — a test that reads the constant it pins cannot catch it
+#: changing, and this list must NOT follow `spec` into the tuple.
 PINNED_CONSUMER_TYPES = ["self", "plan", "code", "doubt", "external_code"]
 
 
-def test_spec_is_recordable_but_not_a_review_type():
-    assert "spec" in GATE_TYPES
-    assert "spec" in RECORDABLE_TYPES
-    assert "spec" not in REVIEW_TYPES
-
-
-# --- the consumer's two guards, mirrored as executable assertions -----------
-# These MIRROR the TypeScript reader; they do not execute it (a cross-repo suite
-# cannot run from this commit's CI). Drift between mirror and consumer is the
-# stated residual risk — see the iterate spec §2b, openai #3.
-
-def test_the_record_still_passes_the_pinned_consumers_guards(tmp_path):
-    record = new_record(RUN)
-    record = upsert_review(record, make_entry("spec", STATUS_COMPLETED))
-    write_record(tmp_path, RUN, record)
-
-    on_disk = json.loads(record_path(tmp_path, RUN).read_text(encoding="utf-8"))
-
-    # review-record.ts:261 — strict `!==` against its own constant of 1.
-    assert on_disk["schema_version"] == 1 == SCHEMA_VERSION
-    # review-record.ts:276 — any key outside its five makes the record invalid.
-    assert list(on_disk["reviews"]) == PINNED_CONSUMER_TYPES
-    # ...and the gate row is nowhere the consumer looks.
-    assert on_disk["gates"]["spec"]["status"] == STATUS_COMPLETED
-
-
-def test_a_legacy_record_without_gates_is_still_valid():
-    """64 merged runs wrote records with no `gates`. Invalidating them would make
-    the F11 gate report an integrity fault on every one."""
-    legacy = {
-        "schema_version": 1, "run_id": RUN,
-        "reviews": {t: make_entry(t, STATUS_COMPLETED) for t in REVIEW_TYPES},
+def _legacy_with_gates(**gate_entries) -> dict:
+    """A record in the shape the 12 gates-era runs actually wrote."""
+    return {
+        "schema_version": 1,
+        "run_id": RUN,
+        "reviews": {t: make_entry(t, STATUS_COMPLETED) for t in PINNED_CONSUMER_TYPES},
+        "gates": dict(gate_entries),
     }
-    ok, err = validate_record(legacy, expected_run_id=RUN)
-    assert ok, err
 
 
-# --- a live run cannot dodge the row by omitting the section ----------------
-
-def test_a_new_record_materialises_spec_as_pending():
-    assert "spec" in pending_types(new_record(RUN))
-
-
-def test_an_absent_gates_section_reads_as_unanswered(tmp_path):
-    """openai #1 — optionality must buy back-compat for old records and nothing
-    at all for a live gate."""
-    legacy = {
-        "schema_version": 1, "run_id": RUN,
-        "reviews": {t: make_entry(t, STATUS_COMPLETED) for t in REVIEW_TYPES},
-    }
-    assert pending_types(legacy) == ["spec"]
-
-
-def test_spec_round_trips_and_is_immutable(tmp_path):
-    record = upsert_review(new_record(RUN), make_entry(
-        "spec", STATUS_NOT_RUN, disposition=REASON, recorded_by="close-missing"))
-    write_record(tmp_path, RUN, record)
-
-    read_back = read_record(tmp_path, RUN)
-    assert read_back == record
-    assert pending_types(read_back) == [t for t in REVIEW_TYPES]
-
-    try:
-        upsert_review(read_back, make_entry("spec", STATUS_COMPLETED))
-    except Exception as exc:  # noqa: BLE001 — the type is asserted below
-        assert type(exc).__name__ == "ImmutableReviewError"
-    else:  # pragma: no cover
-        raise AssertionError("a terminal gate row must not be silently rewritable")
+def test_the_seam_is_retired_as_a_write_destination():
+    """Chesterton: the fence existed to hold passes the pinned `reviews`
+    contract had no slot for. The pin is gone, so a future gate stage goes
+    straight into REVIEW_TYPES and nothing writes here again."""
+    assert "gates" not in new_record(RUN)
+    assert "spec" in REVIEW_TYPES
+    # ...but the read vocabulary survives, because the old records do.
+    assert "spec" in LEGACY_GATE_TYPES
 
 
 def test_an_unknown_gate_key_is_tolerated_not_rejected():
-    """Stage-3 doubt: `schema_version` is frozen at 1 BY DESIGN, and GATE_TYPES
-    is documented as where future stages go. Rejecting an unknown gate key would
-    mean the day it gains a second member, records from the new writer read as
-    schema-INVALID to every reader still on the old constant — and the gate tells
-    the operator to "repair or delete" an immutable, git-tracked, never-evicted
-    history that is perfectly fine. That is §1.3's failure reproduced internally,
-    and the plugin cache makes old-and-new readers routine.
-
-    The asymmetry with `reviews` is deliberate: that one mirrors a cross-repo
-    contract whose consumer rejects strangers, so strictness protects the mirror.
-    `gates` has no mirror.
+    """Asymmetric with `reviews` on purpose. That one mirrors a cross-repo
+    contract whose consumer used to reject strangers, so strictness protected
+    the mirror. `gates` has no mirror, and rejecting a stranger here would mean
+    a record from a newer writer reads as schema-INVALID to every reader still
+    on the old constant — and the F11 gate, which fails CLOSED, tells the
+    operator to "repair or delete" an immutable history that is perfectly fine.
     """
-    record = new_record(RUN)
-    record["gates"]["a_future_stage"] = make_entry("spec", STATUS_COMPLETED)
+    record = _legacy_with_gates(
+        spec=make_entry("spec", STATUS_COMPLETED),
+        a_future_stage=make_entry("spec", STATUS_COMPLETED),
+    )
     ok, err = validate_record(record, expected_run_id=RUN)
     assert ok, err
 
 
 def test_a_malformed_known_gate_entry_is_still_rejected():
     """Tolerating strangers must not tolerate a broken row we DO know."""
-    record = new_record(RUN)
+    record = _legacy_with_gates(spec=make_entry("spec", STATUS_COMPLETED))
     record["gates"]["spec"]["findings_count"] = 99
     ok, err = validate_record(record, expected_run_id=RUN)
     assert not ok and "gates.spec" in err
+
+
+def test_a_non_object_gates_value_is_rejected():
+    record = _legacy_with_gates()
+    record["gates"] = "not an object"
+    ok, err = validate_record(record, expected_run_id=RUN)
+    assert not ok and "gates" in err

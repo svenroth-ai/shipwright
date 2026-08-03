@@ -42,11 +42,16 @@ def _record(root: Path, **overrides):
     """Every type closed; `overrides` replaces individual entries."""
     record = new_record(RUN)
     for review_type in REVIEW_TYPES:
-        if review_type not in overrides:
+        # `spec` is set explicitly below; without this skip it would be written
+        # twice — closed `not_run` here, then force-overwritten `completed`.
+        if review_type not in overrides and review_type != "spec":
             record = upsert_review(record, make_entry(
                 review_type, STATUS_NOT_RUN, disposition=WHY), force=True)
+    # No `force`: after the loop skip above this row is still `pending`, so the
+    # normal path applies. Dropping it deliberately — a `force` that is not
+    # needed hides the day it becomes needed.
     record = upsert_review(record, make_entry("spec", STATUS_COMPLETED,
-                                              recorded_by="spec-reviewer"), force=True)
+                                              recorded_by="spec-reviewer"))
     for review_type, entry in overrides.items():
         record = upsert_review(record, entry, force=True)
     write_record(root, RUN, record)
@@ -142,16 +147,38 @@ def test_external_code_is_outside_the_stage_1_invariant(tmp_path):
 
 
 def test_an_unanswered_spec_row_blocks_like_any_other_type(tmp_path):
+    """`spec` is the ONE type where "present but pending" and "absent" are both
+    schema-valid — `validate_record` permanently tolerates its absence so
+    pre-promotion records stay readable. That makes `pending_types` the sole
+    enforcement that a live run cannot dodge the Stage-1 row, and this is the
+    only gate-level test of it.
+
+    Two traps this guards against, both hit once:
+
+    * the loop must SKIP `spec`. When `spec` joined `REVIEW_TYPES` a blanket
+      `for review_type in REVIEW_TYPES` started closing the very row the test
+      leaves open, and the test went vacuous (Stage-2 code review).
+    * asserting on `"spec"` alone is not enough. With every row `not_run` the
+      run falls through to `code_review_floor`, whose message contains the
+      literal `spec-reviewer` — so the substring matches a DIFFERENT failure.
+      Assert the pending branch's own wording.
+    """
     _entry(tmp_path)
     record = new_record(RUN)
     for review_type in REVIEW_TYPES:
+        if review_type == "spec":
+            continue          # the subject: left genuinely unanswered
         record = upsert_review(record, make_entry(
             review_type, STATUS_NOT_RUN, disposition=WHY), force=True)
-    write_record(tmp_path, RUN, record)   # `spec` left pending
+    write_record(tmp_path, RUN, record)
 
     result = check_review_record(tmp_path, RUN)
 
-    assert result.is_failure and "spec" in result.detail
+    assert result.is_failure
+    assert "still unanswered" in result.detail, (
+        "must fail on the PENDING branch, not on the code-review floor"
+    )
+    assert "spec" in result.detail
 
 
 # --- AC-3: a missing F5c entry fails, it does not skip ----------------------

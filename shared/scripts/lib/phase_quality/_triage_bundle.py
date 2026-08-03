@@ -3,11 +3,12 @@
 Replaces the prior 1-FAIL-1-item finding-mirror emit with a single rolling
 ``phaseQuality:backlog:<sig>`` action-unit (memory
 ``project_triage_launch_surface_redesign`` / ADR-057: producers emit
-action-units, not finding-mirrors). Concerns: Layer 1
-:func:`phase_is_engaged` (applicability gate, FAIL-OPEN),
+action-units, not finding-mirrors). Concerns:
 :func:`collect_in_scope_fails` (latest finding per phase → Tier-1 FAILs,
 filtered), Layer 3 :func:`emit_phase_quality_backlog` (dismiss-stale +
-idempotent append / auto-dismiss when empty). See the iterate spec
+idempotent append / auto-dismiss when empty). Layer 1 — the applicability
+gate :func:`~._engagement.phase_is_engaged` — lives in :mod:`._engagement`.
+See the iterate spec
 ``2026-05-31-phasequality-triage-bundle`` for the no-leader-election
 concurrency rationale (atomic finding writes + deterministic ``<sig>`` +
 triage ``_FileLock`` + idempotent ops → converges to one open item).
@@ -16,7 +17,6 @@ triage ``_FileLock`` + idempotent ops → converges to one open item).
 from __future__ import annotations
 
 import hashlib
-import json
 import sys
 from pathlib import Path
 
@@ -24,97 +24,14 @@ _SCRIPTS_ROOT = Path(__file__).resolve().parents[2]
 if str(_SCRIPTS_ROOT) not in sys.path:
     sys.path.insert(0, str(_SCRIPTS_ROOT))
 
-from lib.events_log import resolve_events_path  # noqa: E402
-
 from ._aggregates import load_actionable_findings  # noqa: E402
 from ._constants import CATEGORIES, DASHBOARD_PATH, STATUS_FAIL  # noqa: E402
+from ._engagement import load_engagement_inputs, phase_is_engaged  # noqa: E402
 
 BACKLOG_PREFIX = "phaseQuality:backlog:"
 # "Live view:" pointer baked into triage detail/launchPayload. Follow the SSoT
 # constant so it tracks the FINDING_DIR relocation (iterate-2026-06-09).
 DASHBOARD_REL = DASHBOARD_PATH
-
-
-# ---------------------------------------------------------------------------
-# Layer 1 — phase-applicability gate
-# ---------------------------------------------------------------------------
-
-def load_engagement_inputs(project_root: Path) -> tuple[dict | None, list[dict]]:
-    """Read run-config + event log for the engagement predicate (FAIL-OPEN).
-
-    Returns ``(cfg, events)``. ``cfg`` is ``None`` when
-    ``shipwright_run_config.json`` is missing or malformed — callers MUST
-    treat ``cfg is None`` as "cannot determine engagement → engaged" so a
-    read error never silently suppresses alerts (AC-1b).
-    """
-    cfg: dict | None = None
-    cfg_path = project_root / "shipwright_run_config.json"
-    if cfg_path.exists():
-        try:
-            data = json.loads(cfg_path.read_text(encoding="utf-8"))
-            if isinstance(data, dict):
-                cfg = data
-        except (json.JSONDecodeError, OSError):
-            cfg = None
-
-    events: list[dict] = []
-    ev_path = resolve_events_path(project_root)  # SSOT accessor (worktree-aware)
-    if ev_path.exists():
-        try:
-            for raw in ev_path.read_text(encoding="utf-8", errors="ignore").splitlines():
-                raw = raw.strip()
-                if not raw:
-                    continue
-                try:
-                    obj = json.loads(raw)
-                except json.JSONDecodeError:
-                    continue
-                if isinstance(obj, dict):
-                    events.append(obj)
-        except OSError:
-            events = []
-    return cfg, events
-
-
-def phase_is_engaged(phase: str, cfg: dict | None, events: list[dict]) -> bool:
-    """Whether ``phase`` is part of THIS project's active lifecycle.
-
-    Engaged iff ANY of:
-
-    * a ``phase_completed`` event, or a ``work_completed`` event with
-      ``source == phase``, exists in the event log; OR
-    * ``cfg.status == "complete"`` AND ``phase == "iterate"`` (iterate is the
-      always-on maintenance phase of a finished project); OR
-    * ``cfg.status != "complete"`` AND (``phase ∈ completed_steps`` OR
-      ``phase == current_step``).
-
-    ``current_step`` / ``completed_steps`` grant engagement ONLY while the
-    project is in progress, so a *stale* ``current_step`` on a completed run
-    cannot re-admit a phase (AC-2). FAIL-OPEN: ``cfg is None`` → engaged.
-    Status casing is normalized.
-    """
-    if cfg is None:
-        return True  # AC-1b — cannot determine → never suppress
-
-    for e in events or []:
-        if not isinstance(e, dict):
-            continue
-        etype = e.get("type")
-        if etype == "phase_completed" and (e.get("source") == phase or e.get("phase") == phase):
-            return True
-        if etype == "work_completed" and e.get("source") == phase:
-            return True
-
-    status = str(cfg.get("status") or "").strip().lower()
-    if phase == "iterate" and status == "complete":
-        return True
-    if status != "complete":
-        completed = cfg.get("completed_steps")
-        if isinstance(completed, list) and phase in completed:
-            return True
-        if phase == cfg.get("current_step"):
-            return True
-    return False
 
 
 # --- Collect in-scope Tier-1 FAILs (latest finding per phase, filtered) ---
@@ -321,6 +238,4 @@ __all__ = [
     "DASHBOARD_REL",
     "collect_in_scope_fails",
     "emit_phase_quality_backlog",
-    "load_engagement_inputs",
-    "phase_is_engaged",
 ]

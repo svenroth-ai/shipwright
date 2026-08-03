@@ -1,0 +1,25 @@
+{
+  "stage": "code",
+  "scope": "CI follow-up for the real-producer fixpoint assertion",
+  "completed_at": "2026-08-03T07:20:47.2712832Z",
+  "passes": [
+    {
+      "verdict": "needs_revision",
+      "findings": [
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/tests/test_compliance_refresh_real_producer.py",
+          "line": 279,
+          "finding": "A final count of one could pass if the sole snapshot were emitted after the first pass.",
+          "resolution": "Added per-pass assertions, then strengthened them further after doubt review to compare the exact event list from every pass."
+        }
+      ]
+    },
+    {
+      "verdict": "pass",
+      "findings": [],
+      "summary": "Baseline absence plus exact per-pass event-list equality proves the snapshot appears in pass 1 and remains unchanged thereafter."
+    }
+  ]
+}

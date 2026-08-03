@@ -1,0 +1,23 @@
+{
+  "section": "full branch diff after PID follow-up",
+  "verdict": "PASS after re-review",
+  "review": [
+    {
+      "severity": "medium",
+      "category": "correctness",
+      "file": "shared/scripts/tools/verifiers/runtime_checks.py",
+      "line": 157,
+      "finding": "Initial review found that GetExitCodeProcess could misclassify a terminated process whose valid exit code is STILL_ACTIVE (259). Resolved before re-review by using SYNCHRONIZE plus WaitForSingleObject(handle, 0), where only WAIT_TIMEOUT means alive.",
+      "suggestion": "Resolved; the final reviewer confirmed GetExitCodeProcess is never invoked and every opened handle is closed."
+    },
+    {
+      "severity": "medium",
+      "category": "test-quality",
+      "file": "shared/tests/test_verifiers_runtime.py",
+      "line": 202,
+      "finding": "Initial review found that the no-signal dispatch test did not exercise Win32 wait states, API failures, access denial, or handle closure. Resolved before re-review with portable fake-kernel32 tests covering each state and DWORD-range rejection.",
+      "suggestion": "Resolved; the final reviewer confirmed the portable tests and the real Windows current-PID smoke test cover the required behavior."
+    }
+  ],
+  "disposition": "Stage 2 PASS on re-review; no remaining correctness, security, ctypes-signature, race-handling, test-hygiene, or ADR-045 finding."
+}

@@ -56,10 +56,29 @@ def _porcelain_paths(line: str) -> Iterable[str]:
         yield body.strip().strip('"')
 
 
+def resolve_git_root(project_root: Path | str) -> Path | None:
+    """Canonical top-level of the containing Git worktree, or ``None``.
+
+    A repo root and one of its subdirectories are two paths to the same tree. Keep
+    this identity beside the status-path relativisation that already depends on
+    ``--show-toplevel`` so callers do not grow subtly different Git-root rules.
+    """
+    try:
+        root = Path(project_root)
+    except (TypeError, ValueError, OSError):
+        return None
+    top = _git(["rev-parse", "--show-toplevel"], root)
+    if not top or not top.strip():
+        return None
+    try:
+        return Path(top.strip()).resolve()
+    except (TypeError, ValueError, OSError):
+        return None
+
+
 def _repo_relative(root: Path, paths: Iterable[str]) -> set[str]:
     """Re-express ``paths`` relative to the repo root, the way git prints them."""
-    top = _git(["rev-parse", "--show-toplevel"], root)
-    base = Path(top.strip()) if top and top.strip() else root
+    base = resolve_git_root(root) or root
     out: set[str] = set()
     for raw in paths:
         candidate = Path(raw)
@@ -120,4 +139,4 @@ def resolve_git_state(
     return SourceState(run_id=resolved_run, commit=commit, dirty=dirty)
 
 
-__all__ = ["resolve_git_state"]
+__all__ = ["resolve_git_root", "resolve_git_state"]

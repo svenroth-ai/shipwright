@@ -88,11 +88,18 @@ TOUCHES_BUILD_FILE_PATTERNS = (
 # (`my-package.json` must NOT fire), and its meta-test instantiates every entry
 # as a literal filename. Folding wildcards in would make both silently
 # meaningless. fnmatch anchors the whole basename, so `my-requirements.txt` and
-# `requirements.txt.bak` do not fire here — and, since the token guards added
-# to the RISK_TAXONOMY message patterns in the same change, they do not fire on
-# the message surface either. The two surfaces agree on whole-filename
-# matching; that parity is asserted, not assumed
-# (test_a_longer_token_containing_a_build_input_does_not_fire).
+# `requirements.txt.bak` do not fire here — and, since `risk_taxonomy` builds
+# every touches_build message pattern through `_filename_token()`, they do not
+# fire on the message surface either.
+#
+# The claim is asserted per detector entry rather than over a hand-written list
+# (tests/test_touches_build_surface_parity.py), so an ecosystem added to this
+# tuple tomorrow is held to the same parity — which is what makes it safe to
+# state here at all: it once covered only the Python half of that entry.
+#
+# The parity is on TOKEN BOUNDARIES, not on case: `detect_risk_flags`
+# lowercases the prompt, this half is deliberately `fnmatchcase`. That one
+# asymmetry is intended and pinned in the same file.
 TOUCHES_BUILD_BASENAME_GLOBS = (
     "requirements*.txt",
 )

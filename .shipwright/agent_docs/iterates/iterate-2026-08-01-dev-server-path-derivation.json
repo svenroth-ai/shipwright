@@ -1,0 +1,108 @@
+{
+  "run_id": "iterate-2026-08-01-dev-server-path-derivation",
+  "date": "2026-08-03T09:26:52.846117Z",
+  "event_at": "2026-08-03T06:39:02.523243+00:00",
+  "type": "change",
+  "complexity": "small",
+  "prior_source": "history",
+  "branch": "iterate/dev-server-path-derivation",
+  "spec": null,
+  "tests_passed": true,
+  "adr": "iterate-2026-08-01-dev-server-path-derivation",
+  "scope_addition": {
+    "type": "bug",
+    "spec_impact": "none",
+    "root_cause": "On Windows, os.kill(pid, 0) maps signal zero to CTRL_C_EVENT and can terminate the verifier's own console process group."
+  },
+  "test_summary": {
+    "f0_units_passed": 18,
+    "f0_units_total": 18,
+    "shared_tests_passed": 7515,
+    "shared_tests_total": 7558,
+    "diff_coverage_percent": 100
+  },
+  "test_completeness": {
+    "status": "complete",
+    "behaviors": [
+      {
+        "behavior": "shared/scripts is derived once for the dev_server package and retains the value of the pathlib derivation it replaced",
+        "disposition": "tested",
+        "evidence": "test_dev_server_windows_npm.py::test_scripts_dir_matches_the_pathlib_derivation_it_replaced PASSED; final F0 diff coverage 100%"
+      },
+      {
+        "behavior": "the package has one guarded sys.path insertion that is idempotent and restores shared/scripts at the front",
+        "disposition": "tested",
+        "evidence": "test_dev_server_path_anchors.py::test_ensure_scripts_on_path_inserts_once_and_at_the_front PASSED"
+      },
+      {
+        "behavior": "shared/profiles is derived from the shared/scripts anchor rather than an independent file walk",
+        "disposition": "tested",
+        "evidence": "test_dev_server_path_anchors.py::test_profiles_dir_matches_the_pathlib_derivation_it_replaced PASSED"
+      },
+      {
+        "behavior": "importing dev_server remains safe when os.name is faked and performs no module-scope pathlib path arithmetic",
+        "disposition": "tested",
+        "evidence": "test_dev_server_path_anchors.py::test_importing_dev_server_does_no_pathlib_path_arithmetic PASSED"
+      },
+      {
+        "behavior": "spawn's package-attribute-absent fallback still restores shared/scripts before importing lib.cmd_resolver",
+        "disposition": "tested",
+        "evidence": "test_dev_server_path_anchors.py::test_spawn_fallback_puts_scripts_on_path_without_the_package_attribute PASSED"
+      },
+      {
+        "behavior": "the path refactor preserves observable behavior and adds no eager ADR-045-sensitive lib.cmd_resolver binding",
+        "disposition": "tested",
+        "evidence": "behavior_snapshot verify VERIFIED; test_dev_server_windows_npm.py::test_importing_dev_server_leaves_lib_cmd_resolver_unbound PASSED"
+      },
+      {
+        "behavior": "Windows PID liveness checks never send a console signal and report the current process alive",
+        "disposition": "tested",
+        "evidence": "test_pid_is_alive_windows_does_not_send_console_signal and test_pid_is_alive_current_process_true PASSED"
+      },
+      {
+        "behavior": "Windows PID liveness distinguishes running, terminated and failed waits and closes every opened handle",
+        "disposition": "tested",
+        "evidence": "test_windows_pid_probe_uses_wait_state_and_closes_handle PASSED for WAIT_TIMEOUT, WAIT_OBJECT_0 and WAIT_FAILED"
+      },
+      {
+        "behavior": "Windows process-open failures treat access denied as existing and invalid-parameter as absent",
+        "disposition": "tested",
+        "evidence": "test_windows_pid_probe_handles_open_process_failures PASSED for ERROR_ACCESS_DENIED and ERROR_INVALID_PARAMETER"
+      },
+      {
+        "behavior": "Windows rejects PIDs outside DWORD range before OpenProcess while POSIX retains os.kill(pid, 0) semantics",
+        "disposition": "tested",
+        "evidence": "test_windows_pid_probe_rejects_values_that_do_not_fit_a_dword and cross-platform test_pid_is_alive_current_process_true PASSED"
+      }
+    ],
+    "counts": {
+      "testable": 10,
+      "tested": 10,
+      "untestable": 0,
+      "untested_testable": 0
+    },
+    "enumeration_basis": {
+      "acs": 7,
+      "covered_acs": 7
+    }
+  },
+  "surface_verification": {
+    "surface": "none",
+    "runner": "",
+    "exit_code": 0,
+    "tests_run": 0,
+    "evidence_path": ".shipwright/runs/iterate-2026-08-01-dev-server-path-derivation/surface_verification.json",
+    "timestamp": "2026-08-03T08:36:34.503Z",
+    "justification": "Internal Python dev-server path anchors and runtime PID liveness verification only; no startable or user-facing surface changed."
+  },
+  "declared_removals": [
+    {
+      "path": ".shipwright/agent_docs/iterates/iterate-2026-07-27-security-scope-and-parity.json",
+      "reason": "F5c 50-entry retention evicted the oldest recency-cache entry; permanent history remains in git and shipwright_events.jsonl."
+    },
+    {
+      "path": ".shipwright/agent_docs/iterates/iterate-2026-07-28-grade-snapshot-lineage.json",
+      "reason": "F5c 50-entry retention evicted the oldest recency-cache entry; permanent history remains in git and shipwright_events.jsonl."
+    }
+  ]
+}

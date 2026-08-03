@@ -1,0 +1,286 @@
+{
+  "run_id": "iterate-2026-08-01-f0-diff-coverage-gate",
+  "date": "2026-08-02T23:29:34.402786Z",
+  "event_at": "2026-08-02T22:28:27.896628+00:00",
+  "type": "feature",
+  "complexity": "medium",
+  "prior_source": "keyword",
+  "branch": "iterate/f0-diff-coverage-gate",
+  "spec": ".shipwright/planning/iterate/2026-08-01-f0-diff-coverage-gate.md",
+  "tests_passed": true,
+  "adr": "iterate-2026-08-01-f0-diff-coverage-gate",
+  "test_completeness": {
+    "status": "complete",
+    "behaviors": [
+      {
+        "behavior": "A plugin with scripts/ is measured from its own CWD",
+        "disposition": "tested",
+        "evidence": "test_a_plugin_with_scripts_is_measured_from_its_own_cwd PASSED"
+      },
+      {
+        "behavior": "A plugin without scripts/ is not instrumented at all",
+        "disposition": "tested",
+        "evidence": "test_a_plugin_without_scripts_is_not_instrumented PASSED"
+      },
+      {
+        "behavior": "shared and integration tiers measure shared/",
+        "disposition": "tested",
+        "evidence": "test_shared_and_integration_tiers_measure_shared PASSED"
+      },
+      {
+        "behavior": "--cov-config is the ABSOLUTE root pyproject",
+        "disposition": "tested",
+        "evidence": "test_the_cov_config_is_the_absolute_root_pyproject PASSED"
+      },
+      {
+        "behavior": "Each shared unit writes its OWN data file; no --cov-append",
+        "disposition": "tested",
+        "evidence": "test_each_shared_unit_writes_its_OWN_data_file PASSED"
+      },
+      {
+        "behavior": "Colliding labels fail closed before any process starts",
+        "disposition": "tested",
+        "evidence": "test_colliding_labels_fail_before_any_process_starts PASSED"
+      },
+      {
+        "behavior": "No root pyproject.toml means nothing is instrumented",
+        "disposition": "tested",
+        "evidence": "test_no_root_pyproject_means_no_instrumentation PASSED"
+      },
+      {
+        "behavior": "instrument_for_coverage resolves a relative project root / data dir",
+        "disposition": "tested",
+        "evidence": "test_the_cov_config_is_the_absolute_root_pyproject PASSED (asserts is_absolute)"
+      },
+      {
+        "behavior": "Coverage args never split the -m marker expression",
+        "disposition": "tested",
+        "evidence": "test_coverage_args_never_split_the_marker_expression PASSED"
+      },
+      {
+        "behavior": "An instrumented unit gets its own COVERAGE_FILE",
+        "disposition": "tested",
+        "evidence": "test_an_instrumented_unit_gets_its_own_coverage_file PASSED"
+      },
+      {
+        "behavior": "An uninstrumented unit does not inherit an ambient COVERAGE_FILE",
+        "disposition": "tested",
+        "evidence": "test_an_uninstrumented_unit_does_not_inherit_an_ambient_coverage_file PASSED"
+      },
+      {
+        "behavior": "run_suite reports the data files it told units to write",
+        "disposition": "tested",
+        "evidence": "test_run_suite_reports_the_files_it_told_units_to_write PASSED (real run_suite; expectation derived from discover_units, not a literal)"
+      },
+      {
+        "behavior": "A project that cannot be measured reports nothing rather than breakage",
+        "disposition": "tested",
+        "evidence": "test_a_project_without_a_root_pyproject_measures_nothing PASSED"
+      },
+      {
+        "behavior": "main hands the gate the data FILES, not a count",
+        "disposition": "tested",
+        "evidence": "test_the_gate_is_handed_the_files_not_just_a_count PASSED"
+      },
+      {
+        "behavior": "main exits 4 and surfaces diff-cover's own report",
+        "disposition": "tested",
+        "evidence": "test_an_under_covered_diff_stops_the_run PASSED"
+      },
+      {
+        "behavior": "Exit precedence: suite rc > unrecorded race > coverage gate",
+        "disposition": "tested",
+        "evidence": "test_exit_code_precedence PASSED (6 combinations)"
+      },
+      {
+        "behavior": "warm_up provisions the package instrumentation adds",
+        "disposition": "tested",
+        "evidence": "test_warm_up_provisions_the_package_instrumentation_adds PASSED"
+      },
+      {
+        "behavior": "gate_argv mirrors the CI action's command shape, positionally",
+        "disposition": "tested",
+        "evidence": "test_the_local_gate_command_matches_the_action_command PASSED"
+      },
+      {
+        "behavior": "The gate consumes one coherent final-worktree patch that includes untracked and excludes ignored files",
+        "disposition": "tested",
+        "evidence": "test_gate_argv_uses_one_coherent_final_worktree_diff + test_the_documented_scratch_directory_is_actually_ignored + test_line_shifting_uncommitted_edits_use_one_coherent_final_snapshot PASSED"
+      },
+      {
+        "behavior": "Pinned version, threshold, and compare ref equal the action's declared defaults",
+        "disposition": "tested",
+        "evidence": "test_local_gate_pins_the_same_diff_cover_as_ci + test_local_gate_uses_the_same_threshold_as_ci + test_local_gate_uses_the_same_compare_branch_as_ci PASSED"
+      },
+      {
+        "behavior": "ci.yml keeps the diff-coverage gate as the backstop",
+        "disposition": "tested",
+        "evidence": "test_ci_keeps_the_diff_coverage_gate_as_the_backstop PASSED"
+      },
+      {
+        "behavior": "combine_argv delegates to the ONE combiner implementation",
+        "disposition": "tested",
+        "evidence": "test_combine_argv_delegates_to_the_one_combiner PASSED"
+      },
+      {
+        "behavior": "eligible == 0 is an n/a PASS (nothing to gate)",
+        "disposition": "tested",
+        "evidence": "test_nothing_eligible_is_n_a_and_passes PASSED"
+      },
+      {
+        "behavior": "The no-config cause is named distinctly from no-source-root",
+        "disposition": "tested",
+        "evidence": "test_the_no_config_case_names_the_config_not_the_source_roots PASSED"
+      },
+      {
+        "behavior": "Instrumented units but no combined XML fails closed",
+        "disposition": "tested",
+        "evidence": "test_eligible_units_but_no_xml_fails_closed PASSED"
+      },
+      {
+        "behavior": "A failed combine fails closed",
+        "disposition": "tested",
+        "evidence": "test_a_failed_combine_fails_closed PASSED"
+      },
+      {
+        "behavior": "Below threshold fails and names locally-skipping tests as a cause",
+        "disposition": "tested",
+        "evidence": "test_below_threshold_fails_and_says_what_to_do PASSED"
+      },
+      {
+        "behavior": "A broken diff-cover or uvx rc=1 without diff-cover's pinned threshold message is NOT reported as a threshold verdict",
+        "disposition": "tested",
+        "evidence": "test_a_broken_diff_cover_is_not_reported_as_a_threshold_verdict + test_uvx_exit_one_without_diff_cover_verdict_is_infrastructure_failure PASSED"
+      },
+      {
+        "behavior": "No compare branch fails closed naming git fetch",
+        "disposition": "tested",
+        "evidence": "test_an_unresolvable_compare_branch_fails_closed_with_a_fix PASSED"
+      },
+      {
+        "behavior": "A unit that wrote no data is named, and gating stops before combining; pytest-cov xdist suffixes still count as present",
+        "disposition": "tested",
+        "evidence": "test_a_unit_that_wrote_no_data_is_named_not_ignored + test_the_gate_refuses_before_measuring_when_a_unit_wrote_nothing + test_an_xdist_suffixed_data_file_counts_as_present PASSED"
+      },
+      {
+        "behavior": "A red suite skips the gate, compare fetch, and coherent-diff builder entirely",
+        "disposition": "tested",
+        "evidence": "test_a_red_suite_skips_the_gate_entirely + test_a_red_suite_never_fetches_or_builds_a_diff PASSED"
+      },
+      {
+        "behavior": "Every subprocess failure mode is a closed gate, never a traceback",
+        "disposition": "tested",
+        "evidence": "test_a_missing_binary_is_a_closed_gate_not_a_traceback[uvx|combine_coverage] + test_git_being_unavailable_is_no_base_rather_than_a_crash + test_a_report_that_vanishes_mid_check_is_untrusted_not_a_traceback PASSED"
+      },
+      {
+        "behavior": "Stale or foreign state is fail-closed, and only this invocation's unique combine candidate is trusted",
+        "disposition": "tested",
+        "evidence": "test_prepare_clears_stale_state_and_returns_the_data_dir + test_a_momentarily_held_file_is_retried_not_refused + test_stale_state_that_survives_the_reset_is_refused + test_prepare_leaves_a_project_it_will_never_measure_alone + test_a_coverage_xml_this_run_did_not_write_is_not_trusted PASSED"
+      },
+      {
+        "behavior": "Compare-branch parity uses a bounded non-interactive refresh of CI's origin/main, ignores origin/HEAD, and names history deepening when no merge base exists",
+        "disposition": "tested",
+        "evidence": "test_compare_branch_uses_ci_origin_main_even_when_origin_HEAD_differs + test_compare_branch_returns_origin_main_when_it_resolves + test_compare_branch_refreshes_a_stale_origin_main_before_using_it + test_compare_fetch_cannot_prompt_or_wait_without_a_bound + test_compare_branch_is_None_when_no_base_exists + test_a_dangling_origin_HEAD_falls_back_to_a_valid_origin_main + test_missing_merge_base_names_the_shallow_history_fix PASSED"
+      },
+      {
+        "behavior": "End to end with the REAL pinned diff-cover: uncovered fails, covered passes, mixed committed plus dirty line shifts use final coordinates, both tiers combine repo-relative, the CLI returns 4 then 0, and the existing race-followup path remains green under the permanent gate",
+        "disposition": "tested",
+        "evidence": "test_an_uncovered_changed_line_fails_the_gate + test_covering_the_changed_line_passes_the_gate + test_line_shifting_uncommitted_edits_use_one_coherent_final_snapshot + test_the_combined_xml_is_repo_relative_so_diff_cover_can_match_it + test_the_f0_cli_stops_on_an_under_covered_diff_then_passes_once_covered + test_the_runner_records_a_real_race_and_never_auto_closes_it PASSED; full integration root 444 passed, 2 deselected; post-CodeQL-fix canonical F0 18/18 units GREEN in 3.6 min, pinned diff-cover 10.3.0 PASS at 93% over 341 changed lines (23 missed); focused coverage/CLI 32 passed; hook environment confirmation 40 passed",
+        "category": "integration"
+      },
+      {
+        "behavior": "A second F0 cannot enter the repository-global coverage critical section; reset preserves the stable lock rendezvous and release makes it reusable",
+        "disposition": "tested",
+        "evidence": "test_a_second_f0_cannot_enter_the_coverage_critical_section + test_coverage_reset_preserves_the_held_lock_rendezvous PASSED"
+      },
+      {
+        "behavior": "An authoritative retry discards the failed attempt's base and xdist-suffixed coverage before it starts",
+        "disposition": "tested",
+        "evidence": "test_an_authoritative_retry_discards_the_failed_attempts_coverage PASSED"
+      },
+      {
+        "behavior": "Inherited Git repository/index variables cannot redirect gate Git operations away from the absolute project root",
+        "disposition": "tested",
+        "evidence": "test_compare_fetch_cannot_prompt_or_wait_without_a_bound + test_missing_merge_base_names_the_shallow_history_fix PASSED"
+      },
+      {
+        "behavior": "A measured Python source or test/coverage/dependency config change during suite, fetch, patch creation, or gate invalidates coverage",
+        "disposition": "tested",
+        "evidence": "test_source_fingerprint_hashes_existing_source_and_root_config (existing .py, root coverage config, suite config) + test_source_change_during_suite_invalidates_coverage + test_source_change_after_fetch_patch_or_gate_invalidates_measurement PASSED"
+      }
+    ],
+    "counts": {
+      "testable": 39,
+      "tested": 39,
+      "untestable": 0,
+      "untested_testable": 0
+    },
+    "enumeration_basis": {
+      "acs": 17,
+      "covered_acs": 17
+    }
+  },
+  "surface_verification": {
+    "surface": "cli",
+    "runner": "uv run --python 3.11 --with pytest --with pytest-cov --with pytest-mock pytest shared/scripts/tools/tests/test_f0_cli_diff_coverage_e2e.py shared/scripts/tools/tests/test_f0_diff_coverage_e2e.py -q -p no:cacheprovider",
+    "exit_code": 0,
+    "tests_run": 6,
+    "evidence_path": "C:\\01_Development\\shipwright\\.worktrees\\f0-diff-coverage-gate\\.shipwright\\runs\\iterate-2026-08-01-f0-diff-coverage-gate\\surface_verification.log",
+    "timestamp": "2026-08-02T23:29:06.606Z",
+    "attempts": 1
+  },
+  "declared_removals": [
+    {
+      "path": ".shipwright/agent_docs/iterates/iterate-2026-07-27-audit-empty-run-not-recorded.json",
+      "reason": "F5c 50-entry retention eviction; full history remains in shipwright_events.jsonl and git history"
+    },
+    {
+      "path": ".shipwright/agent_docs/iterates/iterate-2026-07-27-c3-phase-content-key.json",
+      "reason": "F5c 50-entry retention eviction; full history remains in shipwright_events.jsonl and git history"
+    },
+    {
+      "path": ".shipwright/agent_docs/iterates/iterate-2026-07-27-merge-state-vocabulary.json",
+      "reason": "F5c 50-entry retention eviction; full history remains in shipwright_events.jsonl and git history"
+    },
+    {
+      "path": ".shipwright/agent_docs/iterates/iterate-2026-07-27-changelog-aggregator-idempotency.json",
+      "reason": "F5c 50-entry retention eviction after origin/main integration; full history remains in shipwright_events.jsonl and git history"
+    },
+    {
+      "path": ".shipwright/agent_docs/iterates/iterate-2026-07-27-checks-that-gate-nothing.json",
+      "reason": "F5c 50-entry retention eviction after origin/main integration; full history remains in shipwright_events.jsonl and git history"
+    },
+    {
+      "path": ".shipwright/agent_docs/iterates/iterate-2026-07-27-no-silent-revert.json",
+      "reason": "F5c 50-entry retention eviction after origin/main integration; full history remains in shipwright_events.jsonl and git history"
+    },
+    {
+      "path": ".shipwright/agent_docs/iterates/iterate-2026-07-27-review-floor-not-chained.json",
+      "reason": "F5c 50-entry retention eviction after origin/main integration; full history remains in shipwright_events.jsonl and git history"
+    },
+    {
+      "path": ".shipwright/agent_docs/iterates/iterate-2026-07-27-run-unit-parallel-race.json",
+      "reason": "F5c 50-entry retention eviction after origin/main integration; full history remains in shipwright_events.jsonl and git history"
+    },
+    {
+      "path": ".shipwright/agent_docs/iterates/iterate-2026-07-27-triage-defer-review-followup.json",
+      "reason": "F5c 50-entry retention eviction after origin/main integration; full history remains in shipwright_events.jsonl and git history"
+    },
+    {
+      "path": ".shipwright/agent_docs/iterates/iterate-2026-07-27-derived-snapshots-off-branch.json",
+      "reason": "F5c 50-entry retention eviction after final origin/main integration; full history remains in shipwright_events.jsonl and git history"
+    },
+    {
+      "path": ".shipwright/agent_docs/iterates/iterate-2026-07-28-cascade-delegated-to-nobody.json",
+      "reason": "F5c 50-entry retention eviction after final origin/main integration; full history remains in shipwright_events.jsonl and git history"
+    },
+    {
+      "path": ".shipwright/agent_docs/iterates/iterate-2026-07-28-pathlib-import-normalize.json",
+      "reason": "F5c 50-entry retention eviction after final origin/main integration; full history remains in shipwright_events.jsonl and git history"
+    },
+    {
+      "path": ".shipwright/agent_docs/iterates/iterate-2026-07-28-security-pyasn1-bump-brace-accept.json",
+      "reason": "F5c 50-entry retention eviction after final origin/main integration; full history remains in shipwright_events.jsonl and git history"
+    }
+  ]
+}

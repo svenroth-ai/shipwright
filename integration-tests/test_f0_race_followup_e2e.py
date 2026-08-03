@@ -28,6 +28,11 @@ import pytest
 
 _REPO = Path(__file__).resolve().parents[1]
 _RUNNER = _REPO / "shared" / "scripts" / "tools" / "run_test_suite.py"
+_GIT_ENV = {
+    **os.environ,
+    "GIT_AUTHOR_NAME": "t", "GIT_AUTHOR_EMAIL": "t@t.invalid",
+    "GIT_COMMITTER_NAME": "t", "GIT_COMMITTER_EMAIL": "t@t.invalid",
+}
 
 _FLAKY_UNIT = '''import pathlib
 
@@ -46,15 +51,57 @@ def _uv_available() -> bool:
     return shutil.which("uv") is not None
 
 
+def _require_uv() -> None:
+    if _uv_available():
+        return
+    if os.environ.get("CI", "").lower() in ("true", "1"):
+        pytest.fail("uv is required in CI: https://docs.astral.sh/uv/getting-started/")
+    pytest.skip("uv not installed; the F0 runner cannot spawn its units")
+
+
+def _git(cwd: Path, *args: str) -> None:
+    subprocess.run(
+        ["git", *args], cwd=str(cwd), env=_GIT_ENV,
+        capture_output=True, text=True, check=True,
+    )
+
+
 @pytest.fixture
 def project(tmp_path: Path) -> Path:
+    _require_uv()
     unit = tmp_path / "plugins" / "shipwright-alpha"
     (unit / "tests").mkdir(parents=True)
     (tmp_path / "shipwright_test_config.json").write_text(
         json.dumps({"suite": {}}), encoding="utf-8")
+    (tmp_path / ".gitignore").write_text(
+        ".venv/\n.cov-data/\n.coverage*\ncoverage.xml\nran_once.marker\n.shipwright/\n",
+        encoding="utf-8",
+    )
     (unit / "pyproject.toml").write_text(
-        '[project]\nname = "alpha"\nversion = "0.0.0"\n', encoding="utf-8")
+        '[project]\nname = "alpha"\nversion = "0.0.0"\nrequires-python = ">=3.11"\n',
+        encoding="utf-8",
+    )
     (unit / "tests" / "test_unreliable.py").write_text(_FLAKY_UNIT, encoding="utf-8")
+    subprocess.run(
+        ["uv", "lock"], cwd=str(unit), env=_GIT_ENV,
+        capture_output=True, text=True, check=True,
+    )
+
+    # F0 now permanently includes the same diff-coverage gate as CI. Give this
+    # end-to-end fixture the real origin/main contract that every iterate has;
+    # weakening the production gate for a synthetic non-repo would hide failures.
+    _git(tmp_path, "init", "-q", "-b", "main")
+    _git(tmp_path, "config", "core.autocrlf", "false")
+    _git(tmp_path, "add", "-A")
+    _git(tmp_path, "commit", "-q", "-m", "base")
+    bare = tmp_path.parent / "origin.git"
+    subprocess.run(
+        ["git", "init", "-q", "--bare", str(bare)], env=_GIT_ENV,
+        capture_output=True, text=True, check=True,
+    )
+    _git(tmp_path, "remote", "add", "origin", str(bare))
+    _git(tmp_path, "push", "-q", "origin", "main")
+    _git(tmp_path, "fetch", "-q", "origin", "main")
     return tmp_path
 
 
@@ -76,11 +123,6 @@ def _cards(project_root: Path) -> list[dict]:
 
 
 def test_the_runner_records_a_real_race_and_never_auto_closes_it(project: Path) -> None:
-    if not _uv_available():
-        if os.environ.get("CI", "").lower() in ("true", "1"):
-            pytest.fail("uv is required in CI: https://docs.astral.sh/uv/getting-started/")
-        pytest.skip("uv not installed; the F0 runner cannot spawn its units")
-
     # Run 1 - the unit is red in parallel, green when re-run alone.
     first = _run_f0(project)
     assert first.returncode == 0, f"a race must not stop the gate:\n{first.stdout}"

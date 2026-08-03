@@ -32,6 +32,8 @@ from typing import Any
 
 from .common import CheckResult, Severity, read_events_jsonl
 
+_WINDOWS = os.name == "nt"
+
 
 def _replay_task_states(events: list[dict[str, Any]]) -> dict[str, dict[str, Any]]:
     """Minimal event-replay to derive current task status.
@@ -107,17 +109,62 @@ def _pid_is_alive(pid: int) -> bool:
     """Best-effort liveness check cross-platform.
 
     On POSIX, ``os.kill(pid, 0)`` raises ``ProcessLookupError`` when no
-    process with that PID exists. On Windows the same call works via
-    ``signal 0`` but Python maps the error differently — we just trust
-    ``OSError``-of-any-kind to mean "not running".
+    process with that PID exists. Windows needs a process-handle query:
+    ``os.kill(pid, 0)`` sends ``CTRL_C_EVENT`` there and can terminate the
+    verifier's own console process group.
     """
     if pid <= 0:
         return False
+    if _WINDOWS:
+        return _windows_pid_is_alive(pid)
     try:
         os.kill(pid, 0)
         return True
     except OSError:
         return False
+
+
+def _windows_pid_is_alive(pid: int) -> bool:
+    """Query Windows process state without delivering a console signal."""
+    if not 0 < pid <= 0xFFFFFFFF:
+        return False
+
+    import ctypes
+    from ctypes import wintypes
+
+    process_query_limited_information = 0x1000
+    synchronize = 0x00100000
+    error_access_denied = 5
+    wait_timeout = 258
+
+    kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
+    open_process = kernel32.OpenProcess
+    open_process.argtypes = (wintypes.DWORD, wintypes.BOOL, wintypes.DWORD)
+    open_process.restype = wintypes.HANDLE
+    wait_for_single_object = kernel32.WaitForSingleObject
+    wait_for_single_object.argtypes = (wintypes.HANDLE, wintypes.DWORD)
+    wait_for_single_object.restype = wintypes.DWORD
+    close_handle = kernel32.CloseHandle
+    close_handle.argtypes = (wintypes.HANDLE,)
+    close_handle.restype = wintypes.BOOL
+
+    ctypes.set_last_error(0)
+    handle = open_process(
+        process_query_limited_information | synchronize,
+        False,
+        pid,
+    )
+    if not handle:
+        # A protected process can deny query access while still being alive.
+        return ctypes.get_last_error() == error_access_denied
+
+    try:
+        # A zero-timeout wait reports WAIT_TIMEOUT only while the process is
+        # still running. Unlike GetExitCodeProcess, this cannot confuse a
+        # terminated process whose legitimate exit code is STILL_ACTIVE (259).
+        return wait_for_single_object(handle, 0) == wait_timeout
+    finally:
+        close_handle(handle)
 
 
 def check_no_zombie_running_tasks(

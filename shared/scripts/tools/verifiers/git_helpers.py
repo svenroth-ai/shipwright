@@ -60,11 +60,15 @@ def git_context(project_root: Path) -> Literal["work_tree", "not_git", "git_erro
     infrastructure failure that must fail CLOSED — reading it as "not a repo"
     green-skips a gate from inside the repository it was meant to enforce.
 
-    Only a DEFINITIVE non-git answer is ``not_git``: rc 0 with stdout that is not
-    ``true``, or git ran and said so on stderr. A synthesized failure
-    (``_run_git`` maps OSError / ValueError / TimeoutExpired to ``(1, "", "")``)
-    or any other non-zero rc without that message is ``git_error``, so an
-    exception can never escape unstructured or be mistaken for a clean skip.
+    Only a DEFINITIVE non-git answer is ``not_git``: rc 0 with stdout that is not ``true``,
+    or git ran and said so on stderr. A synthesized failure (``_run_git`` maps OSError /
+    ValueError / TimeoutExpired to ``(1, "", "")``) or any other non-zero rc without that
+    stderr message is ``git_error``, so an exception can never escape unstructured.
+
+    That first clause is a RULE, not a sample: ANY context where git exits 0 without printing
+    ``true`` is ``not_git``, so a caller migrating off ``rev-parse --git-dir`` (rc only) now
+    SKIPs where it proceeded — a bare repo, a ``.git`` dir, a ``GIT_WORK_TREE`` elsewhere,
+    whatever else is in that set. Accepted as for the non-repo SKIP: nothing to merge.
 
     Lives here rather than in one verifier because both ``layer_coverage`` (which
     first drew the distinction) and ``integration_coverage`` need the same

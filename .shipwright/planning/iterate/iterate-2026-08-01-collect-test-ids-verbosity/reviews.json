@@ -1,0 +1,80 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-08-01-collect-test-ids-verbosity",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-02T19:20:29.027566+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-02T19:20:29.270696+00:00",
+      "disposition": "small BUG iterate; external plan/iterate review applies only at medium+ per iteration-reviews.md",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-02T19:23:08.454698+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-02T19:23:08.821209+00:00",
+      "disposition": "Stage 3 is conditional per iteration-reviews.md; this diff touches no migrations, async/concurrency, cross-plugin imports, or irreversible operations",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": "openrouter",
+      "completed_at": "2026-08-02T19:42:10.637386+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "unstructured",
+      "raw_excerpt": "[gemini] <no review returned: provider returned an empty reply>\n\n[openai] No concrete defects found. The absolute `--verbosity=-1` override correctly neutralizes configured verbosity while retaining configured `addopts`, and the added subprocess tests cover positive, zero, negative verbosity configurations, marker filtering, and non-pytest behavior.\n\nOverall assessment: ship-as-is.\n\nSHIPWRIGHT_VERDICT: approve"
+    }
+  },
+  "gates": {
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-02T19:21:40.812067+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    }
+  }
+}

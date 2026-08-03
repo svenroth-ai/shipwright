@@ -54,7 +54,7 @@ def test_regenerate_stages_test_traceability_when_rewritten(git_origin_repo, mon
 
     fresh = '{"schema_version": 2, "links": [], "generated_at": "fresh"}\n'
 
-    def fresh_scan(project_root):
+    def fresh_scan(project_root, run_id=None):
         (Path(project_root) / _TT).write_text(fresh, encoding="utf-8")
         return [_TT]
 
@@ -77,7 +77,8 @@ def test_regenerate_does_not_stage_unchanged_test_traceability(git_origin_repo, 
     _git(work, "add", "-A")
     _git(work, "commit", "-m", "seed test-traceability")
 
-    monkeypatch.setattr(finalize_iterate, "_update_compliance", lambda pr: ["ok"])
+    monkeypatch.setattr(finalize_iterate, "_update_compliance",
+                        lambda pr, run_id=None: ["ok"])
 
     out = rcc.regenerate_tracked_snapshots(work, "iterate-x", only={_DASH})
 
@@ -112,13 +113,13 @@ def test_test_traceability_fresh_scan_reaches_followup_commit(git_origin_repo, m
     fresh = '{"schema_version": 2, "links": [9], "generated_at": "fresh"}\n'
     _stub_derived_md_producers(monkeypatch)
 
-    def fresh_scan(project_root):
+    def fresh_scan(project_root, run_id=None):
         (Path(project_root) / _TT).write_text(fresh, encoding="utf-8")
         return [_TT]
 
     ran = {"scan": False}
 
-    def tracking_scan(project_root):
+    def tracking_scan(project_root, run_id=None):
         ran["scan"] = True
         return fresh_scan(project_root)
 

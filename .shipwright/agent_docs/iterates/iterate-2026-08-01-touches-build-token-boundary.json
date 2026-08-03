@@ -1,0 +1,125 @@
+{
+  "run_id": "iterate-2026-08-01-touches-build-token-boundary",
+  "date": "2026-08-02T20:44:53.797898Z",
+  "event_at": "2026-08-01T08:26:45.209123+00:00",
+  "type": "bug",
+  "complexity": "small",
+  "prior_source": "keyword",
+  "branch": "iterate/touches-build-token-boundary",
+  "spec": ".shipwright/planning/iterate/iterate-2026-08-01-touches-build-token-boundary.md",
+  "tests_passed": true,
+  "adr": "iterate-2026-08-01-touches-build-token-boundary",
+  "test_completeness": {
+    "status": "complete",
+    "behaviors": [
+      {
+        "behavior": "A prefixed token (my-{name}) fires on neither surface for every detector entry.",
+        "disposition": "tested",
+        "evidence": "test_a_prefixed_build_input_fires_on_neither_surface: 29 parameters PASSED"
+      },
+      {
+        "behavior": "A suffixed token ({name}.bak) fires on neither surface for every detector entry.",
+        "disposition": "tested",
+        "evidence": "test_a_suffixed_build_input_fires_on_neither_surface: 29 parameters PASSED"
+      },
+      {
+        "behavior": "The 15 named JavaScript partial tokens from the finding do not fire.",
+        "disposition": "tested",
+        "evidence": "test_named_js_partial_tokens_do_not_fire: 15 parameters PASSED"
+      },
+      {
+        "behavior": "Every detector entry still fires from a message.",
+        "disposition": "tested",
+        "evidence": "test_every_detector_entry_also_fires_from_a_message: 29 parameters PASSED"
+      },
+      {
+        "behavior": "A build input ending a sentence still fires.",
+        "disposition": "tested",
+        "evidence": "test_a_build_input_ending_a_sentence_still_fires: 29 parameters PASSED"
+      },
+      {
+        "behavior": "Path separators, backticks, and trailing punctuation still fire.",
+        "disposition": "tested",
+        "evidence": "test_ordinary_prose_around_a_build_input_still_fires: 6 parameters PASSED"
+      },
+      {
+        "behavior": "A bare config stem fires on neither surface.",
+        "disposition": "tested",
+        "evidence": "test_a_bare_config_stem_fires_on_neither_surface: 5 parameters PASSED"
+      },
+      {
+        "behavior": "An extensioned config file still fires on both surfaces, including sentence-final use.",
+        "disposition": "tested",
+        "evidence": "test_an_extensioned_config_file_fires_on_both_surfaces: 5 parameters PASSED"
+      },
+      {
+        "behavior": "A config stem is not matched inside a longer word.",
+        "disposition": "tested",
+        "evidence": "test_a_config_stem_is_not_matched_inside_a_longer_word: 5 parameters PASSED"
+      },
+      {
+        "behavior": "Every message pattern carries the whole constructed guard at both ends.",
+        "disposition": "tested",
+        "evidence": "test_every_message_pattern_is_token_guarded PASSED"
+      },
+      {
+        "behavior": "The deliberate case asymmetry between surfaces is preserved.",
+        "disposition": "tested",
+        "evidence": "test_the_two_surfaces_deliberately_disagree_on_case: 3 parameters PASSED"
+      },
+      {
+        "behavior": "The derived parameter set contains literal filenames, not uninstantiated globs.",
+        "disposition": "tested",
+        "evidence": "test_glob_instances_are_literal_filenames PASSED"
+      },
+      {
+        "behavior": "The detector comment and convention memory accurately describe the whole taxonomy entry.",
+        "disposition": "untestable",
+        "reason_code": "requires-manual-visual-judgment",
+        "reason": "This is prose scope and decision-memory accuracy; executable properties are covered by the adjacent parity and construction rows."
+      },
+      {
+        "behavior": "An alternation fragment cannot escape the filename guards.",
+        "disposition": "tested",
+        "evidence": "test_the_helper_groups_its_argument: 5 parameters PASSED"
+      },
+      {
+        "behavior": "A refused config stem still raises touches_middleware without adding the performance layer.",
+        "disposition": "tested",
+        "evidence": "test_a_refused_config_stem_still_raises_touches_middleware: 2 parameters PASSED"
+      },
+      {
+        "behavior": "A build input inside a hyphen compound still fires.",
+        "disposition": "tested",
+        "evidence": "test_a_build_input_in_a_hyphen_compound_still_fires: 29 parameters PASSED"
+      },
+      {
+        "behavior": "The requirements*.txt family accepts the same filename alphabet on both surfaces.",
+        "disposition": "tested",
+        "evidence": "test_the_glob_family_accepts_the_same_alphabet_on_both_surfaces: 8 fills PASSED"
+      }
+    ],
+    "counts": {
+      "testable": 16,
+      "tested": 16,
+      "untestable": 1,
+      "untested_testable": 0
+    },
+    "enumeration_basis": {
+      "acs": 9,
+      "covered_acs": 9,
+      "note": "AC-1 through AC-9 are covered; additional rows pin review-found edge cases and decision residue."
+    }
+  },
+  "surface_verification": {
+    "surface": "none",
+    "justification": "Small internal classifier change with no standalone user-facing web, API, or CLI surface; production detector functions are exercised directly by the focused parity suite."
+  },
+  "declared_removals": [],
+  "degraded": [
+    {
+      "condition": "local_f0_incomplete",
+      "detail": "Repeated canonical run_test_suite.py attempts, including a detached Windows Scheduled Task, were terminated externally with 0xC000013A (CONTROL_C_EXIT) before pytest produced a result. No test failure was observed. Required serial PR CI is the authoritative clean-environment full-suite result and delivery is blocked until it is green."
+    }
+  ]
+}
