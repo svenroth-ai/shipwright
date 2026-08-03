@@ -3,7 +3,7 @@
 
 Split out of ``test_grade_snapshot_regen.py`` when that file crossed the
 300-line guideline. The seam is the subject: that file asks whether the emitter
-EMITS (one per regen, unconditionally, matching the dashboard); this one asks
+EMITS (one per grade CHANGE, matching the dashboard); this one asks
 whether what it emits says WHICH TREE it measured — the property the union-merged
 event log needs so snapshots from many worktrees stop reading as one timeline.
 

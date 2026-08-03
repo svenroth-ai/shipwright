@@ -176,10 +176,13 @@ def main() -> int:
                     test_evidence_triage_result = {
                         "appended": 0, "dismissed": 0, "error": str(exc),
                     }
-            # M-Pre-3: when the dashboard (Control Grade) is regenerated, append
-            # one grade_snapshot event to the durable event log so the WebUI
-            # Ship's-Log can trend the grade. Same best-effort contract — a
-            # failure here never aborts the compliance regen.
+            # M-Pre-3: when the dashboard (Control Grade) is regenerated,
+            # append a grade_snapshot event to the durable event log so the
+            # WebUI Ship's-Log can trend the grade — but only when the grade
+            # actually moved (iterate-2026-08-01-grade-snapshot-dedup), which is
+            # why the result below may carry {"appended": 0, "reason":
+            # "unchanged_grade"}. Same best-effort contract — a failure here
+            # never aborts the compliance regen.
             elif report_name == "dashboard":
                 try:
                     grade_snapshot_result = emit_grade_snapshot(data)

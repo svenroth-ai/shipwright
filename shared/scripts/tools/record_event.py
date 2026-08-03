@@ -34,17 +34,20 @@ if str(_SCRIPTS_ROOT) not in sys.path:
     sys.path.insert(0, str(_SCRIPTS_ROOT))
 
 from lib.events_log import resolve_events_path  # noqa: E402
+from lib.events_amend import apply_amendments  # noqa: E402
 # grade_snapshot shape + attribution; top-level for ADR-045 like tests_block.
 from grade_snapshot_shape import apply_grade_snapshot, reject_asserted_attribution  # noqa: E402
 # Shared skip-vs-fail SSOT; top-level avoids the ADR-045 lib collision.
 from tests_block import validate_tests_block  # noqa: E402
 # Re-export the tolerant reader so `record_event.read_events` remains the F14
 # lifecycle-test and caller monkeypatch seam. Direction tools -> lib.
-from lib.config import read_events  # noqa: E402,F401 — re-exported SSOT
+from lib.config import read_events, read_events_result  # noqa: E402,F401 — re-exported SSOT
 # All append-dedup predicates; historical names remain exported below.
 from lib.event_dedup import (  # noqa: E402,F401 — re-exported surface
     has_commit as _has_commit,
     has_phase_event as _has_phase_event,
+    last_grade_snapshot,
+    unchanged_grade_skip,
 )
 # Keep the historical `_FileLock` alias monkeypatchable for the F14 lifecycle
 # test and existing `with _FileLock(...)` call sites.
@@ -348,8 +351,9 @@ def append_event(project_root: Path, event: dict) -> str:
 
     Unconditional append — no dedup. Direct callers are single-writer
     (e.g. ``finalize_iterate`` emits a run-id-idempotent ``work_completed``).
-    Concurrent dedup (``phase_completed`` / by-commit) lives in
-    ``append_event_idempotent`` (deep-audit F14); the CLI routes through it.
+    Every dedup rule (``phase_completed``, by-commit, and the opt-in
+    ``grade_snapshot`` one) lives in ``append_event_idempotent`` (deep-audit
+    F14); the CLI and the compliance grade emitter both route through it.
 
     Resolves the per-tree event log via ``resolve_events_path``. Under a
     ``/shipwright-iterate`` run this is the worktree-local copy: the append
@@ -384,6 +388,7 @@ def append_event_idempotent(
     event: dict,
     *,
     deduplicate_by_commit: bool = False,
+    deduplicate_grade_snapshot: bool = False,
 ) -> tuple[str | None, dict | None]:
     """Scan-for-duplicate then append **inside one ``_FileLock``** (deep-audit F14).
 
@@ -396,7 +401,13 @@ def append_event_idempotent(
 
     Returns ``(event_id, None)`` on append, or ``(None, skip)`` where ``skip`` is
     a JSON-serialisable dict describing the duplicate (``reason`` + keys) so the
-    caller can render the existing ``skipped`` CLI output verbatim.
+    caller can render the existing ``skipped`` CLI output verbatim. A skip dict
+    carries no ``appended`` key — that is the compliance emitter's own result
+    vocabulary, added on top.
+
+    ``deduplicate_grade_snapshot`` is opt-in and defaults off, so existing and
+    manual/replay callers remain unconditional; only the compliance emitter
+    enables it.
     """
     path = resolve_events_path(project_root)
     lock_path = path.with_name(path.name + ".lock")
@@ -409,6 +420,21 @@ def append_event_idempotent(
             if has_commit(project_root, event["commit"], section=section):
                 return None, {"reason": "duplicate_commit",
                               "commit": event["commit"], "section": section}
+        if deduplicate_grade_snapshot and event.get("type") == "grade_snapshot":
+            # Corruption is explicit data, not inferred from whether warnings
+            # happen to raise. An older recovered match cannot prove that an
+            # unreadable newer fragment did not contain a transition.
+            try:
+                read_result = read_events_result(project_root)
+                prior = (
+                    [] if read_result.corrupt
+                    else apply_amendments(read_result.records)
+                )
+            except Exception:  # noqa: BLE001 - never lose a snapshot to read/fold
+                prior = []
+            unchanged = unchanged_grade_skip(event, prior)
+            if unchanged is not None:
+                return None, unchanged
         if event.get("type") == "phase_completed" and event.get("phase"):
             split_id = event.get("splitId")
             if has_phase_event(project_root, event["phase"], split_id):

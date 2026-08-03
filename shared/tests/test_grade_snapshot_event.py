@@ -5,11 +5,12 @@ Lives in a NEW file because the two existing ``test_record_event.py`` modules
 are baseline-capped (anti-ratchet would block appending to them — same reason
 ``test_record_event_lifecycle_integrity.py`` was created).
 
-``grade_snapshot`` is the M-Pre-3 event the compliance dashboard appends once
-per Control-Grade regen so the WebUI Ship's-Log can trend the grade. These
-tests pin the producer side: the type is an accepted ``--type`` choice, its
-``build_event`` branch serialises ``grade``/``score``/optional ``commit``, and
-the event round-trips through ``append_event`` → ``read_events``.
+``grade_snapshot`` is the M-Pre-3 event the compliance dashboard appends when a
+Control-Grade regen moves the grade, so the WebUI Ship's-Log can trend it (the
+dedup itself lives in ``test_grade_snapshot_dedup.py``). These tests pin the
+producer side: the type is an accepted ``--type`` choice, its ``build_event``
+branch serialises ``grade``/``score``/optional ``commit``, and the event
+round-trips through ``append_event`` → ``read_events``.
 """
 
 from __future__ import annotations

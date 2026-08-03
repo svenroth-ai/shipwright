@@ -1,0 +1,154 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-08-01-grade-snapshot-dedup",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-02T21:31:47.652685+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 4,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The proposed `_comparable_grade` still risks raising on valid JSON numeric payloads if it implements the stated `float(score)` normalization directly. Python JSON can parse arbitrarily large integers, but `float(1010000)` and some `math.isfinite()` calls on such integers raise `OverflowError`. This violates AC3d’s “never raises” guarantee and, because the caller swallows emitter failures, can lose the snapshot rather than merely retain a duplicate.",
+          "suggestion": "Wrap both numeric conversion and finiteness checking in `try/except (TypeError, ValueError, OverflowError)` and return `None` on failure. Add a test with an extremely large integer score in both a stored predecessor and the candidate event. Preserve the specified behavior: non-comparable means append.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The malformed-data coverage discusses invalid fields on an event object, but the reverse scan appears to assume every parsed JSONL entry is a mapping (`event.get(...)`). If `read_events` can return valid JSON values that are not objects—such as a JSON array, string, number, or `null` line—the new scan can raise while holding the lock. The specification explicitly relies on recovery from durable, union-merged, amendable data, so shape-level validation should not be assumed unless `read_events` already guarantees it.",
+          "suggestion": "Make `_lineage_class` and `_comparable_grade` accept an object only when it is a `dict` (otherwise return `None`), and have `last_grade_snapshot` skip non-dict parsed entries. Add a regression test with a syntactically valid non-object JSONL line before a valid candidate snapshot, or explicitly document and enforce a `read_events -> list[dict]` guarantee if one already exists.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "The proposed `last_grade_snapshot(project_root, lineage_class)` API makes it easier to accidentally violate AC4 later: it independently resolves and reads an events path from a project root, while the lock and append path are owned by `append_event_idempotent`. The plan says it will be invoked inside the lock, but the helper signature does not encode that invariant or ensure it scans the exact file protected by that lock.",
+          "suggestion": "Keep the helper private and pass it the already-resolved events path, or preferably the parsed events list read inside `append_event_idempotent`’s lock. This makes the scan/decision/append relationship explicit and avoids an accidental separate path resolution or unlocked reuse.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "A few contract statements remain internally inconsistent. The overview says adding the branch “covers both producers at once,” while AC5 intentionally leaves the CLI producer unconditional. Likewise, the risk table says a backfill “would not want” identical snapshots suppressed, although the selected implementation correctly leaves CLI/backfill deduplication off. These are documentation-level contradictions that could lead a later maintainer to enable the flag for the CLI and alter the replay contract.",
+          "suggestion": "State consistently that the shared helper supports both routes but only the automatic compliance emitter opts into grade deduplication; the CLI/manual replay route remains deliberately unconditional.  Overall, the chosen lineage-class, opt-in, lock-scoped deduplication approach is sound and appropriately preserves the CLI and historical audit log behavior. Address the malformed durable-data handling before implementation so the central no-raise/no-lost-event guarantee is actually upheld. SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-08-01T10:18:25.561825+00:00",
+      "disposition": null,
+      "recorded_by": "external_review.py",
+      "parse_status": "partial",
+      "raw_excerpt": "[gemini] comparable -> append\".\n    Let's make absolutely sure they ensure `None == None` doesn't result in deduplicating two malformed events.\n    Spec: \"A candidate is non-comparable -> append, unless grade is a non-empty str...\"\n    As long as the implementation explicitly checks `if new_comparable is not None and old_comparable is not None and new_comparable == old_comparable: deduplicate`, it's safe. If they just do `if _comparable_grade(new) == _comparable_grade(old):`, then `None == None` would be True and it would suppress.\n    The spec states: \"A malformed predecessor ... never suppresses (AC3d)\". I should\n\n[openai] 1. **Category:** edge-case  \n   **Severity:** medium  \n   **Finding:** The proposed `_comparable_grade` still risks raising on valid JSON numeric payloads if it implements the stated `float(score)` normalization directly. Python JSON can parse arbitrarily large integers, but `float(10**10000)` and some `math.isfinite()` calls on such integers raise `OverflowError`. This violates AC3d’s “never raises” guarantee and, because the caller swallows emitter failures, can lose the snapshot rather than merely retain a duplicate.  \n   **Suggestion:** Wrap both numeric conversion and finiteness checking in `try/except (TypeError, ValueError, OverflowError)` and return `None` on failure. Add a test with an extremely large integer score in both a stored predecessor and the candidate event. Preserve the specified behavior: non-comparable means append.\n\n2. **Category:** edge-case  \n   **Severity:** medium  \n   **Finding:** The malformed-data coverage discusses invalid fields on an event object, but the reverse scan appears to assume every parsed JSONL entry is a mapping (`event.get(...)`). If `read_events` can return valid JSON values that are not objects—such as a JSON array, string, number, or `null` line—the new scan can raise while holding the lock. The specification explicitly relies on recovery from durable, union-merged, amendable data, so shape-level validation should not be assumed unless `read_events` already guarantees it.  \n   **Suggestion:** Make `_lineage_class` and `_comparable_grade` accept an object only when it is a `dict` (otherwise return `None`), and have `last_grade_snapshot` skip non-dict parsed entries. Add a regression test with a syntactically valid non-object JSONL line before a valid candidate snapshot, or explicitly document and enforce a `read_events -> list[dict]` guarantee if one already exists.\n\n3. **Category:** approach  \n   **Severity:** low  \n   **Finding:** The proposed `last_grade_snapshot(project_root, lineage_class)` API makes i […truncated]"
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-03T06:24:09.839678+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-03T06:27:17.810193+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 4,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "edge-case / bug",
+          "file": "shared/scripts/lib/event_dedup.py",
+          "line": 127,
+          "finding": "The external reviewer explicitly warned that `last_grade_snapshot` assumes every entry parsed from the JSONL file is a `dict` (e.g. `event.get(\"type\")`), and that if a user manually amends a line to be a syntactically valid JSON array (e.g",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "spec",
+          "file": "plugins/shipwright-compliance/scripts/lib/_grade_snapshot.py",
+          "line": 142,
+          "finding": "The unchanged-grade emitter result contains an extra `lineage` field: `{\"appended\": 0, skipped, \"lineage\": ...}`. AC1 defines the emitter result as the helper’s exact `{reason, grade, score}` payload with `appended: 0` added; it does not permit adding emitter-specific metadata. The corresponding new test explicitly requires this extra field, so it validates a result shape that differs from the specified contract.",
+          "suggestion": "Return only `{\"appended\": 0, skipped}` for this skip path, and update the test to assert the specified payload by equality.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "regression",
+          "file": "shared/scripts/lib/event_dedup.py:163-190",
+          "line": null,
+          "finding": "Moving `has_commit` and `has_phase_event` changes their dependency binding from `tools.record_event.read_events` to `lib.event_dedup.read_events`. Re-exporting the functions from `record_event` preserves their names but not the historical monkeypatch seam: a caller/test that monkeypatches `tools.record_event.read_events` will no longer affect either predicate. This contradicts the stated requirement that historical monkeypatching behavior remains unchanged, and can cause existing lifecycle/idempotency tests or embedding callers to read the real log unexpectedly.",
+          "suggestion": "Preserve the `record_event.read_events` seam, such as by retaining thin `record_event` wrappers that call its module-level `read_events`, or make the extracted predicates accept an injected reader/events collection and have `record_event` pass its re-exported reader.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": "shared/scripts/lib/event_dedup.py:117-121",
+          "line": null,
+          "finding": "comparable_grade` only catches `OverflowError`, despite AC3d requiring that comparison never raise and specifically calling for `TypeError`, `ValueError`, and `OverflowError` to be handled. While ordinary JSON-decoded `int`/`float` values generally only need the overflow guard, this public helper accepts arbitrary `dict` events and an `int`/`float` subclass can raise `TypeError` or `ValueError` from `__float__`; that exception escapes the lock and causes the best-effort emitter to lose the snapshot.",
+          "suggestion": "Catch `(TypeError, ValueError, OverflowError)` around conversion and finiteness normalization, returning `None` for all failures; add a test using a numeric subclass whose `__float__` raises.  Overall assessment: ship-with-fixes. The core lineage-class, opt-in, lock-scoped deduplication implementation is sound, but the result-shape contract and backward-compatible predicate monkeypatching need correction before shipping.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-08-02T19:33:29.208570+00:00",
+      "disposition": null,
+      "recorded_by": "openrouter",
+      "parse_status": "structured",
+      "raw_excerpt": "[gemini] The implementation correctly shifts from unconditional appending to a lock-scoped deduplication scan that preserves the `main`/`branch` lineage context. However, there is a concrete correctness bug and a missed edge-case raised by the external reviewer that the diff fails to guard against. \n\n- **Category:** edge-case / bug\n- **Severity:** medium\n- **File:** `shared/scripts/lib/event_dedup.py:127`\n- **Finding:** The external reviewer explicitly warned that `last_grade_snapshot` assumes every entry parsed from the JSONL file is a `dict` (e.g. `event.get(\"type\")`), and that if a user manually amends a line to be a syntactically valid JSON array (e.g\n\n[openai] - Category: spec  \n  Severity: low  \n  File: plugins/shipwright-compliance/scripts/lib/_grade_snapshot.py:142  \n  Finding: The unchanged-grade emitter result contains an extra `lineage` field: `{\"appended\": 0, **skipped, \"lineage\": ...}`. AC1 defines the emitter result as the helper’s exact `{reason, grade, score}` payload with `appended: 0` added; it does not permit adding emitter-specific metadata. The corresponding new test explicitly requires this extra field, so it validates a result shape that differs from the specified contract.  \n  Suggestion: Return only `{\"appended\": 0, **skipped}` for this skip path, and update the test to assert the specified payload by equality.\n\n- Category: regression  \n  Severity: medium  \n  File: shared/scripts/lib/event_dedup.py:163-190  \n  Finding: Moving `has_commit` and `has_phase_event` changes their dependency binding from `tools.record_event.read_events` to `lib.event_dedup.read_events`. Re-exporting the functions from `record_event` preserves their names but not the historical monkeypatch seam: a caller/test that monkeypatches `tools.record_event.read_events` will no longer affect either predicate. This contradicts the stated requirement that historical monkeypatching behavior remains unchanged, and can cause existing lifecycle/idempotency tests or embedding callers to read the real log unexpectedly.  \n  Suggestion: Preserve the `record_event.read_events` seam, such as by retaining thin `record_event` wrappers that call its module-level `read_events`, or make the extracted predicates accept an injected reader/events collection and have `record_event` pass its re-exported reader.\n\n- Category: edge-case  \n  Severity: low  \n  File: shared/scripts/lib/event_dedup.py:117-121  \n  Finding: `comparable_grade` only catches `OverflowError`, despite AC3d requiring that comparison never raise and specifically calling for `TypeError`, `ValueError`, and `OverflowError` to be handled. While ordinary JSON-decoded `int`/`float` v […truncated]"
+    }
+  },
+  "gates": {
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-01T10:18:09.583844+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    }
+  }
+}

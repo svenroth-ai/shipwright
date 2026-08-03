@@ -3,9 +3,13 @@
 
 ``grade_snapshot`` lands on the DURABLE, tracked ``shipwright_events.jsonl`` and
 is read cross-repo by the WebUI Ship's-Log. Two producers write it: the
-compliance emitter (``_grade_snapshot.emit_grade_snapshot``, once per
-Control-Grade regen) and the manual/replay CLI (``record_event.py --type
-grade_snapshot``). They previously built the event independently, so the CLI
+compliance emitter (``_grade_snapshot.emit_grade_snapshot``, on a Control-Grade
+regen that MOVES the grade) and the manual/replay CLI (``record_event.py --type
+grade_snapshot``, unconditionally). The two cadences differ on purpose:
+iterate-2026-08-01-grade-snapshot-dedup falsified the premise that "a regen is
+an explicit act" for the automatic emitter, but it holds for a hand-run replay,
+so only the emitter opts into dedup. The SHAPE below is identical either way —
+that is what this module exists to guarantee. They previously built the event independently, so the CLI
 enforced a score range the emitter did not, and a field added to one would
 silently not exist on the other.
 

@@ -7,10 +7,17 @@ sub-300-LOC home rather than ratcheting the exception file larger. Sibling of
 
 The subject: two ``finalize_iterate.run`` calls must render a byte-identical
 dashboard *body*. The one legitimately-varying token is the wall-clock minute
-in the ``> Updated:`` banner — each run appends a fresh ``grade_snapshot`` event
-during compliance regen, so ``latest_event_dt`` (and thus the banner minute)
-advances between runs. Comparing the full byte-string flaked whenever the two
-runs straddled a minute boundary (trg-183a304a).
+in the ``> Updated:`` banner, which is derived from ``latest_event_dt`` — the
+newest event in the log — so it advances whenever a second run appends anything.
+Comparing the full byte-string flaked whenever the two runs straddled a minute
+boundary (trg-183a304a).
+
+The banner is compared loosely rather than pinned, so it does not matter WHICH
+append advances it. That is deliberate: this note used to name the fresh
+``grade_snapshot`` per regen as the cause, and since
+iterate-2026-08-01-grade-snapshot-dedup a repeat regen over an unchanged grade
+appends nothing. The tests below are unaffected — one tolerates the minute
+either way, the other forces the drift directly through ``_deterministic_now``.
 """
 
 from __future__ import annotations
@@ -47,13 +54,11 @@ def _dashboard_body_and_banner_suffix(dashboard: str) -> tuple[str, str]:
 
     The ``> Updated: {now} | Session: ...`` banner is the ONLY line whose
     content is wall-clock derived: ``now`` is a minute-resolution UTC stamp
-    from ``latest_event_dt`` (the most recent event in the log). Every
-    ``finalize_iterate.run`` appends a fresh ``grade_snapshot`` event during
-    its compliance-regen step, so ``latest_event_dt`` — and therefore the
-    banner minute — legitimately advances between two runs. Comparing the
-    full byte-string then flakes whenever the two runs straddle a minute
-    boundary (trg-183a304a). The dashboard *body* is day-resolution /
-    content-derived and must be byte-identical across runs.
+    from ``latest_event_dt`` (the most recent event in the log), so it
+    legitimately advances between two runs whenever the second appends any
+    event at all. Comparing the full byte-string then flakes whenever the two
+    runs straddle a minute boundary (trg-183a304a). The dashboard *body* is
+    day-resolution / content-derived and must be byte-identical across runs.
 
     Returns the body (banner line removed) plus the banner text from
     ``| Session:`` onward (Session + Run — both wall-clock independent), so a
@@ -85,11 +90,11 @@ def test_run_is_idempotent(project, monkeypatch):
     dashboard2 = (project / ".shipwright" / "agent_docs" / "build_dashboard.md").read_text(encoding="utf-8")
 
     # Idempotency is asserted over everything EXCEPT the wall-clock minute in
-    # the "> Updated:" banner. Each finalize appends a fresh grade_snapshot
-    # event, so latest_event_dt (and thus the banner minute) legitimately
-    # advances between runs; a full byte comparison made this test flake
-    # whenever the two runs straddled a minute boundary (trg-183a304a). The
-    # body plus the Session/Run banner suffix are what must be identical.
+    # the "> Updated:" banner: latest_event_dt (and thus the banner minute)
+    # advances whenever the second run appends an event, and a full byte
+    # comparison made this test flake whenever the two runs straddled a minute
+    # boundary (trg-183a304a). The body plus the Session/Run banner suffix are
+    # what must be identical, and they are whether or not the minute moved.
     body1, suffix1 = _dashboard_body_and_banner_suffix(dashboard1)
     body2, suffix2 = _dashboard_body_and_banner_suffix(dashboard2)
     assert body1 == body2

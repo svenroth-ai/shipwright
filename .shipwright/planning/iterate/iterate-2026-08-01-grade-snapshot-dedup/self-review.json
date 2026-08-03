@@ -1,0 +1,44 @@
+{
+  "items": [
+    {
+      "name": "Spec Compliance",
+      "verdict": "pass",
+      "note": "AC1-AC7 are implemented without historical compaction or changing the manual record_event CLI contract; the unchanged-grade payload now matches AC1 exactly."
+    },
+    {
+      "name": "Error Handling",
+      "verdict": "pass",
+      "note": "Malformed entries and TypeError, ValueError, and OverflowError during numeric normalization remain non-comparable and append instead of escaping the lock or losing a snapshot."
+    },
+    {
+      "name": "Security Basics",
+      "verdict": "pass",
+      "note": "The change introduces no credential, authorization, SQL, HTML, or network boundary and adds no secrets or executable user input."
+    },
+    {
+      "name": "Test Quality",
+      "verdict": "pass",
+      "note": "Outcome-based tests cover append and skip paths, malformed durable data, lineage isolation, event-type opt-in, stale trees, concurrency, emitter composition, and the historical monkeypatch seam."
+    },
+    {
+      "name": "Performance Basics",
+      "verdict": "pass",
+      "note": "The reverse scan stops at the newest comparable snapshot and reuses the existing single-lock read/append path; no additional I/O pass or unbounded nested work was introduced."
+    },
+    {
+      "name": "Naming & Structure",
+      "verdict": "pass",
+      "note": "Dedup predicates are cohesive in lib/event_dedup.py, compatibility wrappers preserve established names, and record_event.py is reduced to 757 lines below its 769-line ADR-111 baseline."
+    },
+    {
+      "name": "Affected Boundaries",
+      "verdict": "pass",
+      "note": "Producer and consumers of shipwright_events.jsonl are enumerated; write-read, emitter-composition, malformed-line, and lock-scoped round-trip probes pass while the serialized event shape remains unchanged."
+    },
+    {
+      "name": "Test Hygiene Probe",
+      "verdict": "pass",
+      "note": "uv run shared/scripts/tools/scan_test_hygiene.py --diff completed with no findings."
+    }
+  ]
+}

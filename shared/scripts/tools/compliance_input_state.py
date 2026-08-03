@@ -41,7 +41,8 @@ __all__ = ["APPEND_ONLY_INPUTS", "PRODUCER_STATE", "rewind", "snapshot"]
 #: Tracked paths the producers WRITE that are not part of the derivation's
 #: output. Rewound before every pass so pass N and pass N+1 see identical inputs:
 #: the sbom and test-evidence legs append to the backlog, ``update_compliance``
-#: appends one ``grade_snapshot`` event per run by documented contract, and it
+#: MAY append a ``grade_snapshot`` event (only when the grade moved —
+#: iterate-2026-08-01-grade-snapshot-dedup), and it
 #: rewrites the compliance config unconditionally. Hashing the derived paths while
 #: letting these drift proves a fixpoint of a projection, not of the producer.
 PRODUCER_STATE: tuple[str, ...] = (
@@ -61,9 +62,13 @@ PRODUCER_STATE: tuple[str, ...] = (
 #: **never destroy an appended line.**
 #:
 #: The fixpoint survives that, and the reason is specific rather than hopeful.
-#: ``update_compliance`` appends one ``grade_snapshot`` event per run, and
+#: ``update_compliance`` may append a ``grade_snapshot`` event, and
 #: ``change_history.collect_events`` filters that type out — so it moves no derived
-#: document. Its sbom / test-evidence triage appends carry a ``dedupKey`` and are
+#: document. Since iterate-2026-08-01-grade-snapshot-dedup the argument is
+#: stronger still: pass 1 appends the snapshot, pass 2 sees an identical grade
+#: from the same tree and appends NOTHING, so the log is byte-stable from pass 2
+#: on rather than merely irrelevant to the derived documents. Its sbom /
+#: test-evidence triage appends carry a ``dedupKey`` and are
 #: idempotent, so they land once on pass 1 and are absorbed from pass 2 on. Two
 #: consecutive passes therefore still agree, which is all :func:`converge` asks.
 APPEND_ONLY_INPUTS: frozenset[str] = frozenset({EVENTS_LOG, TRIAGE_LOG})
