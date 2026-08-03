@@ -41,6 +41,10 @@ from tools.append_iterate_entry import append_iterate_entry  # noqa: E402
 from tools.write_changelog_drop import write_changelog_drop  # noqa: E402
 
 
+_RESULTS_FILENAME = "shipwright_test_results.json"
+_EVIDENCE_SUFFIX = ".test-results.json"
+
+
 def _git(repo: Path, *args: str, check: bool = True) -> subprocess.CompletedProcess:
     env = os.environ.copy()
     env["GIT_AUTHOR_NAME"] = "Integration Test"
@@ -92,6 +96,7 @@ def _build_repo(tmp_path: Path, *, legacy_array: list[dict] | None = None) -> Pa
         config[MIGRATION_STATE_KEY] = "complete"
     (repo / RUN_CONFIG_NAME).write_text(json.dumps(config, indent=2), encoding="utf-8")
     (repo / "CHANGELOG.md").write_text(_initial_changelog(), encoding="utf-8")
+    (repo / ".gitignore").write_text(f"/{_RESULTS_FILENAME}\n", encoding="utf-8")
     _git(repo, "add", "-A")
     _git(repo, "commit", "-m", "seed")
     return repo
@@ -119,6 +124,10 @@ def _finalize_on_branch(
 ) -> None:
     """Simulate iterate finalize on a fresh branch and commit the artifacts."""
     _git(repo, "checkout", "-b", branch_name, "main")
+    (repo / _RESULTS_FILENAME).write_text(
+        json.dumps({"iterate_latest": {"run_id": entry["run_id"]}}),
+        encoding="utf-8",
+    )
     append_iterate_entry(repo, entry)
     write_changelog_drop(repo, entry["run_id"], changelog_category, bullet)
     _git(repo, "add", "-A")
@@ -151,10 +160,24 @@ class TestSteadyStateParallel:
         assert status.stdout.strip() == "", "merge left dirty state behind"
 
         # Both entry files must be present at the merge tip.
-        files = sorted(iterates_dir(repo).glob("iterate-*.json"))
+        files = sorted(
+            p for p in iterates_dir(repo).glob("iterate-*.json")
+            if not p.name.endswith(_EVIDENCE_SUFFIX)
+        )
         run_ids = {json.loads(p.read_text())["run_id"] for p in files}
         assert "iterate-2026-05-01-alpha" in run_ids
         assert "iterate-2026-05-02-beta" in run_ids
+        evidence_names = {
+            p.name for p in iterates_dir(repo).glob(f"*{_EVIDENCE_SUFFIX}")
+        }
+        assert evidence_names == {
+            f"iterate-2026-05-01-alpha{_EVIDENCE_SUFFIX}",
+            f"iterate-2026-05-02-beta{_EVIDENCE_SUFFIX}",
+        }
+        tracked_root = _git(
+            repo, "ls-files", "--error-unmatch", _RESULTS_FILENAME, check=False
+        )
+        assert tracked_root.returncode != 0
 
         # Both changelog drops must be present at the merge tip.
         drop_files = sorted((repo / "CHANGELOG-unreleased.d").rglob("*.md"))
@@ -197,6 +220,7 @@ class TestFirstMigrationOnBothBranches:
         run_ids = {
             json.loads(p.read_text())["run_id"]
             for p in iterates_dir(repo).glob("iterate-*.json")
+            if not p.name.endswith(_EVIDENCE_SUFFIX)
         }
         assert run_ids == {
             "iterate-2026-05-00-seed-a",

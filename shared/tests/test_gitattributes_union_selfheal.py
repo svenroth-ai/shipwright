@@ -52,11 +52,12 @@ def test_self_heal_commits_when_union_missing(git_origin_repo):
 
     assert res.status == "committed", res
     # self-heal backfills the FULL fragment coverage (JSONL logs + curated docs).
-    assert set(res.added) == set(gu.ALL_UNION_PATHS)
+    assert set(res.added) == set(gu.ALL_MANAGED_PATHS)
     assert h.head_count(work) == before + 1
     assert h.git(work, "log", "-1", "--format=%s").stdout.strip() == _CHORE_SUBJECT
     ga = (work / ".gitattributes").read_text(encoding="utf-8")
     assert gu.missing_union_paths(ga) == []
+    assert gu.missing_managed_paths(ga) == []
     # the file was committed, not left dirty/staged
     assert h.git(work, "status", "--porcelain").stdout.strip() == ""
 

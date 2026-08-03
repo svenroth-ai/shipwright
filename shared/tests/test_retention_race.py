@@ -24,6 +24,7 @@ import time
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
+import pytest
 
 from lib.iterate_entry import (
     MIGRATION_STATE_KEY,
@@ -32,7 +33,20 @@ from lib.iterate_entry import (
     iterates_dir,
     read_iterate_entries,
 )
-from tools.append_iterate_entry import ITERATE_RETENTION, append_iterate_entry
+from lib.iterate_test_results import install_immutable_evidence
+import tools.append_iterate_entry as tool
+
+
+ITERATE_RETENTION = tool.ITERATE_RETENTION
+
+
+@pytest.fixture(autouse=True)
+def _generated_current_evidence(monkeypatch):
+    def install(project: Path, run_id: str):
+        raw = json.dumps({"iterate_latest": {"run_id": run_id}}).encode()
+        return install_immutable_evidence(project, run_id, raw)
+
+    monkeypatch.setattr(tool, "install_current_evidence", install)
 
 
 def _canonical_entry(slug: str, date: str) -> dict:
@@ -85,7 +99,7 @@ def _synchronized_append(
 ) -> dict:
     """Worker used by ThreadPoolExecutor — waits on barrier then appends."""
     barrier.wait(timeout=5.0)
-    return append_iterate_entry(project, entry)
+    return tool.append_iterate_entry(project, entry)
 
 
 class TestRetentionRace:
@@ -113,13 +127,17 @@ class TestRetentionRace:
         assert "entry_path" in result_b
 
         # Final file count is exactly the cap.
-        files = list(iterates_dir(tmp_path).glob("iterate-*.json"))
+        files = [
+            p for p in iterates_dir(tmp_path).glob("iterate-*.json")
+            if not p.name.endswith(".test-results.json")
+        ]
         assert len(files) == ITERATE_RETENTION
 
         # Both new run_ids must be present (they're the newest by date).
         run_ids = {json.loads(p.read_text())["run_id"] for p in files}
         assert "iterate-2026-05-01-alpha" in run_ids
         assert "iterate-2026-05-01-beta" in run_ids
+        assert len(list(iterates_dir(tmp_path).glob("*.test-results.json"))) == 2
 
         # No duplicates.
         assert len(run_ids) == len(files)
@@ -145,7 +163,9 @@ class TestRetentionRace:
         # Now try a serial append with a very short lock timeout — it must
         # succeed because the burst released its locks.
         tail = _canonical_entry("after-burst", date="2026-07-01T00:00:00Z")
-        result = append_iterate_entry(tmp_path, tail, lock_timeout_seconds=2.0)
+        result = tool.append_iterate_entry(
+            tmp_path, tail, lock_timeout_seconds=2.0
+        )
         assert "entry_path" in result
 
     def test_parallel_appends_produce_unique_files(self, tmp_path):
@@ -213,19 +233,15 @@ class TestLockSerialization:
             start = time.monotonic()
 
             def worker_a():
-                append_iterate_entry(
-                    tmp_path,
-                    _canonical_entry("thread-a", date="2026-06-01T10:00:00Z"),
-                )
+                entry = _canonical_entry("thread-a", date="2026-06-01T10:00:00Z")
+                tool.append_iterate_entry(tmp_path, entry)
 
             def worker_b():
                 # Wait until A has entered its slow write so we're guaranteed
                 # to contend for the lock instead of arriving early.
                 slow_write_event.wait(timeout=2.0)
-                append_iterate_entry(
-                    tmp_path,
-                    _canonical_entry("thread-b", date="2026-06-02T10:00:00Z"),
-                )
+                entry = _canonical_entry("thread-b", date="2026-06-02T10:00:00Z")
+                tool.append_iterate_entry(tmp_path, entry)
 
             t_a = threading.Thread(target=worker_a)
             t_b = threading.Thread(target=worker_b)

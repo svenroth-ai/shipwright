@@ -30,6 +30,7 @@ module's first paragraph already assumes.
 
 from __future__ import annotations
 
+from .triage_defer import DEFERRED_TOP_N, REVISIT_FIELD, parse_revisit_date, sort_deferred
 from .tty_sanitize import (
     is_visually_empty,
     strip_control_chars,
@@ -37,6 +38,12 @@ from .tty_sanitize import (
 )
 
 NO_REASON = "(no reason recorded)"
+
+#: What a parked entry whose stored date cannot be read shows instead. A hand
+#: -edited file is untrusted input and such a value is deliberately kept (it
+#: must not silently re-open the entry, nor silently bury it), so it reaches
+#: the views — but never as its own contents.
+UNREADABLE_REVISIT = "(no revisit date recorded)"
 
 #: Token every row carries, immediately after the bullet and before any stored
 #: field. The section header alone was not enough: before the deferred section
@@ -49,20 +56,28 @@ OPEN_MARK = "[open] "
 DEFERRED_MARK = "[deferred] "
 
 #: Per-field render cap for the one-line free-text fields of BOTH blocks
-#: (`source`, `dedupKey`, `title`, `statusReason`). Same value as the sibling
-#: renderer's
-#: `aggregate_triage.FIELD_TRUNCATE_AT`; the cut is also `rstrip`ped the same
-#: way, so a cut landing on a space does not render as "… …". `id`, `severity`
+#: (`source`, `dedupKey`, `title`, `statusReason`). Both human renderers consume
+#: this cap through :func:`clip`; the cut is `rstrip`ped, so a cut landing on a
+#: space does not render as "… …". `id`, `severity`
 #: and `kind` are NOT clipped: they are closed vocabularies validated on append
 #: (`triage.py`), so clipping them would only disguise a hand-edited file.
 FIELD_MAX_LEN = 120
 
 
-def _clip(text: str) -> str:
-    """Truncate only what exceeds the cap, marking where the cut happened."""
-    if len(text) <= FIELD_MAX_LEN:
+def clip(text: str, limit: int = FIELD_MAX_LEN) -> str:
+    """Truncate only what exceeds the cap, marking where the cut happened.
+
+    Public since iterate-2026-08-01-triage-defer-lifecycle: `aggregate_triage`
+    carried a byte-identical private copy under the name `_truncate`, with its
+    own constant of the same value. One function now, so the two TTY-facing
+    views of one record cannot start clipping differently.
+    """
+    if len(text) <= limit:
         return text
-    return text[: FIELD_MAX_LEN - 1].rstrip() + "…"
+    return text[: limit - 1].rstrip() + "…"
+
+
+_clip = clip  # in-module shorthand, kept so the row builders read compactly
 
 
 def safe_display(value: object) -> str:
@@ -152,6 +167,9 @@ def format_deferred(item: dict) -> str:
     - The row itself carries ``DEFERRED_MARK``. A section header printed once
       is not a property of the row, and rows here are otherwise shaped exactly
       like open ones.
+    - The revisit date goes through :func:`format_revisit`, never printed raw:
+      ``AC-7`` deliberately keeps an unreadable stored value rather than
+      discarding it, so one can reach this row.
     """
     shown = safe_display(item.get("statusReason") or "")
     reason = NO_REASON if is_visually_empty(shown) else shown
@@ -160,6 +178,52 @@ def format_deferred(item: dict) -> str:
         f"severity={safe_display(item.get('severity', ''))} "
         f"kind={safe_display(item.get('kind', ''))} "
         f"source={_clip(safe_display(item.get('source', '')))}\n"
+        f"  revisit: {format_revisit(item.get(REVISIT_FIELD))}\n"
         f"  reason: {_clip(reason)}\n"
         f"  title: {_clip(safe_display(item.get('title', '')))}"
     )
+
+
+def format_revisit(value: object) -> str:
+    """The ONE way a stored revisit date reaches a human surface.
+
+    Emits the canonical ``YYYY-MM-DD`` re-rendered from the PARSED date, or
+    :data:`UNREADABLE_REVISIT` — never the stored bytes. Both human surfaces
+    call this, so neither can be the one that forgets: the value is stored on a
+    line anybody can hand-edit, and printing it raw would hand that editor a
+    markdown fence, a row-forging newline, or a terminal escape sequence.
+
+    Re-rendering rather than echoing the accepted input is deliberate. It costs
+    nothing and it means the safety of this function does not depend on the
+    writer's validation still being correct tomorrow.
+    """
+    parsed = parse_revisit_date(value)
+    return parsed.isoformat() if parsed is not None else UNREADABLE_REVISIT
+
+
+def render_deferred_section(
+    items: list[dict], severity_rank: dict, *, cap: int = DEFERRED_TOP_N,
+) -> list[str]:
+    """The whole parked block for a TTY: header, capped rows, elision line.
+
+    Returns a list of blocks the caller joins — it does no I/O, so both the
+    terminal listing and its tests can call it directly.
+
+    The cap is a property of the HUMAN surfaces only. `list --json` prints
+    every parked entry: silently dropping rows from a consumer that cannot tell
+    it happened is the failure this whole change exists to end.
+    """
+    if not items:
+        return []
+    ordered = sort_deferred(items, severity_rank)
+    shown = ordered[:cap]
+    blocks = [f"Deferred — decided, revisit later ({len(ordered)}):"]
+    blocks.extend(format_deferred(item) for item in shown)
+    if len(ordered) > len(shown):
+        blocks.append(elision_line(len(ordered), len(shown)))
+    return blocks
+
+
+def elision_line(total: int, shown: int) -> str:
+    """The ONE wording both capped surfaces use for what they did not print."""
+    return f"… and {total - shown} more deferred (showing first {shown})."

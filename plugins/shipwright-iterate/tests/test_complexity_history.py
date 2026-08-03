@@ -157,6 +157,24 @@ class TestLoadHistoryPrior:
         assert result["prior"] == "small"
         assert result["n"] == 3
 
+    def test_valid_looking_test_results_sidecar_is_ignored(self, tmp_path):
+        seeded_root(tmp_path, ["trivial"] * 3)
+        d = tmp_path / ".shipwright" / "agent_docs" / "iterates"
+        sidecar = d / "iterate-2026-08-03-poison.test-results.json"
+        sidecar.write_text(
+            json.dumps({
+                "run_id": "iterate-2026-08-03-poison",
+                "date": "2026-08-03T00:00:00Z",
+                "complexity": "large",
+                "iterate_latest": {"run_id": "iterate-2026-08-03-poison"},
+            }),
+            encoding="utf-8",
+        )
+
+        result = load_history_prior(tmp_path)
+
+        assert result == {"prior": "trivial", "n": 3}
+
     def test_non_string_date_is_skipped_not_crash(self, tmp_path):
         # Review HIGH: "date": null in valid JSON must be skipped, never
         # raise AttributeError out of classify().

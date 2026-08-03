@@ -1,0 +1,15 @@
+{
+  "stage": "doubt",
+  "gating": "advisory-must-address",
+  "trigger": "concurrency-ordering,cross-module-boundary",
+  "doubts": [
+    {
+      "severity": "medium",
+      "lens": "boundary-contract",
+      "claim_under_doubt": "A real transition is never suppressed when a grade snapshot has been amended.",
+      "disproof_attempt": "The raw predecessor could suppress a candidate after an event_amended overlay changed the effective grade.",
+      "file": "shared/scripts/tools/record_event.py",
+      "resolution": "Fixed: fold the corruption-free reader result through apply_amendments inside the append lock; read/fold failures append. Regression tests cover amended and malformed-amended predecessors."
+    }
+  ]
+}

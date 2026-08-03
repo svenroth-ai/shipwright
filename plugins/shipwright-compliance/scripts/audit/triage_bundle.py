@@ -31,9 +31,9 @@ _SEVERITY_MAP = {
 
 def _triage_api():
     """(append_idempotent, mark_status, read_all_items, should_route_to_outbox,
-    StatusPreconditionError).
+    AUTO_RESOLVABLE_STATUSES, StatusPreconditionError).
 
-    Returns a 5-tuple of ``None`` when the shared triage module can't be
+    Returns a 6-tuple of ``None`` when the shared triage module can't be
     imported (best-effort producer — never blocks the audit).
 
     The exception class is carried out of the SAME import as ``mark_status``
@@ -52,6 +52,7 @@ def _triage_api():
             triage.mark_status,
             triage.read_all_items,
             triage.should_route_to_outbox,
+            triage.AUTO_RESOLVABLE_STATUSES,
             # Every name off the SAME module object, INSIDE the same try, so
             # the `except` arm cannot bind a different `triage` and miss every
             # refusal (external plan review, finding #3).
@@ -66,7 +67,7 @@ def _triage_api():
         # TypeError on EVERY flip, the refusal arm never matches, and the
         # dismiss path dies silently. One visible failure mode beats two
         # invisible ones (doubt review, doubt 2).
-        return None, None, None, None, None
+        return None, None, None, None, None, None
 
 
 def _normalize_fails(report: Any) -> list[dict[str, str]]:
@@ -136,17 +137,18 @@ def emit_compliance_backlog(
 ) -> dict[str, int]:
     """Emit/refresh ONE ``compliance:backlog:<sig>`` item + retire legacy items.
 
-    * No failing findings → dismiss every open ``compliance:backlog:*``
+    * No failing findings → dismiss every open/parked ``compliance:backlog:*``
       (``complianceResolved``) and append nothing.
     * Else → dismiss stale-signature backlog items (``complianceRefreshed``) +
       append the current one (idempotent).
-    * One-shot: any open legacy per-check ``compliance`` item (dedupKey not in
+    * One-shot: any open/parked legacy per-check ``compliance`` item (dedupKey not in
       the backlog shape) is dismissed (``supersededByBacklog``) — AC-4.
+      Promoted/dismissed decisions remain terminal.
 
     Best-effort: returns ``{"appended","dismissed","open_fails"}``.
     """
     (append_idempotent, mark_status_fn, read_all_items, route,
-     precondition_error) = _triage_api()
+     AUTO_RESOLVABLE_STATUSES, precondition_error) = _triage_api()
     if append_idempotent is None:
         return {"appended": 0, "dismissed": 0, "open_fails": 0}
 
@@ -163,7 +165,8 @@ def emit_compliance_backlog(
     try:
         open_compliance = [
             it for it in read_all_items(project_root)
-            if it.get("source") == "compliance" and it.get("status") == "triage"  # artifact-path-canon: legacy (triage source enum, not a path)
+            if it.get("source") == "compliance"  # artifact-path-canon: legacy (triage source enum, not a path)
+            and it.get("status") in AUTO_RESOLVABLE_STATUSES
         ]
     except Exception:  # noqa: BLE001
         open_compliance = []
@@ -189,7 +192,7 @@ def emit_compliance_backlog(
             mark_status_fn(
                 project_root, item_id, new_status="dismissed",
                 by="complianceBacklog", reason=reason,
-                expected_status="triage",
+                expected_status=AUTO_RESOLVABLE_STATUSES,
             )
             return 1
         except precondition_error as exc:  # the item was decided — KEPT, not failed

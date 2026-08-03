@@ -1,0 +1,33 @@
+{
+  "success": true,
+  "provider": "openrouter",
+  "degraded": false,
+  "reviews_succeeded": 1,
+  "reviews": {
+    "openai": {
+      "feedback": "1. **Category:** edge-case  \n   **Severity:** medium  \n   **Finding:** The proposed `_comparable_grade` still risks raising on valid JSON numeric payloads if it implements the stated `float(score)` normalization directly. Python JSON can parse arbitrarily large integers, but `float(10**10000)` and some `math.isfinite()` calls on such integers raise `OverflowError`. This violates AC3d\u2019s \u201cnever raises\u201d guarantee and, because the caller swallows emitter failures, can lose the snapshot rather than merely retain a duplicate.  \n   **Suggestion:** Wrap both numeric conversion and finiteness checking in `try/except (TypeError, ValueError, OverflowError)` and return `None` on failure. Add a test with an extremely large integer score in both a stored predecessor and the candidate event. Preserve the specified behavior: non-comparable means append.\n\n2. **Category:** edge-case  \n   **Severity:** medium  \n   **Finding:** The malformed-data coverage discusses invalid fields on an event object, but the reverse scan appears to assume every parsed JSONL entry is a mapping (`event.get(...)`). If `read_events` can return valid JSON values that are not objects\u2014such as a JSON array, string, number, or `null` line\u2014the new scan can raise while holding the lock. The specification explicitly relies on recovery from durable, union-merged, amendable data, so shape-level validation should not be assumed unless `read_events` already guarantees it.  \n   **Suggestion:** Make `_lineage_class` and `_comparable_grade` accept an object only when it is a `dict` (otherwise return `None`), and have `last_grade_snapshot` skip non-dict parsed entries. Add a regression test with a syntactically valid non-object JSONL line before a valid candidate snapshot, or explicitly document and enforce a `read_events -> list[dict]` guarantee if one already exists.\n\n3. **Category:** approach  \n   **Severity:** low  \n   **Finding:** The proposed `last_grade_snapshot(project_root, lineage_class)` API makes it easier to accidentally violate AC4 later: it independently resolves and reads an events path from a project root, while the lock and append path are owned by `append_event_idempotent`. The plan says it will be invoked inside the lock, but the helper signature does not encode that invariant or ensure it scans the exact file protected by that lock.  \n   **Suggestion:** Keep the helper private and pass it the already-resolved events path, or preferably the parsed events list read inside `append_event_idempotent`\u2019s lock. This makes the scan/decision/append relationship explicit and avoids an accidental separate path resolution or unlocked reuse.\n\n4. **Category:** approach  \n   **Severity:** low  \n   **Finding:** A few contract statements remain internally inconsistent. The overview says adding the branch \u201ccovers both producers at once,\u201d while AC5 intentionally leaves the CLI producer unconditional. Likewise, the risk table says a backfill \u201cwould not want\u201d identical snapshots suppressed, although the selected implementation correctly leaves CLI/backfill deduplication off. These are documentation-level contradictions that could lead a later maintainer to enable the flag for the CLI and alter the replay contract.  \n   **Suggestion:** State consistently that the shared helper supports both routes but only the automatic compliance emitter opts into grade deduplication; the CLI/manual replay route remains deliberately unconditional.\n\nOverall, the chosen lineage-class, opt-in, lock-scoped deduplication approach is sound and appropriately preserves the CLI and historical audit log behavior. Address the malformed durable-data handling before implementation so the central no-raise/no-lost-event guarantee is actually upheld.  \nSHIPWRIGHT_VERDICT: revise",
+      "via": "openrouter",
+      "status": "success"
+    },
+    "gemini": {
+      "feedback": "comparable -> append\".\n    Let's make absolutely sure they ensure `None == None` doesn't result in deduplicating two malformed events.\n    Spec: \"A candidate is non-comparable -> append, unless grade is a non-empty str...\"\n    As long as the implementation explicitly checks `if new_comparable is not None and old_comparable is not None and new_comparable == old_comparable: deduplicate`, it's safe. If they just do `if _comparable_grade(new) == _comparable_grade(old):`, then `None == None` would be True and it would suppress.\n    The spec states: \"A malformed predecessor ... never suppresses (AC3d)\". I should",
+      "via": "openrouter",
+      "status": "degraded",
+      "reason": "provider reported the reply was cut off (finish_reason=length)"
+    }
+  },
+  "verdicts": {
+    "openai": "revise",
+    "gemini": "unavailable"
+  },
+  "statuses": {
+    "openai": "success",
+    "gemini": "degraded"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": false,
+    "requires_resolution": true,
+    "reason": "only one reviewer answered \u2014 gemini did not (gemini=unavailable, openai=revise)"
+  }
+}

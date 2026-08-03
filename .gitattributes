@@ -34,3 +34,7 @@ shipwright_events.jsonl merge=union
 # Escalate to per-run drop-files if that ever bites. See docs/hooks-and-pipeline.md.
 .shipwright/agent_docs/architecture.md merge=union
 .shipwright/agent_docs/conventions.md merge=union
+
+# Immutable per-run test evidence must reach Git byte-for-byte. In particular,
+# core.autocrlf must not rewrite CRLF snapshots while staging them.
+/.shipwright/agent_docs/iterates/*.test-results.json -text -diff

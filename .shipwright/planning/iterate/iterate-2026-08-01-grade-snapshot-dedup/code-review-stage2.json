@@ -1,0 +1,13 @@
+{
+  "section": "iterate-2026-08-01-grade-snapshot-dedup",
+  "review": [
+    {
+      "severity": "medium",
+      "category": "architecture",
+      "file": "shared/scripts/tools/record_event.py",
+      "line": 43,
+      "finding": "The feature diff also relocates the pre-existing has_commit and has_phase_event implementations into lib/event_dedup.py. This mixes behavior-neutral refactoring with the grade-snapshot behavior change, contrary to the mandated separate-refactoring rule and makes regressions in the existing dedup paths harder to isolate or bisect.",
+      "suggestion": "Separate the predicate relocation into a behavior-neutral commit, then apply the grade-snapshot dedup feature in a subsequent commit while preserving the compatibility wrappers and tests."
+    }
+  ]
+}

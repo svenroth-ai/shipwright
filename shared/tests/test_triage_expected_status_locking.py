@@ -95,7 +95,7 @@ def test_the_precondition_is_evaluated_while_the_lock_is_held(
     real_read = triage.read_all_items
     held_when_read: list[bool] = []
 
-    def tracing_read(project_root):
+    def tracing_read(project_root, **kwargs):
         held_when_read.append(bool(depth))
         return real_read(project_root)
 

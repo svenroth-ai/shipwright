@@ -149,7 +149,10 @@ def run_review(
     for name, rev in reviews.items():
         status = rev.get("status", "unknown")
         feedback = rev.get("feedback", "_no feedback_")
-        body += f"## {name} — {status}\n\n{feedback}\n\n---\n\n"
+        body += f"## {name} — {status}\n\n{feedback}\n\n"
+        if rev.get("reasoning_cap_dropped"):
+            body += f"> Warning: {rev['reasoning_cap_dropped']}\n\n"
+        body += "---\n\n"
     review_path.write_text(body, encoding="utf-8")
 
     return {
@@ -157,4 +160,6 @@ def run_review(
         "reason": "" if result.get("success") else "llm_returned_unsuccess",
         "review_path": str(review_path),
         "provider": provider,
+        "partial": bool(result.get("partial")),
+        "warnings": list(result.get("warnings", [])),
     }

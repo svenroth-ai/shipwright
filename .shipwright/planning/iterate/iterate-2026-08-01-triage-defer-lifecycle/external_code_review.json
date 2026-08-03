@@ -1,0 +1,33 @@
+{
+  "success": true,
+  "provider": "openrouter",
+  "degraded": false,
+  "reviews_succeeded": 1,
+  "reviews": {
+    "openai": {
+      "feedback": "- Category: edge-case  \n  Severity: medium  \n  File: shared/scripts/triage.py:876  \n  Finding: `read_all_items(..., now=...)` uses `stamp.date()` directly without requiring an aware UTC datetime. A caller supplying an aware non-UTC value (or a naive value) resolves expiry according to that caller’s local calendar day, not UTC as AC-3a/AC-21 require. For example, `2026-09-01T00:30+14:00` is still August 31 UTC but would reopen a September-1 park early.  \n  Suggestion: Validate that supplied `now` is timezone-aware and normalize it with `now.astimezone(timezone.utc)` before deriving `today`; reject naive values.\n\n- Category: test  \n  Severity: low  \n  File: shared/tests/test_triage_defer_cli.py:118-125  \n  Finding: The malformed-date CLI test verifies only exit code and unchanged status. AC-6 requires the refusal message to name the accepted `YYYY-MM-DD` form, but a regression to a generic parse error would still pass this test.  \n  Suggestion: Assert that `result.stderr` contains `YYYY-MM-DD` for every invalid-date case (and preferably that the raw hostile input is not reflected unsafely).\n\nOverall assessment: the lifecycle implementation substantially covers the specified behavior and has strong coverage, but UTC normalization at the public store-read boundary should be fixed and the CLI contract test tightened before shipping.  \nSHIPWRIGHT_VERDICT: revise",
+      "via": "openrouter",
+      "status": "success"
+    },
+    "gemini": {
+      "feedback": " \n```python\n    status = item.get(\"status\")\n    if not is_auto_resolvable(status): # status is \"triage\", which is in (\"triage\", \"snoozed\"), so True\n        return False\n    ...\n    if status == \"snoozed\" or item.get(DUE_FIELD) is True:\n        return True\n```\nWait! If an item's park has expired (`DUE_FIELD is True`), its `status` is `\"triage\"`, so it passes `not is_auto_resolvable`.\nThen `item.get(DUE_FIELD) is True` is evaluated, and it returns `True` immediately, skipping the `cutoff` check!\nBut",
+      "via": "openrouter",
+      "status": "degraded",
+      "reason": "provider reported the reply was cut off (finish_reason=length)"
+    }
+  },
+  "verdicts": {
+    "openai": "revise",
+    "gemini": "unavailable"
+  },
+  "statuses": {
+    "openai": "success",
+    "gemini": "degraded"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": false,
+    "requires_resolution": true,
+    "reason": "only one reviewer answered — gemini did not (gemini=unavailable, openai=revise)"
+  }
+}

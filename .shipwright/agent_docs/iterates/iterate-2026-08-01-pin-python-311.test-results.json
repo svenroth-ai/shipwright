@@ -1,0 +1,145 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-08-01-pin-python-311",
+    "date": "2026-08-01",
+    "unit": {
+      "status": "pass",
+      "passed": 7318,
+      "failed": 0,
+      "note": "Measured counts for the two test roots this diff changes: shared/tests 7013 passed / 13 skipped / 26 deselected, and shared/scripts/tools/tests 305 passed / 6 skipped / 2 deselected. Zero failures in either. The full F0 suite additionally ran all 18 discovered units GREEN in 2.7 min; the runner reports per-unit PASS/FAIL, not per-unit counts, so the 7318 figure is the two roots actually counted rather than a repo-wide total."
+    },
+    "integration": {
+      "status": "pass",
+      "passed": 0,
+      "failed": 0,
+      "note": "integration-tests ran GREEN as one of the 18 F0 units; not separately counted."
+    },
+    "e2e": {
+      "status": "n/a",
+      "reason": "no browser surface; this is test-runner machinery and a shell distribution script"
+    },
+    "smoke": {
+      "status": "n/a",
+      "reason": "no startable server surface in this repo"
+    },
+    "pgtap": {
+      "status": "n/a",
+      "reason": "no database"
+    },
+    "design_fidelity": {
+      "status": "n/a",
+      "reason": "no UI surface"
+    },
+    "surface_verification": {
+      "surface": "cli",
+      "tests_run": 57,
+      "exit_code": 0,
+      "evidence_path": ".shipwright/runs/iterate-2026-08-01-pin-python-311/surface_verification.json",
+      "detail": "Drove the three pin-guard test files as one root (the one-root rule) via the real pytest. Beyond this gate, the decisive end-to-end evidence is the F0 run itself: all 15 venvs in the worktree now report version_info=3.11.15, where before the change 14 plugin venvs were 3.13.13/3.12.13."
+    },
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "build_command names the pin for every discovered unit",
+          "disposition": "tested",
+          "evidence": "test_every_unit_runs_the_interpreter_ci_pins PASSED; mutation 1 (pin removed) FAILS it"
+        },
+        {
+          "behavior": "the pin is an argument to uv, not to pytest",
+          "disposition": "tested",
+          "evidence": "test_the_pin_is_an_argument_to_uv_not_to_pytest PASSED"
+        },
+        {
+          "behavior": "warm_up warms the pinned interpreter",
+          "disposition": "tested",
+          "evidence": "test_warm_up_prebuilds_the_interpreter_the_units_will_use PASSED; mutation 1 FAILS it"
+        },
+        {
+          "behavior": "ensure_xdist_available probes the pinned interpreter",
+          "disposition": "tested",
+          "evidence": "test_xdist_preflight_probes_the_pinned_interpreter PASSED; mutation 1 FAILS it"
+        },
+        {
+          "behavior": "the published triage-card suite command carries the pin",
+          "disposition": "tested",
+          "evidence": "test_no_uv_invocation_escapes_the_interpreter_pin PASSED; mutation 9b (suite_report reverted) FAILS it"
+        },
+        {
+          "behavior": "no uv/uvx call site escapes UV_RUN, across 4 modules and both quote styles",
+          "disposition": "tested",
+          "evidence": "test_no_uv_invocation_escapes_the_interpreter_pin PASSED; mutations 5 (4th site) and 9a (single-quoted) FAIL it"
+        },
+        {
+          "behavior": "the xdist refusal names the interpreter as a possible cause",
+          "disposition": "tested",
+          "evidence": "test_unprovisionable_xdist_is_an_actionable_error PASSED (asserts PYTHON_VERSION in the message)"
+        },
+        {
+          "behavior": "the repo-root .python-version exists",
+          "disposition": "tested",
+          "evidence": "test_every_tracked_version_file_agrees_with_the_runner_pin PASSED; mutation 4 (root file deleted) FAILS it"
+        },
+        {
+          "behavior": "every plugin carries its own .python-version",
+          "disposition": "tested",
+          "evidence": "test_every_plugin_ci_runs_carries_its_own_version_file PASSED; mutation 3 (one deleted) FAILS it"
+        },
+        {
+          "behavior": "all 15 version files equal the pin",
+          "disposition": "tested",
+          "evidence": "test_every_tracked_version_file_agrees_with_the_runner_pin PASSED; mutation 2 (pin -> 3.12) FAILS it"
+        },
+        {
+          "behavior": "every workflow's uv python install equals the pin",
+          "disposition": "tested",
+          "evidence": "test_runner_pins_the_interpreter_every_workflow_installs PASSED; mutation 6c (3.13) FAILS it"
+        },
+        {
+          "behavior": "an unparseable or quoted or expression pin FAILS instead of being skipped",
+          "disposition": "tested",
+          "evidence": "same test; mutations 6a (quoted \"3.12\") and 6b (${{ matrix.python }}) FAIL it"
+        },
+        {
+          "behavior": "a patch-level pin such as 3.11.15 is tolerated",
+          "disposition": "tested",
+          "evidence": "same test; positive control with ci.yml pinned to 3.11.15 PASSES"
+        },
+        {
+          "behavior": "any CI surface running this repo's Python must declare an interpreter",
+          "disposition": "tested",
+          "evidence": "test_every_ci_surface_that_runs_python_declares_the_interpreter PASSED; mutations 7 and 10 FAIL it"
+        },
+        {
+          "behavior": "a commented-out pin does not count as a declaration",
+          "disposition": "tested",
+          "evidence": "same test; mutations 11 (trailing comment) and 11b (full-line comment) FAIL it"
+        },
+        {
+          "behavior": "every marketplace copy path excludes .python-version",
+          "disposition": "tested",
+          "evidence": "test_every_copy_path_excludes_the_version_file PASSED; mutation 8a FAILS it"
+        },
+        {
+          "behavior": "prune paths do NOT exclude it, so a stale cached copy stays removable",
+          "disposition": "tested",
+          "evidence": "test_the_prune_paths_do_not_exclude_it PASSED; mutation 8b FAILS it"
+        }
+      ],
+      "untested_testable": 0,
+      "note": "17 behaviors, 0 testable-but-untested, against 7 acceptance criteria. No 'untestable' rows. The single candidate - 'uv actually resolves 3.11 at runtime' - is covered by ten real-subprocess probes recorded in the spec rather than filed as untestable: asserting it inside the F0 unit would make that unit depend on uv's interpreter-download service and on the exact patch build, i.e. a network-dependent non-deterministic assertion inside the very gate this run exists to make trustworthy."
+    },
+    "degraded": [
+      {
+        "condition": "external_review_partial",
+        "detail": "Gemini returned finish_reason=length on BOTH external reviews (iterate mode and code mode), so each was recorded degraded/unavailable and only OpenAI answered. Per the standing rule a truncated reply is not a clean pass, so it is not counted as a second opinion. The GPT reviews were acted on in full: the iterate-mode review produced the 'absence is not agreement' CI guard and corrected an overstated warm_up claim; the code-mode review produced the comment-stripping fix and the quote-agnostic escape guard. Gemini's readable fragment raised only the 15-file duplication, which the operator had already decided and which AC6/AC7 address."
+      }
+    ]
+  },
+  "coverage": {
+    "total": 80.2,
+    "measured_tier": "repo",
+    "source": "combined coverage.xml (all plugins + shared + integration)",
+    "measured_at": "2026-07-04T00:00:00Z"
+  }
+}

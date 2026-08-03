@@ -48,6 +48,9 @@ desktop.ini
 # is the transient dir combine_coverage.py folds into coverage.xml. None tracked.
 .coverage*
 .cov-data/
+# Disposable local source experiments: F0 intentionally includes every other
+# untracked Python file in diff coverage, so scratch work has one explicit home.
+/.scratch/
 htmlcov/
 .pytest_cache/
 coverage/
@@ -232,6 +235,9 @@ Spec/
 # main_repo_root resolver in check_file_size + bloat_gate_on_stop
 # (iterate-2026-06-09); this is belt-and-suspenders.
 **/.shipwright/locks/
+# A hard kill during immutable evidence publication may leave the fsynced private
+# hard-link source behind. F6 stages iterates/ recursively; never stage that residue.
+/.shipwright/agent_docs/iterates/*.test-results.json.*.tmp
 # === END Shipwright canonical .shipwright artifact-ignore (managed) ===
 
 # Crash residue from `lib/atomic_write.durable_atomic_write`: it writes a

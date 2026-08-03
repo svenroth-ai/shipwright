@@ -1,0 +1,25 @@
+{
+  "stage": "doubt",
+  "scope": "CI follow-up for the real-producer fixpoint assertion",
+  "completed_at": "2026-08-03T07:20:47.2712832Z",
+  "passes": [
+    {
+      "verdict": "revise",
+      "doubts": [
+        {
+          "severity": "medium",
+          "category": "false-green",
+          "file": "shared/tests/test_compliance_refresh_real_producer.py",
+          "line": 287,
+          "finding": "Cumulative counts alone could pass if a later pass replaced the first snapshot in place.",
+          "resolution": "Asserted that every per-pass capture preserves the exact same grade-snapshot event list."
+        }
+      ]
+    },
+    {
+      "verdict": "pass",
+      "doubts": [],
+      "summary": "Baseline absence, exact per-pass event-list equality, final count, and three-pass convergence jointly cover timing, late appends, replacement, ordering, and rewind behavior."
+    }
+  ]
+}

@@ -25,7 +25,7 @@ from lib.gitattributes_union import (  # noqa: E402  (pure merge-logic SSoT)
     GITATTRIBUTES_PATH,
     UNION_PATHS,
     merge_into,
-    missing_union_paths,
+    missing_managed_paths,
 )
 
 
@@ -35,7 +35,7 @@ class HealResult:
 
     ``status`` ∈ {``committed``, ``no_change``, ``skipped``, ``error``}.
     ``reason`` carries the guard name for ``skipped`` / ``error``; ``added`` lists
-    the union paths newly declared in a ``committed`` run.
+    the managed paths newly declared in a ``committed`` run.
     """
 
     status: str
@@ -88,7 +88,7 @@ def self_heal_gitattributes(
     ``chore`` commit on the current branch.
 
     Acts ONLY on a Shipwright-managed repo (tracks at least one append-log
-    artifact) that is missing union lines. A batch of guards make it a structured
+    artifact) that is missing managed rules. A batch of guards make it a structured
     no-op rather than ever corrupting git state. Never raises for an expected
     condition — returns a structured :class:`HealResult`.
     """
@@ -152,7 +152,7 @@ def self_heal_gitattributes(
     if _git("diff", "--cached", "--quiet").returncode != 0:
         return HealResult("skipped", "staged_changes")
 
-    added = missing_union_paths(existing)
+    added = missing_managed_paths(existing)
     _atomic_write(ga_path, merged)
     subject = "chore: scaffold append-log union merge driver into .gitattributes"
 

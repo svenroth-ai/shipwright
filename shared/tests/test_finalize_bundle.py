@@ -285,3 +285,15 @@ def test_f5b_failure_names_f5b(tmp_path):
     result = run(_payload(), tmp_path, runner=runner)
     assert result["success"] is False
     assert result["failed_step"] == "F5b"
+
+
+def test_f5c_failure_stops_before_f5b(tmp_path):
+    runner = FakeRunner(
+        {"append_iterate_entry.py": RunResult(1, "", "missing current-run snapshot")}
+    )
+
+    result = run(_payload(), tmp_path, runner=runner)
+
+    assert result["success"] is False
+    assert result["failed_step"] == "F5c"
+    assert "finalize_iterate.py" not in runner.tools()

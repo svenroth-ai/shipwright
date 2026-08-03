@@ -125,17 +125,18 @@ def emit_phase_quality_backlog(
 ) -> dict[str, int]:
     """Emit/refresh the single rolling phase-quality backlog action-unit.
 
-    * No in-scope FAILs → dismiss every open ``phaseQuality:backlog:*`` item
+    * No in-scope FAILs → dismiss every open/parked ``phaseQuality:backlog:*`` item
       (``reason="phaseQualityResolved"``); append nothing.
-    * Else → dismiss open backlog items whose signature differs from the
+    * Else → dismiss open/parked backlog items whose signature differs from the
       current set (``reason="phaseQualityRefreshed"``) and append the current
-      one (idempotent; an open same-signature item suppresses the append).
+      one (idempotent; promoted/dismissed decisions remain terminal).
 
     Best-effort: returns ``{"appended", "dismissed", "open_fails"}``; all
     errors are swallowed so the Stop hook stays non-blocking.
     """
     try:
         from triage import (  # noqa: PLC0415
+            AUTO_RESOLVABLE_STATUSES,
             StatusPreconditionError,
             append_triage_item_idempotent,
             mark_status,
@@ -161,7 +162,7 @@ def emit_phase_quality_backlog(
         open_backlog = [
             it for it in read_all_items(project_root)
             if it.get("source") == "phaseQuality"
-            and it.get("status") == "triage"
+            and it.get("status") in AUTO_RESOLVABLE_STATUSES
             and str(it.get("dedupKey") or "").startswith(BACKLOG_PREFIX)
         ]
     except Exception:  # noqa: BLE001
@@ -176,7 +177,7 @@ def emit_phase_quality_backlog(
             mark_status(
                 project_root, item_id, new_status="dismissed",
                 by="phaseQualityBacklog", reason=reason,
-                expected_status="triage",
+                expected_status=AUTO_RESOLVABLE_STATUSES,
             )
             return 1
         except StatusPreconditionError as exc:

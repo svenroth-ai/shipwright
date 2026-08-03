@@ -1,0 +1,318 @@
+{
+  "run_id": "iterate-2026-08-01-llm-review-truncation-guard",
+  "date": "2026-08-01T10:56:49.760998Z",
+  "event_at": "2026-08-01T08:26:45.209123+00:00",
+  "type": "bug",
+  "complexity": "medium",
+  "branch": "iterate/llm-review-truncation-guard",
+  "spec": ".shipwright/planning/iterate/2026-08-01-llm-review-truncation-guard.md",
+  "tests_passed": true,
+  "adr": "iterate-2026-08-01-llm-review-truncation-guard",
+  "prior_source": "history",
+  "test_completeness": {
+    "status": "complete",
+    "behaviors": [
+      {
+        "behavior": "OpenRouter arm (llm_review) sends the shared budget",
+        "disposition": "tested",
+        "evidence": "test_openrouter_arms_agree_on_budget_and_cap PASSED"
+      },
+      {
+        "behavior": "OpenRouter arm (external_review) sends the same budget",
+        "disposition": "tested",
+        "evidence": "test_openrouter_arms_agree_on_budget_and_cap PASSED (parity across both)"
+      },
+      {
+        "behavior": "Direct-OpenAI arm (llm_review) uses max_completion_tokens",
+        "disposition": "tested",
+        "evidence": "test_direct_openai_arms_agree_on_budget, test_llm_review_openai_uses_max_completion_tokens PASSED"
+      },
+      {
+        "behavior": "Direct-OpenAI arm (external_review) uses max_completion_tokens",
+        "disposition": "tested",
+        "evidence": "test_direct_openai_arms_agree_on_budget, test_review_with_openai_uses_max_completion_tokens PASSED"
+      },
+      {
+        "behavior": "Direct-Gemini arms send max_output_tokens + thinking_budget",
+        "disposition": "tested",
+        "evidence": "test_direct_gemini_arms_send_thinking_budget PASSED"
+      },
+      {
+        "behavior": "A truncated reply is degraded, not success (both paths)",
+        "disposition": "tested",
+        "evidence": "test_both_paths_degrade_a_truncated_reply PASSED"
+      },
+      {
+        "behavior": "An empty reply is degraded (both paths)",
+        "disposition": "tested",
+        "evidence": "test_both_paths_degrade_an_empty_reply PASSED"
+      },
+      {
+        "behavior": "A complete reply is still success (no over-correction)",
+        "disposition": "tested",
+        "evidence": "test_a_complete_reply_is_still_a_success PASSED"
+      },
+      {
+        "behavior": "run_review aggregate success is False when all legs degrade",
+        "disposition": "tested",
+        "evidence": "test_run_review_success_is_false_when_every_leg_is_degraded PASSED"
+      },
+      {
+        "behavior": "Both google-genai finish-reason renderings degrade (named + dotted)",
+        "disposition": "tested",
+        "evidence": "test_direct_gemini_degrades_a_truncated_reply[named] and [dotted] PASSED; mutation-verified"
+      },
+      {
+        "behavior": "Direct-Gemini retries once without thinking_config on rejection",
+        "disposition": "tested",
+        "evidence": "test_direct_gemini_retries_without_reasoning_when_model_rejects_it PASSED"
+      },
+      {
+        "behavior": "Retry keeps the budget, drops only the reasoning knob",
+        "disposition": "tested",
+        "evidence": "test_direct_gemini_retries_without_reasoning_when_model_rejects_it PASSED"
+      },
+      {
+        "behavior": "llm_review imports as a bare module (adopt path)",
+        "disposition": "tested",
+        "evidence": "test_llm_review_imports_as_a_bare_module PASSED (isolated subprocess, -I)"
+      },
+      {
+        "behavior": "llm_review imports as lib.llm_review (review_assistant path)",
+        "disposition": "tested",
+        "evidence": "test_llm_review_imports_as_lib_llm_review PASSED (isolated subprocess, -I)"
+      },
+      {
+        "behavior": "Budget and cap remain a coupled pair",
+        "disposition": "tested",
+        "evidence": "test_budget_leaves_room_for_an_overshot_cap_plus_a_full_answer PASSED"
+      },
+      {
+        "behavior": "openrouter_extra_body payload shape",
+        "disposition": "tested",
+        "evidence": "test_extra_body_caps_only_the_arm_that_needed_it PASSED"
+      },
+      {
+        "behavior": "adopt: a degraded-only review is not completed",
+        "disposition": "tested",
+        "evidence": "test_degraded_only_review_is_not_completed PASSED (adopt root)"
+      },
+      {
+        "behavior": "adopt: degraded status is visible in review.md",
+        "disposition": "tested",
+        "evidence": "test_degraded_status_is_visible_in_the_written_review PASSED (adopt root)"
+      },
+      {
+        "behavior": "adopt: a real review still completes",
+        "disposition": "tested",
+        "evidence": "test_a_real_review_still_completes PASSED (adopt root)"
+      },
+      {
+        "behavior": "The cap ships on gemini and NOT on the openai arm",
+        "disposition": "tested",
+        "evidence": "test_extra_body_caps_only_the_arm_that_needed_it PASSED"
+      },
+      {
+        "behavior": "Budget/cap pair leaves room for a 3.5x-overshot cap plus a full answer",
+        "disposition": "tested",
+        "evidence": "test_budget_leaves_room_for_an_overshot_cap_plus_a_full_answer PASSED"
+      },
+      {
+        "behavior": "The invariant rejects the bug-reproducing values, in both directions",
+        "disposition": "tested",
+        "evidence": "test_the_invariant_rejects_the_values_that_reproduce_the_bug PASSED"
+      },
+      {
+        "behavior": "Both paths, every provider fallback, and the shipping config agree on the timeout",
+        "disposition": "tested",
+        "evidence": "test_default_timeout_matches_shipping_config, test_external_review_openai_clients_default_to_shared_timeout, test_direct_gemini_client_carries_a_bounded_timeout, test_degraded_review_keeps_reason_and_partial_body PASSED"
+      },
+      {
+        "behavior": "Both direct-Gemini clients bound the call, in milliseconds",
+        "disposition": "tested",
+        "evidence": "test_direct_gemini_client_carries_a_bounded_timeout PASSED"
+      },
+      {
+        "behavior": "A dropped reasoning cap reaches the caller as data, not just stderr",
+        "disposition": "tested",
+        "evidence": "test_direct_gemini_retries_without_reasoning_when_model_rejects_it asserts reasoning_cap_dropped"
+      },
+      {
+        "behavior": "An old SDK without ThinkingConfig still returns a review",
+        "disposition": "tested",
+        "evidence": "test_an_old_sdk_without_thinking_config_still_reviews PASSED"
+      },
+      {
+        "behavior": "A missing google-genai is reported, not swallowed",
+        "disposition": "tested",
+        "evidence": "test_missing_google_genai_is_reported_not_swallowed PASSED"
+      },
+      {
+        "behavior": "The two import modes resolve genuinely distinct module names",
+        "disposition": "tested",
+        "evidence": "test_the_two_modes_resolve_distinct_module_names PASSED"
+      },
+      {
+        "behavior": "review_assistant_ui_plan renders a degraded leg's partial body",
+        "disposition": "tested",
+        "evidence": "test_degraded_review_keeps_reason_and_partial_body PASSED"
+      },
+      {
+        "behavior": "Known abnormal provider terminal reasons never count as success",
+        "disposition": "tested",
+        "evidence": "test_known_abnormal_finish_reasons_are_degraded PASSED"
+      },
+      {
+        "behavior": "Auth, rate-limit, server, connection and timeout errors never retry unbounded",
+        "disposition": "tested",
+        "evidence": "test_only_http_400_is_a_provider_retry_signal and test_network_timeout_is_not_retried PASSED"
+      },
+      {
+        "behavior": "One usable leg remains usable but the aggregate is explicitly partial",
+        "disposition": "tested",
+        "evidence": "test_one_usable_leg_keeps_success_but_marks_the_result_partial PASSED"
+      },
+      {
+        "behavior": "A dropped reasoning cap is visible in both human artifacts and aggregate warnings",
+        "disposition": "tested",
+        "evidence": "test_degraded_review_keeps_reason_and_partial_body and test_a_real_review_still_completes PASSED"
+      },
+      {
+        "behavior": "A failed direct-Gemini fallback preserves both attempt errors",
+        "disposition": "tested",
+        "evidence": "test_failed_fallback_preserves_both_attempt_errors PASSED"
+      },
+      {
+        "behavior": "A nested missing dependency is not mistaken for the sibling module being absent",
+        "disposition": "tested",
+        "evidence": "test_nested_module_not_found_is_not_mistaken_for_the_sibling PASSED"
+      },
+      {
+        "behavior": "The real google-genai SDK accepts the config shape we send (field-rename guard)",
+        "disposition": "tested",
+        "evidence": "uv run --project plugins/shipwright-plan --extra dev pytest shared/tests/test_external_review_gemini_budget.py::test_real_sdk_accepts_the_config_shape_we_send PASSED; the ordinary shared-root run retains its expected dependency-gated skip"
+      },
+      {
+        "behavior": "Live provider honours the shipped config end-to-end",
+        "disposition": "untestable",
+        "reason_code": "requires-external-nondeterministic-service",
+        "reason": "Paid, non-deterministic, network-dependent. Compensating control: measured as AC-8/AC-8b and recorded in live_provider_probe below."
+      }
+    ],
+    "counts": {
+      "testable": 36,
+      "tested": 36,
+      "untestable": 1,
+      "untested_testable": 0
+    },
+    "enumeration_basis": {
+      "acs": 12,
+      "covered_acs": 12
+    }
+  },
+  "surface_verification": {
+    "surface": "cli",
+    "runner": "uv run --extra dev pytest shared/tests/test_external_review_budget.py shared/tests/test_external_review_gemini_budget.py shared/tests/test_external_review_gemini_retry.py shared/tests/test_llm_review_import_modes.py shared/tests/test_llm_review.py shared/tests/test_external_review_openai_param.py shared/tests/test_external_review_reply.py shared/tests/test_review_assistant_ui_plan.py -v -p no:cacheprovider",
+    "exit_code": 0,
+    "tests_run": 49,
+    "evidence_path": "C:\\01_Development\\shipwright\\.worktrees\\llm-review-truncation-guard\\.shipwright\\runs\\iterate-2026-08-01-llm-review-truncation-guard\\surface_verification.log",
+    "timestamp": "2026-08-02T19:21:22.967Z",
+    "attempts": 1
+  },
+  "additional_test_runs": [
+    {
+      "root": "plugins/shipwright-adopt",
+      "runner": "uv run --extra dev --with pytest-mock pytest tests/test_review_runner_degraded.py -q -p no:cacheprovider",
+      "exit_code": 0,
+      "tests_run": 3,
+      "result": "3 passed",
+      "timestamp": "2026-08-02T19:08:11.048Z"
+    },
+    {
+      "root": "integration-tests",
+      "runner": "uv run pytest integration-tests -q --junitxml=.shipwright/runs/iterate-2026-08-01-llm-review-truncation-guard/f11-integration-tests.xml",
+      "exit_code": 0,
+      "tests_run": 444,
+      "result": "444 passed, 2 deselected",
+      "timestamp": "2026-08-02T21:18:00.235Z"
+    }
+  ],
+  "live_provider_probe": {
+    "purpose": "AC-8/AC-8b — measured before/after on a real 209,549-char review prompt",
+    "prompt_chars": 209549,
+    "runs": [
+      {
+        "label": "before (bug)",
+        "model": "google/gemini-3.1-pro-preview",
+        "max_tokens": 4096,
+        "reasoning_cap": null,
+        "reasoning_tokens": 3928,
+        "completion_tokens": 4092,
+        "visible_chars": 621,
+        "finish_reason": "length"
+      },
+      {
+        "label": "budget raised, no cap",
+        "model": "google/gemini-3.1-pro-preview",
+        "max_tokens": 16000,
+        "reasoning_cap": null,
+        "reasoning_tokens": 15360,
+        "completion_tokens": 15996,
+        "visible_chars": 2352,
+        "finish_reason": "length"
+      },
+      {
+        "label": "after (shipped)",
+        "model": "google/gemini-3.1-pro-preview",
+        "max_tokens": 16000,
+        "reasoning_cap": 2000,
+        "reasoning_tokens": 3791,
+        "completion_tokens": 7500,
+        "visible_chars": 14134,
+        "finish_reason": "stop"
+      },
+      {
+        "label": "AC-8b GPT, no cap",
+        "model": "openai/gpt-5.6-terra",
+        "max_tokens": 16000,
+        "reasoning_cap": null,
+        "reasoning_tokens": 1235,
+        "completion_tokens": 5868,
+        "visible_chars": 22008,
+        "finish_reason": "stop",
+        "numbered_findings": 33
+      },
+      {
+        "label": "AC-8b GPT, cap 2000",
+        "model": "openai/gpt-5.6-terra",
+        "max_tokens": 16000,
+        "reasoning_cap": 2000,
+        "reasoning_tokens": 1220,
+        "completion_tokens": 5838,
+        "visible_chars": 21613,
+        "finish_reason": "stop",
+        "numbered_findings": 33
+      },
+      {
+        "label": "wall-clock at production timeout",
+        "model": "google/gemini-3.1-pro-preview",
+        "max_tokens": 16000,
+        "reasoning_cap": 2000,
+        "reasoning_tokens": 6909,
+        "completion_tokens": 10500,
+        "visible_chars": 14077,
+        "finish_reason": "stop",
+        "client_timeout_s": 120,
+        "elapsed_s": 89.2,
+        "headroom_s": 30.8
+      }
+    ],
+    "conclusions": [
+      "Raising the budget alone did not fix truncation (row 2 still finish_reason=length).",
+      "The cap is weak: 3332/3791/6909 reasoning at the same cap of 2000 (1.7x-3.5x overshoot).",
+      "The cap is non-binding on GPT for this prompt, so it is NOT sent to that arm.",
+      "89.2s of a 120s timeout drove timeout_seconds 120 -> 240."
+    ]
+  },
+  "declared_removals": []
+}

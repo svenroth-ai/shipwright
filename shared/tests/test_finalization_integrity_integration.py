@@ -74,6 +74,9 @@ def _run_f3_f5c(root: Path, run_id: str) -> None:
         root, run_id=run_id, section="Iterate — change: x", title="x",
         context="c", decision="Chose the decision-drop path.", consequences="k",
     )
+    (root / "shipwright_test_results.json").write_text(
+        json.dumps({"iterate_latest": {"run_id": run_id}}), encoding="utf-8"
+    )
     append_iterate_entry(root, _entry(run_id))
 
 
@@ -117,6 +120,9 @@ def test_lost_adr_empty_drop_fails(tmp_path):
     _init_project(root)
     run_id = "iterate-2026-07-20-lostadr"
     # F5c ran, but the ADR content was lost — an empty placeholder drop.
+    (root / "shipwright_test_results.json").write_text(
+        json.dumps({"iterate_latest": {"run_id": run_id}}), encoding="utf-8"
+    )
     append_iterate_entry(root, _entry(run_id))
     drops = root / ".shipwright" / "agent_docs" / "decision-drops"
     drops.mkdir(parents=True, exist_ok=True)

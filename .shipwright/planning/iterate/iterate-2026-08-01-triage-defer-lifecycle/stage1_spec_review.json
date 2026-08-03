@@ -1,0 +1,6 @@
+{
+  "stage": "spec-compliance",
+  "verdict": "PASS",
+  "spec_citations": [],
+  "summary": "AC-18 citation resolved: the module header now accurately distinguishes all three sweeps and their algorithms, and resolve_stale correctly documents open-or-parked handling. The documentation-only fix introduces no divergence. Stage 2 may proceed."
+}

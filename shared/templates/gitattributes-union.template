@@ -18,3 +18,6 @@ shipwright_events.jsonl merge=union
 # if that ever bites. See docs/hooks-and-pipeline.md.
 .shipwright/agent_docs/architecture.md merge=union
 .shipwright/agent_docs/conventions.md merge=union
+# Immutable per-run test evidence preserves the exact source byte buffer. Disable
+# Git text normalization so core.autocrlf cannot rewrite CRLF snapshots on add.
+/.shipwright/agent_docs/iterates/*.test-results.json -text -diff

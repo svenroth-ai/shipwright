@@ -188,15 +188,20 @@
   iterate setup. Related: Producer, Consumer, Worktree-Isolation,
   Anti-Ratchet (the Outbox is NOT a ratchet of the tracked log — it is a
   staging buffer, drained exactly-once via `merge=union` + dedup).
-- **Defer (Snooze)** — the third triage decision beside promote and dismiss:
-  decided, but deliberately not now. Stored as `snoozed`, writable from both
-  surfaces (`triage_cli.py defer <id> --reason …` and the Command Center).
-  Only the **CLI listing** shows a deferred entry, in its own section with a
-  `[deferred]` row marker; the machine-readable `list --json`, the Command
-  Center and the rendered `triage_inbox.md` still treat it as absent (the last
-  shows a bare count) — so "deferred is not gone" is true of the terminal
-  only, today. No subcommand un-defers on either surface. Both gaps, plus a
-  revisit date and re-import suppression, are `trg-51f8e2a1`.
+- **Defer (Park)** — the third triage decision beside promote and dismiss:
+  decided, but deliberately not now, **until a named day**. The CLI requires
+  `revisitAt` (`triage_cli.py defer <id> --reason … --revisit YYYY-MM-DD`),
+  while the stored format keeps it optional for existing and WebUI parks.
+  From 00:00 UTC on that day `read_all_items` resolves
+  it back to `triage` — no second event is written, because a park expiring is
+  not a decision anybody made. Until then the same finding is not recorded a
+  second time, and it still closes itself if the finding disappears. Shown in
+  its own section by the CLI listing (`[deferred]` row marker),
+  `triage_inbox.md`, and `list --json` (`contractVersion` 2). Only the two
+  human surfaces are capped; the machine JSON section is complete.
+  `triage_cli.py unpark <id> --reason …` reverses it. The Command Center writes a date-less
+  park, which resolves as parked-but-never-due (`trg-f2214310` in the
+  `shipwright-webui` triage store).
 - **Machine-Churn (triage)** — a dismissal a Producer set on itself
   (`MACHINE_DISMISSERS` **and** an exact `MACHINE_REASONS` token, so a human
   dismissal reusing a token survives). The only thing compaction may drop.

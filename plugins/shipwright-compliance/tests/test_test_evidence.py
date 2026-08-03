@@ -417,6 +417,7 @@ class TestEmitTestFailureTriage:
             "_import_triage_api",
             lambda: (_broken_append, triage_api.mark_status,
                      triage_api.read_all_items,
+                     triage_api.AUTO_RESOLVABLE_STATUSES,
                      triage_api.StatusPreconditionError),
         )
         result = emit_test_failure_triage(tmp_path)

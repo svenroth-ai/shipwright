@@ -650,7 +650,7 @@ _LAYER_TRIAGE: dict[str, tuple[str, str]] = {
 def _import_triage_api():
     """Lazy import of triage helpers (mirrors sbom_generator pattern).
 
-    All four names come off the SAME module object, so the ``except`` arm
+    All five names come off the SAME module object, so the ``except`` arm
     cannot bind a different ``triage`` and silently miss every refusal
     (external plan review, finding #3). A ``triage`` that predates
     ``expected_status`` disables this producer via the ``AttributeError`` arm
@@ -663,12 +663,13 @@ def _import_triage_api():
         # Every name off the SAME module object, INSIDE the same try, so the
         # `except` arm cannot bind a different `triage` (finding #3).
         return (triage.append_triage_item_idempotent, triage.mark_status,
-                triage.read_all_items, triage.StatusPreconditionError)
+                triage.read_all_items, triage.AUTO_RESOLVABLE_STATUSES,
+                triage.StatusPreconditionError)
     except (ImportError, AttributeError):
         # AttributeError too: a `triage` predating `expected_status` must
         # disable this producer CLEANLY rather than half-work - see the note
         # in audit/triage_bundle.py (doubt review, doubt 2).
-        return None, None, None, None
+        return None, None, None, None, None
 
 
 def _failing_layers(tr) -> tuple[list[tuple[str, int, int, int]], set[str]]:
@@ -803,7 +804,7 @@ def emit_test_failure_triage(
     - ``launchPayload = "/shipwright-iterate --type bug"`` with the
       failing-layer context inline
 
-    Auto-dismiss: any currently-``triage`` ``source="test-evidence"``
+    Auto-dismiss: any open or parked ``source="test-evidence"``
     item whose ``dedupKey`` is NOT in this run's set of failing layers
     is marked ``dismissed`` with ``reason="testEvidenceResolved"``.
     Promoted / dismissed items stay terminal (HIGH-2 contract).
@@ -812,7 +813,7 @@ def emit_test_failure_triage(
     """
     project_root = Path(project_root).resolve()
     (append_idempotent, mark_status_fn, read_all_items,
-     precondition_error) = _import_triage_api()
+     AUTO_RESOLVABLE_STATUSES, precondition_error) = _import_triage_api()
     if append_idempotent is None:
         return {
             "appended": 0,
@@ -883,7 +884,7 @@ def emit_test_failure_triage(
         for item in read_all_items(project_root):
             if item.get("source") != _TRIAGE_SOURCE:
                 continue
-            if item.get("status") != "triage":
+            if item.get("status") not in AUTO_RESOLVABLE_STATUSES:
                 continue
             dk = item.get("dedupKey")
             if not isinstance(dk, str):
@@ -899,15 +900,15 @@ def emit_test_failure_triage(
                 continue
             try:
                 # This loop read the store UNLOCKED; expected_status re-checks
-                # the `status == "triage"` filter under the store's own lock so
-                # an operator decision is not overwritten (trg-93ceb2b0).
+                # the status filter above under the store's own lock so an
+                # operator decision is not overwritten (trg-93ceb2b0).
                 mark_status_fn(
                     project_root,
                     item["id"],
                     new_status="dismissed",
                     by="testEvidence",
                     reason="testEvidenceResolved",
-                    expected_status="triage",
+                    expected_status=AUTO_RESOLVABLE_STATUSES,
                 )
                 dismissed += 1
             except precondition_error as exc:
