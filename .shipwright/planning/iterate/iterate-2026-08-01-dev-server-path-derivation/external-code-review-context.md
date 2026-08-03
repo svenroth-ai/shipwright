@@ -27,9 +27,21 @@ re-verified at code on 2026-08-01):
 > F0, RED in CI. A lazy import only defers WHICH lib binds; it does not make it
 > safe.
 
+During final F0 on Windows, the existing runtime-verifier smoke test exposed a
+second defect and the operator explicitly authorized fixing it in this same
+iterate: `runtime_checks._pid_is_alive(os.getpid())` terminated the pytest
+console group because Windows maps `os.kill(pid, 0)` to `CTRL_C_EVENT`. The
+authorized repair must probe Windows process state without sending a signal,
+must reject values that cannot be represented by a Windows PID `DWORD`, and
+must leave the POSIX path unchanged.
+
 ## Classification
 
-- Path B CHANGE, **SIMPLIFY sub-mode**, **Spec Impact = NONE** (behavior-preserving)
+- Original scope: Path B CHANGE, **SIMPLIFY sub-mode**, **Spec Impact = NONE**
+  (behavior-preserving).
+- Authorized F0 scope addition: Path C BUG, **Spec Impact = NONE** — it restores
+  the verifier's documented cross-platform liveness contract and changes no
+  serialized format or public API.
 - Complexity `small`; risk flags: none (verified diff-driven against
   `risk_detectors.py` — the changed paths match no IO_BOUNDARY /
   CROSS_COMPONENT / CI_SUPPLYCHAIN / TOUCHES_BUILD pattern)
@@ -44,6 +56,10 @@ re-verified at code on 2026-08-01):
 4. No observable behavior change (Spec Impact NONE).
 5. No new eager `from lib.X` import outside `lib/`; no absolute import that
    could resolve differently under the plugin-vs-shared root split.
+6. Windows PID liveness checks send no console signal, report a live current
+   process, distinguish running/terminated/wait-failed states, close every
+   opened process handle, and reject values outside `1..0xFFFFFFFF`.
+7. POSIX PID liveness retains its existing `os.kill(pid, 0)` behavior.
 
 ## Constraints a reviewer must honor
 
@@ -61,6 +77,12 @@ re-verified at code on 2026-08-01):
   package it is making importable, and it is outside "the package".
 
 ## Verification already performed
+
+The full-suite figures below describe the original path-centralization tree and
+are superseded by the final F0 rerun still required after the authorized bug
+fix. Focused evidence for the added scope currently stands at 22/22 runtime
+tests, including portable fake-Win32 cases for wait states, access denial,
+invalid/oversized PIDs and handle closure; test hygiene and Ruff are clean.
 
 - 88 tests green (84 pre-existing + 4 new); ruff clean repo-wide.
 - `behavior_snapshot verify` VERIFIED (behavior preserved).

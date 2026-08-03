@@ -1,0 +1,12 @@
+{
+  "stage": "Stage-1 spec-reviewer",
+  "verdict": "PASS",
+  "spec_citations": [],
+  "reviewed_locations": [
+    "external-code-review-context.md",
+    "shared/scripts/dev_server/_paths.py",
+    "shared/scripts/tools/verifiers/runtime_checks.py",
+    "shared/tests/test_verifiers_runtime.py"
+  ],
+  "disposition": "The full diff matches the authorized path-centralization scope and the operator-authorized Windows PID repair. POSIX behavior and ADR-045-sensitive import ordering are preserved."
+}

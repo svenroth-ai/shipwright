@@ -1,0 +1,44 @@
+{
+  "items": [
+    {
+      "name": "Spec Compliance",
+      "verdict": "pass",
+      "note": "The diff retains the original one-derivation/one-insert end state and implements only the operator-authorized Windows PID repair plus its evidence."
+    },
+    {
+      "name": "Error Handling",
+      "verdict": "pass",
+      "note": "OpenProcess denial is handled conservatively, failed waits do not prove liveness, invalid DWORD values are rejected, and every opened handle closes in finally."
+    },
+    {
+      "name": "Security Basics",
+      "verdict": "pass",
+      "note": "No input is executed or interpolated into a shell; the PID is range-checked before crossing the Win32 boundary and no secrets enter the diff."
+    },
+    {
+      "name": "Test Quality",
+      "verdict": "pass",
+      "note": "Outcome tests cover no-signal dispatch, running/terminated/failed wait states, access denial, invalid and oversized PIDs, handle closure, and the native current-process path."
+    },
+    {
+      "name": "Performance Basics",
+      "verdict": "pass",
+      "note": "The Windows path performs one handle open, one zero-timeout wait, and one close; POSIX cost is unchanged."
+    },
+    {
+      "name": "Naming & Structure",
+      "verdict": "pass",
+      "note": "The private helper and constants follow existing module conventions; Ruff is clean and no file-size ratchet is introduced by the PID follow-up."
+    },
+    {
+      "name": "Affected Boundaries",
+      "verdict": "n/a",
+      "note": "No serialized format changes; pids.json remains an existing consumer input and the added process query changes only runtime interpretation."
+    },
+    {
+      "name": "Test Hygiene Probe",
+      "verdict": "pass",
+      "note": "scan_test_hygiene.py --diff reports no findings; the platform behavior is covered without collection-time skips."
+    }
+  ]
+}
