@@ -1205,9 +1205,17 @@ Properties:
   after completion, advances an immutable successor immediately, even inside the
   30-second TTL. Each participant is the plugin's single `plugin:sessionstart`
   wrapper, so no unused per-target authorization can survive into a repeated
-  event. The elected owner grants a 100 ms join window before scanning, keeping
-  the normal concurrent fan-out at one scanner while making a delayed or
-  previously absent wrapper fail safely into a new generation. Each wrapper
+  event. The elected owner records itself, probes for a concurrent peer for up
+  to 100 ms, and, once a fan-out is observed, waits up to two seconds for the
+  active `installed_plugins.json` entries whose selected version actually
+  registers a command whose script-token basename is exactly
+  `run_if_cache_ready.py` to record the same generation.
+  Stale or unregistered cache directories are not peers; an unavailable manifest
+  falls back to the bounded probe. The normal
+  cohort therefore starts one scan even when process scheduling is uneven;
+  isolated/manual invocation keeps the bounded 100 ms probe, while a wrapper
+  that was genuinely absent until after completion still advances safely into
+  a new generation. Each wrapper
   joins before it trusts readiness, so it cannot open a target on stale
   completion. Each election has a random fencing token so a late old owner
   cannot complete a newer one.
@@ -1292,7 +1300,9 @@ different sessions contending for one cache-global writer lease, and an
   expired prior completion followed by another partial reap, and a fresh startup
   completion followed by a resume-source reap, plus partial reaps followed by
   the identical payload inside the completion TTL from both a prior and a
-  previously absent participant; 21 subprocess scenarios total). Malformed but
+  previously absent participant, plus a structurally malformed but valid-JSON
+  install manifest falling back to a bounded successful repair; 22 subprocess
+  scenarios total). Malformed but
   JSON-decodable target output is warned and omitted without aborting later
   targets; the first non-zero target status is retained after the full chain.
 

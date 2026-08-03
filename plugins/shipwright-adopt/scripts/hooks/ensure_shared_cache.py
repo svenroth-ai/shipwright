@@ -5,12 +5,13 @@ import hashlib, json, os, re, secrets, shutil, sys, time
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 try:
-    from cache_repair_lock import CACHE_LOCK_NAME, CLAIM_TTL_SECONDS, COMPLETION_CLOCK_SKEW_SECONDS, acquire_cache_lock, observe_completion, read_claim_token, read_completion_age, session_event_key, session_repair_state, unlock_cache_lock
+    from cache_repair_lock import CACHE_LOCK_NAME, CLAIM_TTL_SECONDS, COMPLETION_CLOCK_SKEW_SECONDS, acquire_cache_lock, await_fanout_observers, observe_completion, read_claim_token, read_completion_age, session_event_key, session_repair_state, unlock_cache_lock
 except (ImportError, OSError, SyntaxError):
     CLAIM_TTL_SECONDS = 30.0
     COMPLETION_CLOCK_SKEW_SECONDS = 1.0
     CACHE_LOCK_NAME = ".sessionstart-cache-repair.lock"
-    acquire_cache_lock = observe_completion = read_claim_token = read_completion_age = None
+    acquire_cache_lock = await_fanout_observers = observe_completion = None
+    read_claim_token = read_completion_age = None
     session_event_key = session_repair_state = unlock_cache_lock = None
 _SHARED_SENTINEL = ("scripts", "lib", "project_root.py")
 _IGNORE_NAMES = ("__pycache__", "*.pyc", "*.pyo", ".venv", ".pytest_cache",
@@ -18,8 +19,7 @@ _IGNORE_NAMES = ("__pycache__", "*.pyc", "*.pyo", ".venv", ".pytest_cache",
                  ".python-version")
 _IGNORE = shutil.ignore_patterns(*_IGNORE_NAMES)
 _CLAIM_DIRNAME = ".sessionstart-claims"
-_CLAIM_TTL_SECONDS = CLAIM_TTL_SECONDS
-_CLAIM_WAIT_SECONDS = 5.0
+_CLAIM_TTL_SECONDS = CLAIM_TTL_SECONDS; _CLAIM_WAIT_SECONDS = 5.0
 _TOKEN_RE = re.compile(r"^[0-9a-f]{32}$")
 def _claim_session(cache_root: Path, session_id: object, *,
                    wait_seconds: float = _CLAIM_WAIT_SECONDS,
@@ -233,7 +233,10 @@ def main(payload: object = None, participant: str = "") -> int:
         coordination = None if dev_model else _claim_session(cache_root, event_key, observer=participant)
         if coordination is False:
             return 0
-        if isinstance(coordination, Path): time.sleep(0.1)
+        if isinstance(coordination, Path) and observe_completion:
+            observed = observe_completion(coordination, participant)
+            if observed is not None and await_fanout_observers:
+                await_fanout_observers(cache_root, coordination, participant)
         cache_lock = None if dev_model or acquire_cache_lock is None else acquire_cache_lock(
             cache_root / CACHE_LOCK_NAME,
         )
