@@ -1,0 +1,32 @@
+{
+  "success": true,
+  "provider": "openrouter",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviews": {
+    "gemini": {
+      "feedback": "SHIPWRIGHT_VERDICT: approve",
+      "via": "openrouter",
+      "status": "success"
+    },
+    "openai": {
+      "feedback": "- Category: spec\n- Severity: medium\n- File: plugins/shipwright-iterate/scripts/lib/risk_taxonomy.py:173\n- Finding: The `requirements[\\w.-]*\\.txt` message pattern does not cover the full `requirements*.txt` glob family used by the diff surface. For example, `touches_build_files([\"requirements#.txt\"])` matches the `requirements*.txt` glob, while the message regex does not match because `#` is outside `[\\w.-]`. This violates AC-3 (and sentence-final AC-4) for valid glob-family instances, leaving a concrete cross-surface false negative.\n- Suggestion: Make the message regex represent the glob\u2019s accepted basename language (for example, permit all non-path-separator characters between `requirements` and `.txt`, while retaining the outer token guard), or deliberately narrow the diff glob to the same character set.\n\n- Category: test\n- Severity: medium\n- File: plugins/shipwright-iterate/tests/test_touches_build_surface_parity.py:65\n- Finding: `_GLOB_INSTANCES` tests exactly one synthetic glob instance, `requirements-dev.txt`, and therefore cannot validate the required \u201ceach glob family instance\u201d behavior. The current implementation passes all derived tests despite the real mismatch for filenames such as `requirements#.txt`; the test\u2019s metacharacter check only ensures the generated probe is literal, not that the regex and glob accept the same family.\n- Suggestion: Parameterize representative valid glob matches including characters outside `[\\w.-]` (or derive/define the intended allowed filename alphabet) and assert both surfaces for each. This should catch the production mismatch above.\n\n- Category: spec\n- Severity: low\n- File: .shipwright/planning/iterate/iterate-2026-08-01-touches-build-token-boundary/self-review.json:27\n- Finding: The shipped self-review still describes the pre-split, pre-final-verification state: it refers to \u201c157 cases in the new file,\u201d reports only the first two mutation rounds, and later claims a single new test file of 282 lines. The diff instead ships two test modules and the specification states that the record was remeasured and includes mutation round 3. This leaves a Stage-2-consumed review artifact certifying stale evidence.\n- Suggestion: Regenerate the self-review against the final tree, naming both modules, their final case/line counts, and the final mutation round.\n\nOverall assessment: ship-with-fixes. The core guard implementation is sound, but the glob-family parity guarantee is incomplete and its derived tests currently conceal the mismatch.  \nSHIPWRIGHT_VERDICT: revise",
+      "via": "openrouter",
+      "status": "success"
+    }
+  },
+  "verdicts": {
+    "gemini": "approve",
+    "openai": "revise"
+  },
+  "statuses": {
+    "gemini": "success",
+    "openai": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: gemini=approve, openai=revise"
+  }
+}

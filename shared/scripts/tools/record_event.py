@@ -37,6 +37,7 @@ from lib.events_log import resolve_events_path  # noqa: E402
 from lib.events_amend import apply_amendments  # noqa: E402
 # grade_snapshot shape + attribution; top-level for ADR-045 like tests_block.
 from grade_snapshot_shape import apply_grade_snapshot, reject_asserted_attribution  # noqa: E402
+from source_state_capture import capture_dirty  # noqa: E402 — same ADR-045 placement
 # Shared skip-vs-fail SSOT; top-level avoids the ADR-045 lib collision.
 from tests_block import validate_tests_block  # noqa: E402
 # Re-export the tolerant reader so `record_event.read_events` remains the F14
@@ -340,8 +341,17 @@ def build_event(args: argparse.Namespace) -> dict:
         # Shape owned by grade_snapshot_shape (shared with the compliance
         # emitter): validation AND the tree attribution, which is derived from
         # --project-root and cannot be asserted by any caller.
-        apply_grade_snapshot(event, grade=args.grade, score=args.score,
-                             project_root=args.project_root, commit=args.commit)
+        #
+        # Dirtiness is captured here, not passed in, and that is correct on THIS
+        # route for the reason it is wrong on the compliance one: nothing has been
+        # written yet. Bound to SHIPWRIGHT_RUN_ID so an earlier capture in the same
+        # run is inherited rather than re-measured (trg-f5ae5371).
+        apply_grade_snapshot(
+            event, grade=args.grade, score=args.score,
+            project_root=args.project_root, commit=args.commit,
+            dirty=capture_dirty(args.project_root,
+                                os.environ.get("SHIPWRIGHT_RUN_ID")),
+        )
 
     return event
 

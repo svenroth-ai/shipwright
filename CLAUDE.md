@@ -47,7 +47,22 @@ uv sync                              # Install dependencies
 uv run pytest tests/ -v               # Run tests for a plugin (from plugin dir)
 uv run pytest integration-tests/ -v   # Run integration tests (from root)
 uvx ruff@0.15.15 check .              # Bug-focused lint — GATING in CI (ci.yml)
+uv run scripts/verify_local.py        # The CI merge guards that run nowhere else
 ```
+
+**Run `verify_local.py` before pushing.** `ci.yml`'s required job carries three
+bespoke guards — the CI-gate guard and the two surface verifiers — that no local
+step runs, so they are learned about from a red CI run *after* the iterate
+reports done. Measured at 4-6 s from a worktree (Windows); expect longer from a
+clone whose `.worktrees/` holds other checkouts, which `grade.py` also walks. It
+reports all three in one pass (never short-circuiting, so one push fixes
+everything CI would reject) and names what would block.
+
+It is a pre-flight, not a substitute: CI checks a clean checkout on a pinned
+interpreter, and its `Repair-PR safety (gate)` reads the PR's *base* revision so
+a branch cannot vouch for itself. Note also that it vets your **working tree**
+while CI vets the commit you **push** — it prints which, and warns when the tree
+is dirty. **Nothing runs it for you**; it is a command you type.
 
 **Lint is a hard CI gate.** `.github/workflows/ci.yml` runs `uvx ruff@0.15.15
 check .` with no `|| true` / `continue-on-error`, so a lint failure blocks merge.

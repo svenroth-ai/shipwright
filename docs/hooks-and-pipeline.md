@@ -844,12 +844,28 @@ in `phase_tasks[]`:
 }
 ```
 
-> **`current_step` / `completed_steps` are WRITE-ONCE, NEVER-ADVANCED. Never key logic
-> on them.** `config_factory` stamps `current_step` at run creation (`"project"`) and
-> nothing in the v2 lifecycle moves it: `phase_task_lifecycle` advances `phase_tasks[]`
-> + `completed_phase_task_ids` + `status`, and that is the whole authority. They survive
-> only for legacy readers that key on their *presence* (`phase_quality.resolve_source`)
-> or render from them (compliance `mermaid.py`).
+> **`current_step` / `completed_steps` are WRITE-ONCE, NEVER-ADVANCED in a DRIVEN run.
+> Never key logic on them ALONE.** `config_factory` stamps `current_step` at run creation
+> (`"project"`) and nothing in the v2 lifecycle moves it: `phase_task_lifecycle` advances
+> `phase_tasks[]` + `completed_phase_task_ids` + `status`, and that is the whole authority.
+>
+> They are NOT dead fields, and the v1 `update_step` path *does* advance them — it is
+> merely inert on a driven run (the drivability guard). They are still written by
+> `shipwright-project`, by `shipwright-adopt` (which seeds `completed_steps` so an adopted
+> repo does not look like it skipped phases), and by that v1 path; and they are still read
+> by `compliance/mermaid.py` (dashboard phase strip), `generate_handoff_on_stop`,
+> `suggest_iterate`, `update_build_dashboard`, `state.detect_current_phase`,
+> `convert_configs_to_events`, and the `design` / `compliance` verifiers.
+>
+> **The rule for a reader is therefore: consult `phase_tasks[]` first, and fall back to
+> the v1 fields — do not read either one alone.** `phase_quality.resolve_source` and
+> `phase_quality.phase_is_engaged` were migrated to exactly that shape in
+> `iterate-2026-08-01-drop-write-once-step-fields`. They OR the two sources rather than
+> replacing v1, because `config_factory` marks a phase completed *standalone* as
+> `skipped` in `phase_tasks[]` while still listing it in `completed_steps` — so a
+> v2-only read would engage FEWER phases, and phase-quality's contract is "audit MORE,
+> never silently fewer". Dropping the fields is a campaign blocked on the readers above,
+> not a cleanup — owned by triage `trg-8d52a965` (successor to `trg-be24ff6f`).
 >
 > The phase skills used to derive "pipeline vs standalone" from
 > `status == "in_progress" AND current_step == <my phase>`, which is FALSE for every
@@ -1094,12 +1110,35 @@ originally motivated this healer, `phase_session_start`, called that fallback un
 and crashed SessionStart; it has since been deleted with the multi-session engine, but
 the cross-plugin import gap it exposed is real for any such hook.)
 
-**What it does.** When the expected `shared/` cache dir is missing, it mirrors it
-from the marketplace **full-clone** (`~/.claude/plugins/marketplaces/<name>/shared`,
-which a marketplace install *does* carry). When the sibling `plugins/` cross-link
-tree is missing, it mirrors each installed plugin
-(`cache/<name>/shipwright-X/<version>`) into `cache/<name>/plugins/shipwright-X`
-so `../../plugins/shipwright-X` imports resolve — no clone needed for that part.
+**What it does.** When the cached `shared/` is missing **or incomplete**, it
+mirrors it from the marketplace **full-clone**
+(`~/.claude/plugins/marketplaces/<name>/shared`, which a marketplace install
+*does* carry). Independently, for **each** installed plugin whose mirror is
+missing or incomplete, it copies `cache/<name>/shipwright-X/<version>` (the
+numerically newest version — `0.10.0` beats `0.2.0`) into
+`cache/<name>/plugins/shipwright-X` so `../../plugins/shipwright-X` imports
+resolve — no clone needed for that part.
+
+Two source-selection rules apply to `shared/`, not one. **Restore** (the tree is
+absent) accepts any marketplace clone carrying the sentinel — a stranger's copy
+beats nothing. **Top-up** (the tree is present but short) accepts only the
+*same-name* clone `marketplaces/<cache name>/shared`: a foreign clone's extra
+files would read as our gaps and its code would be copied in on every session.
+An install carrying only a foreign clone therefore gets restore-but-never-top-up.
+
+**Completeness, not liveness (2026-08-01).** Each tree used to be judged from a
+single sentinel file: `shared/scripts/lib/project_root.py` for the whole
+1013-file `shared/` tree, and shipwright-run's `phase_task_lifecycle.py` for all
+14 mirrors. A sentinel answers *"was this tree ever created?"*, never *"is it
+whole?"* — so a **partial reap**, the event this hook exists to survive, read as
+healthy and was never repaired. ADR-120 measured it: a reap of the 55
+`shared/scripts/tools/verifiers/` modules every iterate's F11 imports left the
+sentinel standing and F11 died with `ModuleNotFoundError`. Two independent code
+paths hid the plugins half — a combined early return, and a `not
+_plugins_healthy(...) and _heal_plugins(...)` short-circuit that made the repair
+operand unreachable. Both are gone; each tree is now compared **file-set**
+against its repair source.
+
 Properties:
 
 - **plugin-local + vendored** — a plugin-local file is the only thing a
@@ -1107,17 +1146,53 @@ Properties:
   `shared/`. Drift between the canonical and the 12 copies (and their SessionStart
   registration) is gated by `shared/tests/test_ensure_shared_cache_vendored.py`
   (forward + reverse);
-- **stdlib-only** — it can never depend on the very `shared/` it repairs;
+- **stdlib-only** — it can never depend on the very `shared/` it repairs. That is
+  also why its ignore set is a second copy of
+  `scripts/cache_tree_compare.SKIP_DIRS`; the copy is pinned by
+  `test_ensure_shared_cache_walk.py`;
+- **presence, not content** — the clone and the cache differ in line endings (24
+  of 1015 files, measured), so a content rule here would re-copy them every
+  session. *Is anything gone?* is this hook's question; *is anything stale?* is
+  `check_plugin_cache_sync.py`'s, and it CRLF-normalizes before hashing. A file
+  that is present but truncated is therefore **not** detected here;
 - **fail-open** — any error (incl. no marketplace clone found → an actionable
-  "run `update-marketplace.sh`" stderr note) exits 0, so a session is never blocked;
-- **idempotent** — a sentinel check (`shared/scripts/lib/project_root.py`) makes it
-  a no-op once healed, and in the `--plugin-dir` dev model (where `shared/` is the
-  real repo dir) always.
+  "run `update-marketplace.sh`" stderr note) exits 0, so a session is never
+  blocked. The walk is **tri-state**: an unreadable tree yields *unknown*, never a
+  short file list, because an under-counted source would manufacture exactly the
+  false "complete" verdict this change removes. Unknown ⇒ neither claim health
+  nor copy;
+- **idempotent** — a whole cache is a no-op, and so is the `--plugin-dir` dev
+  model (no top-level `shipwright-*` dirs, no marketplace clone). The cache
+  manager's own files (`.in_use/<pid>` per-PID refcounts, `.orphaned_at` reap
+  markers) are ignored on both sides; counting them reported a phantom gap on all
+  14 mirrors and would have turned this hook into a 1464-file copy on every
+  session start. Verified against the live cache: complete on all 14 mirrors and
+  on `shared/`, i.e. a clean no-op;
+- **~200 ms per invocation, ×12 per session start** — four `stat` walks (both
+  sides of both trees, ~4 400 entries), measured on the live cache. Claude Code
+  fires SessionStart from **every** hook-bearing plugin with no active-plugin
+  filter, so all 12 vendored copies run, each in its own `uv run` process. The
+  old sentinel check was ~1 stat, so the fan-out was free; a completeness check
+  is not. Nothing blocks on it (fail-open, and the walks are concurrent), but
+  the honest number is 12 × 200 ms of I/O, not 200 ms.
+
+  **Consequence, and it is not only cost.** When a heal *is* needed, all 12
+  invocations reach the same verdict and copy onto the same destination
+  concurrently, with `copyfile` truncating and no temp+rename — while sibling
+  hooks in other plugins' SessionStart arrays are importing from that same
+  tree. The old `dst.exists()` skip made concurrent copying nearly impossible;
+  a completeness check makes it the normal path. Serializing the fan-out (the
+  `event_once.claim_once` pattern this repo already uses for exactly this
+  hazard) belongs with the hook-fan-out work, not inside one of 12 vendored
+  copies of one hook — tracked as `trg-0c5af217`.
 
 Composition is pinned by `shared/tests/test_ensure_shared_cache_integration.py`
-(heals a simulated marketplace layout — both `shared/` from the clone and
-`plugins/` from the installed dirs; `plugins/` heals even with no clone; idempotent
-no-op; fail-open; dev-model no-op).
+(fresh-install delivery: `shared/` from the clone and `plugins/` from the
+installed dirs; `plugins/` heals with no clone; idempotent no-op; fail-open;
+dev-model no-op) and `shared/tests/test_ensure_shared_cache_partial_reap.py`
+(the surviving-sentinel cases, both trees, both former short-circuits, and the
+cache-manager-litter no-op). Layout builders are shared via the sibling
+`shared/tests/ensure_shared_cache_fixtures.py`.
 
 ### Shared Hook: capture_session_id.py
 
@@ -1366,8 +1441,9 @@ at all, so it has no Stop hook.)
   `event_once.claim_once` guard (`.shipwright/.cache/stop-phasequality-<sid>.claim`,
   taken AFTER all no-op guards so a foreign/no-op invocation never consumes it);
   the rest skip. The winner resolves which phase(s) to audit from SESSION STATE
-  via `phase_quality.resolve_engaged_phases()` (run config `current_step` /
-  `completed_steps` / `status` + `events.jsonl`), **not** from
+  via `phase_quality.resolve_engaged_phases()` (run config `phase_tasks[]` —
+  the v2 authority — OR-ed with the v1 `current_step` / `completed_steps`, plus
+  `status` + `events.jsonl`), **not** from
   `CLAUDE_PLUGIN_ROOT`. The plugin root is now only a recognition gate
   (`phase_from_plugin_root(...) is None` → foreign-plugin no-op). This replaces
   the old "each plugin audits its own plugin-root phase" fan-out, which audited
@@ -2334,7 +2410,7 @@ The unified event log (`shipwright_events.jsonl`) is written to by these compone
 | Test SKILL.md (Step 5) | `test_run` | Full test suite executed | unit/e2e/smoke layer counts |
 | Deploy SKILL.md (Step 5) | `phase_completed` (phase=deploy) | Deploy smoke test passed | Deploy URL via `--detail` |
 | Changelog SKILL.md (Step 7) | `phase_completed` (phase=changelog) | PR created or tag pushed | Version + PR URL via `--detail` |
-| Compliance `_grade_snapshot.py` | `grade_snapshot` | A Control-Grade dashboard regen that MOVES the grade (M-Pre-3) | `grade` + `score`, plus the tree attribution below. One per regen **that changes the grade** — see the dedup note below |
+| Compliance `_grade_snapshot.py` | `grade_snapshot` | A Control-Grade dashboard regen that MOVES the grade (M-Pre-3) | `grade` + `score`, plus the tree attribution below (incl. `dirty`, captured before any producer in the run wrote — at `update_compliance` entry, or earlier still at `finalize_iterate` entry, whichever came first). One per regen **that changes the grade** — see the dedup note below |
 
 All events share common fields: `v` (schema version), `id` (UUID-based), `ts` (ISO timestamp), `type`, and optional `session`.
 
@@ -2356,6 +2432,7 @@ A Control Grade is a property of a **tree state**, not of the repository in the 
 | `lineage` | `"main"` — the checked-out branch **is** the default branch (or, for a *detached* HEAD only, HEAD is an ancestor of it). `"branch"` — any named non-default branch, **regardless of ancestry**. `"unknown"` — the producer ran and could not tell (no git, not a repo, no commits, no resolvable default branch, or a detached HEAD whose ancestry is unobtainable). |
 | `branch` | Short branch name; **absent** when HEAD is detached, unresolvable, longer than 255 chars, or carrying control characters. |
 | `base` | Merge-base of HEAD with the default branch. Lowercase hex, **7–64 chars** (not fixed at 40: a SHA-256 repository must keep its attribution, so do not validate for SHA-1 width). **Absent** when unobtainable (shallow clone, unrelated histories). Read rule 3 before using it. |
+| `dirty` | Boolean. Whether the tree held **uncommitted tracked changes when the producer that measured it started, before it wrote anything**. Not "when the run began": an iterate is clean at run start and legitimately holds uncommitted source by the time it finalizes, and `dirty` describes the latter. `false` = tracked content did not deviate from the checked-out commit; it does **not** say that `base` is that commit on branch lineage. `true` = tracked content differed from the checked-out commit — the normal, correct value for an iterate's own pre-F6 regen. **Absent** = the event predates the field (everything before `iterate-2026-08-01-grade-snapshot-dirty-capture`) *or* git could not answer; both mean "do not conclude anything". Read rule 5. |
 
 Six rules a consumer must honour:
 
@@ -2365,9 +2442,17 @@ Six rules a consumer must honour:
    **Absence of a branch snapshot is now meaningful, and does not mean "not measured" (iterate-2026-08-01-grade-snapshot-dedup).** The dedup key is the `lineage` *class*, so a branch's snapshot is suppressed when its value equals the most recent **branch-class** measurement already in that tree's log — which may have come from an unrelated branch. Read an absent branch snapshot as *"this tree measured the same grade as the last branch-class measurement it could see"*, not as *"no regen ran"*. The audit question "did a regen run for branch X" is answered by that run's `work_completed` event, never by the presence of a grade snapshot. A consumer that counts branch snapshots to count runs will undercount, and should count `work_completed` instead.
 4. **The dedup compares in APPEND order; you must plot in `base` order — they can disagree.** The producer suppresses a snapshot whose value matches the most recent same-class snapshot *in the file*, which is not necessarily the one with the newest `base`. A detached-HEAD regen on an older commit still resolves `lineage: "main"` (`tree_lineage` returns `base = merge-base(HEAD, default) = HEAD` there), so a historical measurement can be appended after a newer one; a later regen at the tip is then compared against that historical tail and may be suppressed even though nothing at the tip's own coordinate was recorded. Consequence for a trend consumer: **an absent point is not a gap in measurement**, and the newest `base` may legitimately have no snapshot of its own — carry the last recorded value forward rather than rendering a hole. Reachable only through manual/backfill regens on detached checkouts, not the automatic pipeline (which is monotone in `base`), but the trend is precisely the series this matters for (iterate-2026-08-01-grade-snapshot-dedup).
 5. **Do not order the trend by `ts`.** `ts` is when the measurement was *taken*. For a `"main"` snapshot on a detached checkout of an older commit, `ts` is now while the subject is historical; `base` places it correctly.
-6. **`base` names a commit, not the graded content — and on the main path it is the *previous* commit.** `grade`/`score` are computed from the **working tree**; `lineage`/`base` can only be derived from **committed** state, and nothing reconciles them. Where HEAD is an ancestor of the default ref, `merge-base(HEAD, default) == HEAD`, so a pre-commit regen stamps the commit it has not made yet — the same limitation for which `commit` was rejected outright. There is currently **no field that tells you whether the two agree**: a `dirty` flag was built for this and withdrawn before shipping, because every automatic producer writes tracked artifacts (its own regenerated documents, and an event appended just before it) *before* the snapshot is emitted, so the flag read `true` on pristine trees and would have marked every main-lineage point provisional. Tracked as `trg-10aa91e3`; until then treat `base` as "the commit this measurement was taken near", not "the commit this score describes".
+6. **`dirty` qualifies the working tree against HEAD, not against `base`.** `grade`/`score` are computed from the **working tree**; `lineage`/`base` can only be derived from **committed** state. `dirty: false` says there were no tracked deviations from the checked-out commit at capture time. Only where `base == HEAD` — for example, HEAD is an ancestor of the default ref — does that also let `base` describe the tracked graded content. For `lineage: "branch"`, `base` is the merge-base and may predate committed branch changes even when `dirty` is false; rule 3 still applies. `dirty: true` says the working tree differed from HEAD, so treat `base` only as the nearby common-ancestor coordinate. **Absent `dirty` is not `false`**; it carries no assurance at all. Untracked files are outside this field by definition.
 
-Attribution is **derived** from the tree on disk, and no CLI route can assert it: neither producer takes it as input, and `record_event.py --type event_amended --fields` refuses the attribution keys (that generic mutator was the door the first producer audit missed — `apply_amendments` overlays fields with a blind merge, so without the refusal an amendment could overlay `lineage`). Two honest limits: this is not tamper-evidence — arbitrary Python may call `apply_grade_snapshot` and `append_event` with different roots — and **the *measurement* is still caller-supplied**: `--grade`/`--score` are free-text, so a hand-run `record_event.py` on the default branch mints a correctly-attributed point around a grade nobody computed. Resolution is best-effort and never fails a compliance regen: shape + attribution live in the shared SSOT `shared/scripts/grade_snapshot_shape.py` (with `shared/scripts/tree_lineage.py` doing the git work), used by both the compliance emitter and `record_event.py --type grade_snapshot`.
+   **How it is obtained, and why it could not be measured.** The value is **captured at the producer's entry, before it writes anything**, and passed through (`shared/scripts/source_state_capture.py`). Measuring it when the snapshot is emitted is the implementation that was built and **withdrawn before shipping**: every automatic producer writes *tracked* files first — `update_compliance` rewrites six documents, and `finalize_iterate` appends `work_completed` to the tracked event log just before calling it — so the flag read `true` on pristine trees (evidenced on four producers; reproduced with zero uncommitted source) and would have marked every main-lineage point provisional. An exclusion list was rejected too: hanging it off `DERIVED_SNAPSHOTS` is structurally wrong, since that register deliberately keeps the event log and `triage.jsonl` *out* and the two answer different questions. The distinction that fixes it: **a producer's own writes are the output of the measurement, not its input.**
+
+   `capture_dirty` is first-call-wins and bound to a run id **and a tree**, with a readable current-capture mirror in `SHIPWRIGHT_SOURCE_DIRTY` / `SHIPWRIGHT_SOURCE_DIRTY_RUN` / `SHIPWRIGHT_SOURCE_DIRTY_ROOT` and a hashed per-run/per-tree environment slot that preserves earlier roots when one process serves several. Subprocesses inherit both, so `update_compliance` (spawned by `finalize_iterate` with `--run-id`) reads the parent's pre-write answer rather than measuring a tree the parent has since dirtied. An explicit `--run-id` beats the ambient `SHIPWRIGHT_RUN_ID`. **A producer that writes tracked files before spawning the regen owes a `capture_dirty` call at its own entry** — without one, its snapshot reverts to the withdrawn behaviour. Wired today: `finalize_iterate`, `resolve_churn_conflicts.regenerate_tracked_snapshots`, and `update_compliance` itself.
+
+   **Two limits worth knowing before you compare snapshots.** (a) *How far back the value reaches is not recorded.* It describes the tree when the **earliest** capturer in that process tree started — `finalize_iterate` Step 0, `regenerate_tracked_snapshots` entry, or `update_compliance` entry — and the event does not say which, so two snapshots' `dirty` values are not strictly comparable instants. A `converge()` refresh runs several regens off one pass-1 capture, all stamped with it. (b) *It counts any tracked modification, not only source* — a derived artifact written by a **sibling** process counts, which is the known residual `trg-709828ad`: in a pipeline run the phase's own `record_event.py` is a sibling of the later regen, not an ancestor, so its single tracked append can still read as tree dirt. Both limits bias toward `true`, the conservative direction.
+
+`lineage`/`branch`/`base` are **derived** from the tree on disk, and no route can assert them: neither producer takes them as input, and `record_event.py --type event_amended --fields` refuses all four attribution keys (that generic mutator was the door the first producer audit missed — `apply_amendments` overlays fields with a blind merge, so without the refusal an amendment could overlay `lineage`).
+
+**`dirty` is weaker, and the difference matters.** It is the one attribution field a *producer* supplies rather than the shape module resolving it, and that is forced — it is the only one whose honest value cannot be observed at emit time. Closing the amendment door does **not** make it unassertable: exporting `SHIPWRIGHT_SOURCE_DIRTY=0` with a matching `SHIPWRIGHT_SOURCE_DIRTY_RUN` (and `SHIPWRIGHT_SOURCE_DIRTY_ROOT`) stamps `dirty: false` onto the durable log from a filthy tree in one command, with no amendment involved. So `dirty` carries the same "not tamper-evidence" caveat as `grade`/`score` themselves: it is protected against *accidental* laundering by a later mutator, not against a caller who sets out to assert it. Treat it as a producer's honest report, not a proof. Two honest limits: this is not tamper-evidence — arbitrary Python may call `apply_grade_snapshot` and `append_event` with different roots — and **the *measurement* is still caller-supplied**: `--grade`/`--score` are free-text, so a hand-run `record_event.py` on the default branch mints a correctly-attributed point around a grade nobody computed. Resolution is best-effort and never fails a compliance regen: shape + attribution live in the shared SSOT `shared/scripts/grade_snapshot_shape.py` (with `shared/scripts/tree_lineage.py` doing the git work), used by both the compliance emitter and `record_event.py --type grade_snapshot`.
 
 > **Where `main`-lineage snapshots come from.** Every `PHASE_REPORTS` entry in `update_compliance.py` includes `dashboard`, and that branch emits — so **any** compliance regen can produce a snapshot, not only an iterate's (subject to the dedup above: a regen that does not move the grade produces none). In a `/shipwright-run` or adopted project the orchestrator regenerates after each completed phase **on the default branch**, so `lineage: "main"` is the normal case there. In *this* monorepo it is not: every regen happens inside an iterate worktree, and a main-tree append is never committed, so `main`-lineage snapshots are rare-to-absent on `main`. Do not read either situation as universal — filter on the field, do not assume its distribution.
 
@@ -2485,9 +2570,39 @@ runs three guards:
 | `Contract surface (gate)` | `scripts/verify_contract_surface.py` | the bytes `grade.py --format json` and `analyze_codebase.py` actually emit still match the cross-repo contract this repo publishes |
 | `Sweep delivery surface (gate)` | `scripts/verify_sweep_delivery_surface.py` | an operator's triage dismiss survives the outbox sweep to origin instead of being quarantined away |
 
-The last two existed, were correct, and were referenced by no workflow until
-iterate-2026-07-27-checks-that-gate-nothing — they ran nowhere and gated
-nothing. Two rules follow from wiring them:
+All three are mirrored locally by `scripts/verify_local.py`, so a push does not
+have to learn about them from a red CI run:
+
+```bash
+uv run scripts/verify_local.py     # runs the three above, before you push
+```
+
+It drives each gate as a **subprocess**, with the command `ci.yml` uses verbatim
+— never by importing the checker. `check_ci_gate_coverage.py` mutates `sys.path`
+and does an eager `from lib.ci_gate_allowlist import …` at module scope, so
+importing it would bind `lib` for the whole interpreter and resolve differently
+under the plugin-vs-shared root split (ADR-045): green locally, red in CI. A
+lazy import only defers *which* `lib` binds; it does not make it safe.
+
+Two of `ci.yml`'s five guards are deliberately **not** mirrored, each recorded
+with its reason in `CI_ONLY_GATES`: `Repair-PR safety (gate)` materialises its
+checker from the PR's *base* revision precisely so a branch cannot vouch for
+itself, and `Diff coverage (gate)` belongs in the F0 suite runner that already
+produces coverage (tracked as `trg-392dc923`).
+`shared/tests/test_verify_local_ci_drift.py` pins both drift directions across
+every workflow and job — a bespoke guard that lands in neither registry fails
+there, and a local command that stops matching CI's fails per-gate.
+
+Two limits to keep in view. **A local pass is never a substitute for the host's
+re-check** (FR-01.17): CI runs a clean checkout on a pinned interpreter, which
+is a different question, and it vets the commit you *push* where this vets your
+*working tree* (it prints which, and warns when the tree is dirty). And
+**nothing invokes it for you** — no hook, no skill step, no workflow. Whether
+something should is `trg-486cb11c`.
+
+The two surface verifiers existed, were correct, and were referenced by no
+workflow until iterate-2026-07-27-checks-that-gate-nothing — they ran nowhere
+and gated nothing. Two rules follow from wiring them:
 
 - **Confirm a check passes locally before you make it block.** Wiring a red gate
   blocks every PR, starting with the one that wires it.
@@ -2616,7 +2731,8 @@ uv run "{shared_root}/scripts/tools/run_test_suite.py" \
 | **"pytest ran?"** | PROVEN by the JUnit report file, never guessed from output prose (`uv run` also exits 1 when it fails to build the env; pytest pluralises `error`→`errors`, so a fixture-level race would be misread). rc 1 + report = test failure; rc 1 + no report = infra fault. |
 | **Safety net** | A unit reporting a genuine pytest *test failure* is re-run **serially, without xdist, alone, after the pool drains, in a clean temp dir**; that verdict is authoritative. Red-in-parallel + green-alone → gate does NOT stop (no false STOP), but warns — it is a race **or** a flake, and the runner does not claim to know which. |
 | **The warning is recorded, not just printed** (iterate-2026-07-27-f0-race-triage) | The runner files the follow-up ITSELF via `shared/scripts/tools/suite_race_triage.py` — a console line saying "triage it" dies with the session. One entry per unit in the **tracked** `.shipwright/triage.jsonl` under `--project-root` (`source="f0-suite"`, `dedupKey="f0-race:<unit-id>"`, `severity=high`, `to_outbox=False` like the other phase-invoked emitters), so F6's existing `git add` ships it in the iterate PR. **Never auto-closed** — a race is intermittent, so one clean parallel run is not evidence it is gone; a card an operator already dismissed does not suppress a fresh one. The card carries the real re-run commands and states the cause is undetermined; it never carries captured test output (the log is committed and published). Only the test-failure→green-alone class is filed: a non-reproducing *infra* fault keeps its own note and is deliberately not tracked. Card text is composed in `suite_report.py`, which also renders the console block — one module, so the sentence and the card cannot drift. |
-| **Exit codes** | `0` green · `1` a unit is red · `2` the `suite` config is unusable · **`3` a race was observed and could NOT be recorded** — an otherwise-green run STOPs rather than passing with nothing written down. A run that is already red keeps `1` (it STOPs either way; `3` would misdescribe it). The append is the authority on whether the record exists; a read-back failure alone never reddens the gate. |
+| **Exit codes** | `0` green · `1` a unit is red · `2` the `suite` config is unusable · **`3` a race was observed and could NOT be recorded** — an otherwise-green run STOPs rather than passing with nothing written down · **`4` the diff-coverage gate did not pass** (below threshold, or the measurement failed). A run that is already red keeps `1` (it STOPs either way; `3`/`4` would misdescribe it), and an unrecorded race outranks `4` for the same reason — `suite_coverage.final_exit_code` owns that precedence. The append is the authority on whether the record exists; a read-back failure alone never reddens the gate. |
+| **Diff coverage** (iterate-2026-08-01-f0-diff-coverage-gate) | F0 now runs the gate CI runs, because `Diff coverage (gate)` existed ONLY in CI and could therefore only fail AFTER a push — 5 of 22 sampled CI failures, each one a PR left hanging plus a next-day re-entry. Each unit is measured into its OWN `.cov-data/.coverage.<label>` (`instrument_for_coverage`; ci.yml can `--cov-append` onto one file because it runs the shared dirs serially, F0 cannot because it runs them concurrently), `combine_coverage.py` folds them into one repo-relative `coverage.xml` — the SAME combiner ci.yml uses, so the plugin `scripts/…` → `plugins/<name>/scripts/…` remap has one owner — and `uvx diff-cover@<pin>` gates the merge-base diff (`--diff-range-notation` defaults to `...`). **One flag diverges from the action on purpose — `--diff-file=<run-owned patch>` — and it makes the line set coherent:** F0 runs BEFORE F6, so its final snapshot spans committed, staged, unstaged and untracked state. diff-cover's default union numbers those hunks against different file revisions; a private temporary index instead starts at the merge base and `git add -A`s the final working tree into one patch, including untracked and excluding ignored files without touching the real index or HEAD. CI needs no patch because its snapshot is already one commit. Disposable local files belong under the repository's ignored `/.scratch/` directory; every other untracked source intentionally participates. **The local gate can be stricter than CI** where a test skips locally (missing `bash`/`npm`/`docker`/`gh`, a platform guard) but runs in CI; the exit-4 message names that as a possible cause, and rc `1` is treated as below threshold only when diff-cover 10.3.0 also emits its pinned failure signature; a launcher rc `1` remains an infrastructure failure (coverage unknown, so "add tests" would be wrong). **`.github/` is untouched:** the gate already lives in `.github/actions/diff-coverage-gate/action.yml`, whose description puts coverage *production* on the caller, and the CI step stays as the backstop for the three things a local run cannot provide (clean checkout, pinned environment, a checker materialised from the PR's base). Drift guards in `test_f0_ci_parity.py`: the local pin, threshold, compare ref and command shape are asserted against that action's declared defaults, and ci.yml must keep running it. Fails CLOSED on everything except one case — `eligible == 0` (no unit had a measurable source root) is `n/a`; a measurement that was attempted and did not arrive is `4`, which is deliberately stricter than ci.yml's `if: hashFiles('coverage.xml') != ''` guard, since that cannot tell the two apart. The compare branch is the action's declared `origin/main`, refreshed with the same `git fetch --no-tags origin main` shape and verified locally before diff-cover starts; a stale ref or differing/dangling `origin/HEAD` cannot make F0 measure a line set CI will not. A failed fetch or unresolved `origin/main` is `4`, never a silent pass; a shallow checkout with no merge base names `git fetch --deepen=100 origin main` as remediation. Green fetches disable terminal prompts and time out after 120 s, while a red suite performs no fetch or diff build. Every gate-owned Git call uses `git -C <absolute-root>` and removes inherited `GIT_DIR`, `GIT_WORK_TREE`, `GIT_COMMON_DIR` and `GIT_INDEX_FILE`; `origin` must be the canonical remote CI uses. An OS-backed lock spans reset → suite → combine → gate so two F0 invocations cannot delete each other's repository-global state; its stable root rendezvous is outside resettable coverage state. Combine and diff-cover use a unique invocation-owned XML until the verdict is known, then atomically publish root `coverage.xml`; a fresh report from another producer is never trusted as this run's evidence. Before an authoritative retry, the failed attempt's base coverage file and exact pytest-cov/xdist suffix family are removed, so only accepted-attempt coverage is combined. Normalized path plus bytes/symlink target of tracked and untracked, non-ignored `.py`/`.pyi` sources and test/coverage/interpreter/dependency config files are SHA-256 fingerprinted before the suite, after suite/fetch/patch, and after diff-cover; a change exits `4`, so coverage and the final diff describe one snapshot. F0 executes the checkout's tests and normal Git filters and therefore belongs only in a trusted repository. All artefacts are gitignored (`.cov-data/`, `.coverage*`, `coverage.xml`), so F0 does not dirty the tree. The measured conservative cost is 6.7 min against a 1.9 min baseline; it was explicitly accepted after a warm diagnostic confirmed the existing 8-worker/C-tracer path is already the faster semantics-preserving option, traded against the 1.18 extra CI cycles per branch measured at a 29 % failure rate. |
 | **Faults** | An infra fault is retried ONCE with the **identical command shape** (xdist still on). A deterministic fault (rc 5 nothing-collected, usage error, unprovisionable xdist) reproduces and still FAILS — nothing is laundered. A transient one (uv-cache hardlink race under 18 concurrent processes) recovers. **The retry must never strip xdist.** A hang is capped by `suite.timeout_seconds` (default 1800) and becomes a fault. |
 | **CPU** | Outer pool + inner xdist workers share ONE budget (`cpu_count - 2`, or `suite.max_workers`). |
 | **Opt-in** | No `suite` block → the runner refuses with an actionable message and F0 keeps the project's own test command. Adopted projects are unaffected. |
@@ -2699,13 +2815,21 @@ Trivial iterates emit an auto `n/a` line and skip the hard gate.
   `recorded_by` naming an adapter other than `none`. `--status completed` with
   `--from` omitted produces a row with none of them (`trg-51a57370`). Measured
   before shipping: 45 of 45 real records already carry evidence.
-- **Stage 1 has its own row and the cascade's order is enforced.** `spec` lives
-  in the record's sibling `gates` object — NOT as a sixth `reviews` key, because
-  the webui consumer rejects an unknown key *and* a bumped `schema_version`, and
-  renders an invalid record as a data-integrity fault rather than degrading to
-  the markers. A `code` row recorded `completed` while `spec` is not `completed`
-  FAILS: Stage 2 cannot legitimately have run without its HARD-GATE
-  (`trg-64372769`). `external_code` is outside that rule by design.
+- **Stage 1 has its own row and the cascade's order is enforced.** `spec` is an
+  ordinary sixth `reviews` key. It lived in a sibling `gates` object while the
+  webui consumer rejected an unknown key *and* a bumped `schema_version`,
+  rendering an invalid record as a data-integrity fault rather than degrading to
+  the markers; that reader now treats the version as a floor and renders review
+  types it does not recognise (`shipwright-webui` `ce21323e`), so `spec` was
+  promoted. `schema_version` deliberately stays `1`. Records written before the
+  promotion keep `spec` under `gates` and are still read from there — they are
+  immutable, so the fallback is permanent, not a migration window. A `code` row
+  recorded `completed` while `spec` is not `completed` FAILS: Stage 2 cannot
+  legitimately have run without its HARD-GATE (`trg-64372769`). The ordering
+  check exempts only a record that carries no `spec` row in *either* section —
+  keying it on "no `gates` key", as it once did, would have silently stopped
+  firing for every record written after the promotion. `external_code` is
+  outside the rule by design.
 - **A missing F5c entry fails, it does not skip.** The complexity comes from
   that entry, so without it the gate cannot know what to enforce, and "I could
   not tell" must not be reported as "not applicable".

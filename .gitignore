@@ -48,6 +48,9 @@ desktop.ini
 # is the transient dir combine_coverage.py folds into coverage.xml. None tracked.
 .coverage*
 .cov-data/
+# Disposable local source experiments: F0 intentionally includes every other
+# untracked Python file in diff coverage, so scratch work has one explicit home.
+/.scratch/
 htmlcov/
 .pytest_cache/
 coverage/

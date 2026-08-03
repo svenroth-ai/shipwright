@@ -50,7 +50,7 @@ def main() -> int:
 
     # Inject repo path into sys.path so we can import lib.llm_review
     sys.path.insert(0, str(repo_root / "shared" / "scripts"))
-    from lib.llm_review import run_review, detect_provider
+    from lib.llm_review import DEFAULT_TIMEOUT_SECONDS, detect_provider, run_review
 
     provider = detect_provider()
     if provider == "none":
@@ -109,7 +109,7 @@ def main() -> int:
         context=context,
         system_prompt=system_prompt,
         user_prompt=user_prompt,
-        timeout=180,
+        timeout=DEFAULT_TIMEOUT_SECONDS,
     )
 
     # Write review output next to the plan for later reference.
@@ -125,7 +125,16 @@ def main() -> int:
         md_lines.append("")
         status = review.get("status", "unknown")
         md_lines.append(f"- Status: **{status}**")
-        if status == "success":
+        if review.get("reasoning_cap_dropped"):
+            md_lines.append(f"- Warning: {review['reasoning_cap_dropped']}")
+        # `degraded` renders its reason AND its body. classify_reply keeps the
+        # partial text on purpose so a human can read what did arrive, and
+        # before llm_review learned to classify truncation a cut-off reply
+        # reached here as `success` and was rendered — so dropping it now would
+        # lose output this file used to show.
+        if status in ("success", "degraded"):
+            if status == "degraded":
+                md_lines.append(f"- Reason: {review.get('reason', 'unknown')}")
             md_lines.append("")
             # lib.llm_review.run_review returns the body under `feedback`
             # (not `content`) for every successful provider branch.

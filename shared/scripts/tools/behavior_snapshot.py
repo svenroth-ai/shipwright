@@ -149,9 +149,17 @@ def _split_cmd(test_cmd: str) -> list[str]:
 
 
 def collect_test_ids(project_root: str | os.PathLike, base: list[str], targets: list[str]) -> list[str]:
-    """Collected pytest node ids (empty for a non-pytest runner)."""
+    """Collected pytest node ids (empty for a non-pytest runner).
+
+    ``--verbosity=-1`` is absolute and deliberate; a bare ``-q`` is NOT
+    equivalent. pytest SUMS verbosity and emits ``path::name`` only at exactly
+    -1, so a relative ``-q`` lands wherever ``addopts`` leaves it: under ``-v``
+    it cancelled to 0 and this returned ``[]``, disarming the coverage arms of
+    :func:`compute_verdict`. No fixed count of ``-q`` works either, and ``-o
+    addopts=`` would drop the project's own ``-m`` filters (see unit tests).
+    """
     proc = subprocess.run(
-        [*base, *targets, "--collect-only", "-q"],
+        [*base, *targets, "--collect-only", "--verbosity=-1"],
         cwd=str(project_root), capture_output=True, text=True,
     )
     return sorted(line.strip() for line in proc.stdout.splitlines() if "::" in line)

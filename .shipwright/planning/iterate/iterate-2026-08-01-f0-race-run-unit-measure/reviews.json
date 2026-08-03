@@ -1,0 +1,162 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-08-01-f0-race-run-unit-measure",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-01T09:54:59.392116+00:00",
+      "disposition": null,
+      "recorded_by": "iterate-step-7-self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-01T09:55:15.974267+00:00",
+      "disposition": "Phase Matrix: Mini-Plan is FEATURE-only at small and External LLM Review is medium+. This is a BUG-class measurement run at small complexity.",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "code": {
+      "review_type": "code",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-01T09:55:16.085404+00:00",
+      "disposition": "Phase Matrix: Full Code Review at small fires only if risk flags. diff_risk_recheck recomputed from the real diff: 1 file, 1 LOC, risk_flags=[], escalate.required=false. Diff is one appended JSON status line; no code changed. The doubt pass was run anyway on the DECISION and is recorded completed with 9 findings.",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 9,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "statistics",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: The rate change is significant at p=0.009, so the race is gone. — The p-value conditions on window A's point estimate as if it were the population parameter. Fisher's exact on 2/13 vs 0/28 gives p=0.095, above threshold. Rule of three on window B alone allows up to 10.7%/run, compatible with window A's observed 15.4%. Window B does NOT exclude the old rate. ACCEPTED: statistic withdrawn, reason now says SUGGESTIVE ONLY with the recomputed 3/27=11.1% bound.",
+          "suggestion": "Withdraw the p-value; state the rule-of-three bound and argue qualitatively.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "high",
+          "category": "correctness",
+          "file": "shared/scripts/triage.py",
+          "line": 167,
+          "finding": "Claim under doubt: Zero cards in window B means zero races in window B. — Dedup censoring is invisible and was unchecked. triage.py:167 _triage_path is worktree-relative with no main-root resolver, so the dedup scan at triage.py:527-539 sees main's log as of the branch FORK POINT. An open match returns None silently; suite_race_triage.py:156-164 records that under 'recorded', so run_test_suite.py:294 never returns rc 3. A censored run is indistinguishable from a clean one, and the f0-race:shared/tests control is a DIFFERENT dedup key so it does not cover this. ACCEPTED AND VERIFIED IN CODE. Measured impact: the trg-44f26dce dismissal reached main only at 841761cc (2026-07-28T18:45:17Z), not at the 12:05:44Z event time; restarting window B there costs exactly one run (28 to 27).",
+          "suggestion": "Find the commit carrying the dismissal to main; drop window-B runs forked before it.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "high",
+          "category": "environment",
+          "file": "shared/scripts/tools/suite_units.py",
+          "line": 30,
+          "finding": "Claim under doubt: The 3 green rounds are faithful to the configuration that produced the reds. — They ran on Python 3.11 (suite_units.PYTHON_VERSION, pinned by #519 merged 2026-08-01T07:34Z) while both post-fix reds and ~24 of the 28 window-B runs ran on 3.13/3.12 (F0.md:59-68). The rounds are faithful to the CURRENT gate, not to the configuration being explained. Does not rescue window B either way, since the pin postdates almost all of it. ACCEPTED: caveat now stated in the dismissal reason.",
+          "suggestion": "State that the rounds ran py3.11 while the historical observations ran 3.12/3.13.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "measurement",
+          "file": "shared/scripts/tools/run_test_suite.py",
+          "line": 264,
+          "finding": "Claim under doubt: '0 races' means shipwright-run behaved correctly under parallelism. — unrecorded_races() only counts RETRY_SERIAL, i.e. rc 1 WITH a junit report. INFRA-class faults (rc 1 without a report, rc 2/5, timeouts) are retried, recover, and are deliberately never tracked (F0.md:113-115); they are printed, never stored. So the claim is narrower than stated. ACCEPTED: verified from the round logs that there were ZERO retries of ANY kind in all three rounds, and the reason now makes that stronger claim instead.",
+          "suggestion": "Claim 'zero retries of any kind', which the logs actually support.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "methodology",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: Window A supplies 13 clean at-risk trials to compare against. — The denominator is not reproducible (16 finalized runs fall in the interval, not 13), and inside window A the dedup key was itself OCCUPIED for ~5.1 of 17.6 hours (trg-410ef2a6 06:19-10:07, trg-44f26dce 10:49-12:05), so roughly 8 window-A runs could not have produced an observable firing. Neither window supplies clean at-risk trials. Separately, the 50-entry retention does NOT bias A vs B (oldest-first by date; oldest retained entry predates the fix) but will age window A out. ACCEPTED: this is why the statistic is withdrawn rather than merely corrected, since per-worktree fork points are unrecoverable once branches are deleted.",
+          "suggestion": "Withdraw the comparison; record the run ids before retention ages window A out.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "measurement",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: 28 finalized runs is the count of suite executions in window B. — It counts runs that REACHED MAIN, not cards minted; abandoned runs never appear in agent_docs/iterates/, and a triage.jsonl hunk can be lost in a churn merge. Biases window B toward zero. ACCEPTED as a stated limit.",
+          "suggestion": "State it as a lower bound on executions, not a count of observations.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "methodology",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: The window boundary was chosen after seeing the data (p-hacking). — Refuted by the reviewer itself: window B's start is mechanically forced by the dedup rule (triage.py:537-539), not chosen. The reviewer instead notes the strongest evidence was MISSING: the operator's own 07-28 note on trg-44f26dce recorded the opposite prediction in writing ('the measurement will probably come back red; until then the card will return'), and window B falsified that recorded prior expectation. ACCEPTED: carried into the commit body.",
+          "suggestion": "Add the falsified pre-registered prediction to the record.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "power",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: 3 green rounds are meaningfully stronger than the 1 the card asked for. — Only marginally: ~6% power at the historically measured 2.1% self-contention rate, and the pre-fix baseline was 5/5 green in the same 18-unit shape. Three green rounds are worth strictly less than the five that preceded the bug being confirmed present. Demoting them was the correct judgement. AGREED, no change.",
+          "suggestion": "No change; the demotion was already correct.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "information-loss",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: Dismissing loses information the project needs. — Bounded. trg-1cc5043b genuinely covers the gap, is verified-at-code, and names a viable fix path, though it is SERIAL 3/3 behind trg-d66964fe and trg-392dc923 so at least three iterates out. triage.jsonl is append-only and git-tracked, so both post-fix reds survive permanently. The dismissal destroys nothing still recoverable. ACCEPTED: the decision now rests on undiagnosability plus reversibility rather than on proven absence.",
+          "suggestion": "Base the dismissal on undiagnosable-until-trg-1cc5043b, not on proven absence.",
+          "source": "doubt-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-08-01T09:54:48.663184+00:00",
+      "disposition": null,
+      "recorded_by": "shipwright-build:doubt-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-01T09:55:16.195519+00:00",
+      "disposition": "Phase Matrix: External LLM review is medium+ (auto); this run is small with no risk flags.",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    }
+  },
+  "gates": {
+    "spec": {
+      "review_type": "spec",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-01T09:55:15.861026+00:00",
+      "disposition": "Phase Matrix: Iterate Spec is skipped at small complexity, so there is no spec for a Stage-1 spec-compliance gate to review. Diff is a single appended status line in the tracked triage store.",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    }
+  }
+}

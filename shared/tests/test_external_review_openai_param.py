@@ -11,9 +11,12 @@ downstream, and its documented request field is ``max_tokens``.
 import sys
 from pathlib import Path
 
-_TOOLS_DIR = Path(__file__).resolve().parents[1] / "scripts" / "tools"
-if str(_TOOLS_DIR) not in sys.path:
-    sys.path.insert(0, str(_TOOLS_DIR))
+_SHARED = Path(__file__).resolve().parents[1]
+for _p in (_SHARED / "scripts" / "tools", _SHARED / "scripts" / "lib"):
+    if str(_p) not in sys.path:
+        sys.path.insert(0, str(_p))
+
+from external_review_degraded import MAX_OUTPUT_TOKENS  # noqa: E402
 
 
 class _FakeMessage:
@@ -69,4 +72,6 @@ def test_review_with_openai_uses_max_completion_tokens(monkeypatch):
     assert result["feedback"] == "REVIEW_OK"
     # The incompatible param must be gone; the correct one must be present.
     assert "max_tokens" not in captured
-    assert captured.get("max_completion_tokens") == 4096
+    # Budget itself is pinned by test_external_review_budget.py; this asserts
+    # the arm draws from the shared constant rather than a literal of its own.
+    assert captured.get("max_completion_tokens") == MAX_OUTPUT_TOKENS

@@ -1,0 +1,165 @@
+{
+  "run_id": "iterate-2026-08-01-cache-contract-single-source",
+  "date": "2026-08-02T16:56:21.319067Z",
+  "event_at": "2026-08-01T10:50:33.820595+00:00",
+  "type": "bug",
+  "complexity": "small",
+  "prior_source": "history",
+  "branch": "iterate/cache-contract-single-source",
+  "spec": ".shipwright/planning/iterate/iterate-2026-08-01-cache-contract-single-source/reviews.json",
+  "tests_passed": true,
+  "adr": "iterate-2026-08-01-cache-contract-single-source",
+  "test_completeness": {
+    "status": "complete",
+    "behaviors": [
+      {
+        "behavior": "The compared version dir is the one installed_plugins.json names, not the highest SemVer present",
+        "disposition": "tested",
+        "evidence": "test_plugin_cache_version_resolution::test_a_stale_higher_version_does_not_become_the_comparison_target PASSED; ::test_it_follows_the_installed_dir_even_when_another_one_would_pass PASSED"
+      },
+      {
+        "behavior": "The change is load-bearing: the pre-change resolver returns the OPPOSITE verdict on the identical fixture",
+        "disposition": "tested",
+        "evidence": "test_plugin_cache_version_resolution::test_the_old_resolver_fails_the_very_same_fixture PASSED"
+      },
+      {
+        "behavior": "A manifest-named dir that does not exist is not_in_cache, never a silent fallback to another version",
+        "disposition": "tested",
+        "evidence": "test_plugin_cache_version_resolution::test_a_named_but_absent_install_dir_is_not_in_cache PASSED"
+      },
+      {
+        "behavior": "With no manifest the highest cached version is used and version_basis says so",
+        "disposition": "tested",
+        "evidence": "test_plugin_cache_version_resolution::test_no_installed_plugins_file_falls_back_to_highest_version PASSED"
+      },
+      {
+        "behavior": "A malformed manifest degrades to the fallback instead of crashing the session",
+        "disposition": "tested",
+        "evidence": "test_plugin_cache_version_resolution::test_malformed_json_falls_back_instead_of_crashing PASSED"
+      },
+      {
+        "behavior": "A plugin absent from the manifest falls back",
+        "disposition": "tested",
+        "evidence": "test_plugin_cache_version_resolution::test_a_plugin_absent_from_the_manifest_falls_back PASSED"
+      },
+      {
+        "behavior": "A manifest entry carrying no installPath falls back",
+        "disposition": "tested",
+        "evidence": "test_plugin_cache_version_resolution::test_a_manifest_naming_no_install_path_falls_back PASSED"
+      },
+      {
+        "behavior": "Every plugin record carries version_basis, on every status",
+        "disposition": "tested",
+        "evidence": "test_plugin_cache_version_resolution::test_every_plugin_record_carries_a_version_basis PASSED"
+      },
+      {
+        "behavior": "A plugin entry that is an object (entries[0] raises KeyError) falls back rather than crashing",
+        "disposition": "tested",
+        "evidence": "test_plugin_cache_version_robustness::test_a_plugin_entry_that_is_an_object_falls_back PASSED"
+      },
+      {
+        "behavior": "A denied or unstatable candidate reads as unreadable, not absent",
+        "disposition": "tested",
+        "evidence": "test_plugin_cache_version_robustness::test_an_unstatable_candidate_is_unreadable_not_absent PASSED"
+      },
+      {
+        "behavior": "The absent/unreadable reason is probed on the CANDIDATE, not its parent",
+        "disposition": "tested",
+        "evidence": "test_plugin_cache_version_robustness::test_the_resolver_probes_the_candidate_and_not_its_parent PASSED; MUTATION-VERIFIED: call site changed to _probe_missing_dir(candidate.parent) is CAUGHT (missed by the direct-call test, which is why this one goes through resolve_version_dir)"
+      },
+      {
+        "behavior": "A denied stat does not escape check_sync's documented no-exception-leaks contract",
+        "disposition": "tested",
+        "evidence": "test_plugin_cache_version_robustness::test_a_denied_stat_does_not_escape_the_resolver PASSED; MUTATION-VERIFIED: reverting os.path.isdir -> Path.is_dir is CAUGHT"
+      },
+      {
+        "behavior": "An installPath outside the given cache root is named in the basis rather than measured silently",
+        "disposition": "tested",
+        "evidence": "test_plugin_cache_version_robustness::test_an_install_path_outside_this_cache_root_is_named PASSED"
+      },
+      {
+        "behavior": "A guessed version dir is named on the DRIFT line",
+        "disposition": "tested",
+        "evidence": "test_plugin_cache_version_robustness::test_the_drift_line_names_it PASSED"
+      },
+      {
+        "behavior": "A guessed version dir is named on the GREEN line (the false-green half)",
+        "disposition": "tested",
+        "evidence": "test_plugin_cache_version_robustness::test_the_green_line_names_it_too PASSED"
+      },
+      {
+        "behavior": "A real manifest lookup prints no note, so the signal is not on 100% of the time",
+        "disposition": "tested",
+        "evidence": "test_plugin_cache_version_robustness::test_a_real_lookup_stays_silent PASSED"
+      },
+      {
+        "behavior": "The manifest applies by default only to the cache root it describes",
+        "disposition": "tested",
+        "evidence": "test_plugin_cache_version_robustness::test_a_foreign_cache_root_gets_no_implied_manifest PASSED"
+      },
+      {
+        "behavior": "An explicit --installed-plugins always wins",
+        "disposition": "tested",
+        "evidence": "test_plugin_cache_version_robustness::test_an_explicit_manifest_always_wins PASSED"
+      },
+      {
+        "behavior": "One verdict rests on ONE reading of the manifest (read once, not once per plugin)",
+        "disposition": "tested",
+        "evidence": "test_plugin_cache_version_robustness::test_one_verdict_rests_on_one_reading_of_the_manifest PASSED"
+      },
+      {
+        "behavior": "Producer and checker read the same manifest path (derived from the Python side, not restated)",
+        "disposition": "tested",
+        "evidence": "test_plugin_cache_version_pin::test_the_sync_reads_the_manifest_this_module_reads PASSED"
+      },
+      {
+        "behavior": "Producer and checker read the same keys and the same entry index",
+        "disposition": "tested",
+        "evidence": "test_plugin_cache_version_pin::test_the_sync_reads_the_keys_this_module_reads PASSED"
+      },
+      {
+        "behavior": "The lookup key is <plugin>@<marketplace> on both sides, separator and name",
+        "disposition": "tested",
+        "evidence": "test_plugin_cache_version_pin::test_the_lookup_key_is_built_the_same_way PASSED"
+      },
+      {
+        "behavior": "The sync's copy target IS the pinned _install_path output, not merely a function that still exists",
+        "disposition": "tested",
+        "evidence": "test_plugin_cache_version_pin::test_the_copy_target_is_the_pinned_function_s_output PASSED"
+      },
+      {
+        "behavior": "The sync copies every plugin the check inspects (hardcoded array vs repo glob)",
+        "disposition": "tested",
+        "evidence": "test_plugin_cache_version_pin::test_the_sync_copies_every_plugin_the_check_inspects PASSED"
+      },
+      {
+        "behavior": "Both sides agree on the cache root, which is DERIVED from MARKETPLACE_NAME rather than restated",
+        "disposition": "tested",
+        "evidence": "test_plugin_cache_version_pin::test_both_sides_agree_on_where_the_cache_lives PASSED"
+      },
+      {
+        "behavior": "Existing check_sync callers that pass no manifest keep their prior behaviour (backward compatibility)",
+        "disposition": "tested",
+        "evidence": "30 pre-existing call sites across test_plugin_cache_sync{,_basis,_verdict,_shared_tree}.py \u2014 61 passed, 1 skipped (Windows symlink, pre-existing)"
+      }
+    ],
+    "counts": {
+      "total": 26,
+      "tested": 26,
+      "untestable": 0,
+      "untested": 0,
+      "untested_testable": 0
+    },
+    "ledger_path": ".shipwright/planning/iterate/iterate-2026-08-01-cache-contract-single-source/reviews.json"
+  },
+  "surface_verification": {
+    "surface": "cli",
+    "runner": "uv run --extra dev pytest shared/tests/test_plugin_cache_version_resolution.py shared/tests/test_plugin_cache_version_robustness.py shared/tests/test_plugin_cache_version_pin.py -q -p no:cacheprovider",
+    "exit_code": 0,
+    "tests_run": 26,
+    "evidence_path": "C:\\01_Development\\shipwright\\.worktrees\\cache-contract-single-source\\.shipwright\\runs\\iterate-2026-08-01-cache-contract-single-source\\surface_verification.log",
+    "timestamp": "2026-08-01T10:50:05.693Z",
+    "attempts": 1
+  },
+  "declared_removals": []
+}

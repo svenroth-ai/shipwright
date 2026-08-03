@@ -84,7 +84,7 @@ def test_campaign_status_md_conflict_blocks_touching_nothing(tmp_path: Path) -> 
 
 def _stub_derived(monkeypatch) -> None:
     from tools import finalize_iterate
-    monkeypatch.setattr(finalize_iterate, "_update_compliance", lambda pr: [])
+    monkeypatch.setattr(finalize_iterate, "_update_compliance", lambda pr, run_id=None: [])
     monkeypatch.setattr(finalize_iterate, "_update_dashboard", lambda *a, **k: None)
     monkeypatch.setattr(finalize_iterate, "_generate_handoff", lambda *a, **k: None)
     monkeypatch.setattr(finalize_iterate, "_snapshot_triage_runtime", lambda pr: "skipped")

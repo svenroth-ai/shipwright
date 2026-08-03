@@ -80,7 +80,7 @@ if TYPE_CHECKING:
     from scripts.lib.data_collector import ComplianceData
 
 
-def emit_grade_snapshot(data: ComplianceData) -> dict:
+def emit_grade_snapshot(data: ComplianceData, *, dirty: bool | None = None) -> dict:
     """Append a ``grade_snapshot`` event when the just-regenerated grade moved.
 
     The grade is RECOMPUTED here via ``compute_grade(build_grade_inputs(data))``
@@ -89,6 +89,11 @@ def emit_grade_snapshot(data: ComplianceData) -> dict:
     render consumed, so the two cannot diverge — this independent recompute IS
     the parity guarantee (pinned by a real-flow test). Do NOT refactor to cache
     or thread the report through the render path.
+
+    ``dirty`` is passed IN, never measured here: this runs after six generators
+    have rewritten tracked documents, so asking git now reads ``true`` on a pristine
+    tree (``trg-f5ae5371``). ``update_compliance`` captures it at its own entry,
+    before the first generator runs.
 
     Returns a small result dict (``appended`` count + grade/score + the resolved
     ``lineage``, or a skip ``reason``) for the ``update_compliance`` output
@@ -133,7 +138,7 @@ def emit_grade_snapshot(data: ComplianceData) -> dict:
     # snapshot. ``base`` — the merge-base the attribution resolves — answers
     # "which tree" without that defect (iterate-2026-07-28-grade-snapshot-lineage).
     apply_grade_snapshot(event, grade=report.grade, score=report.score,
-                         project_root=data.project_root)
+                         project_root=data.project_root, dirty=dirty)
 
     event_id, skipped = append_event_idempotent(
         data.project_root, event, deduplicate_grade_snapshot=True,
@@ -149,4 +154,5 @@ def emit_grade_snapshot(data: ComplianceData) -> dict:
         "grade": report.grade,
         "score": report.score,
         "lineage": event["lineage"],
+        "dirty": event.get("dirty"),
     }

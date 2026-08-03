@@ -293,7 +293,7 @@ def test_regenerate_invokes_canonical_producers_and_stages(tmp_path: Path, monke
 
     calls: list[str] = []
 
-    def fake_compliance(project_root: Path) -> list[str]:
+    def fake_compliance(project_root: Path, run_id=None) -> list[str]:
         calls.append("compliance")
         rels = []
         for name in ("dashboard", "sbom", "test-evidence", "traceability-matrix", "change-history"):

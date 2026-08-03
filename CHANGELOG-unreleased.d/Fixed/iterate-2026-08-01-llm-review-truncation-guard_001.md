@@ -1,0 +1,1 @@
+External LLM review no longer reports a truncated reply as a successful review. `lib/llm_review.py` now classifies every provider reply through the same `classify_reply` its sibling `external_review.py` already used, so a cut-off or empty answer is recorded `degraded` instead of `success` — closing a silent fail-open on shipwright-adopt's Layer-3 review gate.

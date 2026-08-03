@@ -9,6 +9,7 @@ Only regenerates reports affected by the completed phase.
 
 import argparse
 import json
+import os
 import sys
 from pathlib import Path
 
@@ -88,12 +89,59 @@ def _run_check_mode(project_root: Path) -> dict:
     }
 
 
+def _capture_source_dirty(project_root: Path, run_id: str | None) -> bool | None:
+    """Dirtiness of the tree BEFORE this process writes anything (``trg-f5ae5371``).
+
+    Must be called before the first generator runs: every generator rewrites a
+    TRACKED document, so a measurement taken later reads ``true`` on a pristine
+    tree — the withdrawn implementation this replaces.
+
+    ``capture_dirty`` is first-call-wins and bound to the run id AND the tree, so
+    when a parent producer already captured (``finalize_iterate`` appends to the
+    tracked event log before spawning us) this INHERITS that earlier answer instead
+    of measuring a tree the parent has already dirtied.
+
+    The ``sys.path`` front-insert is **scoped to the import** and undone in the
+    ``finally``, unlike the emitter's permanent one: this runs at ``main()`` entry,
+    before every generator imports, and ``shared/scripts`` at front-precedence can
+    shadow this plugin's own ``lib`` package (the reason
+    ``collectors/_lib_loader.py`` exists). Leaving it in place would widen that
+    hazard across the whole regen for no gain — the module is in ``sys.modules``
+    after the first import either way (Stage-3 doubt D4).
+    """
+    shared = str(Path(__file__).resolve().parents[4] / "shared" / "scripts")
+    inserted = shared not in sys.path
+    if inserted:
+        sys.path.insert(0, shared)
+    try:
+        from source_state_capture import capture_dirty  # noqa: PLC0415
+        return capture_dirty(project_root, run_id)
+    except Exception as exc:  # noqa: BLE001 — never block a compliance regen
+        # Loud, because this is the one degradation nobody can see downstream: an
+        # unknown `dirty` is OMITTED, and an absent field is indistinguishable from
+        # an event that predates it. A permanently broken import here would
+        # otherwise be invisible forever.
+        print(f"update_compliance: source-state capture failed: {exc}",
+              file=sys.stderr)
+        return None
+    finally:
+        if inserted:
+            try:
+                sys.path.remove(shared)
+            except ValueError:  # something else already removed it
+                pass
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="Incremental compliance update")
     parser.add_argument("--project-root", required=True, help="Project root directory")
     parser.add_argument("--phase", help="Completed phase name (write-mode)")
     parser.add_argument("--check", action="store_true",
                         help="Staleness-only diff; writes nothing. Implies --phase is optional.")
+    parser.add_argument("--run-id", default=None,
+                        help="Run this regen belongs to. Binds the source-state capture "
+                             "so a parent producer's pre-write measurement is inherited "
+                             "rather than re-taken. Falls back to SHIPWRIGHT_RUN_ID.")
     args = parser.parse_args()
 
     project_root = Path(args.project_root).resolve()
@@ -107,6 +155,13 @@ def main() -> int:
         parser.error("--phase is required unless --check is set")
 
     phase = args.phase
+
+    # BEFORE anything is written. An explicit --run-id beats the ambient env var:
+    # a caller that names the run knows better than a variable that may have been
+    # exported by an unrelated, longer-lived shell.
+    run_id = (args.run_id if args.run_id is not None
+              else os.environ.get("SHIPWRIGHT_RUN_ID") or None)
+    source_dirty = _capture_source_dirty(project_root, run_id)
 
     reports_to_update = PHASE_REPORTS.get(phase, ["dashboard"])
 
@@ -185,7 +240,8 @@ def main() -> int:
             # never aborts the compliance regen.
             elif report_name == "dashboard":
                 try:
-                    grade_snapshot_result = emit_grade_snapshot(data)
+                    grade_snapshot_result = emit_grade_snapshot(
+                        data, dirty=source_dirty)
                 except Exception as exc:  # noqa: BLE001
                     grade_snapshot_result = {"appended": 0, "error": str(exc)}
 

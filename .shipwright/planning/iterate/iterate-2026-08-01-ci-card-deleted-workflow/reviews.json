@@ -1,0 +1,126 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-08-01-ci-card-deleted-workflow",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-01T10:13:02.262132+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": "unstructured",
+      "raw_excerpt": "# Self-Review — iterate-2026-08-01-ci-card-deleted-workflow\n\n8-point checklist, run after implementation and before commit.\n\n**1. Spec Compliance — PASS.** AC1–AC11 are each implemented and pinned by a\nnamed test; the Stage-1 spec-reviewer independently walked all eleven against\ncode and tests and marked every one met. YAGNI holds: `ci_action_unit`'s\npayload/severity/dedup key, `main_health.py`, `gh-pr-ci` and the triage schema\nare all untouched, as the spec's Out-of-Scope section requires.\n\n**2. Error Handling — PASS.** Every boundary is guarded and every guard fails\nOPEN. Client: non-integer `workflow_id` returns before the endpoint is built;\n`_gh_api` non-dict (network fault, non-zero exit, 404, unparseable JSON) → None;\nempty or non-string `state` → None. Reducer: missing/non-int `workflow_id` →\nkeep without calling the fetcher; a fetcher that raises is caught per run and\nthe run is kept. `None` is never conflated with `\"deleted\"` anywhere.\n\n**3. Security Basics — PASS.** No secrets, no SQL, no HTML, no user input.\n`workflow_id` is validated as a true integer (bool rejected — it is an int\nsubclass) before endpoint construction, and `_gh_api` invokes `gh` with an argv\nlist and no shell, so the id cannot become a path or shell fragment. A test\nasserts no request is built for `\"12; rm -rf /\"`. Triage `title`/`detail` are\nunchanged, so the existing sanitisation and length caps still apply.\n\n**4. Test Quality — PASS.** Assertions are on outcomes — which runs survive the\nreduce, which dedup keys reach the store, what status AND reason a card ends\nat — not on internals. Each behavior has both a happy and an error path. No\nalways-pass tests: all 27 were watched failing first, and for the right reasons\n(`TypeError: unexpected keyword argument 'workflow_state_fetcher'` and\n`AttributeError: module has no attribute 'fetch_workflow_state'`), before any\nimplementation existed.\n\n**5. Performance Basics — PASS.** The state lookup runs after the reduction, so\nit costs at most one API call per workflow whose latest run failed, and zero on\na healthy repo — cheaper than the workflow-list alternative, which cost one call\non every import. `test_state_is_fetched_only_for_latest_failed_workflows` pins\nthis against green, superseded and in-progress runs, so an N+1 over the raw\n100-run page cannot regress in silently.\n\n**6. Naming & Structure — PASS, with one deliberate overshoot recorded.**\nNaming mirrors the existing siblings (`github_pr_api` → `github_workflow_api`;\n`pr_state_fetcher` → `workflow_state_fetcher`). Sizes: new client 63,\nmappers 271, unit tests 296, e2e tests 193, conftest back to exactly its 320\nbaseline. `github_api.py` is untouched at 321, so nothing ratchets — the repo's\npre-commit anti-ratchet hook passes (exit 0). The one overshoot is\n`consumer.py` at **303** against a 300 guideline; it was at exactly 300 before,\nand the change adds one import plus one call line. It is a new crossing, not a\nratchet, so it does not block; flagged in the run summary rather than paid for\nby golfing unrelated code.\n\n**7. Affected Boundaries — n/a, justified.** The only new boundary is\nin-process: a `str | None` returned by an injected callable. Nothing is\nserialized, written to disk, parsed from a file, or crossed between processes,\nso no producer→file→consumer round-trip is owed. `touches_io_boundary` did not\nfire, and that is verified rather than assumed — all four detectors in\n`risk_detectors.py` match on file paths, and this diff matches none of their\npatterns.\n\n**8. Test Hygiene Probe — PASS.** `scan_test_hygiene.py --diff` → \"no findings\".\nNo skips, no `.only`, no conditional-skip patterns introduced.\n\n## Things I changed because a reviewer was right\n\n- The **first design was wrong** and the external plan review caught it: it\n  inferred deletion from absence in the `actions/workflows` listing, on a\n  premise (that every `disabled_*` workflow appears there) that my own probe had\n  not established. Its failure direction was the d […truncated]"
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 5,
+      "findings": [
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "GitHub API string fields (like `state`) can occasionally drift in casing (e.g., `\"Deleted\"` instead of `\"deleted\"`). If the string is checked strictly against a lowercase policy constant (`_GONE_WORKFLOW_STATES = {\"deleted\"}`), a casing shift would trigger a fail-open, keeping the unactionable card.",
+          "suggestion": "Normalize the extracted state string with `.lower()` and `.strip()` either inside `fetch_workflow_state` before returning, or in the mapper predicate before checking membership in `_GONE_WORKFLOW_STATES`.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "AC11 enforces strict integer validation for the `workflow_id`. While GitHub's `actions/runs` JSON specification defines `workflow_id` as an integer, intermediate standard library JSON parsers or future API versions can sometimes stringify numerics (e.g. `\"322548704\"`). Strict `type(workflow_id) is int` might unnecessarily trip the fail-open mechanism.",
+          "suggestion": "Broaden the validation to accept both integers and stringified integers (e.g., `isinstance(wid, int) or (isinstance(wid, str) and wid.isdigit())`) before casting it to a string to build the endpoint URL.  Overall Assessment: This is an exceptionally rigorous and well-reasoned plan that correctly identifies the data edge, accurately categorizes the failure modes, and establishes a robust fail-open mechanism to prevent catastrophic over-filtering. The findings above are minor defensive refinements to an already sound approach.  SHIPWRIGHT_VERDICT: approve",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The input-validation requirement says `workflow_id` must be an integer, but in Python `bool` is a subclass of `int`. An implementation using `isinstance(workflow_id, int)` would accept `True` and construct a nonsensical workflow endpoint. Negative or zero IDs are also not meaningful workflow identifiers. This is not an injection path because `_gh_api` uses argv rather than a shell, but it weakens the stated validation contract.",
+          "suggestion": "Use a strict, positive-ID guard such as `type(workflow_id) is int and workflow_id > 0` before constructing the endpoint. Add `True`, `False`, `0`, and `-1` to the invalid-ID parameterized test.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The fail-open policy is well specified and the implementation should naturally preserve unknown non-`\"deleted\"` states if it uses exact equality. However, the ledger explicitly tests known active and disabled states, but does not identify a test for an unexpected valid non-empty state such as `\"archived\"` or a future GitHub lifecycle value. A future refactor from exact matching to an allowlist could silently turn this into over-filtering.",
+          "suggestion": "Add one mapper-level test asserting that an unexpected non-empty state is kept. Keep the predicate narrowly equivalent to `state == \"deleted\"` and avoid converting it into a “known good states” allowlist.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "The per-ID approach is the correct correctness tradeoff, but a broad CI outage can still produce up to the fetched run-window’s number of distinct failed workflows, resulting in many sequential `gh api` calls. This does not make the approach unsound—failure remains per-workflow and fail-open—but it could extend import duration or consume API quota in an unusual large-repository incident.",
+          "suggestion": "Confirm that the existing `_gh_api` path has bounded subprocess/network behavior and preserve the current one-lookup-per-reduced-workflow property. No list-based fallback or persistent cache is warranted; those would reintroduce the correctness risks the proposal correctly avoids.  Overall, the approach is sound: it obtains authoritative lifecycle state from the correct endpoint, filters only the proven unfixable state, preserves backward compatibility, and correctly keeps resolution gated by a successful runs fetch. The remaining items are narrow hardening and regression-proofing refinements rather than blockers. SHIPWRIGHT_VERDICT: approve",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-08-01T09:35:00.291920+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[gemini] Here is the review of your implementation approach:\n\n- **Category:** edge-case\n  **Severity:** low\n  **Finding:** GitHub API string fields (like `state`) can occasionally drift in casing (e.g., `\"Deleted\"` instead of `\"deleted\"`). If the string is checked strictly against a lowercase policy constant (`_GONE_WORKFLOW_STATES = {\"deleted\"}`), a casing shift would trigger a fail-open, keeping the unactionable card. \n  **Suggestion:** Normalize the extracted state string with `.lower()` and `.strip()` either inside `fetch_workflow_state` before returning, or in the mapper predicate before checking membership in `_GONE_WORKFLOW_STATES`.\n\n- **Category:** edge-case\n  **Severity:** low\n  **Finding:** AC11 enforces strict integer validation for the `workflow_id`. While GitHub's `actions/runs` JSON specification defines `workflow_id` as an integer, intermediate standard library JSON parsers or future API versions can sometimes stringify numerics (e.g. `\"322548704\"`). Strict `type(workflow_id) is int` might unnecessarily trip the fail-open mechanism.\n  **Suggestion:** Broaden the validation to accept both integers and stringified integers (e.g., `isinstance(wid, int) or (isinstance(wid, str) and wid.isdigit())`) before casting it to a string to build the endpoint URL.\n\nOverall Assessment: \nThis is an exceptionally rigorous and well-reasoned plan that correctly identifies the data edge, accurately categorizes the failure modes, and establishes a robust fail-open mechanism to prevent catastrophic over-filtering. The findings above are minor defensive refinements to an already sound approach.\n\nSHIPWRIGHT_VERDICT: approve\n\n[openai] 1. **Category:** edge-case  \n   **Severity:** low  \n   **Finding:** The input-validation requirement says `workflow_id` must be an integer, but in Python `bool` is a subclass of `int`. An implementation using `isinstance(workflow_id, int)` would accept `True` and construct a nonsensical workflow endpoint. Negative or zero IDs are also not meaningful workflow identifiers. This is not an injection path because `_gh_api` uses argv rather than a shell, but it weakens the stated validation contract.  \n   **Suggestion:** Use a strict, positive-ID guard such as `type(workflow_id) is int and workflow_id > 0` before constructing the endpoint. Add `True`, `False`, `0`, and `-1` to the invalid-ID parameterized test.\n\n2. **Category:** edge-case  \n   **Severity:** low  \n   **Finding:** The fail-open policy is well specified and the implementation should naturally preserve unknown non-`\"deleted\"` states if it uses exact equality. However, the ledger explicitly tests known active and disabled states, but does not identify a test for an unexpected valid non-empty state such as `\"archived\"` or a future GitHub lifecycle value. A future refactor from exact matching to an allowlist could silently turn this into over-filtering.  \n   **Suggestion:** Add one mapper-level test asserting that an unexpected non-empty state is kept. Keep the predicate narrowly equivalent to `state == \"deleted\"` and avoid converting it into a “known good states” allowlist.\n\n3. **Category:** risk  \n   **Severity:** low  \n   **Finding:** The per-ID approach is the correct correctness tradeoff, but a broad CI outage can still produce up to the fetched run-window’s number of distinct failed workflows, resulting in many sequential `gh api` calls. This does not make the approach unsound—failure remains per-workflow and fail-open—but it could extend import duration or consume API quota in an unusual large-repository incident.  \n   **Suggestion:** Confirm that the existing `_gh_api` path has bounded subpr […truncated]"
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-01T10:44:00.949769+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-01T10:44:01.312380+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": "openrouter",
+      "completed_at": "2026-08-01T10:48:26.094839+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "unstructured",
+      "raw_excerpt": "[gemini] ...\n    try:\n        import github_pr_api  # noqa: PLC0415\n        monkeypatch.setattr(github_pr_api, \"fetch_open_prs\", lambda: None)\n        monkeypatch.setattr(github_pr_api, \"fetch_pr_check_runs\", lambda head_sha: None)\n        monkeypatch.setattr(github_pr_api, \"fetch_pr_state\", lambda pr_number: None)\n    except ImportError:\n        pass\n    try:\n        import github_workflow_api  # noqa: PLC0415\n        monkeypatch.setattr(github_workflow_api, \"fetch_workflow_state\", lambda workflow_id\n\n[openai] No concrete defects found. The implementation carries workflow lifecycle state through the new per-ID API client, filters only positively identified deleted workflows after reduction, preserves fail-open behavior per workflow, maintains the existing runs-fetch resolution gate, and keeps the public reducer call compatible.\n\nThe added tests exercise deleted, active, disabled, unknown, raising, malformed-ID, capped-lookup, end-to-end filing, and resolution behavior. Ship as-is.\n\nSHIPWRIGHT_VERDICT: approve"
+    }
+  },
+  "gates": {
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-01T10:12:54.421243+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    }
+  }
+}

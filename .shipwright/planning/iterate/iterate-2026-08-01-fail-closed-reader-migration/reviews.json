@@ -1,0 +1,199 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-08-01-fail-closed-reader-migration",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-01T09:40:51.601618+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-01T10:21:49.490336+00:00",
+      "disposition": "complexity is small: external plan/iterate review is not run by default below medium per iteration-planning.md, and --review was not passed; the mandatory self-review plus the full internal cascade carried this run",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 6,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "test",
+          "file": "shared/tests/test_iterate_entry_encoding.py",
+          "line": 145,
+          "finding": "The end-to-end test never asserts the exit code, so the fail-CLOSED direction is unpinned; a later lenient re-decode fallback would print a green report and keep the test green. It also inherits the pytest cwd rather than the fixture dir.",
+          "suggestion": "ACCEPTED AND FIXED. Added `assert proc.returncode == 1` with a comment naming why (check_iterate_history_has_run_id runs first, cannot find the run, so errors>0 and main exits 1), and passed cwd=tmp_path so no check resolves a main repo root from the real repository.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "test",
+          "file": "shared/tests/test_check_ci_supplychain_infra.py",
+          "line": 55,
+          "finding": "test_a_git_fault_inside_a_repo_errors_at_every_complexity sweeps four complexities but seeds nothing, so the four runs are byte-identical and the docstring's guarantee ('these four cases are what diverge and fail') is FALSE: a reintroduced complexity read would see the same absent value four times. The sibling it was modelled on seeds per parameter.",
+          "suggestion": "ACCEPTED AND FIXED. Added the _seed_entry helper mirroring test_check_integration_coverage_infra.py, seeded per parameter, added the json import it needs, and rewrote the docstring to claim only what the test proves.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "test",
+          "file": "shared/tests/test_check_ci_supplychain_infra.py",
+          "line": 208,
+          "finding": "test_a_real_work_tree_still_reaches_enforcement asserts ok is False plus the absence of the git phrase, so it would also pass on 'cannot obtain the diff' - a different refusal and a plausible fixture regression.",
+          "suggestion": "ACCEPTED AND FIXED. Now asserts the ack-specific phrase 'no acknowledgement was', distinguishing reaching enforcement from refusing earlier for another reason.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "docs",
+          "file": "shared/scripts/tools/verifiers/ci_supplychain.py",
+          "line": 186,
+          "finding": "The one fail-OPEN direction of the change - the probe swap widens the green SKIP to bare repos and .git directories, where the old probe proceeded - is recorded only in a test docstring; the justifying source comment was dropped in the trim to exactly 300 lines. The acceptance is sound but a reader of the gate cannot discover it.",
+          "suggestion": "ACCEPTED AND FIXED as suggested: added to git_helpers.git_context's docstring, where it serves all three callers, rather than growing ci_supplychain (at the 300 cliff). git_helpers hit 301 doing so and was re-trimmed to exactly 300, so the fix introduced no new crossing either.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "docs",
+          "file": "shared/scripts/lib/iterate_entry.py",
+          "line": 289,
+          "finding": "The rewritten _read_iterates_dir docstring re-asserts a signal that does not exist: 'the CLI wrapper exposes a corrupt-count signal'. quarantined_count counts invalid LEGACY ROWS during migration, not files this reader skipped; the only real signal is the _logger.warning. The same sentence also implies oversized files are announced, which they are not.",
+          "suggestion": "ACCEPTED AND FIXED. The sentence now names the _logger.warning as the signal and states that oversized files are dropped silently by _is_entry_file.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "design",
+          "file": "shared/tests/test_check_ci_supplychain_infra.py",
+          "line": 152,
+          "finding": "test_a_localized_failure_INSIDE_a_repo_is_a_git_error patches by raw attribute assignment plus try/finally while the file's own module docstring mandates module-object monkeypatching and every other test uses monkeypatch.setattr; a removed finally would leak a patched global.",
+          "suggestion": "ACCEPTED AND FIXED. Converted to monkeypatch.setattr, consistent with the rest of the file.",
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-08-01T10:00:56.233093+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 7,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "bug",
+          "file": "shared/tests/test_iterate_entry_encoding.py",
+          "line": null,
+          "finding": "Claim 'every gate refuses without the entry' is FALSE. spec_checks._read_iterate_entry and iterate_compliance._latest_iterate_entry end with 'return entries[-1]', so a run whose entry is unreadable is handed the most recent OTHER run, and S9/S10/W2 then branch on inherited category/complexity.",
+          "suggestion": "ACCEPTED, REPRODUCED, PARTLY REBUTTED. Reproduced end to end: asked for a feature/medium run, got back another run's change/small entry. But measured BOTH corruption classes and the substitution is PRE-EXISTING - a malformed-JSON entry already did this before the change, because the reader has always skipped that class. This change routes one more class into the same fallback (previously it crashed F11, losing all 20 checks, which is strictly worse). Actions: (1) the false invariant is struck from the test module docstring and replaced with a precise statement of what skipping does and does not buy; (2) test_a_corrupt_entry_substitutes_the_previous_run_in_tail_fallback_readers now pins the behaviour, driving BOTH classes, asserting the fail-OPEN direction on purpose so closing the hole fails the test and forces the prose to be revisited; (3) filed as trg-e0a0f569 against the MAIN root and verified via read_all_items.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "docs",
+          "file": "shared/scripts/tools/verifiers/integration_coverage.py",
+          "line": null,
+          "finding": "'The family no longer holds contradictory decisions' is untrue: git_helpers._git_available is still the binary rc==0 probe at five live call sites, one of them check_spec_impact_recorded, an F11 ERROR gate that green-SKIPs on an infra fault.",
+          "suggestion": "ACCEPTED AND FIXED. Verified the five call sites and the F11 gate. Both docstrings (integration_coverage and ci_supplychain) now scope the claim explicitly to the three git_context consumers and name _git_available as still carrying the conflation. Filed as trg-4183acd3 and cited by id in both files.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "test",
+          "file": "shared/tests/test_check_ci_supplychain_ack.py",
+          "line": null,
+          "finding": "The strengthened assertion is right but its stated justification is false: a git fault returns ok=False, so 'ok is True' would already have caught it. The real value of is_skipped is distinguishing the SKIP from a genuine PASS.",
+          "suggestion": "ACCEPTED AND FIXED. Docstring rewritten to name the correct pair - ok is True also holds for 'no CI supply-chain file touched', so a fixture that stopped being a non-repo would have kept the test green while testing nothing.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "test",
+          "file": "shared/tests/test_iterate_entry_encoding.py",
+          "line": null,
+          "finding": "returncode == 1 is overdetermined in that fixture (a bare repo with no events log, no test results, no ack makes a dozen checks ERROR regardless of decoding), so the comment claiming it as the differential fail-closed half overclaims.",
+          "suggestion": "ACCEPTED AND FIXED. The comment now says explicitly that this is smoke only and overdetermined, and names the three assertions above it as the ones that pin the fix.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "docs",
+          "file": "shared/scripts/tools/verifiers/git_helpers.py",
+          "line": null,
+          "finding": "The disclosure names bare repos and .git dirs but the code's actual rule is the OPEN set 'rc == 0 and stdout != true'; other members exist (GIT_WORK_TREE pointing elsewhere, a git shim exiting 0 without stdout). An enumeration that reads as exhaustive is the defect for a change whose discipline is that every widening is disclosed.",
+          "suggestion": "ACCEPTED AND FIXED. git_context's docstring now states the RULE first and the members as examples of an open set, explicitly warning not to read it as closed.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "docs",
+          "file": "shared/scripts/lib/iterate_entry.py",
+          "line": null,
+          "finding": "The legacy arm's cross-reference points at a docstring saying 'the loss is announced', but the legacy arm has NO warning - an undecodable run config drops the whole legacy array silently. Also append_iterate_entry._load_config still catches only JSONDecodeError, so the posture is 2-of-3, not uniform.",
+          "suggestion": "ACCEPTED AND FIXED for the misleading half: the legacy docstring now states plainly that this arm is SILENT. _load_config left unmigrated by decision - it raises a wrapped IterateAppendError by design and is on the F5c WRITE path, not the F11 read path, so it is a different posture rather than the same defect.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "docs",
+          "file": "shared/tests/test_check_ci_supplychain_infra.py",
+          "line": null,
+          "finding": "The bare-repo docstring says the old probe 'proceeded and then failed on the unobtainable diff', but with this test's arguments it refused earlier, on the unresolvable unborn HEAD.",
+          "suggestion": "ACCEPTED AND FIXED. Corrected to name the unborn HEAD, and pointed at git_context for the general rule.",
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-08-01T10:20:30.073870+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": "openrouter",
+      "completed_at": "2026-08-01T10:21:49.328998+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "unstructured",
+      "raw_excerpt": "[gemini] .py`.\n```python\n    try:\n        data = json.loads(path.read_text(encoding=\"utf-8\"))\n    except (json.JSONDecodeError, OSError, UnicodeDecodeError) as exc:\n        _logger.warning(\"skip corrupt entry file %s: %s\", path.name, exc)\n        continue\n```\nIn Python 3, `path.read_text(encoding=\"utf-8\")` raises `UnicodeDecodeError` if the file contains invalid UTF-8 bytes. But `json.JSONDecodeError` might also be raised if the JSON is malformed. The only issue is that `path.read_text()` doesn't raise `json.JSONDecodeError`, `json.loads()` does.\n\n\n[openai] No concrete defects found. The change implements both required migrations: `ci_supplychain` now uses the tri-state `git_context()` and fails closed for every state other than an explicit work tree, while both iterate-entry UTF-8 reads now treat `UnicodeDecodeError` as corrupt-file input and preserve the existing skip/warning behavior.\n\nThe added tests exercise the relevant failure classifications, non-UTF-8 reader behavior, readable-neighbor behavior, logging, legacy configuration input, and an F11 subprocess path that would have crashed before. No security or compatibility regression is evident from the diff.\n\nOverall assessment: ship-as-is.\n\nSHIPWRIGHT_VERDICT: approve"
+    }
+  },
+  "gates": {
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-01T09:44:50.170242+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    }
+  }
+}
