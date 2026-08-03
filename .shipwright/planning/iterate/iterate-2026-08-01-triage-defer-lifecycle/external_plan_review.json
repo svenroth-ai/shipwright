@@ -1,0 +1,33 @@
+{
+  "success": true,
+  "provider": "openrouter",
+  "degraded": false,
+  "reviews_succeeded": 1,
+  "reviews": {
+    "openai": {
+      "feedback": "1. **Category:** edge-case  \n   **Severity:** medium  \n   **Finding:** The ordering definition is still not fully executable despite AC-22 calling it total. \u201cThen by severity\u201d does not state the direction or define behavior for unknown/malformed severity values. If severity is an enum with a non-lexical priority order, independently implemented renderers could produce different parked subsets at the cap boundary.  \n   **Suggestion:** Define and centralize an explicit severity rank and direction (for example, critical \u2192 high \u2192 medium \u2192 low, with unknown last), and have the shared sort-key helper handle absent/invalid severity deterministically before the final ID tie-breaker.\n\n2. **Category:** risk  \n   **Severity:** medium  \n   **Finding:** `list --json` changes from a top-level array to an object envelope. The plan documents the Command Center fixture and says repository searches found no executable local consumers, but this remains a hard break for shell scripts, CI jobs, external integrations, and unpublished consumers that invoke the CLI directly. A `contractVersion` inside an incompatible top-level shape does not let an old consumer detect the version before it has already failed array parsing.  \n   **Suggestion:** Ensure the release/PR notes prominently call out the breaking CLI contract and include a concrete before/after migration example. If the CLI has a documented stability policy or external distribution channel, consider an explicit compatibility mode such as `--json-version 1` for one deprecation window; otherwise, explicitly record that the accepted operator decision is an immediate breaking change.\n\n3. **Category:** approach  \n   **Severity:** low  \n   **Finding:** The proposed `triage_defer.py` module is reasonable, but its listed contents mix four separate concerns: date parsing/expiry, dedup policy, auto-resolver policy, and display cap configuration. This is not currently needless abstraction, but it risks becoming a generic \u201cdefer miscellany\u201d module whose dependencies grow with each policy addition.  \n   **Suggestion:** Keep the module narrowly documented as the canonical deferred-lifecycle policy module, and avoid making it a dumping ground. In particular, keep rendering-specific formatting/escaping in the renderer and have the module expose only lifecycle values and pure ordering/date helpers. The shared cap constant is justified because two renderers must agree.\n\n4. **Category:** edge-case  \n   **Severity:** medium  \n   **Finding:** The plan says \u201cnow\u201d is read once at the store boundary, but it should explicitly guarantee that the same UTC instant is used for every part of a union read: tracked JSONL, outbox JSONL, status resolution, dedup checks, and any returned `revisitDue` fields. Otherwise an item at the UTC-day boundary could resolve differently within one `read_all_items`/append operation depending on which source or phase reads it.  \n   **Suggestion:** Make `read_all_items(now_utc: datetime | None = None)` capture/default `now_utc` exactly once and pass it unchanged through both union-source resolution and revisit helpers. For append/idempotency operations, capture the instant inside the lock and use that same value for the read, suppression decision, and expected-status evaluation. Add a midnight-boundary test covering tracked/outbox split entries.\n\n5. **Category:** dependency  \n   **Severity:** medium  \n   **Finding:** Build order step 10 still says \u201cTriage card for the Command Center consumer\u201d even though step 0 says the card is already filed and the preceding review narrative says the duplicate step was removed. This is contradictory execution guidance and can produce a duplicate card or obscure which card must be linked in the PR.  \n   **Suggestion:** Remove build step 10 and replace it with a verification/docs step that confirms `trg-731cd03c` is linked from the PR, implementation notes, and any contract-change test/documentation.\n\n6. **Category:** security  \n   **Severity:** low  \n   **Finding:** AC-20 and AC-25 appropriately cover hostile stored values on human renderers, but the implementation should ensure the new JSON path uses a real JSON serializer for every field and never constructs JSON via interpolation. Raw `revisitAt` is intentionally exposed to machine consumers, including potentially hostile hand-edited content.  \n   **Suggestion:** Keep JSON generation exclusively through `json.dumps`/the existing structured serializer, add a JSON test containing quotes, control characters, and newline payloads in `revisitAt` and `reason`, and verify the output parses while the human views render only canonical dates/placeholders and escaped text.\n\nOverall, the core approach is sound: deriving expiry in the resolved read model, preserving the append-only decision log, and centralizing auto-close eligibility correctly address the lifecycle requirements. The remaining changes are implementation-precision and contract-management refinements rather than reasons to change the design.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "openrouter",
+      "status": "success"
+    },
+    "gemini": {
+      "feedback": "This is a highly mature, well-defended implementation plan. The decision to make expiry pure/derived via `read_all_items` (Decision 1) instead of using a sweep is exactly the right architectural choice, and the careful auditing of auto-resolvers (Decision 4) shows a deep understanding of the domain. \n\nHowever, there is one UX/visibility edge case regarding how expired items behave once they cross back over to the open list, which risks defeating the purpose of the feature.\n\nHere are the findings:\n\n- **Category:** edge-case\n- **Severity:** medium\n- **Finding:** Expired parks returning to the \"open\" list may become invisible if the open list is capped. While AC-22 carefully defines a total order for the",
+      "via": "openrouter",
+      "status": "degraded",
+      "reason": "provider reported the reply was cut off (finish_reason=length)"
+    }
+  },
+  "verdicts": {
+    "openai": "revise",
+    "gemini": "unavailable"
+  },
+  "statuses": {
+    "openai": "success",
+    "gemini": "degraded"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": false,
+    "requires_resolution": true,
+    "reason": "only one reviewer answered \u2014 gemini did not (gemini=unavailable, openai=revise)"
+  }
+}

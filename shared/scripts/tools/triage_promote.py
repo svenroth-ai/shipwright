@@ -1,16 +1,22 @@
 #!/usr/bin/env python3
-"""The three triage decisions as library helpers, plus a promote-only CLI.
+"""The four triage decisions as library helpers, plus a promote-only CLI.
 
-``promote`` / ``dismiss`` / ``defer`` wrap `triage.mark_status` with this
-repo's CLI validation: the item must exist and still be undecided (`triage`);
-moving out of a decided state is not offered here (use ``mark_status``).
+``promote`` / ``dismiss`` / ``defer`` / ``unpark`` wrap `triage.mark_status`
+with this repo's CLI validation. Each names the EFFECTIVE statuses it may
+start from — promote and dismiss from open only, defer from open or already
+parked (re-parking replaces the date), unpark from parked only — and the
+store re-checks that same set under its lock. Effective, not stored: a park
+whose revisit date has passed reads open and behaves like any open entry.
 Operator strings are sanitized — no control chars, task-ref ≤200, reason ≤500.
 
 **Reference semantics the Command Center's Triage tab mirrors — NOT a code
 path it shares**, so tightening validation here does not cover both surfaces
-(verified divergence: its snooze route permits a reason-less park —
-`shipwright-webui` `server/src/routes/triage.ts::parseDismissSnoozeBody`,
-2026-07-27). Canonical statement: `shared/glossary.md` → *Defer (Snooze)*.
+(verified divergence: its snooze route permits a park with neither a reason
+nor a revisit date — `shipwright-webui`
+`server/src/routes/triage.ts::parseDismissSnoozeBody`, 2026-07-27; such a
+park resolves parked-but-never-due rather than being silently re-opened,
+and WebUI-store `trg-f2214310` carries the consumer work). Canonical statement:
+`shared/glossary.md` → *Defer (Park)*.
 
 Usage:
     uv run shared/scripts/tools/triage_promote.py \
@@ -34,6 +40,16 @@ from triage import (  # noqa: E402
     mark_status,
     read_all_items,
 )
+from shared_lib_loader import load_shared_lib  # noqa: E402
+
+# ADR-045: NOT `from lib.triage_defer import …`. This module is imported by
+# test sessions that may already have a different `lib` package cached, and an
+# eager package import would bind to that one — CI red while a local F0 stays
+# green (iterate-2026-07-27-test-phase-record-honesty). `triage_defer` has no
+# intra-package imports, which is the loader's documented precondition.
+_defer = load_shared_lib("triage_defer")
+DEFERRABLE_STATUSES = _defer.DEFERRABLE_STATUSES
+UNPARKABLE_STATUSES = _defer.UNPARKABLE_STATUSES
 
 _TASK_REF_MAX_LEN = 200
 _REASON_MAX_LEN = 500
@@ -45,23 +61,38 @@ _DECIDABLE = {
     "dismissed": "dismissable",
     "snoozed": "deferrable",
     "promoted": "promotable",
+    "triage": "un-parkable",
 }
 
 
-def _not_triage_error(item_id: str, current: object, new_status: str) -> ValueError:
-    """The ONE wording for "this item is no longer open", both ways it is found.
+def _wrong_status_error(
+    item_id: str, current: object, new_status: str, allowed: tuple[str, ...],
+) -> ValueError:
+    """The ONE wording for "this item is not in a state you can do that from".
 
-    The pre-check below reads the store unlocked, so the item can be decided in
-    the window between that read and the write; the store then refuses under its
-    own lock. Both paths raise from here, so the CLI's documented message and
-    exit code are identical whichever one fires and cannot drift apart
-    (external plan review, finding #9).
+    Both ways it is found raise from here: the pre-check below reads the store
+    unlocked, so the item can be decided in the window between that read and the
+    write, and the store then refuses under its own lock. One constructor keeps
+    the CLI's message and exit code identical whichever fires (external plan
+    review of iterate-2026-07-27, finding #9).
+
+    ``allowed`` is named rather than assumed `triage`-only since
+    iterate-2026-08-01-triage-defer-lifecycle: `defer` also accepts an already
+    parked entry (re-park with a corrected date) and `unpark` accepts only a
+    parked one. The status compared against is always the EFFECTIVE one, so an
+    entry whose park expired reads `triage` here and is reported as open.
     """
+    allowed_phrase = " or ".join(f"`{s}`" for s in allowed)
     return ValueError(
-        f"item {item_id} has status={current!r}; only `triage` is "
+        f"item {item_id} has status={current!r}; only {allowed_phrase} is "
         f"{_DECIDABLE.get(new_status, 'decidable')} from this CLI "
         f"(use mark_status for other transitions)"
     )
+
+
+def _not_triage_error(item_id: str, current: object, new_status: str) -> ValueError:
+    """Back-compat shim for the `triage`-only callers (promote, dismiss)."""
+    return _wrong_status_error(item_id, current, new_status, ("triage",))
 
 
 def _sanitize_single_line(raw: str, *, label: str, max_len: int) -> str:
@@ -184,20 +215,35 @@ def promote(
     }
 
 
-def _decide_from_triage(
+def _transition(
     project_root: Path,
     *,
     item_id: str,
     new_status: str,
+    allowed: tuple[str, ...],
     reason: str,
     by: str,
+    revisit_at: str | None = None,
 ) -> dict:
-    """Move a still-open item into a decided state — the body ``dismiss`` and
-    ``defer`` share so their guards cannot drift apart.
+    """The one body ``dismiss``, ``defer`` and ``unpark`` share.
+
+    ``allowed`` is the set of EFFECTIVE statuses the transition may start from,
+    and it is checked twice on purpose: once against this unlocked read (so the
+    common case gets the good message) and once by the store, under its lock,
+    via ``expected_status``. Both refusals raise from
+    :func:`_wrong_status_error`, so the message and the exit code cannot drift
+    apart between the two paths.
+
+    ``allowed`` became a parameter in iterate-2026-08-01-triage-defer-lifecycle:
+    `dismiss` starts only from open, `defer` also from already-parked (a re-park
+    replaces the date), and `unpark` only from parked.
 
     Deliberately NOT used by ``promote``: that one also writes
-    ``promotedTaskId``, and widening this helper with a parameter one caller
-    never sets is how a shared helper starts lying about what it does.
+    ``promotedTaskId`` and returns a different shape, and widening this helper
+    with a parameter one caller never sets is how a shared helper starts lying
+    about what it does. ``revisit_at`` is not that case — it is the payload of
+    one of the three transitions this helper exists to serve, and it is passed
+    straight through to the store, which refuses it on any non-park flip.
     """
     reason_clean = sanitize_reason(reason)
     _require_store(project_root)
@@ -206,21 +252,29 @@ def _decide_from_triage(
     if item is None:
         raise KeyError(item_id)
     current = item.get("status")
-    if current != "triage":
-        raise _not_triage_error(item_id, current, new_status)
+    if current not in allowed:
+        raise _wrong_status_error(item_id, current, new_status, allowed)
 
     try:
-        mark_status(project_root, item_id, new_status=new_status, by=by,
-                    reason=reason_clean, expected_status="triage")
+        previous = mark_status(
+            project_root, item_id, new_status=new_status, by=by,
+            reason=reason_clean, expected_status=allowed,
+            revisit_at=revisit_at,
+        )
     except StatusPreconditionError as exc:
-        raise _not_triage_error(item_id, exc.actual, new_status) from exc
+        raise _wrong_status_error(
+            item_id, exc.actual, new_status, allowed,
+        ) from exc
 
-    return {
+    result = {
         "id": item_id,
-        "previousStatus": "triage",
+        "previousStatus": previous,
         "newStatus": new_status,
         "reason": reason_clean,
     }
+    if revisit_at is not None:
+        result["revisitAt"] = revisit_at
+    return result
 
 
 def dismiss(
@@ -240,9 +294,9 @@ def dismiss(
         ValueError: invalid state (only `triage` is dismissable) or
             invalid ``reason``.
     """
-    return _decide_from_triage(
+    return _transition(
         project_root, item_id=item_id, new_status="dismissed",
-        reason=reason, by=by,
+        allowed=("triage",), reason=reason, by=by,
     )
 
 
@@ -251,19 +305,61 @@ def defer(
     *,
     item_id: str,
     reason: str,
+    revisit_at: str,
     by: str = "manualDefer",
 ) -> dict:
-    """Defer a triage item — decided, but deliberately not now.
+    """Park a triage item — decided, but deliberately not now, until a date.
 
     The third decision beside promote and dismiss (FR-01.14), stored as
-    `snoozed`. Same contract as ``dismiss``: reason required, only `triage`
-    items are deferrable, same three exceptions. No subcommand reverses it;
-    ``mark_status(..., new_status="triage")`` is the supported correction until
-    `trg-51f8e2a1` lands.
+    `snoozed`. ``revisit_at`` (``YYYY-MM-DD``) is **required here** and names
+    the day the entry returns to the open list by itself; a park with no date
+    is what let a deferral become permanent through inattention, and what let a
+    machine-raised finding re-appear as a duplicate on the very next import.
+    The store keeps the parameter optional so the Command Center's date-less
+    park and every pre-existing one still resolve (as parked-but-not-due) — the
+    requirement belongs to the decision surface, not to the log.
+
+    Accepts an entry that is effectively open **or** already parked: re-parking
+    replaces the date, so a mistyped one is correctable without un-parking
+    first. `dismissed` and `promoted` are refused.
+
+    Returns ``{"id", "previousStatus", "newStatus", "reason", "revisitAt"}``.
     """
-    return _decide_from_triage(
+    if revisit_at is None:
+        raise ValueError("revisit_at is required when deferring an item")
+    return _transition(
         project_root, item_id=item_id, new_status="snoozed",
-        reason=reason, by=by,
+        allowed=DEFERRABLE_STATUSES, reason=reason, by=by,
+        revisit_at=revisit_at,
+    )
+
+
+def unpark(
+    project_root: Path,
+    *,
+    item_id: str,
+    reason: str,
+    by: str = "manualUnpark",
+) -> dict:
+    """Reverse a park — the entry returns to the open list, date cleared.
+
+    The store always permitted this transition; only the command was missing,
+    so a mistaken park pushed an operator toward hand-editing the log — the
+    exact untrusted-input path the renderer exists to defend against
+    (`trg-51f8e2a1` part 4, operator decision #4 of 2026-07-27).
+
+    Judged on the **effective** status: an entry whose revisit date has already
+    passed reads `triage` and is refused as *already open*, rather than being
+    handed a second event that changes nothing.
+
+    Returns ``{"id", "previousStatus", "newStatus", "reason"}``.
+    """
+    # No `revisit_at`: the absent key is what CLEARS the date in the resolved
+    # view, which is how an un-parked entry stays distinguishable from one that
+    # merely expired.
+    return _transition(
+        project_root, item_id=item_id, new_status="triage",
+        allowed=UNPARKABLE_STATUSES, reason=reason, by=by,
     )
 
 

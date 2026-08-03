@@ -1,9 +1,15 @@
 """Tests for `triage_cli.py list --json` — the machine-readable contract.
 
 iterate-2026-06-10-triage-list-json. The WebUI live-view (trg-e2a0ebb3) consumes
-this instead of re-parsing JSONL: it emits the SAME unioned (tracked ∪ outbox),
-status==triage items the human `list` shows, as a JSON array, plus a
-`pendingDelivery` boolean so the UI can badge outbox-only (not-yet-swept) items.
+this instead of re-parsing JSONL: it emits the unioned (tracked ∪ outbox) items
+the human `list` shows, plus a `pendingDelivery` boolean so the UI can badge
+outbox-only (not-yet-swept) items.
+
+**Contract version 2** (iterate-2026-08-01-triage-defer-lifecycle): a bare
+array of open items became an envelope — `contractVersion`, `open`, `deferred`
+— because a parked entry had to become visible here and a flat array has no
+sections. `_open()` below reads the `open` section, so the pre-existing cases
+still say what they always said; the envelope itself is pinned separately.
 """
 
 from __future__ import annotations
@@ -34,10 +40,14 @@ def _run(args: list[str]) -> subprocess.CompletedProcess[str]:
     )
 
 
-def _list_json(project: Path) -> list[dict]:
+def _list_json(project: Path) -> dict:
     res = _run(["--project-root", str(project), "list", "--json"])
     assert res.returncode == 0, res.stderr
     return json.loads(res.stdout)
+
+
+def _open(project: Path) -> list[dict]:
+    return _list_json(project)["open"]
 
 
 def _write_outbox(project: Path, *appends: dict) -> None:
@@ -55,8 +65,11 @@ def tracked_item(tmp_path: Path) -> str:
     )
 
 
-def test_list_json_emits_array_of_open_items(tmp_path: Path, tracked_item: str) -> None:
-    data = _list_json(tmp_path)
+def test_list_json_emits_the_open_section(tmp_path: Path, tracked_item: str) -> None:
+    payload = _list_json(tmp_path)
+    assert payload["contractVersion"] == 2
+    assert payload["deferred"] == []
+    data = payload["open"]
     assert isinstance(data, list) and len(data) == 1
     item = data[0]
     assert item["id"] == tracked_item
@@ -65,13 +78,15 @@ def test_list_json_emits_array_of_open_items(tmp_path: Path, tracked_item: str) 
     assert item["pendingDelivery"] is False  # lives in the tracked log
 
 
-def test_list_json_empty_is_empty_array(tmp_path: Path) -> None:
-    assert _list_json(tmp_path) == []
+def test_list_json_empty_is_two_empty_sections(tmp_path: Path) -> None:
+    assert _list_json(tmp_path) == {
+        "contractVersion": 2, "open": [], "deferred": [],
+    }
 
 
 def test_list_json_excludes_dismissed(tmp_path: Path, tracked_item: str) -> None:
     mark_status(tmp_path, tracked_item, new_status="dismissed", by="x", reason="r")
-    assert _list_json(tmp_path) == []
+    assert (_open(tmp_path), _list_json(tmp_path)["deferred"]) == ([], [])
 
 
 def test_list_json_marks_outbox_only_pending_delivery(tmp_path: Path) -> None:
@@ -82,7 +97,7 @@ def test_list_json_marks_outbox_only_pending_delivery(tmp_path: Path) -> None:
         "source": "manual", "severity": "low", "kind": "improvement",
         "title": "outbox-only item", "status": "triage",
     })
-    by_id = {d["id"]: d for d in _list_json(tmp_path)}
+    by_id = {d["id"]: d for d in _open(tmp_path)}
     assert "trg-outbox01" in by_id
     assert by_id["trg-outbox01"]["pendingDelivery"] is True
 
@@ -95,7 +110,7 @@ def test_list_json_tracked_preferred_when_in_both(tmp_path: Path, tracked_item: 
         "source": "github", "severity": "high", "kind": "bug",
         "title": "dup", "status": "triage",
     })
-    [it] = [d for d in _list_json(tmp_path) if d["id"] == tracked_item]
+    [it] = [d for d in _open(tmp_path) if d["id"] == tracked_item]
     assert it["pendingDelivery"] is False
 
 
@@ -141,7 +156,7 @@ def test_list_json_is_utf8_under_legacy_console_encoding(tmp_path: Path) -> None
     )
     res = _run_legacy_console(["--project-root", str(tmp_path), "list", "--json"])
     assert res.returncode == 0, res.stderr.decode("utf-8", "replace")
-    data = json.loads(res.stdout.decode("utf-8"))
+    data = json.loads(res.stdout.decode("utf-8"))["open"]
     assert data[0]["title"] == NON_ASCII_TITLE
     assert data[0]["pendingDelivery"] is False
 

@@ -1,0 +1,44 @@
+{
+  "items": [
+    {
+      "name": "Spec Compliance",
+      "verdict": "pass",
+      "note": "All five requested lifecycle parts and the cross-cutting ACs are implemented; the final Stage-2 review is empty and no out-of-scope compatibility mode was added."
+    },
+    {
+      "name": "Error Handling",
+      "verdict": "pass",
+      "note": "CLI, helper, store, tolerant-reader, timezone, and malformed-calendar boundaries refuse invalid inputs or resolve damaged stored values conservatively."
+    },
+    {
+      "name": "Security Basics",
+      "verdict": "pass",
+      "note": "Stored fields remain untrusted: JSON uses structured serialization and both human renderers escape hostile values or emit a fixed unreadable-date placeholder; no credentials were added."
+    },
+    {
+      "name": "Test Quality",
+      "verdict": "pass",
+      "note": "Behavior-level happy, refusal, expiry, race, producer, schema, rendering, cap, and contract paths are covered; the latest targeted runs passed 165/165 lifecycle tests and 122/122 schema/store/lifecycle tests."
+    },
+    {
+      "name": "Performance Basics",
+      "verdict": "pass",
+      "note": "Human deferred sections share a deterministic cap, machine JSON remains deliberately complete, and the store keeps its existing linear union/read behavior without new I/O loops."
+    },
+    {
+      "name": "Naming & Structure",
+      "verdict": "pass",
+      "note": "Lifecycle, contract, and Markdown concerns are separated into focused shared modules; every intentional existing-file ceiling raise is measured and covered by ADR-121, and the file-size gate passes."
+    },
+    {
+      "name": "Affected Boundaries",
+      "verdict": "pass",
+      "note": "Producer→append-only JSONL→resolved view→CLI/Markdown round trips and tracked∪outbox composition are covered; contractVersion 2 names the WebUI consumer card trg-f2214310, and schema validation now enforces real calendar dates."
+    },
+    {
+      "name": "Test Hygiene Probe",
+      "verdict": "pass",
+      "note": "`scan_test_hygiene.py --diff` completed with no findings after the final test changes."
+    }
+  ]
+}

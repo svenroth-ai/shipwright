@@ -858,6 +858,24 @@ _Where the work detail lives_ at the end of this document.
 - (E) Given a previously imported finding no longer appears, when the import
   next succeeds, then its entry is closed automatically; an import that failed
   closes nothing, so a broken fetch can never mass-resolve real findings.
+- (E) Given the operator defers a finding, when that decision is recorded, then
+  it names the day the finding should come back, and from that day the entry is
+  among the open ones again without anyone acting — so deferring cannot become
+  permanent through inattention. Until that day the same finding is not recorded
+  a second time, so deferring a machine-raised finding actually quiets it
+  instead of producing a duplicate on the next run.
+- (E) Given a deferred finding stops being true before the day it was due back,
+  when the check that raised it next succeeds without it, then its entry is
+  closed automatically — exactly as an open one is — so the deferred list never
+  fills with problems that no longer exist.
+- (E) Given a finding was deferred by mistake, when the operator reverses it,
+  then it returns among the open ones with the reason recorded, without anyone
+  editing the stored record by hand.
+- (E) Given findings have been deferred, when the operator looks at any of the
+  places this project shows its findings, then the deferred ones are present
+  there in their own section with the day they return — never silently absent
+  and never reduced to a count. Where a place shows only the first few, it says
+  how many it did not show, and any two of them show the same few.
 - (E) Given a leaked-secret alert, when it is imported, then the secret value
   itself is never written into the Triage Inbox, and the entry carries only a
   rotation checklist and a link.

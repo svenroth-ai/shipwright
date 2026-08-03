@@ -1,22 +1,29 @@
 #!/usr/bin/env python3
 """Triage Inbox CLI — operate on `.shipwright/triage.jsonl` from the shell.
 
-CLI = first-class operation interface. All three decisions the requirement
-promises can be made here (``triage_promote.promote`` / ``.dismiss`` /
-``.defer``). The shipwright-webui Triage tab reaches the same store through
-its OWN implementation and mirrors these semantics rather than sharing the
-code — see ``triage_promote``'s header for the known divergence.
+CLI = first-class operation interface. Every decision the requirement promises
+can be made here — ``triage_promote.promote`` / ``.dismiss`` / ``.defer``, and
+since iterate-2026-08-01-triage-defer-lifecycle ``.unpark``, which reverses the
+third one. The shipwright-webui Triage tab reaches the same store through its
+OWN implementation and mirrors these semantics rather than sharing the code —
+see ``triage_promote``'s header for the known divergence.
 
-Subcommands (positional ``<id>`` for the three decisions):
+Subcommands (positional ``<id>`` for every decision):
 
-  list [--json]                         list open items, then any deferred
-                                        ones in their own section (--json = a
-                                        machine-readable contract for the WebUI:
-                                        OPEN items only, each with
-                                        pendingDelivery for outbox-only items)
+  list [--json]                         open items, then any deferred ones in
+                                        their own capped section. ``--json`` is
+                                        the machine contract for the WebUI —
+                                        an envelope with `contractVersion`,
+                                        `open` and `deferred`, both complete
+                                        and each item carrying pendingDelivery.
+                                        Shape + version: `lib.triage_contract`
   promote <id> --task-ref EXT:<ref>     promote → backlog task
   dismiss <id> --reason <reason>        dismiss (false-positive / won't-fix)
-  defer   <id> --reason <reason>        defer (decided, but not now)
+  defer   <id> --reason <r> --revisit D defer until day D (YYYY-MM-DD), after
+                                        which it returns to the open list by
+                                        itself; until then the same finding is
+                                        not recorded a second time
+  unpark  <id> --reason <reason>        reverse a defer, back onto the open list
 
 Fix-now flow:
   - operators open ``.shipwright/agent_docs/triage_inbox.md`` (or run
@@ -40,13 +47,15 @@ if str(_SCRIPTS_DIR) not in sys.path:
     sys.path.insert(0, str(_SCRIPTS_DIR))
 
 from triage import (  # noqa: E402
+    SEVERITY_RANK,
     _append_ids_at,
     _outbox_path,
     _triage_path,
     read_all_items,
 )
-from lib.triage_render import format_deferred, format_item  # noqa: E402
-from tools.triage_promote import defer, dismiss, promote  # noqa: E402
+from lib.triage_contract import build_listing  # noqa: E402
+from lib.triage_render import format_item, render_deferred_section  # noqa: E402
+from tools.triage_promote import defer, dismiss, promote, unpark  # noqa: E402
 
 _BY_LABEL = "cli"
 
@@ -76,38 +85,36 @@ def _cmd_list(args: argparse.Namespace) -> int:
     project_root = Path(args.project_root)
     resolved = read_all_items(project_root)
     items = [it for it in resolved if it.get("status") == "triage"]
+    # A park whose revisit date has arrived already resolved back to `triage`
+    # above, so it lands in the open list without anything here noticing —
+    # which is the whole point of deriving expiry in the reader.
+    deferred = [it for it in resolved if it.get("status") == "snoozed"]
     if getattr(args, "json", False):
-        # Machine-readable contract for the WebUI live-view (trg-e2a0ebb3): the
-        # SAME unioned open items, plus `pendingDelivery` = the item lives ONLY
-        # in the gitignored outbox buffer (not yet swept into the tracked log),
-        # so the UI can badge it. TRACKED-PREFERRED: an id in BOTH files is NOT
-        # pending (parallels triage.mark_status residence). Empty → `[]`.
-        outbox_ids = _append_ids_at(_outbox_path(project_root))
-        tracked_ids = _append_ids_at(_triage_path(project_root))
-        enriched = [
-            {**it, "pendingDelivery": (it.get("id") in outbox_ids
-                                       and it.get("id") not in tracked_ids)}
-            for it in items
-        ]
-        sys.stdout.write(json.dumps(enriched, indent=2, ensure_ascii=False) + "\n")
-        return 0
+        return _emit_json(project_root, items, deferred)
     if not items:
         sys.stdout.write("No open triage items.\n\n")
     for item in items:
         sys.stdout.write(format_item(item) + "\n\n")
-    # The third decision is not a disappearance ON THIS SURFACE: a deferred
-    # item is still here, still undone, and told apart from an open one by its
-    # row's own marker, not only by this header. (`list --json`, the Command
-    # Center and triage_inbox.md still show it as gone — trg-51f8e2a1.) Header
-    # only when there is something under it, blank-line-separated like every
-    # other block so the whole listing keeps one grouping rule.
-    deferred = [it for it in resolved if it.get("status") == "snoozed"]
-    if deferred:
-        sys.stdout.write(
-            f"Deferred — decided, revisit later ({len(deferred)}):\n\n"
-        )
-        for item in deferred:
-            sys.stdout.write(format_deferred(item) + "\n\n")
+    # The third decision is not a disappearance: a deferred entry is still
+    # here, still undone, and told apart from an open one by its row's own
+    # marker, not only by the section header. Capped like the rendered
+    # document's open list, because a parked section that prints without limit
+    # crowds out the work that is actually open.
+    for block in render_deferred_section(deferred, SEVERITY_RANK):
+        sys.stdout.write(block + "\n\n")
+    return 0
+
+
+def _emit_json(project_root: Path, items: list[dict],
+               deferred: list[dict]) -> int:
+    """Serialise the machine contract. Its shape lives in `lib.triage_contract`."""
+    payload = build_listing(
+        items, deferred,
+        tracked_ids=_append_ids_at(_triage_path(project_root)),
+        outbox_ids=_append_ids_at(_outbox_path(project_root)),
+        severity_rank=SEVERITY_RANK,
+    )
+    sys.stdout.write(json.dumps(payload, indent=2, ensure_ascii=False) + "\n")
     return 0
 
 
@@ -143,8 +150,10 @@ def _cmd_promote(args: argparse.Namespace) -> int:
 
 def _status_flip(
     decide: Callable[..., dict], args: argparse.Namespace, verb: str,
+    **extra,
 ) -> int:
-    """Shared dispatch for the two decisions that need only a reason.
+    """Shared dispatch for the decisions that need only a reason (plus, for a
+    park, the date it comes back on).
 
     Promote is not routed through here — it also takes a task reference and
     reports the task it was linked to.
@@ -155,6 +164,7 @@ def _status_flip(
             item_id=args.item_id,
             reason=args.reason,
             by=_BY_LABEL,
+            **extra,
         )
     except ValueError as exc:
         sys.stderr.write(f"error: {exc}\n")
@@ -175,7 +185,11 @@ def _cmd_dismiss(args: argparse.Namespace) -> int:
 
 
 def _cmd_defer(args: argparse.Namespace) -> int:
-    return _status_flip(defer, args, "deferred")
+    return _status_flip(defer, args, "deferred", revisit_at=args.revisit)
+
+
+def _cmd_unpark(args: argparse.Namespace) -> int:
+    return _status_flip(unpark, args, "un-parked")
 
 
 # ---------------------------------------------------------------------------
@@ -200,8 +214,11 @@ def _build_parser() -> argparse.ArgumentParser:
     )
     p_list.add_argument(
         "--json", action="store_true",
-        help="emit open items as a JSON array (machine-readable contract for the "
-             "WebUI; each item gains a pendingDelivery bool for outbox-only items)",
+        help="emit the machine contract for the WebUI: an envelope with "
+             "contractVersion, plus complete `open` and `deferred` arrays "
+             "(never capped). Each item gains a pendingDelivery bool for "
+             "outbox-only items, and a deferred one carries revisitAt + "
+             "revisitDue. Shape and version: lib/triage_contract.py",
     )
     p_list.set_defaults(func=_cmd_list)
 
@@ -243,7 +260,26 @@ def _build_parser() -> argparse.ArgumentParser:
         "--reason", required=True,
         help="rationale for deferring (required)",
     )
+    p_defer.add_argument(
+        "--revisit", required=True, metavar="YYYY-MM-DD",
+        help="the day this comes back to the open list by itself (required). "
+             "It returns from 00:00 UTC on that date, and until then the same "
+             "finding will not be recorded a second time. Re-run defer with a "
+             "different date to change it.",
+    )
     p_defer.set_defaults(func=_cmd_defer)
+
+    p_unpark = sub.add_parser(
+        "unpark", help="reverse a defer — put a parked item back on the open list",
+    )
+    p_unpark.add_argument(
+        "item_id", help="triage item id (e.g. trg-abc12345)",
+    )
+    p_unpark.add_argument(
+        "--reason", required=True,
+        help="rationale for un-parking (required)",
+    )
+    p_unpark.set_defaults(func=_cmd_unpark)
 
     return parser
 

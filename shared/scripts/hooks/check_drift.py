@@ -270,8 +270,10 @@ def _emit_drift_to_triage(
     foreign repo with a stale ``CLAUDE.md`` wrote ``.shipwright/triage.jsonl``
     into a tree the framework isn't installed in.
 
-    **Resolve pass (Bug 2):** after appending, every still-open
-    (``status == "triage"``) ``source="drift"`` item THIS detector owns (key
+    **Resolve pass (Bug 2):** after appending, every still-actionable
+    (``AUTO_RESOLVABLE_STATUSES`` — open OR parked-not-yet-due, since
+    iterate-2026-08-01-triage-defer-lifecycle) ``source="drift"`` item THIS
+    detector owns (key
     ending ``:content`` — or a legacy ``:timestamp`` item from the removed
     timestamp detector — but NOT ``artifact_sync``'s ``:artifact``) whose key is
     absent from the current set flips to ``dismissed``. The ``:timestamp`` branch
@@ -291,6 +293,7 @@ def _emit_drift_to_triage(
         if scripts_dir not in sys.path:
             sys.path.insert(0, scripts_dir)
         from triage import (  # noqa: PLC0415
+            AUTO_RESOLVABLE_STATUSES,
             StatusPreconditionError,
             append_triage_item_idempotent,
             mark_status,
@@ -349,7 +352,7 @@ def _emit_drift_to_triage(
         for item in read_all_items(project_root):
             if item.get("source") != "drift":
                 continue
-            if item.get("status") != "triage":
+            if item.get("status") not in AUTO_RESOLVABLE_STATUSES:
                 continue
             dk = item.get("dedupKey") or ""
             # Only keys THIS detector owns — artifact_sync.py shares
@@ -359,8 +362,8 @@ def _emit_drift_to_triage(
             if dk in current_keys:
                 continue
             try:
-                # expected_status re-checks the `status == "triage"` filter
-                # above INSIDE the store's lock — this loop read the store
+                # expected_status re-checks the status filter above INSIDE
+                # the store's lock — this loop read the store
                 # unlocked, so an operator decision can have landed since
                 # (trg-93ceb2b0). A refusal means the item is KEPT, which is a
                 # normal outcome and not a failure.
@@ -370,7 +373,7 @@ def _emit_drift_to_triage(
                     new_status="dismissed",
                     by="driftDetector",
                     reason="driftResolved",
-                    expected_status="triage",
+                    expected_status=AUTO_RESOLVABLE_STATUSES,
                 )
             except StatusPreconditionError as exc:
                 # Guarded: a failure escaping this DIAGNOSTIC write would hit
