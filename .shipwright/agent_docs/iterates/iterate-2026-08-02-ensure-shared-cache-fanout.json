@@ -110,6 +110,18 @@
     {
       "path": ".shipwright/agent_docs/iterates/iterate-2026-07-27-triage-defer-review-followup.json",
       "reason": "F5c's 50-entry retention evicted this oldest recency-cache entry while adding the current run; its history remains in git and shipwright_events.jsonl."
+    },
+    {
+      "path": ".shipwright/agent_docs/iterates/iterate-2026-07-27-pr-review-forged-boundary.json",
+      "reason": "F5c's 50-entry retention evicted this oldest recency-cache entry after integrating current main; its history remains in git and shipwright_events.jsonl."
+    },
+    {
+      "path": ".shipwright/agent_docs/iterates/iterate-2026-07-28-cascade-ask-before-lapse.json",
+      "reason": "F5c's 50-entry retention evicted this oldest recency-cache entry after integrating current main; its history remains in git and shipwright_events.jsonl."
+    },
+    {
+      "path": ".shipwright/agent_docs/iterates/iterate-2026-07-28-silent-revert-false-positives.json",
+      "reason": "F5c's 50-entry retention evicted this oldest recency-cache entry after integrating current main; its history remains in git and shipwright_events.jsonl."
     }
   ]
 }
