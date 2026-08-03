@@ -1,0 +1,179 @@
+{
+  "schema_version": 1,
+  "backfill_run_id": "iterate-2026-08-03-preserve-test-evidence",
+  "policy": "exact bytes; embedded run_id matches an F5c summary reachable from origin/main; worktree roots are dirty relative to their own HEAD; Git candidates are explicit commit/path pairs; inherited clean snapshots and invented detail are forbidden",
+  "recovered": [
+    {
+      "label": null,
+      "run_id": "iterate-2026-07-27-pr-review-forged-boundary",
+      "source": "commit:d9bc7d90:shipwright_test_results.json (root snapshot modified in source commit; summary delivered in same commit)",
+      "sha256": "d12296c45c32651bd30c8ad66909e670d12efecc4c81b47ecf3dd783a468f34b",
+      "bytes": 17064,
+      "created": true,
+      "artifact": ".shipwright/agent_docs/iterates/iterate-2026-07-27-pr-review-forged-boundary.test-results.json"
+    },
+    {
+      "label": null,
+      "run_id": "iterate-2026-07-28-docs-placement-rule",
+      "source": "commit:bebdc9a3:shipwright_test_results.json (root snapshot modified in source commit; summary delivered in same commit)",
+      "sha256": "13de5c7e6b92d7a1ea0225130a381974729fb62c4e0abfab50c52ae64dca926c",
+      "bytes": 5958,
+      "created": true,
+      "artifact": ".shipwright/agent_docs/iterates/iterate-2026-07-28-docs-placement-rule.test-results.json"
+    },
+    {
+      "label": null,
+      "run_id": "iterate-2026-07-28-main-self-heal",
+      "source": "commit:24a56158:shipwright_test_results.json (run-written blob and matching summary delivered together; byte-identical to source PR head 351fc65f)",
+      "sha256": "8dde58129595225a8c55a60abeda5e00f6154dacf123c32ef2dc1604a62e56f6",
+      "bytes": 14138,
+      "created": true,
+      "artifact": ".shipwright/agent_docs/iterates/iterate-2026-07-28-main-self-heal.test-results.json"
+    },
+    {
+      "label": null,
+      "run_id": "iterate-2026-07-31-it7a-pr-review-stale-verdict",
+      "source": "commit:adbd2f78:shipwright_test_results.json (root snapshot modified on source PR head; matching summary delivered at a87085b1)",
+      "sha256": "bca673de4e2fdb5b01ede46ba1b155888a470935b9bb9c4e59b227c9041e6b07",
+      "bytes": 10911,
+      "created": true,
+      "artifact": ".shipwright/agent_docs/iterates/iterate-2026-07-31-it7a-pr-review-stale-verdict.test-results.json"
+    },
+    {
+      "label": null,
+      "run_id": "iterate-2026-07-31-review-record-spec-promotion",
+      "source": "worktree:review-record-spec-promotion@9d23d038 (M shipwright_test_results.json)",
+      "sha256": "3099687612a7fd2c94d8c237a82f89e86775a987af39deae4de92d1e18ec9ddc",
+      "bytes": 9567,
+      "created": true,
+      "artifact": ".shipwright/agent_docs/iterates/iterate-2026-07-31-review-record-spec-promotion.test-results.json"
+    },
+    {
+      "label": "P1.08",
+      "run_id": "iterate-2026-08-01-cache-contract-single-source",
+      "source": "commit:fa73c08c:shipwright_test_results.json",
+      "sha256": "78346e8a040d9b4896a0360ab83ee1c3cb33bba879293f57b97ef0cd2d9b2b2d",
+      "bytes": 9490,
+      "created": true,
+      "artifact": ".shipwright/agent_docs/iterates/iterate-2026-08-01-cache-contract-single-source.test-results.json"
+    },
+    {
+      "label": "P1.07",
+      "run_id": "iterate-2026-08-01-cache-heal-per-plugin",
+      "source": "worktree:cache-heal-per-plugin@546344fb (M shipwright_test_results.json)",
+      "sha256": "3500187539ad5eacfb08a88d559ef945698e86df251c2d4051e3ccf2617f9841",
+      "bytes": 14988,
+      "created": false,
+      "artifact": ".shipwright/agent_docs/iterates/iterate-2026-08-01-cache-heal-per-plugin.test-results.json"
+    },
+    {
+      "label": null,
+      "run_id": "iterate-2026-08-01-ci-card-deleted-workflow",
+      "source": "worktree:ci-card-deleted-workflow@7fc85f9d (M shipwright_test_results.json)",
+      "sha256": "946b0f6ec4ed94979faa570a810f59ba8edc6c6fc40a037489aab6ea6361ca9d",
+      "bytes": 9245,
+      "created": false,
+      "artifact": ".shipwright/agent_docs/iterates/iterate-2026-08-01-ci-card-deleted-workflow.test-results.json"
+    },
+    {
+      "label": null,
+      "run_id": "iterate-2026-08-01-compliance-refresh-real-converge",
+      "source": "worktree:compliance-refresh-real-converge@55d5a127 (M shipwright_test_results.json)",
+      "sha256": "3c6d07b5fd7f81a5076a389a998d482a46ccf277b1d6a1716577794f218bfd7e",
+      "bytes": 7149,
+      "created": false,
+      "artifact": ".shipwright/agent_docs/iterates/iterate-2026-08-01-compliance-refresh-real-converge.test-results.json"
+    },
+    {
+      "label": null,
+      "run_id": "iterate-2026-08-01-drop-write-once-step-fields",
+      "source": "worktree:drop-write-once-step-fields@b797596b (M shipwright_test_results.json)",
+      "sha256": "9f4cb6e053de1c118bfc634be7cb12f76b347cfe9c571cb873e898214b3efd15",
+      "bytes": 4471,
+      "created": false,
+      "artifact": ".shipwright/agent_docs/iterates/iterate-2026-08-01-drop-write-once-step-fields.test-results.json"
+    },
+    {
+      "label": null,
+      "run_id": "iterate-2026-08-01-f0-diff-coverage-gate",
+      "source": "worktree:f0-diff-coverage-gate@cf43537e (M shipwright_test_results.json)",
+      "sha256": "3fa510c194ca6e2fdeb38053207952086551c573697f13fa6a3ecd1ae6ec4647",
+      "bytes": 14749,
+      "created": true,
+      "artifact": ".shipwright/agent_docs/iterates/iterate-2026-08-01-f0-diff-coverage-gate.test-results.json"
+    },
+    {
+      "label": null,
+      "run_id": "iterate-2026-08-01-grade-snapshot-dirty-capture",
+      "source": "worktree:grade-snapshot-dirty-capture@f4545b99 (M shipwright_test_results.json)",
+      "sha256": "8c6c630554a6aca36dfcf1496babbee5084df4a2e736e4f359ad0b4257b7cccc",
+      "bytes": 4399,
+      "created": true,
+      "artifact": ".shipwright/agent_docs/iterates/iterate-2026-08-01-grade-snapshot-dirty-capture.test-results.json"
+    },
+    {
+      "label": "P1.09",
+      "run_id": "iterate-2026-08-01-llm-review-truncation-guard",
+      "source": "worktree:llm-review-truncation-guard@5ad0544c (M shipwright_test_results.json)",
+      "sha256": "e2f3e21de4cae15f2bcabcd4d04d209441132a1dd7e097fa885a33422be64ef5",
+      "bytes": 14615,
+      "created": true,
+      "artifact": ".shipwright/agent_docs/iterates/iterate-2026-08-01-llm-review-truncation-guard.test-results.json"
+    },
+    {
+      "label": "P1.03",
+      "run_id": "iterate-2026-08-01-pin-python-311",
+      "source": "commit:76546d8f:shipwright_test_results.json",
+      "sha256": "b1376ee1abff3a51a611cc46e5c41fd3692bfd9220b1baa27d2e6dcae76c317e",
+      "bytes": 7489,
+      "created": true,
+      "artifact": ".shipwright/agent_docs/iterates/iterate-2026-08-01-pin-python-311.test-results.json"
+    },
+    {
+      "label": null,
+      "run_id": "iterate-2026-08-01-touches-build-token-boundary",
+      "source": "worktree:touches-build-token-boundary@7c2abca1 (M shipwright_test_results.json)",
+      "sha256": "135bbc774d6ec3b38d897100940a10476446b549209f8f09e0ead7c4450c7b35",
+      "bytes": 6741,
+      "created": true,
+      "artifact": ".shipwright/agent_docs/iterates/iterate-2026-08-01-touches-build-token-boundary.test-results.json"
+    }
+  ],
+  "unavailable": [
+    {
+      "label": "P1.01",
+      "run_id": "iterate-2026-08-01-campaign-diff-driven-risk-recheck",
+      "reason": "durable summary only; no complete snapshot in accepted reachable sources"
+    },
+    {
+      "label": "P1.02",
+      "run_id": "iterate-2026-08-01-cache-sync-shared-tree",
+      "reason": "durable summary only; no complete snapshot in accepted reachable sources"
+    },
+    {
+      "label": "P1.04",
+      "run_id": "iterate-2026-08-01-coverage-gate-recompute-order",
+      "reason": "durable summary only; no complete snapshot in accepted reachable sources"
+    },
+    {
+      "label": "P1.05",
+      "run_id": "iterate-2026-08-01-spec-impact-range-resolver",
+      "reason": "durable summary only; no complete snapshot in accepted reachable sources"
+    },
+    {
+      "label": "P1.06",
+      "run_id": "iterate-2026-08-01-canon-lookbehind-hyphen",
+      "reason": "durable summary only; no complete snapshot in accepted reachable sources"
+    },
+    {
+      "label": null,
+      "run_id": "iterate-2026-08-01-grade-snapshot-dedup",
+      "reason": "matching F5c summary exists only on unmerged commits a09b02aa/6e9e01d8 and is absent from origin/main history; rejected by delivered-durable-summary rule"
+    },
+    {
+      "label": null,
+      "run_id": "iterate-2026-08-02-ensure-shared-cache-fanout",
+      "reason": "worktree snapshot is run-written, but its matching F5c summary is not committed in that worktree HEAD; rejected by durable-summary rule"
+    }
+  ]
+}

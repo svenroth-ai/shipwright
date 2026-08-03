@@ -355,7 +355,8 @@ must merge that commit (so the attribute is present in its tree) before `union`
 applies to its `events.jsonl`. The resolver validates the merged log regardless.
 
 **Target-repo coverage (iterate-2026-06-07-scaffold-churn-merge-machinery).** The
-`merge=union` first-line driver is no longer monorepo-only: the same fragment
+managed attributes fragment is no longer monorepo-only: its `merge=union`
+first-line driver and the immutable test-evidence `-text -diff` rule use the same fragment
 (`shared/templates/gitattributes-union.template`, SSoT
 `shared/scripts/lib/gitattributes_union.py`) is now scaffolded into every managed
 repo — at adopt time (Step E.13c, idempotent **merge** into the target's root
@@ -368,6 +369,9 @@ even without running `integrate_main.py` locally. The resolver
 via `{shared_root}`) remains the monorepo-authored **second-line** authority that
 dedups + validates the union'd log; it is incidentally reachable in managed repos
 but the union driver alone is the sufficient first-line defense there.
+The `-text -diff` rule separately prevents Git EOL normalization from changing
+the exact bytes of `iterates/*.test-results.json` during F6 staging and keeps
+byte-preserved CRLF evidence out of text whitespace diagnostics.
 
 **Auto-merge is safe ONLY for a current single iterate — parallel PRs drain
 serially (iterate-2026-06-12-automerge-serial-integrate, Option A).** GitHub's
@@ -2302,6 +2306,7 @@ plan SKILL completes
 | `shipwright_project_config.json` | /shipwright-project | Orchestrator (splits), compliance (requirements), validators |
 | `shipwright_build_config.json` | /shipwright-build, update_section_state.py | Orchestrator (progress), dashboard, compliance, validators |
 | `shipwright_test_results.json` | test-runner subagent (full record); `record_coverage_total.py` (`coverage` block only); `stamp_test_results.py` (`source_state` block only — invoked as the last step of test Step 5 and iterate F5) | Compliance (test evidence), validators |
+| `.shipwright/agent_docs/iterates/<run_id>.test-results.json` | iterate F5c (`append_iterate_entry.py`): validates `iterate_latest.run_id`, then atomically installs the exact root-snapshot bytes once | F11 immutable-evidence gate; future per-run evidence consumers. Tracked and never summary-retention-pruned; root `shipwright_test_results.json` remains excluded from iterate commits. |
 | `shipwright_compliance_config.json` | update_compliance.py, run_audit.py (`last_audit` / `last_full_audit`) | Compliance (phases_covered; the audit record → the `Consistency-audit:` provenance line in every evidence document) |
 | `shipwright_plan_config.json` | /shipwright-plan | Build (section references) |
 | `shipwright_project_session.json` | /shipwright-project | /shipwright-project (session resume state) |

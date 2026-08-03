@@ -180,20 +180,23 @@ Writes — **in order**:
     by `shared/tests/test_security_workflow_convention.py`
     (`TestSupplyChainHardening`).
 
-    **Append-log union merge driver scaffold (Step E.13c).** Adopt also
-    lands a root `.gitattributes` declaring `merge=union` for the tracked
+    **Managed Git-attributes scaffold (Step E.13c).** Adopt also lands a root
+    `.gitattributes` declaring `merge=union` for the tracked
     append-log artifacts (`shipwright_events.jsonl`,
     `.shipwright/triage.jsonl`), sourced from
     `shared/templates/gitattributes-union.template` (SSoT
-    `shared/scripts/lib/gitattributes_union.py`). `merge=union` is git's
+    `shared/scripts/lib/gitattributes_union.py`). The fragment also marks
+    `.shipwright/agent_docs/iterates/*.test-results.json` `-text -diff`, preserving
+    exact evidence bytes even when `core.autocrlf` is enabled and keeping
+    byte-preserved CRLF evidence out of text whitespace checks. `merge=union` is git's
     built-in line-union driver: when two iterates each append, both sides'
     lines are kept automatically (no conflict markers, honored by GitHub's
     server-side PR merge too) — the protection that kept the monorepo
     merge-theater-free but had never reached managed repos (WebUI #96–#100
     hand-resolved exactly these files). **Unlike** the `.gitleaks.toml`
     scaffold this is a **merge, not never-overwrite**: an existing user
-    `.gitattributes` is preserved bit-for-bit and only the missing union
-    lines are appended (idempotent — a second adopt run is a no-op). The
+    `.gitattributes` is preserved bit-for-bit and only missing managed rules
+    are appended (idempotent — a second adopt run is a no-op). The
     same fragment is self-healed into already-adopted repos by the iterate
     flow (`setup_iterate_worktree` → `self_heal_gitattributes`). The
     scaffolder result lands in `results.gitattributes_union` as

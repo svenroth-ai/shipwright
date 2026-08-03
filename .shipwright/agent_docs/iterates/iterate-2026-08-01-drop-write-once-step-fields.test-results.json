@@ -1,0 +1,110 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-08-01-drop-write-once-step-fields",
+    "date": "2026-08-02",
+    "unit": {
+      "status": "passed",
+      "passed": 9191,
+      "total": 9209,
+      "note": "Fresh shared root: 7192 passed, 13 skipped, 26 deselected; shipwright-compliance: 1606 passed, 5 skipped; shipwright-run: 393 passed."
+    },
+    "integration": {
+      "status": "passed",
+      "passed": 439,
+      "total": 446,
+      "note": "439 passed, 7 deselected."
+    },
+    "pgtap": {
+      "status": "skipped",
+      "passed": 0,
+      "total": 0,
+      "reason": "No database surface."
+    },
+    "e2e": {
+      "status": "skipped",
+      "passed": 0,
+      "total": 0,
+      "reason": "Internal phase-quality refactor with no startable web, API, CLI, or user-visible runtime surface."
+    },
+    "design_fidelity": {
+      "status": "skipped",
+      "passed": 0,
+      "total": 0,
+      "reason": "No UI surface."
+    },
+    "smoke": {
+      "status": "skipped",
+      "reason": "No startable service surface."
+    },
+    "surface_verification": {
+      "surface": "none",
+      "runner": "",
+      "exit_code": 0,
+      "tests_run": 0,
+      "evidence_path": ".shipwright/runs/iterate-2026-08-01-drop-write-once-step-fields/surface_verification.json",
+      "timestamp": "2026-08-02T18:19:35.456Z",
+      "attempts": 0,
+      "justification": "Internal phase-quality refactor with no startable web, API, CLI, or user-visible runtime surface."
+    },
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "Driven v2 phases are engaged from phase_tasks status instead of the frozen current_step field.",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_phase_quality_v2_phase_tasks.py::test_v2_phase_task_that_ran_is_engaged and ::test_v2_phase_task_that_did_not_run_is_not_engaged PASSED"
+        },
+        {
+          "behavior": "Legacy v1 current_step and completed_steps evidence remains unioned with v2 phase_tasks evidence.",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_phase_quality_v2_phase_tasks.py::test_v1_current_step_still_engaged_alongside_phase_tasks and ::test_skipped_task_still_engaged_via_v1_completed_steps PASSED"
+        },
+        {
+          "behavior": "Malformed phase tasks and unhashable status values fail open without crashing or suppressing valid v1 evidence.",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_phase_quality_v2_phase_tasks.py::test_malformed_phase_tasks_falls_back_to_v1, ::test_unhashable_or_non_string_status_does_not_raise, and ::test_unhashable_status_does_not_suppress_the_v1_read PASSED"
+        },
+        {
+          "behavior": "A recovered task whose visible status returned to not-started remains engaged when executionCount proves it ran.",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_phase_quality_v2_phase_tasks.py::test_task_recovered_to_a_not_started_status_is_still_engaged PASSED"
+        },
+        {
+          "behavior": "Run-source and run-id resolution accept v2-only configs and malformed non-object JSON safely.",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_phase_quality_v2_phase_tasks.py::test_resolve_source_v2_is_orchestrator_without_current_step, ::test_resolve_source_non_dict_config_is_standalone, and ::test_resolve_run_id_survives_a_non_dict_config PASSED"
+        },
+        {
+          "behavior": "Phase engagement consumes every JSONL event record even when multiple records share one physical line.",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_phase_quality_v2_phase_tasks.py::test_engagement_reads_two_events_sharing_one_physical_line PASSED"
+        }
+      ],
+      "counts": {
+        "testable": 6,
+        "tested": 6,
+        "untestable": 0,
+        "untested_testable": 0
+      },
+      "enumeration_basis": {
+        "acs": 6,
+        "covered_acs": 6
+      }
+    },
+    "declared_removals": [],
+    "degraded": []
+  },
+  "coverage": {
+    "total": 80.2,
+    "measured_tier": "repo",
+    "source": "combined coverage.xml (all plugins + shared + integration)",
+    "measured_at": "2026-07-04T00:00:00Z"
+  },
+  "source_state": {
+    "run_id": "iterate-2026-08-01-drop-write-once-step-fields",
+    "commit": "2c7f5afba2a705266fc5b797080c28ec2812e7fd",
+    "dirty": true,
+    "base": null,
+    "release": null
+  }
+}

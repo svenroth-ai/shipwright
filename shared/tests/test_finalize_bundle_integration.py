@@ -116,6 +116,7 @@ def test_bundle_composes_the_real_tools_and_writes_every_artifact(tmp_path):
     each produces its artifact with the payload's content."""
     root = tmp_path
     _init_fixture(root)
+    f5c_source = (root / "shipwright_test_results.json").read_bytes()
     result = _run_bundle(root, _payload())
 
     assert result["_returncode"] == 0, result.get("_stderr")
@@ -142,6 +143,8 @@ def test_bundle_composes_the_real_tools_and_writes_every_artifact(tmp_path):
     entry = root / ".shipwright" / "agent_docs" / "iterates" / f"{_RUN_ID}.json"
     assert entry.exists()
     assert json.loads(entry.read_text(encoding="utf-8"))["type"] == "change"
+    immutable = entry.with_name(f"{_RUN_ID}.test-results.json")
+    assert immutable.read_bytes() == f5c_source
 
     # F5b recorded exactly one work_completed event with the classification.
     events = _work_events(root)

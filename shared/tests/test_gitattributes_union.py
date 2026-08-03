@@ -40,6 +40,8 @@ def test_template_exists_and_declares_every_union_line():
     text = gu.load_fragment()
     for path in gu.ALL_UNION_PATHS:
         assert f"{path} merge=union" in text, path
+    for path in gu.NON_TEXT_PATHS:
+        assert f"{path} -text" in text, path
 
 
 def test_union_paths_match_churn_allowlist_append_logs():
@@ -79,6 +81,7 @@ def test_merge_into_none_writes_full_fragment():
     text, changed = gu.merge_into(None)
     assert changed is True
     assert gu.missing_union_paths(text) == []
+    assert gu.missing_managed_paths(text) == []
 
 
 def test_merge_into_whitespace_only_treated_as_empty():
@@ -116,10 +119,20 @@ def test_declares_union_tolerates_extra_attributes():
     existing = (
         f"{EVENTS_LOG} merge=union -text\n{TRIAGE_LOG}   merge=union\n"
         + "".join(f"{p} merge=union\n" for p in gu.CURATED_DOC_UNION_PATHS)
+        + "".join(f"{p} -text -diff\n" for p in gu.NON_TEXT_PATHS)
     )
     assert gu.missing_union_paths(existing) == []
     _, changed = gu.merge_into(existing)
     assert changed is False
+
+
+def test_merge_into_adds_missing_exact_byte_rule():
+    existing = "".join(f"{p} merge=union\n" for p in gu.ALL_UNION_PATHS)
+
+    text, changed = gu.merge_into(existing)
+
+    assert changed is True
+    assert gu.missing_managed_paths(text) == []
 
 
 def test_merge_into_preserves_crlf_eol():

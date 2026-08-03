@@ -29,6 +29,12 @@ from complexity_history import (  # noqa: E402
 )
 
 
+def _write_evidence(project_root, run_id):
+    (project_root / "shipwright_test_results.json").write_text(
+        json.dumps({"iterate_latest": {"run_id": run_id}}), encoding="utf-8"
+    )
+
+
 class TestRoundTripWithRealWriter:
     @pytest.fixture()
     def shared_writer(self):
@@ -71,14 +77,16 @@ class TestRoundTripWithRealWriter:
             ))
         jumbled = specs[12:] + specs[:5] + specs[5:12]
         for run_id, date, cx in jumbled:
-            shared_writer.append_iterate_entry(tmp_path, {
+            entry = {
                 "run_id": run_id,
                 "date": date,
                 "type": "change",
                 "complexity": cx,
                 "branch": f"iterate/{run_id}",
                 "tests_passed": True,
-            })
+            }
+            _write_evidence(tmp_path, run_id)
+            shared_writer.append_iterate_entry(tmp_path, entry)
         result = load_history_prior(tmp_path)
         assert result["prior"] == "small"
         assert result["n"] == HISTORY_WINDOW
@@ -99,6 +107,7 @@ class TestRoundTripWithRealWriter:
             "change_type": "infra",
             "adr": "iterate-2026-06-10-triage-dedup-keep-last-append",
         }
+        _write_evidence(tmp_path, field_entry["run_id"])
         shared_writer.append_iterate_entry(tmp_path, field_entry)
         write_entry(tmp_path, "iterate-2026-06-11-a", "2026-06-11T00:00:00Z",
                     "small")

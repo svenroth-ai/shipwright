@@ -6,11 +6,8 @@ survived: every fixture stamped ``at``, ``append_phase_history.py`` stamped
 dead in production. A fixture asserts against a shape someone believed; only the
 writer asserts against the shape that ships.
 
-So: no hand-built dicts here. Each test invokes the actual tool as a subprocess,
-then reads the artifact back through ``lib.phase_history`` and, where it matters,
-runs Canon C3 against the result. What ``_c3_fixtures`` writes elsewhere is
-pinned to these by ``test_the_hand_built_shape_matches_the_writer``; the
-producer registry itself is guarded in ``test_c3_applicability.py``.
+Each test invokes the actual tool, reads it through ``lib.phase_history`` and,
+where relevant, runs Canon C3. Fixture and producer shape stay separately pinned.
 """
 
 from __future__ import annotations
@@ -27,6 +24,7 @@ sys.path.insert(0, str(REPO_ROOT / "shared" / "scripts"))
 sys.path.insert(0, str(REPO_ROOT / "shared" / "scripts" / "tools"))
 
 from _c3_fixtures import ITERATE_RUN, history_entries, write_handoff  # noqa: E402
+from shared.tests._iterate_entry_helpers import write_current_evidence  # noqa: E402
 from lib.canon_frontmatter import parse_canon_frontmatter  # noqa: E402
 from lib.phase_history import latest_completion  # noqa: E402
 from verifiers.handoff_phase_canon import (  # noqa: E402
@@ -51,6 +49,7 @@ def _project(root: Path) -> Path:
     (root / "shipwright_run_config.json").write_text(
         json.dumps({"phase_history": {}}), encoding="utf-8"
     )
+    write_current_evidence(root, ITERATE_RUN)
     return root
 
 
