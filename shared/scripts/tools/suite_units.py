@@ -13,7 +13,7 @@ from __future__ import annotations
 
 import json
 import subprocess  # nosec B404 - fixed argv, shell=False; no user-supplied strings
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from pathlib import Path
 
 SHARED_TEST_DIRS = ("shared/tests", "shared/scripts/tests", "shared/scripts/tools/tests")
@@ -65,6 +65,10 @@ class Unit:
     target: str
     markers: tuple[str, ...] = ()
     extra_deps: tuple[str, ...] = ()
+    #: Coverage instrumentation, set by `instrument_for_coverage` (empty until then,
+    #: so an uninstrumented unit runs exactly as it did before).
+    cov_args: tuple[str, ...] = ()
+    cov_file: str | None = None
 
 
 @dataclass(frozen=True)
@@ -93,6 +97,77 @@ def discover_units(project_root: Path) -> list[Unit]:
     if (project_root / INTEGRATION_DIR).is_dir():
         units.append(Unit(id=INTEGRATION_DIR, cwd=".", target=INTEGRATION_DIR))
     return units
+
+
+def cov_label(unit_id: str) -> str:
+    """`shared/scripts/tests` -> `shared-scripts-tests`, a filename-safe label.
+
+    `combine_coverage.py` reads the label back to decide whether the tier needs
+    remapping onto `plugins/<name>/scripts/`, and it splits on `.` (pytest-cov's
+    xdist suffix), so the separator here must not be a dot.
+    """
+    return unit_id.replace("/", "-")
+
+
+def _cov_source(unit: Unit, project_root: Path) -> str | None:
+    """The `--cov=` root for a unit, or None when it has nothing to measure.
+
+    Same rule as ci.yml: a plugin is measured through its own `scripts/` (it runs
+    from its own CWD), while the shared and integration tiers run from the repo
+    root and measure `shared/`.
+    """
+    if unit.cwd == ".":
+        return "shared" if (project_root / "shared").is_dir() else None
+    return "scripts" if (project_root / unit.cwd / "scripts").is_dir() else None
+
+
+def instrument_for_coverage(units, project_root: Path, data_dir: Path) -> list[Unit]:
+    """Attach per-unit coverage measurement, so F0 can run the diff-coverage gate
+    CI runs (`suite_coverage`). Units with nothing measurable are returned as-is.
+
+    Every path handed to a unit is ABSOLUTE: a plugin unit runs from its own CWD,
+    and coverage does not search parent directories for its config, so a relative
+    `--cov-config` would silently drop `relative_files` and leave the XML full of
+    absolute paths that diff-cover cannot match against git.
+
+    Without a root `pyproject.toml` nothing is instrumented at all - that config is
+    where `relative_files` lives, and a measurement it cannot honour would look
+    green while proving nothing.
+
+    Both inputs are RESOLVED here rather than trusted: the CLI happens to pass an
+    absolute root, but a programmatic `run_suite(Path("."))` would otherwise emit
+    `--cov-config=pyproject.toml`, which a plugin unit - running from
+    `plugins/<name>` - resolves to that plugin's own pyproject instead of the root
+    one, silently losing `relative_files`. A function whose correctness depends on
+    the caller having normalised its argument is a trap, not a contract.
+    """
+    project_root = Path(project_root).resolve()
+    data_dir = Path(data_dir).resolve()
+    config = project_root / "pyproject.toml"
+    if not config.is_file():
+        return list(units)
+    out: list[Unit] = []
+    seen: dict[str, str] = {}
+    for unit in units:
+        source = _cov_source(unit, project_root)
+        if source is None:
+            out.append(unit)
+            continue
+        label = cov_label(unit.id)
+        if label in seen:  # two concurrent writers on one file would silently merge
+            raise SuiteConfigError(
+                f"units {seen[label]!r} and {unit.id!r} would share the same "
+                f"coverage data file (.coverage.{label}) - rename one unit.")
+        seen[label] = unit.id
+        out.append(replace(
+            unit,
+            extra_deps=(*unit.extra_deps, "pytest-cov"),
+            # Appended AFTER unit.markers by build_command, so the shared tier's
+            # composed `-m "not slow and not cross_plugin"` is untouched.
+            cov_args=(f"--cov={source}", f"--cov-config={config}", "--cov-report="),
+            cov_file=str(data_dir / f".coverage.{label}"),
+        ))
+    return out
 
 
 def _positive_int(value: object, label: str) -> int:

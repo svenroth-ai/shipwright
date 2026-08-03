@@ -1,0 +1,6 @@
+{
+  "stage": "spec-compliance",
+  "verdict": "PASS",
+  "spec_citations": [],
+  "summary": "All acceptance requirements are present and faithful: node-id collection uses absolute pytest verbosity, tests cover configured -v and no configured verbosity, marker filters remain active, and non-pytest runners retain the empty-list fallback. Stage 2 may proceed."
+}
