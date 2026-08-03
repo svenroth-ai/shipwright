@@ -26,6 +26,7 @@ from lib.iterate_entry import (
     iterates_dir,
 )
 from tools.generate_session_handoff import generate_handoff
+from tools.verifiers import decision_log_gate
 from tools.verifiers.iterate_checks import (
     check_adr_in_iterate_history,
     check_compliance_reflects_run_id,
@@ -114,6 +115,28 @@ class TestIterateChecksDirOnly:
         result = check_adr_in_iterate_history(tmp_path, entry["run_id"])
         assert result.ok is False
         assert "ADR-999" in result.detail
+
+    def test_adr_check_accepts_strict_local_drop_fallback(self, tmp_path, monkeypatch):
+        main = tmp_path / "main"
+        main.mkdir()
+        project = tmp_path / "worktree"
+        entry = _canonical_entry(slug="local-drop")
+        entry["adr"] = entry["run_id"]
+        _seed_dir_only_project(project, [entry])
+        drops = project / ".shipwright" / "agent_docs" / "decision-drops"
+        drops.mkdir()
+        (drops / f"{entry['run_id']}_001.json").write_text(
+            json.dumps({"run_id": entry["run_id"], "decision": "kept local"}),
+            encoding="utf-8",
+        )
+        monkeypatch.setattr(decision_log_gate, "resolve_main_repo_root", lambda _: main)
+
+        result = decision_log_gate.check_adr_in_iterate_history(
+            project, entry["run_id"]
+        )
+
+        assert result.ok is True
+        assert "decision-drop" in result.detail
 
     def test_compliance_reflects_entry_count_with_dir_only(self, tmp_path):
         entries = [_canonical_entry(slug=f"c{i}") for i in range(3)]

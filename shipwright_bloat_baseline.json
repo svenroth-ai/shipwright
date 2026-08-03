@@ -711,7 +711,7 @@
     {
       "path": "shared/scripts/tools/record_event.py",
       "limit": 300,
-      "current": 771,
+      "current": 779,
       "state": "exception",
       "adr": "ADR-111"
     },
