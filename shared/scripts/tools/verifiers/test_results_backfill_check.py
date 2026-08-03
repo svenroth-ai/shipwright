@@ -253,8 +253,12 @@ def check_test_results_backfill(
             if prior_summary is None:
                 raise BackfillError(f"summary did not pre-exist backfill commit: {rel}")
             _validate_summary(prior_summary, expected_run, f"pre-existing {rel}")
-            if committed_summary != prior_summary or committed_summary != working_summary:
+            if committed_summary != prior_summary:
                 raise BackfillError(f"durable summary changed in backfill commit: {rel}")
+            if committed_summary.replace(b"\r\n", b"\n") != working_summary.replace(
+                b"\r\n", b"\n"
+            ):
+                raise BackfillError(f"working durable summary differs from commit: {rel}")
     except (BackfillError, GitReadError) as exc:
         return CheckResult(name, False, str(exc))
     return CheckResult(name, True, f"{len(rows)} backfill artifacts committed with provenance")

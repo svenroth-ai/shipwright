@@ -235,7 +235,8 @@
         {
           "behavior": "AC-5 immutable evidence is committed while the mutable root snapshot remains excluded",
           "disposition": "tested",
-          "evidence": "test_valid_evidence_committed_with_the_run_passes, test_valid_but_uncommitted_evidence_fails_f6_gate, exact-byte CRLF Git test, parallel-iterate staging integration, and real directory-level staging exclusion of evidence-install *.tmp crash residue from the managed Gitignore template"
+          "evidence": "test_valid_evidence_committed_with_the_run_passes, test_valid_but_uncommitted_evidence_fails_f6_gate, exact-byte CRLF Git test, parallel-iterate staging integration, and real directory-level staging exclusion of evidence-install *.tmp crash residue from the managed Gitignore template",
+          "category": "integration"
         },
         {
           "behavior": "AC-6 backfill accepts only evidence attributed to a durable matching summary",
@@ -245,7 +246,7 @@
         {
           "behavior": "AC-7 recoverable P1 history is source-proven and unavailable history is named without invention",
           "disposition": "tested",
-          "evidence": "15 recovered artifacts pass test_results_backfill_check.py; 22 backfill verifier tests include strict staged/unstaged M-status parsing and rejection of A/D/R/U/??; the manifest records seven unavailable or rejected runs"
+          "evidence": "15 recovered artifacts pass test_results_backfill_check.py; 24 backfill verifier tests include strict staged/unstaged M-status parsing, rejection of A/D/R/U/??, CRLF-only checkout tolerance, and refusal of every other working-summary byte change; the manifest records seven unavailable or rejected runs"
         },
         {
           "behavior": "AC-8 compact summaries and event projection remain unchanged",
@@ -260,7 +261,7 @@
         {
           "behavior": "AC-10 unsafe encodings, duplicate keys, symlinks/reparse paths, path-traversing IDs, unstable reads, inherited blobs, unreachable commits, and unavailable parents are refused",
           "disposition": "tested",
-          "evidence": "validation matrix in test_iterate_test_results_evidence.py and 22 provenance/status cases in test_test_results_backfill_check.py"
+          "evidence": "validation matrix in test_iterate_test_results_evidence.py and 24 provenance/status/EOL cases in test_test_results_backfill_check.py"
         }
       ],
       "counts": {
@@ -297,8 +298,8 @@
       "changed_lines": 425,
       "missing_lines": 46,
       "compare_branch": "origin/main",
-      "source_fingerprint_before": "8907a08f4f6ea394fd0898963d3f0d7a9a3a1f0abd4fb87a93b627defc94b1e0",
-      "source_fingerprint_after": "8907a08f4f6ea394fd0898963d3f0d7a9a3a1f0abd4fb87a93b627defc94b1e0"
+      "source_fingerprint_before": "3fda2679aefd794170f269dcaf758ee8c87fcd29eed4ff52915500654db70099",
+      "source_fingerprint_after": "3fda2679aefd794170f269dcaf758ee8c87fcd29eed4ff52915500654db70099"
     },
     "provenance": {
       "python": "3.11.15",
@@ -311,12 +312,12 @@
         ".coverage.shared-chunk-5",
         ".coverage.shared-chunk-40"
       ],
-      "measured_at": "2026-08-03T11:03:46.3340116Z"
+      "measured_at": "2026-08-03T11:21:53.9158817Z"
     }
   },
   "source_state": {
     "run_id": "iterate-2026-08-03-preserve-test-evidence",
-    "commit": "76dc9621d872763052fa0d4ed9bc57a338b0c509",
+    "commit": "36d60e1eceb7add459b3eafed896cddc79344af7",
     "dirty": true,
     "base": null,
     "release": null

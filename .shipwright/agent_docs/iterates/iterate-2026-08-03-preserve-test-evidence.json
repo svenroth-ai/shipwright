@@ -1,12 +1,13 @@
 {
   "run_id": "iterate-2026-08-03-preserve-test-evidence",
-  "date": "2026-08-03T11:11:10.435696Z",
+  "date": "2026-08-03T11:23:14.439698Z",
   "event_at": "2026-08-03T10:53:52.315286+00:00",
   "type": "change",
   "complexity": "medium",
   "branch": "iterate/preserve-test-evidence",
   "tests_passed": true,
   "spec": ".shipwright/planning/iterate/2026-08-03-preserve-test-evidence.md",
+  "adr": "iterate-2026-08-03-preserve-test-evidence",
   "test_completeness": {
     "status": "complete",
     "behaviors": [
@@ -33,7 +34,8 @@
       {
         "behavior": "AC-5 immutable evidence is committed while the mutable root snapshot remains excluded",
         "disposition": "tested",
-        "evidence": "test_valid_evidence_committed_with_the_run_passes, test_valid_but_uncommitted_evidence_fails_f6_gate, exact-byte CRLF Git test, parallel-iterate staging integration, and real directory-level staging exclusion of evidence-install *.tmp crash residue from the managed Gitignore template"
+        "evidence": "test_valid_evidence_committed_with_the_run_passes, test_valid_but_uncommitted_evidence_fails_f6_gate, exact-byte CRLF Git test, parallel-iterate staging integration, and real directory-level staging exclusion of evidence-install *.tmp crash residue from the managed Gitignore template",
+        "category": "integration"
       },
       {
         "behavior": "AC-6 backfill accepts only evidence attributed to a durable matching summary",
@@ -43,7 +45,7 @@
       {
         "behavior": "AC-7 recoverable P1 history is source-proven and unavailable history is named without invention",
         "disposition": "tested",
-        "evidence": "15 recovered artifacts pass test_results_backfill_check.py; 22 backfill verifier tests include strict staged/unstaged M-status parsing and rejection of A/D/R/U/??; the manifest records seven unavailable or rejected runs"
+        "evidence": "15 recovered artifacts pass test_results_backfill_check.py; 24 backfill verifier tests include strict staged/unstaged M-status parsing, rejection of A/D/R/U/??, CRLF-only checkout tolerance, and refusal of every other working-summary byte change; the manifest records seven unavailable or rejected runs"
       },
       {
         "behavior": "AC-8 compact summaries and event projection remain unchanged",
@@ -58,7 +60,7 @@
       {
         "behavior": "AC-10 unsafe encodings, duplicate keys, symlinks/reparse paths, path-traversing IDs, unstable reads, inherited blobs, unreachable commits, and unavailable parents are refused",
         "disposition": "tested",
-        "evidence": "validation matrix in test_iterate_test_results_evidence.py and 22 provenance/status cases in test_test_results_backfill_check.py"
+        "evidence": "validation matrix in test_iterate_test_results_evidence.py and 24 provenance/status/EOL cases in test_test_results_backfill_check.py"
       }
     ],
     "counts": {

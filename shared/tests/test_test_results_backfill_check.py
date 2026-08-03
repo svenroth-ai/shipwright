@@ -108,6 +108,57 @@ def test_backfill_gate_accepts_exact_commit_source_and_preexisting_summary(
     assert "committed with provenance" in result.detail
 
 
+def test_backfill_gate_accepts_text_normalized_worktree_summary(git_origin_repo):
+    root, _ = git_origin_repo
+    raw = _write_artifact_and_summary(root)
+    (root / SUMMARY_REL).write_text(
+        json.dumps({"run_id": RECOVERED_RUN}, indent=2) + "\n", encoding="utf-8"
+    )
+    source_commit = _seed_commit_source(root, raw)
+    _write_manifest(
+        root, _manifest(raw, f"commit:{source_commit}:shipwright_test_results.json")
+    )
+    backfill_commit = _commit(root, BACKFILL_MANIFEST_REL, RECOVERED_REL)
+    committed = (root / SUMMARY_REL).read_bytes()
+    normalized = committed.replace(b"\r\n", b"\n")
+    (root / SUMMARY_REL).write_bytes(normalized.replace(b"\n", b"\r\n"))
+
+    result = check_test_results_backfill(root, CURRENT_RUN, backfill_commit)
+
+    assert result.ok is True
+    assert "committed with provenance" in result.detail
+
+
+def test_backfill_gate_rejects_every_non_eol_worktree_summary_change(
+    git_origin_repo,
+):
+    root, _ = git_origin_repo
+    raw = _write_artifact_and_summary(root)
+    committed_doc = {"run_id": RECOVERED_RUN, "verified": True}
+    (root / SUMMARY_REL).write_text(json.dumps(committed_doc), encoding="utf-8")
+    source_commit = _seed_commit_source(root, raw)
+    _write_manifest(
+        root, _manifest(raw, f"commit:{source_commit}:shipwright_test_results.json")
+    )
+    backfill_commit = _commit(root, BACKFILL_MANIFEST_REL, RECOVERED_REL)
+
+    mutations = (
+        json.dumps({"run_id": RECOVERED_RUN, "verified": 1}).encode(),
+        (
+            f'{{"run_id": "{RECOVERED_RUN}", "verified": true, '
+            '"verified": true}'
+        ).encode(),
+        (json.dumps(committed_doc, indent=2) + "\n").encode(),
+    )
+    for working in mutations:
+        (root / SUMMARY_REL).write_bytes(working)
+
+        result = check_test_results_backfill(root, CURRENT_RUN, backfill_commit)
+
+        assert result.ok is False
+        assert "working durable summary differs" in result.detail
+
+
 def test_backfill_gate_fails_when_recovered_artifact_is_left_uncommitted(
     git_origin_repo,
 ):
