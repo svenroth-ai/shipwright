@@ -23,6 +23,7 @@ def test_completion_observation_can_be_queried_safely(tmp_path: Path):
     assert lock_helper.has_completion_observation(done, "participant") is False
     assert lock_helper.observe_completion(done, "participant") is True
     assert lock_helper.has_completion_observation(done, "participant") is True
+    # An immutable observation marker is valid only while it stays zero bytes.
     marker = next(tmp_path.glob("observed-*.seen"))
     marker.write_bytes(b"\n")
     assert lock_helper.has_completion_observation(done, "participant") is False
@@ -80,12 +81,17 @@ def test_detected_fanout_waits_for_all_installed_hook_participants(
         cache, participants[0],
     ) == participants
     joined = threading.Event()
+    errors: list[BaseException] = []
 
     def join_fanout() -> None:
-        time.sleep(0.02)
-        for participant in participants[1:]:
-            assert lock_helper.observe_completion(done, participant) is True
-        joined.set()
+        try:
+            time.sleep(0.02)
+            for participant in participants[1:]:
+                if lock_helper.observe_completion(done, participant) is not True:
+                    raise AssertionError(f"observation failed for {participant}")
+            joined.set()
+        except BaseException as exc:
+            errors.append(exc)
 
     joiner = threading.Thread(target=join_fanout)
     joiner.start()
@@ -93,6 +99,7 @@ def test_detected_fanout_waits_for_all_installed_hook_participants(
     assert joined.is_set(), "barrier returned before every active peer joined"
     joiner.join(timeout=1)
 
+    assert not errors
     assert not joiner.is_alive()
     assert all(
         lock_helper.has_completion_observation(done, participant) is True

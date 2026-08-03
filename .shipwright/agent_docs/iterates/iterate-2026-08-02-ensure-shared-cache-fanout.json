@@ -89,7 +89,7 @@
     "exit_code": 0,
     "tests_run": 466,
     "evidence_path": ".shipwright/runs/iterate-2026-08-02-ensure-shared-cache-fanout/surface_verification.log",
-    "timestamp": "2026-08-03T22:30:16.200Z",
+    "timestamp": "2026-08-03T22:48:33.054Z",
     "attempts": 1
   },
   "declared_removals": [
