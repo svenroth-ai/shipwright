@@ -1,0 +1,1 @@
+Iterate now selects bounded, provenance-bearing event history after Repo Scout through a shared area catalog and disposable index, with compact, shadow, explicit full modes, visible fallbacks, and temporary context-cost reporting.

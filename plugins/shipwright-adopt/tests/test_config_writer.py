@@ -131,6 +131,7 @@ def test_iterate_config_written_with_documented_schema(tmp_path: Path) -> None:
     # Schema: external_code_review.enabled (controls code-review cascade — independent gate)
     assert "external_code_review" in iterate
     assert iterate["external_code_review"]["enabled"] is True
+    assert iterate["events_context"]["mode"] == "compact"
 
     # Provenance marker so tooling can tell adopt-seeded configs apart from
     # /shipwright-iterate hand-edited ones.
@@ -158,6 +159,7 @@ def test_iterate_config_round_trip_producer_consumer(tmp_path: Path) -> None:
     # Type fidelity (the root of most boundary bugs):
     assert isinstance(parsed["external_review"]["feedback_iterations"], int)
     assert isinstance(parsed["external_code_review"]["enabled"], bool)
+    assert parsed["events_context"]["mode"] == "compact"
     assert isinstance(parsed["seeded_by_adopt"], bool)
     assert isinstance(parsed["updated_at"], str)
 
@@ -181,6 +183,7 @@ def test_iterate_config_idempotent_overwrite(tmp_path: Path) -> None:
     assert set(first.keys()) == set(second.keys())
     assert first["external_review"] == second["external_review"]
     assert first["external_code_review"] == second["external_code_review"]
+    assert first["events_context"] == second["events_context"]
     assert first["seeded_by_adopt"] == second["seeded_by_adopt"]
 
 

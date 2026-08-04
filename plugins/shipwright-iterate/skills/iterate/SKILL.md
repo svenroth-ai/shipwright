@@ -75,7 +75,7 @@ This run inherits `origin/<default>`'s state, so check it before building on it 
 
 ### B2. Load Project Context (MANDATORY)
 
-Read **all Layer 1** of `references/context-loading.md` — `CLAUDE.md`, `conventions.md`, `decision_log.md`, `architecture.md`, `shipwright_sync_config.json`, all `spec.md`, `shipwright_test_results.json`, `shipwright_events.jsonl`, `git log --oneline -20`. Missing files: warn but continue.
+Load pre-Scout Layer 1 per `references/context-loading.md`; never load raw `shipwright_events.jsonl` here. After Stage-2 Repo Scout, use that reference's bounded query + canonical catalog refresh. Missing files: warn but continue.
 
 ### C. Generate Run ID
 
