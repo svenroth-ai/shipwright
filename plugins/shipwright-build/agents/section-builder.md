@@ -423,7 +423,7 @@ uv run "{shared_root}/scripts/tools/record_event.py" \
   --deduplicate-by-commit
 ```
 
-Where `{comma_separated_FRs}` is the list of FRs from the section spec. If the section spec does not reference specific FRs, use the split-level FR range. If this step fails: log WARNING but do not block — the event can be re-recorded later. The dashboard (Fix 2) has a config fallback that covers missing events.
+Where `{comma_separated_FRs}` is the list of FRs from the section spec. If the section spec does not reference specific FRs, use the split-level FR range. If this step fails: log WARNING but do not block — the event can be re-recorded later. The dashboard (Fix 2) has a config fallback that covers missing events. Then refresh realised paths through the shared producer: `uv run "{shared_root}/scripts/tools/area_catalog.py" refresh --project-root "{project_root}" --source build --git-range "HEAD^..HEAD" --no-provisional`.
 **Then declare the section's requirement impact.** Read `{plugin_root}/skills/build/references/requirement-writeback.md` and run the two commands it gives (`record_requirement_impact.py --phase build`, then `check_section_file_attribution.py`) with this section's scope and its own commit range. A non-zero attribution exit lists changed files neither declared nor attributed: add the missing `--extra` entries with real reasons, or drop the out-of-scope change; never proceed with it unexplained.
 
 ## Output

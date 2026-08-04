@@ -199,6 +199,10 @@ templates):
    `supabase link --project-ref`, verify `.supabase/` exists.
 7. **GitHub Repo Hygiene** — enable `delete_branch_on_merge=true` if a
    GitHub remote exists.
+8. **Seed the area catalog** after specs and `architecture.md` exist through
+   the shared producer (never write the schema directly):
+   `uv run "{shared_root}/scripts/tools/area_catalog.py" seed-greenfield
+   --project-root "$(pwd)" --source project`.
 
 **Checkpoint:** CLAUDE.md existence + `supabase/config.toml` existence
 (supabase-nextjs only).

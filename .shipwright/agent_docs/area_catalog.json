@@ -1,0 +1,492 @@
+{
+  "areas": [
+    {
+      "cross_cutting_tags": [],
+      "id": "changelog-unreleased-d",
+      "path_patterns": [
+        "CHANGELOG-unreleased.d/**"
+      ],
+      "planned_paths": [],
+      "priority": 0,
+      "realized_paths": [
+        "CHANGELOG-unreleased.d/Changed/iterate-2026-08-03-f0-host-resource-lease_001.md",
+        "CHANGELOG-unreleased.d/Changed/iterate-2026-08-03-f0-host-resource-lease_002.md",
+        "CHANGELOG-unreleased.d/Changed/iterate-2026-08-04-p1-15-events-context_001.md"
+      ],
+      "requirements": [],
+      "source": "deterministic",
+      "status": "active"
+    },
+    {
+      "cross_cutting_tags": [],
+      "id": "claude-plugin",
+      "path_patterns": [
+        ".claude-plugin/**"
+      ],
+      "planned_paths": [],
+      "priority": 0,
+      "realized_paths": [],
+      "requirements": [],
+      "source": "deterministic",
+      "status": "active"
+    },
+    {
+      "cross_cutting_tags": [],
+      "id": "docs",
+      "path_patterns": [
+        "docs/**"
+      ],
+      "planned_paths": [],
+      "priority": 0,
+      "realized_paths": [
+        "docs/guide.md",
+        "docs/hooks-and-pipeline.md"
+      ],
+      "requirements": [],
+      "source": "deterministic",
+      "status": "active"
+    },
+    {
+      "cross_cutting_tags": [],
+      "id": "github",
+      "path_patterns": [
+        ".github/**"
+      ],
+      "planned_paths": [],
+      "priority": 0,
+      "realized_paths": [],
+      "requirements": [],
+      "source": "deterministic",
+      "status": "active"
+    },
+    {
+      "cross_cutting_tags": [],
+      "id": "integration-tests",
+      "path_patterns": [
+        "integration-tests/**"
+      ],
+      "planned_paths": [],
+      "priority": 0,
+      "realized_paths": [
+        "integration-tests/test_event_context_workflow.py"
+      ],
+      "requirements": [],
+      "source": "deterministic",
+      "status": "active"
+    },
+    {
+      "cross_cutting_tags": [],
+      "id": "plugins",
+      "path_patterns": [
+        "plugins/**"
+      ],
+      "planned_paths": [],
+      "priority": 0,
+      "realized_paths": [],
+      "requirements": [],
+      "source": "deterministic",
+      "status": "active"
+    },
+    {
+      "cross_cutting_tags": [],
+      "id": "plugins-shipwright-adopt",
+      "path_patterns": [
+        "plugins/shipwright-adopt/**"
+      ],
+      "planned_paths": [],
+      "priority": 0,
+      "realized_paths": [
+        "plugins/shipwright-adopt/scripts/lib/config_writer.py",
+        "plugins/shipwright-adopt/scripts/lib/dry_run_reporter.py",
+        "plugins/shipwright-adopt/skills/adopt/SKILL.md",
+        "plugins/shipwright-adopt/skills/adopt/references/backfill-iterate-config.md",
+        "plugins/shipwright-adopt/skills/adopt/references/step-e-artifact-generation.md",
+        "plugins/shipwright-adopt/tests/test_config_writer.py"
+      ],
+      "requirements": [],
+      "source": "deterministic",
+      "status": "active"
+    },
+    {
+      "cross_cutting_tags": [],
+      "id": "plugins-shipwright-adopt-tests-fixtures-polyglot-monorepo-apps-api",
+      "path_patterns": [
+        "plugins/shipwright-adopt/tests/fixtures/polyglot-monorepo/apps/api/**"
+      ],
+      "planned_paths": [],
+      "priority": 0,
+      "realized_paths": [],
+      "requirements": [],
+      "source": "deterministic",
+      "status": "active"
+    },
+    {
+      "cross_cutting_tags": [],
+      "id": "plugins-shipwright-adopt-tests-fixtures-polyglot-monorepo-apps-web",
+      "path_patterns": [
+        "plugins/shipwright-adopt/tests/fixtures/polyglot-monorepo/apps/web/**"
+      ],
+      "planned_paths": [],
+      "priority": 0,
+      "realized_paths": [],
+      "requirements": [],
+      "source": "deterministic",
+      "status": "active"
+    },
+    {
+      "cross_cutting_tags": [],
+      "id": "plugins-shipwright-build",
+      "path_patterns": [
+        "plugins/shipwright-build/**"
+      ],
+      "planned_paths": [],
+      "priority": 0,
+      "realized_paths": [
+        "plugins/shipwright-build/agents/section-builder.md",
+        "plugins/shipwright-build/skills/build/references/section-state.md"
+      ],
+      "requirements": [],
+      "source": "deterministic",
+      "status": "active"
+    },
+    {
+      "cross_cutting_tags": [],
+      "id": "plugins-shipwright-changelog",
+      "path_patterns": [
+        "plugins/shipwright-changelog/**"
+      ],
+      "planned_paths": [],
+      "priority": 0,
+      "realized_paths": [],
+      "requirements": [],
+      "source": "deterministic",
+      "status": "active"
+    },
+    {
+      "cross_cutting_tags": [],
+      "id": "plugins-shipwright-compliance",
+      "path_patterns": [
+        "plugins/shipwright-compliance/**"
+      ],
+      "planned_paths": [],
+      "priority": 0,
+      "realized_paths": [],
+      "requirements": [],
+      "source": "deterministic",
+      "status": "active"
+    },
+    {
+      "cross_cutting_tags": [],
+      "id": "plugins-shipwright-deploy",
+      "path_patterns": [
+        "plugins/shipwright-deploy/**"
+      ],
+      "planned_paths": [],
+      "priority": 0,
+      "realized_paths": [],
+      "requirements": [],
+      "source": "deterministic",
+      "status": "active"
+    },
+    {
+      "cross_cutting_tags": [],
+      "id": "plugins-shipwright-design",
+      "path_patterns": [
+        "plugins/shipwright-design/**"
+      ],
+      "planned_paths": [],
+      "priority": 0,
+      "realized_paths": [],
+      "requirements": [],
+      "source": "deterministic",
+      "status": "active"
+    },
+    {
+      "cross_cutting_tags": [],
+      "id": "plugins-shipwright-grade",
+      "path_patterns": [
+        "plugins/shipwright-grade/**"
+      ],
+      "planned_paths": [],
+      "priority": 0,
+      "realized_paths": [],
+      "requirements": [],
+      "source": "deterministic",
+      "status": "active"
+    },
+    {
+      "cross_cutting_tags": [],
+      "id": "plugins-shipwright-iterate",
+      "path_patterns": [
+        "plugins/shipwright-iterate/**"
+      ],
+      "planned_paths": [],
+      "priority": 0,
+      "realized_paths": [
+        "plugins/shipwright-iterate/skills/iterate/SKILL.md",
+        "plugins/shipwright-iterate/skills/iterate/references/F0.5.md",
+        "plugins/shipwright-iterate/skills/iterate/references/F0.md",
+        "plugins/shipwright-iterate/skills/iterate/references/context-loading.md"
+      ],
+      "requirements": [],
+      "source": "deterministic",
+      "status": "active"
+    },
+    {
+      "cross_cutting_tags": [],
+      "id": "plugins-shipwright-plan",
+      "path_patterns": [
+        "plugins/shipwright-plan/**"
+      ],
+      "planned_paths": [],
+      "priority": 0,
+      "realized_paths": [
+        "plugins/shipwright-plan/skills/plan/SKILL.md"
+      ],
+      "requirements": [],
+      "source": "deterministic",
+      "status": "active"
+    },
+    {
+      "cross_cutting_tags": [],
+      "id": "plugins-shipwright-preview",
+      "path_patterns": [
+        "plugins/shipwright-preview/**"
+      ],
+      "planned_paths": [],
+      "priority": 0,
+      "realized_paths": [],
+      "requirements": [],
+      "source": "deterministic",
+      "status": "active"
+    },
+    {
+      "cross_cutting_tags": [],
+      "id": "plugins-shipwright-project",
+      "path_patterns": [
+        "plugins/shipwright-project/**"
+      ],
+      "planned_paths": [],
+      "priority": 0,
+      "realized_paths": [
+        "plugins/shipwright-project/skills/project/SKILL.md"
+      ],
+      "requirements": [],
+      "source": "deterministic",
+      "status": "active"
+    },
+    {
+      "cross_cutting_tags": [],
+      "id": "plugins-shipwright-run",
+      "path_patterns": [
+        "plugins/shipwright-run/**"
+      ],
+      "planned_paths": [],
+      "priority": 0,
+      "realized_paths": [],
+      "requirements": [],
+      "source": "deterministic",
+      "status": "active"
+    },
+    {
+      "cross_cutting_tags": [],
+      "id": "plugins-shipwright-security",
+      "path_patterns": [
+        "plugins/shipwright-security/**"
+      ],
+      "planned_paths": [],
+      "priority": 0,
+      "realized_paths": [],
+      "requirements": [],
+      "source": "deterministic",
+      "status": "active"
+    },
+    {
+      "cross_cutting_tags": [],
+      "id": "plugins-shipwright-test",
+      "path_patterns": [
+        "plugins/shipwright-test/**"
+      ],
+      "planned_paths": [],
+      "priority": 0,
+      "realized_paths": [],
+      "requirements": [],
+      "source": "deterministic",
+      "status": "active"
+    },
+    {
+      "cross_cutting_tags": [],
+      "id": "pytest-cache",
+      "path_patterns": [
+        ".pytest_cache/**"
+      ],
+      "planned_paths": [],
+      "priority": 0,
+      "realized_paths": [],
+      "requirements": [],
+      "source": "deterministic",
+      "status": "active"
+    },
+    {
+      "cross_cutting_tags": [
+        "repository"
+      ],
+      "id": "root",
+      "path_patterns": [
+        ".gitattributes",
+        ".gitignore",
+        ".python-version",
+        ".trivyignore.yaml",
+        "CHANGELOG.md",
+        "CLAUDE.md",
+        "CODE_OF_CONDUCT.md",
+        "CONTRIBUTING.md",
+        "LICENSE",
+        "README.md",
+        "SECURITY.md",
+        "audit_config.json",
+        "conftest.py",
+        "pyproject.toml",
+        "shipwright_accepted_risks.yaml",
+        "shipwright_bloat_baseline.json",
+        "shipwright_build_config.json",
+        "shipwright_compliance_config.json",
+        "shipwright_events.jsonl",
+        "shipwright_iterate_config.json",
+        "shipwright_plan_config.json",
+        "shipwright_project_config.json",
+        "shipwright_run_config.json",
+        "shipwright_security_config.json",
+        "shipwright_sync_config.json",
+        "shipwright_test_config.json",
+        "shipwright_test_results.json",
+        "uv.lock"
+      ],
+      "planned_paths": [],
+      "priority": 0,
+      "realized_paths": [
+        "shipwright_events.jsonl",
+        "shipwright_test_config.json",
+        "shipwright_test_results.json"
+      ],
+      "requirements": [],
+      "source": "deterministic",
+      "status": "active"
+    },
+    {
+      "cross_cutting_tags": [],
+      "id": "ruff-cache",
+      "path_patterns": [
+        ".ruff_cache/**"
+      ],
+      "planned_paths": [],
+      "priority": 0,
+      "realized_paths": [],
+      "requirements": [],
+      "source": "deterministic",
+      "status": "active"
+    },
+    {
+      "cross_cutting_tags": [],
+      "id": "scripts",
+      "path_patterns": [
+        "scripts/**"
+      ],
+      "planned_paths": [],
+      "priority": 0,
+      "realized_paths": [],
+      "requirements": [],
+      "source": "deterministic",
+      "status": "active"
+    },
+    {
+      "cross_cutting_tags": [],
+      "id": "shared",
+      "path_patterns": [
+        "shared/**"
+      ],
+      "planned_paths": [],
+      "priority": 0,
+      "realized_paths": [
+        "shared/scripts/lib/_host_resource_locking.py",
+        "shared/scripts/lib/_windows_acl.py",
+        "shared/scripts/lib/area_catalog.py",
+        "shared/scripts/lib/event_context_index.py",
+        "shared/scripts/lib/event_context_metrics.py",
+        "shared/scripts/lib/event_context_query.py",
+        "shared/scripts/lib/host_resource_lease.py",
+        "shared/scripts/tests/test_event_context.py",
+        "shared/scripts/tools/area_catalog.py",
+        "shared/scripts/tools/event_context.py",
+        "shared/scripts/tools/run_test_suite.py",
+        "shared/scripts/tools/suite_budget.py",
+        "shared/scripts/tools/suite_gate_runtime.py",
+        "shared/scripts/tools/suite_host_resources.py",
+        "shared/scripts/tools/tests/test_f0_cli_diff_coverage_e2e.py",
+        "shared/scripts/tools/tests/test_host_resource_lease.py",
+        "shared/scripts/tools/tests/test_host_resource_lease_process.py",
+        "shared/scripts/tools/tests/test_host_resource_locking.py",
+        "shared/scripts/tools/tests/test_run_test_suite_coverage.py",
+        "shared/scripts/tools/tests/test_run_test_suite_faults.py",
+        "shared/scripts/tools/tests/test_suite_host_resources.py",
+        "shared/scripts/tools/tests/test_suite_race_cli.py"
+      ],
+      "requirements": [],
+      "source": "deterministic",
+      "status": "active"
+    },
+    {
+      "cross_cutting_tags": [],
+      "id": "shipwright",
+      "path_patterns": [
+        ".shipwright/**"
+      ],
+      "planned_paths": [
+        ".shipwright/agent_docs/iterates/iterate-2026-08-03-f0-host-resource-lease.json",
+        ".shipwright/agent_docs/iterates/iterate-2026-08-03-f0-host-resource-lease.test-results.json",
+        ".shipwright/planning/iterate/2026-08-03-f0-host-resource-lease-miniplan.md",
+        ".shipwright/planning/iterate/2026-08-03-f0-host-resource-lease.md",
+        ".shipwright/planning/iterate/iterate-2026-08-03-f0-host-resource-lease/reviews.json"
+      ],
+      "priority": 0,
+      "realized_paths": [
+        ".shipwright/agent_docs/architecture.md",
+        ".shipwright/agent_docs/area_catalog.json",
+        ".shipwright/agent_docs/build_dashboard.md",
+        ".shipwright/agent_docs/conventions.md",
+        ".shipwright/agent_docs/iterates/iterate-2026-07-28-grade-snapshot-honest-subject.json",
+        ".shipwright/agent_docs/iterates/iterate-2026-08-04-p1-15-events-context.json",
+        ".shipwright/agent_docs/iterates/iterate-2026-08-04-p1-15-events-context.test-results.json",
+        ".shipwright/agent_docs/session_handoff.md",
+        ".shipwright/agent_docs/triage_inbox.md",
+        ".shipwright/compliance/change-history.md",
+        ".shipwright/compliance/ci-security.json",
+        ".shipwright/compliance/context-cost",
+        ".shipwright/compliance/context-cost/events-context-metrics.jsonl",
+        ".shipwright/compliance/context-cost/events-context-report.md",
+        ".shipwright/compliance/dashboard.md",
+        ".shipwright/compliance/sbom.md",
+        ".shipwright/compliance/test-evidence.md",
+        ".shipwright/compliance/test-traceability.json",
+        ".shipwright/compliance/traceability-matrix.md",
+        ".shipwright/planning/adr/INDEX.md",
+        ".shipwright/planning/iterate/2026-08-04-events-context-miniplan.md",
+        ".shipwright/planning/iterate/2026-08-04-events-context.md",
+        ".shipwright/planning/iterate/iterate-2026-08-04-p1-15-events-context",
+        ".shipwright/planning/iterate/iterate-2026-08-04-p1-15-events-context/reviews.json",
+        ".shipwright/triage.jsonl"
+      ],
+      "requirements": [],
+      "source": "deterministic",
+      "status": "active"
+    }
+  ],
+  "catalogue_version": 4,
+  "path_fingerprint": "cbdcd35a63de86427bf991e2fe4f828f7c4e58f9188fe8d32ec30f28cc30e058",
+  "producer": "shared/scripts/tools/area_catalog.py",
+  "schema_version": 1,
+  "sources": [
+    "iterate",
+    "iterate:bootstrap"
+  ]
+}

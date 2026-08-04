@@ -1,0 +1,1 @@
+{"fallbacks": ["catalog_missing"], "full_bytes": 510687, "full_count": 758, "full_estimated_tokens": 127672, "mode": "compact", "query_count": 1, "reduction_percentage": 95.3, "run_id": "iterate-2026-08-04-p1-15-events-context", "selected_bytes": 23927, "selected_count": 15, "selected_estimated_tokens": 5982, "truncations": 1}
