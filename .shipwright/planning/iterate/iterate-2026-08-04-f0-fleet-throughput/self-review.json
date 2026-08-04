@@ -1,0 +1,44 @@
+{
+  "items": [
+    {
+      "name": "Spec Compliance",
+      "verdict": "pass",
+      "note": "The diff implements the measured 11-of-22 fleet budget, integration outer-only policy, both synchronized race fixes, bounded progress, descendant cleanup, retained diagnostics, strict retries, coverage, and CI parity without unrelated behavior."
+    },
+    {
+      "name": "Error Handling",
+      "verdict": "pass",
+      "note": "Spawn, timeout, cancellation, output-drain, evidence-write, and cleanup failures preserve a red/fault verdict; every supervisor exit reaps its owned tree and releases handle-owned resources."
+    },
+    {
+      "name": "Security Basics",
+      "verdict": "pass",
+      "note": "Run, unit, phase, and child output are treated as untrusted: path keys are hashed, display text is capped, credential shapes are redacted, output is marked untrusted, and no secrets were added."
+    },
+    {
+      "name": "Test Quality",
+      "verdict": "pass",
+      "note": "Tests assert observable process, lease, ordering, disk, retry, and CLI outcomes; planted scheduler mutations turned the synchronized overlap/FIFO tests red, and the native Windows probe uses real uv, pytest, xdist workers, an exited intermediate, and a grandchild."
+    },
+    {
+      "name": "Performance Basics",
+      "verdict": "pass",
+      "note": "A fixed-size byte tail bounds pipe, memory, and disk; fleet replay selects weight 11 by four-run throughput and queue metrics, allowing two sibling F0s without exceeding capacity 22."
+    },
+    {
+      "name": "Naming & Structure",
+      "verdict": "pass",
+      "note": "Process supervision, diagnostics, scheduling, and rendering remain in focused existing/new suite modules; every new source module is below the 300-line budget and names follow suite_* conventions."
+    },
+    {
+      "name": "Affected Boundaries",
+      "verdict": "pass",
+      "note": "Config-to-argv, supervisor-to-verdict, diagnostics-producer-to-disk-reader, and lifecycle-to-console boundaries are listed in the spec and pass real round trips. Diagnostic JSON is machine-produced, so export/comment/quote operator-input probes are n/a; invalid UTF-8, non-ASCII/control ids, long paths, duplicate writes, truncation, and redaction are covered."
+    },
+    {
+      "name": "Test Hygiene Probe",
+      "verdict": "pass",
+      "note": "scan_test_hygiene.py passed on every tracked and untracked changed Python test; the Windows-only Job Object skip carries the documented platform exception and POSIX cleanup has separate coverage."
+    }
+  ]
+}

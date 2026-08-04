@@ -34,6 +34,7 @@ import os
 import subprocess  # nosec B404 - fixed argv, shell=False; no user-supplied strings
 import sys
 import tempfile
+import threading
 import time
 from contextlib import contextmanager
 from dataclasses import dataclass, field
@@ -47,8 +48,14 @@ from uuid import uuid4
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
 from scripts.tools.suite_budget import (  # noqa: E402
-    Budget as _Budget, heartbeat_while as _heartbeat_while,
+    Budget as _Budget, emit_unit_event as _emit_unit_event,
+    heartbeat_while as _heartbeat_while,
     run_parallel as _run_parallel,
+)
+from scripts.tools.suite_diagnostics import write_attempt_evidence  # noqa: E402
+from scripts.tools.suite_process import (  # noqa: E402
+    RC_CANCELLED as _RC_CANCELLED, read_output_tail as _read_output_tail,
+    run_process as _run_process,
 )
 from scripts.tools.suite_coverage import (  # noqa: E402
     GATE_FAILED, GATE_PASSED, GateResult, coverage_run_lock, final_exit_code,
@@ -79,9 +86,7 @@ from scripts.tools.suite_units import (  # noqa: E402  (re-export: one import si
     load_suite_config,
 )
 
-_RC_TIMEOUT = 124        # conventional timeout rc; INFRA like any other fault
 _RC_SPAWN_FAILED = 126
-
 #: how a unit recovered on its retry - purely for an honest operator message
 RETRY_SERIAL = "serial"   # a test failure that passed when run alone, without xdist
 RETRY_INFRA = "infra"     # a transient infrastructure fault that did not reproduce
@@ -98,6 +103,11 @@ class UnitResult:
     retry_kind: str | None = None
     serial_rc: int | None = None
     retry_cmd: str | None = None  # the argv the retry ACTUALLY ran (reproduce-me)
+    evidence_path: str | None = None
+    retry_evidence_path: str | None = None
+    evidence_error: str | None = None
+    truncated: bool = False
+    cancelled: bool = False
 
 
 @dataclass
@@ -165,8 +175,10 @@ def warm_up(project_root: Path) -> None:
 
 
 def _exec(unit: Unit, project_root: Path, xdist_workers: int | None, tmp_dir: Path,
-          timeout: int | None = None) -> tuple[int, str, float, bool]:
-    """Run one unit. Returns (rc, output, seconds, pytest_ran).
+          timeout: int | None = None,
+          cancel_event: threading.Event | None = None,
+          ) -> tuple[int, str, float, bool, bool, bool]:
+    """Run one unit. Returns rc, output, seconds, pytest_ran, truncated, cancelled.
 
     A spawn failure or a hang becomes a FAULT rc, never an exception: one unlaunchable
     unit must not discard the other units' results.
@@ -182,21 +194,31 @@ def _exec(unit: Unit, project_root: Path, xdist_workers: int | None, tmp_dir: Pa
     if unit.cov_file:
         env["COVERAGE_FILE"] = unit.cov_file
     report = tmp_dir / "r.xml"
-    started = time.time()
+    log_path = tmp_dir / "attempt.log"
+    started = time.monotonic()
     try:
-        proc = subprocess.run(  # nosec B603 - fixed argv from a validated allowlist
+        result = _run_process(
             build_command(unit, xdist_workers, report),
-            cwd=project_root / unit.cwd, env=env, shell=False,
-            capture_output=True, text=True, errors="replace", timeout=timeout,
+            cwd=project_root / unit.cwd, env=env,
+            log_path=log_path, timeout=timeout,
+            cancel_event=cancel_event,
         )
-    except subprocess.TimeoutExpired:
-        return (_RC_TIMEOUT, f"FAULT: unit timed out after {timeout}s",
-                time.time() - started, False)
+    except KeyboardInterrupt:
+        if cancel_event is not None:
+            cancel_event.set()
+        tail, truncated = _read_output_tail(log_path)
+        return (_RC_CANCELLED, "FAULT: unit cancelled by operator\n" + tail,
+                time.monotonic() - started, report.exists(), truncated, True)
     except OSError as exc:  # uv not on PATH, ENOMEM/EAGAIN on spawn, ...
         return (_RC_SPAWN_FAILED, f"FAULT: could not launch unit: {exc}",
-                time.time() - started, False)
-    out = (proc.stdout or "") + (proc.stderr or "")
-    return proc.returncode, out, time.time() - started, report.exists()
+                0.0, False, False, False)
+    out = result.tail
+    if result.timed_out:
+        out = f"FAULT: unit timed out after {timeout}s\n" + out
+    elif result.cancelled:
+        out = "FAULT: unit cancelled by parent\n" + out
+    return (result.returncode, out, result.seconds, report.exists(),
+            result.truncated, result.cancelled)
 
 
 def _clear_failed_attempt_coverage(unit: Unit) -> None:
@@ -226,6 +248,22 @@ def resolve_suite_config(project_root: Path) -> SuiteConfig:
     return load_suite_config(project_root, [u.id for u in units])
 
 
+def _retain_attempt_evidence(project_root: Path, *, run_id: str | None,
+                             unit_id: str, phase: str, rc: int, seconds: float,
+                             output: str, pytest_ran: bool,
+                             truncated: bool) -> tuple[str | None, str | None]:
+    """Persist a failed attempt without allowing diagnostics to hide its verdict."""
+    try:
+        path = write_attempt_evidence(
+            project_root, run_id=run_id or "unknown-run", unit_id=unit_id,
+            phase=phase, rc=rc, seconds=seconds, tail=output,
+            truncated=truncated, pytest_ran=pytest_ran,
+        )
+    except Exception as exc:  # noqa: BLE001 - the red verdict must still be returned
+        return None, f"{type(exc).__name__}: {exc}"
+    return path.as_posix(), None
+
+
 def run_suite(project_root: Path, config: SuiteConfig | None = None, *,
               budget_total: int | None = None, preflight: bool = True,
               heartbeat_seconds: float = 30.0, run_id: str | None = None,
@@ -242,6 +280,7 @@ def run_suite(project_root: Path, config: SuiteConfig | None = None, *,
     units = instrument_for_coverage(units, project_root, prepare_coverage(project_root))
     requested_budget = budget_total if budget_total is not None else config.max_workers
     budget = _Budget(normalize_cpu_weight(requested_budget))
+    cancel_event = threading.Event()
     started = time.time()
 
     def _xdist_workers(unit_id: str) -> int | None:
@@ -254,20 +293,39 @@ def run_suite(project_root: Path, config: SuiteConfig | None = None, *,
     with tempfile.TemporaryDirectory(prefix="swf0-", ignore_cleanup_errors=True) as tmp:
         tmp_root = Path(tmp)
 
+        for unit in units:
+            requested = _xdist_workers(unit.id) or 1
+            _emit_unit_event(stream, run_id=run_id, event="queued", unit_id=unit.id,
+                             weight=requested)
+
         def _one(indexed: tuple[int, Unit]) -> UnitResult:
             idx, unit = indexed
             workers = _xdist_workers(unit.id)
-            weight = budget.acquire(workers or 1)
+            weight = budget.acquire(workers or 1, cancel_event=cancel_event)
+            _emit_unit_event(stream, run_id=run_id, event="start", unit_id=unit.id,
+                             weight=weight)
             try:  # a unit may never fan out wider than the budget it holds
-                rc, out, secs, ran = _exec(unit, project_root, weight if workers else None,
-                                           tmp_root / "p" / f"u{idx}", config.timeout_seconds)
+                rc, out, secs, ran, truncated, cancelled = _exec(
+                    unit, project_root, weight if workers else None,
+                    tmp_root / "p" / f"u{idx}", config.timeout_seconds, cancel_event)
             finally:
                 budget.release(weight)
-            return UnitResult(unit.id, classify(rc, ran), rc, secs, out)
+            outcome = classify(rc, ran)
+            result = UnitResult(
+                unit.id, outcome, rc, secs, out,
+                truncated=truncated, cancelled=cancelled)
+            if outcome != PASS:
+                result.evidence_path, result.evidence_error = _retain_attempt_evidence(
+                    project_root, run_id=run_id, unit_id=unit.id, phase="initial",
+                    rc=rc, seconds=secs, output=out, pytest_ran=ran,
+                    truncated=truncated)
+            _emit_unit_event(stream, run_id=run_id, event="complete", unit_id=unit.id,
+                             weight=weight, outcome=outcome, seconds=secs)
+            return result
 
         results = _run_parallel(
             units, _one, heartbeat_seconds=heartbeat_seconds,
-            run_id=run_id, stream=stream,
+            run_id=run_id, stream=stream, cancel_event=cancel_event,
         )
 
         # Retries - AFTER the pool drains, so "serially" is literally true, and in a clean
@@ -287,25 +345,53 @@ def run_suite(project_root: Path, config: SuiteConfig | None = None, *,
             # Capture the REAL retry argv: a follow-up card that guesses the command
             # is an attractive but unreliable "reproduce me".
             res.retry_cmd = reproduce_command(unit.cwd, build_command(unit, workers))
+            retry_weight = _xdist_workers(res.unit_id) if keep_xdist else 1
+            retry_state = "identical-shape-infra" if keep_xdist else "authoritative-serial"
+            _emit_unit_event(stream, run_id=run_id, event="start", unit_id=res.unit_id,
+                             weight=retry_weight or 1, phase="serial-retry",
+                             retry_kind=retry_state)
             with _heartbeat_while(
                     heartbeat_seconds=heartbeat_seconds, run_id=run_id,
                     completed=completed_units, total=len(units),
                     initial_completed=len(results),
                     phase="serial-retry",
                     unit_id=res.unit_id, stream=stream):
-                rc, out, _, ran = _exec(unit, project_root, workers,
-                                        tmp_root / "s" / f"u{idx}",
-                                        config.timeout_seconds)
+                rc, out, retry_secs, ran, retry_truncated, retry_cancelled = _exec(
+                    unit, project_root, workers, tmp_root / "s" / f"u{idx}",
+                    config.timeout_seconds, cancel_event)
             res.serial_rc = rc
+            if retry_cancelled:
+                res.retry_evidence_path, error = _retain_attempt_evidence(
+                    project_root, run_id=run_id, unit_id=unit.id, phase="cancelled-retry",
+                    rc=rc, seconds=retry_secs, output=out, pytest_ran=ran,
+                    truncated=retry_truncated)
+                res.evidence_error = res.evidence_error or error
+                _emit_unit_event(
+                    stream, run_id=run_id, event="complete", unit_id=res.unit_id,
+                    weight=retry_weight or 1, outcome="cancelled",
+                    seconds=retry_secs, phase="serial-retry",
+                    retry_kind=retry_state)
+                raise KeyboardInterrupt
             if classify(rc, ran) == PASS:
                 res.race = True  # keep the FIRST output: it is the evidence
                 res.outcome = PASS
                 res.retry_kind = RETRY_INFRA if keep_xdist else RETRY_SERIAL
             else:
                 res.outcome, res.output = classify(rc, ran), out
+                res.truncated = retry_truncated
+                res.cancelled = retry_cancelled
+                res.retry_evidence_path, error = _retain_attempt_evidence(
+                    project_root, run_id=run_id, unit_id=unit.id, phase="retry",
+                    rc=rc, seconds=retry_secs, output=out, pytest_ran=ran,
+                    truncated=retry_truncated)
+                res.evidence_error = res.evidence_error or error
+            _emit_unit_event(stream, run_id=run_id, event="complete",
+                             unit_id=res.unit_id, weight=retry_weight or 1,
+                             outcome=res.outcome, seconds=retry_secs,
+                             phase="serial-retry", retry_kind=retry_state)
             completed_units += 1
 
-    failed = [r for r in results if r.outcome != PASS]
+    failed = [r for r in results if r.outcome != PASS or r.evidence_error]
     return SuiteResult(results, 1 if failed else 0, time.time() - started,
                        tuple(config.xdist),
                        tuple(u.cov_file for u in units if u.cov_file))
@@ -392,6 +478,10 @@ def main() -> int:
     try:
         with coverage_run_lock(root):
             return _run_locked(root, run_id)
+    except KeyboardInterrupt:
+        print("F0 suite cancelled: owned test processes were terminated and reaped.",
+              file=sys.stderr)
+        return _RC_CANCELLED
     except (SuiteConfigError, HostLeaseError) as exc:
         print(f"ERROR: {exc}", file=sys.stderr)
         return 2

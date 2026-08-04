@@ -173,6 +173,19 @@ def test_captured_output_never_reaches_the_tracked_log(tmp_path):
     assert "red in parallel" in raw, "the measured facts ARE recorded"
 
 
+def test_race_card_links_durable_evidence_without_copying_output(tmp_path):
+    marker = "PRIVATE-FAILURE-OUTPUT"
+    race = _raced(output=marker)
+    race.evidence_path = ".shipwright/runs/f0-abc/f0-diagnostics/u/a.json"
+
+    _emit(tmp_path, race)
+
+    item, = _items(tmp_path)
+    assert item["evidencePath"] == race.evidence_path
+    raw = (tmp_path / ".shipwright" / "triage.jsonl").read_text(encoding="utf-8")
+    assert marker not in raw
+
+
 # --- AC14: hostile-looking text cannot break the entry or the command ---
 
 def test_control_characters_and_length_are_neutralised(tmp_path):

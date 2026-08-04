@@ -1,0 +1,13 @@
+{
+  "section": "P1.16-post-ci-heartbeat-sync",
+  "review": [
+    {
+      "severity": "low",
+      "category": "correctness",
+      "file": "shared/scripts/tools/tests/test_host_resource_lease_process.py",
+      "line": 316,
+      "finding": "The early-exit assertion could use the log read immediately before child exit.",
+      "disposition": "resolved by refreshing the diagnostic file after poll reports child exit"
+    }
+  ]
+}

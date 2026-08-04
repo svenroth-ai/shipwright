@@ -1,0 +1,78 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-08-04-f0-fleet-throughput",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-04T13:37:07.161523+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": "openrouter",
+      "completed_at": "2026-08-04T11:30:11.556974+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "unstructured",
+      "raw_excerpt": "[gemini] SHIPWRIGHT_VERDICT: approve\nFindings: specify the Windows process-tree lifecycle precisely; ensure no requested unit weight can deadlock above the run grant; redact and label retained diagnostic output as untrusted; predeclare the throughput telemetry and candidate comparison.\n\n[openai] SHIPWRIGHT_VERDICT: revise\nFindings: make the bounded budget portable through host clamping; state the integration scheduling policy as an argv invariant; keep JUnit existence independent from bounded output; assign Windows descendants before execution and define cancellation ordering; isolate sibling cleanup; handle binary/invalid UTF-8 tails and secrets safely; predeclare objective fleet metrics and tie-breaking; serialize progress emission; avoid duplicating helpers."
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-04T14:18:07.079864+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-04T14:43:44.598558+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": "openrouter",
+      "completed_at": "2026-08-04T12:43:17.357734+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "unstructured",
+      "raw_excerpt": "[gemini] SHIPWRIGHT_VERDICT: revise\nCategory: Correctness / Severity: HIGH / Finding: live output capture is not bounded while the subprocess is running.\nCategory: Verification / Severity: HIGH / Finding: the Windows descendant-cleanup probe does not yet cover the requested native uv/pytest/xdist topology.\nCategory: Correctness / Severity: MEDIUM / Finding: retry shape is not named in lifecycle output.\nCategory: Evidence / Severity: MEDIUM / Finding: repeated diagnostic writes can collide.\nCategory: Correctness / Severity: LOW / Finding: suite_report.clean appears undefined.\n\n[openai] SHIPWRIGHT_VERDICT: revise\nCategory: Correctness / Severity: HIGH / Finding: attempt.log can grow without bound during execution because the cap is applied only after the child exits.\nCategory: Verification / Severity: HIGH / Finding: the native Windows test must prove the actual uv to pytest to xdist workers to exited intermediate to grandchild tree.\nCategory: Correctness / Severity: MEDIUM / Finding: retry lifecycle lines must distinguish authoritative serial retry from identical-shape infrastructure retry.\nCategory: Evidence / Severity: MEDIUM / Finding: diagnostic filenames based only on run, unit, and phase can overwrite separate events.\nCategory: Delivery / Severity: MEDIUM / Finding: review cascade and immutable F5c evidence remain required before delivery."
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-04T14:03:58.305595+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    }
+  }
+}

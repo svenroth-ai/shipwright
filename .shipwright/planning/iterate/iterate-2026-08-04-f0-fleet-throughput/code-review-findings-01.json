@@ -1,0 +1,13 @@
+{
+  "section": "P1.16-f0-fleet-throughput",
+  "review": [
+    {
+      "severity": "medium",
+      "category": "correctness",
+      "file": "shared/scripts/tools/run_test_suite.py",
+      "line": 257,
+      "finding": "For output larger than the 64 KiB limit, `_exec` prepends `_TRUNCATION_MARKER` to the already byte-capped suffix, then `_retain_attempt_evidence` passes that enlarged string to `write_attempt_evidence`, whose `_cap_utf8` keeps the prefix. This drops the final marker-length bytes of the actual child output, so the retained artifact is not the promised diagnostic tail and can discard the terminal failure message.",
+      "suggestion": "Keep the truncation flag separate from the captured output and pass the raw suffix to `write_attempt_evidence`; add the human-readable marker only while rendering, or reserve marker bytes and retain the remaining suffix from the end."
+    }
+  ]
+}

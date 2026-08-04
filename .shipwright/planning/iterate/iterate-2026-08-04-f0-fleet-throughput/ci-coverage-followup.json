@@ -1,0 +1,29 @@
+{
+  "run_id": "iterate-2026-08-04-f0-fleet-throughput",
+  "pr": 549,
+  "failed_check": {
+    "name": "Python (lint + test)",
+    "run_url": "https://github.com/svenroth-ai/shipwright/actions/runs/30922096803/job/92035024188",
+    "reason": "Linux diff coverage was 77 percent",
+    "covered_lines": 243,
+    "total_lines": 312,
+    "missing_lines": 69
+  },
+  "remediation": {
+    "scope": "portable direct tests only",
+    "newly_exercised_lines": 9,
+    "minimum_covered_lines": 252,
+    "minimum_diff_coverage_percent": 80.77,
+    "threshold_percent": 80,
+    "branches": [
+      "suite_process._drain_output OSError cleanup",
+      "suite_process.read_output_tail bounded seek",
+      "suite_diagnostics._io_path extended, UNC, and drive prefixes"
+    ]
+  },
+  "verification": {
+    "focused": "16 passed",
+    "tools_root": "470 passed, 15 skipped, 2 deselected",
+    "ruff": "passed for both changed test files"
+  }
+}

@@ -5,9 +5,9 @@
   },
   "suite": {
     "xdist": {
-      "shared/tests": 8,
-      "integration-tests": 8
+      "shared/tests": 8
     },
-    "_comment": "F0 suite runner (shared/scripts/tools/run_test_suite.py, iterate-2026-07-14-f0-parallel-suite). Units are DISCOVERED like ci.yml (never hardcoded) and run as parallel processes; this block only carries overrides. 'xdist' is a per-unit OPT-IN allowlist for pytest-xdist fan-out INSIDE a unit — measured 2026-07-14: shared/tests 297s -> 79s, integration-tests 83s -> 18s, both with an identical pass/fail set. shipwright-compliance is DELIBERATELY ABSENT and must stay absent: it is not xdist-safe (5 shared-state races in test_test_evidence.py under -n 8; the same tests pass 37/37 serially). NEVER replace this allowlist with a global '-n auto'. 'max_workers' (optional, positive int) requests a per-run budget; the runner caps it to cpu_count-2 and a repository-keyed weighted host lease caps the sum granted across sibling worktrees. The outer pool and inner xdist workers draw only from the granted budget."
+    "max_workers": 11,
+    "_comment": "F0 suite runner (shared/scripts/tools/run_test_suite.py). Units are DISCOVERED like ci.yml and run as parallel processes; this block only carries measured overrides. 'xdist' is a per-unit OPT-IN allowlist for pytest-xdist fan-out INSIDE a unit. shared/tests retains its proven fan-out. integration-tests is deliberately serial inside its outer unit because its cache-fanout tests already spawn up to twelve subprocesses; nesting xdist under outer fleet load produced 17 failures although the root passed alone. shipwright-compliance is also deliberately absent because it is not xdist-safe. NEVER replace this allowlist with a global '-n auto'. 'max_workers' requests a per-run weight, is clamped to cpu_count-2, and is 11 so two sibling F0 runs fit concurrently on the measured 22-capacity host. The outer pool and inner xdist workers draw only from the granted budget."
   }
 }

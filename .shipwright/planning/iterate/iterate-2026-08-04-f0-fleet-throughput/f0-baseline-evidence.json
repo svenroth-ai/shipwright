@@ -1,0 +1,41 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-08-04-f0-fleet-throughput-baseline-01",
+  "captured_output_available": false,
+  "evidence_kind": "bounded_failure_summary",
+  "host": {
+    "logical_cpus": 24,
+    "lease_capacity": 22,
+    "configured_max_workers": null,
+    "effective_request": 22
+  },
+  "whole_suite": {
+    "wall_seconds": 1297.8,
+    "initial_failures": {
+      "shipwright-build": 7,
+      "shared/tests": 19,
+      "shared/scripts/tools/tests": 3,
+      "integration-tests": 17
+    },
+    "environmental_failures": [
+      "shipwright-build and shared/tests could not find Git Bash because the launching Desktop process omitted C:/Program Files/Git/bin from PATH"
+    ]
+  },
+  "recorded_race_shapes": [
+    {
+      "card": "trg-e2b3cac8",
+      "unit": "integration-tests",
+      "shape": "17 cache-fanout failures with xdist=8 inside the outer pool; authoritative serial retry passed",
+      "controlled_probe": "468 passed alone with xdist=8 in 60.35s",
+      "diagnosis": "nested xdist plus tests spawning up to twelve subprocesses crossed cache-ready deadlines only under outer fleet load"
+    },
+    {
+      "card": "trg-e05f7384",
+      "unit": "shared/scripts/tools/tests",
+      "shape": "three real-process lease tests failed under outer-pool load",
+      "controlled_probe": "446 passed, 7 skipped, 2 deselected alone in 64.68s",
+      "diagnosis": "fixed sub-second process-launch timing thresholds were used as a proxy for overlap and FIFO"
+    }
+  ],
+  "retention_note": "The original historic console was absent by design premise. This controlled reproduction retains bounded counts, shapes, timings, and commands without embedding unbounded or potentially sensitive test output. Future failures are retained automatically under .shipwright/runs/<safe-run>/f0-diagnostics/."
+}

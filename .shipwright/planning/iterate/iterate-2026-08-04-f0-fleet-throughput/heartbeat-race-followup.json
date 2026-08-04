@@ -1,0 +1,34 @@
+{
+  "run_id": "iterate-2026-08-04-f0-fleet-throughput",
+  "triage_id": "trg-ecb7ba4e",
+  "recorded_failure": {
+    "suite": "shared/scripts/tools/tests",
+    "test": "test_wait_output_names_queue_owner_run_id_and_heartbeats",
+    "observed": "waiting diagnostic without a heartbeat before fixed-time holder release",
+    "canonical_outcome": "retry-green",
+    "evidence_path": ".shipwright/runs/f0-5a2ed9f9853c/f0-diagnostics/1591d0436763/ac1b5c09-7c952b7782b84cdab98c6660b3a12239.json"
+  },
+  "root_cause": [
+    "The holder released after 0.45 seconds measured before waiter startup, so outer-pool load could consume the proof window.",
+    "The first synchronized form still used an unrelated 8-second queue-state poll; controlled repetition 34 reproduced that startup race."
+  ],
+  "fix": [
+    "Hold the capacity-1 lease behind an explicit release file until the real waiter emits a flushed heartbeat.",
+    "Wait directly for the diagnostic event with a 30-second bound and fail early on child exit.",
+    "Refresh the final child diagnostic after exit and release/reap only the exact probe processes."
+  ],
+  "controlled_repetitions": {
+    "before_final_fix": "33 passed then the unrelated state-poll startup race reproduced at repetition 34",
+    "after_final_fix": "50 of 50 passed",
+    "after_review_fix": "20 of 20 passed"
+  },
+  "verification": {
+    "tools_root": "470 passed, 15 skipped, 2 deselected",
+    "canonical_units": "18 of 18 passed on initial attempts; no serial retry",
+    "canonical_suite_seconds": 324,
+    "canonical_queue_seconds": 1081.8,
+    "canonical_diff_coverage_percent": 89,
+    "queue_blocker": "iterate-2026-08-04-runtime-process-identity (P2.35, weight 22)",
+    "cleanup": "An outer-shell timeout left only the exact P1.16 waiter child; its run-id/PID chain was validated and stopped, its stale ticket was reaped by the next legitimate acquisition, and P2.35 remained untouched."
+  }
+}

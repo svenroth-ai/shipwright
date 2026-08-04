@@ -1,0 +1,10 @@
+{
+  "stage": "doubt",
+  "section": "P1.16-f0-fleet-throughput-final-repass",
+  "verdict": "SHIP",
+  "doubts": [],
+  "refuted": [
+    "Stage-3 remediation introduced no new regression: the clean code re-review, isolated CLI, resolver, diagnostics/faults, full tools-root, Ruff, and regression-specific proofs all remain green."
+  ],
+  "summary": "Final re-pass found no unresolved doubt on the code-reviewed remediation tree."
+}

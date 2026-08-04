@@ -12,6 +12,11 @@ from typing import TextIO, TypeVar
 
 Item = TypeVar("Item")
 Result = TypeVar("Result")
+_OUTPUT_LOCK = threading.Lock()
+
+
+class SuiteCancelled(RuntimeError):
+    """Admission stopped because the parent suite is cancelling."""
 
 
 class Budget:
@@ -22,11 +27,16 @@ class Budget:
         self._used = 0
         self._cond = threading.Condition()
 
-    def acquire(self, weight: int) -> int:
+    def acquire(self, weight: int,
+                cancel_event: threading.Event | None = None) -> int:
         weight = max(1, min(weight, self.total))
         with self._cond:
             while self._used + weight > self.total:
-                self._cond.wait()
+                if cancel_event is not None and cancel_event.is_set():
+                    raise SuiteCancelled("suite cancellation stopped budget admission")
+                self._cond.wait(timeout=.1)
+            if cancel_event is not None and cancel_event.is_set():
+                raise SuiteCancelled("suite cancellation stopped budget admission")
             self._used += weight
         return weight
 
@@ -43,9 +53,25 @@ def _ascii_field(value: object) -> str:
 
 def _emit_heartbeat(stream: TextIO, line: str) -> None:
     try:
-        print(line, file=stream, flush=True)
+        with _OUTPUT_LOCK:
+            print(line[:1000], file=stream, flush=True)
     except (OSError, ValueError):
         pass
+
+
+def emit_unit_event(stream: TextIO | None, *, run_id: str | None, event: str,
+                    unit_id: str, weight: int, outcome: str = "-",
+                    seconds: float = 0.0, phase: str = "initial",
+                    retry_kind: str = "-") -> None:
+    """Emit one locked, ASCII-safe, length-capped lifecycle record."""
+    output = stream if stream is not None else sys.stderr
+    _emit_heartbeat(
+        output,
+        f"F0 suite unit: run_id={_ascii_field(run_id)} event={_ascii_field(event)} "
+        f"unit={_ascii_field(unit_id)} weight={max(1, int(weight))} "
+        f"outcome={_ascii_field(outcome)} elapsed={max(0.0, seconds):.1f}s "
+        f"phase={_ascii_field(phase)} retry_kind={_ascii_field(retry_kind)}",
+    )
 
 
 @contextmanager
@@ -86,13 +112,16 @@ def run_parallel(
     heartbeat_seconds: float,
     run_id: str | None,
     stream: TextIO | None,
+    cancel_event: threading.Event | None = None,
 ) -> list[Result]:
     """Collect results in input order while keeping the parent channel visible."""
     output = stream if stream is not None else sys.stderr
     interval = max(0.01, heartbeat_seconds)
     results: list[Result | None] = [None] * len(items)
     started = time.monotonic()
-    with cf.ThreadPoolExecutor(max_workers=max(1, len(items))) as pool:
+    pool = cf.ThreadPoolExecutor(max_workers=max(1, len(items)))
+    pending: dict[cf.Future, int] = {}
+    try:
         pending = {
             pool.submit(one, indexed): indexed[0]
             for indexed in enumerate(items)
@@ -112,4 +141,13 @@ def run_parallel(
                     f"completed={complete}/{len(items)} elapsed={now - started:.1f}s",
                 )
                 next_heartbeat = now + interval
+    except BaseException:
+        if cancel_event is not None:
+            cancel_event.set()
+        for future in pending:
+            future.cancel()
+        pool.shutdown(wait=True, cancel_futures=True)
+        raise
+    else:
+        pool.shutdown(wait=True)
     return [result for result in results if result is not None]
