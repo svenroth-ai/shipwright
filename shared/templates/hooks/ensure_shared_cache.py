@@ -92,7 +92,7 @@ def _claim_session(cache_root: Path, session_id: object, *,
             offset = 0
             while offset < len(payload):
                 written = os.write(fd, payload[offset:])
-                if written <= 0 or written > len(payload) - offset:
+                if written <= 0:
                     raise OSError("claim token write made no forward progress")
                 offset += written
             os.fsync(fd)
