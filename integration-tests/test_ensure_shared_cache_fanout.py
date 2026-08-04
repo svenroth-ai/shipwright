@@ -107,6 +107,7 @@ def _layout(tmp_path: Path) -> tuple[list[Path], Path, Path, Path]:
     _write(shared_data)
 
     scripts: list[Path] = []
+    installed: dict[str, list[dict[str, str]]] = {}
     for slug in _PLUGINS:
         name = f"shipwright-{slug}"
         version = cache / name / "1.0.0"
@@ -115,8 +116,17 @@ def _layout(tmp_path: Path) -> tuple[list[Path], Path, Path, Path]:
         script.write_bytes(_CANONICAL.read_bytes())
         script.with_name("cache_repair_lock.py").write_bytes(_LOCK_HELPER.read_bytes())
         script.with_name("run_if_cache_ready.py").write_bytes(_READY_GUARD.read_bytes())
+        hooks = version / "hooks" / "hooks.json"
+        _write(hooks, json.dumps({"hooks": {"SessionStart": [{"hooks": [{
+            "type": "command", "command": "run_if_cache_ready.py",
+        }]}]}}))
+        installed[f"{name}@shipwright"] = [{"installPath": str(version)}]
         _write(version / "payload" / f"{name}.txt")
         scripts.append(script)
+    _write(
+        plugins_root / "installed_plugins.json",
+        json.dumps({"plugins": installed}),
+    )
 
     consumer_target = cache / "shared" / shared_late.relative_to(clone_shared)
     shared_target = cache / "shared" / shared_data.relative_to(clone_shared)
@@ -225,6 +235,24 @@ def test_healthy_cache_fanout_elects_one_scanner_and_copies_nothing(
     claims = scripts[0].parents[4] / ".sessionstart-claims"
     assert len(list(claims.glob("*.claim"))) == 2
     assert len(list(claims.glob("*.done"))) == 2
+
+
+def test_malformed_install_manifest_falls_back_and_repairs(tmp_path: Path):
+    scripts, consumer_target, shared_target, mirror_target = _layout(tmp_path)
+    cache = scripts[0].parents[4]
+    cache.parent.parent.joinpath("installed_plugins.json").write_text(
+        "[]", encoding="utf-8",
+    )
+
+    result = _fire(
+        scripts[0], consumer_target, shared_target, mirror_target,
+        "malformed-install-manifest",
+    )
+
+    assert result.returncode == 0, result.stderr
+    assert _context(result.stdout) == "consumer-ok"
+    assert shared_target.read_text(encoding="utf-8") == "ready\n"
+    assert mirror_target.read_text(encoding="utf-8") == "ready\n"
 
 
 def test_consolidated_wrapper_runs_all_targets_in_manifest_order(tmp_path: Path):

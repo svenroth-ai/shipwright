@@ -17,6 +17,7 @@ by the other tests, so it scores as covered. Executed is not asserted.
 
 from __future__ import annotations
 
+from contextlib import contextmanager
 import sys
 from pathlib import Path
 
@@ -25,7 +26,14 @@ import pytest
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent.parent))
 
 import scripts.tools.run_test_suite as mod
+import scripts.tools.suite_gate_runtime as gate_mod
 from scripts.tools.run_test_suite import PASS, build_command, discover_units
+
+
+@contextmanager
+def _leased(root, result):
+    source_before, fingerprint_error = mod.source_fingerprint(root)
+    yield result, source_before, fingerprint_error
 
 
 def _project(tmp_path: Path) -> Path:
@@ -145,14 +153,15 @@ def test_an_under_covered_diff_stops_the_run(tmp_path, monkeypatch, capsys):
     report reaches the operator rather than dying inside the runner."""
     from scripts.tools.suite_coverage import GATE_FAILED, GateResult
 
-    monkeypatch.setattr(mod, "run_gate",
+    monkeypatch.setattr(gate_mod, "run_gate",
                         lambda *a, **k: GateResult(GATE_FAILED, ["see: foo.py:3"]))
-    monkeypatch.setattr(mod, "compare_branch", lambda *a, **k: "origin/main")
+    monkeypatch.setattr(gate_mod, "compare_branch", lambda *a, **k: "origin/main")
     monkeypatch.setattr(mod, "source_fingerprint", lambda *a, **k: ("stable", ""))
-    monkeypatch.setattr(mod, "build_worktree_diff",
+    monkeypatch.setattr(gate_mod, "build_worktree_diff",
                         lambda *a, **k: (tmp_path / "worktree.diff", ""))
-    monkeypatch.setattr(mod, "run_suite", lambda *a, **k: mod.SuiteResult(
-        [mod.UnitResult("u", PASS, 0, 0.1)], 0, 0.1, (), 3))
+    monkeypatch.setattr(mod, "_run_host_leased_suite", lambda root, *a, **k: _leased(
+        root, mod.SuiteResult([mod.UnitResult("u", PASS, 0, 0.1)],
+                              0, 0.1, (), 3)))
     monkeypatch.setattr(sys, "argv", ["run_test_suite.py", "--project-root", str(tmp_path)])
 
     assert mod.main() == GATE_FAILED
@@ -161,13 +170,14 @@ def test_an_under_covered_diff_stops_the_run(tmp_path, monkeypatch, capsys):
 
 def test_a_red_suite_never_fetches_or_builds_a_diff(tmp_path, monkeypatch):
     """The red verdict is already authoritative; network work must not delay it."""
-    monkeypatch.setattr(mod, "run_suite", lambda *a, **k: mod.SuiteResult(
-        [mod.UnitResult("u", mod.TEST_FAILURE, 1, 0.1)], 1, 0.1, (), ("x",)))
+    monkeypatch.setattr(mod, "_run_host_leased_suite", lambda root, *a, **k: _leased(
+        root, mod.SuiteResult([mod.UnitResult("u", mod.TEST_FAILURE, 1, 0.1)],
+                              1, 0.1, (), ("x",))))
     monkeypatch.setattr(
-        mod, "compare_branch",
+        gate_mod, "compare_branch",
         lambda *a, **k: pytest.fail("a red suite must not fetch origin/main"))
     monkeypatch.setattr(
-        mod, "build_worktree_diff",
+        gate_mod, "build_worktree_diff",
         lambda *a, **k: pytest.fail("a red suite must not build a diff"))
     monkeypatch.setattr(sys, "argv", ["run_test_suite.py", "--project-root",
                                       str(tmp_path)])
@@ -187,14 +197,15 @@ def test_the_gate_is_handed_the_files_not_just_a_count(tmp_path, monkeypatch):
         return GateResult(GATE_PASSED, [])
 
     files = (r"C:\x\.cov-data\.coverage.a", r"C:\x\.cov-data\.coverage.b")
-    monkeypatch.setattr(mod, "run_gate", fake_gate)
-    monkeypatch.setattr(mod, "compare_branch", lambda *a, **k: "origin/main")
+    monkeypatch.setattr(gate_mod, "run_gate", fake_gate)
+    monkeypatch.setattr(gate_mod, "compare_branch", lambda *a, **k: "origin/main")
     monkeypatch.setattr(mod, "source_fingerprint", lambda *a, **k: ("stable", ""))
     diff_file = tmp_path / "worktree.diff"
-    monkeypatch.setattr(mod, "build_worktree_diff",
+    monkeypatch.setattr(gate_mod, "build_worktree_diff",
                         lambda *a, **k: (diff_file, ""))
-    monkeypatch.setattr(mod, "run_suite", lambda *a, **k: mod.SuiteResult(
-        [mod.UnitResult("u", PASS, 0, 0.1)], 0, 0.1, (), files))
+    monkeypatch.setattr(mod, "_run_host_leased_suite", lambda root, *a, **k: _leased(
+        root, mod.SuiteResult([mod.UnitResult("u", PASS, 0, 0.1)],
+                              0, 0.1, (), files)))
     monkeypatch.setattr(sys, "argv", ["run_test_suite.py", "--project-root", str(tmp_path)])
 
     assert mod.main() == 0
@@ -206,10 +217,11 @@ def test_source_change_during_suite_invalidates_coverage(
         tmp_path, monkeypatch, capsys):
     fingerprints = iter((("before", ""), ("after", "")))
     monkeypatch.setattr(mod, "source_fingerprint", lambda *a, **k: next(fingerprints))
-    monkeypatch.setattr(mod, "run_suite", lambda *a, **k: mod.SuiteResult(
-        [mod.UnitResult("u", PASS, 0, 0.1)], 0, 0.1, (), ("x",)))
+    monkeypatch.setattr(mod, "_run_host_leased_suite", lambda root, *a, **k: _leased(
+        root, mod.SuiteResult([mod.UnitResult("u", PASS, 0, 0.1)],
+                              0, 0.1, (), ("x",))))
     monkeypatch.setattr(
-        mod, "compare_branch",
+        gate_mod, "compare_branch",
         lambda *a, **k: pytest.fail("a changed source snapshot must not be gated"))
     monkeypatch.setattr(sys, "argv", ["run_test_suite.py", "--project-root",
                                       str(tmp_path)])
@@ -231,7 +243,7 @@ def test_source_change_after_fetch_patch_or_gate_invalidates_measurement(
     seen = {"build": 0, "gate": 0}
     values = iter((value, "") for value in fingerprints)
     monkeypatch.setattr(mod, "source_fingerprint", lambda *a, **k: next(values))
-    monkeypatch.setattr(mod, "compare_branch", lambda *a, **k: "origin/main")
+    monkeypatch.setattr(gate_mod, "compare_branch", lambda *a, **k: "origin/main")
 
     def build(*args, **kwargs):
         seen["build"] += 1
@@ -242,8 +254,8 @@ def test_source_change_after_fetch_patch_or_gate_invalidates_measurement(
         from scripts.tools.suite_coverage import GATE_PASSED, GateResult
         return GateResult(GATE_PASSED, ["pass"])
 
-    monkeypatch.setattr(mod, "build_worktree_diff", build)
-    monkeypatch.setattr(mod, "run_gate", gate)
+    monkeypatch.setattr(gate_mod, "build_worktree_diff", build)
+    monkeypatch.setattr(gate_mod, "run_gate", gate)
     result = mod.SuiteResult(
         [mod.UnitResult("u", PASS, 0, 0.1)], 0, 0.1, (), ("x",))
 

@@ -5,16 +5,17 @@ import hashlib, json, os, re, secrets, shutil, sys, time
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 try:
-    from cache_repair_lock import CACHE_LOCK_NAME, CLAIM_TTL_SECONDS, acquire_cache_lock, observe_completion, read_claim_token, read_completion_age, session_event_key, session_repair_state, unlock_cache_lock
+    from cache_repair_lock import CACHE_LOCK_NAME, CLAIM_TTL_SECONDS, COMPLETION_CLOCK_SKEW_SECONDS, acquire_cache_lock, await_fanout_observers, observe_completion, read_claim_token, read_completion_age, session_event_key, session_repair_state, unlock_cache_lock
 except (ImportError, OSError, SyntaxError):
     CLAIM_TTL_SECONDS = 30.0
+    COMPLETION_CLOCK_SKEW_SECONDS = 1.0
     CACHE_LOCK_NAME = ".sessionstart-cache-repair.lock"
-    acquire_cache_lock = observe_completion = read_claim_token = read_completion_age = None
+    acquire_cache_lock = await_fanout_observers = observe_completion = None
+    read_claim_token = read_completion_age = None
     session_event_key = session_repair_state = unlock_cache_lock = None
 _SHARED_SENTINEL = ("scripts", "lib", "project_root.py")
 _IGNORE_NAMES = ("__pycache__", "*.pyc", "*.pyo", ".venv", ".pytest_cache",
-                 ".git", "node_modules", ".in_use", ".orphaned_at",
-                 ".python-version")
+                 ".git", "node_modules", ".in_use", ".orphaned_at", ".python-version")
 _IGNORE = shutil.ignore_patterns(*_IGNORE_NAMES)
 _CLAIM_DIRNAME = ".sessionstart-claims"
 _CLAIM_TTL_SECONDS = CLAIM_TTL_SECONDS
@@ -64,7 +65,7 @@ def _claim_session(cache_root: Path, session_id: object, *,
             age = read_completion_age(done) if read_completion_age else None
             if age is None: return None
             if age is not False:
-                if 0.0 <= age < _CLAIM_TTL_SECONDS:
+                if -COMPLETION_CLOCK_SKEW_SECONDS <= age < _CLAIM_TTL_SECONDS:
                     if not observer or observed_here: return False
                 claim = directory / f"{prefix}-{current}.next"; observed_here = False
                 continue
@@ -230,9 +231,12 @@ def main(payload: object = None, participant: str = "") -> int:
         plugin_id = plugin_root.name if plugin_root.name.startswith("shipwright-") else plugin_root.parent.name
         participant = participant or f"{plugin_id}:standalone"
         coordination = None if dev_model else _claim_session(cache_root, event_key, observer=participant)
-        if coordination is False:
-            return 0
-        if isinstance(coordination, Path): time.sleep(0.1)
+        if coordination is False: return 0
+        if isinstance(coordination, Path):
+            if observe_completion:
+                observe_completion(coordination, participant)
+            if await_fanout_observers:
+                await_fanout_observers(cache_root, coordination, participant)
         cache_lock = None if dev_model or acquire_cache_lock is None else acquire_cache_lock(
             cache_root / CACHE_LOCK_NAME,
         )

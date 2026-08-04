@@ -7,6 +7,7 @@ import hashlib
 import json
 import os
 import re
+import shlex
 import stat
 import time
 from pathlib import Path
@@ -17,6 +18,9 @@ _TOKEN_RE = re.compile(r"^[0-9a-f]{32}$")
 _WINDOWS_LOCK_BYTES = 65
 CACHE_LOCK_NAME = ".sessionstart-cache-repair.lock"
 CLAIM_TTL_SECONDS = 30.0
+COMPLETION_CLOCK_SKEW_SECONDS = 1.0
+_FANOUT_PROBE_SECONDS = 0.1
+_FANOUT_WAIT_SECONDS = 2.0
 
 
 def _opened_regular_at_path(path: Path, fd: int) -> bool:
@@ -82,11 +86,15 @@ def read_completion_age(path: Path) -> float | bool | None:
     return age
 
 
-def observe_completion(done: Path, observer: str) -> bool | None:
-    """Return true on this observer's first sight of an immutable generation."""
+def _completion_observer_marker(done: Path, observer: str) -> Path:
     identity = f"{done.name}\0{observer}".encode("utf-8")
     digest = hashlib.sha256(identity).hexdigest()[:32]
-    marker = done.with_name(f"observed-{digest}.seen")
+    return done.with_name(f"observed-{digest}.seen")
+
+
+def observe_completion(done: Path, observer: str) -> bool | None:
+    """Return true on this observer's first sight of an immutable generation."""
+    marker = _completion_observer_marker(done, observer)
     flags = os.O_CREAT | os.O_EXCL | os.O_WRONLY
     flags |= getattr(os, "O_NOFOLLOW", 0)
     try:
@@ -97,6 +105,119 @@ def observe_completion(done: Path, observer: str) -> bool | None:
         return None
     os.close(fd)
     return True
+
+
+def has_completion_observation(done: Path, observer: str) -> bool | None:
+    """Return whether a safe marker records this observer for the generation."""
+    marker = _completion_observer_marker(done, observer)
+    flags = os.O_RDONLY | getattr(os, "O_NONBLOCK", 0)
+    flags |= getattr(os, "O_NOFOLLOW", 0)
+    try:
+        fd = os.open(marker, flags)
+    except FileNotFoundError:
+        return False
+    except OSError:
+        return None
+    try:
+        if not _opened_regular_at_path(marker, fd):
+            return None
+        return os.read(fd, 1) == b""
+    except OSError:
+        return None
+    finally:
+        os.close(fd)
+
+
+def _installed_fanout_participants(
+    cache_root: Path, participant: str,
+) -> tuple[str, ...] | None:
+    """Read active, SessionStart-registered peers from Claude's manifest."""
+    if ":" not in participant:
+        return ()
+    manifest = cache_root.parent.parent / "installed_plugins.json"
+    try:
+        data = json.loads(manifest.read_text(encoding="utf-8"))
+        if not isinstance(data, dict):
+            return None
+        plugins = data.get("plugins")
+        if not isinstance(plugins, dict):
+            return None
+    except (OSError, UnicodeError, json.JSONDecodeError):
+        return None
+    mode = participant.rsplit(":", 1)[1]
+    cache_name = os.path.normcase(os.path.abspath(cache_root))
+    peers: set[str] = set()
+    for key, entries in plugins.items():
+        if not isinstance(key, str) or not key.endswith("@shipwright") or \
+                not isinstance(entries, list) or not entries:
+            continue
+        entry = entries[0]
+        install = entry.get("installPath") if isinstance(entry, dict) else None
+        if not isinstance(install, str) or not install:
+            continue
+        install_path = Path(install)
+        if os.path.normcase(os.path.abspath(install_path.parent.parent)) != \
+                cache_name:
+            continue
+        try:
+            hooks = json.loads(
+                (install_path / "hooks" / "hooks.json").read_text(
+                    encoding="utf-8",
+                ),
+            )
+            session = hooks.get("hooks", {}).get("SessionStart", [])
+            command_hooks = [
+                hook
+                for group in session if isinstance(group, dict)
+                for hook in group.get("hooks", []) if isinstance(hook, dict)
+                if hook.get("type") == "command"
+            ]
+        except (AttributeError, OSError, TypeError, UnicodeError,
+                json.JSONDecodeError):
+            continue
+        commands: list[list[str]] = []
+        for hook in command_hooks:
+            command = hook.get("command")
+            if not isinstance(command, str):
+                continue
+            try:
+                commands.append(shlex.split(command, posix=os.name != "nt"))
+            except ValueError:
+                continue
+        if any(
+            Path(token.strip("\"'")).name == "run_if_cache_ready.py"
+            for command in commands for token in command
+        ):
+            peers.add(f"{install_path.parent.name}:{mode}")
+    return tuple(sorted(peers)) if participant in peers else ()
+
+
+def await_fanout_observers(cache_root: Path, done: Path,
+                           participant: str) -> None:
+    """Let an observed active-plugin fan-out join before repair is published."""
+    peers = _installed_fanout_participants(cache_root, participant)
+    if peers is None or len(peers) < 2:
+        time.sleep(_FANOUT_PROBE_SECONDS)
+        return
+    started = time.monotonic()
+    probe_deadline = started + _FANOUT_PROBE_SECONDS
+    fanout_deadline = started + _FANOUT_WAIT_SECONDS
+    fanout_seen = False
+    while True:
+        observed = 0
+        for peer in peers:
+            state = has_completion_observation(done, peer)
+            if state is None:
+                return
+            observed += state is True
+        if observed == len(peers):
+            return
+        fanout_seen = fanout_seen or observed > 1
+        now = time.monotonic()
+        if (not fanout_seen and now >= probe_deadline) or \
+                now >= fanout_deadline:
+            return
+        time.sleep(0.01)
 
 
 def session_event_key(payload: object) -> str:
@@ -159,7 +280,7 @@ def session_repair_state(cache_root: Path, session_id: object) -> bool | None:
         if age is None:
             return None
         assert isinstance(age, float)
-        return 0.0 <= age < CLAIM_TTL_SECONDS
+        return -COMPLETION_CLOCK_SKEW_SECONDS <= age < CLAIM_TTL_SECONDS
     return None
 
 
