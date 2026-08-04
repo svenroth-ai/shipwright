@@ -27,8 +27,8 @@ Output:
 
 Requirements:
   - Spec file from /shipwright-project
-  - Recommended: OPENROUTER_API_KEY (or GEMINI_API_KEY + OPENAI_API_KEY)
-    for external LLM review. If missing, the skill will ask whether to
+  - Recommended: OPENROUTER_API_KEY for DeepSeek + OpenAI review;
+    OPENAI_API_KEY can run the GPT arm only. If missing, the skill will ask whether to
     skip external review and fall back to mandatory self-review.
 ================================================================================
 ```

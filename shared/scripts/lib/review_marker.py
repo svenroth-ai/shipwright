@@ -50,11 +50,12 @@ __all__ = [
 REVIEW_STATE_FILE = "external_review_state.json"
 CODE_REVIEW_STATE_FILE = "external_code_review_state.json"
 
-#: Bumped to 2 when the marker gained per-reviewer ``verdicts`` and the derived
-#: ``contradiction``. A marker without the field pre-dates them and is read
-#: leniently — it cannot be expected to carry what did not exist when it was
-#: written (see :func:`evaluate_review_state`).
-MARKER_SCHEMA = 2
+#: Schema 2 introduced per-reviewer ``verdicts`` with the historical
+#: ``gemini``/``openai`` roster. Schema 3 changes the writer contract to the
+#: ``deepseek``/``openai`` roster. Readers intentionally derive validity from
+#: the roster itself, so schema-2 markers and older markers without this field
+#: remain readable (see :func:`evaluate_review_state`).
+MARKER_SCHEMA = 3
 
 ALLOWED_STATUSES = frozenset({
     "completed",
@@ -173,7 +174,7 @@ def evaluate_review_state(marker: dict[str, Any] | None) -> tuple[str, str]:
     # A `completed` marker where NO leg answered is not a review. It needs no
     # operator resolution — the degraded-review gate owns that condition and
     # fails loudly — but it must not read as reviewed either, or
-    # `--verdict gemini=unavailable --verdict openai=unavailable` would clear
+    # `--verdict deepseek=unavailable --verdict openai=unavailable` would clear
     # every gate with nobody having reviewed anything.
     if all(str(v) == "unavailable" for v in verdicts.values()):
         return STATE_BLOCK, (

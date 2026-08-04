@@ -33,8 +33,10 @@ uv run --project {plugin_root} {shared_root}/scripts/tools/external_review.py \
 `{plugin_root}/../../shared`. The CLI consolidated into `shared/` in v0.5.x;
 plan-mode prompts still load from `{plugin_root}/prompts/plan_reviewer/`.)
 
-This runs Gemini and OpenAI reviews **in parallel** via ThreadPoolExecutor
-(OpenRouter when set, direct APIs otherwise).
+This runs DeepSeek and OpenAI reviews **in parallel** via ThreadPoolExecutor
+(both through OpenRouter when set; direct OpenAI otherwise leaves DeepSeek unavailable).
+Every DeepSeek request uses the configured, code-approved ZDR endpoint allowlist
+and disables provider fallback. A missing allowed endpoint degrades only that arm.
 
 **Process findings:**
 1. Present both reviews to the user
@@ -47,9 +49,9 @@ Each reviewer ends with `SHIPWRIGHT_VERDICT: approve|revise|reject`. The CLI
 reads both and reports them:
 
 ```json
-"verdicts": { "gemini": "approve", "openai": "reject" },
+"verdicts": { "deepseek": "approve", "openai": "reject" },
 "contradiction": { "detected": true, "requires_resolution": true,
-                   "reason": "reviewers contradict each other: gemini=approve, openai=reject" }
+                   "reason": "reviewers contradict each other: deepseek=approve, openai=reject" }
 ```
 
 **`requires_resolution: true` is its own outcome, not a finding count.** It
@@ -69,7 +71,7 @@ above already covers it.)
 
 Put it to the user, in these terms:
 
-> The two reviewers disagree about this plan. {gemini} says **{verdict}**;
+> The two reviewers disagree about this plan. {deepseek} says **{verdict}**;
 > {openai} says **{verdict}**. Their reasons are above. How should I proceed —
 > take one side, rework the plan, or record why the disagreement does not
 > block?
@@ -107,7 +109,7 @@ Then go to **Step 5b**.
 `feedback_iterations > 0` but no API key was found in `.env.local`.
 **Stop** and ask the user verbatim:
 
-> External LLM review is the recommended quality gate for this plan, but no `OPENROUTER_API_KEY` (or `GEMINI_API_KEY` / `OPENAI_API_KEY`) was found in `.env.local`.
+> External LLM review is the recommended quality gate for this plan, but no `OPENROUTER_API_KEY` or `OPENAI_API_KEY` was found in `.env.local`.
 >
 > **Option 1 (recommended):** Add `OPENROUTER_API_KEY=...` to `.env.local` at the repo root and say "ready" — I'll re-check and run the external review.
 > **Option 2:** Skip external review. I'll fall back to a mandatory self-review ("2x denken") pass and log the opt-out in the decision log.
@@ -179,10 +181,10 @@ can advance:
 uv run --project {plugin_root} {shared_root}/scripts/checks/mark-review-state.py \
   --planning-dir "{planning_dir}" \
   --status "{completed | skipped_user_opt_out | skipped_config_disabled}" \
-  --provider "{openrouter | gemini | openai | null}" \
+  --provider "{openrouter | openai | null}" \
   --findings-count {N} \
   --reason "{optional reason for skip}" \
-  --verdict gemini={approve|revise|reject|unknown|unavailable} \
+  --verdict deepseek={approve|revise|reject|unknown|unavailable} \
   --verdict openai={approve|revise|reject|unknown|unavailable} \
   --contradiction-resolution "{only when the reviewers disagreed}"
 ```
@@ -200,7 +202,7 @@ which side was taken and why, why the unreadable verdict does not block, or
 why proceeding on a single review is acceptable. Without it Step 6 refuses to
 begin.
 
-Reviewer names must be `gemini` and `openai` (the two that run), each given
+Reviewer names must be `deepseek` and `openai` (the two current arms), each given
 once. Branch B/C skips record no verdicts, which is correct — a skipped review
 has no reviewers. But a **`completed`** review with no verdicts is treated as
 not-yet-recorded and blocks Step 6: omitting the flags must not be a way to

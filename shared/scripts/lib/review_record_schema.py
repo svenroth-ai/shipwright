@@ -124,6 +124,8 @@ _OPTIONAL_STRINGS = (
 #: Mirrors the webui consumer's own `isSafeRunId` guard on the same identifier.
 _SAFE_RUN_ID_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]*$")
 _MAX_RUN_ID_CHARS = 128
+_REVIEW_KEY_RE = re.compile(r"^[A-Za-z][A-Za-z0-9_-]{0,63}$")
+_MAX_REVIEW_TYPES = 32
 
 
 def is_safe_run_id(run_id: Any) -> bool:
@@ -243,15 +245,15 @@ def validate_record(
     ]
     if missing:
         return False, f"reviews is missing: {', '.join(missing)}"
-    unknown = [t for t in reviews if t not in REVIEW_TYPES]
-    if unknown:
-        return False, f"reviews has unknown type(s): {', '.join(sorted(unknown))}"
-    # Only what is actually present — the tolerated absence above must not then
-    # be indexed, which would raise KeyError on every legacy record.
-    for review_type in REVIEW_TYPES:
-        if review_type not in reviews:
-            continue
-        err = validate_entry(review_type, reviews[review_type])
+    if len(reviews) > _MAX_REVIEW_TYPES:
+        return False, f"reviews has {len(reviews)} types; maximum is {_MAX_REVIEW_TYPES}"
+    # Additive review types are a forward-compatible read surface. They do not
+    # become required or writable merely by appearing, but their entries must
+    # satisfy the same structural contract as every known row.
+    for review_type, entry in reviews.items():
+        if not isinstance(review_type, str) or not _REVIEW_KEY_RE.match(review_type):
+            return False, f"reviews key {review_type!r} is not a safe reviewer identifier"
+        err = validate_entry(review_type, entry)
         if err:
             return False, err
     return _validate_gates(record.get("gates"))
@@ -272,21 +274,9 @@ def _validate_gates(gates: Any) -> tuple[bool, str | None]:
         return True, None
     if not isinstance(gates, dict):
         return False, "gates is not an object"
-    # An UNKNOWN gate key is tolerated, unlike an unknown `reviews` key — but
-    # NOT for the reason that asymmetry originally had. "Strictness protects the
-    # mirror" was true while the consumer rejected strangers; it no longer does,
-    # which is the premise of the promotion, so that reason retires with the
-    # seam. What keeps `reviews` strict is a different claim: the consumer only
-    # DISPLAYS, so guessing costs it a wrong row, while this gate BLOCKS
-    # DELIVERY, so guessing costs a wrong verdict. Its price — every future
-    # REVIEW_TYPES growth needs this same transitional read path — is recorded
-    # in the iterate spec, not hidden (Stage-3 doubt, objection 4).
-    #
-    # `gates` carries no such tension: nothing writes it, so whatever a past
-    # writer left is history. Rejecting a key this constant does not list would
-    # make the fail-closed F11 gate tell the operator to "repair or delete" an
-    # immutable, git-tracked review history that is perfectly fine. Reading
-    # history strictly buys nothing and can only destroy it.
+    # Unknown gate keys are tolerated because this reader must not invalidate
+    # immutable history produced by a newer taxonomy. Known legacy gate rows
+    # still receive their full structural validation below.
     for gate_type in LEGACY_GATE_TYPES:
         if gate_type not in gates:
             continue

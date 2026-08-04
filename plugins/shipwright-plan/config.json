@@ -12,5 +12,5 @@
     "enabled": true,
     "_comment": "Generate Playwright E2E test plan as claude-plan-e2e.md (Shipwright enhancement)"
   },
-  "_review_config_moved": "External review settings (models, llm_client, external_review) live in shared/config/external_review.json — read via lib.external_review_config.load_review_config(). Override models per-environment with SHIPWRIGHT_REVIEW_MODEL_GEMINI / _CHATGPT / _OPENROUTER_GEMINI / _OPENROUTER_CHATGPT."
+  "_review_config_moved": "External review settings (identity-locked models, DeepSeek ZDR routing, llm_client, external_review) live in shared/config/external_review.json — read via lib.external_review_config.load_review_config(). Differing model overrides fail closed."
 }

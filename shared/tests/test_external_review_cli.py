@@ -7,8 +7,8 @@ detection, same prompt loading per mode, same fallback semantics.
 Six core scenarios cover the provider-detect matrix:
 1. No keys           → provider="none",       both reviews skipped
 2. Only OPENROUTER   → provider="openrouter", both reviews via OpenRouter
-3. Only GEMINI       → provider="direct",     gemini direct, openai skipped
-4. Only OPENAI       → provider="direct",     openai direct, gemini skipped
+3. Only GEMINI       → provider="none",       both current arms skipped
+4. Only OPENAI       → provider="direct",     openai direct, deepseek skipped
 5. Both direct keys  → provider="direct",     both run via direct APIs
 6. OpenRouter wins   → provider="openrouter", direct keys ignored
 """
@@ -39,6 +39,7 @@ def clean_env(monkeypatch, tmp_path):
         "SHIPWRIGHT_REVIEW_MODEL_GEMINI",
         "SHIPWRIGHT_REVIEW_MODEL_CHATGPT",
         "SHIPWRIGHT_REVIEW_MODEL_OPENROUTER_GEMINI",
+        "SHIPWRIGHT_REVIEW_MODEL_OPENROUTER_DEEPSEEK",
         "SHIPWRIGHT_REVIEW_MODEL_OPENROUTER_CHATGPT",
     ):
         monkeypatch.delenv(key, raising=False)
@@ -77,19 +78,18 @@ def test_detect_provider_openrouter(monkeypatch, clean_env):
     assert external_review.detect_provider() == "openrouter"
 
 
-def test_detect_provider_direct_gemini(monkeypatch, clean_env):
+def test_detect_provider_ignores_historical_gemini_key(monkeypatch, clean_env):
     monkeypatch.setenv("GEMINI_API_KEY", "AI-test")
     import external_review
 
-    assert external_review.detect_provider() == "direct"
+    assert external_review.detect_provider() == "none"
 
 
-def test_detect_provider_direct_google(monkeypatch, clean_env):
-    """Both GEMINI_API_KEY and GOOGLE_API_KEY count as a Gemini direct key."""
+def test_detect_provider_ignores_historical_google_key(monkeypatch, clean_env):
     monkeypatch.setenv("GOOGLE_API_KEY", "AI-test")
     import external_review
 
-    assert external_review.detect_provider() == "direct"
+    assert external_review.detect_provider() == "none"
 
 
 def test_detect_provider_direct_openai(monkeypatch, clean_env):
@@ -114,8 +114,8 @@ def test_detect_provider_openrouter_wins_over_direct(monkeypatch, clean_env):
 def test_cli_no_keys_returns_skipped_schema(tmp_path, fake_plan_plugin, monkeypatch):
     """End-to-end: invoke CLI subprocess without any API keys.
 
-    Asserts the JSON schema:
-        { "success": bool, "provider": "none", "reviews": { "gemini": {...}, "openai": {...} } }
+    Asserts the JSON schema. Schema 1 was implicit and carried the historical
+    gemini/openai roster; schema 2 is the explicit deepseek/openai contract.
 
     Both reviews must report status=skipped.
     """
@@ -155,6 +155,7 @@ def test_cli_no_keys_returns_skipped_schema(tmp_path, fake_plan_plugin, monkeypa
     payload = json.loads(result.stdout)
 
     # Schema lock-in
+    assert payload["review_schema"] == 2
     assert "success" in payload
     assert "provider" in payload
     assert "reviews" in payload
@@ -162,8 +163,8 @@ def test_cli_no_keys_returns_skipped_schema(tmp_path, fake_plan_plugin, monkeypa
     assert payload["success"] is True
 
     # Both reviews must be in the reviews block, both with status=skipped
-    assert set(payload["reviews"].keys()) == {"gemini", "openai"}
-    assert payload["reviews"]["gemini"]["status"] == "skipped"
+    assert set(payload["reviews"].keys()) == {"deepseek", "openai"}
+    assert payload["reviews"]["deepseek"]["status"] == "skipped"
     assert payload["reviews"]["openai"]["status"] == "skipped"
 
 
@@ -280,11 +281,11 @@ def test_main_output_schema_has_expected_keys(
     assert "reviews" in payload
 
     # Reviews always has both keys, even when skipped
-    assert "gemini" in payload["reviews"]
+    assert "deepseek" in payload["reviews"]
     assert "openai" in payload["reviews"]
 
     # Each review has at least 'status'
-    for name in ("gemini", "openai"):
+    for name in ("deepseek", "openai"):
         assert "status" in payload["reviews"][name]
 
 
@@ -337,7 +338,7 @@ def test_external_review_module_imports_cleanly():
     assert hasattr(external_review, "main")
     assert hasattr(external_review, "detect_provider")
     assert hasattr(external_review, "review_with_openrouter")
-    assert hasattr(external_review, "review_with_gemini")
+    assert not hasattr(external_review, "review_with_deepseek")
     assert hasattr(external_review, "review_with_openai")
 
 
@@ -351,22 +352,17 @@ def test_external_review_module_imports_cleanly():
 
 def _patch_review_funcs(monkeypatch, external_review):
     """Replace review_with_* with sentinels that record calls and return a known blob."""
-    calls = {"openrouter": [], "gemini": [], "openai": []}
+    calls = {"openrouter": [], "deepseek": [], "openai": []}
 
     def fake_openrouter(plan, spec, sys_p, usr_p, cfg, model_key):
         calls["openrouter"].append(model_key)
         return {"status": "success", "feedback": f"OR-{model_key}", "via": "openrouter"}
-
-    def fake_gemini(plan, spec, sys_p, usr_p, cfg):
-        calls["gemini"].append("gemini")
-        return {"status": "success", "feedback": "G-direct", "via": "direct"}
 
     def fake_openai(plan, spec, sys_p, usr_p, cfg):
         calls["openai"].append("openai")
         return {"status": "success", "feedback": "O-direct", "via": "direct"}
 
     monkeypatch.setattr(external_review, "review_with_openrouter", fake_openrouter)
-    monkeypatch.setattr(external_review, "review_with_gemini", fake_gemini)
     monkeypatch.setattr(external_review, "review_with_openai", fake_openai)
     return calls
 
@@ -412,18 +408,18 @@ def test_main_openrouter_path_dispatches_both_via_openrouter(
 
     assert payload["provider"] == "openrouter"
     assert payload["success"] is True
-    assert sorted(calls["openrouter"]) == ["gemini", "openai"]
-    assert calls["gemini"] == []
+    assert sorted(calls["openrouter"]) == ["deepseek", "openai"]
+    assert calls["deepseek"] == []
     assert calls["openai"] == []
-    assert payload["reviews"]["gemini"]["status"] == "success"
-    assert payload["reviews"]["gemini"]["feedback"] == "OR-gemini"
+    assert payload["reviews"]["deepseek"]["status"] == "success"
+    assert payload["reviews"]["deepseek"]["feedback"] == "OR-deepseek"
     assert payload["reviews"]["openai"]["feedback"] == "OR-openai"
 
 
-def test_main_direct_gemini_only_path(
+def test_main_gemini_key_alone_never_activates_a_review_arm(
     monkeypatch, clean_env, capsys, fake_plan_plugin
 ):
-    """Only GEMINI_API_KEY → review_with_gemini fires; review_with_openai still called but skips."""
+    """A historical Gemini key is not a DeepSeek credential or fallback."""
     monkeypatch.setenv("GEMINI_API_KEY", "AI-test")
     import external_review
     calls = _patch_review_funcs(monkeypatch, external_review)
@@ -432,11 +428,11 @@ def test_main_direct_gemini_only_path(
     assert rc == 0
     payload = json.loads(capsys.readouterr().out)
 
-    assert payload["provider"] == "direct"
+    assert payload["provider"] == "none"
     assert calls["openrouter"] == []
-    assert calls["gemini"] == ["gemini"]
-    assert calls["openai"] == ["openai"]  # Always invoked in direct mode; the helper handles the missing-key skip
-    assert payload["reviews"]["gemini"]["feedback"] == "G-direct"
+    assert calls["deepseek"] == []
+    assert calls["openai"] == []
+    assert payload["reviews"]["deepseek"]["status"] == "skipped"
 
 
 def test_main_direct_openai_only_path(
@@ -457,10 +453,10 @@ def test_main_direct_openai_only_path(
     assert payload["reviews"]["openai"]["feedback"] == "O-direct"
 
 
-def test_main_both_direct_keys_dispatches_both(
+def test_main_gemini_key_does_not_change_direct_openai_path(
     monkeypatch, clean_env, capsys, fake_plan_plugin
 ):
-    """Both direct keys set, no OPENROUTER → both direct review functions fire."""
+    """With no OpenRouter key, only the existing direct GPT arm may run."""
     monkeypatch.setenv("GEMINI_API_KEY", "AI-test")
     monkeypatch.setenv("OPENAI_API_KEY", "sk-openai-test")
     import external_review
@@ -472,9 +468,9 @@ def test_main_both_direct_keys_dispatches_both(
 
     assert payload["provider"] == "direct"
     assert calls["openrouter"] == []
-    assert calls["gemini"] == ["gemini"]
+    assert calls["deepseek"] == []
     assert calls["openai"] == ["openai"]
-    assert payload["reviews"]["gemini"]["status"] == "success"
+    assert payload["reviews"]["deepseek"]["status"] == "skipped"
     assert payload["reviews"]["openai"]["status"] == "success"
 
 
@@ -493,8 +489,8 @@ def test_main_openrouter_wins_over_direct(
     payload = json.loads(capsys.readouterr().out)
 
     assert payload["provider"] == "openrouter"
-    assert sorted(calls["openrouter"]) == ["gemini", "openai"]
-    assert calls["gemini"] == []
+    assert sorted(calls["openrouter"]) == ["deepseek", "openai"]
+    assert calls["deepseek"] == []
     assert calls["openai"] == []
 
 
@@ -511,7 +507,7 @@ def test_main_plan_mode_with_openrouter(
     payload = json.loads(capsys.readouterr().out)
 
     assert payload["provider"] == "openrouter"
-    assert sorted(calls["openrouter"]) == ["gemini", "openai"]
+    assert sorted(calls["openrouter"]) == ["deepseek", "openai"]
 
 
 # ---- Code-review mode (--mode code) ----------------------------------------
@@ -660,7 +656,7 @@ def test_main_code_mode_empty_diff_short_circuits(
     payload = json.loads(capsys.readouterr().out)
     # The empty-diff short-circuit must NOT call any provider helper.
     assert calls["openrouter"] == []
-    assert calls["gemini"] == []
+    assert calls["deepseek"] == []
     assert calls["openai"] == []
     # JSON must surface why the review was skipped so the caller can log it.
     assert payload["success"] is True
@@ -668,8 +664,9 @@ def test_main_code_mode_empty_diff_short_circuits(
     # Schema lock-in: empty-diff branch still emits the same top-level keys
     # so consumers parsing the result don't have to special-case it.
     assert payload["provider"] == "none"
-    assert set(payload["reviews"].keys()) == {"gemini", "openai"}
-    assert payload["reviews"]["gemini"]["status"] == "skipped"
+    assert payload["review_schema"] == 2
+    assert set(payload["reviews"].keys()) == {"deepseek", "openai"}
+    assert payload["reviews"]["deepseek"]["status"] == "skipped"
     assert payload["reviews"]["openai"]["status"] == "skipped"
 
 
@@ -702,8 +699,8 @@ def test_main_code_mode_with_openrouter_dispatches_via_openrouter(
     payload = json.loads(capsys.readouterr().out)
 
     assert payload["provider"] == "openrouter"
-    assert sorted(calls["openrouter"]) == ["gemini", "openai"]
-    assert calls["gemini"] == []
+    assert sorted(calls["openrouter"]) == ["deepseek", "openai"]
+    assert calls["deepseek"] == []
     assert calls["openai"] == []
 
 
@@ -792,7 +789,7 @@ def test_main_code_mode_falls_back_to_inline_default_prompts(
     payload = json.loads(capsys.readouterr().out)
 
     assert payload["provider"] == "openrouter"
-    assert sorted(calls["openrouter"]) == ["gemini", "openai"]
+    assert sorted(calls["openrouter"]) == ["deepseek", "openai"]
     # Output schema unchanged
     assert "reviews" in payload
 
@@ -824,8 +821,8 @@ def test_main_code_mode_no_keys_returns_skipped_schema(
     payload = json.loads(capsys.readouterr().out)
 
     assert payload["provider"] == "none"
-    assert set(payload["reviews"].keys()) == {"gemini", "openai"}
-    assert payload["reviews"]["gemini"]["status"] == "skipped"
+    assert set(payload["reviews"].keys()) == {"deepseek", "openai"}
+    assert payload["reviews"]["deepseek"]["status"] == "skipped"
     assert payload["reviews"]["openai"]["status"] == "skipped"
 
 

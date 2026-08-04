@@ -68,7 +68,7 @@
       }
     }
   },
-  "regenerated_for": "The adopt review renderer now preserves the intentionally introduced degraded status and its partial feedback, changing only the source fingerprint of review_runner.run_review; requirements discovery behaviour is unchanged.",
+  "regenerated_for": "P2.33 replaces the current Gemini review arm with the identity-locked DeepSeek V4 Pro ZDR route while retaining historical-reader compatibility",
   "schema_version": 1,
   "targets": {
     "disc._test_links_io.discover_specs": {
@@ -1697,7 +1697,7 @@
     },
     "disc.review_runner.run_review": {
       "kind": "source_only",
-      "sha256": "9a2a1872a64d1178e2ac38b6b92a1244d5ce026aed0e9c5821ebbf35cdbaede0",
+      "sha256": "4b274cebee6161c2dc0efc6599794cfa6651a4a450f313c405efc9614c0ee171",
       "source_lines": 119
     },
     "disc.rtm.collect_external_review_states": {

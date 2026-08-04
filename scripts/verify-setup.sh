@@ -190,8 +190,6 @@ env_has() {
 
 if env_has OPENROUTER_API_KEY; then
     echo "  $PASS OPENROUTER_API_KEY: set (external review via OpenRouter)"
-elif env_has GEMINI_API_KEY || env_has GOOGLE_API_KEY; then
-    echo "  $PASS GEMINI_API_KEY: set (external review via Gemini)"
 elif env_has OPENAI_API_KEY; then
     echo "  $PASS OPENAI_API_KEY: set (external review via OpenAI)"
 else

@@ -120,12 +120,7 @@ _SHIPWRIGHT_FRAMEWORK_VARS: list[dict] = [
     {
         "name": "OPENROUTER_API_KEY",
         "description": "OpenRouter API key for external plan/iterate/code reviews "
-                       "(preferred — single key for both Gemini and OpenAI)",
-        "optional": True,
-    },
-    {
-        "name": "GEMINI_API_KEY",
-        "description": "Direct Google Gemini API key (alternative to OpenRouter)",
+                       "(required for the ZDR-routed DeepSeek arm)",
         "optional": True,
     },
     {
@@ -252,7 +247,7 @@ def init_env_file(
     Also ensures .env.local is in .gitignore before creating the file.
 
     When ``include_framework=True``, the framework-level external-review keys
-    (``OPENROUTER_API_KEY`` / ``GEMINI_API_KEY`` / ``OPENAI_API_KEY``) are
+    (``OPENROUTER_API_KEY`` / ``OPENAI_API_KEY``) are
     appended after the profile-defined vars and deduplicated by name — first
     occurrence wins, so a profile that already lists one of these keys keeps
     its custom description. Default ``False`` preserves the global

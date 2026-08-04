@@ -164,7 +164,7 @@ via `shared/scripts/validate_env.py::init_env_file(project_root, "all", profile_
 include_framework=True)` (result in `results["env_local"]`). Idempotent (never
 overwrites); `.gitignore` enforced FIRST (on failure → `action: skipped`, writes
 nothing); comment-prefixed entries only. Keys = profile `required_env_vars[...]`
-+ framework `OPENROUTER_API_KEY` / `GEMINI_API_KEY` / `OPENAI_API_KEY`.
++ framework `OPENROUTER_API_KEY` / `OPENAI_API_KEY`.
 
 Full procedure → [references/step-e5-env-scaffold.md](references/step-e5-env-scaffold.md).
 
