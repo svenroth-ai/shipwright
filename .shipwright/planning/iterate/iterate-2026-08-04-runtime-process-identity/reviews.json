@@ -1,0 +1,169 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-08-04-runtime-process-identity",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-04T16:53:24.769236+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 10,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "approach (reducibility)",
+          "file": null,
+          "line": null,
+          "finding": "Creating a dedicated test file specifically named `test_runtime_verifier_retirement.py` is over-production and leaves a historical tombstone in the test suite. While the spec justifies an integration test to satisfy the `cross_component` rule, maintaining a permanent file dedicated to verifying the absence of a deleted feature is an anti-pattern.",
+          "suggestion": "Instead of creating a retirement-specific test file, add the negative assertion (CLI rejects `--phase runtime`) and the dispatch order assertion to an existing CLI integration test file (e.g., `test_verify_phase.py`). If no such general CLI test exists, name the new file `test_verify_phase_cli.py` so it owns the general CLI contract moving forward, rather than memorializing a deleted phase.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "The inventory step mentions checking the repository for \"active executable and documentation callers\" but does not explicitly call out CI/CD environments. If pipeline configs, Makefiles, `package.json` scripts, or pre-commit hooks currently hardcode `--phase runtime`, merging this change will immediately break builds or commits because the CLI will begin exiting non-zero.",
+          "suggestion": "Explicitly include CI pipeline definitions (e.g., `.github/workflows/`, `.gitlab-ci.yml`), `Makefile`s, and `.pre-commit-config.yaml` in the Step 1 inventory list to ensure all automated invocations are removed.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "While the plan rightly ignores the WebUI and dev-server, it does not explicitly mention any remaining cleanup scripts or `.gitignore` entries related to the `.shipwright-webui/pids.json` file. If there are bash scripts or teardown hooks that still expect or attempt to clean up that specific JSON file, they will be left behind as dead code.",
+          "suggestion": "Do a quick text search for `pids.json` across the repository to ensure no orphaned file-system cleanup tasks remain.  Overall Assessment: The approach correctly identifies the root cause and safely excises the dead consumer code while verifying the remaining `--phase all` order is preserved. Once the integration test is generalized to avoid permanent technical debt and CI configs are explicitly checked, this is ready to implement.  SHIPWRIGHT_VERDICT: approve",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "The plan inventories active callers but does not make remediation of discovered executable callers an explicit implementation gate. A CI workflow, hook, task runner, or project-local automation that still invokes `verify_phase.py --phase runtime` will begin failing after this change.",
+          "suggestion": "Treat the inventory as a required decision point: update or remove every active executable caller found, including workflow definitions, hook/task configuration, test-selection manifests, and script wrappers. If any caller represents a required control rather than obsolete automation, stop and reassess rather than deleting the phase.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "The proposed integration test needs a concrete mechanism for proving the exact `--phase all` dispatch order. A subprocess invocation alone may only reveal success/failure; if the verifiers do not emit an unambiguous ordered phase trace, the test could either fail because a verifier requires unrelated environment/state or pass without actually proving dispatch order.",
+          "suggestion": "Define the probe around the existing dispatcher’s observable behavior. Assert a fixed, independently maintained expected remaining phase list, and capture actual dispatch calls through an existing registry/output mechanism or narrowly monkeypatch each remaining verifier entry point while invoking the real parser/dispatcher. Do not derive the expected list by inspecting the same registry under test.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "“`runtime` is rejected” can be satisfied accidentally by a general CLI/import failure. Likewise, `--help` may be emitted on a different stream or have platform/version-specific formatting.",
+          "suggestion": "Assert the expected argument-validation behavior specifically: a nonzero argparse-style exit code, an error containing `runtime` and invalid-choice/invalid-phase wording, and absence of `runtime` from combined help output. Also assert that one lightweight surviving phase succeeds under a controlled fixture, so the test distinguishes retired-selector rejection from a broken CLI.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "Deleting the module and its dedicated unit test may leave stale references outside ordinary Python imports, such as explicit pytest target lists, packaging/source manifests, generated documentation inputs, coverage configuration, or verifier registries maintained in another file. The stated source/doc scan is useful but should cover these repository-control files explicitly.",
+          "suggestion": "Include repository configuration and build/test metadata in the inventory, then run the configured targeted and full-suite commands from a clean checkout. Follow established integration-test discovery conventions rather than assuming a newly added file under `integration-tests/` is automatically collected.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "The plan edits `verifiers/common.py` in addition to removing the module, but it does not distinguish stale prose from shared runtime-related helpers. Removing or changing executable shared helpers while cleaning documentation could affect remaining verifiers.",
+          "suggestion": "Limit `common.py` changes to comments/docstrings unless a helper is demonstrably runtime-only and has no remaining references. Validate remaining verifier imports directly as part of the targeted shared test run.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The negative scan requirement can become misleading if implemented as a blanket text ban: the retirement integration test must itself contain `runtime`, and historical records are intentionally retained.",
+          "suggestion": "Scope the scan to active source, automation, and documentation, with explicit exclusions for immutable changelog/history and the retirement test assertions. Review matches semantically so references documenting the retired behavior or asserting rejection are not mistaken for supported surface claims.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "security",
+          "file": null,
+          "line": null,
+          "finding": "No new security exposure is introduced; removing an unsupported PID-file consumer reduces the chance that stale or attacker-controlled PID data is treated as authoritative. The practical security concern is only an unnoticed active caller losing a validation step.",
+          "suggestion": "Complete the caller inventory before removal and document any replacement verification used by an active automation path. No new dependency or security-specific implementation is warranted.  Overall, removal is the sound approach because there is no remaining producer capable of establishing a meaningful PID identity contract. The plan should be revised to make active-caller remediation explicit and to specify a reliable, non-circular dispatch-order test mechanism. SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-08-04T16:46:51.946698+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[gemini] Here is the review of the implementation plan:\n\n- **Category**: approach (reducibility)\n- **Severity**: medium\n- **Finding**: Creating a dedicated test file specifically named `test_runtime_verifier_retirement.py` is over-production and leaves a historical tombstone in the test suite. While the spec justifies an integration test to satisfy the `cross_component` rule, maintaining a permanent file dedicated to verifying the *absence* of a deleted feature is an anti-pattern.\n- **Suggestion**: Instead of creating a retirement-specific test file, add the negative assertion (CLI rejects `--phase runtime`) and the dispatch order assertion to an *existing* CLI integration test file (e.g., `test_verify_phase.py`). If no such general CLI test exists, name the new file `test_verify_phase_cli.py` so it owns the general CLI contract moving forward, rather than memorializing a deleted phase.\n\n- **Category**: risk\n- **Severity**: medium\n- **Finding**: The inventory step mentions checking the repository for \"active executable and documentation callers\" but does not explicitly call out CI/CD environments. If pipeline configs, Makefiles, `package.json` scripts, or pre-commit hooks currently hardcode `--phase runtime`, merging this change will immediately break builds or commits because the CLI will begin exiting non-zero.\n- **Suggestion**: Explicitly include CI pipeline definitions (e.g., `.github/workflows/`, `.gitlab-ci.yml`), `Makefile`s, and `.pre-commit-config.yaml` in the Step 1 inventory list to ensure all automated invocations are removed.\n\n- **Category**: edge-case\n- **Severity**: low\n- **Finding**: While the plan rightly ignores the WebUI and dev-server, it does not explicitly mention any remaining cleanup scripts or `.gitignore` entries related to the `.shipwright-webui/pids.json` file. If there are bash scripts or teardown hooks that still expect or attempt to clean up that specific JSON file, they will be left behind as dead code.\n- **Suggestion**: Do a quic […truncated]\n\n[openai] 1. **Category:** dependency  \n   **Severity:** medium  \n   **Finding:** The plan inventories active callers but does not make remediation of discovered executable callers an explicit implementation gate. A CI workflow, hook, task runner, or project-local automation that still invokes `verify_phase.py --phase runtime` will begin failing after this change.  \n   **Suggestion:** Treat the inventory as a required decision point: update or remove every active executable caller found, including workflow definitions, hook/task configuration, test-selection manifests, and script wrappers. If any caller represents a required control rather than obsolete automation, stop and reassess rather than deleting the phase.\n\n2. **Category:** approach  \n   **Severity:** medium  \n   **Finding:** The proposed integration test needs a concrete mechanism for proving the exact `--phase all` dispatch order. A subprocess invocation alone may only reveal success/failure; if the verifiers do not emit an unambiguous ordered phase trace, the test could either fail because a verifier requires unrelated environment/state or pass without actually proving dispatch order.  \n   **Suggestion:** Define the probe around the existing dispatcher’s observable behavior. Assert a fixed, independently maintained expected remaining phase list, and capture actual dispatch calls through an existing registry/output mechanism or narrowly monkeypatch each remaining verifier entry point while invoking the real parser/dispatcher. Do not derive the expected list by inspecting the same registry under test.\n\n3. **Category:** edge-case  \n   **Severity:** medium  \n   **Finding:** “`runtime` is rejected” can be satisfied accidentally by a general CLI/import failure. Likewise, `--help` may be emitted on a different stream or have platform/version-specific formatting.  \n   **Suggestion:** Assert the expected argument-validation behavior specifically: a nonzero argparse-style exit code, an error containing `runtime` […truncated]"
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-04T17:00:39.950324+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-04T17:04:04.265953+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": "openrouter",
+      "completed_at": "2026-08-04T17:04:03.411405+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "unstructured",
+      "raw_excerpt": "[gemini] The provided code change successfully fulfills the specification. The obsolete `runtime` phase and its verification module, tests, and CLI dispatcher are removed. Documentation updates align exactly with the removal, and the new integration test properly validates both the CLI behavior and the phase order preservation (correctly using default argument binding `phase=phase` in the lambda to prevent closure capture bugs).\n\nI reviewed the changes for correctness, missing edge cases, and regressions in the verifier CLI dispatch, but found no defects.\n\nSHIPWRIGHT_VERDICT: approve\n\n[openai] No concrete defects found. The obsolete module and its tests are deleted; CLI imports, selector choices, direct dispatch, and ordered `all` registry no longer include `runtime`; and active verifier documentation is updated without changes under `shared/scripts/dev_server/`.\n\nThe new integration test exercises real CLI help and invalid-phase handling, verifies a surviving phase still runs, and monkeypatches the all-phase dispatchers to assert the exact remaining dispatch order. This satisfies the specified regression coverage.\n\nOverall assessment: ship-as-is.\n\nSHIPWRIGHT_VERDICT: approve"
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-04T16:58:22.546516+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    }
+  }
+}

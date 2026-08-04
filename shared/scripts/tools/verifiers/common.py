@@ -66,8 +66,8 @@ class Severity(str, Enum):
 @dataclass
 class CheckResult:
     """One verifier finding. ``ok`` is tri-state: True=passed, False=failed (severity
-    decides blocking), None=deliberately skipped (severity ``SKIPPED``) — the None case lets
-    ``verify_phase.py --phase all`` surface a runtime stub without counting it pass OR fail."""
+    decides blocking), None=deliberately skipped (severity ``SKIPPED``) without
+    counting it as either a pass or failure."""
 
     name: str
     ok: bool | None

@@ -1,0 +1,110 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-08-04-runtime-process-identity",
+    "date": "2026-08-04",
+    "unit": {
+      "status": "passed",
+      "passed": 18,
+      "total": 18,
+      "note": "The canonical suite runner completed all 18 test roots; integration-tests passed on the runner's serial retry after a known parallel cache-fanout race."
+    },
+    "integration": {
+      "status": "passed",
+      "passed": 470,
+      "total": 470
+    },
+    "pgtap": {
+      "status": "skipped",
+      "passed": 0,
+      "total": 0
+    },
+    "e2e": {
+      "status": "skipped",
+      "passed": 0,
+      "total": 0
+    },
+    "design_fidelity": {
+      "status": "skipped",
+      "passed": 0,
+      "total": 0
+    },
+    "smoke": {
+      "status": "skipped"
+    },
+    "surface_verification": {
+      "run_id": "iterate-2026-08-04-runtime-process-identity",
+      "surface": "cli",
+      "runner": "uv run --python 3.11 --with pytest pytest integration-tests/test_verify_phase_cli.py -v",
+      "exit_code": 0,
+      "tests_run": 2,
+      "evidence_path": ".shipwright/runs/iterate-2026-08-04-runtime-process-identity/surface_verification.json"
+    },
+    "test_completeness": {
+      "run_id": "iterate-2026-08-04-runtime-process-identity",
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "AC-1: the retired runtime selector is absent from help and rejected by the real CLI while a surviving selector still reaches its verifier",
+          "disposition": "tested",
+          "category": "integration",
+          "evidence": "integration-tests/test_verify_phase_cli.py::test_runtime_phase_is_retired_from_real_cli PASSED on Python 3.11"
+        },
+        {
+          "behavior": "AC-2: all-phase dispatch excludes runtime and preserves the exact remaining phase order",
+          "disposition": "tested",
+          "category": "integration",
+          "evidence": "integration-tests/test_verify_phase_cli.py::test_all_phase_dispatch_preserves_the_surviving_order PASSED on Python 3.11"
+        },
+        {
+          "behavior": "AC-3: active source, automation, and documentation contain no supported runtime verifier, pids.json, or zombie-reconciliation contract",
+          "disposition": "tested",
+          "evidence": "repository-wide active-surface rg scan returned no matches; historical changelog/event records were excluded and retained"
+        },
+        {
+          "behavior": "AC-4: the dev-server implementation remains outside this change",
+          "disposition": "tested",
+          "evidence": "git diff -- shared/scripts/dev_server returned empty"
+        }
+      ],
+      "counts": {
+        "testable": 4,
+        "tested": 4,
+        "untestable": 0,
+        "untested_testable": 0
+      },
+      "enumeration_basis": {
+        "acs": 4,
+        "covered_acs": 4
+      }
+    },
+    "declared_removals": [
+      {
+        "path": "shared/scripts/tools/verifiers/runtime_checks.py",
+        "reason": "The only pids.json producer was removed with the extracted WebUI process governor, so the verifier has no live contract to verify."
+      },
+      {
+        "path": "shared/tests/test_verifiers_runtime.py",
+        "reason": "The dedicated tests only exercised the retired producerless runtime verifier."
+      }
+    ],
+    "degraded": [
+      {
+        "condition": "canonical_retry_green",
+        "detail": "integration-tests failed only in parallel cache-fanout cases and passed when the canonical runner retried the same root serially; existing triage trg-c31bd693 records the race."
+      }
+    ]
+  },
+  "coverage": {
+    "total": 80.2,
+    "measured_tier": "repo",
+    "source": "combined coverage.xml (all plugins + shared + integration)",
+    "measured_at": "2026-07-04T00:00:00Z"
+  },
+  "source_state": {
+    "run_id": "iterate-2026-08-04-runtime-process-identity",
+    "commit": "4e2434a546f0ab0947aec48271d3e361285f522f",
+    "dirty": true,
+    "base": null,
+    "release": null
+  }
+}

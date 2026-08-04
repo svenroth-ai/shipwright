@@ -1,9 +1,9 @@
 """Unified CLI entrypoint for the Shipwright phase verifier.
 
-Iterate 12.0 shipped ``iterate`` + ``runtime``. Iterate 12.1 added
-``project``. Iterate 12.2 added ``design`` + ``plan``. Iterate 12.3
-adds ``build`` (canon hybrid — per-section C1/C4 + phase-level C2/C3/C5
-+ check-plan Group B3/B6 preventive imports). Iterate 12.4 will add
+Iterate 12.0 shipped ``iterate``. Iterate 12.1 added ``project``.
+Iterate 12.2 added ``design`` + ``plan``. Iterate 12.3 adds
+``build`` (canon hybrid — per-section C1/C4 + phase-level C2/C3/C5
++ check-plan Group B3/B6 preventive imports). Iterate 12.4 added
 ``test``, ``changelog``, ``deploy``.
 
 Usage:
@@ -52,7 +52,6 @@ from tools.verifiers import (  # noqa: E402
     iterate_checks,
     plan_checks,
     project_checks,
-    runtime_checks,
     test_checks,
 )
 from tools.verifiers.common import (  # noqa: E402
@@ -64,15 +63,18 @@ from tools.verifiers.stdio import ensure_utf8_stdout  # noqa: E402
 
 
 # The phases that ``--phase all`` dispatches today.
-ALL_PHASES = frozenset({
-    "iterate", "runtime", "project", "design", "plan", "build",
-    "test", "changelog", "deploy",
-})
+ALL_PHASES = (
+    "iterate",
+    "project",
+    "design",
+    "plan",
+    "build",
+    "test",
+    "changelog",
+    "deploy",
+)
 
-DISPATCHABLE_PHASES = frozenset({
-    "iterate", "runtime", "project", "design", "plan", "build",
-    "test", "changelog", "deploy", "all",
-})
+DISPATCHABLE_PHASES = frozenset((*ALL_PHASES, "all"))
 
 
 def dispatch_iterate(project_root: Path, run_id: str, commit: str) -> list[CheckResult]:
@@ -83,10 +85,6 @@ def dispatch_iterate(project_root: Path, run_id: str, commit: str) -> list[Check
             detail="--run-id is required for --phase iterate",
         )]
     return iterate_checks.run_all_checks(project_root, run_id, commit)
-
-
-def dispatch_runtime(project_root: Path) -> list[CheckResult]:
-    return runtime_checks.run_all_checks(project_root)
 
 
 def dispatch_project(project_root: Path, run_id: str) -> list[CheckResult]:
@@ -123,8 +121,6 @@ def dispatch_all(project_root: Path, run_id: str, commit: str) -> list[CheckResu
     # the caller didn't pass one — otherwise it's a guaranteed failure.
     if "iterate" in ALL_PHASES and run_id:
         out.extend(dispatch_iterate(project_root, run_id, commit))
-    if "runtime" in ALL_PHASES:
-        out.extend(dispatch_runtime(project_root))
     if "project" in ALL_PHASES:
         out.extend(dispatch_project(project_root, run_id))
     if "design" in ALL_PHASES:
@@ -171,9 +167,6 @@ def main() -> None:
     if args.phase == "iterate":
         results = dispatch_iterate(project_root, args.run_id, args.commit)
         title = "iterate finalization"
-    elif args.phase == "runtime":
-        results = dispatch_runtime(project_root)
-        title = "runtime reconciliation"
     elif args.phase == "project":
         results = dispatch_project(project_root, args.run_id)
         title = "project finalization"

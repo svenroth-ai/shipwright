@@ -1,0 +1,6 @@
+{
+  "stage": "doubt-reviewer",
+  "verdict": "PASS",
+  "doubts": [],
+  "summary": "PASS. Repository-wide searches found no active runtime verifier caller, import, re-export, PID-file producer, automation entry, or supported documentation claim. Git history and the current external shipwright-webui checkout confirm that ProcessGovernor—the pids.json producer—was removed in commit 963d52f on 2026-04-19; surviving WebUI references are historical decisions and event-type compatibility only. Retirement is therefore safer than creating an identity contract without an active producer. The real Python 3.11 CLI regression independently passed 2/2, proving runtime rejection, surviving project dispatch, clean imports, and exact remaining all-phase order. git diff --check is clean, and shared/scripts/dev_server has no diff."
+}
