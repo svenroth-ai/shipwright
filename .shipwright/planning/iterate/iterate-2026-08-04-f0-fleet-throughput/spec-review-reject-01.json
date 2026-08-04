@@ -1,0 +1,19 @@
+{
+  "stage": "spec-compliance",
+  "verdict": "REJECT",
+  "spec_citations": [
+    {
+      "spec_ref": ".shipwright/planning/iterate/2026-08-04-f0-fleet-throughput.md:L74-L77 (AC-2: three measured final whole-suite duration sets must back the fleet replay)",
+      "divergence": "The replay evidence does not retain the three complete measured unit-duration sets it says it consumed. Each sample stores only a rounded suite duration and three dominant-unit durations, while replay_method claims every measured unit duration was used; therefore the candidate makespan and queue results cannot be reproduced or audited from the retained evidence.",
+      "diff_location": ".shipwright/planning/iterate/iterate-2026-08-04-f0-fleet-throughput/fleet-throughput-evidence.json:samples,replay_method.in_run_model",
+      "kind": "missing"
+    },
+    {
+      "spec_ref": ".shipwright/planning/iterate/2026-08-04-f0-fleet-throughput.md:L97-L102 and L126-L127 (AC-8/F0.5: cancellation must unwind pool, CPU lease, and coverage lock, then an immediate invocation must reacquire them)",
+      "divergence": "The probes verify cancellation-aware budget admission and descendant cleanup separately, but no probe drives cancellation through the real `_run_locked`/`coverage_run_lock`/`f0_cpu_lease` stack and then performs the required immediate second invocation. The main cancellation test explicitly replaces the coverage lock with `nullcontext`, and the native follow-up verifies only a new supervised uv process, so lease/coverage release and namespaced reset after cancellation remain unproven.",
+      "diff_location": "shared/scripts/tools/tests/test_run_test_suite_faults.py:170; shared/scripts/tools/tests/test_suite_process.py:129; shared/scripts/tools/tests/test_suite_host_resources.py:293",
+      "kind": "missing"
+    }
+  ],
+  "summary": "2 acceptance criteria lack the required empirical proof (complete replay inputs and integrated cancellation-to-lock-reuse). Code-reviewer remains gated."
+}

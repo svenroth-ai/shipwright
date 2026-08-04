@@ -1,0 +1,13 @@
+{
+  "section": "P1.16-f0-fleet-throughput",
+  "review": [
+    {
+      "severity": "medium",
+      "category": "correctness",
+      "file": "shared/scripts/tools/run_test_suite.py",
+      "line": 252,
+      "finding": "The evidence helper infers truncation by searching untrusted child output for the human-readable marker. A test process can print that exact line, causing a false truncation claim and removal of genuine output.",
+      "suggestion": "Propagate ProcessResult.truncated explicitly through the executor and attempt result. Treat the marker as presentation-only and never parse child output for control state."
+    }
+  ]
+}

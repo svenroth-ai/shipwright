@@ -181,12 +181,13 @@ def _fake_exec(script):
     """
     calls = []
 
-    def _exec(unit, project_root, xdist_workers, tmp_dir, timeout=None):
+    def _exec(unit, project_root, xdist_workers, tmp_dir, timeout=None,
+              cancel_event=None):
         # tmp_dir is <root>/p/u<i> (parallel) or <root>/s/u<i> (retry)
         calls.append((unit.id, xdist_workers, tmp_dir.parent.name))
         rc = script[unit.id].pop(0)
         ran = rc in (0, 1)  # pytest produced a report unless uv died before it
-        return rc, f"out-rc{rc}", 0.01, ran
+        return rc, f"out-rc{rc}", 0.01, ran, False, False
 
     return _exec, calls
 
@@ -268,11 +269,12 @@ def test_an_infra_retry_never_strips_xdist(tmp_path, monkeypatch):
     _write_cfg(root, {"xdist": {"shared/tests": 4}})
     calls = []
 
-    def _exec(unit, project_root, xdist_workers, tmp_dir, timeout=None):
+    def _exec(unit, project_root, xdist_workers, tmp_dir, timeout=None,
+              cancel_event=None):
         calls.append((unit.id, xdist_workers))
         if unit.id == "shared/tests" and xdist_workers:
-            return 1, _UV_FAULT_OUT, 0.01, False   # uv died before pytest -> no report
-        return 0, "ok", 0.01, True                 # an xdist-STRIPPED run would pass
+            return 1, _UV_FAULT_OUT, 0.01, False, False, False  # uv died before pytest
+        return 0, "ok", 0.01, True, False, False  # stripped run would pass
 
     monkeypatch.setattr(mod, "_exec", _exec)
     monkeypatch.setattr(mod, "ensure_xdist_available", lambda *a, **k: None)

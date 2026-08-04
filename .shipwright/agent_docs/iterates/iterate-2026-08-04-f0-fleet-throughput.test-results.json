@@ -1,0 +1,127 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-08-04-f0-fleet-throughput",
+    "date": "2026-08-04",
+    "unit": {
+      "status": "passed",
+      "passed": 18,
+      "total": 18
+    },
+    "integration": {
+      "status": "passed",
+      "passed": 1,
+      "total": 1
+    },
+    "pgtap": {
+      "status": "not_run",
+      "passed": 0,
+      "total": 0
+    },
+    "e2e": {
+      "status": "not_run",
+      "passed": 0,
+      "total": 0
+    },
+    "design_fidelity": {
+      "status": "not_run",
+      "passed": 0,
+      "total": 0
+    },
+    "smoke": {
+      "status": "not_run"
+    },
+    "degraded": [],
+    "test_completeness": {
+      "run_id": "iterate-2026-08-04-f0-fleet-throughput",
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "AC1 explicit fleet budget permits two sibling F0 grants without oversubscription",
+          "disposition": "tested",
+          "evidence": "real sibling-worktree weighted lease overlap and hardware-cap probes PASSED",
+          "category": "integration"
+        },
+        {
+          "behavior": "AC2 budget 11 is selected from complete repeated fleet throughput and queue evidence",
+          "disposition": "tested",
+          "evidence": "54 retained unit durations reproduce 8/11/22 makespan, runs/hour, mean queue and max queue metrics"
+        },
+        {
+          "behavior": "AC3 integration-tests runs without xdist and is stable under the outer pool",
+          "disposition": "tested",
+          "evidence": "argv/config regressions PASSED; three final canonical audits plus final reviewed F0 GREEN"
+        },
+        {
+          "behavior": "AC4 outer-only lease races use synchronized overlap and FIFO proofs",
+          "disposition": "tested",
+          "evidence": "explicit holder/release/order probes PASSED and both planted ordering regressions turned RED"
+        },
+        {
+          "behavior": "AC5 unit and retry lifecycle records are bounded, ASCII-safe, ordered, and heartbeat-visible",
+          "disposition": "tested",
+          "evidence": "lifecycle, closed-stream, retry-authority, cancellation-completion and canonical heartbeat probes PASSED"
+        },
+        {
+          "behavior": "AC6 diagnostic output is live-bounded, redacted, durable, and linked without affecting classification",
+          "disposition": "tested",
+          "evidence": "2 MiB cap, marker-forgery, all-field redaction, linked-worktree survival and race-card round trips PASSED"
+        },
+        {
+          "behavior": "AC7 timeout and cancellation reap complete owned descendant trees on Windows and POSIX",
+          "disposition": "tested",
+          "evidence": "native uv-pytest-xdist-exited-parent-grandchild Job Object probe PASSED; POSIX process-group counterparts remain CI-covered",
+          "category": "integration"
+        },
+        {
+          "behavior": "AC8 cancellation stops admission and releases coverage, CPU, temp and retry state for immediate reuse",
+          "disposition": "tested",
+          "evidence": "real lock-stack unwind plus immediate second main invocation PASSED; natural rc130 remains red while real cancel interrupts"
+        },
+        {
+          "behavior": "AC9 strict retry, JUnit, coverage, one-test-root and serial CI parity semantics remain intact",
+          "disposition": "tested",
+          "evidence": "full shared-tools root 467 PASSED; final canonical F0 18/18 GREEN with diff coverage 88%"
+        },
+        {
+          "behavior": "AC10 both recorded race shapes and bounded pre-fix evidence are retained beyond a clean run",
+          "disposition": "tested",
+          "evidence": "controlled baseline reproduced 17 integration cache-fanout and 3 tools ordering failures; run-scoped baseline and fleet evidence retained"
+        }
+      ],
+      "counts": {
+        "testable": 10,
+        "tested": 10,
+        "untestable": 0,
+        "untested_testable": 0
+      },
+      "enumeration_basis": {
+        "acs": 10,
+        "covered_acs": 10
+      }
+    },
+    "surface_verification": {
+      "run_id": "iterate-2026-08-04-f0-fleet-throughput",
+      "surface": "cli",
+      "runner": "uv run shared/scripts/tools/suite_host_resources.py --probe --project-root . --run-id iterate-2026-08-04-f0-fleet-throughput",
+      "exit_code": 0,
+      "tests_run": 1,
+      "evidence_path": ".shipwright/runs/iterate-2026-08-04-f0-fleet-throughput/surface_verification.json",
+      "timestamp": "2026-08-04T14:49:04.675Z",
+      "attempts": 1
+    },
+    "declared_removals": []
+  },
+  "coverage": {
+    "total": 88.0,
+    "measured_tier": "diff",
+    "source": "final canonical F0 diff-cover against origin/main",
+    "measured_at": "2026-08-04T14:49:38Z"
+  },
+  "source_state": {
+    "run_id": "iterate-2026-08-04-f0-fleet-throughput",
+    "commit": "ed4388b9d683c3f2fa5644f40d67a73cf5fa9ccd",
+    "dirty": true,
+    "base": null,
+    "release": null
+  }
+}

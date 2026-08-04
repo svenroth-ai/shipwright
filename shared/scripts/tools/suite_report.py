@@ -33,6 +33,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
 from scripts.tools.suite_units import INFRA, PASS, TEST_FAILURE, UV_RUN  # noqa: E402
 
+TRUNCATION_MARKER = "FAULT: output tail truncated to the bounded diagnostic limit\n"
+
 #: dedup-key namespace for the race producer (one OPEN entry per unit)
 DEDUP_PREFIX = "f0-race:"
 _RUNNER = "shared/scripts/tools/run_test_suite.py"
@@ -210,9 +212,18 @@ def render_run_report(result) -> list[str]:
     for res in result.results:  # output for what failed AND for a retry (its evidence)
         if res.outcome != PASS or res.race:
             serial = f", retry rc={res.serial_rc}" if res.serial_rc is not None else ""
+            output = ((TRUNCATION_MARKER if getattr(res, "truncated", False) else "")
+                      + res.output)
             lines.append(f"\n{'=' * 70}\n{res.unit_id} "
                          f"({'RETRY-GREEN' if res.race else res.outcome}, "
-                         f"rc={res.rc}{serial})\n{'=' * 70}\n{res.output}")
+                         f"rc={res.rc}{serial})\n{'=' * 70}\n{output}")
+            if getattr(res, "evidence_path", None):
+                lines.append(f"  bounded diagnostic evidence: {res.evidence_path}")
+            if getattr(res, "retry_evidence_path", None):
+                lines.append(f"  retry diagnostic evidence: {res.retry_evidence_path}")
+        if getattr(res, "evidence_error", None):
+            lines.append(f"  FAULT: diagnostic evidence could not be retained for "
+                         f"{res.unit_id}: {clean(res.evidence_error, 300)}")
     lines.append(f"\nF0 suite: {len(result.results)} units in "
                  f"{result.seconds / 60:.1f} min "
                  f"-> {'GREEN' if result.exit_code == 0 else 'RED'}")

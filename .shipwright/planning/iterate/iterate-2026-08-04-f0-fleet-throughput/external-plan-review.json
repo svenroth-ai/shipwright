@@ -1,0 +1,17 @@
+{
+  "success": true,
+  "provider": "openrouter",
+  "degraded": false,
+  "reviews": {
+    "gemini": {
+      "status": "success",
+      "via": "openrouter",
+      "feedback": "SHIPWRIGHT_VERDICT: approve\nFindings: specify the Windows process-tree lifecycle precisely; ensure no requested unit weight can deadlock above the run grant; redact and label retained diagnostic output as untrusted; predeclare the throughput telemetry and candidate comparison."
+    },
+    "openai": {
+      "status": "success",
+      "via": "openrouter",
+      "feedback": "SHIPWRIGHT_VERDICT: revise\nFindings: make the bounded budget portable through host clamping; state the integration scheduling policy as an argv invariant; keep JUnit existence independent from bounded output; assign Windows descendants before execution and define cancellation ordering; isolate sibling cleanup; handle binary/invalid UTF-8 tails and secrets safely; predeclare objective fleet metrics and tie-breaking; serialize progress emission; avoid duplicating helpers."
+    }
+  }
+}
