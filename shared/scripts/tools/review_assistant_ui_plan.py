@@ -55,7 +55,7 @@ def main() -> int:
     provider = detect_provider()
     if provider == "none":
         print(
-            "ERROR: no OPENROUTER_API_KEY (or direct GEMINI_API_KEY/OPENAI_API_KEY) "
+            "ERROR: no OPENROUTER_API_KEY or direct OPENAI_API_KEY "
             "found in env or .env.local. Cannot run external review.",
             file=sys.stderr,
         )
@@ -118,7 +118,7 @@ def main() -> int:
     md_lines.append(f"# External LLM Review — {plan_path.name}")
     md_lines.append("")
     md_lines.append(f"- Provider: `{result.get('provider')}`")
-    md_lines.append("- Reviewer models: gemini-3.1-pro-preview, gpt-5.6-terra-pro (via OpenRouter)")
+    md_lines.append("- Reviewer models: deepseek/deepseek-v4-pro, openai/gpt-5.6-terra")
     md_lines.append("")
     for name, review in result.get("reviews", {}).items():
         md_lines.append(f"## Reviewer: {name}")

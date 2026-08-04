@@ -292,13 +292,12 @@ class TestFrameworkVarsMerge:
         assert result["action"] == "created"
         env_text = (empty_project / ".env.local").read_text(encoding="utf-8")
         assert "OPENROUTER_API_KEY" in env_text
-        assert "GEMINI_API_KEY" in env_text
         assert "OPENAI_API_KEY" in env_text
-        # Order: OPENROUTER first, then GEMINI, then OPENAI.
+        assert "GEMINI_API_KEY" not in env_text
+        # Order: OpenRouter first, then direct OpenAI.
         i_or = env_text.index("OPENROUTER_API_KEY")
-        i_g = env_text.index("GEMINI_API_KEY")
         i_o = env_text.index("OPENAI_API_KEY")
-        assert i_or < i_g < i_o
+        assert i_or < i_o
         # Section label
         assert "Framework / External Review" in env_text
 
@@ -339,8 +338,8 @@ class TestFrameworkVarsMerge:
         # OPENROUTER appears exactly once, with the profile's description.
         assert env_text.count("OPENROUTER_API_KEY") == 1
         assert "Profile-specific OpenRouter description" in env_text
-        # Framework GEMINI / OPENAI are still present (not in profile).
-        assert "GEMINI_API_KEY" in env_text
+        # Direct OpenAI is still present; retired Gemini credentials are not.
+        assert "GEMINI_API_KEY" not in env_text
         assert "OPENAI_API_KEY" in env_text
 
     def test_dedup_first_occurrence_wins_within_profile(self, tmp_path):
@@ -441,10 +440,10 @@ class TestRichReturnContract:
         assert result["action"] == "created"
         assert "missing_keys" in result
         assert set(result["missing_keys"]) == {
-            "OPENROUTER_API_KEY", "GEMINI_API_KEY", "OPENAI_API_KEY",
+            "OPENROUTER_API_KEY", "OPENAI_API_KEY",
         }
         assert result["framework_keys"] == [
-            "OPENROUTER_API_KEY", "GEMINI_API_KEY", "OPENAI_API_KEY",
+            "OPENROUTER_API_KEY", "OPENAI_API_KEY",
         ]
         assert "path" in result
 
@@ -452,10 +451,10 @@ class TestRichReturnContract:
         self, fw_project, fw_profile_dir,
     ):
         """A second run on a file with all keys still commented (placeholders)
-        must report all three as missing, not zero. Action is 'unchanged'
+        must report both as missing, not zero. Action is 'unchanged'
         because no rewrite happened — but Step H still needs to prompt the
         user."""
-        # First run creates the file with three commented placeholders.
+        # First run creates the file with two commented placeholders.
         init_env_file(fw_project, "all", fw_profile_dir, include_framework=True)
         # Second run: file unchanged, but all three values are still empty.
         result = init_env_file(
@@ -463,18 +462,17 @@ class TestRichReturnContract:
         )
         assert result["action"] == "unchanged"
         assert set(result["missing_keys"]) == {
-            "OPENROUTER_API_KEY", "GEMINI_API_KEY", "OPENAI_API_KEY",
+            "OPENROUTER_API_KEY", "OPENAI_API_KEY",
         }
 
     def test_missing_keys_excludes_filled_values(
         self, fw_project, fw_profile_dir,
     ):
         """If user has filled OPENROUTER_API_KEY, missing_keys lists the
-        other two."""
+        other current framework key."""
         env_file = fw_project / ".env.local"
         env_file.write_text(
             "OPENROUTER_API_KEY=sk-or-real-value\n"
-            "# GEMINI_API_KEY=        # placeholder\n"
             "# OPENAI_API_KEY=        # placeholder\n",
             encoding="utf-8",
         )
@@ -485,7 +483,6 @@ class TestRichReturnContract:
         )
         assert result["action"] == "unchanged"
         assert "OPENROUTER_API_KEY" not in result["missing_keys"]
-        assert "GEMINI_API_KEY" in result["missing_keys"]
         assert "OPENAI_API_KEY" in result["missing_keys"]
 
 
@@ -547,14 +544,11 @@ class TestFrameworkOrderDriftProtection:
         The reference implementation looks like::
 
             has_openrouter = bool(os.environ.get("OPENROUTER_API_KEY"))
-            has_gemini = bool(os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_API_KEY"))
             has_openai = bool(os.environ.get("OPENAI_API_KEY"))
 
         We extract every ``os.environ.get("KEY")`` argument inside the function
         body in source order, then dedupe while preserving first occurrence.
-        ``GOOGLE_API_KEY`` appears as a Gemini alias and is intentionally
-        excluded from the framework scaffold (only direct, primary keys
-        are scaffolded), so we tolerate it in the runtime list.
+        Only current review credentials are scaffolded.
         """
         import ast
         from pathlib import Path as _P
@@ -609,25 +603,19 @@ class TestFrameworkOrderDriftProtection:
         framework_names = [v["name"] for v in validate_env._SHIPWRIGHT_FRAMEWORK_VARS]
         assert framework_names == [
             "OPENROUTER_API_KEY",
-            "GEMINI_API_KEY",
             "OPENAI_API_KEY",
         ]
 
         runtime_keys = self._extract_runtime_fallback_keys()
-        # Filter out Gemini aliases (GOOGLE_API_KEY) — only primary-name
-        # keys are scaffolded, but the runtime accepts both. Locking the
-        # alias here would block legitimate fallback additions.
-        primary_runtime_keys = [k for k in runtime_keys if k != "GOOGLE_API_KEY"]
 
-        # Order must match exactly. If a new primary key is added to the
+        # Order must match exactly. If a new key is added to the
         # runtime fallback, this test fails loud and the framework list
         # must be synced before merging.
-        assert primary_runtime_keys == framework_names, (
+        assert runtime_keys == framework_names, (
             f"Framework key list out of sync with runtime fallback.\n"
             f"  validate_env._SHIPWRIGHT_FRAMEWORK_VARS: {framework_names}\n"
-            f"  external_review_config.is_external_review_enabled(): {primary_runtime_keys}\n"
-            f"Update _SHIPWRIGHT_FRAMEWORK_VARS to match (or update this test "
-            f"if GOOGLE_API_KEY-style aliases were added)."
+            f"  external_review_config.is_external_review_enabled(): {runtime_keys}\n"
+            f"Update _SHIPWRIGHT_FRAMEWORK_VARS to match."
         )
 
 
@@ -857,7 +845,6 @@ class TestMissingKeysActiveBlankValues:
     def test_unquoted_blank_counts_as_missing(self, fw_project, fw_profile_dir):
         (fw_project / ".env.local").write_text(
             "OPENROUTER_API_KEY=\n"
-            "GEMINI_API_KEY=AIza-real\n"
             "OPENAI_API_KEY=\n",
             encoding="utf-8",
         )
@@ -866,12 +853,10 @@ class TestMissingKeysActiveBlankValues:
         )
         assert "OPENROUTER_API_KEY" in result["missing_keys"]
         assert "OPENAI_API_KEY" in result["missing_keys"]
-        assert "GEMINI_API_KEY" not in result["missing_keys"]
 
     def test_quoted_blank_counts_as_missing(self, fw_project, fw_profile_dir):
         (fw_project / ".env.local").write_text(
             'OPENROUTER_API_KEY=""\n'
-            "GEMINI_API_KEY=''\n"
             "OPENAI_API_KEY=AIza-real\n",
             encoding="utf-8",
         )
@@ -879,5 +864,4 @@ class TestMissingKeysActiveBlankValues:
             fw_project, "all", fw_profile_dir, include_framework=True,
         )
         assert "OPENROUTER_API_KEY" in result["missing_keys"]
-        assert "GEMINI_API_KEY" in result["missing_keys"]
         assert "OPENAI_API_KEY" not in result["missing_keys"]

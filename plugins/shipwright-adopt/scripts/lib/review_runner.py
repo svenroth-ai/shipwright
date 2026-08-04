@@ -38,8 +38,6 @@ def _locate_llm_review() -> Path | None:
 def _has_any_api_key() -> bool:
     return bool(
         os.environ.get("OPENROUTER_API_KEY")
-        or os.environ.get("GEMINI_API_KEY")
-        or os.environ.get("GOOGLE_API_KEY")
         or os.environ.get("OPENAI_API_KEY")
     )
 
@@ -61,7 +59,7 @@ def run_review(
     if not _has_any_api_key():
         review_path.write_text(
             "# Adopt Review — SKIPPED\n\n"
-            "No `OPENROUTER_API_KEY` / `GEMINI_API_KEY` / `OPENAI_API_KEY` detected. "
+            "No `OPENROUTER_API_KEY` / `OPENAI_API_KEY` detected. "
             "Layer-3 external review was skipped.\n\n"
             "Set one of these env vars and re-run Adopt (or `/shipwright-iterate` "
             "and run review manually) to generate a post-generation sanity check.\n",

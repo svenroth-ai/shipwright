@@ -104,7 +104,7 @@ Parse the JSON. Then:
     --plugin-root "{plugin_root}"
   ```
 
-  Parse `reviews.gemini.feedback` + `reviews.openai.feedback`. Merge
+  Parse `reviews.deepseek.feedback` + `reviews.openai.feedback`. Merge
   high/medium findings into the iterate ADR's
   `External-Plan-Review-Findings` table, each `accepted-and-fixed` /
   `rejected-with-reason`, before Finalization.

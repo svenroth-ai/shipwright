@@ -130,6 +130,8 @@ def make_entry(
     recorded_by: str | None = None,
     parse_status: str | None = None,
     raw_excerpt: str | None = None,
+    verdicts: dict[str, str] | None = None,
+    contradiction_resolution: str | None = None,
 ) -> dict[str, Any]:
     """Build one review entry.
 
@@ -146,7 +148,7 @@ def make_entry(
             f"status {status!r} requires a disposition naming the rule that "
             f"applies (more than one word) — got {disposition!r}"
         )
-    return {
+    entry = {
         "review_type": review_type,
         "status": status,
         "findings_count": len(items),
@@ -158,6 +160,11 @@ def make_entry(
         "parse_status": parse_status,
         "raw_excerpt": raw_excerpt,
     }
+    if verdicts is not None:
+        entry["verdicts"] = dict(verdicts)
+    if contradiction_resolution is not None:
+        entry["contradiction_resolution"] = contradiction_resolution
+    return entry
 
 
 def new_record(run_id: str) -> dict[str, Any]:

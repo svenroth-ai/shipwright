@@ -51,14 +51,16 @@ SELF_REVIEW_REPLY = json.dumps({"items": [
 ]})
 
 EXTERNAL_REVIEW_OUTPUT = json.dumps({
-    "success": True, "provider": "openrouter",
+    "review_schema": 2, "success": True, "provider": "openrouter",
     "reviews": {
-        "gemini": {"status": "success", "feedback":
+        "deepseek": {"status": "success", "feedback":
                    "- **Category:** Risk\n- **Severity:** Medium\n"
-                   "- **Finding:** The gate blocks in-flight runs.\n"},
+                   "- **Finding:** The gate blocks in-flight runs.\n\n"
+                   "SHIPWRIGHT_VERDICT: approve\n"},
         "openai": {"status": "success", "feedback":
                    "- Category: bug\n- Severity: high\n- File: tools/x.py:7\n"
-                   "- Finding: the marker write is not transactional.\n"},
+                   "- Finding: the marker write is not transactional.\n\n"
+                   "SHIPWRIGHT_VERDICT: revise\n"},
     },
 })
 

@@ -227,6 +227,17 @@ _Where the work detail lives_ at the end of this document.
   recorded as having failed, with the reason, rather than as having reviewed.
   If neither reviewer delivered, the step fails loudly instead of passing.
   (iterate-2026-07-27-name-the-blocker)
+- (E) Given the default outside reviewers are invoked, when their results are
+  recorded, then they are identified truthfully as DeepSeek and OpenAI — never
+  with DeepSeek hidden behind the historical Gemini name — and the OpenAI arm
+  keeps its selected GPT model. Historical Gemini/OpenAI records remain readable
+  as historical evidence. (iterate-2026-08-03-p2-33-deepseek-zdr-review)
+- (E) Given DeepSeek is asked to review project material, when its route is
+  selected, then only deliberately configured US or EU endpoints whose
+  zero-retention handling has been verified may receive it. If none is
+  available, that reviewer is reported unavailable and the route is not widened
+  to another provider, region, retention policy, or to Gemini.
+  (iterate-2026-08-03-p2-33-deepseek-zdr-review)
 
 <a id="fr-0104"></a>
 ### FR-01.04 — /shipwright-design
@@ -696,6 +707,15 @@ _Where the work detail lives_ at the end of this document.
   any pass is left unanswered — so "nothing shown" always means "genuinely did
   not run" and never "nobody wrote it down". A finished review cannot afterwards
   be quietly restated. (iterate-2026-07-21-review-record)
+- (E) Given a review record contains a reviewer type a current reader did not
+  previously know, when that entry is complete and internally consistent, then
+  the record remains readable and the extra reviewer stays visible; a malformed
+  entry still fails the integrity check. (iterate-2026-08-03-p2-33-deepseek-zdr-review)
+- (E) Given outside-review conclusions are compared, when the current
+  DeepSeek/OpenAI pair or a historical Gemini/OpenAI pair is read, then the same
+  disagreement, unreadable-answer, and one-answer rules are applied. A mixed or
+  incomplete pair is never silently treated as agreement.
+  (iterate-2026-08-03-p2-33-deepseek-zdr-review)
 - (E) Given a finished change is waiting on the code host to merge it, when it
   has not merged, then the report names what is holding it up — conversations
   still unresolved, required checks that never reported, the host's own verdict

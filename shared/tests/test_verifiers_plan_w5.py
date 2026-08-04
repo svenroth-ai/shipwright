@@ -15,8 +15,8 @@ from lib.phase_quality import STATUS_FAIL, STATUS_PASS, STATUS_WARN
 from lib.review_marker import build_marker, write_marker
 from tools.verifiers.plan_compliance import check_w5_external_review_marker
 
-AGREEING = {"gemini": "approve", "openai": "revise"}
-CONTRADICTING = {"gemini": "approve", "openai": "reject"}
+AGREEING = {"deepseek": "approve", "openai": "revise"}
+CONTRADICTING = {"deepseek": "approve", "openai": "reject"}
 
 
 def _project_with_marker(tmp_path: Path, **marker_kwargs) -> Path:
@@ -76,11 +76,21 @@ def test_a_marker_predating_verdicts_warns_rather_than_failing(tmp_path):
     """W5 audits plans of any age; one written before per-reviewer verdicts
     existed is flagged, not failed. The in-session gate blocks on the same
     state, because the marker it reads was written moments ago."""
-    root = _project_with_marker(tmp_path, status="completed", provider="openrouter")
+    planning = tmp_path / ".shipwright" / "planning"
+    planning.mkdir(parents=True)
+    write_marker(planning, {"status": "completed", "provider": "openrouter"})
+    root = tmp_path
     finding = check_w5_external_review_marker(root)
     assert finding["status"] == STATUS_WARN
     assert "no reviewer verdicts" in finding["evidence"]
     assert "--verdict" in finding["remediation"]
+
+
+def test_a_schema_3_marker_without_verdicts_fails_closed(tmp_path):
+    root = _project_with_marker(tmp_path, status="completed", provider="openrouter")
+    finding = check_w5_external_review_marker(root)
+    assert finding["status"] == STATUS_FAIL
+    assert "schema 3" in finding["evidence"]
 
 
 def test_a_malformed_marker_fails(tmp_path):
@@ -96,7 +106,7 @@ def test_a_malformed_marker_fails(tmp_path):
         ({"status": "skipped_user_opt_out", "reason": "offline"}, STATUS_PASS),
         ({"status": "skipped_user_opt_out"}, STATUS_FAIL),
         ({"status": "skipped_config_disabled", "reason": "feedback_iterations=0"}, STATUS_PASS),
-        ({"status": "completed", "reason": ""}, STATUS_WARN),
+        ({"status": "completed", "reason": ""}, STATUS_FAIL),
     ],
 )
 def test_skip_handling_is_unchanged(tmp_path, kwargs, expected):

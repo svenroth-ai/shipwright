@@ -114,6 +114,13 @@ def test_a_plan_record_dual_writes_the_legacy_marker(project, tmp_path):
     assert run_scoped_marker.exists(), "the run-scoped copy is what the Mission view reads"
     assert json.loads(shared_marker.read_text(encoding="utf-8"))["status"] == "completed"
     assert json.loads(run_scoped_marker.read_text(encoding="utf-8"))["findings_count"] == 2
+    marker = json.loads(run_scoped_marker.read_text(encoding="utf-8"))
+    assert marker["marker_schema"] == 3
+    assert marker["verdicts"] == {"deepseek": "approve", "openai": "revise"}
+    assert marker["contradiction"]["requires_resolution"] is False
+
+    record = json.loads(record_path(project, RUN_ID).read_text(encoding="utf-8"))
+    assert record["reviews"]["plan"]["verdicts"] == marker["verdicts"]
 
 
 def test_a_marker_is_not_written_for_an_internal_type(project, tmp_path):

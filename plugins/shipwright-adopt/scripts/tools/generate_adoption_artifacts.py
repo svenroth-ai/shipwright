@@ -478,7 +478,7 @@ def generate(
     # shipwright_run_config.json exists (validate_env reads `profile`
     # from it). Idempotent: never overwrites an existing .env.local;
     # the first run creates the file, subsequent runs append missing
-    # keys only. Framework keys (OPENROUTER/GEMINI/OPENAI) are merged
+    # keys only. Framework keys (OPENROUTER/OPENAI) are merged
     # in regardless of profile so external review keys land in every
     # adopted repo. The result rides on results["env_local"] which
     # the SKILL.md Step H banner renders.

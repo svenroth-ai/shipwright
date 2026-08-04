@@ -15,9 +15,10 @@ R4 data controls (Spec §11-R4) enforced by :func:`validate_payload`:
 * the LLM verdict is **advisory**: ``auto_write`` is always ``False`` (only
   deterministic corroboration may auto-write — the engine enforces this too).
 
-The production adjudicator sets the model **explicitly** (GPT + Gemini via
+The production adjudicator sets the model **explicitly** (GPT + DeepSeek via
 OpenRouter, per the external-review convention) — never the silent default, which
-would fall back to a costly wrong model. It proposes an FR only on cross-model
+would fall back to a costly wrong model. Every DeepSeek request carries the same
+fail-closed ZDR routing policy as the review clients. It proposes an FR only on cross-model
 **consensus**; disagreement returns ``proposed_fr = None``.
 """
 
@@ -25,6 +26,11 @@ from __future__ import annotations
 
 import json
 import re
+
+try:
+    from .external_review_routing import openrouter_extra_body, resolve_reviewer_model
+except ImportError:  # pragma: no cover - top-level import from tools/
+    from external_review_routing import openrouter_extra_body, resolve_reviewer_model
 
 _ALLOWED_PAYLOAD_KEYS = frozenset({"test_path", "test_title", "candidate_frs"})
 _MAX_FIELD_LEN = 300
@@ -93,7 +99,7 @@ _SYSTEM_PROMPT = (
 
 
 class OpenRouterAdjudicator:
-    """Production adjudicator — GPT + Gemini via OpenRouter, consensus-only.
+    """Production adjudicator — GPT + DeepSeek via OpenRouter, consensus-only.
 
     Constructed only when ``--use-llm`` is passed AND ``OPENROUTER_API_KEY`` is
     set. Never imported/instantiated in CI (the stub adapter is injected instead).
@@ -109,7 +115,13 @@ class OpenRouterAdjudicator:
     def _ask(self, model_key: str, payload: dict) -> str | None:
         from openai import OpenAI  # lazy: never a CI import
 
-        model = self._resolve_model(self._config, model_key)  # EXPLICIT model (never silent default)
+        reviewer = "deepseek" if model_key == "openrouter_deepseek" else "openai"
+        model = resolve_reviewer_model(
+            self._config,
+            reviewer,
+            "openrouter",
+            resolver=self._resolve_model,
+        )
         timeout = self._config.get("llm_client", {}).get("timeout_seconds", 120)
         client = OpenAI(api_key=self._api_key, base_url=self._BASE_URL, timeout=timeout)
         user = (
@@ -121,6 +133,10 @@ class OpenRouterAdjudicator:
             messages=[{"role": "system", "content": _SYSTEM_PROMPT},
                       {"role": "user", "content": user}],
             max_tokens=512,
+            extra_body=openrouter_extra_body(
+                reviewer,
+                self._config,
+            ),
         )
         return resp.choices[0].message.content
 
@@ -149,7 +165,7 @@ class OpenRouterAdjudicator:
         validate_payload(payload)
         allowed = set(payload["candidate_frs"])
         results = []
-        for key in ("openrouter_gemini", "openrouter_chatgpt"):
+        for key in ("openrouter_deepseek", "openrouter_chatgpt"):
             try:
                 fr, conf = self._parse(self._ask(key, payload))
             except Exception:

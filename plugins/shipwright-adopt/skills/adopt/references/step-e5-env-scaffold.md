@@ -15,7 +15,7 @@ What gets written:
 - **Profile-specific keys** — `required_env_vars[build|deploy|plugin]`
   from the active stack profile (e.g. `NEXT_PUBLIC_SUPABASE_URL` for
   `supabase-nextjs`, `JELASTIC_TOKEN` for deploy phase, …).
-- **Framework keys** — always: `OPENROUTER_API_KEY`, `GEMINI_API_KEY`,
+- **Framework keys** — always: `OPENROUTER_API_KEY`,
   `OPENAI_API_KEY` (in that order — mirroring the fallback chain in
   `external_review_config.py`). These appear regardless of which
   stack profile is matched, because external review is framework-level

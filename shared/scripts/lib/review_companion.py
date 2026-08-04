@@ -21,6 +21,7 @@ from typing import Any, Callable
 from .review_marker import build_marker, write_marker
 from .review_record_core import ReviewRecordError
 from .review_record_ops import repair_companion
+from .review_verdict import HISTORICAL_REVIEWER_PAIRS, contradiction_block
 
 __all__ = ["MARKER_TYPES", "repair_markers", "write_markers"]
 
@@ -35,18 +36,37 @@ def write_markers(
     review_type: str,
     *,
     marker_status: str,
+    record_status: str,
     findings_count: int,
     provider: str | None = None,
     reason: str | None = None,
+    verdicts: dict[str, str] | None = None,
+    contradiction_resolution: str | None = None,
 ) -> list[str]:
     """Dual-write the marker. Returns the paths written, run-scoped copy first."""
     marker_mode = MARKER_TYPES.get(review_type)
+    if (record_status == "completed") != (marker_status == "completed"):
+        raise ReviewRecordError(
+            f"record status {record_status!r} conflicts with marker status {marker_status!r}"
+        )
+    if marker_status.startswith("skipped_") and verdicts:
+        raise ReviewRecordError("a skipped marker cannot carry reviewer verdicts")
+    if marker_status == "completed" and not verdicts:
+        raise ReviewRecordError("a completed marker requires reviewer verdicts")
+    marker_schema = (
+        2 if verdicts and frozenset(verdicts) == frozenset(HISTORICAL_REVIEWER_PAIRS[0])
+        else 3
+    )
     marker = build_marker(
         status=marker_status,
         review_type=marker_mode,
         provider=provider,
         reason=reason,
         findings_count=findings_count,
+        verdicts=verdicts,
+        contradiction=contradiction_block(verdicts) if verdicts else None,
+        contradiction_resolution=contradiction_resolution,
+        marker_schema=marker_schema,
     )
     shared_dir = Path(project_root) / ".shipwright" / "planning" / "iterate"
     return [
@@ -75,11 +95,15 @@ def repair_markers(
 
     def rewrite(record: dict[str, Any]) -> None:
         entry = record["reviews"][review_type]
+        verdicts = entry.get("verdicts")
         written.extend(write_markers(
             project_root, run_id, review_type,
             marker_status=marker_status,
+            record_status=str(entry.get("status") or ""),
             findings_count=int(entry.get("findings_count") or 0),
             provider=provider, reason=reason,
+            verdicts=verdicts,
+            contradiction_resolution=entry.get("contradiction_resolution"),
         ))
 
     _run_repair(project_root, run_id, review_type, rewrite)

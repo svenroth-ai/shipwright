@@ -27,9 +27,8 @@ def sample_config_dict():
     return {
         "external_review": {"alert_if_missing": True, "feedback_iterations": 1},
         "models": {
-            "gemini": "gemini-test-default",
             "chatgpt": "gpt-test-default",
-            "openrouter_gemini": "google/gemini-test-default",
+            "openrouter_deepseek": "deepseek/deepseek-test-default",
             "openrouter_chatgpt": "openai/gpt-test-default",
         },
         "llm_client": {"timeout_seconds": 120, "max_retries": 3},
@@ -52,9 +51,8 @@ def clean_review_env(monkeypatch, tmp_path):
         "GEMINI_API_KEY",
         "GOOGLE_API_KEY",
         "OPENAI_API_KEY",
-        "SHIPWRIGHT_REVIEW_MODEL_GEMINI",
         "SHIPWRIGHT_REVIEW_MODEL_CHATGPT",
-        "SHIPWRIGHT_REVIEW_MODEL_OPENROUTER_GEMINI",
+        "SHIPWRIGHT_REVIEW_MODEL_OPENROUTER_DEEPSEEK",
         "SHIPWRIGHT_REVIEW_MODEL_OPENROUTER_CHATGPT",
     ):
         monkeypatch.delenv(key, raising=False)
@@ -240,10 +238,10 @@ def test_is_external_review_enabled_openrouter(monkeypatch, clean_review_env):
     assert is_external_review_enabled(config) is True
 
 
-def test_is_external_review_enabled_gemini_direct(monkeypatch, clean_review_env):
+def test_is_external_review_ignores_gemini_direct(monkeypatch, clean_review_env):
     monkeypatch.setenv("GEMINI_API_KEY", "AI-test-123")
     config = {"external_review": {"feedback_iterations": 1}}
-    assert is_external_review_enabled(config) is True
+    assert is_external_review_enabled(config) is False
 
 
 def test_is_external_review_enabled_openai_direct(monkeypatch, clean_review_env):
@@ -278,19 +276,14 @@ def test_get_external_review_status_default_iterations_is_1(clean_review_env):
 
 # ---- resolve_model — defaults ----
 
-def test_resolve_model_default_gemini(clean_review_env):
-    config = {"models": {"gemini": "gemini-3.1-pro-preview"}}
-    assert resolve_model(config, "gemini") == "gemini-3.1-pro-preview"
-
-
 def test_resolve_model_default_chatgpt(clean_review_env):
     config = {"models": {"chatgpt": "gpt-5.4"}}
     assert resolve_model(config, "chatgpt") == "gpt-5.4"
 
 
-def test_resolve_model_default_openrouter_gemini(clean_review_env):
-    config = {"models": {"openrouter_gemini": "google/gemini-3.1-pro-preview"}}
-    assert resolve_model(config, "openrouter_gemini") == "google/gemini-3.1-pro-preview"
+def test_resolve_model_default_openrouter_deepseek(clean_review_env):
+    config = {"models": {"openrouter_deepseek": "deepseek/deepseek-v4-pro"}}
+    assert resolve_model(config, "openrouter_deepseek") == "deepseek/deepseek-v4-pro"
 
 
 def test_resolve_model_default_openrouter_chatgpt(clean_review_env):
@@ -300,25 +293,19 @@ def test_resolve_model_default_openrouter_chatgpt(clean_review_env):
 
 # ---- resolve_model — env overrides ----
 
-def test_resolve_model_env_override_gemini(monkeypatch, clean_review_env):
-    monkeypatch.setenv("SHIPWRIGHT_REVIEW_MODEL_GEMINI", "custom-gemini-2")
-    config = {"models": {"gemini": "config-default"}}
-    assert resolve_model(config, "gemini") == "custom-gemini-2"
-
-
 def test_resolve_model_env_override_chatgpt(monkeypatch, clean_review_env):
     monkeypatch.setenv("SHIPWRIGHT_REVIEW_MODEL_CHATGPT", "custom-chatgpt-2")
     config = {"models": {"chatgpt": "config-default"}}
     assert resolve_model(config, "chatgpt") == "custom-chatgpt-2"
 
 
-def test_resolve_model_env_override_openrouter_gemini(monkeypatch, clean_review_env):
+def test_resolve_model_env_override_openrouter_deepseek(monkeypatch, clean_review_env):
     monkeypatch.setenv(
-        "SHIPWRIGHT_REVIEW_MODEL_OPENROUTER_GEMINI",
-        "anthropic/claude-opus-4-7",
+        "SHIPWRIGHT_REVIEW_MODEL_OPENROUTER_DEEPSEEK",
+        "deepseek/custom-reviewed-model",
     )
-    config = {"models": {"openrouter_gemini": "config-default"}}
-    assert resolve_model(config, "openrouter_gemini") == "anthropic/claude-opus-4-7"
+    config = {"models": {"openrouter_deepseek": "config-default"}}
+    assert resolve_model(config, "openrouter_deepseek") == "deepseek/custom-reviewed-model"
 
 
 def test_resolve_model_env_override_openrouter_chatgpt(monkeypatch, clean_review_env):
@@ -333,21 +320,21 @@ def test_resolve_model_env_override_openrouter_chatgpt(monkeypatch, clean_review
 # ---- resolve_model — defensive (whitespace, empty, invalid) ----
 
 def test_resolve_model_empty_string_falls_back(monkeypatch, clean_review_env):
-    monkeypatch.setenv("SHIPWRIGHT_REVIEW_MODEL_GEMINI", "")
-    config = {"models": {"gemini": "config-default"}}
-    assert resolve_model(config, "gemini") == "config-default"
+    monkeypatch.setenv("SHIPWRIGHT_REVIEW_MODEL_OPENROUTER_DEEPSEEK", "")
+    config = {"models": {"openrouter_deepseek": "config-default"}}
+    assert resolve_model(config, "openrouter_deepseek") == "config-default"
 
 
 def test_resolve_model_whitespace_only_falls_back(monkeypatch, clean_review_env):
-    monkeypatch.setenv("SHIPWRIGHT_REVIEW_MODEL_GEMINI", "   \t  \n")
-    config = {"models": {"gemini": "config-default"}}
-    assert resolve_model(config, "gemini") == "config-default"
+    monkeypatch.setenv("SHIPWRIGHT_REVIEW_MODEL_OPENROUTER_DEEPSEEK", "   \t  \n")
+    config = {"models": {"openrouter_deepseek": "config-default"}}
+    assert resolve_model(config, "openrouter_deepseek") == "config-default"
 
 
 def test_resolve_model_env_value_is_stripped(monkeypatch, clean_review_env):
-    monkeypatch.setenv("SHIPWRIGHT_REVIEW_MODEL_GEMINI", "  trimmed-model  ")
-    config = {"models": {"gemini": "config-default"}}
-    assert resolve_model(config, "gemini") == "trimmed-model"
+    monkeypatch.setenv("SHIPWRIGHT_REVIEW_MODEL_OPENROUTER_DEEPSEEK", "  trimmed-model  ")
+    config = {"models": {"openrouter_deepseek": "config-default"}}
+    assert resolve_model(config, "openrouter_deepseek") == "trimmed-model"
 
 
 def test_resolve_model_invalid_key_raises(clean_review_env):
@@ -358,4 +345,4 @@ def test_resolve_model_invalid_key_raises(clean_review_env):
 
 def test_resolve_model_returns_empty_when_not_in_config(clean_review_env):
     config = {}  # no models block
-    assert resolve_model(config, "gemini") == ""
+    assert resolve_model(config, "openrouter_deepseek") == ""

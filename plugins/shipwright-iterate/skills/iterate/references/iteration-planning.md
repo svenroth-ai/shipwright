@@ -194,8 +194,8 @@ Mirrors `/shipwright-plan` Step 5 Branch A / B / C flow.
 3. **Branch B — `missing_keys`:** STOP and ask the user verbatim:
 
    > External LLM review is the recommended quality gate for this medium+
-   > iterate, but no `OPENROUTER_API_KEY` (or `GEMINI_API_KEY` /
-   > `OPENAI_API_KEY`) was found in `.env.local`.
+   > iterate, but no `OPENROUTER_API_KEY` or
+   > `OPENAI_API_KEY` was found in `.env.local`.
    >
    > **Option 1 (recommended):** Add a key to `.env.local` and say "ready" —
    > I'll re-check and run the review.
@@ -232,7 +232,7 @@ Mirrors `/shipwright-plan` Step 5 Branch A / B / C flow.
    "Recording each review pass" in [iteration-reviews.md](iteration-reviews.md).
 
 ### Handling results (Branch A)
-- Parse JSON output: `reviews.gemini.feedback` + `reviews.openai.feedback`
+- Parse JSON output: `reviews.deepseek.feedback` + `reviews.openai.feedback`
 - Print findings summary to user
 - For high-severity findings: discuss with user before proceeding to build
 - For low/medium: note in ADR, proceed

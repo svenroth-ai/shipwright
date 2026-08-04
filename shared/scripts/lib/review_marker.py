@@ -50,11 +50,12 @@ __all__ = [
 REVIEW_STATE_FILE = "external_review_state.json"
 CODE_REVIEW_STATE_FILE = "external_code_review_state.json"
 
-#: Bumped to 2 when the marker gained per-reviewer ``verdicts`` and the derived
-#: ``contradiction``. A marker without the field pre-dates them and is read
-#: leniently — it cannot be expected to carry what did not exist when it was
-#: written (see :func:`evaluate_review_state`).
-MARKER_SCHEMA = 2
+#: Schema 2 introduced per-reviewer ``verdicts`` with the historical
+#: ``gemini``/``openai`` roster. Schema 3 changes the writer contract to the
+#: ``deepseek``/``openai`` roster. Readers bind each known schema to its exact
+#: roster; older markers without this field remain readable only through the
+#: historical Gemini/OpenAI contract (see :func:`evaluate_review_state`).
+MARKER_SCHEMA = 3
 
 ALLOWED_STATUSES = frozenset({
     "completed",
@@ -84,6 +85,7 @@ def build_marker(
     verdicts: dict[str, str] | None = None,
     contradiction: dict[str, Any] | None = None,
     contradiction_resolution: str | None = None,
+    marker_schema: int = MARKER_SCHEMA,
 ) -> dict[str, Any]:
     """The marker payload. ``self_review_fallback_ran`` is implied by any
     skipped status — the self-review is mandatory, so a skipped external pass
@@ -105,7 +107,7 @@ def build_marker(
         ),
         "reason": reason,
         "review_mode": review_type,
-        "marker_schema": MARKER_SCHEMA,
+        "marker_schema": marker_schema,
         "verdicts": verdicts,
         "contradiction": contradiction,
         "contradiction_resolution": contradiction_resolution,
@@ -157,23 +159,58 @@ def evaluate_review_state(marker: dict[str, Any] | None) -> tuple[str, str]:
     if status not in ALLOWED_STATUSES:
         return STATE_BLOCK, f"unknown review status {status!r}"
 
+    has_schema = "marker_schema" in marker
+    marker_schema = marker.get("marker_schema")
+    if has_schema and (
+        type(marker_schema) is not int or marker_schema not in {2, MARKER_SCHEMA}
+    ):
+        return STATE_BLOCK, f"unknown review marker schema {marker_schema!r}"
+
     if status.startswith("skipped_"):
         if not str(marker.get("reason") or "").strip():
             return STATE_BLOCK, f"status={status} but reason is empty (justification required)"
+        has_review_evidence = (
+            marker.get("verdicts") or marker.get("contradiction")
+            or str(marker.get("contradiction_resolution") or "").strip()
+        )
+        if has_review_evidence:
+            return STATE_BLOCK, "skipped review marker carries reviewer evidence"
         # A skipped review has no reviewers and therefore no verdicts to weigh.
         return STATE_OK, f"status={status}"
 
     verdicts = marker.get("verdicts")
     if not isinstance(verdicts, dict) or not verdicts:
+        if has_schema:
+            return STATE_BLOCK, (
+                f"schema {marker_schema} completed marker recorded no reviewer "
+                "verdicts"
+            )
         return STATE_LEGACY, (
             "review completed but recorded no reviewer verdicts — a "
             "disagreement between the two could not have been noticed"
         )
 
+    expected_reviewers = (
+        frozenset({"deepseek", "openai"})
+        if marker_schema == MARKER_SCHEMA
+        else frozenset({"gemini", "openai"})
+    )
+    actual_reviewers = frozenset(verdicts)
+    if actual_reviewers != expected_reviewers:
+        contract = (
+            f"schema {MARKER_SCHEMA} deepseek/openai"
+            if marker_schema == MARKER_SCHEMA
+            else "historical gemini/openai"
+        )
+        return STATE_BLOCK, (
+            f"reviewer set does not match the {contract} marker contract: "
+            f"got {sorted(map(str, actual_reviewers))!r}"
+        )
+
     # A `completed` marker where NO leg answered is not a review. It needs no
     # operator resolution — the degraded-review gate owns that condition and
     # fails loudly — but it must not read as reviewed either, or
-    # `--verdict gemini=unavailable --verdict openai=unavailable` would clear
+    # `--verdict deepseek=unavailable --verdict openai=unavailable` would clear
     # every gate with nobody having reviewed anything.
     if all(str(v) == "unavailable" for v in verdicts.values()):
         return STATE_BLOCK, (

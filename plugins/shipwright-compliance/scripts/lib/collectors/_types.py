@@ -267,7 +267,7 @@ class ExternalReviewState:
     """
     split: str
     status: str                   # completed | skipped_user_opt_out | skipped_config_disabled | missing
-    provider: str | None = None   # openrouter | gemini | openai | null
+    provider: str | None = None   # current: openrouter | openai | null; historical: gemini
     findings_count: int = 0
     self_review_fallback_ran: bool = False
     reason: str | None = None
