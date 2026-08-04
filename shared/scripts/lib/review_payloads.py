@@ -26,8 +26,9 @@ from .review_findings import (
     from_self_review,
     from_spec_reviewer,
 )
+from .review_verdict import HISTORICAL_REVIEWER_PAIRS, REVIEWERS, summarize_reviews
 
-__all__ = ["ADAPTERS", "MAX_RAW_EXCERPT", "build_findings"]
+__all__ = ["ADAPTERS", "MAX_RAW_EXCERPT", "build_findings", "build_reviewer_verdicts"]
 
 ADAPTERS = (
     "code-reviewer",
@@ -144,3 +145,36 @@ def build_findings(
     if native is None:
         raise ReviewFindingsError(f"unknown adapter: {adapter}")
     return native(extract_json_payload(text)), None, None
+
+
+def build_reviewer_verdicts(
+    adapter: str, payload_file: str | None
+) -> dict[str, str] | None:
+    """Derive the marker verdicts from an external-review JSON payload.
+
+    Never trust the payload's own summary: derive from the full reviewer legs,
+    then bind the envelope generation to its exact reviewer roster.
+    """
+    if adapter != "external-review-json":
+        return None
+    if not payload_file:
+        raise ReviewFindingsError("--from external-review-json requires --payload-file")
+    payload = extract_json_payload(_read(payload_file))
+    if not isinstance(payload, dict) or not isinstance(payload.get("reviews"), dict):
+        raise ReviewFindingsError("external review output has no 'reviews' object")
+    review_schema = payload.get("review_schema")
+    expected = (
+        frozenset(REVIEWERS)
+        if review_schema == 2
+        else frozenset(HISTORICAL_REVIEWER_PAIRS[0])
+        if review_schema in (None, 1)
+        else None
+    )
+    if expected is None:
+        raise ReviewFindingsError(f"unsupported external review schema {review_schema!r}")
+    verdicts = summarize_reviews(payload["reviews"])["verdicts"]
+    if frozenset(verdicts) != expected:
+        raise ReviewFindingsError(
+            f"external review schema {review_schema!r} does not match reviewer roster"
+        )
+    return verdicts

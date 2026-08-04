@@ -111,6 +111,10 @@
         }
       ],
       "provider": "openrouter",
+      "verdicts": {
+        "gemini": "approve",
+        "openai": "revise"
+      },
       "completed_at": "2026-08-04T05:21:23.295099+00:00",
       "disposition": null,
       "recorded_by": "external-plan-review",
@@ -184,6 +188,10 @@
         }
       ],
       "provider": "openrouter",
+      "verdicts": {
+        "deepseek": "approve",
+        "openai": "revise"
+      },
       "completed_at": "2026-08-04T07:04:20.736406+00:00",
       "disposition": null,
       "recorded_by": "external-code-review",

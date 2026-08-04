@@ -40,7 +40,7 @@ from lib.review_findings import (  # noqa: E402
     ReviewFindingsError,
 )
 from lib.review_marker import ALLOWED_STATUSES  # noqa: E402
-from lib.review_payloads import ADAPTERS, build_findings  # noqa: E402
+from lib.review_payloads import ADAPTERS, build_findings, build_reviewer_verdicts  # noqa: E402
 from lib.review_record import (  # noqa: E402
     RECORDABLE_TYPES,
     STATUS_COMPLETED,
@@ -145,25 +145,18 @@ def _validate_record_args(args: argparse.Namespace) -> str | None:
         return f"--marker-status applies only to {sorted(MARKER_TYPES)}"
     if (args.review_type in MARKER_TYPES and args.status == STATUS_COMPLETED
             and not args.marker_status):
-        # AC7: these two types carry the legacy gate marker, so a review that
-        # actually RAN must leave one — otherwise the new gate reads green while
-        # existing marker consumers have no evidence. Only `completed` is
-        # forced: the marker vocabulary has no term for "not applicable at this
-        # complexity", and requiring one would make the caller pick a status
-        # that misstates why the pass did not run.
+        # Completed marker-backed reviews must leave evidence for legacy gates.
         return (f"--marker-status is required when recording {args.review_type} "
                 f"as completed (one of {sorted(ALLOWED_STATUSES)})")
+    if (args.review_type in MARKER_TYPES and args.status == STATUS_COMPLETED
+            and args.review_from != "external-review-json"):
+        return (f"completed {args.review_type} markers require --from "
+                "external-review-json so reviewer verdicts are provable")
     if args.force and args.review_type in MARKER_TYPES and not args.marker_status:
-        # A forced correction that leaves the old marker in place is worse than
-        # no correction: the record now says one thing and the artifact every
-        # legacy consumer reads still says the other, with nothing to
-        # invalidate it.
+        # Forced corrections must not leave the old companion marker behind.
         return (f"--force on {args.review_type} also requires --marker-status, so the "
                 "companion marker cannot be left stating the superseded result")
     if args.marker_status and args.marker_status not in ALLOWED_STATUSES:
-        # The tool this replaces at the call sites rejects an out-of-vocabulary
-        # status; losing that check would let a typo write a marker no consumer
-        # understands while the CLI reports success.
         return (f"--marker-status must be one of {sorted(ALLOWED_STATUSES)}, "
                 f"got {args.marker_status!r}")
     return None
@@ -176,13 +169,14 @@ def _cmd_record(args: argparse.Namespace) -> int:
 
     try:
         findings, parse_status, raw = build_findings(args.review_from, args.payload_file)
+        verdicts = build_reviewer_verdicts(args.review_from, args.payload_file)
     except (ReviewFindingsError, ProseOverflowError) as exc:
         return _fail("payload_unreadable", str(exc))
 
     if args.status != STATUS_COMPLETED:
-        # A pass that did not run has nothing to report; keeping findings from a
-        # payload here would attribute them to a review that never happened.
+        # A pass that did not run has no findings or reviewer verdicts.
         findings, parse_status, raw = [], None, None
+        verdicts = None
 
     try:
         entry = make_entry(
@@ -191,6 +185,7 @@ def _cmd_record(args: argparse.Namespace) -> int:
             disposition=args.disposition, completed_at=_now(),
             recorded_by=args.recorded_by or args.review_from,
             parse_status=parse_status, raw_excerpt=raw,
+            verdicts=verdicts,
         )
     except ReviewRecordError as exc:
         return _fail("invalid_entry", str(exc), EXIT_USAGE)
@@ -198,12 +193,7 @@ def _cmd_record(args: argparse.Namespace) -> int:
     project_root = Path(args.project_root)
     markers: list[str] = []
 
-    # Set the moment the record is durable, so the OSError branch below reports
-    # what ACTUALLY landed instead of asserting one specific outcome. An OSError
-    # from mkdir, the lock open, or the record write itself reaches the same
-    # handler, and claiming "the record was written" there would be a guess — in
-    # a tool whose whole thesis is that absence must never be mistaken for a
-    # result.
+    # Set only after the record is durable so OSError reporting stays truthful.
     record_written = False
 
     def write_companion(_record: dict) -> None:
@@ -215,6 +205,7 @@ def _cmd_record(args: argparse.Namespace) -> int:
                 marker_status=args.marker_status, findings_count=len(findings),
                 provider=args.provider,
                 reason=_marker_reason(args.disposition, parse_status, len(findings)),
+                verdicts=verdicts,
             ))
 
     try:

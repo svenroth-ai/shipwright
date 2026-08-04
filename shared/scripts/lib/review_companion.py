@@ -21,6 +21,7 @@ from typing import Any, Callable
 from .review_marker import build_marker, write_marker
 from .review_record_core import ReviewRecordError
 from .review_record_ops import repair_companion
+from .review_verdict import HISTORICAL_REVIEWER_PAIRS, contradiction_block
 
 __all__ = ["MARKER_TYPES", "repair_markers", "write_markers"]
 
@@ -38,15 +39,25 @@ def write_markers(
     findings_count: int,
     provider: str | None = None,
     reason: str | None = None,
+    verdicts: dict[str, str] | None = None,
 ) -> list[str]:
     """Dual-write the marker. Returns the paths written, run-scoped copy first."""
     marker_mode = MARKER_TYPES.get(review_type)
+    if marker_status == "completed" and not verdicts:
+        raise ReviewRecordError("a completed marker requires reviewer verdicts")
+    marker_schema = (
+        2 if verdicts and frozenset(verdicts) == frozenset(HISTORICAL_REVIEWER_PAIRS[0])
+        else 3
+    )
     marker = build_marker(
         status=marker_status,
         review_type=marker_mode,
         provider=provider,
         reason=reason,
         findings_count=findings_count,
+        verdicts=verdicts,
+        contradiction=contradiction_block(verdicts) if verdicts else None,
+        marker_schema=marker_schema,
     )
     shared_dir = Path(project_root) / ".shipwright" / "planning" / "iterate"
     return [
@@ -75,11 +86,13 @@ def repair_markers(
 
     def rewrite(record: dict[str, Any]) -> None:
         entry = record["reviews"][review_type]
+        verdicts = entry.get("verdicts")
         written.extend(write_markers(
             project_root, run_id, review_type,
             marker_status=marker_status,
             findings_count=int(entry.get("findings_count") or 0),
             provider=provider, reason=reason,
+            verdicts=verdicts,
         ))
 
     _run_repair(project_root, run_id, review_type, rewrite)

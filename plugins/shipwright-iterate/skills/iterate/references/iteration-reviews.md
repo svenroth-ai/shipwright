@@ -463,6 +463,12 @@ uv run "{shared_root}/scripts/tools/record_review_pass.py" record \
   [--provider openrouter] [--marker-status completed]
 ```
 
+For `external-review-json`, the recorder re-derives each reviewer verdict from
+the full provider legs, stores the validated pair on the authoritative review
+row, and writes the companion marker from that same pair. A current envelope
+must be `deepseek`/`openai`; an implicit historical envelope remains readable
+as `gemini`/`openai`. A completed current marker without both verdicts blocks.
+
 | Pass | `--review-type` | `--from` | payload |
 |---|---|---|---|
 | Step 7 Self-Review | `self` | `self-review` | `{"items":[{"name","verdict":"pass\|fail\|n/a","note"}]}` — one entry per checklist item |

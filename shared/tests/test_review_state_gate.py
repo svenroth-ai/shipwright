@@ -287,7 +287,7 @@ def test_malformed_verdict_pair_is_rejected(tmp_path):
     assert out["error"] == "invalid_verdict"
 
 
-def test_omitting_the_verdict_flags_is_legacy_not_a_pass(tmp_path):
+def test_omitting_the_verdict_flags_from_a_current_marker_blocks(tmp_path):
     """The flags are optional at the CLI so the skip branches still work, but
     a *completed* review that recorded none cannot be read as clear —
     otherwise the whole disagreement check is opt-out by omission."""
@@ -295,7 +295,7 @@ def test_omitting_the_verdict_flags_is_legacy_not_a_pass(tmp_path):
     assert code == 0
     assert out["state"]["verdicts"] is None
     assert out["state"]["contradiction"] is None
-    assert evaluate_review_state(out["state"])[0] == STATE_LEGACY
+    assert evaluate_review_state(out["state"])[0] == STATE_BLOCK
 
 
 def test_a_skip_needs_no_verdicts(tmp_path):

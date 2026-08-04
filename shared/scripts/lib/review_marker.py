@@ -85,6 +85,7 @@ def build_marker(
     verdicts: dict[str, str] | None = None,
     contradiction: dict[str, Any] | None = None,
     contradiction_resolution: str | None = None,
+    marker_schema: int = MARKER_SCHEMA,
 ) -> dict[str, Any]:
     """The marker payload. ``self_review_fallback_ran`` is implied by any
     skipped status — the self-review is mandatory, so a skipped external pass
@@ -106,7 +107,7 @@ def build_marker(
         ),
         "reason": reason,
         "review_mode": review_type,
-        "marker_schema": MARKER_SCHEMA,
+        "marker_schema": marker_schema,
         "verdicts": verdicts,
         "contradiction": contradiction,
         "contradiction_resolution": contradiction_resolution,
@@ -173,6 +174,11 @@ def evaluate_review_state(marker: dict[str, Any] | None) -> tuple[str, str]:
 
     verdicts = marker.get("verdicts")
     if not isinstance(verdicts, dict) or not verdicts:
+        if has_schema:
+            return STATE_BLOCK, (
+                f"schema {marker_schema} completed marker recorded no reviewer "
+                "verdicts"
+            )
         return STATE_LEGACY, (
             "review completed but recorded no reviewer verdicts — a "
             "disagreement between the two could not have been noticed"

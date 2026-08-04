@@ -84,9 +84,11 @@ def test_an_unitemizable_review_does_not_reach_the_marker_as_a_clean_zero(projec
     """`status: completed, findings_count: 0` is read by the existing consumer as
     'ran and found nothing'. A review whose prose could not be itemized must
     carry the caveat in the one field that consumer surfaces."""
-    unparseable = json.dumps({"success": True, "reviews": {
-        "gemini": {"status": "success",
-                   "feedback": "I reviewed it and have thoughts but wrote no structure"},
+    unparseable = json.dumps({"review_schema": 2, "success": True, "reviews": {
+        "deepseek": {"status": "success",
+                     "feedback": "I reviewed it and have thoughts but wrote no structure"},
+        "openai": {"status": "success",
+                   "feedback": "I also reviewed it without structured findings"},
     }})
     run_tool(project, "init")
     code, output = run_tool(
@@ -106,9 +108,9 @@ def test_an_unitemizable_review_does_not_reach_the_marker_as_a_clean_zero(projec
 def test_a_provider_that_errored_counts_toward_the_denominator(project, tmp_path):
     """An errored leg carries no `feedback`, so filtering it out first let one
     good leg of two report `structured` — hiding the likelier loss mode."""
-    errored = json.dumps({"success": True, "reviews": {
-        "gemini": {"status": "success",
-                   "feedback": "- Category: bug\n- Severity: high\n- Finding: a real defect\n"},
+    errored = json.dumps({"review_schema": 2, "success": True, "reviews": {
+        "deepseek": {"status": "success",
+                     "feedback": "- Category: bug\n- Severity: high\n- Finding: a real defect\n"},
         "openai": {"status": "error", "reason": "rate limited"},
     }})
     run_tool(project, "init")

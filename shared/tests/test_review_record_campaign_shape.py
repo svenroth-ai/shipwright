@@ -31,7 +31,13 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from _review_cli_harness import RUN_ID, make_project, run_tool  # noqa: E402
+from _review_cli_harness import (  # noqa: E402
+    EXTERNAL_REVIEW_OUTPUT,
+    RUN_ID,
+    make_project,
+    payload,
+    run_tool,
+)
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(REPO_ROOT / "shared" / "scripts"))
@@ -86,7 +92,11 @@ def _record_row(root: Path, review_type: str, status: str, disposition: str | No
         # what a real recording produces, not the minimum the CLI accepts.
         args += ["--recorded-by", f"{review_type}-reviewer"]
     if status == "completed" and review_type in ("plan", "external_code"):
-        args += ["--marker-status", "completed", "--provider", "openrouter"]
+        args += [
+            "--marker-status", "completed", "--provider", "openrouter",
+            "--from", "external-review-json",
+            "--payload-file", payload(root, f"{review_type}.json", EXTERNAL_REVIEW_OUTPUT),
+        ]
     return run_tool(root, *args)
 
 

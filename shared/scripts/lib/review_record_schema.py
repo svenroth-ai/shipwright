@@ -18,6 +18,23 @@ from __future__ import annotations
 import re
 from typing import Any
 
+try:
+    from .review_verdict import (
+        HISTORICAL_REVIEWER_PAIRS,
+        REVIEWERS,
+        UNAVAILABLE,
+        UNKNOWN,
+        VERDICTS,
+    )
+except ImportError:
+    from review_verdict import (  # type: ignore[no-redef]
+        HISTORICAL_REVIEWER_PAIRS,
+        REVIEWERS,
+        UNAVAILABLE,
+        UNKNOWN,
+        VERDICTS,
+    )
+
 __all__ = [
     "ALL_STATUSES",
     "LEGACY_GATE_TYPES",
@@ -200,6 +217,16 @@ def validate_entry(review_type: str, entry: Any, *, where: str | None = None) ->
         value = entry.get(key)
         if value is not None and not isinstance(value, str):
             return f"{where}.{key} must be a string or null"
+    if "verdicts" in entry:
+        verdicts = entry["verdicts"]
+        if not isinstance(verdicts, dict):
+            return f"{where}.verdicts must be an object"
+        supported = {frozenset(REVIEWERS), *map(frozenset, HISTORICAL_REVIEWER_PAIRS)}
+        if frozenset(verdicts) not in supported:
+            return f"{where}.verdicts has an unsupported reviewer set"
+        allowed = {*VERDICTS, UNKNOWN, UNAVAILABLE}
+        if any(value not in allowed for value in verdicts.values()):
+            return f"{where}.verdicts contains an unknown verdict"
     return None
 
 
