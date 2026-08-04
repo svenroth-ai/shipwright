@@ -63,13 +63,15 @@ def _worktrees(tmp_path: Path) -> tuple[Path, Path]:
 def _start(root: Path, lease_root: Path, *, weight: int, capacity: int,
            hold: float, run_id: str, marker: Path | None = None,
            heartbeat: float = 30.0, resource: str = "cpu",
-           release: Path | None = None) -> subprocess.Popen:
+           release: Path | None = None, stderr=None) -> subprocess.Popen:
     return subprocess.Popen(
         [sys.executable, "-c", _PROBE, _SHARED, str(root), str(lease_root),
          str(weight), str(capacity), str(hold), run_id,
          str(marker) if marker else "-", str(heartbeat), resource,
          str(release) if release else "-"],
-        stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, errors="replace")
+        stdout=subprocess.PIPE,
+        stderr=stderr if stderr is not None else subprocess.PIPE,
+        text=True, errors="replace")
 
 
 def _wait_marker(path: Path, timeout: float = 8.0) -> dict:
@@ -292,16 +294,40 @@ def test_dead_owner_is_reaped_before_capacity_change_is_adopted(tmp_path):
 def test_wait_output_names_queue_owner_run_id_and_heartbeats(tmp_path):
     repo, sibling = _worktrees(tmp_path)
     lease_root, held = tmp_path / "leases", tmp_path / "held"
-    holder = _start(repo, lease_root, weight=1, capacity=1, hold=.45,
-                    run_id="blocking-run", marker=held)
+    release = tmp_path / "release"
+    diagnostics = tmp_path / "waiter.log"
+    holder = _start(repo, lease_root, weight=1, capacity=1, hold=30,
+                    run_id="blocking-run", marker=held, release=release)
     waiter = None
     try:
         _wait_marker(held)
-        waiter = _start(sibling, lease_root, weight=1, capacity=1, hold=.01,
-                        run_id="queued-run", heartbeat=.1)
-        _out, err = waiter.communicate(timeout=8)
+        with diagnostics.open("w", encoding="utf-8") as stream:
+            waiter = _start(sibling, lease_root, weight=1, capacity=1, hold=.01,
+                            run_id="queued-run", heartbeat=.1, stderr=stream)
+            deadline = time.monotonic() + 30
+            err = ""
+            while time.monotonic() < deadline:
+                try:
+                    err = diagnostics.read_text(encoding="utf-8")
+                except OSError:
+                    pass
+                if "heartbeat:" in err:
+                    break
+                if waiter.poll() is not None:
+                    try:
+                        err = diagnostics.read_text(encoding="utf-8")
+                    except OSError:
+                        pass
+                    raise AssertionError(
+                        f"waiter exited {waiter.returncode} before heartbeat: {err}")
+                time.sleep(.02)
+            else:
+                raise AssertionError(f"timed out waiting for heartbeat: {err}")
+            release.touch()
+            waiter.wait(timeout=8)
         assert waiter.returncode == 0
         assert "waiting:" in err and "heartbeat:" in err
         assert "queue_run_id=blocking-run" in err and "queue_owner=pid-" in err
     finally:
+        release.touch(exist_ok=True)
         _stop(*[p for p in (holder, waiter) if p])

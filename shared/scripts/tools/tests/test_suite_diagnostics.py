@@ -6,9 +6,11 @@ import json
 import subprocess
 import sys
 from pathlib import Path
+from types import SimpleNamespace
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent.parent))
 
+import scripts.tools.suite_diagnostics as diagnostics_mod
 from scripts.tools.suite_diagnostics import write_attempt_evidence
 
 
@@ -99,3 +101,16 @@ def test_linked_worktree_evidence_survives_in_the_main_repo_store(tmp_path):
 
     assert (main / rel).is_file()
     assert not (linked / rel).exists()
+
+
+def test_windows_io_paths_cover_extended_unc_and_drive_forms(monkeypatch):
+    monkeypatch.setattr(Path, "resolve", lambda self: self)
+    monkeypatch.setattr(diagnostics_mod, "os", SimpleNamespace(name="nt"))
+
+    already_extended = diagnostics_mod._io_path(Path(r"\\?\C:\deep\file"))
+    unc = diagnostics_mod._io_path(Path(r"\\server\share\file"))
+    drive = diagnostics_mod._io_path(Path(r"C:\deep\file"))
+
+    assert str(already_extended).startswith("\\\\?\\")
+    assert str(unc).startswith("\\\\?\\UNC\\server")
+    assert str(drive).startswith("\\\\?\\C:")

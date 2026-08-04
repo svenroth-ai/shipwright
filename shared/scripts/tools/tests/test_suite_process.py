@@ -61,6 +61,23 @@ def test_missing_attempt_log_has_an_explicit_empty_tail(tmp_path):
     assert process_mod.read_output_tail(tmp_path / "missing.log") == ("", False)
 
 
+def test_output_drain_tolerates_a_pipe_that_closes_with_oserror():
+    class _BrokenPipe:
+        @staticmethod
+        def read(_size):
+            raise OSError("closed")
+
+    capture = process_mod._BoundedCapture(8)
+    process_mod._drain_output(_BrokenPipe(), capture)
+    assert capture.snapshot() == (b"", False)
+
+
+def test_interrupted_log_reader_seeks_to_the_bounded_tail(tmp_path):
+    path = tmp_path / "attempt.log"
+    path.write_bytes(b"0123456789")
+    assert process_mod.read_output_tail(path, cap=4) == ("6789", True)
+
+
 def test_posix_group_cleanup_uses_term_then_kill(monkeypatch):
     signals = []
     monkeypatch.setattr(process_mod.signal, "SIGTERM", 15, raising=False)
