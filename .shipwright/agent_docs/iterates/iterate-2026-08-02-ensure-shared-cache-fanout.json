@@ -16,7 +16,12 @@
       {
         "behavior": "One winner and eleven waiters serialize one SessionStart fan-out",
         "disposition": "tested",
-        "evidence": "shared/tests/test_ensure_shared_cache_fanout.py and integration-tests/test_ensure_shared_cache_fanout.py passed"
+        "evidence": "dynamic installed-participant barrier plus real 12-process repair and healthy fan-outs passed with exactly one scanner"
+      },
+      {
+        "behavior": "A detected concurrent cohort joins before the elected healer scans while isolated invocation remains bounded",
+        "disposition": "tested",
+        "evidence": "active installed_plugins plus exact command-token hooks.json peer selection ignores stale, substring-only, and non-command cache entries; non-object manifests use bounded fallback; exact-empty observer and joined-before-return units passed; the former fixed-delay Main regression passed in the 22-scenario subprocess module and complete integration root"
       },
       {
         "behavior": "Waiters return only after token-specific winner completion",
@@ -36,13 +41,18 @@
       {
         "behavior": "Completed generations re-arm without delete/ABA while running owners are never time-reclaimed",
         "disposition": "tested",
-        "evidence": "TTL, future-mtime, live-owner, and immutable-successor tests passed"
+        "evidence": "TTL, exact -1.0s clock-skew boundary, -1.001s rejection, far-future-mtime, live-owner, and immutable-successor tests passed"
+      },
+      {
+        "behavior": "Healer and ready guard share the bounded completion clock-skew decision",
+        "disposition": "tested",
+        "evidence": "deterministic unit probes accept -1.0s and reject -1.001s in both freshness consumers; the original healthy fan-out passed 100/100 repetitions"
       },
       {
         "behavior": "Real 12-process repair completes both cache trees before dependent consumers run",
         "disposition": "tested",
         "category": "integration",
-        "evidence": "21 real subprocess fan-out scenarios passed under eight xdist workers via F0.5 CLI surface verification"
+        "evidence": "post-fix F0.5 ran the complete integration root: 466 passed, 2 deselected"
       },
       {
         "behavior": "Canonical helpers and 12 vendored copies remain identical with exact healer/guard command chains",
@@ -61,9 +71,9 @@
       }
     ],
     "counts": {
-      "total": 9,
-      "testable": 9,
-      "tested": 9,
+      "total": 11,
+      "testable": 11,
+      "tested": 11,
       "untestable": 0,
       "untested_testable": 0
     },
@@ -75,11 +85,11 @@
   "surface_verification": {
     "run_id": "iterate-2026-08-02-ensure-shared-cache-fanout",
     "surface": "cli",
-    "runner": "uv run --python 3.11 --with pytest --with pytest-mock --with pytest-xdist pytest integration-tests/test_ensure_shared_cache_fanout.py -q -p no:cacheprovider -n 8",
+    "runner": "uv run --with pytest --with pytest-mock --with pytest-cov pytest integration-tests/ -q -p no:cacheprovider --cov=shared --cov-config=pyproject.toml --cov-report=",
     "exit_code": 0,
-    "tests_run": 21,
+    "tests_run": 466,
     "evidence_path": ".shipwright/runs/iterate-2026-08-02-ensure-shared-cache-fanout/surface_verification.log",
-    "timestamp": "2026-08-03T16:52:53.745Z",
+    "timestamp": "2026-08-03T22:48:33.054Z",
     "attempts": 1
   },
   "declared_removals": [
@@ -122,6 +132,134 @@
     {
       "path": ".shipwright/agent_docs/iterates/iterate-2026-07-28-silent-revert-false-positives.json",
       "reason": "F5c's 50-entry retention evicted this oldest recency-cache entry after integrating current main; its history remains in git and shipwright_events.jsonl."
+    },
+    {
+      "path": "shared/tests/test_ensure_shared_cache_fanout.py",
+      "reason": "The repair intentionally replaces the synthetic race test's too-short timeout budgets so coverage instrumentation cannot exhaust them before the elected owner publishes completion; the owner/waiter assertions remain unchanged."
+    },
+    {
+      "path": ".shipwright/planning/iterate/iterate-2026-08-02-ensure-shared-cache-fanout/reviews.json",
+      "reason": "The repair intentionally replaces the original cascade timestamps with the completed spec, code, and doubt reviews of the main-CI repair, including the production clock-skew fix."
+    },
+    {
+      "path": "docs/hooks-and-pipeline.md",
+      "reason": "The repair intentionally replaces the TTL-only hook description with the shared bounded clock-skew rule used by both healer and ready guard."
+    },
+    {
+      "path": "shared/templates/hooks/cache_repair_lock.py",
+      "reason": "The repair intentionally replaces the zero-skew freshness boundary with a shared one-second filesystem timestamp-rounding tolerance while keeping larger future completions expired."
+    },
+    {
+      "path": "shared/templates/hooks/ensure_shared_cache.py",
+      "reason": "The repair intentionally replaces the zero-skew freshness boundary with a shared one-second filesystem timestamp-rounding tolerance while keeping larger future completions expired."
+    },
+    {
+      "path": "plugins/shipwright-project/scripts/hooks/cache_repair_lock.py",
+      "reason": "The repair intentionally replaces the zero-skew freshness boundary with a shared one-second filesystem timestamp-rounding tolerance while keeping larger future completions expired."
+    },
+    {
+      "path": "plugins/shipwright-project/scripts/hooks/ensure_shared_cache.py",
+      "reason": "The repair intentionally replaces the zero-skew freshness boundary with a shared one-second filesystem timestamp-rounding tolerance while keeping larger future completions expired."
+    },
+    {
+      "path": "plugins/shipwright-design/scripts/hooks/cache_repair_lock.py",
+      "reason": "The repair intentionally replaces the zero-skew freshness boundary with a shared one-second filesystem timestamp-rounding tolerance while keeping larger future completions expired."
+    },
+    {
+      "path": "plugins/shipwright-design/scripts/hooks/ensure_shared_cache.py",
+      "reason": "The repair intentionally replaces the zero-skew freshness boundary with a shared one-second filesystem timestamp-rounding tolerance while keeping larger future completions expired."
+    },
+    {
+      "path": "plugins/shipwright-plan/scripts/hooks/cache_repair_lock.py",
+      "reason": "The repair intentionally replaces the zero-skew freshness boundary with a shared one-second filesystem timestamp-rounding tolerance while keeping larger future completions expired."
+    },
+    {
+      "path": "plugins/shipwright-plan/scripts/hooks/ensure_shared_cache.py",
+      "reason": "The repair intentionally replaces the zero-skew freshness boundary with a shared one-second filesystem timestamp-rounding tolerance while keeping larger future completions expired."
+    },
+    {
+      "path": "plugins/shipwright-build/scripts/hooks/cache_repair_lock.py",
+      "reason": "The repair intentionally replaces the zero-skew freshness boundary with a shared one-second filesystem timestamp-rounding tolerance while keeping larger future completions expired."
+    },
+    {
+      "path": "plugins/shipwright-build/scripts/hooks/ensure_shared_cache.py",
+      "reason": "The repair intentionally replaces the zero-skew freshness boundary with a shared one-second filesystem timestamp-rounding tolerance while keeping larger future completions expired."
+    },
+    {
+      "path": "plugins/shipwright-test/scripts/hooks/cache_repair_lock.py",
+      "reason": "The repair intentionally replaces the zero-skew freshness boundary with a shared one-second filesystem timestamp-rounding tolerance while keeping larger future completions expired."
+    },
+    {
+      "path": "plugins/shipwright-test/scripts/hooks/ensure_shared_cache.py",
+      "reason": "The repair intentionally replaces the zero-skew freshness boundary with a shared one-second filesystem timestamp-rounding tolerance while keeping larger future completions expired."
+    },
+    {
+      "path": "plugins/shipwright-security/scripts/hooks/cache_repair_lock.py",
+      "reason": "The repair intentionally replaces the zero-skew freshness boundary with a shared one-second filesystem timestamp-rounding tolerance while keeping larger future completions expired."
+    },
+    {
+      "path": "plugins/shipwright-security/scripts/hooks/ensure_shared_cache.py",
+      "reason": "The repair intentionally replaces the zero-skew freshness boundary with a shared one-second filesystem timestamp-rounding tolerance while keeping larger future completions expired."
+    },
+    {
+      "path": "plugins/shipwright-deploy/scripts/hooks/cache_repair_lock.py",
+      "reason": "The repair intentionally replaces the zero-skew freshness boundary with a shared one-second filesystem timestamp-rounding tolerance while keeping larger future completions expired."
+    },
+    {
+      "path": "plugins/shipwright-deploy/scripts/hooks/ensure_shared_cache.py",
+      "reason": "The repair intentionally replaces the zero-skew freshness boundary with a shared one-second filesystem timestamp-rounding tolerance while keeping larger future completions expired."
+    },
+    {
+      "path": "plugins/shipwright-changelog/scripts/hooks/cache_repair_lock.py",
+      "reason": "The repair intentionally replaces the zero-skew freshness boundary with a shared one-second filesystem timestamp-rounding tolerance while keeping larger future completions expired."
+    },
+    {
+      "path": "plugins/shipwright-changelog/scripts/hooks/ensure_shared_cache.py",
+      "reason": "The repair intentionally replaces the zero-skew freshness boundary with a shared one-second filesystem timestamp-rounding tolerance while keeping larger future completions expired."
+    },
+    {
+      "path": "plugins/shipwright-compliance/scripts/hooks/cache_repair_lock.py",
+      "reason": "The repair intentionally replaces the zero-skew freshness boundary with a shared one-second filesystem timestamp-rounding tolerance while keeping larger future completions expired."
+    },
+    {
+      "path": "plugins/shipwright-compliance/scripts/hooks/ensure_shared_cache.py",
+      "reason": "The repair intentionally replaces the zero-skew freshness boundary with a shared one-second filesystem timestamp-rounding tolerance while keeping larger future completions expired."
+    },
+    {
+      "path": "plugins/shipwright-iterate/scripts/hooks/cache_repair_lock.py",
+      "reason": "The repair intentionally replaces the zero-skew freshness boundary with a shared one-second filesystem timestamp-rounding tolerance while keeping larger future completions expired."
+    },
+    {
+      "path": "plugins/shipwright-iterate/scripts/hooks/ensure_shared_cache.py",
+      "reason": "The repair intentionally replaces the zero-skew freshness boundary with a shared one-second filesystem timestamp-rounding tolerance while keeping larger future completions expired."
+    },
+    {
+      "path": "plugins/shipwright-adopt/scripts/hooks/cache_repair_lock.py",
+      "reason": "The repair intentionally replaces the zero-skew freshness boundary with a shared one-second filesystem timestamp-rounding tolerance while keeping larger future completions expired."
+    },
+    {
+      "path": "plugins/shipwright-adopt/scripts/hooks/ensure_shared_cache.py",
+      "reason": "The repair intentionally replaces the zero-skew freshness boundary with a shared one-second filesystem timestamp-rounding tolerance while keeping larger future completions expired."
+    },
+    {
+      "path": "plugins/shipwright-run/scripts/hooks/cache_repair_lock.py",
+      "reason": "The repair intentionally replaces the zero-skew freshness boundary with a shared one-second filesystem timestamp-rounding tolerance while keeping larger future completions expired."
+    },
+    {
+      "path": "plugins/shipwright-run/scripts/hooks/ensure_shared_cache.py",
+      "reason": "The repair intentionally replaces the zero-skew freshness boundary with a shared one-second filesystem timestamp-rounding tolerance while keeping larger future completions expired."
+    },
+    {
+      "path": ".shipwright/agent_docs/iterates/iterate-2026-08-02-ensure-shared-cache-fanout.json",
+      "reason": "The repair intentionally refreshes this run's ledger to 11 tested behaviors and the canonical post-fix 466-test surface result."
+    },
+    {
+      "path": "shared/tests/test_ensure_shared_cache_fanout_join.py",
+      "reason": "The repair intentionally adds focused, skip-free contracts for safe observation queries and the dynamic installed-participant join barrier."
+    },
+    {
+      "path": "integration-tests/test_ensure_shared_cache_fanout.py",
+      "reason": "The repair intentionally makes the subprocess fixture model Claude's authoritative installed_plugins.json and active SessionStart hook registration."
     }
   ]
 }
