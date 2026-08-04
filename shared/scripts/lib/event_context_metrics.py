@@ -90,8 +90,9 @@ def render_report(rows: list[dict[str, Any]]) -> str:
         ("Reduction %", "reduction_percentage"),
     ):
         lines.append(f"| {label} | {_fmt(latest.get(key, 0))} | {_fmt(averages[key])} |")
-    lines.extend(["", "Counts are measured from the raw log and the emitted structured event payload. "
-                  "Estimated tokens use the deterministic `ceil(bytes / 4)` approximation.", ""])
+    note = "Counts are measured from the raw log and the emitted structured event payload. "
+    note += "Estimated tokens use the deterministic `ceil(bytes / 4)` approximation."
+    lines.extend(["", note, ""])
     return "\n".join(lines)
 
 
