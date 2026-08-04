@@ -159,10 +159,11 @@ def make_entry(
         "recorded_by": recorded_by,
         "parse_status": parse_status,
         "raw_excerpt": raw_excerpt,
-        "contradiction_resolution": contradiction_resolution,
     }
     if verdicts is not None:
         entry["verdicts"] = dict(verdicts)
+    if contradiction_resolution is not None:
+        entry["contradiction_resolution"] = contradiction_resolution
     return entry
 
 
