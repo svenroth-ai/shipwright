@@ -172,5 +172,5 @@ def run_project_checks(
 
 
 def run_all_checks(project_root: Path, run_id: str = "") -> list[CheckResult]:
-    """Alias kept for symmetry with ``iterate_checks`` / ``runtime_checks``."""
+    """Alias kept for symmetry with ``iterate_checks``."""
     return run_project_checks(project_root, run_id=run_id)

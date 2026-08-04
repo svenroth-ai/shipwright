@@ -1,0 +1,44 @@
+{
+  "items": [
+    {
+      "name": "Spec Compliance",
+      "verdict": "pass",
+      "note": "The diff removes only the obsolete runtime verifier surface and leaves dev_server and external WebUI code unchanged."
+    },
+    {
+      "name": "Error Handling",
+      "verdict": "pass",
+      "note": "The retired selector now fails through argparse's explicit invalid-choice path while surviving selectors still import and dispatch."
+    },
+    {
+      "name": "Security Basics",
+      "verdict": "pass",
+      "note": "Removal eliminates interpretation of stale or attacker-controlled legacy PID-file data and adds no input surface."
+    },
+    {
+      "name": "Test Quality",
+      "verdict": "pass",
+      "note": "The CLI integration test failed on both acceptance dimensions before the fix and passes after it; 76 targeted remaining-verifier tests also pass."
+    },
+    {
+      "name": "Performance Basics",
+      "verdict": "pass",
+      "note": "The change removes process probes and adds no runtime work."
+    },
+    {
+      "name": "Naming & Structure",
+      "verdict": "pass",
+      "note": "The durable regression is the general test_verify_phase_cli.py contract, and the ordered phase tuple is named alongside the existing dispatcher."
+    },
+    {
+      "name": "Affected Boundaries",
+      "verdict": "pass",
+      "note": "The deleted producer/consumer pair is documented; a round trip is structurally impossible because no producer remains, and the real CLI retirement boundary is integration-tested."
+    },
+    {
+      "name": "Test Hygiene Probe",
+      "verdict": "pass",
+      "note": "scan_test_hygiene.py --diff reported no findings."
+    }
+  ]
+}

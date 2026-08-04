@@ -1,0 +1,15 @@
+{
+  "stage": "spec-reviewer",
+  "verdict": "PASS",
+  "spec_citations": [
+    "Spec lines 28-33: obsolete verifier/test removal, CLI and all-dispatch removal, documentation updates, CLI regression, and dev_server exclusion",
+    "Spec lines 37-45: AC-1 through AC-4",
+    "Spec lines 64-66: real-CLI retired/surviving selector probes plus exact remaining dispatch order",
+    "Spec lines 67-70: negative scan of active surfaces with historical changelog exclusion",
+    "Spec lines 82-83: accepted stale-import review requirement",
+    "Miniplan lines 8-16 and 20-31: declared files and implementation sequence",
+    "Miniplan lines 35-39: integration-boundary and targeted test strategy"
+  ],
+  "findings": [],
+  "disposition": "PASS. The corrected integration regression invokes the real CLI for --help, the retired runtime selector, and the surviving project selector; it proves runtime is rejected as an invalid choice, project reaches its verifier without traceback or stale-import failure, and the exact remaining all-phase order is preserved. The runtime module and dedicated tests are deleted, CLI/import/package/documentation surfaces are cleaned, active-source scans find no runtime_checks.py, pids.json, --phase runtime, or zombie-reconciliation claims, historical changelog records are untouched, and no file under shared/scripts/dev_server/ changed. The small project_checks.py prose cleanup is directly within the specified stale-reference removal and does not expand scope."
+}

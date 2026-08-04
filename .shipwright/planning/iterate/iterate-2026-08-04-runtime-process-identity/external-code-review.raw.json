@@ -1,0 +1,32 @@
+{
+  "success": true,
+  "provider": "openrouter",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviews": {
+    "openai": {
+      "feedback": "No concrete defects found. The obsolete module and its tests are deleted; CLI imports, selector choices, direct dispatch, and ordered `all` registry no longer include `runtime`; and active verifier documentation is updated without changes under `shared/scripts/dev_server/`.\n\nThe new integration test exercises real CLI help and invalid-phase handling, verifies a surviving phase still runs, and monkeypatches the all-phase dispatchers to assert the exact remaining dispatch order. This satisfies the specified regression coverage.\n\nOverall assessment: ship-as-is.\n\nSHIPWRIGHT_VERDICT: approve",
+      "via": "openrouter",
+      "status": "success"
+    },
+    "gemini": {
+      "feedback": "The provided code change successfully fulfills the specification. The obsolete `runtime` phase and its verification module, tests, and CLI dispatcher are removed. Documentation updates align exactly with the removal, and the new integration test properly validates both the CLI behavior and the phase order preservation (correctly using default argument binding `phase=phase` in the lambda to prevent closure capture bugs).\n\nI reviewed the changes for correctness, missing edge cases, and regressions in the verifier CLI dispatch, but found no defects.\n\nSHIPWRIGHT_VERDICT: approve",
+      "via": "openrouter",
+      "status": "success"
+    }
+  },
+  "verdicts": {
+    "openai": "approve",
+    "gemini": "approve"
+  },
+  "statuses": {
+    "openai": "success",
+    "gemini": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: gemini=approve, openai=approve"
+  }
+}

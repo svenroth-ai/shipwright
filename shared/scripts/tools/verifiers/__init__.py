@@ -9,9 +9,6 @@ module of `check_*` functions:
   helpers imported from the ``shipwright-check`` plan (Group F).
 - `iterate_checks.py` — the 5 existing iterate finalization checks,
   migrated 1:1 from the pre-12.0 ``verify_iterate_finalization.py``.
-- `runtime_checks.py` — zombie-task reconciliation stub in 12.0; becomes
-  a real event-store / PID-file diff in 12.0b.
-
 Iterate 12.1+ will add `project_checks.py`, `design_checks.py`,
 `plan_checks.py`, `build_checks.py`, `test_checks.py`, `changelog_checks.py`,
 and `deploy_checks.py`. Compliance does NOT get its own module

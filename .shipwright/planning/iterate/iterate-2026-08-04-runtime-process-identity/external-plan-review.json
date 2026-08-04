@@ -1,0 +1,26 @@
+{
+  "success": true,
+  "provider": "openrouter",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviews": {
+    "gemini": {
+      "feedback": "High: inventory CI/CD pipelines, task runners, and tooling for active --phase runtime callers before removal. Low: consider existing tests, keep help derived from the active registry. Overall approach sound; approve.",
+      "via": "openrouter",
+      "status": "success"
+    },
+    "openai": {
+      "feedback": "High: inventory every active executable caller before removal. Medium: assert the exact surviving --phase all order and stale-import absence by exercising help, one valid phase, and all dispatch. Low: expand active documentation search terms. Overall retirement approach sound; revise with these probes.",
+      "via": "openrouter",
+      "status": "success"
+    }
+  },
+  "verdicts": {
+    "gemini": "approve",
+    "openai": "revise"
+  },
+  "statuses": {
+    "gemini": "success",
+    "openai": "success"
+  }
+}

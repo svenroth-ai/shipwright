@@ -3125,9 +3125,8 @@ The canon is enforced by `shared/scripts/tools/verifiers/*_checks.py`
 `shared/scripts/tools/verify_phase.py`. Iterate 12.0 shipped the
 infrastructure (verifier package, helper scripts, canon definition) and
 the **iterate** module (migrated from `verify_iterate_finalization.py`
-with identical behaviour). Iterate 12.0b wired runtime zombie-task
-reconciliation; 12.1 added project + stop-hook conditional skip; 12.2
-added design + plan; 12.3 added build (canon hybrid per section / phase);
+with identical behaviour). Iterate 12.1 added project + stop-hook conditional
+skip; 12.2 added design + plan; 12.3 added build (canon hybrid per section / phase);
 12.4 added test, changelog and deploy. Iterate 12.6 closed the campaign
 with the Canon Coverage matrix below. **Iterate 12.5 (compliance) was
 struck** — compliance is future detective-only via shipwright-check,
@@ -3520,7 +3519,6 @@ shared/scripts/tools/
     handoff_phase_canon.py         # Canon C3: did THIS phase leave the note. Takes no run id;
                                    #   joins the marker against the phase's completion record
     iterate_checks.py              # iterate finalization checks (5 @12.0 + F0.5 surface + spec-impact + no-direct-decision_log gates)
-    runtime_checks.py              # Zombie-task replay check                     — 12.0b
     project_checks.py              # Project phase-own + canon + phase_history   — 12.1
     design_checks.py               # Design phase-own + canon (skip C4)          — 12.2
     plan_checks.py                 # Plan phase-own + canon (skip C5) + check-plan C2/C3/C4 imports — 12.2
@@ -3553,7 +3551,6 @@ Legend: ✅ present · ⏭ skip by policy · n/a not applicable
 | Phase | C1 event | C2 dashboard | C3 handoff | C4 ADR | C5 CHANGELOG | phase_history | Verifier module | Phase validator |
 |---|---|---|---|---|---|---|---|---|
 | **iterate** | ✅ F7 | ✅ F5 (`check_build_dashboard_has_run_id`, implemented 14.8) | ✅ F5/F11 | ✅ F3 | ✅ F4 | ✅ the F5c ledger, NOT `phase_history` — C3 reads it via `COMPLETION_PRODUCER` | `iterate_checks.py` + cross-artifact warnings (compliance, architecture, conventions) | `verify_iterate_finalization.py` |
-| **runtime** | n/a | n/a | n/a | n/a | n/a | n/a | `runtime_checks.py` (zombie replay) | — |
 | **project** | ✅ | ✅ | ✅ (canon-marker) | ✅ (Step 7) | ✅ | ✅ | `project_checks.py` | `_validate_project` |
 | **design** | ✅ | ✅ | ✅ (canon-marker) | ⏭ transformation | ✅ | ✅ | `design_checks.py` + FR coverage (check-plan C1 import) | `_validate_design` |
 | **plan** | ✅ | ✅ | ✅ (canon-marker) | ✅ (Step 2/5) | ⏭ internal | ✅ | `plan_checks.py` + section-manifest/FR-orphan/section-id (check-plan C2/C3/C4 imports) + `plan_gate_checks.py` (dependency order, FR coverage, section trace, section quality) | `_validate_plan` |

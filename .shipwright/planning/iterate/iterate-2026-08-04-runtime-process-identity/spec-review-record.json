@@ -1,0 +1,6 @@
+{
+  "stage": "spec-compliance",
+  "verdict": "PASS",
+  "spec_citations": [],
+  "summary": "The corrected integration regression invokes the real CLI for --help, the retired runtime selector, and the surviving project selector. It proves runtime is rejected, project reaches its verifier without traceback or stale-import failure, the exact remaining all-phase order is preserved, active source and documentation no longer claim the retired contract, historical records remain untouched, and shared/scripts/dev_server is unchanged."
+}
