@@ -1,7 +1,7 @@
 {
   "run_id": "iterate-2026-08-04-runtime-process-identity",
-  "date": "2026-08-04T17:18:33.071397Z",
-  "event_at": "2026-08-04T07:03:55.549555+00:00",
+  "date": "2026-08-04T17:28:50.074852Z",
+  "event_at": "2026-08-04T17:19:24.774217+00:00",
   "type": "bug",
   "complexity": "medium",
   "prior_source": "history",
@@ -63,6 +63,10 @@
     {
       "path": "shared/tests/test_verifiers_runtime.py",
       "reason": "The dedicated tests only exercised the retired producerless runtime verifier."
+    },
+    {
+      "path": ".shipwright/compliance/context-cost/events-context-report.md",
+      "reason": "The canonical P1.15 renderer replaces the Latest iterate and rolling-window values when this run appends its observation; prior raw observations remain in the append-only metrics JSONL."
     }
   ]
 }
