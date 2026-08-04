@@ -463,9 +463,11 @@ uv run "{shared_root}/scripts/tools/record_review_pass.py" record \
   [--provider openrouter] [--marker-status completed]
 ```
 
-For `external-review-json`, the recorder re-derives each reviewer verdict from
-the full provider legs, stores the validated pair on the authoritative review
-row, and writes the companion marker from that same pair. A current envelope
+For `external-review-json`, the recorder reads the payload once, then derives
+both findings and each reviewer verdict from that in-memory snapshot. It stores
+the validated pair on the authoritative review row and writes the companion
+marker from that same pair. An operator's `--contradiction-resolution` is stored
+beside the verdicts, so `repair-markers` cannot lose the decision. A current envelope
 must be `deepseek`/`openai`; an implicit historical envelope remains readable
 as `gemini`/`openai`. A completed current marker without both verdicts blocks.
 

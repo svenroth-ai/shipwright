@@ -131,6 +131,7 @@ def make_entry(
     parse_status: str | None = None,
     raw_excerpt: str | None = None,
     verdicts: dict[str, str] | None = None,
+    contradiction_resolution: str | None = None,
 ) -> dict[str, Any]:
     """Build one review entry.
 
@@ -158,6 +159,7 @@ def make_entry(
         "recorded_by": recorded_by,
         "parse_status": parse_status,
         "raw_excerpt": raw_excerpt,
+        "contradiction_resolution": contradiction_resolution,
     }
     if verdicts is not None:
         entry["verdicts"] = dict(verdicts)

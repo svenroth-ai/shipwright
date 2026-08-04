@@ -40,6 +40,7 @@ def write_markers(
     provider: str | None = None,
     reason: str | None = None,
     verdicts: dict[str, str] | None = None,
+    contradiction_resolution: str | None = None,
 ) -> list[str]:
     """Dual-write the marker. Returns the paths written, run-scoped copy first."""
     marker_mode = MARKER_TYPES.get(review_type)
@@ -57,6 +58,7 @@ def write_markers(
         findings_count=findings_count,
         verdicts=verdicts,
         contradiction=contradiction_block(verdicts) if verdicts else None,
+        contradiction_resolution=contradiction_resolution,
         marker_schema=marker_schema,
     )
     shared_dir = Path(project_root) / ".shipwright" / "planning" / "iterate"
@@ -93,6 +95,7 @@ def repair_markers(
             findings_count=int(entry.get("findings_count") or 0),
             provider=provider, reason=reason,
             verdicts=verdicts,
+            contradiction_resolution=entry.get("contradiction_resolution"),
         ))
 
     _run_repair(project_root, run_id, review_type, rewrite)

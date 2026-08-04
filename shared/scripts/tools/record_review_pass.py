@@ -40,7 +40,7 @@ from lib.review_findings import (  # noqa: E402
     ReviewFindingsError,
 )
 from lib.review_marker import ALLOWED_STATUSES  # noqa: E402
-from lib.review_payloads import ADAPTERS, build_findings, build_reviewer_verdicts  # noqa: E402
+from lib.review_payloads import ADAPTERS, build_review_evidence  # noqa: E402
 from lib.review_record import (  # noqa: E402
     RECORDABLE_TYPES,
     STATUS_COMPLETED,
@@ -168,8 +168,8 @@ def _cmd_record(args: argparse.Namespace) -> int:
         return _fail("invalid_arguments", invalid, EXIT_USAGE)
 
     try:
-        findings, parse_status, raw = build_findings(args.review_from, args.payload_file)
-        verdicts = build_reviewer_verdicts(args.review_from, args.payload_file)
+        findings, parse_status, raw, verdicts = build_review_evidence(
+            args.review_from, args.payload_file)
     except (ReviewFindingsError, ProseOverflowError) as exc:
         return _fail("payload_unreadable", str(exc))
 
@@ -186,6 +186,7 @@ def _cmd_record(args: argparse.Namespace) -> int:
             recorded_by=args.recorded_by or args.review_from,
             parse_status=parse_status, raw_excerpt=raw,
             verdicts=verdicts,
+            contradiction_resolution=args.contradiction_resolution,
         )
     except ReviewRecordError as exc:
         return _fail("invalid_entry", str(exc), EXIT_USAGE)
@@ -206,6 +207,7 @@ def _cmd_record(args: argparse.Namespace) -> int:
                 provider=args.provider,
                 reason=_marker_reason(args.disposition, parse_status, len(findings)),
                 verdicts=verdicts,
+                contradiction_resolution=args.contradiction_resolution,
             ))
 
     try:
@@ -350,6 +352,7 @@ def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
                      help="overwrite an already-terminal record (corrections only)")
     rec.add_argument("--marker-status", default=None,
                      help="also write the legacy external_*review_state.json marker")
+    rec.add_argument("--contradiction-resolution", default=None)
 
     close = sub.add_parser("close-missing", help="close every still-pending type")
     common(close)

@@ -28,7 +28,10 @@ from .review_findings import (
 )
 from .review_verdict import HISTORICAL_REVIEWER_PAIRS, REVIEWERS, summarize_reviews
 
-__all__ = ["ADAPTERS", "MAX_RAW_EXCERPT", "build_findings", "build_reviewer_verdicts"]
+__all__ = [
+    "ADAPTERS", "MAX_RAW_EXCERPT", "build_findings", "build_review_evidence",
+    "build_reviewer_verdicts",
+]
 
 ADAPTERS = (
     "code-reviewer",
@@ -121,20 +124,11 @@ def _from_external_review_json(text: str) -> tuple[list[dict[str, Any]], str, st
     return findings, status, "\n\n".join(excerpts) or None
 
 
-def build_findings(
-    adapter: str, payload_file: str | None
+def _findings_from_text(
+    adapter: str, text: str
 ) -> tuple[list[dict[str, Any]], str | None, str | None]:
-    """Return ``(findings, parse_status, raw_excerpt)`` for ``adapter``.
-
-    ``parse_status`` is ``None`` for the native shapes — they either parse or
-    raise, so there is no "it ran but we could not read it" state to record.
-    """
     if adapter == "none":
         return [], None, None
-    if not payload_file:
-        raise ReviewFindingsError(f"--from {adapter} requires --payload-file")
-    text = _read(payload_file)
-
     if adapter == "external-prose":
         findings, parse_status = from_external_prose(text)
         return findings, parse_status, _bounded(text, MAX_RAW_EXCERPT) or None
@@ -147,19 +141,17 @@ def build_findings(
     return native(extract_json_payload(text)), None, None
 
 
-def build_reviewer_verdicts(
+def build_findings(
     adapter: str, payload_file: str | None
-) -> dict[str, str] | None:
-    """Derive the marker verdicts from an external-review JSON payload.
+) -> tuple[list[dict[str, Any]], str | None, str | None]:
+    """Return normalized findings from one payload snapshot."""
+    return build_review_evidence(adapter, payload_file)[:3]
 
-    Never trust the payload's own summary: derive from the full reviewer legs,
-    then bind the envelope generation to its exact reviewer roster.
-    """
+
+def _verdicts_from_text(adapter: str, text: str) -> dict[str, str] | None:
     if adapter != "external-review-json":
         return None
-    if not payload_file:
-        raise ReviewFindingsError("--from external-review-json requires --payload-file")
-    payload = extract_json_payload(_read(payload_file))
+    payload = extract_json_payload(text)
     if not isinstance(payload, dict) or not isinstance(payload.get("reviews"), dict):
         raise ReviewFindingsError("external review output has no 'reviews' object")
     review_schema = payload.get("review_schema")
@@ -178,3 +170,26 @@ def build_reviewer_verdicts(
             f"external review schema {review_schema!r} does not match reviewer roster"
         )
     return verdicts
+
+
+def build_review_evidence(
+    adapter: str, payload_file: str | None
+) -> tuple[list[dict[str, Any]], str | None, str | None, dict[str, str] | None]:
+    """Derive findings and verdicts from one immutable in-memory snapshot."""
+    if adapter == "none":
+        return [], None, None, None
+    if not payload_file:
+        raise ReviewFindingsError(f"--from {adapter} requires --payload-file")
+    text = _read(payload_file)
+    return (*_findings_from_text(adapter, text), _verdicts_from_text(adapter, text))
+
+
+def build_reviewer_verdicts(
+    adapter: str, payload_file: str | None
+) -> dict[str, str] | None:
+    """Derive verdicts from the full reviewer legs, never a payload summary."""
+    if adapter != "external-review-json":
+        return None
+    if not payload_file:
+        raise ReviewFindingsError("--from external-review-json requires --payload-file")
+    return _verdicts_from_text(adapter, _read(payload_file))
