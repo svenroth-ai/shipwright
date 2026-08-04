@@ -1,6 +1,6 @@
 """Current DeepSeek and historical Gemini verdict pairs. @FR-01.03 @FR-01.11"""
 
-from lib.review_marker import STATE_OK, evaluate_review_state
+from lib.review_marker import STATE_BLOCK, STATE_OK, evaluate_review_state
 from lib.review_verdict import contradiction_block, summarize_reviews
 
 
@@ -39,6 +39,45 @@ def test_schema_2_historical_gemini_marker_remains_readable():
     })
     assert state == STATE_OK
     assert reason == "status=completed"
+
+
+def test_unknown_marker_schema_fails_closed():
+    state, reason = evaluate_review_state({
+        "marker_schema": 999,
+        "status": "completed",
+        "verdicts": {"deepseek": "approve", "openai": "approve"},
+    })
+    assert state == STATE_BLOCK
+    assert "unknown review marker schema" in reason
+
+
+def test_schema_2_rejects_the_current_deepseek_roster():
+    state, reason = evaluate_review_state({
+        "marker_schema": 2,
+        "status": "completed",
+        "verdicts": {"deepseek": "approve", "openai": "approve"},
+    })
+    assert state == STATE_BLOCK
+    assert "historical gemini/openai" in reason
+
+
+def test_schema_3_rejects_the_historical_gemini_roster():
+    state, reason = evaluate_review_state({
+        "marker_schema": 3,
+        "status": "completed",
+        "verdicts": {"gemini": "approve", "openai": "approve"},
+    })
+    assert state == STATE_BLOCK
+    assert "schema 3 deepseek/openai" in reason
+
+
+def test_marker_without_schema_only_uses_the_historical_roster():
+    state, reason = evaluate_review_state({
+        "status": "completed",
+        "verdicts": {"deepseek": "approve", "openai": "approve"},
+    })
+    assert state == STATE_BLOCK
+    assert "historical gemini/openai" in reason
 
 
 def test_mixed_three_arm_mapping_fails_closed_as_ambiguous():

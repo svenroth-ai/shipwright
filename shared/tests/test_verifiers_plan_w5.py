@@ -15,8 +15,8 @@ from lib.phase_quality import STATUS_FAIL, STATUS_PASS, STATUS_WARN
 from lib.review_marker import build_marker, write_marker
 from tools.verifiers.plan_compliance import check_w5_external_review_marker
 
-AGREEING = {"gemini": "approve", "openai": "revise"}
-CONTRADICTING = {"gemini": "approve", "openai": "reject"}
+AGREEING = {"deepseek": "approve", "openai": "revise"}
+CONTRADICTING = {"deepseek": "approve", "openai": "reject"}
 
 
 def _project_with_marker(tmp_path: Path, **marker_kwargs) -> Path:

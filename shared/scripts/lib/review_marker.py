@@ -52,9 +52,9 @@ CODE_REVIEW_STATE_FILE = "external_code_review_state.json"
 
 #: Schema 2 introduced per-reviewer ``verdicts`` with the historical
 #: ``gemini``/``openai`` roster. Schema 3 changes the writer contract to the
-#: ``deepseek``/``openai`` roster. Readers intentionally derive validity from
-#: the roster itself, so schema-2 markers and older markers without this field
-#: remain readable (see :func:`evaluate_review_state`).
+#: ``deepseek``/``openai`` roster. Readers bind each known schema to its exact
+#: roster; older markers without this field remain readable only through the
+#: historical Gemini/OpenAI contract (see :func:`evaluate_review_state`).
 MARKER_SCHEMA = 3
 
 ALLOWED_STATUSES = frozenset({
@@ -158,6 +158,13 @@ def evaluate_review_state(marker: dict[str, Any] | None) -> tuple[str, str]:
     if status not in ALLOWED_STATUSES:
         return STATE_BLOCK, f"unknown review status {status!r}"
 
+    has_schema = "marker_schema" in marker
+    marker_schema = marker.get("marker_schema")
+    if has_schema and (
+        type(marker_schema) is not int or marker_schema not in {2, MARKER_SCHEMA}
+    ):
+        return STATE_BLOCK, f"unknown review marker schema {marker_schema!r}"
+
     if status.startswith("skipped_"):
         if not str(marker.get("reason") or "").strip():
             return STATE_BLOCK, f"status={status} but reason is empty (justification required)"
@@ -169,6 +176,23 @@ def evaluate_review_state(marker: dict[str, Any] | None) -> tuple[str, str]:
         return STATE_LEGACY, (
             "review completed but recorded no reviewer verdicts — a "
             "disagreement between the two could not have been noticed"
+        )
+
+    expected_reviewers = (
+        frozenset({"deepseek", "openai"})
+        if marker_schema == MARKER_SCHEMA
+        else frozenset({"gemini", "openai"})
+    )
+    actual_reviewers = frozenset(verdicts)
+    if actual_reviewers != expected_reviewers:
+        contract = (
+            f"schema {MARKER_SCHEMA} deepseek/openai"
+            if marker_schema == MARKER_SCHEMA
+            else "historical gemini/openai"
+        )
+        return STATE_BLOCK, (
+            f"reviewer set does not match the {contract} marker contract: "
+            f"got {sorted(map(str, actual_reviewers))!r}"
         )
 
     # A `completed` marker where NO leg answered is not a review. It needs no
