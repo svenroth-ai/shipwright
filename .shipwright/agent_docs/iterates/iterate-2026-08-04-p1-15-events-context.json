@@ -1,0 +1,87 @@
+{
+  "run_id": "iterate-2026-08-04-p1-15-events-context",
+  "date": "2026-08-04T07:04:11.289814Z",
+  "event_at": "2026-08-04T07:03:55.549555+00:00",
+  "type": "change",
+  "complexity": "medium",
+  "prior_source": "history",
+  "branch": "iterate/p1-15-events-context",
+  "spec": ".shipwright/planning/iterate/2026-08-04-events-context.md",
+  "tests_passed": true,
+  "adr": "iterate-2026-08-04-p1-15-events-context",
+  "test_completeness": {
+    "status": "complete",
+    "behaviors": [
+      {
+        "behavior": "AC-1 compact queries enforce hard bounds, deterministic provenance, and explicit truncation",
+        "disposition": "tested",
+        "evidence": "test_compact_filters_orders_bounds_and_marks_truncation PASSED"
+      },
+      {
+        "behavior": "AC-2 Repo Scout precedes compact context and full, shadow, compact modes are explicit",
+        "disposition": "tested",
+        "evidence": "test_modes_and_metrics_report + test_all_phase_surfaces_invoke_one_catalog_producer PASSED"
+      },
+      {
+        "behavior": "AC-3 one producer seeds greenfield and brownfield catalogs and refreshes paths",
+        "disposition": "tested",
+        "evidence": "test_greenfield_and_brownfield_use_canonical_schema + test_match_precedence_and_refresh_realised_and_provisional_paths PASSED"
+      },
+      {
+        "behavior": "AC-4 missing and stale catalogs visibly use the bounded fail-soft ladder",
+        "disposition": "tested",
+        "evidence": "test_missing_and_stale_catalog_follow_visible_bounded_ladder PASSED"
+      },
+      {
+        "behavior": "AC-5 disposable index rebuild is byte deterministic and ordering stable",
+        "disposition": "tested",
+        "evidence": "test_rebuild_is_byte_deterministic_and_cache_is_disposable + test_poisoned_cache_is_rebuilt_before_query PASSED"
+      },
+      {
+        "behavior": "AC-6 area, path, FR, and type filters compose with deterministic overlap precedence",
+        "disposition": "tested",
+        "evidence": "test_compact_filters_orders_bounds_and_marks_truncation + test_match_precedence_and_refresh_realised_and_provisional_paths PASSED"
+      },
+      {
+        "behavior": "AC-7 hostile event data remains redacted, bounded, escaped, and untrusted",
+        "disposition": "tested",
+        "evidence": "test_hostile_event_text_is_untrusted_redacted_and_bounded PASSED"
+      },
+      {
+        "behavior": "AC-8 index failure visibly falls back to bounded direct-log history",
+        "disposition": "tested",
+        "evidence": "test_index_failure_uses_visible_direct_log_fallback PASSED"
+      },
+      {
+        "behavior": "AC-9 query metrics and the operator report contain required latest and rolling values",
+        "disposition": "tested",
+        "evidence": "test_modes_and_metrics_report + test_config_mode_defaults_compact_and_explicit_full_is_counted PASSED"
+      },
+      {
+        "behavior": "AC-10 public producer, index, query, and metrics CLIs compose without replacing raw authority",
+        "disposition": "tested",
+        "category": "integration",
+        "evidence": "integration-tests/test_event_context_workflow.py::test_public_cli_catalog_index_query_metrics_round_trip PASSED"
+      }
+    ],
+    "counts": {
+      "testable": 10,
+      "tested": 10,
+      "untestable": 0,
+      "untested_testable": 0
+    },
+    "enumeration_basis": {
+      "acs": 10,
+      "covered_acs": 10
+    }
+  },
+  "surface_verification": {
+    "surface": "cli",
+    "runner": "uv run --with pytest pytest integration-tests/test_event_context_workflow.py -q -p no:cacheprovider",
+    "exit_code": 0,
+    "tests_run": 2,
+    "evidence_path": ".shipwright/runs/iterate-2026-08-04-p1-15-events-context/surface_verification.json",
+    "attempts": 1
+  },
+  "declared_removals": []
+}

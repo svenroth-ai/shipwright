@@ -38,6 +38,15 @@ uv run "{shared_root}/scripts/tools/record_event.py" \
   --deduplicate-by-commit
 ```
 
+Refresh planned paths that became real in this section through the canonical
+area-catalog producer:
+
+```bash
+uv run "{shared_root}/scripts/tools/area_catalog.py" refresh \
+  --project-root "$(pwd)" --source build --git-range "HEAD^..HEAD" \
+  --no-provisional
+```
+
 Where `{comma_separated_FRs}` is the list of FRs from the section spec that this section implements (e.g. `"FR-01.01,FR-01.02"`). If the section spec does not reference specific FRs, use the split-level FR range. Omit `--review-findings` and `--review-fixed` if no review was performed (self-review with 0 findings).
 
 **Dashboard update:**

@@ -1728,6 +1728,25 @@ Eleven canonical risk flags trigger safety minimums regardless of complexity lev
 
 Before assessing intent or complexity, iterate reads all project context upfront: `CLAUDE.md`, coding conventions, the complete decision log (ADRs), architecture overview, all spec files across all planning splits, file-to-FR mappings, last test results, and the 20 most recent git commits. This ensures the agent knows what was already built, what decisions were made, and what was recently changed -- preventing regressions and duplicate work.
 
+The append-only event log is the deliberate exception: Iterate no longer loads
+the whole, ever-growing `shipwright_events.jsonl` before it knows the code area.
+Repo Scout runs first. Then the shared event-context query uses Scout paths,
+requirements and `.shipwright/agent_docs/area_catalog.json` to return at most
+the configured event/token budget (15 events / 15,000 estimated tokens by
+default), with provenance, explicit truncation and an untrusted-data warning.
+If the catalog is absent or stale, selection visibly falls through to changed
+path ownership and bounded recent/global safety events; an index failure uses a
+visible bounded direct-log fallback. It never silently reads the full log and
+never silently claims that no history exists.
+
+`shipwright_iterate_config.json` controls diagnosis/rollback through
+`events_context.mode`: `compact` is normal; `shadow` returns the same compact
+prompt bundle while measuring the full cost; `full` is an explicit full-log
+fallback. Every query records one temporary observation under
+`.shipwright/compliance/context-cost/` and regenerates an operator report.
+Those two files are not context inputs. After 5–10 ordinary compact iterates,
+the operator may open a separate cleanup item; P1.15 does not pre-create it.
+
 ### Planned Run Summary
 
 Before execution begins, iterate prints a summary of what will run:
@@ -2357,9 +2376,10 @@ Read these in order. Stop as soon as you have the answer you need; most reviews 
 | 5 | `.shipwright/agent_docs/decision_log.md` | Architecture Decision Records: why each non-obvious choice was made | scan-based |
 | 6 | `.shipwright/agent_docs/session_handoff.md` | Most recent state: last commit, last test status, last completed phase | ~1 min |
 | 7 | `shipwright_*_config.json` | Pipeline state machine: current step, completed steps, project metadata. Several files (run, project, plan, build, test, deploy, security, sync); grep the one whose name matches your question | scan-based |
-| 8 | `shipwright_events.jsonl` | Append-only event log, single source of truth for what happened, when. Compliance reports and the activity dashboard derive from this | scan-based |
+| 8 | `.shipwright/agent_docs/area_catalog.json` | Stable project-owned areas and their path patterns; produced by one shared tool from Project/Plan/Adopt/Build/Iterate evidence | scan-based |
+| 9 | `shipwright_events.jsonl` | Append-only event log, single source of truth for what happened, when. Compliance reports and the activity dashboard derive from this | scan-based |
 
-Files 1–4 are the primer. Files 5–8 are reference material: you grep them for a specific question, you do not read them cover to cover.
+Files 1–4 are the primer. Files 5–9 are reference material: you grep them for a specific question, you do not read them cover to cover.
 
 #### Single-Source-of-Truth Map
 
@@ -2373,6 +2393,7 @@ When you have a specific question, go directly to the file that owns the answer.
 | What did the last iterate do? | `shipwright_events.jsonl` (most recent `work_completed`) + `.shipwright/agent_docs/build_dashboard.md` | Event log is canonical; dashboard is a rendered view |
 | What test status right now? | `shipwright_test_results.json` | Last test run, pass/fail counts per layer |
 | What requirement maps to which file? | `shipwright_sync_config.json` (if present) | FR ↔ file mapping |
+| Which stable area owns this path? | `.shipwright/agent_docs/area_catalog.json` | Canonical deterministic area/path-pattern contract; not an LLM startup input |
 | What requirements does this project even have? | `.shipwright/planning/*/spec.md` | IREB-aligned FR/NFR specs |
 | Where in the pipeline are we? | `shipwright_run_config.json` (`status`, `current_step`) + `phase_history` for "which step ran when" | Pipeline state machine; `current_step` is the live cursor, `phase_history` is the trail |
 | What sections has build completed? | `shipwright_build_config.json` (`completed_sections`) | Per-section build state lives here, not in run config |
