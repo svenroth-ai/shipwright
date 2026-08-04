@@ -151,7 +151,7 @@ spec · visual docs (Tier 5) · prior-art harvest · sibling-test ACs · TODO/FI
 inventory · cross-links · security / CI / CodeQL / Claude-Review scaffolds ·
 `AUTOMERGE_SETUP.md` (LAST — its Required-Check names are parsed from the
 workflow files just written). Vite DX templates are offer-only, never
-auto-applied; existing configs are never overwritten.
+auto-applied; existing configs are never overwritten. Immediately after the generator, seed deterministic brownfield ownership via `uv run "${CLAUDE_PLUGIN_ROOT}/../../shared/scripts/tools/area_catalog.py" seed-brownfield --project-root <cwd> --source adopt`; never overload the requirements-honesty artifact.
 
 Full procedure → [references/step-e-artifact-generation.md](references/step-e-artifact-generation.md).
 Template slot mapping → [references/artifact-templates.md](references/artifact-templates.md).

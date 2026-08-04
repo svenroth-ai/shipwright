@@ -19,13 +19,18 @@ Writes — **in order**:
 4. The six required configs (project / plan / build / iterate /
    compliance / + optional sync — `--no-sync` skips it), and
    **`shipwright_run_config.json` LAST**. The iterate config carries
-   the documented opt-out fields (`external_review.feedback_iterations`
+   the documented mode/opt-out fields (`events_context.mode: compact`,
+   `external_review.feedback_iterations`
    for plan/iterate-mode review, `external_code_review.enabled` for the
    code-review cascade); both are independent gates and the cascade
    defaults to enabled.
 5. `shipwright_events.jsonl` with one `adopted` event + optional
    backfill.
-6. (No project-level hook write.) The `suggest_iterate` UserPromptSubmit
+6. After generation, the skill invokes
+   `shared/scripts/tools/area_catalog.py seed-brownfield`; the shared producer
+   writes `.shipwright/agent_docs/area_catalog.json` from deterministic folder,
+   manifest/workspace and feature-path analysis.
+7. (No project-level hook write.) The `suggest_iterate` UserPromptSubmit
    hook is plugin-owned, registered in
    `plugins/shipwright-iterate/hooks/hooks.json`. If the target project
    carries a legacy `${CLAUDE_PLUGIN_ROOT}` entry from a pre-2026-05-05
@@ -33,8 +38,8 @@ Writes — **in order**:
    `.claude/settings.json` to silence the Claude Code "hook is not
    associated with a plugin" red-banner error. The plugin-registered
    hook fires regardless.
-7. `e2e/flows/adopted-baseline.spec.ts` if routes.json exists.
-8. **Visual frontend documentation (Tier 5).** Three artifacts at
+8. `e2e/flows/adopted-baseline.spec.ts` if routes.json exists.
+9. **Visual frontend documentation (Tier 5).** Three artifacts at
    canonical paths so /shipwright-design / /shipwright-iterate consume
    them without manual fix-up:
 

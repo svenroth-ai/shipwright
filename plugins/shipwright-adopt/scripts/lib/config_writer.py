@@ -121,6 +121,9 @@ def write_iterate_config(project_root: Path) -> Path:
         independent gate per iteration-reviews.md:191-194). Default true so
         the cascade runs by default; user flips to false at project level
         to opt out of diff exfiltration.
+      - events_context.mode: compact is the normal bounded LLM startup mode.
+        Shadow diagnoses selection without expanding prompt context; full is
+        an explicit rollback/forensic selection.
     """
     config = {
         "external_review": {
@@ -128,6 +131,9 @@ def write_iterate_config(project_root: Path) -> Path:
         },
         "external_code_review": {
             "enabled": True,
+        },
+        "events_context": {
+            "mode": "compact",
         },
         "seeded_by_adopt": True,
         "updated_at": _utc_now_iso(),
