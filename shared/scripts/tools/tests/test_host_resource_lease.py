@@ -105,6 +105,7 @@ def test_missing_owner_ticket_fails_closed(tmp_path):
 def test_owner_ticket_open_race_fails_closed(monkeypatch, tmp_path):
     path = tmp_path / "owner.lock"
     path.write_bytes(b"0")
+    path.chmod(0o600)
     real_safe = locking._safe_file
 
     def _unlink_after_check(current, **kwargs):
