@@ -21,6 +21,7 @@ _CLAIM_DIRNAME = ".sessionstart-claims"
 _CLAIM_TTL_SECONDS = CLAIM_TTL_SECONDS
 _CLAIM_WAIT_SECONDS = 5.0
 _TOKEN_RE = re.compile(r"^[0-9a-f]{32}$")
+_TOKEN_PREFIX_RE = re.compile(r"^[0-9a-f]{1,31}$")
 def _claim_session(cache_root: Path, session_id: object, *,
                    wait_seconds: float = _CLAIM_WAIT_SECONDS,
                    token: str | None = None,
@@ -59,6 +60,11 @@ def _claim_session(cache_root: Path, session_id: object, *,
                     return None
                 time.sleep(0.01)
                 continue
+            if _TOKEN_PREFIX_RE.fullmatch(current):
+                if time.monotonic() >= deadline:
+                    return None
+                time.sleep(0.01)
+                continue
             if not _TOKEN_RE.fullmatch(current):
                 return None
             done = directory / f"{prefix}-{current}.done"
@@ -82,7 +88,13 @@ def _claim_session(cache_root: Path, session_id: object, *,
         except OSError:
             return None
         try:
-            os.write(fd, own.encode("ascii"))
+            payload = own.encode("ascii")
+            offset = 0
+            while offset < len(payload):
+                written = os.write(fd, payload[offset:])
+                if written <= 0 or written > len(payload) - offset:
+                    raise OSError("claim token write made no forward progress")
+                offset += written
             os.fsync(fd)
         except OSError:
             os.close(fd)

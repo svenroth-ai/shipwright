@@ -158,12 +158,14 @@ def test_two_expired_completion_rearmers_elect_only_one_owner(
     os.utime(old_done, (old, old))
 
     real_open = os.open
+    real_read_claim_token = healer.read_claim_token
     barrier = threading.Barrier(2)
+    partial_token_observed = threading.Event()
     synchronized: set[int] = set()
     sync_lock = threading.Lock()
 
     def synchronized_open(path, flags, mode=0o600):
-        if str(path).endswith(".next"):
+        if str(path).endswith(".next") and flags & os.O_EXCL:
             ident = threading.get_ident()
             with sync_lock:
                 first_attempt = ident not in synchronized
@@ -172,7 +174,14 @@ def test_two_expired_completion_rearmers_elect_only_one_owner(
                 barrier.wait(timeout=10)
         return real_open(path, flags, mode)
 
+    def partial_successor_token(path):
+        if str(path).endswith(".next") and not partial_token_observed.is_set():
+            partial_token_observed.set()
+            return "b" * 8
+        return real_read_claim_token(path)
+
     monkeypatch.setattr(os, "open", synchronized_open)
+    monkeypatch.setattr(healer, "read_claim_token", partial_successor_token)
     with ThreadPoolExecutor(max_workers=2) as pool:
         futures = [
             pool.submit(
@@ -193,6 +202,7 @@ def test_two_expired_completion_rearmers_elect_only_one_owner(
 
     assert sum(isinstance(result, Path) for result in results) == 1
     assert results.count(False) == 1, "the loser must observe owner completion"
+    assert partial_token_observed.is_set()
 
 
 def test_future_completion_mtime_is_expired_not_fresh(tmp_path: Path):
@@ -595,3 +605,19 @@ def test_failed_token_write_keeps_immutable_claim_path(tmp_path: Path, monkeypat
     assert _claim(tmp_path, "write-failure") is None
     claims = list(tmp_path.rglob("*.claim"))
     assert len(claims) == 1
+
+
+def test_short_token_writes_are_completed_before_owner_returns(
+    tmp_path: Path, monkeypatch,
+):
+    real_write = os.write
+
+    def write_four_bytes(fd, payload):
+        return real_write(fd, payload[:4])
+
+    monkeypatch.setattr(os, "write", write_four_bytes)
+    done = _claim(tmp_path, "short-write", token="d" * 32)
+
+    assert isinstance(done, Path)
+    claim, = tmp_path.rglob("*.claim")
+    assert claim.read_text(encoding="ascii") == "d" * 32
