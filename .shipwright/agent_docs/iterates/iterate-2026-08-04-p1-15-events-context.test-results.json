@@ -1,0 +1,130 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-08-04-p1-15-events-context",
+    "date": "2026-08-04",
+    "unit": {
+      "status": "passed",
+      "passed": 18,
+      "total": 18,
+      "note": "All 18 isolated roots passed through the canonical run_test_suite.py runner; changed-line coverage was 89%."
+    },
+    "integration": {
+      "status": "passed",
+      "passed": 468,
+      "total": 468,
+      "note": "The parallel integration pass was red from cache-fanout timing and the canonical isolated retry passed; recorded as trg-c31bd693."
+    },
+    "pgtap": {
+      "status": "skipped",
+      "passed": 0,
+      "total": 0
+    },
+    "e2e": {
+      "status": "passed",
+      "passed": 2,
+      "total": 2
+    },
+    "design_fidelity": {
+      "status": "skipped",
+      "passed": 0,
+      "total": 0
+    },
+    "smoke": {
+      "status": "skipped"
+    },
+    "surface_verification": {
+      "surface": "cli",
+      "runner": "uv run --with pytest pytest integration-tests/test_event_context_workflow.py -q -p no:cacheprovider",
+      "exit_code": 0,
+      "tests_run": 2,
+      "evidence_path": ".shipwright/runs/iterate-2026-08-04-p1-15-events-context/surface_verification.json",
+      "attempts": 1
+    },
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "AC-1 compact queries enforce event and whole-bundle token bounds with deterministic provenance and explicit truncation",
+          "disposition": "tested",
+          "evidence": "test_compact_filters_orders_bounds_and_marks_truncation PASSED"
+        },
+        {
+          "behavior": "AC-2 Iterate runs Repo Scout first and exposes compact, shadow, and explicit full modes without a normal raw-log startup read",
+          "disposition": "tested",
+          "evidence": "test_modes_and_metrics_report + test_config_mode_defaults_compact_and_explicit_full_is_counted + test_all_phase_surfaces_invoke_one_catalog_producer PASSED"
+        },
+        {
+          "behavior": "AC-3 one canonical producer seeds greenfield and brownfield catalogs and refreshes realised or provisional paths",
+          "disposition": "tested",
+          "evidence": "test_greenfield_and_brownfield_use_canonical_schema + test_match_precedence_and_refresh_realised_and_provisional_paths PASSED"
+        },
+        {
+          "behavior": "AC-4 missing or stale catalogs visibly degrade through changed-file ownership to bounded recent or global history",
+          "disposition": "tested",
+          "evidence": "test_missing_and_stale_catalog_follow_visible_bounded_ladder PASSED"
+        },
+        {
+          "behavior": "AC-5 deleting and rebuilding the disposable index produces byte-identical content and stable query order",
+          "disposition": "tested",
+          "evidence": "test_rebuild_is_byte_deterministic_and_cache_is_disposable + test_poisoned_cache_is_rebuilt_before_query PASSED"
+        },
+        {
+          "behavior": "AC-6 area, path, FR, and event-type filters compose deterministically with pinned overlap precedence",
+          "disposition": "tested",
+          "evidence": "test_compact_filters_orders_bounds_and_marks_truncation + test_match_precedence_and_refresh_realised_and_provisional_paths PASSED"
+        },
+        {
+          "behavior": "AC-7 hostile event text, paths, control characters, and secret-like values remain bounded untrusted JSON data",
+          "disposition": "tested",
+          "evidence": "test_hostile_event_text_is_untrusted_redacted_and_bounded PASSED"
+        },
+        {
+          "behavior": "AC-8 indexing failure uses a visible bounded direct-log fallback and never silently expands or empties readable history",
+          "disposition": "tested",
+          "evidence": "test_index_failure_uses_visible_direct_log_fallback PASSED"
+        },
+        {
+          "behavior": "AC-9 each query records complete context-cost metrics and regenerates an operator-readable latest and rolling report",
+          "disposition": "tested",
+          "evidence": "test_modes_and_metrics_report + test_config_mode_defaults_compact_and_explicit_full_is_counted PASSED"
+        },
+        {
+          "behavior": "AC-10 public CLIs compose producer to index to compact query to metrics while the raw log remains the source of truth",
+          "disposition": "tested",
+          "category": "integration",
+          "evidence": "integration-tests/test_event_context_workflow.py::test_public_cli_catalog_index_query_metrics_round_trip PASSED"
+        }
+      ],
+      "counts": {
+        "testable": 10,
+        "tested": 10,
+        "untestable": 0,
+        "untested_testable": 0
+      },
+      "enumeration_basis": {
+        "acs": 10,
+        "covered_acs": 10
+      }
+    },
+    "declared_removals": [],
+    "degraded": [
+      {
+        "condition": "integration_parallel_retry_green",
+        "detail": "The canonical runner observed cache-fanout timing failures under xdist, then passed the complete integration root in its allowed isolated retry; trg-c31bd693 records the unsound fan-out separately."
+      }
+    ]
+  },
+  "coverage": {
+    "total": 80.2,
+    "measured_tier": "repo",
+    "source": "combined coverage.xml (all plugins + shared + integration)",
+    "measured_at": "2026-07-04T00:00:00Z"
+  },
+  "source_state": {
+    "run_id": "iterate-2026-08-04-p1-15-events-context",
+    "commit": "dc9293885075e423ce835c7c33f49fdb092c6247",
+    "dirty": true,
+    "base": null,
+    "release": null
+  }
+}

@@ -242,7 +242,7 @@ CRUD, navigation), scenarios with expected outcomes, POM suggestions.
 
 ## Step 9: Completion
 
-See [step-9-completion.md](references/step-9-completion.md) for the full
+See [step-9-completion.md](references/step-9-completion.md) for the full procedure; after section validation and before completion, refresh planned paths via `uv run "{shared_root}/scripts/tools/area_catalog.py" seed-greenfield --project-root "$(pwd)" --source plan`. The
 checklist and the C1+C2+C3+C4 + `phase_history` canon block (C5 skipped by
 policy: plan is internal decomposition, not user-facing).
 
