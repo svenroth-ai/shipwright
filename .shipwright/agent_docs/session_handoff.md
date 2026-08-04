@@ -1,36 +1,39 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-08-04-p1-15-events-context"
+run_id: "iterate-2026-07-28-docs-placement-rule"
 phase: "iterate"
-reason: "iterate completion: P1.15 relevance-bounded event context"
-timestamp: "2026-08-04T07:03:55.549555+00:00"
+reason: "iterate: docs/ placement rule + remove one generated artifact and five finished records"
+timestamp: "2026-07-28T12:18:50.089137+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-08-04 07:03:55 UTC
+> Auto-generated 2026-07-28 12:18:50 UTC
 
 ## Session Info
 
-- **Session ID**: unknown
-- **Timestamp**: 2026-08-04 07:03:55 UTC
-- **Reason**: iterate completion: P1.15 relevance-bounded event context
+- **Session ID**: 7c6c7b07-d3a2-4c91-ba4e-fab3535b5067
+- **Timestamp**: 2026-07-28 12:18:50 UTC
+- **Reason**: iterate: docs/ placement rule + remove one generated artifact and five finished records
 
 ## Last Iterate
 
-- **Run ID**: iterate-2026-08-04-p1-15-events-context
-- **Date**: 2026-08-04T07:02:56.796136Z
+- **Run ID**: iterate-2026-07-28-docs-placement-rule
+- **Date**: 2026-07-28T12:18:44.151571Z
 - **Type**: change
 - **Complexity**: medium
-- **Branch**: iterate/p1-15-events-context
-- **ADR**: iterate-2026-08-04-p1-15-events-context
+- **Branch**: iterate/docs-placement-rule
+- **ADR**: iterate-2026-07-28-docs-placement-rule
 - **Tests passed**: True
-- **Spec**: .shipwright/planning/iterate/2026-08-04-events-context.md
+- **Spec**: .shipwright/planning/iterate/iterate-2026-07-28-docs-placement-rule.md
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/p1-15-events-context
-- **External Review Marker**: missing
+- **Branch**: iterate/docs-placement-rule
+- **Run ID**: iterate-2026-07-28-docs-placement-rule
+- **Spec**: .shipwright/planning/iterate/iterate-2026-07-28-docs-placement-rule.md
+- **Complexity**: medium · **spec_impact:** none · **affected_frs:** [] ·
+- **External Review Marker**: completed (external_review_state.json @ 2026-07-28T11:58:04)
 
 ### Mandatory replay on Resume
 
@@ -48,8 +51,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/p1-15-events-context
-- **Last Commit**: dc929388 chore(triage): sweep 20 outbox append(s) into branch
+- **Branch**: iterate/docs-placement-rule
+- **Last Commit**: 7ec426a2 chore(triage): sweep 54 outbox append(s) into branch
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -65,17 +68,17 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 | Event | Type | Source | Date |
 |-------|------|--------|------|
-| evt-5a2647c8 | grade_snapshot | — | 2026-08-04 |
-| evt-9e219827 | work_completed | iterate (Implemented one shared area-catalog producer, deterministic disposable event index, bounded compact/shadow/full query modes, visible fail-soft fallback, hostile-data handling, and temporary context-cost metrics/reporting.) | 2026-08-04 |
-| evt-eb45a0c8 | hook_warning | session_id_fallback | 2026-08-03 |
-| evt-dddaaea5 | hook_warning | session_id_fallback | 2026-08-03 |
-| evt-5c19f8a2 | hook_warning | session_id_fallback | 2026-08-03 |
+| evt-003a4ccb | grade_snapshot | — | 2026-07-28 |
+| evt-a25fc820 | work_completed | iterate (iterate: docs/ placement rule + remove one generated artifact and five finished records) | 2026-07-28 |
+| evt-7963d51e | grade_snapshot | — | 2026-07-28 |
+| evt-2df150c5 | work_completed | iterate (Make a conditional session policy gating subagents a question asked before Stage 1 rather than a silent not_run at F11, and define what a real blocker is.) | 2026-07-28 |
+| evt-5f7e67f6 | grade_snapshot | — | 2026-07-28 |
 
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 450
-- **Last iterate**: Replace Iterate startup exposure of the complete event log with relevance-bounded context selected after Repo Scout. — Implemented one shared area-catalog producer, deterministic disposable event index, bounded compact/shadow/full query modes, visible fail-soft fallback, hostile-data handling, and temporary context-cost metrics/reporting. (2026-08-04)
+- **Total work events**: 400
+- **Last iterate**: change — iterate: docs/ placement rule + remove one generated artifact and five finished records (2026-07-28)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
 ## Recent Decisions
