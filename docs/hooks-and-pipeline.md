@@ -1231,7 +1231,17 @@ Properties:
 
   Claim generations are immutable; completion is a separate owner-only O_EXCL
   file, never an in-place rewrite. TTL age starts at that completion file's
-  mtime, not at the earlier claim election. The healer and ready guard share
+  mtime, not at the earlier claim election. A successor claim is visible as
+  soon as O_EXCL elects its
+  owner, before the token write can finish; readers therefore treat a 1–31 byte
+  lowercase-hex token as initialization still in progress and retry within the
+  existing monotonic deadline. The owner loops over short writes and returns
+  only after all 32 token bytes are durable, so a scheduler-visible prefix can
+  no longer become a false unsafe verdict during successful initialization.
+  If the owner dies or its write/fsync fails, the immutable partial claim may
+  remain; readers wait only to their deadline, then take the existing
+  fail-open/no-mutation path.
+  The healer and ready guard share
   that TTL constant and accept up to one second of negative apparent age from
   filesystem timestamp rounding; a completion farther in the future remains
   expired. A resumed session therefore cannot treat an expired done generation
