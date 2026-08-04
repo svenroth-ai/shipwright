@@ -19,6 +19,7 @@ Everything writes to `tmp_path` (a runner pointed at a tracked root leaks its
 
 from __future__ import annotations
 
+from contextlib import contextmanager
 import sys
 from pathlib import Path
 
@@ -37,6 +38,12 @@ from scripts.tools.run_test_suite import (  # noqa: E402
 )
 from triage import read_all_items  # noqa: E402
 
+
+@contextmanager
+def _leased(root, result):
+    source_before, fingerprint_error = mod.source_fingerprint(root)
+    yield result, source_before, fingerprint_error
+
 _XDIST = ("shared/tests",)
 
 
@@ -54,7 +61,8 @@ def _race(unit_id="shared/tests"):
 def _run(monkeypatch, root, *results, exit_code=0, argv=()):
     """Drive main() with a stubbed suite; returns (rc, captured stdout)."""
     result = SuiteResult(list(results), exit_code, 12.0, _XDIST)
-    monkeypatch.setattr(mod, "run_suite", lambda *a, **k: result)
+    monkeypatch.setattr(mod, "_run_host_leased_suite",
+                        lambda root, *a, **k: _leased(root, result))
     monkeypatch.setattr(mod, "source_fingerprint", lambda *a, **k: ("stable", ""))
     monkeypatch.setattr(sys, "argv",
                         ["run_test_suite.py", "--project-root", str(root), *argv])
@@ -151,18 +159,19 @@ def test_a_config_error_still_exits_two_without_touching_the_store(tmp_path,
     def _refuse(*a, **k):
         raise mod.SuiteConfigError("no test units discovered")
 
-    monkeypatch.setattr(mod, "run_suite", _refuse)
+    monkeypatch.setattr(mod, "_run_host_leased_suite", _refuse)
     monkeypatch.setattr(sys, "argv",
                         ["run_test_suite.py", "--project-root", str(tmp_path)])
     assert mod.main() == 2
     assert not (tmp_path / ".shipwright").exists()
 
 
-def test_run_id_is_optional_and_its_absence_is_recorded_as_absent(tmp_path,
-                                                                  monkeypatch):
-    """The flag is additive - F0 in an adopted project may not pass one - and a
-    missing run id must be a null field, never a placeholder that reads as real."""
+def test_missing_run_id_generates_one_stable_invocation_id(tmp_path, monkeypatch,
+                                                           capsys):
+    monkeypatch.setattr(mod, "uuid4", lambda: type("UUID", (), {"hex": "a" * 32})())
     assert _run(monkeypatch, tmp_path, _race()) == 0
 
     item, = read_all_items(tmp_path)
-    assert item["runId"] is None and item["dedupKey"] == "f0-race:shared/tests"
+    expected = f"f0-{'a' * 32}"
+    assert item["runId"] == expected and item["dedupKey"] == "f0-race:shared/tests"
+    assert f"F0 invocation: run_id={expected}" in capsys.readouterr().out

@@ -8,13 +8,14 @@ exception that discards the other units' results.
 from __future__ import annotations
 
 import sys
-import threading
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent.parent))
 
 import scripts.tools.run_test_suite as mod
-from scripts.tools.run_test_suite import INFRA, TEST_FAILURE, classify, cpu_budget, discover_units
+from scripts.tools.run_test_suite import (
+    INFRA, TEST_FAILURE, classify, cpu_budget, discover_units,
+)
 
 
 def _project(tmp_path: Path) -> Path:
@@ -64,18 +65,17 @@ def test_pytest_ran_is_proven_by_the_junit_report_not_by_prose(tmp_path, monkeyp
     class _Failed:
         returncode, stdout, stderr = 1, "12 errors in 30.14s", ""
 
-    def _pytest_ran(cmd, **kw):  # emulate pytest writing its --junit-xml file
+    def _pytest_ran(cmd, **kw):
         Path(cmd[cmd.index("--junit-xml") + 1]).write_text("<testsuite/>", encoding="utf-8")
         return _Failed()
 
     root = _project(tmp_path)
     unit = discover_units(root)[0]
-
     monkeypatch.setattr(mod.subprocess, "run", _pytest_ran)
     rc, _out, _s, ran = mod._exec(unit, root, None, tmp_path / "a")
     assert ran is True and classify(rc, ran) == TEST_FAILURE
 
-    monkeypatch.setattr(mod.subprocess, "run", lambda cmd, **kw: _Failed())  # no report
+    monkeypatch.setattr(mod.subprocess, "run", lambda cmd, **kw: _Failed())
     rc, _out, _s, ran = mod._exec(unit, root, None, tmp_path / "b")
     assert ran is False and classify(rc, ran) == INFRA
 
@@ -105,28 +105,3 @@ def test_an_unlaunchable_unit_becomes_a_FAULT_not_a_traceback(tmp_path, monkeypa
 def test_cpu_budget_is_never_below_one(monkeypatch):
     monkeypatch.setattr(mod.os, "cpu_count", lambda: 1)
     assert cpu_budget(None) >= 1
-
-
-def test_budget_never_oversubscribes_and_never_deadlocks():
-    """AC11: the outer pool and the inner xdist workers share ONE budget. A unit heavier
-    than the whole budget must still be admitted (clamped) — otherwise F0 would hang."""
-    budget = mod._Budget(8)
-    held = budget.acquire(8)
-    assert held == 8
-
-    done = threading.Event()
-
-    def _waiter():
-        w = budget.acquire(4)  # must block until the 8 is released
-        done.set()
-        budget.release(w)
-
-    t = threading.Thread(target=_waiter, daemon=True)
-    t.start()
-    assert not done.wait(0.2), "budget admitted work beyond its total (oversubscribed)"
-    budget.release(held)
-    assert done.wait(2), "budget deadlocked"
-    t.join(2)
-
-    tiny = mod._Budget(2)
-    assert tiny.acquire(99) == 2, "a unit heavier than the budget must be clamped, not stuck"

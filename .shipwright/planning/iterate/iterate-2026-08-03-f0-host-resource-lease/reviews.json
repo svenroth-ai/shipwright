@@ -1,0 +1,78 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-08-03-f0-host-resource-lease",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-03T19:32:47.883711+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": "openrouter",
+      "completed_at": "2026-08-03T16:22:37.275717+00:00",
+      "disposition": null,
+      "recorded_by": "external-review",
+      "parse_status": "unstructured",
+      "raw_excerpt": "# External plan review — OpenRouter\n\nTwo reviewers completed. One approved; one requested revision. Incorporated findings:\n\n- fail closed on malformed/unsafe state rather than treating it as empty;\n- acquire owner lock before publishing a permanently unique ticket;\n- normalize all weights to the hardware capacity so the FIFO head always fits;\n- define a non-nested uv-then-CPU lifetime to avoid deadlock and idle CPU reservation;\n- key sibling worktrees by resolved Git common directory and isolate separate clones;\n- use a private per-user runtime root with link/object validation;\n- make ticket-file cleanup bounded/best-effort, never part of correctness;\n- require native Windows subprocess/crash evidence under the existing CI matrix;\n- send queue and heartbeat diagnostics as single stderr lines.\n\nFinal disposition: revised plan accepted as build basis.\n"
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-03T19:07:43.040011+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-03T19:07:43.149965+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": "openrouter",
+      "completed_at": "2026-08-03T19:07:43.257990+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "unstructured",
+      "raw_excerpt": "[gemini] SHIPWRIGHT_VERDICT: approve\n\n[openai] No concrete defects found in the implementation against the stated acceptance criteria. The lease design enforces weighted FIFO admission with OS-lock-based stale-owner recovery, namespaces sibling worktrees correctly, serializes uv warm-up separately from CPU leasing, caps in-process scheduling to the granted weight, preserves coverage-lock/coverage-gate ordering, and emits parent-process ASCII-safe progress without exposing captured unit output. Overall assessment: ship-as-is. SHIPWRIGHT_VERDICT: approve"
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-03T19:07:42.937497+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    }
+  }
+}

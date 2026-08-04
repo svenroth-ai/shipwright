@@ -1,0 +1,134 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-08-03-f0-host-resource-lease",
+    "date": "2026-08-03",
+    "unit": {
+      "status": "passed",
+      "passed": 18,
+      "total": 18
+    },
+    "integration": {
+      "status": "passed",
+      "passed": 1,
+      "total": 1
+    },
+    "pgtap": {
+      "status": "not_run",
+      "passed": 0,
+      "total": 0
+    },
+    "e2e": {
+      "status": "not_run",
+      "passed": 0,
+      "total": 0
+    },
+    "design_fidelity": {
+      "status": "not_run",
+      "passed": 0,
+      "total": 0
+    },
+    "smoke": {
+      "status": "not_run"
+    },
+    "degraded": [],
+    "test_completeness": {
+      "run_id": "iterate-2026-08-03-f0-host-resource-lease",
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "AC1 host-wide granted CPU never exceeds cpu_count-2 and oversized requests are capped",
+          "disposition": "tested",
+          "evidence": "test_every_host_request_is_capped_to_the_hardware_budget + weighted multi-process probes PASSED",
+          "category": "integration"
+        },
+        {
+          "behavior": "AC2 compatible sibling-worktree F0 requests overlap",
+          "disposition": "tested",
+          "evidence": "test_compatible_sibling_worktree_leases_overlap PASSED"
+        },
+        {
+          "behavior": "AC3 exhausted capacity waits strict FIFO without smaller-request bypass",
+          "disposition": "tested",
+          "evidence": "strict FIFO process probe PASSED"
+        },
+        {
+          "behavior": "AC4 wait diagnostics name queue owner/run-id and heartbeat periodically",
+          "disposition": "tested",
+          "evidence": "queue heartbeat process and ASCII progress tests PASSED"
+        },
+        {
+          "behavior": "AC5 process death releases capacity through OS locks without stale-file deletion",
+          "disposition": "tested",
+          "evidence": "crash release, release-write recovery, native byte-lock, and POSIX fork probes PASSED/skipped by platform"
+        },
+        {
+          "behavior": "AC6 sibling uv warm-ups serialize while CPU runs remain independently concurrent",
+          "disposition": "tested",
+          "evidence": "real-process uv serialization then CPU overlap probe PASSED"
+        },
+        {
+          "behavior": "AC7 sibling worktrees share identity while separate clones remain isolated",
+          "disposition": "tested",
+          "evidence": "test_sibling_worktrees_share_identity_but_separate_clone_does_not PASSED"
+        },
+        {
+          "behavior": "AC8 coverage lock, retries, triage, fingerprinting, diff coverage, and exit precedence remain intact",
+          "disposition": "tested",
+          "evidence": "canonical F0 18/18 GREEN; warm-up mutation exits 4; coverage/fault/race suites PASSED"
+        },
+        {
+          "behavior": "AC9 Windows locks and unsafe ACLs plus weighted/FIFO/crash worktree paths have native tests",
+          "disposition": "tested",
+          "evidence": "Windows native lock/ACL tests PASSED; POSIX-only counterparts skipped on Windows and run in CI"
+        },
+        {
+          "behavior": "AC10 F0 documentation describes shared leases, queueing, crash recovery, uv, and coverage lock",
+          "disposition": "tested",
+          "evidence": "agent-doc rules, artifact path canon, spec/code review PASS"
+        },
+        {
+          "behavior": "AC11 canonical parent emits ASCII-safe run-id and completed/total heartbeats",
+          "disposition": "tested",
+          "evidence": "heartbeat unit tests PASSED and canonical F0 emitted periodic progress lines"
+        },
+        {
+          "behavior": "AC12 diagnostic file sharding is optional after interruption and never replaces canonical F0",
+          "disposition": "tested",
+          "evidence": "F0 skill/docs contract assertions and final canonical F0 GREEN"
+        }
+      ],
+      "counts": {
+        "testable": 12,
+        "tested": 12,
+        "untestable": 0,
+        "untested_testable": 0
+      },
+      "enumeration_basis": {
+        "acs": 12,
+        "covered_acs": 12
+      }
+    },
+    "surface_verification": {
+      "run_id": "iterate-2026-08-03-f0-host-resource-lease",
+      "surface": "cli",
+      "runner": "uv run shared/scripts/tools/suite_host_resources.py --probe --project-root . --run-id iterate-2026-08-03-f0-host-resource-lease",
+      "exit_code": 0,
+      "tests_run": 1,
+      "evidence_path": ".shipwright/runs/iterate-2026-08-03-f0-host-resource-lease/surface_verification.json"
+    },
+    "declared_removals": []
+  },
+  "coverage": {
+    "total": 83.0,
+    "measured_tier": "diff",
+    "source": "canonical F0 diff-cover against origin/main",
+    "measured_at": "2026-08-03T19:31:00Z"
+  },
+  "source_state": {
+    "run_id": "iterate-2026-08-03-f0-host-resource-lease",
+    "commit": "35b485c00de449d5c44c4244f8cff243480731b1",
+    "dirty": true,
+    "base": null,
+    "release": null
+  }
+}
