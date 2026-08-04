@@ -36,6 +36,7 @@ def write_markers(
     review_type: str,
     *,
     marker_status: str,
+    record_status: str,
     findings_count: int,
     provider: str | None = None,
     reason: str | None = None,
@@ -44,6 +45,12 @@ def write_markers(
 ) -> list[str]:
     """Dual-write the marker. Returns the paths written, run-scoped copy first."""
     marker_mode = MARKER_TYPES.get(review_type)
+    if (record_status == "completed") != (marker_status == "completed"):
+        raise ReviewRecordError(
+            f"record status {record_status!r} conflicts with marker status {marker_status!r}"
+        )
+    if marker_status.startswith("skipped_") and verdicts:
+        raise ReviewRecordError("a skipped marker cannot carry reviewer verdicts")
     if marker_status == "completed" and not verdicts:
         raise ReviewRecordError("a completed marker requires reviewer verdicts")
     marker_schema = (
@@ -92,6 +99,7 @@ def repair_markers(
         written.extend(write_markers(
             project_root, run_id, review_type,
             marker_status=marker_status,
+            record_status=str(entry.get("status") or ""),
             findings_count=int(entry.get("findings_count") or 0),
             provider=provider, reason=reason,
             verdicts=verdicts,

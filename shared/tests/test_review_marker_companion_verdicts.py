@@ -9,6 +9,7 @@ import pytest
 
 from lib.review_companion import repair_markers, write_markers
 from lib.review_findings import ReviewFindingsError
+from lib.review_marker import STATE_BLOCK, evaluate_review_state
 from lib import review_payloads
 from lib.review_payloads import build_review_evidence, build_reviewer_verdicts
 from lib.review_record import (
@@ -117,7 +118,7 @@ def test_companion_writes_and_repairs_from_the_recorded_verdicts(tmp_path):
     current = {"deepseek": "approve", "openai": "revise"}
     paths = write_markers(
         tmp_path, "run-1", "plan", marker_status="completed",
-        findings_count=0, verdicts=current,
+        record_status="completed", findings_count=0, verdicts=current,
     )
     marker = json.loads(Path(paths[0]).read_text(encoding="utf-8"))
     assert marker["marker_schema"] == 3
@@ -140,7 +141,8 @@ def test_companion_repairs_the_recorded_operator_resolution(tmp_path):
     resolution = "Operator accepted OpenAI rejection and corrected the implementation."
     paths = write_markers(
         tmp_path, "run-1", "plan", marker_status="completed", findings_count=1,
-        verdicts=verdicts, contradiction_resolution=resolution,
+        record_status="completed", verdicts=verdicts,
+        contradiction_resolution=resolution,
     )
     record = upsert_review(new_record("run-1"), make_entry(
         "plan", STATUS_COMPLETED, verdicts=verdicts,
@@ -156,8 +158,30 @@ def test_companion_repairs_the_recorded_operator_resolution(tmp_path):
 def test_completed_companion_without_verdicts_is_refused(tmp_path):
     with pytest.raises(ReviewRecordError, match="requires reviewer verdicts"):
         write_markers(
-            tmp_path, "run-1", "plan", marker_status="completed", findings_count=0
+            tmp_path, "run-1", "plan", marker_status="completed",
+            record_status="completed", findings_count=0,
         )
+
+
+def test_companion_rejects_record_marker_status_mismatch(tmp_path):
+    with pytest.raises(ReviewRecordError, match="conflicts with marker status"):
+        write_markers(
+            tmp_path, "run-1", "plan", marker_status="skipped_config_disabled",
+            record_status="completed", findings_count=0,
+            reason="config disabled by operator",
+            verdicts={"deepseek": "approve", "openai": "reject"},
+        )
+
+
+def test_skip_with_reviewer_evidence_blocks():
+    marker = {
+        "status": "skipped_config_disabled", "reason": "config disabled by operator",
+        "marker_schema": 3,
+        "verdicts": {"deepseek": "approve", "openai": "reject"},
+    }
+    state, reason = evaluate_review_state(marker)
+    assert state == STATE_BLOCK
+    assert "reviewer evidence" in reason
 
 
 def test_record_cli_main_dual_writes_verdicts_in_process(tmp_path, capsys):
@@ -194,3 +218,33 @@ def test_record_cli_main_dual_writes_verdicts_in_process(tmp_path, capsys):
     ]) == 0
     repaired = json.loads(marker_path.read_text(encoding="utf-8"))
     assert repaired["contradiction_resolution"] == resolution
+
+
+def test_record_and_repair_cli_reject_skip_marker_for_completed_review(tmp_path, capsys):
+    payload = _external_payload(tmp_path, second_verdict="reject")
+    assert record_review_pass.main([
+        "init", "--project-root", str(tmp_path), "--run-id", "run-1",
+    ]) == 0
+    capsys.readouterr()
+    args = [
+        "record", "--project-root", str(tmp_path), "--run-id", "run-1",
+        "--review-type", "plan", "--status", "completed",
+        "--marker-status", "skipped_config_disabled", "--disposition",
+        "config disabled by operator", "--from", "external-review-json",
+        "--payload-file", str(payload),
+    ]
+    assert record_review_pass.main(args) == 2
+    record = json.loads(
+        (tmp_path / ".shipwright" / "planning" / "iterate" / "run-1"
+         / "reviews.json").read_text(encoding="utf-8")
+    )
+    assert record["reviews"]["plan"]["status"] == "pending"
+
+    args[args.index("skipped_config_disabled")] = "completed"
+    args.extend(["--contradiction-resolution", "Operator accepted rejection and fixed it."])
+    assert record_review_pass.main(args) == 0
+    assert record_review_pass.main([
+        "repair-markers", "--project-root", str(tmp_path), "--run-id", "run-1",
+        "--review-type", "plan", "--marker-status", "skipped_config_disabled",
+        "--disposition", "config disabled by operator",
+    ]) == 1

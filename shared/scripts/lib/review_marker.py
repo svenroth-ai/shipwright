@@ -169,6 +169,12 @@ def evaluate_review_state(marker: dict[str, Any] | None) -> tuple[str, str]:
     if status.startswith("skipped_"):
         if not str(marker.get("reason") or "").strip():
             return STATE_BLOCK, f"status={status} but reason is empty (justification required)"
+        has_review_evidence = (
+            marker.get("verdicts") or marker.get("contradiction")
+            or str(marker.get("contradiction_resolution") or "").strip()
+        )
+        if has_review_evidence:
+            return STATE_BLOCK, "skipped review marker carries reviewer evidence"
         # A skipped review has no reviewers and therefore no verdicts to weigh.
         return STATE_OK, f"status={status}"
 

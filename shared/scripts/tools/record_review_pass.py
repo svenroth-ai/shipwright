@@ -143,6 +143,10 @@ def _validate_record_args(args: argparse.Namespace) -> str | None:
                 "is the absence of a record, not a way to close one")
     if args.marker_status and args.review_type not in MARKER_TYPES:
         return f"--marker-status applies only to {sorted(MARKER_TYPES)}"
+    if args.marker_status and (
+            (args.status == STATUS_COMPLETED) != (args.marker_status == "completed")):
+        return (f"record status {args.status!r} conflicts with marker status "
+                f"{args.marker_status!r}")
     if (args.review_type in MARKER_TYPES and args.status == STATUS_COMPLETED
             and not args.marker_status):
         # Completed marker-backed reviews must leave evidence for legacy gates.
@@ -204,6 +208,7 @@ def _cmd_record(args: argparse.Namespace) -> int:
             markers.extend(write_markers(
                 project_root, args.run_id, args.review_type,
                 marker_status=args.marker_status, findings_count=len(findings),
+                record_status=args.status,
                 provider=args.provider,
                 reason=_marker_reason(args.disposition, parse_status, len(findings)),
                 verdicts=verdicts,

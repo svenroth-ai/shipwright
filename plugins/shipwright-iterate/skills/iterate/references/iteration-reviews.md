@@ -470,6 +470,8 @@ marker from that same pair. An operator's `--contradiction-resolution` is stored
 beside the verdicts, so `repair-markers` cannot lose the decision. A current envelope
 must be `deepseek`/`openai`; an implicit historical envelope remains readable
 as `gemini`/`openai`. A completed current marker without both verdicts blocks.
+Record and marker status are bound: a completed record can only write or repair
+a completed marker, while a skipped marker cannot carry reviewer evidence.
 
 | Pass | `--review-type` | `--from` | payload |
 |---|---|---|---|
