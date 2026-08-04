@@ -237,7 +237,11 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--spec-file", action="append", help="Spec.md (repeatable; else auto-discover)")
     parser.add_argument("--test-root", action="append", help="Test dir (repeatable; else auto-detect)")
     parser.add_argument("--report-dir", help=f"Where to write the report (default <root>/{_REPORT_DIRNAME})")
-    parser.add_argument("--use-llm", action="store_true", help="Adjudicate the residue with GPT+Gemini (opt-in)")
+    parser.add_argument(
+        "--use-llm",
+        action="store_true",
+        help="Adjudicate the residue with GPT + ZDR-routed DeepSeek (opt-in)",
+    )
     parser.add_argument("--dry-run", action="store_true", help="Do not write tags; only produce the report")
     parser.add_argument(
         "--repo-follows-split-convention", action="store_true",

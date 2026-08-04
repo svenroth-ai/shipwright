@@ -31,6 +31,7 @@ import re
 from typing import Any
 
 __all__ = [
+    "HISTORICAL_REVIEWER_PAIRS",
     "REVIEWERS",
     "SENTINEL",
     "UNAVAILABLE",
@@ -46,11 +47,13 @@ __all__ = [
 
 SENTINEL = "SHIPWRIGHT_VERDICT"
 
-#: The two reviewers ``external_review.py`` always runs. A marker naming any
-#: other pair is not a record of *this* review, so the gate does not accept it
-#: — otherwise `--verdict foo=approve --verdict bar=approve` would satisfy the
-#: check without either real reviewer having spoken.
-REVIEWERS: tuple[str, ...] = ("gemini", "openai")
+#: The pair new writers emit. Historical Gemini/OpenAI markers remain a
+#: supported read shape, but Gemini is never aliased into a new DeepSeek row.
+REVIEWERS: tuple[str, ...] = ("deepseek", "openai")
+HISTORICAL_REVIEWER_PAIRS: tuple[tuple[str, ...], ...] = (("gemini", "openai"),)
+_SUPPORTED_REVIEWER_SETS = frozenset(
+    {frozenset(REVIEWERS), *(frozenset(pair) for pair in HISTORICAL_REVIEWER_PAIRS)}
+)
 
 VERDICTS: tuple[str, ...] = ("approve", "revise", "reject")
 
@@ -191,12 +194,12 @@ def contradiction_block(verdicts: dict[str, str]) -> dict[str, Any]:
             "requires_resolution": False, "reason": "no reviews",
         }
 
-    if tuple(names) != tuple(sorted(REVIEWERS)):
+    if frozenset(names) not in _SUPPORTED_REVIEWER_SETS or len(names) != 2:
         return {
             "detected": False, "comparable": False, "requires_resolution": True,
             "reason": (
-                f"expected verdicts from {', '.join(sorted(REVIEWERS))}, "
-                f"got {len(names)}: {pairs or 'none'}"
+                "unexpected reviewer set; expected current deepseek/openai or "
+                f"historical gemini/openai, got {len(names)}: {pairs or 'none'}"
             ),
         }
 

@@ -1,0 +1,128 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-08-03-p2-33-deepseek-zdr-review",
+    "date": "2026-08-04",
+    "unit": {
+      "status": "passed",
+      "passed": 18,
+      "total": 18
+    },
+    "integration": {
+      "status": "passed",
+      "passed": 1,
+      "total": 1
+    },
+    "pgtap": {
+      "status": "not_run",
+      "passed": 0,
+      "total": 0
+    },
+    "e2e": {
+      "status": "not_run",
+      "passed": 0,
+      "total": 0
+    },
+    "design_fidelity": {
+      "status": "not_run",
+      "passed": 0,
+      "total": 0
+    },
+    "smoke": {
+      "status": "not_run"
+    },
+    "degraded": [],
+    "test_completeness": {
+      "run_id": "iterate-2026-08-03-p2-33-deepseek-zdr-review",
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "AC1 current OpenRouter writers emit DeepSeek/OpenAI with fixed DeepSeek V4 Pro and GPT Terra identities",
+          "disposition": "tested",
+          "evidence": "serialized-body and identity-lock tests in test_deepseek_review_routing.py and test_external_review_cli.py PASSED",
+          "category": "integration"
+        },
+        {
+          "behavior": "AC2 every DeepSeek request carries the exact novita/together deny-fallback ZDR provider policy",
+          "disposition": "tested",
+          "evidence": "both client SDK transport captures and live novita probe PASSED"
+        },
+        {
+          "behavior": "AC3 empty, malformed, unverified, non-US/EU, or forbidden provider declarations fail before network I/O",
+          "disposition": "tested",
+          "evidence": "hostile routing matrix in test_deepseek_review_routing.py PASSED"
+        },
+        {
+          "behavior": "AC4 direct OpenAI remains usable while DeepSeek is explicit unavailable and Gemini-only credentials do not activate review",
+          "disposition": "tested",
+          "evidence": "direct/no-key/Gemini-only tests in test_llm_review.py and test_external_review_cli.py PASSED"
+        },
+        {
+          "behavior": "AC5 current and historical reviewer pairs preserve fail-closed verdict and contradiction semantics",
+          "disposition": "tested",
+          "evidence": "test_review_verdict_reviewer_migration.py and schema-2 marker round-trip tests PASSED"
+        },
+        {
+          "behavior": "AC6 well-formed forward reviewer records read while malformed entries fail closed",
+          "disposition": "tested",
+          "evidence": "test_review_record_forward_compat.py PASSED"
+        },
+        {
+          "behavior": "AC7 shipping models, built-in defaults, timeout, marker schema, and review envelope schema stay locked",
+          "disposition": "tested",
+          "evidence": "config/default and schema contract tests PASSED"
+        },
+        {
+          "behavior": "AC8 synthetic live probe reuses production routing, succeeds through an approved endpoint, and stores sanitized evidence",
+          "disposition": "tested",
+          "evidence": "test_deepseek_zdr_probe.py PASSED and F0.5 live CLI probe selected novita with exit 0"
+        },
+        {
+          "behavior": "AC9 runtime labels and external-review documentation name DeepSeek/OpenAI and historical Gemini only as compatibility",
+          "disposition": "tested",
+          "evidence": "installer, review UI, prose/cascade, artifact drift, Ruff, and canonical F0 checks PASSED"
+        }
+      ],
+      "counts": {
+        "testable": 9,
+        "tested": 9,
+        "untestable": 0,
+        "untested_testable": 0
+      },
+      "enumeration_basis": {
+        "acs": 9,
+        "covered_acs": 9
+      }
+    },
+    "surface_verification": {
+      "run_id": "iterate-2026-08-03-p2-33-deepseek-zdr-review",
+      "surface": "cli",
+      "runner": "uv run shared/scripts/tools/probe_deepseek_zdr.py --project-root . --run-id iterate-2026-08-03-p2-33-deepseek-zdr-review",
+      "exit_code": 0,
+      "tests_run": 1,
+      "evidence_path": ".shipwright/runs/iterate-2026-08-03-p2-33-deepseek-zdr-review/surface_verification.json"
+    },
+    "declared_removals": [
+      {
+        "path": "shared/tests/test_external_review_gemini_budget.py",
+        "reason": "The retired direct Gemini arm and its Gemini-only token-budget behavior no longer exist."
+      },
+      {
+        "path": "shared/tests/test_external_review_gemini_retry.py",
+        "reason": "The retired direct Gemini retry path was removed; DeepSeek is OpenRouter-only and fails closed."
+      }
+    ]
+  },
+  "coverage": {
+    "total": 82.0,
+    "measured_tier": "diff",
+    "source": "canonical F0 diff-cover against origin/main",
+    "measured_at": "2026-08-04T07:42:00Z"
+  },
+  "source_state": {
+    "run_id": "iterate-2026-08-03-p2-33-deepseek-zdr-review",
+    "commit": "679e35d00252c32e704b2cf2e2184c9f522e24da",
+    "dirty": true,
+    "base": null,
+    "release": null
+  }
+}

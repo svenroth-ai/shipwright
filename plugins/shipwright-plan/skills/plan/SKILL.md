@@ -2,7 +2,7 @@
 name: shipwright-plan
 description: "Creates detailed implementation plans from spec files via research, interview, external LLM review, and TDD approach. Generates section-based plans for /shipwright-build.\nTRIGGER when: user wants to plan implementation, create an implementation plan, break down a spec into sections, plan how to build something, create a technical design, generate build sections, or plan test strategy for a spec.\nDO NOT TRIGGER when: user asks to implement or write code (/shipwright-build), run tests (/shipwright-test), fix a bug or make a small change (/shipwright-iterate), deploy (/shipwright-deploy), define requirements (/shipwright-project), or design UI mockups (/shipwright-design)."
 license: MIT
-compatibility: Requires uv (Python 3.11+), git repository recommended. Recommended: OPENROUTER_API_KEY (or GEMINI_API_KEY + OPENAI_API_KEY) for external LLM review in Step 5. If missing, the skill will ask you whether to skip external review and fall back to mandatory self-review.
+compatibility: Requires uv (Python 3.11+), git repository recommended. Recommended: OPENROUTER_API_KEY for DeepSeek + OpenAI review; OPENAI_API_KEY can run the GPT arm only. If missing, the skill will ask you whether to skip external review and fall back to mandatory self-review.
 ---
 
 # Shipwright Plan Skill
@@ -144,7 +144,7 @@ Read `external_review_status` from the session report (First Actions
 > F). Branch on its value:
 
 - **Branch A — `available`:** run
-  `shared/scripts/tools/external_review.py --mode plan ...` (Gemini +
+  `shared/scripts/tools/external_review.py --mode plan ...` (DeepSeek +
   OpenAI in parallel), integrate findings, log every finding to
   `decision_log.md`, then go to Step 5b. **Read the `contradiction` block
   first:** `requires_resolution: true` means the two reviewers contradict
@@ -162,7 +162,7 @@ Read `external_review_status` from the session report (First Actions
 After exactly one branch completes, **Step 5b** writes the marker with
 `{shared_root}/scripts/checks/mark-review-state.py` — `--status`,
 `--provider`, `--findings-count`, `--reason`, one
-`--verdict {gemini|openai}={verdict}` per reviewer, and
+`--verdict {deepseek|openai}={verdict}` per reviewer, and
 `--contradiction-resolution` when they disagreed. The contradiction is
 **derived** from the two verdicts; there is no flag to assert agreement they do
 not support. Exact invocation:

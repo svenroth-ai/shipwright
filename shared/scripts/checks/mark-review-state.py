@@ -43,7 +43,7 @@ Usage:
         --planning-dir <path> \\
         --status {completed|skipped_user_opt_out|skipped_config_disabled} \\
         [--review-type plan|iterate|code] \\
-        [--provider openrouter|gemini|openai] \\
+        [--provider openrouter|openai] \\
         [--reason "user opted out: offline demo"] \\
         [--findings-count 5] \\
         [--self-review-fallback-ran]
@@ -87,7 +87,7 @@ _ALLOWED_VERDICT_VALUES = frozenset(VERDICTS) | {UNKNOWN, "unavailable"}
 
 
 def parse_verdict_args(pairs: list[str] | None) -> tuple[dict[str, str], str | None]:
-    """Turn ``["gemini=approve", "openai=reject"]`` into a verdict mapping.
+    """Turn ``["deepseek=approve", "openai=reject"]`` into a verdict mapping.
 
     Returns ``(verdicts, error)``. An unrecognised verdict word is an error
     rather than a silent ``unknown``: the caller mistyped, and coercing it
@@ -145,7 +145,7 @@ def main() -> int:
         action="append",
         metavar="REVIEWER=VALUE",
         help=(
-            "One reviewer's overall verdict, e.g. --verdict gemini=approve "
+            "One reviewer's overall verdict, e.g. --verdict deepseek=approve "
             "--verdict openai=reject. Read from each reply's SHIPWRIGHT_VERDICT "
             "line (external_review.py reports them under 'verdicts'). The "
             "contradiction is DERIVED from the pair, never passed in."

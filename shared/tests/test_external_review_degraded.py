@@ -1,7 +1,7 @@
 """Regression tests for the external-review DEGRADED gate (SS6).
 
 Covers the SS6 bug: a live /shipwright-plan run silently fell back to
-self-review because Gemini's key was missing AND the direct OpenAI call
+self-review because one arm was missing AND the direct OpenAI call
 errored on an incompatible param. The review gate degraded WITHOUT failing
 loudly — ``main()`` hardcoded ``success: true`` regardless of whether a
 single review actually ran, so the caller marked the gate "completed".
@@ -38,9 +38,8 @@ def clean_env(monkeypatch, tmp_path):
         "GEMINI_API_KEY",
         "GOOGLE_API_KEY",
         "OPENAI_API_KEY",
-        "SHIPWRIGHT_REVIEW_MODEL_GEMINI",
         "SHIPWRIGHT_REVIEW_MODEL_CHATGPT",
-        "SHIPWRIGHT_REVIEW_MODEL_OPENROUTER_GEMINI",
+        "SHIPWRIGHT_REVIEW_MODEL_OPENROUTER_DEEPSEEK",
         "SHIPWRIGHT_REVIEW_MODEL_OPENROUTER_CHATGPT",
     ):
         monkeypatch.delenv(key, raising=False)
@@ -64,7 +63,7 @@ def fake_plan_plugin(tmp_path):
     return plugin_root, spec, plan
 
 
-def _run_main_direct(monkeypatch, fake_plan_plugin, gemini_result, openai_result):
+def _run_main_direct(monkeypatch, fake_plan_plugin, openai_result):
     """Drive main() in 'direct' provider mode with stubbed review helpers."""
     plugin_root, spec, plan = fake_plan_plugin
     monkeypatch.setenv("OPENAI_API_KEY", "sk-openai-test")  # → provider 'direct'
@@ -75,9 +74,6 @@ def _run_main_direct(monkeypatch, fake_plan_plugin, gemini_result, openai_result
         external_review,
         "load_iterate_review_prompts",
         lambda prompts_root=None: ("sys", "u {SPEC} {PLAN}"),
-    )
-    monkeypatch.setattr(
-        external_review, "review_with_gemini", lambda *a, **k: dict(gemini_result)
     )
     monkeypatch.setattr(
         external_review, "review_with_openai", lambda *a, **k: dict(openai_result)
@@ -96,14 +92,13 @@ def _run_main_direct(monkeypatch, fake_plan_plugin, gemini_result, openai_result
 def test_gate_degraded_when_keys_present_but_no_review_succeeds(
     monkeypatch, clean_env, capsys, fake_plan_plugin
 ):
-    """The exact live bug: gemini key missing (skipped) + openai errors.
+    """DeepSeek is unavailable on direct routing and OpenAI errors.
 
     provider='direct', 0/2 reviews succeed → must fail loud, NOT success:true.
     """
     rc = _run_main_direct(
         monkeypatch,
         fake_plan_plugin,
-        gemini_result={"status": "skipped", "reason": "No GEMINI_API_KEY set"},
         openai_result={"status": "error", "reason": "Unsupported parameter: max_tokens"},
     )
     captured = capsys.readouterr()
@@ -117,7 +112,7 @@ def test_gate_degraded_when_keys_present_but_no_review_succeeds(
     assert payload.get("degraded_reason")
     # The recorded reason must surface WHY each leg failed (machine-readable).
     assert "max_tokens" in payload["degraded_reason"]
-    assert "GEMINI_API_KEY" in payload["degraded_reason"]
+    assert "approved OpenRouter ZDR endpoint" in payload["degraded_reason"]
     # And a loud human-facing banner on stderr.
     assert "DEGRADED" in captured.err
 
@@ -129,7 +124,6 @@ def test_gate_not_degraded_on_partial_success(
     rc = _run_main_direct(
         monkeypatch,
         fake_plan_plugin,
-        gemini_result={"status": "skipped", "reason": "No GEMINI_API_KEY set"},
         openai_result={"status": "success", "feedback": "looks fine", "via": "direct"},
     )
     payload = json.loads(capsys.readouterr().out)
@@ -210,9 +204,10 @@ def test_finalize_review_output_helper_contract():
     # Attempted + no success → degraded, exit 1.
     out, code = finalize_review_output(
         "direct",
-        {"gemini": {"status": "skipped", "reason": "no key"},
+        {"deepseek": {"status": "skipped", "reason": "no key"},
          "openai": {"status": "error", "reason": "boom"}},
     )
+    assert out["review_schema"] == 2
     assert code == 1
     assert out["degraded"] is True
     assert out["success"] is False
@@ -220,7 +215,7 @@ def test_finalize_review_output_helper_contract():
     # Attempted + one success → healthy, exit 0.
     out, code = finalize_review_output(
         "openrouter",
-        {"gemini": {"status": "success", "feedback": "ok"},
+        {"deepseek": {"status": "success", "feedback": "ok"},
          "openai": {"status": "error", "reason": "boom"}},
     )
     assert code == 0
@@ -230,7 +225,7 @@ def test_finalize_review_output_helper_contract():
     # No provider attempted → never degraded.
     out, code = finalize_review_output(
         "none",
-        {"gemini": {"status": "skipped"}, "openai": {"status": "skipped"}},
+        {"deepseek": {"status": "skipped"}, "openai": {"status": "skipped"}},
     )
     assert code == 0
     assert out["degraded"] is False

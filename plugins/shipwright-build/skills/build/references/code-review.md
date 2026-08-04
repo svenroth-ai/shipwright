@@ -159,8 +159,8 @@ contract; iterate uses the same shape.
 
 **Operator warning — diff exposure:** Enabling this option transmits the
 contents of the staged diff (including any code, comments, or strings
-present in the changed files) to a third-party LLM provider (OpenRouter,
-Gemini, or OpenAI direct, depending on which keys are configured). Do NOT
+present in the changed files) to a third-party LLM provider (OpenRouter
+or OpenAI direct, depending on which keys are configured). Do NOT
 enable it for projects where the diff may contain secrets, customer data,
 or code under restrictive license/NDA terms. The diff is already written
 to `/tmp/shipwright-review-diff.txt` for Step 6b — that file is what gets
@@ -192,7 +192,7 @@ uv run "{shared_root}/scripts/tools/external_review.py" \
 (`--plugin-root` is unused in code-mode prompt loading but the argument
 remains required for CLI shape parity with plan/iterate modes.)
 
-3. Parse JSON output (`reviews.gemini.feedback` + `reviews.openai.feedback`).
+3. Parse JSON output (`reviews.deepseek.feedback` + `reviews.openai.feedback`).
    Merge any high/medium severity findings into the in-flight findings list
    from Step 6b. Treat them with the same autonomous/guided handling rule
    as the internal subagent findings.
