@@ -98,7 +98,7 @@ def _tags(event_type: str, paths: list[str]) -> list[str]:
     joined = " ".join(paths).lower()
     for tag, needles in {
         "ci": (".github/", "ci"),
-        "compliance": ("compliance",),
+    "compliance": ("compliance",),  # artifact-path-canon: legacy -- event tag, not a path
         "governance": ("constitution", "decision", "policy"),
         "release": ("deploy", "release", "changelog"),
         "security": ("security", "auth", "rls", "secret"),
