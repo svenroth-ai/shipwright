@@ -44,15 +44,21 @@ _GIT_ENV = {
 }
 #: What `run_test_suite.py` needs on disk to run standalone in a synthetic repo.
 _RUNNER_FILES = (
+    "scripts/lib/_host_resource_locking.py",
+    "scripts/lib/_windows_acl.py",
     "scripts/lib/atomic_write.py",
     "scripts/lib/diff_coverage_gate.py",
+    "scripts/lib/host_resource_lease.py",
     "scripts/tools/measure_diff_coverage.py",
     "scripts/tools/combine_coverage.py",
     "scripts/tools/run_test_suite.py",
+    "scripts/tools/suite_budget.py",
     "scripts/tools/suite_coverage.py",
     "scripts/tools/suite_coverage_rules.py",
+    "scripts/tools/suite_gate_runtime.py",
     "scripts/tools/suite_worktree_diff.py",
     "scripts/tools/suite_report.py",
+    "scripts/tools/suite_host_resources.py",
     "scripts/tools/suite_race_triage.py",
     "scripts/tools/suite_units.py",
 )

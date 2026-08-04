@@ -340,6 +340,7 @@ Python 3.11+ with uv as package manager. All scripts are invoked via uv run. Hoo
 - (2026-08-01) iterate/test — probe the REAL environment before designing the comparison: `.in_use/<pid>` (3 live PIDs) faked a gap on all 14 mirrors, and size comparison faked 24 more on `shared/` (CRLF). Both would have turned a no-op into a full copy per session; neither is visible from a fixture. → iterate-2026-08-01-cache-heal-per-plugin
 - (2026-08-01) iterate/review — removing a cheap guard makes previously unreachable states reachable: `dst.exists()` had silently protected a symlinked mirror and made 12-way concurrent copying near-impossible, so a completeness check inherited two hazards nothing tested. Ask what the OLD code was accidentally preventing. → iterate-2026-08-01-cache-heal-per-plugin
 - (2026-08-01) iterate/test — READ the diff-cover log before theorising about it: a change re-vendoring 12 byte-identical copies looked like the copies tanked the ratio (92% of measured changed lines), and I edited the repo-wide coverage `omit` to exclude them — but they are never imported, so they were absent from `coverage.xml` and never counted. The real cause was the canonical file at 56%, because its suites shell out and a subprocess measures 0%. → iterate-2026-08-01-cache-heal-per-plugin
+- (2026-08-03) iterate/test — on Windows, a Codex tool process may omit Git Bash from PATH even when Git is installed; verify `bash` before F0 shell-hook tests and add Git's `bin` only to that process environment. → iterate-2026-08-03-f0-host-resource-lease
 
 ## Contributing
 
