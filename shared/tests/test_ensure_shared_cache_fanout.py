@@ -598,6 +598,7 @@ def test_unwritable_coordination_boundary_fails_open(tmp_path: Path, monkeypatch
 
 
 def test_failed_token_write_keeps_immutable_claim_path(tmp_path: Path, monkeypatch):
+    """A published O_EXCL generation stays put so no second owner can win."""
     def fail_write(*_args):
         raise OSError("write failed")
 

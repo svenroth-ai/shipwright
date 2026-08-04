@@ -98,6 +98,11 @@ def _claim_session(cache_root: Path, session_id: object, *,
             os.fsync(fd)
         except OSError:
             os.close(fd)
+            # The O_EXCL path is already published: never unlink it here. A
+            # reader may have observed this generation, and recreating the
+            # pathname could elect a second owner (ABA). Readers bound a
+            # partial token by ``deadline``, then fail open without replacing
+            # the claim.
             return None
         os.close(fd)
         return directory / f"{prefix}-{own}.done"
