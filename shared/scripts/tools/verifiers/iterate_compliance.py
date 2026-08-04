@@ -31,6 +31,7 @@ from lib.phase_quality import (  # noqa: E402
     STATUS_SKIP,
     make_finding,
 )
+from lib.review_marker import STATE_LEGACY, STATE_OK, evaluate_review_state  # noqa: E402
 from tools.verifiers.common import read_events_jsonl  # noqa: E402
 from tools.verifiers._iterate_run_id import (  # noqa: E402
     unresolvable_run_id_skip,
@@ -51,7 +52,7 @@ W3_REMEDIATION = (
 )
 
 
-def _w2_status_finding(marker: Path, spec_mtime: float):
+def _w2_status_finding(marker: Path, spec_mtime: float, *, allow_legacy: bool = False):
     """Judge one ``external_review_state.json``-shaped marker.
 
     Returns a finding, or ``None`` when the marker carries a status this gate
@@ -66,6 +67,13 @@ def _w2_status_finding(marker: Path, spec_mtime: float):
             name=W2_NAME, remediation=W2_REMEDIATION,
         )
     status = str(state.get("status", ""))
+    gate_state, gate_reason = evaluate_review_state(state)
+    if gate_state != STATE_OK and not (allow_legacy and gate_state == STATE_LEGACY):
+        return make_finding(
+            "W2", STATUS_FAIL, f"{marker.name}: {gate_reason}",
+            name=W2_NAME, remediation=W2_REMEDIATION,
+            provenance="unverified_marker",
+        )
     if status == "completed":
         if not spec_mtime or marker.stat().st_mtime >= spec_mtime:
             return make_finding(
@@ -199,7 +207,8 @@ def check_w2_external_review_marker(
     # launder a bad run-scoped marker into a pass.
     marker = per_run_marker if per_run_marker.exists() else state_file
     if marker.exists():
-        finding = _w2_status_finding(marker, spec_mtime)
+        finding = _w2_status_finding(
+            marker, spec_mtime, allow_legacy=marker == state_file)
         if finding is not None:
             return finding
 

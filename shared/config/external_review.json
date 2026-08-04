@@ -6,17 +6,33 @@
     "_comment_iterations": "feedback_iterations: default 1 = external review is the default path. 0 = explicit opt-out; the consuming skill then runs a mandatory self-review ('2x denken') fallback instead. If > 0 and no API key is set, the skill interactively prompts the user."
   },
   "models": {
-    "gemini": "gemini-3.1-pro-preview",
     "chatgpt": "gpt-5.6-terra",
-    "openrouter_gemini": "google/gemini-3.1-pro-preview",
+    "openrouter_deepseek": "deepseek/deepseek-v4-pro",
     "openrouter_chatgpt": "openai/gpt-5.6-terra",
-    "_comment": "Models for external review. OpenRouter models used when OPENROUTER_API_KEY is set (recommended). Direct models used with GEMINI_API_KEY/OPENAI_API_KEY. Override per-environment via SHIPWRIGHT_REVIEW_MODEL_GEMINI / _CHATGPT / _OPENROUTER_GEMINI / _OPENROUTER_CHATGPT (resolved by lib.external_review_config.resolve_model)."
+    "_comment": "Identity-locked review models: DeepSeek always uses its OpenRouter model; GPT uses its OpenRouter or direct model. Runtime rejects config or environment overrides that differ from these exact identifiers."
+  },
+  "deepseek_routing": {
+    "provider_allowlist": [
+      {
+        "provider": "novita",
+        "region": "US",
+        "zero_retention_verified": true,
+        "verified_on": "2026-08-04"
+      },
+      {
+        "provider": "together",
+        "region": "US",
+        "zero_retention_verified": true,
+        "verified_on": "2026-08-04"
+      }
+    ],
+    "_comment": "Fail closed: runtime requires this ordered declaration to match the code-owned approved endpoint registry. A future US/EU endpoint needs deliberate code, config, test, and review changes after its ZDR policy and processing region are verified."
   },
   "llm_client": {
     "timeout_seconds": 240,
     "max_retries": 3,
     "retry_codes": [429, 500, 503],
     "_comment": "Timeout and retry settings for external LLM calls",
-    "_comment_timeout": "Raised 120 -> 240 in iterate-2026-08-01-llm-review-truncation-guard, because that run raised the output budget 4096 -> 16000 and a bigger budget takes longer to generate. Measured on a 209k-char review prompt against gemini-3.1-pro-preview: 89.2s elapsed for a 10500-token completion, i.e. only 30.8s of headroom under the old 120s. Leaving 120s would have converted the truncated-but-partial review this run fixes into a timeout that returns nothing at all. Keep this above the slowest observed completion, not just above the average."
+    "_comment_timeout": "Kept at 240 seconds for the shared 16000-token review budget. Keep both review clients and this shipping value in lockstep."
   }
 }

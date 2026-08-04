@@ -60,7 +60,8 @@ def test_run_suite_reports_the_files_it_told_units_to_write(tmp_path, monkeypatc
     plugin does not silently narrow what this proves.
     """
     root = _project(tmp_path)
-    monkeypatch.setattr(mod, "_exec", lambda *a, **k: (0, "", 0.01, True))
+    monkeypatch.setattr(
+        mod, "_exec", lambda *a, **k: (0, "", 0.01, True, False, False))
     result = mod.run_suite(root)
 
     expected = {u.id for u in discover_units(root)} - {"shipwright-beta"}
@@ -74,7 +75,8 @@ def test_a_project_without_a_root_pyproject_measures_nothing(tmp_path, monkeypat
     reported as nothing-to-gate, not as a broken measurement."""
     root = _project(tmp_path)
     (root / "pyproject.toml").unlink()
-    monkeypatch.setattr(mod, "_exec", lambda *a, **k: (0, "", 0.01, True))
+    monkeypatch.setattr(
+        mod, "_exec", lambda *a, **k: (0, "", 0.01, True, False, False))
     assert mod.run_suite(root).cov_files == ()
 
 
@@ -85,19 +87,20 @@ def test_an_authoritative_retry_discards_the_failed_attempts_coverage(
     root = _project(tmp_path)
     calls = {"shipwright-alpha": 0}
 
-    def fake_exec(unit, project_root, workers, tmp_dir, timeout=None):
+    def fake_exec(unit, project_root, workers, tmp_dir, timeout=None,
+                  cancel_event=None):
         if unit.id != "shipwright-alpha":
-            return 0, "", 0.01, True
+            return 0, "", 0.01, True, False, False
         calls[unit.id] += 1
         base = Path(unit.cov_file)
         if calls[unit.id] == 1:
             base.write_text("failed-base", encoding="utf-8")
             Path(f"{base}.host.1.abc").write_text("failed-xdist", encoding="utf-8")
-            return 1, "failed", 0.01, True
+            return 1, "failed", 0.01, True, False, False
         assert not base.exists()
         assert list(base.parent.glob(f"{base.name}.*")) == []
         base.write_text("accepted-retry", encoding="utf-8")
-        return 0, "", 0.01, True
+        return 0, "", 0.01, True, False, False
 
     monkeypatch.setattr(mod, "_exec", fake_exec)
     result = mod.run_suite(root)
@@ -115,7 +118,7 @@ def _capture_env(monkeypatch):
         seen["argv"] = argv
         raise OSError("stop here — we only wanted the environment")
 
-    monkeypatch.setattr(mod.subprocess, "run", fake_run)
+    monkeypatch.setattr(mod, "_run_process", fake_run)
     return seen
 
 

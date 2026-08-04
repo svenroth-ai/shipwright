@@ -1,0 +1,154 @@
+{
+  "schema_version": 1,
+  "host_capacity": 22,
+  "simultaneous_arrivals": 4,
+  "candidate_weights": [8, 11, 22],
+  "integration_policy": "serial inside its outer unit; no -n/--numprocesses",
+  "xdist_policy": {"shared/tests": 8},
+  "samples": [
+    {
+      "run_id": "iterate-2026-08-04-f0-fleet-throughput-audit-01",
+      "canonical_exit": 0,
+      "rendered_suite_minutes": 4.4,
+      "diff_coverage_percent": 87,
+      "unit_seconds": {
+        "shipwright-adopt": 60.5,
+        "shipwright-build": 7.2,
+        "shipwright-changelog": 5.9,
+        "shipwright-compliance": 179.9,
+        "shipwright-deploy": 21.7,
+        "shipwright-design": 1.7,
+        "shipwright-grade": 23.4,
+        "shipwright-iterate": 7.3,
+        "shipwright-plan": 6.8,
+        "shipwright-preview": 0.8,
+        "shipwright-project": 3.1,
+        "shipwright-run": 34.7,
+        "shipwright-security": 12.7,
+        "shipwright-test": 34.2,
+        "shared/tests": 188.5,
+        "shared/scripts/tests": 11.1,
+        "shared/scripts/tools/tests": 57.7,
+        "integration-tests": 217.1
+      }
+    },
+    {
+      "run_id": "iterate-2026-08-04-f0-fleet-throughput-audit-02",
+      "canonical_exit": 0,
+      "rendered_suite_minutes": 4.8,
+      "diff_coverage_percent": 87,
+      "unit_seconds": {
+        "shipwright-adopt": 61.8,
+        "shipwright-build": 7.4,
+        "shipwright-changelog": 5.9,
+        "shipwright-compliance": 182.0,
+        "shipwright-deploy": 22.5,
+        "shipwright-design": 1.6,
+        "shipwright-grade": 24.6,
+        "shipwright-iterate": 7.2,
+        "shipwright-plan": 6.6,
+        "shipwright-preview": 0.7,
+        "shipwright-project": 3.1,
+        "shipwright-run": 32.8,
+        "shipwright-security": 13.4,
+        "shipwright-test": 34.2,
+        "shared/tests": 211.2,
+        "shared/scripts/tests": 11.0,
+        "shared/scripts/tools/tests": 59.4,
+        "integration-tests": 218.7
+      }
+    },
+    {
+      "run_id": "iterate-2026-08-04-f0-fleet-throughput-audit-03",
+      "canonical_exit": 0,
+      "rendered_suite_minutes": 4.5,
+      "diff_coverage_percent": 87,
+      "unit_seconds": {
+        "shipwright-adopt": 60.5,
+        "shipwright-build": 7.6,
+        "shipwright-changelog": 5.9,
+        "shipwright-compliance": 179.7,
+        "shipwright-deploy": 21.8,
+        "shipwright-design": 1.7,
+        "shipwright-grade": 23.7,
+        "shipwright-iterate": 7.3,
+        "shipwright-plan": 6.5,
+        "shipwright-preview": 0.8,
+        "shipwright-project": 3.2,
+        "shipwright-run": 33.7,
+        "shipwright-security": 13.9,
+        "shipwright-test": 34.1,
+        "shared/tests": 196.6,
+        "shared/scripts/tests": 10.5,
+        "shared/scripts/tools/tests": 58.8,
+        "integration-tests": 218.3
+      }
+    }
+  ],
+  "replay_method": {
+    "unit_order": [
+      "shipwright-adopt",
+      "shipwright-build",
+      "shipwright-changelog",
+      "shipwright-compliance",
+      "shipwright-deploy",
+      "shipwright-design",
+      "shipwright-grade",
+      "shipwright-iterate",
+      "shipwright-plan",
+      "shipwright-preview",
+      "shipwright-project",
+      "shipwright-run",
+      "shipwright-security",
+      "shipwright-test",
+      "shared/tests",
+      "shared/scripts/tests",
+      "shared/scripts/tools/tests",
+      "integration-tests"
+    ],
+    "unit_weights": "shared/tests=8; every other unit=1",
+    "in_run_model": "deterministic discovery-order weighted admission using every measured unit duration from each final sample",
+    "host_model": "strict-FIFO weighted lease with four arrivals at t=0",
+    "rounding": "per-sample makespans are rounded to 0.1s; fleet metrics use their unrounded arithmetic mean and are displayed to 0.1s or 0.01 runs/hour",
+    "metrics": ["fleet_makespan_seconds", "completed_runs_per_hour", "mean_queue_seconds", "max_queue_seconds"],
+    "tie_break": "smaller weight"
+  },
+  "candidate_results": [
+    {
+      "weight": 8,
+      "concurrent_runs": 2,
+      "per_sample_run_seconds": [585.5, 611.9, 594.6],
+      "average_run_seconds": 597.3,
+      "fleet_makespan_seconds": 1194.7,
+      "completed_runs_per_hour": 12.05,
+      "mean_queue_seconds": 298.7,
+      "max_queue_seconds": 597.3
+    },
+    {
+      "weight": 11,
+      "concurrent_runs": 2,
+      "per_sample_run_seconds": [277.6, 280.5, 278.8],
+      "average_run_seconds": 279.0,
+      "fleet_makespan_seconds": 557.9,
+      "completed_runs_per_hour": 25.81,
+      "mean_queue_seconds": 139.5,
+      "max_queue_seconds": 279.0
+    },
+    {
+      "weight": 22,
+      "concurrent_runs": 1,
+      "per_sample_run_seconds": [220.2, 221.8, 221.5],
+      "average_run_seconds": 221.2,
+      "fleet_makespan_seconds": 884.7,
+      "completed_runs_per_hour": 16.28,
+      "mean_queue_seconds": 331.8,
+      "max_queue_seconds": 663.5
+    }
+  ],
+  "dominance_checks": [
+    "Weight 8 cannot overlap the weight-8 shared/tests unit with any other unit. Even an ideal schedule is bounded below by shared/tests plus the longest serial integration duration, already above the measured weight-11 run duration.",
+    "Weight 22 admits only one host run. Even its ideal per-run duration is bounded below by integration-tests, which is greater than half the weight-11 duration required to overcome two-run host concurrency."
+  ],
+  "selected_weight": 11,
+  "selection_reason": "Highest aggregate four-run throughput and lowest fleet makespan, mean queue, and maximum queue among the predeclared candidates; two sibling requests sum exactly to host capacity without oversubscription."
+}

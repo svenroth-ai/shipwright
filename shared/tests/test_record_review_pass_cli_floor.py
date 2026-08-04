@@ -24,6 +24,10 @@ from pathlib import Path
 
 import pytest
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+
+from _review_cli_harness import EXTERNAL_REVIEW_OUTPUT, payload  # noqa: E402
+
 REPO_ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(REPO_ROOT / "shared" / "scripts"))
 
@@ -111,7 +115,8 @@ def test_recording_one_real_review_clears_the_floor(project: Path):
     result = subprocess.run(
         [sys.executable, TOOL, "record", "--review-type", "external_code",
          "--status", "completed", "--marker-status", "completed",
-         "--from", "none", "--provider", "openrouter", "--force",
+         "--from", "external-review-json", "--provider", "openrouter", "--force",
+         "--payload-file", payload(project, "external.json", EXTERNAL_REVIEW_OUTPUT),
          "--project-root", str(project), "--run-id", RUN_ID],
         capture_output=True, text=True, encoding="utf-8",
     )
@@ -119,10 +124,9 @@ def test_recording_one_real_review_clears_the_floor(project: Path):
     assert check_review_record(project, RUN_ID).ok
 
 
-def test_an_evidence_free_repair_does_not_clear_the_floor(project: Path):
-    """The control for the test above: without `--provider` the same command
-    writes a row indistinguishable from one nobody earned, and the floor says
-    so instead of greening (`trg-51a57370`)."""
+def test_an_evidence_free_repair_is_rejected_before_write(project: Path):
+    """A completed external marker without its reviewer payload is not a
+    review and cannot be written as one."""
     _close_missing(project)
 
     result = subprocess.run(
@@ -132,8 +136,8 @@ def test_an_evidence_free_repair_does_not_clear_the_floor(project: Path):
          "--project-root", str(project), "--run-id", RUN_ID],
         capture_output=True, text=True, encoding="utf-8",
     )
-    assert result.returncode == 0, result.stdout + result.stderr
+    assert result.returncode == 2, result.stdout + result.stderr
 
     outcome = check_review_record(project, RUN_ID)
     assert outcome.is_failure
-    assert "evidence" in outcome.detail.lower()
+    assert "no code review ran" in outcome.detail.lower()

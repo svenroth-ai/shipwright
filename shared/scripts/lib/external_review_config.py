@@ -20,7 +20,10 @@ loader) get the unchanged shared default.
 Env-var override pattern: ``SHIPWRIGHT_REVIEW_MODEL_<KEY_UPPER>`` overrides
 ``config['models'][key]``. Empty/whitespace-only values fall back to the config
 default. The set of valid keys matches the keys in the shipped config:
-``gemini, chatgpt, openrouter_gemini, openrouter_chatgpt``.
+``chatgpt, openrouter_deepseek, openrouter_chatgpt``.
+Active review producers pass this result through
+``external_review_routing.resolve_reviewer_model``, which rejects any value
+that would change the operator-approved reviewer identity.
 
 This module is the result of consolidating logic that previously lived in
 ``plugins/shipwright-plan/scripts/lib/config.py``.
@@ -46,9 +49,8 @@ _DEFAULT_CONFIG_PATH = Path(__file__).resolve().parents[2] / "config" / "externa
 # Whitelist of valid model keys for resolve_model() — matches keys in
 # shared/config/external_review.json.
 _VALID_MODEL_KEYS: set[str] = {
-    "gemini",
     "chatgpt",
-    "openrouter_gemini",
+    "openrouter_deepseek",
     "openrouter_chatgpt",
 }
 
@@ -130,7 +132,8 @@ def load_review_config(
 def is_external_review_enabled(config: dict[str, Any]) -> bool:
     """Check if external review is enabled and at least one API key is available.
 
-    Considers OPENROUTER_API_KEY, GEMINI_API_KEY/GOOGLE_API_KEY, and OPENAI_API_KEY.
+    Considers OPENROUTER_API_KEY and OPENAI_API_KEY. DeepSeek has no direct
+    fallback; Gemini credentials are historical and deliberately ignored.
     """
     from env import load_shipwright_env  # type: ignore[import-not-found]
 
@@ -141,10 +144,9 @@ def is_external_review_enabled(config: dict[str, Any]) -> bool:
         return False
 
     has_openrouter = bool(os.environ.get("OPENROUTER_API_KEY"))
-    has_gemini = bool(os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_API_KEY"))
     has_openai = bool(os.environ.get("OPENAI_API_KEY"))
 
-    return has_openrouter or has_gemini or has_openai
+    return has_openrouter or has_openai
 
 
 def is_external_code_review_enabled(config: dict[str, Any]) -> bool:
@@ -177,10 +179,9 @@ def get_external_review_status(config: dict[str, Any]) -> str:
         return "user_disabled"
 
     has_openrouter = bool(os.environ.get("OPENROUTER_API_KEY"))
-    has_gemini = bool(os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_API_KEY"))
     has_openai = bool(os.environ.get("OPENAI_API_KEY"))
 
-    if has_openrouter or has_gemini or has_openai:
+    if has_openrouter or has_openai:
         return "available"
     return "missing_keys"
 

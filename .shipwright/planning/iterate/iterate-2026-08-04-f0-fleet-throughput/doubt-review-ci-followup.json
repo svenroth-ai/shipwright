@@ -1,0 +1,12 @@
+{
+  "section": "P1.16-post-CI-portable-coverage",
+  "doubts": [
+    {
+      "claim": "The three portable tests genuinely close the Linux diff-coverage gap without masking platform defects.",
+      "counterexample": "Tests could merely mock return values, bypass real file/capture behavior, or pretend POSIX paths behave like Windows paths without exercising the transformation branches.",
+      "evidence_needed": "Direct execution of every missed line, real bounded-tail file I/O, real capture state, isolated platform simulation limited to deterministic path-string branches, and green focused/full suites.",
+      "verdict": "resolved",
+      "disposition": "The tests directly execute suite_process lines 65-66 and 76 using a real bounded capture and real seek/read file, and execute every suite_diagnostics Windows path branch at lines 42-47. Only os.name and Path.resolve are isolated for the deterministic Windows prefix transformation; existing native Windows tests remain intact. The change is test-only, focused tests pass 16/16, the full tools root passes 470 with 15 skipped and 2 deselected, and post-CI code review is empty."
+    }
+  ]
+}

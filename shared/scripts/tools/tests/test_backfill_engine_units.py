@@ -73,37 +73,79 @@ def test_openrouter_parse(raw, expected):
     assert backfill_llm.OpenRouterAdjudicator._parse(raw) == expected
 
 
-def _install_fake_openai(monkeypatch, content):
+def _routing_config():
+    return {
+        "models": {
+            "openrouter_deepseek": "deepseek/deepseek-v4-pro",
+            "openrouter_chatgpt": "openai/gpt-5.6-terra",
+        },
+        "deepseek_routing": {
+            "provider_allowlist": [
+                {"provider": "novita", "region": "US", "zero_retention_verified": True},
+                {"provider": "together", "region": "US", "zero_retention_verified": True},
+            ],
+        },
+    }
+
+
+def _install_fake_openai(monkeypatch, content, calls=None):
     mod = types.ModuleType("openai")
 
     class _OpenAI:
         def __init__(self, **kw):
             resp = types.SimpleNamespace(
                 choices=[types.SimpleNamespace(message=types.SimpleNamespace(content=content))])
+            def create(**request):
+                if calls is not None:
+                    calls.append(request)
+                return resp
             self.chat = types.SimpleNamespace(
-                completions=types.SimpleNamespace(create=lambda **k: resp))
+                completions=types.SimpleNamespace(create=create))
 
     mod.OpenAI = _OpenAI
     monkeypatch.setitem(sys.modules, "openai", mod)
 
 
 def test_openrouter_adjudicate_consensus_via_fake_openai(monkeypatch):
-    _install_fake_openai(monkeypatch, '{"proposed_fr": "FR-01.02", "confidence": 0.7}')
-    adj = backfill_llm.OpenRouterAdjudicator("key", {}, lambda config, key: "some/model")
+    calls = []
+    _install_fake_openai(
+        monkeypatch,
+        '{"proposed_fr": "FR-01.02", "confidence": 0.7}',
+        calls,
+    )
+    adj = backfill_llm.OpenRouterAdjudicator(
+        "key", _routing_config(), lambda config, key: config["models"][key],
+    )
     payload = {"test_path": "t.ts", "test_title": "x", "candidate_frs": ["FR-01.02", "FR-01.03"]}
     resp = adj.adjudicate(payload)     # both models agree on FR-01.02 (in the candidate set)
     assert resp == {"proposed_fr": "FR-01.02", "confidence": 0.7, "auto_write": False}
+    assert calls[0]["model"] == "deepseek/deepseek-v4-pro"
+    assert calls[0]["extra_body"] == {
+        "provider": {
+            "only": ["novita", "together"],
+            "order": ["novita", "together"],
+            "allow_fallbacks": False,
+            "data_collection": "deny",
+            "zdr": True,
+        },
+    }
+    assert calls[1]["model"] == "openai/gpt-5.6-terra"
+    assert calls[1]["extra_body"] == {}
 
 
 def test_openrouter_adjudicate_out_of_set_fr_is_dropped(monkeypatch):
     _install_fake_openai(monkeypatch, '{"proposed_fr": "FR-09.09", "confidence": 0.9}')
-    adj = backfill_llm.OpenRouterAdjudicator("key", {}, lambda config, key: "some/model")
+    adj = backfill_llm.OpenRouterAdjudicator(
+        "key", _routing_config(), lambda config, key: config["models"][key],
+    )
     payload = {"test_path": "t.ts", "test_title": "x", "candidate_frs": ["FR-01.02"]}
     assert adj.adjudicate(payload)["proposed_fr"] is None      # FR-09.09 not in the candidate set
 
 
 def test_openrouter_ask_failure_is_swallowed(monkeypatch):
-    adj = backfill_llm.OpenRouterAdjudicator("key", {}, lambda config, key: "some/model")
+    adj = backfill_llm.OpenRouterAdjudicator(
+        "key", _routing_config(), lambda config, key: config["models"][key],
+    )
     monkeypatch.setattr(adj, "_ask", lambda k, p: (_ for _ in ()).throw(RuntimeError("boom")))
     payload = {"test_path": "t.ts", "test_title": "x", "candidate_frs": ["FR-01.02"]}
     assert adj.adjudicate(payload)["proposed_fr"] is None

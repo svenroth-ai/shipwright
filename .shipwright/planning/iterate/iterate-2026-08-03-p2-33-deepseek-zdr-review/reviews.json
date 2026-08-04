@@ -1,0 +1,214 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-08-03-p2-33-deepseek-zdr-review",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-04T06:13:50.607845+00:00",
+      "disposition": null,
+      "recorded_by": "codex-self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 10,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "The Acceptance Criteria specifies checking the \"exact outbound body\" for `provider.zdr` equaling `true`. While OpenRouter supports `data_collection: \"deny\"`, `order`, `only`, and `allow_fallbacks`, there is no `zdr` parameter in their official Chat Completions API schema. Including undocumented custom fields in the external OpenRouter payload may result in a `400 Bad Request` or silent routing failures.",
+          "suggestion": "Strip `zdr` (and any other internal verification metadata) from the final payload before making the OpenRouter network call. The ZDR verification should be a strict internal gate during config loading/policy building, not an outbound HTTP parameter.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "Step 2 introduces a \"configurable endpoint allowlist\" to build the canonical provider policy, but AC 2 mandates that the exact outbound body must equal `[\"novita\", \"together\"]`. If the routing test hardcodes this specific array, it will break immediately when the first EU endpoint is eventually added to the JSON configuration.",
+          "suggestion": "Have the test assert that the outbound `provider.only` and `provider.order` match the parsed output of the active `external_review.json` allowlist, rather than hardcoding the Novita/Together string literals in the test assertions.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The plan handles historical `gemini`/`openai` pairs and new `deepseek`/`openai` pairs. However, during the transition window, an existing review record might have a `gemini` verdict, and a subsequent partial run might append a `deepseek` verdict, resulting in a state with `gemini`, `deepseek`, and `openai` all present in a single record.",
+          "suggestion": "In Step 4 (verdict summarizer), explicitly define the precedence if both `gemini` and `deepseek` exist alongside `openai`. (e.g., ignore `gemini` if `deepseek` is present, or treat it as a contradiction if they disagree).  Overall Assessment: The overall strategy of preserving historical read compatibility while cleanly cutting over the write path and enforcing strict ZDR routing is sound. Refine the exact OpenRouter outbound payload to ensure no internal metadata is sent to the API, and the implementation is good to go.  SHIPWRIGHT_VERDICT: approve",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "security",
+          "file": null,
+          "line": null,
+          "finding": "The proposed configurable allowlist appears to trust configuration-supplied metadata (`processing region`, `zero-retention verification`) as sufficient proof that a provider is permitted. That would allow an arbitrary provider to become eligible merely by being labeled `US` and `verified: true`, which conflicts with the requirement that routing never reach an unlisted/unknown-retention provider and with the currently mandated exact provider set of `[\"novita\", \"together\"]`.",
+          "suggestion": "Make the production policy validate against a closed, code-owned set of approved provider slugs (`novita`, `together`) and require the shipping configuration to match it exactly, including order. The metadata can document the verification basis and support a future deliberately reviewed EU addition, but it should not itself authorize arbitrary provider slugs. Reject duplicates, omissions, additions, changed order, unsupported regions, and absent/false verification before creating the client request.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "The plan says to create “one canonical provider policy,” but does not explicitly require one canonical request-body builder used by both OpenRouter call sites. A shared validator plus separately assembled `extra_body` values can drift, especially for `provider.only`, `provider.order`, `allow_fallbacks`, `data_collection`, and `zdr`.",
+          "suggestion": "Have the helper return the complete DeepSeek-specific OpenRouter `extra_body` (or a strongly typed immutable representation of it), rather than only returning validated provider data. Both `llm_review._review_openrouter` and `external_review.review_with_openrouter` should consume that exact result, and the probe should invoke the same request-builder path.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The compatibility plan covers the two intended reviewer pairs, but does not call out mixed or ambiguous mappings such as `gemini` + `deepseek` + `openai`, `gemini` + `openai` plus a structurally valid extra reviewer, or a record containing `deepseek` with a `review_type: gemini`. These cases can accidentally cause a reader to select the wrong pair or silently reinterpret evidence.",
+          "suggestion": "Define pair selection explicitly: recognize the current and historical pairs only when their required entries are internally consistent; permit structurally valid additional entries without letting them alter the recognized pair; and fail closed for mixed-generation/ambiguous required-pair states. Add fixtures for the mixed-pair and extra-key cases in both marker and durable-record readers.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "The acceptance criteria require shipping configuration and built-in defaults to agree exactly on DeepSeek/GPT model identifiers and timeout, but the configuration-change description and test plan mention model lockstep without identifying the timeout’s canonical source or planned update. This risks passing a model-focused test while the two clients continue to use divergent timeout behavior.",
+          "suggestion": "Identify where each client’s timeout currently comes from, put the relevant DeepSeek/OpenRouter timeout in one authoritative shared config/default path, and add a lockstep test covering both model identifiers and timeout values for both clients.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "“Defer final canonical F0 until P1.12 is delivered on `origin/main`” introduces an external prerequisite that is neither described nor tied to this change’s acceptance criteria. It creates a risk that the change is integrated without its required canonical verification, or that unrelated work blocks a security-sensitive routing change indefinitely.",
+          "suggestion": "State precisely what P1.12 supplies and why it is required. If it is genuinely necessary, make it an explicit integration dependency and do not mark this change complete before the canonical F0 runs against the merged dependency. If it is only a cache/helper convenience, run the existing canonical verification now and keep the later synchronization as follow-up maintenance.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "security",
+          "file": null,
+          "line": null,
+          "finding": "The plan correctly avoids logging `OPENROUTER_API_KEY`, but the synthetic probe’s evidence file may still capture raw request/response content, selected-provider headers, exceptions, or environment-derived endpoint details. If the probe ever uses a realistic review payload, that could persist review content in a run-scoped artifact.",
+          "suggestion": "Use a fixed non-sensitive synthetic prompt, redact authorization and request headers, record only the policy summary/model/selected provider/status, and ensure failure serialization does not include client configuration or environment values. Keep the OpenRouter base URL fixed in code unless custom hosts are explicitly required; provider allowlist entries should not be accepted as arbitrary URLs.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The plan tests invalid configuration before network I/O, but does not explicitly cover a valid policy where OpenRouter returns an error, omits selected-provider metadata, or reports a selected provider outside the requested allowlist. These cases should not be represented as a successful DeepSeek review or a verified route.",
+          "suggestion": "Treat API routing failures as DeepSeek-arm unavailable/degraded. For the probe, require the selected-provider value when OpenRouter exposes it and mark the probe failed/degraded if it is absent or not one of the approved providers; do not infer route verification from a successful text response alone.  Overall, the identity migration and reader-only historical compatibility direction are sound, and the plan has strong test intent. It needs a closed authorization model for the ZDR provider set, an explicit shared request builder/timeout source, and resolution of the deferred canonical-verification dependency before implementation proceeds. SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "verdicts": {
+        "gemini": "approve",
+        "openai": "revise"
+      },
+      "completed_at": "2026-08-04T05:21:23.295099+00:00",
+      "disposition": null,
+      "recorded_by": "external-plan-review",
+      "parse_status": "structured",
+      "raw_excerpt": "[gemini] Here is a review of the implementation approach for the DeepSeek ZDR migration:\n\n- **Category:** risk\n- **Severity:** medium\n- **Finding:** The Acceptance Criteria specifies checking the \"exact outbound body\" for `provider.zdr` equaling `true`. While OpenRouter supports `data_collection: \"deny\"`, `order`, `only`, and `allow_fallbacks`, there is no `zdr` parameter in their official Chat Completions API schema. Including undocumented custom fields in the external OpenRouter payload may result in a `400 Bad Request` or silent routing failures.\n- **Suggestion:** Strip `zdr` (and any other internal verification metadata) from the final payload before making the OpenRouter network call. The ZDR verification should be a strict internal gate during config loading/policy building, not an outbound HTTP parameter.\n\n- **Category:** edge-case\n- **Severity:** low\n- **Finding:** Step 2 introduces a \"configurable endpoint allowlist\" to build the canonical provider policy, but AC 2 mandates that the exact outbound body must equal `[\"novita\", \"together\"]`. If the routing test hardcodes this specific array, it will break immediately when the first EU endpoint is eventually added to the JSON configuration.\n- **Suggestion:** Have the test assert that the outbound `provider.only` and `provider.order` match the parsed output of the active `external_review.json` allowlist, rather than hardcoding the Novita/Together string literals in the test assertions.\n\n- **Category:** edge-case\n- **Severity:** low\n- **Finding:** The plan handles historical `gemini`/`openai` pairs and new `deepseek`/`openai` pairs. However, during the transition window, an existing review record might have a `gemini` verdict, and a subsequent partial run might append a `deepseek` verdict, resulting in a state with `gemini`, `deepseek`, and `openai` all present in a single record. \n- **Suggestion:** In Step 4 (verdict summarizer), explicitly define the precedence if both `gemini` and `deepseek` exist alongsid […truncated]\n\n[openai] 1. **Category:** security  \n   **Severity:** high  \n   **Finding:** The proposed configurable allowlist appears to trust configuration-supplied metadata (`processing region`, `zero-retention verification`) as sufficient proof that a provider is permitted. That would allow an arbitrary provider to become eligible merely by being labeled `US` and `verified: true`, which conflicts with the requirement that routing never reach an unlisted/unknown-retention provider and with the currently mandated exact provider set of `[\"novita\", \"together\"]`.  \n   **Suggestion:** Make the production policy validate against a closed, code-owned set of approved provider slugs (`novita`, `together`) and require the shipping configuration to match it exactly, including order. The metadata can document the verification basis and support a future deliberately reviewed EU addition, but it should not itself authorize arbitrary provider slugs. Reject duplicates, omissions, additions, changed order, unsupported regions, and absent/false verification before creating the client request.\n\n2. **Category:** approach  \n   **Severity:** medium  \n   **Finding:** The plan says to create “one canonical provider policy,” but does not explicitly require one canonical request-body builder used by *both* OpenRouter call sites. A shared validator plus separately assembled `extra_body` values can drift, especially for `provider.only`, `provider.order`, `allow_fallbacks`, `data_collection`, and `zdr`.  \n   **Suggestion:** Have the helper return the complete DeepSeek-specific OpenRouter `extra_body` (or a strongly typed immutable representation of it), rather than only returning validated provider data. Both `llm_review._review_openrouter` and `external_review.review_with_openrouter` should consume that exact result, and the probe should invoke the same request-builder path.\n\n3. **Category:** edge-case  \n   **Severity:** medium  \n   **Finding:** The compatibility plan covers the two intended reviewer […truncated]"
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-04T06:28:39.000096+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-04T06:36:08.549554+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 4,
+      "findings": [
+        {
+          "severity": "low",
+          "category": "test",
+          "file": "shared/scripts/lib/llm_review.py` — the `run_review` function’s `direct` provider branch (lines where `reviews` is built with `deepseek` skipped and `openai` called directly).",
+          "line": null,
+          "finding": "There is no unit test that exercises `run_review` when only `OPENAI_API_KEY` is set (the “direct” path). The branch that constructs the `reviews` dict and invokes `_review_openai` is untested. A regression in this path could go undetected.",
+          "suggestion": "Add a test that sets `OPENAI_API_KEY`, mocks `_review_openai`, calls `run_review`, and asserts that the deepseek leg is skipped with the expected reason and the openai leg returns the mocked result.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": "shared/scripts/lib/llm_review.py` — inside `run_review`, the `non_success` list and `warnings` extension (around lines 260‑275).",
+          "line": null,
+          "finding": "The warnings list is populated with per‑arm failure details only when `success` is True. When every leg fails (`success` is False), the returned `warnings` list is left empty and `partial` is False. While the caller should inspect `reviews` directly, the absence of per‑arm diagnostic strings in the top‑level `warnings` field could surprise consumers that always check `warnings` for partial‑failure details.",
+          "suggestion": "Consider always extending `warnings` with non‑success arm information regardless of the `success` flag, so the top‑level message always reflects which arms did not succeed, and leave `partial` to be derived from `success` and the number of succeeded arms.  Overall assessment: The change thoroughly implements the spec, with strong routing validation, identity locking, backward‑compatible verdict handling, and sanitized live probing. The defects identified are minor and do not block release. Ship as‑is.  SHIPWRIGHT_VERDICT: approve",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "bug",
+          "file": "shared/scripts/tools/external_review.py:100` — The `_KNOWN_PLACEHOLDERS` assignment starts a normal quoted string with `\"# Iterate Spec: ...` and then embeds the full multi-line spec without triple quotes or escapes. This is invalid Python source, so importing/running the external-review CLI raises a `SyntaxError` before any DeepSeek/OpenAI routing behavior can execute.",
+          "line": null,
+          "finding": "Remove the accidentally embedded spec text and restore `_KNOWN_PLACEHOLDERS` to a tuple of placeholder tokens only (for example `(\"{PLAN}\", \"{DIFF}\", \"{CONTENT}\", \"{CONTEXT}\")`). Run a syntax/collection check on the changed Python files.",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "test",
+          "file": "shared/tests/test_deepseek_review_routing.py:88` — The new test passes a prompt beginning `\"{PLAN} # Iterate Spec: ...` followed by raw multi-line Markdown outside a triple-quoted literal. This makes the test module unparseable, so the routing-contract tests cannot be collected or provide the intended acceptance-criteria coverage. The same malformed prompt insertion is also visible in […truncated]",
+          "line": null,
+          "finding": "Replace these accidental full-spec insertions with the intended short prompt template (such as `\"{PLAN}\"` or `\"{PLAN} {SPEC}\"`), then run the affected pytest roots to ensure collection succeeds.  Overall assessment: ship-with-fixes. The routing design appears aimed at the required fail-closed behavior, but the committed source/test syntax corruption prevents the external-review implementation and its validation suite from running at all.  SHIPWRIGHT_VERDICT: revise",
+          "suggestion": null,
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "verdicts": {
+        "deepseek": "approve",
+        "openai": "revise"
+      },
+      "completed_at": "2026-08-04T07:04:20.736406+00:00",
+      "disposition": null,
+      "recorded_by": "external-code-review",
+      "parse_status": "structured",
+      "raw_excerpt": "[deepseek] - Category: test\n- Severity: low\n- File: `shared/scripts/lib/llm_review.py` — the `run_review` function’s `direct` provider branch (lines where `reviews` is built with `deepseek` skipped and `openai` called directly).\n- Finding: There is no unit test that exercises `run_review` when only `OPENAI_API_KEY` is set (the “direct” path). The branch that constructs the `reviews` dict and invokes `_review_openai` is untested. A regression in this path could go undetected.\n- Suggestion: Add a test that sets `OPENAI_API_KEY`, mocks `_review_openai`, calls `run_review`, and asserts that the deepseek leg is skipped with the expected reason and the openai leg returns the mocked result.\n\n- Category: edge-case\n- Severity: low\n- File: `shared/scripts/lib/llm_review.py` — inside `run_review`, the `non_success` list and `warnings` extension (around lines 260‑275).\n- Finding: The warnings list is populated with per‑arm failure details only when `success` is True. When every leg fails (`success` is False), the returned `warnings` list is left empty and `partial` is False. While the caller should inspect `reviews` directly, the absence of per‑arm diagnostic strings in the top‑level `warnings` field could surprise consumers that always check `warnings` for partial‑failure details.\n- Suggestion: Consider always extending `warnings` with non‑success arm information regardless of the `success` flag, so the top‑level message always reflects which arms did not succeed, and leave `partial` to be derived from `success` and the number of succeeded arms.\n\nOverall assessment: The change thoroughly implements the spec, with strong routing validation, identity locking, backward‑compatible verdict handling, and sanitized live probing. The defects identified are minor and do not block release. Ship as‑is.\n\nSHIPWRIGHT_VERDICT: approve\n\n[openai] - Category: bug\n- Severity: high\n- File: `shared/scripts/tools/external_review.py:100` — The `_KNOWN_PLACEHOLDERS` assignment starts a normal quoted string with `\"# Iterate Spec: ...` and then embeds the full multi-line spec without triple quotes or escapes. This is invalid Python source, so importing/running the external-review CLI raises a `SyntaxError` before any DeepSeek/OpenAI routing behavior can execute.\n- Suggestion: Remove the accidentally embedded spec text and restore `_KNOWN_PLACEHOLDERS` to a tuple of placeholder tokens only (for example `(\"{PLAN}\", \"{DIFF}\", \"{CONTENT}\", \"{CONTEXT}\")`). Run a syntax/collection check on the changed Python files.\n\n- Category: test\n- Severity: high\n- File: `shared/tests/test_deepseek_review_routing.py:88` — The new test passes a prompt beginning `\"{PLAN} # Iterate Spec: ...` followed by raw multi-line Markdown outside a triple-quoted literal. This makes the test module unparseable, so the routing-contract tests cannot be collected or provide the intended acceptance-criteria coverage. The same malformed prompt insertion is also visible in other changed test calls.\n- Suggestion: Replace these accidental full-spec insertions with the intended short prompt template (such as `\"{PLAN}\"` or `\"{PLAN} {SPEC}\"`), then run the affected pytest roots to ensure collection succeeds.\n\nOverall assessment: ship-with-fixes. The routing design appears aimed at the required fail-closed behavior, but the committed source/test syntax corruption prevents the external-review implementation and its validation suite from running at all.\n\nSHIPWRIGHT_VERDICT: revise"
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-04T06:23:07.571368+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    }
+  }
+}

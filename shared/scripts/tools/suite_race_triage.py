@@ -148,6 +148,7 @@ def emit_race_followups(project_root, races, xdist_ids, *,
                 window_seconds=None,     # one open entry until an operator closes it
                 launch_payload=launch_payload(f, suite_cmd),
                 suite_id=f.unit_key,
+                evidence_path=getattr(res, "evidence_path", None),
                 to_outbox=False,         # tracked: F6 stages it, it ships in the PR
             )
         except Exception as exc:  # noqa: BLE001 - a lost record must be REPORTED

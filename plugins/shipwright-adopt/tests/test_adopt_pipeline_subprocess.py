@@ -160,7 +160,7 @@ def test_full_pipeline_e2e_via_subprocess(tmp_path: Path) -> None:
     env_text = env_local.read_text(encoding="utf-8")
     # Framework keys land regardless of the active profile (vite-hono has
     # no required_env_vars block, so these come from _SHIPWRIGHT_FRAMEWORK_VARS).
-    for key in ("OPENROUTER_API_KEY", "GEMINI_API_KEY", "OPENAI_API_KEY"):
+    for key in ("OPENROUTER_API_KEY", "OPENAI_API_KEY"):
         assert f"# {key}=" in env_text, f"Framework key {key} missing from .env.local"
     # Documented payload shape from AC1/AC8 — locks in deterministic
     # consumption by the Step H banner. A future regression that drops
@@ -170,16 +170,16 @@ def test_full_pipeline_e2e_via_subprocess(tmp_path: Path) -> None:
     assert "path" in env_payload, "missing 'path' in env_local payload"
     assert env_payload["path"].replace("\\", "/").endswith("/.env.local")
     assert "vars" in env_payload, "missing 'vars' in env_local payload"
-    # vars must contain at minimum the framework triple, in fallback order.
+    # vars must contain the framework pair in fallback order.
     fw_in_vars = [v for v in env_payload["vars"]
-                  if v in {"OPENROUTER_API_KEY", "GEMINI_API_KEY", "OPENAI_API_KEY"}]
-    assert fw_in_vars == ["OPENROUTER_API_KEY", "GEMINI_API_KEY", "OPENAI_API_KEY"]
+                  if v in {"OPENROUTER_API_KEY", "OPENAI_API_KEY"}]
+    assert fw_in_vars == ["OPENROUTER_API_KEY", "OPENAI_API_KEY"]
     assert env_payload["framework_keys"] == [
-        "OPENROUTER_API_KEY", "GEMINI_API_KEY", "OPENAI_API_KEY",
+        "OPENROUTER_API_KEY", "OPENAI_API_KEY",
     ]
     # Every key is placeholder-empty on first scaffold.
     assert set(env_payload["missing_keys"]) >= {
-        "OPENROUTER_API_KEY", "GEMINI_API_KEY", "OPENAI_API_KEY",
+        "OPENROUTER_API_KEY", "OPENAI_API_KEY",
     }
     # .gitignore is enforced before the file is written.
     gi = (tmp_path / ".gitignore").read_text(encoding="utf-8")
@@ -388,7 +388,7 @@ def test_pipeline_env_local_idempotent_on_rerun(tmp_path: Path) -> None:
     # an unchanged rerun when entries are still placeholder-only. Locks in
     # the contract so the user is still prompted to fill in keys.
     assert set(payload2["env_local"]["missing_keys"]) >= {
-        "OPENROUTER_API_KEY", "GEMINI_API_KEY", "OPENAI_API_KEY",
+        "OPENROUTER_API_KEY", "OPENAI_API_KEY",
     }, "unchanged rerun must still surface placeholder keys via missing_keys"
     # File preserved BYTE-for-byte (tests against trailing-newline / whitespace
     # churn that subtle formatting bugs would introduce on re-run).
@@ -430,18 +430,18 @@ def test_pipeline_env_local_appends_missing_keys(tmp_path: Path) -> None:
     assert r.returncode == 0, f"adopt run failed: {r.stderr[-1000:]}"
     payload = json.loads(r.stdout[r.stdout.find("{"):])
     assert payload["env_local"]["action"] == "updated"
-    # Only GEMINI + OPENAI were appended; OPENROUTER already present.
+    # Only direct OPENAI was appended; OPENROUTER already present.
     added = set(payload["env_local"].get("added", []))
     assert "OPENROUTER_API_KEY" not in added
-    assert {"GEMINI_API_KEY", "OPENAI_API_KEY"} <= added
+    assert added == {"OPENAI_API_KEY"}
 
     final = (tmp_path / ".env.local").read_text(encoding="utf-8")
     # User content preserved verbatim
     assert "# User notes — do not delete" in final
     assert "OPENROUTER_API_KEY=sk-or-v1-real-secret" in final
     assert "MY_PERSONAL_THING=keep-me" in final
-    # Newly added framework keys present (commented placeholders).
-    assert "# GEMINI_API_KEY=" in final
+    # Newly added framework key present (commented placeholder).
+    assert "# GEMINI_API_KEY=" not in final
     assert "# OPENAI_API_KEY=" in final
     # missing_keys must NOT include OPENROUTER (it has a real value).
     assert "OPENROUTER_API_KEY" not in payload["env_local"]["missing_keys"]

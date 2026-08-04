@@ -39,6 +39,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from _review_cli_harness import (  # noqa: E402
     CODE_REVIEWER_REPLY,
     DOUBT_REVIEWER_REPLY,
+    EXTERNAL_REVIEW_OUTPUT,
     RUN_ID,
     make_project,
     payload,
@@ -77,11 +78,18 @@ def campaign_root(tmp_path: Path) -> Path:
     for review_type, status, extra in (
         ("self", "completed", ["--recorded-by", "self-review"]),
         ("plan", "completed", ["--recorded-by", "plan-review",
-                               "--marker-status", "completed",
-                               "--provider", "openrouter"]),
+                                "--marker-status", "completed",
+                                "--provider", "openrouter",
+                                "--from", "external-review-json",
+                                "--payload-file", payload(
+                                    tmp_path, "plan.json", EXTERNAL_REVIEW_OUTPUT)]),
         ("external_code", "completed", ["--recorded-by", "external-review",
-                                        "--marker-status", "completed",
-                                        "--provider", "openrouter"]),
+                                         "--marker-status", "completed",
+                                         "--provider", "openrouter",
+                                         "--from", "external-review-json",
+                                         "--payload-file", payload(
+                                             tmp_path, "code.json",
+                                             EXTERNAL_REVIEW_OUTPUT)]),
     ):
         rc, out = run_tool(root, "record", "--review-type", review_type,
                            "--status", status, *extra)

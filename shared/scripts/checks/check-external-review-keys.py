@@ -47,7 +47,7 @@ def main() -> int:
 
     providers = {
         "openrouter": bool(os.environ.get("OPENROUTER_API_KEY")),
-        "gemini": bool(os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_API_KEY")),
+        "deepseek": bool(os.environ.get("OPENROUTER_API_KEY")),
         "openai": bool(os.environ.get("OPENAI_API_KEY")),
     }
 

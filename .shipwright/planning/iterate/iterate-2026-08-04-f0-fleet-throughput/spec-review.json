@@ -1,0 +1,6 @@
+{
+  "stage": "spec-compliance",
+  "verdict": "PASS",
+  "spec_citations": [],
+  "summary": "Both Stage-1 divergences are resolved: the fleet replay now retains all 54 measured unit durations and recomputed candidate metrics, and the integrated cancellation probe traverses the real coverage/CPU lock stack, verifies unwind, immediate reacquisition, and stale coverage reset. No new spec divergence was introduced."
+}

@@ -96,7 +96,7 @@ If no findings: return `{"section": "<name>", "review": []}`.
 
 ## External LLM Review (optional)
 
-If `OPENROUTER_API_KEY` (or `GEMINI_API_KEY`/`OPENAI_API_KEY`) is set, supplement your
+If `OPENROUTER_API_KEY` (or direct `OPENAI_API_KEY`) is set, supplement your
 review with an external LLM review using `shared/scripts/lib/llm_review.py`:
 
 ```bash

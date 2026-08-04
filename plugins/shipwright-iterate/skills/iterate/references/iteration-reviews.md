@@ -289,7 +289,7 @@ For build (per-section opt-in, default off) see
 ### Operator Warning — Diff Exposure
 
 Enabling the external code-review cascade transmits the staged diff to
-a third-party LLM provider (OpenRouter, Gemini direct, or OpenAI direct,
+a third-party LLM provider (OpenRouter or OpenAI direct,
 depending on which keys are configured). Diffs are higher-risk than
 plans because they may contain secrets, customer data, or code under
 restrictive license terms accidentally checked into the patch. If those
@@ -310,7 +310,7 @@ uv run "{shared_root}/scripts/tools/external_review.py" \
   --plugin-root "{plan_plugin_root}"
 ```
 
-Parse `reviews.gemini.feedback` + `reviews.openai.feedback`. Merge any
+Parse `reviews.deepseek.feedback` + `reviews.openai.feedback`. Merge any
 high/medium-severity findings into the iterate ADR's
 `External-Code-Review-Findings` table. Address before commit (apply fix,
 rerun tests) — same disposition pattern as the mini-plan-review block:
@@ -332,8 +332,8 @@ re-check keys (Option 1) or fall back to self-review and record the opt-out
 STOP and ask the user verbatim:
 
 > External LLM code-review is the recommended cascade for this medium+
-> shared-infra change, but no `OPENROUTER_API_KEY` (or
-> `GEMINI_API_KEY` / `OPENAI_API_KEY`) was found in `.env.local`.
+> shared-infra change, but no `OPENROUTER_API_KEY` or
+> `OPENAI_API_KEY` was found in `.env.local`.
 >
 > **Option 1 (recommended):** Add a key to `.env.local` and say "ready" —
 > I'll re-check and run the cascade.
@@ -462,6 +462,16 @@ uv run "{shared_root}/scripts/tools/record_review_pass.py" record \
   --payload-file "{path to the reply}" \
   [--provider openrouter] [--marker-status completed]
 ```
+
+For `external-review-json`, the recorder reads the payload once, then derives
+both findings and each reviewer verdict from that in-memory snapshot. It stores
+the validated pair on the authoritative review row and writes the companion
+marker from that same pair. An operator's `--contradiction-resolution` is stored
+beside the verdicts, so `repair-markers` cannot lose the decision. A current envelope
+must be `deepseek`/`openai`; an implicit historical envelope remains readable
+as `gemini`/`openai`. A completed current marker without both verdicts blocks.
+Record and marker status are bound: a completed record can only write or repair
+a completed marker, while a skipped marker cannot carry reviewer evidence.
 
 | Pass | `--review-type` | `--from` | payload |
 |---|---|---|---|

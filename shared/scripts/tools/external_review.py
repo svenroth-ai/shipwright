@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
-"""External LLM review CLI — Gemini + OpenAI in parallel (shared across plugins).
+"""External LLM review CLI — DeepSeek + OpenAI in parallel.
 
 Supports three review providers:
 1. OpenRouter (recommended): one OPENROUTER_API_KEY for both models
-2. Direct keys: GEMINI_API_KEY + OPENAI_API_KEY separately
+2. Direct OpenAI: DeepSeek is explicitly unavailable; GPT uses OPENAI_API_KEY
 3. Skip: no keys → review skipped gracefully
 
-Fallback chain: OpenRouter → direct keys → skip
+DeepSeek never falls back to Gemini or a direct provider.
 
 Usage (plan / iterate modes):
     uv run shared/scripts/tools/external_review.py \\
@@ -34,17 +34,18 @@ Mode → primary-input mapping:
 
 Output (JSON):
     {
+        "review_schema": 2,  // v1 was implicit and used gemini/openai
         "success": true/false,
         "provider": "openrouter" | "direct" | "none",
         "skipped": "empty_diff",  // optional, code-mode only
         "reviews": {
-            "gemini": { "status": "success|error|skipped", "feedback": "..." },
+            "deepseek": { "status": "success|error|skipped", "feedback": "..." },
             "openai": { "status": "success|error|skipped", "feedback": "..." }
         },
         // Both reviewers' verdicts, read from the SHIPWRIGHT_VERDICT sentinel,
         // plus the deterministic comparison. Present on every exit path.
-        "verdicts":  { "gemini": "approve", "openai": "reject" },
-        "statuses":  { "gemini": "success", "openai": "success" },
+        "verdicts":  { "deepseek": "approve", "openai": "reject" },
+        "statuses":  { "deepseek": "success", "openai": "success" },
         "contradiction": {
             "detected": true, "comparable": true,
             "requires_resolution": true, "reason": "..."
@@ -52,10 +53,9 @@ Output (JSON):
     }
 
 This is the consolidated successor of
-``plugins/shipwright-plan/scripts/llm_clients/review.py`` — the logic is
-copied verbatim except for the import paths, model resolution (now goes
-through ``resolve_model`` for env-var override support), and prompt loading
-(per-mode helpers from ``lib.external_review_prompts``).
+``plugins/shipwright-plan/scripts/llm_clients/review.py``. Prompt loading uses
+per-mode helpers from ``lib.external_review_prompts``; reviewer/model
+identities are validated against fixed bindings before client construction.
 """
 
 import argparse
@@ -76,25 +76,29 @@ from env import load_shipwright_env  # type: ignore[import-not-found]
 
 load_shipwright_env()
 
-from external_review_config import load_review_config, resolve_model  # noqa: E402
-from external_review_degraded import DEFAULT_TIMEOUT_SECONDS, MAX_OUTPUT_TOKENS, classify_reply, finalize_review_output, gemini_finish_reason, gemini_generate, openai_finish_reason, openrouter_extra_body  # noqa: E402
+from external_review_config import load_review_config  # noqa: E402
+from external_review_degraded import (  # noqa: E402
+    DEFAULT_TIMEOUT_SECONDS,
+    MAX_OUTPUT_TOKENS,
+    REVIEW_ENVELOPE_SCHEMA,
+    classify_reply,
+    finalize_review_output,
+    openai_finish_reason,
+)
 from external_review_prompts import (  # noqa: E402
     default_review_prompts,
     load_code_review_prompts,
     load_iterate_review_prompts,
     load_plan_review_prompts,
 )
+from external_review_routing import (  # noqa: E402
+    openrouter_extra_body,
+    resolve_reviewer_model,
+)
 from review_verdict import summarize_reviews  # noqa: E402
 
 
 OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1"
-
-
-def _import_genai():
-    """Lazy google-genai import (a seam so tests can substitute it)."""
-    from google import genai
-    return genai
-
 
 _KNOWN_PLACEHOLDERS = ("{PLAN}", "{DIFF}", "{SPEC}")
 _PLACEHOLDER_RE = re.compile(r"\{[A-Z][A-Z_]*\}")
@@ -139,10 +143,8 @@ def review_with_openrouter(
     try:
         from openai import OpenAI
 
-        if model_key == "gemini":
-            model_name = resolve_model(config, "openrouter_gemini")
-        else:
-            model_name = resolve_model(config, "openrouter_chatgpt")
+        model_name = resolve_reviewer_model(config, model_key, "openrouter")
+        extra_body = openrouter_extra_body(model_key, config)
 
         timeout = config.get("llm_client", {}).get("timeout_seconds", DEFAULT_TIMEOUT_SECONDS)
 
@@ -161,7 +163,7 @@ def review_with_openrouter(
                 {"role": "user", "content": prompt},
             ],
             max_tokens=MAX_OUTPUT_TOKENS,
-            extra_body=openrouter_extra_body(model_key),
+            extra_body=extra_body,
         )
 
         return classify_reply(response.choices[0].message.content, openai_finish_reason(response), via="openrouter")
@@ -170,32 +172,6 @@ def review_with_openrouter(
         return {"status": "error", "reason": "openai package not installed"}
     except Exception as e:
         return {"status": "error", "reason": str(e)}
-
-
-def review_with_gemini(
-    plan: str, spec: str, system_prompt: str, user_prompt: str, config: dict
-) -> dict:
-    """Send plan for review to Gemini (direct API)."""
-    api_key = os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_API_KEY")
-    if not api_key:
-        return {"status": "skipped", "reason": "No GEMINI_API_KEY set"}
-
-    try:
-        genai = _import_genai()
-
-        model_name = resolve_model(config, "gemini")
-        # http_options.timeout is MILLISECONDS; timeout_seconds is seconds.
-        client = genai.Client(api_key=api_key, http_options={"timeout": config.get("llm_client", {}).get("timeout_seconds", DEFAULT_TIMEOUT_SECONDS) * 1000})
-        prompt = _render_user_prompt(user_prompt, plan, spec)
-        response, note = gemini_generate(genai, client, model_name, prompt, system_prompt)
-        out = classify_reply(response.text, gemini_finish_reason(response), via="direct")
-        return {**out, "reasoning_cap_dropped": note} if note else out
-
-    except ImportError:
-        return {"status": "error", "reason": "google-genai package not installed"}
-    except Exception as e:
-        return {"status": "error", "reason": str(e)}
-
 
 def review_with_openai(
     plan: str, spec: str, system_prompt: str, user_prompt: str, config: dict
@@ -208,7 +184,7 @@ def review_with_openai(
     try:
         from openai import OpenAI
 
-        model_name = resolve_model(config, "chatgpt")
+        model_name = resolve_reviewer_model(config, "openai", "direct")
         timeout = config.get("llm_client", {}).get("timeout_seconds", DEFAULT_TIMEOUT_SECONDS)
 
         client = OpenAI(api_key=api_key, timeout=timeout)
@@ -236,15 +212,12 @@ def review_with_openai(
 def detect_provider() -> str:
     """Detect which review provider to use.
 
-    Fallback chain: openrouter → direct → none
+    Fallback chain: OpenRouter → direct OpenAI → none.
     """
     if os.environ.get("OPENROUTER_API_KEY"):
         return "openrouter"
 
-    has_gemini = bool(os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_API_KEY"))
-    has_openai = bool(os.environ.get("OPENAI_API_KEY"))
-
-    if has_gemini or has_openai:
+    if os.environ.get("OPENAI_API_KEY"):
         return "direct"
 
     return "none"
@@ -315,14 +288,22 @@ def main() -> int:
     if not primary_path.exists():
         print(
             json.dumps(
-                {"success": False, "error": f"{primary_label} not found: {primary_path}"},
+                {
+                    "review_schema": REVIEW_ENVELOPE_SCHEMA,
+                    "success": False,
+                    "error": f"{primary_label} not found: {primary_path}",
+                },
                 indent=2,
             )
         )
         return 1
 
     if not spec_path.exists():
-        print(json.dumps({"success": False, "error": f"Spec not found: {spec_path}"}, indent=2))
+        print(json.dumps({
+            "review_schema": REVIEW_ENVELOPE_SCHEMA,
+            "success": False,
+            "error": f"Spec not found: {spec_path}",
+        }, indent=2))
         return 1
 
     primary_text = primary_path.read_text(encoding="utf-8")
@@ -332,10 +313,11 @@ def main() -> int:
     # review what isn't there, and many providers reject empty inputs.
     if args.mode == "code" and not primary_text.strip():
         empty_reviews = {
-            "gemini": {"status": "skipped", "reason": "empty diff"},
+            "deepseek": {"status": "skipped", "reason": "empty diff"},
             "openai": {"status": "skipped", "reason": "empty diff"},
         }
         print(json.dumps({
+            "review_schema": REVIEW_ENVELOPE_SCHEMA,
             "success": True,
             "skipped": "empty_diff",
             "provider": "none",
@@ -368,7 +350,7 @@ def main() -> int:
         # Both reviews via OpenRouter (one API key)
         with ThreadPoolExecutor(max_workers=2) as executor:
             futures = {
-                executor.submit(review_with_openrouter, primary_text, spec, system_prompt, user_prompt, config, "gemini"): "gemini",
+                executor.submit(review_with_openrouter, primary_text, spec, system_prompt, user_prompt, config, "deepseek"): "deepseek",
                 executor.submit(review_with_openrouter, primary_text, spec, system_prompt, user_prompt, config, "openai"): "openai",
             }
             for future in as_completed(futures):
@@ -379,23 +361,21 @@ def main() -> int:
                     reviews[name] = {"status": "error", "reason": str(e)}
 
     elif provider == "direct":
-        # Direct API keys (original behavior)
-        with ThreadPoolExecutor(max_workers=2) as executor:
-            futures = {
-                executor.submit(review_with_gemini, primary_text, spec, system_prompt, user_prompt, config): "gemini",
-                executor.submit(review_with_openai, primary_text, spec, system_prompt, user_prompt, config): "openai",
-            }
-            for future in as_completed(futures):
-                name = futures[future]
-                try:
-                    reviews[name] = future.result()
-                except Exception as e:
-                    reviews[name] = {"status": "error", "reason": str(e)}
+        # DeepSeek has no direct route. Preserve GPT's existing direct path.
+        reviews = {
+            "deepseek": {
+                "status": "skipped",
+                "reason": "DeepSeek requires an approved OpenRouter ZDR endpoint",
+            },
+            "openai": review_with_openai(
+                primary_text, spec, system_prompt, user_prompt, config
+            ),
+        }
 
     else:
         # No keys — both reviews skipped
         reviews = {
-            "gemini": {"status": "skipped", "reason": "No GEMINI_API_KEY or OPENROUTER_API_KEY set"},
+            "deepseek": {"status": "skipped", "reason": "No OPENROUTER_API_KEY set"},
             "openai": {"status": "skipped", "reason": "No OPENAI_API_KEY or OPENROUTER_API_KEY set"},
         }
 

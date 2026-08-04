@@ -16,7 +16,6 @@ import sys
 from pathlib import Path
 
 from lib.review_marker import (
-    MARKER_SCHEMA,
     STATE_BLOCK,
     STATE_LEGACY,
     STATE_OK,
@@ -130,7 +129,7 @@ def test_an_incomplete_verdict_pair_blocks():
         "status": "completed", "verdicts": {"gemini": "approve"},
     })
     assert state == STATE_BLOCK
-    assert "expected verdicts from gemini, openai" in reason
+    assert "historical gemini/openai" in reason
 
 
 def test_verdicts_from_reviewers_that_never_ran_do_not_satisfy_the_gate():
@@ -199,14 +198,14 @@ def test_a_completed_review_with_no_verdicts_is_legacy_not_ok():
 def test_verdicts_round_trip_through_the_marker(tmp_path):
     code, out = _run_mark(
         tmp_path, "--status", "completed", "--provider", "openrouter",
-        "--verdict", "gemini=approve", "--verdict", "openai=reject",
+        "--verdict", "deepseek=approve", "--verdict", "openai=reject",
     )
     assert code == 0
     state = out["state"]
-    assert state["verdicts"] == {"gemini": "approve", "openai": "reject"}
+    assert state["verdicts"] == {"deepseek": "approve", "openai": "reject"}
     assert state["contradiction"]["detected"] is True
     assert state["contradiction"]["requires_resolution"] is True
-    assert state["marker_schema"] == MARKER_SCHEMA
+    assert state["marker_schema"] == 3
     # …and the written file says the same thing.
     written = json.loads(Path(out["marker_path"]).read_text(encoding="utf-8"))
     assert written["contradiction"] == state["contradiction"]
@@ -215,7 +214,7 @@ def test_verdicts_round_trip_through_the_marker(tmp_path):
 def test_a_written_contradiction_blocks_the_gate(tmp_path):
     _run_mark(
         tmp_path, "--status", "completed",
-        "--verdict", "gemini=approve", "--verdict", "openai=reject",
+        "--verdict", "deepseek=approve", "--verdict", "openai=reject",
     )
     marker = json.loads((tmp_path / "external_review_state.json").read_text(encoding="utf-8"))
     assert evaluate_review_state(marker)[0] == STATE_BLOCK
@@ -224,7 +223,7 @@ def test_a_written_contradiction_blocks_the_gate(tmp_path):
 def test_resolution_passed_on_the_cli_clears_it(tmp_path):
     _run_mark(
         tmp_path, "--status", "completed",
-        "--verdict", "gemini=approve", "--verdict", "openai=reject",
+        "--verdict", "deepseek=approve", "--verdict", "openai=reject",
         "--contradiction-resolution", "kept the plan; openai misread the split boundary",
     )
     marker = json.loads((tmp_path / "external_review_state.json").read_text(encoding="utf-8"))
@@ -234,7 +233,7 @@ def test_resolution_passed_on_the_cli_clears_it(tmp_path):
 def test_agreeing_verdicts_need_no_resolution(tmp_path):
     _run_mark(
         tmp_path, "--status", "completed",
-        "--verdict", "gemini=approve", "--verdict", "openai=revise",
+        "--verdict", "deepseek=approve", "--verdict", "openai=revise",
     )
     marker = json.loads((tmp_path / "external_review_state.json").read_text(encoding="utf-8"))
     assert marker["contradiction"]["requires_resolution"] is False
@@ -244,7 +243,7 @@ def test_agreeing_verdicts_need_no_resolution(tmp_path):
 def test_an_unreadable_verdict_requires_a_decision(tmp_path):
     _run_mark(
         tmp_path, "--status", "completed",
-        "--verdict", "gemini=approve", "--verdict", "openai=unknown",
+        "--verdict", "deepseek=approve", "--verdict", "openai=unknown",
     )
     marker = json.loads((tmp_path / "external_review_state.json").read_text(encoding="utf-8"))
     assert marker["contradiction"]["requires_resolution"] is True
@@ -253,7 +252,7 @@ def test_an_unreadable_verdict_requires_a_decision(tmp_path):
 def test_one_silent_reviewer_requires_a_decision(tmp_path):
     _run_mark(
         tmp_path, "--status", "completed",
-        "--verdict", "gemini=approve", "--verdict", "openai=unavailable",
+        "--verdict", "deepseek=approve", "--verdict", "openai=unavailable",
     )
     marker = json.loads((tmp_path / "external_review_state.json").read_text(encoding="utf-8"))
     assert marker["contradiction"]["requires_resolution"] is True
@@ -268,7 +267,7 @@ def test_an_unknown_reviewer_name_is_rejected(tmp_path):
 def test_the_same_reviewer_twice_is_rejected_not_overwritten(tmp_path):
     code, out = _run_mark(
         tmp_path, "--status", "completed",
-        "--verdict", "gemini=reject", "--verdict", "gemini=approve",
+        "--verdict", "deepseek=reject", "--verdict", "deepseek=approve",
     )
     assert code == 2
     assert "twice" in out["message"]
@@ -276,19 +275,19 @@ def test_the_same_reviewer_twice_is_rejected_not_overwritten(tmp_path):
 
 def test_a_bad_verdict_word_is_rejected_not_coerced(tmp_path):
     code, out = _run_mark(
-        tmp_path, "--status", "completed", "--verdict", "gemini=looks-good",
+        tmp_path, "--status", "completed", "--verdict", "deepseek=looks-good",
     )
     assert code == 2
     assert out["error"] == "invalid_verdict"
 
 
 def test_malformed_verdict_pair_is_rejected(tmp_path):
-    code, out = _run_mark(tmp_path, "--status", "completed", "--verdict", "gemini")
+    code, out = _run_mark(tmp_path, "--status", "completed", "--verdict", "deepseek")
     assert code == 2
     assert out["error"] == "invalid_verdict"
 
 
-def test_omitting_the_verdict_flags_is_legacy_not_a_pass(tmp_path):
+def test_omitting_the_verdict_flags_from_a_current_marker_blocks(tmp_path):
     """The flags are optional at the CLI so the skip branches still work, but
     a *completed* review that recorded none cannot be read as clear —
     otherwise the whole disagreement check is opt-out by omission."""
@@ -296,7 +295,7 @@ def test_omitting_the_verdict_flags_is_legacy_not_a_pass(tmp_path):
     assert code == 0
     assert out["state"]["verdicts"] is None
     assert out["state"]["contradiction"] is None
-    assert evaluate_review_state(out["state"])[0] == STATE_LEGACY
+    assert evaluate_review_state(out["state"])[0] == STATE_BLOCK
 
 
 def test_a_skip_needs_no_verdicts(tmp_path):

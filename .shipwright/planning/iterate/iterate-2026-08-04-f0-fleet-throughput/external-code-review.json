@@ -1,0 +1,13 @@
+{
+  "success": true,
+  "provider": "openrouter",
+  "degraded": false,
+  "reviews": {
+    "openai": {
+      "feedback": "SHIPWRIGHT_VERDICT: revise\nCategory: Correctness / Severity: HIGH / Finding: attempt.log can grow without bound during execution because the cap is applied only after the child exits.\nCategory: Verification / Severity: HIGH / Finding: the native Windows test must prove the actual uv to pytest to xdist workers to exited intermediate to grandchild tree.\nCategory: Correctness / Severity: MEDIUM / Finding: retry lifecycle lines must distinguish authoritative serial retry from identical-shape infrastructure retry.\nCategory: Evidence / Severity: MEDIUM / Finding: diagnostic filenames based only on run, unit, and phase can overwrite separate events.\nCategory: Delivery / Severity: MEDIUM / Finding: review cascade and immutable F5c evidence remain required before delivery."
+    },
+    "gemini": {
+      "feedback": "SHIPWRIGHT_VERDICT: revise\nCategory: Correctness / Severity: HIGH / Finding: live output capture is not bounded while the subprocess is running.\nCategory: Verification / Severity: HIGH / Finding: the Windows descendant-cleanup probe does not yet cover the requested native uv/pytest/xdist topology.\nCategory: Correctness / Severity: MEDIUM / Finding: retry shape is not named in lifecycle output.\nCategory: Evidence / Severity: MEDIUM / Finding: repeated diagnostic writes can collide.\nCategory: Correctness / Severity: LOW / Finding: suite_report.clean appears undefined."
+    }
+  }
+}

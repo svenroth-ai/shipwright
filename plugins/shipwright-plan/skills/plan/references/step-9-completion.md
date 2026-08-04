@@ -106,7 +106,7 @@ SHIPWRIGHT-PLAN COMPLETE
 ================================================================================
 Plan:         {planning_dir}/plan.md
 Sections:     {N} sections generated
-Review:       {external via OpenRouter/Gemini/OpenAI | self-review fallback (user opt-out) | self-review fallback (config opt-out)}
+Review:       {external via OpenRouter DeepSeek/OpenAI | direct OpenAI only | self-review fallback (user opt-out) | self-review fallback (config opt-out)}
 E2E Plan:     {generated | skipped}
 
 Section files:

@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Get the plan reviewed by external LLMs (Gemini + OpenAI) to catch blind spots.
+Get the plan reviewed by external LLMs (DeepSeek + OpenAI) to catch blind spots.
 Claude reviewing its own plan misses systematic biases — external models help.
 
 External review is the **default** for /shipwright-plan. If keys are missing,
@@ -13,14 +13,13 @@ mandatory self-review pass. Silent-skip is not an option.
 
 - **Recommended:** `OPENROUTER_API_KEY` (single key for both models) in the
   project's `.env.local` at the repo root.
-- **Alternative:** `GEMINI_API_KEY` (or `GOOGLE_API_KEY` / Vertex AI ADC) and
-  `OPENAI_API_KEY` as direct provider keys.
+- **Alternative:** `OPENAI_API_KEY` runs the GPT arm directly. DeepSeek has no
+  direct-provider fallback and remains unavailable without OpenRouter.
 - `external_review.feedback_iterations > 0` in
   `shared/config/external_review.json` (default: `1`). Set to `0` only for
   explicit opt-out — the skill will then run the mandatory self-review
-  fallback. Per-environment model overrides via env vars
-  `SHIPWRIGHT_REVIEW_MODEL_GEMINI` / `_CHATGPT` / `_OPENROUTER_GEMINI` /
-  `_OPENROUTER_CHATGPT`.
+  fallback. Each reviewer identity is locked to its shipped model; a differing
+  config value or environment override fails before client creation.
 
 ## Script
 
@@ -40,7 +39,8 @@ serve plan, iterate, and any future SDLC plugin uniformly.
 
 1. Loads system + user prompts from `{plugin_root}/prompts/plan_reviewer/`
    (plan-mode prompts stay plugin-local — they're plan-specific)
-2. Sends plan + spec to Gemini and OpenAI **in parallel** (ThreadPoolExecutor)
+2. Sends plan + spec to DeepSeek and OpenAI **in parallel** (ThreadPoolExecutor);
+   every DeepSeek request carries the fail-closed ZDR provider policy
 3. Collects feedback from both
 4. Returns structured JSON with findings
 

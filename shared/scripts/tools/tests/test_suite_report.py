@@ -108,3 +108,23 @@ def test_a_failing_units_captured_output_IS_shown_on_the_console():
     red = UnitResult("x", TEST_FAILURE, 1, 1.0, "E   assert 1 == 2")
     joined = "\n".join(render_run_report(_suite(red, exit_code=1)))
     assert "E   assert 1 == 2" in joined and "-> RED" in joined
+
+
+def test_truncation_marker_is_added_only_by_the_console_renderer():
+    red = UnitResult("x", TEST_FAILURE, 1, 1.0, "terminal failure", truncated=True)
+    joined = "\n".join(render_run_report(_suite(red, exit_code=1)))
+    assert "FAULT: output tail truncated" in joined
+    assert joined.index("FAULT: output tail truncated") < joined.index("terminal failure")
+
+
+def test_failure_report_names_bounded_evidence_and_write_faults():
+    red = UnitResult(
+        "x", TEST_FAILURE, 1, 1.0, "failed",
+        evidence_path=".shipwright/runs/r/initial.json",
+        retry_evidence_path=".shipwright/runs/r/retry.json",
+        evidence_error="PermissionError: locked",
+    )
+    joined = "\n".join(render_run_report(_suite(red, exit_code=1)))
+    assert "bounded diagnostic evidence:" in joined
+    assert "retry diagnostic evidence:" in joined
+    assert "diagnostic evidence could not be retained" in joined

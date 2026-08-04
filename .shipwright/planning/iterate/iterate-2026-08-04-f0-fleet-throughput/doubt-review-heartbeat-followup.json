@@ -1,0 +1,12 @@
+{
+  "section": "P1.16-heartbeat-race-final",
+  "doubts": [
+    {
+      "claim": "The recorded heartbeat race is causally fixed rather than hidden by a clean run.",
+      "counterexample": "The former fixed 0.45-second holder could release before the waiter reached its heartbeat deadline under fleet load; an intermediate queue-state poll also introduced an unrelated 8-second startup race.",
+      "evidence_needed": "A real sibling-worktree lease test where release is impossible before an observed heartbeat, with bounded direct diagnostics, early child-exit reporting, repeated stress, and exact-process cleanup.",
+      "verdict": "resolved",
+      "disposition": "The retained failure tail proves the original false assumption: only the initial waiting diagnostic was emitted. The final test keeps the capacity-1 holder leased behind a release file until it reads an actual flushed heartbeat from the real waiter subprocess, then requires successful acquisition and validates the blocker run ID and owner. It removes the intermediate queue-state dependency, waits directly with a 30-second bound, refreshes diagnostics on premature exit, and reaps only its exact holder/waiter Popen objects. The 50/50 plus 20/20 repetitions, 470-test tools-root pass, initial-green canonical F0, and empty code re-review provide stress and regression evidence."
+    }
+  ]
+}

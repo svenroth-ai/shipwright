@@ -59,7 +59,7 @@ def test_llm_review_openai_uses_max_completion_tokens(monkeypatch):
 
     result = llm_review._review_openai(
         "CONTENT", "CONTEXT", "system", "u {CONTENT} {CONTEXT}",
-        {"chatgpt": "gpt-5.4"}, 5,
+        {"models": {"chatgpt": "gpt-5.6-terra"}}, 5,
     )
 
     assert result["status"] == "success"
@@ -83,18 +83,35 @@ def test_run_review_success_is_false_when_no_leg_succeeds(monkeypatch):
     assert result["warnings"] == []
 
 
+def test_run_review_direct_openai_marks_deepseek_unavailable(monkeypatch):
+    monkeypatch.delenv("OPENROUTER_API_KEY", raising=False)
+    monkeypatch.setenv("OPENAI_API_KEY", "sk-openai-test")
+    import llm_review
+
+    expected = {"status": "success", "feedback": "review"}
+    monkeypatch.setattr(llm_review, "_review_openai", lambda *_args: expected)
+
+    result = llm_review.run_review("content", "context")
+
+    assert result["provider"] == "direct"
+    assert result["success"] is True
+    assert result["partial"] is True
+    assert result["reviews"]["deepseek"] == {
+        "status": "skipped",
+        "reason": "DeepSeek requires an approved OpenRouter ZDR endpoint",
+    }
+    assert result["reviews"]["openai"] == expected
+    assert result["warnings"] == ["deepseek: reviewer arm skipped"]
+
+
 def test_one_usable_leg_keeps_success_but_marks_the_result_partial(monkeypatch):
     monkeypatch.setenv("OPENROUTER_API_KEY", "test")
     import llm_review
 
     def _leg(*_args):
         model_key = _args[-2]
-        if model_key == "gemini":
-            return {
-                "status": "success",
-                "feedback": "review",
-                "reasoning_cap_dropped": "retried unbounded",
-            }
+        if model_key == "deepseek":
+            return {"status": "success", "feedback": "review"}
         return {"status": "degraded", "feedback": "partial", "reason": "cut off"}
 
     monkeypatch.setattr(llm_review, "_review_openrouter", _leg)
@@ -102,7 +119,25 @@ def test_one_usable_leg_keeps_success_but_marks_the_result_partial(monkeypatch):
 
     assert result["success"] is True
     assert result["partial"] is True
-    assert result["warnings"] == ["gemini: retried unbounded"]
+    assert result["warnings"] == ["openai: reviewer arm degraded"]
+
+
+def test_one_error_leg_is_partial_and_names_the_unavailable_arm(monkeypatch):
+    monkeypatch.setenv("OPENROUTER_API_KEY", "test")
+    import llm_review
+
+    def _leg(*_args):
+        model_key = _args[-2]
+        if model_key == "deepseek":
+            return {"status": "error", "reason": "routing unavailable"}
+        return {"status": "success", "feedback": "review"}
+
+    monkeypatch.setattr(llm_review, "_review_openrouter", _leg)
+    result = llm_review.run_review("content", "context")
+
+    assert result["success"] is True
+    assert result["partial"] is True
+    assert result["warnings"] == ["deepseek: reviewer arm error"]
 
 
 def test_default_models_match_shipping_config():

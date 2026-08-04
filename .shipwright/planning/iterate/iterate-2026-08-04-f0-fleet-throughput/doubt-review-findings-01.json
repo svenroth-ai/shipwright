@@ -1,0 +1,47 @@
+{
+  "section": "P1.16-f0-fleet-throughput",
+  "doubts": [
+    {
+      "claim": "Weight 11 was selected objectively for fleet throughput rather than single-run latency.",
+      "counterexample": "A replay using only dominant units or intuitive constants could falsely favor concurrency.",
+      "evidence_needed": "All unit durations across repeated canonical runs, reproducible candidate calculations, queue metrics, and real sibling lease overlap.",
+      "verdict": "resolved",
+      "disposition": "The evidence retains 54 unit durations across three canonical audits. Independent recomputation reproduced every 8/11/22 makespan. Weight 11 yields 25.81 runs/hour with two 11-of-22 grants; synchronized sibling-worktree tests prove compatible grants overlap without exceeding capacity."
+    },
+    {
+      "claim": "The two recorded race shapes were diagnosed rather than hidden by clean reruns.",
+      "counterexample": "Removing parallelism or timing assertions after an intermittent failure could merely hide the signal.",
+      "evidence_needed": "Controlled outer-load reproduction, isolated controls, explicit scheduling gates, planted regressions, and repeated canonical results.",
+      "verdict": "resolved",
+      "disposition": "Integration reproduced 17 nested-fanout failures and passed 468/468 alone with xdist; it is now serial internally. Lease ordering uses explicit gates, both planted mutations turn red, and three canonical audits are green."
+    },
+    {
+      "claim": "Strict gate and process-lifecycle semantics remain intact.",
+      "counterexample": "Bounded output, retries, or cancellation could change classification, coverage, process cleanup, or lock reuse.",
+      "evidence_needed": "JUnit-only classification, retry shape tests, native descendant cleanup, rejected coverage cleanup, real lock unwind, immediate reuse, one-root and CI parity.",
+      "verdict": "resolved",
+      "disposition": "The complete tools-root proof covers all listed boundaries; 467 tests pass with 15 skipped and 2 deselected. Native Windows topology, integrated lock unwind, immediate reuse, one-root and CI parity remain covered."
+    },
+    {
+      "claim": "Cancellation is distinguished from a natural child exit 130 and every retry lifecycle terminates visibly.",
+      "counterexample": "A natural retry rc130 was previously raised as KeyboardInterrupt, while a real cancelled retry omitted its completion record.",
+      "evidence_needed": "Structured cancellation state and opposing regressions.",
+      "verdict": "resolved",
+      "disposition": "An explicit cancelled boolean controls interruption. Natural rc130 remains red infrastructure; actual cancellation retains evidence, emits complete outcome=cancelled, then interrupts."
+    },
+    {
+      "claim": "Diagnostic evidence is bounded, redacted, durable, and linked without leaking output.",
+      "counterexample": "Metadata secrets, a disposable worktree path, or missing card wiring could invalidate the claim.",
+      "evidence_needed": "All-field redaction, linked-worktree survival, atomic bounded storage, and tracked-card round trip.",
+      "verdict": "resolved",
+      "disposition": "All untrusted fields are redacted; evidence writes to the canonical main-root ignored run store; a real linked worktree proves survival; the card persists evidencePath and excludes captured output."
+    },
+    {
+      "claim": "The durable store preserves standalone F0 and the evidence map is honest.",
+      "counterexample": "The first resolver import broke the isolated CLI and F0.5 was credited with tests outside its artifact.",
+      "evidence_needed": "Exact isolated CLI execution and accurate verification assignment.",
+      "verdict": "resolved",
+      "disposition": "Package-relative imports plus the complete fixture closure pass the exact CLI E2E. The spec now assigns only host CLI to F0.5 and cleanup/reuse to the canonical tools root."
+    }
+  ]
+}
