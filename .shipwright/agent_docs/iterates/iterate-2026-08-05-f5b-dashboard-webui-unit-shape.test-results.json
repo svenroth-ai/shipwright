@@ -1,0 +1,122 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-08-05-f5b-dashboard-webui-unit-shape",
+    "date": "2026-08-05",
+    "unit": {
+      "status": "pass",
+      "passed": 9168,
+      "total": 9208,
+      "note": "F0 canonical suite (run_test_suite.py, 18/18 units) GREEN in 4.2 min, 100% diff-coverage on the changed source file (origin/main...HEAD, vs an 80% gate). passed/total here are the exact tally for the 4 units re-run directly: shared/tests 7853 passed + 25 skipped (largest root, sibling suite to the touched renderer); integration-tests 470 passed; shared/scripts/tests 365 passed (incl. test_build_dashboard.py, the directly touched test file, with 12 new/changed cases for this fix); shared/scripts/tools/tests 480 passed + 15 skipped. The remaining 14 plugins/*/tests units each reported PASS in the F0 log (shipwright-adopt, build, changelog, compliance, deploy, design, grade, iterate, plan, preview, project, run, security, test) but were not individually re-tallied here \u2014 F0's own JUnit-backed pass/fail verdict is the authoritative source per its own protocol, and none were degraded, red-then-green-alone (a race), or incomplete."
+    },
+    "integration": {
+      "status": "passed",
+      "passed": 470,
+      "total": 470
+    },
+    "e2e": {
+      "status": "n/a",
+      "reason": "no browser surface; this is framework machinery (a Markdown-rendering CLI tool, shared/scripts/tools/update_build_dashboard.py)"
+    },
+    "smoke": {
+      "status": "n/a",
+      "reason": "no startable server surface in this repo"
+    },
+    "pgtap": {
+      "status": "n/a",
+      "reason": "no database"
+    },
+    "design_fidelity": {
+      "status": "n/a",
+      "reason": "no UI surface"
+    },
+    "surface_verification": {
+      "surface": "cli",
+      "runner": "uv run pytest shared/scripts/tests/test_build_dashboard.py::TestEventTestStatus -v",
+      "exit_code": 0,
+      "tests_run": 14,
+      "evidence_path": ".shipwright/runs/iterate-2026-08-05-f5b-dashboard-webui-unit-shape/surface_verification.json",
+      "detail": "Also verified at the real CLI entrypoint (uv run shared/scripts/tools/update_build_dashboard.py --project-root <scratch> ...) against a WebUI-shaped fixture with mixed string/mapping layers and an embedded pipe character: exit 0, ## Test Status rendered correctly with the pipe Markdown-escaped."
+    },
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "Each total-bearing layer (unit/integration/pgtap/e2e) as a non-empty string renders \"{Label}: {string}\" instead of crashing",
+          "disposition": "tested",
+          "evidence": "test_build_dashboard.py::TestEventTestStatus::test_status_from_iterate_webui_string_shape_all_total_bearing_layers PASSED"
+        },
+        {
+          "behavior": "smoke as a non-empty string renders \"Smoke: {string}\" instead of crashing, alongside missing total-bearing keys staying silently omitted",
+          "disposition": "tested",
+          "evidence": "test_build_dashboard.py::TestEventTestStatus::test_status_from_iterate_webui_smoke_string_shape PASSED"
+        },
+        {
+          "behavior": "A string layer with embedded newlines/repeated whitespace collapses to one markdown line",
+          "disposition": "tested",
+          "evidence": "test_build_dashboard.py::TestEventTestStatus::test_status_from_iterate_string_layer_collapses_internal_whitespace PASSED"
+        },
+        {
+          "behavior": "A mapping-shaped layer renders identically to before when a sibling key uses the string shape",
+          "disposition": "tested",
+          "evidence": "test_build_dashboard.py::TestEventTestStatus::test_status_from_iterate_mixed_string_and_mapping_shapes PASSED"
+        },
+        {
+          "behavior": "A blank/whitespace-only string layer renders no line, parity with total==0 mapping behavior",
+          "disposition": "tested",
+          "evidence": "test_build_dashboard.py::TestEventTestStatus::test_status_from_iterate_blank_string_layer_omitted PASSED"
+        },
+        {
+          "behavior": "Pre-existing mapping-shape behavior (dict {status,passed,total}) unaffected by this change",
+          "disposition": "tested",
+          "evidence": "full pre-existing TestEventTestStatus suite (6 cases) PASSED unmodified"
+        },
+        {
+          "behavior": "CLI regeneration (update_build_dashboard.py entrypoint, the actual F5b call site) completes against a WebUI-shaped fixture",
+          "disposition": "tested",
+          "evidence": "manual CLI run, exit 0, correct ## Test Status output; durably pinned by the generate_dashboard()-path pytest cases above"
+        },
+        {
+          "behavior": "A `|` inside a string-shaped layer is Markdown-escaped, not left raw (the WebUI-originated pipe-character row-shift failure mode escape_cell was built for)",
+          "disposition": "tested",
+          "evidence": "test_build_dashboard.py::TestEventTestStatus::test_status_from_iterate_string_layer_escapes_pipe PASSED"
+        },
+        {
+          "behavior": "An explicit JSON null for a layer (neither dict nor string) renders no line and does not crash, same as an absent key",
+          "disposition": "tested",
+          "evidence": "test_build_dashboard.py::TestEventTestStatus::test_status_from_iterate_null_layer_omitted PASSED"
+        },
+        {
+          "behavior": "A `\\` inside a string-shaped layer is Markdown-escaped, independently of the `|` case",
+          "disposition": "tested",
+          "evidence": "test_build_dashboard.py::TestEventTestStatus::test_status_from_iterate_string_layer_escapes_backslash PASSED"
+        }
+      ],
+      "counts": {
+        "total": 10,
+        "tested": 10,
+        "untestable": 0,
+        "untested_testable": 0
+      },
+      "ledger_path": ".shipwright/planning/iterate/iterate-2026-08-05-f5b-dashboard-webui-unit-shape.md"
+    },
+    "degraded": [
+      {
+        "condition": "phase_timing_marks_not_emitted",
+        "detail": "This run did not call SKILL.md's 'mark'/'start'/'end' Iterate-Rail timing instrumentation throughout (scope/build/review/test/finalize spans). F5b's phase_timings fold is additive + best-effort per F5b.md, so the work_completed event itself is unaffected, but the WebUI Iterate-Rail view will show no per-phase duration breakdown for this run; finalize_bundle's F5b step logged 9 rejected timing-close attempts with no matching parent span for the same reason."
+      }
+    ]
+  },
+  "coverage": {
+    "total": 80.2,
+    "measured_tier": "repo",
+    "source": "combined coverage.xml (all plugins + shared + integration)",
+    "measured_at": "2026-07-04T00:00:00Z"
+  },
+  "source_state": {
+    "run_id": "iterate-2026-08-05-f5b-dashboard-webui-unit-shape",
+    "commit": "5c1aeeff9e1b4993ba9d5af0b2d497e3b7588ccd",
+    "dirty": true,
+    "base": null,
+    "release": null
+  }
+}

@@ -311,6 +311,150 @@ class TestEventTestStatus:
         assert "(iterate)" in content
         assert "2026-04-06" in content
 
+    def test_status_from_iterate_webui_string_shape_all_total_bearing_layers(self, tmp_project):
+        """WebUI historical F5 evidence can render ANY total-bearing layer
+        (not just unit) as a pre-formatted human-readable string. Each must
+        render verbatim rather than crash on `.get()` (trg-cb7d4938)."""
+        _write_events(tmp_project, [
+            {"v": 1, "type": "work_completed", "source": "iterate",
+             "ts": "2026-04-06T10:00:00Z", "intent": "feature",
+             "description": "Add search", "tests": {"passed": 830, "total": 831}},
+        ])
+        for label, key in (("Unit", "unit"), ("Integration", "integration"),
+                            ("pgTAP", "pgtap"), ("E2E", "e2e")):
+            (tmp_project / "shipwright_test_results.json").write_text(json.dumps({
+                "iterate_latest": {"date": "2026-04-06", key: "some passed, 0 failed"}
+            }), encoding="utf-8")
+            content = generate_dashboard(tmp_project, session_id="test")
+            assert f"{label}: some passed, 0 failed" in content, f"{key} did not render"
+
+    def test_status_from_iterate_webui_smoke_string_shape(self, tmp_project):
+        """`smoke` uses a distinct status-only formatting path from the
+        total-bearing layers; its string shape renders the same way, and a
+        layer key entirely absent from the block (not even an empty dict —
+        a WebUI block that only ever sets a subset of layers) stays
+        omitted rather than crashing."""
+        _write_events(tmp_project, [
+            {"v": 1, "type": "work_completed", "source": "iterate",
+             "ts": "2026-04-06T10:00:00Z", "intent": "feature",
+             "description": "Add search", "tests": {"passed": 830, "total": 831}},
+        ])
+        (tmp_project / "shipwright_test_results.json").write_text(json.dumps({
+            "iterate_latest": {"date": "2026-04-06", "smoke": "pass"}
+        }), encoding="utf-8")
+        content = generate_dashboard(tmp_project, session_id="test")
+        assert "## Test Status" in content
+        assert "Smoke: pass" in content
+        assert "(iterate)" in content
+        assert "Unit:" not in content
+        assert "Integration:" not in content
+        assert "pgTAP:" not in content
+        assert "E2E:" not in content
+
+    def test_status_from_iterate_string_layer_collapses_internal_whitespace(self, tmp_project):
+        """A string layer with embedded newlines/repeated whitespace is
+        collapsed to a single line so it never breaks the pipe-joined
+        `## Test Status` row (external-review finding)."""
+        _write_events(tmp_project, [
+            {"v": 1, "type": "work_completed", "source": "iterate",
+             "ts": "2026-04-06T10:00:00Z", "intent": "feature",
+             "description": "Add search", "tests": {"passed": 830, "total": 831}},
+        ])
+        (tmp_project / "shipwright_test_results.json").write_text(json.dumps({
+            "iterate_latest": {"date": "2026-04-06", "unit": "  833 passed,\n0   failed  "}
+        }), encoding="utf-8")
+        content = generate_dashboard(tmp_project, session_id="test")
+        assert "Unit: 833 passed, 0 failed" in content
+        status_lines = [line for line in content.splitlines() if line.startswith("Last run:")]
+        assert len(status_lines) == 1
+
+    def test_status_from_iterate_string_layer_escapes_pipe(self, tmp_project):
+        """A `|` inside a string-shaped layer is Markdown-escaped, not left
+        raw — the same WebUI-originated pipe-character failure mode
+        `escape_cell` was built for (see markdown_table.py docstring)."""
+        _write_events(tmp_project, [
+            {"v": 1, "type": "work_completed", "source": "iterate",
+             "ts": "2026-04-06T10:00:00Z", "intent": "feature",
+             "description": "Add search", "tests": {"passed": 830, "total": 831}},
+        ])
+        (tmp_project / "shipwright_test_results.json").write_text(json.dumps({
+            "iterate_latest": {"date": "2026-04-06", "unit": "12 passed (local|tailscale)"}
+        }), encoding="utf-8")
+        content = generate_dashboard(tmp_project, session_id="test")
+        assert "Unit: 12 passed (local\\|tailscale)" in content
+        assert "(local|tailscale)" not in content
+
+    def test_status_from_iterate_string_layer_escapes_backslash(self, tmp_project):
+        """A `\\` inside a string-shaped layer is Markdown-escaped too —
+        `escape_cell` escapes backslash FIRST so a later `|` substitution
+        cannot collide with one (external-review finding)."""
+        _write_events(tmp_project, [
+            {"v": 1, "type": "work_completed", "source": "iterate",
+             "ts": "2026-04-06T10:00:00Z", "intent": "feature",
+             "description": "Add search", "tests": {"passed": 830, "total": 831}},
+        ])
+        (tmp_project / "shipwright_test_results.json").write_text(json.dumps({
+            "iterate_latest": {"date": "2026-04-06", "unit": "12 passed (C:\\path)"}
+        }), encoding="utf-8")
+        content = generate_dashboard(tmp_project, session_id="test")
+        assert "Unit: 12 passed (C:\\\\path)" in content
+
+    def test_status_from_iterate_null_layer_omitted(self, tmp_project):
+        """An explicit JSON `null` for a layer (neither dict nor string)
+        renders no line and does not crash, same as an absent key."""
+        _write_events(tmp_project, [
+            {"v": 1, "type": "work_completed", "source": "iterate",
+             "ts": "2026-04-06T10:00:00Z", "intent": "feature",
+             "description": "Add search", "tests": {"passed": 830, "total": 831}},
+        ])
+        (tmp_project / "shipwright_test_results.json").write_text(json.dumps({
+            "iterate_latest": {"date": "2026-04-06", "unit": None, "smoke": "pass"}
+        }), encoding="utf-8")
+        content = generate_dashboard(tmp_project, session_id="test")
+        assert "Unit:" not in content
+        assert "Smoke: pass" in content
+
+    def test_status_from_iterate_mixed_string_and_mapping_shapes(self, tmp_project):
+        """The two documented shapes can appear on different keys in the
+        same iterate_latest block; the mapping path renders identically to
+        before regardless of a sibling key using the string shape."""
+        _write_events(tmp_project, [
+            {"v": 1, "type": "work_completed", "source": "iterate",
+             "ts": "2026-04-06T10:00:00Z", "intent": "feature",
+             "description": "Add search", "tests": {"passed": 830, "total": 831}},
+        ])
+        (tmp_project / "shipwright_test_results.json").write_text(json.dumps({
+            "iterate_latest": {
+                "date": "2026-04-06",
+                "unit": {"passed": 830, "total": 831, "status": "failed"},
+                "integration": "12 passed",
+                "smoke": {"status": "pass"},
+            }
+        }), encoding="utf-8")
+        content = generate_dashboard(tmp_project, session_id="test")
+        assert "Unit: 830/831" in content
+        assert "Integration: 12 passed" in content
+        assert "Smoke: pass" in content
+
+    def test_status_from_iterate_blank_string_layer_omitted(self, tmp_project):
+        """A blank/whitespace-only string layer renders no line for that
+        layer, matching the existing empty-mapping ('total': 0) behavior."""
+        _write_events(tmp_project, [
+            {"v": 1, "type": "work_completed", "source": "iterate",
+             "ts": "2026-04-06T10:00:00Z", "intent": "feature",
+             "description": "Add search", "tests": {"passed": 830, "total": 831}},
+        ])
+        (tmp_project / "shipwright_test_results.json").write_text(json.dumps({
+            "iterate_latest": {
+                "date": "2026-04-06",
+                "unit": "   ",
+                "smoke": {"status": "pass"},
+            }
+        }), encoding="utf-8")
+        content = generate_dashboard(tmp_project, session_id="test")
+        assert "Unit:" not in content
+        assert "Smoke: pass" in content
+
     def test_status_from_iterate_flat_fallback(self, tmp_project):
         """When no results JSON, iterate events show flat passed/total."""
         _write_events(tmp_project, [

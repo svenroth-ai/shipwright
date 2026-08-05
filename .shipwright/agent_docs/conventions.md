@@ -346,6 +346,7 @@ Python 3.11+ with uv as package manager. All scripts are invoked via uv run. Hoo
 - (2026-08-04) iterate/test — process-order tests must synchronize on acquisition/release state, never infer overlap or FIFO from sub-second launch timing; prove the replacement by planting each ordering regression and observing RED. → iterate-2026-08-04-f0-fleet-throughput
 - (2026-08-05) iterate/F5 — an "untestable" ledger row's `reason_code` must come from `UNTESTABLE_REASON_CODES`'s closed vocabulary; an invented code (however well-argued in prose) fails F11 closed. If nothing in the set fits, that is a signal to write the real test, not to widen the vocabulary. → iterate-2026-08-04-iterate-timing-attribution
 - (2026-08-05) iterate/finalize — a `deduplicate_by_commit`-style branch must gate on the event's own `type`, not merely on field presence: PR #537 gave `grade_snapshot` a `commit` field, and the pre-existing by-commit branch (unlike its sibling `grade_snapshot` branch, added in the same PR) had no type gate, so a `grade_snapshot` sharing a `work_completed`'s sha was silently dropped as a duplicate. → iterate-2026-08-05-by-commit-dedup-type-gate
+- (2026-08-05) iterate/F5c — editing shipwright_test_results.json after F5c installs its immutable per-run evidence copy makes the next F5c call fail closed ("immutable evidence collision"), no --force; delete the run's stale .test-results.json + .json under .shipwright/agent_docs/iterates/ and re-run (safe only pre-commit). → iterate-2026-08-05-f5b-dashboard-webui-unit-shape
 
 ## Contributing
 

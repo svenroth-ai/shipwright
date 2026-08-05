@@ -1,0 +1,170 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-08-05-f5b-dashboard-webui-unit-shape",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-05T08:06:03.902194+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 6,
+      "findings": [
+        {
+          "severity": null,
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "The read-time tolerance via `isinstance` branching is a clean, minimal consumer-side fix that avoids mutating the producer or introducing schema changes.",
+          "suggestion": "No change needed.  2. Edge‑case · Severity: low",
+          "source": "external-review"
+        },
+        {
+          "severity": null,
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "The spec explicitly handles ``None``-equivalents (absent key, empty/blank string) but does not address a layer value of `None` (e.g., `\"unit\": null`). An `isinstance` test on `None` would not match `dict` or `str`, causing a new `AttributeError`.",
+          "suggestion": "Consider treating a `None` value identically to an absent key (omit silently) for even greater robustness, though it’s not part of the documented WebUI shape and therefore optional.  3. Security / formatting · Severity: low",
+          "source": "external-review"
+        },
+        {
+          "severity": null,
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "The string path inserts arbitrary, producer‑provided text directly into the Markdown dashboard. No escaping is applied for characters that could break the document structure (e.g., pipe `|` if the rendering context were a table, or raw HTML). The existing mapping‑shape path has the same behaviour, so this is not a regression, but it does accept external content.",
+          "suggestion": "If the dashboard ever shifts to a Markdown table, remember to escape pipe characters. For now, the risk is negligible given the current bullet‑list format.  Overall assessment: The approach is sound and proportionate; it fixes the crash without altering any producer or contract, and the testing coverage is thorough. The minor robustness and formatting notes are refinement opportunities, not blockers. SHIPWRIGHT_VERDICT: approve",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The mini-plan’s stated three new tests do not explicitly cover all required string variants. In particular, it does not name a `smoke` string case or embedded newline/repeated-whitespace normalization, despite both being acceptance criteria. A generic “WebUI string shape” test could cover the four total-bearing layers, but it will not prove the separate status-only smoke behavior or one-line Markdown requirement unless those are explicit assertions.",
+          "suggestion": "Add explicit tests (or a clearly parameterized test matrix) for: all four total-bearing labels, `smoke` alone with omitted sibling layers, mixed mapping/string input, blank strings, and whitespace/newline collapse. Ensure assertions verify the exact rendered line and ordering, not merely absence of an exception.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "security",
+          "file": null,
+          "line": null,
+          "finding": "The new opaque string path may bypass any existing Markdown escaping applied by the structured rendering path. Collapsing whitespace prevents line-break injection, but a producer-controlled value containing `|`, Markdown links, HTML, or other Markdown syntax could alter the dashboard’s rendered structure or display misleading content. This is especially relevant because the string is produced outside this repository.",
+          "suggestion": "Route normalized string values through the same Markdown-escaping/sanitization utility used for existing test-status values, preserving the displayed human-readable content while preventing Markdown structure injection. Extend the existing Markdown escaping test coverage with a string-shaped layer containing at least a pipe and Markdown-special characters.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "Replacing five inline paths with a shared loop/helper is appropriate, but it can accidentally alter legacy mapping behavior for absent fields, zero totals, falsy `passed` values, label ordering, or status-only smoke handling. The acceptance criterion requires byte-identical structured output, which is stricter than simply continuing not to crash.",
+          "suggestion": "Keep the mapping branch behaviorally identical to the current per-layer expressions and add/retain exact-output assertions for representative structured inputs for each layer, including `total == 0` omission and smoke. The helper should only introduce the string normalization branch rather than normalize or reinterpret mapping values.  Overall, consumer-side shape tolerance is the correct, smallest-scope fix and does not require changing the external producer or JSON schema. The approach should proceed once the explicit coverage gap and Markdown-safe rendering path are addressed. SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-08-05T07:57:32.711847+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[deepseek] **Findings**\n\n1. **Approach** · Severity: low  \n   **Finding:** The read-time tolerance via `isinstance` branching is a clean, minimal consumer-side fix that avoids mutating the producer or introducing schema changes.  \n   **Suggestion:** No change needed.\n\n2. **Edge‑case** · Severity: low  \n   **Finding:** The spec explicitly handles ``None``-equivalents (absent key, empty/blank string) but does not address a layer value of `None` (e.g., `\"unit\": null`). An `isinstance` test on `None` would not match `dict` or `str`, causing a new `AttributeError`.  \n   **Suggestion:** Consider treating a `None` value identically to an absent key (omit silently) for even greater robustness, though it’s not part of the documented WebUI shape and therefore optional.\n\n3. **Security / formatting** · Severity: low  \n   **Finding:** The string path inserts arbitrary, producer‑provided text directly into the Markdown dashboard. No escaping is applied for characters that could break the document structure (e.g., pipe `|` if the rendering context were a table, or raw HTML). The existing mapping‑shape path has the same behaviour, so this is not a regression, but it does accept external content.  \n   **Suggestion:** If the dashboard ever shifts to a Markdown table, remember to escape pipe characters. For now, the risk is negligible given the current bullet‑list format.\n\n**Overall assessment:** The approach is sound and proportionate; it fixes the crash without altering any producer or contract, and the testing coverage is thorough. The minor robustness and formatting notes are refinement opportunities, not blockers.  \nSHIPWRIGHT_VERDICT: approve\n\n[openai] 1. **Category:** edge-case  \n   **Severity:** medium  \n   **Finding:** The mini-plan’s stated three new tests do not explicitly cover all required string variants. In particular, it does not name a `smoke` string case or embedded newline/repeated-whitespace normalization, despite both being acceptance criteria. A generic “WebUI string shape” test could cover the four total-bearing layers, but it will not prove the separate status-only smoke behavior or one-line Markdown requirement unless those are explicit assertions.  \n   **Suggestion:** Add explicit tests (or a clearly parameterized test matrix) for: all four total-bearing labels, `smoke` alone with omitted sibling layers, mixed mapping/string input, blank strings, and whitespace/newline collapse. Ensure assertions verify the exact rendered line and ordering, not merely absence of an exception.\n\n2. **Category:** security  \n   **Severity:** low  \n   **Finding:** The new opaque string path may bypass any existing Markdown escaping applied by the structured rendering path. Collapsing whitespace prevents line-break injection, but a producer-controlled value containing `|`, Markdown links, HTML, or other Markdown syntax could alter the dashboard’s rendered structure or display misleading content. This is especially relevant because the string is produced outside this repository.  \n   **Suggestion:** Route normalized string values through the same Markdown-escaping/sanitization utility used for existing test-status values, preserving the displayed human-readable content while preventing Markdown structure injection. Extend the existing Markdown escaping test coverage with a string-shaped layer containing at least a pipe and Markdown-special characters.\n\n3. **Category:** risk  \n   **Severity:** low  \n   **Finding:** Replacing five inline paths with a shared loop/helper is appropriate, but it can accidentally alter legacy mapping behavior for absent fields, zero totals, falsy `passed` values, label ordering, […truncated]",
+      "verdicts": {
+        "openai": "revise",
+        "deepseek": "approve"
+      }
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 2,
+      "findings": [
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "shared/scripts/tools/update_build_dashboard.py",
+          "line": 286,
+          "finding": "_layer_display/_smoke_display left the layer parameter unannotated, inconsistent with the rest of the file which type-hints every parameter.",
+          "suggestion": "Annotate as dict | str | None (accepted-and-fixed).",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "duplication",
+          "file": "shared/scripts/tools/update_build_dashboard.py",
+          "line": 311,
+          "finding": "_smoke_display's string branch duplicated _layer_display's string branch verbatim except for the label.",
+          "suggestion": "Delegate the non-dict branch to _layer_display(\"Smoke\", layer) (accepted-and-fixed).",
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-08-05T08:15:49.577402+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-05T08:15:16.108795+00:00",
+      "disposition": "docs/logic-only diff, no migrations/async-concurrency/cross-plugin-imports/irreversible-ops; doubt pass is conditional per iteration-reviews.md Stage 3 trigger rule",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 1,
+      "findings": [
+        {
+          "severity": "low",
+          "category": "test",
+          "file": "shared/scripts/tests/test_build_dashboard.py` — line near the pipe-escape test (cannot pinpoint exact line from diff, but the test `test_status_from_iterate_string_layer_escapes_pipe`)",
+          "line": null,
+          "finding": "The acceptance criteria explicitly require both `\\` and `|` to be escaped via `escape_cell`. The current test only validates `|` escaping; a backslash inside a string layer is never verified. If `escape_cell` were inadvertently changed to no longer escape backslashes, the dashboard would still pass all tests but would violate the spec.",
+          "suggestion": "Add a test case with a backslash in the layer string (e.g., `\"C:\\\\path\"`) and assert it is escaped to `\"C:\\\\\\\\path\"`.  Overall assessment: The implementation correctly handles both documented shapes, whitespace normalization, and edge cases. All acceptance criteria except the backslash-escaping test are covered; the missed test is minor but prevents a trivial regression. The change is otherwise safe to merge.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-08-05T08:21:09.810429+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "partial",
+      "raw_excerpt": "[deepseek] - Category: test\n- Severity: low\n- File: `shared/scripts/tests/test_build_dashboard.py` — line near the pipe-escape test (cannot pinpoint exact line from diff, but the test `test_status_from_iterate_string_layer_escapes_pipe`)\n- Finding: The acceptance criteria explicitly require both `\\` and `|` to be escaped via `escape_cell`. The current test only validates `|` escaping; a backslash inside a string layer is never verified. If `escape_cell` were inadvertently changed to no longer escape backslashes, the dashboard would still pass all tests but would violate the spec.\n- Suggestion: Add a test case with a backslash in the layer string (e.g., `\"C:\\\\path\"`) and assert it is escaped to `\"C:\\\\\\\\path\"`.\n\nOverall assessment: The implementation correctly handles both documented shapes, whitespace normalization, and edge cases. All acceptance criteria except the backslash-escaping test are covered; the missed test is minor but prevents a trivial regression. The change is otherwise safe to merge.\n\nSHIPWRIGHT_VERDICT: revise\n\n[openai] No concrete defects found. The renderer now safely distinguishes mapping, string, and null/absent layer values; string values are whitespace-normalized and escaped as required, while mapping output retains the prior formatting behavior. The added tests exercise each supported string layer, mixed shapes, blank/null omission, whitespace handling, and pipe escaping through the dashboard-generation path.\n\nOverall assessment: ship-as-is.\nSHIPWRIGHT_VERDICT: approve",
+      "verdicts": {
+        "openai": "approve",
+        "deepseek": "revise"
+      }
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-05T08:15:49.450722+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    }
+  }
+}
