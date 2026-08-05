@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-08-05-codeql-action-v4-bump",
+  "ci_supplychain_ack": {
+    "run_id": "iterate-2026-08-05-codeql-action-v4-bump",
+    "paths_fingerprint": "e7a06d1461965fededcd2f33910fdb0f938b9e1b6f1739d183fe49253f68e902",
+    "consistent_with": "ADR-271",
+    "statement": "Bumps github/codeql-action init/autobuild/analyze from @v3 to @v4 in .github/workflows/codeql.yml and the adopt scaffolding template (shared/templates/github-actions/codeql.yml.template). Stays on a mutable GitHub-owned major-version tag per ADR-271's accepted posture (GitHub-owned actions are not SHA-pinned); only the tag's value changes, ahead of GitHub's Dec-2026 v3 deprecation and fall-2026 Node20 runner removal. No new third-party action introduced, no permission or trigger change.",
+    "ci_paths": [
+      ".github/workflows/codeql.yml",
+      "shared/templates/github-actions/codeql.yml.template"
+    ]
+  }
+}

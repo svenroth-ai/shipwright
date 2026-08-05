@@ -1,0 +1,56 @@
+{
+  "run_id": "iterate-2026-08-05-codeql-action-v4-bump",
+  "date": "2026-08-05T16:45:26.785099Z",
+  "event_at": "2026-08-05T09:29:40.554562+00:00",
+  "type": "change",
+  "complexity": "medium",
+  "prior_source": "keyword",
+  "branch": "iterate/codeql-action-v4-bump",
+  "spec": ".shipwright/planning/iterate/2026-08-05-codeql-action-v4-bump.md",
+  "tests_passed": true,
+  "adr": "iterate-2026-08-05-codeql-action-v4-bump",
+  "test_completeness": {
+    "status": "complete",
+    "behaviors": [
+      {
+        "behavior": "codeql.yml init/autobuild/analyze pin @v4",
+        "disposition": "tested",
+        "evidence": "test_codeql_config_query_filters.py::test_codeql_action_steps_pin_v4[init|autobuild|analyze] PASSED (3 cases)"
+      },
+      {
+        "behavior": "codeql.yml.template init/autobuild/analyze pin @v4",
+        "disposition": "tested",
+        "evidence": "test_codeql_workflow_convention.py::test_codeql_action_steps_pin_v4[init|autobuild|analyze] PASSED (3 cases)"
+      },
+      {
+        "behavior": "a leftover duplicate step (e.g. stray @v3 alongside an added @v4) is caught, not silently shadowed",
+        "disposition": "tested",
+        "evidence": "both test_codeql_action_steps_pin_v4 tests assert len(matches) == 1 per step name before checking the version (found during external code-review, fixed in-diff) PASSED"
+      },
+      {
+        "behavior": "permissions / continue-on-error / queries / config-file stay byte-identical",
+        "disposition": "tested",
+        "evidence": "test_explicit_permissions_floor, test_analyze_step_continue_on_error, test_workflow_references_config_file, test_workflow_keeps_security_and_quality_suite \u2014 all pre-existing, unmodified, still PASSED after the edit"
+      }
+    ],
+    "counts": {
+      "testable": 4,
+      "tested": 4,
+      "untestable": 0,
+      "untested_testable": 0
+    },
+    "enumeration_basis": {
+      "acs": 4,
+      "covered_acs": 4
+    },
+    "ledger_path": ".shipwright/planning/iterate/2026-08-05-codeql-action-v4-bump.md"
+  },
+  "surface_verification": {
+    "surface": "none",
+    "tests_run": 0,
+    "exit_code": 0,
+    "evidence_path": ".shipwright/runs/iterate-2026-08-05-codeql-action-v4-bump/surface_verification.json",
+    "justification": "Pure CI-workflow-file version-pin change (github/codeql-action v3->v4); no client/server runtime surface exists to drive. Verified via the pytest meta-tests instead."
+  },
+  "declared_removals": []
+}
