@@ -1,0 +1,73 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-08-05-by-commit-dedup-type-gate",
+    "date": "2026-08-05",
+    "unit": {
+      "status": "pass",
+      "passed": 8697,
+      "total": 8697,
+      "note": "shared/scripts/tests 357, shared/scripts/tools/tests 489 (+7 skipped), shared/tests 7851 (+21 skipped) all explicitly executed and green. The canonical F0 suite runner (run_test_suite.py) additionally proved all 14 plugin units green: 18 units in 4.9 min -> GREEN, diff-coverage 100% on the one changed line (record_event.py) vs origin/main. Per-unit plugin pass counts are not reconciled here; see the F0 console output for the per-unit PASS list."
+    },
+    "integration": {
+      "status": "pass",
+      "passed": 470,
+      "total": 470
+    },
+    "e2e": {
+      "status": "n/a",
+      "reason": "no browser surface; this is a Python CLI helper fix (record_event.py append_event_idempotent dedup gating), not UI or io-boundary code"
+    },
+    "smoke": {
+      "status": "n/a",
+      "reason": "no startable server surface in this repo"
+    },
+    "pgtap": {
+      "status": "n/a",
+      "reason": "no database"
+    },
+    "design_fidelity": {
+      "status": "n/a",
+      "reason": "no UI surface"
+    },
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "a grade_snapshot event sharing a work_completed event's commit sha is not skipped as duplicate_commit when deduplicate_by_commit=True",
+          "disposition": "tested",
+          "evidence": "shared/scripts/tools/tests/test_record_event_by_commit_dedup.py::TestByCommitDedupIsTypeScoped::test_by_commit_dedup_is_scoped_to_work_completed PASSED (red before the fix: skip={'reason': 'duplicate_commit', ...}; green after)"
+        },
+        {
+          "behavior": "a second work_completed event with the same commit (and section) is still skipped as duplicate_commit (no regression)",
+          "disposition": "tested",
+          "evidence": "shared/scripts/tools/tests/test_record_event.py::TestDeduplication::test_dedup_via_cli PASSED; shared/tests/test_record_event_lifecycle_integrity.py::test_skips_duplicate_commit_when_flag_set PASSED"
+        }
+      ],
+      "counts": {
+        "total": 2,
+        "tested": 2,
+        "untestable": 0,
+        "untested_testable": 0
+      },
+      "enumeration_basis": {
+        "acs": 1,
+        "covered_acs": 1
+      },
+      "ledger_path": "n/a \u2014 small complexity, no iterate spec file (Phase Matrix: Iterate Spec skip at small)"
+    },
+    "degraded": []
+  },
+  "coverage": {
+    "total": 80.2,
+    "measured_tier": "repo",
+    "source": "combined coverage.xml (all plugins + shared + integration)",
+    "measured_at": "2026-07-04T00:00:00Z"
+  },
+  "source_state": {
+    "run_id": "iterate-2026-08-05-by-commit-dedup-type-gate",
+    "commit": "0f642dafe1ce1f55d2b47fcc09c4412cfd05be5f",
+    "dirty": true,
+    "base": null,
+    "release": null
+  }
+}

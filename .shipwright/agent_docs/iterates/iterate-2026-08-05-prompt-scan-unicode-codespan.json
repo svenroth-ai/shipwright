@@ -1,0 +1,66 @@
+{
+  "run_id": "iterate-2026-08-05-prompt-scan-unicode-codespan",
+  "date": "2026-08-05T08:25:24.884136Z",
+  "event_at": "2026-08-05T08:24:35.188413+00:00",
+  "type": "bug",
+  "complexity": "small",
+  "prior_source": "history",
+  "branch": "iterate/prompt-scan-unicode-codespan",
+  "spec": null,
+  "tests_passed": true,
+  "adr": "iterate-2026-08-05-prompt-scan-unicode-codespan",
+  "test_completeness": {
+    "status": "complete",
+    "behaviors": [
+      {
+        "behavior": "A suspicious Unicode codepoint quoted inside a fenced code block (``` ... ```) is not flagged",
+        "disposition": "tested",
+        "evidence": "TestMarkdownScanner::test_fenced_code_block_unicode_ignored PASSED"
+      },
+      {
+        "behavior": "A suspicious Unicode codepoint quoted inside an inline backtick span is not flagged",
+        "disposition": "tested",
+        "evidence": "TestMarkdownScanner::test_inline_code_span_unicode_ignored PASSED"
+      },
+      {
+        "behavior": "A suspicious Unicode codepoint sitting in bare prose (the real hiding case) is still flagged \u2014 the fix must not blind real detection",
+        "disposition": "tested",
+        "evidence": "TestMarkdownScanner::test_unicode_outside_code_span_still_flagged PASSED"
+      },
+      {
+        "behavior": "Pre-existing detection of a hidden zero-width-joiner in bare prose (malicious_skill.md fixture) still fires after the fix",
+        "disposition": "tested",
+        "evidence": "TestMarkdownScanner::test_malicious_skill_detects_unicode PASSED (pre-existing test, unmodified)"
+      },
+      {
+        "behavior": "The original reported false positive (.shipwright/planning/iterate/iterate-2026-07-28-codescanning-alerts.md:63, U+202E inside an inline code span) no longer produces a finding",
+        "disposition": "tested",
+        "evidence": "Manual re-scan: scan_markdown() on the real file returns 0 findings (was 1 high before the fix); full-repo --full scan confirms only 1 unrelated pre-existing finding remains (PY_DYNAMIC_IMPORT in shared/tests/test_iterate_timing_cli.py, out of scope)"
+      },
+      {
+        "behavior": "Base64-blob detection (the sibling check reusing the same in_fence pattern) is unaffected by the Unicode-scan change",
+        "disposition": "tested",
+        "evidence": "TestMarkdownScanner::test_code_block_base64_ignored PASSED (pre-existing test, unmodified)"
+      }
+    ],
+    "counts": {
+      "total": 6,
+      "tested": 6,
+      "untestable": 0,
+      "untested_testable": 0
+    },
+    "enumeration_basis": {
+      "acs": 3,
+      "covered_acs": 3
+    }
+  },
+  "surface_verification": {
+    "surface": "cli",
+    "runner": "uv run --project plugins/shipwright-security pytest plugins/shipwright-security/tests/test_prompt_injection_scan.py plugins/shipwright-security/tests/test_prompt_injection_scan_diff.py plugins/shipwright-security/tests/test_prompt_injection_scan_literals.py -q",
+    "tests_run": 55,
+    "exit_code": 0,
+    "evidence_path": ".shipwright/runs/iterate-2026-08-05-prompt-scan-unicode-codespan/surface_verification.json",
+    "detail": "Scanner's own test suite driven via the real pytest CLI (not mocked); includes the 3 new regression tests (fenced-block-ignored, inline-span-ignored, prose-still-flagged) plus the fixture-based malicious_skill.md unicode-detection test proving the real detection path survives the fix. Also manually verified: re-scanning the actual file that produced the original triage false positive (.shipwright/planning/iterate/iterate-2026-07-28-codescanning-alerts.md) now returns 0 findings."
+  },
+  "declared_removals": []
+}

@@ -200,6 +200,18 @@ def test_version_key_orders_numerically_not_lexically():
     assert _HOOK._version_key("not-a-version") < _HOOK._version_key("0.0.1")
 
 
+def test_version_key_ranks_a_release_above_its_own_prereleases():
+    """SemVer: ``1.0.0`` outranks ``1.0.0-rc1`` — the release, not the tag.
+
+    A raw string-tail comparison used to pick the prerelease (``'-rc1' > ''``
+    lexically). Pinned here too, not just in ``cache_tree_compare``'s own
+    tests: this hook's copy is what the self-heal repair reads as the
+    completeness AUTHORITY (trg-18da39b0).
+    """
+    assert _HOOK._version_key("1.0.0") > _HOOK._version_key("1.0.0-rc1")
+    assert _HOOK._version_key("1.0.0") > _HOOK._version_key("1.0.0-beta")
+
+
 def test_plugin_mirrors_picks_the_numerically_newest_version(tmp_path: Path):
     cache = tmp_path / "cache" / "shipwright"
     for version in ("0.2.0", "0.10.0", "0.9.3"):
@@ -214,6 +226,29 @@ def test_plugin_mirrors_picks_the_numerically_newest_version(tmp_path: Path):
     src, dst = pairs[0]
     assert src.name == "0.10.0", f"picked {src.name}, not the newest version"
     assert dst == cache / "plugins" / "shipwright-x"
+
+
+def test_plugin_mirrors_picks_a_release_over_a_prerelease_of_the_same_version(
+    tmp_path: Path,
+):
+    """The repair SOURCE must never be a prerelease sitting beside its release.
+
+    Not reachable today — every installed plugin carries exactly one plain
+    MAJOR.MINOR.PATCH version — but the picked directory is read as the
+    completeness AUTHORITY for the whole mirror, so picking the prerelease
+    would overwrite a mirror built from the stable version with its contents.
+    """
+    cache = tmp_path / "cache" / "shipwright"
+    for version in ("1.0.0-rc1", "1.0.0"):
+        (cache / "shipwright-x" / version / "scripts").mkdir(parents=True)
+        (cache / "shipwright-x" / version / "scripts" / "m.py").write_text(
+            f"V = '{version}'\n", encoding="utf-8")
+
+    pairs = list(_HOOK._plugin_mirrors(cache, cache / "plugins"))
+
+    assert len(pairs) == 1
+    src, _dst = pairs[0]
+    assert src.name == "1.0.0", f"picked {src.name}, not the release"
 
 
 def test_plugin_mirrors_yields_nothing_in_the_dev_repo_model(tmp_path: Path):

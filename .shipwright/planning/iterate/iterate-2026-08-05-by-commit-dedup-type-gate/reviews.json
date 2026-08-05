@@ -1,0 +1,78 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-08-05-by-commit-dedup-type-gate",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-05T08:00:15.570959+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-05T08:00:32.357874+00:00",
+      "disposition": "BUG path at small complexity has no mini-plan step per Phase Matrix (Mini-Plan: FEATURE only at small)",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "code": {
+      "review_type": "code",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-05T08:00:32.609449+00:00",
+      "disposition": "small complexity, zero risk flags, 29-line diff, no security-sensitive files — self-review is sufficient per iteration-reviews.md Full Code Review Trigger",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-05T08:00:32.727865+00:00",
+      "disposition": "Stage 3 is conditional on a Stage 2 pass; the internal cascade did not fire at small/no-risk-flags per iteration-reviews.md",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-05T08:00:32.849208+00:00",
+      "disposition": "External cascade trigger rule (diff>100 lines OR security-sensitive OR medium+) does not fire for this 29-line, no-risk-flag, small-complexity diff",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-05T08:00:32.485979+00:00",
+      "disposition": "small complexity, zero risk flags, 29-line diff, no security-sensitive files — self-review is sufficient per iteration-reviews.md Full Code Review Trigger",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    }
+  }
+}

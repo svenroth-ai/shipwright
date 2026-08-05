@@ -147,6 +147,21 @@ class TestFallbackIsHonest:
         assert result["plugins"][0]["cache_version"] == "0.10.0"
         assert result["plugins"][0]["version_basis"].startswith("latest")
 
+    def test_the_fallback_does_not_pick_a_prerelease_over_its_own_release(
+        self, tmp_path: Path,
+    ):
+        """trg-18da39b0: ``1.0.0-rc1`` must not outrank ``1.0.0`` as "latest".
+
+        Not reachable today — every installed plugin carries exactly one plain
+        MAJOR.MINOR.PATCH version — but this is the caller the triage item
+        names directly: ``latest_cache_version_dir`` would otherwise report
+        the prerelease as the cache's current version.
+        """
+        repo, cache = _seed(tmp_path, cache_versions={"1.0.0-rc1": {}, "1.0.0": FILES})
+        result = check_sync(repo_root=repo, cache_root=cache, installed_plugins=None)
+        assert result["status"] == "ok", result["plugins"]
+        assert result["plugins"][0]["cache_version"] == "1.0.0", result["plugins"]
+
     def test_malformed_json_falls_back_instead_of_crashing(self, tmp_path: Path):
         """A detective check must never crash a session on someone else's file."""
         repo, cache = _seed(tmp_path, cache_versions={"0.2.1": FILES})

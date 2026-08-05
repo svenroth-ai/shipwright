@@ -180,10 +180,18 @@ def _find_marketplace_shared(cache_marketplace_root: Path) -> Path | None:
     return None
 _SEMVER_RE = re.compile(r"^(\d+)\.(\d+)\.(\d+)(.*)$")
 def _version_key(name: str) -> tuple:
+    # A release must outrank every prerelease of the same numeric version
+    # (SemVer) -- the 4th element is "is release" (1) vs "is prerelease" (0),
+    # compared BEFORE the suffix text, so a bare '-rc1' > '' string compare
+    # can no longer put the prerelease first. Kept equal to
+    # cache_tree_compare.version_key by test_ensure_shared_cache_ssot_pins.py.
+    # Scope: a '+build' metadata suffix is NOT distinguished from a
+    # prerelease (never observed in this cache's directory names).
     m = _SEMVER_RE.match(name)
     if not m:
-        return (-1, -1, -1, name)
-    return (int(m.group(1)), int(m.group(2)), int(m.group(3)), m.group(4) or "")
+        return (-1, -1, -1, -1, name)
+    suffix = m.group(4) or ""
+    return (int(m.group(1)), int(m.group(2)), int(m.group(3)), 0 if suffix else 1, suffix)
 def _plugin_mirrors(cache_marketplace_root: Path, plugins_target: Path,
                     enumeration: list[bool] | None = None):
     """Yield newest installed source + mirror; repo dev model yields none."""
