@@ -1,0 +1,342 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-08-05-wire-local-guard-scripts",
+    "date": "2026-08-05",
+    "unit": {
+      "status": "pass",
+      "detail": "F0 suite GREEN - 18/18 units in 4.2 min"
+    },
+    "integration": {
+      "status": "pass",
+      "detail": "integration-tests unit PASS (224.6s)"
+    },
+    "e2e": {
+      "status": "n/a",
+      "detail": "no UI surface; the CLI surface was executed at F0.5"
+    },
+    "smoke": {
+      "status": "n/a",
+      "detail": "no server surface"
+    },
+    "pgtap": {
+      "status": "n/a",
+      "detail": "no database"
+    },
+    "design_fidelity": {
+      "status": "n/a",
+      "detail": "no UI change"
+    },
+    "surface_verification": {
+      "surface": "cli",
+      "runner": "uv run --python 3.11 pytest shared/tests/test_required_checks_hook_chain_integration.py shared/tests/test_verify_local_f0_snippets.py -q -p no:randomly",
+      "exit_code": 0,
+      "tests_run": 7,
+      "evidence_path": ".shipwright/runs/iterate-2026-08-05-wire-local-guard-scripts/surface_verification.json",
+      "timestamp": "2026-08-05T23:20:00Z"
+    },
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "F0 runs verify_local.py when the project has it",
+          "status": "tested",
+          "evidence": "test_f0_runs_verify_local",
+          "category": "unit"
+        },
+        {
+          "behavior": "The guard lives inside the executable snippet",
+          "status": "tested",
+          "evidence": "test_the_f0_step_guards_on_the_file_existing",
+          "category": "unit"
+        },
+        {
+          "behavior": "A PowerShell spelling exists at all",
+          "status": "tested",
+          "evidence": "test_the_step_is_runnable_on_the_platform_this_repo_is_developed_on",
+          "category": "unit"
+        },
+        {
+          "behavior": "PowerShell handles a missing uv deterministically via a Get-Command precondition",
+          "status": "tested",
+          "evidence": "test_the_powershell_spelling_can_actually_stop_the_run",
+          "category": "unit"
+        },
+        {
+          "behavior": "PowerShell pops the location in finally",
+          "status": "tested",
+          "evidence": "test_the_powershell_spelling_can_actually_stop_the_run",
+          "category": "unit"
+        },
+        {
+          "behavior": "PowerShell throws on non-zero",
+          "status": "tested",
+          "evidence": "test_the_powershell_spelling_can_actually_stop_the_run",
+          "category": "unit"
+        },
+        {
+          "behavior": "bash keeps its subshell",
+          "status": "tested",
+          "evidence": "test_the_powershell_spelling_can_actually_stop_the_run",
+          "category": "unit"
+        },
+        {
+          "behavior": "The guard is on identity: a foreign script at the same path is declined",
+          "status": "tested",
+          "evidence": "test_it_declines_a_foreign_script_at_the_same_path",
+          "category": "unit"
+        },
+        {
+          "behavior": "Both snippets actually invoke the script, not merely name it",
+          "status": "tested",
+          "evidence": "test_both_snippets_actually_invoke_the_script",
+          "category": "unit"
+        },
+        {
+          "behavior": "A passing gate lets F0 continue",
+          "status": "tested",
+          "evidence": "test_it_runs_a_passing_gate",
+          "category": "unit"
+        },
+        {
+          "behavior": "A failing gate propagates its exact exit code",
+          "status": "tested",
+          "evidence": "test_it_propagates_a_failing_gate",
+          "category": "unit"
+        },
+        {
+          "behavior": "The snippet no-ops where there is no gate",
+          "status": "tested",
+          "evidence": "test_it_no_ops_where_there_is_no_gate",
+          "category": "unit"
+        },
+        {
+          "behavior": "The step precedes the suite",
+          "status": "tested",
+          "evidence": "test_the_step_precedes_the_suite",
+          "category": "unit"
+        },
+        {
+          "behavior": "SKILL.md summary does not contradict F0.md",
+          "status": "tested",
+          "evidence": "test_skill_md_f0_summary_does_not_contradict_the_reference",
+          "category": "unit"
+        },
+        {
+          "behavior": "No file still claims verify_local is unwired (three homes)",
+          "status": "tested",
+          "evidence": "test_no_file_still_claims_verify_local_is_unwired",
+          "category": "unit"
+        },
+        {
+          "behavior": "Producer exit 2 is not a chain failure and is silent",
+          "status": "tested",
+          "evidence": "test_the_producers_documented_exit_2_is_not_a_failure",
+          "category": "unit"
+        },
+        {
+          "behavior": "A hang is bounded and fail-soft",
+          "status": "tested",
+          "evidence": "test_a_hang_is_bounded_and_fail_soft",
+          "category": "unit"
+        },
+        {
+          "behavior": "The hook budget is declared to fit the chain 30s cap",
+          "status": "tested",
+          "evidence": "test_a_hang_is_bounded_and_fail_soft",
+          "category": "unit"
+        },
+        {
+          "behavior": "An unexpected failure exits 0 but reaches the operator",
+          "status": "tested",
+          "evidence": "test_an_unexpected_failure_still_exits_zero_but_reaches_the_operator",
+          "category": "unit"
+        },
+        {
+          "behavior": "An undocumented exit code is reported, not swallowed",
+          "status": "tested",
+          "evidence": "test_a_producer_crash_is_reported_but_not_fatal",
+          "category": "unit"
+        },
+        {
+          "behavior": "KeyboardInterrupt is not swallowed",
+          "status": "tested",
+          "evidence": "test_control_flow_exceptions_are_not_swallowed",
+          "category": "unit"
+        },
+        {
+          "behavior": "argv list, never a shell string",
+          "status": "tested",
+          "evidence": "test_the_producer_is_driven_as_an_argv_list_never_a_shell_string",
+          "category": "unit"
+        },
+        {
+          "behavior": "Absolute producer path, explicit --project-root, pinned cwd",
+          "status": "tested",
+          "evidence": "test_the_producer_path_is_absolute_and_the_root_is_explicit",
+          "category": "unit"
+        },
+        {
+          "behavior": "Child stdout and stderr captured, never forwarded",
+          "status": "tested",
+          "evidence": "test_child_output_is_captured_not_forwarded",
+          "category": "unit"
+        },
+        {
+          "behavior": "No-op outside a Shipwright project",
+          "status": "tested",
+          "evidence": "test_it_does_nothing_outside_a_shipwright_project",
+          "category": "unit"
+        },
+        {
+          "behavior": "A bare .shipwright directory is not a Shipwright project",
+          "status": "tested",
+          "evidence": "test_a_bare_shipwright_directory_is_not_a_shipwright_project",
+          "category": "unit"
+        },
+        {
+          "behavior": "The degraded fallback agrees with the canonical predicate in both directions",
+          "status": "tested",
+          "evidence": "test_the_degraded_fallback_agrees_with_the_canonical_predicate",
+          "category": "unit"
+        },
+        {
+          "behavior": "main() survives an unresolvable project root",
+          "status": "tested",
+          "evidence": "test_main_survives_a_project_root_that_cannot_be_resolved",
+          "category": "unit"
+        },
+        {
+          "behavior": "The hook is registered on SessionStart",
+          "status": "tested",
+          "evidence": "test_the_hook_is_registered_on_session_start",
+          "category": "unit"
+        },
+        {
+          "behavior": "The registered chain keeps its exact ordered target tuple",
+          "status": "tested",
+          "evidence": "test_consolidated_command_preserves_exact_ordered_targets",
+          "category": "unit"
+        },
+        {
+          "behavior": "The first run in a window compares",
+          "status": "tested",
+          "evidence": "test_the_first_run_in_a_window_compares",
+          "category": "unit"
+        },
+        {
+          "behavior": "A second session inside the window does not call out",
+          "status": "tested",
+          "evidence": "test_a_second_session_inside_the_window_does_not_call_out",
+          "category": "unit"
+        },
+        {
+          "behavior": "The window expires",
+          "status": "tested",
+          "evidence": "test_the_window_expires",
+          "category": "unit"
+        },
+        {
+          "behavior": "The interval is configurable by env",
+          "status": "tested",
+          "evidence": "test_the_interval_is_configurable_by_env",
+          "category": "unit"
+        },
+        {
+          "behavior": "Run-config outranks the env var",
+          "status": "tested",
+          "evidence": "test_run_config_outranks_the_env_var",
+          "category": "unit"
+        },
+        {
+          "behavior": "An unusable interval falls back to the default",
+          "status": "tested",
+          "evidence": "test_an_unusable_interval_falls_back_to_the_default",
+          "category": "unit"
+        },
+        {
+          "behavior": "Unreadable throttle state reads as due",
+          "status": "tested",
+          "evidence": "test_unreadable_state_reads_as_due",
+          "category": "unit"
+        },
+        {
+          "behavior": "A future stamp does not mean permanent silence",
+          "status": "tested",
+          "evidence": "test_a_stamp_from_the_future_does_not_mean_permanent_silence",
+          "category": "unit"
+        },
+        {
+          "behavior": "A timeout consumes its window",
+          "status": "tested",
+          "evidence": "test_a_timed_out_producer_still_stamps",
+          "category": "unit"
+        },
+        {
+          "behavior": "A producer that could not start does not consume its window",
+          "status": "tested",
+          "evidence": "test_a_producer_that_could_not_start_does_NOT_stamp",
+          "category": "unit"
+        },
+        {
+          "behavior": "An unrecordable window skips rather than running unthrottled",
+          "status": "tested",
+          "evidence": "test_an_unwritable_state_file_skips_rather_than_running_unthrottled",
+          "category": "unit"
+        },
+        {
+          "behavior": "A check that never succeeds eventually says so",
+          "status": "tested",
+          "evidence": "test_a_check_that_never_succeeds_eventually_says_so",
+          "category": "unit"
+        },
+        {
+          "behavior": "A succeeding check never nags",
+          "status": "tested",
+          "evidence": "test_a_succeeding_check_never_nags",
+          "category": "unit"
+        },
+        {
+          "behavior": "A fresh project is not greeted with a staleness warning",
+          "status": "tested",
+          "evidence": "test_a_fresh_project_is_not_greeted_with_a_staleness_warning",
+          "category": "unit"
+        },
+        {
+          "behavior": "A filed card lands in the tracked log, not the gitignored outbox",
+          "status": "tested",
+          "evidence": "test_one_divergence_files_one_card_across_repeated_invocations",
+          "category": "unit"
+        },
+        {
+          "behavior": "Triage routing is conditional, not hardcoded",
+          "status": "tested",
+          "evidence": "test_drift_files_one_item_keyed_on_repo_and_branch",
+          "category": "unit"
+        },
+        {
+          "behavior": "One divergence files one card across repeated invocations",
+          "status": "tested",
+          "evidence": "test_one_divergence_files_one_card_across_repeated_invocations",
+          "category": "unit"
+        },
+        {
+          "behavior": "INTEGRATION: the SHIPPED SessionStart chain composes with the producer registered - the real run_if_cache_ready.py driven over the targets parsed out of hooks.json in order, plus the gh-unavailable leg with gh provably off PATH",
+          "status": "tested",
+          "evidence": "test_the_shipped_chain_runs_clean_with_the_producer_registered; test_the_producer_is_reached_and_stays_silent_on_an_unreadable_host; test_it_stays_silent_when_gh_itself_is_unavailable",
+          "category": "integration"
+        }
+      ],
+      "untested_testable": 0,
+      "note": "48 behaviors, 0 testable-but-untested. Diff coverage 86 percent against origin/main (threshold 80)."
+    },
+    "degraded": [
+      "External CODE review ran degraded: the DeepSeek leg returned 'unavailable' while the GPT leg succeeded; all 3 of its findings were actioned. The external PLAN review earlier in the run had both legs."
+    ]
+  },
+  "coverage": {
+    "total": 80.2,
+    "measured_tier": "repo",
+    "source": "combined coverage.xml (all plugins + shared + integration)",
+    "measured_at": "2026-07-04T00:00:00Z"
+  }
+}

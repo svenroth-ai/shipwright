@@ -1,0 +1,86 @@
+{
+  "section": "iterate-2026-08-05-wire-local-guard-scripts",
+  "reviewer": "shipwright-build:doubt-reviewer",
+  "stage": "doubt",
+  "gating": "advisory-must-address",
+  "trigger": "cross-plugin (hooks.json -> shared/scripts/hooks/*) + concurrency (a networked SessionStart producer with a reserved-before-launch throttle and side-effecting writes)",
+  "verdict": "9 doubts (3 high, 4 medium, 2 low); all addressed - 7 by code or documentation change, 1 by a filed follow-up, 1 accepted with its rebuttal recorded",
+  "survived": [
+    "The wrapper's fail-soft contract - stdout empty, guarded stderr, main() guarded, KeyboardInterrupt passed through, argv-list-never-shell, the 20s bound, and driving the producer as a subprocess rather than importing it (ADR-045).",
+    "The throttle's own logic - the future-stamp branch, malformed-state-reads-as-due, reserve-before-launch, and the timeout-consumes / unstartable-releases split."
+  ],
+  "doubts": [
+    {
+      "severity": "high",
+      "lens": "hidden-coupling",
+      "claim_under_doubt": "The producer hardcoded to_outbox=True against a repo-wide convention of conditional routing.",
+      "disproof_attempt": "The producer hardcoded to_outbox=True against a repo-wide convention of conditional routing. resolve_project_root is cwd-based, so a session opened in .worktrees/<slug> resolves the WORKTREE - whose outbox is gitignored, which sweep_outbox_to_branch never reads (it reads only the MAIN root's), and which is deleted with the tree. The card would be written to a buffer nothing drains and then destroyed. Harmless while a human typed it on main; this change is what made it load-bearing.",
+      "finding": "The producer hardcoded to_outbox=True against a repo-wide convention of conditional routing. resolve_project_root is cwd-based, so a session opened in .worktrees/<slug> resolves the WORKTREE - whose outbox is gitignored, which sweep_outbox_to_branch never reads (it reads only the MAIN root's), and which is deleted with the tree. The card would be written to a buffer nothing drains and then destroyed. Harmless while a human typed it on main; this change is what made it load-bearing.",
+      "what_would_resolve_it": "FIXED - to_outbox=should_route_to_outbox(root), matching all four sibling producers. The suggested assertion was added too: the CLI test now asserts triage.jsonl exists, because read_all_items unions tracked+outbox and cannot tell them apart. The pre-existing test that pinned 'is True' was updated with the reason."
+    },
+    {
+      "severity": "high",
+      "lens": "boundary-contract",
+      "claim_under_doubt": "Fail-soft silence is not always right.",
+      "disproof_attempt": "Fail-soft silence is not always right. exit 2 covers NO AUTH; the wrapper is silent on that path by contract; the attempt still consumes its window; and nothing records outcome as distinct from attempt. An expired gh token would end the check permanently with no trace anywhere - and the failure correlates with the event being watched, since whoever rotates credentials is often whoever edits Settings -> Rules.",
+      "finding": "Fail-soft silence is not always right. exit 2 covers NO AUTH; the wrapper is silent on that path by contract; the attempt still consumes its window; and nothing records outcome as distinct from attempt. An expired gh token would end the check permanently with no trace anywhere - and the failure correlates with the event being watched, since whoever rotates credentials is often whoever edits Settings -> Rules.",
+      "what_would_resolve_it": "FIXED - state now records lastSuccess and an unhealthySince streak marker separately from lastRun, and stale_since() makes the wrapper say once that the check is running but not succeeding. Floored at STALE_FLOOR_DAYS so shortening the throttle does not shorten the patience. Three tests, including that a healthy check never nags and a fresh project is not greeted with a warning."
+    },
+    {
+      "severity": "high",
+      "lens": "reversibility",
+      "claim_under_doubt": "'F0 is the only home where the script's documented weakness disappears' is FALSE.",
+      "disproof_attempt": "'F0 is the only home where the script's documented weakness disappears' is FALSE. SKILL.md's own ordering note lists eight phases that write tracked artifacts after F0, and F11's ensure_current merges origin/<default> before the push - so the pushed commit is F0's tree plus eight phases plus a merge of main. The divergence lands on the input that matters, since check_ci_gate_coverage.py reads .github/workflows and the gate allowlist, which is exactly what arrives in that merge.",
+      "finding": "'F0 is the only home where the script's documented weakness disappears' is FALSE. SKILL.md's own ordering note lists eight phases that write tracked artifacts after F0, and F11's ensure_current merges origin/<default> before the push - so the pushed commit is F0's tree plus eight phases plus a merge of main. The divergence lands on the input that matters, since check_ci_gate_coverage.py reads .github/workflows and the gate allowlist, which is exactly what arrives in that merge.",
+      "what_would_resolve_it": "CLAIM CORRECTED in the spec, the verify_local.py docstring, docs/hooks-and-pipeline.md and the test module docstring - the honest statement is that F0 is the cheapest early catch and the F0->push window remains. The deeper remedy (a second invocation at F11 after ensure_current) is FILED as trg-64c159dc rather than smuggled into the delivering run."
+    },
+    {
+      "severity": "medium",
+      "lens": "hidden-coupling",
+      "claim_under_doubt": "'closed on measurement, not on taste' does not survive the anti-ratchet rule: it blocks only entries PRESENT in the baseline, run_test_suite.",
+      "disproof_attempt": "'closed on measurement, not on taste' does not survive the anti-ratchet rule: it blocks only entries PRESENT in the baseline, run_test_suite.py is a thin orchestrator over ~11 sibling modules none of which is baselined, and iterate-2026-08-01-f0-diff-coverage-gate added a mechanical F0 gate under the identical constraint four days earlier. The Non-Goal's 'would need a new recorded artifact' is also false - F5 already writes shipwright_test_results.json.",
+      "finding": "'closed on measurement, not on taste' does not survive the anti-ratchet rule: it blocks only entries PRESENT in the baseline, run_test_suite.py is a thin orchestrator over ~11 sibling modules none of which is baselined, and iterate-2026-08-01-f0-diff-coverage-gate added a mechanical F0 gate under the identical constraint four days earlier. The Non-Goal's 'would need a new recorded artifact' is also false - F5 already writes shipwright_test_results.json.",
+      "what_would_resolve_it": "SPEC CORRECTED - restated as a scope judgement ('possible and unblocked; this run chose the documented step') rather than a measurement that forecloses it."
+    },
+    {
+      "severity": "medium",
+      "lens": "boundary-contract",
+      "claim_under_doubt": "'One rule, two homes' does no predictive work - it returns no answer for check_plugin_cache_sync.",
+      "disproof_attempt": "'One rule, two homes' does no predictive work - it returns no answer for check_plugin_cache_sync.py, the next member of the same class, and 'the form its answer takes' is an exit code someone chose rather than a property of the subject. The phantom direction is also a verdict about the push, actionable at F11.",
+      "finding": "'One rule, two homes' does no predictive work - it returns no answer for check_plugin_cache_sync.py, the next member of the same class, and 'the form its answer takes' is an exit code someone chose rather than a property of the subject. The phantom direction is also a verdict about the push, actionable at F11.",
+      "what_would_resolve_it": "SPEC CORRECTED - the rule is replaced by the three discriminators that actually did the deciding and are already the table's columns: portability, whose credentials it needs, and whether the answer moves with the diff."
+    },
+    {
+      "severity": "medium",
+      "lens": "boundary-contract",
+      "claim_under_doubt": "AC-2's guard tests a PATH, not an identity.",
+      "disproof_attempt": "AC-2's guard tests a PATH, not an identity. scripts/verify_local.py is not a distinctive name, so a consumer project carrying one gets an arbitrary local script executed by an agent under 'non-zero = STOP' - the exact outcome the guard's own paragraph says it prevents.",
+      "finding": "AC-2's guard tests a PATH, not an identity. scripts/verify_local.py is not a distinctive name, so a consumer project carrying one gets an arbitrary local script executed by an agent under 'non-zero = STOP' - the exact outcome the guard's own paragraph says it prevents.",
+      "what_would_resolve_it": "FIXED - both spellings now grep for the marker token SHIPWRIGHT_MIRRORED_MERGE_GATES, which verify_local.py declares in its docstring with a do-not-remove note. New executed test: a stub at the right path WITHOUT the marker must not run."
+    },
+    {
+      "severity": "medium",
+      "lens": "hidden-coupling",
+      "claim_under_doubt": "Three residuals to 'the cards are closed': registration is not execution (hooks.",
+      "disproof_attempt": "Three residuals to 'the cards are closed': registration is not execution (hooks.json does not reach the plugin cache until update-marketplace.sh runs); nothing records that the F0 step ran; F0 belongs to one plugin.",
+      "finding": "Three residuals to 'the cards are closed': registration is not execution (hooks.json does not reach the plugin cache until update-marketplace.sh runs); nothing records that the F0 step ran; F0 belongs to one plugin.",
+      "what_would_resolve_it": "ACCEPTED and stated. The cache re-sync is the documented post-merge step and is in the F12 summary; the un-proven step is an explicit Non-Goal with its now-corrected justification; the one-plugin scope is stated in the hooks doc."
+    },
+    {
+      "severity": "low",
+      "lens": "boundary-contract",
+      "claim_under_doubt": "Four ledger rows claim coverage they do not have - row 4 describes an ABANDONED design ($LASTEXITCODE reset), rows 4/6 rest on a disjunction that passes on the weaker form, row 13 conflates one hook's budget with the chain's aggregate cap, row 31 calls the outbox the 'real triage store'.",
+      "disproof_attempt": "Four ledger rows claim coverage they do not have - row 4 describes an ABANDONED design ($LASTEXITCODE reset), rows 4/6 rest on a disjunction that passes on the weaker form, row 13 conflates one hook's budget with the chain's aggregate cap, row 31 calls the outbox the 'real triage store'.",
+      "finding": "Four ledger rows claim coverage they do not have - row 4 describes an ABANDONED design ($LASTEXITCODE reset), rows 4/6 rest on a disjunction that passes on the weaker form, row 13 conflates one hook's budget with the chain's aggregate cap, row 31 calls the outbox the 'real triage store'.",
+      "what_would_resolve_it": "FIXED - row 4 rewritten to the shipped design with a note that it previously described an abandoned one; row 13 rescoped to what is actually proven; row 31 corrected and rows 32-34 added for the new behaviours."
+    },
+    {
+      "severity": "low",
+      "lens": "concurrency",
+      "claim_under_doubt": "test_hook_output_schema_compliance executes the whole registered chain with env=os.",
+      "disproof_attempt": "test_hook_output_schema_compliance executes the whole registered chain with env=os.environ.copy() and does not pin SHIPWRIGHT_PROJECT_ROOT, so it can spend authenticated gh calls against a real tree. Rebuttal available: import_github_findings.py has the same exposure today.",
+      "finding": "test_hook_output_schema_compliance executes the whole registered chain with env=os.environ.copy() and does not pin SHIPWRIGHT_PROJECT_ROOT, so it can spend authenticated gh calls against a real tree. Rebuttal available: import_github_findings.py has the same exposure today.",
+      "what_would_resolve_it": "FIXED - env.pop('SHIPWRIGHT_PROJECT_ROOT', None) added, which closes the sibling's exposure as well."
+    }
+  ]
+}

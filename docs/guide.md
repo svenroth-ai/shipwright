@@ -530,7 +530,9 @@ GitHub merges automatically once all Required Checks pass; if a check goes red, 
 uv run shared/scripts/tools/check_required_checks.py --project-root .
 ```
 
-It needs your own `gh` login (the Actions token cannot read a repo's protection settings), which is why it is a command you run rather than a check in CI. It prints what it found and files a triage item on divergence; `--json` prints the raw comparison, and `--branch` checks a branch other than your default one.
+It needs your own `gh` login (the Actions token cannot read a repo's protection settings), which is why it runs beside you rather than as a check in CI. It prints what it found and files a triage item on divergence; `--json` prints the raw comparison, and `--branch` checks a branch other than your default one.
+
+**You do not have to remember it.** Since iterate-2026-08-05-wire-local-guard-scripts it also runs by itself, as a session is opening, whenever `/shipwright-iterate` is installed — at most once every 6 hours, because the answer only changes when you add or rename a workflow or edit the rules on GitHub. It files the same triage item, never blocks, and says nothing at all in the normal course, including when `gh` is missing or you are not logged in. The one thing that will speak up is the check itself misbehaving, which prints a single `[required-checks] …` line so a quietly broken check cannot masquerade as a healthy one. Set `SHIPWRIGHT_REQUIRED_CHECKS_THROTTLE_HOURS` to change the interval. Running it by hand is for when you want the answer right now.
 
 A repo that requires **nothing** is a result, not an error: every check you run is listed as gating nothing, which is the most useful thing this can tell you. Only a configuration it could not read at all makes it stop and say so — "I could not look" is never reported as "everything matches", and never as "nothing is required" either.
 

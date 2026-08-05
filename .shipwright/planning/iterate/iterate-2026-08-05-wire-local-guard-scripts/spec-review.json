@@ -1,0 +1,34 @@
+{
+  "stage": "spec-compliance",
+  "verdict": "PASS",
+  "spec_citations": [],
+  "summary": "All three cited divergences are resolved and none of the four edits introduced a new one or touched a Non-Goal. AC-5 is now met across every documentation home it enumerates, and its guard test is non-vacuous (verified: the old text would have failed it). AC-1..AC-4 and AC-6 remain met; the PowerShell fix strengthens AC-1 fidelity without adding scope. Stage 2 (code-reviewer) may run.",
+  "history": {
+    "first_pass": "REJECT",
+    "first_pass_findings": [
+      {
+        "kind": "missing",
+        "spec_ref": "AC-5",
+        "where": "docs/hooks-and-pipeline.md:2760-2765",
+        "detail": "Still asserted 'nothing invokes it for you - no hook, no skill step, no workflow. Whether something should is trg-486cb11c.' F0.md now invokes it and that card is the one this run closes. The diff corrected two of the three documentation homes AC-5 enumerates."
+      },
+      {
+        "kind": "missing",
+        "spec_ref": "AC-5",
+        "where": "shared/tests/test_verify_local_f0_wiring.py:153-156",
+        "detail": "The honesty guard listed only _VERIFY_LOCAL and _CLAUDE_MD, omitting docs/hooks-and-pipeline.md - so the test reported green while the claim in the very file AC-5 names survived verbatim. The gate and the defect were the same omission."
+      },
+      {
+        "kind": "unfaithful",
+        "spec_ref": "AC-5 / Affected Boundaries",
+        "where": "docs/guide.md:527-535",
+        "detail": "SECONDARY. Framed the producer as 'a command you run rather than a check in CI' and section 2.10 step 5 as 'remember to run this periodically', which stops being the whole story once it runs unattended on every shipwright-iterate SessionStart."
+      }
+    ],
+    "resolution": "All three fixed, plus the reviewer's Stage-2 note about the PowerShell block ending on Pop-Location (now captures $LASTEXITCODE and re-raises). A repo-wide sweep for a fourth home was run by both the author and the reviewer independently; none exists.",
+    "non_blocking_notes": [
+      "docs/guide.md said the background run 'prints nothing'; strictly the wrapper writes one [required-checks] line on an undocumented producer exit. Wording corrected after the pass so the guide cannot be caught out.",
+      "F0.md grew ~35 lines and is a shipped runtime prompt - confirm anti-ratchet before commit. Verified: F0.md is doc-classified (should_skip=True, no limit) and anti_ratchet_check.py --staged exits 0."
+    ]
+  }
+}
