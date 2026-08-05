@@ -130,6 +130,50 @@ def test_covered_ms_never_exceeds_the_selected_envelope():
     assert stat["unattributed_ms"] <= stat["total_ms"]
 
 
+def test_real_top_level_span_outranks_a_derived_one_of_the_same_name():
+    """Found in doubt review: `_SOURCE_RANK` (producer=0, derived=1, agent=2)
+    claims a real record always outranks a derived one, but under today's
+    `_attach_parents` invariants a real and a derived top-level entry of the
+    SAME name can never actually coexist in one normalize call — so the
+    claim was untested for the case it names. `run_stat`/`_select_top_level`
+    do not re-validate their input (a hand-built or legacy-format event
+    could carry both), so pin the guarantee directly, independent of
+    `_attach_parents`."""
+    event = {"type": "work_completed", "source": "iterate", "adr_id": "r", "ts": "x", "iterate_timings": [
+        {"name": "review", "parent": None, "source": "derived", "outcome": "completed",
+         "start_utc": "2026-08-04T09:00:00+00:00", "end_utc": "2026-08-04T11:00:00+00:00",
+         "duration_ms": 7200000, "exclusive_ms": 7200000, "attempt": 1, "extra": {}},
+        {"name": "review", "parent": None, "source": "agent", "outcome": "completed",
+         "start_utc": "2026-08-04T09:00:00+00:00", "end_utc": "2026-08-04T09:10:00+00:00",
+         "duration_ms": 600000, "exclusive_ms": 600000, "attempt": 1, "extra": {}},
+    ]}
+    stat = run_stat(event)
+    assert stat["phases"]["review"]["source"] == "agent"
+    assert stat["phases"]["review"]["duration_ms"] == 600000
+    assert stat["coverage_top_level"] == 1
+    assert stat["derived_top_level"] == 0
+
+
+def test_derived_top_level_span_shows_real_data_but_does_not_count_as_coverage():
+    """A synthesized ancestor (iterate_timings_synthesis.py) carries a real,
+    if reconstructed, duration — it must render (not read as absent) but
+    must NOT count toward coverage_top_level, since that metric specifically
+    means "the agent/producer actually marked this boundary." A fully
+    derived run should still read as degraded, just no longer as zero data."""
+    event = {"type": "work_completed", "source": "iterate", "adr_id": "r", "ts": "x", "iterate_timings": [
+        {"name": "verification", "parent": None, "source": "derived", "outcome": "completed",
+         "start_utc": "2026-08-04T09:00:00+00:00", "end_utc": "2026-08-04T09:10:00+00:00",
+         "duration_ms": 600000, "exclusive_ms": 600000, "attempt": 1, "extra": {}},
+    ]}
+    stat = run_stat(event)
+    assert stat["phases"]["verification"]["present"] is True
+    assert stat["phases"]["verification"]["source"] == "derived"
+    assert stat["phases"]["verification"]["duration_ms"] == 600000
+    assert stat["coverage_top_level"] == 0
+    assert stat["derived_top_level"] == 1
+    assert stat["degraded"] is True
+
+
 def test_present_but_incomplete_top_level_span_does_not_count_toward_coverage():
     """External code review: presence alone is not coverage — a span that is
     'present' with outcome incomplete/unavailable or no duration_ms must not

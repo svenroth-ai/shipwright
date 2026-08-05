@@ -1,0 +1,114 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-08-05-iterate-timings-derived-parent",
+    "date": "2026-08-05",
+    "unit": {
+      "status": "pass",
+      "passed": 7899,
+      "failed": 0,
+      "note": "F0 canonical suite runner: 18/18 units GREEN (3.7 min) - all 14 plugin units, shared/scripts/tests, shared/scripts/tools/tests, integration-tests, and shared/tests (7899 passed, 21 skipped, 0 failed - the tree this diff lives in). First F0 attempt caught a real self-inflicted gap (a new ADR spec file added before F3 regenerated INDEX.md, 2 failures in test_adr_index_producers.py); fixed by running F3, re-verified locally, then the full F0 gate re-run GREEN. Diff-coverage gate: 91% (>= 80% threshold) against origin/main."
+    },
+    "integration": {
+      "status": "pass",
+      "passed": 1,
+      "failed": 0,
+      "note": "integration-tests unit PASS under F0 (197.0s); this diff adds no new integration-tests file - existing suite unaffected"
+    },
+    "e2e": {
+      "status": "n/a",
+      "reason": "no browser/UI surface - pure Python library fix (measurement/timing normalization + throughput report rendering)"
+    },
+    "smoke": {
+      "status": "n/a",
+      "reason": "no startable server surface touched"
+    },
+    "pgtap": {
+      "status": "n/a",
+      "reason": "no database"
+    },
+    "design_fidelity": {
+      "status": "n/a",
+      "reason": "no UI surface"
+    },
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "A single missing top-level ancestor is synthesized from the envelope of its children",
+          "disposition": "tested",
+          "evidence": "test_iterate_timings_synthesis.py::test_missing_top_level_parent_is_synthesized_from_children_envelope PASSED"
+        },
+        {
+          "behavior": "Two independently-declared parent names for the same span type synthesize independently, from disjoint envelopes",
+          "disposition": "tested",
+          "evidence": "test_iterate_timings_synthesis.py::test_multiple_declared_parents_synthesize_independently PASSED"
+        },
+        {
+          "behavior": "A real-but-irrelevant record under a sibling allowed parent name does not suppress synthesis of the child's own declared (absent) parent name",
+          "disposition": "tested",
+          "evidence": "test_iterate_timings_synthesis.py::test_a_real_but_irrelevant_sibling_parent_does_not_suppress_synthesis PASSED"
+        },
+        {
+          "behavior": "A synthesized ancestor is marked outcome=incomplete (not completed) when a referencing child is still open",
+          "disposition": "tested",
+          "evidence": "test_iterate_timings_synthesis.py::test_synthesized_ancestor_is_incomplete_when_a_referencing_child_is_still_open PASSED"
+        },
+        {
+          "behavior": "Synthesis recurses when a synthesized ancestor is itself nested and needs a further-missing parent",
+          "disposition": "tested",
+          "evidence": "test_iterate_timings_synthesis.py::test_synthesized_ancestor_recurses_when_it_is_itself_nested PASSED"
+        },
+        {
+          "behavior": "A real agent-emitted parent mark, even unclosed/incomplete, always wins over synthesis",
+          "disposition": "tested",
+          "evidence": "test_iterate_timings_synthesis.py::test_real_agent_mark_wins_over_synthesis_even_when_incomplete PASSED"
+        },
+        {
+          "behavior": "A genuinely mismatched (present but non-containing) real parent still rejects via impossible-ordering, cascading to its children, and is never synthesized around",
+          "disposition": "tested",
+          "evidence": "test_iterate_timings_hierarchy.py::test_a_child_attached_to_a_rejected_parent_cascades_the_rejection PASSED"
+        },
+        {
+          "behavior": "End-to-end: finalize_iterate's F5b fold produces real iterate_timings data when no top-level agent mark exists anywhere in the run (the production bug shape)",
+          "disposition": "tested",
+          "evidence": "test_iterate_timings_finalize.py::test_finalize_folds_iterate_timings_when_no_top_level_mark_was_ever_made PASSED"
+        },
+        {
+          "behavior": "A derived span shows real duration data in the throughput stats but does not count toward measured coverage_top_level",
+          "disposition": "tested",
+          "evidence": "test_iterate_throughput_stats.py::test_derived_top_level_span_shows_real_data_but_does_not_count_as_coverage PASSED"
+        },
+        {
+          "behavior": "A real top-level span of a given name always outranks a derived one of the same name in _select_top_level (source-rank precedence, fixed after doubt review)",
+          "disposition": "tested",
+          "evidence": "test_iterate_throughput_stats.py::test_real_top_level_span_outranks_a_derived_one_of_the_same_name PASSED"
+        },
+        {
+          "behavior": "A derived ancestor is rendered distinctly in the throughput report table, not identically to a measured span",
+          "disposition": "tested",
+          "evidence": "test_iterate_throughput_report.py::test_derived_ancestor_labeled_distinctly_in_the_rendered_table PASSED"
+        }
+      ],
+      "counts": {
+        "testable": 11,
+        "tested": 11,
+        "untestable": 0,
+        "untested_testable": 0
+      }
+    },
+    "degraded": []
+  },
+  "coverage": {
+    "total": 80.2,
+    "measured_tier": "repo",
+    "source": "combined coverage.xml (all plugins + shared + integration)",
+    "measured_at": "2026-07-04T00:00:00Z"
+  },
+  "source_state": {
+    "run_id": "iterate-2026-08-05-iterate-timings-derived-parent",
+    "commit": "d4190f6caa5c6c22df90c828e4c3c86bf4bb4bc5",
+    "dirty": true,
+    "base": null,
+    "release": null
+  }
+}

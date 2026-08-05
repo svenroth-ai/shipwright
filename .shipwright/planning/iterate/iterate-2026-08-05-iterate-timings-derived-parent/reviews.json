@@ -1,0 +1,143 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-08-05-iterate-timings-derived-parent",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-05T17:18:15.500682+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-05T17:18:28.544133+00:00",
+      "disposition": "Phase Matrix: Mini-Plan is FEATURE-only at small complexity; this is a BUG intent, no risk flags, small (classify_complexity.py: small, confidence 0.6, no risk flags) - skipped per the matrix, not an operator decline.",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 3,
+      "findings": [
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "shared/scripts/lib/iterate_timings_normalize.py",
+          "line": null,
+          "finding": "Unreachable-but-defensive guard comment was imprecise about why it's unreachable.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/scripts/lib/iterate_timings_synthesis.py",
+          "line": null,
+          "finding": "synthesize_ancestor silently picked the alphabetically-first parent name if a future catalog change ever gave a synthesized ancestor multiple valid non-None parents.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/scripts/lib/iterate_timings_synthesis.py",
+          "line": null,
+          "finding": "Empty-children precondition for synthesize_ancestor was implicit, not documented.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-08-05T17:02:06.253055+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 4,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "hidden-coupling",
+          "file": "shared/scripts/lib/iterate_timings_synthesis.py",
+          "line": null,
+          "finding": "Claim under doubt: The synthesized ancestor's envelope (earliest start, latest end) honestly represents when that phase happened. — Two children sharing the same missing declared parent name but temporally disjoint (e.g. a phase re-entered hours apart in one long/resumed session) merge into ONE derived span whose duration spans the whole gap, not just real activity - misleading an operator reading the throughput report. Not exploitable (measurement-only, never gates a verdict) and not observed in either real production run inspected (both were tight single-episode clusters). Documented as a known limitation in iterate-timings.md rather than engineered around, since splitting into disjoint clusters would exceed the operator's literal 'envelope: earliest start, latest end' spec, and the existing exclusive_ms figure already surfaces the gap as elevated uncovered time.",
+          "suggestion": "documented as known limitation; not fixed",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "ordering",
+          "file": "shared/scripts/lib/iterate_timings_normalize.py",
+          "line": null,
+          "finding": "Claim under doubt: Round-based resolution always converges to the correct tree, not just some tree. — Two orphan groups resolved in the SAME round synthesize independently, from only their own children - if one group's synthesized ancestor is itself nested and needs to be contained by an ancestor a DIFFERENT group synthesizes in the same round, the narrower one wins and a later-round widening never happens. Only reachable today via the delivery chain (ci_wait -> delivery_wait -> delivery, delivery's other declarer being post_ci_remediation) and only if deliver_pr.py's own real self-recorded delivery/delivery_wait spans are both silently absent - not confirmed reachable via the real CLI path, which always records them together. Falls back to rejection (pre-fix behavior), not data corruption. Documented as a known limitation with a code comment and in iterate-timings.md.",
+          "suggestion": "documented as known limitation; not fixed",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "boundary-contract",
+          "file": "shared/scripts/lib/iterate_throughput_stats.py",
+          "line": null,
+          "finding": "Claim under doubt: _SOURCE_RANK guarantees a real record always outranks a derived one, per the operator's explicit 'an agent-emitted parent, when present, must still win over the derived one' requirement. — The original placeholder ordering was producer=0, derived=1, agent=2 - derived explicitly ranked ABOVE agent. A new direct test against _select_top_level/run_stat (bypassing _attach_parents, which happens to make this unreachable via the normal synthesis path today) proved this was a live, testable violation of the stated guarantee, not dead code.",
+          "suggestion": "fixed - _SOURCE_RANK reordered to producer=0, agent=1, derived=2; new test test_real_top_level_span_outranks_a_derived_one_of_the_same_name pins the guarantee directly, independent of _attach_parents.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "clarity",
+          "file": "shared/scripts/lib/iterate_throughput_render.py",
+          "line": null,
+          "finding": "Claim under doubt: A derived span's outcome/labeling gives an operator enough signal to judge its trustworthiness. — A merged multi-episode derived span still reports outcome='completed', which reads as confident, with only the render layer's *(derived)* tag as the sole distinguishing signal.",
+          "suggestion": "no change needed - subsumed by the HIGH finding's documented limitation; the existing *(derived)* tag is the intended signal.",
+          "source": "doubt-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-08-05T17:17:27.018939+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-05T17:18:28.645707+00:00",
+      "disposition": "Phase Matrix: External LLM Review is 'skip' at small complexity (Advisory in Override Classes) - not mandatory below medium; the internal review cascade (spec/code/doubt) ran instead and found and fixed real issues.",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-05T16:52:24.430406+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    }
+  }
+}

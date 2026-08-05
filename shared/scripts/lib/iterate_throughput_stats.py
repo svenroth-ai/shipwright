@@ -34,7 +34,7 @@ def iterate_work_completed_events(events: list[dict]) -> list[dict]:
     return rows
 
 
-_SOURCE_RANK = {"producer": 0, "derived": 1, "agent": 2}
+_SOURCE_RANK = {"producer": 0, "agent": 1, "derived": 2}
 
 
 def _select_top_level(spans: list[dict]) -> dict[str, dict]:
@@ -46,10 +46,17 @@ def _select_top_level(spans: list[dict]) -> dict[str, dict]:
     dict comprehension keyed by name silently keeps whichever happens to
     sort last, which can pick the shorter/less-accurate instance and skew
     ``total_ms``/``unattributed_ms`` for the whole run (code review). Prefer
-    producer over derived over agent, then bounded over open-ended, then the
+    producer over agent over derived, then bounded over open-ended, then the
     longest duration — the same "most-accurate-wins" intuition as
     ``_attach_parents``'s tiebreak, applied here for reporting rather than
-    child-attachment.
+    child-attachment. ``derived`` ranks LAST, not merely below producer: a
+    derived entry is a reconstruction with no real recorded boundary at all,
+    so it must never silently outrank an actual agent mark, even a bare one
+    — "an agent-emitted parent, when present, must always win over the
+    derived one" is a hard requirement (iterate-timings.md), and this rank
+    is what enforces it wherever both could ever appear side by side (found
+    in doubt review — the original placeholder ordering had this backwards,
+    untested until synthesis could actually produce a ``derived`` entry).
     """
     candidates: dict[str, list[dict]] = {}
     for s in spans:
@@ -100,7 +107,7 @@ def run_stat(event: dict) -> dict:
         excl = entry.get("exclusive_ms")
         pct = round(100.0 * excl / total_ms, 1) if (total_ms and excl is not None) else None
         phases[name] = {
-            "present": True, "outcome": entry.get("outcome"),
+            "present": True, "outcome": entry.get("outcome"), "source": entry.get("source"),
             "duration_ms": entry.get("duration_ms"), "exclusive_ms": excl, "pct": pct,
         }
 
@@ -156,11 +163,22 @@ def run_stat(event: dict) -> dict:
     # mark (no end_utc) or an outcome of incomplete/unavailable is exactly
     # the partial-run case this report exists to surface, not to hide behind
     # a clean-looking N/N (external code review) — a run with five bare
-    # `start` marks and no matching ends must not read as fully covered.
+    # `start` marks and no matching ends must not read as fully covered. A
+    # DERIVED span (materialized from producer children when the agent never
+    # marked the boundary — see iterate_timings_synthesis.py) carries real
+    # duration data and is shown in the table, but it is a reconstruction,
+    # not a measured boundary, so it does not count toward "coverage" either
+    # — that metric means "the agent/producer actually marked this," and a
+    # fully-derived run should still read as degraded (the agent boundary is
+    # genuinely still missing), just no longer as ZERO data.
     coverage_n = sum(
         1 for name in FOLD_TIME_CAPTURABLE_SPANS
         if phases[name]["present"] and phases[name].get("duration_ms") is not None
         and phases[name].get("outcome") not in ("incomplete", "unavailable")
+        and phases[name].get("source") != "derived"
+    )
+    derived_n = sum(
+        1 for name in FOLD_TIME_CAPTURABLE_SPANS if phases[name].get("source") == "derived"
     )
 
     return {
@@ -168,6 +186,7 @@ def run_stat(event: dict) -> dict:
         "total_ms": total_ms, "coverage_top_level": coverage_n,
         "coverage_top_level_total": len(FOLD_TIME_CAPTURABLE_SPANS), "span_count": len(spans),
         "degraded": coverage_n < len(FOLD_TIME_CAPTURABLE_SPANS),
+        "derived_top_level": derived_n,
         "phases": phases, "nested": nested_by_name,
         "unattributed_ms": unattributed_ms, "unattributed_pct": unattributed_pct,
         "restarts": restarts,
