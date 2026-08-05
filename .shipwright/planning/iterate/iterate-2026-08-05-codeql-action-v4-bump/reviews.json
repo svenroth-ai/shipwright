@@ -1,0 +1,188 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-08-05-codeql-action-v4-bump",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-05T16:23:23.868811+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 7,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The new tests (e.g., in `test_codeql_config_query_filters.py` and `test_codeql_workflow_convention.py`) may only assert the version string when a step is found, without explicitly verifying that the three required steps (`init`, `autobuild`, `analyze`) actually exist in the parsed workflow. If a step is accidentally removed, the test could silently pass because no assertion is triggered.",
+          "suggestion": "Ensure each test first confirms the presence of the step (by `id` or `uses` prefix), then asserts the `uses` field ends with `@v4`.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "The version bump may introduce a subtle runtime difference in CodeQL v4 (e.g., default query suite, language detection) that is not captured by the static YAML-shape tests. While unlikely to break, a live run of the workflow could fail.",
+          "suggestion": "Optionally trigger a one-time manual execution of the CodeQL workflow on the branch after the change to verify it completes without errors, or rely on the PR merge triggering the workflow and monitoring its status.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "The acceptance criterion AC3 enforces that permissions, `continue-on-error`, queries, and config-file remain byte-identical. The existing tests validate these properties structurally, but the developer must still take care not to introduce unintended whitespace or formatting changes when editing the YAML files.",
+          "suggestion": "Review the diff carefully; the tests likely ignore harmless whitespace differences, but the intent is a clean version-only change. This is a human-review point, not a code defect.  The implementation approach is sound, minimal, and well-scoped. The new assertions will guard against regression, and the change carries low risk. The only notable refinement is ensuring the tests assert step existence explicitly.  SHIPWRIGHT_VERDICT: approve",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "The plan does not verify runner compatibility for CodeQL Action v4. v4 uses the newer Node runtime, and self-hosted runners must meet GitHub’s minimum runner version for that runtime. A workflow that currently succeeds on an older self-hosted runner could fail before the CodeQL steps execute.",
+          "suggestion": "Inspect the `runs-on` values in both the repository workflow and the rendered/adopted template. If either can target self-hosted runners, document the required minimum GitHub Actions runner version and either confirm the supported runner fleet meets it or add an explicit prerequisite to upgrade it. If both use GitHub-hosted runners exclusively, record that as the compatibility justification.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "The proposed tests should ensure the complete expected set of CodeQL action references is v4, not merely establish that one or more `@v4` strings are present or that `@v3` is absent. A weak presence/absence assertion could pass with a missing required step, an unexpected action reference, or a mix of major versions.",
+          "suggestion": "In each test, extract the `uses` values for the `init`, `autobuild`, and `analyze` steps and assert the exact mapping/set is `github/codeql-action/{init,autobuild,analyze}@v4`. This directly enforces AC1/AC2 and makes the “fails on v3, passes on v4” intent unambiguous.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "AC3 requires selected fields to remain byte-identical, but the listed existing tests appear to validate their semantic presence/value rather than byte identity. That is adequate for this narrowly controlled edit if the diff is reviewed, but it would not independently prove the stated byte-identical criterion.",
+          "suggestion": "Keep the change as a token-only replacement and explicitly inspect/record the six-line workflow/template diff. If the project expects AC3 to be regression-enforced rather than verified per change, add focused source-text assertions for the relevant unchanged snippets; otherwise, do not add unnecessary snapshot infrastructure for this one-off bump.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "The acknowledgement artifact is listed as required but the plan does not state the command or confirm that the generated JSON is committed and validated. Since this repository apparently treats workflow modifications as supply-chain-sensitive, omitting or hand-authoring the artifact could fail repository policy checks.",
+          "suggestion": "Include the concrete `record_ci_supplychain_ack.py` invocation in the implementation steps, review the generated artifact for the intended changed workflow paths/action version, and include it in the final verification/status check.  Overall, the version bump and scope are sound, and retaining GitHub-owned CodeQL actions on the approved major tag is consistent with the stated policy. Address the self-hosted-runner compatibility check and make the new pin assertions exact before landing. SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-08-05T16:05:47.256718+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[deepseek] - **Category:** edge-case  \n- **Severity:** medium  \n- **Finding:** The new tests (e.g., in `test_codeql_config_query_filters.py` and `test_codeql_workflow_convention.py`) may only assert the version string when a step is found, without explicitly verifying that the three required steps (`init`, `autobuild`, `analyze`) actually exist in the parsed workflow. If a step is accidentally removed, the test could silently pass because no assertion is triggered.  \n- **Suggestion:** Ensure each test first confirms the presence of the step (by `id` or `uses` prefix), then asserts the `uses` field ends with `@v4`.\n\n- **Category:** risk  \n- **Severity:** low  \n- **Finding:** The version bump may introduce a subtle runtime difference in CodeQL v4 (e.g., default query suite, language detection) that is not captured by the static YAML-shape tests. While unlikely to break, a live run of the workflow could fail.  \n- **Suggestion:** Optionally trigger a one-time manual execution of the CodeQL workflow on the branch after the change to verify it completes without errors, or rely on the PR merge triggering the workflow and monitoring its status.\n\n- **Category:** risk  \n- **Severity:** low  \n- **Finding:** The acceptance criterion AC3 enforces that permissions, `continue-on-error`, queries, and config-file remain byte-identical. The existing tests validate these properties structurally, but the developer must still take care not to introduce unintended whitespace or formatting changes when editing the YAML files.  \n- **Suggestion:** Review the diff carefully; the tests likely ignore harmless whitespace differences, but the intent is a clean version-only change. This is a human-review point, not a code defect.\n\nThe implementation approach is sound, minimal, and well-scoped. The new assertions will guard against regression, and the change carries low risk. The only notable refinement is ensuring the tests assert step existence explicitly.\n\nSHIPWRIGHT_VERDICT: approve\n\n[openai] 1. **Category:** dependency  \n   **Severity:** medium  \n   **Finding:** The plan does not verify runner compatibility for CodeQL Action v4. v4 uses the newer Node runtime, and self-hosted runners must meet GitHub’s minimum runner version for that runtime. A workflow that currently succeeds on an older self-hosted runner could fail before the CodeQL steps execute.  \n   **Suggestion:** Inspect the `runs-on` values in both the repository workflow and the rendered/adopted template. If either can target self-hosted runners, document the required minimum GitHub Actions runner version and either confirm the supported runner fleet meets it or add an explicit prerequisite to upgrade it. If both use GitHub-hosted runners exclusively, record that as the compatibility justification.\n\n2. **Category:** approach  \n   **Severity:** low  \n   **Finding:** The proposed tests should ensure the complete expected set of CodeQL action references is v4, not merely establish that one or more `@v4` strings are present or that `@v3` is absent. A weak presence/absence assertion could pass with a missing required step, an unexpected action reference, or a mix of major versions.  \n   **Suggestion:** In each test, extract the `uses` values for the `init`, `autobuild`, and `analyze` steps and assert the exact mapping/set is `github/codeql-action/{init,autobuild,analyze}@v4`. This directly enforces AC1/AC2 and makes the “fails on v3, passes on v4” intent unambiguous.\n\n3. **Category:** risk  \n   **Severity:** low  \n   **Finding:** AC3 requires selected fields to remain byte-identical, but the listed existing tests appear to validate their semantic presence/value rather than byte identity. That is adequate for this narrowly controlled edit if the diff is reviewed, but it would not independently prove the stated byte-identical criterion.  \n   **Suggestion:** Keep the change as a token-only replacement and explicitly inspect/record the six-line workflow/template diff. If the project expect […truncated]",
+      "verdicts": {
+        "openai": "revise",
+        "deepseek": "approve"
+      }
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 2,
+      "findings": [
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": ".shipwright/triage.jsonl",
+          "line": 722,
+          "finding": "Open triage item trg-0ce59c05 (2026-07-18) asserted the adopt template already shipped codeql-action@v4, which this diff's own before-state disproves. Non-blocking for this bump; flagged to the operator as a follow-up, not fixed here (out of scope).",
+          "suggestion": "Separate follow-up: reconcile or dismiss trg-0ce59c05.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "shared/tests/test_codeql_config_query_filters.py",
+          "line": 100,
+          "finding": "_init_step() duplicated the same parse-and-scan logic as the new _codeql_action_steps() helper.",
+          "suggestion": "Applied in this diff: _init_step() now delegates to _codeql_action_steps()['init']. Re-verified green (45 passed).",
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-08-05T16:32:05.994664+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-05T16:32:14.806294+00:00",
+      "disposition": "Stage 3 is conditional on a non-trivial surface (migrations, async/concurrency, cross-plugin imports, irreversible ops) per iteration-reviews.md; this diff is a CI-config version-pin bump plus two static YAML-shape assertions, none of which apply.",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 2,
+      "findings": [
+        {
+          "severity": "low",
+          "category": "test",
+          "file": "shared/tests/test_codeql_config_query_filters.py",
+          "line": 109,
+          "finding": "_codeql_action_steps()` stores only one step per action name and silently overwrites earlier matches. A workflow containing (for example) `init@v3` followed by an added `init@v4` would pass this test despite retaining a deprecated v3 CodeQL action step, so the test does not fully guarantee that v3 cannot silently reappear.",
+          "suggestion": "Collect all matching `uses` values per action name and assert that there is exactly one matching step and that its value is the expected `@v4` pin.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "test",
+          "file": "shared/tests/test_codeql_workflow_convention.py",
+          "line": 191,
+          "finding": "The template test has the same overwrite behavior: a v3 action step can be retained alongside a later v4 duplicate and the test will pass. This leaves the shipped scaffold able to contain a v3 pin without detection.",
+          "suggestion": "Assert exactly one `init`, `autobuild`, and `analyze` CodeQL action step exists in the template, and assert every matching step is pinned exactly to `@v4`.  The workflow and template changes satisfy the requested version bump and preserve the surrounding settings in the visible diff. The pin-regression tests need the duplicate-step fix to fully enforce the stated guarantee. SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-08-05T16:35:01.162013+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "partial",
+      "raw_excerpt": "[deepseek] No defects found. The diff cleanly bumps the three CodeQL Action steps in both the monorepo workflow and the adopt template, with no unintended changes to permissions, continue-on-error, queries, or config-file lines. The new parametrized assertions in both test files explicitly check for exact `@v4` pins and will fail on `@v3`, preventing silent regressions. The refactored `_init_step()` helper preserves backward compatibility for existing tests. No correctness, security, or regression issues introduced.\n\nSHIPWRIGHT_VERDICT: approve\n\n[openai] - Category: test\n- Severity: low\n- File: `shared/tests/test_codeql_config_query_filters.py:109`\n- Finding: `_codeql_action_steps()` stores only one step per action name and silently overwrites earlier matches. A workflow containing (for example) `init@v3` followed by an added `init@v4` would pass this test despite retaining a deprecated v3 CodeQL action step, so the test does not fully guarantee that v3 cannot silently reappear.\n- Suggestion: Collect all matching `uses` values per action name and assert that there is exactly one matching step and that its value is the expected `@v4` pin.\n\n- Category: test\n- Severity: low\n- File: `shared/tests/test_codeql_workflow_convention.py:191`\n- Finding: The template test has the same overwrite behavior: a v3 action step can be retained alongside a later v4 duplicate and the test will pass. This leaves the shipped scaffold able to contain a v3 pin without detection.\n- Suggestion: Assert exactly one `init`, `autobuild`, and `analyze` CodeQL action step exists in the template, and assert every matching step is pinned exactly to `@v4`.\n\nThe workflow and template changes satisfy the requested version bump and preserve the surrounding settings in the visible diff. The pin-regression tests need the duplicate-step fix to fully enforce the stated guarantee.  \nSHIPWRIGHT_VERDICT: revise",
+      "verdicts": {
+        "openai": "revise",
+        "deepseek": "approve"
+      }
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-05T16:25:42.384785+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    }
+  }
+}
