@@ -1,0 +1,166 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-08-05-iterate-entry-tail-fallback-fail-closed",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-05T19:33:26.492837+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-05T19:33:54.036269+00:00",
+      "disposition": "BUG intent at small complexity — Mini-Plan is medium+ only per the Phase Matrix; no mini-plan was authored",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 5,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "shared/scripts/tools/verifiers/_iterate_run_id.py",
+          "line": 58,
+          "finding": "own_entry_file_is_corrupt only probes the per-file store (entry_file_for(...).exists()); it doesn't detect the case where the requested run's own entry lives only in the legacy iterate_history array and shipwright_run_config.json is itself corrupt at read time. In that scenario resolve_iterate_entry still falls through to entries[-1], silently substituting a different run's data — the same bug class trg-e0a0f569 closes, via the other storage path.",
+          "suggestion": "Extend own_entry_file_is_corrupt to also flag 'legacy array present but run_config.json failed to parse' for the requested run_id, or explicitly document this residual scope limitation the way test_iterate_entry_encoding.py's docstring documents other limits.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "shared/scripts/tools/verifiers/_iterate_run_id.py",
+          "line": 79,
+          "finding": "own_entry_file_is_corrupt's except Exception: return False fails OPEN on unexpected errors, the opposite of this fix's fail-closed intent.",
+          "suggestion": "Return True (fail closed) on unexpected exceptions instead of False.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "performance",
+          "file": "shared/scripts/tools/verifiers/_iterate_run_id.py",
+          "line": 98,
+          "finding": "resolve_iterate_entry and own_entry_file_is_corrupt each independently call read_iterate_entries, a duplicate re-parse on the no-match path.",
+          "suggestion": "Pass the already-fetched entries list into the corruption check instead of re-invoking the full merged reader.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "shared/scripts/tools/verifiers/spec_checks.py",
+          "line": 150,
+          "finding": "Both wrapper bodies do a function-local import of resolve_iterate_entry even though tools.verifiers._iterate_run_id is already imported at module top-level in both files for unresolvable_run_id_skip.",
+          "suggestion": "Add resolve_iterate_entry to the existing top-level import list in both files; drop the local import lines.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/tests/test_iterate_entry_encoding.py",
+          "line": 121,
+          "finding": "Only non-UTF-8 and malformed-JSON corruption classes are driven through own_entry_file_is_corrupt/resolve_iterate_entry; an oversized (>MAX_ENTRY_FILE_BYTES) or symlinked own-entry file is untested.",
+          "suggestion": "Add an oversized-file case mirroring the existing corrupt-entry test.",
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-08-05T19:49:43.211211+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 3,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "concurrency",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: own_entry_file_is_corrupt correctly distinguishes corrupt-on-disk from genuinely-absent in every case — resolve_iterate_entry snapshots entries via read_iterate_entries, then own_entry_file_is_corrupt performs its own LATER, separate filesystem checks against that stale snapshot with no lock between the two passes. A concurrent writer landing/removing the entry file between the two passes could misclassify corrupt-vs-absent.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "hidden coupling & blast radius / boundary & contract",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: the fix closes trg-e0a0f569 completely — check_s9_readme_freshness and check_s10_claude_md_sync never call unresolvable_run_id_skip (unlike S2/S3/W2), so a sentinel run_id ('' or 'unknown') on a project with prior iterate history still tail-falls-back and inherits an unrelated run's category -- the exact symptom trg-e0a0f569 named for S9/S10, via a different trigger (sentinel run_id, not file corruption) than this ticket addressed.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "boundary & contract",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: own_entry_file_is_corrupt correctly distinguishes corrupt-on-disk from genuinely-absent in every case — entry_file_for(...).exists() follows symlinks and reports False for a DANGLING one (target missing), so it would be treated as 'genuinely absent' and permit a tail-fallback substitution -- diverging from _is_entry_file's deliberate exclusion of ALL symlinks at this location regardless of target validity.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-08-05T20:04:03.500652+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 1,
+      "findings": [
+        {
+          "severity": "low",
+          "category": "regression",
+          "file": "shared/scripts/tools/verifiers/spec_checks.py:145 and iterate_compliance.py:99 (removal of sys.path insertion inside the wrapper functions)",
+          "line": null,
+          "finding": "The old `_read_iterate_entry` and `_latest_iterate_entry` added `shared/scripts` to `sys.path` before importing `lib.iterate_entry`, which allowed calling them from contexts where the path was not pre‑configured. The new delegation to `resolve_iterate_entry` does not add the path. While current internal callers and test suites already set `sys.path`, any external code that relied on the function’s own path injection would now fail with an `ImportError`.",
+          "suggestion": "Either restore the `sys.path` guard inside `resolve_iterate_entry` or explicitly document that callers must ensure `shared/scripts` is on `sys.path` before calling these functions.  Overall assessment: The change correctly implements the spec’s fail‑closed behavior, the corruption‑detection logic is sound and covers edge cases (symlinks, oversized files, unreadable legacy config), the tests assert the new contract and cover multiple corruption scenarios, and the existing legitimate fallback for truly unwritten entries is preserved. The regression risk is low and confined to unusual external callers. Ship with the change as‑is.  SHIPWRIGHT_VERDICT: approve",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-08-05T20:08:35.905326+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "partial",
+      "raw_excerpt": "[deepseek] - Category: regression\n- Severity: low\n- File: shared/scripts/tools/verifiers/spec_checks.py:145 and iterate_compliance.py:99 (removal of sys.path insertion inside the wrapper functions)\n- Finding: The old `_read_iterate_entry` and `_latest_iterate_entry` added `shared/scripts` to `sys.path` before importing `lib.iterate_entry`, which allowed calling them from contexts where the path was not pre‑configured. The new delegation to `resolve_iterate_entry` does not add the path. While current internal callers and test suites already set `sys.path`, any external code that relied on the function’s own path injection would now fail with an `ImportError`.\n- Suggestion: Either restore the `sys.path` guard inside `resolve_iterate_entry` or explicitly document that callers must ensure `shared/scripts` is on `sys.path` before calling these functions.\n\nOverall assessment: The change correctly implements the spec’s fail‑closed behavior, the corruption‑detection logic is sound and covers edge cases (symlinks, oversized files, unreadable legacy config), the tests assert the new contract and cover multiple corruption scenarios, and the existing legitimate fallback for truly unwritten entries is preserved. The regression risk is low and confined to unusual external callers. Ship with the change as‑is.\n\nSHIPWRIGHT_VERDICT: approve\n\n[openai] No concrete defects found. The shared resolver distinguishes a missing requested entry from a skipped corrupt one, preserves the intentional fallback for genuinely unwritten entries, and both reader families now use it. Tests cover malformed JSON, non-UTF-8 data, oversized files, dangling symlinks, legacy-config corruption, the legitimate fallback path, and W2’s prior false-SKIP behavior.\n\nOverall assessment: ship-as-is.  \nSHIPWRIGHT_VERDICT: approve",
+      "verdicts": {
+        "openai": "approve",
+        "deepseek": "approve"
+      }
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-05T19:37:41.602612+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    }
+  }
+}

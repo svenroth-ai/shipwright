@@ -176,6 +176,43 @@ def test_analyze_step_continue_on_error() -> None:
         )
 
 
+def _codeql_action_steps() -> dict[str, list[dict]]:
+    """Map step-purpose ('init'/'autobuild'/'analyze') -> ALL matching step
+    dicts, matched by `uses:` prefix. Kept as a list (not last-write-wins) so
+    a leftover duplicate step is visible instead of silently shadowed by a
+    later match."""
+    job = (_parsed().get("jobs") or {}).get("analyze") or {}
+    steps = job.get("steps") or []
+    found: dict[str, list[dict]] = {}
+    for step in steps:
+        uses = step.get("uses") if isinstance(step, dict) else None
+        if not isinstance(uses, str):
+            continue
+        for name in ("init", "autobuild", "analyze"):
+            if uses.startswith(f"github/codeql-action/{name}@"):
+                found.setdefault(name, []).append(step)
+    return found
+
+
+@pytest.mark.parametrize("step_name", ["init", "autobuild", "analyze"])
+def test_codeql_action_steps_pin_v4(step_name: str) -> None:
+    """CodeQL Action v3 is deprecated December 2026 and drops Node.js 20
+    runner support in fall 2026; v4 is the GA, Node-24-based replacement.
+    Guards the adopt scaffolding template against a regression back to @v3
+    (every adopted repo inherits this template's pins) — and, since every
+    match is kept (not last-write-wins), against a leftover v3 duplicate
+    hiding behind an added v4 step."""
+    matches = _codeql_action_steps().get(step_name) or []
+    assert len(matches) == 1, (
+        f"expected exactly one github/codeql-action/{step_name} step in "
+        f"template, found {len(matches)}"
+    )
+    assert matches[0]["uses"] == f"github/codeql-action/{step_name}@v4", (
+        f"template {step_name} step uses={matches[0]['uses']!r}, "
+        f"expected 'github/codeql-action/{step_name}@v4'"
+    )
+
+
 def test_raw_template_carries_placeholder_literal() -> None:
     # Guards against a YAML round-trip that quotes/mangles the token.
     assert LANGUAGES_PLACEHOLDER in _raw()
