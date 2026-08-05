@@ -22,7 +22,11 @@ Usage:
         --detail "Operator-stamped via triage_add" \\
         --severity high --kind bug \\
         --source manual \\
-        --fr-id FR-01.01
+        --fr-id FR-01.01 \\
+        --launch-payload "/shipwright-iterate --type bug \\"fix X\\""
+
+`--launch-payload` is optional (see `DEFAULT_LAUNCH_PAYLOAD` below);
+`--no-launch-payload` opts a card out of the default entirely.
 
 Output: JSON on stdout for both success and validation failures. Exit
 0 on success, 1 on validation error. Argparse errors continue to use
@@ -51,6 +55,16 @@ from triage import append_triage_item, should_route_to_outbox  # noqa: E402
 # Two numeric segments separated by `.`, dash-prefixed: `FR-01.01`,
 # `FR-12.34`. Format-only validation; cross-FR existence is deferred.
 FR_ID_RE = re.compile(r"^FR-\d+\.\d+$")
+
+# Manual-card default (iterate-2026-08-05-triage-launch-payload-cli): nearly
+# every operator-filed card is later worked by typing /shipwright-iterate, so
+# that's the default launchPayload when --launch-payload is omitted. `<id>` is
+# a literal placeholder, not a template slot — matches the `<ref>` convention
+# in aggregate_triage.py's rendered `--task-ref EXT:<ref>` promote command.
+# It can't be substituted with the card's real id here: that id is generated
+# by triage.append_triage_item() itself, after this default is already built.
+# The operator swaps it in using the id printed in this CLI's JSON result.
+DEFAULT_LAUNCH_PAYLOAD = "/shipwright-iterate <id>"
 
 
 def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
@@ -83,6 +97,21 @@ def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
                    help="Optional FR-ID to stamp the card with (e.g. FR-01.01). "
                         "Enables RTM deep-link in `### FRs with open triage items`. "
                         "Must match ^FR-\\d+\\.\\d+$; cross-FR existence is NOT verified.")
+    launch_group = p.add_mutually_exclusive_group()
+    launch_group.add_argument(
+        "--launch-payload", default=None,
+        help="Ready-to-paste command (stored verbatim as `launchPayload`; "
+             "shown fenced on the rendered card for copy-paste into a new "
+             "session). Optional — omit to default to "
+             f"{DEFAULT_LAUNCH_PAYLOAD!r} ('<id>' is a literal placeholder "
+             "for this card's own id, printed in this command's JSON "
+             "result). Mutually exclusive with --no-launch-payload.")
+    launch_group.add_argument(
+        "--no-launch-payload", action="store_true",
+        help="Record no launch payload (skips the manual-card default) for "
+             "a card with no sensible launch command. Stays a legal card; "
+             "the board's missing-payload warning may still apply to it, "
+             "same as any other producer that omits the field.")
     p.add_argument("--evidence-path", default=None,
                    help="Optional path to evidence (relative to project root).")
     p.add_argument("--run-id", default=None,
@@ -112,6 +141,35 @@ def _validate_fr_id(value: str | None) -> str | None:
     return value
 
 
+def _resolve_launch_payload(
+    raw: str | None, *, no_launch_payload: bool
+) -> tuple[str | None, bool]:
+    """Resolve --launch-payload / --no-launch-payload into (value, used_default).
+
+    Three cases:
+
+    - ``no_launch_payload`` → ``(None, False)``. Explicit opt-out for a card
+      with no sensible launch command — stays legal, matches any other
+      producer that omits the field.
+    - ``raw`` given (non-blank) → ``(raw, False)``. Overrides the
+      manual-card default verbatim.
+    - ``raw is None`` (flag omitted) → ``(DEFAULT_LAUNCH_PAYLOAD, True)``.
+
+    Raises ``ValueError`` on a blank/whitespace-only ``--launch-payload``
+    (ambiguous with "no payload" — use --no-launch-payload instead).
+    """
+    if no_launch_payload:
+        return None, False
+    if raw is None:
+        return DEFAULT_LAUNCH_PAYLOAD, True
+    if not raw.strip():
+        raise ValueError(
+            "--launch-payload must not be blank; use --no-launch-payload "
+            "to record a card with no launch command."
+        )
+    return raw, False
+
+
 def main(argv: list[str] | None = None) -> int:
     args = _parse_args(argv)
 
@@ -126,6 +184,28 @@ def main(argv: list[str] | None = None) -> int:
             "detail": str(exc),
         }, indent=2))
         return 1
+
+    try:
+        launch_payload, used_default_payload = _resolve_launch_payload(
+            args.launch_payload, no_launch_payload=args.no_launch_payload
+        )
+    except ValueError as exc:
+        print(json.dumps({
+            "success": False,
+            "error": "invalid_launch_payload",
+            "detail": str(exc),
+        }, indent=2))
+        return 1
+    if used_default_payload:
+        print(
+            f"note: no --launch-payload given; defaulting to "
+            f"{DEFAULT_LAUNCH_PAYLOAD!r} (nearly every manually filed card "
+            "is later worked via /shipwright-iterate). '<id>' is a literal "
+            "placeholder — swap in this card's own id (see the JSON result "
+            "below) before pasting into a new session. Pass "
+            "--no-launch-payload to record none instead.",
+            file=sys.stderr,
+        )
 
     # 2) Delegate the rest of validation (title/severity/kind/source) to
     #    triage.append_triage_item — single source of truth (OpenAI #5).
@@ -148,6 +228,7 @@ def main(argv: list[str] | None = None) -> int:
             run_id=args.run_id,
             commit=args.commit,
             fr_id=fr_id,
+            launch_payload=launch_payload,
             to_outbox=to_outbox,
         )
     except ValueError as exc:
@@ -166,6 +247,7 @@ def main(argv: list[str] | None = None) -> int:
         "success": True,
         "id": item_id,
         "frId": fr_id,
+        "launchPayload": launch_payload,
     }
     if fr_id is not None:
         result["note"] = (
