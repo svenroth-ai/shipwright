@@ -34,6 +34,7 @@ from lib.phase_quality import (  # noqa: E402
 from lib.review_marker import STATE_LEGACY, STATE_OK, evaluate_review_state  # noqa: E402
 from tools.verifiers.common import read_events_jsonl  # noqa: E402
 from tools.verifiers._iterate_run_id import (  # noqa: E402
+    resolve_iterate_entry,
     unresolvable_run_id_skip,
 )
 
@@ -99,25 +100,11 @@ _SMALL_COMPLEXITIES: frozenset[str] = frozenset({"small", "tiny", "trivial"})
 def _latest_iterate_entry(project_root: Path, run_id: str) -> dict[str, Any] | None:
     """Return the entry for ``run_id``, or the most recent entry as fallback.
 
-    Uses the merged legacy-array + file-per-iterate reader so the W2/W3
-    compliance checks see the same history as every other verifier.
-    Returns ``None`` when the project has no iterate history at all.
+    Thin wrapper over ``_iterate_run_id.resolve_iterate_entry`` so W2/W3 see
+    the same corruption-aware tail-fallback contract as every other verifier
+    (trg-e0a0f569).
     """
-    import sys
-    from pathlib import Path as _Path
-
-    _scripts_root = _Path(__file__).resolve().parents[2]
-    if str(_scripts_root) not in sys.path:
-        sys.path.insert(0, str(_scripts_root))
-    from lib.iterate_entry import read_iterate_entries
-
-    entries = read_iterate_entries(project_root)
-    if not entries:
-        return None
-    for entry in reversed(entries):
-        if entry.get("run_id") == run_id:
-            return entry
-    return entries[-1]
+    return resolve_iterate_entry(project_root, run_id)
 
 
 def check_w2_external_review_marker(
