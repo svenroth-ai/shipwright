@@ -180,6 +180,6 @@
     "tests_run": 0,
     "exit_code": 0,
     "evidence_path": ".shipwright/runs/iterate-2026-08-05-llm-review-gateway-route/surface_verification.json",
-    "detail": "Library code (llm_review.py, external_review_gateway.py, external_review_default_legs.py, review_verdict.py) with no independent CLI/web surface; consumers (Adopt Layer-3 review, review_assistant_ui_plan.py) are invoked deep inside existing flows, not directly startable. Covered by the 109 mocked-HTTP unit tests in the F0 fresh verification gate."
+    "justification": "Library code (llm_review.py, external_review_gateway.py, external_review_default_legs.py, review_verdict.py) with no independent CLI/web surface; consumers (Adopt Layer-3 review, review_assistant_ui_plan.py) are invoked deep inside existing flows, not directly startable. Covered by the 109 mocked-HTTP unit tests in the F0 fresh verification gate."
   }
 }
