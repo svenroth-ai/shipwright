@@ -1,0 +1,111 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-08-05-worktree-evidence-recovery",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-05T07:54:21.531116+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-05T07:54:39.359249+00:00",
+      "disposition": "Mini-Plan is skipped at small complexity for a non-FEATURE (change) intent per the SKILL.md Phase Matrix; there is no plan-review artifact to cascade.",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 2,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "shared/tests/test_worktree_evidence_recovery.py",
+          "line": 143,
+          "finding": "test_original_backfill_manifest_is_unedited() claimed to guard byte-for-byte immutability of test-results-backfill-manifest.json but only asserted backfill_run_id equality plus two set-membership checks -- it would still pass if the file were reformatted or an unrelated field edited.",
+          "suggestion": "Hash the original manifest's raw bytes and assert against a hardcoded sha256 recorded at authoring time.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "shared/tests/test_worktree_evidence_recovery_p1_14.py",
+          "line": 1,
+          "finding": "This was the only file in shared/tests/ whose filename embedded an ephemeral triage-card/plan identifier (_p1_14); every sibling test file keeps that reference in the docstring/body only.",
+          "suggestion": "Drop the _p1_14 suffix; a purely descriptive name matches repo convention.",
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-08-05T08:04:31.877834+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-05T08:04:44.289967+00:00",
+      "disposition": "Diff is audit-JSON plus a lock-in test only; no migrations, async/concurrency, cross-plugin imports, or irreversible ops -- the Stage-3 conditional trigger in iteration-reviews.md does not apply to this docs/evidence-only surface.",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 1,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "spec",
+          "file": "shared/tests/test_worktree_evidence_recovery.py:60-66",
+          "line": null,
+          "finding": "The required validation that each durable F5c summary is reachable from `origin/main` is not implemented. The test only checks that a same-named JSON file exists in the current checkout and has a matching `run_id`; it would pass if the summaries existed only locally, were uncommitted, or were absent from `origin/main`. The supplemental manifest’s statements that they are “present on origin/main” are therefore unverified assertions.",
+          "suggestion": "Verify the summary paths against `origin/main` (for example, with `git cat-file -e origin/main:.shipwright/agent_docs/iterates/<run_id>.json` and parse those bytes), or otherwise add durable provenance that is mechanically checked against the referenced origin/main commit.  Overall assessment: ship-with-fixes. The recovered-byte, stale-evidence exclusion, and original-manifest immutability checks are substantive, but the explicit origin/main F5c validation acceptance criterion is currently not enforced.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-08-05T08:08:41.580479+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "partial",
+      "raw_excerpt": "[deepseek] The diff adds exactly the two recovered immutable evidence files, a supplemental audit manifest recording recoveries, unavailable runs, and P1.10 confirmation, plus a changelog entry and a test file. All acceptance criteria are met:\n\n- The two recovered snapshots are delivered as `.test-results.json` artifacts, with exact bytes matched by SHA‑256 and byte length in tests.\n- Each recovered snapshot is validated (embedded `run_id` matches the run, and the corresponding durable F5c summary is present and consistent).\n- P1.10’s self-delivered snapshot is confirmed present and valid.\n- The two stale‑root worktree runs are correctly *not* imported and are recorded as unavailable in the supplemental manifest without touching the original P1.11 backfill manifest (byte‑for‑byte locked by a hash).\n- No worktrees are removed; the diff is purely additive.\n- No secrets, injection, unsafe input handling, or regression risks are introduced.\n\nThe tests verify behavior rather than mere invocation and would fail if evidence files are missing, have wrong content, or the original manifest were edited. No concrete correctness or security defects are present.\n\nSHIPWRIGHT_VERDICT: approve\n\n[openai] - Category: spec\n- Severity: medium\n- File: `shared/tests/test_worktree_evidence_recovery.py:60-66`\n- Finding: The required validation that each durable F5c summary is reachable from `origin/main` is not implemented. The test only checks that a same-named JSON file exists in the current checkout and has a matching `run_id`; it would pass if the summaries existed only locally, were uncommitted, or were absent from `origin/main`. The supplemental manifest’s statements that they are “present on origin/main” are therefore unverified assertions.\n- Suggestion: Verify the summary paths against `origin/main` (for example, with `git cat-file -e origin/main:.shipwright/agent_docs/iterates/<run_id>.json` and parse those bytes), or otherwise add durable provenance that is mechanically checked against the referenced origin/main commit.\n\nOverall assessment: ship-with-fixes. The recovered-byte, stale-evidence exclusion, and original-manifest immutability checks are substantive, but the explicit origin/main F5c validation acceptance criterion is currently not enforced.\n\nSHIPWRIGHT_VERDICT: revise",
+      "verdicts": {
+        "openai": "revise",
+        "deepseek": "approve"
+      }
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-05T07:57:12.387136+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    }
+  }
+}
