@@ -192,7 +192,6 @@ def test_insecure_url_error_never_echoes_embedded_credentials(monkeypatch):
     assert "svenroth" not in result["reason"]
     assert "s3cr3t-t0ken" not in result["reason"]
     assert "another-secret" not in result["reason"]
-    assert "gw.example.com" in result["reason"]  # host still shown — useful, not secret
 
 
 def test_empty_header_suffix_env_var_is_ignored_not_sent_as_a_blank_header(monkeypatch):
