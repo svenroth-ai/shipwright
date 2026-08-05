@@ -1,0 +1,160 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-08-05-semver-prerelease-sort",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 1,
+      "findings": [
+        {
+          "severity": null,
+          "category": "Naming & Structure",
+          "file": null,
+          "line": null,
+          "finding": "scripts/cache_tree_compare.py crossed the 300-line guideline (now 305) after the docstring fix + build-metadata scope note. Non-blocking per the harness's own PostToolUse note (not a bloat-baseline entry, not gated); splitting the file is out of scope for this narrowly-scoped bugfix per the mini-plan's Out-of-Scope section and both external reviewers' 'appropriately minimal' assessment. Flagged to the operator as a follow-up candidate, not fixed in this run.",
+          "suggestion": null,
+          "source": "self-review"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-08-05T08:13:49.377346+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 7,
+      "findings": [
+        {
+          "severity": "low",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "The fix adds a single integer flag before the suffix string, keeping the raw suffix (including leading dash). For directory names like `1.0.0+build` (build metadata, no dash), this will treat the version as a release with flag=1, which is incorrect per SemVer (build metadata should be ignored). However, this is unlikely to appear in the monorepo’s plugin‑cache directories and scoped out.",
+          "suggestion": "Document the limitation in the code comment (e.g., “build‑metadata versions are treated as releases; only `‑prerelease` suffixes are in scope”). No code change required.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The plan states “`0` for any non‑empty suffix, `1` for a bare release.” A directory named `1.0.0-` (trailing dash) would get suffix=`-`, flag=0, correctly sorting below the release. This is an improvement over the previous raw‑string order, but the spec doesn’t explicitly mention it.",
+          "suggestion": "No action needed; the behaviour is benign.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "Adding a 4th tuple element changes the shape of the key. No consumers unpack the tuple directly, but if any serialized cache of keys existed (none found), it could desync. The test coverage for `latest_cache_version_dir`, `_plugin_mirrors`, and `check_sync`’s fallback confirms no practical risk.",
+          "suggestion": "None; the existing integration tests sufficiently mitigate this.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "The hook’s mirror remains stdlib‑only, and the plan re‑vendors the canonical template into 12 plugin copies with a byte‑identical gate. This maintains the intended duplication contract and avoids importing a third‑party `packaging` library.",
+          "suggestion": "Confirm that the re‑vendoring step copies the canonical file after the fix is applied, not the original buggy version. (The plan appears to do this correctly.)",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The proposed “any non-empty suffix is prerelease” flag is correct for the targeted `-rc1` case, but it also classifies SemVer build metadata such as `1.0.0+build.7` as a prerelease if the existing parser accepts the tail generically. Under SemVer, build metadata does not make a version lower than its corresponding release. This would either introduce a new ordering regression or leave the helper’s supported directory-name grammar ambiguous.",
+          "suggestion": "Confirm the exact accepted version-directory grammar. If `+` metadata can occur, distinguish a `-` prerelease tail from `+` build metadata and add a regression test for it. If cache directory names intentionally support only plain triplets and `-` prereleases, document that constraint near the parser and add a test demonstrating that unsupported tails retain the established fallback behavior.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "Adding a tuple element changes the effective shape of the comparison key, not just its ordering. The stated consumers appear to use it only as a sort/max key, which is safe, but any overlooked caller that indexes or unpacks the returned tuple would break. The test suite exercises the known consumers but the plan does not explicitly include a repository-wide confirmation that no other callers depend on the prior four-element shape.",
+          "suggestion": "Before finalizing, search all repository consumers of `version_key` and `_version_key` (including tests and scripts) for tuple unpacking, indexing, serialization, or exact tuple assertions. Preserve or update any such contract intentionally rather than relying only on the known `max`/sort consumers.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "The targeted verification and vendoring gate are strong, but the broader `shared/tests` regression run is still in progress. Since this helper participates in cache resolution and the fix changes which directory becomes authoritative, completion of that run is needed before treating the change as fully validated.",
+          "suggestion": "Complete the declared `not slow and not cross_plugin` suite and retain its result with the run evidence before merge. If failures arise in cache-resolution tests, specifically inspect assumptions that prerelease directory names are selected as the newest entry.  Overall, the flag-before-suffix approach is appropriately minimal for the narrowly scoped release-versus-prerelease defect, and the consumer-level and vendoring coverage are well targeted. Resolve or explicitly constrain build-metadata handling, and complete the pending regression suite. SHIPWRIGHT_VERDICT: approve",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-08-05T08:13:50.354206+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[deepseek] - **Category:** approach  \n  **Severity:** low  \n  **Finding:** The fix adds a single integer flag before the suffix string, keeping the raw suffix (including leading dash). For directory names like `1.0.0+build` (build metadata, no dash), this will treat the version as a release with flag=1, which is incorrect per SemVer (build metadata should be ignored). However, this is unlikely to appear in the monorepo’s plugin‑cache directories and scoped out.  \n\n  **Suggestion:** Document the limitation in the code comment (e.g., “build‑metadata versions are treated as releases; only `‑prerelease` suffixes are in scope”). No code change required.\n\n- **Category:** edge-case  \n  **Severity:** low  \n  **Finding:** The plan states “`0` for any non‑empty suffix, `1` for a bare release.” A directory named `1.0.0-` (trailing dash) would get suffix=`-`, flag=0, correctly sorting below the release. This is an improvement over the previous raw‑string order, but the spec doesn’t explicitly mention it.  \n\n  **Suggestion:** No action needed; the behaviour is benign.\n\n- **Category:** risk  \n  **Severity:** low  \n  **Finding:** Adding a 4th tuple element changes the shape of the key. No consumers unpack the tuple directly, but if any serialized cache of keys existed (none found), it could desync. The test coverage for `latest_cache_version_dir`, `_plugin_mirrors`, and `check_sync`’s fallback confirms no practical risk.  \n\n  **Suggestion:** None; the existing integration tests sufficiently mitigate this.\n\n- **Category:** dependency  \n  **Severity:** low  \n  **Finding:** The hook’s mirror remains stdlib‑only, and the plan re‑vendors the canonical template into 12 plugin copies with a byte‑identical gate. This maintains the intended duplication contract and avoids importing a third‑party `packaging` library.  \n\n  **Suggestion:** Confirm that the re‑vendoring step copies the canonical file *after* the fix is applied, not the original buggy version. (The plan appears to do this cor […truncated]\n\n[openai] 1. **Category:** edge-case  \n   **Severity:** medium  \n   **Finding:** The proposed “any non-empty suffix is prerelease” flag is correct for the targeted `-rc1` case, but it also classifies SemVer build metadata such as `1.0.0+build.7` as a prerelease if the existing parser accepts the tail generically. Under SemVer, build metadata does not make a version lower than its corresponding release. This would either introduce a new ordering regression or leave the helper’s supported directory-name grammar ambiguous.  \n   **Suggestion:** Confirm the exact accepted version-directory grammar. If `+` metadata can occur, distinguish a `-` prerelease tail from `+` build metadata and add a regression test for it. If cache directory names intentionally support only plain triplets and `-` prereleases, document that constraint near the parser and add a test demonstrating that unsupported tails retain the established fallback behavior.\n\n2. **Category:** risk  \n   **Severity:** low  \n   **Finding:** Adding a tuple element changes the effective shape of the comparison key, not just its ordering. The stated consumers appear to use it only as a sort/max key, which is safe, but any overlooked caller that indexes or unpacks the returned tuple would break. The test suite exercises the known consumers but the plan does not explicitly include a repository-wide confirmation that no other callers depend on the prior four-element shape.  \n   **Suggestion:** Before finalizing, search all repository consumers of `version_key` and `_version_key` (including tests and scripts) for tuple unpacking, indexing, serialization, or exact tuple assertions. Preserve or update any such contract intentionally rather than relying only on the known `max`/sort consumers.\n\n3. **Category:** risk  \n   **Severity:** low  \n   **Finding:** The targeted verification and vendoring gate are strong, but the broader `shared/tests` regression run is still in progress. Since this helper participates in cache reso […truncated]",
+      "verdicts": {
+        "openai": "approve",
+        "deepseek": "approve"
+      }
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-05T08:13:49.852075+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-05T08:13:50.082143+00:00",
+      "disposition": "no non-trivial surface touched (no migrations, async/concurrency, cross-plugin imports, or irreversible ops) per iteration-reviews.md Stage 3 trigger; a pure comparison-key logic fix",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": "openrouter",
+      "completed_at": "2026-08-05T08:13:50.566893+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "unstructured",
+      "raw_excerpt": "[deepseek] I find no concrete defects in this diff.\n\n- **Spec compliance:** All acceptance criteria are implemented exactly as described. The `version_key` and `_version_key` functions now include a release-vs-prerelease flag; `latest_cache_version_dir` and `_plugin_mirrors` pick the release over a co‑located prerelease. The canonical template is byte‑identically vendored into all 12 plugin copies, and the SSoT pin is extended with the new case and correctness assertions.\n- **Correctness:** The added tuple element is safe for all existing consumers (only used as sort keys), and the fallback for non‑matching names remains functional. The logic correctly ranks a release above any prerelease of the same numeric version while preserving numeric‑triplet precedence.\n- **Security:** No new security surface; the function processes in‑memory directory names, no serialization, no untrusted input sinks.\n- **Test quality:** The tests genuinely exercise the new behaviour — a broken implementation (e.g., missing the flag) would cause them to fail. Both unit‑level and integration (actual consumer pipeline) tests are present, and the byte‑identity gate stays green.\n- **Regressions:** The change is backwards‑compatible for all internal callers (tuple element added at a position that does not alter prior comparisons). No existing functionality breaks.\n- **Edge cases:** The scope consciously leaves build‑metadata suffixes and full prerelease‑identifier ordering untouched, as stated in the spec — this is intentional and consistent.\n\nSHIPWRIGHT_VERDICT: approve\n\n[openai] No concrete defects found. The comparison key correctly inserts a release flag ahead of the suffix, preserves numeric-version precedence, updates the stdlib mirror and all 12 vendored copies, and the added tests exercise both direct keys and their real selection consumers. The deliberate treatment of `+build` suffixes remains explicitly out of scope.\n\nOverall assessment: ship-as-is.  \nSHIPWRIGHT_VERDICT: approve",
+      "verdicts": {
+        "openai": "approve",
+        "deepseek": "approve"
+      }
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-05T08:13:49.602918+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    }
+  }
+}

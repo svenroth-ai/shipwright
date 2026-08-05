@@ -112,6 +112,32 @@ class TestMarkdownScanner:
         findings = scanner.scan_markdown(p, "test.md")
         assert not any(f["rule"] == "BASE64_BLOB_IN_PROSE" for f in findings)
 
+    def test_fenced_code_block_unicode_ignored(self, tmp_path):
+        # A doc quoting a suspicious codepoint inside a fenced block to
+        # illustrate it (e.g. explaining a bidi finding elsewhere) is not
+        # hiding content from a reviewer — it's showing the character.
+        content = "# Title\n\n```\nU+202E example: ‮\n```\n\nDone."
+        p = tmp_path / "test.md"
+        p.write_text(content, encoding="utf-8")
+        findings = scanner.scan_markdown(p, "test.md")
+        assert not any("UNICODE" in f["rule"] for f in findings)
+
+    def test_inline_code_span_unicode_ignored(self, tmp_path):
+        content = 'Escaping is representation-only: `"‮"` is U+202E at runtime.\n'
+        p = tmp_path / "test.md"
+        p.write_text(content, encoding="utf-8")
+        findings = scanner.scan_markdown(p, "test.md")
+        assert not any("UNICODE" in f["rule"] for f in findings)
+
+    def test_unicode_outside_code_span_still_flagged(self, tmp_path):
+        # A suspicious codepoint sitting in bare prose (not quoted as an
+        # example) is the real hiding case and must still be caught.
+        content = "Some text with a zero width joiner: hidden‍text\n"
+        p = tmp_path / "test.md"
+        p.write_text(content, encoding="utf-8")
+        findings = scanner.scan_markdown(p, "test.md")
+        assert any("UNICODE" in f["rule"] for f in findings)
+
 
 # ---------------------------------------------------------------------------
 # Hooks scanner

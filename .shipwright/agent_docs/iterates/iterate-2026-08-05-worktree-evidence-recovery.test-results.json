@@ -1,0 +1,99 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-08-05-worktree-evidence-recovery",
+    "date": "2026-08-05",
+    "unit": {
+      "status": "passed",
+      "passed": 6,
+      "total": 6,
+      "note": "This change's own added tests (shared/tests/test_worktree_evidence_recovery.py). The full canonical F0 suite also ran GREEN (18/18 units -- 14 plugins + shared/tests + shared/scripts/tests + shared/scripts/tools/tests + integration-tests -- in 5.6 min via run_test_suite.py), but the runner reports only per-unit PASS/FAIL, not per-unit pass/total counts, so no aggregate monorepo-wide figure is recorded here rather than inventing one."
+    },
+    "integration": {
+      "status": "not_run",
+      "passed": 0,
+      "total": 0,
+      "note": "No CRUD/DB changes in this run (audit-artifact recovery only); the integration-tests pytest root nonetheless passed as part of F0's blanket full-suite policy."
+    },
+    "pgtap": {
+      "status": "skipped",
+      "passed": 0,
+      "total": 0
+    },
+    "e2e": {
+      "status": "not_run",
+      "passed": 0,
+      "total": 0
+    },
+    "design_fidelity": {
+      "status": "skipped",
+      "passed": 0,
+      "total": 0
+    },
+    "smoke": {
+      "status": "skipped"
+    },
+    "degraded": [],
+    "surface_verification": {
+      "surface": "cli",
+      "runner": "uv run pytest shared/tests/test_worktree_evidence_recovery.py -v",
+      "exit_code": 0,
+      "tests_run": 6,
+      "evidence_path": ".shipwright/runs/iterate-2026-08-05-worktree-evidence-recovery/surface_verification.json",
+      "timestamp": "2026-08-05T00:00:00Z",
+      "attempts": 1
+    },
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "Recovered P2.03/P2.05 evidence bytes match the SHA256 and byte-count named in the triage card and validate as immutable evidence for their own run_id",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_worktree_evidence_recovery.py::test_recovered_evidence_matches_declared_bytes_and_validates PASSED"
+        },
+        {
+          "behavior": "Each recovered run's durable F5c summary is reachable from the validated origin/main commit and matches the local checkout",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_worktree_evidence_recovery.py::test_recovered_runs_have_a_durable_f5c_summary_reachable_from_main PASSED"
+        },
+        {
+          "behavior": "The original P1.11 backfill manifest is byte-for-byte unedited and its recovered/unavailable rows are undisturbed",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_worktree_evidence_recovery.py::test_original_backfill_manifest_is_unedited PASSED"
+        },
+        {
+          "behavior": "The new supplemental manifest correctly records the two recoveries, the two excluded stale runs (with grounded reasons), and the P1.10 self-delivery confirmation",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_worktree_evidence_recovery.py::test_supplemental_manifest_records_recoveries_and_exclusions PASSED"
+        },
+        {
+          "behavior": "The two stale worktrees' inherited snapshot is never imported as their own evidence file",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_worktree_evidence_recovery.py::test_stale_worktree_run_ids_are_not_imported_as_their_own_evidence PASSED"
+        },
+        {
+          "behavior": "P1.10's own pre-existing immutable snapshot validates as genuinely self-delivered",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_worktree_evidence_recovery.py::test_p1_10_already_self_delivered_its_own_immutable_snapshot PASSED"
+        }
+      ],
+      "counts": {
+        "testable": 6,
+        "tested": 6,
+        "untestable": 0,
+        "untested_testable": 0
+      },
+      "enumeration_basis": {
+        "acs": 6,
+        "covered_acs": 6
+      }
+    },
+    "declared_removals": []
+  },
+  "source_state": {
+    "run_id": "iterate-2026-08-05-worktree-evidence-recovery",
+    "commit": "692227dff8d86aa8b6d3f21cf61e6678c9334670",
+    "dirty": true,
+    "base": null,
+    "release": null
+  }
+}

@@ -180,10 +180,15 @@ def _find_marketplace_shared(cache_marketplace_root: Path) -> Path | None:
     return None
 _SEMVER_RE = re.compile(r"^(\d+)\.(\d+)\.(\d+)(.*)$")
 def _version_key(name: str) -> tuple:
+    # SemVer: release outranks prerelease of same version. 4th element is
+    # "is release" (1/0) BEFORE the suffix text (kept equal to
+    # cache_tree_compare.version_key by test_ensure_shared_cache_ssot_pins.py).
+    # +build scope caveat: see cache_tree_compare.version_key's docstring.
     m = _SEMVER_RE.match(name)
     if not m:
-        return (-1, -1, -1, name)
-    return (int(m.group(1)), int(m.group(2)), int(m.group(3)), m.group(4) or "")
+        return (-1, -1, -1, -1, name)
+    suffix = m.group(4) or ""
+    return (int(m.group(1)), int(m.group(2)), int(m.group(3)), 0 if suffix else 1, suffix)
 def _plugin_mirrors(cache_marketplace_root: Path, plugins_target: Path,
                     enumeration: list[bool] | None = None):
     """Yield newest installed source + mirror; repo dev model yields none."""

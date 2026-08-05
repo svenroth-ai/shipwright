@@ -1,0 +1,38 @@
+{
+  "run_id": "iterate-2026-08-05-by-commit-dedup-type-gate",
+  "date": "2026-08-05T08:18:59.692979Z",
+  "event_at": "2026-08-05T08:13:05.667816+00:00",
+  "type": "bug",
+  "complexity": "small",
+  "prior_source": "history",
+  "branch": "iterate/by-commit-dedup-type-gate",
+  "spec": null,
+  "tests_passed": true,
+  "adr": "iterate-2026-08-05-by-commit-dedup-type-gate",
+  "test_completeness": {
+    "status": "complete",
+    "behaviors": [
+      {
+        "behavior": "a grade_snapshot event sharing a work_completed event's commit sha is not skipped as duplicate_commit when deduplicate_by_commit=True",
+        "disposition": "tested",
+        "evidence": "shared/scripts/tools/tests/test_record_event_by_commit_dedup.py::TestByCommitDedupIsTypeScoped::test_by_commit_dedup_is_scoped_to_work_completed PASSED (red before the fix: skip={'reason': 'duplicate_commit', ...}; green after)"
+      },
+      {
+        "behavior": "a second work_completed event with the same commit (and section) is still skipped as duplicate_commit (no regression)",
+        "disposition": "tested",
+        "evidence": "shared/scripts/tools/tests/test_record_event.py::TestDeduplication::test_dedup_via_cli PASSED; shared/tests/test_record_event_lifecycle_integrity.py::test_skips_duplicate_commit_when_flag_set PASSED"
+      }
+    ],
+    "counts": {
+      "total": 2,
+      "tested": 2,
+      "untestable": 0,
+      "untested_testable": 0
+    },
+    "enumeration_basis": {
+      "acs": 1,
+      "covered_acs": 1
+    }
+  },
+  "declared_removals": []
+}

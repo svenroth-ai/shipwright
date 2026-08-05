@@ -255,15 +255,21 @@ _SEMVER_RE = re.compile(r"^(\d+)\.(\d+)\.(\d+)(.*)$")
 def version_key(name: str) -> tuple:
     """Numeric-tuple sort key for SemVer-shaped dir names.
 
-    Reviewer-flagged Gemini-S1 + OpenAI-M2: pure lexical sort puts ``0.10.0``
-    before ``0.2.0`` (since ``'1' < '2'``). Parse the leading
-    ``MAJOR.MINOR.PATCH`` triplet as ints; any pre-release / suffix stays a
-    string tail. Non-SemVer names sort before any real version.
+    Pure lexical sort puts ``0.10.0`` before ``0.2.0`` (Gemini-S1/OpenAI-M2);
+    parse ``MAJOR.MINOR.PATCH`` as ints. 4th element is "is release" (1) vs
+    "is prerelease" (0), compared BEFORE the suffix string, so a release
+    outranks a prerelease of the same version (trg-18da39b0: a bare
+    string-tail compare put ``1.0.0-rc1`` AFTER ``1.0.0``, since any
+    non-empty suffix beats ``''`` lexically). Non-SemVer names sort first.
+    Scope: a ``+build`` suffix is not distinguished from a prerelease —
+    never observed in this cache's directory names (external review,
+    iterate-2026-08-05-semver-prerelease-sort).
     """
     m = _SEMVER_RE.match(name)
     if not m:
-        return (-1, -1, -1, name)
-    return (int(m.group(1)), int(m.group(2)), int(m.group(3)), m.group(4) or "")
+        return (-1, -1, -1, -1, name)
+    suffix = m.group(4) or ""
+    return (int(m.group(1)), int(m.group(2)), int(m.group(3)), 0 if suffix else 1, suffix)
 
 
 def latest_cache_version_dir(plugin_cache_root: Path) -> tuple[Path | None, str]:

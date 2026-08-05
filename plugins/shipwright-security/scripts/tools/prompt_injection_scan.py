@@ -154,6 +154,10 @@ PY_DANGEROUS_PATTERNS: list[tuple[str, str, str]] = [
 # inside a prose (non-code) markdown file. Code blocks are skipped.
 BASE64_BLOB_PATTERN = re.compile(r"[A-Za-z0-9+/]{100,}={0,2}")
 
+# Inline code span: `...` on a single line. Used to mask quoted-for-exposition
+# content (e.g. a doc illustrating a codepoint) out of the Unicode scan.
+INLINE_CODE_SPAN_PATTERN = re.compile(r"`[^`]*`")
+
 # Hidden HTML comment detection.
 HTML_COMMENT_PATTERN = re.compile(r"<!--(.*?)-->", re.DOTALL)
 
@@ -249,9 +253,18 @@ def scan_markdown(path: Path, rel_path: str) -> list[dict[str, Any]]:
                     ),
                 ))
 
-    # Suspicious Unicode scan
+    # Suspicious Unicode scan (skip fenced code blocks + inline code spans —
+    # a doc quoting a codepoint for exposition, e.g. explaining a bidi
+    # finding elsewhere, is showing the character, not hiding one)
+    in_fence = False
     for i, line in enumerate(lines, 1):
-        for ch in line:
+        if line.lstrip().startswith("```"):
+            in_fence = not in_fence
+            continue
+        if in_fence:
+            continue
+        scan_line = INLINE_CODE_SPAN_PATTERN.sub("", line)
+        for ch in scan_line:
             cp = ord(ch)
             if cp in SUSPICIOUS_UNICODE:
                 findings.append(make_finding(
