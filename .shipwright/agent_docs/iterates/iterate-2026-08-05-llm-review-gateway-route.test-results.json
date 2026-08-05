@@ -1,0 +1,215 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-08-05-llm-review-gateway-route",
+    "date": "2026-08-05",
+    "unit": {
+      "status": "pass",
+      "passed": 109,
+      "failed": 0,
+      "note": "109 new/updated mocked-HTTP tests for the gateway route (test_llm_review_gateway*.py x4, test_review_runner_gateway_reachable.py) all pass. Full monorepo F0 suite (18 units incl. shared/tests, integration-tests, all 14 plugins) GREEN in 4.3 min after fixing the requirements-corpus golden.json baseline (review_runner.run_review's source fingerprint changed intentionally) -- see .shipwright/runs/iterate-2026-08-05-llm-review-gateway-route/f0-diagnostics for the pre-fix run."
+    },
+    "integration": {
+      "status": "pass",
+      "passed": 472,
+      "failed": 0,
+      "note": "integration-tests unit, part of the same green F0 suite run."
+    },
+    "e2e": {
+      "status": "n/a",
+      "reason": "no browser surface; library/CLI code only (see Verification section of the iterate spec)"
+    },
+    "smoke": {
+      "status": "n/a",
+      "reason": "no startable server surface for this change"
+    },
+    "pgtap": {
+      "status": "n/a",
+      "reason": "no database"
+    },
+    "design_fidelity": {
+      "status": "n/a",
+      "reason": "no UI surface"
+    },
+    "surface_verification": {
+      "surface": "none",
+      "tests_run": 0,
+      "exit_code": 0,
+      "evidence_path": ".shipwright/runs/iterate-2026-08-05-llm-review-gateway-route/surface_verification.json",
+      "detail": "Library code (llm_review.py, external_review_gateway.py, external_review_default_legs.py, review_verdict.py) with no independent CLI/web surface; consumers (Adopt Layer-3 review, review_assistant_ui_plan.py) are invoked deep inside existing flows, not directly startable. Covered by the 109 mocked-HTTP unit tests in the F0 fresh verification gate."
+    },
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "detect_provider returns gateway when base URL set",
+          "disposition": "tested",
+          "evidence": "test_detect_provider_returns_gateway_when_base_url_set PASSED"
+        },
+        {
+          "behavior": "gateway takes exclusive precedence over openrouter/direct",
+          "disposition": "tested",
+          "evidence": "test_detect_provider_prefers_gateway_over_openrouter_and_direct PASSED"
+        },
+        {
+          "behavior": "default chain unchanged when gateway unset",
+          "disposition": "tested",
+          "evidence": "test_detect_provider_falls_back_normally_without_gateway_configured PASSED"
+        },
+        {
+          "behavior": "missing MODEL_<slot> \u2192 error (not skip)",
+          "disposition": "tested",
+          "evidence": "test_gateway_leg_missing_model_env_is_error_not_skip PASSED"
+        },
+        {
+          "behavior": "missing KEY_MODEL_<slot> \u2192 error",
+          "disposition": "tested",
+          "evidence": "test_gateway_leg_missing_key_env_is_error PASSED"
+        },
+        {
+          "behavior": "arbitrary model name passed through, no identity lock",
+          "disposition": "tested",
+          "evidence": "test_gateway_leg_accepts_any_model_name_no_identity_lock PASSED"
+        },
+        {
+          "behavior": "answering_model recorded when present in response",
+          "disposition": "tested",
+          "evidence": "test_gateway_leg_records_answering_model_as_separate_evidence_field PASSED"
+        },
+        {
+          "behavior": "answering_model absent when response omits it",
+          "disposition": "tested",
+          "evidence": "test_gateway_leg_answering_model_absent_when_response_carries_none PASSED"
+        },
+        {
+          "behavior": "base_url/api_key passed to the client",
+          "disposition": "tested",
+          "evidence": "test_gateway_leg_passes_base_url_and_key_to_client PASSED"
+        },
+        {
+          "behavior": "arbitrary HEADER_<NAME> vars forwarded",
+          "disposition": "tested",
+          "evidence": "test_gateway_arbitrary_headers_pass_through PASSED"
+        },
+        {
+          "behavior": "API/network exception \u2192 error status, reason captured",
+          "disposition": "tested",
+          "evidence": "test_gateway_leg_api_error_is_error_status PASSED"
+        },
+        {
+          "behavior": "run_review success uses model-1/model-2 role pair",
+          "disposition": "tested",
+          "evidence": "test_run_review_gateway_success_uses_model_1_model_2_role_pair PASSED"
+        },
+        {
+          "behavior": "run_review gateway failure never falls back",
+          "disposition": "tested",
+          "evidence": "test_run_review_gateway_failure_never_falls_back_to_openrouter_or_direct PASSED"
+        },
+        {
+          "behavior": "model-1/model-2 registered in review_verdict",
+          "disposition": "tested",
+          "evidence": "test_gateway_reviewer_pair_is_registered_in_review_verdict PASSED"
+        },
+        {
+          "behavior": "existing deepseek/openai and gemini/openai pairs undisturbed",
+          "disposition": "tested",
+          "evidence": "test_deepseek_openai_and_gemini_openai_pairs_still_supported PASSED"
+        },
+        {
+          "behavior": "Adopt's _has_any_api_key() recognizes a gateway-only config",
+          "disposition": "tested",
+          "evidence": "test_gateway_only_env_does_not_skip_before_llm_review_runs PASSED"
+        },
+        {
+          "behavior": "_has_any_api_key() still skips with nothing configured",
+          "disposition": "tested",
+          "evidence": "test_no_provider_configured_at_all_still_skips PASSED"
+        },
+        {
+          "behavior": "run_review's defense-in-depth fallback catch also redacts",
+          "disposition": "tested",
+          "evidence": "test_run_review_gateway_fallback_catch_also_redacts_secrets PASSED"
+        },
+        {
+          "behavior": "leg-level error redacts key + header secrets",
+          "disposition": "tested",
+          "evidence": "test_gateway_leg_error_message_redacts_key_and_header_secrets PASSED"
+        },
+        {
+          "behavior": "slot 2 reads its own distinct model/key env vars",
+          "disposition": "tested",
+          "evidence": "test_gateway_leg_slot_2_reads_its_own_model_and_key_env_vars PASSED"
+        },
+        {
+          "behavior": "both slots configured together, no cross-contamination",
+          "disposition": "tested",
+          "evidence": "test_both_slots_configured_together_use_their_own_distinct_values PASSED"
+        },
+        {
+          "behavior": "insecure http:// base URL rejected, no network call attempted",
+          "disposition": "tested",
+          "evidence": "test_insecure_http_base_url_is_rejected_before_any_network_call PASSED"
+        },
+        {
+          "behavior": "http://localhost / 127.0.0.1 allowed for local testing",
+          "disposition": "tested",
+          "evidence": "test_http_localhost_is_allowed_for_local_testing PASSED"
+        },
+        {
+          "behavior": "https:// base URL accepted",
+          "disposition": "tested",
+          "evidence": "test_https_base_url_is_accepted PASSED"
+        },
+        {
+          "behavior": "custom header overrides SDK-generated Authorization",
+          "disposition": "tested",
+          "evidence": "test_custom_authorization_header_overrides_the_sdk_generated_one PASSED"
+        },
+        {
+          "behavior": "gateway leg never reads OPENROUTER_API_KEY/OPENAI_API_KEY",
+          "disposition": "tested",
+          "evidence": "test_gateway_never_reads_openrouter_or_direct_env_vars PASSED"
+        },
+        {
+          "behavior": "insecure-URL error message never echoes embedded credentials",
+          "disposition": "tested",
+          "evidence": "test_insecure_url_error_never_echoes_embedded_credentials PASSED"
+        },
+        {
+          "behavior": "empty HEADER_ suffix ignored, not sent as a blank header",
+          "disposition": "tested",
+          "evidence": "test_empty_header_suffix_env_var_is_ignored_not_sent_as_a_blank_header PASSED"
+        },
+        {
+          "behavior": "live behavior against a real gateway (Portkey/WAF)",
+          "disposition": "untestable",
+          "reason_code": "requires-external-nondeterministic-service",
+          "reason": "no real gateway reachable from this repo; carlosgil-ai validates post-merge on main"
+        },
+        {
+          "behavior": "SDK-level request construction (URL joining, header serialization) against a real openai.OpenAI transport, not a fake client",
+          "disposition": "untestable",
+          "reason_code": "covered-by-existing-test",
+          "reason": "test_custom_authorization_header_overrides_the_sdk_generated_one already exercises the real openai.OpenAI construction path for header precedence, the one SDK-internal behavior this diff actually depends on (external plan review, OpenAI arm, flagged the fakes generally; a full mock-transport harness for every call shape was judged disproportionate to what a config-plumbing change needs)"
+        }
+      ],
+      "counts": {
+        "testable": 30,
+        "tested": 28,
+        "untestable": 2,
+        "untested_testable": 0
+      },
+      "enumeration_basis": {
+        "acs": 11,
+        "covered_acs": 11
+      }
+    },
+    "degraded": []
+  },
+  "coverage": {
+    "total": 80.2,
+    "measured_tier": "repo",
+    "source": "combined coverage.xml (all plugins + shared + integration)",
+    "measured_at": "2026-07-04T00:00:00Z"
+  }
+}
