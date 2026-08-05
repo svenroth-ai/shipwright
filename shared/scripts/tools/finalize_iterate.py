@@ -36,6 +36,7 @@ from lib.campaign_status_io import finalize_campaign_status  # noqa: E402
 from lib.fr_classification import normalize_fr_impact as _normalize_fr_impact  # noqa: E402
 from lib.iterate_phase_groups import fold_into_event as _fold_phase_timings  # noqa: E402
 from lib.iterate_tests_block import fold_into_event as _fold_tests_block  # noqa: E402
+from lib.iterate_timings_normalize import fold_into_event as _fold_iterate_timings  # noqa: E402
 
 
 class FinalizeGateError(RuntimeError):
@@ -287,6 +288,9 @@ def _record_event(
         # of the boundary-mark sidecar into ``phase_timings`` (best-effort).
         _fold_phase_timings(event, project_root, run_id)
 
+        # Hierarchical lifecycle spans — separate sidecar, additive fold.
+        _fold_iterate_timings(event, project_root, run_id)
+
         # This run's recorded test totals → ``tests``; D1/D3 read ``tests.total``
         # to decide FR coverage, and the worktree flow used to record none.
         _fold_tests_block(event, project_root, run_id)
@@ -431,6 +435,13 @@ def run(
     compliance_paths = _update_compliance(project_root, run_id)
     result["steps"]["compliance"] = (
         {"written": compliance_paths} if compliance_paths else {"skipped": True}
+    )
+
+    # Step 2b: derived iterate-throughput report (best-effort).
+    from tools.iterate_throughput_report import write_report_best_effort
+    throughput_path = write_report_best_effort(project_root)
+    result["steps"]["throughput_report"] = (
+        {"written": throughput_path} if throughput_path else {"skipped": True}
     )
 
     # Step 3: regenerate build dashboard.

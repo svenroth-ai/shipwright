@@ -37,6 +37,7 @@ from tools.verifiers.silent_revert import dropped_lines  # noqa: E402
 
 CAMPAIGN_STATUS = ".shipwright/planning/iterate/campaigns/it3-probe/status.json"
 AUTHORED = "docs/hand-written.md"
+THROUGHPUT_REPORT = ".shipwright/compliance/performance/iterate-throughput.md"
 
 
 def _git(root: Path, *args: str) -> subprocess.CompletedProcess:
@@ -108,6 +109,57 @@ def test_the_two_components_agree_on_the_campaign_board(integrated: Path):
     assert CAMPAIGN_STATUS not in dropped, (
         "the merge resolver regenerates this file wholesale, so the F11 gate "
         "must not read its replaced lines as work thrown away"
+    )
+
+
+@pytest.fixture
+def integrated_with_throughput_report(tmp_path: Path) -> Path:
+    """Same real-git-integration scenario as ``integrated`` above, for
+    ``THROUGHPUT_REPORT`` — the churn artifact registered by
+    iterate-2026-08-04-iterate-timing-attribution — instead of the campaign
+    board. Proves the same cross-component composition claim for the newly
+    added `CHURN_ALLOWLIST` member, not just the pre-existing one."""
+    root = tmp_path / "repo2"
+    root.mkdir(parents=True)
+    _git(root, "init", "-q", "-b", "main")
+    _git(root, "config", "user.email", "t@example.com")
+    _git(root, "config", "user.name", "t")
+
+    _write(root, THROUGHPUT_REPORT, "# throughput v1\n")
+    _write(root, AUTHORED, "line one\nline two\n")
+    _commit(root, "fork point")
+
+    _git(root, "checkout", "-q", "-b", "iterate/y")
+    # main moves: the report is regenerated, and a human adds a paragraph.
+    _git(root, "checkout", "-q", "main")
+    _write(root, THROUGHPUT_REPORT, "# throughput v2 (main)\n")
+    _write(root, AUTHORED, "line one\nline two\nline three from main\n")
+    _commit(root, "main regenerates the report and gains prose")
+
+    # The branch regenerates its own report, then integrates.
+    _git(root, "checkout", "-q", "iterate/y")
+    _write(root, THROUGHPUT_REPORT, "# throughput v2 (branch)\n")
+    _commit(root, "branch regenerates the report")
+    _git(root, "merge", "-q", "--no-edit", "-X", "ours", "main")
+    _write(root, THROUGHPUT_REPORT, "# throughput v2 (branch)\n")
+    _write(root, AUTHORED, "line one\nline two\nline three from main\n")
+    _commit(root, "regenerate-at-merge resolution")
+    return root
+
+
+def test_the_two_components_agree_on_the_throughput_report(
+        integrated_with_throughput_report: Path):
+    """The same composition claim as the campaign board test, for
+    THROUGHPUT_REPORT: what the resolver auto-resolves, the gate exempts."""
+    resolvable, blocking = classify([THROUGHPUT_REPORT, AUTHORED])
+    assert resolvable == [THROUGHPUT_REPORT]
+    assert blocking == [AUTHORED]
+
+    dropped = dropped_lines(integrated_with_throughput_report, "main")
+
+    assert THROUGHPUT_REPORT not in dropped, (
+        "the merge resolver treats this as regenerated churn (--theirs), so "
+        "the F11 gate must not read its replaced content as work thrown away"
     )
 
 

@@ -183,8 +183,12 @@ Mirrors `/shipwright-plan` Step 5 Branch A / B / C flow.
      --mode iterate \
      --spec-file "{iterate_spec_path}" \
      --plan-file "{miniplan_path}" \
-     --plugin-root "{plan_plugin_root}"
+     --plugin-root "{plan_plugin_root}" \
+     --project-root "{project_root}" --run-id "{run_id}"
    ```
+   (`--run-id` is additive — it records this call's real boundary as an
+   `external_review` timing span, parent `planning`; omitting it just skips
+   the recording, see [iterate-timings](iterate-timings.md).)
    (`--plugin-root` is the plan plugin root — used only for plan-mode prompt
    lookup. For iterate-mode it is not consulted, but the argument remains
    required for CLI shape compatibility.) Present findings, integrate into

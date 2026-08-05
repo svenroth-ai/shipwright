@@ -690,9 +690,23 @@
     {
       "path": "shared/scripts/tools/finalize_iterate.py",
       "limit": 300,
-      "current": 564,
+      "current": 575,
       "state": "exception",
       "adr": "ADR-096"
+    },
+    {
+      "path": "shared/scripts/tools/deliver_pr.py",
+      "limit": 300,
+      "current": 322,
+      "state": "exception",
+      "adr": "ADR-122"
+    },
+    {
+      "path": "shared/scripts/tools/run_test_suite.py",
+      "limit": 300,
+      "current": 518,
+      "state": "exception",
+      "adr": "ADR-123"
     },
     {
       "path": "shared/scripts/tools/generate_session_handoff.py",

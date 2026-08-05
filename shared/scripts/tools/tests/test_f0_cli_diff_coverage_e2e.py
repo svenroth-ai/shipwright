@@ -48,8 +48,12 @@ _RUNNER_FILES = (
     "scripts/lib/_windows_acl.py",
     "scripts/lib/atomic_write.py",
     "scripts/lib/diff_coverage_gate.py",
+    "scripts/lib/file_lock.py",
     "scripts/lib/git_base.py",
     "scripts/lib/host_resource_lease.py",
+    "scripts/lib/iterate_entry.py",
+    "scripts/lib/iterate_timings.py",
+    "scripts/lib/iterate_timings_extra.py",
     "scripts/lib/main_health_diagnosis.py",
     "scripts/lib/repo_root.py",
     "scripts/tools/measure_diff_coverage.py",
@@ -66,6 +70,7 @@ _RUNNER_FILES = (
     "scripts/tools/suite_process.py",
     "scripts/tools/suite_process_child.py",
     "scripts/tools/suite_race_triage.py",
+    "scripts/tools/suite_timing.py",
     "scripts/tools/suite_units.py",
 )
 _PLUGIN = "shipwright-synthetic"

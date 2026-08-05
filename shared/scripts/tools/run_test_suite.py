@@ -38,6 +38,7 @@ import threading
 import time
 from contextlib import contextmanager
 from dataclasses import dataclass, field
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import TextIO
 from uuid import uuid4
@@ -71,6 +72,10 @@ from scripts.tools.suite_report import (  # noqa: E402
 )
 from scripts.tools.suite_host_resources import (  # noqa: E402
     HostLeaseError, f0_cpu_lease, normalize_cpu_weight, uv_warmup_lease,
+)
+from scripts.tools.suite_timing import (  # noqa: E402
+    record_canonical_f0_active_span, record_canonical_f0_active_span_failed,
+    record_f0_queue_span,
 )
 from scripts.tools.suite_units import (  # noqa: E402  (re-export: one import site)
     INFRA,
@@ -417,12 +422,34 @@ def _run_host_leased_suite(root: Path, run_id: str | None):
     """Serialize uv setup, then hold the CPU grant through the F0 verdict."""
     source_before, fingerprint_error = source_fingerprint(root)
     config = resolve_suite_config(root)
-    with uv_warmup_lease(root, run_id=run_id):
+    with uv_warmup_lease(root, run_id=run_id) as warmup_grant:
+        # Recorded immediately on grant, BEFORE ensure_xdist_available/warm_up
+        # run - those can take real time, and capturing "now" only after they
+        # finish (as the original code did) shifted the reported queue-wait
+        # window later than the real one by however long they took (doubt
+        # review). f0_cpu_lease's own call below was already correct.
+        record_f0_queue_span(root, run_id, waited_seconds=warmup_grant.waited_seconds,
+                             weight=1, capacity=1)
         ensure_xdist_available(config, root)
         warm_up(root)
     with f0_cpu_lease(root, config, run_id=run_id) as grant:
-        result = run_suite(root, config, budget_total=grant.weight,
-                           preflight=False, run_id=run_id)
+        record_f0_queue_span(root, run_id, waited_seconds=grant.waited_seconds,
+                             weight=grant.weight, capacity=grant.capacity)
+        active_start = datetime.now(timezone.utc)
+        try:
+            result = run_suite(root, config, budget_total=grant.weight,
+                               preflight=False, run_id=run_id)
+        except BaseException:
+            # A real producer boundary that never returns is exactly the run
+            # where attribution matters most - record it incomplete rather
+            # than silently losing the span (external code review).
+            record_canonical_f0_active_span_failed(
+                root, run_id, active_start=active_start,
+                weight=grant.weight, capacity=grant.capacity)
+            raise
+        record_canonical_f0_active_span(
+            root, run_id, active_start=active_start, result=result,
+            weight=grant.weight, capacity=grant.capacity)
         yield result, source_before, fingerprint_error
 
 

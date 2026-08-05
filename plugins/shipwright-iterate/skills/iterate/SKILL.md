@@ -83,7 +83,7 @@ Load pre-Scout Layer 1 per `references/context-loading.md`; never load raw `ship
 
 ### D. Determine Intent Type
 
-Priority: `--type` flag → `[Shipwright] Detected: ...` hook context → `classify_intent.py` → ask user (if confidence < 0.7). A `mode: simplify` classification (simplify/clean-up vocabulary) selects the behavior-preserving **SIMPLIFY sub-mode** (Path B → [F-simplify](references/F-simplify.md), Spec Impact NONE).
+Priority: `--type` flag → `[Shipwright] Detected: ...` hook context → `classify_intent.py` → ask user (if confidence < 0.7). A `mode: simplify` classification (simplify/clean-up vocabulary) selects the behavior-preserving **SIMPLIFY sub-mode** (Path B → [F-simplify](references/F-simplify.md), Spec Impact NONE). → **Iterate Timing:** BUG intent → `start discovery_diagnosis --parent none`; otherwise `start planning --parent none` (see [iterate-timings](references/iterate-timings.md) for the full catalog and the producer/agent split).
 
 ### E. Assess Complexity (Two-Stage)
 
@@ -161,7 +161,7 @@ Create `.shipwright/planning/iterate/{date}-{short-description}.md`. Full templa
 
 ### Step 6: Build (TDD — Red-Green-Refactor)
 
-Tests first (outcomes, not internal state; one happy + one error path per AC). Implementation, verify wiring, Boundary Probe sub-step when `touches_io_boundary`. Full body in `references/path-a-feature.md`. → **Phase Timing:** emit `mark build` at entry. The three governance-rule anchors stay inline so `tests/test_skill_step_6_rules_present.py` continues to fire:
+Tests first (outcomes, not internal state; one happy + one error path per AC). Implementation, verify wiring, Boundary Probe sub-step when `touches_io_boundary`. Full body in `references/path-a-feature.md`. → **Phase Timing:** emit `mark build` at entry. → **Iterate Timing:** `end planning` (or `end discovery_diagnosis`) / `start implementation --parent none`. The three governance-rule anchors stay inline so `tests/test_skill_step_6_rules_present.py` continues to fire:
 
 - **Test-Update-Klausel** — when an iterate changes test infrastructure itself (skip semantics, hygiene rules, test conventions, this skill's checklist), it MUST update the skill's reference rules in the same diff.
 - **Registry-driven SSoT meta-test rule** — when a registry in `shared/scripts/lib/*` references files/identifiers on disk, BOTH directions of drift protection MUST exist: forward (every value resolves to a file) AND reverse (every namespace-matched file has a registry entry).
@@ -169,7 +169,7 @@ Tests first (outcomes, not internal state; one happy + one error path per AC). I
 
 ### Step 7: Self-Review (always)
 
-See `references/iteration-reviews.md` for the 7-point checklist (item 7: Affected Boundaries). → **Phase Timing:** emit `mark review` at entry. **Record every review pass:** all six types — `self` · `plan` · `code` · `doubt` · `external_code` · `spec` (Stage 1), all under `reviews` — close their own row in `.shipwright/planning/iterate/{run_id}/reviews.json` via `shared/scripts/tools/record_review_pass.py` (contract + per-pass table: `references/iteration-reviews.md` → "Recording each review pass"). The F11 verifier `check_review_record` STOPs the run while any type is still `pending` (small+; skipped at trivial), so a pass that did not run is closed EXPLICITLY with a `--disposition` naming the rule. An empty Review row must always mean "genuinely not run", never "nobody wrote it down".
+See `references/iteration-reviews.md` for the 7-point checklist (item 7: Affected Boundaries). → **Phase Timing:** emit `mark review` at entry. → **Iterate Timing:** `end implementation` / `start review --parent none` + `start self_review --parent review`; bracket Step 8's cascade with `spec_review`/`code_review`/`doubt_review` (see [iterate-timings](references/iterate-timings.md)). **Record every review pass:** all six types — `self` · `plan` · `code` · `doubt` · `external_code` · `spec` (Stage 1), all under `reviews` — close their own row in `.shipwright/planning/iterate/{run_id}/reviews.json` via `shared/scripts/tools/record_review_pass.py` (contract + per-pass table: `references/iteration-reviews.md` → "Recording each review pass"). The F11 verifier `check_review_record` STOPs the run while any type is still `pending` (small+; skipped at trivial), so a pass that did not run is closed EXPLICITLY with a `--disposition` naming the rule. An empty Review row must always mean "genuinely not run", never "nobody wrote it down".
 
 ### Step 7.5: Confidence Calibration (mandatory at medium+, also when `touches_io_boundary`)
 
@@ -261,7 +261,7 @@ See `references/escape-hatch.md` and `references/iteration-planning.md` (handoff
 
 ## Finalization (all paths)
 
-**CRITICAL: F0–F11 (incl. F3a, F5a, F5b, F5c) are MANDATORY.** (→ Phase Timing: `mark test` at F0, `mark finalize` at F1 — see [phase-timing](references/phase-timing.md).)
+**CRITICAL: F0–F11 (incl. F3a, F5a, F5b, F5c) are MANDATORY.** (→ Phase Timing: `mark test` at F0, `mark finalize` at F1 — see [phase-timing](references/phase-timing.md). → Iterate Timing: at F0, `end review` / `start verification --parent none` — `pre_f0_validation`/`f0_queue`/`canonical_f0_active` self-instrument, do not mark them by hand; at F1, `end verification` / `start finalization --parent none`; at F11, `end finalization` — `deliver_pr.py` self-records its own `delivery`/`delivery_wait`/`ci_wait` spans, no agent mark needed. On a `checks_failed` verdict, bracket the diagnose→fix→re-push work with `start`/`end post_ci_remediation --parent delivery`. See [iterate-timings](references/iterate-timings.md).)
 
 > **Order matters.** F0.5 / F3 / F3a / F4 / F5 / F5a / F5b / F5c all write tracked artifacts and MUST run before F6 so a single atomic commit stages them. **F5b's `work_completed` event lands in this worktree's `shipwright_events.jsonl`, so F6 stages it and it ships in the PR** (per-tree, PR-committed model — iterate-2026-05-29-events-jsonl-worktree-commit). F0.5 is the production-time E2E gate. F6.5 (SHA patch) and F7/F7b are SKIPPED in the normal worktree flow — they exist only for legacy / out-of-band (non-worktree, replay) event recording. Do not reorder. **Speed (optional):** F1/F3/F4/F5c/F5b MAY be driven in ONE call via `finalize_bundle.py` (pure orchestrator; F5 before it, F2/F3a/F6 stay manual; whole-bundle re-run is safe) — see [F-finalize-bundle](references/F-finalize-bundle.md).
 

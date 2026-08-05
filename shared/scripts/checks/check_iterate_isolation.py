@@ -34,6 +34,7 @@ _SHARED_LIB = Path(__file__).resolve().parents[1]
 if str(_SHARED_LIB) not in sys.path:
     sys.path.insert(0, str(_SHARED_LIB))
 
+from lib.iterate_timings import span as _timing_span  # noqa: E402
 from lib.worktree_isolation import (  # noqa: E402
     GitError,
     IsolationError,
@@ -125,7 +126,16 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
 
     project_root = Path(args.project_root).resolve()
-    exit_code, payload = _decide(project_root, args.run_id)
+    # pre_f0_validation is a real producer boundary (this script's own
+    # lifetime IS the span) — only meaningful at the F0 gate; F11's leak-guard
+    # call sits in the delivery ladder and is out of scope for this catalog.
+    if args.stage == "f0":
+        with _timing_span(project_root, args.run_id, name="pre_f0_validation",
+                          parent="verification") as extra:
+            exit_code, payload = _decide(project_root, args.run_id)
+            extra["stage"] = "f0"
+    else:
+        exit_code, payload = _decide(project_root, args.run_id)
     if args.stage:
         payload["stage"] = args.stage
 

@@ -218,6 +218,16 @@ ALLOWLIST: dict[str, list[str]] = {
         # lists legacy artefact names (planning/designs/agent_docs/compliance) so
         # user-projects know what to do when drift detector fires.
         "shared/templates/claude-md-template.md",
+        # iterate-2026-08-04-iterate-timing-attribution: "planning" is one of
+        # the 7 iterate_timings top-level span-catalog NAMES (discovery_
+        # diagnosis/planning/implementation/verification/review/finalization/
+        # delivery) — a coincidental vocabulary collision with the migration's
+        # canonical directory name, not a path reference. Same class as the
+        # plugin.json / pyproject.toml keyword entries above.
+        "shared/scripts/lib/iterate_timings*.py",
+        "shared/tests/test_iterate_timing*.py",
+        "shared/tests/test_iterate_throughput*.py",
+        "plugins/shipwright-iterate/skills/iterate/references/iterate-timings.md",
     ],
     "designs": [
         # Migration framework itself — references both paths by design

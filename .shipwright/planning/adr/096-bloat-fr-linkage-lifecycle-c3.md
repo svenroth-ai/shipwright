@@ -93,6 +93,25 @@ mirroring how ADR-095 re-pointed `audit_staleness`/`test_audit_snapshot`.
 untouched. Retire when `finalize_iterate` / the detective-audit groups + suites
 are split (Re-Review-Date / the B/C bloat campaigns).
 
+### Addendum 2026-08-04 (iterate-timing-attribution)
+
+`finalize_iterate.py` 564 → 575 (+11): folds the new `iterate_timings` sidecar
+into `work_completed` beside the existing `phase_timings` fold (one import +
+two lines), and regenerates the derived iterate-throughput report at F5b (one
+import + a `write_report_best_effort` call + the same `{written}/{skipped}`
+result shape every other finalize step already uses). Both additions were
+trimmed repeatedly before this addendum — the best-effort try/except was
+pushed into `iterate_throughput_report.py` itself (a new, unconstrained file)
+specifically to keep this hub file's growth to the minimum a caller genuinely
+needs: one function call and one result-dict entry per new finalize step,
+matching the shape `_update_compliance`/`_update_dashboard` already established.
+No further reduction was available without breaking that established shape or
+re-opening ADR-096's own Ousterhout argument (the gate belongs at the write
+chokepoint, not scattered to dodge a line count). `564` (the ADR-096 → later
+bump measurement already on file) is raised to `575`; `adr` stays `ADR-096` —
+same controlling reason (this file legitimately absorbs new finalize-step
+wiring), not a new exception class. Re-Review-Date unchanged.
+
 ## Consequences
 
 The four files now operate against the new limits; further additions must stay

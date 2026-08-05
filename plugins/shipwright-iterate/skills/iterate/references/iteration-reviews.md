@@ -307,8 +307,12 @@ uv run "{shared_root}/scripts/tools/external_review.py" \
   --mode code \
   --diff-file /tmp/shipwright-review-diff.txt \
   --spec-file "{iterate_spec_path}" \
-  --plugin-root "{plan_plugin_root}"
+  --plugin-root "{plan_plugin_root}" \
+  --project-root "{project_root}" --run-id "{run_id}"
 ```
+
+(`--run-id` additively records this call as an `external_review` timing span,
+parent `review` — see [iterate-timings](iterate-timings.md).)
 
 Parse `reviews.deepseek.feedback` + `reviews.openai.feedback`. Merge any
 high/medium-severity findings into the iterate ADR's

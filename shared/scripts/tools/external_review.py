@@ -64,6 +64,7 @@ import os
 import re
 import sys
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from contextlib import nullcontext
 from pathlib import Path
 
 # Wire up shared/scripts/lib so we can import shared helpers + the env loader.
@@ -95,8 +96,8 @@ from external_review_routing import (  # noqa: E402
     openrouter_extra_body,
     resolve_reviewer_model,
 )
+from iterate_timings import span as _timing_span  # noqa: E402
 from review_verdict import summarize_reviews  # noqa: E402
-
 
 OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1"
 
@@ -269,6 +270,10 @@ def main() -> int:
             "Defaults to cwd."
         ),
     )
+    parser.add_argument(
+        "--run-id", default=None,
+        help="Iterate run_id — records this call as an 'external_review' timing span; omit to skip.",
+    )
     args = parser.parse_args()
 
     # Mode-specific argument validation.
@@ -346,38 +351,49 @@ def main() -> int:
     provider = detect_provider()
     reviews: dict[str, dict] = {}
 
-    if provider == "openrouter":
-        # Both reviews via OpenRouter (one API key)
-        with ThreadPoolExecutor(max_workers=2) as executor:
-            futures = {
-                executor.submit(review_with_openrouter, primary_text, spec, system_prompt, user_prompt, config, "deepseek"): "deepseek",
-                executor.submit(review_with_openrouter, primary_text, spec, system_prompt, user_prompt, config, "openai"): "openai",
+    # external_review is a real producer boundary (this whole block IS the
+    # network-call span); code mode is the Step-8 cascade's pass, others run
+    # pre-Build. Bare string below is a span-parent name, not a path.
+    timing_cm = nullcontext(None)
+    if args.run_id:
+        timing_parent = "review" if args.mode == "code" else "planning"  # artifact-path-canon: legacy
+        timing_cm = _timing_span(Path(args.project_root).resolve(), args.run_id,
+                                 name="external_review", parent=timing_parent)
+    with timing_cm as timing_extra:
+        if provider == "openrouter":
+            # Both reviews via OpenRouter (one API key)
+            with ThreadPoolExecutor(max_workers=2) as executor:
+                futures = {
+                    executor.submit(review_with_openrouter, primary_text, spec, system_prompt, user_prompt, config, "deepseek"): "deepseek",
+                    executor.submit(review_with_openrouter, primary_text, spec, system_prompt, user_prompt, config, "openai"): "openai",
+                }
+                for future in as_completed(futures):
+                    name = futures[future]
+                    try:
+                        reviews[name] = future.result()
+                    except Exception as e:
+                        reviews[name] = {"status": "error", "reason": str(e)}
+
+        elif provider == "direct":
+            # DeepSeek has no direct route. Preserve GPT's existing direct path.
+            reviews = {
+                "deepseek": {
+                    "status": "skipped",
+                    "reason": "DeepSeek requires an approved OpenRouter ZDR endpoint",
+                },
+                "openai": review_with_openai(
+                    primary_text, spec, system_prompt, user_prompt, config
+                ),
             }
-            for future in as_completed(futures):
-                name = futures[future]
-                try:
-                    reviews[name] = future.result()
-                except Exception as e:
-                    reviews[name] = {"status": "error", "reason": str(e)}
 
-    elif provider == "direct":
-        # DeepSeek has no direct route. Preserve GPT's existing direct path.
-        reviews = {
-            "deepseek": {
-                "status": "skipped",
-                "reason": "DeepSeek requires an approved OpenRouter ZDR endpoint",
-            },
-            "openai": review_with_openai(
-                primary_text, spec, system_prompt, user_prompt, config
-            ),
-        }
-
-    else:
-        # No keys — both reviews skipped
-        reviews = {
-            "deepseek": {"status": "skipped", "reason": "No OPENROUTER_API_KEY set"},
-            "openai": {"status": "skipped", "reason": "No OPENAI_API_KEY or OPENROUTER_API_KEY set"},
-        }
+        else:
+            # No keys — both reviews skipped
+            reviews = {
+                "deepseek": {"status": "skipped", "reason": "No OPENROUTER_API_KEY set"},
+                "openai": {"status": "skipped", "reason": "No OPENAI_API_KEY or OPENROUTER_API_KEY set"},
+            }
+        if timing_extra is not None:
+            timing_extra["provider"] = provider
 
     # Degraded-gate: keys present but 0 reviews succeeded → fail loud (never a silent no-op).
     output, exit_code = finalize_review_output(provider, reviews)
