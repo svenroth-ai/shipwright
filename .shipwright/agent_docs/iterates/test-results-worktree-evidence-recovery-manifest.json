@@ -1,0 +1,52 @@
+{
+  "schema_version": 1,
+  "audit_run_id": "iterate-2026-08-05-worktree-evidence-recovery",
+  "triage_card": "trg-dbb83bb0 (P1.14)",
+  "supplements": ".shipwright/agent_docs/iterates/test-results-backfill-manifest.json",
+  "policy": "Same policy as the P1.11 backfill this file supplements: exact bytes only; embedded run_id must equal the target run's own run_id; a durable F5c summary for that run_id must be reachable from origin/main; inherited/stale root snapshots and invented detail are forbidden. This file records recoveries and confirmations made AFTER the P1.11 backfill closed, without editing that manifest -- an entry here must never be read as having been known at P1.11 time.",
+  "recovered": [
+    {
+      "label": "P2.03",
+      "run_id": "iterate-2026-08-01-triage-defer-lifecycle",
+      "source": "worktree:triage-defer-lifecycle@5051ef01 (M shipwright_test_results.json, dirty relative to its own HEAD)",
+      "sha256": "db508c455a3b19ef3d39ad206b58d2c4587619679e0c101a362a4ff942acb484",
+      "bytes": 3456,
+      "embedded_run_id_matches_target": true,
+      "durable_f5c_summary": ".shipwright/agent_docs/iterates/iterate-2026-08-01-triage-defer-lifecycle.json, present on origin/main (tip d6b2124a); run delivered via PR #539 (Run-ID trailer iterate-2026-08-01-triage-defer-lifecycle)",
+      "created": true,
+      "artifact": ".shipwright/agent_docs/iterates/iterate-2026-08-01-triage-defer-lifecycle.test-results.json"
+    },
+    {
+      "label": "P2.05",
+      "run_id": "iterate-2026-08-01-grade-snapshot-dedup",
+      "source": "worktree:grade-snapshot-dedup@07b1d10a (M shipwright_test_results.json, dirty relative to its own HEAD)",
+      "sha256": "9cff8b81d86c788a3072f888e5808f9466a7b57f05c54d9d8cc5f081536bd04a",
+      "bytes": 6863,
+      "embedded_run_id_matches_target": true,
+      "durable_f5c_summary": ".shipwright/agent_docs/iterates/iterate-2026-08-01-grade-snapshot-dedup.json, present on origin/main (tip d6b2124a); run delivered via PR #537 (Run-ID trailer iterate-2026-08-01-grade-snapshot-dedup). Supersedes the P1.11 backfill's 'unavailable' verdict for this run_id, which was correct at the time (matching F5c summary then lived only on unmerged commits a09b02aa/6e9e01d8) and is left unedited in test-results-backfill-manifest.json.",
+      "created": true,
+      "artifact": ".shipwright/agent_docs/iterates/iterate-2026-08-01-grade-snapshot-dedup.test-results.json"
+    }
+  ],
+  "unavailable": [
+    {
+      "label": null,
+      "run_id": "iterate-2026-08-01-verify-local-surface-gates",
+      "worktree": "verify-local-surface-gates@124ee473",
+      "reason": "Root shipwright_test_results.json is clean (no local modification against branch HEAD) and its embedded iterate_latest.run_id is iterate-2026-07-28-main-self-heal -- an unrelated, older run's snapshot inherited at worktree creation, not this run's own evidence. Importing it under this run_id would misattribute another run's test results. Delivered via PR #525 (Run-ID trailer iterate-2026-08-01-verify-local-surface-gates); a durable F5c summary exists at .shipwright/agent_docs/iterates/iterate-2026-08-01-verify-local-surface-gates.json but no complete matching snapshot was ever run-written to this worktree's root."
+    },
+    {
+      "label": null,
+      "run_id": "iterate-2026-08-01-collect-test-ids-verbosity",
+      "worktree": "collect-test-ids-verbosity@1a792a39",
+      "reason": "Root shipwright_test_results.json is clean (no local modification against branch HEAD) and its embedded iterate_latest.run_id is iterate-2026-07-28-main-self-heal -- the identical inherited snapshot found in verify-local-surface-gates, not this run's own evidence. Importing it under this run_id would misattribute another run's test results. Delivered via PR #535 (Run-ID trailer iterate-2026-08-01-collect-test-ids-verbosity); a durable F5c summary exists at .shipwright/agent_docs/iterates/iterate-2026-08-01-collect-test-ids-verbosity.json but no complete matching snapshot was ever run-written to this worktree's root."
+    }
+  ],
+  "confirmed_self_delivered": [
+    {
+      "label": "P1.10",
+      "run_id": "iterate-2026-08-02-ensure-shared-cache-fanout",
+      "note": "No recovery action needed. P1.11's F5c evidence-preservation mechanism (PR #540) had already merged before P1.10 finalized, so P1.10 wrote and shipped its own immutable snapshot in the same PR as its fix: commit 64c8c334 (PR #541) carries a 'chore(iterate): persist immutable test evidence' commit with Run-ID trailer iterate-2026-08-02-ensure-shared-cache-fanout. Verified present and tracked at .shipwright/agent_docs/iterates/iterate-2026-08-02-ensure-shared-cache-fanout.test-results.json on origin/main (tip d6b2124a)."
+    }
+  ]
+}
