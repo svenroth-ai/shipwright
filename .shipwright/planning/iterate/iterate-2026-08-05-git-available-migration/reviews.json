@@ -1,0 +1,216 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-08-05-git-available-migration",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-05T08:28:13.425728+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 8,
+      "findings": [
+        {
+          "severity": "low",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "The implementation description for `check_test_results_evidence` and `check_test_results_backfill` does not explicitly state whether a `not_git` outcome when a commit hash is supplied should cause a SKIP (mirroring `ci_supplychain_ack` and the “not-a-repo SKIPs” test case) or a refusing ERROR. The spec’s phrasing “refuse (ERROR) when a commit was supplied and git faults” could be misread to include the `not_git` case, even though the accompanying test pattern (tested by infra test) expects a SKIP.",
+          "suggestion": "Clarify in the mini‑plan that both gates will first check `git_context`, SKIP on `not_git` (regardless of commit_hash), SKIP if `commit_hash` is absent, and refuse only on `git_error` when a commit is provided. This ensures the implementation and reviewer expectations align with the stated test pattern.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "The deletion of `_git_available` is performed first to trigger import errors and confirm completeness. However, if any caller is missed by the grep (e.g., dynamically imported or inlined in an eval), the disruption could temporarily break the test suite in a way that masks other failures.",
+          "suggestion": "Immediately after deletion, run a targeted test run that loads all verifier modules (e.g., `pytest --collect-only`) to catch any residual import error before proceeding with code changes. The plan already intends a full suite run; this is a minor precaution.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The migration of `regenerate_base_head` to `git_context` relies on the fact that both current callers perform a `git_context` pre‑check. If a future caller omits that pre‑check and passes a non‑work‑tree root, the function will now receive a `not_git` or `git_error` state and may behave differently than the old `_git_available` check (which would return `None` in all non‑work‑tree cases).",
+          "suggestion": "Add a brief docstring comment in `_layer_coverage_regen.py` noting that the function expects to be called from paths that already validate git availability; this does not change current behavior but documents the precondition for maintainers.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "The plan uses a “delete‑first” strategy to confirm no stray callers remain, but the `git_context` function needs to already be importable in every migrated file. The write‑up assumes the necessary imports exist (from prior migrations), which is true based on the referenced PRs, but the mini‑plan doesn’t explicitly list the import adjustments.",
+          "suggestion": "Add a brief note in the “Files” section that each migrated module must import `git_context` from `git_helpers` (if not already present). This is a trivial reminder but avoids a trivial overshift in the implementation.  Overall Assessment: The approach is sound, thoroughly maps all callers, and properly differentiates between skip‑worthy and error‑worthy git states. A minor documentation/ambiguity in the handling of the two evidence gates is already covered by the test strategy; the plan can be approved as‑is with only clarifying notes.  SHIPWRIGHT_VERDICT: approve",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "The zero-reference verification claim conflicts with the explicitly out-of-scope test-local `_git_available()` helper definitions in `test_layer_coverage_.py`. A literal `grep -R _git_available` cannot return zero hits if those definitions remain, and deleting/renaming those unrelated helpers is not necessary to remove the production API. This makes AC-5 and Work Breakdown step 6 internally inconsistent.",
+          "suggestion": "Define AC-5 and the verification command in terms of production-helper usage: no imports of `git_helpers._git_available`, no calls through that helper, and no definition remaining in `git_helpers.py`. Use a targeted search such as imports/call patterns, or explicitly exclude the known test-local helper definitions and history/spec artifacts.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The plan should preserve the evaluation order in the two `test_results_` checks: an absent `commit_hash` must return its existing SKIP before invoking `git_context`. If the refactor evaluates `git_context(root)` first, a no-commit invocation in a non-repository or faulting environment would change from the explicitly preserved no-commit SKIP into a git-related result.",
+          "suggestion": "Structure both checks explicitly as: first `if not commit_hash: SKIP`; then obtain `git_context`; then SKIP only for `not_git`, proceed for `work_tree`, and refuse for every other value. Add an assertion in the new infra tests that `git_context` is not called when no commit is supplied, if the test style permits mocking.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "The assertion that `regenerate_base_head` is behaviorally unchanged relies on its two current callers always running `_git_precheck` immediately before calling it. That is sound for current flows, but changing the helper from a binary availability check to a context classification can subtly affect direct/helper-level tests or future callers unless its non-work-tree return contract remains clear.",
+          "suggestion": "Keep `regenerate_base_head` conservative: return the same `None` outcome for every non-`work_tree` context and avoid introducing a new exception or distinct result. Add or retain a small direct test for its non-work-tree path if existing tests do not already exercise it; the existing end-to-end coverage alone is sufficient only if it demonstrably includes that path.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "security",
+          "file": null,
+          "line": null,
+          "finding": "No new external input handling, privilege change, or shell invocation is proposed. The primary security-relevant behavior—treating repository access failures such as `safe.directory` refusals as failures for F11 gates rather than green SKIPs—is correctly fail-closed.",
+          "suggestion": "Ensure refusal messages expose the classified `git_context` state or a sanitized diagnostic, rather than raw Git stderr, so paths, repository configuration, or environment details are not unnecessarily surfaced in verifier output.  Overall, the migration approach is sound and appropriately avoids broadening the Tier-2 contract while making F11 gates fail closed on real Git faults. Resolve the contradictory zero-grep criterion and explicitly preserve the no-commit short-circuit before merging. SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-08-05T09:03:36.638587+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[deepseek] - **Category:** approach  \n  **Severity:** low  \n  **Finding:** The implementation description for `check_test_results_evidence` and `check_test_results_backfill` does not explicitly state whether a `not_git` outcome when a commit hash is supplied should cause a SKIP (mirroring `ci_supplychain_ack` and the “not-a-repo SKIPs” test case) or a refusing ERROR. The spec’s phrasing “refuse (ERROR) when a commit *was* supplied and git faults” could be misread to include the `not_git` case, even though the accompanying test pattern (tested by infra test) expects a SKIP.  \n  **Suggestion:** Clarify in the mini‑plan that both gates will first check `git_context`, SKIP on `not_git` (regardless of commit_hash), SKIP if `commit_hash` is absent, and refuse only on `git_error` when a commit is provided. This ensures the implementation and reviewer expectations align with the stated test pattern.\n\n- **Category:** risk  \n  **Severity:** low  \n  **Finding:** The deletion of `_git_available` is performed first to trigger import errors and confirm completeness. However, if any caller is missed by the grep (e.g., dynamically imported or inlined in an eval), the disruption could temporarily break the test suite in a way that masks other failures.  \n  **Suggestion:** Immediately after deletion, run a targeted test run that loads all verifier modules (e.g., `pytest --collect-only`) to catch any residual import error before proceeding with code changes. The plan already intends a full suite run; this is a minor precaution.\n\n- **Category:** edge-case  \n  **Severity:** low  \n  **Finding:** The migration of `regenerate_base_head` to `git_context` relies on the fact that both current callers perform a `git_context` pre‑check. If a future caller omits that pre‑check and passes a non‑work‑tree root, the function will now receive a `not_git` or `git_error` state and may behave differently than the old `_git_available` check (which would return `None` in all non‑work‑tree cases).  \n  * […truncated]\n\n[openai] 1. **Category:** dependency  \n   **Severity:** medium  \n   **Finding:** The zero-reference verification claim conflicts with the explicitly out-of-scope test-local `_git_available()` helper definitions in `test_layer_coverage_*.py`. A literal `grep -R _git_available` cannot return zero hits if those definitions remain, and deleting/renaming those unrelated helpers is not necessary to remove the production API. This makes AC-5 and Work Breakdown step 6 internally inconsistent.  \n   **Suggestion:** Define AC-5 and the verification command in terms of production-helper usage: no imports of `git_helpers._git_available`, no calls through that helper, and no definition remaining in `git_helpers.py`. Use a targeted search such as imports/call patterns, or explicitly exclude the known test-local helper definitions and history/spec artifacts.\n\n2. **Category:** edge-case  \n   **Severity:** medium  \n   **Finding:** The plan should preserve the evaluation order in the two `test_results_*` checks: an absent `commit_hash` must return its existing SKIP before invoking `git_context`. If the refactor evaluates `git_context(root)` first, a no-commit invocation in a non-repository or faulting environment would change from the explicitly preserved no-commit SKIP into a git-related result.  \n   **Suggestion:** Structure both checks explicitly as: first `if not commit_hash: SKIP`; then obtain `git_context`; then SKIP only for `not_git`, proceed for `work_tree`, and refuse for every other value. Add an assertion in the new infra tests that `git_context` is not called when no commit is supplied, if the test style permits mocking.\n\n3. **Category:** risk  \n   **Severity:** low  \n   **Finding:** The assertion that `regenerate_base_head` is behaviorally unchanged relies on its two current callers always running `_git_precheck` immediately before calling it. That is sound for current flows, but changing the helper from a binary availability check to a context classification can sub […truncated]",
+      "verdicts": {
+        "openai": "revise",
+        "deepseek": "approve"
+      }
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 3,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "architecture",
+          "file": "shared/scripts/tools/verifiers/test_results_backfill_check.py",
+          "line": null,
+          "finding": "Duplication: the tri-state git-fault refusal CheckResult (~7 lines) was duplicated near-verbatim in test_results_evidence_check.py, differing only in the trailing artifact label. The same diff already extracted an identical 3-way duplication in spec_checks.py into _skip_unless_work_tree. FIXED: extracted _work_tree_refusal(name, artifact_label) into test_results_backfill_check.py; test_results_evidence_check.py imports and calls it. Confirmed by re-review.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "architecture",
+          "file": "shared/scripts/tools/verifiers/_layer_coverage_regen.py",
+          "line": null,
+          "finding": "File crossed the 300-line bloat guideline (300->301) as a side effect of a docstring update; no baseline entry exists. FIXED: trimmed the docstring by one more line; file is back to exactly 300 lines. Confirmed by re-review.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "shared/scripts/tools/verifiers/spec_checks.py",
+          "line": null,
+          "finding": "Single-line if/return forms with long messages are harder to scan than the multi-line wrapped form used in the reference implementation (ci_supplychain.py). ACKNOWLEDGED, no change: no spare line budget in spec_checks.py/iterate_checks.py (independently bloat-baselined and held at exact pre-existing ceiling); reviewer explicitly flagged this non-blocking given the constraint.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-08-05T08:59:46.119858+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 2,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "boundary & contract",
+          "file": null,
+          "line": null,
+          "finding": "the diff's actual footprint matches the spec's declared 'Boundaries touched' / 'Files' lists",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "boundary & contract",
+          "file": null,
+          "line": null,
+          "finding": "AC-3's 'both existing callers' behavior is unchanged' independently validates the probe swap inside regenerate_base_head in isolation",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-08-05T08:59:26.828784+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 1,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "test",
+          "file": "shared/tests/test_check_test_results_infra.py:61` and `shared/tests/test_check_test_results_infra.py",
+          "line": 121,
+          "finding": "The no-commit tests assert only that the result is skipped; they do not verify AC-4’s required ordering that `git_context` is never called when `commit_hash` is absent. A regression back to `if not commit_hash or git_context(root) != ...` would still pass these tests in `tmp_path`, since `git_context(tmp_path)` returns `not_git` and the check would still return a skip.",
+          "suggestion": "In each no-commit test, monkeypatch the respective module’s `git_context` to raise `AssertionError` if invoked, then call the check without `commit_hash`. This directly pins the required short-circuit behavior.  The production migration appears to implement the requested tri-state behavior and removes the live binary-probe callers. Add the missing ordering assertions before shipping so the explicit no-commit contract cannot regress unnoticed. SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-08-05T09:07:48.171768+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "partial",
+      "raw_excerpt": "[deepseek] I reviewed the diff against the spec and found no defects. All acceptance criteria are satisfied: each call site uses the tri‑state `git_context`, the fault/skip behaviour matches the severity class (F11 gates refuse on `git_error` while Tier‑2 checks skip), the `_git_available` function is deleted with no remaining call sites, the ordering of `commit_hash` check before `git_context` is correct, and new infra tests cover the required behaviours. No correctness bugs, security issues, regressions, or untested edge cases were identified.\n\nSHIPWRIGHT_VERDICT: approve\n\n[openai] - Category: test\n- Severity: medium\n- File: `shared/tests/test_check_test_results_infra.py:61` and `shared/tests/test_check_test_results_infra.py:121`\n- Finding: The no-commit tests assert only that the result is skipped; they do not verify AC-4’s required ordering that `git_context` is never called when `commit_hash` is absent. A regression back to `if not commit_hash or git_context(root) != ...` would still pass these tests in `tmp_path`, since `git_context(tmp_path)` returns `not_git` and the check would still return a skip.\n- Suggestion: In each no-commit test, monkeypatch the respective module’s `git_context` to raise `AssertionError` if invoked, then call the check without `commit_hash`. This directly pins the required short-circuit behavior.\n\nThe production migration appears to implement the requested tri-state behavior and removes the live binary-probe callers. Add the missing ordering assertions before shipping so the explicit no-commit contract cannot regress unnoticed.  \nSHIPWRIGHT_VERDICT: revise",
+      "verdicts": {
+        "openai": "revise",
+        "deepseek": "approve"
+      }
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-05T08:59:26.478454+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    }
+  }
+}

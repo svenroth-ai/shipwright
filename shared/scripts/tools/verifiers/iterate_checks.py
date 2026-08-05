@@ -48,7 +48,7 @@ from ._iterate_latest import read_iterate_latest, stale_detail  # noqa: E402
 from .agent_doc_budget_check import check_agent_doc_budget  # noqa: E402,F401 — re-exported
 from .agent_doc_shape_check import check_agent_doc_shape  # noqa: E402,F401 — re-exported
 from .common import CheckResult, Severity  # noqa: E402
-from .git_helpers import _git_available, _iterate_changed_paths, _run_git  # noqa: E402
+from .git_helpers import _iterate_changed_paths, _run_git, git_context  # noqa: E402
 from .handoff_freshness import check_session_handoff_fresh  # noqa: E402, F401 — re-exported
 from .silent_revert import check_silent_revert_for_run  # noqa: E402, F401 — re-exported
 # Re-export extracted decision-log checks for the wrapper and tests.
@@ -888,9 +888,9 @@ def check_spec_impact_recorded(
        :func:`_iterate_changed_paths`, NOT one commit — must touch a planning spec.md.
 
     BUG iterates, intent-less entries, and runs whose entry is absent are
-    SKIPPED — a bug fix need not touch the spec. Git-unavailable is SKIPPED.
-    Severity ERROR on failure (blocks default exit and ``--strict``).
-    Origin: iterate-2026-05-16-spec-impact-gate.
+    SKIPPED — a bug fix need not touch the spec. ``git_context`` SKIPs on
+    ``not_git``, fails CLOSED on any other fault (trg-4183acd3). Severity ERROR
+    on failure (blocks default exit and ``--strict``). Origin: iterate-2026-05-16-spec-impact-gate.
     """
     name = "spec impact recorded (feature/change)"
 
@@ -946,11 +946,11 @@ def check_spec_impact_recorded(
 
     # spec_impact add|modify|remove, or a legacy event with no spec_impact:
     # the branch this iterate built must have touched a planning spec.md.
-    if not _git_available(project_root):
-        return CheckResult(
-            name, True, "skipped (git unavailable — cannot inspect the branch)",
-            severity=Severity.SKIPPED.value,
-        )
+    ctx = git_context(project_root)  # tri-state; see git_helpers.git_context
+    if ctx == "not_git":
+        return CheckResult(name, True, "skipped (not a git work tree)", severity=Severity.SKIPPED.value)
+    if ctx != "work_tree":  # git_error / unrecognised: fail CLOSED, never fall through
+        return CheckResult(name, False, "git could not answer whether this is a work tree (wedged index.lock, safe.directory refusal, or permission failure) — refusing to certify this iterate's spec impact as recorded")
     changed = _iterate_changed_paths(project_root, event_commit)
     if changed is None:  # "could not see" — NOT [] — so skip, never accuse
         return CheckResult(

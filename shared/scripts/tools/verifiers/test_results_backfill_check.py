@@ -18,7 +18,7 @@ from lib.iterate_test_results import (
 
 from .common import CheckResult, Severity
 from .git_blob_read import GitReadError, committed_bytes_reader
-from .git_helpers import _git_available, _run_git
+from .git_helpers import _run_git, git_context
 
 
 BACKFILL_MANIFEST_REL = (
@@ -31,6 +31,22 @@ _COMMIT_SOURCE = re.compile(
 _WORKTREE_SOURCE = re.compile(
     r"^worktree:([^@()\s]+)@([0-9a-f]{8,40}) \(M shipwright_test_results\.json\)$"
 )
+
+
+def _work_tree_refusal(name: str, artifact_label: str) -> CheckResult:
+    """Shared git-fault refusal for ``check_test_results_evidence`` /
+    ``check_test_results_backfill``: identical wording except which artifact it
+    declines to certify as committed. Callers pass their own already-computed
+    ``git_context()`` result — this does not call it itself, so each module's
+    own ``git_context`` monkeypatch (ADR-045) still governs its own tests."""
+    return CheckResult(
+        name, False,
+        "git could not answer whether this is a work tree — common causes: a "
+        "wedged index.lock, a stalled filesystem, a `safe.directory` / dubious-"
+        "ownership refusal, or git missing from PATH. Run `git -C <project> "
+        "rev-parse --is-inside-work-tree` to see git's own message. Refusing to "
+        f"certify {artifact_label} as committed.",
+    )
 
 
 class BackfillError(RuntimeError):
@@ -233,11 +249,27 @@ def check_test_results_backfill(
     except (BackfillError, EvidenceError, GitReadError, OSError) as exc:
         return CheckResult(name, False, str(exc))
 
-    if not commit_hash or not _git_available(root):
+    if not commit_hash:
         return CheckResult(
-            name, True, f"{len(rows)} backfill artifacts and sources valid; commit skipped",
+            name, True,
+            f"{len(rows)} backfill artifacts and sources valid; commit skipped "
+            "(no --commit supplied)",
             severity=Severity.SKIPPED.value,
         )
+    # Tri-state, not "did git exit 0": a broken binary / `safe.directory` refusal /
+    # permission failure / wedged index.lock all return non-zero from INSIDE a real
+    # repo, and reading that as "not a repo" would green-SKIP this ERROR gate on an
+    # infra fault. Only a DEFINITIVE non-git answer stands it down.
+    ctx = git_context(root)
+    if ctx == "not_git":
+        return CheckResult(
+            name, True,
+            f"{len(rows)} backfill artifacts and sources valid; commit skipped "
+            "(not a git work tree)",
+            severity=Severity.SKIPPED.value,
+        )
+    if ctx != "work_tree":
+        return _work_tree_refusal(name, "the backfill manifest")
     reader = committed_bytes_reader(root, commit_hash)
     parent_reader = committed_bytes_reader(root, f"{commit_hash}^")
     try:

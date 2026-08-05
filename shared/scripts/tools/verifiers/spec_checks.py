@@ -39,8 +39,8 @@ from tools.verifiers._iterate_run_id import (  # noqa: E402
     unresolvable_run_id_skip,
 )
 from tools.verifiers.git_helpers import (  # noqa: E402
-    _git_available,
     _run_git,
+    git_context,
 )
 from lib.spec_parser import (  # noqa: E402
     compute_fr_coherence,
@@ -126,6 +126,15 @@ _UI_PATH_PREFIXES: tuple[str, ...] = (
 
 # Window size for S9/S10 git-log lookback.
 _GIT_RECENT_COMMITS = 10
+
+
+def _skip_unless_work_tree(project_root: Path, check_id: str, name: str) -> dict[str, Any] | None:
+    """S4/S9/S10 git-context guard: Tier-2 WARN-only ceiling, so BOTH ``not_git`` and a
+    real git fault SKIP (unlike the F11 ERROR gates ``git_context`` was built for)."""
+    ctx = git_context(project_root)
+    if ctx == "not_git": return make_finding(check_id, STATUS_SKIP, "not a git work tree — partial checkout", name=name, provenance="unverified_marker")
+    if ctx != "work_tree": return make_finding(check_id, STATUS_SKIP, "git could not answer whether this is a work tree (wedged index.lock, `safe.directory` refusal, or permission failure) — skipping this Tier-2 advisory check", name=name, provenance="unverified_marker")
+    return None
 
 
 # ---------------------------------------------------------------------------
@@ -333,12 +342,9 @@ def check_s3_iterate_miniplan(project_root: Path, run_id: str) -> dict[str, Any]
 
 def check_s4_fr_preservation(project_root: Path) -> dict[str, Any]:
     """S4 — removed FR ids still marked deprecated. Tier-2 WARN-only."""
-    if not _git_available(project_root):
-        return make_finding(
-            "S4", STATUS_SKIP,
-            "git unavailable or not a git work tree — partial checkout",
-            name=S4_NAME, provenance="unverified_marker",
-        )
+    guard = _skip_unless_work_tree(project_root, "S4", S4_NAME)
+    if guard is not None:
+        return guard
 
     # Compare HEAD with the last commit that touched the top-level spec.
     # We look at the set of FR ids in HEAD vs 10 commits back; any id
@@ -608,12 +614,9 @@ def check_s9_readme_freshness(
     project_root: Path, run_id: str,
 ) -> dict[str, Any]:
     """S9 — README.md fresh on UI-facing iterate features (Tier-2, WARN)."""
-    if not _git_available(project_root):
-        return make_finding(
-            "S9", STATUS_SKIP,
-            "git unavailable — cannot inspect recent commits",
-            name=S9_NAME, provenance="unverified_marker",
-        )
+    guard = _skip_unless_work_tree(project_root, "S9", S9_NAME)
+    if guard is not None:
+        return guard
 
     category = _iterate_category(project_root, run_id)
     if category != "feature":
@@ -701,12 +704,9 @@ def check_s10_claude_md_sync(
     project_root: Path, run_id: str,
 ) -> dict[str, Any]:
     """S10 — CLAUDE.md touched when new top-level dirs appear (Tier-2)."""
-    if not _git_available(project_root):
-        return make_finding(
-            "S10", STATUS_SKIP,
-            "git unavailable — cannot inspect recent commits",
-            name=S10_NAME, provenance="unverified_marker",
-        )
+    guard = _skip_unless_work_tree(project_root, "S10", S10_NAME)
+    if guard is not None:
+        return guard
 
     category = _iterate_category(project_root, run_id)
     if category not in {"feature", "bug", "bugfix"}:

@@ -1,0 +1,1 @@
+F11 verifier gates no longer green-SKIP on a git subprocess fault (wedged index.lock, safe.directory refusal, permission failure) inside a real repository; the last callers of the binary git_available probe are migrated to the tri-state git_context classifier and the old probe is deleted

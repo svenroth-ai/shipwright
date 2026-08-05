@@ -35,7 +35,7 @@ if str(_SHARED_SCRIPTS) not in sys.path:
     sys.path.insert(0, str(_SHARED_SCRIPTS))
 
 from ._layer_coverage_evidence import fresh_evidence  # noqa: E402
-from .git_helpers import _git_available, _run_git  # noqa: E402
+from .git_helpers import _run_git, git_context  # noqa: E402
 
 _COLLECTOR: tuple | None = None
 _COLLECTOR_MODULES = (
@@ -270,9 +270,9 @@ def regenerate_base_head(
     checkouts (R3). The base manifest + rename map are memoized per (root, commit) and shared
     between the two gates (SHOULD-FIX 8); only the HEAD manifest is rebuilt per call so the
     cross-layer gate can fold in this run's evidence (``with_evidence``). Returns ``None`` when
-    git is unavailable, no base ref resolves, the collector cannot load, or an archive fails —
-    an infrastructure gap the caller renders as a blocking ERROR with no SKIP path left."""
-    if not commit_hash or not _git_available(project_root):
+    git is unavailable (:func:`~.git_helpers.git_context`), no base ref resolves, the collector
+    cannot load, or an archive fails — an infra gap the caller renders as a blocking ERROR."""
+    if not commit_hash or git_context(project_root) != "work_tree":
         return None
     loaded = _load_collector()
     if loaded is None:
