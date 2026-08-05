@@ -1,0 +1,1 @@
+iterate_timings measurement fold produced zero data on every run because producer-owned spans (F0 queue/active, external_review, delivery) named a top-level lifecycle parent no agent mark ever recorded; a missing ancestor is now synthesized from its children's envelope instead of being orphaned

@@ -2,9 +2,9 @@
 
 Covers: parent resolution (containment, tiebreaks, cascade rejection),
 overlap/exclusive-time computation, malformed-entry rejection (per-entry,
-not all-or-nothing), and the synthetic weight-22 F0 blocker case matching
-the P1.16 rollout shape. Split from test_iterate_timings.py (writers,
-resume, clock regression) at ~300 lines per file-size guideline.
+not all-or-nothing), and the synthetic weight-22 F0 blocker case (P1.16).
+Split from test_iterate_timings.py at ~300 lines; missing-ancestor synthesis
+(the absent-name case) is its own further split, test_iterate_timings_synthesis.py.
 """
 
 from __future__ import annotations
@@ -276,22 +276,23 @@ def test_most_recently_opened_open_ended_parent_wins_ties(tmp_path):
 
 
 def test_a_child_attached_to_a_rejected_parent_cascades_the_rejection(tmp_path):
-    """External code review: a child's candidate parent is drawn from ALL
-    entries, not just already-validated ones — so a child can attach to an
-    instance that is itself rejected (no valid parent of ITS own), leaving a
-    durable span whose claimed parent doesn't exist anywhere in the output.
-    No 'delivery' top-level span exists here, so 'delivery_wait' has no
-    containing instance and must be rejected — and 'ci_wait', whose only
-    viable candidate IS that rejected 'delivery_wait', must cascade-reject
-    too rather than persist claiming a parent that was thrown away."""
+    """A child's candidate parent is drawn from ALL entries, not just
+    already-validated ones — so a child can attach to an instance that is
+    itself rejected (no valid parent of ITS own). A REAL 'delivery' entry
+    exists here but does not temporally contain 'delivery_wait' (ends before
+    it starts) — impossible ordering, not an absent name, so it is rejected
+    rather than synthesized around (see test_iterate_timings_synthesis.py
+    for the absent-name case). 'ci_wait' cascades too."""
     raw = [
+        _span("delivery", None, "2026-08-04T09:00:00+00:00",
+             "2026-08-04T09:30:00+00:00", 1800000),
         _span("delivery_wait", "delivery", "2026-08-04T10:00:00+00:00",
              "2026-08-04T11:00:00+00:00", 3600000),
         _span("ci_wait", "delivery_wait", "2026-08-04T10:10:00+00:00",
              "2026-08-04T10:20:00+00:00", 600000),
     ]
     valid, rejected = itn.normalize_iterate_timings(raw)
-    assert valid == []
+    assert {v["name"] for v in valid} == {"delivery"}
     assert {r["raw"]["name"] for r in rejected} == {"delivery_wait", "ci_wait"}
     ci_wait_rejection = next(r for r in rejected if r["raw"]["name"] == "ci_wait")
     assert "itself rejected" in ci_wait_rejection["reason"]

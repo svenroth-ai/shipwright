@@ -1,22 +1,22 @@
 #!/usr/bin/env python3
 """Iterate-timing spans — hierarchy resolution, normalization, and the F5b fold.
 
-Sibling of ``iterate_timings.py`` (catalog + writers) and
-``iterate_timings_pairing.py`` (raw-event pairing + per-entry validation,
-split out at ~300 lines). See ``iterate_timings.py``'s docstring for the
-design contract.
+Sibling of ``iterate_timings.py`` (catalog + writers), ``iterate_timings_pairing.py``
+(raw-event pairing + per-entry validation) and ``iterate_timings_synthesis.py``
+(parent-containment search + missing-ancestor synthesis) — each split out at
+~300 lines (file-size guideline). See ``iterate_timings.py``'s docstring for
+the design contract.
 """
 
 from __future__ import annotations
 
 import json
 import sys
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timezone
 
-from lib.iterate_timings import IterateTimingError, SPAN_PARENTS, sidecar_path
+from lib.iterate_timings import IterateTimingError, SPAN_NAMES, sidecar_path
 from lib.iterate_timings_pairing import pair_agent_events, parse_dt, validate_entry
-
-_MAX_TIMEDELTA = timedelta.max
+from lib.iterate_timings_synthesis import best_containing_parent, synthesize_ancestor
 
 
 def read_raw_events(project_root, run_id: str) -> list[dict]:
@@ -42,11 +42,27 @@ def _attach_parents(entries: list[dict]) -> tuple[list[dict], list[dict]]:
     """Assign each nested entry to the temporally-containing parent instance.
 
     A top-level entry (``parent is None``) always survives. A nested entry
-    whose interval is not contained by any surviving candidate-parent
-    instance is rejected — this is the "impossible ordering" guard: a child
-    cannot start before, or end after, the instance it claims to belong to.
-    An incomplete child (no ``end_utc``) only needs ``start >= parent.start``
-    (and ``start <= parent.end`` when the parent has already closed).
+    resolves in rounds against ``by_name`` (seeded with the raw entries,
+    growing as ancestors are synthesized):
+
+    - A real (or already-synthesized) instance of any allowed parent name
+      that CONTAINS the child -> attach (the containment search tries every
+      name the child's span type permits, not just the one it declared —
+      "most-recently-opened wins" leniency, unchanged).
+    - No containing instance found, but an instance of the child's own
+      DECLARED parent name (``e["parent"]``) exists somewhere in the run ->
+      "impossible ordering" — a genuine mismatch, rejected, never
+      synthesized around. Scoped to the declared name specifically, not the
+      union of every name the type allows — a real-but-irrelevant record
+      under a merely-permitted sibling name must never suppress synthesis of
+      the name actually missing (see ``best_containing_parent``'s docstring).
+    - No instance of the declared parent name exists anywhere -> materialize
+      the missing ancestor from the envelope of the children that name it
+      (see ``iterate_timings_synthesis.synthesize_ancestor``) and retry next
+      round. A synthesized ancestor that is itself nested (e.g. a derived
+      ``delivery_wait`` still needing ``delivery``) queues for its own
+      resolution the same way — bounded by the span catalog's size so a
+      logic error can never loop forever.
     """
     by_name: dict[str, list[dict]] = {}
     for e in entries:
@@ -54,55 +70,76 @@ def _attach_parents(entries: list[dict]) -> tuple[list[dict], list[dict]]:
 
     kept: list[dict] = []
     rejected: list[dict] = []
+    unresolved: list[dict] = []
     for e in entries:
         if e["parent"] is None:
             e["_parent_key"] = None
             kept.append(e)
-            continue
-        candidates: list[dict] = []
-        for pname in sorted(SPAN_PARENTS[e["name"]], key=lambda p: p or ""):
-            candidates.extend(by_name.get(pname, []))
-        child_start = parse_dt(e["start_utc"])
-        child_end = parse_dt(e["end_utc"]) if e["end_utc"] else None
-        # Tightest-fitting containing instance wins (deterministic — matches
-        # scoping intuition): when two candidate parents both fully contain
-        # the child (e.g. a top-level "delivery" and its own nested
-        # "delivery_wait" spanning the identical interval), the more specific
-        # one is correct, not whichever happened to be inserted first. Sort
-        # key: bounded before open-ended, smallest interval first, a
-        # candidate that is ITSELF nested (has its own parent) before a
-        # top-level one, then the MOST RECENTLY OPENED candidate — the
-        # innermost enclosing scope, same intuition as call-stack resolution.
-        # That last tiebreak matters when two top-level groups are both left
-        # open (an agent forgot to close the earlier one): the one that
-        # opened right before this span is far more likely correct than
-        # whichever sorts first alphabetically.
-        contained = []
-        for cand in candidates:
-            if cand is e:
+        else:
+            unresolved.append(e)
+
+    for _ in range(len(SPAN_NAMES) + 1):
+        if not unresolved:
+            break
+        orphans: list[dict] = []
+        for e in unresolved:
+            chosen, declared_name_has_record = best_containing_parent(e, by_name)
+            if chosen is not None:
+                e["_parent_key"] = id(chosen)
+                kept.append(e)
+            elif declared_name_has_record:
+                rejected.append({"reason": f"no containing parent instance for {e['name']!r}", "raw": e})
+            else:
+                orphans.append(e)
+        if not orphans:
+            unresolved = []
+            break
+
+        # Each distinct missing name synthesizes independently, from only
+        # ITS OWN group's children — a known, narrow limitation: if this
+        # group's ancestor is itself nested and a DIFFERENT group synthesized
+        # in this same round will need to contain it later, this pass has no
+        # way to know to widen for it (see iterate-timings.md's "round-
+        # batched synthesis" known limitation). Only reachable today via the
+        # `delivery` chain and only if deliver_pr.py's own real self-recorded
+        # spans are absent; the fallback is rejection, not data corruption.
+        by_missing_parent: dict[str, list[dict]] = {}
+        for e in orphans:
+            by_missing_parent.setdefault(e["parent"], []).append(e)
+
+        next_round = list(orphans)
+        synthesized_any = False
+        for pname, group in by_missing_parent.items():
+            if pname in by_name:
+                # Defensive only — every key in `by_missing_parent` came from
+                # `orphans`, and an entry only lands there when this round's
+                # per-entry pass already found `by_name.get(e["parent"])`
+                # falsy for that exact name, so this branch cannot currently
+                # trigger. Kept in case a future refactor of the loop above
+                # breaks that invariant.
                 continue
-            p_start = parse_dt(cand["start_utc"])
-            p_end = parse_dt(cand["end_utc"]) if cand["end_utc"] else None
-            if p_start is None or child_start < p_start:
-                continue
-            if p_end is not None and child_start > p_end:
-                continue
-            if child_end is not None and p_end is not None and child_end > p_end:
-                continue
-            span_len = (p_end - p_start) if p_end is not None else None
-            contained.append((
-                0 if span_len is not None else 1,
-                span_len if span_len is not None else _MAX_TIMEDELTA,
-                0 if cand.get("parent") is not None else 1,
-                child_start - p_start,
-                cand,
-            ))
-        chosen = min(contained, key=lambda t: t[:4])[4] if contained else None
-        if chosen is None:
+            synth = synthesize_ancestor(pname, group)
+            by_name.setdefault(pname, []).append(synth)
+            synthesized_any = True
+            if synth["parent"] is None:
+                synth["_parent_key"] = None
+                kept.append(synth)
+            else:
+                next_round.append(synth)
+
+        if not synthesized_any:
+            # Defensive only — every name in `by_missing_parent` was, by
+            # construction, absent from `by_name` a moment ago, so this
+            # branch should be unreachable; never leave entries unresolved.
+            for e in orphans:
+                rejected.append({"reason": f"no containing parent instance for {e['name']!r}", "raw": e})
+            unresolved = []
+            break
+        unresolved = next_round
+    else:
+        for e in unresolved:
             rejected.append({"reason": f"no containing parent instance for {e['name']!r}", "raw": e})
-            continue
-        e["_parent_key"] = id(chosen)
-        kept.append(e)
+
     return _cascade_reject_orphans(kept, rejected)
 
 

@@ -53,9 +53,11 @@ def render_run_section(stat: dict) -> list[str]:
 
     coverage = f"{stat['coverage_top_level']}/{stat['coverage_top_level_total']}"
     degraded = " — **DEGRADED** (a fold-time-capturable phase is missing)" if stat["degraded"] else ""
+    derived_n = stat.get("derived_top_level", 0)
+    derived_note = f" (+{derived_n} derived)" if derived_n else ""
     lines += [
         f"- **Timing source:** producer + agent spans (mixed) · "
-        f"**coverage:** {coverage} fold-time-capturable groups, "
+        f"**coverage:** {coverage} fold-time-capturable groups{derived_note}, "
         f"{stat['span_count']} spans total{degraded}",
         f"- **Total wall-clock (discovery through review):** {_ms(stat['total_ms'])}",
         f"- **Unattributed:** {_ms(stat['unattributed_ms'])} ({_pct(stat['unattributed_pct'])})",
@@ -87,8 +89,19 @@ def render_run_section(stat: dict) -> list[str]:
             # clock-regression span. Showing "—" here alone would be
             # indistinguishable from *not captured*; naming the outcome is
             # what keeps a partial run from reading as a clean one (external
-            # code review).
-            lines.append(f"| {name} | *{p.get('outcome') or 'incomplete'}* (started, not closed) | — | — |")
+            # code review). A derived-but-still-open envelope (one of its
+            # referencing children never closed) is tagged the same way.
+            tag = "derived, " if p.get("source") == "derived" else ""
+            lines.append(f"| {name} | *{tag}{p.get('outcome') or 'incomplete'}* (started, not closed) | — | — |")
+        elif p.get("source") == "derived":
+            # No agent boundary mark exists for this group — the duration is
+            # reconstructed from the envelope of its producer children (see
+            # iterate_timings_synthesis.py), not a measured boundary. Shown,
+            # not hidden, but labeled so it's never read as a real mark.
+            lines.append(
+                f"| {name} | {_ms(p['duration_ms'])} *(derived — reconstructed from child spans)* | "
+                f"{_ms(p['exclusive_ms'])} | {_pct(p['pct'])} |"
+            )
         else:
             lines.append(f"| {name} | {_ms(p['duration_ms'])} | {_ms(p['exclusive_ms'])} | {_pct(p['pct'])} |")
 
@@ -156,6 +169,12 @@ def render_report(run_stats: list[dict]) -> str:
          "shown as *unattributed* with a reason, never as zero duration; the two "
          "structurally-limited groups (`finalization`, `delivery`) are labeled "
          "separately — see the Coverage boundary note below."),
+        "",
+        ("> **Derived spans:** a fold-time-capturable group with no agent "
+         "start/end mark, but at least one producer child that names it as "
+         "parent, is reconstructed from that child's own envelope and shown "
+         "labeled *derived* rather than left unattributed — real duration "
+         "data, not a measured boundary; it does not count toward coverage."),
         "",
         ("> **Coverage boundary:** F5b folds this report's durable data BEFORE F6 "
          "commits and F11 delivers — `discovery_diagnosis` through `review` can "
