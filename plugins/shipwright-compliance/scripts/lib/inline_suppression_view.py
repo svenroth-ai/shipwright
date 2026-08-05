@@ -58,11 +58,15 @@ def inline_suppression_lines(project_root: Path | str) -> list[str]:
     """
     shared = _load_shared()
     if shared is None:
-        return [
+        # Built outside the list on purpose: a wrapped string sitting directly
+        # in a list literal is byte-identical to a forgotten comma, which is
+        # what CodeQL's implicit-concatenation rule exists to catch. Naming it
+        # first removes the ambiguity instead of suppressing the rule.
+        unavailable = (
             "> ⚠️ Inline suppressions: the shared reader could not be loaded, "
-            "so `# nosemgrep` sites are **not** counted here.",
-            "",
-        ]
+            "so `# nosemgrep` sites are **not** counted here."
+        )
+        return [unavailable, ""]
 
     try:
         result = shared.reconcile(project_root)
@@ -100,25 +104,24 @@ def inline_suppression_lines(project_root: Path | str) -> list[str]:
         lines.append("")
 
     if result["mode"] != "git":
-        lines += [
+        walked = (
             "> ⚠️ Not a git tree — the file set came from a filesystem walk, "
-            "which is broader and less precise than `git ls-files`.",
-            "",
-        ]
+            "which is broader and less precise than `git ls-files`."
+        )
+        lines += [walked, ""]
     if result["unreadable"]:
-        lines += [
-            "> ⚠️ "
-            f"{len(result['unreadable'])} file(s) could not be read, so this "
-            "count is **partial**: "
-            + ", ".join(f"`{p}`" for p in result["unreadable"]),
-            "",
-        ]
+        named = ", ".join(f"`{p}`" for p in result["unreadable"])
+        partial = (
+            f"> ⚠️ {len(result['unreadable'])} file(s) could not be read, so "
+            f"this count is **partial**: {named}"
+        )
+        lines += [partial, ""]
 
     # No Shipwright-internal run id here: this block renders into ADOPTER
     # projects, where an `iterate-…` slug resolves to nothing. The reasoning
     # belongs in the artifact; the citation belongs in the framework's own
     # source (`shared/scripts/inline_suppressions.py`). Stage-2 code review.
-    lines += [
+    footer = (
         "_Inline suppressions are deliberately **not** tracked in the "
         "accepted-risk register: an offline reconciler would have to mirror "
         "the scanner's own suppression semantics and would drift, and a "
@@ -126,7 +129,7 @@ def inline_suppression_lines(project_root: Path | str) -> list[str]:
         "source site. The control is the anti-ratchet above — the count "
         "cannot grow without a recorded decision. This is visibility, "
         "**not** per-site review: unlike a register entry, no site here "
-        "carries an owner or a re-review date._",
-        "",
-    ]
+        "carries an owner or a re-review date._"
+    )
+    lines += [footer, ""]
     return lines
