@@ -47,8 +47,13 @@ _UNAVAILABLE_STALE = {
 _CONFIRMED_SELF_DELIVERED = "iterate-2026-08-02-ensure-shared-cache-fanout"
 
 # Hardcoded at authoring time -- a real byte-for-byte lock, not a semantic proxy.
+# This is the hash of the COMMITTED GIT BLOB (read via git cat-file, below), not
+# of a working-tree read: a working-tree read is subject to checkout-time EOL
+# translation (Windows CRLF vs the LF the blob is actually stored as), so
+# hashing raw read_bytes() output is platform-dependent and hashes a DIFFERENT
+# value in CI than it does locally on Windows.
 _ORIGINAL_MANIFEST_SHA256 = (
-    "012e3b5b39f4daacd604de621ecd8f4862d0313f3f7eb768fa91114d012c14e0"
+    "78f28cc2f91afe613df30e5653d8148c0c80bbded2efec433d9e7d38567ce4ff"
 )
 
 
@@ -86,11 +91,22 @@ def test_recovered_runs_have_a_durable_f5c_summary_reachable_from_main():
 
 
 def test_original_backfill_manifest_is_unedited():
-    raw = _ORIGINAL_MANIFEST.read_bytes()
+    reader = committed_bytes_reader(_REPO_ROOT, _VALIDATED_MAIN_TIP)
+    rel = ".shipwright/agent_docs/iterates/test-results-backfill-manifest.json"
+    try:
+        committed = reader(rel)
+    except GitReadError as exc:  # pragma: no cover - fails closed, not silently
+        raise AssertionError(f"cannot read {rel} at {_VALIDATED_MAIN_TIP[:8]}: {exc}")
+    assert committed is not None, f"{rel} is absent from the validated main tip"
 
-    # Byte-for-byte lock: any reformat, reorder, or field edit fails this,
-    # not just the two run_ids this change happens to care about.
-    assert hashlib.sha256(raw).hexdigest() == _ORIGINAL_MANIFEST_SHA256
+    # Byte-for-byte lock against the committed GIT BLOB (platform-independent):
+    # any reformat, reorder, or field edit fails this, not just the two
+    # run_ids this change happens to care about.
+    assert hashlib.sha256(committed).hexdigest() == _ORIGINAL_MANIFEST_SHA256
+
+    # Local checkout must not diverge either, modulo checkout-time EOL translation.
+    raw = _ORIGINAL_MANIFEST.read_bytes()
+    assert raw.replace(b"\r\n", b"\n") == committed.replace(b"\r\n", b"\n")
 
     doc = json.loads(raw.decode("utf-8"))
     assert doc["backfill_run_id"] == "iterate-2026-08-03-preserve-test-evidence"
