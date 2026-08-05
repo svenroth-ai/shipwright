@@ -107,18 +107,6 @@ def git_context(project_root: Path) -> Literal["work_tree", "not_git", "git_erro
     return "git_error" if has_git else "not_git"
 
 
-def _git_available(project_root: Path, timeout: float | None = 10.0) -> bool:
-    # ``rev-parse --is-inside-work-tree`` is a trivial metadata read; bound it
-    # (default 10s) so a wedged ``index.lock`` / stalled filesystem cannot hang a
-    # verifier indefinitely. spec_checks bounded this probe at 10s before its
-    # wrappers were folded onto this module (iterate-2026-06-13-shc-git-helpers);
-    # the bound now also covers the integration_coverage / iterate_checks callers.
-    rc, _, _ = _run_git(
-        project_root, "rev-parse", "--is-inside-work-tree", timeout=timeout
-    )
-    return rc == 0
-
-
 def _commit_changed_paths(project_root: Path, commit: str) -> list[str] | None:
     """Return the repo-relative paths a commit touched, or None on git failure.
 
@@ -136,8 +124,8 @@ def _commit_changed_paths(project_root: Path, commit: str) -> list[str] | None:
     return [ln.strip() for ln in out.splitlines() if ln.strip()]
 
 
-#: Bounded like ``_git_available``: a wedged ``index.lock`` or a stalled filesystem
-#: must degrade to the documented fail-open skip, not hang F11 with no output.
+#: Bounded like ``git_context``: a wedged ``index.lock`` or a stalled filesystem
+#: must degrade to a reported failure, not hang F11 with no output.
 _GIT_TIMEOUT_SECONDS = 30.0
 
 

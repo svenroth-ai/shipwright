@@ -9,8 +9,8 @@ from lib.iterate_entry import RUN_ID_STRICT
 
 from .common import CheckResult, Severity
 from .git_blob_read import GitReadError, committed_bytes_reader
-from .test_results_backfill_check import check_test_results_backfill
-from .git_helpers import _git_available
+from .test_results_backfill_check import _work_tree_refusal, check_test_results_backfill
+from .git_helpers import git_context
 
 
 def check_test_results_evidence(
@@ -37,11 +37,23 @@ def check_test_results_evidence(
         validate_evidence_bytes(working, run_id)
     except (EvidenceError, OSError) as exc:
         return CheckResult(name, False, f"invalid working evidence: {exc}")
-    if not commit_hash or not _git_available(root):
+    if not commit_hash:
         return CheckResult(
-            name, True, f"{target.name} valid; committed check skipped",
+            name, True, f"{target.name} valid; committed check skipped (no --commit supplied)",
             severity=Severity.SKIPPED.value,
         )
+    # Tri-state, not "did git exit 0": a broken binary / `safe.directory` refusal /
+    # permission failure / wedged index.lock all return non-zero from INSIDE a real
+    # repo, and reading that as "not a repo" would green-SKIP this ERROR gate on an
+    # infra fault. Only a DEFINITIVE non-git answer stands it down.
+    ctx = git_context(root)
+    if ctx == "not_git":
+        return CheckResult(
+            name, True, f"{target.name} valid; committed check skipped (not a git work tree)",
+            severity=Severity.SKIPPED.value,
+        )
+    if ctx != "work_tree":
+        return _work_tree_refusal(name, "the evidence file")
     rel = target.relative_to(root).as_posix()
     try:
         committed = committed_bytes_reader(root, commit_hash)(rel)

@@ -9,7 +9,11 @@ Covers the contract that ``spec_checks`` now folds onto
   behaviour for existing callers.
 - A ``TimeoutExpired`` is swallowed and reported as ``(1, "", "")`` — the
   unified failure code (git_helpers returns ``1``, never ``-1``).
-- ``_git_available`` is truthy on a real repo and false off-repo.
+
+``git_context`` (the tri-state probe that replaced ``_git_available``, deleted
+in trg-4183acd3) has its own dedicated coverage in
+``test_check_ci_supplychain_infra.py``, ``test_check_integration_coverage_infra.py``,
+and the new infra test files this migration adds.
 """
 
 from __future__ import annotations
@@ -48,16 +52,6 @@ def test_run_git_returns_tuple_on_real_repo(tmp_path: Path):
     rc, out, err = gh._run_git(tmp_path, "rev-parse", "--is-inside-work-tree")
     assert rc == 0
     assert out.strip() == "true"
-
-
-def test_git_available_true_on_repo_false_off_repo(tmp_path: Path):
-    off = tmp_path / "not-a-repo"
-    off.mkdir()
-    assert gh._git_available(off) is False
-    repo = tmp_path / "repo"
-    repo.mkdir()
-    _init_git_repo(repo)
-    assert gh._git_available(repo) is True
 
 
 # ---------------------------------------------------------------------------

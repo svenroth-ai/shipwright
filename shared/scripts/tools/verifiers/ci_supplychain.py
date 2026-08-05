@@ -176,8 +176,8 @@ def check_ci_supplychain_ack(
     Infra failures fail CLOSED at every complexity too: a gate that stands down when it
     cannot see is dodgeable by breaking its eyes. This was the last of the three
     ``git_context`` consumers on the binary ``rev-parse --git-dir`` probe (trg-20cc9ec8);
-    those three agree now, while ``_git_available``'s five callers still carry the old
-    conflation and are trg-4183acd3."""
+    ``git_helpers._git_available`` — the same conflation for every OTHER caller — was
+    deleted in trg-4183acd3, so no caller anywhere in the repo still carries it."""
     name = "CI supply-chain acknowledgement"
     # Tri-state, not "did git exit 0": a broken binary / `safe.directory` refusal /
     # permission failure / corrupt metadata / wedged index.lock all return non-zero from

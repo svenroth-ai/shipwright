@@ -1,0 +1,33 @@
+{
+  "run_id": "iterate-2026-08-05-git-available-migration",
+  "date": "2026-08-05T09:30:17.394679Z",
+  "event_at": "2026-08-05T09:29:40.554562+00:00",
+  "type": "change",
+  "complexity": "medium",
+  "prior_source": "keyword",
+  "branch": "iterate/git-available-migration",
+  "spec": ".shipwright/planning/iterate/iterate-2026-08-05-git-available-migration.md",
+  "tests_passed": true,
+  "adr": "iterate-2026-08-05-git-available-migration",
+  "test_completeness": {
+    "status": "complete",
+    "counts": {
+      "total": 9,
+      "tested": 9,
+      "untestable": 0,
+      "untested_testable": 0
+    },
+    "enumeration_basis": {
+      "acs": 6,
+      "covered_acs": 6
+    },
+    "ledger_path": ".shipwright/planning/iterate/iterate-2026-08-05-git-available-migration.md"
+  },
+  "surface_verification": {
+    "surface": "none",
+    "tests_run": 0,
+    "exit_code": 0,
+    "evidence_path": ".shipwright/runs/iterate-2026-08-05-git-available-migration/surface_verification.json",
+    "justification": "Pure backend F11 verifier control-flow change; no dev_url, no UI, no HTTP surface, no build artifacts."
+  }
+}

@@ -152,10 +152,9 @@ def check_integration_coverage(project_root: Path, run_id: str, commit_hash: str
     :func:`~.ci_supplychain.check_ci_supplychain_ack` on BOTH axes now — complexity
     and git faults: that gate was migrated off the binary ``rev-parse --git-dir``
     probe onto the same tri-state :func:`~.git_helpers.git_context` (trg-20cc9ec8).
-    **Scoped to the three ``git_context`` consumers, deliberately** — the binary
-    conflation is NOT gone from the repo. ``git_helpers._git_available`` still answers
-    it the old way for five callers, one of which (``check_spec_impact_recorded``) is
-    an F11 ERROR gate that green-SKIPs on it; migrating those is trg-4183acd3.
+    ``git_helpers._git_available`` — the same binary conflation for every OTHER
+    caller, including the F11 ERROR gate ``check_spec_impact_recorded`` that used to
+    green-SKIP on it — was deleted in trg-4183acd3.
     """
     name = "integration coverage (cross-component)"
     # Tri-state, not "did git exit 0": a broken binary / permission failure /
