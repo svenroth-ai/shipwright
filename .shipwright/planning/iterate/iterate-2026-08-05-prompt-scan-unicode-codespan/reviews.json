@@ -1,0 +1,78 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-08-05-prompt-scan-unicode-codespan",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-05T08:09:23.818162+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-05T08:10:02.890464+00:00",
+      "disposition": "small complexity BUG fix has no iterate spec/mini-plan (Phase Matrix: Mini-Plan skip at small); nothing for a plan review to run against",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "code": {
+      "review_type": "code",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-05T08:10:03.159738+00:00",
+      "disposition": "Full Code Review trigger not met: small complexity, no risk flags, diff 41 lines (under 100-line threshold), no security-sensitive files touched per iteration-reviews.md",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-05T08:10:03.289778+00:00",
+      "disposition": "Stage 3 is conditional on a Stage 2 pass and on non-trivial surface (migrations/async/cross-plugin/irreversible); Stage 2 did not run and this diff is none of those",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-05T08:10:03.410561+00:00",
+      "disposition": "External cascade trigger not met: small complexity, no risk flags, diff 41 lines under the 100-line threshold, no security-sensitive files touched per iteration-reviews.md",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-05T08:10:03.030985+00:00",
+      "disposition": "Full Code Review trigger not met: small complexity, no risk flags, diff 41 lines (under 100-line threshold), no security-sensitive files touched per iteration-reviews.md",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    }
+  }
+}
