@@ -169,6 +169,62 @@ def test_missing_gh_exits_2_without_a_traceback(monkeypatch, capsys) -> None:
     assert "not installed" in capsys.readouterr().err
 
 
+def test_one_divergence_files_one_card_across_repeated_invocations(
+    tmp_path, monkeypatch
+) -> None:
+    """Repeated runs against unchanged drift must leave exactly one card.
+
+    Idempotency was always the design — `append_triage_item_idempotent` keyed on
+    the exact divergence — but it only became load-bearing when
+    iterate-2026-08-05-wire-local-guard-scripts wired this producer to a
+    SessionStart hook, so it now runs unattended instead of when a human types it.
+
+    This is also the suite's first exercise of the REAL triage store: every other
+    test here stubs the append out, which cannot show accumulation.
+    """
+    from triage import read_all_items
+
+    (tmp_path / "shipwright_run_config.json").write_text('{"status": "complete"}',
+                                                         encoding="utf-8")
+    (tmp_path / ".shipwright").mkdir()
+    workflows = tmp_path / ".github" / "workflows"
+    workflows.mkdir(parents=True)
+    (workflows / "ci.yml").write_text(
+        "name: CI\non:\n  pull_request:\n    branches: [main]\njobs:\n"
+        "  build:\n    runs-on: ubuntu-latest\n    steps:\n      - run: echo hi\n",
+        encoding="utf-8",
+    )
+
+    monkeypatch.setattr(crc.subprocess, "run", gh_router({
+        "repos/o/r": REPO_OK,
+        "/rules/branches/main": Resp(0, "[]"),      # no ruleset …
+        "/branches/main/protection": NOT_FOUND,     # … and not protected → drift
+    }))
+
+    for _ in range(3):
+        assert crc.main(["--project-root", str(tmp_path)]) == 0
+
+    cards = [i for i in read_all_items(tmp_path)
+             if (i.get("source") or "") == "required-checks"]
+    assert len(cards) == 1, (
+        f"three invocations filed {len(cards)} cards for one unchanged divergence — "
+        f"the inbox would grow by one card per session opened."
+    )
+
+    # WHERE it landed, not merely that `read_all_items` can see it — that function
+    # unions the tracked log with the gitignored outbox, so it cannot tell them
+    # apart. On a non-iterate tree the routing decision is the tracked log, which
+    # F6 stages and which therefore reaches origin.
+    assert (tmp_path / ".shipwright" / "triage.jsonl").is_file(), (
+        "the card went to the gitignored outbox. `to_outbox` was hardcoded True "
+        "until iterate-2026-08-05-wire-local-guard-scripts; wiring this producer "
+        "to SessionStart made that load-bearing, because a session opened inside "
+        "`.worktrees/<slug>` resolves the WORKTREE, whose outbox no sweep reads "
+        "and which is deleted with the tree — the finding would be written to a "
+        "buffer nothing drains and then destroyed."
+    )
+
+
 def test_in_sync_repo_exits_0_and_files_nothing(monkeypatch, capsys) -> None:
     derived = crc.all_workflow_check_names(REPO_ROOT)
     rules = [{"type": "required_status_checks", "parameters": {
@@ -200,5 +256,13 @@ def test_drift_files_one_item_keyed_on_repo_and_branch(monkeypatch, capsys) -> N
     capsys.readouterr()
     assert len(filed) == 1
     assert filed[0]["source"] == "required-checks"
-    assert filed[0]["to_outbox"] is True
+    # ROUTED, not hardcoded. This asserted `is True` until
+    # iterate-2026-08-05-wire-local-guard-scripts, which is what pinned the bug:
+    # `to_outbox=True` was harmless while a human typed this on main, but wiring
+    # the producer to a SessionStart hook made it load-bearing — a session opened
+    # inside `.worktrees/<slug>` resolves the WORKTREE, whose outbox no sweep
+    # reads and which is deleted with the tree. Every sibling producer routes
+    # conditionally; the value is now whatever `should_route_to_outbox` decides
+    # for the tree in hand, which is what this asserts.
+    assert filed[0]["to_outbox"] == crc.should_route_to_outbox(REPO_ROOT)
     assert "o/r@main" in filed[0]["dedup_key"], filed[0]["dedup_key"]
