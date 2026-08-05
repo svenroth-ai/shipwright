@@ -106,6 +106,32 @@ def test_missing_agent_group_reads_unattributed_with_a_reason(tmp_path):
     assert "| delivery | *not reached before F5b fold (structural)* |" in report
 
 
+def test_derived_ancestor_labeled_distinctly_in_the_rendered_table(tmp_path):
+    """iterate-2026-08-05-iterate-timings-derived-parent: the production
+    shape where F0's producer spans name 'verification' as their parent but
+    no agent mark ever recorded it. The report must show the reconstructed
+    duration labeled *derived*, not the old *unattributed* absence row."""
+    run_id = "iterate-2026-08-05-derived-shape"
+    raw = [
+        {"event": "span", "name": "pre_f0_validation", "parent": "verification", "attempt": 1,
+         "source": "producer", "outcome": "completed",
+         "start_utc": "2026-08-04T10:00:00+00:00", "end_utc": "2026-08-04T10:00:02+00:00",
+         "duration_ms": 2000, "extra": {}},
+        {"event": "span", "name": "canonical_f0_active", "parent": "verification", "attempt": 1,
+         "source": "producer", "outcome": "completed",
+         "start_utc": "2026-08-04T10:00:02+00:00", "end_utc": "2026-08-04T10:05:00+00:00",
+         "duration_ms": 298000, "extra": {}},
+    ]
+    valid, rejected = itn.normalize_iterate_timings(raw)
+    assert not rejected
+    _write_work_completed(tmp_path, run_id, "2026-08-04T10:05:01+00:00", iterate_timings=valid)
+
+    report = compute_report(tmp_path)
+    assert "*(derived — reconstructed from child spans)*" in report
+    assert "| verification | *unattributed" not in report
+    assert "(+1 derived)" in report
+
+
 def test_report_is_deterministic_given_the_same_events(tmp_path):
     run_id = "iterate-2026-08-04-deterministic"
     it.record_start(tmp_path, run_id, name="delivery", parent=None,

@@ -1,0 +1,11 @@
+{
+  "run_id": "iterate-2026-08-05-iterate-timings-derived-parent",
+  "date": "2026-08-05T17:43:50.506548Z",
+  "event_at": "2026-08-05T09:29:40.554562+00:00",
+  "type": "bug",
+  "complexity": "small",
+  "branch": "iterate/iterate-timings-derived-parent",
+  "spec": null,
+  "tests_passed": true,
+  "adr": "iterate-2026-08-05-iterate-timings-derived-parent"
+}

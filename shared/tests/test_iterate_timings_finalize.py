@@ -61,6 +61,43 @@ def test_finalize_folds_iterate_timings_alongside_phase_timings(project, monkeyp
     assert names == {"verification", "canonical_f0_active"}
 
 
+def test_finalize_folds_iterate_timings_when_no_top_level_mark_was_ever_made(project, monkeypatch):
+    """iterate-2026-08-05-iterate-timings-derived-parent: the production bug
+    this run fixes. Eight real runs after P1.17 shipped, ZERO work_completed
+    events carried iterate_timings — every producer span (F0's queue/active,
+    external_review) named a top-level parent (verification/planning/review)
+    that no agent mark ever recorded, so every one of them was orphaned and
+    the fold had nothing to persist. No ``it.record_start``/``record_end``
+    call for any top-level group here, on purpose — this is exactly that
+    shape. The missing ancestors must now be synthesized so the fold
+    produces real (if derived) data instead of an empty/absent field."""
+    monkeypatch.chdir(project)
+    from tools.finalize_iterate import run
+
+    it.record_producer_span(project, RUN, name="pre_f0_validation", parent="verification",
+                            start_utc="2026-08-04T10:00:00+00:00",
+                            end_utc="2026-08-04T10:00:02+00:00", duration_ms=2000)
+    it.record_producer_span(project, RUN, name="canonical_f0_active", parent="verification",
+                            start_utc="2026-08-04T10:00:02+00:00",
+                            end_utc="2026-08-04T10:05:00+00:00", duration_ms=298000)
+    it.record_producer_span(project, RUN, name="external_review", parent="planning",
+                            start_utc="2026-08-04T09:50:00+00:00",
+                            end_utc="2026-08-04T09:51:00+00:00", duration_ms=60000,
+                            extra={"provider": "openrouter"})
+
+    run(project, run_id=RUN, event_extras=dict(_VALID_EXTRAS))
+    ev = _latest_work_completed(project)
+    assert "iterate_timings" in ev
+    by_name = {s["name"]: s for s in ev["iterate_timings"]}
+    assert by_name.keys() == {
+        "pre_f0_validation", "canonical_f0_active", "verification",
+        "external_review", "planning",
+    }
+    assert by_name["verification"]["source"] == "derived"
+    assert by_name["planning"]["source"] == "derived"
+    assert by_name["pre_f0_validation"]["source"] == "producer"
+
+
 def test_finalize_without_sidecar_omits_iterate_timings(project, monkeypatch):
     monkeypatch.chdir(project)
     from tools.finalize_iterate import run

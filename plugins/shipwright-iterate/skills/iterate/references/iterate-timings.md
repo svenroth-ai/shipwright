@@ -73,14 +73,106 @@ hook into. Those stay agent-emitted; their absence is reported as
 `unattributed` with a reason, never silently omitted or zeroed.
 
 **Contract for a producer-owned span's containing parent:** a nested
-producer span is only attachable if a containing top-level instance exists
-in the sidecar. `deliver_pr.py` self-records `delivery` (top-level) alongside
-`delivery_wait`/`ci_wait` for exactly this reason — an earlier design left
-`delivery` agent-only and required the SKILL to mark `start delivery` before
-invoking `deliver_pr.py`, a fragile cross-component contract an external plan
-review flagged (a missed mark silently dropped `delivery_wait`/`ci_wait` as
-"no containing parent" — per-entry, not fatal to the rest of the run, but
-still a real gap). Prefer the producer owning its own root wherever it can.
+producer span attaches to a containing top-level instance in the sidecar
+when one exists — real or synthesized (see "Synthesizing a missing
+ancestor" below). `deliver_pr.py` self-records `delivery` (top-level)
+alongside `delivery_wait`/`ci_wait` for exactly this reason — an earlier
+design left `delivery` agent-only and required the SKILL to mark `start
+delivery` before invoking `deliver_pr.py`, a fragile cross-component
+contract an external plan review flagged. Prefer the producer owning its own
+root wherever it can; synthesis is the safety net for the groups that can't.
+
+## Synthesizing a missing ancestor
+
+**The gap this closes (iterate-2026-08-05-iterate-timings-derived-parent,
+"P1.17 one level up"):** P1.17 shipped and its producers wrote real data —
+but every producer child nests under one of the 7 top-level groups, and 6 of
+those 7 are agent-emitted. A session that never calls the boundary mark
+leaves the child with no containing parent instance at all, and the old
+`_attach_parents` rejected it outright: "no containing parent instance for
+X". Across 8 real runs after the merge, every fold-time-capturable group
+except `delivery` (which self-records) went unmarked in every run, so every
+producer child was rejected and `work_completed.iterate_timings` was never
+populated at all — the exact failure `phase_timings` had already shown
+(4 of 5 recent runs recorded exactly one of its five marks), one layer up:
+the producers stopped depending on the agent to remember a mark, but they
+were still hung off scaffolding — the 6 agent-emitted top-level parents —
+that only an agent emits.
+
+**The fix:** `_attach_parents` (in `iterate_timings_normalize.py`, factored
+into `iterate_timings_synthesis.py` at ~300 lines) distinguishes two
+failure shapes for a child with no valid containing parent. The containment
+search itself is unchanged and still tries every parent name the child's
+span type allows (e.g. `external_review` tries both `planning` and
+`review`) — a real, open-ended span under a sibling name can still
+legitimately be the correct container ("most-recently-opened wins"
+leniency). What determines reject-vs-synthesize is scoped tighter: does an
+instance of the child's own **declared** parent name (`e["parent"]`) exist
+anywhere in the run at all — not the union of every name its type would
+accept. A same-named instance under the DECLARED name that exists but
+doesn't temporally contain the child is the existing "impossible ordering"
+guard — genuinely corrupt data, still rejected, never synthesized around
+(and a real-but-irrelevant record under a *different*, merely-permitted
+sibling name must never suppress synthesis of the declared name — found in
+review, the earlier union-based version of this gate reproduced the exact
+orphaning bug for any run with partial agent-mark compliance). Otherwise the
+missing ancestor is materialized from the envelope (earliest start, latest
+end) of the children that name it — resolved in rounds so a synthesized
+ancestor that is itself nested (e.g. a derived `delivery_wait` still needing
+`delivery`) queues for its own synthesis in turn.
+
+A synthesized span carries `source: "derived"` — the third value in the
+`SOURCES` vocabulary, present since the original card but never produced
+until this fix — and `outcome: "incomplete"` (not `"completed"`) whenever
+any referencing child is still open, since the ancestor's true end is
+genuinely unknown, not merely unmeasured. **A real agent/producer record for
+the declared name, whenever one exists — even an unclosed agent mark —
+always wins**: synthesis only fires when no instance of that specific name
+exists at all, so a real record (which the containment search always finds
+first) is never displaced. The throughput report (`iterate_throughput_render.py`) labels a
+derived row explicitly (*"derived — reconstructed from child spans"*)
+rather than rendering it identically to a measured one, and
+`iterate_throughput_stats.py`'s `coverage_top_level` count excludes derived
+spans — coverage means "the agent/producer actually marked this boundary,"
+so a fully-derived run still reads as degraded (the agent boundary really is
+still missing), just no longer as zero data.
+
+**Known limitation — a derived envelope does not distinguish multiple
+episodes of the same missing name.** The envelope is literally "earliest
+start, latest end" of every child that declares a given missing parent
+name, with no clustering by time gap. If two children sharing a missing
+declared parent are genuinely temporally disjoint (an agent re-enters the
+same phase hours apart in one long-running or resumed session, rather than
+the tight single-episode case this fix was built and measured against — see
+the real production runs referenced above, where every derived group spans
+minutes, not hours), the derived span's duration includes the whole gap
+between them, not just the children's own activity; the gap shows up
+honestly as elevated `exclusive_ms` (uncovered time) on that span, but nothing
+currently flags a derived span specifically for spanning an implausible
+gap. Accepted as a documented limitation rather than engineered around —
+splitting into disjoint clusters would go beyond the "envelope: earliest
+start, latest end" this card asked for, and the existing `exclusive_ms`
+figure already surfaces the signal for an operator who looks (found in
+doubt review; not exploitable — this system never gates a verdict, only
+reports a duration).
+
+**Known limitation — round-batched synthesis can, in one narrow failure
+mode, produce a too-narrow ancestor.** Two orphan groups resolved in the
+SAME round each synthesize independently, from only their own children —
+if one group's synthesized ancestor is itself a nested name that a
+DIFFERENT group's (separately synthesized) ancestor will need to contain in
+a later round, the first pass has no way to know to widen for it. In
+today's catalog this can only arise for the `delivery` chain (`ci_wait` ->
+`delivery_wait` -> `delivery`, `delivery`'s other declarer being
+`post_ci_remediation`), and only if `deliver_pr.py`'s own real self-recorded
+`delivery`/`delivery_wait` spans are BOTH absent (their normal write
+silently failed) while `post_ci_remediation` and `ci_wait` are both present
+— found in doubt review, not confirmed reachable via the real CLI path
+(`deliver_pr.py` always records `delivery` and `delivery_wait` together,
+wrapping the whole ladder, when invoked normally). If it ever triggers, the
+affected entries fall back to rejection — the same "no containing parent
+instance" outcome this card replaces for the common case, not data
+corruption or a wrong tree.
 
 ## Agent-emitted marks — where to call them
 
