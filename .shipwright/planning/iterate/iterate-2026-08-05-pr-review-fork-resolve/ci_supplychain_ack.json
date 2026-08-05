@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-08-05-pr-review-fork-resolve",
+  "ci_supplychain_ack": {
+    "run_id": "iterate-2026-08-05-pr-review-fork-resolve",
+    "paths_fingerprint": "9b7089d7f5998eac863265702a52488956bce1115dc03fd7900660dcf6e96824",
+    "consistent_with": "iterate-2026-07-27-review-gate-failclosed-fork",
+    "statement": "Fixes Stage 2's PR-identity resolver (pr-review-run.yml + the shipped claude-review-run.yml.template) so it also resolves a fork PR's head SHA, which commits/{sha}/pulls silently never did. Trust boundary unchanged: identity still comes solely from the trusted workflow_run event (REPO, HEAD_SHA), never from stage 1's artifact or any PR-controlled input; the exactly-one-match ambiguity guard is untouched. No new secret, no new permission, no new trust source.",
+    "ci_paths": [
+      ".github/workflows/pr-review-run.yml",
+      "shared/templates/github-actions/claude-review-run.yml.template"
+    ]
+  }
+}

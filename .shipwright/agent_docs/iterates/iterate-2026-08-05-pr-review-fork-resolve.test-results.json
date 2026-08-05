@@ -1,0 +1,102 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-08-05-pr-review-fork-resolve",
+    "date": "2026-08-05",
+    "unit": {
+      "status": "passed",
+      "passed": 2,
+      "total": 2,
+      "note": "This change's own new test (shared/tests/test_pr_review_fork_trust.py::test_stage2_resolves_a_fork_pr_not_just_a_same_repo_one[path0,path1]). The full suite around it (test_pr_review_fork_trust.py + test_pr_review_fail_closed.py) ran 37 passed, 1 pre-existing skip (unrelated, platform-gated). The full canonical F0 suite also ran GREEN (18/18 units in 6.1 min via run_test_suite.py), but the runner reports only per-unit PASS/FAIL, not per-unit pass/total counts, so no aggregate monorepo-wide figure is recorded here rather than inventing one."
+    },
+    "integration": {
+      "status": "not_run",
+      "passed": 0,
+      "total": 0,
+      "note": "No CRUD/DB changes in this run (a CI workflow resolver fix); the integration-tests pytest root nonetheless passed as part of F0 blanket full-suite policy."
+    },
+    "pgtap": {
+      "status": "n/a",
+      "reason": "no RLS/migration changes"
+    },
+    "e2e": {
+      "status": "n/a",
+      "reason": "no browser surface; this is a GitHub Actions workflow shell-script fix"
+    },
+    "design_fidelity": {
+      "status": "n/a",
+      "reason": "no UI"
+    },
+    "smoke": {
+      "status": "n/a",
+      "reason": "no startable server surface for this change"
+    },
+    "degraded": [],
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "Stage 2 (monorepo pr-review-run.yml) no longer queries commits/{sha}/pulls",
+          "disposition": "tested",
+          "evidence": "test_pr_review_fork_trust.py::test_stage2_resolves_a_fork_pr_not_just_a_same_repo_one[path0] PASSED"
+        },
+        {
+          "behavior": "Stage 2 (shipped claude-review-run.yml.template) no longer queries commits/{sha}/pulls",
+          "disposition": "tested",
+          "evidence": "same test, [path1] PASSED"
+        },
+        {
+          "behavior": "Stage 2 resolves identity by listing open PRs (paginated) and matching head.sha, both files, safely jq-bound",
+          "disposition": "tested",
+          "evidence": "same test, both params -- isolates the matches= block and asserts --paginate, --slurp, .[][] , pulls?state=open, --arg sha binding, .head.sha==$sha, .number all co-located"
+        },
+        {
+          "behavior": "The ambiguity guard (exactly-one-match, fail closed on 0 or many) still holds after the data-source swap",
+          "disposition": "tested",
+          "evidence": "test_stage2_refuses_an_ambiguous_pull_request[path0,path1] PASSED (pre-existing test, unmodified, still green)"
+        },
+        {
+          "behavior": "The fix resolves a REAL fork PR (not a mock) via the exact shipped jq pipeline",
+          "disposition": "tested",
+          "evidence": "live probe: gh api --paginate --slurp against 3 real open cross-repository PRs on cli/cli (#14083/#14082/#14081), matches [14083] etc -- recorded in the iterate spec Confidence Calibration"
+        },
+        {
+          "behavior": "No injection / secrets-handling regression introduced by the edit",
+          "disposition": "tested",
+          "evidence": "test_pr_review_workflow_shape.py::TestHardening (SHA-pin + no-raw-${{ github.* }}-in-run-body) PASSED unmodified"
+        }
+      ],
+      "counts": {
+        "testable": 6,
+        "tested": 6,
+        "untestable": 0,
+        "untested_testable": 0
+      },
+      "enumeration_basis": {
+        "acs": 4,
+        "covered_acs": 4
+      }
+    },
+    "surface_verification": {
+      "surface": "none",
+      "runner": "n/a (surface=none)",
+      "exit_code": 0,
+      "tests_run": 0,
+      "evidence_path": ".shipwright/runs/iterate-2026-08-05-pr-review-fork-resolve/surface_verification.json",
+      "timestamp": "2026-08-05T20:27:16.531Z",
+      "justification": "This change edits a GitHub Actions workflow's shell body; there is no startable dev server, CLI entrypoint, or API surface for this repository's own CI plumbing to exercise locally as an E2E run. Empirical confidence comes from live API/jq probes against 3 real fork PRs on cli/cli (recorded in the iterate spec) plus the executed pytest suite pinning the workflow's parsed structure."
+    }
+  },
+  "coverage": {
+    "total": 80.2,
+    "measured_tier": "repo",
+    "source": "combined coverage.xml (all plugins + shared + integration)",
+    "measured_at": "2026-07-04T00:00:00Z"
+  },
+  "source_state": {
+    "run_id": "iterate-2026-08-05-pr-review-fork-resolve",
+    "commit": "ab4d19a0ead62e56703a2285282d811f42543696",
+    "dirty": true,
+    "base": null,
+    "release": null
+  }
+}
