@@ -168,7 +168,7 @@ def test_a_config_error_still_exits_two_without_touching_the_store(tmp_path,
 
 def test_missing_run_id_generates_one_stable_invocation_id(tmp_path, monkeypatch,
                                                            capsys):
-    monkeypatch.setattr(mod, "uuid4", lambda: type("UUID", (), {"hex": "a" * 32})())
+    monkeypatch.setattr(mod, "uuid4", type("UUID", (), {"hex": "a" * 32}))
     assert _run(monkeypatch, tmp_path, _race()) == 0
 
     item, = read_all_items(tmp_path)
