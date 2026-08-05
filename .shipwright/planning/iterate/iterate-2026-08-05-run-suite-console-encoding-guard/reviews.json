@@ -1,0 +1,78 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-08-05-run-suite-console-encoding-guard",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-05T19:25:03.287141+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-05T19:25:13.893402+00:00",
+      "disposition": "small complexity BUG fix skips Iterate Spec/mini-plan per the phase matrix, so there is no plan-review artifact to review",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "code": {
+      "review_type": "code",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-05T19:25:14.128399+00:00",
+      "disposition": "Full Code Review cascade not triggered: small complexity, no risk flags, diff 67 lines (<100), no security-sensitive files per iteration-reviews.md Full Code Review Trigger",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-05T19:25:14.245252+00:00",
+      "disposition": "Stage 3 is conditional on a Stage 2 pass, which did not run (small complexity, no risk flags, diff under 100 lines); the surface is also not non-trivial (no migrations/async/cross-plugin/irreversible ops)",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-05T19:25:14.363229+00:00",
+      "disposition": "external cascade trigger not met: small complexity, no risk flags, diff 67 lines (<100), no security-sensitive files per iteration-reviews.md External Code-Review Cascade Trigger Rule",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-05T19:25:14.011365+00:00",
+      "disposition": "Full Code Review cascade not triggered: small complexity, no risk flags, diff 67 lines (<100), no security-sensitive files per iteration-reviews.md Full Code Review Trigger",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    }
+  }
+}
