@@ -1,0 +1,85 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-08-05-reconcile-trg-0ce59c05",
+    "date": "2026-08-05",
+    "unit": {
+      "status": "pass",
+      "passed": 14409,
+      "total": 14409,
+      "note": "Full suite via run_test_suite.py (18 units, 4.7 min), all PASS. Docs/triage-record change only, no source lines touched: diff-coverage gate reported n/a (No lines with coverage information in this diff)."
+    },
+    "integration": {
+      "status": "pass",
+      "passed": 477,
+      "total": 477
+    },
+    "e2e": {
+      "status": "n/a",
+      "reason": "no browser/UI surface; this run is a triage-record + ADR + changelog-drop reconciliation"
+    },
+    "smoke": {
+      "status": "n/a",
+      "reason": "no startable server surface for this change"
+    },
+    "pgtap": {
+      "status": "n/a",
+      "reason": "no database change"
+    },
+    "design_fidelity": {
+      "status": "n/a",
+      "reason": "no UI surface"
+    },
+    "surface_verification": {
+      "surface": "none",
+      "runner": "n/a",
+      "exit_code": 0,
+      "tests_run": 0,
+      "evidence_path": ".shipwright/runs/iterate-2026-08-05-reconcile-trg-0ce59c05/surface_verification.json",
+      "justification": "Documentation/triage-record reconciliation only (no code, no UI, no API surface changed); advisory at small complexity per the Phase Matrix (not touches_io_boundary, not feature+UI)."
+    },
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "trg-0ce59c05 codeql-action @v4 claim is root-caused as inaccurate-at-authoring, not a later regression",
+          "disposition": "tested",
+          "evidence": "git log --all --follow -- shared/templates/github-actions/codeql.yml.template shows exactly two states (created @v3 in PR #227, bumped @v4 in unmerged PR #561) -- no commit ever reverted a v4 state, ruling out a regression window."
+        },
+        {
+          "behavior": "the pinning-posture guard (test_action_pinning_posture.py) could not have caught a stale version citation, because it asserts posture (mutable tag vs SHA) not a specific version",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_action_pinning_posture.py read directly: test_github_owned_actions_stay_on_mutable_tags only rejects a SHA-pinned GitHub-owned action, it never asserts a version string."
+        },
+        {
+          "behavior": "the reconciliation record (trg-daf91c2d) is appended and dismissed with a valid, well-formed triage.jsonl entry",
+          "disposition": "tested",
+          "evidence": "triage_add.py + triage_cli.py dismiss exit 0; tail -3 .shipwright/triage.jsonl shows both events with matching id and valid JSON."
+        }
+      ],
+      "counts": {
+        "testable": 3,
+        "tested": 3,
+        "untestable": 0,
+        "untested_testable": 0
+      },
+      "enumeration_basis": {
+        "acs": 1,
+        "covered_acs": 1
+      }
+    },
+    "degraded": []
+  },
+  "coverage": {
+    "total": 80.2,
+    "measured_tier": "repo",
+    "source": "combined coverage.xml (all plugins + shared + integration)",
+    "measured_at": "2026-07-04T00:00:00Z"
+  },
+  "source_state": {
+    "run_id": "iterate-2026-08-05-reconcile-trg-0ce59c05",
+    "commit": "f5218355a152f4a6497bb2a233e7e1ada091683c",
+    "dirty": true,
+    "base": null,
+    "release": null
+  }
+}

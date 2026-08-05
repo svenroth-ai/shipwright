@@ -1,0 +1,78 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-08-05-reconcile-trg-0ce59c05",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-05T19:14:53.602859+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-05T19:15:07.382861+00:00",
+      "disposition": "Mini-Plan is FEATURE-only at small complexity per the Phase Matrix; this run is a CHANGE, so no plan review applies.",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "code": {
+      "review_type": "code",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-05T19:15:07.591090+00:00",
+      "disposition": "Full Code Review is conditional on risk flags at small complexity (Phase Matrix); none fired, diff is under 100 lines, no security-sensitive files touched (iteration-reviews.md, When Self-Review is Sufficient).",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-05T19:15:07.696796+00:00",
+      "disposition": "Stage 3 runs only behind a Stage 2 code-reviewer pass, which did not fire here; the diff is also a record/docs-only surface, not migrations/async/cross-plugin (iteration-reviews.md).",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-05T19:15:07.809381+00:00",
+      "disposition": "External cascade fires only at medium+, diff>100 lines, or security-sensitive files (iteration-reviews.md Trigger Rule); none apply to this small, risk-flag-free record change.",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-05T19:15:07.486799+00:00",
+      "disposition": "Iterate Spec is skipped at small complexity per the Phase Matrix, so there is no spec document for the Stage-1 spec-reviewer HARD-GATE to check.",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    }
+  }
+}
