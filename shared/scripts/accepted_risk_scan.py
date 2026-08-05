@@ -14,6 +14,13 @@ covers it, so reading the two as equivalent is what makes an inline suppression
 look like it needs a register entry. A GitHub code-scanning dismissal is live
 API state, not a file, so it is outside this module's reach for the opposite
 reason — see ``accepted_risks.STATIC_TARGETS``.
+
+Inline suppressions being uncovered is a DECISION, not a gap awaiting closure
+(iterate-2026-08-05-inline-suppression-ratchet — the reasoning is in
+``accepted_risks``). They are governed instead by the per-rule anti-ratchet in
+``inline_suppressions``, which counts them from git-tracked source rather than
+reconciling them, precisely because a counting error is absorbed by a baseline
+whereas a reconciliation error tells an operator to delete a live record.
 """
 
 from __future__ import annotations

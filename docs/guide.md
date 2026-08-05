@@ -2166,6 +2166,8 @@ It automatically skips `.env.example`, test fixtures, lock files, and vendor dir
 
 **Suppression syntax (`nosemgrep` adjacency rule).** A `# nosemgrep:<rule-id>` directive MUST sit on the matched line or immediately preceding it; an intervening justification comment breaks attribution and Semgrep flags the call anyway. For multi-line calls flagged on a kwarg, write the directive as an inline trailing comment on that kwarg line. Full reference: `plugins/shipwright-security/skills/security/references/suppression-syntax.md`.
 
+**Inline suppressions are ratcheted, so adding one is a two-file change.** `shipwright_inline_suppressions.json` freezes a `max_sites` per rule with a `rationale_ref` naming a recorded decision; a rule that gains a site — or has no entry at all — blocks in CI (`shared/tests/test_inline_suppressions_repo_guard.py`), and removing a rule's *last* site means deleting its entry. This is deliberately **not** an accepted-risk register entry: an offline reconciler would have to mirror the scanner and would drift, and a re-review date does not fit a permanent false positive at a fixed source site. Reasoning and the operator commands: [docs/security-ci-setup.md](security-ci-setup.md).
+
 ### Plugin-cache drift check
 
 After `git push` to the dev repo, plugin-side fixes (under `plugins/*`, `shared/scripts/`, any `SKILL.md`) do **not** auto-sync to the Claude Code runtime cache at `~/.claude/plugins/cache/shipwright/`. Without `bash scripts/update-marketplace.sh`, fixes land in the repo but never reach runtime. `scripts/check_plugin_cache_sync.py` compares the repo head against the cache via per-file SHA-256 and reports drift.
