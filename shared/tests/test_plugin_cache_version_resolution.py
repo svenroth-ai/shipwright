@@ -52,12 +52,17 @@ def _seed(tmp_path: Path, *, cache_versions: dict[str, dict[str, str]]) -> tuple
     Created even when the file map is EMPTY — the exact shape a survived cleanup or a
     half-finished `claude plugin install` leaves behind. Letting `_write` skip the mkdir
     made these tests pass against a directory that did not exist (caught by the arm below).
+
+    Also mirrors each version's files into ``cache/plugins/<name>/`` (the now-gated
+    mirror tree) — callers here list versions ascending, so the last (highest) write
+    wins and matches ``latest_cache_version_dir``, the mirror's own repair source.
     """
     repo, cache = tmp_path / "repo", tmp_path / "cache"
     _write(repo / "plugins" / PLUGIN, FILES)
     for version, files in cache_versions.items():
         (cache / PLUGIN / version).mkdir(parents=True, exist_ok=True)
         _write(cache / PLUGIN / version, files)
+        _write(cache / "plugins" / PLUGIN, files)
     cache.mkdir(parents=True, exist_ok=True)
     return repo, cache
 

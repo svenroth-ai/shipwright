@@ -65,7 +65,11 @@ files can be read, are both refusals to establish a basis.
   gate — an unpropagated deletion stays importable at runtime, and a tracked
   file that cannot be read must not shrink `tracked_count` to fit.
 - The cross-plugin mirror `cache/plugins/<name>/` stays **ungated by
-  decision** (`trg-7d1d8437`).
+  decision** (`trg-7d1d8437`). **Update (2026-08-05, iterate-2026-08-05-mirror-tree-drift-basis,
+  P2.29):** the blocker below is resolved (the healer now compares each
+  mirror's file set against its repair source) and the mirror is gated —
+  see `scripts/cache_mirror_compare.py`, which gives it its own basis
+  (`"cache"`, never `git`/`walk`) rather than reusing `compare_tree`'s.
 - Because the two sides now apply different rules, a meta-test
   (`test_skip_dirs_hide_nothing_git_tracks`) asserts nothing git tracks lives
   under a skipped component.
@@ -102,6 +106,8 @@ structurally; guarding both zero-entrances removes the second.
   `_plugins_healthy`, a single sentinel file (shipwright-run's), so a mirror
   missing while that file survives is never healed. A gate built on top would
   restate this bug one tree over. Sequenced behind `trg-7d1d8437` instead.
+  **Done as of P2.29** once that sequencing blocker cleared (see the
+  Consequences update above).
 - **Walk the filesystem on both sides.** Symmetric and simple, but it is what
   made the six gitignored files phantom drift, and no exclusion list stays
   correct as directories are added.

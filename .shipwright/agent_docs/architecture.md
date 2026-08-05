@@ -117,36 +117,47 @@ escapes the worktree.
 `scripts/update-marketplace.sh`; `scripts/check_plugin_cache_sync.py` detects
 drift. (End users consuming the published plugins do not need this step.)
 
-The cache carries three trees and the check gates two: the versioned plugin
-dirs and `shared/` (reached as `{plugin_root}/../../shared`, home of the F11
-verifier every iterate runs). The cross-plugin mirror `cache/plugins/<name>/`
-remains ungated **by the drift check**, but no longer for the original reason:
-`ensure_shared_cache` judged each tree from one sentinel file, so a gate built
-on it would have inherited that weakness (trg-7d1d8437). Since
-`iterate-2026-08-01-cache-heal-per-plugin` the healer compares each tree's
-**file set** against its repair source, so the mirror is soundly repaired and
-joining it to the drift check is now a plain follow-up rather than a blocked
-one (filed as `trg-5005bf57`). Note the two answer different questions and the
-healer cannot replace the check: the healer detects **absence** (presence-only,
-because the clone and the cache differ in line endings), the check detects
-**staleness** (CRLF-normalized content hashes). **The two sides of the comparison are
-verifier every iterate runs). **Which version dir is compared is the sync's
-answer, not a second opinion:** both sides read
-`~/.claude/plugins/installed_plugins.json`, so a surviving stale dir cannot make
-the sync report "up to date" while the check reports drift (P2.06). The check
-falls back to the highest cached version when that manifest is unreadable and
-records which rule it used as `version_basis`. The cross-plugin mirror `cache/plugins/<name>/`
-is knowingly ungated — `ensure_shared_cache._plugins_healthy` gates repair of
-all 14 mirrors behind a single sentinel file, so a gate built on it would
-inherit that weakness (trg-7d1d8437). **The two sides of the comparison are
-established differently by design:** the repo side is `git ls-files`, because
-the cache is copied from a `git reset --hard origin/main` clone that holds
-exactly the tracked files; the cache side is a filesystem walk minus build
-artefacts, because the cache is not a git tree. `scripts/cache_tree_compare.py`
-holds the primitives and `scripts/cache_sync_report.py` the rendering. A zero
-is never read as agreement — neither an empty `ls-files` listing nor a listing
-none of whose files can be read — and the verdict names which trees it covers
-(`verified`), which it does not (`ungated`), and how each was established
+The cache carries three trees and the check gates **all three**: the versioned
+plugin dirs, `shared/` (reached as `{plugin_root}/../../shared`, home of the
+F11 verifier every iterate runs), and the cross-plugin mirror
+`cache/plugins/<name>/` (behind `{plugin_root}/../../plugins/shipwright-X`,
+joined last — P2.29, superseding trg-5005bf57).
+
+**Which version dir the `plugins` tree compares is the sync's answer, not a
+second opinion:** both sides read `~/.claude/plugins/installed_plugins.json`,
+so a surviving stale dir cannot make the sync report "up to date" while the
+check reports drift (P2.06). The check falls back to the highest cached
+version when that manifest is unreadable and records which rule it used as
+`version_basis`. **The `plugins`/`shared` sides are established differently by
+design:** the repo side is `git ls-files`, because the cache is copied from a
+`git reset --hard origin/main` clone that holds exactly the tracked files; the
+cache side is a filesystem walk minus build artefacts, because the cache is
+not a git tree. `scripts/cache_tree_compare.py` holds the primitives and
+`scripts/cache_sync_report.py` the rendering.
+
+**The mirror tree has its own basis and verdict semantics** (`scripts/cache_mirror_compare.py`), not a
+variant of the `plugins`/`shared` one. It once could not be gated at all:
+`ensure_shared_cache` judged the whole mirror from one sentinel file, so a
+gate built on it would have inherited that weakness (trg-7d1d8437). Since
+`iterate-2026-08-01-cache-heal-per-plugin` the healer compares each mirror's
+**file set** against its own repair source — the plugin's newest cached
+version dir, never `installed_plugins.json` (the healer doesn't consult it) —
+so the check judges the mirror by that same rule, independently of the
+`plugins` tree's own version choice. Its `basis` is therefore always the
+literal string `"cache"`, never `"git"` nor a `walk (...)` fallback: neither
+side was ever a git tree, so unlike the other two trees there is no
+git-vs-clone line-ending seam and nothing "degraded" to flag. The healer does
+not make the check redundant: the healer detects **absence** (a file-set
+diff, no hashing, so a repo checkout's line endings can never enter into it),
+the check detects **staleness** (CRLF-normalized content hashes) — the same
+hash function as the other two trees, reused for the drift-detection
+contract, not because a mismatch between two cache-side copies is expected.
+
+A zero is never read as agreement, on any of the three trees — neither an
+empty `ls-files` listing nor a listing none of whose files can be read, nor an
+empty/absent mirror source — and the verdict names which trees it covers
+(`verified`), which it does not (`ungated` — empty now that all three are
+gated, kept in the schema for stability), and how each was established
 (`basis`).
 
 **Secrets.** Secrets live exclusively in `<project_root>/.env.local`, scaffolded
@@ -224,6 +235,8 @@ _Existing user-facing documentation discovered by /shipwright-adopt._
 
 > **One line per change** — always-loaded Layer-1 context, so every line costs tokens on every future iterate. Format: `- **<run_id|ADR-NNN>** (YYYY-MM-DD): <Impact> — <one sentence: what + key surface>. → decision_log (Run-ID/ADR)`. **Budget ≤ 600 chars; detail goes in the ADR / `.shipwright/planning/adr/`, not here.** Enforced repo-agnostically (incl. adopted repos) by the F11 verifier + `shared/scripts/tools/check_agent_doc_budget.py` (SSoT `lib.agent_doc_budget`); see `references/F2.md`. Bullet **shape** (a `run_id`|`ADR-NNN` anchor, an `<Impact> —` lead, and a `→` pointer — no `Campaign`/`sub_iterate`/free-text) is enforced from 2026-06-28 by `check_agent_doc_shape` (SSoT `lib.agent_doc_shape`); the release aggregator writes no duplicate `ADR-NNN` bullet — the run_id line is the single canonical entry. Full verbatim prose for compacted entries lives in [`../planning/adr/_archive-agent-doc-updates.md`](../planning/adr/_archive-agent-doc-updates.md). Routing (`lib.architecture_doc.IMPACT_TARGETS`): `convention`-impact → [`conventions.md`](conventions.md) `## Convention Updates`; only `component` / `data-flow` live here.
 - **iterate-2026-08-05-inline-suppression-ratchet** (2026-08-05): Component — inline `# nosemgrep` suppressions get their own anti-ratchet instead of an accepted-risk register `target`: new shared leaf trio `inline_suppression_scan` / `inline_suppression_baseline` / `inline_suppressions` over repo-root `shipwright_inline_suppressions.json` (per-rule `max_sites` + `rationale_ref`), bound by a `shared/tests` live guard and rendered by `lib/inline_suppression_view.py`. A reconciler would have to mirror Semgrep and drift; a count degrades safely. → decision_log (Run-ID).
+- **iterate-2026-08-05-llm-review-gateway-route** (2026-08-05): Component — new `shared/scripts/lib/external_review_gateway.py` adds a 4th, operator-owned `gateway` route to `lib/llm_review.py`, alongside openrouter/direct/none, config under `SHIPWRIGHT_REVIEW_GATEWAY_*`. Fail-closed and exclusive once configured; no model-identity lock, no ZDR check by design. New `model-1`/`model-2` pair registered in `review_verdict.GATEWAY_REVIEWERS`. Scoped to Adopt's Layer-3 review + `review_assistant_ui_plan.py`; `external_review.py` untouched. → decision_log (Run-ID).
+- **iterate-2026-08-05-mirror-tree-drift-basis** (2026-08-05): Component — `check_plugin_cache_sync` gates the cross-plugin mirror `cache/plugins/<name>/` (P2.29, supersedes trg-5005bf57) now that `ensure_shared_cache` validates each mirror against its repair source. New leaf `scripts/cache_mirror_compare.py`: basis is always `"cache"`, source is each plugin's newest cached version, never `installed_plugins.json` — the healer doesn't consult it either. `ungated` is now empty; healer detects ABSENCE (file sets), this detects STALENESS (CRLF-hashes). → decision_log (Run-ID).
 - **iterate-2026-08-05-risk-recheck-recording-integrity** (2026-08-05): Component — new per-run artifact `risk_recheck.json` (beside `ci_supplychain_ack.json`) where Step 3.4 persists its computed `effective_complexity`, plus F11 verifier `check_risk_recheck_recorded` (registered in `run_all_checks`), FAILing when the F5c-recorded complexity is outranked by it. Campaign-only by absence (SKIP). Closes the gap where nothing checked F5c honored what Step 3.4 computed. → decision_log (Run-ID).
 - **iterate-2026-08-03-p2-33-deepseek-zdr-review** (2026-08-04): Data-flow — external review binds DeepSeek V4 Pro to a fail-closed configurable US/EU ZDR allowlist while GPT stays fixed; current writers use DeepSeek/OpenAI and readers retain historical Gemini/OpenAI compatibility. → decision_log.md (ADR via Run-ID: iterate-2026-08-03-p2-33-deepseek-zdr-review)
 - **iterate-2026-08-04-p1-15-events-context** (2026-08-04): Data-flow — Iterate now queries bounded untrusted event bundles after Repo Scout through one cross-phase area catalog and a disposable raw-log index; compact is normal, shadow diagnostic, and full explicit. → decision_log.md (ADR via Run-ID: iterate-2026-08-04-p1-15-events-context)

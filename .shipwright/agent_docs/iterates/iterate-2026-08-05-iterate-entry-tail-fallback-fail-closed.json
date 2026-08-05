@@ -1,0 +1,11 @@
+{
+  "run_id": "iterate-2026-08-05-iterate-entry-tail-fallback-fail-closed",
+  "date": "2026-08-05T20:12:35.325445Z",
+  "event_at": "2026-08-05T17:43:50.649058+00:00",
+  "type": "bug",
+  "complexity": "small",
+  "branch": "iterate/iterate-entry-tail-fallback-fail-closed",
+  "spec": null,
+  "tests_passed": true,
+  "adr": "iterate-2026-08-05-iterate-entry-tail-fallback-fail-closed"
+}

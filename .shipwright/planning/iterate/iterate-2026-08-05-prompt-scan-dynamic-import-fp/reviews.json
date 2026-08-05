@@ -1,0 +1,78 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-08-05-prompt-scan-dynamic-import-fp",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-05T20:12:24.864671+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-05T20:13:01.841592+00:00",
+      "disposition": "small-complexity BUG fix; plan review only applies to medium+ external plan-review branch",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "code": {
+      "review_type": "code",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-05T20:13:02.165340+00:00",
+      "disposition": "small complexity, no risk flags, diff under 100 lines, no security-sensitive files touched: self-review is sufficient per iteration-reviews.md Full Code Review Trigger",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-05T20:13:02.307478+00:00",
+      "disposition": "docs/test-only 4-line diff, no migrations/async/cross-plugin/irreversible-ops surface, and Stage 2 never ran (not triggered): the conditional Stage-3 doubt pass does not apply",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-05T20:13:02.454016+00:00",
+      "disposition": "external code-review cascade fires on its own thresholds (diff>100 lines, security-sensitive files, or medium+); none apply to this small 4-line test-only diff",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-05T20:13:02.013148+00:00",
+      "disposition": "small complexity with no risk flags and a 4-line diff; Full Code Review Trigger's own-thresholds are not met, so the internal cascade (spec/code/doubt) does not fire per iteration-reviews.md",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    }
+  }
+}

@@ -68,7 +68,7 @@
       }
     }
   },
-  "regenerated_for": "P2.33 replaces the current Gemini review arm with the identity-locked DeepSeek V4 Pro ZDR route while retaining historical-reader compatibility",
+  "regenerated_for": "iterate-2026-08-05-llm-review-gateway-route: review_runner.run_review's _has_any_api_key() gate widened to also recognize a configured SHIPWRIGHT_REVIEW_GATEWAY_BASE_URL (issue #547) -- fixes the gateway route being unreachable from Adopt's Layer-3 review, found by Stage-2 code review. Source line count 119->120, one added env check.",
   "schema_version": 1,
   "targets": {
     "disc._test_links_io.discover_specs": {
@@ -1697,8 +1697,8 @@
     },
     "disc.review_runner.run_review": {
       "kind": "source_only",
-      "sha256": "4b274cebee6161c2dc0efc6599794cfa6651a4a450f313c405efc9614c0ee171",
-      "source_lines": 119
+      "sha256": "90763bb51dda65030eabf47e026498db53d25fc32355e89ec934327a35a4efed",
+      "source_lines": 120
     },
     "disc.rtm.collect_external_review_states": {
       "fixtures": {
