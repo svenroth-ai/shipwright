@@ -1,0 +1,109 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-08-05-triage-launch-payload-cli",
+    "date": "2026-08-05",
+    "unit": {
+      "status": "pass",
+      "passed": 7965,
+      "total": 7965,
+      "failed": 0,
+      "note": "shared/tests (this run's affected root \u2014 houses the changed shared/tests/test_triage_add_cli.py, 23 tests, and every sibling triage.py/triage_render.py test): 7942 passed, 23 skipped, 26 deselected (not slow/cross_plugin markers), 0 failed, 872s. Small-complexity --related scope per the Phase Matrix; not a full monorepo run."
+    },
+    "integration": {
+      "status": "n/a",
+      "reason": "cross_component risk detector returned false for this diff (risk_detectors.is_cross_component_change on the two changed files); no cross-plugin machinery touched"
+    },
+    "e2e": {
+      "status": "n/a",
+      "reason": "no browser/UI surface; this is a CLI argparse-flag change"
+    },
+    "smoke": {
+      "status": "n/a",
+      "reason": "no startable server surface in this repo"
+    },
+    "pgtap": {
+      "status": "n/a",
+      "reason": "no database"
+    },
+    "design_fidelity": {
+      "status": "n/a",
+      "reason": "no UI surface"
+    },
+    "surface_verification": {
+      "surface": "cli",
+      "tests_run": 23,
+      "exit_code": 0,
+      "evidence_path": ".shipwright/runs/iterate-2026-08-05-triage-launch-payload-cli/surface_verification.json",
+      "detail": "surface_verification.py drove `uv run pytest shared/tests/test_triage_add_cli.py shared/tests/test_triage_add_launch_payload.py -q` for real: all 23 tests (general CLI coverage plus the --launch-payload/--no-launch-payload split-out file) passed, exit 0. The launch-payload tests were split into their own file after a bloat-baseline block on test_triage_add_cli.py (465-line cap)."
+    },
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "--launch-payload VALUE (non-blank) persists verbatim and overrides the manual-card default",
+          "disposition": "tested",
+          "evidence": "test_triage_add_launch_payload.py::test_resolve_launch_payload_explicit_value_overrides_default PASSED; ::test_main_launch_payload_override PASSED (CLI stdout + read_all_items round-trip)"
+        },
+        {
+          "behavior": "Omitting both flags defaults launchPayload to the constant '/shipwright-iterate <id>'",
+          "disposition": "tested",
+          "evidence": "test_triage_add_launch_payload.py::test_resolve_launch_payload_defaults_when_omitted PASSED; ::test_main_defaults_launch_payload_when_omitted PASSED (CLI stdout + read_all_items round-trip)"
+        },
+        {
+          "behavior": "--no-launch-payload forces launchPayload=None; card stays legal (exit 0)",
+          "disposition": "tested",
+          "evidence": "test_triage_add_launch_payload.py::test_resolve_launch_payload_no_launch_payload_forces_none PASSED; ::test_main_no_launch_payload_flag_persists_null PASSED (CLI stdout + read_all_items round-trip)"
+        },
+        {
+          "behavior": "--launch-payload and --no-launch-payload together are rejected as mutually exclusive (argparse exit 2), nothing written",
+          "disposition": "tested",
+          "evidence": "test_triage_add_launch_payload.py::test_main_launch_payload_and_no_launch_payload_are_mutually_exclusive PASSED"
+        },
+        {
+          "behavior": "--launch-payload blank/whitespace-only is rejected (ValueError, exit 1, JSON error envelope), nothing written",
+          "disposition": "tested",
+          "evidence": "test_triage_add_launch_payload.py::test_resolve_launch_payload_rejects_blank PASSED; ::test_main_rejects_blank_launch_payload PASSED"
+        },
+        {
+          "behavior": "A stderr note is printed only when the default is actually applied, never on override or opt-out",
+          "disposition": "tested",
+          "evidence": "test_triage_add_launch_payload.py::test_main_defaults_launch_payload_when_omitted (asserts 'defaulting to' in captured.err) + ::test_main_launch_payload_override and ::test_main_no_launch_payload_flag_persists_null (assert 'defaulting to' not in captured.err) PASSED"
+        },
+        {
+          "behavior": "CLI JSON stdout result includes a launchPayload key reflecting the resolved value",
+          "disposition": "tested",
+          "evidence": "test_triage_add_launch_payload.py::test_main_defaults_launch_payload_when_omitted, ::test_main_launch_payload_override, ::test_main_no_launch_payload_flag_persists_null (all assert payload[\"launchPayload\"]) PASSED"
+        },
+        {
+          "behavior": "Schema parity: a CLI-created item's launchPayload legitimately differs from a hand-crafted library-API item (which still defaults to None)",
+          "disposition": "tested",
+          "evidence": "test_triage_add_cli.py::test_schema_parity_only_fr_id_differs PASSED (updated assertions: ref[\"launchPayload\"] is None, cli[\"launchPayload\"] == DEFAULT_LAUNCH_PAYLOAD)"
+        }
+      ],
+      "counts": {
+        "total": 8,
+        "tested": 8,
+        "untestable": 0,
+        "untested_testable": 0
+      },
+      "enumeration_basis": {
+        "acs": 8,
+        "covered_acs": 8
+      }
+    },
+    "degraded": []
+  },
+  "coverage": {
+    "total": 80.2,
+    "measured_tier": "repo",
+    "source": "combined coverage.xml (all plugins + shared + integration)",
+    "measured_at": "2026-07-04T00:00:00Z"
+  },
+  "source_state": {
+    "run_id": "iterate-2026-08-05-triage-launch-payload-cli",
+    "commit": "3a6b634b281a45b89a1606efd31580637dcd2a1a",
+    "dirty": true,
+    "base": null,
+    "release": null
+  }
+}
