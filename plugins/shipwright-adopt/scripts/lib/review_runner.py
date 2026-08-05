@@ -1,7 +1,8 @@
 """Layer-3 review runner: call shared/scripts/lib/llm_review.py on generated artifacts.
 
-Without OPENROUTER_API_KEY (or any fallback key), this gracefully skips
-with a documented reason. Writes `.shipwright/adopt/review.md`.
+Without OPENROUTER_API_KEY, OPENAI_API_KEY, or a configured
+SHIPWRIGHT_REVIEW_GATEWAY_BASE_URL, this gracefully skips with a
+documented reason. Writes `.shipwright/adopt/review.md`.
 """
 
 from __future__ import annotations
@@ -36,8 +37,16 @@ def _locate_llm_review() -> Path | None:
 
 
 def _has_any_api_key() -> bool:
+    """Mirrors ``llm_review.detect_provider()``'s three configured-provider
+    checks (gateway / openrouter / direct) — kept as a separate boolean
+    rather than delegating to ``detect_provider()`` itself because the
+    dynamically-imported ``llm_review`` isn't available yet at this point
+    (see ``run_review`` below), and tests substitute a stub module via
+    ``sys.modules`` that only defines ``run_review``.
+    """
     return bool(
-        os.environ.get("OPENROUTER_API_KEY")
+        os.environ.get("SHIPWRIGHT_REVIEW_GATEWAY_BASE_URL", "").strip()
+        or os.environ.get("OPENROUTER_API_KEY")
         or os.environ.get("OPENAI_API_KEY")
     )
 
@@ -59,7 +68,8 @@ def run_review(
     if not _has_any_api_key():
         review_path.write_text(
             "# Adopt Review — SKIPPED\n\n"
-            "No `OPENROUTER_API_KEY` / `OPENAI_API_KEY` detected. "
+            "No `OPENROUTER_API_KEY` / `OPENAI_API_KEY` / "
+            "`SHIPWRIGHT_REVIEW_GATEWAY_BASE_URL` detected. "
             "Layer-3 external review was skipped.\n\n"
             "Set one of these env vars and re-run Adopt (or `/shipwright-iterate` "
             "and run review manually) to generate a post-generation sanity check.\n",
