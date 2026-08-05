@@ -1225,6 +1225,97 @@
       "current": 371,
       "state": "grandfathered",
       "adr": null
+    },
+    {
+      "path": "shared/templates/hooks/ensure_shared_cache.py",
+      "limit": 300,
+      "current": 322,
+      "state": "grandfathered",
+      "adr": null
+    },
+    {
+      "path": "plugins/shipwright-adopt/scripts/hooks/ensure_shared_cache.py",
+      "limit": 300,
+      "current": 322,
+      "state": "grandfathered",
+      "adr": null
+    },
+    {
+      "path": "plugins/shipwright-build/scripts/hooks/ensure_shared_cache.py",
+      "limit": 300,
+      "current": 322,
+      "state": "grandfathered",
+      "adr": null
+    },
+    {
+      "path": "plugins/shipwright-changelog/scripts/hooks/ensure_shared_cache.py",
+      "limit": 300,
+      "current": 322,
+      "state": "grandfathered",
+      "adr": null
+    },
+    {
+      "path": "plugins/shipwright-compliance/scripts/hooks/ensure_shared_cache.py",
+      "limit": 300,
+      "current": 322,
+      "state": "grandfathered",
+      "adr": null
+    },
+    {
+      "path": "plugins/shipwright-deploy/scripts/hooks/ensure_shared_cache.py",
+      "limit": 300,
+      "current": 322,
+      "state": "grandfathered",
+      "adr": null
+    },
+    {
+      "path": "plugins/shipwright-design/scripts/hooks/ensure_shared_cache.py",
+      "limit": 300,
+      "current": 322,
+      "state": "grandfathered",
+      "adr": null
+    },
+    {
+      "path": "plugins/shipwright-iterate/scripts/hooks/ensure_shared_cache.py",
+      "limit": 300,
+      "current": 322,
+      "state": "grandfathered",
+      "adr": null
+    },
+    {
+      "path": "plugins/shipwright-plan/scripts/hooks/ensure_shared_cache.py",
+      "limit": 300,
+      "current": 322,
+      "state": "grandfathered",
+      "adr": null
+    },
+    {
+      "path": "plugins/shipwright-project/scripts/hooks/ensure_shared_cache.py",
+      "limit": 300,
+      "current": 322,
+      "state": "grandfathered",
+      "adr": null
+    },
+    {
+      "path": "plugins/shipwright-run/scripts/hooks/ensure_shared_cache.py",
+      "limit": 300,
+      "current": 322,
+      "state": "grandfathered",
+      "adr": null
+    },
+    {
+      "path": "plugins/shipwright-security/scripts/hooks/ensure_shared_cache.py",
+      "limit": 300,
+      "current": 322,
+      "state": "grandfathered",
+      "adr": null
+    },
+    {
+      "path": "plugins/shipwright-test/scripts/hooks/ensure_shared_cache.py",
+      "limit": 300,
+      "current": 322,
+      "state": "grandfathered",
+      "adr": null
     }
   ]
 }

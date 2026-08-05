@@ -1,0 +1,71 @@
+{
+  "run_id": "iterate-2026-08-05-bloat-baseline-vendored-hook",
+  "date": "2026-08-05T09:16:26.442461Z",
+  "event_at": "2026-08-05T08:26:16.237384+00:00",
+  "type": "bug",
+  "complexity": "medium",
+  "prior_source": "keyword",
+  "branch": "iterate/bloat-baseline-vendored-hook",
+  "spec": ".shipwright/planning/iterate/iterate-2026-08-05-bloat-baseline-vendored-hook.md",
+  "tests_passed": true,
+  "adr": "iterate-2026-08-05-bloat-baseline-vendored-hook",
+  "test_completeness": {
+    "status": "complete",
+    "behaviors": [
+      {
+        "behavior": "version_key/latest_cache_version_dir behavior is unchanged by the trim",
+        "disposition": "tested",
+        "evidence": "test_cache_tree_compare_version_key.py (4 cases) PASSED, identical to pre-trim"
+      },
+      {
+        "behavior": "The hook's _version_key/_plugin_mirrors behavior is unchanged by the trim",
+        "disposition": "tested",
+        "evidence": "test_ensure_shared_cache_walk.py (18 cases) PASSED, identical to pre-trim"
+      },
+      {
+        "behavior": "The two implementations still stay equivalent post-trim",
+        "disposition": "tested",
+        "evidence": "test_ensure_shared_cache_ssot_pins.py (7 cases) PASSED"
+      },
+      {
+        "behavior": "check_plugin_cache_sync.py's fallback-consumer behavior is unchanged",
+        "disposition": "tested",
+        "evidence": "test_plugin_cache_version_resolution.py (10 cases) PASSED"
+      },
+      {
+        "behavior": "The 13 vendored copies stay byte-identical post-trim",
+        "disposition": "tested",
+        "evidence": "test_ensure_shared_cache_vendored.py (13 cases) PASSED"
+      },
+      {
+        "behavior": "The 13 new baseline entries are well-formed/loadable and the Stop-hook's crossing check now finds each path in-baseline",
+        "disposition": "tested",
+        "category": "integration",
+        "evidence": "test_bloat_baseline.py (61 cases) PASSED against the real loader, PLUS a direct probe invoking the real gate's crossing-check rule: WOULD PASS (13/13 in-baseline, gate byte-count matches current: 322 exactly)"
+      },
+      {
+        "behavior": "The bloat-defense artifact suite still passes with the new entries present",
+        "disposition": "tested",
+        "evidence": "test_bloat_defense_artifacts.py (25 cases) PASSED"
+      }
+    ],
+    "counts": {
+      "total": 7,
+      "tested": 7,
+      "untestable": 0,
+      "untested_testable": 0
+    },
+    "enumeration_basis": {
+      "acs": 4,
+      "covered_acs": 4
+    },
+    "ledger_path": ".shipwright/planning/iterate/iterate-2026-08-05-bloat-baseline-vendored-hook.md"
+  },
+  "surface_verification": {
+    "surface": "cli",
+    "tests_run": 138,
+    "exit_code": 0,
+    "evidence_path": ".shipwright/runs/iterate-2026-08-05-bloat-baseline-vendored-hook/surface_verification.json",
+    "detail": "uv run pytest against the 7 touched/relevant test files, project-root-relative paths -- all 138 passed."
+  }
+}
