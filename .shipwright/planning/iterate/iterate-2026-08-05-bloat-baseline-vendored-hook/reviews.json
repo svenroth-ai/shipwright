@@ -1,0 +1,169 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-08-05-bloat-baseline-vendored-hook",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-05T09:09:37.431538+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 7,
+      "findings": [
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The 13 new baseline entries are appended at the end of the array rather than merged in path order. The loader is order-independent and the test suite sorts for comparison, so correctness is not affected.",
+          "suggestion": "Consider inserting entries in lexicographic order for scannability. Not a blocker.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "The mini-plan states \"no new test is needed\" without explicitly referencing the concrete integration test that already covers baseline loading and the stop-hook crossing check.",
+          "suggestion": "Clarify that test_bloat_baseline.py already exercises the exact loader used by the gate.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "The comment/docstring trims are described as \"essential content only.\" There is no stated fallback check that docstrings consumed by external tooling remain valid post-trim.",
+          "suggestion": "Confirm no documentation-generation tool reads the trimmed portions; risk is negligible for an internal hook.  Overall assessment: The approach is sound and proportionate -- it fixes a bloat-gate block with minimal, safe changes and formal registration of pre-existing debt. The execution plan is well-verified and risk-free for production behavior.  SHIPWRIGHT_VERDICT: approve",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "The new `current: 321` baseline values necessarily grandfather the remaining four lines of growth relative to the documented pre-PR-556 size of 317. This is explicitly disclosed and matches the stated acceptance criteria, but the baseline format cannot later distinguish historic debt from the +4 retained by this change.",
+          "suggestion": "Ensure the PR description and/or run record retains the 317 -> 325 -> 321 history, as described.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "The confidence notes refer to log appends and a generated surface-verification evidence file, but the mini-plan's file list does not identify those artifacts.",
+          "suggestion": "State whether surface_verification.json and logs are expected committed artifacts.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The plan appropriately uses the Stop hook's byte-newline counting behavior rather than relying only on wc -l. A trailing newline change in any of the 13 copies would change the gate's count.",
+          "suggestion": "Keep the described direct real-entry-point probe as a final pre-merge check.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "security",
+          "file": null,
+          "line": null,
+          "finding": "No material security concern is introduced.",
+          "suggestion": "No additional security work needed.  Overall, the approach is proportionate and technically sound for a hygiene-only correction. The direct Stop-hook probe, complete vendored-copy coverage, and explicit disclosure of the retained overage adequately address the meaningful operational risks.  SHIPWRIGHT_VERDICT: approve",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-08-05T09:09:37.928337+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[deepseek] - **Category:** edge-case  \n  **Severity:** low  \n  **Finding:** The 13 new baseline entries are appended at the end of the array rather than merged in path order. The loader is order-independent and the test suite sorts for comparison, so correctness is not affected.  \n  **Suggestion:** Consider inserting entries in lexicographic order for scannability. Not a blocker.\n\n- **Category:** approach  \n  **Severity:** low  \n  **Finding:** The mini-plan states \"no new test is needed\" without explicitly referencing the concrete integration test that already covers baseline loading and the stop-hook crossing check.  \n  **Suggestion:** Clarify that test_bloat_baseline.py already exercises the exact loader used by the gate.\n\n- **Category:** risk  \n  **Severity:** low  \n  **Finding:** The comment/docstring trims are described as \"essential content only.\" There is no stated fallback check that docstrings consumed by external tooling remain valid post-trim.  \n  **Suggestion:** Confirm no documentation-generation tool reads the trimmed portions; risk is negligible for an internal hook.\n\n**Overall assessment:** The approach is sound and proportionate -- it fixes a bloat-gate block with minimal, safe changes and formal registration of pre-existing debt. The execution plan is well-verified and risk-free for production behavior.\n\nSHIPWRIGHT_VERDICT: approve\n\n[openai] 1. **Category:** risk  \n   **Severity:** low  \n   **Finding:** The new `current: 321` baseline values necessarily grandfather the remaining four lines of growth relative to the documented pre-PR-556 size of 317. This is explicitly disclosed and matches the stated acceptance criteria, but the baseline format cannot later distinguish historic debt from the +4 retained by this change.  \n   **Suggestion:** Ensure the PR description and/or run record retains the 317 -> 325 -> 321 history, as described.\n\n2. **Category:** dependency  \n   **Severity:** low  \n   **Finding:** The confidence notes refer to log appends and a generated surface-verification evidence file, but the mini-plan's file list does not identify those artifacts.  \n   **Suggestion:** State whether surface_verification.json and logs are expected committed artifacts.\n\n3. **Category:** edge-case  \n   **Severity:** low  \n   **Finding:** The plan appropriately uses the Stop hook's byte-newline counting behavior rather than relying only on wc -l. A trailing newline change in any of the 13 copies would change the gate's count.  \n   **Suggestion:** Keep the described direct real-entry-point probe as a final pre-merge check.\n\n4. **Category:** security  \n   **Severity:** low  \n   **Finding:** No material security concern is introduced.  \n   **Suggestion:** No additional security work needed.\n\nOverall, the approach is proportionate and technically sound for a hygiene-only correction. The direct Stop-hook probe, complete vendored-copy coverage, and explicit disclosure of the retained overage adequately address the meaningful operational risks.\n\nSHIPWRIGHT_VERDICT: approve",
+      "verdicts": {
+        "openai": "approve",
+        "deepseek": "approve"
+      }
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 2,
+      "findings": [
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "scripts/cache_tree_compare.py",
+          "line": 265,
+          "finding": "version_key's trimmed docstring dropped the +build-suffix caveat's citation trail.",
+          "suggestion": "Restore a compact citation.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "shared/templates/hooks/ensure_shared_cache.py",
+          "line": 185,
+          "finding": "_version_key's trimmed comment dropped the +build-suffix scope caveat entirely, creating doc asymmetry with the twin implementation.",
+          "suggestion": "Add a short pointer back to cache_tree_compare.version_key.",
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-08-05T09:09:37.679095+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-05T09:09:37.804059+00:00",
+      "disposition": "no non-trivial surface touched (no migrations, async/concurrency, cross-plugin imports, or irreversible ops) per iteration-reviews.md Stage 3 trigger; a comment/docstring trim plus a JSON data-file registration",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": "openrouter",
+      "completed_at": "2026-08-05T09:09:38.132304+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "unstructured",
+      "raw_excerpt": "[deepseek] - **No defects found.** The diff consists entirely of comment/docstring trims and JSON baseline additions, with zero logic/behavior changes.  \n- All acceptance criteria described in the spec are met: `cache_tree_compare.py` is under 300 lines (295), the vendored hook’s growth is minimized and registered, all 12 copies are byte‑identical, and the full test suite (138 tests) passes unchanged.  \n- The changes are demonstrably safe: comments were trimmed, essential citations preserved, baseline entries exported as grandfathered with the correct line count validated against the real gate.  \n- No security issues, correctness bugs, or regressions are introduced.  \n\n**Overall assessment:** Ship‑as‑is.  \n\nSHIPWRIGHT_VERDICT: approve\n\n[openai] No concrete defects found. The diff trims only comments/docstrings, returns `cache_tree_compare.py` below the guideline, keeps the canonical hook and all 12 vendored copies aligned, and registers all 13 over-limit hook paths as `grandfathered` at `current: 322` with `adr: null`, as required. No behavior, security, caller-compatibility, or test-coverage regression is evident from the change.\n\nOverall assessment: ship-as-is.\n\nSHIPWRIGHT_VERDICT: approve",
+      "verdicts": {
+        "openai": "approve",
+        "deepseek": "approve"
+      }
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-05T09:09:37.557070+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    }
+  }
+}

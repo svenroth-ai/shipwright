@@ -255,25 +255,15 @@ _SEMVER_RE = re.compile(r"^(\d+)\.(\d+)\.(\d+)(.*)$")
 def version_key(name: str) -> tuple:
     """Numeric-tuple sort key for SemVer-shaped dir names.
 
-    Reviewer-flagged Gemini-S1 + OpenAI-M2: pure lexical sort puts ``0.10.0``
-    before ``0.2.0`` (since ``'1' < '2'``). Parse the leading
-    ``MAJOR.MINOR.PATCH`` triplet as ints; any pre-release / suffix stays a
-    string tail. Non-SemVer names sort before any real version.
-
-    OpenAI external review (trg-18da39b0): a bare suffix-string tail sorts
-    ``'1.0.0-rc1'`` (tail ``'-rc1'``) AFTER ``'1.0.0'`` (tail ``''``), since
-    any non-empty string beats ``''`` lexically — the opposite of SemVer,
-    where a release outranks every prerelease of the same numeric version.
-    The 4th element is therefore "is this a release" (1) vs "is this a
-    prerelease" (0), compared BEFORE the suffix text, so the release always
-    sorts last among same-triplet names regardless of what the tail says.
-
-    Scope: only the ``-prerelease`` tail is targeted. A ``+build`` metadata
-    suffix (which SemVer says must NOT affect precedence at all) is not
-    distinguished from a prerelease here and would sort as one — never
-    observed in this cache's directory names, so left unhandled rather than
-    grown to parse a distinction nothing produces (external review, both
-    OpenAI and DeepSeek, iterate-2026-08-05-semver-prerelease-sort).
+    Pure lexical sort puts ``0.10.0`` before ``0.2.0`` (Gemini-S1/OpenAI-M2);
+    parse ``MAJOR.MINOR.PATCH`` as ints. 4th element is "is release" (1) vs
+    "is prerelease" (0), compared BEFORE the suffix string, so a release
+    outranks a prerelease of the same version (trg-18da39b0: a bare
+    string-tail compare put ``1.0.0-rc1`` AFTER ``1.0.0``, since any
+    non-empty suffix beats ``''`` lexically). Non-SemVer names sort first.
+    Scope: a ``+build`` suffix is not distinguished from a prerelease —
+    never observed in this cache's directory names (external review,
+    iterate-2026-08-05-semver-prerelease-sort).
     """
     m = _SEMVER_RE.match(name)
     if not m:
