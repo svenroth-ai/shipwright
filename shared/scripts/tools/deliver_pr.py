@@ -41,6 +41,12 @@ _SCRIPTS_ROOT = Path(__file__).resolve().parent.parent
 if str(_SCRIPTS_ROOT) not in sys.path:
     sys.path.insert(0, str(_SCRIPTS_ROOT))
 
+from lib.deliver_pr_timing import (  # noqa: E402
+    delivery_root_span,
+    delivery_wait_span,
+    instrument_watch,
+    timed_self_merge_call,
+)
 from lib.pr_delivery_host import HOST_ERRORS, Host  # noqa: E402
 from lib.pr_delivery import (  # noqa: E402
     ARM_SETTING_OFF,
@@ -85,10 +91,61 @@ def deliver(
     watch=None,
     verified_commit: str = "",
     now=None,
+    record_timing: bool = False,
 ) -> dict:
-    """Run the ladder. Returns ``{"status", "exit_code", "merged_by", "steps", …}``."""
+    """Run the ladder. Returns ``{"status", "exit_code", "merged_by", "steps", …}``.
+
+    ``record_timing`` (default OFF — every existing caller is unaffected)
+    opts into best-effort delivery/ci_wait producer spans; only :func:`main`
+    turns this on."""
     env = dict(os.environ if env is None else env)
     watch = watch or wpd.watch
+    # NOT wrapped here: `watch` also reaches self_merge()'s own internal retry
+    # loop (rung 3) unchanged below — wrapping it at this level would record a
+    # ci_wait span per internal poll AND another one for the whole self_merge()
+    # call, duplicating and mislabeling the rung-3 data (code review).
+    # instrument_watch is applied only at the rung-2 call site inside
+    # _run_ladder, where "watch" really does mean "wait for the host".
+
+    def _body() -> dict:
+        """The ladder's own decisions — a closure so record_timing needs no
+        second copy of this whole parameter list to wrap it conditionally."""
+        return _run_ladder(pr_url, project_root=project_root, run_id=run_id,
+                           head_branch=head_branch, base_branch=base_branch, repo=repo,
+                           env=env, timeout_seconds=timeout_seconds, poll_seconds=poll_seconds,
+                           arm=arm, host=host, watch=watch, verified_commit=verified_commit,
+                           now=now, record_timing=record_timing)
+
+    if not record_timing:
+        return _body()
+    # Self-records its own root ("delivery") — no SKILL mark needed first.
+    with delivery_root_span(project_root, run_id):
+        with delivery_wait_span(project_root, run_id) as extra:
+            result = _body()
+            if extra is not None:
+                extra["conclusion"] = str(result.get("status", ""))[:200]
+    return result
+
+
+def _run_ladder(
+    pr_url: str,
+    *,
+    project_root: Path,
+    run_id: str,
+    head_branch: str,
+    base_branch: str,
+    repo: str,
+    env: dict,
+    timeout_seconds: float,
+    poll_seconds: float,
+    arm: bool,
+    host: Host | None,
+    watch,
+    verified_commit: str,
+    now,
+    record_timing: bool,
+) -> dict:
+    """The ladder's own decisions — unchanged by timing instrumentation."""
     # ONE bundle, so no member can be half-faked. The six seams used to be six loose
     # parameters whose defaults were not consistent with each other: `capability` closed
     # over the MODULE-level `gh_json`, so faking `gh_json` alone still fired real
@@ -171,9 +228,10 @@ def deliver(
 
     # --- step 2: the host will merge it — just watch, exactly as today ---------
     if not self_merging:
+        rung2_watch = instrument_watch(watch, project_root, run_id) if record_timing else watch
         try:
-            verdict = watch(pr_url, repo=repo, timeout_seconds=timeout_seconds,
-                            poll_seconds=poll_seconds)
+            verdict = rung2_watch(pr_url, repo=repo, timeout_seconds=timeout_seconds,
+                                  poll_seconds=poll_seconds)
         except HOST_ERRORS as exc:
             # `watch_pr_delivery.main` mapped a gh failure to exit 5; keep that,
             # rather than aborting with a traceback (Stage 1 review).
@@ -191,13 +249,17 @@ def deliver(
         return result
 
     # --- step 3: deliver it here ----------------------------------------------
-    return self_merge(
-        pr_url, project_root=project_root, run_id=run_id, head_branch=head_branch,
-        base_branch=base_branch, repo=repo, steps=steps,
-        timeout_seconds=timeout_seconds, poll_seconds=poll_seconds,
-        watch=watch, host=host, verified_commit=verified_commit,
-        **({"now": now} if now is not None else {}),
-    )
+    def _call_self_merge() -> dict:
+        return self_merge(
+            pr_url, project_root=project_root, run_id=run_id, head_branch=head_branch,
+            base_branch=base_branch, repo=repo, steps=steps,
+            timeout_seconds=timeout_seconds, poll_seconds=poll_seconds,
+            watch=watch, host=host, verified_commit=verified_commit,
+            **({"now": now} if now is not None else {}),
+        )
+    if not record_timing:
+        return _call_self_merge()
+    return timed_self_merge_call(project_root, run_id, _call_self_merge)
 
 
 def summary(result: dict) -> str:
@@ -249,7 +311,7 @@ def main(argv: list[str] | None = None) -> int:
         args.pr, project_root=Path(args.project_root).resolve(), run_id=args.run_id,
         head_branch=args.head_branch, base_branch=args.base_branch, repo=args.repo,
         timeout_seconds=args.timeout_seconds, poll_seconds=args.poll_seconds,
-        arm=not args.no_arm, verified_commit=args.verified_commit,
+        arm=not args.no_arm, verified_commit=args.verified_commit, record_timing=True,
     )
     print(json.dumps(result, indent=2))
     print(summary(result), file=sys.stderr)

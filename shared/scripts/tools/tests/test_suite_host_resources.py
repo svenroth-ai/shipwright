@@ -1,12 +1,14 @@
-"""F0 host-budget adapters, lease lifetime, and progress visibility."""
+"""F0 host-budget adapters and lease lifetime.
+
+Progress-visibility / parallel-runner / budget-cancellation tests split into
+``test_suite_parallel_progress.py`` at ~300 lines (mirrors this file's own
+docstring's three concerns).
+"""
 
 from __future__ import annotations
 
-import io
 import json
 import sys
-import threading
-import time
 from contextlib import contextmanager
 from pathlib import Path
 from types import SimpleNamespace
@@ -15,23 +17,13 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent.parent))
 
+import scripts.lib.iterate_timings_normalize as itn
 import scripts.tools.run_test_suite as mod
 import scripts.tools.suite_host_resources as host_mod
-from scripts.tools.suite_budget import SuiteCancelled
-from scripts.tools.run_test_suite import discover_units
 from scripts.tools.suite_host_resources import hardware_cpu_budget, lease_cpu_weight
 from scripts.tools.suite_units import SuiteConfig
 
 _REPO_ROOT = Path(__file__).resolve().parents[4]
-
-
-def _project(tmp_path: Path) -> Path:
-    plugin = tmp_path / "plugins" / "shipwright-alpha"
-    (plugin / "tests").mkdir(parents=True)
-    (plugin / "pyproject.toml").write_text("[project]\n", encoding="utf-8")
-    for directory in ("shared/tests", "integration-tests"):
-        (tmp_path / directory).mkdir(parents=True)
-    return tmp_path
 
 
 def test_every_host_request_is_capped_to_the_hardware_budget(monkeypatch):
@@ -101,7 +93,7 @@ def test_fingerprint_precedes_uv_and_cpu_covers_suite(monkeypatch, tmp_path):
     @contextmanager
     def _lease(kind, weight):
         events.append(("enter", kind))
-        yield SimpleNamespace(weight=weight)
+        yield SimpleNamespace(weight=weight, capacity=weight, waited_seconds=0.0)
         events.append(("exit", kind))
 
     config = SuiteConfig(xdist={"shared/tests": 2}, max_workers=3)
@@ -124,12 +116,44 @@ def test_fingerprint_precedes_uv_and_cpu_covers_suite(monkeypatch, tmp_path):
     assert events[6][1]["budget_total"] == 3 and not events[6][1]["preflight"]
 
 
+def test_run_suite_exception_still_records_an_incomplete_canonical_f0_active_span(
+        monkeypatch, tmp_path):
+    """External code review: a `run_suite()` that raises must not silently
+    lose the canonical_f0_active producer boundary — exactly the run where
+    attribution matters most. The exception must still propagate unchanged."""
+    run_id = "iterate-2026-08-04-iterate-timing-attribution"
+
+    @contextmanager
+    def _lease(*_args, **_kwargs):
+        yield SimpleNamespace(weight=1, capacity=1, waited_seconds=0.0)
+
+    monkeypatch.setattr(mod, "resolve_suite_config", lambda _root: SuiteConfig(max_workers=1))
+    monkeypatch.setattr(mod, "uv_warmup_lease", _lease)
+    monkeypatch.setattr(mod, "f0_cpu_lease", _lease)
+    monkeypatch.setattr(mod, "ensure_xdist_available", lambda *_args: None)
+    monkeypatch.setattr(mod, "warm_up", lambda *_args: None)
+    monkeypatch.setattr(mod, "source_fingerprint", lambda *_args: ("sha", None))
+
+    def _boom(*_a, **_k):
+        raise RuntimeError("suite blew up")
+    monkeypatch.setattr(mod, "run_suite", _boom)
+
+    with pytest.raises(RuntimeError, match="suite blew up"):
+        with mod._run_host_leased_suite(tmp_path, run_id):
+            pass
+
+    raw = itn.read_raw_events(tmp_path, run_id)
+    active_spans = [e for e in raw if e.get("name") == "canonical_f0_active"]
+    assert len(active_spans) == 1
+    assert active_spans[0]["outcome"] == "incomplete"
+
+
 def test_source_change_during_uv_warmup_stops_final_verdict(monkeypatch, tmp_path):
     state = {"fingerprint": "before"}
 
     @contextmanager
     def _lease(*_args, **_kwargs):
-        yield SimpleNamespace(weight=1)
+        yield SimpleNamespace(weight=1, capacity=1, waited_seconds=0.0)
 
     monkeypatch.setattr(mod, "resolve_suite_config", lambda _root: SuiteConfig(max_workers=1))
     monkeypatch.setattr(mod, "uv_warmup_lease", _lease)
@@ -171,161 +195,3 @@ def test_cpu_lease_remains_live_until_coverage_verdict(monkeypatch, tmp_path):
     monkeypatch.setattr(mod, "_gate_green_suite", _gate)
     assert mod._run_locked(tmp_path, "run-1") == 0
     assert events == ["lease-enter", "coverage-gate", "lease-exit"]
-
-
-def test_parallel_runner_emits_ascii_progress_heartbeat(tmp_path):
-    units, stream = discover_units(_project(tmp_path))[:2], io.StringIO()
-
-    def _slow(indexed):
-        time.sleep(.04)
-        return mod.UnitResult(indexed[1].id, mod.PASS, 0, .04)
-
-    results = mod._run_parallel(units, _slow, heartbeat_seconds=.01,
-                                run_id="run-München", stream=stream)
-    assert [result.unit_id for result in results] == [unit.id for unit in units]
-    output = stream.getvalue()
-    assert "run_id=run-M\\xfcnchen" in output and "completed=0/2" in output
-
-
-def test_unit_lifecycle_is_bounded_ascii_and_ordered(tmp_path, monkeypatch):
-    root, stream = _project(tmp_path), io.StringIO()
-
-    def _exec(unit, *_args, **_kwargs):
-        return 0, "pass", .01, True, False, False
-
-    monkeypatch.setattr(mod, "_exec", _exec)
-    result = mod.run_suite(root, SuiteConfig(max_workers=2), budget_total=2,
-                           preflight=False, run_id="run-München", stream=stream)
-    assert result.exit_code == 0
-    lines = [line for line in stream.getvalue().splitlines()
-             if line.startswith("F0 suite unit:")]
-    assert lines and all(line.isascii() and len(line) <= 1000 for line in lines)
-    for unit in discover_units(root):
-        own = [line for line in lines if f"unit={unit.id}" in line]
-        assert "event=queued" in own[0]
-        assert any("event=start" in line for line in own[1:])
-        assert "event=complete" in own[-1]
-
-
-def test_parallel_runner_ignores_a_closed_heartbeat_stream(tmp_path):
-    class _Closed:
-        def write(self, _value):
-            raise BrokenPipeError("channel closed")
-
-        def flush(self):
-            raise BrokenPipeError("channel closed")
-
-    unit = discover_units(_project(tmp_path))[0]
-
-    def _slow(indexed):
-        time.sleep(.03)
-        return mod.UnitResult(indexed[1].id, mod.PASS, 0, .03)
-
-    assert mod._run_parallel([unit], _slow, heartbeat_seconds=.01,
-                             run_id="run-closed", stream=_Closed())[0].outcome == mod.PASS
-
-
-def test_serial_retry_keeps_parent_heartbeat_visible(tmp_path, monkeypatch):
-    root = _project(tmp_path)
-    unit = discover_units(root)[0]
-    stream = io.StringIO()
-    monkeypatch.setattr(mod, "_run_parallel", lambda *_a, **_k: [
-        mod.UnitResult(unit.id, mod.TEST_FAILURE, 1, .01, "failed")])
-    monkeypatch.setattr(mod, "_clear_failed_attempt_coverage", lambda *_args: None)
-
-    def _slow_retry(*_args, **_kwargs):
-        time.sleep(.04)
-        return 0, "passed", .04, True, False, False
-
-    monkeypatch.setattr(mod, "_exec", _slow_retry)
-    result = mod.run_suite(root, SuiteConfig(max_workers=1), budget_total=1,
-                           preflight=False, heartbeat_seconds=.01,
-                           run_id="retry-run", stream=stream)
-    assert result.exit_code == 0
-    output = stream.getvalue()
-    assert "run_id=retry-run" in output and "phase=serial-retry" in output
-    assert f"unit={unit.id}" in output
-    assert "retry_kind=authoritative-serial" in output
-    assert "completed=0/3" in output
-    assert "initial_completed=1/3" in output
-    assert "completed=3/3" not in output
-
-
-def test_oversized_xdist_is_capped_for_initial_and_infra_retry(tmp_path, monkeypatch):
-    root = _project(tmp_path)
-    unit = discover_units(root)[0]
-    calls, stream = [], io.StringIO()
-
-    def _exec(current, _root, workers, *_args, **_kwargs):
-        calls.append((current.id, workers))
-        attempts = sum(item[0] == current.id for item in calls)
-        return ((2, "infra", .01, False, False, False) if attempts == 1
-                else (0, "pass", .01, True, False, False))
-
-    monkeypatch.setattr(mod, "_exec", _exec)
-    monkeypatch.setattr(host_mod.os, "cpu_count", lambda: 6)
-    result = mod.run_suite(root, SuiteConfig(xdist={unit.id: 100}, max_workers=100),
-                           budget_total=400, preflight=False, stream=stream)
-    assert result.exit_code == 0
-    assert [workers for unit_id, workers in calls if unit_id == unit.id] == [4, 4]
-    assert "retry_kind=identical-shape-infra" in stream.getvalue()
-
-
-def test_budget_never_oversubscribes_and_never_deadlocks():
-    budget = mod._Budget(8)
-    held = budget.acquire(8)
-    done = threading.Event()
-
-    def _waiter():
-        weight = budget.acquire(4)
-        done.set()
-        budget.release(weight)
-
-    thread = threading.Thread(target=_waiter, daemon=True)
-    thread.start()
-    assert not done.wait(.2)
-    budget.release(held)
-    assert done.wait(2)
-    thread.join(2)
-    assert mod._Budget(2).acquire(99) == 2
-
-
-def test_budget_cancellation_stops_a_queued_admission():
-    budget, cancel = mod._Budget(1), threading.Event()
-    held = budget.acquire(1)
-    outcome = []
-
-    def _waiter():
-        try:
-            budget.acquire(1, cancel_event=cancel)
-        except SuiteCancelled:
-            outcome.append("cancelled")
-
-    thread = threading.Thread(target=_waiter)
-    thread.start()
-    cancel.set()
-    thread.join(2)
-    budget.release(held)
-    assert outcome == ["cancelled"] and not thread.is_alive()
-
-
-def test_budget_checks_cancellation_before_admitting_available_capacity():
-    class _SecondCheckCancels:
-        calls = 0
-
-        def is_set(self):
-            self.calls += 1
-            return self.calls == 1
-
-    with pytest.raises(SuiteCancelled):
-        mod._Budget(1).acquire(1, cancel_event=_SecondCheckCancels())
-
-
-def test_parallel_exception_signals_cancel_and_re_raises():
-    cancel = threading.Event()
-    with pytest.raises(RuntimeError, match="worker failed"):
-        mod._run_parallel(
-            ["u"], lambda _item: (_ for _ in ()).throw(RuntimeError("worker failed")),
-            heartbeat_seconds=.01, run_id="r", stream=io.StringIO(),
-            cancel_event=cancel)
-    assert cancel.is_set()

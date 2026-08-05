@@ -1,0 +1,11 @@
+{
+  "run_id": "iterate-2026-08-04-iterate-timing-attribution",
+  "date": "2026-08-05T03:19:54.663343Z",
+  "event_at": "2026-08-05T01:48:28.898239+00:00",
+  "type": "feature",
+  "complexity": "medium",
+  "branch": "iterate/iterate-timing-attribution",
+  "spec": ".shipwright/planning/iterate/iterate-2026-08-04-iterate-timing-attribution.md",
+  "tests_passed": true,
+  "adr": "iterate-2026-08-04-iterate-timing-attribution"
+}

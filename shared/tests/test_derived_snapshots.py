@@ -70,13 +70,14 @@ def _write(root: Path, rel: str, text: str) -> None:
 # --- the registry -----------------------------------------------------------
 
 def test_registry_covers_every_derived_md_plus_the_two_json_snapshots() -> None:
-    """The eleven paths, derived from the churn registry rather than hand-listed
+    """The twelve paths, derived from the churn registry rather than hand-listed
     so a newly added derived MD is picked up here instead of drifting."""
     assert DERIVED_MDS < DERIVED_SNAPSHOTS
     assert TEST_RESULTS in DERIVED_SNAPSHOTS
     assert ".shipwright/compliance/ci-security.json" in DERIVED_SNAPSHOTS
     assert ".shipwright/compliance/test-traceability.json" in DERIVED_SNAPSHOTS
-    assert len(DERIVED_SNAPSHOTS) == 11
+    assert ".shipwright/compliance/performance/iterate-throughput.md" in DERIVED_SNAPSHOTS
+    assert len(DERIVED_SNAPSHOTS) == 12
 
 
 def test_registry_excludes_the_append_logs_and_per_run_paths() -> None:

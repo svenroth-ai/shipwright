@@ -67,9 +67,14 @@ def test_refresh_set_is_exactly_the_compliance_directory():
     ``REFRESH_SET`` is written out as a literal so widening it is a deliberate
     edit, but a literal can fall behind. This pins the two definitions together
     without letting the prefix rule BE the definition — a new file dropped into
-    the compliance directory fails this test instead of joining the commit.
+    the compliance directory fails this test instead of joining the commit,
+    UNLESS it is explicitly named in ``EXCLUDED`` (a second producer sharing
+    the directory, e.g. the throughput report — a decision, not an oversight).
     """
-    by_directory = {rel for rel in CLASSIFICATION if rel.startswith(_COMPLIANCE_DIR)}
+    by_directory = {
+        rel for rel in CLASSIFICATION
+        if rel.startswith(_COMPLIANCE_DIR) and rel not in EXCLUDED
+    }
     assert REFRESH_SET == by_directory
 
 

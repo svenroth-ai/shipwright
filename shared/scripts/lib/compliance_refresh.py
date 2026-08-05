@@ -36,6 +36,7 @@ from lib.churn_merge import (
     COMPLIANCE_MDS,
     TEST_RESULTS,
     TEST_TRACEABILITY,
+    THROUGHPUT_REPORT,
 )
 from lib.derived_snapshots import DERIVED_SNAPSHOTS
 
@@ -96,6 +97,7 @@ CLASSIFICATION: dict[str, str] = {
     ".shipwright/agent_docs/build_dashboard.md": SESSION_SCOPED,
     ".shipwright/agent_docs/session_handoff.md": SESSION_SCOPED,
     TEST_RESULTS: RUN_WRITTEN,
+    THROUGHPUT_REPORT: DERIVES_FROM_TREE,
 }
 
 #: **The set, pinned as a literal.** The compliance directory: five markdown
@@ -122,10 +124,9 @@ TREE_DERIVED: frozenset[str] = frozenset(
     rel for rel in REFRESH_SET if CLASSIFICATION.get(rel) == DERIVES_FROM_TREE
 )
 
-#: Every derived path NOT in :data:`REFRESH_SET`, each with the reason it is out.
-#: A reason per path, not a class-level rule, because two of these are excluded for
-#: reasons their class does not explain — and an exclusion nobody wrote down reads
-#: as an oversight the next time somebody audits the set.
+#: Every derived path NOT in :data:`REFRESH_SET`, each with the reason it is out —
+#: a reason per path, not a class-level rule, since an exclusion nobody wrote down
+#: reads as an oversight the next time somebody audits the set.
 EXCLUDED: dict[str, str] = {
     ".shipwright/agent_docs/build_dashboard.md":
         "session_scoped — embeds one session's run id; the default branch has no run, "
@@ -141,6 +142,7 @@ EXCLUDED: dict[str, str] = {
     TEST_RESULTS:
         "run_written — a run writes it and nothing can recompute it (trg-ad29a709, "
         "PR #502). Regenerating it would destroy the F5 ledger, not refresh a view",
+    THROUGHPUT_REPORT: "tree-derived, but by its OWN producer — same scope pin as triage_inbox.md",
 }
 
 #: What the producer is asked to regenerate. ``regenerate_tracked_snapshots``

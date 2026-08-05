@@ -139,9 +139,10 @@ artifact has exactly one documented resolution strategy:
 | `.shipwright/agent_docs/session_handoff.md` | **regenerate** |
 | `.shipwright/agent_docs/triage_inbox.md` | **regenerate** |
 | `.shipwright/planning/adr/INDEX.md` | **regenerate** (re-derived from the MERGED ADR folder listing by `lib.adr_index.rebuild_adr_index`, so a row added on each side survives). The one entry here that the BRANCH legitimately carries — iterate F3 refreshes it so its row ships in the same commit as its ADR (iterate-2026-07-31-adr-index-producer), which is exactly what created this conflict class (trg-1acb5304). Re-deriving is correct by construction, not a heuristic: the index is a pure function of the folder, and after the merge the folder holds both sides' ADR files. Deliberately **not** a `DERIVED_SNAPSHOTS` member (that register is for views that are *wrong* when derived on a branch) and **not** `merge=union` (union would concatenate two sorted lists into an unsorted one with a duplicated header). **Scope note:** unlike every other `regenerate` row this one is NOT produced by `regenerate_tracked_snapshots` — it is refreshed by `integrate_regenerate.regenerate_after_merge`, after `restore_derived_to_head`, so the integration path covers it but the manual `resolve_churn_conflicts.py --mode regenerate` escape hatch does not. Refresh that case with `uv run {shared_root}/scripts/tools/rebuild_adr_index.py --project-root .`. |
+| `.shipwright/compliance/performance/iterate-throughput.md` | **theirs** (cleared like the other regenerated snapshots; no dedicated branch is wired in `regenerate_tracked_snapshots` yet, so a conflict leaves it stale until the next iterate's own F5b run refreshes it — see `iterate_throughput_report.py`) |
 | `shipwright_test_results.json` | **ours** (PR-owned snapshot) |
 
-> **Since iterate-2026-07-27-derived-snapshots-off-branch the eleven
+> **Since iterate-2026-07-27-derived-snapshots-off-branch the twelve
 > `DERIVED_SNAPSHOTS` rows above describe a path an iterate no longer takes.**
 > (The `.shipwright/planning/adr/INDEX.md` row is the exception and is *not* one
 > of them — an iterate branch deliberately DOES carry the index, which is why it
@@ -3104,6 +3105,101 @@ partial-mark runs are fine and the WebUI reads the field only when present. This
 is the iterate counterpart of the pipeline's paired
 `phase_started`/`phase_completed` (B1): the framework produces the timing, the
 WebUI Iterate-Rail renders it. Origin: iterate-2026-07-11-iterate-phase-timing.
+
+**Iterate timings — hierarchical lifecycle spans (measurement only).** A
+separate, richer sibling of the per-phase durations above — `phase_timings`
+is 5 flat groups; this is a **tree** of 7 top-level groups
+(`discovery_diagnosis planning implementation verification review
+finalization delivery`) plus 14 nested spans, spanning the full lifecycle
+through finalization/review/CI/delivery, not just Build. Catalog + SSoT:
+`shared/scripts/lib/iterate_timings.py::SPAN_PARENTS`. Full producer/agent
+split and per-span table: `plugins/shipwright-iterate/skills/iterate/references/iterate-timings.md`.
+
+- **Producer boundaries (self-instrumented, no agent action).**
+  `shared/scripts/checks/check_iterate_isolation.py` (F0 leak-guard, `--stage
+  f0` only) records `pre_f0_validation`. `shared/scripts/tools/run_test_suite.py`
+  records `f0_queue` (persists `host_resource_lease.LeaseGrant.waited_seconds`,
+  previously computed and discarded) and `canonical_f0_active`
+  (`SuiteResult.duration`). `shared/scripts/tools/external_review.py` records
+  `external_review` when invoked with `--run-id` (additive; the flag is
+  optional so every existing non-iterate caller is unaffected).
+  `shared/scripts/tools/deliver_pr.py::deliver()` records `delivery_wait`
+  (the whole call) and `ci_wait` (the `watch()`/`self_merge()` sub-call) when
+  `record_timing=True` — **opt-in, defaulting False**: the fake-host test
+  suite calls `deliver()` with a non-existent `project_root` (`Path("/tmp/wt")`),
+  and unconditional instrumentation would have written real sidecar files to
+  that path on every test run. Only `deliver_pr.main()` (the real CLI
+  invocation) sets `record_timing=True`.
+- **Agent-emitted marks (no process owns the boundary).** The top-level group
+  boundaries, `self_review`/`spec_review`/`code_review`/`doubt_review`
+  (Task-tool subagent spawns — not a `uv run` subprocess this repo's scripts
+  can hook into), `reviewer_wait`, `remediation`, `focused_tests`, and
+  `post_ci_remediation` stay agent-emitted via
+  `shared/scripts/tools/iterate_timing.py start|end` — same best-effort
+  `|| true` contract as `iterate_phase_timing.py mark`. Their absence is
+  reported as `unattributed` with a reason at report time, never silently
+  omitted or shown as zero.
+- **Sidecar:** `.shipwright/agent_docs/iterates/<run_id>.iterate_timings.jsonl`
+  — gitignored, resumable (append-only), sibling of `*.phase_timings.jsonl`.
+  Two line shapes: agent `start`/`end` pairs (correlated across separate CLI
+  invocations by `(name, parent)` in arrival order) and producer `span`
+  records (one atomic line per real process boundary).
+- **Durable field:** `finalize_iterate.py` (F5b) calls
+  `lib.iterate_timings_normalize.fold_into_event` directly beside the
+  `phase_timings` fold, setting `work_completed.iterate_timings` — a flat
+  list of `{name, parent, source, outcome, start_utc, end_utc, duration_ms,
+  exclusive_ms, attempt, extra}`. Validation is **per-entry**, not
+  all-or-nothing (unlike `phase_timings`' `normalize_phase_timings`, which
+  rejects the whole block on one bad entry) — a malformed span (unknown
+  name, invalid parent, negative duration, impossible ordering vs. its
+  claimed parent, an unbounded/unknown `extra` key) is dropped with a reason
+  logged to stderr, and every other valid span in the run still persists.
+  This is the deliberate fix for the failure mode that produced
+  `phase_timings`' near-empty history: one skipped or malformed mark used to
+  zero an entire run's data.
+- **Failure behavior:** additive + best-effort throughout — a missing
+  sidecar, a fold exception, or a `record_timing`-disabled `deliver()` call
+  leaves `work_completed.iterate_timings` absent, never present-but-zero.
+  Existing `work_completed` events without the field remain valid. No verdict,
+  gate, retry decision, review cascade, CI requirement, or delivery outcome
+  is ever altered by this instrumentation.
+- **Known scope boundary:** F6 stages the F5b-recorded event and F11 pushes
+  that commit before CI/delivery wait time is even knowable. This reaches
+  further than the 3 nested spans: the entire top-level `delivery` group
+  (self-recorded only from the real F11 CLI invocation) and `finalization`'s
+  own duration (its `end` mark sits at F11 entry) are BOTH structurally
+  unreachable at fold time too, in every run (doubt review traced this
+  precisely against the actual F5b/F6/F11 ordering). `ci_wait`/`delivery_wait`/
+  `post_ci_remediation` reach the sidecar (useful for diagnosing a stuck F11
+  in the current run) but not `work_completed.iterate_timings` or the rolling
+  report. `lib.iterate_timings.FOLD_TIME_CAPTURABLE_SPANS` names the 5
+  top-level groups that genuinely CAN close by fold time
+  (`discovery_diagnosis`/`planning`/`implementation`/`verification`/`review`);
+  coverage/`degraded` and the report's "Total wall-clock" are measured
+  against that 5, not all 7, so a cleanly-closed pre-fold run reads as
+  complete rather than permanently DEGRADED — measuring against all 7 would
+  have pinned every real run to DEGRADED with zero discriminating power.
+  Embedding the delivery-phase tail durably would require either racing an
+  async host auto-merge with a follow-up commit (unsafe) or a new post-merge
+  write path (out of scope: no new CI jobs, no policy decisions); named
+  explicitly rather than silently shipped as solved. Durable delivery-phase
+  attribution is the natural next-card scope once the operator has reviewed
+  a few instrumented runs.
+- **Report consumer:** `shared/scripts/tools/iterate_throughput_report.py`
+  (called best-effort, in-process, from `finalize_iterate.py`'s F5b step)
+  reads `shipwright_events.jsonl` — no second metrics store — and writes
+  `.shipwright/compliance/performance/iterate-throughput.md`: latest-run
+  breakdown (inclusive/exclusive/% per top-level phase, nested spans),
+  rolling median/P90 over the last 10 instrumented runs, and per-run coverage
+  (`N/7` top-level groups captured) so a degraded run reads as degraded, not
+  fast. Deterministic from the event log alone; never loaded as agent
+  startup context (same rule as `events-context-report.md`).
+- **Retention:** the sidecar has no retention policy of its own (one file
+  per run, gitignored, harmless if it accumulates locally). The report's
+  rolling window is the last 10 instrumented `work_completed` events, the
+  same window as the `event_context_metrics` precedent.
+
+Origin: iterate-2026-08-04-iterate-timing-attribution.
 
 ### Scripts Supporting Self-Healing
 

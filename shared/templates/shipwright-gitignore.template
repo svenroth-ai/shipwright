@@ -64,6 +64,13 @@
 # Transient run-scoped state (durable copy is the tracked event field), sibling
 # of *.plan.json. iterate-2026-07-11-iterate-phase-timing.
 /.shipwright/agent_docs/iterates/*.phase_timings.jsonl
+# Hierarchical iterate-timing spans (<run_id>.iterate_timings.jsonl) — the
+# richer sibling sidecar folded into work_completed.iterate_timings at F5b.
+# Same transient-run-scoped-state rationale as *.phase_timings.jsonl above.
+/.shipwright/agent_docs/iterates/*.iterate_timings.jsonl
+# The FileLock sidecar the writer above takes while appending — never
+# contains data, must never be tracked.
+/.shipwright/agent_docs/iterates/*.iterate_timings.jsonl.lock
 /.shipwright/compliance/skill-compliance/
 # Detective-audit report (run_audit.py / /shipwright-compliance) — transient,
 # regenerated each run, not in audit_staleness.DOC_REGISTRY. The .json was

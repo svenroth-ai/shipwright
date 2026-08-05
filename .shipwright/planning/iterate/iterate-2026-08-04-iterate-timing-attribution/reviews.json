@@ -1,0 +1,244 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-08-04-iterate-timing-attribution",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-04T22:35:30.156666+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 9,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "approach / risk",
+          "file": null,
+          "line": null,
+          "finding": "The timing hierarchy depends on the agent emitting top-level span markers (e.g., `start delivery`) before nested producer spans begin. If the agent fails to emit a marker (due to a bug or coordination gap), the most‑recently‑opened tiebreak can misattribute those nested spans, degrading data quality. The plan documents this as a contract but offers no automatic fallback.",
+          "suggestion": "Add a lightweight report‑side check (e.g., an alert when unattributed time for a group exceeds a threshold) so operators can detect a broken contract quickly. This is an operational improvement, not a correctness fix.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge‑case",
+          "file": null,
+          "line": null,
+          "finding": "The sidecar filename is built from the `run_id`. The plan validates that the ID is canonical (test 18), but the exact character set permitted for a safe filename is not specified, leaving a small risk of filesystem‑unsafe characters if validation ever weakens.",
+          "suggestion": "Document that the canonical‑run‑ID pattern must be `^[a-zA-Z0-9_-]+$` and ensure the validation explicitly rejects any character that could break filenames on Windows or Unix.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "security",
+          "file": null,
+          "line": null,
+          "finding": "The generated throughput report is a static Markdown file on disk. Although it contains no credentials, the timing data (durations, attempt counts) could be considered internal operational information in some environments. The file is gitignored but world‑readable by default.",
+          "suggestion": "If the repository is used in a highly‑sensitive context, consider locking down the file’s permissions or placing it in a directory with restricted access. The risk is minimal for typical open‑source or development use.  Overall assessment: The plan is thorough—legitimate edge cases are either covered by tests or explicitly declared out of scope with clear documentation. The approach is additive and guarded, posing negligible risk to existing functionality. The single remaining item is the agent‑contract dependency, which is well understood and acceptable given the measurement‑only goal.  SHIPWRIGHT_VERDICT: approve",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "The stated goal and acceptance criteria promise complete Iterate wall-clock and per-run/rolling throughput, but the durable event and rolling report intentionally omit `ci_wait`, `delivery_wait`, and `post_ci_remediation`. Those intervals are often a material portion of the lifecycle, so the report is not a complete throughput measure even though the sidecar captures some of them during the active run.",
+          "suggestion": "Either add a safe durable post-delivery persistence mechanism in a follow-up and explicitly defer “complete lifecycle throughput” until then, or revise this change’s goal, acceptance criteria, report headings, and documentation to say that durable throughput ends at F5b and excludes delivery-phase elapsed time. The report should prominently label this as a coverage boundary, not merely degraded attribution.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "Computing `unattributed` by summing exclusive time across every span is still not guaranteed to be wall-clock-safe. Interval-union logic for a parent prevents nested child double counting, but exclusive intervals from separate or overlapping top-level branches (or overlapping sibling attempts) can overlap. Summing those exclusive durations can exceed the run envelope and yield negative or misleading unattributed time.",
+          "suggestion": "Define coverage/unattributed time as a union of all valid attributed intervals clipped to a clearly defined run envelope. Keep summed exclusive durations only as a separate “work by span” metric if useful, and test overlapping top-level spans and overlapping sibling/attempt spans to ensure coverage never exceeds wall-clock duration.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "deliver()` instrumentation defaults to `record_timing=False` to preserve existing behavior, but the approach does not identify the production Iterate caller that passes `True`, nor test that the production delivery invocation does so. The direct `deliver()` opt-in test proves the implementation can record timing, not that normal Iterate runs will record it. The same concern applies to propagation of canonical `run_id` and project root to producer processes such as `external_review.py`.",
+          "suggestion": "Name and modify each actual orchestration call site to pass timing configuration explicitly, preserving `False` for standalone/test callers. Add integration-level tests for command construction or orchestration wiring that verify `run_id`, project root, and opt-in timing reach F0, external review, test-suite execution, and delivery producers in a normal Iterate invocation.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "Parent resolution relies on containment plus deterministic heuristics (“tightest-fitting” and “most-recently-opened”). This remains ambiguous when repeated spans of the same name/attempt overlap, when retries are concurrent, or when an agent resumes with stale open marks. A deterministic but guessed parent produces plausible-looking incorrect attribution, which is worse than surfacing unavailable attribution in a measurement system.",
+          "suggestion": "Persist a generated `span_id` for each start/span and a `parent_span_id` where the producer or agent knows it. Use name/time containment only as a compatibility fallback; when multiple candidates remain, mark the entry/span `unavailable` or `unattributed` with an ambiguity reason instead of silently selecting one. Add a test for overlapping same-name retry spans and stale resumed starts.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "UTC timestamps from separate processes are subject to wall-clock corrections and host clock skew. An agent `start`/`end` pair across processes cannot use a shared monotonic clock, so NTP adjustments can create negative durations or make legitimate child containment look impossible. Per-entry rejection is correct for malformed data, but without a defined degradation behavior it can unnecessarily erase valid portions of a run.",
+          "suggestion": "Retain monotonic duration only for single-process spans as designed, but explicitly classify wall-clock ordering failures from cross-process marks as `unavailable`/`unattributed` with a clock-ordering reason rather than treating them as ordinary malformed input. Test a clock-regression and a cross-host-skew case, ensuring unaffected spans still fold and the report explains reduced coverage.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "security",
+          "file": null,
+          "line": null,
+          "finding": "The closed `extra` allowlist reduces data-exposure risk, but the Markdown report is rendered from durable event data, including potentially pre-existing or manually edited JSONL events. If any allowed string-valued fields such as provider, reason, or run metadata are rendered without escaping and length limits, a crafted event can inject Markdown links/content or make the report misleading.",
+          "suggestion": "Enforce enum/value and byte-length constraints at both normalization and event-read boundaries, and escape all dynamic Markdown cells/labels during report rendering. Include a report test using Markdown-special characters in an otherwise valid event.  Overall, the producer-side, additive sidecar design and per-entry validation are sound, and the plan demonstrates strong attention to regression safety. It needs revision to prevent mathematically incorrect wall-clock coverage and to align the “complete lifecycle throughput” claim with the deliberately non-durable delivery phase. SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter(deepseek+openai)",
+      "completed_at": "2026-08-04T22:34:39.103078+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[deepseek] **Findings**\n- **Category:** approach / risk  \n  **Severity:** medium  \n  **Finding:** The timing hierarchy depends on the agent emitting top-level span markers (e.g., `start delivery`) before nested producer spans begin. If the agent fails to emit a marker (due to a bug or coordination gap), the most‑recently‑opened tiebreak can misattribute those nested spans, degrading data quality. The plan documents this as a contract but offers no automatic fallback.  \n  **Suggestion:** Add a lightweight report‑side check (e.g., an alert when unattributed time for a group exceeds a threshold) so operators can detect a broken contract quickly. This is an operational improvement, not a correctness fix.\n\n- **Category:** edge‑case  \n  **Severity:** low  \n  **Finding:** The sidecar filename is built from the `run_id`. The plan validates that the ID is canonical (test 18), but the exact character set permitted for a safe filename is not specified, leaving a small risk of filesystem‑unsafe characters if validation ever weakens.  \n  **Suggestion:** Document that the canonical‑run‑ID pattern must be `^[a-zA-Z0-9_-]+$` and ensure the validation explicitly rejects any character that could break filenames on Windows or Unix.\n\n- **Category:** security  \n  **Severity:** low  \n  **Finding:** The generated throughput report is a static Markdown file on disk. Although it contains no credentials, the timing data (durations, attempt counts) could be considered internal operational information in some environments. The file is gitignored but world‑readable by default.  \n  **Suggestion:** If the repository is used in a highly‑sensitive context, consider locking down the file’s permissions or placing it in a directory with restricted access. The risk is minimal for typical open‑source or development use.\n\n**Overall assessment:** The plan is thorough—legitimate edge cases are either covered by tests or explicitly declared out of scope with clear documentation. The approach is additive a […truncated]\n\n[openai] 1. **Category:** approach  \n   **Severity:** high  \n   **Finding:** The stated goal and acceptance criteria promise complete Iterate wall-clock and per-run/rolling throughput, but the durable event and rolling report intentionally omit `ci_wait`, `delivery_wait`, and `post_ci_remediation`. Those intervals are often a material portion of the lifecycle, so the report is not a complete throughput measure even though the sidecar captures some of them during the active run.  \n   **Suggestion:** Either add a safe durable post-delivery persistence mechanism in a follow-up and explicitly defer “complete lifecycle throughput” until then, or revise this change’s goal, acceptance criteria, report headings, and documentation to say that durable throughput ends at F5b and excludes delivery-phase elapsed time. The report should prominently label this as a coverage boundary, not merely degraded attribution.\n\n2. **Category:** approach  \n   **Severity:** high  \n   **Finding:** Computing `unattributed` by summing exclusive time across every span is still not guaranteed to be wall-clock-safe. Interval-union logic for a parent prevents nested child double counting, but exclusive intervals from separate or overlapping top-level branches (or overlapping sibling attempts) can overlap. Summing those exclusive durations can exceed the run envelope and yield negative or misleading unattributed time.  \n   **Suggestion:** Define coverage/unattributed time as a union of all valid attributed intervals clipped to a clearly defined run envelope. Keep summed exclusive durations only as a separate “work by span” metric if useful, and test overlapping top-level spans and overlapping sibling/attempt spans to ensure coverage never exceeds wall-clock duration.\n\n3. **Category:** dependency  \n   **Severity:** medium  \n   **Finding:** `deliver()` instrumentation defaults to `record_timing=False` to preserve existing behavior, but the approach does not identify the production Iterate caller tha […truncated]",
+      "verdicts": {
+        "openai": "revise",
+        "deepseek": "approve"
+      }
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 2,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "correctness",
+          "file": "shared/scripts/tools/deliver_pr.py",
+          "line": 101,
+          "finding": "watch was wrapped unconditionally before the ladder chose a rung, so self_merge()'s internal retry loop (rung 3) each recorded its own ci_wait AND the outer self-merge call recorded another -- up to 4 overlapping, mislabeled ci_wait spans for one self-merged delivery.",
+          "suggestion": "Only wrap watch at the rung-2 call site; pass the raw watch into self_merge().",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "shared/scripts/lib/iterate_throughput_stats.py",
+          "line": 52,
+          "finding": "top_level dict comprehension keyed by name silently kept whichever of two same-named top-level spans sorted last, which could pick a shorter/incomplete agent mark over the fuller producer span, skewing total_ms/unattributed_ms for the whole run.",
+          "suggestion": "Select the best representative per name: producer > derived > agent, then bounded > open-ended, then longest duration.",
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-08-04T23:09:27.981050+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 3,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "boundary & contract / hidden coupling",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: the durable work_completed.iterate_timings (and its derived report) measure the complete Iterate wall-clock across 7 top-level groups, and degraded distinguishes a well-instrumented run from a partial one — F5b folds and locks the durable field strictly before F6/commit and F11/push; delivery only self-records from the real F11 CLI invocation (after F5b), and finalization's own end mark sits at F11 entry too -- so both are structurally unreachable at fold time in every run, capping coverage at 6/7 forever and pinning degraded=True with zero discriminating power.",
+          "suggestion": "measure coverage/degraded against the subset genuinely capturable by fold time, and document the fuller scope of the gap (not just the 3 nested delivery children).",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "high",
+          "category": "boundary & contract (adversarial/malformed timestamp input)",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: an interrupted/malformed span persists as incomplete, never a fabricated zero duration — agent start/end pairs are wall-clock-only across separate CLI invocations; a clock step-back between marks (NTP correction, suspend/resume) makes end_dt < start_dt, and the unconditional max(0, ...) clamp silently produced duration_ms=0 with outcome=completed -- indistinguishable from a genuinely instantaneous span.",
+          "suggestion": "detect end_dt < start_dt and classify that entry unavailable with no duration instead of clamping to zero.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "boundary & contract",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: real producer boundaries are stamped by the owning process itself -- a producer span's timestamps genuinely bracket the real boundary it claims to measure — the f0_queue warmup span was recorded AFTER ensure_xdist_available/warm_up already ran inside the lease's with-block, so its reconstructed start/end interval was shifted later than the real queueing window by however long that work took.",
+          "suggestion": "capture the span at lease-grant time, before other work runs inside the same block.",
+          "source": "doubt-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-08-04T23:35:20.765301+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 3,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "spec",
+          "file": "shared/scripts/tools/external_review.py — diff shows `_KNOWN_PLACEHOLDERS` line corrupted with full spec text as a string literal",
+          "line": null,
+          "finding": "The diff hunk appears to insert the entire iterate spec into `_KNOWN_PLACEHOLDERS`, which would cause a syntax error if committed. The specification’s Round‑7 log says this was a false positive in a prior external review and that the actual file is unchanged. If the diff as represented is the real code change, it is a blocking correctness bug.",
+          "suggestion": "Verify the actual staged file does not contain this corruption before merging. If it is an artifact of the diff presentation, it can be ignored.  (No other concrete defects found.)  SHIPWRIGHT_VERDICT: approve",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "regression",
+          "file": "shared/scripts/tools/external_review.py",
+          "line": 99,
+          "finding": "_KNOWN_PLACEHOLDERS` has been replaced with the beginning of the entire Iterate specification inside a normal quoted string. The string starts at `\"# Iterate Spec: ...` and immediately crosses a newline, making `external_review.py` syntactically invalid (`unterminated string literal`). Any invocation or import of the external-review tool will fail before its review behavior can run.",
+          "suggestion": "Restore the original valid placeholder tuple, e.g. `_KNOWN_PLACEHOLDERS = (\"{PLAN}\", \"{DIFF}\", \"{SPEC}\")`, and remove all accidentally injected specification content from this Python file.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "test",
+          "file": "shared/scripts/tools/external_review.py",
+          "line": 99,
+          "finding": "The stated verification command and added tests do not compile or exercise the changed `external_review.py` CLI path. Consequently, the test suite can pass while this producer is completely unusable due to the syntax error above, despite external review being an explicitly required producer boundary.",
+          "suggestion": "Add at least a `py_compile`/import test and a CLI-level timing test for `external_review.py --run-id`; include it in the required verification command.  This change cannot ship as-is because it breaks the external-review producer at Python parse time, preventing a required lifecycle boundary from functioning. Fix the accidental content injection and add direct coverage for that executable path. SHIPWRIGHT_VERDICT: reject",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter(deepseek+openai)",
+      "completed_at": "2026-08-05T01:28:20.528017+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[deepseek] - Category: spec\n- Severity: high\n- File: shared/scripts/tools/external_review.py — diff shows `_KNOWN_PLACEHOLDERS` line corrupted with full spec text as a string literal\n- Finding: The diff hunk appears to insert the entire iterate spec into `_KNOWN_PLACEHOLDERS`, which would cause a syntax error if committed. The specification’s Round‑7 log says this was a false positive in a prior external review and that the actual file is unchanged. If the diff as represented is the real code change, it is a blocking correctness bug.\n- Suggestion: Verify the actual staged file does not contain this corruption before merging. If it is an artifact of the diff presentation, it can be ignored.\n\n(No other concrete defects found.)\n\nSHIPWRIGHT_VERDICT: approve\n\n[openai] - Category: regression\n- Severity: high\n- File: `shared/scripts/tools/external_review.py:99`\n- Finding: `_KNOWN_PLACEHOLDERS` has been replaced with the beginning of the entire Iterate specification inside a normal quoted string. The string starts at `\"# Iterate Spec: ...` and immediately crosses a newline, making `external_review.py` syntactically invalid (`unterminated string literal`). Any invocation or import of the external-review tool will fail before its review behavior can run.\n- Suggestion: Restore the original valid placeholder tuple, e.g. `_KNOWN_PLACEHOLDERS = (\"{PLAN}\", \"{DIFF}\", \"{SPEC}\")`, and remove all accidentally injected specification content from this Python file.\n\n- Category: test\n- Severity: medium\n- File: `shared/scripts/tools/external_review.py:99`\n- Finding: The stated verification command and added tests do not compile or exercise the changed `external_review.py` CLI path. Consequently, the test suite can pass while this producer is completely unusable due to the syntax error above, despite external review being an explicitly required producer boundary.\n- Suggestion: Add at least a `py_compile`/import test and a CLI-level timing test for `external_review.py --run-id`; include it in the required verification command.\n\nThis change cannot ship as-is because it breaks the external-review producer at Python parse time, preventing a required lifecycle boundary from functioning. Fix the accidental content injection and add direct coverage for that executable path.  \nSHIPWRIGHT_VERDICT: reject",
+      "verdicts": {
+        "openai": "reject",
+        "deepseek": "approve"
+      },
+      "contradiction_resolution": "Round 8 split (openai=reject, deepseek=approve) rests on openai's sole HIGH finding, which is a confirmed false positive verified two independent ways: (1) ast.parse() on shared/scripts/tools/external_review.py succeeds cleanly, (2) the actual diff hunk for that file (git diff, lines ~2702-2815) shows _KNOWN_PLACEHOLDERS = (\"{PLAN}\", \"{DIFF}\", \"{SPEC}\") as unchanged context with no spec text anywhere. Identical claim recurred verbatim in round 7 and round 8 across separate reviewer calls; deepseek's own round-8 text explicitly flagged uncertainty and deferred to direct verification. Treated as resolved-approve: rounds 5-7 fixed 9 real findings (coverage counting, numeric extra bounds, duration/interval consistency, run_suite exception handling, unattributed-with-reason rendering, checks_observed bool handling, completed-outcome invariant, genuine subprocess resume test), full shared/tests (7848 passed) and scripts/tools/tests (488 passed) regression green, ruff clean."
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-04T22:53:19.618569+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    }
+  }
+}

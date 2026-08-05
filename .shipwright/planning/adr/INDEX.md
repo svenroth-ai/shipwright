@@ -49,4 +49,6 @@ _Regenerate:_ `uv run {shared_root}/scripts/tools/rebuild_adr_index.py --project
 - [ADR-120 — The coverage gates ask the diff, not the recorded complexity](120-coverage-gates-ask-the-diff.md)
 - [ADR-120 — The plugin-cache check reads the index, not the disk](120-the-cache-check-reads-the-index-not-the-disk.md)
 - [ADR-121 — Bloat exception — the triage park lifecycle raises eleven guarded ceilings](121-bloat-triage-defer-lifecycle.md)
+- [ADR-122 — Bloat exception — `shared/scripts/tools/deliver_pr.py` raised to 317-LOC](122-bloat-deliver-pr-timing-instrumentation.md)
+- [ADR-123 — Bloat exception — `shared/scripts/tools/run_test_suite.py` raised to 538-LOC](123-bloat-run-test-suite-timing-instrumentation.md)
 - [Archive — Agent-Doc Update Backlog (verbatim)](_archive-agent-doc-updates.md)

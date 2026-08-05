@@ -342,6 +342,7 @@ Python 3.11+ with uv as package manager. All scripts are invoked via uv run. Hoo
 - (2026-08-01) iterate/test — READ the diff-cover log before theorising about it: a change re-vendoring 12 byte-identical copies looked like the copies tanked the ratio (92% of measured changed lines), and I edited the repo-wide coverage `omit` to exclude them — but they are never imported, so they were absent from `coverage.xml` and never counted. The real cause was the canonical file at 56%, because its suites shell out and a subprocess measures 0%. → iterate-2026-08-01-cache-heal-per-plugin
 - (2026-08-03) iterate/test — on Windows, a Codex tool process may omit Git Bash from PATH even when Git is installed; verify `bash` before F0 shell-hook tests and add Git's `bin` only to that process environment. → iterate-2026-08-03-f0-host-resource-lease
 - (2026-08-04) iterate/test — process-order tests must synchronize on acquisition/release state, never infer overlap or FIFO from sub-second launch timing; prove the replacement by planting each ordering regression and observing RED. → iterate-2026-08-04-f0-fleet-throughput
+- (2026-08-05) iterate/F5 — an "untestable" ledger row's `reason_code` must come from `UNTESTABLE_REASON_CODES`'s closed vocabulary; an invented code (however well-argued in prose) fails F11 closed. If nothing in the set fits, that is a signal to write the real test, not to widen the vocabulary. → iterate-2026-08-04-iterate-timing-attribution
 
 ## Contributing
 

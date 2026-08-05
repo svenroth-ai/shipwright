@@ -44,17 +44,19 @@ from lib.churn_merge import (
     DERIVED_MDS,
     TEST_RESULTS,
     TEST_TRACEABILITY,
+    THROUGHPUT_REPORT,
     norm,
 )
 
 __all__ = ["DERIVED_SNAPSHOTS", "RESTORABLE_SNAPSHOTS", "restore_derived_to_head"]
 
-#: The eleven paths. Derived from the churn registry so a new derived MD is picked
+#: The twelve paths. Derived from the churn registry so a new derived MD is picked
 #: up here automatically instead of drifting into a second hand-maintained list.
 DERIVED_SNAPSHOTS: frozenset[str] = DERIVED_MDS | {
     CI_SECURITY_SUMMARY,
     TEST_TRACEABILITY,
     TEST_RESULTS,
+    THROUGHPUT_REPORT,
 }
 
 #: The subset :func:`restore_derived_to_head` may reset — everything a producer can

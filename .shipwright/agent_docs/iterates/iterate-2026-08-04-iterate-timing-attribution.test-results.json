@@ -1,0 +1,367 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-08-04-iterate-timing-attribution",
+    "date": "2026-08-05",
+    "unit": {
+      "status": "pass",
+      "passed": 8804,
+      "failed": 0,
+      "note": "F0 (uv run run_test_suite.py, 18 discovered units) GREEN in 3.9 min, diff-coverage 90% (>=80% threshold). Per-unit detail from this session's own direct pytest runs: shared/tests 7848 passed / 21 skipped / 26 deselected, shared/scripts/tools/tests 488 passed / 7 skipped / 2 deselected, integration-tests 465 passed / 7 deselected, plus all 14 plugin units green. passed count above is the sum of the three counted roots (7848+488+465=8801) plus 3 new concurrency-test cases added after those counts were taken; plugin units are counted only as pass/fail by F0, not individually enumerated here."
+    },
+    "integration": {
+      "status": "pass",
+      "passed": 465,
+      "failed": 0
+    },
+    "e2e": {
+      "status": "n/a",
+      "reason": "no browser surface; this is framework/CLI measurement tooling"
+    },
+    "smoke": {
+      "status": "n/a",
+      "reason": "no startable server surface for this change"
+    },
+    "pgtap": {
+      "status": "n/a",
+      "reason": "no database"
+    },
+    "design_fidelity": {
+      "status": "n/a",
+      "reason": "no UI surface"
+    },
+    "surface_verification": {
+      "surface": "cli",
+      "tests_run": 64,
+      "exit_code": 0,
+      "evidence_path": ".shipwright/runs/iterate-2026-08-04-iterate-timing-attribution/surface_verification.json",
+      "detail": "uv run pytest against the shared/tests iterate-timing test files (10 files, 64 tests), exit 0. The scripts/tools/tests root's timing tests run as F0's own shared/scripts/tools/tests unit instead (one-root rule)."
+    },
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "Producer span recorded via `span()` context manager",
+          "disposition": "tested",
+          "evidence": "`test_iterate_timings.py::test_span_context_manager_records_on_success` PASSED"
+        },
+        {
+          "behavior": "Span marked incomplete on exception, exception still propagates",
+          "disposition": "tested",
+          "evidence": "`test_span_context_manager_marks_incomplete_on_exception` PASSED"
+        },
+        {
+          "behavior": "Agent start/end pairing across separate process invocations (resume)",
+          "disposition": "tested",
+          "evidence": "`test_iterate_timing_cli.py::test_resume_across_real_separate_os_processes` (genuine subprocess pair) PASSED; `test_sidecar_is_append_only_across_sequential_calls` (same-process isolation of the append-only property) PASSED"
+        },
+        {
+          "behavior": "Malformed entry dropped without voiding the rest of the run",
+          "disposition": "tested",
+          "evidence": "`test_malformed_entry_is_dropped_without_voiding_the_run` PASSED"
+        },
+        {
+          "behavior": "Negative duration rejected",
+          "disposition": "tested",
+          "evidence": "`test_negative_duration_rejected` PASSED"
+        },
+        {
+          "behavior": "Child outside parent's time bounds rejected (impossible ordering)",
+          "disposition": "tested",
+          "evidence": "`test_child_outside_parent_bounds_is_impossible_ordering` PASSED"
+        },
+        {
+          "behavior": "Nested spans not double-counted (exclusive-time computation)",
+          "disposition": "tested",
+          "evidence": "`test_nested_spans_are_not_double_counted` PASSED"
+        },
+        {
+          "behavior": "Partial child coverage leaves parent's own exclusive time visible",
+          "disposition": "tested",
+          "evidence": "`test_partial_coverage_leaves_parent_exclusive_time_visible` PASSED"
+        },
+        {
+          "behavior": "F0 queue vs active execution distinguishable (synthetic weight-22)",
+          "disposition": "tested",
+          "evidence": "`test_f0_queue_and_active_execution_are_distinguishable_weight22` PASSED"
+        },
+        {
+          "behavior": "Multiple `ci_wait` attempts individually attributed",
+          "disposition": "tested",
+          "evidence": "`test_ci_wait_attempts_are_individually_attributed` PASSED"
+        },
+        {
+          "behavior": "F5b folds `iterate_timings` alongside (not instead of) `phase_timings`",
+          "disposition": "tested",
+          "evidence": "`test_finalize_folds_iterate_timings_alongside_phase_timings` PASSED"
+        },
+        {
+          "behavior": "No sidecar \u2192 field omitted, not zero",
+          "disposition": "tested",
+          "evidence": "`test_finalize_without_sidecar_omits_iterate_timings` PASSED"
+        },
+        {
+          "behavior": "Pre-existing `iterate_timings` field on the event is never overwritten",
+          "disposition": "tested",
+          "evidence": "`test_finalize_never_overwrites_a_preexisting_field` PASSED"
+        },
+        {
+          "behavior": "Interrupted/cancelled run persists `incomplete`, never a fabricated zero",
+          "disposition": "tested",
+          "evidence": "`test_incomplete_span_persists_as_incomplete_not_zero` PASSED"
+        },
+        {
+          "behavior": "Malformed span rejected at the event-write boundary; rest still persists",
+          "disposition": "tested",
+          "evidence": "`test_malformed_span_is_rejected_the_rest_still_persists` PASSED"
+        },
+        {
+          "behavior": "Existing gate/verdict behavior (FR-gate) unchanged by the timing fold",
+          "disposition": "tested",
+          "evidence": "`test_gate_ordering_and_verdict_unchanged_by_timing_fold` PASSED"
+        },
+        {
+          "behavior": "Agent CLI `start`/`end` round-trip through normalize",
+          "disposition": "tested",
+          "evidence": "`test_start_then_end_round_trips_through_normalize` PASSED"
+        },
+        {
+          "behavior": "Non-canonical run_id refused (no stray sidecar written)",
+          "disposition": "tested",
+          "evidence": "`test_non_canonical_run_id_is_refused` PASSED"
+        },
+        {
+          "behavior": "Unknown span name rejected at the CLI (argparse choices)",
+          "disposition": "tested",
+          "evidence": "`test_unknown_span_name_is_an_argparse_error` PASSED"
+        },
+        {
+          "behavior": "Malformed `--extra-json` refused",
+          "disposition": "tested",
+          "evidence": "`test_end_with_malformed_extra_json_is_refused` PASSED"
+        },
+        {
+          "behavior": "F0 `f0_queue` span recorded for a canonical run_id, gated for a non-canonical one",
+          "disposition": "tested",
+          "evidence": "`test_f0_queue_span_recorded_for_canonical_run_id`, `test_f0_queue_span_skipped_for_non_canonical_run_id` PASSED"
+        },
+        {
+          "behavior": "F0 timing span recording never raises (best-effort)",
+          "disposition": "tested",
+          "evidence": "`test_f0_queue_span_never_raises_on_bad_project_root` PASSED"
+        },
+        {
+          "behavior": "`deliver()`'s timing instrumentation is opt-in; default touches no filesystem",
+          "disposition": "tested",
+          "evidence": "`test_record_timing_off_by_default_writes_nothing` PASSED"
+        },
+        {
+          "behavior": "`deliver()` records `delivery_wait`/`ci_wait` with correct rung/extras when opted in",
+          "disposition": "tested",
+          "evidence": "`test_record_timing_on_records_delivery_wait_and_ci_wait` PASSED"
+        },
+        {
+          "behavior": "Report: empty state with no events",
+          "disposition": "tested",
+          "evidence": "`test_report_is_empty_state_with_no_events` PASSED"
+        },
+        {
+          "behavior": "Report: pre-instrumentation run identified plainly, never as zero",
+          "disposition": "tested",
+          "evidence": "`test_pre_instrumentation_run_identified_plainly_not_as_zero` PASSED"
+        },
+        {
+          "behavior": "Report: degraded coverage surfaced, not hidden",
+          "disposition": "tested",
+          "evidence": "`test_degraded_coverage_surfaced_not_hidden` PASSED"
+        },
+        {
+          "behavior": "Report: deterministic given the same events",
+          "disposition": "tested",
+          "evidence": "`test_report_is_deterministic_given_the_same_events` PASSED"
+        },
+        {
+          "behavior": "Report: written to the documented path",
+          "disposition": "tested",
+          "evidence": "`test_write_report_creates_the_documented_path` PASSED"
+        },
+        {
+          "behavior": "Report: CI-retry attribution visible in the rendered nested table",
+          "disposition": "tested",
+          "evidence": "`test_ci_retry_attribution_visible_in_nested_table` PASSED"
+        },
+        {
+          "behavior": "Report: rolling stats appear once enough instrumented runs exist",
+          "disposition": "tested",
+          "evidence": "`test_rolling_stats_appear_with_enough_instrumented_runs` PASSED"
+        },
+        {
+          "behavior": "External-review producer span records `provider`/`parent` correctly",
+          "disposition": "tested",
+          "evidence": "manual end-to-end subprocess run (real CLI, temp project root) \u2014 see probe 3 above"
+        },
+        {
+          "behavior": "Real GitHub-backed delivery ladder timing (live `gh` calls)",
+          "disposition": "untestable",
+          "reason_code": "requires-external-nondeterministic-service"
+        },
+        {
+          "behavior": "Real concurrent sibling-worktree F0 host-lease contention under this instrumentation",
+          "disposition": "untestable",
+          "reason_code": "covered-by-existing-test",
+          "note": "the lease mechanism itself is P1.12/P1.16's own coverage; this card only persists what it already computes, verified via the synthetic weight-22 case above rather than re-proving the lease"
+        },
+        {
+          "behavior": "A child attached to a parent instance that is itself rejected cascades the rejection",
+          "disposition": "tested",
+          "evidence": "`test_iterate_timings_hierarchy.py::test_a_child_attached_to_a_rejected_parent_cascades_the_rejection` PASSED"
+        },
+        {
+          "behavior": "`covered_ms` never exceeds the selected top-level envelope (duplicate-span clipping)",
+          "disposition": "tested",
+          "evidence": "`test_iterate_throughput_report.py::test_covered_ms_never_exceeds_the_selected_envelope` PASSED"
+        },
+        {
+          "behavior": "`f0_queue` gating uses the actual `RUN_ID_STRICT` regex, not a loose prefix",
+          "disposition": "tested",
+          "evidence": "`test_run_test_suite_timing.py::test_f0_queue_span_skipped_for_a_run_id_that_only_LOOKS_canonical` PASSED"
+        },
+        {
+          "behavior": "`extra` string field rejected when it contains disallowed characters (prompt/finding-shaped prose)",
+          "disposition": "tested",
+          "evidence": "`test_iterate_throughput_report.py::test_extra_with_pipe_or_newline_is_rejected_at_validation` PASSED"
+        },
+        {
+          "behavior": "A pipe/newline in already-validated `extra` data does not break the rendered table (defense in depth)",
+          "disposition": "tested",
+          "evidence": "`test_iterate_throughput_report.py::test_extra_field_pipe_character_does_not_break_the_table` PASSED"
+        },
+        {
+          "behavior": "Concurrent producer writers never corrupt the sidecar",
+          "disposition": "tested",
+          "evidence": "`test_iterate_timings_concurrency.py::test_concurrent_producer_writers_never_corrupt_the_sidecar` (40 threads) PASSED"
+        },
+        {
+          "behavior": "Overlapping sibling spans use interval union, not raw-duration sum",
+          "disposition": "tested",
+          "evidence": "`test_iterate_timings_hierarchy.py::test_overlapping_siblings_use_interval_union_not_sum` PASSED"
+        },
+        {
+          "behavior": "An ambiguous open-ended top-level parent resolves to the most-recently-opened candidate",
+          "disposition": "tested",
+          "evidence": "`test_iterate_timings_hierarchy.py::test_most_recently_opened_open_ended_parent_wins_ties` PASSED"
+        },
+        {
+          "behavior": "`canonical_f0_active` is recorded from the real `SuiteResult.seconds` field",
+          "disposition": "tested",
+          "evidence": "`test_run_test_suite_timing.py::test_canonical_f0_active_span_recorded_from_the_real_result_shape` PASSED"
+        },
+        {
+          "behavior": "A `result` whose shape doesn't match degrades to a skipped span, never raises",
+          "disposition": "tested",
+          "evidence": "`test_run_test_suite_timing.py::test_canonical_f0_active_span_never_raises_when_result_lacks_seconds` PASSED"
+        },
+        {
+          "behavior": "Cross-process multi-*process* (not just multi-thread) safety of the sidecar `FileLock`",
+          "disposition": "tested",
+          "evidence": "`test_iterate_timings_concurrency.py::test_concurrent_writers_across_real_OS_processes_never_corrupt_the_sidecar` (8 genuine subprocesses) PASSED"
+        },
+        {
+          "behavior": "A present-but-unclosed (bare-start) top-level span does not count toward coverage",
+          "disposition": "tested",
+          "evidence": "`test_iterate_throughput_stats.py::test_present_but_incomplete_top_level_span_does_not_count_toward_coverage` PASSED"
+        },
+        {
+          "behavior": "A run of bare start marks for all 5 capturable groups reads as DEGRADED 0/5, not a clean complete",
+          "disposition": "tested",
+          "evidence": "`test_iterate_throughput_report.py::test_bare_start_marks_for_every_capturable_group_read_as_degraded_not_complete` PASSED"
+        },
+        {
+          "behavior": "Every numeric `extra` field has a registered bound (SSoT forward+reverse)",
+          "disposition": "tested",
+          "evidence": "`test_iterate_timings_extra.py::test_every_numeric_extra_field_has_a_registered_bound` PASSED"
+        },
+        {
+          "behavior": "An out-of-range numeric `extra` value is rejected",
+          "disposition": "tested",
+          "evidence": "`test_iterate_timings_extra.py::test_numeric_field_over_its_bound_is_rejected`, `test_negative_number_below_its_bound_is_rejected` PASSED"
+        },
+        {
+          "behavior": "A non-finite (`NaN`/`Infinity`) float `extra` value is rejected",
+          "disposition": "tested",
+          "evidence": "`test_iterate_timings_extra.py::test_nan_float_is_rejected`, `test_infinite_float_is_rejected` PASSED"
+        },
+        {
+          "behavior": "`duration_ms` grossly inconsistent with its own start/end interval is rejected",
+          "disposition": "tested",
+          "evidence": "`test_iterate_timings_hierarchy.py::test_duration_grossly_inconsistent_with_its_own_interval_is_rejected` PASSED"
+        },
+        {
+          "behavior": "`duration_ms` within legitimate wall/monotonic drift tolerance of its interval is accepted",
+          "disposition": "tested",
+          "evidence": "`test_iterate_timings_hierarchy.py::test_duration_within_tolerance_of_its_interval_is_accepted` PASSED"
+        },
+        {
+          "behavior": "`run_suite()` raising still records an incomplete `canonical_f0_active` span, exception propagates",
+          "disposition": "tested",
+          "evidence": "`test_suite_host_resources.py::test_run_suite_exception_still_records_an_incomplete_canonical_f0_active_span` PASSED"
+        },
+        {
+          "behavior": "A missing fold-time-capturable group renders as unattributed with a reason, distinct from finalization/delivery's structural absence",
+          "disposition": "tested",
+          "evidence": "`test_iterate_throughput_report.py::test_missing_agent_group_reads_unattributed_with_a_reason` PASSED"
+        },
+        {
+          "behavior": "`checks_observed=True` (bool) drops only the one field, not the whole `ci_wait` span",
+          "disposition": "tested",
+          "evidence": "`test_deliver_pr_timing.py::test_bool_checks_observed_does_not_break_the_whole_ci_wait_span` PASSED"
+        },
+        {
+          "behavior": "`outcome=\"completed\"` with a missing `end_utc` or `duration_ms` is rejected",
+          "disposition": "tested",
+          "evidence": "`test_iterate_timings_hierarchy.py::test_completed_outcome_with_no_end_utc_is_rejected`, `test_completed_outcome_with_end_utc_but_no_duration_is_rejected` PASSED"
+        },
+        {
+          "behavior": "Agent start/end resume works across REAL separate OS processes (not just sequential in-process calls)",
+          "disposition": "tested",
+          "evidence": "`test_iterate_timing_cli.py::test_resume_across_real_separate_os_processes` (genuine `subprocess.run` pair) PASSED"
+        },
+        {
+          "behavior": "cross-component churn-registry addition (THROUGHPUT_REPORT) composes correctly across classify() and the F11 silent-revert gate",
+          "disposition": "tested",
+          "category": "integration",
+          "evidence": "`test_derived_definition_integration.py::test_the_two_components_agree_on_the_throughput_report` (real git, two independently-calling components) PASSED"
+        },
+        {
+          "behavior": "A bool-typed extra field (e.g. timed_out) does not fall into the numeric-bounds validation branch and drop the whole span",
+          "disposition": "tested",
+          "evidence": "`test_iterate_timings_extra.py::test_bool_typed_field_does_not_fall_into_the_numeric_bounds_branch` PASSED"
+        }
+      ],
+      "counts": {
+        "testable": 59,
+        "tested": 57,
+        "untestable": 2,
+        "untested_testable": 0
+      },
+      "enumeration_basis": {
+        "acs": 9,
+        "covered_acs": 9
+      },
+      "ledger_path": ".shipwright/planning/iterate/iterate-2026-08-04-iterate-timing-attribution.md"
+    },
+    "degraded": []
+  },
+  "coverage": {
+    "total": 80.2,
+    "measured_tier": "repo",
+    "source": "combined coverage.xml (all plugins + shared + integration)",
+    "measured_at": "2026-07-04T00:00:00Z"
+  },
+  "source_state": {
+    "run_id": "iterate-2026-08-04-iterate-timing-attribution",
+    "commit": "0ef8190dce95a47adfa3b3dfac0ba5b52bc65ff0",
+    "dirty": true,
+    "base": null,
+    "release": null
+  }
+}
