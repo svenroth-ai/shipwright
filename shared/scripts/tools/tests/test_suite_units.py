@@ -21,6 +21,7 @@ import pytest
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent.parent))
 
 import scripts.tools.run_test_suite as run_mod
+import scripts.tools.suite_console as console_mod
 import scripts.tools.suite_coverage as cov_mod
 import scripts.tools.suite_race_triage as race_mod
 import scripts.tools.suite_report as report_mod
@@ -131,7 +132,7 @@ def test_valid_config_round_trips(tmp_path):
 def test_operator_facing_strings_are_ascii_only():
     """A cp1252 console raises UnicodeEncodeError on non-ASCII output — which on the
     RACE path would abort the very gate the race handling exists to keep green (#244)."""
-    for module in (mod, run_mod, report_mod, race_mod, cov_mod):
+    for module in (mod, run_mod, report_mod, race_mod, cov_mod, console_mod):
         src = Path(module.__file__).read_text(encoding="utf-8")
         offenders = [ln for ln in src.splitlines() if not ln.isascii()]
         assert not offenders, f"non-ASCII in {module.__name__}: {offenders[:3]}"
