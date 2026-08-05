@@ -51,4 +51,5 @@ _Regenerate:_ `uv run {shared_root}/scripts/tools/rebuild_adr_index.py --project
 - [ADR-121 — Bloat exception — the triage park lifecycle raises eleven guarded ceilings](121-bloat-triage-defer-lifecycle.md)
 - [ADR-122 — Bloat exception — `shared/scripts/tools/deliver_pr.py` raised to 317-LOC](122-bloat-deliver-pr-timing-instrumentation.md)
 - [ADR-123 — Bloat exception — `shared/scripts/tools/run_test_suite.py` raised to 538-LOC](123-bloat-run-test-suite-timing-instrumentation.md)
+- [ADR-124 — Bloat exception — `update_build_dashboard.py` raised to 531-LOC, `test_build_dashboard.py` raised to 632-LOC](124-bloat-webui-string-shape-tolerance.md)
 - [Archive — Agent-Doc Update Backlog (verbatim)](_archive-agent-doc-updates.md)
