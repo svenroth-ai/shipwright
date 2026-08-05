@@ -104,12 +104,32 @@ def test_step_3_4_documents_ci_escalation_and_forbids_self_ack():
 
 @pytest.mark.covers("FR-01.11")
 def test_step_3_4_requires_f5c_to_record_effective_complexity():
-    """`check_integration_coverage` reads complexity from the F5c entry and
-    green-SKIPs below medium, so recording Step 2's stale estimate leaves the
-    gate reporting green without ever evaluating."""
+    """A runner writing Step 2's stale estimate into F5c instead of this step's
+    `effective_complexity` used to escape every gate silently — nothing compared
+    the two. F11's `check_risk_recheck_recorded` (iterate-2026-08-05) now does."""
     text = _step_3_4()
     assert "effective_complexity" in text
     assert "F5c MUST record this value" in text
+
+
+@pytest.mark.covers("FR-01.11")
+def test_step_3_4_names_the_recording_integrity_enforcement():
+    """The contract must say WHERE the value is persisted and WHAT enforces it —
+    otherwise "F5c MUST record this value" is unverifiable prose again."""
+    text = _step_3_4()
+    assert "risk_recheck.json" in text
+    assert "check_risk_recheck_recorded" in text
+
+
+@pytest.mark.covers("FR-01.11")
+def test_step_3_4_example_command_still_passes_run_id():
+    """`write_recheck_record` only fires when `--run-id` reaches the CLI
+    (`main()` checks `if args.run_id`). If a future edit drops `--run-id` from
+    Step 3.4's example command, the persisted artifact silently stops
+    existing and `check_risk_recheck_recorded` SKIPs every campaign run
+    instead of enforcing anything — exactly the class of stale-recorded-value
+    bug this iterate exists to catch, reintroduced one level up."""
+    assert "--run-id" in _step_3_4()
 
 
 @pytest.mark.covers("FR-01.11")

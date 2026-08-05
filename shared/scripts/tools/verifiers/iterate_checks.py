@@ -76,6 +76,7 @@ from .derived_snapshot_gate import check_no_derived_snapshots_committed  # noqa:
 # re-exported from their historical home (`iterate_checks`).
 from ._migration_check import check_migration_quarantine_empty  # noqa: E402, F401
 from .layer_coverage import check_cross_layer_coverage, check_removal_coverage  # noqa: E402, F401
+from .risk_recheck_recording import check_risk_recheck_recorded  # noqa: E402, F401
 
 
 # ---------------------------------------------------------------------------
@@ -1073,6 +1074,7 @@ def run_all_checks(
         ),
         check_architecture_documented(project_root, run_id),
         check_integration_coverage(project_root, run_id, commit_hash),
+        check_risk_recheck_recorded(project_root, run_id),
         check_review_record(project_root, run_id, commit_hash),
         check_iterate_no_direct_decision_log(project_root, run_id, commit_hash),
         check_ci_supplychain_ack(project_root, run_id, commit_hash),
