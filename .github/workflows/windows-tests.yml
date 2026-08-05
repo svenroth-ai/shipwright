@@ -1,0 +1,77 @@
+name: Windows Tests
+
+# IT-9 (trg-bd66b9b0) Unit 5: no CI job ran on Windows, so tests gated
+# skipif(sys.platform != "win32") / skipif(os.name != "nt") never executed —
+# a Windows-only defect (97392eea) reached `main` green and was only found
+# because someone happened to test locally. This job runs the three shared/
+# test directories (the only place those platform-gated tests live) on a
+# real windows-latest runner. ci.yml itself is intentionally untouched here
+# — see .shipwright/planning/iterate/2026-08-05-windows-ci-tests.md.
+#
+# Runs on pull_request (visible in the PR's own Checks tab, pre-merge) as
+# well as push to main, so this is NOT wired into
+# shared/scripts/lib/main_health.py's MONITORED_WORKFLOWS post-merge repair
+# path by design — pre-merge visibility is the detection mechanism here.
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+# Least-privilege GITHUB_TOKEN (mirrors ci.yml): checkout + tests only, no
+# writes, so the top-level token is read-only.
+permissions:
+  contents: read
+
+concurrency:
+  # Own group (distinct from ci.yml's `ci-*` group) so a Linux and a Windows
+  # run for the same ref never cancel each other.
+  group: windows-tests-${{ github.ref == 'refs/heads/main' && github.sha || github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+
+jobs:
+  shared-tests-windows:
+    name: Shared tests (Windows)
+    runs-on: windows-latest
+    defaults:
+      run:
+        # windows-latest defaults non-bash steps to PowerShell; pin every
+        # step to the Git-Bash shell the runner image ships so behavior
+        # matches ci.yml's Linux job and this workflow's own local
+        # native-Windows verification exactly.
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+        # GitHub-owned action, mutable tag by decision (mirrors ci.yml) —
+        # third-party actions below are SHA-pinned instead.
+
+      - name: Install uv
+        # Third-party action pinned to a full commit SHA (supply-chain
+        # hardening), identical pin to ci.yml's "Install uv" step.
+        uses: astral-sh/setup-uv@caf0cab7a618c569241d31dcd442f54681755d39  # v3
+        with:
+          enable-cache: true
+
+      - name: Install Python
+        run: uv python install 3.11
+
+      - name: Install root dependencies
+        run: uv sync
+
+      - name: Run shared tests
+        run: |
+          set -euo pipefail
+          # Same per-dir loop as ci.yml's "Run shared tests" step, minus
+          # coverage flags (no diff-coverage gate applies to this job) and
+          # minus pytest-cov/diff-cover extras (not needed without -cov).
+          # shared/tests/ and shared/scripts/tests/ each define their own
+          # top-level `tests` package, so they must run as separate pytest
+          # processes (one dir per invocation) or collection collides on
+          # the duplicate package name.
+          for dir in shared/tests shared/scripts/tests shared/scripts/tools/tests; do
+            echo "--- Running tests in $dir (windows) ---"
+            uv run --with pytest --with pytest-mock \
+              pytest "$dir" -v -m "not slow and not cross_plugin"
+          done
