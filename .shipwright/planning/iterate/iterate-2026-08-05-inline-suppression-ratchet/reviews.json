@@ -1,0 +1,191 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-08-05-inline-suppression-ratchet",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-05T20:41:27.001248+00:00",
+      "disposition": null,
+      "recorded_by": "self-review (7-point checklist; 2 findings raised and fixed in-run: CLI skeleton placeholders validated clean, and the regex doc-comment matched itself)",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 12,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The “comment-marker anchored” regex for discovering `nosemgrep: rule-id` may miss files in languages whose comment syntax is not enumerated (e.g., `--` in SQL, `//` in C-like languages, `'` in VBA). If such files contain explicit suppressions, the ratchet would be blind to them, allowing unmonitored growth.",
+          "suggestion": "Explicitly define the set of comment markers the scanner supports (e.g., `#`, `//`, `--`, `;`) and construct the regex accordingly. Document the list so that a missing language is visible; a test asserting presence for each supported marker would reduce the risk.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The pattern might match inside string literals that contain `nosemgrep: rule-id` (e.g., a docstring referencing the syntax). While the baseline can absorb current false positives, new such strings would inflate counts and cause spurious blocks.",
+          "suggestion": "Acknowledge this limitation in the module docstring. The implementation can optionally limit matching to lines where the comment marker is the first non-whitespace token, though that would miss trailing comments. The trade-off is acceptable; just make it known.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "The guard test runs `reconcile` against this repo. The plan states “shrink is advisory, never a block,” but it does not detail how the test exactly distinguishes a block from an advisory. If the test checks for `ratchets` and `unrecorded` but also inadvertently fails on a non-empty `shrunk`, a legitimate baseline entry for a rule no longer present in source would break CI.",
+          "suggestion": "In the guard test, explicitly assert that `ratchets` and `unrecorded` are empty, while intentionally not asserting on `shrunk`. Add a code comment explaining that `shrunk` is advisory and does not block.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "The requirement to supply a `rationale_ref` matching `DECISION_REF_RE` for each baseline entry may slow down developers adding a new suppression. If the regex is strict (e.g., requires an ADR number that doesn’t exist yet), the process for generating a valid reference might be unclear or heavy.",
+          "suggestion": "Clarify in documentation what values are acceptable (e.g., this run ID, an issue number, or a free-text slug if the regex permits). If the gate is intentionally strict to enforce a recorded decision, explain the minimum steps to create one.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "The new module imports `DECISION_REF_RE` directly from `accepted_risks`. Both reside in `shared/scripts/`, so the import is safe now, but future restructuring could break it. The existing duplication in `verifiers/ci_supplychain` was for a different reason; here a bare import is intended.",
+          "suggestion": "Add a test that the import succeeds and that the regex behaves as expected. A comment noting the dependency for maintainers would be prudent.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "The proposed regex-based discovery does not yet define how it distinguishes an actual language comment from `nosemgrep:` text inside a string, docstring, heredoc, template literal, or source-code prose. Anchoring on a comment marker is insufficient in several supported languages—for example, Python strings can contain `# nosemgrep: rule`, and JavaScript strings can contain `// nosemgrep: rule`. This risks both blocking harmless text additions and recording false sites in the baseline.",
+          "suggestion": "Define the supported file types and comment forms explicitly, and implement a conservative recognizer for those forms. At minimum, test quoted-string/docstring/heredoc false positives for every supported comment marker. If exact comment recognition is not practical, limit scanning to the file types and line forms actually used by the repository’s Semgrep configuration, document that scope, and ensure the scanner does not claim broader Semgrep equivalence.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "The source-extension allowlist and skipped directories are unspecified and may not align with the actual Semgrep target set. A new suppression in a Semgrep-scanned extension omitted by this leaf will evade the ratchet; conversely, scanning a source-like extension Semgrep does not scan creates irrelevant blocking counts. Fixed exclusions such as `node_modules`, `site-packages`, and generated/vendor trees also need to match the repository’s Semgrep invocation rather than be assumed safe.",
+          "suggestion": "Derive and document the scanner’s supported extensions/exclusions from the repository’s Semgrep configuration or CI invocation. Add fixtures for every currently relevant language/comment style, plus a test demonstrating that an unsupported extension is intentionally ignored. Revisit this list whenever Semgrep target configuration changes.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "Baseline validation is described only at a high level. `json.loads` silently accepts duplicate object keys, and permissive coercion can accept problematic values such as `true` for `max_sites` in Python (`bool` is an `int` subclass). Without strict validation, a malformed hand-edited baseline may not fail closed as required.",
+          "suggestion": "Specify and test the exact JSON shape: schema version, top-level object/entries, allowed keys, non-empty rule IDs, non-negative integer `max_sites` excluding booleans, non-empty `statement`, and `rationale_ref` full-match validation. Use a duplicate-key-detecting `object_pairs_hook` and reject duplicate keys, unknown keys, invalid types, and invalid schema versions with `BaselineError`.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "Failure behavior for the source walk is not stated. Permission errors, decode errors, broken symlinks, or an unreadable eligible source file can otherwise result in a partial count and a passing live guard, creating a practical bypass for a security control. This is particularly important because the baseline itself is correctly planned to fail closed.",
+          "suggestion": "Make scanning failures explicit and fail closed in the live guard for any eligible file that cannot be read or decoded. Resolve and validate paths while walking so traversal cannot escape the requested project root through symlinks; alternatively, explicitly skip symlinks and test that behavior. Include the affected relative path in the diagnostic.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "security",
+          "file": null,
+          "line": null,
+          "finding": "The ratchet can be bypassed in the same pull request by raising `max_sites` or adding a new rule entry. That may be acceptable for a “cannot grow unnoticed” control, but the plan currently validates only the syntax of `rationale_ref`; it does not ensure that it resolves to the promised recorded decision. A contributor could attach an unrelated or nonexistent-looking-but-regex-valid reference and make a growth appear governed.",
+          "suggestion": "Confirm the repository review policy treats baseline changes as security-governance changes, and make the validation resolve `rationale_ref` against the decision-drop inventory if such an inventory exists. At minimum, add a test that the seeded run reference corresponds to the F3 decision drop and document the required workflow for future baseline increases: update count, provide rule-specific statement, and cite a recorded decision.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The reconciliation and dashboard contracts need deterministic, actionable output. A map of sites can produce non-deterministic diagnostics if filesystem traversal is not sorted, and the dashboard’s degradation-tolerant import path could silently display an empty or stale-looking block when the scanner/baseline is unavailable or invalid.",
+          "suggestion": "Sort paths, rule IDs, and sites before reconciliation and rendering. Have the dashboard distinguish “zero suppressions” from “suppression data unavailable/invalid”; only the latter may degrade, and it should render a conspicuous status note rather than an apparently valid zero count.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "The plan introduces `SCHEMA_VERSION` but does not state where or how that version is serialized in the baseline. An exported constant without an enforced on-disk version adds ambiguity rather than providing schema protection.",
+          "suggestion": "Either include and validate an explicit top-level `schema_version: 1` field, or omit `SCHEMA_VERSION` until versioned migration behavior is actually needed.  Overall, the per-rule count ratchet is an appropriate, lower-risk alternative to offline Semgrep reconciliation, and the live guard plus exact initial baseline are sound. It needs a tighter scanner scope and fail-closed parsing/walk semantics before it can be relied on as a binding security control. SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-08-05T21:40:41.645766+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[deepseek] ### Review Findings\n\n1. **Category:** edge-case  \n   **Severity:** medium  \n   **Finding:** The “comment-marker anchored” regex for discovering `nosemgrep: rule-id` may miss files in languages whose comment syntax is not enumerated (e.g., `--` in SQL, `//` in C-like languages, `'` in VBA). If such files contain explicit suppressions, the ratchet would be blind to them, allowing unmonitored growth.  \n   **Suggestion:** Explicitly define the set of comment markers the scanner supports (e.g., `#`, `//`, `--`, `;`) and construct the regex accordingly. Document the list so that a missing language is visible; a test asserting presence for each supported marker would reduce the risk.\n\n2. **Category:** edge-case  \n   **Severity:** low  \n   **Finding:** The pattern might match inside string literals that contain `nosemgrep: rule-id` (e.g., a docstring referencing the syntax). While the baseline can absorb current false positives, new such strings would inflate counts and cause spurious blocks.  \n   **Suggestion:** Acknowledge this limitation in the module docstring. The implementation can optionally limit matching to lines where the comment marker is the first non-whitespace token, though that would miss trailing comments. The trade-off is acceptable; just make it known.\n\n3. **Category:** risk  \n   **Severity:** medium  \n   **Finding:** The guard test runs `reconcile` against this repo. The plan states “shrink is advisory, never a block,” but it does not detail how the test exactly distinguishes a block from an advisory. If the test checks for `ratchets` and `unrecorded` but also inadvertently fails on a non-empty `shrunk`, a legitimate baseline entry for a rule no longer present in source would break CI.  \n   **Suggestion:** In the guard test, explicitly assert that `ratchets` and `unrecorded` are empty, while intentionally **not** asserting on `shrunk`. Add a code comment explaining that `shrunk` is advisory and does not block.\n\n4. **Category:** approach  \n    […truncated]\n\n[openai] 1. **Category:** approach  \n   **Severity:** high  \n   **Finding:** The proposed regex-based discovery does not yet define how it distinguishes an actual language comment from `nosemgrep:` text inside a string, docstring, heredoc, template literal, or source-code prose. Anchoring on a comment marker is insufficient in several supported languages—for example, Python strings can contain `# nosemgrep: rule`, and JavaScript strings can contain `// nosemgrep: rule`. This risks both blocking harmless text additions and recording false sites in the baseline.  \n   **Suggestion:** Define the supported file types and comment forms explicitly, and implement a conservative recognizer for those forms. At minimum, test quoted-string/docstring/heredoc false positives for every supported comment marker. If exact comment recognition is not practical, limit scanning to the file types and line forms actually used by the repository’s Semgrep configuration, document that scope, and ensure the scanner does not claim broader Semgrep equivalence.\n\n2. **Category:** dependency  \n   **Severity:** medium  \n   **Finding:** The source-extension allowlist and skipped directories are unspecified and may not align with the actual Semgrep target set. A new suppression in a Semgrep-scanned extension omitted by this leaf will evade the ratchet; conversely, scanning a source-like extension Semgrep does not scan creates irrelevant blocking counts. Fixed exclusions such as `node_modules`, `site-packages`, and generated/vendor trees also need to match the repository’s Semgrep invocation rather than be assumed safe.  \n   **Suggestion:** Derive and document the scanner’s supported extensions/exclusions from the repository’s Semgrep configuration or CI invocation. Add fixtures for every currently relevant language/comment style, plus a test demonstrating that an unsupported extension is intentionally ignored. Revisit this list whenever Semgrep target configuration changes.\n\n3. **Category:** edge […truncated]",
+      "verdicts": {
+        "openai": "revise",
+        "deepseek": "approve"
+      }
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-05T21:16:57.559626+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer (Stage 2, opus): REVISE - 13 findings incl. 1 HIGH (nosem alias + case-insensitivity = live bypass). All 12 actionable findings fixed in-run; #13 (duplicated test helpers) declined as G5-exempt per the reviewer's own note.",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-05T21:40:14.020051+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer (Stage 3, opus): 14 doubts, 2 HIGH. D1 (fail-open on decode after token match) and D2 (stale Test Completeness Ledger) fixed; D3,D4,D6,D7,D8,D9,D10,D11,D13 fixed; D5+D12 disclosed as limits with reasoning; D14 pre-existing pattern, noted.",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-05T21:40:14.123500+00:00",
+      "disposition": "Phase Matrix: External LLM Review is 'auto' at medium for the PLAN (run at Step 3.5, GPT+DeepSeek, verdicts revise/approve, all findings addressed). A separate external CODE review is Advisory per Override Classes and was not run: the internal cascade (spec/code/doubt, all opus) produced 33 findings on this diff, of which 2 were HIGH, and both were found by the internal reviewers rather than the external one.",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-05T20:51:40.458392+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer (Stage 1 HARD-GATE, opus): APPROVE, 0 blocking findings; 6 recorded-accuracy findings raised and fixed in-run",
+      "parse_status": null,
+      "raw_excerpt": null
+    }
+  }
+}

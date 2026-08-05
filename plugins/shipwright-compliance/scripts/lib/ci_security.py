@@ -157,6 +157,11 @@ from .accepted_risk_view import (  # noqa: F401
     parse_accepted_risks,
 )
 
+# Inline `# nosemgrep` sites — the one silencing channel the register has no
+# target for. Its own module only because `accepted_risk_view` sits at 294 of
+# its 300 permitted lines; the two are read together.
+from .inline_suppression_view import inline_suppression_lines  # noqa: F401
+
 
 def _gate_badge(summary: dict) -> str:
     return "✅ PASS" if summary.get("critical_gate") == "pass" else "❌ FAIL"
@@ -232,6 +237,10 @@ def render_ci_security(project_root: Path | str, *, now: date) -> list[str]:
                 f"{row['expires'] or '—'} | {status} | "
                 f"{row['rationale_ref'] or '—'} |")
         lines.append("")
+
+    # The one silencing channel the register deliberately does not cover, and
+    # therefore the one most likely to be invisible.
+    lines.extend(inline_suppression_lines(project_root))
 
     footer = (
         "_Ingested from CI `findings.json` (public-safe: severity counts + gate "
