@@ -1,0 +1,1 @@
+F0 now runs `scripts/verify_local.py` — the mirror of CI's three bespoke merge guards — right after the leak-guard and before the test suite, so a push comes back red less often. The step is guarded on a marker token rather than a filename, so it no-ops in projects that do not have it.
