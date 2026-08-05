@@ -36,6 +36,7 @@ from lib.phase_quality import (  # noqa: E402
     make_finding,
 )
 from tools.verifiers._iterate_run_id import (  # noqa: E402
+    resolve_iterate_entry,
     unresolvable_run_id_skip,
 )
 from tools.verifiers.git_helpers import (  # noqa: E402
@@ -144,26 +145,10 @@ def _skip_unless_work_tree(project_root: Path, check_id: str, name: str) -> dict
 def _read_iterate_entry(project_root: Path, run_id: str) -> dict[str, Any] | None:
     """Return the iterate entry for ``run_id`` or ``None``.
 
-    Reads from the merged legacy-array + per-file directory store via
-    ``lib.iterate_entry.read_iterate_entries``. Falls back to the most
-    recent entry when ``run_id`` is not present — mid-flow finalize may
-    reach this verifier before the entry itself is written.
+    Thin wrapper over ``_iterate_run_id.resolve_iterate_entry`` — see there
+    for the corruption-aware tail-fallback contract (trg-e0a0f569).
     """
-    # Deferred import so the module stays safe to import without the
-    # sibling ``lib/`` path on sys.path (pytest adds it via conftest).
-    import sys
-    _scripts_root = Path(__file__).resolve().parents[2]
-    if str(_scripts_root) not in sys.path:
-        sys.path.insert(0, str(_scripts_root))
-    from lib.iterate_entry import read_iterate_entries
-
-    entries = read_iterate_entries(project_root)
-    if not entries:
-        return None
-    for entry in entries:
-        if entry.get("run_id") == run_id:
-            return entry
-    return entries[-1]  # tail fallback for mid-flow finalize
+    return resolve_iterate_entry(project_root, run_id)
 
 
 def _iterate_complexity(project_root: Path, run_id: str) -> str | None:

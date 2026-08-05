@@ -1,0 +1,24 @@
+{
+  "run_id": "iterate-2026-08-05-prompt-scan-dynamic-import-fp",
+  "date": "2026-08-05T20:26:35.692401Z",
+  "event_at": "2026-08-05T19:42:54.206095+00:00",
+  "type": "bug",
+  "complexity": "small",
+  "prior_source": "history",
+  "branch": "iterate/prompt-scan-dynamic-import-fp",
+  "spec": null,
+  "tests_passed": true,
+  "adr": "iterate-2026-08-05-prompt-scan-dynamic-import-fp",
+  "test_completeness": {
+    "status": "n/a",
+    "justification": "Behavior-preserving import-style normalization: __import__(\"json\")/__import__(\"os\") and the top-level import equivalents bind the identical module object, so no new or changed testable behavior is introduced. Verified via existing suites (17/17 unchanged) and a scanner negative control (2 findings -> 0)."
+  },
+  "surface_verification": {
+    "surface": "none",
+    "tests_run": 0,
+    "exit_code": 0,
+    "evidence_path": ".shipwright/runs/iterate-2026-08-05-prompt-scan-dynamic-import-fp/surface_verification.json",
+    "justification": "Test-only fix with zero production-code changes; not a feature or UI change; BUG at small complexity without touches_io_boundary, so the Phase Matrix does not require E2E authoring/execution."
+  },
+  "declared_removals": []
+}

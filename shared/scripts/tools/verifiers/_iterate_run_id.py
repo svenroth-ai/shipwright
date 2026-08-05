@@ -10,10 +10,18 @@ preserves the file-exists -> PASS signal.
 
 Extracted into its own module (rather than inlined in ``spec_checks.py``) to
 keep that already-grandfathered file under its bloat baseline.
+
+``resolve_iterate_entry`` is the shared tail-fallback resolver for
+``spec_checks._read_iterate_entry`` / ``iterate_compliance._latest_iterate_entry``
+(both now thin wrappers over it, for the same bloat-baseline reason): it tells
+a REQUESTED run whose own entry file is corrupt apart from one that is simply
+not written yet, so only the latter may fall back to the most recent entry
+(trg-e0a0f569).
 """
 
 from __future__ import annotations
 
+import json
 import sys
 from pathlib import Path
 from typing import Any
@@ -46,6 +54,94 @@ def has_exact_iterate_entry(project_root: Path, run_id: str) -> bool:
         isinstance(e, dict) and e.get("run_id") == run_id
         for e in (entries or [])
     )
+
+
+def own_entry_file_is_corrupt(
+    project_root: Path, run_id: str, entries: list[dict[str, Any]] | None = None,
+) -> bool:
+    """True when ``run_id``'s own entry is unreadable rather than genuinely absent.
+
+    Two storage paths can hide a requested run's own entry from the merged
+    ``read_iterate_entries`` result: its per-file ``iterates/<run_id>.json`` exists
+    but failed to decode/parse, OR it lives only in the legacy
+    ``iterate_history`` array and ``shipwright_run_config.json`` itself failed to
+    parse (so the legacy array silently reads as empty — we cannot rule out the
+    entry being in there). Either way, the requested run's own data is
+    unreadable, NOT genuinely unwritten.
+
+    Distinguishes that from the *genuinely unwritten* case (no per-file entry
+    AND a readable — or absent — legacy config that simply does not mention
+    ``run_id``), which is the one legitimate reason for
+    ``resolve_iterate_entry`` to tail-fall-back to the most recent entry.
+    Corruption of the REQUESTED run's own entry must never be papered over by
+    substituting a different run's category/complexity.
+
+    ``entries`` lets a caller that already has the merged result (e.g.
+    ``resolve_iterate_entry``) pass it through instead of triggering a second
+    full re-parse; omit it to fetch fresh. Safe against interleaving with a
+    concurrent writer only because it never is: one iterate = one worktree =
+    one physical directory (`references/artifact-ownership.md` B1a), F5c
+    (the sole writer) always completes before F11 calls this in the SAME
+    process, and no code path ever deletes a live run's own entry file
+    (retention only evicts entries OLDER than the one being written). A
+    caller reading a project_root that genuinely is being concurrently
+    written from outside that model is out of scope for this guard.
+
+    Fails CLOSED (returns ``True``) on any unexpected error — an error while
+    determining corruption is itself the ambiguous case this guards against,
+    so it must never resolve in favor of permitting a substitution.
+    """
+    if not run_id:
+        return False
+    from lib.iterate_entry import RUN_CONFIG_NAME, entry_file_for, read_iterate_entries
+
+    try:
+        target = entry_file_for(project_root, run_id)
+        # is_symlink() also catches a DANGLING link (target missing), which
+        # .exists() alone would follow and report False on — read_iterate_entries
+        # excludes every symlink regardless of target validity (_is_entry_file),
+        # so a dangling one must count as "present but unreadable", not "absent".
+        own_file_exists = target.exists() or target.is_symlink()
+        legacy_unreadable = False
+        legacy_config = project_root / RUN_CONFIG_NAME
+        if legacy_config.exists():
+            try:
+                json.loads(legacy_config.read_text(encoding="utf-8"))
+            except (json.JSONDecodeError, OSError, UnicodeDecodeError):
+                legacy_unreadable = True
+        if not own_file_exists and not legacy_unreadable:
+            return False
+        if entries is None:
+            entries = read_iterate_entries(project_root)
+    except Exception:  # noqa: BLE001 — fail CLOSED: ambiguity favors "corrupt"
+        return True
+    return not any(
+        isinstance(e, dict) and e.get("run_id") == run_id for e in (entries or [])
+    )
+
+
+def resolve_iterate_entry(project_root: Path, run_id: str) -> dict[str, Any] | None:
+    """Merged-reader lookup for ``run_id`` with a corruption-aware tail fallback.
+
+    Returns the exact entry when present. Returns ``None`` when there is no
+    iterate history at all, or when ``run_id``'s own entry is unreadable
+    (per-file or legacy-array corruption) — never substitutes a different
+    run's category/complexity in that case (trg-e0a0f569). Otherwise falls
+    back to the most recent entry, legitimate only when ``run_id`` genuinely
+    has no entry yet (mid-flow finalize reaching a verifier before F5c writes
+    it).
+    """
+    from lib.iterate_entry import read_iterate_entries
+
+    entries = read_iterate_entries(project_root)
+    if not entries:
+        return None
+    for entry in entries:
+        if entry.get("run_id") == run_id:
+            return entry
+    if own_entry_file_is_corrupt(project_root, run_id, entries):
+        return None
+    return entries[-1]
 
 
 def unresolvable_run_id_skip(
