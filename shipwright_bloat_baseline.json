@@ -641,9 +641,9 @@
     {
       "path": "shared/scripts/tests/test_build_dashboard.py",
       "limit": 300,
-      "current": 488,
-      "state": "grandfathered",
-      "adr": null
+      "current": 632,
+      "state": "exception",
+      "adr": "ADR-124"
     },
     {
       "path": "shared/scripts/tests/test_validate_env.py",
@@ -767,9 +767,9 @@
     {
       "path": "shared/scripts/tools/update_build_dashboard.py",
       "limit": 300,
-      "current": 498,
+      "current": 534,
       "state": "exception",
-      "adr": "ADR-111"
+      "adr": "ADR-124"
     },
     {
       "path": "shared/scripts/tools/verifiers/build_checks.py",

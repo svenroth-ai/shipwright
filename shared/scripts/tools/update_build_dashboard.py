@@ -270,6 +270,47 @@ def _read_iterate_test_results(project_root: Path) -> dict | None:
         return None
 
 
+def _single_line_cell(text: str) -> str:
+    """Collapse internal whitespace/newlines to spaces, trim the ends,
+    then Markdown-escape `\\`/`|` via the shared `escape_cell` helper.
+
+    Test Status renders as one `" | ".join(parts)` line; an embedded
+    newline in a string-shaped layer would otherwise split it, and an
+    embedded `|` would otherwise look like an extra field — the same
+    WebUI-originated pipe-character failure mode `escape_cell`'s own
+    docstring documents for the Recent Changes table.
+    """
+    return escape_cell(" ".join(text.split()))
+
+
+def _layer_display(label: str, layer: dict | str | None) -> str | None:
+    """Render one Test Status layer, tolerating either documented shape.
+
+    This monorepo's own F5 always writes the structured mapping
+    `{"status": ..., "passed": N, "total": N}` (see F5.md). An adopted
+    repo's historical F5 evidence (predating that contract) may instead
+    carry the same key as a pre-rendered human-readable string — rendered
+    here as-is (whitespace-normalized, Markdown-escaped) since it is
+    already meant for display (trg-cb7d4938). Any other shape (`None`,
+    a number, ...) is silently omitted, same as an absent key.
+    """
+    if isinstance(layer, dict):
+        total = layer.get("total", 0)
+        return f"{label}: {layer.get('passed', 0)}/{total}" if total > 0 else None
+    if isinstance(layer, str):
+        text = _single_line_cell(layer)
+        return f"{label}: {text}" if text else None
+    return None
+
+
+def _smoke_display(layer: dict | str | None) -> str | None:
+    """Render the Smoke layer, tolerating either documented shape (see _layer_display)."""
+    if isinstance(layer, dict):
+        status = layer.get("status")
+        return f"Smoke: {status}" if status else None
+    return _layer_display("Smoke", layer)
+
+
 def _test_status_from_iterate(project_root: Path, latest_event: dict) -> list[str]:
     """Build Test Status parts from iterate data.
 
@@ -279,21 +320,13 @@ def _test_status_from_iterate(project_root: Path, latest_event: dict) -> list[st
     layered = _read_iterate_test_results(project_root)
     if layered:
         parts = [f"Last run: {layered.get('date', latest_event.get('ts', '')[:10])}"]
-        unit = layered.get("unit", {})
-        integration = layered.get("integration", {})
-        pgtap = layered.get("pgtap", {})
-        e2e = layered.get("e2e", {})
-        smoke = layered.get("smoke", {})
-        if unit and unit.get("total", 0) > 0:
-            parts.append(f"Unit: {unit.get('passed', 0)}/{unit.get('total', 0)}")
-        if integration and integration.get("total", 0) > 0:
-            parts.append(f"Integration: {integration.get('passed', 0)}/{integration.get('total', 0)}")
-        if pgtap and pgtap.get("total", 0) > 0:
-            parts.append(f"pgTAP: {pgtap.get('passed', 0)}/{pgtap.get('total', 0)}")
-        if e2e and e2e.get("total", 0) > 0:
-            parts.append(f"E2E: {e2e.get('passed', 0)}/{e2e.get('total', 0)}")
-        if smoke and smoke.get("status"):
-            parts.append(f"Smoke: {smoke['status']}")
+        for label, key in (("Unit", "unit"), ("Integration", "integration"), ("pgTAP", "pgtap"), ("E2E", "e2e")):
+            text = _layer_display(label, layered.get(key, {}))
+            if text:
+                parts.append(text)
+        smoke_text = _smoke_display(layered.get("smoke", {}))
+        if smoke_text:
+            parts.append(smoke_text)
         parts.append("(iterate)")
         return parts
 
