@@ -97,14 +97,47 @@ def test_no_security_or_high_value_query_excluded(query_id: str) -> None:
     )
 
 
-def _init_step() -> dict:
+def _codeql_action_steps() -> dict[str, list[dict]]:
+    """Map step-purpose ('init'/'autobuild'/'analyze') -> ALL matching step
+    dicts, matched by `uses:` prefix. Kept as a list (not last-write-wins) so
+    a leftover duplicate step is visible instead of silently shadowed by a
+    later match."""
     parsed = yaml.safe_load(WORKFLOW_PATH.read_text(encoding="utf-8"))
     steps = ((parsed.get("jobs") or {}).get("analyze") or {}).get("steps") or []
+    found: dict[str, list[dict]] = {}
     for step in steps:
         uses = step.get("uses") if isinstance(step, dict) else None
-        if isinstance(uses, str) and uses.startswith("github/codeql-action/init"):
-            return step
-    raise AssertionError("no github/codeql-action/init step in codeql.yml")
+        if not isinstance(uses, str):
+            continue
+        for name in ("init", "autobuild", "analyze"):
+            if uses.startswith(f"github/codeql-action/{name}@"):
+                found.setdefault(name, []).append(step)
+    return found
+
+
+def _init_step() -> dict:
+    matches = _codeql_action_steps().get("init") or []
+    if not matches:
+        raise AssertionError("no github/codeql-action/init step in codeql.yml")
+    return matches[0]
+
+
+@pytest.mark.parametrize("step_name", ["init", "autobuild", "analyze"])
+def test_codeql_action_steps_pin_v4(step_name: str) -> None:
+    """CodeQL Action v3 is deprecated December 2026 and drops Node.js 20
+    runner support in fall 2026; v4 is the GA, Node-24-based replacement.
+    Guards the live monorepo workflow against a regression back to @v3 —
+    and, since every match is kept (not last-write-wins), against a
+    leftover v3 duplicate hiding behind an added v4 step."""
+    matches = _codeql_action_steps().get(step_name) or []
+    assert len(matches) == 1, (
+        f"expected exactly one github/codeql-action/{step_name} step in "
+        f"codeql.yml, found {len(matches)}"
+    )
+    assert matches[0]["uses"] == f"github/codeql-action/{step_name}@v4", (
+        f"codeql.yml {step_name} step uses={matches[0]['uses']!r}, "
+        f"expected 'github/codeql-action/{step_name}@v4'"
+    )
 
 
 def test_workflow_references_config_file() -> None:

@@ -1,0 +1,89 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-08-05-codeql-action-v4-bump",
+    "date": "2026-08-05",
+    "unit": {
+      "status": "pass",
+      "passed": 7899,
+      "total": 7899,
+      "note": "shared/tests full run (uv run pytest shared/tests -q): 7899 passed, 25 skipped, 20 deselected, 0 failed. F0 canonical suite runner (run_test_suite.py) additionally confirmed GREEN across all 18 units (14 shipwright-* plugins, shared/scripts/tests, shared/scripts/tools/tests, integration-tests) in 4.2 min; diff-coverage gate PASS (no measurable Python lines in this YAML/CI-config diff). The two directly-touched test files (test_codeql_workflow_convention.py, test_codeql_config_query_filters.py) were run RED-before/GREEN-after the version bump: 6 new parametrized cases failed on @v3, all 45 passed after."
+    },
+    "integration": {
+      "status": "pass",
+      "note": "integration-tests unit PASS (225.4s) as part of the F0 canonical run; this change has no CRUD/DB surface of its own to exercise."
+    },
+    "e2e": {
+      "status": "n/a",
+      "reason": "no client/server runtime surface; pure CI-workflow-file version-pin change. Verified via F0.5 surface=none with justification."
+    },
+    "smoke": {
+      "status": "n/a",
+      "reason": "no startable server surface touched by this change"
+    },
+    "pgtap": {
+      "status": "n/a",
+      "reason": "no database"
+    },
+    "design_fidelity": {
+      "status": "n/a",
+      "reason": "no UI surface"
+    },
+    "surface_verification": {
+      "surface": "none",
+      "tests_run": 0,
+      "exit_code": 0,
+      "evidence_path": ".shipwright/runs/iterate-2026-08-05-codeql-action-v4-bump/surface_verification.json",
+      "justification": "Pure CI-workflow-file version-pin change (github/codeql-action v3->v4); no client/server runtime surface exists to drive. Verified via the pytest meta-tests instead."
+    },
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "codeql.yml init/autobuild/analyze pin @v4",
+          "disposition": "tested",
+          "evidence": "test_codeql_config_query_filters.py::test_codeql_action_steps_pin_v4[init|autobuild|analyze] PASSED (3 cases)"
+        },
+        {
+          "behavior": "codeql.yml.template init/autobuild/analyze pin @v4",
+          "disposition": "tested",
+          "evidence": "test_codeql_workflow_convention.py::test_codeql_action_steps_pin_v4[init|autobuild|analyze] PASSED (3 cases)"
+        },
+        {
+          "behavior": "a leftover duplicate step (e.g. stray @v3 alongside an added @v4) is caught, not silently shadowed",
+          "disposition": "tested",
+          "evidence": "both test_codeql_action_steps_pin_v4 tests assert len(matches) == 1 per step name before checking the version (found during external code-review, fixed in-diff) PASSED"
+        },
+        {
+          "behavior": "permissions / continue-on-error / queries / config-file stay byte-identical",
+          "disposition": "tested",
+          "evidence": "test_explicit_permissions_floor, test_analyze_step_continue_on_error, test_workflow_references_config_file, test_workflow_keeps_security_and_quality_suite \u2014 all pre-existing, unmodified, still PASSED after the edit"
+        }
+      ],
+      "counts": {
+        "testable": 4,
+        "tested": 4,
+        "untestable": 0,
+        "untested_testable": 0
+      },
+      "enumeration_basis": {
+        "acs": 4,
+        "covered_acs": 4
+      },
+      "ledger_path": ".shipwright/planning/iterate/2026-08-05-codeql-action-v4-bump.md"
+    },
+    "degraded": []
+  },
+  "coverage": {
+    "total": 80.2,
+    "measured_tier": "repo",
+    "source": "combined coverage.xml (all plugins + shared + integration)",
+    "measured_at": "2026-07-04T00:00:00Z"
+  },
+  "source_state": {
+    "run_id": "iterate-2026-08-05-codeql-action-v4-bump",
+    "commit": "8f2f562db2ba689f1bfcc91a0e59f5d2ce0fd3af",
+    "dirty": true,
+    "base": null,
+    "release": null
+  }
+}
