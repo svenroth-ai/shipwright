@@ -1,0 +1,1 @@
+iterate F11 checks (S9, S10, W2) no longer silently inherit a different run's category or complexity when the current run's own iterate-entry file is corrupt -- the shared tail-fallback resolver now fails closed for the requested run instead of substituting the most recent entry
