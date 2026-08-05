@@ -86,10 +86,23 @@ def test_ignore_set_covers_every_name_the_PRODUCER_withholds():
 def test_version_key_is_equivalent_to_the_shared_implementation():
     """The duplication is justified (stdlib-only); the EQUIVALENCE needs the pin."""
     for name in ("0.10.0", "0.2.0", "0.2.1", "1.0.0", "0.29.1", "0.3.1",
-                 "0.2.0-rc1", "10.0.0", "not-a-version", "0.2", ""):
+                 "0.2.0-rc1", "1.0.0-rc1", "10.0.0", "not-a-version", "0.2", ""):
         assert _HOOK._version_key(name) == version_key(name), (
             f"_version_key diverged from cache_tree_compare.version_key on {name!r}"
         )
+
+
+def test_version_key_ranks_a_release_above_its_own_prereleases_in_both_copies():
+    """Not just equal to each other — both must implement SemVer correctly.
+
+    trg-18da39b0: a raw string-tail comparison put ``1.0.0-rc1`` after
+    ``1.0.0`` (``'-rc1' > ''`` lexically), so a prerelease would be picked as
+    the newest installed version. A release must outrank every prerelease of
+    the same numeric version, in EITHER implementation.
+    """
+    for key in (version_key, _HOOK._version_key):
+        assert key("1.0.0") > key("1.0.0-rc1")
+        assert key("1.0.0") > key("1.0.0-beta")
 
 
 def test_every_copy_site_passes_the_shared_ignore_callable():
