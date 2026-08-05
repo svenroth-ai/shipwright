@@ -53,4 +53,5 @@ _Regenerate:_ `uv run {shared_root}/scripts/tools/rebuild_adr_index.py --project
 - [ADR-123 — Bloat exception — `shared/scripts/tools/run_test_suite.py` raised to 538-LOC](123-bloat-run-test-suite-timing-instrumentation.md)
 - [ADR-124 — Bloat exception — `update_build_dashboard.py` raised to 531-LOC, `test_build_dashboard.py` raised to 632-LOC](124-bloat-webui-string-shape-tolerance.md)
 - [ADR-125 — Bloat exception — `shared/scripts/tools/verifiers/iterate_checks.py` raised to 1089-LOC](125-bloat-exception-risk-recheck-recording-registration.md)
+- [ADR-125 — Synthesize a missing ancestor for iterate_timings instead of orphaning its children](125-iterate-timings-derived-parent-synthesis.md)
 - [Archive — Agent-Doc Update Backlog (verbatim)](_archive-agent-doc-updates.md)
