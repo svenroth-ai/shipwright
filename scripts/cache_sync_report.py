@@ -11,9 +11,23 @@ from __future__ import annotations
 
 import sys
 
-#: Named in every verdict, human and machine, so the deferral stays visible
-#: where the result is READ — not only in a docstring the operator won't open.
-UNGATED = "plugins/ mirror (trg-5005bf57)"
+
+def _mirror_summary(mirror: list[dict]) -> str:
+    """One clause describing the mirror tree — never folded into ``_basis_note``.
+
+    ``basis: "cache"`` is the mirror's own PERMANENT provenance (own basis and
+    verdict semantics, ADR-120), not a degraded git fallback, so it must not
+    trip the "name it when it's not git" warning the other two trees use.
+    ``no_source`` records (nothing cached for that plugin yet) are excluded
+    from the count — that plugin's absence is already named on its `plugins`
+    record, and folding it in here would double-report the same finding as
+    two different numbers.
+    """
+    compared = [m for m in mirror if m["state"] != "no_source"]
+    if not compared:
+        return "mirror n/a (no cached plugin versions)"
+    tracked = sum(m["tracked_count"] for m in compared)
+    return f"mirror ({len(compared)} plugin(s), {tracked} files)"
 
 
 def _basis_note(records: list[dict]) -> str:
@@ -54,6 +68,7 @@ def print_ok(result: dict) -> None:
     skipped. ``n/a`` is reported as ``n/a``, never folded into "in sync".
     """
     shared = result["shared"]
+    mirror = result.get("mirror", [])
     shared_part = (
         "shared/ n/a (no shared/ in repo)" if shared["state"] == "n/a"
         else f"shared/ ({shared['tracked_count']} files)"
@@ -61,12 +76,14 @@ def print_ok(result: dict) -> None:
     # Sum every compared tree, not just shared/, and state the OBSERVATION
     # rather than a cause: the commonest source is a local unpushed deletion,
     # where the sync did nothing wrong and the file is still on origin/main.
+    # `basis`/`version_basis` notes stay git-vs-cache specific (below) — the
+    # mirror's own "cache" basis is a permanent fact, not a fallback to flag.
     records = [shared, *result["plugins"]]
-    stale = sum(r.get("cache_only_count", 0) for r in records)
+    stale = sum(r.get("cache_only_count", 0) for r in [*records, *mirror])
     unhashable = sum(r.get("unhashable_count", 0) for r in records)
     extra = ""
     if stale:
-        extra += f"; {stale} cache file(s) with no repo counterpart"
+        extra += f"; {stale} cache file(s) with no repo/source counterpart"
     if unhashable:
         extra += f"; {unhashable} tracked file(s) could not be read"
     # On the GREEN branch too, and for the same reason `_basis_note` is: this is the
@@ -75,8 +92,8 @@ def print_ok(result: dict) -> None:
     # the stale installed one — an ok over a directory nobody runs.
     extra += _basis_note(records) + _version_basis_note(records)
     print(
-        f"plugin-cache-sync: ok — {len(result['plugins'])} plugin(s) "
-        f"and {shared_part} in sync. Not gated: {UNGATED}{extra}"
+        f"plugin-cache-sync: ok — {len(result['plugins'])} plugin(s), "
+        f"{shared_part}, and {_mirror_summary(mirror)} in sync{extra}"
     )
 
 
@@ -93,6 +110,9 @@ def print_drift(result: dict) -> None:
             print(f"  - plugin {entry['plugin']}: {entry}", file=sys.stderr)
     if result["shared"]["state"] not in ("ok", "n/a"):
         print(f"  - shared/: {result['shared']}", file=sys.stderr)
+    for entry in result.get("mirror", []):
+        if entry["state"] not in ("ok", "no_source"):
+            print(f"  - mirror {entry['plugin']}: {entry}", file=sys.stderr)
 
 
 def print_orphan_advisory(markers: list[str]) -> None:

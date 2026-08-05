@@ -1,11 +1,75 @@
 # Project Activity Dashboard
-> Updated: 2026-07-28 12:18 UTC | Session: 7c6c7b07-d3a2-4c91-ba4e-fab3535b5067 | Run: iterate-2026-07-28-docs-placement-rule
+> Updated: 2026-08-05 20:23 UTC | Session: f0b56cde-31c4-4450-b878-e23403a93640 | Run: iterate-2026-08-05-mirror-tree-drift-basis
 
-## Recent Changes (400 iterations)
+## Recent Changes (465 iterations)
 
 | Type | Description | Tests | Commit | FRs | Date |
 |------|-------------|-------|--------|-----|------|
+| change | check_plugin_cache_sync.py now gates the cross-plugin mirror cache/plugins/<name>/, the third of the cache's three trees, via new scripts/cache_mirror_compare.py with its own basis (always "cache") and state vocabulary (ok/drift/not_mirrored/no_source), distinct from the plugins/shared trees' git-vs-walk comparison. | 186/186 |  | tooling | 2026-08-05 |
+| change | F11 gate enforcing that F5c honors Step 3.4 recorded complexity | 8843/8844 |  | tooling | 2026-08-05 |
+| change | Synthesize a missing iterate_timings ancestor from its children's envelope instead of orphaning them, closing the P1.17 gap that left every work_completed event with zero measurement data | 0/0 |  | tooling | 2026-08-05 |
+| bug | Trim bloat-gate-crossing docstrings and register the vendored hook's pre-existing overage as grandfathered debt | 138/138 |  | tooling | 2026-08-05 |
+| bug | Scope append_event_idempotent's deduplicate_by_commit branch to work_completed events | 58/58 |  | tooling | 2026-08-05 |
+| bug | Fix SemVer prerelease-vs-release ordering in cache_tree_compare.version_key and its vendored hook mirror | 7859/7880 |  | tooling | 2026-08-05 |
+| bug | Fix prompt-injection scanner Unicode-check false positive for codepoints quoted inside fenced/inline code spans | 55/55 |  | tooling | 2026-08-05 |
+| change | Recover post-P1.11 immutable test evidence from two retained worktrees (P2.03 triage-defer-lifecycle, P2.05 grade-snapshot-dedup) before they are removed | 6/6 |  | compliance | 2026-08-05 |
+| bug | Tolerate WebUI's string-shaped iterate_latest test-status layers in build-dashboard regen | +8 new, 9168/9208 |  | tooling | 2026-08-05 |
+| change | Migrate the remaining git_helpers._git_available callers onto the tri-state git_context probe and delete _git_available | 7877/7898 |  | tooling | 2026-08-05 |
+| feature | Hierarchical iterate-timing span instrumentation (producer + agent marks, sidecar, F5b fold, derived throughput report) — measurement only, no gate/verdict change. | 0/0 |  | tooling | 2026-08-05 |
+| change | Replace the default Gemini reviewer with identity-locked DeepSeek V4 Pro on a fail-closed US ZDR route | 18/18 |  | FR-01.03, FR-01.11 | 2026-08-04 |
+| bug | Restore F0 fleet throughput and stabilize suite concurrency, process cleanup, progress, and retained diagnostics | 18/18 |  | infra | 2026-08-04 |
+| bug | Retire the producerless runtime PID verifier | 18/18 |  | tooling | 2026-08-04 |
+| change | share F0 host resources across sibling worktrees | 18/18 |  | tooling | 2026-08-03 |
+| change | Implemented one shared area-catalog producer, deterministic disposable event index, bounded compact/shadow/full query modes, visible fail-soft fallback, hostile-data handling, and temporary context-cost metrics/reporting. | 488/488 | 7ae8e98 | tooling | 2026-08-04 |
+| change | F5c now preserves exact complete current-run test results, F6/F11 enforce shipment, and 15 historical P1 snapshots are source-proven backfilled. | 0/0 |  | FR-01.10, FR-01.11 | 2026-08-03 |
+| change | serialize ensure_shared_cache SessionStart fan-out | 13381/13428 |  | infra | 2026-08-03 |
+| bug | Normalize pytest collection to absolute verbosity -1 so behavior snapshots retain node IDs under repository addopts. | 13572/13572 |  | tooling | 2026-08-02 |
+| change | iterate: f0-race shipwright-run measured and closed | 0/0 |  | compliance | 2026-08-01 |
+| feature | verify_local.py mirrors ci.yml's three bespoke merge guards locally, with a both-directions drift registry | 21/21 |  | FR-01.17 | 2026-08-01 |
+| change | iterate: two F11 readers brought in line with their siblings on fail-safety | 0/0 |  | tooling | 2026-08-01 |
+| change | iterate: the cache check and the sync resolve the same version directory | 7165/7182 (17 skipped) |  | tooling | 2026-08-01 |
+| feature | real-producer integration test for the compliance-evidence refresh | 7150/7163 |  | tooling | 2026-08-01 |
+| change | Migrate phase-quality engagement readers from frozen step fields to phase task lifecycle state | 9630/9630 |  | tooling | 2026-08-02 |
+| bug | Filter unactionable CI triage cards only when GitHub authoritatively reports the workflow state as deleted. | 8511/8524 |  | FR-01.14 | 2026-08-02 |
+| bug | Capture grade-snapshot dirtiness before producer writes | 18/18 |  | tooling | 2026-08-02 |
+| bug | Align touches_build message patterns with diff-driven filename token boundaries. | 1337/1341 (4 skipped) |  | tooling | 2026-08-02 |
+| change | iterate: external review truncation guard + reasoning budget | 8418/8418 |  | tooling | 2026-08-01 |
+| change | iterate: mirror the CI diff-coverage gate at F0 | 0/0 |  | tooling | 2026-08-01 |
+| change | Deduplicate unchanged automatic grade snapshots within each resolved lineage. | 13584/13584 |  | compliance | 2026-08-03 |
+| change | Centralize dev_server path anchors and make Windows PID liveness checks signal-free. | 7515/7558 |  | tooling | 2026-08-02 |
+| feature | Complete the deferred triage lifecycle across store, producers, CLI, Markdown, and JSON contract v2. | 13680/13710 |  | FR-01.14 | 2026-08-03 |
+| change | iterate: the cache comparator learns what the sync refuses to copy | 0/0 |  | tooling | 2026-08-01 |
+| change | iterate: the plugin-cache healer checks completeness, not liveness | 7150/7168 |  | infra | 2026-08-01 |
+| change | iterate: canon lookbehind hyphen guard | 0/0 |  | tooling | 2026-08-01 |
+| bug | iterate: spec-impact gate reads the iterate's work, not the tip commit | 0/0 |  | tooling | 2026-08-01 |
+| bug | cache-sync check verifies the shared tree, from the index | 13788/13788 |  | tooling | 2026-08-01 |
+| change | iterate: the F0 gate runs the interpreter CI judges with | 0/0 |  | tooling | 2026-08-01 |
+| change | Coverage gates ask the diff, not the recorded complexity. check_integration_coverage evaluates the recomputed cross-component path set before the recorded complexity (which becomes message content); layer_coverage infra failures fail closed at every complexity for removal coverage. Supersedes MUST-FIX 1 / SHOULD-FIX 6. Rides along: run-id attribution on the shared-ledger fallback, and a locale-independent tri-state git probe shared by both gates. | 0/0 |  | tooling | 2026-08-01 |
+| change | iterate: campaign runner re-checks diff-driven risk after Build | 0/0 |  | tooling | 2026-08-01 |
+| change | iterate: triage expected_status under the lock (IT-1/S2) | 6890/6890 |  | FR-01.14 | 2026-07-31 |
+| change | Campaign sub-iterates run the delegated review cascade at loop step 3f-bis (before merge, so a REJECT can still stop delivery) and the same finalization phases a standalone iterate runs: F0.5, F2 (architecture.md), F3a and F5 were missing, and the F2 label was reused for Browser Verify, hiding its own absence. | 13149/13178 (29 skipped) |  | FR-01.11 | 2026-07-31 |
+| change | iterate: promote the Stage-1 spec pass into the reviews contract, with a permanent read path for 65 older records | 0/0 |  | tooling | 2026-07-31 |
+| change | adr-index-churn-register | 13108/13108 |  | tooling | 2026-07-31 |
+| change | iterate: the dev-server proxy stops doing path work on a faked platform | 0/0 |  | tooling | 2026-07-31 |
+| change | adr-index-producer | 12681/12681 |  | tooling | 2026-07-31 |
+| change | iterate: close two holes in the accepted-risk drift gate | 10055/10079 |  | compliance | 2026-07-31 |
+| change | The Tier-3 PR reviewer retracts its own superseded change-requests when a later run passes, so a green pull request stops being held by a verdict about code that is gone. | 0/0 |  | FR-01.17 | 2026-07-31 |
+| change | iterate: cap the complexity fall-through at small and teach touches_build to see Python build inputs | 0/0 |  | FR-01.11 | 2026-07-31 |
+| change | iterate: F11 delivers the change, or says plainly that it did not | 8285/8285 |  | FR-01.11 | 2026-07-31 |
+| change | iterate: fail-safe fixes to the triage-store primitives (S1 of IT-1) | 0/0 |  | tooling | 2026-07-31 |
+| change | iterate: the compliance evidence documents ship at release and on demand; the derived-snapshot gate remedy resolves the merge-base | 0/0 |  | tooling | 2026-07-31 |
+| change | iterate: the derived-snapshot gate sees the branch, not the tip | 7621/7637 |  | tooling | 2026-07-31 |
+| change | iterate: the run's own ledger survives finalization | 12622/12651 |  | tooling | 2026-07-30 |
+| change | iterate: pin the quoting contract the PR-review path filter relies on | 812/819 (7 skipped) |  | tooling | 2026-07-29 |
+| change | iterate: the CI supply-chain ack gets a home that is not a derived snapshot | 6839/6851 (12 skipped) |  | tooling | 2026-07-28 |
+| change | iterate: close the six open GitHub code-scanning alerts (3 root causes) | 7858/7881 (23 skipped) |  | tooling | 2026-07-28 |
+| change | F5c stamps event_at from latest_event_dt so Canon C3's same-phase clock check runs for the iterate phase; the known-bound paragraph is removed from all five places it was written down, and the maintainer's name leaves five live files that used it as prose rather than authorship metadata. | 12334/12359 (25 skipped) |  | tooling | 2026-07-28 |
+| change | iterate: the review cascade is a standing request in CLAUDE.md; workflows are not | 7815/7831 (16 skipped) |  | FR-01.02, FR-01.11, FR-01.13 | 2026-07-28 |
+| change | iterate: F11 verifies the run it is checking | 10806/10806 |  | FR-01.11 | 2026-07-28 |
+| change | iterate: main repairs itself — attribution, diagnosis package, repair procedure | 0/0 |  | FR-01.19 | 2026-07-28 |
+| change | Correct grade_snapshot attribution: a named branch is branch by name, ancestry only for detached HEAD; refuse asserted attribution on the amendment channel; restate the consumer contract so branch snapshots are not plotted on the default branch's trend. | 0/0 |  | FR-01.10 | 2026-07-28 |
 | change | iterate: docs/ placement rule + remove one generated artifact and five finished records | 0/0 |  | docs | 2026-07-28 |
+| change | iterate: IT-0 hygiene sweep — reconcile the bloat baseline, trim CLAUDE.md, record test totals at F5b, and point the security-named gate at the security scan | 12237/12262 (25 skipped) |  | compliance | 2026-07-28 |
 | change | Make a conditional session policy gating subagents a question asked before Stage 1 rather than a silent not_run at F11, and define what a real blocker is. | 0/0 |  | FR-01.11 | 2026-07-28 |
 | change | Stamp every grade_snapshot with the tree it measured (lineage / branch / merge-base), so the Control-Grade trend can be filtered to one lineage instead of plotting a mixture of worktrees. | 0/0 |  | FR-01.10 | 2026-07-28 |
 | change | Bump pyasn1 to 0.6.4 (CVE-2026-59885/59886) and record a scoped, expiring acceptance for CVE-2026-14257 (brace-expansion, dev-only perf runner) in both registers, guarded by a new dependency-floor test. | 11282/11282 |  | infra | 2026-07-28 |
@@ -18,6 +82,7 @@
 | change | iterate: a branch may not quietly revert merged work | 0/0 |  | FR-01.11 | 2026-07-27 |
 | change | iterate: post-merge review follow-up for the triage defer surface | 0/0 |  | FR-01.14 | 2026-07-27 |
 | bug | iterate: a PR must not be able to forge a file boundary in its own diff | 0/0 |  | FR-01.17 | 2026-07-28 |
+| change | iterate: Canon C3 asks whether THIS phase left the handover note | 0/0 |  | FR-01.01 | 2026-07-28 |
 | change | iterate: raise the PR-review diff cap, cut at a file boundary, name what went unreviewed | 0/0 |  | FR-01.17 | 2026-07-27 |
 | change | iterate: an audit that checked nothing is not recorded | 0/0 |  | compliance | 2026-07-27 |
 | change | iterate: refuse a multi-root pytest session instead of failing 21 unrelated tests | 0/0 |  | tooling | 2026-07-27 |
@@ -407,7 +472,7 @@
 | change | post-adoption framework cleanup (Sub-1A through 1D) | 225/225 | 3db485b | FR-01.01, FR-01.02, FR-01.03 | 2026-05-02 |
 
 ## Test Status
-Last run: 2026-07-28 | Unit: 6458/6474 | Integration: 422/422 | Smoke: not_run | (iterate)
+Last run: 2026-08-05 | Smoke: n/a | (iterate)
 
 ## Pipeline
 

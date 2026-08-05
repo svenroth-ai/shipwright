@@ -1,31 +1,81 @@
 # Commit Change Log
 
-Generated: 2026-07-28T12:18:44.236199+00:00
-Source-State: run=iterate-2026-07-28-docs-placement-rule
-Consistency-audit: never run
-Total commits: 1261
+Generated: 2026-08-05T20:23:09.795210+00:00
+Source-State: run=iterate-2026-08-05-mirror-tree-drift-basis
+Consistency-audit: last run 2026-07-28 (8 days earlier) — FAIL
+Total commits: 1340
 
 ## Commit Distribution
 
 ```mermaid
 pie title Commit Types
-    "fix" : 373
-    "feat" : 352
-    "chore" : 256
-    "docs" : 150
-    "refactor" : 78
-    "test" : 31
-    "ci" : 11
+    "fix" : 423
+    "feat" : 364
+    "chore" : 258
+    "docs" : 153
+    "refactor" : 80
+    "test" : 34
+    "ci" : 18
     "other" : 9
     "build" : 1
 ```
 
 ## Changes by Type
 
-### Fixes (fix) — 373 commits
+### Fixes (fix) — 423 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-08-05 | iterate | synthesize a missing iterate_timings ancestor from its children (#562) | 7dbbb2418ce6 |
+| 2026-08-05 | iterate | enforce F5c honors Step 3.4's recorded complexity (#560) | 922fa3355d00 |
+| 2026-08-05 | iterate | close the git_available conflation for its last 7 callers (#559) | 53b73a242819 |
+| 2026-08-05 | iterate | tolerate WebUI's string-shaped iterate_latest test-status layers (#558) | e8adafcc34c4 |
+| 2026-08-05 | iterate | recover post-backfill test evidence from retained worktrees (#554) | 5566ff466074 |
+| 2026-08-05 | shared | trim bloat-gate-crossing docstrings, grandfather the rest (#557) | 2bda4d44e0da |
+| 2026-08-05 | security | skip code spans in prompt-scan Unicode detector (#555) | c33292e7e6ab |
+| 2026-08-05 | shared | a SemVer release now outranks a prerelease of the same version (#556) | 66d98dcd08bc |
+| 2026-08-05 | events | scope by-commit dedup to work_completed events (#553) | 120d17779170 |
+| 2026-08-05 | security | patch vulnerable transitive deps, clean up 2 CodeQL findings (#552) | 62ab8239b999 |
+| 2026-08-04 | verifier | retire producerless runtime PID check (#550) | d5b61f10491c |
+| 2026-08-04 | test | restore F0 fleet throughput (#549) | fbe41e66f4e3 |
+| 2026-08-04 | main | publish cache claim tokens completely (#546) | 0c8348b3b67e |
+| 2026-08-04 | hooks | join active cache repair fanout (#543) | 1cbe2dc53cf2 |
+| 2026-08-03 | hooks | serialize shared cache SessionStart fan-out (#541) | 64c8c334e132 |
+| 2026-08-03 | iterate | preserve immutable test evidence (#540) | b248ed9a4d54 |
+| 2026-08-03 | iterate | collect pytest node ids at absolute verbosity (#535) | 57728860b4b5 |
+| 2026-08-02 | review | fail closed on incomplete LLM replies (#533) | 39d36f943ab0 |
+| 2026-08-02 | iterate | align build filename token boundaries (#532) | 564b383f2005 |
+| 2026-08-02 | compliance | capture snapshot dirtiness before writes (#534) | 981c3f7cbd3d |
+| 2026-08-02 | triage | ignore deleted workflow failures (#530) | 6fdb8fcbc5ee |
+| 2026-08-02 | shared | the plugin-cache healer checks completeness, not liveness (#524) | 6bb9cfbf1a9e |
+| 2026-08-02 | iterate | the cache check reads the version dir the sync writes to (#527) | a76f238e4f73 |
+| 2026-08-01 | iterate | two F11 readers stop lying about why they stood down (#526) | d5026200b7a7 |
+| 2026-08-01 | iterate | a campaign unit finally looks at the code it wrote (#521) | 62c92866770e |
+| 2026-08-01 | iterate | a file the sync refuses to copy is not cache drift (#522) | 65efb5013c33 |
+| 2026-08-01 | iterate | the coverage gates ask the diff, not the recorded complexity (#520) | 458600672fbb |
+| 2026-08-01 | iterate | the F0 gate runs the interpreter CI judges the push with (#519) | cccd7da2e5d8 |
+| 2026-08-01 | iterate | the cache check reads the shared tree, and reads it from the index (#518) | 4146a610295e |
+| 2026-08-01 | shared | a plugin's own folder no longer reads as a moved artifact path (#517) | ac3bf5a24640 |
+| 2026-08-01 | iterate | the spec-impact gate reads the iterate's work, not the tip commit (#516) | 76d7c115400e |
+| 2026-08-01 | iterate | the delegate ADR-029 named finally gets a step (#514) | 6d2b2013ba0f |
+| 2026-08-01 | iterate | an automatic closer no longer overwrites a person's decision (#513) | 749b75834630 |
+| 2026-07-31 | iterate | parallel ADR iterates no longer block each other on the index (#511) | dd2c3019cf65 |
+| 2026-07-31 | iterate | the triage store fails closed, and says so (#509) | 6a845a42281e |
+| 2026-07-31 | iterate | F11 delivers the change, or says plainly that it did not (#510) | 9dab368f619c |
+| 2026-07-31 | iterate | a fall-through may lower a tier, never buy one (#506) | 3763701ba436 |
+| 2026-07-31 | security | a passing Tier-3 review retracts its own superseded verdicts (#508) | a87085b168fe |
+| 2026-07-31 | security | the accepted-risk gate asks what is suppressed, not whether a file exists (#507) | 987e49c6ed29 |
+| 2026-07-31 | iterate | the ADR index refreshes when an ADR is written, not only at release (#505) | cc4598557347 |
+| 2026-07-31 | dev-server | the lazy resolver stops doing path work on a faked platform (#504) | f6e0fd834fdd |
+| 2026-07-31 | iterate | the derived-snapshot gate sees the branch, not the tip (#503) | dcf85f874e8e |
+| 2026-07-30 | iterate | the run's own ledger survives finalization (#502) | a3e625fc2e16 |
+| 2026-07-29 | iterate | F11 verifies the run it is checking, and Stage 1 records itself (#498) | c1caa23d86bb |
+| 2026-07-29 | iterate | the CI supply-chain ack leaves the snapshot that erased it, and binds content for every filename (#499) | c6ce9b2e1bee |
+| 2026-07-28 | security | the sanitiser spells its alphabet in escapes, not in the characters it strips (#495) | 0fdf875c2c38 |
+| 2026-07-28 | iterate | the iterate ledger stamps the clock C3 reads, and no prose speaks for a maintainer by name (#494) | 841761cc79f7 |
+| 2026-07-28 | compliance | a gate named for security reads the security scan, and F5b records the run's test totals (#492) | 8b7b6eb7e759 |
+| 2026-07-28 | iterate | the phase canon asks whether THIS phase left the note (#491) | d03c300c3ecf |
+| 2026-07-28 | compliance | a grade snapshot tells the truth about its own subject (#490) | 3ed41047c2f4 |
 | 2026-07-28 | iterate | "cannot run" must not mean "was never asked" (#489) | bcc7a5901d53 |
 | 2026-07-28 | iterate | the revert check stops accusing an edit and a deletion it did not make (#488) | e4db51544224 |
 | 2026-07-28 | security | the reviewer ends a diff line where git does, and nowhere else (#487) | d9bc7d90cc07 |
@@ -400,10 +450,22 @@ pie title Commit Types
 | 2026-03-21 | — | rename skill folders for clean slash commands | 5a8d77658fab |
 | 2026-03-20 | — | update README attribution to svenroth.ai | dd5de7f7d6ab |
 
-### Features (feat) — 352 commits
+### Features (feat) — 364 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-08-05 | iterate | add hierarchical wall-clock timing attribution (#551) | d6b2124a3843 |
+| 2026-08-04 | review | route DeepSeek through verified ZDR providers (#548) | 2d940d998a9b |
+| 2026-08-04 | iterate | bound event history context (#545) | 64720a0f8abd |
+| 2026-08-04 | iterate | share F0 host resource budget (#544) | fd49aded3c68 |
+| 2026-08-03 | triage | complete defer lifecycle (#539) | 8d3d08d0dde3 |
+| 2026-08-03 | compliance | deduplicate unchanged grade snapshots (#537) | c91080327460 |
+| 2026-08-03 | iterate | enforce local F0 diff coverage (#536) | aff197724d2c |
+| 2026-08-02 | iterate | the Stage-1 spec review becomes a first-class row, and 65 old records stay readable (#515) | bfa6caa480a0 |
+| 2026-08-01 | ci | the three gates that only ever ran in CI now run before the push (#525) | 3f1bb3192693 |
+| 2026-07-31 | compliance | the evidence documents ship at release, not frozen on main (#512) | 95f390781a5d |
+| 2026-07-29 | iterate | a red shared branch names the commit that broke it (#497) | 24a56158f38a |
+| 2026-07-28 | review | the review cascade is a standing request; workflows still ask (#496) | bbdd2ada8f36 |
 | 2026-07-28 | security | the coverage manifest decides, instead of being reported (Part 2 of 2) (#486) | d373ac400920 |
 | 2026-07-27 | build | stop on a mockup-vs-section contradiction; allow a recorded shared touch (3/3) (#465) | ea2ad4bfab15 |
 | 2026-07-27 | design | a feedback round declares what it changed about the requirements (2/3) (#464) | 4da3f66526b5 |
@@ -757,11 +819,13 @@ pie title Commit Types
 | 2026-03-20 | — | Task 02 — project templates (CLAUDE.md, agent_docs, CI) | c3a6d2f53bd3 |
 | 2026-03-20 | — | Task 01 — monorepo scaffolding + supabase-nextjs stack profile | 990a138a4690 |
 
-### Chores (chore) — 256 commits
+### Chores (chore) — 258 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
-| 2026-07-28 | triage | sweep 54 outbox append(s) into branch | 7ec426a2ed01 |
+| 2026-08-05 | triage | sweep 6 outbox append(s) into branch | 4c7fb716e67e |
+| 2026-08-02 | events | seal post-delivery grade snapshot (#531) | 027eeb9c0ee6 |
+| 2026-08-01 | triage | the f0-race card for shipwright-run closes on measurement, not on a green run (#523) | 6d858c3b5a69 |
 | 2026-07-27 | triage | follow-up card for requiring the checks that gate nothing | 7387b2796960 |
 | 2026-07-26 | review | default external-review GPT model to gpt-5.6-terra (#435) | 8d750a5fc7af |
 | 2026-07-24 | security | stage full compliance write-set in Step 7.5 finalizer (#434) | 5da96ebe8561 |
@@ -1018,10 +1082,13 @@ pie title Commit Types
 | 2026-03-28 | — | add shipwright-run uv.lock | ef1cc1ad180c |
 | 2026-03-20 | — | initial commit with spec and task list | 07ca9c1de51c |
 
-### Documentation (docs) — 150 commits
+### Documentation (docs) — 153 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-08-01 | readme | flag active refactoring window through Aug 10, 2026 | b0c3caf35946 |
+| 2026-07-28 | planning | the quoted directive stops tripping the prompt scanner | 07cd445538db |
+| 2026-07-28 | — | docs/ holds what someone wrote for someone to read (#493) | bebdc9a37e7e |
 | 2026-07-28 | planning | record the confirmed admin bypass and the 11-commit drift | 6bb11960b39c |
 | 2026-07-28 | planning | triage-delivery audit findings + queue/refresh handover | 1f8364b68017 |
 | 2026-07-27 | guide | the finalization walkthrough ends at delivery, not at arming (#462) | eea6e1643388 |
@@ -1173,10 +1240,12 @@ pie title Commit Types
 | 2026-03-21 | — | expand README with pipeline diagram, architecture, and quality gates | 377dc2141b3d |
 | 2026-03-20 | — | add README.md for GitHub repo | 853c8f930132 |
 
-### Refactoring (refactor) — 78 commits
+### Refactoring (refactor) — 80 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-08-03 | dev-server | centralize path derivation (#538) | 4cb281da6847 |
+| 2026-08-02 | phase-quality | derive engagement from phase tasks (#529) | 4efca0709971 |
 | 2026-07-27 | test | split the close-missing floor cases out of the CLI test file (#478) | f7eee6f4b3a9 |
 | 2026-07-27 | test | split the close-missing floor cases out of the CLI test file (#478) | cf6d326b5011 |
 | 2026-07-27 | shared | split git resolution out of source_state (300-LOC compliance) (#451) | 3cdca5cfc884 |
@@ -1256,10 +1325,13 @@ pie title Commit Types
 | 2026-03-30 | env | consolidate plugin env vars into single .env.local | 4a9267b522fb |
 | 2026-03-28 | — | unify decision log to shared ADR format across all phases | 2851babbbcfa |
 
-### Tests (test) — 31 commits
+### Tests (test) — 34 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-08-03 | hooks | stabilize concurrent rearm timing (#542) | b811ef6988c2 |
+| 2026-08-02 | compliance | the evidence refresh is driven through its real producer (#528) | 0797067b1494 |
+| 2026-07-29 | security | the path filter's reliance on git quoting is written down, not assumed (#500) | bbfdb5b91990 |
 | 2026-07-27 | shared | split the source-state suite along its three seams (#449) | ecade7e6225e |
 | 2026-07-22 | traceability | normalize an inline dynamic import to clear a benign prompt-scan finding (#426) | 4a0b6d025cb7 |
 | 2026-07-19 | requirements | golden corpus freezing discovery + parser behaviour, bugs included (#403) | 76d97ec06fe6 |
@@ -1292,10 +1364,17 @@ pie title Commit Types
 | 2026-04-11 | — | complete test phase — 299 unit tests, 5 E2E tests, smoke PASS | e843d458942d |
 | 2026-04-11 | e2e | set up Playwright with E2E specs and smoke test results | cba0fd6e9012 |
 
-### CI/CD (ci) — 11 commits
+### CI/CD (ci) — 18 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-07-30 | probe | a deploy key can write to main; probe removes itself | 86a948ac4add |
+| 2026-07-30 | probe | can a deploy key write to protected main? | 97c9eb93d7cc |
+| 2026-07-29 | probe | remove the Actions-bypass probe | 8f28d73b0c06 |
+| 2026-07-29 | probe | measure whether the Actions app can bypass main-protection | 55b628aacf7b |
+| 2026-07-29 | probe | remove the throwaway token probe | 1e4dd9095498 |
+| 2026-07-29 | probe | separate token-write refusal from ruleset refusal | 2a5b7d35e4c0 |
+| 2026-07-29 | probe | can the refresh token write to the protected branch? | ab91f6b543dc |
 | 2026-07-06 | coverage | flip the diff-coverage gate to hard-block (< 80% changed-line coverage blocks merge) (#330) | d22111eac8c6 |
 | 2026-07-06 | coverage | prove the diff-coverage gate bites via a tested --fail-under entrypoint (Phase-4 hardening) (#328) | ec73bfffb9de |
 | 2026-07-06 | coverage | diff-coverage warn-only --fail-under=80 gate (Phase 4) (#324) | 881b1281e866 |
@@ -1332,7 +1411,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 1261 |
+| Total commits | 1340 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 1261 |
+| Human-authored commits | 1340 |
 

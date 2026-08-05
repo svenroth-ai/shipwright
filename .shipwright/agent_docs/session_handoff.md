@@ -1,39 +1,35 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-07-28-docs-placement-rule"
+run_id: "iterate-2026-08-05-mirror-tree-drift-basis"
 phase: "iterate"
-reason: "iterate: docs/ placement rule + remove one generated artifact and five finished records"
-timestamp: "2026-07-28T12:18:50.089137+00:00"
+reason: "iterate: join the cross-plugin mirror to the cache drift check, own basis per ADR-120"
+timestamp: "2026-08-05T20:23:09.795210+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-07-28 12:18:50 UTC
+> Auto-generated 2026-08-05 20:23:09 UTC
 
 ## Session Info
 
-- **Session ID**: 7c6c7b07-d3a2-4c91-ba4e-fab3535b5067
-- **Timestamp**: 2026-07-28 12:18:50 UTC
-- **Reason**: iterate: docs/ placement rule + remove one generated artifact and five finished records
+- **Session ID**: f0b56cde-31c4-4450-b878-e23403a93640
+- **Timestamp**: 2026-08-05 20:23:09 UTC
+- **Reason**: iterate: join the cross-plugin mirror to the cache drift check, own basis per ADR-120
 
 ## Last Iterate
 
-- **Run ID**: iterate-2026-07-28-docs-placement-rule
-- **Date**: 2026-07-28T12:18:44.151571Z
-- **Type**: change
-- **Complexity**: medium
-- **Branch**: iterate/docs-placement-rule
-- **ADR**: iterate-2026-07-28-docs-placement-rule
+- **Run ID**: iterate-2026-08-05-iterate-timings-derived-parent
+- **Date**: 2026-08-05T17:43:50.506548Z
+- **Type**: bug
+- **Complexity**: small
+- **Branch**: iterate/iterate-timings-derived-parent
+- **ADR**: iterate-2026-08-05-iterate-timings-derived-parent
 - **Tests passed**: True
-- **Spec**: .shipwright/planning/iterate/iterate-2026-07-28-docs-placement-rule.md
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/docs-placement-rule
-- **Run ID**: iterate-2026-07-28-docs-placement-rule
-- **Spec**: .shipwright/planning/iterate/iterate-2026-07-28-docs-placement-rule.md
-- **Complexity**: medium · **spec_impact:** none · **affected_frs:** [] ·
-- **External Review Marker**: completed (external_review_state.json @ 2026-07-28T11:58:04)
+- **Branch**: iterate/mirror-tree-drift-basis
+- **External Review Marker**: missing
 
 ### Mandatory replay on Resume
 
@@ -51,8 +47,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/docs-placement-rule
-- **Last Commit**: 7ec426a2 chore(triage): sweep 54 outbox append(s) into branch
+- **Branch**: iterate/mirror-tree-drift-basis
+- **Last Commit**: 4c7fb716 chore(triage): sweep 6 outbox append(s) into branch
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -68,17 +64,17 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 | Event | Type | Source | Date |
 |-------|------|--------|------|
-| evt-003a4ccb | grade_snapshot | — | 2026-07-28 |
-| evt-a25fc820 | work_completed | iterate (iterate: docs/ placement rule + remove one generated artifact and five finished records) | 2026-07-28 |
-| evt-7963d51e | grade_snapshot | — | 2026-07-28 |
-| evt-2df150c5 | work_completed | iterate (Make a conditional session policy gating subagents a question asked before Stage 1 rather than a silent not_run at F11, and define what a real blocker is.) | 2026-07-28 |
-| evt-5f7e67f6 | grade_snapshot | — | 2026-07-28 |
+| evt-eee53017 | work_completed | iterate (check_plugin_cache_sync.py now gates the cross-plugin mirror cache/plugins/<name>/, the third of the cache's three trees, via new scripts/cache_mirror_compare.py with its own basis (always "cache") and state vocabulary (ok/drift/not_mirrored/no_source), distinct from the plugins/shared trees' git-vs-walk comparison.) | 2026-08-05 |
+| evt-1ad30d17 | work_completed | iterate (F11 gate enforcing that F5c honors Step 3.4 recorded complexity) | 2026-08-05 |
+| evt-f29ca838 | work_completed | iterate (Synthesize a missing iterate_timings ancestor from its children's envelope instead of orphaning them, closing the P1.17 gap that left every work_completed event with zero measurement data) | 2026-08-05 |
+| evt-0e920f7c | grade_snapshot | — | 2026-08-05 |
+| evt-cec64454 | work_completed | iterate (Trim bloat-gate-crossing docstrings and register the vendored hook's pre-existing overage as grandfathered debt) | 2026-08-05 |
 
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 400
-- **Last iterate**: change — iterate: docs/ placement rule + remove one generated artifact and five finished records (2026-07-28)
+- **Total work events**: 465
+- **Last iterate**: change — check_plugin_cache_sync.py now gates the cross-plugin mirror cache/plugins/<name>/, the third of the cache's three trees, via new scripts/cache_mirror_compare.py with its own basis (always "cache") and state vocabulary (ok/drift/not_mirrored/no_source), distinct from the plugins/shared trees' git-vs-walk comparison. (2026-08-05)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
 ## Recent Decisions

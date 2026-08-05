@@ -8,11 +8,13 @@ silently never take effect" learning: changes under ``plugins/*`` and
 is run. Iterates 7-11 all had plugin-side fixes that landed in the dev repo but
 never reached runtime because the sync step was skipped.
 
-Two of the cache's trees are compared, and a green means both were read:
+All three of the cache's trees are compared, and a green means all were read:
 
 - ``cache/<plugin>/<version>/`` — the installed plugins;
 - ``cache/shared/``            — reached as ``{plugin_root}/../../shared``, and
-  the home of the F11 finalization verifier every iterate runs.
+  the home of the F11 finalization verifier every iterate runs;
+- ``cache/plugins/<plugin>/``  — the cross-plugin mirror behind
+  ``{plugin_root}/../../plugins/shipwright-X``.
 
 Only the first was compared until 2026-08-01, so ``--strict`` could print
 "all 14 plugin(s) in sync" with the whole of ``shared/scripts/`` deleted from
@@ -20,14 +22,13 @@ the cache. That is not a hypothetical: a partial reap (see ``.orphaned_at``
 below) leaves the SessionStart self-heal hook's sentinel intact, so nothing
 repairs it and F11 dies with ``ModuleNotFoundError``.
 
-A third tree, ``cache/plugins/<plugin>/`` (the cross-plugin mirror behind
-``{plugin_root}/../../plugins/shipwright-X``), is not compared here. It once
-could not be: ``ensure_shared_cache`` judged that whole tree from a single
-sentinel file, so a gate on top of it would have inherited the weakness. Since
-iterate-2026-08-01-cache-heal-per-plugin the healer compares each tree's FILE
-SET against its repair source, so joining the mirror here is now plain follow-up
-work (``trg-5005bf57``) rather than a blocked one. The healer is not a
-substitute: it detects ABSENCE, this check detects STALENESS.
+The mirror joined last (P2.29, superseding trg-5005bf57). It once could not be
+gated: ``ensure_shared_cache`` judged that whole tree from a single sentinel
+file, so a gate on top of it would have inherited the weakness. Since
+iterate-2026-08-01-cache-heal-per-plugin the healer compares each mirror's FILE
+SET against its own repair source, so the mirror is soundly repaired and can be
+held to a basis of its own — see ``scripts/cache_mirror_compare.py``. The
+healer is not a substitute: it detects ABSENCE, this check detects STALENESS.
 
 ``.orphaned_at`` files are written by the Claude Code cache manager into
 directories it does not recognise as an installed plugin. Nothing in this repo
@@ -80,14 +81,7 @@ from cache_install_resolve import (  # noqa: E402
     manifest_for,
     resolve_version_dir,
 )
-
-#: `installed_plugins=None` means "deliberately no authority"; OMITTING it means "you decide".
-#: Without the distinction the library entry point kept the pre-change heuristic as its
-#: default — right for the tmp roots tests use, wrong for the one tree in production.
-_UNSET = object()
-from cache_sync_report import (  # noqa: E402
-    UNGATED as _UNGATED,
-)
+from cache_mirror_compare import compare_all_mirrors  # noqa: E402
 from cache_sync_report import (  # noqa: E402
     print_drift,
     print_ok,
@@ -98,9 +92,12 @@ from cache_tree_compare import (  # noqa: E402
     find_orphan_markers,
 )
 
+#: `installed_plugins=None` means "deliberately no authority"; OMITTING it means "you decide".
+#: Without the distinction the library entry point kept the pre-change heuristic as its
+#: default — right for the tmp roots tests use, wrong for the one tree in production.
+_UNSET = object()
+
 _SHARED_DIR = "shared"
-
-
 
 
 def _default_repo_root() -> Path:
@@ -138,12 +135,15 @@ def _result(status: str, cache_root: Path, **extra) -> dict:
     The early-return statuses used to omit ``shared`` / ``orphan_markers``
     entirely, so a ``--json`` consumer got a payload the docstring denied.
     """
-    return {"status": status, "drifted_count": 0, "plugins": [],
+    return {"status": status, "drifted_count": 0, "plugins": [], "mirror": [],
             "shared": _shared_na(), "orphan_markers": [],
             # A machine consumer must be able to tell WHICH trees a green
             # covers. `status: ok` alone is the pre-fix guarantee, because it
             # reads the same whether shared/ was compared or skipped as n/a.
-            "verified": [], "ungated": [_UNGATED],
+            # `ungated` is kept (rather than dropped) for schema stability —
+            # empty now that all three trees are gated, but a consumer that
+            # already checks it need not change.
+            "verified": [], "ungated": [],
             "cache_root": str(cache_root), **extra}
 
 
@@ -164,10 +164,13 @@ def check_sync(*, repo_root: Path, cache_root: Path, installed_plugins=_UNSET) -
     - ``shared``: one record for ``cache/shared/`` (``state: "n/a"`` when the
       repo has no ``shared/`` — only the monorepo does, and its absence
       elsewhere is not a finding)
+    - ``mirror``: per-plugin records for ``cache/plugins/<plugin>/`` (see
+      ``cache_mirror_compare.py`` — its own ``basis``/``state`` vocabulary,
+      distinct from ``plugins``/``shared``)
     - ``orphan_markers``: cache-relative dirs flagged for reaping (advisory)
     - ``verified``: which trees this verdict actually covers
-    - ``ungated``: which it knowingly does not
-    - ``drifted_count``: total drifted records across both compared trees
+    - ``ungated``: which it knowingly does not (empty — all three are gated)
+    - ``drifted_count``: total drifted records across all compared trees
 
     Best-effort: no exception leaks out; OSError on cache traversal is treated
     as "not in cache".
@@ -247,9 +250,21 @@ def check_sync(*, repo_root: Path, cache_root: Path, installed_plugins=_UNSET) -
     else:
         shared = _shared_na()
 
+    # Own basis/verdict semantics (cache_mirror_compare.py, ADR-120): the
+    # source is each plugin's newest cached version, never installed_plugins —
+    # the healer this audits doesn't consult that manifest either.
+    mirror = compare_all_mirrors([p.name for p in repo_plugins], cache_root)
+    drifted += sum(1 for m in mirror if m["state"] not in ("ok", "no_source"))
+    # `no_source` still counts as verified — same rule as `not_in_cache` above:
+    # a plugin with nothing cached is a finding on ITS `plugins` record, not a
+    # refusal to establish a basis for the mirror tree as a whole.
+    if mirror and any(m["state"] != "no_source" for m in mirror):
+        verified.append("mirror")
+    scopes.append(cache_root / "plugins")
+
     return _result(
         "drift" if drifted else "ok", cache_root,
-        drifted_count=drifted, plugins=plugins, shared=shared,
+        drifted_count=drifted, plugins=plugins, shared=shared, mirror=mirror,
         verified=verified, orphan_markers=find_orphan_markers(cache_root, scopes),
     )
 
