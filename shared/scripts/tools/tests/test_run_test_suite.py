@@ -5,7 +5,8 @@ load-bearing behaviours: a unit red in parallel but green when re-run serially m
 stop the gate (no false STOP); a DETERMINISTIC infrastructure fault reproduces on its
 retry and still stops it; and an infra retry never strips xdist — that would green a
 suite that never ran the fan-out its config demands. Discovery + the config boundary
-live in `test_suite_units.py`; process/fault behaviour in `test_run_test_suite_faults.py`.
+live in `test_suite_units.py`; process/fault behaviour in `test_run_test_suite_faults.py`;
+console-encoding safety in `test_run_test_suite_console.py`.
 """
 
 from __future__ import annotations

@@ -60,6 +60,7 @@ _RUNNER_FILES = (
     "scripts/tools/combine_coverage.py",
     "scripts/tools/run_test_suite.py",
     "scripts/tools/suite_budget.py",
+    "scripts/tools/suite_console.py",
     "scripts/tools/suite_coverage.py",
     "scripts/tools/suite_coverage_rules.py",
     "scripts/tools/suite_diagnostics.py",

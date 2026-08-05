@@ -1,0 +1,73 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-08-05-run-suite-console-encoding-guard",
+    "date": "2026-08-05",
+    "unit": {
+      "status": "passed",
+      "passed": 490,
+      "failed": 0,
+      "note": "F0 canonical suite (run_test_suite.py -- the file this iterate changes): 18/18 units GREEN across every plugin + shared/tests + shared/scripts/tests + shared/scripts/tools/tests + integration-tests (5.0 min; diff-coverage 100% on the 2 changed source files, run_test_suite.py + suite_console.py, vs origin/main). Exact pytest count captured for the directly-affected unit (shared/scripts/tools/tests): 490 passed, 7 skipped, 2 deselected -- includes the new/relocated regression test for this fix (test_run_test_suite_console.py::test_console_report_survives_non_cp1252_captured_output) and the extended ASCII-only guard (test_suite_units.py::test_operator_facing_strings_are_ascii_only). Per-test counts for the other 17 GREEN units were not individually retained -- F0 only persists diagnostics for a failing/retried unit, and none failed."
+    },
+    "integration": {
+      "status": "passed",
+      "passed": 0,
+      "total": 0,
+      "note": "This change has no CRUD/DB surface, so no integration layer is due for it specifically. The repo's own integration-tests/ unit nonetheless ran GREEN in 252.9s as part of F0's mandatory full-suite run; exact pytest count not individually retained since it passed."
+    },
+    "pgtap": {
+      "status": "n/a",
+      "reason": "no database; this is F0 test-runner tooling"
+    },
+    "e2e": {
+      "status": "n/a",
+      "reason": "no browser/UI surface -- this is F0's own console-reporting encoding safety"
+    },
+    "design_fidelity": {
+      "status": "n/a",
+      "reason": "no UI surface"
+    },
+    "smoke": {
+      "status": "n/a",
+      "reason": "no startable server surface touched"
+    },
+    "degraded": [],
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "_finish_locked's console report (print_console, called from render_run_report's failed/retried-unit output and gate.lines) survives a captured pytest output tail containing a character a cp1252 console cannot encode, printing a replacement character instead of raising UnicodeEncodeError",
+          "disposition": "tested",
+          "evidence": "shared/scripts/tools/tests/test_run_test_suite_console.py::test_console_report_survives_non_cp1252_captured_output PASSED -- confirmed RED before the fix (UnicodeEncodeError at the exact line the raised finding named) and GREEN after"
+        },
+        {
+          "behavior": "the runner's own authored console prose stays ASCII-only after adding suite_console.py (the guard this fix relies on to keep the common path byte-identical to before)",
+          "disposition": "tested",
+          "evidence": "shared/scripts/tools/tests/test_suite_units.py::test_operator_facing_strings_are_ascii_only PASSED -- extended to scan suite_console.py in this diff"
+        }
+      ],
+      "counts": {
+        "testable": 2,
+        "tested": 2,
+        "untestable": 0,
+        "untested_testable": 0
+      },
+      "enumeration_basis": {
+        "acs": 1,
+        "covered_acs": 1
+      }
+    }
+  },
+  "coverage": {
+    "total": 80.2,
+    "measured_tier": "repo",
+    "source": "combined coverage.xml (all plugins + shared + integration)",
+    "measured_at": "2026-07-04T00:00:00Z"
+  },
+  "source_state": {
+    "run_id": "iterate-2026-08-05-run-suite-console-encoding-guard",
+    "commit": "8ef40dae9ae56fee4595732e968d29faf0bb7017",
+    "dirty": true,
+    "base": null,
+    "release": null
+  }
+}
