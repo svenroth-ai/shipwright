@@ -608,6 +608,30 @@ the finalization churn. The flag forces the change to be *reasoned about and
 recorded*; it must never be read as "pin everything" (GitHub-owned actions stay on
 mutable tags by framework decision, third-party stay SHA-pinned).
 
+**Step 3.4's recorded complexity needed its own recording-integrity gate
+(iterate-2026-08-05-risk-recheck-recording-integrity, triage `trg-da9320d8` →
+retitled P4.01).** The campaign sub-iterate-runner's Step 3.4
+(`diff_risk_recheck.py`) computes `effective_complexity` from the real diff and
+the runner contract says F5c MUST record that value — but nothing checked that
+it did. `check_integration_coverage`'s complexity read is diagnostic-only since
+iterate-2026-08-01-coverage-gate-recompute-order (P1.04), so an under-recorded
+F5c entry could pass every existing gate. This matters beyond any one check:
+the F5c-recorded `complexity` is what `classify_complexity`'s history-prior
+fallback (`prior_source: history`) reads for every OTHER no-keyword iterate, so
+an unenforced under-record quietly corrupts the classifier every future run
+falls back on. Step 3.4 now persists its result to
+`.shipwright/planning/iterate/<run_id>/risk_recheck.json` — beside
+`ci_supplychain_ack.json`, staged by F6's existing directory-level add — and
+the F11 verifier `check_risk_recheck_recorded` FAILS when the F5c-recorded
+complexity is outranked by that recorded `effective_complexity`. Absence of
+the artifact is a SKIP, not a failure: Step 3.4 never runs for a standalone
+iterate, so this is campaign-only by construction. **This is a TRANSCRIPTION-
+integrity check, not independent re-verification** — a runner could still edit
+`risk_recheck.json` itself before F6; closing that residual would need an
+independently reproducible fingerprint or a re-run of the detectors at F11,
+consistent with every other runner-contract step being contract-enforced
+rather than independently gated.
+
 **Curated agent-docs use `merge=union`, not regeneration
 (iterate-2026-06-12-union-curated-agent-docs).** The serial-integrate fix above
 auto-resolves the *regenerated* churn snapshots, but `.shipwright/agent_docs/architecture.md`

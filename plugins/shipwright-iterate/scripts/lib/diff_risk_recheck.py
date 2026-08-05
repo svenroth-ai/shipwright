@@ -50,6 +50,7 @@ from risk_detectors import (  # noqa: E402
     is_io_boundary_change,
     touches_build_files,
 )
+from risk_recheck_record import write_recheck_record  # noqa: E402, F401 — re-exported surface
 
 #: Reason code carried by an escalated result. Bound to the operator decision of
 #: 2026-08-01: a runner touching the CI trust boundary STOPS and hands back. It
@@ -245,8 +246,27 @@ def main() -> int:
         # Still valid JSON on stdout: the caller parses unconditionally.
         print(json.dumps({"error": str(exc), "escalate": {"required": False}}))
         return 2
+    # Persisted on BOTH the continue (0) and CI-escalation (3) exit — F11's
+    # check_risk_recheck_recorded needs the escalation case's effective_complexity
+    # too. The escalation's exit code is NEVER changed by a write failure — it is
+    # already a STOP the caller branches on, and downgrading it to a generic
+    # operational failure would erase the reason. The CONTINUE path is different:
+    # silently returning 0 with no artifact would let the recording-integrity
+    # gate's own producer fail invisibly, exactly the silent bypass this
+    # mechanism exists to close (external code review, 2026-08-05) — so on that
+    # path a write failure becomes an operational failure (exit 2), same as any
+    # other reason "the re-check did not run".
+    escalating = result["escalate"]["required"]
+    if args.run_id:
+        try:
+            write_recheck_record(Path(args.project_root), args.run_id, result)
+        except (ValueError, OSError) as exc:
+            result["recheck_record_error"] = str(exc)
+            if not escalating:
+                print(json.dumps(result, indent=2, ensure_ascii=False))
+                return 2
     print(json.dumps(result, indent=2, ensure_ascii=False))
-    return 3 if result["escalate"]["required"] else 0
+    return 3 if escalating else 0
 
 
 if __name__ == "__main__":

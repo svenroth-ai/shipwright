@@ -802,9 +802,9 @@
     {
       "path": "shared/scripts/tools/verifiers/iterate_checks.py",
       "limit": 300,
-      "current": 1087,
+      "current": 1089,
       "state": "exception",
-      "adr": "ADR-093"
+      "adr": "ADR-125"
     },
     {
       "path": "shared/scripts/tools/verifiers/plan_checks.py",

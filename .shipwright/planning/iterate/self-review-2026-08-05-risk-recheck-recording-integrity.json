@@ -1,0 +1,12 @@
+{
+  "items": [
+    {"name": "Spec Compliance", "verdict": "pass", "note": "All 9 ACs implemented; symlink-escape hardening beyond precedent explicitly rejected as out-of-scope, matching sibling artifacts."},
+    {"name": "Error Handling", "verdict": "pass", "note": "Every artifact-read path returns a named CheckResult failure rather than raising; writer's raises are caught by main() and reported without changing exit code."},
+    {"name": "Security Basics", "verdict": "pass", "note": "No secrets/user-input here. Full symlink-escape resolve+containment considered and scoped down to a not-a-regular-file check matching the ci_supplychain_ack precedent."},
+    {"name": "Test Quality", "verdict": "pass", "note": "All new tests assert on outcomes (CheckResult.ok, file contents, exit codes); 19-row Test Completeness Ledger, 0 untested-testable."},
+    {"name": "Performance Basics", "verdict": "n/a", "note": "Single small JSON file read/write per F11 run; no loops, no unbounded fetch."},
+    {"name": "Naming & Structure", "verdict": "pass", "note": "diff_risk_recheck.py split back to 253 lines via a new sibling module (mirrors ci_supplychain.py/ci_supplychain_ack_store.py); sub-iterate-runner.md edit was net-line-neutral (497->497), avoiding an Anti-Ratchet violation."},
+    {"name": "Affected Boundaries", "verdict": "pass", "note": "Producer diff_risk_recheck.py/risk_recheck_record -> consumer risk_recheck_recording, JSON. Real subprocess round-trip probe run; malformed-artifact edge cases (the real edge-case space for a machine-only format) covered in 8 cases."},
+    {"name": "Test Hygiene Probe", "verdict": "pass", "note": "scan_test_hygiene.py --diff reports no findings."}
+  ]
+}

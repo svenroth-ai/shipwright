@@ -1,0 +1,252 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-08-05-risk-recheck-recording-integrity",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-05T14:33:02.980658+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 10,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The verifier does not explicitly validate that the `effective_complexity` value read from the artifact is a recognised rank in `_COMPLEXITY_ORDER`. If a bug in the producer emits an unexpected string, the verifier could raise an unhandled `ValueError`/`KeyError` during rank lookup, or treat it as a successful comparison when it should fail.",
+          "suggestion": "Add a guard immediately after reading `effective_complexity`: if it is not in `_COMPLEXITY_ORDER`, return a FAIL result with a clear defect message (“unrecognized effective_complexity: …”). The unit tests should cover this case.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "The artifact is only written on the normal `exit(0)` and `exit(3)` paths. If `diff_risk_recheck.py` crashes due to an unhandled exception (e.g., a disk I/O error late in `recheck()`), no artifact is produced, the verifier SKIPs, and an under-recorded complexity could slip through without a gate.",
+          "suggestion": "Consider wrapping the artifact write in a `try/finally` to guarantee it is attempted (or at least note that this is a known limitation). For a medium-complexity change this is acceptable, but it’s worth a comment.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "The plan reuses `is_safe_run_id` from `lib.review_record_schema` in `diff_risk_recheck.py`, but does not confirm that the import path is available from the plugin’s `scripts/lib` directory without modifying `PYTHONPATH` or `sys.path`.",
+          "suggestion": "In the implementation, verify the import works (it likely already does, as `ci_supplychain_ack_store` uses the same pattern). If any adjustment is needed, document it; otherwise, no change.  Overall assessment: The approach is well-considered, mirrors proven patterns, and carefully limits blast radius. The only actionable improvement is hardening the unrecognised-`effective_complexity` edge case. All acceptance criteria are addressed; the plan is ready to implement.  SHIPWRIGHT_VERDICT: approve",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "The plan assumes the campaign runner already invokes `diff_risk_recheck.py` with `--run-id`, but it does not list or verify the Step 3.4 invocation that supplies that argument. If that invocation omits the argument, the new writer deliberately produces no artifact and F11 will SKIP, leaving the gap open.",
+          "suggestion": "Inspect the actual Step 3.4 command path and add the runner/orchestrator file to the change if `--run-id \"$RUN_ID\"` is not already mandatory. Add a focused test or command-level assertion that campaign-mode invocation supplies the run ID; document that omission is an invocation error for current campaign runs.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "security",
+          "file": null,
+          "line": null,
+          "finding": "Validating `run_id` as a safe component alone does not fully satisfy “fails closed rather than writing outside the planning tree.” A pre-existing symlinked `.shipwright/planning/iterate/<run_id>` directory can cause `.tmp` creation and `os.replace` to write through the symlink outside the repository tree. The reader has the analogous issue when it follows an artifact symlink.",
+          "suggestion": "Before writing or reading, resolve the expected run directory and verify it remains beneath the resolved `.shipwright/planning/iterate` root; reject symlinked path components or otherwise reject paths whose resolved parent escapes that root. Add a symlink-escape regression test in addition to unsafe-string run-ID tests.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The proposed reader validation is incomplete for an integrity gate. It mentions schema version and missing `effective_complexity`, but does not explicitly require that the envelope `run_id` equals the requested run ID, that `risk_recheck` is an object, or that both complexities are strings in the canonical vocabulary. An artifact copied from another run, or malformed/unknown values, could produce a crash, an ambiguous result, or an unintended pass.",
+          "suggestion": "Treat all of the following as failures: mismatched envelope/requested run ID; non-object envelope or `risk_recheck`; absent, non-string, or unrecognized `effective_complexity`; and absent, non-string, or unrecognized F5c complexity. Ensure the verifier catches parsing/type/rank errors and returns a `CheckResult` failure rather than raising.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "“F5c entry” needs a more precise selection rule. `find_entry_by_run_id` alone may select an entry for the run that is not the F5c record, and duplicate entries could allow a favorable complexity entry to be selected while an under-recorded or malformed F5c entry remains present.",
+          "suggestion": "Confirm the F5c record’s existing schema/discriminator and require it explicitly (for example, phase/step/entry type as applicable). Define duplicate behavior conservatively: fail on multiple matching F5c records, or validate the authoritative/latest record according to the existing append-record semantics. Add tests for a same-run non-F5c entry and duplicate F5c entries.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "The artifact only proves consistency between two mutable working-tree records; it does not prove that `effective_complexity` was actually the result computed by Step 3.4. A runner can avoid an under-recording failure by lowering the artifact’s value too. This is compatible with the explicitly stated out-of-scope independent recomputation, but the design note’s assertion that there is “nothing to re-edit after the fact” is not true for a working-tree artifact before F6.",
+          "suggestion": "State this boundary clearly in the verifier documentation and contract prose: this is a transcription/recording-integrity check, not an independent risk-classification verification. If stronger protection is required later, it needs an independently reproducible input/fingerprint or a re-run of the classifier, rather than additional validation around this self-reported JSON.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The test plan does not explicitly exercise the required exit-3 persistence path. Testing `write_recheck_record` or a normal CLI run is insufficient because the main control flow could return before writing when CI escalation occurs.",
+          "suggestion": "Add a subprocess-level test that creates a diff which triggers the CI escalation outcome, invokes the real CLI with `--run-id`, asserts exit status 3, and verifies a valid artifact with the computed `effective_complexity` exists. Also verify that write errors are surfaced as failures rather than being hidden by the exit-3 handling.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "The “sync test” for a duplicated complexity order is sensible under the cited no-cross-plugin-import constraint, but it should avoid importing a plugin module through a brittle source-path mechanism just to compare a tuple. That can make the shared verifier test environment depend on plugin import behavior rather than vocabulary correctness.",
+          "suggestion": "Keep the local canonical tuple and use the project’s established source-loading/test helper, if one exists, for the drift test. If no such helper exists, a narrowly scoped test that reads the source vocabulary in the same manner as existing cross-boundary tests is preferable to introducing a new shared abstraction solely for four values.  Overall, the durable pre-F11 artifact and comparison gate are a sound, appropriately scoped solution. The change should be revised to guarantee campaign invocation supplies the run ID, harden path/schema/entry selection handling, and test the escalation path before relying on the new gate. SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-08-05T15:45:26.056390+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[deepseek] **Category:** edge-case  \n**Severity:** medium  \n**Finding:** The verifier does not explicitly validate that the `effective_complexity` value read from the artifact is a recognised rank in `_COMPLEXITY_ORDER`. If a bug in the producer emits an unexpected string, the verifier could raise an unhandled `ValueError`/`KeyError` during rank lookup, or treat it as a successful comparison when it should fail.  \n**Suggestion:** Add a guard immediately after reading `effective_complexity`: if it is not in `_COMPLEXITY_ORDER`, return a FAIL result with a clear defect message (“unrecognized effective_complexity: …”). The unit tests should cover this case.\n\n**Category:** risk  \n**Severity:** low  \n**Finding:** The artifact is only written on the normal `exit(0)` and `exit(3)` paths. If `diff_risk_recheck.py` crashes due to an unhandled exception (e.g., a disk I/O error late in `recheck()`), no artifact is produced, the verifier SKIPs, and an under-recorded complexity could slip through without a gate.  \n**Suggestion:** Consider wrapping the artifact write in a `try/finally` to guarantee it is attempted (or at least note that this is a known limitation). For a medium-complexity change this is acceptable, but it’s worth a comment.\n\n**Category:** dependency  \n**Severity:** low  \n**Finding:** The plan reuses `is_safe_run_id` from `lib.review_record_schema` in `diff_risk_recheck.py`, but does not confirm that the import path is available from the plugin’s `scripts/lib` directory without modifying `PYTHONPATH` or `sys.path`.  \n**Suggestion:** In the implementation, verify the import works (it likely already does, as `ci_supplychain_ack_store` uses the same pattern). If any adjustment is needed, document it; otherwise, no change.\n\n**Overall assessment:** The approach is well-considered, mirrors proven patterns, and carefully limits blast radius. The only actionable improvement is hardening the unrecognised-`effective_complexity` edge case. All acceptance criteria are addre […truncated]\n\n[openai] 1. **Category: dependency**  \n   **Severity: high**  \n   **Finding:** The plan assumes the campaign runner already invokes `diff_risk_recheck.py` with `--run-id`, but it does not list or verify the Step 3.4 invocation that supplies that argument. If that invocation omits the argument, the new writer deliberately produces no artifact and F11 will SKIP, leaving the gap open.  \n   **Suggestion:** Inspect the actual Step 3.4 command path and add the runner/orchestrator file to the change if `--run-id \"$RUN_ID\"` is not already mandatory. Add a focused test or command-level assertion that campaign-mode invocation supplies the run ID; document that omission is an invocation error for current campaign runs.\n\n2. **Category: security**  \n   **Severity: medium**  \n   **Finding:** Validating `run_id` as a safe component alone does not fully satisfy “fails closed rather than writing outside the planning tree.” A pre-existing symlinked `.shipwright/planning/iterate/<run_id>` directory can cause `.tmp` creation and `os.replace` to write through the symlink outside the repository tree. The reader has the analogous issue when it follows an artifact symlink.  \n   **Suggestion:** Before writing or reading, resolve the expected run directory and verify it remains beneath the resolved `.shipwright/planning/iterate` root; reject symlinked path components or otherwise reject paths whose resolved parent escapes that root. Add a symlink-escape regression test in addition to unsafe-string run-ID tests.\n\n3. **Category: edge-case**  \n   **Severity: medium**  \n   **Finding:** The proposed reader validation is incomplete for an integrity gate. It mentions schema version and missing `effective_complexity`, but does not explicitly require that the envelope `run_id` equals the requested run ID, that `risk_recheck` is an object, or that both complexities are strings in the canonical vocabulary. An artifact copied from another run, or malformed/unknown values, could produce a crash, an a […truncated]",
+      "verdicts": {
+        "openai": "revise",
+        "deepseek": "approve"
+      }
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 2,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "shared/scripts/tools/verifiers/risk_recheck_recording.py",
+          "line": 59,
+          "finding": "Comment claimed RECHECK_SCHEMA_VERSION was kept in lock-step by a sync test that did not exist.",
+          "suggestion": "Add the promised test or correct the comment.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "plugins/shipwright-iterate/tests/test_diff_risk_recheck_persistence.py",
+          "line": 80,
+          "finding": "Section-header comment had no test directly beneath it; the test it introduced was misplaced at file-end.",
+          "suggestion": "Move the test under its own header.",
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-08-05T15:46:13.840306+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 1,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "boundary & contract / hidden coupling",
+          "file": "shared/scripts/tools/verifiers/risk_recheck_recording.py",
+          "line": null,
+          "finding": "Claim under doubt: a write-time persistence failure cannot silently defeat the new recording-integrity gate — diff_risk_recheck.py's main() reports a write failure only via result['recheck_record_error'], which nothing downstream reads: sub-iterate-runner.md's Step 3.4 contract never mentions it, and the absent-artifact SKIP branch returned a message claiming 'standalone iterate or a run that predates the recording contract' — false for a campaign run whose write simply failed.",
+          "suggestion": "reword the SKIP message to not claim a specific cause, and document the residual explicitly (done); wiring recheck_record_error into the runner contract as an operational-failure signal is a follow-up",
+          "source": "doubt-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-08-05T15:46:36.052804+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 5,
+      "findings": [
+        {
+          "severity": "low",
+          "category": "bug",
+          "file": "shared/scripts/tools/verifiers/risk_recheck_recording.py (in `check_risk_recheck_recorded`, around the `if eff_rank is None:` branch)",
+          "line": null,
+          "finding": "When `effective_complexity` is missing from the artifact (i.e. `block.get(\"effective_complexity\")` returns `None`), the error message says `\"unrecognized effective_complexity (None)\"` instead of indicating the field is missing. This mislabels the root cause, which could confuse diagnosis. The spec treats a missing `effective_complexity` as a failure, which the code correctly enforces, but the message is misleading.",
+          "suggestion": "Differentiate between a missing key and an unrecognized value—for example, check for the key’s absence explicitly and return a message like `\"the recorded risk re-check lacks an effective_complexity field\"`, while keeping the current message for genuinely unrecognised strings.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "spec",
+          "file": "plugins/shipwright-iterate/scripts/lib/diff_risk_recheck.py:252-253",
+          "line": null,
+          "finding": "Persistence failures are swallowed and the CLI still returns `0` on the normal continuation path. Consequently, a failed write (including an unsafe `--run-id`, permission failure, or a directory at the target path) leaves no artifact; the F11 check then treats that absence as a campaign-exempt `SKIP`. This violates the requirement to persist whenever `--run-id` is supplied and creates a direct bypass for the recording-integrity gate.",
+          "suggestion": "Treat a persistence failure as an operational failure on the normal path (return a nonzero status such as `2`), so the runner cannot proceed to F5c/F11 without the artifact. Retaining exit `3` for an already-escalated CI result is reasonable, but it must still stop the runner rather than silently permit a normal continuation.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "test",
+          "file": "plugins/shipwright-iterate/tests/test_diff_risk_recheck_persistence.py:64-69",
+          "line": null,
+          "finding": "The unsafe-run-ID test only calls `write_recheck_record()` directly. It does not test the CLI behavior, where `ValueError` is caught at `diff_risk_recheck.py:252` and converted into a successful normal exit with no artifact. Thus the test ledger’s claim that unsafe IDs are rejected before any write does not validate the externally relevant bypass.",
+          "suggestion": "Add a `main()`/subprocess test using an unsafe `--run-id` and assert a nonzero exit plus no successful continuation result. Add equivalent coverage for an `OSError` write failure on the exit-0 path.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "security",
+          "file": "plugins/shipwright-iterate/scripts/lib/risk_recheck_record.py:77-80",
+          "line": null,
+          "finding": "Validating only the `run_id` does not ensure the resolved write target remains under the planning tree. If `.shipwright/planning/iterate/<run_id>` is a symlink to an external directory, `path.parent.mkdir()` and `tmp.write_text()` follow it and write `risk_recheck.json.tmp` outside the project; the final `os.replace()` also operates there. This contradicts the fail-closed requirement against writing outside the planning tree.",
+          "suggestion": "Resolve the trusted planning root and target parent, reject symlinked/uncontained parents, and verify the resolved target is contained under the resolved planning root before creating or replacing files. Use a unique temporary file within the verified parent.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "security",
+          "file": "shared/scripts/tools/verifiers/risk_recheck_recording.py:78-89",
+          "line": null,
+          "finding": "The verifier interpolates `run_id` into a relative path without validating it. A caller supplying `../` components can make F11 read a `risk_recheck.json` outside the intended run directory (and potentially outside `project_root`), allowing an external/stale artifact to influence pass/fail behavior. Additionally, a dangling symlink at the expected artifact location makes `path.exists()` false and is incorrectly treated as an absent-artifact `SKIP`.",
+          "suggestion": "Apply the same safe-run-ID validation in the verifier before constructing the path, returning a failure for invalid IDs. Use `lexists()`/`lstat()` semantics to distinguish a dangling or otherwise nonregular artifact entry from genuine absence and fail rather than skip.  Overall assessment: ship-with-fixes. The core comparison and registry integration are implemented, but persistence failure currently turns a mandatory campaign artifact into an F11 skip, undermining the gate’s purpose; path containment also needs hardening. SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-08-05T15:56:28.923579+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[deepseek] - Category: bug\n- Severity: low\n- File: shared/scripts/tools/verifiers/risk_recheck_recording.py (in `check_risk_recheck_recorded`, around the `if eff_rank is None:` branch)\n- Finding: When `effective_complexity` is missing from the artifact (i.e. `block.get(\"effective_complexity\")` returns `None`), the error message says `\"unrecognized effective_complexity (None)\"` instead of indicating the field is *missing*. This mislabels the root cause, which could confuse diagnosis. The spec treats a missing `effective_complexity` as a failure, which the code correctly enforces, but the message is misleading.\n- Suggestion: Differentiate between a missing key and an unrecognized value—for example, check for the key’s absence explicitly and return a message like `\"the recorded risk re-check lacks an effective_complexity field\"`, while keeping the current message for genuinely unrecognised strings.\n\n---\n\nOverall assessment: All acceptance criteria are implemented, error paths are covered, the integration tests verify end-to-end composition, and no critical correctness or security issues were found. The only notable flaw is a misleading error message when `effective_complexity` is absent, which is low impact. The change is safe and ready to ship.\n\nSHIPWRIGHT_VERDICT: approve\n\n[openai] - Category: spec\n- Severity: high\n- File: `plugins/shipwright-iterate/scripts/lib/diff_risk_recheck.py:252-253`\n- Finding: Persistence failures are swallowed and the CLI still returns `0` on the normal continuation path. Consequently, a failed write (including an unsafe `--run-id`, permission failure, or a directory at the target path) leaves no artifact; the F11 check then treats that absence as a campaign-exempt `SKIP`. This violates the requirement to persist whenever `--run-id` is supplied and creates a direct bypass for the recording-integrity gate.\n- Suggestion: Treat a persistence failure as an operational failure on the normal path (return a nonzero status such as `2`), so the runner cannot proceed to F5c/F11 without the artifact. Retaining exit `3` for an already-escalated CI result is reasonable, but it must still stop the runner rather than silently permit a normal continuation.\n\n- Category: test\n- Severity: medium\n- File: `plugins/shipwright-iterate/tests/test_diff_risk_recheck_persistence.py:64-69`\n- Finding: The unsafe-run-ID test only calls `write_recheck_record()` directly. It does not test the CLI behavior, where `ValueError` is caught at `diff_risk_recheck.py:252` and converted into a successful normal exit with no artifact. Thus the test ledger’s claim that unsafe IDs are rejected before any write does not validate the externally relevant bypass.\n- Suggestion: Add a `main()`/subprocess test using an unsafe `--run-id` and assert a nonzero exit plus no successful continuation result. Add equivalent coverage for an `OSError` write failure on the exit-0 path.\n\n- Category: security\n- Severity: medium\n- File: `plugins/shipwright-iterate/scripts/lib/risk_recheck_record.py:77-80`\n- Finding: Validating only the `run_id` does not ensure the resolved write target remains under the planning tree. If `.shipwright/planning/iterate/<run_id>` is a symlink to an external directory, `path.parent.mkdir()` and `tmp.write_text()` follow it and write `risk […truncated]",
+      "verdicts": {
+        "openai": "revise",
+        "deepseek": "approve"
+      }
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-05T15:45:52.197041+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    }
+  }
+}
