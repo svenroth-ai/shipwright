@@ -1,0 +1,108 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-08-05-iterate-entry-tail-fallback-fail-closed",
+    "date": "2026-08-05",
+    "unit": {
+      "status": "pass",
+      "passed": 7931,
+      "total": 7958,
+      "note": "shared/tests directly measured via `uv run pytest shared/tests -q`: 7931 passed, 27 skipped, 0 failed in 738.57s. The 5 files this iterate touches (test_iterate_entry_encoding.py, test_verifiers_dual_mode.py, test_spec_checks_run_id_guard.py, test_workflow_w2_run_id_guard.py, test_spec_checks.py): 105 passed, 1 skipped (dangling-symlink test needs OS/privilege, POSIX CI exercises it)."
+    },
+    "integration": {
+      "status": "pass",
+      "passed": 475,
+      "total": 475,
+      "note": "Canonical F0 suite (run_test_suite.py): 18 units GREEN in 8.8 min, diff coverage 88% (>=80% threshold). The integration-tests unit reported 1 failure in the parallel run (test_ensure_shared_cache_fanout.py) and was re-verified GREEN alone on the mandatory serial retry -- inter-unit pollution unrelated to this change (it is not xdist-allowlisted); the runner filed it itself as trg-81bef251 per its documented race-triage protocol. The retry-alone verdict is authoritative per F0.md."
+    },
+    "e2e": {
+      "status": "n/a",
+      "reason": "no browser surface; this is a shared verifier module (spec_checks.py / iterate_compliance.py / _iterate_run_id.py), no UI or dev server involved"
+    },
+    "smoke": {
+      "status": "n/a",
+      "reason": "no startable server surface touched by this change"
+    },
+    "pgtap": {
+      "status": "n/a",
+      "reason": "no RLS/migration touched"
+    },
+    "design_fidelity": {
+      "status": "n/a",
+      "reason": "no UI touched"
+    },
+    "degraded": [],
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "spec_checks._read_iterate_entry / iterate_compliance._latest_iterate_entry fail closed (None) when the requested run's own PER-FILE entry is corrupt (non-UTF-8)",
+          "disposition": "tested",
+          "evidence": "test_iterate_entry_encoding.py::test_a_corrupt_entry_fails_closed_in_tail_fallback_readers PASSED (non-utf8 case); confirmed failing pre-fix by temporarily reverting the fix and re-running"
+        },
+        {
+          "behavior": "same fail-closed contract for the malformed-JSON corruption class (not just non-UTF-8)",
+          "disposition": "tested",
+          "evidence": "test_iterate_entry_encoding.py::test_a_corrupt_entry_fails_closed_in_tail_fallback_readers PASSED (malformed-json case, same test loop)"
+        },
+        {
+          "behavior": "the genuinely-unwritten-entry tail-fallback (mid-flow finalize convenience) is preserved unchanged",
+          "disposition": "tested",
+          "evidence": "test_iterate_entry_encoding.py::test_a_genuinely_unwritten_entry_still_tail_falls_back PASSED; pre-existing test_verifiers_dual_mode.py::test_read_iterate_entry_falls_back_to_tail_on_unknown_run_id also re-verified passing unchanged"
+        },
+        {
+          "behavior": "corruption of the legacy iterate_history array (shipwright_run_config.json itself unparseable) masking the current run also fails closed, not just per-file corruption",
+          "disposition": "tested",
+          "evidence": "test_iterate_entry_encoding.py::test_a_corrupt_legacy_config_masking_the_current_run_also_fails_closed PASSED; confirmed failing pre-fix"
+        },
+        {
+          "behavior": "an unexpected error while checking corruption fails CLOSED (favors 'corrupt') rather than fails open",
+          "disposition": "tested",
+          "evidence": "test_iterate_entry_encoding.py::test_own_entry_file_is_corrupt_fails_closed_on_unexpected_error PASSED; confirmed failing pre-fix (code-reviewer finding, fixed)"
+        },
+        {
+          "behavior": "an oversized (>64KB) own-entry file is treated as corrupt, not absent",
+          "disposition": "tested",
+          "evidence": "test_iterate_entry_encoding.py::test_an_oversized_entry_file_is_treated_as_corrupt_not_absent PASSED"
+        },
+        {
+          "behavior": "a dangling symlink at the canonical entry path is treated as corrupt, not absent",
+          "disposition": "tested",
+          "evidence": "test_iterate_entry_encoding.py::test_a_dangling_symlink_at_the_entry_path_is_treated_as_corrupt_not_absent (skips gracefully without OS symlink privilege on this machine; POSIX CI exercises it -- doubt-review finding, fixed)"
+        },
+        {
+          "behavior": "end-to-end: the real W2 external-review-marker check no longer green-SKIPs on a corrupt current-run entry -- it correctly falls through to FAIL on the actual marker state instead of short-circuiting on the wrong run's inherited complexity",
+          "disposition": "tested",
+          "evidence": "test_workflow_w2_run_id_guard.py::test_w2_does_not_green_skip_on_a_corrupt_current_run_entry PASSED; confirmed failing (SKIP instead of FAIL) pre-fix"
+        },
+        {
+          "behavior": "S9 (README freshness) / S10 (CLAUDE.md sync) inherit the same fix transitively via _iterate_category -> _read_iterate_entry -> resolve_iterate_entry",
+          "disposition": "tested",
+          "evidence": "covered at the shared-reader unit level (same behaviors above); a residual PRE-EXISTING and OUT-OF-SCOPE gap for the DIFFERENT sentinel-run_id trigger (not the corruption trigger this ticket addresses) was found by Stage-3 doubt review and filed separately as trg-7de96bbd"
+        }
+      ],
+      "counts": {
+        "testable": 9,
+        "tested": 9,
+        "untestable": 0,
+        "untested_testable": 0
+      },
+      "enumeration_basis": {
+        "acs": 4,
+        "covered_acs": 4
+      }
+    }
+  },
+  "coverage": {
+    "total": 80.2,
+    "measured_tier": "repo",
+    "source": "combined coverage.xml (all plugins + shared + integration)",
+    "measured_at": "2026-07-04T00:00:00Z"
+  },
+  "source_state": {
+    "run_id": "iterate-2026-08-05-iterate-entry-tail-fallback-fail-closed",
+    "commit": "8de8207324bde26b024aaab42dd0e95e5ac55892",
+    "dirty": true,
+    "base": null,
+    "release": null
+  }
+}

@@ -1,0 +1,106 @@
+{
+  "run_id": "iterate-2026-08-05-mirror-tree-drift-basis",
+  "date": "2026-08-05T20:24:33.589908Z",
+  "event_at": "2026-08-05T20:23:09.795210+00:00",
+  "type": "change",
+  "complexity": "small",
+  "prior_source": "history",
+  "branch": "iterate/mirror-tree-drift-basis",
+  "spec": null,
+  "tests_passed": true,
+  "adr": "iterate-2026-08-05-mirror-tree-drift-basis",
+  "test_completeness": {
+    "status": "complete",
+    "behaviors": [
+      {
+        "behavior": "stale mirror content is reported as drift",
+        "disposition": "tested",
+        "evidence": "test_plugin_cache_sync_verdict.py::TestTheCrossPluginMirrorIsInScope::test_a_stale_mirror_is_drift PASSED; test_cache_mirror_compare.py::TestDriftAndOk::test_stale_content_is_drift PASSED"
+      },
+      {
+        "behavior": "an in-sync mirror is ok and named in verified",
+        "disposition": "tested",
+        "evidence": "test_plugin_cache_sync_verdict.py::TestTheCrossPluginMirrorIsInScope::test_an_in_sync_mirror_is_ok_and_verified PASSED; test_cache_mirror_compare.py::TestDriftAndOk::test_matching_content_is_ok PASSED"
+      },
+      {
+        "behavior": "a missing mirror dir (real source) is not_mirrored, counted as drift",
+        "disposition": "tested",
+        "evidence": "test_plugin_cache_sync_verdict.py::test_a_missing_mirror_is_drift PASSED; test_cache_mirror_compare.py::TestNotMirrored::test_absent_mirror_dir_is_not_mirrored PASSED"
+      },
+      {
+        "behavior": "an existing-but-empty mirror dir is also not_mirrored, not a generic drift compare",
+        "disposition": "tested",
+        "evidence": "test_cache_mirror_compare.py::TestNotMirrored::test_empty_mirror_dir_is_also_not_mirrored PASSED"
+      },
+      {
+        "behavior": "a plugin with no cached version reports mirror=no_source, not double-counted as drift",
+        "disposition": "tested",
+        "evidence": "test_plugin_cache_sync_verdict.py::test_a_plugin_with_no_cached_version_reports_no_source_not_drift PASSED (asserts mirror state, plugins state, and drifted_count==1)"
+      },
+      {
+        "behavior": "the mirror source is the newest cached version, independent of installed_plugins.json",
+        "disposition": "tested",
+        "evidence": "test_plugin_cache_sync_verdict.py::test_the_mirror_source_is_the_newest_cached_version_not_installed_plugins PASSED"
+      },
+      {
+        "behavior": "the mirror's cache basis never triggers the git-fallback basis note on a green run",
+        "disposition": "tested",
+        "evidence": "test_plugin_cache_sync_verdict.py::test_a_green_mirror_never_triggers_the_git_fallback_basis_note PASSED"
+      },
+      {
+        "behavior": "the WARN line names the drifted mirror plugin and offending file",
+        "disposition": "tested",
+        "evidence": "test_plugin_cache_sync_verdict.py::test_the_warn_line_names_the_drifted_mirror PASSED"
+      },
+      {
+        "behavior": "the OK line names the mirror's own coverage (plugin count, file count)",
+        "disposition": "tested",
+        "evidence": "test_plugin_cache_sync_verdict.py::TestTheGreenLineDoesNotOverclaim::test_ok_line_names_every_tree_it_read PASSED"
+      },
+      {
+        "behavior": "a mirror-only file (no source counterpart) is cache_only, not drift",
+        "disposition": "tested",
+        "evidence": "test_cache_mirror_compare.py::TestDriftAndOk::test_a_mirror_only_file_is_cache_only_not_drift PASSED; test_a_stale_mirror_is_drift asserts cache_only_count==1 alongside a real diff"
+      },
+      {
+        "behavior": "orphan markers under the now-gated mirror tree surface in the advisory",
+        "disposition": "tested",
+        "evidence": "test_plugin_cache_sync_verdict.py::TestOrphanMarkersAreSurfaced::test_the_gated_mirror_tree_surfaces_its_own_orphan_markers PASSED"
+      },
+      {
+        "behavior": "ungated is always [] and verified includes mirror now that all three trees are gated",
+        "disposition": "tested",
+        "evidence": "test_plugin_cache_sync_verdict.py::test_the_verdict_names_which_trees_it_covers PASSED"
+      },
+      {
+        "behavior": "the JSON payload carries the mirror key on every status, including early returns",
+        "disposition": "tested",
+        "evidence": "test_plugin_cache_sync_verdict.py::test_json_payload_carries_all_three_trees PASSED; test_early_return_statuses_carry_the_documented_shape PASSED"
+      },
+      {
+        "behavior": "no_source records do not share mutable state across calls",
+        "disposition": "tested",
+        "evidence": "test_cache_mirror_compare.py::TestNoSource::test_no_source_records_do_not_share_the_sample_list PASSED"
+      },
+      {
+        "behavior": "the shipped CLI (not just pytest) gates a stale mirror and passes a synced one end-to-end",
+        "disposition": "tested",
+        "evidence": "F0.5 surface_verification (surface=cli, tests_run=3) exit_code=0, 3/3 CLI probes passed"
+      }
+    ],
+    "counts": {
+      "total": 15,
+      "tested": 15,
+      "untestable": 0,
+      "untested_testable": 0
+    }
+  },
+  "surface_verification": {
+    "surface": "cli",
+    "tests_run": 3,
+    "exit_code": 0,
+    "evidence_path": ".shipwright/runs/iterate-2026-08-05-mirror-tree-drift-basis/surface_verification.json",
+    "detail": "The shipped scripts/check_plugin_cache_sync.py CLI driven end-to-end (not pytest, not mocked) against a real repo+cache fixture tree via .shipwright/runs/f05_cli_probe.sh: (1) a stale mirror correctly fails --strict, (2) the --json payload names the mirror finding, (3) syncing the mirror content makes --strict pass again. 3/3 probes passed."
+  },
+  "declared_removals": []
+}

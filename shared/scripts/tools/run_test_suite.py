@@ -23,8 +23,7 @@ The safety net (why concurrency does not weaken the gate):
 **Honest scope:** F0 is an *accelerated pre-gate*. The retries remove false STOPs; they do
 NOT prove serial equivalence for units that PASSED, so `ci.yml` stays SERIAL as the
 authoritative gate (guarded by test_f0_ci_parity.py); retries get a clean TEMP dir but the
-repo tree is shared. Output is ASCII-only - a cp1252 console raises UnicodeEncodeError on
-non-ASCII, which on the retry path would abort the very gate this keeps green (#244).
+repo tree is shared. The runner's own prose is ASCII-only (#244); a unit's captured pytest output is arbitrary third-party text that discipline never reaches, so `suite_console.py` guards the report instead of losing it to UnicodeEncodeError after the verdict is decided.
 """
 
 from __future__ import annotations
@@ -58,6 +57,7 @@ from scripts.tools.suite_process import (  # noqa: E402
     RC_CANCELLED as _RC_CANCELLED, read_output_tail as _read_output_tail,
     run_process as _run_process,
 )
+from scripts.tools.suite_console import print_console  # noqa: E402
 from scripts.tools.suite_coverage import (  # noqa: E402
     GATE_FAILED, GATE_PASSED, GateResult, coverage_run_lock, final_exit_code,
     prepare_coverage, run_gate,
@@ -464,7 +464,7 @@ def _finish_locked(root: Path, run_id: str | None, result: SuiteResult,
     # finished suite's results must not be withheld for it - nor lost if it is
     # interrupted part-way through.
     for line in render_run_report(result) + render_retry_block(result, races, report):
-        print(line)
+        print_console(line)
     # The gate CI runs, run here: an under-tested diff STOPs the run instead of
     # reddening a PR after the iterate has already reported done. A red suite (or
     # higher-priority evidence-recording failure) must not fetch, prompt, or hang.
@@ -481,7 +481,7 @@ def _finish_locked(root: Path, run_id: str | None, result: SuiteResult,
         else:
             gate = _gate_green_suite(root, result, source_before)
     for line in gate.lines:
-        print(line)
+        print_console(line)
     return final_exit_code(result.exit_code, report.failed, gate)
 
 

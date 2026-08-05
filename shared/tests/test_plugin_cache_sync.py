@@ -26,13 +26,13 @@ def _seed_repo_plugin(repo_root: Path, name: str, files: dict[str, str]) -> None
 def _seed_cache_plugin(
     cache_root: Path, name: str, version: str, files: dict[str, str],
 ) -> None:
-    """Write a fake cached plugin under ``<cache_root>/<name>/<version>/``."""
-    cdir = cache_root / name / version
-    cdir.mkdir(parents=True, exist_ok=True)
-    for rel, content in files.items():
-        target = cdir / rel
-        target.parent.mkdir(parents=True, exist_ok=True)
-        target.write_text(content, encoding="utf-8")
+    """Write a fake cached plugin, mirrored into the now-gated ``plugins/`` tree
+    (callers seed the newest version last, so overwrite-per-call keeps it right)."""
+    for base in (cache_root / name / version, cache_root / "plugins" / name):
+        for rel, content in files.items():
+            target = base / rel
+            target.parent.mkdir(parents=True, exist_ok=True)
+            target.write_text(content, encoding="utf-8")
 
 
 def _setup(tmp_path: Path) -> tuple[Path, Path]:
@@ -244,13 +244,13 @@ class TestCrLfNormalization:
 
     def test_crlf_vs_lf_identical_hash(self, tmp_path: Path):
         repo, cache = _setup(tmp_path)
-        # Repo file with LF, cache file with CRLF — semantically identical.
-        repo_files_dir = repo / "plugins" / "shipwright-foo"
-        cache_files_dir = cache / "shipwright-foo" / "0.1.0"
-        repo_files_dir.mkdir(parents=True)
-        cache_files_dir.mkdir(parents=True)
-        (repo_files_dir / "SKILL.md").write_bytes(b"# Heading\nline 2\n")
-        (cache_files_dir / "SKILL.md").write_bytes(b"# Heading\r\nline 2\r\n")
+        # Repo file with LF; cache (version dir + its mirror) with CRLF.
+        repo_dir = repo / "plugins" / "shipwright-foo"
+        repo_dir.mkdir(parents=True)
+        (repo_dir / "SKILL.md").write_bytes(b"# Heading\nline 2\n")
+        for base in (cache / "shipwright-foo" / "0.1.0", cache / "plugins" / "shipwright-foo"):
+            base.mkdir(parents=True)
+            (base / "SKILL.md").write_bytes(b"# Heading\r\nline 2\r\n")
         result = check_sync(repo_root=repo, cache_root=cache)
         assert result["plugins"][0]["state"] == "ok"
 
