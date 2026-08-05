@@ -344,6 +344,7 @@ Python 3.11+ with uv as package manager. All scripts are invoked via uv run. Hoo
 - (2026-08-03) iterate/test — on Windows, a Codex tool process may omit Git Bash from PATH even when Git is installed; verify `bash` before F0 shell-hook tests and add Git's `bin` only to that process environment. → iterate-2026-08-03-f0-host-resource-lease
 - (2026-08-04) iterate/test — process-order tests must synchronize on acquisition/release state, never infer overlap or FIFO from sub-second launch timing; prove the replacement by planting each ordering regression and observing RED. → iterate-2026-08-04-f0-fleet-throughput
 - (2026-08-05) iterate/F5 — an "untestable" ledger row's `reason_code` must come from `UNTESTABLE_REASON_CODES`'s closed vocabulary; an invented code (however well-argued in prose) fails F11 closed. If nothing in the set fits, that is a signal to write the real test, not to widen the vocabulary. → iterate-2026-08-04-iterate-timing-attribution
+- (2026-08-05) iterate/finalize — a `deduplicate_by_commit`-style branch must gate on the event's own `type`, not merely on field presence: PR #537 gave `grade_snapshot` a `commit` field, and the pre-existing by-commit branch (unlike its sibling `grade_snapshot` branch, added in the same PR) had no type gate, so a `grade_snapshot` sharing a `work_completed`'s sha was silently dropped as a duplicate. → iterate-2026-08-05-by-commit-dedup-type-gate
 
 ## Contributing
 

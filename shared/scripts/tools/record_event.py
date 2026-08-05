@@ -425,7 +425,8 @@ def append_event_idempotent(
 
     with _FileLock(lock_path):
         # Dedup scan UNDER the lock — readers see every prior append.
-        if deduplicate_by_commit and event.get("commit"):
+        if (deduplicate_by_commit and event.get("commit")
+                and event.get("type") == "work_completed"):
             section = event.get("section")
             if has_commit(project_root, event["commit"], section=section):
                 return None, {"reason": "duplicate_commit",

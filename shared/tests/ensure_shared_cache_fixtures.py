@@ -18,7 +18,6 @@ import sys
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[2]
-_REPO = REPO  # back-compat alias for readers of this module
 CANONICAL = REPO / "shared" / "templates" / "hooks" / "ensure_shared_cache.py"
 LOCK_HELPER = CANONICAL.with_name("cache_repair_lock.py")
 
