@@ -1,0 +1,82 @@
+{
+  "run_id": "iterate-2026-08-05-semver-prerelease-sort",
+  "date": "2026-08-05T08:26:16.067995Z",
+  "event_at": "2026-08-05T01:48:28.898239+00:00",
+  "type": "bug",
+  "complexity": "medium",
+  "prior_source": "keyword",
+  "branch": "iterate/semver-prerelease-sort",
+  "spec": ".shipwright/planning/iterate/iterate-2026-08-05-semver-prerelease-sort.md",
+  "tests_passed": true,
+  "adr": "iterate-2026-08-05-semver-prerelease-sort",
+  "test_completeness": {
+    "status": "complete",
+    "behaviors": [
+      {
+        "behavior": "cache_tree_compare.version_key ranks a release above a prerelease of the same numeric version",
+        "disposition": "tested",
+        "evidence": "test_cache_tree_compare_version_key.py::test_a_release_outranks_every_prerelease_of_the_same_version PASSED"
+      },
+      {
+        "behavior": "version_key still orders purely numeric triplets correctly (no regression)",
+        "disposition": "tested",
+        "evidence": "test_cache_tree_compare_version_key.py::test_orders_numerically_not_lexically PASSED"
+      },
+      {
+        "behavior": "the release-vs-prerelease flag does not override the numeric triplet (a newer prerelease still beats an older release)",
+        "disposition": "tested",
+        "evidence": "test_cache_tree_compare_version_key.py::test_prerelease_ordering_does_not_leak_across_numeric_versions PASSED"
+      },
+      {
+        "behavior": "latest_cache_version_dir (the one real consumer) picks the release directory, not a co-located prerelease",
+        "disposition": "tested",
+        "evidence": "test_cache_tree_compare_version_key.py::test_latest_cache_version_dir_picks_the_release_over_a_prerelease PASSED"
+      },
+      {
+        "behavior": "the vendored hook's _version_key implements the identical fix",
+        "disposition": "tested",
+        "evidence": "test_ensure_shared_cache_walk.py::test_version_key_ranks_a_release_above_its_own_prereleases PASSED"
+      },
+      {
+        "behavior": "the hook's _plugin_mirrors (self-heal repair-source picker, the completeness AUTHORITY per trg-18da39b0) picks the release dir over a co-located prerelease",
+        "disposition": "tested",
+        "category": "integration",
+        "evidence": "test_ensure_shared_cache_walk.py::test_plugin_mirrors_picks_a_release_over_a_prerelease_of_the_same_version PASSED - proves the fixed key composes with the real directory-walk/pick pipeline, not just the key function in isolation"
+      },
+      {
+        "behavior": "the two implementations (cache_tree_compare.version_key and the hook's _version_key) stay equal on a 1.0.0-rc1 input, and both independently implement correct release-outranks-prerelease semantics",
+        "disposition": "tested",
+        "evidence": "test_ensure_shared_cache_ssot_pins.py::test_version_key_is_equivalent_to_the_shared_implementation + ::test_version_key_ranks_a_release_above_its_own_prereleases_in_both_copies PASSED"
+      },
+      {
+        "behavior": "check_plugin_cache_sync.py's no-authority fallback path does not report a prerelease-holding dir as in sync when the release dir alongside it holds the real files",
+        "disposition": "tested",
+        "category": "integration",
+        "evidence": "test_plugin_cache_version_resolution.py::TestFallbackIsHonest::test_the_fallback_does_not_pick_a_prerelease_over_its_own_release PASSED"
+      },
+      {
+        "behavior": "the 12 re-vendored plugin copies stay byte-identical to the fixed canonical template",
+        "disposition": "tested",
+        "evidence": "test_ensure_shared_cache_vendored.py (13 forward/reverse identity assertions) PASSED"
+      }
+    ],
+    "counts": {
+      "total": 9,
+      "tested": 9,
+      "untestable": 0,
+      "untested_testable": 0
+    },
+    "enumeration_basis": {
+      "acs": 4,
+      "covered_acs": 4
+    },
+    "ledger_path": ".shipwright/planning/iterate/iterate-2026-08-05-semver-prerelease-sort.md"
+  },
+  "surface_verification": {
+    "surface": "cli",
+    "tests_run": 52,
+    "exit_code": 0,
+    "evidence_path": ".shipwright/runs/iterate-2026-08-05-semver-prerelease-sort/surface_verification.json",
+    "detail": "uv run pytest against the 5 touched test files (direct version_key unit tests, the hook walk/mirror tests, the SSoT equivalence pin, the fallback-consumer regression test, and the byte-identity vendoring drift gate) - all 52 passed."
+  }
+}

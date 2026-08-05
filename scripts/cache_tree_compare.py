@@ -259,11 +259,27 @@ def version_key(name: str) -> tuple:
     before ``0.2.0`` (since ``'1' < '2'``). Parse the leading
     ``MAJOR.MINOR.PATCH`` triplet as ints; any pre-release / suffix stays a
     string tail. Non-SemVer names sort before any real version.
+
+    OpenAI external review (trg-18da39b0): a bare suffix-string tail sorts
+    ``'1.0.0-rc1'`` (tail ``'-rc1'``) AFTER ``'1.0.0'`` (tail ``''``), since
+    any non-empty string beats ``''`` lexically — the opposite of SemVer,
+    where a release outranks every prerelease of the same numeric version.
+    The 4th element is therefore "is this a release" (1) vs "is this a
+    prerelease" (0), compared BEFORE the suffix text, so the release always
+    sorts last among same-triplet names regardless of what the tail says.
+
+    Scope: only the ``-prerelease`` tail is targeted. A ``+build`` metadata
+    suffix (which SemVer says must NOT affect precedence at all) is not
+    distinguished from a prerelease here and would sort as one — never
+    observed in this cache's directory names, so left unhandled rather than
+    grown to parse a distinction nothing produces (external review, both
+    OpenAI and DeepSeek, iterate-2026-08-05-semver-prerelease-sort).
     """
     m = _SEMVER_RE.match(name)
     if not m:
-        return (-1, -1, -1, name)
-    return (int(m.group(1)), int(m.group(2)), int(m.group(3)), m.group(4) or "")
+        return (-1, -1, -1, -1, name)
+    suffix = m.group(4) or ""
+    return (int(m.group(1)), int(m.group(2)), int(m.group(3)), 0 if suffix else 1, suffix)
 
 
 def latest_cache_version_dir(plugin_cache_root: Path) -> tuple[Path | None, str]:
