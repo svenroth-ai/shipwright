@@ -236,7 +236,7 @@ def _run(cmd_argv: list[str], stdin_data: str, cwd: Path, plugin_root: Path) -> 
     # Without it, every audit hook silently no-ops.
     env["SHIPWRIGHT_PHASE_QUALITY"] = "1"
     env["CLAUDE_PLUGIN_ROOT"] = plugin_root.as_posix()
-    env.pop("SHIPWRIGHT_SKIP_QUALITY_CHECK", None)
+    env.pop("SHIPWRIGHT_SKIP_QUALITY_CHECK", None); env["SHIPWRIGHT_PROJECT_ROOT"] = str(cwd)  # pin: inherited, a networked hook would resolve the REAL repo
     return subprocess.run(
         cmd_argv,
         input=stdin_data,

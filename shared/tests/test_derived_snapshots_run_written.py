@@ -34,8 +34,10 @@ from lib.churn_merge import TEST_RESULTS  # noqa: E402
 from lib.derived_snapshots import (  # noqa: E402
     DERIVED_SNAPSHOTS,
     RESTORABLE_SNAPSHOTS,
+    SESSION_HANDOFF,
     restore_derived_to_head,
 )
+from lib.run_written_ledger import RUN_WRITTEN_SNAPSHOTS  # noqa: E402
 
 _DASH = ".shipwright/agent_docs/build_dashboard.md"
 
@@ -63,15 +65,39 @@ def repo(tmp_path: Path) -> Path:
     return root
 
 
-def test_restorable_excludes_exactly_the_run_written_path() -> None:
-    """The exclusion is ONE path, and it is the one a run writes.
+def test_restorable_excludes_exactly_the_run_written_paths() -> None:
+    """The exclusion is TWO paths, and each is one a run writes.
 
     Pinned as an exact set difference rather than "TEST_RESULTS is absent", so that
     widening the carve-out later is a deliberate edit to this assertion. Every other
     derived path is re-derivable, and restoring a re-derivable path costs nothing.
+
+    The second member arrived with P2.15 (``session_handoff.md``): a run WRITES its canon
+    marker and no producer downstream of the restore can put it back, because run identity
+    is not a derivation. Reasoning and the two readers it broke:
+    ``lib/derived_snapshots.RESTORABLE_SNAPSHOTS`` and ``test_handoff_survives_restore.py``.
+
+    Twelve derived snapshots, two run-written exclusions, ten restored — the counts are
+    asserted, not narrated, because the prose in ``docs/hooks-and-pipeline.md`` had already
+    fallen a path behind ("ten of the eleven") before this change touched it.
     """
-    assert DERIVED_SNAPSHOTS - RESTORABLE_SNAPSHOTS == {TEST_RESULTS}
+    assert DERIVED_SNAPSHOTS - RESTORABLE_SNAPSHOTS == {TEST_RESULTS, SESSION_HANDOFF}
     assert RESTORABLE_SNAPSHOTS < DERIVED_SNAPSHOTS, "the exclusion must be a real subset"
+    assert (len(DERIVED_SNAPSHOTS), len(RESTORABLE_SNAPSHOTS)) == (12, 10)
+
+
+def test_the_carve_out_reaches_the_ledger_that_carries_the_bytes() -> None:
+    """Excluding a path from the restore is only half an answer.
+
+    The other half is ``run_written_ledger``, which carries the bytes across the merge so
+    the path is not left tracked-and-dirty for ``git merge`` to refuse on. Its set is
+    DERIVED from the difference above rather than written out — asserted directly here
+    because the external plan review could not tell, from the plan alone, whether the
+    carve-out actually reached the stash (openai #2): if that set were ever hand-listed,
+    a path could be preserved from the restore and still abort the merge.
+    """
+    assert RUN_WRITTEN_SNAPSHOTS == DERIVED_SNAPSHOTS - RESTORABLE_SNAPSHOTS
+    assert SESSION_HANDOFF in RUN_WRITTEN_SNAPSHOTS
 
 
 def test_the_f5_ledger_survives_a_restore(repo: Path) -> None:

@@ -51,7 +51,11 @@ _SCRIPTS_DIR = Path(__file__).resolve().parent.parent  # shared/scripts
 sys.path.insert(0, str(_SCRIPTS_DIR))
 
 from lib.derived_snapshots import restore_derived_to_head  # noqa: E402
-from lib.run_written_ledger import stash_run_written, unstash_run_written  # noqa: E402
+from lib.run_written_ledger import (  # noqa: E402
+    BEST_EFFORT_CARRY,
+    stash_run_written,
+    unstash_run_written,
+)
 from tools.integrate_merge import merge_and_reconcile  # noqa: E402
 
 
@@ -154,6 +158,27 @@ def integrate(
             # Named here because the merge error would otherwise be about a file
             # nothing in this flow had mentioned.
             steps.append("ledger-not-carried")
+            # ...except for a BEST_EFFORT_CARRY path, where staying dirty is the worse
+            # outcome of the two. Before P2.15 the restore below cleaned the handoff
+            # unconditionally; carving it out of the restore is what made "uncarried"
+            # able to block the merge at all, so the carve-out brings its own fallback
+            # rather than importing a new pipeline-stopping mode for a warning-severity
+            # artifact (Stage-3 doubt review, medium). check=False: a reset that fails
+            # leaves exactly the state the step above already reported.
+            #
+            # The reset itself can fail, and often for the very reason the carry did —
+            # a lost `index.lock`, an unreadable path. The merge is still ATTEMPTED
+            # rather than refused pre-emptively: it only refuses when mainline also
+            # moved the path, so stopping here would turn a possible failure into a
+            # certain one, and `merge_failed` is already a clean abort carrying git's
+            # own message naming the file. What was missing is that the fallback could
+            # silently not happen (external code review, openai/medium) — so the failed
+            # reset gets its OWN step, and a later `merge_failed` is attributable
+            # instead of arriving from a file nothing in this flow had mentioned.
+            for rel in sorted(set(not_carried) & BEST_EFFORT_CARRY):
+                reset = _git(project_root, "checkout", "HEAD", "--", rel, check=False)
+                steps.append("uncarried-reset" if reset.returncode == 0
+                             else "uncarried-reset-failed")
         if restore_derived_to_head(project_root):
             steps.append("restored-derived")
         outcome = merge_and_reconcile(
@@ -166,21 +191,32 @@ def integrate(
             steps.append("ledger-preserved")
         if writeback_failed:
             steps.append("ledger-writeback-failed")
+        # Split by what the loss COSTS, not by the fact of it. A best-effort member is
+        # reported and survived; only a path whose content is genuinely unrecoverable
+        # makes this terminal below.
+        blocking_writeback = [p for p in writeback_failed if p not in BEST_EFFORT_CARRY]
+        if writeback_failed and not blocking_writeback:
+            steps.append("writeback-degraded")
 
     # AFTER the try/finally, not inside it. An earlier draft returned from the `finally`
     # — which does override the pending return, but also SWALLOWS a propagating
     # exception, so it needed an `sys.exc_info()` guard to stay honest and CodeQL
     # flagged the shape regardless. Holding the result in `outcome` says the same thing
     # without the trap: an exception simply skips everything below.
-    if writeback_failed:
+    if blocking_writeback:
         # The run's ledger is GONE and the path now holds HEAD's copy — another run's
         # block, clean, in this run's worktree. A step alone does not carry that:
         # `ensure_current` derives its verdict from `status` and F11 gates on the exit
         # code, so `ok` here would report success over the exact loss this module exists
         # to prevent.
+        #
+        # `blocking_writeback`, not `writeback_failed`: a BEST_EFFORT_CARRY path that
+        # failed to write back has already been reported as a step, and stopping the
+        # branch for it would trade a warning for a halt — with a message that names the
+        # wrong producer besides ("re-run F5" cannot restore a note F5b writes).
         return {
             "status": "ledger_writeback_failed",
-            "failed": writeback_failed,
+            "failed": blocking_writeback,
             "message": ("the merge itself is intact, but this run's ledger could not "
                         "be written back and the worktree now holds HEAD's copy — "
                         "re-run F5 before F11 reads it"),

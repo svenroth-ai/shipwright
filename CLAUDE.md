@@ -62,7 +62,9 @@ It is a pre-flight, not a substitute: CI checks a clean checkout on a pinned
 interpreter, and its `Repair-PR safety (gate)` reads the PR's *base* revision so
 a branch cannot vouch for itself. Note also that it vets your **working tree**
 while CI vets the commit you **push** — it prints which, and warns when the tree
-is dirty. **Nothing runs it for you**; it is a command you type.
+is dirty. **F0 runs it for you** inside an iterate (after the leak-guard, before
+the suite, guarded on the file existing); typing it yourself is still how you
+check a tree outside a run.
 
 **Lint is a hard CI gate.** `.github/workflows/ci.yml` runs `uvx ruff@0.15.15
 check .` with no `|| true` / `continue-on-error`, so a lint failure blocks merge.

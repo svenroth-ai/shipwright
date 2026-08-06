@@ -48,10 +48,15 @@ FILES = {"skills/x/SKILL.md": "# x\n"}
 
 
 def _seed(tmp_path: Path, cache_files: dict[str, str]) -> tuple[Path, Path]:
-    """A repo plugin plus one cached 0.2.1 whose contents the caller decides."""
+    """A repo plugin plus one cached 0.2.1 whose contents the caller decides.
+
+    Mirrors ``cache_files`` into the now-gated ``cache/plugins/<name>/`` too —
+    the single cached version is also this mirror's own repair source.
+    """
     repo, cache = tmp_path / "repo", tmp_path / "cache"
     for root, files in ((repo / "plugins" / PLUGIN, FILES),
-                        (cache / PLUGIN / "0.2.1", cache_files)):
+                        (cache / PLUGIN / "0.2.1", cache_files),
+                        (cache / "plugins" / PLUGIN, cache_files)):
         for rel, content in files.items():
             (root / rel).parent.mkdir(parents=True, exist_ok=True)
             (root / rel).write_text(content, encoding="utf-8")

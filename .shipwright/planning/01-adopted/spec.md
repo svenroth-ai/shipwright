@@ -863,6 +863,11 @@ _Where the work detail lives_ at the end of this document.
 - (E) Given onboarding derives a requirement's name and description from the
   code it read, when they are written, then they name a capability and describe
   it in plain business language, rather than describing what the code does.
+- (E) Given an operator's egress policy requires all outbound traffic through
+  an OpenAI-compatible gateway, when onboarding's Layer-3 external review runs,
+  then it can be routed through that gateway instead of OpenRouter or direct
+  OpenAI — and if the gateway is unreachable or misconfigured, the review fails
+  rather than silently falling back to a direct call the egress policy forbids.
 - (E) Given onboarding has produced the audit evidence for a project, when it
   hands over, then it says that this evidence is brought up to date at releases
   and on request rather than continuously, and names both ways to bring it up to

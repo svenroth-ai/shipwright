@@ -32,8 +32,32 @@ behave predictably (external plan review, OpenAI #4).
 from __future__ import annotations
 
 import json
+import sys
 from dataclasses import dataclass, field
 from pathlib import Path
+
+try:  # imported as ``lib.jsonl_records`` (shared/scripts on sys.path)
+    from .atomic_write import durable_read_text
+except ImportError:  # pragma: no cover - exercised in a subprocess test
+    # ``shared_lib_loader`` execs THIS file directly under a sentinel name when a
+    # plugin's own ``scripts/lib`` shadows shared's (ADR-045), and that load has
+    # no package context, so the relative spelling cannot resolve. ``atomic_write``
+    # documents itself as a unique top-level name importable either way.
+    #
+    # ``lib/review_marker.py`` carries the same two SPELLINGS but not this path
+    # insert — it relies on callers having put the directory there. The sentinel
+    # load gives no such guarantee (``load_shared_lib`` adds ``shared/scripts``, not
+    # ``lib``), so this adds it, guarded. Pinned by test_jsonl_records_load_modes.
+    # APPEND, never insert(0): prepending would put 160+ generic module names
+    # (config, errors, state, ...) ahead of everything else for the rest of the
+    # process. `plugins/shipwright-compliance/.../collectors/_lib_loader.py`
+    # documents exactly that discipline and scopes its own front-precedence to
+    # the import. Appending is enough here - we only need the directory to be
+    # findable - and it cannot shadow a plugin's own lib (Stage-3 doubt).
+    _here = str(Path(__file__).resolve().parent)
+    if _here not in sys.path:
+        sys.path.append(_here)
+    from atomic_write import durable_read_text  # type: ignore[no-redef]
 
 __all__ = [
     "CorruptFragment",
@@ -45,6 +69,13 @@ __all__ = [
 
 _DECODER = json.JSONDecoder()
 _JSON_WS = " \t\r\n"
+
+#: Resync candidates tried per physical line before giving up (see
+#: :func:`split_records`). Each candidate re-parses the rest of the line, so an
+#: unbounded scan is quadratic in line length; a malformed line is exactly where
+#: candidate density is highest. Exhausting the budget degrades to the pre-2026-08
+#: behaviour — the whole damaged span is reported as one fragment — never to a hang.
+_MAX_RESYNC_ATTEMPTS = 64
 
 
 @dataclass(frozen=True)
@@ -110,7 +141,7 @@ def ends_without_newline(path: Path | str) -> bool:
         return True
 
 
-def split_records(line: str) -> tuple[list[dict], str]:
+def split_records(line: str, *, is_record=None) -> tuple[list[dict], str]:
     """Split one physical ``line`` into records + the unrecoverable remainder.
 
     Returns ``(records, remainder)``. ``remainder`` is ``""`` when the whole line
@@ -124,6 +155,26 @@ def split_records(line: str) -> tuple[list[dict], str]:
     * Only JSON **objects** count as records: a bare scalar is valid JSON but not a
       triage record, and callers do ``raw.get(...)``, so a scalar is a fragment.
     * Recovery is PARTIAL: records decoded before the bad byte are still returned.
+    * Recovery is also BIDIRECTIONAL (iterate-2026-08-06-p2-19c-corruption-absence,
+      IT-1 audit finding 21): records decoded *after* the bad byte are returned too.
+      Until then a damaged PREFIX sent the whole rest of the line to the remainder,
+      discarding every valid record behind it — and the primary cause this module
+      documents, a truncated predecessor appended onto, has exactly that shape.
+
+    **Forward recovery needs ``is_record``, and does nothing without it.** Syntax
+    alone cannot locate a record boundary: an object nested INSIDE the damaged
+    prefix decodes cleanly. Requiring the candidate's run to reach end-of-line is
+    necessary but NOT sufficient — a prefix ending ``…"meta":{"embedded":1}``
+    followed by a real append lets one run consume both and surface ``embedded``
+    (measured; external plan review round 2, high). Only the caller knows what a
+    record looks like, so it passes a predicate that **every** object in the run
+    must satisfy. Without one this fails closed — no resync, pre-2026-08 behaviour.
+    No default is offered because the two logs reading through here disagree:
+    triage records key on ``event`` (1464/1465 live, none nested) while
+    ``shipwright_events.jsonl`` keys on ``type`` and 306 of 799 DO nest.
+
+    A line carrying TWO damaged spans finds no candidate and degrades to reporting
+    the whole span — the safe direction.
     """
     records: list[dict] = []
     idx = 0
@@ -137,22 +188,75 @@ def split_records(line: str) -> tuple[list[dict], str]:
         if idx >= end:
             break
         try:
-            obj, next_idx = _DECODER.raw_decode(line, idx)
-        except (ValueError, RecursionError):
             # RecursionError (not a ValueError) escapes from json's scanner on a
             # deeply nested blob — plausible from a truncated/interleaved write.
             # Letting it propagate would crash every reader instead of degrading.
+            obj, next_idx = _DECODER.raw_decode(line, idx)
+        except (ValueError, RecursionError):
+            obj = None
+            next_idx = idx
+        if isinstance(obj, dict):
+            records.append(obj)
+            idx = next_idx
+            continue
+        # Undecodable, or valid JSON of the wrong shape (a bare scalar). Either
+        # way the text at `idx` is not a record; look for the next one behind it.
+        recovered, resume = _resync(line, idx, is_record)
+        if resume is None:
             return records, line[idx:]
-        if not isinstance(obj, dict):
-            # Valid JSON, wrong shape — hand it to the caller verbatim rather than
-            # letting a scalar reach code that expects a mapping.
-            return records, line[idx:]
-        records.append(obj)
-        idx = next_idx
+        records.extend(recovered)
+        return records, line[idx:resume]
     return records, ""
 
 
-def read_jsonl_records(path: Path | str) -> RecordRead:
+def _resync(line: str, bad_from: int, is_record) -> tuple[list[dict], int | None]:
+    """Find the next record start after ``bad_from``.
+
+    Returns ``(records, resume_index)`` where ``resume_index`` is the offset the
+    recovered run began at, so the caller can report ``line[bad_from:resume]`` as
+    the damaged span. ``(_, None)`` means nothing trustworthy follows — which is
+    also the answer whenever the caller supplied no ``is_record`` predicate.
+    """
+    if is_record is None:
+        return [], None
+    probe = line.find("{", bad_from + 1)
+    attempts = 0
+    while probe != -1 and attempts < _MAX_RESYNC_ATTEMPTS:
+        objs, complete = _decode_run(line, probe)
+        # EVERY object must look like a record: accepting a run because its LAST
+        # member is genuine is how a nested object from the wreckage gets in.
+        if complete and objs and all(is_record(o) for o in objs):
+            return objs, probe
+        probe = line.find("{", probe + 1)
+        attempts += 1
+    return [], None
+
+
+def _decode_run(line: str, start: int) -> tuple[list[dict], bool]:
+    """Decode objects from ``start`` to end of line.
+
+    ``complete`` is True only when the run consumed everything to the end with no
+    leftover — the condition that makes a resync candidate trustworthy.
+    """
+    objs: list[dict] = []
+    idx = start
+    end = len(line)
+    while idx < end:
+        while idx < end and line[idx] in _JSON_WS:
+            idx += 1
+        if idx >= end:
+            break
+        try:
+            obj, idx = _DECODER.raw_decode(line, idx)
+        except (ValueError, RecursionError):
+            return objs, False
+        if not isinstance(obj, dict):
+            return objs, False
+        objs.append(obj)
+    return objs, True
+
+
+def read_jsonl_records(path: Path | str, *, is_record=None) -> RecordRead:
     """Tolerantly read ``path``, recovering concatenated records and reporting the rest.
 
     Order is preserved: records recovered from one physical line stay in wire order
@@ -167,20 +271,37 @@ def read_jsonl_records(path: Path | str) -> RecordRead:
     multi-byte sequence, and a strict decode would turn that into a
     ``UnicodeDecodeError`` out of every reader. That is the fail-closed blackout the
     spec explicitly rejected, so such a line degrades to a fragment instead.
+
+    The read goes through :func:`lib.atomic_write.durable_read_text`
+    (iterate-2026-08-06-p2-19c-corruption-absence, IT-1 audit finding 5). This file
+    is published by ``durable_atomic_write`` — the D2 sweep rewrites it — and that
+    function's own docstring says callers of such files should read through the
+    durable reader, because on Windows a replaced-but-still-open file leaves the old
+    entry *delete-pending* and an unlocked reader's ``open`` fails with
+    ``PermissionError`` until the last handle goes. It also explicitly reserved
+    ``surrogateescape`` for "a triage-side caller … the day one exists". This is it.
+
+    **The separator alphabet is deliberately unchanged.** ``durable_read_text`` opens
+    in text mode with universal newlines, exactly as the previous file-handle
+    iteration did, so splitting the result on ``"\\n"`` reproduces the old line set
+    byte-for-byte (measured across LF, CRLF, lone CR, missing final newline, and
+    invalid UTF-8). ``str.splitlines()`` must NOT be used here: it additionally
+    breaks on VT, FF, NEL and U+2028, which would silently promote four characters
+    that may appear INSIDE a record into record separators.
     """
     path = Path(path)
     result = RecordRead()
     if not path.exists():
         return result
-    with path.open("r", encoding="utf-8", errors="surrogateescape") as fh:
-        for line_no, raw in enumerate(fh, start=1):
-            stripped = raw.strip()
-            if not stripped:
-                continue
-            records, remainder = split_records(stripped)
-            result.records.extend(records)
-            if remainder:
-                result.corrupt.append(
-                    CorruptFragment(path=str(path), line_no=line_no, text=remainder)
-                )
+    text = durable_read_text(path, errors="surrogateescape")
+    for line_no, raw in enumerate(text.split("\n"), start=1):
+        stripped = raw.strip()
+        if not stripped:
+            continue
+        records, remainder = split_records(stripped, is_record=is_record)
+        result.records.extend(records)
+        if remainder:
+            result.corrupt.append(
+                CorruptFragment(path=str(path), line_no=line_no, text=remainder)
+            )
     return result

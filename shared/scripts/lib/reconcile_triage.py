@@ -166,7 +166,7 @@ def reconcile_main_triage(
     """Fold uncommitted main-tree ``triage.jsonl`` drift into one ``chore(triage)``
     commit, then return. Resolves the MAIN repo root from ``project_root`` (so it
     is correct when called from inside a worktree). Never raises for an expected
-    condition — returns a structured :class:`ReconcileResult` instead.
+    condition — a structured :class:`ReconcileResult`; only ``LockTimeout`` escapes.
 
     **Manual fallback only (campaign 2026-06-08-triage-outbox-delivery / D2).**
     The per-iterate default is now the branch SWEEP (:mod:`lib.sweep_outbox`,
@@ -277,9 +277,9 @@ def reconcile_main_triage(
         subject = f"chore(triage): fold {folded} main-tree background append(s)"
         # ``git commit -- <path>`` commits the WORKING-TREE content of that path
         # (the append-only log's latest superset) and ignores the index for it;
-        # _unrelated_staged already guaranteed no OTHER path is staged, so this
-        # never sweeps up unrelated work nor drops an index-only delta of a file
-        # that is, by the log's append-only nature, always a superset on disk.
+        # ``_has_staged_changes`` already found no OTHER path staged — it runs
+        # OUTSIDE this lock, so it is ADVISORY: it narrows the window, never closes
+        # it — and the log, being append-only, is always a superset on disk.
         # 120 s + a TimeoutExpired handler, mirroring the sibling sweep commit
         # (``sweep_outbox``), which documents why: this commit fires the bloat
         # pre-commit hook, whose cold ``uv run`` routinely exceeds run_git's 15 s

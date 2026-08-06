@@ -548,6 +548,13 @@
       "adr": null
     },
     {
+      "path": "scripts/check_plugin_cache_sync.py",
+      "limit": 300,
+      "current": 321,
+      "state": "grandfathered",
+      "adr": null
+    },
+    {
       "path": "shared/scripts/github_api.py",
       "limit": 300,
       "current": 321,
@@ -1041,6 +1048,13 @@
       "path": "shared/tests/test_plugin_cache_sync.py",
       "limit": 300,
       "current": 371,
+      "state": "grandfathered",
+      "adr": null
+    },
+    {
+      "path": "shared/tests/test_plugin_cache_sync_verdict.py",
+      "limit": 300,
+      "current": 306,
       "state": "grandfathered",
       "adr": null
     },

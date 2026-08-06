@@ -14,6 +14,7 @@ manifest/evidence shapes (ADR-045: monkeypatch by MODULE OBJECT throughout).
 
 from __future__ import annotations
 
+import json
 import sys
 from pathlib import Path
 
@@ -42,7 +43,7 @@ _FAKE_SHA = "deadbeef" * 5
 
 def _seed_valid_evidence(root: Path) -> None:
     _evidence_target(root).write_bytes(
-        __import__("json").dumps({"iterate_latest": {"run_id": _EVIDENCE_RUN}}).encode()
+        json.dumps({"iterate_latest": {"run_id": _EVIDENCE_RUN}}).encode()
     )
 
 

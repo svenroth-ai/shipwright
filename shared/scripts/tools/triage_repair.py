@@ -59,6 +59,7 @@ if str(_SCRIPTS_ROOT) not in sys.path:
 import triage  # noqa: E402
 from lib.atomic_write import durable_atomic_write  # noqa: E402
 from lib.jsonl_records import ends_without_newline, split_records  # noqa: E402
+from lib.triage_integrity import is_triage_record  # noqa: E402
 from lib.sweep_quarantine import append_quarantine  # noqa: E402
 from lib.sweep_text import normalize_lines  # noqa: E402
 
@@ -115,7 +116,13 @@ def scan_path(path: Path) -> RepairReport:
         stripped = raw_line.strip()
         if not stripped:
             continue
-        records, remainder = split_records(stripped)
+        # The SAME predicate the reader uses, or this tool destroys what the
+        # reader recovers: for a truncated-prefix line the unguarded call returns
+        # no records and the whole line as remainder, so the valid record behind
+        # the damage is quarantined-and-dropped instead of re-emitted. Both files
+        # this tool touches are triage stores (see `_resolve_targets`), so the
+        # triage predicate is the right one here.
+        records, remainder = split_records(stripped, is_record=is_triage_record)
         if len(records) == 1 and not remainder:
             # Already fine — re-emit the ORIGINAL bytes, do not re-serialize.
             report.recovered_records += 1

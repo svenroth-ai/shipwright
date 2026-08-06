@@ -1,0 +1,44 @@
+{
+  "items": [
+    {
+      "name": "Spec Compliance",
+      "verdict": "pass",
+      "note": "AC-1..AC-8 delivered. Stage-1 HARD-GATE passed on round 3 after two REJECTs, both of which were real defects in this run's own work, not in the audited code. Spec Impact NONE with affected FR-01.14 verified against the criteria text: the two criteria cited exist verbatim and no criterion is added, changed or removed."
+    },
+    {
+      "name": "Error Handling",
+      "verdict": "pass",
+      "note": "canonical_form is total by contract and by construction: json.loads and json.dumps are each wrapped for (TypeError, ValueError, RecursionError), and every degraded path routes to raw-text membership rather than raising. This matters because the code runs inside the canonical triage lock and on the setup_iterate_worktree step-5 path, where an escaping exception aborts setup after `git worktree add` already succeeded. The run_git_soft timeout handling that audit findings 1 and 7 installed is untouched — declining to fix D2 was chosen partly to avoid regressing it."
+    },
+    {
+      "name": "Security Basics",
+      "verdict": "n/a",
+      "note": "No auth, no credential, no network, no user-supplied input surface. The triage store is git-tracked and therefore public; no finding text, file:line or secret was added to it by this change — the five new cards carry mechanism descriptions only, per the triage_add contract."
+    },
+    {
+      "name": "Test Quality",
+      "verdict": "fail",
+      "note": "Recorded as fail deliberately, because the honest finding of this run is about my own tests. THREE assertions I wrote did not discriminate old from new behaviour and were caught by review, not by me: (1) plan.get(\"drop\", []) read a key plan_gc does not return, so it could never fail; (2) the 'totality' test used a JSON array, which returns at the non-dict guard before ever reaching the encoder it claimed to exercise; (3) the numeric-boundary test passed verbatim against pre-fix code and generalised over a boundary that was leaky in the direction it did not sample. All three are fixed and each is now pinned by an empirical check — for (1) I reverted the fix and observed drop_ids == {'trg-human1'}. The pattern is the same one this run exists to correct in FIX B's fixtures, which is why it is recorded rather than smoothed over."
+    },
+    {
+      "name": "Performance Basics",
+      "verdict": "pass",
+      "note": "MEASURED, not reasoned (the doubt review flagged the estimate as unevidenced). On the real 1457-line tracked log: parse_delivered 25.5 ms, superseded_appends 14.1 ms, ~40 ms total added inside the lock, against a critical section that already budgets 120 s for one commit. Incidentally measured: all 1457 lines canonicalize (text path empty) and 0 superseded appends exist today, so the hatch is dormant on current data."
+    },
+    {
+      "name": "Naming & Structure",
+      "verdict": "pass",
+      "note": "Two files hit the 300-LOC cap and were split rather than trimmed: the GC loop moved from sweep_outbox into sweep_gc.partition_outbox, which also puts the whole drop decision — membership rule, supersession exception, quarantine skip — in the module that owns it; and test_sweep_gc_canonical.py split along its own seam into a supersession + end-to-end module, mirroring the existing test_sweep_outbox_review_cascade2.py split. parse_delivered's arity grew 2 to 3 deliberately: its first element changed meaning, and a silent reinterpretation is a worse failure than an unpack error."
+    },
+    {
+      "name": "Affected Boundaries",
+      "verdict": "pass",
+      "note": "shared/scripts/lib/sweep_gc.py (membership rule, supersession, partition), shared/scripts/lib/sweep_outbox.py (call site + module docstring), shared/scripts/tools/triage_gc.py (pass-2 overlay), shared/scripts/lib/reconcile_triage.py (comment only), shared/tests/_sweep_helpers.py (shared reserializer), plus three documents that still described the deleted id-only rule: sweep_outbox's docstring, shared/glossary.md and docs/hooks-and-pipeline.md — the latter two are designated authoritative by CLAUDE.md. touches_shared_infra applies; cross_component does NOT, because churn_merge.py is deliberately out of scope (finding 25 travels with card P2.19a)."
+    },
+    {
+      "name": "Test Hygiene Probe",
+      "verdict": "pass",
+      "note": "No test was skipped, weakened or deleted to make this change pass. Two pre-existing assertions flipped True to False in test_sweep_outbox_review_cascade.py; both are fixture CORRECTIONS toward the module's own documented intent — FIX B's docstring defines re-serialization as key order / whitespace, while its fixtures used an ADDED KEY, i.e. different content, and thereby asserted finding 14's loss as correct behaviour. The added-key case was not deleted; it moved to its own test asserting survival. Stage 1 was asked to judge this specifically and called it legitimate, noting that a weakening would have dropped the expectation rather than corrected the input. Net assertions and net coverage both rose."
+    }
+  ]
+}

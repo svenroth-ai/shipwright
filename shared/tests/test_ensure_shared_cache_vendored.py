@@ -46,9 +46,15 @@ _EXPECTED_TARGETS = {
     "shipwright-compliance": _COMMON_TARGETS,
     "shipwright-deploy": _COMMON_TARGETS,
     "shipwright-design": _COMMON_TARGETS,
+    # The two network producers sit together and last-but-one, after every local
+    # producer and before the context injector. `check_required_checks_hook.py`
+    # joined them in iterate-2026-08-05-wire-local-guard-scripts and, like
+    # `import_github_findings.py`, is registered in THIS plugin only — which is why
+    # neither appears in `_COMMON_TARGETS`.
     "shipwright-iterate": (
         "capture_session_id.py", "check_drift.py", "check_artifact_drift.py",
-        "import_github_findings.py", "session_start_using_shipwright.py",
+        "import_github_findings.py", "check_required_checks_hook.py",
+        "session_start_using_shipwright.py",
     ),
     "shipwright-plan": _COMMON_TARGETS,
     "shipwright-project": _COMMON_TARGETS,
