@@ -12,6 +12,11 @@ must preserve:
 
 The pre-existing ``test_record_event.py`` and ``test_triage_storage.py`` cover
 the call sites; this file covers the primitive directly.
+
+The bounded wait and same-thread reentrancy added by ``trg-dc013d82`` live in
+``test_file_lock_bounded.py`` — split to keep both files inside the 300-line
+budget. What stays here is what the ORIGINAL extraction had to preserve, so
+these four must keep passing unchanged across any later change to the class.
 """
 
 from __future__ import annotations

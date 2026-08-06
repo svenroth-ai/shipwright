@@ -344,6 +344,17 @@ def test_dead_claim_owner_is_recovered_before_consumers(tmp_path: Path):
 
 
 def test_live_hung_writer_times_out_without_mutating(tmp_path: Path):
+    # The hold must outlast everything the firing process does BEFORE it gives
+    # up on the writer lock, or the holder releases mid-wait and the process
+    # heals instead of skipping — which is the assertion below, not the point
+    # of the test. That budget is:
+    #     _FANOUT_ARRIVAL_GRACE_SECONDS (1.0, no peer ever arrives here)
+    #   + acquire_cache_lock's wait      (5.0)
+    #   = 6.0s
+    # It was 6s against the old 0.1s fan-out probe, i.e. a 0.9s margin that
+    # iterate-2026-08-06-parallel-global-state-tests consumed. Keep this
+    # comfortably above the sum whenever either constant moves.
+    hold_seconds = 9
     scripts, consumer_target, shared_target, mirror_target = _layout(tmp_path)
     cache = scripts[0].parents[4]
     lock_path = cache / ".sessionstart-cache-repair.lock"
@@ -351,7 +362,8 @@ def test_live_hung_writer_times_out_without_mutating(tmp_path: Path):
         "import sys,time; sys.path.insert(0,sys.argv[1]); "
         "from cache_repair_lock import acquire_cache_lock,release_cache_lock; "
         "from pathlib import Path; fd=acquire_cache_lock(Path(sys.argv[2]),1); "
-        "print('locked',flush=True); time.sleep(6); release_cache_lock(fd)"
+        f"print('locked',flush=True); time.sleep({hold_seconds}); "
+        "release_cache_lock(fd)"
     )
     holder = subprocess.Popen(
         [sys.executable, "-c", holder_code, str(scripts[0].parent), str(lock_path)],
@@ -363,6 +375,9 @@ def test_live_hung_writer_times_out_without_mutating(tmp_path: Path):
 
     result = _fire(scripts[1], consumer_target, shared_target, mirror_target,
                    "hung-writer-session")
+    # The holder only has to outlive the fire; keeping it alive for the rest of
+    # its sleep is dead wall time in the integration suite.
+    holder.terminate()
     holder.wait(timeout=10)
 
     assert result.returncode == 0
