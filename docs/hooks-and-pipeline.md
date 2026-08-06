@@ -738,6 +738,25 @@ independently reproducible fingerprint or a re-run of the detectors at F11,
 consistent with every other runner-contract step being contract-enforced
 rather than independently gated.
 
+**Architecture brief (iterate + plan).** A third file joins that run-scoped
+directory: `.shipwright/planning/iterate/<run_id>/architecture_brief.md` (plan
+side: `{planning_dir}/architecture_brief.md`), written pre-build by Step 3.5's
+second external call (`external_review.py --mode architecture`) and staged by
+the same directory-level add. It exists as a separate file rather than a section
+of the mini-plan for a substantive reason: the mini-plan carries `Alternative
+approach — rejected because X`, and a reviewer handed that document has been
+handed the answer. The brief lists the same options **without** the rejection
+rationale (`shared/templates/architecture_brief.md`) — the difference that
+produced opposite verdicts from the same two models on the same change. The CLI
+enforces the separation structurally: `--mode architecture` reads `--brief-file`
+and rejects `--plan-file` as a usage error, because a silently accepted plan
+would restore the anchoring while every field of the emitted envelope stayed
+identical. The pass adds **no review-record row and no marker**: `record_review_pass`
+takes one `--payload-file` per row and a completed row is immutable, so the first
+call's envelope fills `plan` and the second has no slot there. Its verdicts and
+findings land in the iterate spec's `## Architecture Review` section (plan side:
+`plan.md`'s), which ships in the same commit.
+
 **Curated agent-docs use `merge=union`, not regeneration
 (iterate-2026-06-12-union-curated-agent-docs).** The serial-integrate fix above
 auto-resolves the *regenerated* churn snapshots, but `.shipwright/agent_docs/architecture.md`

@@ -100,6 +100,81 @@ uv run "{plugin_root}/../../shared/scripts/tools/write_decision_log.py" \
   --rejected "{if accepted: original approach | if rejected: the suggestion itself}"
 ```
 
+Then run **Step 5a**, then go to **Step 5b**.
+
+---
+
+## Step 5a — Architecture Review (the second call)
+
+**Branch A only** — one extra call in the same step, to the same two models,
+asking the one question no other pass asks: *should this be built at all, and
+what is the smallest thing that would do?*
+
+**Why a second call and not one more paragraph in the prompt above.** The
+difference that produces a different answer is the **input**, not the question.
+`plan.md` carries the approach together with its justification, and the
+Self-Review Fallback's own item 1 asks about architectural soundness over that
+same document — a reviewer handed the plan has been handed the answer. Measured
+twice on the iterate side: the same two models, the same change, `approve` when
+shown the plan and `reject` when shown a brief, both then naming a simpler
+alternative the plan had discarded.
+
+So this call reads a short **brief** written from
+`shared/templates/architecture_brief.md`, listing the options **without** the
+reasons any of them were rejected. When the plan adds nothing permanent, that
+brief is three lines — see the template.
+
+```bash
+# 1. Write {planning_dir}/architecture_brief.md from the template.
+#    Do NOT copy the plan's rejected-alternatives rationale into it.
+
+# 2. Ask the same two models.
+uv run --project {plugin_root} {shared_root}/scripts/tools/external_review.py \
+  --mode architecture \
+  --brief-file "{planning_dir}/architecture_brief.md" \
+  --spec-file "{spec_file}" \
+  --plugin-root "{plugin_root}"
+```
+
+The CLI **refuses `--plan-file` in this mode** (usage error, exit 2): silently
+accepting the plan would restore the anchoring while the emitted envelope stayed
+byte-identical.
+
+`approve` → proceed. `revise` → integrate like any other finding. **`reject`
+from either reviewer → STOP and ask the user**, before Step 6, because the whole
+value is that this is seen while nothing is built yet:
+
+> The architecture review says this should not be built this way.
+> {deepseek} says **{verdict}**, {openai} says **{verdict}**. They recommend:
+> **{the alternative, one line}**. The plan had considered that and rejected it
+> because: **{the reason, from plan.md}**.
+>
+> How should I proceed — take the alternative, keep the plan (I'll record why
+> the objection does not hold), or rework and re-review?
+
+Reviewer disagreement is handled exactly as above: put it to the user, never
+average it away.
+
+**Record it** by appending to `plan.md` — this section is where the withheld
+reasoning re-enters the record, so the reconciliation is written down whichever
+way the user decides:
+
+```markdown
+## Architecture Review
+- **Verdicts:** deepseek={approve|revise|reject} · openai={…}
+- **Smallest thing that would do (per reviewers):** {one line, or `as proposed`}
+- **Reconciliation:** {what the plan had rejected, why, and the user's decision}
+- **Status:** {proceeding as planned | reworked | alternative adopted}
+```
+
+Log each finding to `decision_log.md` with
+`--section "Architecture Review — {split_name}"`.
+
+Step 5b is unchanged: this pass writes **no marker of its own**, and
+`external_review_state.json` continues to record the plan review alone. Its
+provenance is `plan.md` + `decision_log.md`, both git-tracked and both read by
+the compliance audit.
+
 Then go to **Step 5b**.
 
 ---

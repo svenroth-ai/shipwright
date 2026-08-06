@@ -192,8 +192,83 @@ Mirrors `/shipwright-plan` Step 5 Branch A / B / C flow.
    (`--plugin-root` is the plan plugin root — used only for plan-mode prompt
    lookup. For iterate-mode it is not consulted, but the argument remains
    required for CLI shape compatibility.) Present findings, integrate into
-   the mini-plan, log decisions to the iterate ADR. Then write the marker
-   (step 5 below).
+   the mini-plan, log decisions to the iterate ADR. Then run the second call
+   (step 2a) and write the marker (step 5 below).
+
+2a. **Architecture Review — the second call** (Branch A only; skipped under
+   B/C with the first, since it needs the same provider).
+
+   One extra call in the same step — not a second step and not a new gate. It
+   asks the one question no other pass asks: *should this be built at all, and
+   what is the smallest thing that would do?* The cascade and the plan review
+   above both judge the change **within** the frame the plan set.
+
+   **What makes it work is the input, not the prompt.** The mini-plan carries
+   `Alternative approach — rejected because X`; a reviewer handed that document
+   has been handed the answer. So this call reads a short **brief** instead,
+   written from `shared/templates/architecture_brief.md`, which lists the
+   options **without** the reasons any were rejected. Measured twice: same two
+   models, same change, `approve` over the plan and `reject` over a brief
+   (`iterate-2026-07-28-derived-snapshots-refresh`, and again on PR #498).
+
+   ```bash
+   # 1. Write the brief. If this change adds nothing permanent, that is THREE
+   #    LINES — see the template. Do not copy the mini-plan's rejection
+   #    rationale into it.
+   #    → .shipwright/planning/iterate/{run_id}/architecture_brief.md
+
+   # 2. Ask the same two models.
+   uv run "{shared_root}/scripts/tools/external_review.py" \
+     --mode architecture \
+     --spec-file "{iterate_spec_path}" \
+     --brief-file "{project_root}/.shipwright/planning/iterate/{run_id}/architecture_brief.md" \
+     --plugin-root "{plan_plugin_root}" \
+     --project-root "{project_root}" --run-id "{run_id}"
+   ```
+
+   The CLI **refuses `--plan-file` here** (usage error, exit 2) — a silently
+   accepted plan would restore the anchoring while the envelope stayed identical.
+
+   **It runs on every medium+ Branch A of a standalone iterate, not behind a
+   trigger.** A trigger the author sets fails first on exactly the changes that
+   most need the question asked, and both external reviewers said so
+   independently when this pass was reviewed with itself. The brief being three
+   lines when nothing permanent is added is what keeps that affordable.
+   **Campaign sub-iterates do not run it yet** — the `sub-iterate-runner`
+   carries its own inlined copy of this step, is at its bloat cap, and cannot
+   ask an operator on a `reject`. That gap is deliberate and named, not an
+   oversight (trg follow-up).
+
+   **On a `reject` from either reviewer — STOP and ask the operator.** Do not
+   build first and report after; the whole value is a human seeing it while the
+   code does not yet exist:
+
+   > The architecture review says this should not be built this way.
+   > {deepseek} says **{verdict}**, {openai} says **{verdict}**. They recommend:
+   > **{the alternative, in one line}**. The mini-plan had considered that and
+   > rejected it because: **{the reason, from mini-plan item 6}**.
+   >
+   > How should I proceed — take the alternative, keep the plan (I'll record
+   > why the objection does not hold), or rework and re-review?
+
+   **Where the result goes — NOT the `plan` review row.** Step 5 records that row
+   from ONE `--payload-file`, and the *first* call's envelope is what fills it; a
+   completed row is immutable, so there is no second write. Both reviewers'
+   verdicts, their findings and the reconciliation go into the **iterate spec
+   under `## Architecture Review`** and into the iterate ADR — the same
+   destination `/shipwright-plan` Step 5a uses for `plan.md`, and both ship in the
+   commit. Write it whatever the operator decides; that section is where the
+   withheld reasoning re-enters the record. `revise` is not a stop: integrate it
+   like any other finding. The pass adds no review row and no marker of its own.
+
+   ```markdown
+   ## Architecture Review
+   - **Brief:** `.shipwright/planning/iterate/{run_id}/architecture_brief.md`
+   - **Verdicts:** deepseek={approve|revise|reject} · openai={…}
+   - **Smallest thing that would do (per reviewers):** {one line, or `as proposed`}
+   - **Findings:** {each, with accepted-and-fixed | rejected-with-reason}
+   - **Reconciliation:** {what the plan had rejected, why, and the decision}
+   ```
 
 3. **Branch B — `missing_keys`:** STOP and ask the user verbatim:
 

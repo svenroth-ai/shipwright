@@ -1,0 +1,1 @@
+External review prompt rendering substituted placeholders in several passes, so a token appearing inside the injected diff or plan was replaced again: a diff containing `{SPEC}` spliced the whole spec into the middle of it. Substitution is now a single pass over the template and injected content stays literal.

@@ -1,36 +1,28 @@
 #!/usr/bin/env python3
 """External LLM review CLI — DeepSeek + OpenAI in parallel.
 
-Supports three review providers:
-1. OpenRouter (recommended): one OPENROUTER_API_KEY for both models
-2. Direct OpenAI: DeepSeek is explicitly unavailable; GPT uses OPENAI_API_KEY
-3. Skip: no keys → review skipped gracefully
-
+Provider chain (:func:`detect_provider`): OpenRouter (one OPENROUTER_API_KEY for
+both models) → direct OpenAI (GPT only; DeepSeek has no direct route) → skip.
 DeepSeek never falls back to Gemini or a direct provider.
 
-Usage (plan / iterate modes):
-    uv run shared/scripts/tools/external_review.py \\
-        --mode plan|iterate \\
-        --plan-file <path> \\
-        --spec-file <path> \\
-        --plugin-root <path>
+Usage — every mode takes ``--spec-file`` and ``--plugin-root`` plus exactly ONE
+input flag, listed below::
 
-Usage (code-review mode):
-    uv run shared/scripts/tools/external_review.py \\
-        --mode code \\
-        --diff-file <path> \\
-        --spec-file <path> \\
-        --plugin-root <path>
+    uv run shared/scripts/tools/external_review.py --mode <mode> \\
+        <input-flag> <path> --spec-file <path> --plugin-root <path>
 
-The ``--plugin-root`` argument is used for plan-mode prompt loading
-(plan_reviewer prompts stay plugin-local). Iterate-mode prompts come from
-shared/prompts/iterate_reviewer/, code-mode prompts from
-shared/prompts/code_reviewer/, regardless of plugin-root.
+Mode → primary-input mapping (the table itself is
+:data:`lib.external_review_modes.MODE_INPUT`, which also enforces it — a flag
+belonging to another mode is a usage error, never a silent fall-through):
 
-Mode → primary-input mapping:
-- ``plan``    → ``--plan-file`` (full implementation plan vs project spec)
-- ``iterate`` → ``--plan-file`` (mini-plan vs iterate spec)
-- ``code``    → ``--diff-file`` (code diff vs section/iterate spec)
+- ``plan``         → ``--plan-file`` (full implementation plan vs project spec)
+- ``iterate``      → ``--plan-file`` (mini-plan vs iterate spec)
+- ``code``         → ``--diff-file`` (code diff vs section/iterate spec)
+- ``architecture`` → ``--brief-file`` (architecture brief vs the spec)
+
+``--plugin-root`` is used for plan-mode prompt loading only (plan_reviewer
+prompts stay plugin-local); iterate / code / architecture prompts come from
+``shared/prompts/<mode>_reviewer/`` regardless of it.
 
 Output (JSON):
     {
@@ -61,7 +53,6 @@ identities are validated against fixed bindings before client construction.
 import argparse
 import json
 import os
-import re
 import sys
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from contextlib import nullcontext
@@ -86,8 +77,16 @@ from external_review_degraded import (  # noqa: E402
     finalize_review_output,
     openai_finish_reason,
 )
+from external_review_modes import (  # noqa: E402
+    MODE_INPUT,
+    ModeInputError,
+    is_blank,
+    render_user_prompt,
+    select_mode_input,
+)
 from external_review_prompts import (  # noqa: E402
     default_review_prompts,
+    load_architecture_review_prompts,
     load_code_review_prompts,
     load_iterate_review_prompts,
     load_plan_review_prompts,
@@ -101,35 +100,9 @@ from review_verdict import summarize_reviews  # noqa: E402
 
 OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1"
 
-_KNOWN_PLACEHOLDERS = ("{PLAN}", "{DIFF}", "{SPEC}")
-_PLACEHOLDER_RE = re.compile(r"\{[A-Z][A-Z_]*\}")
 
-
-def _render_user_prompt(user_prompt: str, primary: str, spec: str) -> str:
-    """Substitute placeholders into the user prompt template.
-
-    Both ``{PLAN}`` and ``{DIFF}`` are replaced with ``primary`` — whichever
-    token the active mode's template uses wins, the other is a no-op.
-    Plan/iterate templates use ``{PLAN}``; code-mode templates use ``{DIFF}``.
-
-    Emits a stderr warning if the template contains an unknown placeholder
-    (catches developer error when adding a new mode without updating this
-    helper). The check inspects the template, NOT the rendered output, so
-    diff/spec content that happens to contain literal ``{PLAN}/{DIFF}/{SPEC}``
-    strings does not produce false positives.
-    """
-    for token in _PLACEHOLDER_RE.findall(user_prompt):
-        if token not in _KNOWN_PLACEHOLDERS:
-            print(
-                f"warning: external_review prompt template contains unknown placeholder {token}",
-                file=sys.stderr,
-            )
-    return (
-        user_prompt
-        .replace("{PLAN}", primary)
-        .replace("{DIFF}", primary)
-        .replace("{SPEC}", spec)
-    )
+#: Kept as a module-level name: two call sites below and the tests bind to it.
+_render_user_prompt = render_user_prompt
 
 
 def review_with_openrouter(
@@ -226,11 +199,12 @@ def detect_provider() -> str:
 
 def main() -> int:
     parser = argparse.ArgumentParser(
-        description="External LLM plan / iterate / code review",
+        description="External LLM plan / iterate / code / architecture review",
     )
-    # Plan & iterate modes use --plan-file. Code mode uses --diff-file. Both
-    # are non-required at parse time so a single CLI shape can serve all
-    # three modes; mode-specific validation happens after parse.
+    # One input flag per mode (see lib/external_review_modes.MODE_INPUT). All are non-required at parse
+    # time so a single CLI shape can serve every mode; mode-specific validation
+    # happens after parse, and rejects a flag belonging to a DIFFERENT mode
+    # rather than ignoring it.
     parser.add_argument(
         "--plan-file",
         required=False,
@@ -240,6 +214,12 @@ def main() -> int:
         "--diff-file",
         required=False,
         help="Path to a code diff (required for --mode code)",
+    )
+    parser.add_argument(
+        "--brief-file",
+        required=False,
+        help="Architecture brief (--mode architecture). A brief, NOT the plan "
+             "— see shared/templates/architecture_brief.md",
     )
     parser.add_argument(
         "--spec-file",
@@ -253,13 +233,11 @@ def main() -> int:
     )
     parser.add_argument(
         "--mode",
-        choices=["plan", "iterate", "code"],
+        choices=list(MODE_INPUT),
         default="plan",
-        help=(
-            "Review mode: 'plan' (full pipeline plan vs project spec), "
-            "'iterate' (lightweight mini-plan vs iterate spec), "
-            "or 'code' (code diff vs section/iterate spec)."
-        ),
+        help="Review mode: 'plan' (pipeline plan vs project spec), 'iterate' "
+             "(mini-plan vs iterate spec), 'code' (diff vs spec), or "
+             "'architecture' (brief vs spec — should this exist at all).",
     )
     parser.add_argument(
         "--project-root",
@@ -276,17 +254,17 @@ def main() -> int:
     )
     args = parser.parse_args()
 
-    # Mode-specific argument validation.
-    if args.mode == "code":
-        if not args.diff_file:
-            parser.error("--diff-file is required for --mode code")
-        primary_path = Path(args.diff_file)
-        primary_label = "Diff"
-    else:
-        if not args.plan_file:
-            parser.error("--plan-file is required for --mode plan|iterate")
-        primary_path = Path(args.plan_file)
-        primary_label = "Plan"
+    # Mode-specific validation lives in lib/external_review_modes (a foreign
+    # flag first, then a missing one — see there for why the order matters).
+    try:
+        value, primary_label = select_mode_input(args.mode, args)
+    except ModeInputError as exc:
+        # `parser.error` exits 2 and never returns — a fact about argparse, not
+        # one visible here, so without the raise this reads as falling through
+        # to an unbound `value` (CodeQL py/uninitialized-local-variable, #582).
+        parser.error(str(exc))
+        raise SystemExit(2) from exc
+    primary_path = Path(value)
 
     spec_path = Path(args.spec_file)
 
@@ -313,6 +291,29 @@ def main() -> int:
 
     primary_text = primary_path.read_text(encoding="utf-8")
     spec = spec_path.read_text(encoding="utf-8")
+
+    # `.strip()` alone is not enough: a BOM is not whitespace to Python
+    # (`'﻿'.isspace()` is False), and PowerShell 5.1's `Set-Content -Encoding
+    # UTF8 ""` writes exactly BOM+CRLF — which would have read as a non-empty
+    # brief and been sent to both providers (Stage-3 doubt review, low).
+    #
+    # An empty brief is an ERROR, not a skip — the opposite of code mode below.
+    # An empty diff genuinely has nothing to review; an empty brief means this
+    # pass's only input was never written, and the providers would still answer:
+    # a plausible `approve` over nothing, recorded as a completed review.
+    # `is_blank` (not `.strip()`) because a BOM is not whitespace.
+    if args.mode == "architecture" and is_blank(primary_text):
+        print(json.dumps({
+            "review_schema": REVIEW_ENVELOPE_SCHEMA,
+            "success": False,
+            "error": (
+                f"Brief is empty: {primary_path} — the architecture review has "
+                "nothing to reason over, and reviewing nothing is not a pass. "
+                "Write it from shared/templates/architecture_brief.md; when the "
+                "change adds nothing permanent that is three lines."
+            ),
+        }, indent=2))
+        return 1
 
     # Code-mode short-circuit: empty diff → no provider call. The LLM cannot
     # review what isn't there, and many providers reject empty inputs.
@@ -341,6 +342,8 @@ def main() -> int:
         system_prompt, user_prompt = load_iterate_review_prompts()
     elif args.mode == "code":
         system_prompt, user_prompt = load_code_review_prompts()
+    elif args.mode == "architecture":
+        system_prompt, user_prompt = load_architecture_review_prompts()
     else:
         system_prompt, user_prompt = load_plan_review_prompts(args.plugin_root)
 
@@ -352,8 +355,10 @@ def main() -> int:
     reviews: dict[str, dict] = {}
 
     # external_review is a real producer boundary (this whole block IS the
-    # network-call span); code mode is the Step-8 cascade's pass, others run
-    # pre-Build. Bare string below is a span-parent name, not a path.
+    # network-call span); code mode is the Step-8 cascade's pass, others —
+    # plan, iterate and architecture alike — run pre-Build, which is why
+    # architecture shares `planning` rather than earning a parent of its own.
+    # Bare string below is a span-parent name, not a path.
     timing_cm = nullcontext(None)
     if args.run_id:
         timing_parent = "review" if args.mode == "code" else "planning"  # artifact-path-canon: legacy
