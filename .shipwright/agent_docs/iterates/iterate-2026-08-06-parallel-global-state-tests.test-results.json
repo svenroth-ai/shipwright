@@ -136,7 +136,7 @@
         "total": 15,
         "tested": 14,
         "untestable": 1,
-        "untested": 0
+        "untested_testable": 0
       },
       "ledger_path": ".shipwright/planning/iterate/2026-08-06-parallel-global-state-tests.md"
     },
