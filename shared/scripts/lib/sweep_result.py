@@ -26,9 +26,11 @@ class SweepResult:
     ``swept`` is the count of genuinely-new (deduped) lines folded into the branch on a
     ``committed`` run; ``gc_dropped`` is the count of outbox lines dropped because they are
     already origin-delivered; ``quarantined`` is the count of orphan-status lines moved to
-    the quarantine log this run; ``adopted`` is the count of undelivered main-tree TRACKED
-    drift appends routed into the outbox this run (see :mod:`lib.sweep_drift`); ``errors``
-    holds validator messages for ``invalid``.
+    the quarantine log this run; ``held`` is the count of lines withheld from THIS delivery
+    and left in the outbox for the next sweep (see :func:`lib.sweep_quarantine.decide`);
+    ``adopted`` is the count of undelivered main-tree TRACKED drift appends routed into the
+    outbox this run (see :mod:`lib.sweep_drift`); ``errors`` holds validator messages for
+    ``invalid``.
     """
 
     status: str
@@ -39,6 +41,7 @@ class SweepResult:
     adopted: int = 0
     commit_subject: str = ""
     errors: list[str] = field(default_factory=list)
+    held: int = 0
 
     def to_dict(self) -> dict:
         return {
@@ -47,6 +50,7 @@ class SweepResult:
             "swept": self.swept,
             "gc_dropped": self.gc_dropped,
             "quarantined": self.quarantined,
+            "held": self.held,
             "adopted": self.adopted,
             "commit_subject": self.commit_subject,
             "errors": self.errors,
@@ -72,6 +76,14 @@ def sweep_warnings(result: SweepResult) -> list[str]:
         notes.append(
             f"sweep-outbox QUARANTINED {result.quarantined} orphan-status line(s) — an operator "
             f"action was withheld; review {QUARANTINE_LOG}"
+        )
+    if result.held:
+        # Reported on EVERY status, deliberately outside the branches above. A held line
+        # whose append never reaches origin stays buffered indefinitely, and a sweep with
+        # nothing else to do is exactly the run nobody would look at.
+        notes.append(
+            f"sweep-outbox HELD {result.held} line(s) in the outbox — their append is not yet "
+            f"reachable from this branch; the next sweep retries them"
         )
     if result.adopted:
         notes.append(

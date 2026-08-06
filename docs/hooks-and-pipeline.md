@@ -345,17 +345,46 @@ resurrected on the board after every dismiss). The sweep therefore:
   buffer while main's `git status` reads clean;
 * **widens the orphan universe** — `sweep_quarantine.decide` takes the append ids
   known from main's tracked log; a `status` whose append is known is never an
-  orphan and is never quarantined. Unplaceable → fail closed (`invalid`), never
-  silently dropped;
+  orphan and is never quarantined. Unplaceable → **`held`** (see the disposition
+  table below), never silently dropped;
 * **refuses** (`skipped`, mutating nothing) when main's state is not understood:
   `main_tracked_diverged` (not an append-only prefix of HEAD),
   `main_tracked_index_diverged` (staged delta), `main_tracked_unparseable`,
   `main_tracked_changed_during_adopt`. A state that is understood but unrepairable
   (`main_tracked_no_head_blob`, `main_tracked_headerless_head_blob`) does NOT block
   delivery;
-* **reports** — `SweepResult.quarantined` / `.adopted` reach the operator through
-  `sweep_warnings()` (`setup_iterate_worktree` stderr + `warnings[]`). A quarantine
-  used to look exactly like a clean run, which is why the loss stayed invisible.
+* **reports** — `SweepResult.quarantined` / `.held` / `.adopted` reach the operator
+  through `sweep_warnings()` (`setup_iterate_worktree` stderr + `warnings[]`). A
+  quarantine used to look exactly like a clean run, which is why the loss stayed
+  invisible; `held` is reported on EVERY status for the same reason, since a sweep
+  with nothing else to do is the run nobody would look at.
+
+**Every un-deliverable line gets a proportional disposition** — and `block` means
+only "corruption I must not paper over" (iterate-2026-08-06-triage-validate-deadends,
+`trg-b854805c`). Three paths used to reach a `block` there was no way back from:
+the validator had no record-boundary recovery, so ONE concatenated line stopped
+delivery permanently while the recovering reader showed the board as fine; the
+`protected_status_unplaceable` block named a remedy ("deliver main by push /
+merge") that is unreachable in a workflow where main is only fast-forwarded FROM
+origin; and a `status` with a missing or non-`str` id could be neither quarantined
+(no id to select) nor repaired (the JSON is valid). Each stranded the whole buffer,
+which is gitignored and one `git clean -xfd` from empty.
+
+| Disposition | When | Effect on the outbox |
+|---|---|---|
+| `clean` | the materialized log validates | delivered; GC drops lines once origin-delivered |
+| `hold` | a `status` whose append is in main's tracked log — not deliverable YET | **retained**, retried next sweep; the rest of the buffer ships |
+| `quarantine` | no append anywhere, or no usable id — not deliverable EVER | moved to `triage.outbox.quarantine.jsonl`; the rest ships |
+| `block` | bad/missing header, duplicate append, unrecoverable fragment, empty log, or any defect in the worktree-tracked log the sweep cannot rewrite | nothing mutated; every message names a reachable remedy (`triage_repair.py` where it applies) |
+
+`decide` parses with `lib.jsonl_records.split_records`, the same parser the reader
+and the event-log twin `validate_events_text` use, so a recoverable concatenation is
+a union artefact rather than corruption. Two consequences are deliberate: a
+**bare-scalar** line is a fragment and now reports where it passed in silence, and
+**only `str` ids participate in identity** on both event kinds — matching
+`read_all_items` (which skips a non-`str` id in both passes) and
+`dedup_triage_lines`, and removing a `TypeError: unhashable` crash that fired from
+inside the sweep's lock.
 
 **Writing one-shot helpers — DO NOT call `should_route_to_outbox()` blindly.**
 That function answers "am I on idle default branch?" — it returns `False` on any
