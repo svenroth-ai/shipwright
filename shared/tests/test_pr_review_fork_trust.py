@@ -125,6 +125,64 @@ def test_stage2_refuses_an_ambiguous_pull_request(path: Path) -> None:
 
 
 @pytest.mark.parametrize("path", ALL_STAGE2)
+def test_stage2_resolves_a_fork_pr_not_just_a_same_repo_one(path: Path) -> None:
+    """`commits/{sha}/pulls` is scoped to the queried repo's own commit store.
+
+    A fork PR's head commit lives in the FORK's store, not the base repo's, so
+    that endpoint returns an EMPTY list for every fork PR — verified against
+    three real open fork PRs on cli/cli: all three returned zero matches from
+    `commits/{sha}/pulls` and exactly one from listing the base repo's open
+    PRs and matching `head.sha`. The ambiguity guard above then reads "found
+    0" and refuses to post a verdict, so a fork PR is not merely
+    under-reviewed but permanently blocked with a red required check — the
+    exact case this two-stage split exists to fix, inverted into an
+    availability regression no same-repo PR would ever reveal.
+    (shipwright-webui#338, doubt-reviewer finding 26.)
+    """
+    code = shell_code(path)
+    assert "commits/$HEAD_SHA/pulls" not in code, (
+        f"{path.name}: resolves the PR via commits/{{sha}}/pulls, which is "
+        f"EMPTY for a fork PR's head commit — list the base repo's open PRs "
+        f"and match on head.sha instead"
+    )
+    # External review (openai, iterate-2026-08-05-pr-review-fork-resolve):
+    # two independent substring checks can pass even if pagination, the safe
+    # jq argument binding, or the number extraction were dropped or attached
+    # to an unrelated call elsewhere in the file. Extract the actual `matches=`
+    # assignment and assert its properties are co-located in that ONE block.
+    block_match = re.search(r"matches=\$\(gh api(.*?)count=", code, re.DOTALL)
+    assert block_match, (
+        f"{path.name}: could not find the resolver's `matches=$(gh api ...)` "
+        f"assignment — the resolve step's shape changed unexpectedly"
+    )
+    block = block_match.group(1)
+    assert "--paginate" in block and "--slurp" in block, (
+        f"{path.name}: the open-PR listing must be paginated and slurped — a "
+        f"match beyond page 1 must not read as absent"
+    )
+    assert "pulls?state=open" in block, (
+        f"{path.name}: must resolve identity by listing the base repo's open "
+        f"PRs (pulls?state=open) — the only query that also finds a fork PR"
+    )
+    assert '--arg sha "$HEAD_SHA"' in block, (
+        f"{path.name}: the trusted SHA must be bound via a safe jq --arg, "
+        f"never interpolated directly into the jq program text"
+    )
+    # External review (deepseek, iterate-2026-08-05-pr-review-fork-resolve):
+    # --slurp wraps each page's array in an outer array, so a jq filter
+    # missing the `.[][]` double-flatten would satisfy every check above yet
+    # only ever see page 1 (or fail to iterate at all) at runtime.
+    assert ".[][]" in block, (
+        f"{path.name}: --slurp needs the matching .[][] double-flatten in "
+        f"the jq filter, or pages beyond the first are silently dropped"
+    )
+    assert ".head.sha == $sha" in block and ".number" in block, (
+        f"{path.name}: must filter on the safely-bound $sha and extract "
+        f".number from the SAME query this test isolated"
+    )
+
+
+@pytest.mark.parametrize("path", ALL_STAGE2)
 def test_stage2_rechecks_the_head_before_blessing_it(path: Path) -> None:
     """A force-push mid-run means the review describes different code.
 

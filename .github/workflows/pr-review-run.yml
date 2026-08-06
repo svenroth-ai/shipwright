@@ -84,9 +84,24 @@ jobs:
           # that satisfies a DIFFERENT PR's gate. Require exactly one open PR
           # whose CURRENT head is this exact SHA, and fail closed otherwise —
           # ambiguity here is indistinguishable from an attack.
-          matches=$(gh api "repos/$REPO/commits/$HEAD_SHA/pulls" \
+          #
+          # We LIST THE BASE REPO'S OPEN PRS and match on head SHA. The prior
+          # form asked commits/{sha}/pulls, and that endpoint returns an EMPTY
+          # LIST for a pull request raised from a FORK — the commit lives in
+          # the fork's object store, not the base repo's. Verified against
+          # three real fork PRs on cli/cli: all three resolve through this
+          # query and none through commits/{sha}/pulls. The old form left
+          # every fork PR unresolvable and permanently red WITHOUT EVER BEING
+          # REVIEWED — the exact case this two-stage split exists to fix,
+          # inverted into an availability regression no same-repo PR would
+          # ever reveal (shipwright-webui#338, doubt-reviewer finding 26).
+          #
+          # --paginate --slurp (pages flattened by .[][]): a match beyond page
+          # 1 must not read as absent, and a SECOND match beyond it must not
+          # collapse a two-match ambiguity into an apparent unique one.
+          matches=$(gh api --paginate --slurp "repos/$REPO/pulls?state=open&per_page=100" \
             | jq --arg sha "$HEAD_SHA" \
-                '[.[] | select(.state == "open") | select(.head.sha == $sha) | .number]')
+                '[.[][] | select(.state == "open") | select(.head.sha == $sha) | .number]')
           count=$(printf '%s' "$matches" | jq 'length')
           if [ "$count" -ne 1 ]; then
             echo "::error::expected exactly one open PR whose head is $HEAD_SHA, found $count — refusing to post a verdict"
