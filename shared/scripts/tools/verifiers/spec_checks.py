@@ -6,8 +6,9 @@ non-empty. Tier-2 (WARN, ``provenance="unverified_marker"``, ``tier=2``): S3
 mini-plan (medium+); S4 FR-preservation (removed FR keeps ``deprecated`` in
 git history); S5 FR-coherence (Description + Acceptance Criteria per FR); S7
 CLAUDE.md Structure block; S9 README-freshness (feature + UI-facing); S10
-CLAUDE.md-sync (new top-level dirs). The S2/S3 run_id guard lives in
-``_iterate_run_id.py``.
+CLAUDE.md-sync (new top-level dirs). The S2/S3/S9/S10 run_id guard lives in
+``_iterate_run_id.py``; each of the four SKIPs unless the audited run_id has an
+exact ``iterate_history`` entry.
 """
 
 from __future__ import annotations
@@ -602,6 +603,12 @@ def check_s9_readme_freshness(
     guard = _skip_unless_work_tree(project_root, "S9", S9_NAME)
     if guard is not None:
         return guard
+    # No run-specific file exists for S9, so candidates=[] — there is no
+    # file-exists→PASS signal to preserve as there is for S2/S3/W2.
+    guard = unresolvable_run_id_skip(
+        project_root, run_id, [], "S9", S9_NAME, provenance="unverified_marker")
+    if guard is not None:
+        return guard
 
     category = _iterate_category(project_root, run_id)
     if category != "feature":
@@ -690,6 +697,11 @@ def check_s10_claude_md_sync(
 ) -> dict[str, Any]:
     """S10 — CLAUDE.md touched when new top-level dirs appear (Tier-2)."""
     guard = _skip_unless_work_tree(project_root, "S10", S10_NAME)
+    if guard is not None:
+        return guard
+    # candidates=[] for the same reason as S9.
+    guard = unresolvable_run_id_skip(
+        project_root, run_id, [], "S10", S10_NAME, provenance="unverified_marker")
     if guard is not None:
         return guard
 
