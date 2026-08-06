@@ -38,10 +38,14 @@ pending append over a benign repo shape would trade one delivery failure for ano
 restores the tracked log second. An interruption between them leaves the drift in both
 places — harmless, because the plan dedups candidates against the outbox, so the replay
 adds nothing and simply completes the restore. Never the other order (that one loses
-data). The restore is ``git checkout -- <log>``, not a hand-written file: the index guard
-guarantees index == HEAD, so git reproduces HEAD's bytes honouring ``core.autocrlf`` and
-``.gitattributes``. Reconstructing them by hand meant guessing the EOL from the working
-file, and one CRLF drift line over an LF checkout rewrote the ENTIRE log as CRLF.
+data). The restore ends in ``git checkout -- <log>``, not a hand-written file: the index
+guard guarantees index == HEAD, so git reproduces HEAD's bytes honouring ``core.autocrlf``
+and ``.gitattributes``. Reconstructing them by hand meant guessing the EOL from the
+working file, and one CRLF drift line over an LF checkout rewrote the ENTIRE log as CRLF.
+It does NOT let git overwrite the live file, though: :mod:`lib.sweep_drift_restore`
+renames it aside atomically first, so an append landing in the residual window between
+the last re-check and git's write is preserved and adopted instead of destroyed (audit
+2026-07-28, finding 23 — see that module for the window that genuinely remains).
 
 The caller (:mod:`lib.sweep_outbox`) runs both halves INSIDE the canonical triage
 ``_FileLock``, in the same critical section that reads and folds the outbox, so a
@@ -63,6 +67,9 @@ from lib.sweep_drift_events import (  # noqa: F401  (re-export: existing importe
     _parsed,
     append_ids_of,
 )
+# The restore half lives in its own module (audit 2026-07-28 finding 23): it renames
+# the live log aside before letting git recreate it, so a late append is preserved.
+from lib.sweep_drift_restore import restore_tracked_log
 from lib.sweep_text import decode_store_text, normalize_lines, read_text_verbatim
 
 
@@ -102,8 +109,13 @@ class DriftResult:
     ``status`` ∈ {``adopted``, ``buffered``, ``error``}. ``buffered`` means the outbox
     write landed but the restore was abandoned because HEAD or the file moved under us —
     no loss (the replay completes it), but the operator is told the truth rather than
-    "adopted". ``adopted`` is the count of drift lines moved, reported on every outcome
-    including ``buffered``, where it would otherwise read as 0.
+    "adopted". ``error`` is narrower and was unreachable from here until
+    iterate-2026-08-06-triage-store-write-path: the tracked log is MISSING, because git
+    failed to recreate it AND :mod:`lib.sweep_drift_restore` could not put the salvaged
+    copy back. No replay finishes that, so unlike a ``buffered`` reason it must stop the
+    caller rather than ride along. ``adopted`` is the count of drift lines moved
+    (including any salvaged late append), reported on every outcome — including
+    ``buffered``, where it would otherwise read as 0.
     """
 
     status: str
@@ -185,10 +197,19 @@ def plan_main_tracked_drift(main_root: Path | str, outbox_path: Path) -> DriftPl
 
     head_events, work_events = _events(head), _events(lines)
     if work_events[: len(head_events)] != head_events:
+        # Name any salvage sibling on EVERY refusal, not only at the instant it was
+        # created: a `restore_failed` run announces the sole surviving copy once, on
+        # stderr, mid worktree-setup — and from then on this refusal is all the
+        # operator sees. The file is gitignored, so `git clean -xfd` deletes it
+        # (doubt review).
+        salvaged = sorted(p.name for p in triage_path.parent.glob(f"{triage_path.name}.salvage-*"))
+        pointer = (f" NOTE: preserved pre-restore content is at {', '.join(salvaged)} —"
+                   " gitignored, so do not `git clean` before reviewing it." if salvaged else "")
         return DriftPlan(
             "refused",
             reason=f"main_tracked_diverged: the working log is not an append-only extension of "
-                   f"HEAD ({len(head_events)} HEAD line(s), {len(work_events)} in the working tree)",
+                   f"HEAD ({len(head_events)} HEAD line(s), {len(work_events)} in the working "
+                   f"tree).{pointer}",
             known_append_ids=known,
         )
 
@@ -257,26 +278,13 @@ def commit_main_tracked_drift(
                    "— the drift is buffered in the outbox; the next sweep completes the restore",
             adopted=len(plan.drift),
         )
-    # git, not a hand-written file: the index guard proved index == HEAD, so `checkout --`
-    # reproduces HEAD's exact bytes under core.autocrlf / .gitattributes. Guessing the EOL
+    # The re-check above narrows the window between reading the file and git writing
+    # it; it cannot close it (a subprocess spawn sits inside). So the restore does NOT
+    # let git overwrite the live file: `sweep_drift_restore` renames it aside first, so
+    # an append that lands in the residual window is preserved and adopted rather than
+    # destroyed (audit 2026-07-28, finding 23). It still ends in `git checkout --`, not
+    # a hand-written file: the index guard proved index == HEAD, so git reproduces
+    # HEAD's exact bytes under core.autocrlf / .gitattributes, where guessing the EOL
     # from the working file rewrote the whole log as CRLF the moment one drift line was.
-    restore = run_git_soft(["checkout", "--", TRIAGE_LOG], cwd=main_root)
-    if restore.returncode == TIMEOUT_RETURNCODE:
-        # run_git KILLS on timeout, so the log may be PARTIALLY written — "the next
-        # sweep completes the restore" would be false (the next plan sees a non-prefix
-        # and refuses `main_tracked_diverged` forever). Say what is true instead.
-        return DriftResult(
-            "buffered",
-            reason="main_tracked_restore_timeout: the drift is buffered in the outbox, but "
-                   "`git checkout` was killed mid-restore — the tracked log may be partially "
-                   "written; verify it before re-running",
-            adopted=len(plan.drift),
-        )
-    if restore.returncode != 0:
-        return DriftResult(
-            "buffered",
-            reason=f"main_tracked_restore_failed: {restore.stderr.strip()[:200]} — the drift is "
-                   f"buffered in the outbox; the next sweep completes the restore",
-            adopted=len(plan.drift),
-        )
-    return DriftResult("adopted", adopted=len(plan.drift))
+    status, reason, late = restore_tracked_log(main_root, triage_path, outbox_path, plan._raw)
+    return DriftResult(status, reason=reason, adopted=len(plan.drift) + late)

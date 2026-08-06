@@ -1,0 +1,1 @@
+The sweep's restore of main's tracked triage log no longer overwrites an append that lands in its residual window: the live file is renamed aside atomically before git checkout recreates it, and a well-formed late append is recovered into the outbox instead of destroyed. Content it cannot classify is preserved and named rather than adopted or dropped (audit finding 23).

@@ -1,0 +1,1 @@
+The compliance audit's suggestion for an out-of-date evidence document now names a command that can actually bring it up to date. It previously offered only a local re-render, which cannot clear a finding measured against the committed copy, and then briefly named an internal flag the skill does not accept.

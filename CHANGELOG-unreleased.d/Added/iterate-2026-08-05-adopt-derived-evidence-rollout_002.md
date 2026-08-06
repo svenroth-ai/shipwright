@@ -1,0 +1,1 @@
+Onboarding's handover, and the project guidance it leaves behind, now say that the committed audit evidence is refreshed at releases and on request rather than continuously, and name both ways to refresh it.

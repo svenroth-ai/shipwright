@@ -1,0 +1,150 @@
+name: Windows Tests
+
+# IT-9 (trg-bd66b9b0) Unit 5: no CI job ran on Windows, so tests gated
+# skipif(sys.platform != "win32") / skipif(os.name != "nt") never executed —
+# a Windows-only defect (97392eea) reached `main` green and was only found
+# because someone happened to test locally. This job runs the three shared/
+# test directories (the only place those platform-gated tests live) on a
+# real windows-latest runner. ci.yml itself is intentionally untouched here
+# — see .shipwright/planning/iterate/2026-08-05-windows-ci-tests.md.
+#
+# Runs on pull_request (visible in the PR's own Checks tab, pre-merge) as
+# well as push to main, so this is NOT wired into
+# shared/scripts/lib/main_health.py's MONITORED_WORKFLOWS post-merge repair
+# path by design — pre-merge visibility is the detection mechanism here.
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+# Least-privilege GITHUB_TOKEN (mirrors ci.yml): checkout + tests only, no
+# writes, so the top-level token is read-only.
+permissions:
+  contents: read
+
+concurrency:
+  # Own group (distinct from ci.yml's `ci-*` group) so a Linux and a Windows
+  # run for the same ref never cancel each other.
+  group: windows-tests-${{ github.ref == 'refs/heads/main' && github.sha || github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+
+jobs:
+  shared-tests-windows:
+    name: Shared tests (Windows)
+    runs-on: windows-latest
+    defaults:
+      run:
+        # windows-latest defaults non-bash steps to PowerShell; pin every
+        # step to the Git-Bash shell the runner image ships so behavior
+        # matches ci.yml's Linux job and this workflow's own local
+        # native-Windows verification exactly.
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+        # GitHub-owned action, mutable tag by decision (mirrors ci.yml) —
+        # third-party actions below are SHA-pinned instead.
+        with:
+          # Matches ci.yml: some shared/tests read a git blob from an older
+          # historical commit (e.g. test_worktree_evidence_recovery.py's
+          # _VALIDATED_MAIN_TIP), which a shallow (default depth-1) checkout
+          # does not have. Found on this workflow's first two live runs
+          # (constant across the bash fix, ruling out a flaky cause).
+          fetch-depth: 0
+
+      - name: Remove the Windows bash.exe / WSL launcher shim
+        # windows-latest ships a WSL launcher stub at
+        # C:\Windows\System32\bash.exe. GitHub Actions' own `shell: bash`
+        # steps (this file's `defaults.run.shell`) already know to use Git
+        # Bash directly, but the shared/ test SUITE itself spawns
+        # `subprocess.run(["bash", ...])` from Python (test_hooks.py,
+        # test_bloat_defense_artifacts.py, test_hook_block_channel.py, ...)
+        # — Windows' executable search order checks the SYSTEM directory
+        # BEFORE the PATH environment variable for a bare name (app-dir,
+        # then cwd, then System32, THEN PATH), so a plain $GITHUB_PATH
+        # prepend cannot win: the WSL stub is always found first regardless
+        # of PATH order (confirmed empirically — a prepend-only fix left all
+        # 37 failures identical). Removing the stub is the only way a bare
+        # `bash` call resolves to Git Bash. TrustedInstaller may own the
+        # file, hence take-ownership + ACL grant before delete; best-effort,
+        # never reproduced in local verification because a normal Windows
+        # dev machine never has this stub on PATH-visible System32 with no
+        # WSL distro installed.
+        shell: pwsh
+        run: |
+          $wslBash = "$env:SystemRoot\System32\bash.exe"
+          if (Test-Path $wslBash) {
+            try {
+              Remove-Item -Path $wslBash -Force -ErrorAction Stop
+            } catch {
+              takeown /F $wslBash /A | Out-Null
+              icacls $wslBash /grant Administrators:F | Out-Null
+              Remove-Item -Path $wslBash -Force
+            }
+          }
+
+      - name: Verify bash now resolves to Git Bash, not the WSL launcher
+        # Fails fast (seconds) instead of discovering a broken shim removal
+        # only after the ~20-minute test suite finishes.
+        shell: pwsh
+        run: |
+          $resolved = (Get-Command bash -ErrorAction Stop).Source
+          Write-Host "bash resolves to: $resolved"
+          if ($resolved -notlike "*Git*") {
+            Write-Error "bash resolves to '$resolved', not Git Bash -- the WSL shim removal did not take effect."
+            exit 1
+          }
+
+      - name: Install uv
+        # Third-party action pinned to a full commit SHA (supply-chain
+        # hardening), identical pin to ci.yml's "Install uv" step.
+        uses: astral-sh/setup-uv@caf0cab7a618c569241d31dcd442f54681755d39  # v3
+        with:
+          enable-cache: true
+
+      - name: Install Python
+        run: uv python install 3.11
+
+      - name: Install root dependencies
+        run: uv sync
+
+      - name: Run shared tests
+        run: |
+          set -euo pipefail
+          # Same per-dir loop as ci.yml's "Run shared tests" step, minus
+          # the actual --cov measurement flags (no diff-coverage GATE
+          # applies to this job). pytest-cov/coverage/diff-cover ARE still
+          # provisioned though: shared/scripts/tools/tests/test_combine_
+          # coverage.py and test_measure_diff_coverage_gate.py test the
+          # coverage TOOLING itself and hard-fail in CI (ADR-044
+          # silent-skip discipline) when those packages aren't importable
+          # -- found on this workflow's first live green-minus-8 run.
+          #
+          # shared/tests/ and shared/scripts/tests/ each define their own
+          # top-level `tests` package, so they must run as separate pytest
+          # processes (one dir per invocation) or collection collides on
+          # the duplicate package name.
+          #
+          # Two genuine Windows-environment findings deselected here, each
+          # tracked as its own triage card and still running (and passing)
+          # on ci.yml's Linux job -- neither is a provisioning gap this
+          # job can close, and neither is this unit's remit to root-cause:
+          #   - test_main_cancellation_releases_real_locks_and_next_run_resets_state:
+          #     run_test_suite.py's cancellation path returns exit 2 on
+          #     Windows, not the POSIX 128+signal convention (130) the
+          #     test expects. trg-e82d8771.
+          #   - test_the_f0_cli_stops_on_an_under_covered_diff_then_passes_once_covered:
+          #     host_resource_lease's ownership check rejects GitHub-hosted
+          #     windows-latest's runneradmin profile directory as "not
+          #     owned by the current user" -- a security hardening check,
+          #     deliberately not weakened here. trg-d0f585b2.
+          for dir in shared/tests shared/scripts/tests shared/scripts/tools/tests; do
+            echo "--- Running tests in $dir (windows) ---"
+            uv run --with pytest --with pytest-mock --with pytest-cov \
+              --with coverage --with "diff-cover==10.3.0" \
+              pytest "$dir" -v -m "not slow and not cross_plugin" \
+              --deselect "shared/scripts/tools/tests/test_run_test_suite_faults.py::test_main_cancellation_releases_real_locks_and_next_run_resets_state" \
+              --deselect "shared/scripts/tools/tests/test_f0_cli_diff_coverage_e2e.py::test_the_f0_cli_stops_on_an_under_covered_diff_then_passes_once_covered"
+          done

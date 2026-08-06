@@ -1,0 +1,215 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-08-06-triage-store-write-path",
+    "date": "2026-08-06",
+    "unit": {
+      "status": "pass",
+      "passed": 8195,
+      "failed": 0,
+      "skipped": 28,
+      "note": "shared/tests full suite, 12m53s, 0 failed (20 deselected by the default marker filter). integration-tests run separately below. Plugin roots NOT re-run: this change touches shared/scripts only, and one pytest root per process is a hard rule here (ADR-044)."
+    },
+    "integration": {
+      "status": "pass",
+      "passed": 475,
+      "failed": 0,
+      "note": "integration-tests root, 3m04s, 2 deselected."
+    },
+    "e2e": {
+      "status": "n/a",
+      "reason": "no browser surface; this is framework machinery (library modules + one maintenance CLI)"
+    },
+    "smoke": {
+      "status": "n/a",
+      "reason": "no startable server surface in this repo"
+    },
+    "pgtap": {
+      "status": "n/a",
+      "reason": "no database"
+    },
+    "design_fidelity": {
+      "status": "n/a",
+      "reason": "no UI surface"
+    },
+    "surface_verification": {
+      "surface": "cli",
+      "tests_run": 22,
+      "exit_code": 0,
+      "evidence_path": ".shipwright/runs/iterate-2026-08-06-triage-store-write-path/surface_verification.json",
+      "detail": "triage_gc's CLI is a real behaviour surface this change alters (new --commit flag, new rc 2/3 exit codes, new operator-facing warning text), so surface=cli rather than none. The runner drives main() end to end plus the cross-component composition test against real git repos."
+    },
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "AC-1 triage_gc --apply reports an uncommitted compaction, naming the state, the consequence and a runnable remedy; and stays silent when there was nothing to compact",
+          "disposition": "tested",
+          "evidence": "test_triage_gc_publish.py::test_apply_leaves_the_channel_disabled_and_says_so PASSED; ::test_no_warning_when_there_was_nothing_to_compact PASSED; ::test_describe_divergence_is_none_on_a_clean_log PASSED"
+        },
+        {
+          "behavior": "AC-1 an UNCONFIRMED git state still warns after a rewrite (lines were removed, so silence would hide the divergence), while a non-git directory does not (nothing tracks the log there)",
+          "disposition": "tested",
+          "evidence": "test_triage_gc_publish.py::test_unknown_git_state_still_warns_after_a_rewrite PASSED; ::test_a_non_git_directory_gets_no_divergence_warning PASSED"
+        },
+        {
+          "behavior": "AC-2 --commit folds the compaction so plan_main_tracked_drift returns no_drift afterwards",
+          "disposition": "tested",
+          "evidence": "test_triage_gc_publish.py::test_commit_keeps_the_sweep_working PASSED"
+        },
+        {
+          "behavior": "AC-2 all three main-tree guards plus the path-clean precondition are evaluated BEFORE the destructive rewrite: each refuses with rc 2 and leaves the log byte-unchanged",
+          "disposition": "tested",
+          "evidence": "test_triage_gc_publish.py::test_commit_skips_on_a_detached_head PASSED; ::test_commit_skips_when_something_is_staged PASSED; ::test_commit_refuses_when_the_log_already_carried_drift PASSED; ::test_a_blocked_commit_never_compacts_so_there_is_nothing_to_warn_about PASSED"
+        },
+        {
+          "behavior": "AC-2 commit_compaction re-checks the git state itself rather than trusting the caller's earlier preflight, so a HEAD that detaches in between cannot yield a commit on a dangling ref",
+          "disposition": "tested",
+          "evidence": "test_triage_gc_publish.py::test_commit_compaction_reguards_itself PASSED; ::test_a_failed_commit_exits_nonzero PASSED (asserts the re-check actually ran)"
+        },
+        {
+          "behavior": "AC-2 --commit refuses when the log moved after the compaction, refuses outside the main repo root, requires --apply, and exits non-zero when the commit did not happen",
+          "disposition": "tested",
+          "evidence": "test_triage_gc_publish.py::test_commit_refuses_when_the_log_moved_after_the_compaction PASSED; ::test_commit_from_inside_a_worktree_targets_main_not_the_iterate_branch PASSED; ::test_apply_without_commit_still_works_from_a_worktree PASSED; ::test_commit_without_apply_is_rejected_not_ignored PASSED; ::test_a_failed_commit_exits_nonzero PASSED"
+        },
+        {
+          "behavior": "AC-3 the .bak is byte-identical to the log it backs up, for LF and for CRLF, and the published log is LF on every platform",
+          "disposition": "tested",
+          "evidence": "test_triage_gc_durability.py::test_backup_is_byte_identical_to_what_it_backs_up PASSED; ::test_backup_preserves_crlf_too PASSED; ::test_the_published_log_is_written_with_LF_on_every_platform PASSED (first two RED against the pre-fix write path)"
+        },
+        {
+          "behavior": "AC-3 both writes go through durable_atomic_write, and the backup + compaction input derive from ONE read of the source bytes",
+          "disposition": "tested",
+          "evidence": "test_triage_gc_durability.py::test_both_writes_go_through_the_durable_primitive PASSED; ::test_backup_and_compaction_come_from_one_read PASSED (both RED pre-fix)"
+        },
+        {
+          "behavior": "AC-3 apply_gc refuses to publish when the tracked log changed under the lock, and that refusal leaves no .bak for a compaction that never happened",
+          "disposition": "tested",
+          "evidence": "test_triage_gc_durability.py::test_refuses_to_publish_when_the_log_moved_under_the_lock PASSED (RED pre-fix; injection sits at the last hook before the fingerprint check)"
+        },
+        {
+          "behavior": "AC-3 a backup-write failure, a publish failure, malformed JSON and undecodable bytes each leave the live log untouched with no temp residue",
+          "disposition": "tested",
+          "evidence": "test_triage_gc_durability.py::test_backup_write_failure_leaves_the_live_log_untouched PASSED; ::test_publish_failure_leaves_the_live_log_untouched PASSED; ::test_malformed_json_refuses_before_writing_anything PASSED; ::test_undecodable_bytes_refuse_the_rewrite PASSED"
+        },
+        {
+          "behavior": "AC-3 apply_gc keeps its historical return while apply_gc_reporting additionally exposes the bytes it published",
+          "disposition": "tested",
+          "evidence": "test_triage_gc_durability.py::test_apply_gc_keeps_its_historical_return PASSED; ::test_reporting_variant_returns_the_bytes_it_published PASSED"
+        },
+        {
+          "behavior": "AC-4 a definitively failed reconcile commit rolls the dedup rewrite back, leaving the sweep usable — and the state it prevents is pinned directly",
+          "disposition": "tested",
+          "evidence": "test_reconcile_rollback.py::test_failed_commit_rolls_the_rewrite_back PASSED; ::test_without_the_rollback_the_channel_would_be_dead PASSED"
+        },
+        {
+          "behavior": "AC-4 rollback is refused when another writer appended or when HEAD moved; a timeout does not roll back; a run with no rewrite has nothing to undo; and a failed commit leaves the index clean",
+          "disposition": "tested",
+          "evidence": "test_reconcile_rollback.py::test_rollback_refuses_when_another_writer_appended PASSED; ::test_rollback_refuses_when_head_moved PASSED; ::test_no_rewrite_means_nothing_to_roll_back PASSED; ::test_failed_commit_leaves_the_index_clean PASSED; test_main_tree_git_timeout_paths.py::test_reconcile_commit_timeout_returns_a_structured_error PASSED"
+        },
+        {
+          "behavior": "AC-5 same-id appends agreeing on the identity anchor collapse keep-last (ADR-163) and report the drop",
+          "disposition": "tested",
+          "evidence": "test_triage_dedup.py::test_matching_anchor_collapses_keep_last_and_warns PASSED; ::test_supersession_warning_is_not_an_error PASSED; test_churn_merge.py::test_triage_dedup_collapses_same_id_appends_keep_last PASSED"
+        },
+        {
+          "behavior": "AC-5 the anchor is compared as a normalised INSTANT: the two ISO-8601 spellings of one moment collapse, a one-microsecond difference still collides, and an unparseable anchor falls back to string equality in both directions",
+          "disposition": "tested",
+          "evidence": "test_triage_dedup.py::test_the_two_spellings_of_one_instant_are_the_same_anchor PASSED; ::test_a_genuinely_different_instant_still_collides PASSED; ::test_an_unparseable_anchor_falls_back_to_string_equality PASSED"
+        },
+        {
+          "behavior": "AC-5 anything short of a positive anchor match keeps EVERY line and warns naming triage_repair.py — disagreeing, mixed presence, absent, empty, whitespace-only, and non-str",
+          "disposition": "tested",
+          "evidence": "test_triage_dedup.py::test_disagreeing_anchors_keep_both_and_warn_loudly PASSED; ::test_mixed_anchor_presence_is_a_collision PASSED; ::test_anchorless_group_keeps_both PASSED; ::test_empty_and_non_str_anchor_count_as_absent PASSED (covers ' ' and '\\t')"
+        },
+        {
+          "behavior": "AC-5 three-plus same-id appends are grouped by exact anchor, not walked pairwise, so no transitive match can drop an unagreed record",
+          "disposition": "tested",
+          "evidence": "test_triage_dedup.py::test_three_records_two_anchors_keeps_all PASSED; ::test_three_records_one_anchor_collapses_to_last PASSED"
+        },
+        {
+          "behavior": "AC-5 byte-identical collapse, append+status id sharing, unparseable lines, non-str ids and distinct ids are untouched and never warn",
+          "disposition": "tested",
+          "evidence": "test_triage_dedup.py::test_byte_identical_collapse_never_warns PASSED; ::test_status_sharing_an_id_with_its_append_is_untouched PASSED; ::test_unparseable_and_non_str_id_appends_pass_through PASSED; ::test_distinct_ids_are_never_compared PASSED"
+        },
+        {
+          "behavior": "AC-5 the premise the anchor rule rests on (every real append carries originalTs) is pinned against triage.py's source so it cannot rot silently",
+          "disposition": "tested",
+          "evidence": "test_triage_dedup.py::test_every_real_append_carries_the_anchor PASSED"
+        },
+        {
+          "behavior": "AC-6 reconcile_main_triage carries the dedup warnings on its result instead of discarding them",
+          "disposition": "tested",
+          "evidence": "test_reconcile_rollback.py::test_dedup_warnings_reach_the_result PASSED"
+        },
+        {
+          "behavior": "AC-6/R1 a benign keep-last collapse leaves the quarantine decision CLEAN and carries the warning — a warning never blocks delivery; only a retained collision does, and it says why",
+          "disposition": "tested",
+          "evidence": "test_triage_write_path_contracts.py::test_benign_keep_last_collapse_stays_clean_and_carries_the_warning PASSED; ::test_an_id_collision_is_what_blocks_and_it_says_why PASSED; ::test_no_same_id_appends_means_no_warnings_at_all PASSED"
+        },
+        {
+          "behavior": "AC-7 an append landing in the restore window is preserved by the salvage rename and adopted into the outbox; a clean restore removes the salvage; adoption is idempotent across a replay",
+          "disposition": "tested",
+          "evidence": "test_sweep_drift_restore.py::test_late_append_is_recovered_instead_of_destroyed PASSED; ::test_clean_restore_leaves_no_salvage_behind PASSED; ::test_late_append_adoption_is_idempotent PASSED; negative control ::test_a_bare_checkout_destroys_a_late_append PASSED"
+        },
+        {
+          "behavior": "AC-7 salvage content that is not a well-formed append-only suffix is preserved for review, never adopted — unparseable, a wholesale rewrite, or unclassifiable because the read itself failed",
+          "disposition": "tested",
+          "evidence": "test_sweep_drift_restore_faults.py::test_unparseable_late_content_is_kept_not_adopted PASSED; ::test_a_wholesale_rewrite_is_kept_not_adopted PASSED; ::test_failed_adoption_keeps_the_salvage_rather_than_dropping_it PASSED"
+        },
+        {
+          "behavior": "AC-7 a failed rename aborts the restore rather than falling back to the overwrite it prevents; a failed checkout puts the log back only when the path is absent, otherwise BOTH artifacts are kept",
+          "disposition": "tested",
+          "evidence": "test_sweep_drift_restore_faults.py::test_rename_failure_aborts_instead_of_overwriting PASSED; ::test_checkout_failure_puts_the_log_back PASSED; ::test_checkout_failure_with_a_reappeared_file_keeps_both PASSED (the first two assert a `fired` tripwire so the injection cannot silently miss)"
+        },
+        {
+          "behavior": "AC-7 a MISSING tracked log after a failed put-back returns error, not the soft buffered, and the sweep stops on it",
+          "disposition": "tested",
+          "evidence": "test_sweep_drift_restore_faults.py::test_missing_log_after_a_failed_put_back_is_an_error_not_buffered PASSED"
+        },
+        {
+          "behavior": "AC-7 the salvage pointer is repeated on every SUBSEQUENT main_tracked_diverged refusal, not only at the instant of failure",
+          "disposition": "tested",
+          "evidence": "test_sweep_drift_restore_faults.py::test_a_later_refusal_still_names_the_salvage PASSED"
+        },
+        {
+          "behavior": "AC-7 salvage names are exclusive, and the salvage path is gitignored by the SHIPPED template (every adopter, not just this repo)",
+          "disposition": "tested",
+          "evidence": "test_sweep_drift_restore.py::test_salvage_names_are_exclusive PASSED; ::test_salvage_path_is_gitignored_by_the_shipped_template PASSED (with a control that the tracked log itself is NOT ignored)"
+        },
+        {
+          "behavior": "AC-8 the four components compose on a real git repo: GC leaves the channel dead and says so, --commit keeps it alive, main-tree drift is adopted with a late append salvaged and delivered by the next sweep, a failed reconcile commit leaves the sweep usable, an id collision blocks loudly without deleting a record, and a benign refresh still delivers",
+          "disposition": "tested",
+          "category": "integration",
+          "evidence": "test_triage_write_path_integration.py — 6 tests PASSED"
+        },
+        {
+          "behavior": "R8 every moved name resolves from BOTH its old and new home as the same object, and each of the twelve modules imports alone in a fresh interpreter (circular-import guard)",
+          "disposition": "tested",
+          "evidence": "test_triage_write_path_contracts.py::test_every_moved_name_resolves_from_its_old_and_new_home PASSED; ::test_private_aliases_still_point_at_the_shared_implementation PASSED; ::test_each_module_imports_cleanly_in_a_fresh_interpreter PASSED"
+        },
+        {
+          "behavior": "the GC vocabulary drift guard still excludes the module that DEFINES MACHINE_REASONS after the extraction, resolved from the module object rather than a filename",
+          "disposition": "tested",
+          "evidence": "test_triage_gc_vocab_drift.py — 4 tests PASSED (the filename-based exclusion broke on the move and was caught by test_legacy_retained_tokens_have_no_live_emitter)"
+        }
+      ],
+      "counts": {
+        "testable": 30,
+        "tested": 30,
+        "untestable": 0,
+        "untested_testable": 0
+      },
+      "enumeration_basis": {
+        "acs": 8,
+        "covered_acs": 8
+      }
+    },
+    "degraded": []
+  },
+  "coverage": {
+    "total": 80.2,
+    "measured_tier": "repo",
+    "source": "combined coverage.xml (all plugins + shared + integration)",
+    "measured_at": "2026-07-04T00:00:00Z"
+  }
+}
