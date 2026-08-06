@@ -221,8 +221,7 @@ def _retry_past_sharing_violations(operation, budget_seconds: float):
 
 
 def replace_retrying(src: str | Path, dst: str | Path) -> None:
-    """``os.replace``, retried while Windows reports the destination as in use. Public because
-    ``lib.sweep_drift_restore`` renames the tracked log aside in the same threat model."""
+    """``os.replace`` retried while Windows says the destination is in use. Public because ``lib.sweep_drift_restore`` renames the tracked log aside in the same threat model."""
     _retry_past_sharing_violations(lambda: os.replace(src, dst),
                                    REPLACE_RETRY_BUDGET_SECONDS)
 

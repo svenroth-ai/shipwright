@@ -174,8 +174,7 @@ def sweep_outbox_to_branch(
         )
         if decision.action == "block":
             # Nothing has been mutated yet — not the outbox, not main's tracked log.
-            # Dedup notes ride in ``errors``, not ``dedup_notes`` (``sweep_warnings`` prints both).
-            return SweepResult(status="invalid", errors=decision.errors + decision.warnings)
+            return SweepResult(status="invalid", errors=decision.errors + decision.warnings)  # notes in errors: sweep_warnings prints both
 
         # The decision holds: NOW make the adoption real (durable outbox write, then the
         # git restore of main's tracked log).
@@ -183,8 +182,7 @@ def sweep_outbox_to_branch(
         if plan.status == "adoptable":
             done = commit_main_tracked_drift(plan, main_root, outbox_path)
             adopted, adopt_note = done.adopted, done.reason
-            if done.status == "error":  # tracked log MISSING — no replay can finish it,
-                # unlike every `buffered` reason, which rides along in `reason` below.
+            if done.status == "error":  # tracked log MISSING — no replay finishes that
                 return SweepResult(status="error", reason=done.reason, adopted=adopted)
 
         # Driven off the LISTS, not ``action``: quarantine and hold can occur in one sweep
