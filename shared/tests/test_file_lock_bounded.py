@@ -164,9 +164,11 @@ def test_a_real_fault_propagates_instead_of_being_polled(tmp_path):
     """
     import lib.file_lock as fl  # noqa: PLC0415
 
-    probe = open(tmp_path / "dead.lock", "w", encoding="utf-8")
-    dead_fd = probe.fileno()
-    probe.close()
+    # `with`, so the handle is closed on any path — the closing is the POINT
+    # here (we want a dead descriptor), but leaking it on an exception would
+    # still be a leak (CodeQL py/file-not-closed).
+    with open(tmp_path / "dead.lock", "w", encoding="utf-8") as probe:
+        dead_fd = probe.fileno()
 
     class _DeadHandle:
         def seek(self, *a):
@@ -204,10 +206,17 @@ def test_exception_inside_a_nested_block_still_releases(tmp_path):
     """An exception escaping the inner block must not strand the lock."""
     lock_path = tmp_path / "unwind.lock"
 
-    with pytest.raises(RuntimeError, match="boom"):
+    def unwind():
         with FileLock(lock_path, timeout_seconds=1):
             with FileLock(lock_path, timeout_seconds=1):
                 raise RuntimeError("boom")
+
+    # Called rather than inlined: an unconditional `raise` directly inside the
+    # `pytest.raises` block makes everything after it look unreachable to static
+    # analysis (CodeQL py/unreachable-statement), which would have hidden the
+    # assertion that actually matters.
+    with pytest.raises(RuntimeError, match="boom"):
+        unwind()
 
     assert _acquire_from_another_thread(lock_path, 1.0) == "acquired"
 

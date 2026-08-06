@@ -25,6 +25,15 @@ if str(_SCRIPTS) not in sys.path:
 from lib import file_lock_registry as reg  # noqa: E402
 
 
+def _no_unlock(handle):
+    """Release hook that unlocks nothing — these tests register fake handles.
+
+    Module-level rather than an inline ``lambda h: None``: a lambda's implicit
+    return sitting inside a ``finally`` block is flagged as a return-from-finally
+    (CodeQL py/exit-from-finally), the pattern that silently swallows exceptions.
+    """
+
+
 def test_key_is_independent_of_the_working_directory(tmp_path, monkeypatch):
     """A relative path yields the SAME key from any cwd — exclusion depends on it."""
     target = tmp_path / "sub" / "a.lock"
@@ -64,7 +73,7 @@ def test_a_second_thread_is_not_treated_as_the_owner(tmp_path):
     try:
         assert reg.enter_reentrant(key, threading.get_ident()) is True
         # …and release that extra level again so the teardown below is at depth 1.
-        reg.release(key, threading.get_ident(), lambda h: None)
+        reg.release(key, threading.get_ident(), _no_unlock)
 
         seen: list[bool] = []
         other = threading.Thread(
@@ -74,7 +83,7 @@ def test_a_second_thread_is_not_treated_as_the_owner(tmp_path):
         assert not other.is_alive()
         assert seen == [False], "another thread must never inherit ownership"
     finally:
-        reg.release(key, threading.get_ident(), lambda h: None)
+        reg.release(key, threading.get_ident(), _no_unlock)
 
     assert handle_closed == [True], "the outermost release must close the handle"
     assert reg.enter_reentrant(key, threading.get_ident()) is False
@@ -93,16 +102,16 @@ def test_release_by_a_non_owner_is_a_noop(tmp_path):
     try:
         done: list[bool] = []
         other = threading.Thread(
-            target=lambda: (reg.release(key, threading.get_ident(), lambda h: None),
+            target=lambda: (reg.release(key, threading.get_ident(), _no_unlock),
                             done.append(True)))
         other.start()
         other.join(timeout=5)
         assert done == [True]
         assert unlocked == [], "a non-owner release must not close the owner's handle"
         assert reg.enter_reentrant(key, threading.get_ident()) is True
-        reg.release(key, threading.get_ident(), lambda h: None)
+        reg.release(key, threading.get_ident(), _no_unlock)
     finally:
-        reg.release(key, threading.get_ident(), lambda h: None)
+        reg.release(key, threading.get_ident(), _no_unlock)
 
 
 def test_a_forked_child_does_not_inherit_ownership(tmp_path, monkeypatch):

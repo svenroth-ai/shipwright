@@ -68,10 +68,17 @@ class _OsShim:
 
 @_POSIX_ONLY
 def test_carries_an_existing_destinations_mode(tmp_path):
-    """The published file keeps the mode the destination already had."""
+    """The published file keeps the mode the destination already had.
+
+    0o640 rather than 0o644: it is still unmistakably NOT ``mkstemp``'s 0600 and
+    still proves the group bit survives, without a test creating a world-readable
+    file (CodeQL ``py/overly-permissive-file``). That the *other* bits are carried
+    verbatim too is pinned by ``test_carries_the_destinations_exact_mode_bits``,
+    which asserts 0o644 through a stub and touches no real file.
+    """
     dest = tmp_path / "cfg.json"
     dest.write_text("old", encoding="utf-8")
-    os.chmod(dest, 0o644)
+    os.chmod(dest, 0o640)
 
     tmp = tmp_path / "scratch"
     fd = os.open(tmp, os.O_CREAT | os.O_WRONLY, 0o600)
@@ -80,7 +87,7 @@ def test_carries_an_existing_destinations_mode(tmp_path):
     finally:
         os.close(fd)
 
-    assert _mode(tmp) == 0o644
+    assert _mode(tmp) == 0o640
 
 
 @_POSIX_ONLY

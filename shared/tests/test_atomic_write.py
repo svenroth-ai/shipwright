@@ -187,17 +187,24 @@ _POSIX_ONLY = pytest.mark.skipif(
 
 @_POSIX_ONLY
 def test_rewrite_keeps_the_files_existing_mode(tmp_path):
-    """AC-1: a 0644 file rewritten through the primitive is still 0644."""
+    """AC-1: a 0o640 file rewritten through the primitive is still 0o640.
+
+    Not 0o644: this is a REAL file on disk, and a test has no business creating a
+    world-readable one (CodeQL py/overly-permissive-file). 0o640 is still
+    unmistakably not mkstemp's 0600 and still proves the group bit survives the
+    publish; that every other bit is carried verbatim is pinned separately, and
+    without touching the filesystem, by test_carries_the_destinations_exact_mode_bits.
+    """
     import stat as _stat  # noqa: PLC0415
 
     target = tmp_path / "cfg.json"
     durable_atomic_write(target, "first")
-    os.chmod(target, 0o644)
+    os.chmod(target, 0o640)
 
     durable_atomic_write(target, "second")
 
     assert target.read_text(encoding="utf-8") == "second"
-    assert _stat.S_IMODE(target.stat().st_mode) == 0o644
+    assert _stat.S_IMODE(target.stat().st_mode) == 0o640
 
 
 @_POSIX_ONLY
