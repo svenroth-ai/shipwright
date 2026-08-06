@@ -70,15 +70,18 @@ class _OsShim:
 def test_carries_an_existing_destinations_mode(tmp_path):
     """The published file keeps the mode the destination already had.
 
-    0o640 rather than 0o644: it is still unmistakably NOT ``mkstemp``'s 0600 and
-    still proves the group bit survives, without a test creating a world-readable
-    file (CodeQL ``py/overly-permissive-file``). That the *other* bits are carried
-    verbatim too is pinned by ``test_carries_the_destinations_exact_mode_bits``,
-    which asserts 0o644 through a stub and touches no real file.
+    0o400, deliberately MORE restrictive than ``mkstemp``'s 0600 rather than less.
+    It discriminates just as sharply — a broken carry leaves 0600, a working one
+    leaves 0400 — while granting nobody any access, so this test does not have to
+    create a group- or world-readable file to make its point
+    (CodeQL ``py/overly-permissive-file``, a security query this repo's config
+    rightly refuses to disarm). That the PERMISSIVE bits are carried too is pinned
+    by ``test_carries_the_destinations_exact_mode_bits``, which asserts 0o644
+    through a stub and never touches a real file or ``chmod``.
     """
     dest = tmp_path / "cfg.json"
     dest.write_text("old", encoding="utf-8")
-    os.chmod(dest, 0o640)
+    os.chmod(dest, 0o400)
 
     tmp = tmp_path / "scratch"
     fd = os.open(tmp, os.O_CREAT | os.O_WRONLY, 0o600)
@@ -87,7 +90,7 @@ def test_carries_an_existing_destinations_mode(tmp_path):
     finally:
         os.close(fd)
 
-    assert _mode(tmp) == 0o640
+    assert _mode(tmp) == 0o400
 
 
 @_POSIX_ONLY
