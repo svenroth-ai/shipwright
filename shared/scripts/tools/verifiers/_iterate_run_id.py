@@ -1,4 +1,4 @@
-"""run_id-resolution guard for the iterate spec checks (S2/S3).
+"""run_id-resolution guard for the iterate spec checks (S2/S3/S9/S10, W2).
 
 Layer 2 of iterate-2026-05-31-phasequality-triage-bundle. When the resolved
 run_id is a sentinel (``""`` / ``"unknown"`` — emitted by the phase-quality
@@ -7,6 +7,31 @@ Stop audit when no iterate run_id is resolvable) or has no exact
 S2/S3 SKIP — instead of tail-falling-back to the most-recent entry's
 complexity and emitting an unsatisfiable FAIL. A matching file on disk
 preserves the file-exists -> PASS signal.
+
+S9/S10 take the same guard with ``candidates=[]`` (no run-specific file
+exists for either, so there is no file-exists -> PASS signal to preserve).
+They read the tail-fallback's ``type``/``category`` rather than its
+``complexity``, so before the guard an unresolvable run_id let an *unrelated*
+run's category decide their verdict — the sentinel-trigger sibling of the
+corrupt-entry trigger ``resolve_iterate_entry`` closes below
+(iterate-2026-08-06-s9-s10-sentinel-guard).
+
+Which run_ids actually reach these checks matters, because it decides how much
+the guard is worth. The sole production caller is the phase-quality Stop audit,
+whose id comes from ``lib.phase_quality.resolve_run_id``; in this repo steps 1-2
+of that chain are inert (nothing writes a top-level ``run_id`` into
+``shipwright_run_config.json``, and no producer emits a ``run_started`` event),
+so it yields either a sentinel or — in campaign / autonomous-loop runs —
+``SHIPWRIGHT_LOOP_ID``(+``_UNIT_ID``). **The loop-var branch is the one that
+mattered:** the read-time rollup filter (``is_sentinel_run``) already dropped
+sentinel-run findings from every consumer, but a loop id is not a sentinel, so
+there the inherited-category verdict really did reach the triage backlog and the
+dashboard. Neither branch is an ``iterate_history`` key, so both SKIP here; the
+upstream seam is tracked separately (trg-0a80a7e7).
+
+Caveat worth knowing when triaging one of these SKIPs: ``has_exact_iterate_entry``
+swallows any read error and returns ``False``, so an UNREADABLE iterate store is
+reported identically to a foreign audit context.
 
 Extracted into its own module (rather than inlined in ``spec_checks.py``) to
 keep that already-grandfathered file under its bloat baseline.

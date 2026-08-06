@@ -244,15 +244,16 @@ def durable_read_text(path: Path | str, *, encoding: str = "utf-8",
     raises, so a genuine permissions problem is not hidden — it is just no
     longer confused with a neighbour's in-flight publish.
 
-    ``errors`` is explicit and callable but stays **strict**, deliberately NOT
-    mirroring the writer's ``surrogateescape``: no triage-store reader goes through
-    here (each does its own ``open``/``read_bytes``), while all four real callers
-    ``json.loads`` a run-config / phase-history file. Lenient would be harmful there —
-    ``config_io`` catches ``JSONDecodeError`` and returns ``{}``, read as "first run,
-    no config yet", whereas a strict ``UnicodeDecodeError`` is a ``ValueError`` and
-    NOT a ``JSONDecodeError``, so it escapes that handler and fails loudly (see
-    ``test_read_gives_up_loudly_rather_than_inventing_an_empty_config``). A
-    triage-side caller can pass ``surrogateescape`` the day one exists.
+    ``errors`` defaults to **strict**, deliberately NOT mirroring the writer's
+    ``surrogateescape``: the run-config / phase-history callers ``json.loads`` what
+    they read, and lenient is harmful there — ``config_io`` catches
+    ``JSONDecodeError`` and returns ``{}`` ("first run, no config yet"), while a
+    strict ``UnicodeDecodeError`` is a ``ValueError``, escapes that handler and
+    fails loudly. This once added "no triage-store reader goes through here … a
+    triage-side caller can pass ``surrogateescape`` the day one exists"; that day
+    came — ``jsonl_records.read_jsonl_records`` now reads the append-only triage
+    store that way, a strict decode of an interrupted write having raised out of
+    every reader (iterate-2026-08-06-p2-19c-corruption-absence).
     """
     target = Path(path)
     return _retry_past_sharing_violations(

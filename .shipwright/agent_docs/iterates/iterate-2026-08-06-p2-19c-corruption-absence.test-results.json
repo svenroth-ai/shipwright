@@ -1,0 +1,235 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-08-06-p2-19c-corruption-absence",
+    "date": "2026-08-06",
+    "unit": {
+      "status": "passed",
+      "passed": 9037,
+      "total": 9072
+    },
+    "integration": {
+      "status": "passed",
+      "passed": 475,
+      "total": 477
+    },
+    "pgtap": {
+      "status": "skipped",
+      "passed": 0,
+      "total": 0
+    },
+    "e2e": {
+      "status": "passed",
+      "passed": 15,
+      "total": 15
+    },
+    "design_fidelity": {
+      "status": "skipped",
+      "passed": 0,
+      "total": 0
+    },
+    "smoke": {
+      "status": "skipped"
+    },
+    "coverage": {
+      "total": 0
+    },
+    "degraded": [],
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "split_records recovers a valid record after a truncated predecessor (AC1)",
+          "disposition": "tested",
+          "evidence": "test_valid_record_after_a_truncated_predecessor_is_recovered PASSED"
+        },
+        {
+          "behavior": "a simple nested object in the damaged prefix is not fabricated",
+          "disposition": "tested",
+          "evidence": "test_resync_never_fabricates_a_record_from_inside_the_damaged_prefix PASSED"
+        },
+        {
+          "behavior": "a COMPLETE nested object followed by a real record is not fabricated",
+          "disposition": "tested",
+          "evidence": "test_resync_rejects_a_complete_object_nested_in_the_damaged_prefix PASSED"
+        },
+        {
+          "behavior": "a minimal event+id stub nested in wreckage is not fabricated, both event kinds",
+          "disposition": "tested",
+          "evidence": "test_resync_rejects_a_minimal_forged_record_nested_in_the_prefix, test_a_status_shaped_stub_is_also_rejected PASSED"
+        },
+        {
+          "behavior": "a genuine status record behind damage is still recovered",
+          "disposition": "tested",
+          "evidence": "test_a_complete_status_record_after_damage_is_still_recovered PASSED"
+        },
+        {
+          "behavior": "without is_record, recovery fails closed to pre-fix behaviour",
+          "disposition": "tested",
+          "evidence": "test_without_a_predicate_recovery_fails_closed PASSED"
+        },
+        {
+          "behavior": "a foreign (events-log) shaped object is not recovered as a triage record",
+          "disposition": "tested",
+          "evidence": "test_a_foreign_shaped_object_is_not_recovered_as_a_triage_record PASSED"
+        },
+        {
+          "behavior": "pure garbage and a damaged tail keep pre-fix behaviour",
+          "disposition": "tested",
+          "evidence": "test_unrecoverable_line_with_nothing_valid_behind_it_is_unchanged, test_valid_record_followed_by_a_damaged_tail_still_reports_the_tail PASSED"
+        },
+        {
+          "behavior": "a scalar between two records no longer swallows the second",
+          "disposition": "tested",
+          "evidence": "test_a_scalar_between_two_records_does_not_swallow_the_second PASSED"
+        },
+        {
+          "behavior": "the resync attempt budget is real (two-sided, mutation-verified)",
+          "disposition": "tested",
+          "evidence": "test_a_record_within_the_resync_budget_is_recovered, test_a_record_beyond_the_resync_budget_is_not_recovered PASSED"
+        },
+        {
+          "behavior": "read_jsonl_records goes through durable_read_text (AC3)",
+          "disposition": "tested",
+          "evidence": "test_reader_goes_through_the_durable_read_path PASSED"
+        },
+        {
+          "behavior": "the record separator alphabet is unchanged (LF/CRLF/lone CR/no final NL)",
+          "disposition": "tested",
+          "evidence": "test_record_separators_are_unchanged_by_the_durable_read PASSED"
+        },
+        {
+          "behavior": "raw VT/FF stay on one physical line; U+2028 does not split a valid record",
+          "disposition": "tested",
+          "evidence": "test_raw_control_bytes_stay_on_one_physical_line, test_unicode_line_separator_inside_a_record_does_not_split_it PASSED"
+        },
+        {
+          "behavior": "surrogateescape survives the switch; a missing file reads empty",
+          "disposition": "tested",
+          "evidence": "test_undecodable_bytes_still_degrade_to_a_fragment, test_missing_file_still_reads_empty PASSED"
+        },
+        {
+          "behavior": "both ADR-045 import modes resolve AND work, for both new modules",
+          "disposition": "tested",
+          "evidence": "test_package_mode_import_resolves_the_durable_reader, test_sentinel_mode_import_resolves_the_durable_reader, test_sentinel_mode_actually_reads_a_store, test_triage_integrity_sentinel_mode_works PASSED (+ a guard test proving the subprocess probe can fail)"
+        },
+        {
+          "behavior": "corruption is retrievable as data across both stores, tolerating absence (AC2)",
+          "disposition": "tested",
+          "evidence": "test_store_corruption_reports_the_damaged_span, test_store_corruption_spans_every_given_store, test_store_corruption_tolerates_a_missing_file PASSED"
+        },
+        {
+          "behavior": "the corruption notice survives a global warnings filter",
+          "disposition": "tested",
+          "evidence": "test_corruption_notice_survives_a_global_warnings_filter, test_iter_raw_lines_reports_even_under_a_blanket_warnings_filter PASSED"
+        },
+        {
+          "behavior": "the notice never echoes fragment bytes and is ASCII-safe",
+          "disposition": "tested",
+          "evidence": "test_corruption_notice_never_echoes_the_fragment_bytes, test_corruption_notice_is_ascii_safe PASSED"
+        },
+        {
+          "behavior": "the notice goes to stderr not stdout; a clean store is silent",
+          "disposition": "tested",
+          "evidence": "test_iter_raw_lines_reports_corruption_to_stderr, test_a_clean_store_produces_no_stderr_noise PASSED"
+        },
+        {
+          "behavior": "one damaged span is announced once per loaded module",
+          "disposition": "tested",
+          "evidence": "test_one_damaged_span_is_announced_once_per_process PASSED"
+        },
+        {
+          "behavior": "corruption byte counts are BYTES, and the notice is bounded",
+          "disposition": "tested",
+          "evidence": "test_the_notice_counts_BYTES_not_code_points, test_the_notice_is_bounded_on_a_badly_damaged_store PASSED"
+        },
+        {
+          "behavior": "the routing probe runs OUTSIDE the canonical lock (AC4, ordering-pinned)",
+          "disposition": "tested",
+          "evidence": "test_routing_probe_runs_outside_the_canonical_lock PASSED"
+        },
+        {
+          "behavior": "residence routing and refused preconditions are unchanged by the hoist",
+          "disposition": "tested",
+          "evidence": "test_residence_still_routes_an_outbox_only_item_to_the_outbox, test_tracked_item_flip_stays_tracked, test_precondition_failure_still_writes_nothing PASSED"
+        },
+        {
+          "behavior": "undelivered detection: outbox-only pending, tracked delivered, canonical not byte-literal, deciding-event-only, missing outbox (AC5)",
+          "disposition": "tested",
+          "evidence": "test_status_flip_only_in_the_outbox_is_undelivered, test_status_flip_present_in_the_tracked_store_is_delivered, test_delivery_check_is_canonical_not_byte_literal, test_only_the_deciding_status_event_counts, test_a_missing_outbox_means_nothing_is_pending PASSED"
+        },
+        {
+          "behavior": "an out-of-vocabulary tracked event cannot mask a buffered flip; an orphan status is not named",
+          "disposition": "tested",
+          "evidence": "test_out_of_vocabulary_tracked_event_cannot_mask_a_buffered_flip, test_a_status_event_with_no_append_is_not_named PASSED"
+        },
+        {
+          "behavior": "the delivery check and read_all_items agree on the deciding event",
+          "disposition": "tested",
+          "evidence": "test_delivery_check_agrees_with_the_reader_on_the_deciding_event PASSED"
+        },
+        {
+          "behavior": "an empty applied_statuses is refused rather than reporting nothing pending",
+          "disposition": "tested",
+          "evidence": "test_an_empty_status_vocabulary_is_refused PASSED"
+        },
+        {
+          "behavior": "pendingStatusDelivery is always a boolean on every row; pendingDelivery keeps its own meaning",
+          "disposition": "tested",
+          "evidence": "test_listing_always_carries_a_boolean_pending_status_delivery, test_pending_delivery_field_is_unchanged PASSED"
+        },
+        {
+          "behavior": "the corruption block is clean on a healthy store, shape-only, and capped",
+          "disposition": "tested",
+          "evidence": "test_a_clean_store_reports_an_empty_corruption_block, test_corruption_block_carries_shape_never_content, test_corruption_block_is_capped_and_says_so PASSED"
+        },
+        {
+          "behavior": "the envelope carries undeliveredDecisions, so a buffered decision is visible to a consumer that reads no matching row",
+          "disposition": "tested",
+          "evidence": "test_buffered_decision_round_trips_to_the_json_contract, test_a_clean_store_reports_no_undelivered_decisions PASSED"
+        },
+        {
+          "behavior": "end-to-end: real writers -> real files -> real CLI subprocess reports it, on both the machine and human surfaces",
+          "disposition": "tested",
+          "evidence": "test_open_item_with_a_buffered_flip_carries_the_field, test_human_listing_names_the_uncommitted_decisions, test_a_fully_delivered_store_says_nothing PASSED"
+        },
+        {
+          "behavior": "triage_repair keeps the record the reader recovers and still quarantines the damaged prefix",
+          "disposition": "tested",
+          "evidence": "test_repair_does_not_delete_the_record_the_reader_recovers PASSED"
+        },
+        {
+          "behavior": "list --json stdout stays parseable when a store is corrupt",
+          "disposition": "tested",
+          "evidence": "test_json_stays_parseable_when_a_store_is_corrupt PASSED"
+        },
+        {
+          "behavior": "the envelope key set is pinned exhaustively",
+          "disposition": "tested",
+          "evidence": "test_list_json_empty_is_two_empty_sections PASSED"
+        },
+        {
+          "behavior": "the Command Center renders pendingStatusDelivery / undeliveredDecisions / corruption correctly",
+          "disposition": "untestable",
+          "reason_code": "requires-external-nondeterministic-service",
+          "reason": "the WebUI is a separate repository with no executable consumer in this tree; the in-repo contract surface is covered above and the cross-repo change is flagged to the operator in F12"
+        }
+      ],
+      "counts": {
+        "testable": 35,
+        "tested": 34,
+        "untestable": 1,
+        "untested_testable": 0
+      },
+      "enumeration_basis": {
+        "acs": 5,
+        "covered_acs": 5
+      }
+    }
+  },
+  "coverage": {
+    "total": 80.2,
+    "measured_tier": "repo",
+    "source": "combined coverage.xml (all plugins + shared + integration)",
+    "measured_at": "2026-07-04T00:00:00Z"
+  }
+}

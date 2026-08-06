@@ -13,6 +13,8 @@ from __future__ import annotations
 
 import json
 
+from lib.jsonl_records import split_records
+
 __all__ = ["append_ids_of"]
 
 
@@ -22,18 +24,38 @@ _EVENTS = frozenset({"append", "status"})
 
 
 def append_ids_of(lines: list[str]) -> frozenset[str]:
-    """Ids of every well-formed ``append`` event in ``lines``.
+    """Ids of every well-formed ``append`` event in ``lines``, recovering record boundaries.
 
-    Only valid, unambiguous appends enter the universe (external review): a line that does
-    not parse, is not an object, or carries a non-``str`` id contributes nothing — it must
-    never protect a status from the orphan check.
+    Only valid appends enter the universe (external review): a fragment that does not
+    decode, a non-object, or a non-``str`` id contributes nothing — none of those may
+    protect a status from the orphan check.
+
+    RECORD-BOUNDARY RECOVERY (iterate-2026-08-06-triage-validate-deadends, Stage-2 code
+    review finding 1). This is the PROTECTION universe: an id present here stops a
+    ``status`` being read as an orphan and quarantined away. The per-physical-line
+    ``json.loads`` it used to do therefore failed in the DESTROYING direction — an append
+    committed on local main inside a line glued by an unterminated write vanished from the
+    universe, so the operator's dismiss for it became an unprotected orphan, was
+    quarantined, and the item resurrected once main reached origin. That is the
+    composition of the two defects this run fixes (a glued line × an append only local
+    main has), and the validator recovering such a line while this did not is exactly the
+    disagreement the run exists to remove.
+
+    Widening this universe is monotonically SAFE: an extra id can only PREVENT a
+    quarantine, never cause one. Adoption stays deliberately line-granular and
+    conservative — ``_is_producer_event`` still refuses a glued line, so the sweep
+    refuses to MOVE one rather than re-serializing it.
     """
     ids: set[str] = set()
     for line in lines:
-        obj = _parsed(line)
-        iid = obj.get("id") if obj else None
-        if obj and obj.get("event") == "append" and isinstance(iid, str):
-            ids.add(iid)
+        stripped = line.strip()
+        if not stripped:
+            continue
+        records, _remainder = split_records(stripped)
+        for obj in records:
+            iid = obj.get("id")
+            if obj.get("event") == "append" and isinstance(iid, str):
+                ids.add(iid)
     return frozenset(ids)
 
 
