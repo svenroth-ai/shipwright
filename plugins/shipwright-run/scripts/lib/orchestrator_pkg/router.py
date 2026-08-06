@@ -86,11 +86,19 @@ def dispatch_lifecycle(args: argparse.Namespace, project_root: Path) -> int:
             is_legacy_multi_session,
             is_single_session,
             is_v2_config,
-            load_run_config,
             mode_rejection,
+            read_run_config,
         )
 
-        config = load_run_config(project_root, migrate=False)
+        # STRICT: these are the ADVANCING commands, so an unusable config must
+        # stop here. The tolerant reader returned `{}` — falsy — which made
+        # `not_drivable` False and let this guard fall through; the mutation was
+        # then stopped only downstream by `phase_task_lifecycle._read_config`,
+        # which raises a bare JSONDecodeError (or AttributeError for a non-object)
+        # that `cli.main` cannot recognise, so the operator got a traceback and
+        # exit 1 instead of the actionable payload and exit 2. Same defect the
+        # driven-run guard in `cli_update_step` had.
+        config, _present = read_run_config(project_root, migrate=False)
         not_drivable = is_legacy_multi_session(config) or (
             is_v2_config(config) and not is_single_session(config)
         )

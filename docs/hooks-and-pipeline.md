@@ -915,6 +915,56 @@ v1 configs (no `schemaVersion`) are **hard-fail** rejected by phase-lifecycle
 subcommands — the user must rename and re-run `/shipwright-run`. Standalone
 phase invocations (no run config at all) keep working.
 
+#### Reading it: absent, usable, or unusable — never two of these at once
+
+`config_io` exposes **two** readers over one shared read boundary, and which one
+a caller uses is a safety decision, not a style one:
+
+| Reader | Used by | An unusable config |
+|---|---|---|
+| `read_run_config() -> (config, present)` | anything that can **advance or change** a run | raises `RunConfigUnreadable` |
+| `load_run_config() -> config` | anything that only **displays** | warns, degrades to `{}` |
+
+*Unusable* means SYNTACTIC: the file cannot be read, decoded, or parsed, or its
+top-level JSON is not an object. The exception carries a `category` — `parse` ·
+`shape` · `decode` · `io` — and each renders the advice that fits it (telling
+someone to recreate the file is wrong for a permissions fault). Semantic
+validation of a well-formed object is deliberately out of scope.
+
+A **UTF-8 BOM is tolerated**, not treated as corruption: the reader uses
+`utf-8-sig` like the five sibling config readers, because PowerShell and VS Code
+emit one and fail-closed would otherwise turn an invisible byte into a wedged run
+over a file that looks valid in every editor.
+
+Three rules follow, and each closed a live defect:
+
+- **Absent ≠ unusable.** `load_run_config` answered `{}` to both, so a truncated
+  config read as "no config found, start from beginning" and a driven run
+  restarted at phase one.
+- **Absent ≠ empty.** Presence comes from the read (`FileNotFoundError`), never
+  from truthiness — a file holding `{}` is a present config and was previously
+  bootstrapped over.
+- **Bootstrap only for absent.** An unusable config is never overwritten, so the
+  bytes stay repairable.
+
+`create_config` / `write-config` is the deliberate exception: it is the recovery
+path the error message points at, so it replaces bad *content* (including
+non-UTF-8) and only propagates an `io` fault. Re-running it **replaces** the file
+whether or not it was deleted first, which the error message now says.
+
+Both drivability guards read strictly — `update-step`'s "inert in a driven run"
+check and `router`'s guard on the v2 ADVANCING lifecycle commands (claim /
+complete / mark-failed / freeze-splits / plan-next-phase). An unusable config
+used to read as falsy `{}` there, silently switching the guard off.
+
+`get-next-step` reports `{"blocked": true, "reason": "config_unreadable"}` on
+**stdout** and exits **2** — distinct from `next_step: null`, which means every
+step is complete and still exits 0. Mutating commands emit the same payload on
+**stderr**; one payload, one stream, either way.
+
+Decision and the four doors it closes:
+`.shipwright/planning/iterate/iterate-2026-08-05-standalone-flag-corrupt-config.md`.
+
 ### State Machine
 
 `plugins/shipwright-run/scripts/lib/phase_state_machine.py` is the pure
