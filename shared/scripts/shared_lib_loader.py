@@ -16,7 +16,7 @@ triage producer emitted from a subprocess; surfaced by the first in-process one
 common case — and falls back to loading the file directly under a private module
 name that touches no ``lib`` namespace at all.
 
-**Siblings resolve too.** The fallback loads into a private *package* whose
+**Siblings resolve — the fallback loads into a private PACKAGE.** Its
 ``__path__`` is ``shared/scripts/lib``, so a module that does
 ``from .sibling import …`` finds its sibling inside that same private namespace
 and never touches ``lib``. It used to load each module as a lone top-level
@@ -27,10 +27,23 @@ measured, once ``file_lock`` and ``atomic_write`` each grew one
 root the change ran, and its callers swallow exceptions, so it would have
 surfaced as silently lost triage findings rather than as a crash.
 
-Note what is deliberately NOT done: ``shared/scripts/lib`` is never added to
-``sys.path``. That directory contains ``config.py`` and ``state.py``, so putting
-it on the global path would simply relocate the shadowing problem this module
-exists to solve.
+Note what is deliberately NOT done: this loader never adds
+``shared/scripts/lib`` to ``sys.path``. That directory contains ``config.py``
+and ``state.py``, so putting it on the global path would relocate the shadowing
+problem this module exists to solve.
+
+**"Spell it both ways" is still correct, and is now belt-and-braces here.**
+``lib/jsonl_records.py`` (needs ``atomic_write``) and ``lib/triage_integrity.py``
+(needs ``jsonl_records`` + ``triage_delivery``) try the relative import first and
+fall back to the sibling's unique top-level name, appending ``shared/scripts/lib``
+to ``sys.path`` themselves (iterate-2026-08-06-p2-19c-corruption-absence, pinned
+in both modes by ``shared/tests/test_jsonl_records_load_modes.py``). Under the
+package fallback above their RELATIVE leg now succeeds, so the top-level leg is no
+longer reached through this loader — but it remains live for a module imported
+top-level by some other route, and there the caveat that motivated it still
+holds: a sibling bound under its top-level name is a DISTINCT module object from
+a package-loaded copy, so classes from the two do not compare equal. Duck-type
+across that boundary, never ``isinstance``.
 """
 
 from __future__ import annotations
