@@ -1,0 +1,161 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-08-05-pr-review-fork-resolve",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-05T19:55:46.134172+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 4,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "The proposed new regression test is underspecified in the mini-plan: it says to assert that the old endpoint is absent and the new endpoint is present. That would pass if the workflow listed open PRs but omitted pagination, filtered on the wrong field, interpolated the SHA incorrectly, or did not feed the resulting numbers into the existing ambiguity guard. It would not fully pin AC2/AC3.",
+          "suggestion": "Make the structural test assert the meaningful resolver invariants for each `ALL_STAGE2` file: no `commits/.../pulls` endpoint; a `pulls?state=open&per_page=100` request with pagination and slurping; filtering specifically on `.head.sha` against the resolved head SHA; and preservation of the exactly-one-match failure path. This remains consistent with the repository’s structural-test convention while preventing a superficially similar regression.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "security",
+          "file": null,
+          "line": null,
+          "finding": "The head SHA is used in a new `jq` predicate. Even though a normal SHA is constrained, Stage 2 is specifically designed to distrust PR-originated inputs/artifacts, so the implementation must not construct the jq program by shell-interpolating `HEAD_SHA`. Existing checks against raw `${{ github. }}` expressions do not by themselves protect a shell variable populated from an artifact.",
+          "suggestion": "Pass the value as a jq data argument (for example, `jq --arg sha \"$HEAD_SHA\" '... select(.head.sha == $sha) ...'`) rather than embedding it in jq source or an unquoted shell command. Add a focused structural assertion for the safe binding form if the existing hardening suite does not already cover artifact-derived shell variables.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "GET /repos/{owner}/{repo}/pulls` requires access to pull-request metadata for private repositories. The plan runs the token-permissions test but does not explicitly establish that the Stage-2 workflow has and retains `pull-requests: read`; the former commit-associated-PR endpoint may have had different effective permission behavior.",
+          "suggestion": "Confirm the workflow’s job/workflow `permissions` explicitly includes `pull-requests: read` and that `test_workflow_token_permissions.py` asserts it for both the repository workflow and shipped template. No broader token grant should be added.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "The replacement is necessarily more variable in cost than the single commit lookup: repositories with more than 100 open PRs will make multiple API requests. A transient pagination, rate-limit, or API failure will continue to fail the required context, but may be harder to distinguish operationally from the intentional “zero or multiple matches” fail-closed outcome.",
+          "suggestion": "Preserve or add clear log/error messages that distinguish an API/listing failure from the ambiguity guard’s zero/multiple-match failure. Validate that the existing shell error handling does not accidentally convert a failed API pipeline into an empty candidate set.  Overall, listing paginated open base-repository PRs and matching `.head.sha` is the correct, simpler resolver strategy for fork heads, and keeping both workflow copies in parity is appropriate. The implementation should tighten the automated semantic assertions and explicitly preserve safe SHA-to-jq binding before merge. SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-08-05T19:55:17.627404+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "partial",
+      "raw_excerpt": "[deepseek] ## Review Findings\n\n| # | Category | Severity | Finding | Suggestion |\n|---|----------|----------|---------|------------|\n| 1 | risk | low | The new approach lists all open pull requests via pagination. For repositories with an unusually large number of open PRs (thousands), this could consume many API calls and step runtime, potentially hitting rate limits or timeouts. | Add a comment noting the assumption that the open‑PR count is within normal bounds, or document a mitigation (e.g., fallback search) in case this becomes a bottleneck later. No change needed for the current change. |\n| 2 | edge-case | low | The structural test only asserts that the old endpoint string is absent and the new one present; it does not verify the runtime behaviour (e.g., that the guard correctly counts the JSON array output). Confidence is supplied by the live probes, but a downstream format mismatch could still slip through. | Ensure the guard’s handling of the JSON‑array output is explicitly documented in the workflow comments, and confirm the live probe result matches what the guard expects. No code change needed. |\n\n## Overall Assessment\n\nThe approach is well‑reasoned and the implementation plan is thorough: the root cause is verified, the fix is directly ported from a proven production solution, and the test strategy covers both files with structural checks plus live‑data probes. The risk of a permissions gap is already addressed by the existing token scope, and the change does not introduce new security concerns. The two minor flagged items are informational; they do not block the change.\n\nSHIPWRIGHT_VERDICT: approve\n\n[openai] 1. **Category:** approach  \n   **Severity:** medium  \n   **Finding:** The proposed new regression test is underspecified in the mini-plan: it says to assert that the old endpoint is absent and the new endpoint is present. That would pass if the workflow listed open PRs but omitted pagination, filtered on the wrong field, interpolated the SHA incorrectly, or did not feed the resulting numbers into the existing ambiguity guard. It would not fully pin AC2/AC3.  \n   **Suggestion:** Make the structural test assert the meaningful resolver invariants for each `ALL_STAGE2` file: no `commits/.../pulls` endpoint; a `pulls?state=open&per_page=100` request with pagination and slurping; filtering specifically on `.head.sha` against the resolved head SHA; and preservation of the exactly-one-match failure path. This remains consistent with the repository’s structural-test convention while preventing a superficially similar regression.\n\n2. **Category:** security  \n   **Severity:** medium  \n   **Finding:** The head SHA is used in a new `jq` predicate. Even though a normal SHA is constrained, Stage 2 is specifically designed to distrust PR-originated inputs/artifacts, so the implementation must not construct the jq program by shell-interpolating `HEAD_SHA`. Existing checks against raw `${{ github.* }}` expressions do not by themselves protect a shell variable populated from an artifact.  \n   **Suggestion:** Pass the value as a jq data argument (for example, `jq --arg sha \"$HEAD_SHA\" '... select(.head.sha == $sha) ...'`) rather than embedding it in jq source or an unquoted shell command. Add a focused structural assertion for the safe binding form if the existing hardening suite does not already cover artifact-derived shell variables.\n\n3. **Category:** dependency  \n   **Severity:** low  \n   **Finding:** `GET /repos/{owner}/{repo}/pulls` requires access to pull-request metadata for private repositories. The plan runs the token-permissions test but does not explicitly estab […truncated]",
+      "verdicts": {
+        "openai": "revise",
+        "deepseek": "approve"
+      }
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-05T20:09:07.523014+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 3,
+      "findings": [
+        {
+          "severity": "low",
+          "category": "concurrency & ordering",
+          "file": null,
+          "line": null,
+          "finding": "AC3: the ambiguity guard is unchanged in shape and behavior",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "boundary & contract",
+          "file": null,
+          "line": null,
+          "finding": "the ambiguity guard's count is trustworthy regardless of repo size / PR churn",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "hidden coupling & blast radius",
+          "file": null,
+          "line": null,
+          "finding": "no new producer/consumer pair / no second unfixed instance of the defect",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-08-05T20:09:07.699022+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 1,
+      "findings": [
+        {
+          "severity": "low",
+          "category": "test",
+          "file": "shared/tests/test_pr_review_fork_trust.py (new test block around line 124)",
+          "line": null,
+          "finding": "The new test checks for the presence of `--paginate`, `--slurp`, `pulls?state=open`, `--arg sha`, `.head.sha == $sha`, and `.number`, but it does not verify that the jq expression includes the necessary flattening step (`.[][]`). A partially incorrect implementation (e.g., using `[.[] | ...]` with `--slurp`) would pass all these substring checks yet produce an incorrect result at runtime (the jq filter would fail to iterate over pages). This gap reduces the test's ability to pin the exact jq shape required by the pagination strategy.",
+          "suggestion": "Add an assertion that the extracted block contains `.[][]` (or a regex that captures the full `[.[][] | …]` pattern) to ensure the jq flattening matches the slurped array-of-arrays output.  The diff correctly implements all acceptance criteria, introduces no security or correctness bugs, and preserves the fail-closed behavior. The test gap is minor and does not cause false confidence. Overall, the change is safe and ready.  SHIPWRIGHT_VERDICT: approve",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-08-05T20:13:47.039418+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "partial",
+      "raw_excerpt": "[deepseek] - Category: test\n- Severity: low\n- File: shared/tests/test_pr_review_fork_trust.py (new test block around line 124)\n- Finding: The new test checks for the presence of `--paginate`, `--slurp`, `pulls?state=open`, `--arg sha`, `.head.sha == $sha`, and `.number`, but it does not verify that the jq expression includes the necessary flattening step (`.[][]`). A partially incorrect implementation (e.g., using `[.[] | ...]` with `--slurp`) would pass all these substring checks yet produce an incorrect result at runtime (the jq filter would fail to iterate over pages). This gap reduces the test's ability to pin the exact jq shape required by the pagination strategy.\n- Suggestion: Add an assertion that the extracted block contains `.[][]` (or a regex that captures the full `[.[][] | …]` pattern) to ensure the jq flattening matches the slurped array-of-arrays output.\n\nThe diff correctly implements all acceptance criteria, introduces no security or correctness bugs, and preserves the fail-closed behavior. The test gap is minor and does not cause false confidence. Overall, the change is safe and ready.\n\nSHIPWRIGHT_VERDICT: approve\n\n[openai] No concrete defects found. The resolver correctly switches both Stage-2 workflow variants to a paginated base-repository open-PR listing and safely filters by the trusted head SHA, retaining the existing exactly-one-match fail-closed guard. The added parametrized structural test covers both workflow files and would fail against the prior fork-incompatible endpoint.\n\nOverall assessment: ship-as-is.\n\nSHIPWRIGHT_VERDICT: approve",
+      "verdicts": {
+        "openai": "approve",
+        "deepseek": "approve"
+      }
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-05T20:09:07.318133+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    }
+  }
+}
