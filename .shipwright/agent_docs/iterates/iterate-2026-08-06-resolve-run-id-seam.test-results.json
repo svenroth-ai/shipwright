@@ -1,0 +1,165 @@
+{
+  "coverage": {
+    "total": 80.2,
+    "measured_tier": "repo",
+    "source": "combined coverage.xml (all plugins + shared + integration)",
+    "measured_at": "2026-07-04T00:00:00Z"
+  },
+  "iterate_latest": {
+    "run_id": "iterate-2026-08-06-resolve-run-id-seam",
+    "date": "2026-08-06",
+    "unit": {
+      "status": "pass",
+      "passed": 8209,
+      "failed": 0,
+      "note": "F0 full shared/tests root green in one process: 8209 passed, 28 skipped, 20 deselected, 891s. Plus the two plugin roots that import phase_quality, run in their own cwd to falsify the ADR-045 import-binding question: shipwright-run 542 passed, shipwright-compliance 1628 passed, 5 skipped."
+    },
+    "integration": {
+      "status": "pass",
+      "passed": 1,
+      "note": "The composed-seam test (producer -> resolver -> guard -> S9/S10) over a real git worktree, recorded as the category:'integration' behavior in the ledger. cross_component does not fire on this diff (no hooks/*.py, no hooks.json), so check_integration_coverage green-skips; the behavior is recorded regardless."
+    },
+    "e2e": {
+      "status": "n/a",
+      "reason": "no browser surface; this is framework machinery (a Stop-hook resolution path, its tests and its documentation of record)"
+    },
+    "smoke": {
+      "status": "n/a",
+      "reason": "no startable server surface in this repo"
+    },
+    "pgtap": {
+      "status": "n/a",
+      "reason": "no database"
+    },
+    "design_fidelity": {
+      "status": "n/a",
+      "reason": "no UI surface"
+    },
+    "surface_verification": {
+      "surface": "cli",
+      "tests_run": 83,
+      "exit_code": 0,
+      "evidence_path": ".shipwright/runs/iterate-2026-08-06-resolve-run-id-seam/surface_verification.json",
+      "detail": "83 targeted tests across the four new pointer-seam files plus the pre-existing guard and events-log SSoT suites, executed by surface_verification.py against the real tree. Separately the REAL audit_phase_quality_on_stop.py hook was run end-to-end against this run: it reported run=iterate-2026-08-06-resolve-run-id-seam (previously the raw session UUID) and wrote a finding JSON keyed by it - and S2/S3/W2/S9/S10 still SKIPped from the main root, which disproved the draft spec's second claim and forced it to be rewritten."
+    },
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "AC-1 the run pointer outranks run-config, run_started and the loop vars",
+          "disposition": "tested",
+          "evidence": "test_resolve_run_id_pointer_seam.py::test_pointer_outranks_every_lower_priority_source PASSED"
+        },
+        {
+          "behavior": "AC-3 the four pre-existing sources still resolve unchanged when no pointer exists",
+          "disposition": "tested",
+          "evidence": "test_resolve_run_id_pointer_seam.py::test_run_config_still_wins_when_no_pointer_exists, ::test_run_started_event_still_resolves_when_no_pointer_exists, ::test_loop_vars_still_resolve_when_no_pointer_exists, ::test_session_and_unknown_tails_are_unchanged PASSED"
+        },
+        {
+          "behavior": "AC-4 a sentinel session id performs no pointer lookup at all",
+          "disposition": "tested",
+          "evidence": "test_resolve_run_id_pointer_seam.py::test_sentinel_session_attempts_no_pointer_lookup[4 params] PASSED (spies read_run_pointer, asserts calls == [])"
+        },
+        {
+          "behavior": "AC-5 a structurally invalid pointer falls through to the chain",
+          "disposition": "tested",
+          "evidence": "test_resolve_run_id_pointer_seam.py::test_structurally_invalid_pointer_falls_through_to_the_chain[11 params] PASSED"
+        },
+        {
+          "behavior": "AC-5 a malformed, invalid-UTF-8 or unreadable pointer never raises out of resolve_run_id",
+          "disposition": "tested",
+          "evidence": "test_resolve_run_id_pointer_seam.py::test_malformed_json_pointer_falls_through, ::test_invalid_utf8_pointer_cannot_escape_the_resolver, ::test_unreadable_pointer_falls_through PASSED"
+        },
+        {
+          "behavior": "AC-5 fail-open stays narrow: a genuine programming error still propagates",
+          "disposition": "tested",
+          "evidence": "test_resolve_run_id_pointer_seam.py::test_a_programming_error_is_not_swallowed PASSED"
+        },
+        {
+          "behavior": "AC-5b every invalid run_id value type is rejected (null, number, list, empty, whitespace, sentinel, upper-case sentinel)",
+          "disposition": "tested",
+          "evidence": "test_resolve_run_id_pointer_seam.py::test_structurally_invalid_pointer_falls_through_to_the_chain[run-id-* params] PASSED"
+        },
+        {
+          "behavior": "AC-9 the pointer payload must name the audited session, isinstance-guarded rather than str-coerced",
+          "disposition": "tested",
+          "evidence": "test_resolve_run_id_pointer_identity.py::test_pointer_naming_another_session_is_rejected[5 params], ::test_a_non_string_session_cannot_bind_via_its_repr[3 params] PASSED"
+        },
+        {
+          "behavior": "AC-9 session identity is compared after normalisation, so the producer/consumer strip asymmetry cannot reject a genuine pointer",
+          "disposition": "tested",
+          "evidence": "test_resolve_run_id_pointer_identity.py::test_session_identity_is_compared_after_normalisation, ::test_a_matching_session_still_resolves PASSED"
+        },
+        {
+          "behavior": "AC-6 the run_id survives the producer to consumer round trip, incl. session ids the filename sanitiser rewrites",
+          "disposition": "tested",
+          "evidence": "test_resolve_run_id_pointer_seam.py::test_round_trip_through_the_real_producer[4 params] PASSED (drives the real write_run_pointer)"
+        },
+        {
+          "behavior": "AC-11 a pointer whose worktree is missing, blank, non-string, deleted or a file is rejected",
+          "disposition": "tested",
+          "evidence": "test_resolve_run_id_pointer_liveness.py::test_pointer_without_a_usable_worktree_path_is_rejected[4 params], ::test_pointer_whose_worktree_was_removed_is_rejected, ::test_a_file_at_the_worktree_path_is_not_a_live_worktree PASSED"
+        },
+        {
+          "behavior": "AC-11 the liveness guard does not over-fire: a live worktree still resolves",
+          "disposition": "tested",
+          "evidence": "test_resolve_run_id_pointer_liveness.py::test_a_live_worktree_still_resolves PASSED"
+        },
+        {
+          "behavior": "AC-2 an audit rooted in a linked worktree resolves the pointer from the MAIN tree",
+          "disposition": "tested",
+          "evidence": "test_resolve_run_id_pointer_composition.py::test_a_worktree_audit_resolves_the_pointer_from_the_main_tree PASSED (real git worktree add)"
+        },
+        {
+          "behavior": "AC-2 plain-checkout and non-git roots resolve their own pointer",
+          "disposition": "tested",
+          "evidence": "test_resolve_run_id_pointer_composition.py::test_a_plain_checkout_audit_resolves_its_own_pointer, test_resolve_run_id_pointer_seam.py::test_a_non_git_directory_resolves_its_own_pointer PASSED"
+        },
+        {
+          "behavior": "AC-7 the composed seam producer->resolver->guard->S9/S10 stops SKIPping and uses THIS run's category",
+          "disposition": "tested",
+          "evidence": "test_resolve_run_id_pointer_composition.py::test_s9_and_s10_stop_skipping_once_the_seam_is_repaired PASSED (real producer + real git worktree + real guard + real checks)",
+          "category": "integration"
+        },
+        {
+          "behavior": "AC-7 the honest boundary: a MAIN-root audit still SKIPs before the run's PR merges",
+          "disposition": "tested",
+          "evidence": "test_resolve_run_id_pointer_composition.py::test_the_main_root_audit_still_skips_before_the_run_merges PASSED"
+        },
+        {
+          "behavior": "AC-10 all five affected checks (S2, S3, W2, S9, S10) route through unresolvable_run_id_skip",
+          "disposition": "tested",
+          "evidence": "test_resolve_run_id_pointer_composition.py::test_every_affected_check_is_gated_by_the_shared_run_id_guard[5 params] PASSED (spy per module namespace)"
+        },
+        {
+          "behavior": "AC-8 the guard still SKIPs when no pointer names the session, and the tripwire test says so",
+          "disposition": "tested",
+          "evidence": "test_spec_checks_run_id_guard.py::test_the_seam_still_skips_when_no_run_pointer_names_the_session[2 params] PASSED"
+        },
+        {
+          "behavior": "The whitespace-only session_id tail change resolves to the unknown sentinel",
+          "disposition": "tested",
+          "evidence": "test_resolve_run_id_pointer_seam.py::test_a_whitespace_only_session_resolves_to_the_unknown_sentinel PASSED"
+        },
+        {
+          "behavior": "The events-log read goes through the events_log SSoT and the _MAIN_REPO_ONLY exemption is retired",
+          "disposition": "tested",
+          "evidence": "test_events_log_ssot.py::test_no_unaccounted_raw_event_log_joins, ::test_allowlist_entries_are_not_stale PASSED"
+        }
+      ],
+      "counts": {
+        "total": 20,
+        "tested": 20,
+        "untestable": 0,
+        "untested_testable": 0
+      },
+      "ledger_path": ".shipwright/planning/iterate/2026-08-06-resolve-run-id-seam.md"
+    },
+    "degraded": [
+      {
+        "condition": "review_stage_not_run",
+        "detail": "The Stage-3 doubt-reviewer subagent was spawned per the CLAUDE.md standing grant and was terminated mid-run by an Anthropic monthly spend limit - a billing stop, not a session policy and not a finding. Compensated, not skipped: an independent adversarial pass ran via external_review.py --mode code on a different provider account (2 reviewers, both 'revise'; 3 findings accepted and fixed, 2 falsified by executing _constants.is_sentinel_run), plus a self-performed attack on the concurrency, liveness, fail-open, ADR-045 import-binding and bloat-extraction surfaces the doubt prompt named. Recorded as doubt=not_run in the review record and surfaced in the F12 summary."
+      }
+    ]
+  }
+}

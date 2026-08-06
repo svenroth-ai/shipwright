@@ -75,7 +75,10 @@ def test_detected_fanout_waits_for_all_installed_hook_participants(
     done = cache / ".sessionstart-claims" / "generation.done"
     done.parent.mkdir()
     assert lock_helper.observe_completion(done, participants[0]) is True
-    monkeypatch.setattr(lock_helper, "_FANOUT_PROBE_SECONDS", 0.05)
+    # Only the ceiling is patched. _FANOUT_PROBE_SECONDS no longer bounds the
+    # wait loop — it survives solely for the un-enumerable early return, and
+    # this test asserts just below that the peer set IS enumerable, so patching
+    # it here would describe a mechanism that no longer exists.
     monkeypatch.setattr(lock_helper, "_FANOUT_WAIT_SECONDS", 0.5)
     assert lock_helper._installed_fanout_participants(
         cache, participants[0],

@@ -177,16 +177,34 @@ def is_v2_config(config: dict[str, Any]) -> bool:
 # THE INVARIANT: a run is a driven single-session pipeline **iff its config
 # records the explicit literal `mode: "single_session"`.** Nothing is inferred.
 #
-# `gate_policy.read_run_config_mode` applies the identical explicit-literal test
-# ON A USABLE CONFIG, so the orchestrator loop and the gate mechanism cannot
-# disagree about whether a run is being driven — the conflation that made the old
-# multi_session-as-fallback model dangerous to remove.
+# `gate_policy.read_run_config_mode` applies the identical explicit-literal test,
+# so on any config BOTH readers can read, the orchestrator loop and the gate
+# mechanism agree about whether a run is being driven — the conflation that made
+# the old multi_session-as-fallback model dangerous to remove.
 #
-# Scoped to a USABLE config on purpose: `read_run_config_mode` guards only
-# `(JSONDecodeError, OSError)`, so the `shape` and `decode` cases this module now
-# classifies escape its handler instead of reading as INERT_MODE. An availability
-# gap in a read-only reporter, in `shared/` outside this iterate's scope
-# (trg-406d7c3c) — stated, not papered over with an unconditional parity claim.
+# Scoped to CONTENT on purpose, and the scope is now narrow enough to be worth
+# stating precisely. The gap this comment used to name — `read_run_config_mode`
+# guarding only `(JSONDecodeError, OSError)`, so `shape` and `decode` escaped it —
+# was closed in iterate-2026-08-06-shared-read-run-config-mode-guard. The two now
+# agree on every content class: decode, parse (incl. the `RecursionError` past
+# json's nesting limit), shape, and the UTF-8 BOM.
+#
+# ONE divergence remains, and it is on the READ leg, not the content: this module
+# reads via `durable_read_text`, which retries for READ_RETRY_BUDGET_SECONDS past
+# the delete-pending `PermissionError` a concurrent `os.replace` causes on Windows;
+# `read_run_config_mode` uses a plain `Path.read_text` and answers INERT_MODE on the
+# first one. So a config being rewritten underneath them can still split the two.
+# Left open deliberately (a sibling import inside `shared/scripts/lib` is invisible
+# to the usual pytest roots, and that file is at its LOC cap) — stated, not papered
+# over with an unconditional parity claim.
+#
+# Note the disposal asymmetry too: the STRICT reader raises `RunConfigUnreadable`,
+# `load_run_config` degrades `parse`/`shape` to `{}` and re-raises the ORIGINAL
+# exception for `decode`/`io`, and the reporter degrades everything to INERT_MODE.
+#
+# They cannot be unified (`shared/` must not import a plugin), so the lockstep is by
+# convention: a new failure mode classified HERE must be handled THERE in the same
+# diff, or the two silently start answering differently again.
 # --------------------------------------------------------------------------- #
 
 # NOTE: there is deliberately NO ``run_mode()`` reporter here. One existed briefly and

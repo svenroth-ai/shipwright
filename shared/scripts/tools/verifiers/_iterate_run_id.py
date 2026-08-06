@@ -18,16 +18,25 @@ corrupt-entry trigger ``resolve_iterate_entry`` closes below
 
 Which run_ids actually reach these checks matters, because it decides how much
 the guard is worth. The sole production caller is the phase-quality Stop audit,
-whose id comes from ``lib.phase_quality.resolve_run_id``; in this repo steps 1-2
-of that chain are inert (nothing writes a top-level ``run_id`` into
-``shipwright_run_config.json``, and no producer emits a ``run_started`` event),
-so it yields either a sentinel or — in campaign / autonomous-loop runs —
-``SHIPWRIGHT_LOOP_ID``(+``_UNIT_ID``). **The loop-var branch is the one that
-mattered:** the read-time rollup filter (``is_sentinel_run``) already dropped
-sentinel-run findings from every consumer, but a loop id is not a sentinel, so
-there the inherited-category verdict really did reach the triage backlog and the
-dashboard. Neither branch is an ``iterate_history`` key, so both SKIP here; the
-upstream seam is tracked separately (trg-0a80a7e7).
+whose id comes from ``lib.phase_quality.resolve_run_id``.
+
+**Since iterate-2026-08-06-resolve-run-id-seam that id is usually the real
+one.** ``resolve_run_id`` gained priority 0 — the per-session run pointer
+``setup_iterate_worktree.py`` writes at B1a — so an iterate audited from its own
+worktree resolves its canonical ``iterate-YYYY-MM-DD-slug``, matches an
+``iterate_history`` entry, and these checks actually evaluate. That is the seam
+this module's guard was waiting on (formerly tracked as trg-0a80a7e7).
+
+The guard still carries the cases the pointer cannot answer, and they are not
+rare: an audit whose ``project_root`` is the MAIN root cannot see the run's own
+ledger entry until the PR merges; a non-iterate session has no pointer at all;
+and a campaign / autonomous-loop run falls through to
+``SHIPWRIGHT_LOOP_ID``(+``_UNIT_ID``). **That last branch is the one that
+mattered before the guard existed:** the read-time rollup filter
+(``is_sentinel_run``) already dropped sentinel-run findings from every consumer,
+but a loop id is not a sentinel, so there the inherited-category verdict really
+did reach the triage backlog and the dashboard. None of those three is an
+``iterate_history`` key, so all three still SKIP here.
 
 Caveat worth knowing when triaging one of these SKIPs: ``has_exact_iterate_entry``
 swallows any read error and returns ``False``, so an UNREADABLE iterate store is
