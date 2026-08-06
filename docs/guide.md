@@ -1458,7 +1458,7 @@ Shipwright can send artifacts to external LLMs (DeepSeek V4 Pro + GPT-5.6 Terra 
 | `--mode architecture` | second call in the same step: `/shipwright-plan` Step 5a, `/shipwright-iterate` Step 3.5 -- both pre-build | architecture brief vs spec | none |
 | `--mode code` | `/shipwright-build` Step 6c (opt-in) and `/shipwright-iterate` medium+ post-build cascade | code diff vs section/iterate spec | `external_code_review_state.json` |
 
-Plan and iterate modes share the same marker file; code mode writes a distinct one so the two gates stay independent. Architecture mode writes none -- its findings ride in the plan review's own record.
+Plan and iterate modes share the same marker file; code mode writes a distinct one so the two gates stay independent. Architecture mode writes none: its verdicts and findings go into the iterate spec's `## Architecture Review` section and the iterate ADR (plan side: `plan.md`'s section plus `decision_log.md`). Not the plan review's row -- that row takes one payload, the first call already fills it, and a second write is silently treated as a marker repair, so findings sent there are discarded.
 
 #### The architecture pass: "should this be built at all?"
 
