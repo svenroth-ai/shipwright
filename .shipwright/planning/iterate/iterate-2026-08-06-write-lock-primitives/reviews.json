@@ -1,0 +1,405 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-08-06-write-lock-primitives",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-06T07:26:05.268977+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 10,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The POSIX `FileLock` bounded‑wait change promises a poll loop using `LOCK_EX | LOCK_NB`, but the mini‑plan does not specify a sleep/backoff strategy. An unconditional spin could waste CPU and introduce latency spikes under contention.",
+          "suggestion": "Add a small, increasing delay (e.g., 10 ms base with exponential backoff capped at 1 s) between non‑blocking lock attempts, similar to the Windows branch’s described backoff.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The reentrancy registry must atomically release the OS lock and remove the registry entry. The plan’s “guarded by a `threading.Lock`” leaves room for a race where the OS lock is released outside the registry lock, allowing a new thread to acquire the OS lock while the stale entry still exists, which could confuse ownership checks or lead to double‑unlock under rare timing.",
+          "suggestion": "Require that the global registry lock be held across both the OS lock release and the entry removal, so the acquire path always sees a consistent state.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The `carry_destination_mode` helper catches and swallows all `OSError` on `chmod` (AC‑3). This silently preserves the temp file’s `0600` when, for example, a setuid bit cannot be restored, potentially altering the file’s security posture without any record.",
+          "suggestion": "Consider logging a warning when mode preservation fails, so operators can detect privilege‑bit loss on published files.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "The `_SHARING_VIOLATION_WINERRORS` alias will stay in `atomic_write.py` pointing to the leaf’s frozenset, but the alias itself is a mutable name in the module namespace. A later edit could inadvertently rebind it, breaking the expected single source of truth.",
+          "suggestion": "Document the alias as read‑only and add a test that asserts `atomic_write._SHARING_VIOLATION_WINERRORS is durable_publish.SHARING_VIOLATION_WINERRORS` to catch accidental divergence.  The plan correctly fixes the three root causes without altering data contracts or breaking any live call path. The design choices (leaf module to respect source‑size limits, 600 s default, path‑keyed reentrancy) are well justified, and the test strategy ensures both POSIX and Windows behaviour are exercised in CI. The only significant implementation details to watch are the polling backoff and the registry‑lock synchronisation.  SHIPWRIGHT_VERDICT: approve",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "The proposed mode carrier is called “before the rename,” but the plan does not establish its ordering relative to the temporary file’s existing `fsync`. If the implementation writes and fsyncs the temp file, then calls `chmod` on it, the permission metadata change may not be durable before `os.replace`. A subsequent parent-directory fsync does not necessarily make the changed inode metadata durable. This would weaken the guarantee implied by `durable_atomic_write`.",
+          "suggestion": "Read the destination mode and apply it to the temporary file while its descriptor is still open, immediately before the existing file `fsync` (prefer `os.fchmod(temp_fd, mode)`). If the current structure closes the descriptor before the carrier can run, either move the carrier earlier or explicitly fsync the temp again after a successful chmod.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "The reentrancy registry design needs explicit per-instance acquisition state and failure cleanup rules. A nested instance will not own `self._fp`, while the registry owns the real handle; `__exit__` must therefore know whether that particular instance incremented registry depth, rather than infer ownership from its path. Similarly, a timeout or non-contention lock error after `open()` must close the file and reset `self._fp`, or the new polling path can leak descriptors and leave instances in a misleading acquired-looking state.",
+          "suggestion": "Define `FileLock` state explicitly, e.g. an instance-level “entered/registry-depth-acquired” flag plus a canonical registry key. On every unsuccessful `__enter__` path, close any opened handle and clear instance state. Make repeated `__exit__`, `__exit__` after failed `__enter__`, and out-of-order manual exits safe or clearly rejected. Add focused tests for timeout cleanup and an exception raised inside both inner and outer nested contexts.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The new `timeout_seconds` parameter needs validation and a monotonic-deadline contract. Negative values, `NaN`, and infinity can otherwise produce surprising behavior; in particular, `NaN` can prevent ordinary deadline comparisons from ever expiring, recreating an unbounded wait without passing `None`. Wall-clock time also must not be used because clock adjustment can shorten or extend a lock wait.",
+          "suggestion": "Accept only `None` or a finite non-negative numeric value, raise `ValueError` for invalid values, and compute the deadline with `time.monotonic()`. Define and test `timeout_seconds=0` as a single nonblocking acquisition attempt that raises `LockTimeout` if already held.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "Changing the default from indefinite blocking to 600 seconds is intentionally behavioral, but the justification only bounds one git subprocess, not the entire lock hold. The stated triage sweep chains several 120-second subprocesses, and retries, startup delay, or additional work under the lock could legitimately exceed five minutes. This could convert a slow existing workflow into a timeout failure.",
+          "suggestion": "Inventory the actual `FileLock` call sites and their complete critical sections before fixing the default. Confirm the longest normal path has a bounded aggregate duration comfortably below 600 seconds, including retry behavior. If the sweep can exceed that budget, give that specific call site an explicit justified timeout or choose a default based on the complete critical section rather than a single operation.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "The registry lookup must occur before parent creation and `open(path, \"w\")`. The plan says nested entry returns without touching the OS lock or handle, but if the existing setup work happens before checking the registry, a reentrant acquisition still opens and truncates the sidecar file and can fail on filesystem setup despite already holding the lock.",
+          "suggestion": "Normalize the lock key and check/increment same-thread registry ownership first. Only a non-reentrant acquisition should create the parent, open the sidecar, and attempt the OS lock. Keep the exact original path for diagnostics while using the canonical key solely for registry identity.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The proposed anti-hang test strategy can itself contaminate the suite. If a reentrancy regression causes the nested acquisition to wait using the new 600-second default, a daemon test thread remains alive holding the outer lock until process exit; later tests using that path can fail or block.",
+          "suggestion": "Use a unique temporary path and a deliberately short timeout for the nested acquisition in the regression test, then assert it succeeds immediately under the fixed implementation. Ensure all contention tests use synchronization events, release holders in `finally` blocks, and join worker threads before fixture teardown. Test timeout elapsed time with a reasonable lower/upper tolerance rather than an exact sleep duration.  Overall, the split into a small publish helper is proportionate to the source-file limit, and the substantive fixes are directionally sound. The implementation should be revised to preserve the primitive’s durability ordering and to make registry, timeout, and cleanup semantics precise before shipping. SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-08-06T06:51:50.712315+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[deepseek] - **Category:** edge-case  \n  **Severity:** medium  \n  **Finding:** The POSIX `FileLock` bounded‑wait change promises a poll loop using `LOCK_EX | LOCK_NB`, but the mini‑plan does not specify a sleep/backoff strategy. An unconditional spin could waste CPU and introduce latency spikes under contention.  \n  **Suggestion:** Add a small, increasing delay (e.g., 10 ms base with exponential backoff capped at 1 s) between non‑blocking lock attempts, similar to the Windows branch’s described backoff.\n\n- **Category:** edge-case  \n  **Severity:** medium  \n  **Finding:** The reentrancy registry must atomically release the OS lock and remove the registry entry. The plan’s “guarded by a `threading.Lock`” leaves room for a race where the OS lock is released outside the registry lock, allowing a new thread to acquire the OS lock while the stale entry still exists, which could confuse ownership checks or lead to double‑unlock under rare timing.  \n  **Suggestion:** Require that the global registry lock be held across both the OS lock release and the entry removal, so the acquire path always sees a consistent state.\n\n- **Category:** edge-case  \n  **Severity:** low  \n  **Finding:** The `carry_destination_mode` helper catches and swallows all `OSError` on `chmod` (AC‑3). This silently preserves the temp file’s `0600` when, for example, a setuid bit cannot be restored, potentially altering the file’s security posture without any record.  \n  **Suggestion:** Consider logging a warning when mode preservation fails, so operators can detect privilege‑bit loss on published files.\n\n- **Category:** approach  \n  **Severity:** low  \n  **Finding:** The `_SHARING_VIOLATION_WINERRORS` alias will stay in `atomic_write.py` pointing to the leaf’s frozenset, but the alias itself is a mutable name in the module namespace. A later edit could inadvertently rebind it, breaking the expected single source of truth.  \n  **Suggestion:** Document the alias as read‑only and add a test that asserts `a […truncated]\n\n[openai] 1. **Category:** risk  \n   **Severity:** high  \n   **Finding:** The proposed mode carrier is called “before the rename,” but the plan does not establish its ordering relative to the temporary file’s existing `fsync`. If the implementation writes and fsyncs the temp file, then calls `chmod` on it, the permission metadata change may not be durable before `os.replace`. A subsequent parent-directory fsync does not necessarily make the changed inode metadata durable. This would weaken the guarantee implied by `durable_atomic_write`.  \n   **Suggestion:** Read the destination mode and apply it to the temporary file while its descriptor is still open, immediately before the existing file `fsync` (prefer `os.fchmod(temp_fd, mode)`). If the current structure closes the descriptor before the carrier can run, either move the carrier earlier or explicitly fsync the temp again after a successful chmod.\n\n2. **Category:** risk  \n   **Severity:** medium  \n   **Finding:** The reentrancy registry design needs explicit per-instance acquisition state and failure cleanup rules. A nested instance will not own `self._fp`, while the registry owns the real handle; `__exit__` must therefore know whether that particular instance incremented registry depth, rather than infer ownership from its path. Similarly, a timeout or non-contention lock error after `open()` must close the file and reset `self._fp`, or the new polling path can leak descriptors and leave instances in a misleading acquired-looking state.  \n   **Suggestion:** Define `FileLock` state explicitly, e.g. an instance-level “entered/registry-depth-acquired” flag plus a canonical registry key. On every unsuccessful `__enter__` path, close any opened handle and clear instance state. Make repeated `__exit__`, `__exit__` after failed `__enter__`, and out-of-order manual exits safe or clearly rejected. Add focused tests for timeout cleanup and an exception raised inside both inner and outer nested contexts.\n\n3. **Category:** […truncated]",
+      "verdicts": {
+        "openai": "revise",
+        "deepseek": "approve"
+      }
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 10,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "architecture",
+          "file": "shared/scripts/lib/file_lock.py",
+          "line": 217,
+          "finding": "The _HELD registry re-implements _host_resource_locking.py's process-scoped ownership registry without its two safety properties: no os.getpid() reset (a fork lets the child enter reentrantly and release the parent's flock via the shared open file description) and Path.resolve() instead of the non-raising realpath(abspath(...)), which on the pinned Python 3.11 can raise out of FileLock.__init__ on Windows.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "shared/scripts/lib/sweep_outbox.py",
+          "line": 134,
+          "finding": "sweep_outbox_to_branch documents 'Never raises for an expected condition' but triage._FileLock now raises LockTimeout after 600 s, and its only caller setup_iterate_worktree.py:224 has no handler, so stacked contention crashes iterate worktree setup.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/scripts/lib/file_lock.py",
+          "line": 277,
+          "finding": "A KeyboardInterrupt between registering the lock and incrementing self._entries leaves depth>=1 with _entries==0, so __exit__ returns early and the entry is never removed - the lock is stranded for the process lifetime and every later waiter burns a full 600 s. The current order fails safe and that is undocumented.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "performance",
+          "file": "shared/scripts/lib/file_lock.py",
+          "line": 113,
+          "finding": "FileLock's POSIX acquisition changed from kernel-blocking flock(LOCK_EX) to LOCK_EX|LOCK_NB polling, losing rough queueing fairness and adding up to one backoff ceiling of handoff latency. Recorded nowhere; the comment mentions only Windows.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/scripts/lib/file_lock.py",
+          "line": 249,
+          "finding": "self._key is frozen from resolve() at __init__ while the OS lock is taken on self._lock_path at __enter__. Two instances built in one cwd from a relative path and entered in different cwds would share a key while locking different files, and the reentrant short-circuit would skip the OS lock entirely.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "shared/tests/test_durable_publish.py",
+          "line": 193,
+          "finding": "Two tests monkeypatch dp.os.stat, which IS the os module - process-global for the test body, and os.stat is called by pytest's own reporting, so a real assertion failure would surface as an unrelated error. This contradicts the explicit reasoning in the sibling test.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "architecture",
+          "file": "shared/scripts/lib/atomic_write.py",
+          "line": 61,
+          "finding": "atomic_write is genuinely imported both as lib.atomic_write and as top-level atomic_write, so durable_publish acquires two module identities and two _failure_count globals; mode_carry_failures() read via one route will not see failures recorded via the other. The bare except ImportError is NOT a masking risk (durable_publish imports only stdlib; SyntaxError is not ImportError).",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "shared/scripts/lib/file_lock.py",
+          "line": 279,
+          "finding": "self._fp is now write-only inside FileLock; its only consumer is a test asserting on a private attribute, and after a non-LIFO exit it can point at a closed handle.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "architecture",
+          "file": "shared/scripts/lib/atomic_write.py",
+          "line": 300,
+          "finding": "atomic_write.py, file_lock.py and test_atomic_write.py all land at exactly 300 lines. This diff already had to create a leaf module because atomic_write.py was at 299; three files pinned at the ceiling guarantees the next one-line fix repeats that exercise.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "plugins/shipwright-run/scripts/lib/phase_task_lifecycle.py",
+          "line": 85,
+          "finding": "_PhaseTasksLock still carries finding 24's exact defect - unbounded flock(LOCK_EX) on POSIX and a flat 1 ms forever-spin on Windows. Out of this diff's scope, but after this change it is the only unbounded copy left in the tree.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-08-06T08:08:50.043295+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 11,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "boundary",
+          "file": "shared/scripts/lib/file_lock.py:53-56, shared/scripts/lib/atomic_write.py:61-64, shared/scripts/shared_lib_loader.py:36-59, shared/scripts/lib/triage_header.py:20-34",
+          "line": null,
+          "finding": "Claim under doubt: the new module split is import-safe — file_lock and atomic_write now have intra-package imports, which shared_lib_loader's by-file-location fallback cannot satisfy: the relative leg raises ImportError and the flat leg needs shared/scripts/lib on sys.path, which that loader never inserts. triage_header states the falsified invariant verbatim and names both modules.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "high",
+          "category": "reversibility",
+          "file": "shared/scripts/tools/setup_iterate_worktree.py:276-296",
+          "line": null,
+          "finding": "Claim under doubt: failing loudly at worktree setup is strictly better than hanging — LockTimeout subclasses RuntimeError and main() catches only (GitError, OSError), so the one exception this change enables is the one the tool's error contract does not cover: a bare traceback instead of the JSON payload, after the worktree and branch exist.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "hidden coupling",
+          "file": "shared/scripts/lib/file_lock_registry.py",
+          "line": null,
+          "finding": "Claim under doubt: the registry gives FileLock same-thread reentrancy — run_config_store imports file_lock FLAT while record_event imports lib.file_lock; two module identities means two _HELD dicts, so a nested acquisition crossing that boundary does not short-circuit and instead blocks on the OS lock it already holds for the full 600 s. For a diagnostic counter that duplication is a limitation; for a MUTEX it is a correctness property.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "concurrency",
+          "file": "shared/scripts/lib/file_lock.py",
+          "line": null,
+          "finding": "Claim under doubt: 600 s makes the hook paths diagnosable — Claude Code kills a hook long before 600 s, so on exactly the paths the card names (event log, iterate timings) the bound is never reached and nothing changes. The number was derived from sweep_outbox, a different call site.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "concurrency",
+          "file": "shared/scripts/lib/file_lock.py:112-140",
+          "line": null,
+          "finding": "Claim under doubt: a LockTimeout means someone else holds the lock — The Windows branch swallowed every OSError as 'held' while POSIX narrowed to BlockingIOError, so a non-transient failure (dead network share) would poll for 600 s and then name a contender that does not exist. Unifying the loops propagated the asymmetry to both primitives.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "boundary",
+          "file": "shared/scripts/lib/durable_publish.py:129-137",
+          "line": null,
+          "finding": "Claim under doubt: hasattr(os, 'fchmod') is a safe capability gate — The gate auto-enables the carry the day a CPython release grows os.fchmod on Windows, where st_mode is a read-only-attribute proxy - so the carry would publish read-only files, and the next os.replace onto one raises winerror 5, which IS in the sharing-violation set and would be retried for the whole budget: a permanently unwritable destination disguised as transient contention.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "concurrency",
+          "file": "shared/tests/test_file_lock_bounded.py",
+          "line": null,
+          "finding": "Claim under doubt: three tests prove what their docstrings and ledger rows say — (a) test_instance_is_clean_after_a_timeout asserts only `_fp is None`, which is None from __init__, so deleting fp.close() leaves it green while the descriptor leaks. (b) test_zero_timeout_is_one_non_blocking_attempt asserts only elapsed < 2.0 s, which 100 attempts also satisfy. (c) test_none_timeout_restores_the_unbounded_block cannot distinguish None from a finite 600 s default.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "concurrency",
+          "file": "shared/scripts/lib/file_lock.py",
+          "line": null,
+          "finding": "Claim under doubt: instances are interchangeable because reentrancy is keyed on path — _entries lives on the instance and depth in the registry, and nothing says an instance is single-thread. Sharing one across threads gives non-atomic counter updates, a non-owner __exit__ that decrements _entries while release() no-ops, and a clobbered _fp - each stranding the lock. Latent: no live call site shares an instance.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "concurrency",
+          "file": "shared/scripts/lib/file_lock_registry.py",
+          "line": null,
+          "finding": "Claim under doubt: the pid guard makes ownership trustworthy — threading.get_ident() values are recycled after a thread exits, so a leaked __enter__ without __exit__ leaves an entry naming a dead thread and a later thread inheriting that ident would be told it owns a lock it never acquired. The fork case has the same shape and IS guarded.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "boundary",
+          "file": "shared/scripts/lib/file_lock_registry.py:52-67",
+          "line": null,
+          "finding": "Claim under doubt: FileLock.__init__ stays infallible — os.path.abspath on a relative path calls os.getcwd(), which raises when the cwd has been unlinked - a live shape in this repo, where iterate worktrees are removed under running processes. The existing test covers a missing path, not a missing cwd.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "hidden coupling",
+          "file": "plugins/shipwright-{test,security,compliance,adopt}",
+          "line": null,
+          "finding": "Claim under doubt: the regression sweep covers every consuming root — The four roots run exclude exactly the plugins whose in-process triage producers take the shared_lib_loader fallback - where doubt 1 lives - and those producers swallow the exception, so the failure would be silent finding loss rather than a crash.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-08-06T08:42:48.500123+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 4,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "bug",
+          "file": "shared/scripts/lib/file_lock_registry.py",
+          "line": 148,
+          "finding": "release()` does not call `_reset_after_fork()`. If a process forks while holding a `FileLock`, the child inherits the registry entry and the parent thread identifier. When the child exits the inherited lock context, `release()` treats it as the owner and invokes `LOCK_UN`/closes the shared open-file description, potentially releasing the parent’s lock. This is the exact fork hazard the PID guard is intended to prevent.",
+          "suggestion": "Call `_reset_after_fork(st)` while holding `st.guard` before looking up `held` in `release()`. After a fork, release should find no inherited registry ownership and must not unlock the inherited handle.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "bug",
+          "file": "shared/scripts/lib/file_lock_registry.py:49-63",
+          "line": null,
+          "finding": "_state()` has a check-then-create race. Two threads entering it before `_STATE_KEY` is populated can each create and return a different state object; one may subsequently overwrite the other in `sys.modules`. A lock registered in the discarded state will not be found by a nested acquisition, causing the same thread to fall through to OS locking and potentially self-time out rather than re-entering.",
+          "suggestion": "Publish the newly created state atomically, e.g. create a candidate and use `sys.modules.setdefault(_STATE_KEY, candidate)` and return the object returned by `setdefault`; alternatively protect initialization with a process-global initialization lock shared across module identities.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "regression",
+          "file": "shared/scripts/tools/tests/test_f0_cli_diff_coverage_e2e.py:~53",
+          "line": null,
+          "finding": "The standalone synthetic runner fixture copies `scripts/lib/file_lock.py` but not its new required sibling `scripts/lib/file_lock_registry.py`. `file_lock` now imports that module during import, so any synthetic run that imports the copied `file_lock` will fail with `ModuleNotFoundError`. The fixture was updated for `atomic_write`’s new dependency but not for the analogous `file_lock` dependency.",
+          "suggestion": "Add `scripts/lib/file_lock_registry.py` to `_RUNNER_FILES`, and ensure the E2E exercise imports the copied `file_lock` so this dependency drift is detected.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "test",
+          "file": "shared/tests/test_durable_publish.py:151-166",
+          "line": null,
+          "finding": "AC-3 requires that an unstatable destination still be written successfully through `durable_atomic_write`, but the unstatable branch is only tested by calling `carry_destination_mode()` directly. The end-to-end write test covers only an `fchmod` refusal, so an integration regression specific to the `stat` failure path would not be caught.",
+          "suggestion": "Add an end-to-end test that patches `durable_publish.os.stat` to raise `PermissionError`, invokes `durable_atomic_write` on an existing destination, and asserts the replacement bytes land and the failure counter increments.  The core design addresses the requested mode preservation, retry expansion, timeout, and reentrancy behavior, but the fork-release hole can violate mutual exclusion and the registry initialization race can defeat reentrancy. Ship with fixes before merging. SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-08-06T08:49:45.113723+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "partial",
+      "raw_excerpt": "[deepseek] <no review returned: provider returned an empty reply>\n\n[openai] - Category: bug  \n  Severity: high  \n  File: `shared/scripts/lib/file_lock_registry.py:148`  \n  Finding: `release()` does not call `_reset_after_fork()`. If a process forks while holding a `FileLock`, the child inherits the registry entry and the parent thread identifier. When the child exits the inherited lock context, `release()` treats it as the owner and invokes `LOCK_UN`/closes the shared open-file description, potentially releasing the parent’s lock. This is the exact fork hazard the PID guard is intended to prevent.  \n  Suggestion: Call `_reset_after_fork(st)` while holding `st.guard` before looking up `held` in `release()`. After a fork, release should find no inherited registry ownership and must not unlock the inherited handle.\n\n- Category: bug  \n  Severity: medium  \n  File: `shared/scripts/lib/file_lock_registry.py:49-63`  \n  Finding: `_state()` has a check-then-create race. Two threads entering it before `_STATE_KEY` is populated can each create and return a different state object; one may subsequently overwrite the other in `sys.modules`. A lock registered in the discarded state will not be found by a nested acquisition, causing the same thread to fall through to OS locking and potentially self-time out rather than re-entering.  \n  Suggestion: Publish the newly created state atomically, e.g. create a candidate and use `sys.modules.setdefault(_STATE_KEY, candidate)` and return the object returned by `setdefault`; alternatively protect initialization with a process-global initialization lock shared across module identities.\n\n- Category: regression  \n  Severity: medium  \n  File: `shared/scripts/tools/tests/test_f0_cli_diff_coverage_e2e.py:~53`  \n  Finding: The standalone synthetic runner fixture copies `scripts/lib/file_lock.py` but not its new required sibling `scripts/lib/file_lock_registry.py`. `file_lock` now imports that module during import, so any synthetic run that imports the copied `file_lock` will fail with `ModuleNotFoundError`. Th […truncated]",
+      "verdicts": {
+        "openai": "revise",
+        "deepseek": "unavailable"
+      }
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-06T07:43:59.282332+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    }
+  }
+}

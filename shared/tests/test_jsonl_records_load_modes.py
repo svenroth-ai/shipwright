@@ -71,7 +71,13 @@ def test_sentinel_mode_import_resolves_the_durable_reader(tmp_path: Path) -> Non
 
         from shared_lib_loader import load_shared_lib
         mod = load_shared_lib("jsonl_records")
-        assert "_shipwright_shared_lib_jsonl_records" in sys.modules, "not path-loaded"
+        # The fallback ran, not the happy path. Asserted by NAMESPACE rather than
+        # by the old flat sentinel name: trg-dc013d82 made the fallback load into a
+        # private PACKAGE (so a lib module may hold a relative sibling import), which
+        # renamed `_shipwright_shared_lib_jsonl_records` to `_shipwright_shared_lib.jsonl_records`.
+        # The guarantee this pins is unchanged; only the spelling of the proxy moved.
+        assert mod.__name__.startswith("_shipwright_shared_lib"), mod.__name__
+        assert "lib.jsonl_records" not in sys.modules, "the shadowed package import won"
         print("MODE=sentinel", mod.durable_read_text.__name__)
         """,
         tmp_path,
@@ -132,7 +138,13 @@ def test_triage_integrity_sentinel_mode_works(tmp_path: Path) -> None:
         sys.path.insert(0, {str(shadow)!r})
         from shared_lib_loader import load_shared_lib
         mod = load_shared_lib("triage_integrity")
-        assert "_shipwright_shared_lib_triage_integrity" in sys.modules, "not path-loaded"
+        # The fallback ran, not the happy path. Asserted by NAMESPACE rather than
+        # by the old flat sentinel name: trg-dc013d82 made the fallback load into a
+        # private PACKAGE (so a lib module may hold a relative sibling import), which
+        # renamed `_shipwright_shared_lib_triage_integrity` to `_shipwright_shared_lib.triage_integrity`.
+        # The guarantee this pins is unchanged; only the spelling of the proxy moved.
+        assert mod.__name__.startswith("_shipwright_shared_lib"), mod.__name__
+        assert "lib.triage_integrity" not in sys.modules, "the shadowed package import won"
         frags = mod.store_corruption({str(store)!r})
         assert len(frags) == 1, frags
         assert mod.is_triage_record({{"event": "append", "id": "trg-1",

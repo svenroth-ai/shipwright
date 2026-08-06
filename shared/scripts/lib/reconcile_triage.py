@@ -166,7 +166,7 @@ def reconcile_main_triage(
     """Fold uncommitted main-tree ``triage.jsonl`` drift into one ``chore(triage)``
     commit, then return. Resolves the MAIN repo root from ``project_root`` (so it
     is correct when called from inside a worktree). Never raises for an expected
-    condition — returns a structured :class:`ReconcileResult` instead.
+    condition — a structured :class:`ReconcileResult`; only ``LockTimeout`` escapes.
 
     **Manual fallback only (campaign 2026-06-08-triage-outbox-delivery / D2).**
     The per-iterate default is now the branch SWEEP (:mod:`lib.sweep_outbox`,

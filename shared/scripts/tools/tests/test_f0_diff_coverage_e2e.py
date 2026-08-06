@@ -48,10 +48,15 @@ _GIT_ENV = {
     "GIT_AUTHOR_NAME": "t", "GIT_AUTHOR_EMAIL": "t@t.invalid",
     "GIT_COMMITTER_NAME": "t", "GIT_COMMITTER_EMAIL": "t@t.invalid",
 }
-#: The four modules `combine_coverage.py` needs to run standalone in a synthetic
+#: The five modules `combine_coverage.py` needs to run standalone in a synthetic
 #: repo. Copied rather than stubbed: the point is to exercise the REAL combiner.
+#: `durable_publish` is here because `atomic_write` imports it and deliberately
+#: does NOT degrade when it is absent — a fallback that quietly skipped carrying
+#: the destination's mode would reintroduce trg-dc013d82 finding 20 invisibly.
+#: This list is hand-maintained, and this test failing loudly IS its drift guard.
 _COMBINER_FILES = (
     "scripts/lib/atomic_write.py",
+    "scripts/lib/durable_publish.py",
     "scripts/lib/diff_coverage_gate.py",
     "scripts/tools/measure_diff_coverage.py",
     "scripts/tools/combine_coverage.py",
