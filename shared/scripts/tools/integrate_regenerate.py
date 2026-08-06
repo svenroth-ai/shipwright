@@ -93,8 +93,12 @@ def regenerate_after_merge(
         # this pass (campaign S3) to the just-made merge commit, so a partial
         # regeneration never leaves a dirty tree.
         # RESTORABLE_SNAPSHOTS, not a hand-rolled union: it is set-identical and it
-        # is the ONE place that knows the run-written path is excluded, so a future
-        # change to that carve-out reaches this rollback too.
+        # is the ONE place that knows which run-written paths are excluded, so a
+        # future change to that carve-out reaches this rollback too. It already has:
+        # session_handoff.md joined the carve-out in P2.15 and is correctly skipped
+        # here — nothing regenerates it on this path (`only=set()`), so there is
+        # nothing to roll back, and its bytes are written back by integrate_main's
+        # `finally` instead.
         restorable = [
             p for p in sorted(RESTORABLE_SNAPSHOTS) if (project_root / p).exists()
         ]

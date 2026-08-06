@@ -1,0 +1,106 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-08-06-s9-s10-sentinel-guard",
+    "date": "2026-08-06",
+    "unit": {
+      "status": "passed",
+      "passed": 9056,
+      "total": 9089
+    },
+    "integration": {
+      "status": "not_run",
+      "passed": 0,
+      "total": 0
+    },
+    "pgtap": {
+      "status": "not_run",
+      "passed": 0,
+      "total": 0
+    },
+    "e2e": {
+      "status": "not_run",
+      "passed": 0,
+      "total": 0
+    },
+    "design_fidelity": {
+      "status": "not_run",
+      "passed": 0,
+      "total": 0
+    },
+    "smoke": {
+      "status": "not_run"
+    },
+    "surface_verification": {
+      "surface": "none",
+      "runner": "",
+      "exit_code": 0,
+      "tests_run": 0,
+      "evidence_path": "",
+      "timestamp": "2026-08-06T07:27:50.467Z",
+      "attempts": 0,
+      "justification": "No startable surface: the change is confined to a shared Python verifier module (spec_checks.py S9/S10 guard), its guard module docstring, its unit tests and a docs catalog row. Shipwright exposes no web/CLI/API surface that exercises these phase-quality checks outside the pytest suite, which ran green at F0."
+    },
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "S9 SKIPs when the audited run_id has no exact iterate_history entry (sentinel '', 'unknown', 'UNKNOWN') instead of inheriting an unrelated run's category",
+          "disposition": "tested",
+          "evidence": "test_spec_checks_run_id_guard.py::test_s9_s10_skip_on_sentinel_run_id[unknown-S9], [UNKNOWN-S9], [-S9] PASSED"
+        },
+        {
+          "behavior": "S10 SKIPs on the same sentinel run_ids",
+          "disposition": "tested",
+          "evidence": "test_spec_checks_run_id_guard.py::test_s9_s10_skip_on_sentinel_run_id[unknown-S10], [UNKNOWN-S10], [-S10] PASSED"
+        },
+        {
+          "behavior": "S9/S10 SKIP for a NON-sentinel run_id lacking an exact entry — the case the read-time rollup filter (is_sentinel_run) does not exclude, so it reached the triage backlog",
+          "disposition": "tested",
+          "evidence": "test_spec_checks_run_id_guard.py::test_s9_s10_skip_on_unresolvable_non_sentinel_run_id[S9], [S10] PASSED"
+        },
+        {
+          "behavior": "S9/S10 still emit their genuine WARN for a run_id WITH an exact entry — the guard does not over-fire",
+          "disposition": "tested",
+          "evidence": "test_spec_checks_run_id_guard.py::test_s9_s10_exact_entry_still_warns[S9], [S10] PASSED"
+        },
+        {
+          "behavior": "S9/S10's verdict no longer changes when ONLY an unrelated run's category changes (feature vs chore) on otherwise identical repo state",
+          "disposition": "tested",
+          "evidence": "test_spec_checks_run_id_guard.py::test_s9_s10_verdict_no_longer_follows_an_unrelated_runs_category[S9], [S10] PASSED"
+        },
+        {
+          "behavior": "The work-tree guard still precedes the new run_id guard, so a git fault keeps its own diagnostic rather than being misreported as an audit-context mismatch",
+          "disposition": "tested",
+          "evidence": "test_spec_checks_run_id_guard.py::test_work_tree_guard_still_precedes_the_run_id_guard[S9], [S10] PASSED"
+        },
+        {
+          "behavior": "The phase-quality Stop-audit seam supplies an id that is never an iterate_history key, for both session-id values the hook can actually emit ('unknown' and a UUID) — pins the accepted consequence so it fails loudly if the seam is repaired",
+          "disposition": "tested",
+          "evidence": "test_spec_checks_run_id_guard.py::test_the_stop_audit_seam_hands_these_checks_an_unresolvable_run_id[unknown], [d269d6e9-14a6-4c50-b77c] PASSED"
+        },
+        {
+          "behavior": "The loop-var branch (SHIPWRIGHT_LOOP_ID + _UNIT_ID, campaign/autonomous runs) yields a NON-sentinel id that survives the rollup filter and still SKIPs — the branch where the pre-fix bogus verdict was actionable",
+          "disposition": "tested",
+          "evidence": "test_spec_checks_run_id_guard.py::test_the_loop_var_seam_is_the_branch_that_actually_reached_the_backlog PASSED"
+        }
+      ],
+      "counts": {
+        "testable": 8,
+        "tested": 8,
+        "untestable": 0,
+        "untested_testable": 0
+      },
+      "enumeration_basis": {
+        "acs": 8,
+        "covered_acs": 8
+      }
+    },
+    "degraded": []
+  },
+  "coverage": {
+    "total": 80.2,
+    "measured_tier": "repo",
+    "source": "combined coverage.xml (all plugins + shared + integration)",
+    "measured_at": "2026-07-04T00:00:00Z"
+  }
+}

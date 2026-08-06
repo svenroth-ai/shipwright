@@ -1,0 +1,1 @@
+Triage compaction: a damaged status event can no longer overwrite who dismissed an entry and why. Those are the two fields the compaction reads to decide what is machine churn, so a person's decision could be reclassified and deleted (audit finding 26).
