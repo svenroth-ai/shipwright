@@ -1803,8 +1803,8 @@ evidence (plan § 4.5).
 | S6 | project | FAIL | 1 | `CLAUDE.md` exists at project root, non-empty. |
 | S7 | project | WARN (never FAIL) | 2 | `CLAUDE.md` has a `## Structure` fenced code block (via `lib/drift_parsers.extract_structure_block`). |
 | S8 | project | FAIL | 1 | `README.md` exists, non-empty. |
-| S9 | iterate (type=feature + UI-facing diff) | WARN (never FAIL — R17) | 2 | `README.md` touched within last 10 commits AND recent diff includes `webui/client/`, `frontend/`, `client/`, `web/`, `src/components/`, or `mobile/` path. SKIPs otherwise. |
-| S10 | iterate (type ∈ {feature, bug, bugfix}) | WARN (never FAIL — R17) | 2 | `CLAUDE.md` touched recently when new top-level directories appear in last 10 commits that aren't listed in the CLAUDE.md Structure block. SKIPs otherwise. |
+| S9 | iterate (type=feature + UI-facing diff) | WARN (never FAIL — R17) | 2 | `README.md` touched within last 10 commits AND recent diff includes `webui/client/`, `frontend/`, `client/`, `web/`, `src/components/`, or `mobile/` path. SKIPs otherwise. Like S2/S3/W2, SKIPs unless the audited `run_id` has an exact `iterate_history` entry — otherwise the `type` it gates on would be inherited from an unrelated run. Under today's `resolve_run_id` chain the Stop audit supplies an id that is never an `iterate_history` key (a sentinel when neither a session nor a loop id reaches the hook; the session/loop id otherwise), so this SKIP is the normal outcome. In the sentinel branch the pre-guard verdicts were already excluded from every rollup consumer, so the behaviour change is confined to the loop-id branch of campaign / autonomous-loop runs. Upstream seam tracked as trg-0a80a7e7. |
+| S10 | iterate (type ∈ {feature, bug, bugfix}) | WARN (never FAIL — R17) | 2 | `CLAUDE.md` touched recently when new top-level directories appear in last 10 commits that aren't listed in the CLAUDE.md Structure block. SKIPs otherwise. Same `run_id` precondition as S9. |
 
 Tier-2 checks (W1, I4, T2, Q1, S3-S5, S7, S9, S10, Cmp1, D2) are
 permanently excluded from enforcement rollout — they land in the
