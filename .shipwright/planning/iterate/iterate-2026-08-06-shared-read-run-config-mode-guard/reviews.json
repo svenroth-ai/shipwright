@@ -103,10 +103,20 @@
     "spec": {
       "review_type": "spec",
       "status": "completed",
-      "findings_count": 0,
-      "findings": [],
+      "findings_count": 1,
+      "findings": [
+        {
+          "severity": null,
+          "category": "unfaithful",
+          "file": "plugins/shipwright-run/scripts/lib/orchestrator_pkg/config_io.py:174-208",
+          "line": null,
+          "finding": "REJECT round 1 (RESOLVED before commit): the rewritten Mode section re-introduced an overstatement - a different one, but the same failure mode the brief names. It asserted unconditionally that the two readers cannot disagree, now DETECT the same set, and differ only in DISPOSAL. They still differ on DETECTION at the read leg: _read_parse_shape reads via durable_read_text (retries past a Windows delete-pending PermissionError, READ_RETRY_BUDGET_SECONDS = 2.0) while read_run_config_mode uses a plain Path.read_text and answers INERT on the first one. Verified independently against atomic_write.py:115-123 before acting. Fixed by scoping the claim to content classes, naming the residual read-leg divergence with its mechanism and reason for staying open, and correcting the disposal asymmetry; re-reviewed -> PASS, every factual claim in the block verified against source. Also fixed 2 non-blocking precision items: a test docstring restating the retracted unconditional claim, and a verbatim quote of config_io text that no longer existed. — spec: operator brief, closing sentence: the parity claim in config_io.py's Mode section was amended to stop overstating the agreement rather than silently leaving it false",
+          "suggestion": "operator brief, closing sentence: the parity claim in config_io.py's Mode section was amended to stop overstating the agreement rather than silently leaving it false",
+          "source": "spec-reviewer"
+        }
+      ],
       "provider": null,
-      "completed_at": "2026-08-06T10:54:52.048786+00:00",
+      "completed_at": "2026-08-06T11:19:11.106632+00:00",
       "disposition": null,
       "recorded_by": "shipwright-build:spec-reviewer",
       "parse_status": null,
