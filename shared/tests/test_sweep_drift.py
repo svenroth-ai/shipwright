@@ -65,14 +65,26 @@ def tracked_is_clean(work: Path) -> bool:
 def test_status_whose_append_is_only_in_main_tracked_is_not_an_orphan() -> None:
     """The heart of Defect B. The dismiss is a legitimate status — its append is
     real, it just lives in main's tracked log. It must NOT be a quarantine
-    candidate; with the append unplaceable the sweep fails CLOSED (loud) instead."""
+    candidate.
+
+    The disposition changed in iterate-2026-08-06-triage-validate-deadends: this
+    used to assert ``block``, on the reasoning that a loud hard stop beats silent
+    data loss. Both halves of that still hold — the dismiss is still never
+    quarantined — but ``block`` turned out to be a THIRD outcome, not the safe
+    one: the remedy it named ("deliver main by push / merge") is unreachable in a
+    workflow where main is only fast-forwarded from origin, so delivery stopped
+    permanently and every unrelated pending append stranded with it in a
+    gitignored buffer. The line is now HELD: withheld from this delivery, kept in
+    the outbox, retried next sweep. The invariant this test exists to protect is
+    unchanged and asserted below."""
     worktree = [h.HEADER, h.item("trg-other")]
     dismiss = h.status(APPEND, "dismissed")
 
     protected = decide(worktree, [dismiss], "\n", known_append_ids=frozenset({APPEND}))
 
-    assert protected.action == "block", protected
+    assert protected.action == "hold", protected
     assert dismiss not in protected.candidates, "the operator's dismiss was made a quarantine candidate"
+    assert protected.held_lines == [dismiss], "the dismiss was neither delivered nor retained"
 
 
 def test_the_old_universe_is_what_ate_the_dismiss() -> None:

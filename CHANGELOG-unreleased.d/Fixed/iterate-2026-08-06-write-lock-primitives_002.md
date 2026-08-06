@@ -1,0 +1,1 @@
+A contended or self-nested internal file lock no longer hangs indefinitely. It now waits a bounded time and then fails with a message naming the lock and how long it waited, instead of stalling in a way that looks exactly like a dead session.
