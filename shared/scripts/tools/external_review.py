@@ -254,13 +254,16 @@ def main() -> int:
     )
     args = parser.parse_args()
 
-    # Mode-specific argument validation lives in lib/external_review_modes so
-    # the CLI keeps only the argparse binding: a foreign flag first, then a
-    # missing one. See that module for why the order matters.
+    # Mode-specific validation lives in lib/external_review_modes (a foreign
+    # flag first, then a missing one — see there for why the order matters).
     try:
         value, primary_label = select_mode_input(args.mode, args)
     except ModeInputError as exc:
+        # `parser.error` exits 2 and never returns — a fact about argparse, not
+        # one visible here, so without the raise this reads as falling through
+        # to an unbound `value` (CodeQL py/uninitialized-local-variable, #582).
         parser.error(str(exc))
+        raise SystemExit(2) from exc
     primary_path = Path(value)
 
     spec_path = Path(args.spec_file)

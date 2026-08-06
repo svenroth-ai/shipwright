@@ -1,39 +1,39 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-07-28-docs-placement-rule"
+run_id: "iterate-2026-08-06-architecture-review-pass"
 phase: "iterate"
-reason: "iterate: docs/ placement rule + remove one generated artifact and five finished records"
-timestamp: "2026-07-28T12:18:50.089137+00:00"
+reason: "iterate: architecture review pass"
+timestamp: "2026-08-06T10:04:50.616290+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-07-28 12:18:50 UTC
+> Auto-generated 2026-08-06 10:04:50 UTC
 
 ## Session Info
 
-- **Session ID**: 7c6c7b07-d3a2-4c91-ba4e-fab3535b5067
-- **Timestamp**: 2026-07-28 12:18:50 UTC
-- **Reason**: iterate: docs/ placement rule + remove one generated artifact and five finished records
+- **Session ID**: 04df4bbf-e71c-4a77-aa76-7b04773a072d
+- **Timestamp**: 2026-08-06 10:04:50 UTC
+- **Reason**: iterate: architecture review pass
 
 ## Last Iterate
 
-- **Run ID**: iterate-2026-07-28-docs-placement-rule
-- **Date**: 2026-07-28T12:18:44.151571Z
-- **Type**: change
+- **Run ID**: iterate-2026-08-06-architecture-review-pass
+- **Date**: 2026-08-06T10:04:50.405597Z
+- **Type**: feature
 - **Complexity**: medium
-- **Branch**: iterate/docs-placement-rule
-- **ADR**: iterate-2026-07-28-docs-placement-rule
+- **Branch**: iterate/architecture-review-pass
+- **ADR**: iterate-2026-08-06-architecture-review-pass
 - **Tests passed**: True
-- **Spec**: .shipwright/planning/iterate/iterate-2026-07-28-docs-placement-rule.md
+- **Spec**: .shipwright/planning/iterate/2026-08-06-architecture-review-pass.md
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/docs-placement-rule
-- **Run ID**: iterate-2026-07-28-docs-placement-rule
-- **Spec**: .shipwright/planning/iterate/iterate-2026-07-28-docs-placement-rule.md
-- **Complexity**: medium · **spec_impact:** none · **affected_frs:** [] ·
-- **External Review Marker**: completed (external_review_state.json @ 2026-07-28T11:58:04)
+- **Branch**: iterate/architecture-review-pass
+- **Run ID**: iterate-2026-08-06-architecture-review-pass
+- **Spec**: .shipwright/planning/iterate/2026-08-06-architecture-review-pass.md
+- **Complexity**: medium
+- **External Review Marker**: completed (external_review_state.json @ 2026-08-06T10:43:18)
 
 ### Mandatory replay on Resume
 
@@ -51,8 +51,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/docs-placement-rule
-- **Last Commit**: 7ec426a2 chore(triage): sweep 54 outbox append(s) into branch
+- **Branch**: iterate/architecture-review-pass
+- **Last Commit**: 84c52305 Merge remote-tracking branch 'origin/main' into iterate/architecture-review-pass
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -68,17 +68,17 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 | Event | Type | Source | Date |
 |-------|------|--------|------|
-| evt-003a4ccb | grade_snapshot | — | 2026-07-28 |
-| evt-a25fc820 | work_completed | iterate (iterate: docs/ placement rule + remove one generated artifact and five finished records) | 2026-07-28 |
-| evt-7963d51e | grade_snapshot | — | 2026-07-28 |
-| evt-2df150c5 | work_completed | iterate (Make a conditional session policy gating subagents a question asked before Stage 1 rather than a silent not_run at F11, and define what a real blocker is.) | 2026-07-28 |
-| evt-5f7e67f6 | grade_snapshot | — | 2026-07-28 |
+| evt-212583cb | work_completed | iterate (iterate: S9/S10 sentinel run_id guard) | 2026-08-06 |
+| evt-be7a47a0 | work_completed | iterate (iterate: P2.19c — corruption reads as absence; delivered vs buffered) | 2026-08-06 |
+| evt-3f30a713 | work_completed | iterate (iterate: architecture review pass — a second external call asking whether a change should be built at all) | 2026-08-06 |
+| evt-cec39fd7 | work_completed | iterate (Normalize __import__("json")/__import__("os") literals to top-level imports in shared/tests/test_check_test_results_infra.py and shared/tests/test_iterate_timing_cli.py, clearing a benign PY_DYNAMIC_IMPORT prompt-scan finding (CI run 30996996377, 2 medium).) | 2026-08-05 |
+| evt-b13b16d1 | work_completed | iterate (iterate: split an oversize test file along its existing logical seam, behavior-preserving) | 2026-08-05 |
 
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 400
-- **Last iterate**: change — iterate: docs/ placement rule + remove one generated artifact and five finished records (2026-07-28)
+- **Total work events**: 480
+- **Last iterate**: change — iterate: S9/S10 sentinel run_id guard (2026-08-06)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
 ## Recent Decisions
