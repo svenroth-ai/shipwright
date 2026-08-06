@@ -1,0 +1,28 @@
+{
+  "stage": "self-review",
+  "checklist": "8-point (references/iteration-reviews.md)",
+  "verdict": "pass",
+  "items": [
+    {"n": 1, "name": "Spec compliance", "result": "pass",
+     "note": "AC-1..AC-8 all delivered; the Stage-1 hard gate verified each independently and PASSED on round 2. Nothing beyond scope: findings 14/15/17-22/24/26-29 untouched, and sweep_outbox's duplicate _op_in_progress (finding 29) deliberately left alone even when it would have bought needed headroom."},
+    {"n": 2, "name": "Error handling", "result": "pass",
+     "note": "Every new failure path returns a structured result rather than raising: the three modules carrying a 'never raises for an expected condition' contract were each audited for unguarded I/O, and three real leaks were closed (_classify_salvage, and both new run_git_soft calls on the reconcile rollback path). main_tree_guards gained a _probe() wrapper so a missing git cannot traceback out of a tool that has already rewritten a tracked file."},
+    {"n": 3, "name": "Security basics", "result": "n/a",
+     "note": "No user input, no network, no secrets, no auth surface. The one adjacent concern — operator-entered prose reaching a log — is respected: the new dedup notes carry ids and counts only, honouring sweep_result's COUNTS-ONLY rule."},
+    {"n": 4, "name": "Test quality", "result": "pass",
+     "note": "Assertions are on outcomes (bytes on disk, git log subjects, plan status, the outbox's contents), not internal state. Mutation-checked: reverting the finding-9 write path turns 5 of 8 durability tests red, and the 3 that stay green are contract pins, stated as such rather than counted as 8/8. Two genuine negative controls (a bare checkout destroying a late append; a benign refresh still delivering). Two monkeypatches that keyed on a naming scheme — and so would have silently disarmed — now key on the claimed path object with a `fired` tripwire."},
+    {"n": 5, "name": "Performance", "result": "pass",
+     "note": "One added git probe per --commit preflight and one rev-parse --git-dir in path_state_vs_head; both are read-only and off the hot path. The salvage rename is O(1). Deliberately NOT taken: retrying the put-back rename, because the retry's own trigger condition is the state its precondition rules out."},
+    {"n": 6, "name": "Naming & structure", "result": "pass",
+     "note": "Six new modules, each under 300 LOC; every file the diff touches is at or under its limit and nothing ratchets a baselined entry. Re-exports preserve every historical import path, pinned by identity assertions plus a per-module import in an isolated subprocess."},
+    {"n": 7, "name": "Affected boundaries", "result": "pass",
+     "note": "Producer/consumer pairs identified for the tracked log (producers: triage.py's two append constructors, the WebUI's non-locking writer; consumers: read_all_items, validate_triage_text, plan_main_tracked_drift) and for the new salvage sibling (producer and consumer both sweep_drift_restore). Round-trip probes run: LF and CRLF byte-faithfulness of the .bak, the published log's EOL, invalid-UTF-8 refusal, and the two ISO-8601 spellings of one instant. touches_io_boundary did not fire on the path detectors, but the probes were run anyway because the change IS a serialization boundary."},
+    {"n": 8, "name": "Test hygiene probe", "result": "pass",
+     "note": "scan_test_hygiene.py --diff: no findings. No skips introduced."}
+  ],
+  "known_limits_carried_forward": [
+    "The restore's residual window (a writer opening the tracked path by name between the rename and git's write) is narrowed, not closed, and is documented as data loss rather than as unavoidable.",
+    "A retained salvage file is gitignored, so `git clean -xfd` can delete the only copy. Accepted over the alternative (overwriting it outright), stated at the point of creation, and now repeated on every subsequent main_tracked_diverged refusal.",
+    "The corpus measurement behind the anchor rule is taken from the settled log, where the adjudicated input does not occur — so it establishes that anchorless appends are not a shape any writer produces, and NOT the conditional probability the rule's accuracy depends on. The retain-on-missing-anchor choice rests on never-lose-a-record, not on that number."
+  ]
+}

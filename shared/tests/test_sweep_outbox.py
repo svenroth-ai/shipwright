@@ -281,13 +281,14 @@ def test_double_sweep_idempotent(repo) -> None:
 
 
 def test_sweep_collapses_producer_double_append_keep_last(repo) -> None:
-    """Regression (trg-60ef91fb): a producer re-appending an UPDATED, non-byte-
-    identical version of a finding must NOT return ``invalid`` and wedge the whole
-    outbox — the sweep folds the LAST append onto the branch (reader parity)."""
+    """Regression (trg-60ef91fb): a producer re-appending an UPDATED, non-byte-identical
+    version of a finding must NOT return ``invalid`` and wedge the whole outbox — the sweep
+    folds the LAST append onto the branch (reader parity). Both carry the same
+    ``originalTs``, which is what marks them one refreshed item and not an id collision."""
     work, _ = repo
     h.seed_tracked(work)  # header only
-    a1 = '{"event":"append","id":"trg-x","ts":"2026-06-09T06:17:00Z","title":"draft","status":"triage"}'
-    a2 = '{"event": "append", "id": "trg-x", "ts": "2026-06-09T06:29:00Z", "title": "resolved", "status": "triage"}'
+    a1 = '{"event":"append","id":"trg-x","ts":"2026-06-09T06:17:00Z","originalTs":"2026-06-09T06:17:00Z","title":"draft","status":"triage"}'
+    a2 = '{"event": "append", "id": "trg-x", "ts": "2026-06-09T06:29:00Z", "originalTs": "2026-06-09T06:17:00Z", "title": "resolved", "status": "triage"}'
     h.write_outbox(work, a1, a2)
     wt = h.make_worktree(work, "dbl-append")
 

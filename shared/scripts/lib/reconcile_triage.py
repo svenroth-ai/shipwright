@@ -30,10 +30,25 @@ if str(_SCRIPTS_ROOT) not in sys.path:
     sys.path.insert(0, str(_SCRIPTS_ROOT))
 
 import triage  # noqa: E402  — reuse the canonical producer lock (see _triage_lock)
-from lib.atomic_write import durable_atomic_write  # noqa: E402
 from lib.churn_merge import TRIAGE_LOG, dedup_triage_lines, validate_triage_text  # noqa: E402
 from lib.ci_env import ci_active  # noqa: E402
 from lib.git_base import HOOK_GIT_TIMEOUT, TIMEOUT_RETURNCODE, run_git_soft  # noqa: E402
+# The dedup rewrite's durable writer + its rollback live in lib.reconcile_rollback
+# (extracted to keep this file under the 300-LOC guideline; the rollback is audit
+# 2026-07-28 finding 16). ``_atomic_write`` keeps its historical private name here.
+from lib.reconcile_rollback import (  # noqa: E402
+    atomic_write_verbatim as _atomic_write,
+    head_oid as _head_oid,
+    rollback_failed_commit as _rollback_failed_commit,
+)
+# The three main-tree commit preconditions moved to lib.main_tree_guards so
+# tools/triage_gc.py --commit shares one copy instead of adding a third (this file
+# is at the 300-LOC guideline). Re-exported under their historical private names.
+from lib.main_tree_guards import (  # noqa: E402,F401  (re-export: see lib/main_tree_guards.py)
+    has_staged_changes as _has_staged_changes,
+    is_detached as _is_detached,
+    op_in_progress as _op_in_progress,
+)
 from lib.worktree_isolation import GitError, main_repo_root  # noqa: E402
 
 
@@ -44,7 +59,10 @@ class ReconcileResult:
     ``status`` ∈ {``committed``, ``no_drift``, ``skipped``, ``invalid``,
     ``error``}. ``reason`` carries the guard name for ``skipped`` /
     ``error``; ``folded`` is the count of genuinely-new (deduped) lines in a
-    ``committed`` run; ``errors`` holds validator messages for ``invalid``.
+    ``committed`` run; ``errors`` holds validator messages for ``invalid``;
+    ``warnings`` holds whatever :mod:`lib.triage_dedup` reported about the dedup
+    (a same-id ``append`` collapse, or an id collision it refused to collapse) —
+    informational, never a reason to fail. This caller used to discard them.
     """
 
     status: str
@@ -52,6 +70,7 @@ class ReconcileResult:
     folded: int = 0
     commit_subject: str = ""
     errors: list[str] = field(default_factory=list)
+    warnings: list[str] = field(default_factory=list)
 
     def to_dict(self) -> dict:
         return {
@@ -60,6 +79,7 @@ class ReconcileResult:
             "folded": self.folded,
             "commit_subject": self.commit_subject,
             "errors": self.errors,
+            "warnings": self.warnings,
         }
 
 
@@ -67,55 +87,6 @@ def _ci_active() -> bool:
     """Delegates to the shared leaf — see :mod:`lib.ci_env` for why this is not
     a local copy."""
     return ci_active()
-
-
-def _op_in_progress(main_root: Path) -> bool:
-    """True when a merge / rebase / cherry-pick / revert / bisect is underway —
-    committing into a half-finished operation would corrupt it."""
-    # MERGE_HEAD / CHERRY_PICK_HEAD / REVERT_HEAD are pseudo-refs rev-parse can
-    # resolve; rebase-merge/rebase-apply and BISECT_LOG are git-dir FILES, so
-    # they must be probed by path (rev-parse --verify can't resolve a file).
-    for ref in ("MERGE_HEAD", "CHERRY_PICK_HEAD", "REVERT_HEAD"):
-        probe = run_git_soft(["rev-parse", "--verify", "--quiet", ref], cwd=main_root)
-        if probe.returncode == 0:
-            return True
-        # Unknown state must not read as "no operation in progress" — that would
-        # commit into a half-finished merge on an unanswered question.
-        if probe.returncode == TIMEOUT_RETURNCODE:
-            return True
-    for rel in ("rebase-merge", "rebase-apply", "BISECT_LOG"):
-        probe = run_git_soft(["rev-parse", "--git-path", rel], cwd=main_root)
-        # A timeout must NOT fall into the `continue` below: `continue` means "this
-        # marker is absent", which is a definite answer to a question git never
-        # answered. A rebase sets none of the pseudo-refs above, so this loop is the
-        # ONLY thing that detects one — reading a timeout as absence here is what
-        # would let the commit land inside a half-finished rebase.
-        if probe.returncode == TIMEOUT_RETURNCODE:
-            return True
-        if probe.returncode != 0:
-            continue
-        # --git-path may return a relative (``.git/...``) OR absolute path
-        # (linked worktree / non-standard git-dir). Resolve each correctly.
-        p = Path(probe.stdout.strip())
-        full = p if p.is_absolute() else main_root / p
-        if full.exists():
-            return True
-    return False
-
-
-def _is_detached(main_root: Path) -> bool:
-    # Any non-zero, timeout included, reads as detached → the caller skips.
-    return run_git_soft(["symbolic-ref", "--quiet", "HEAD"], cwd=main_root).returncode != 0
-
-
-def _has_staged_changes(main_root: Path) -> bool:
-    """True when ANYTHING is staged in the index. We skip rather than risk a
-    partial ``git commit -- <path>`` interacting with a user's staged WIP — or,
-    if ``triage.jsonl`` itself is staged, committing a hand-staged index state we
-    never validated. The drift we act on is always UNSTAGED background appends,
-    so a non-empty index means "not our case" → no-op (AC-3)."""
-    # Any non-zero, timeout included, reads as "something is staged" → skip.
-    return run_git_soft(["diff", "--cached", "--quiet"], cwd=main_root).returncode != 0
 
 
 def _has_drift(main_root: Path) -> bool | None:
@@ -148,14 +119,6 @@ def _head_line_set(main_root: Path) -> set[str] | None:
     if proc.returncode != 0:
         return set()
     return {ln.strip() for ln in proc.stdout.split("\n") if ln.strip()}
-
-
-def _atomic_write(path: Path, text: str) -> None:
-    """Write ``text`` verbatim (UTF-8, no newline translation) durably — tmp +
-    fsync + os.replace — so a reader never sees a torn file and a crash never
-    drops the content (shared :func:`durable_atomic_write`)."""
-    # surrogateescape: `text` came through this module's own surrogateescape read.
-    durable_atomic_write(path, text.encode('utf-8', errors='surrogateescape'))
 
 
 def reconcile_main_triage(
@@ -253,26 +216,30 @@ def reconcile_main_triage(
         lines = [ln[:-1] if ln.endswith("\r") else ln for ln in raw.split("\n")]
         if lines and lines[-1] == "":
             lines = lines[:-1]  # drop the artifact of a trailing newline
-        deduped, _ = dedup_triage_lines(lines)
+        deduped, warnings = dedup_triage_lines(lines)
         deduped_text = (eol.join(deduped) + eol) if deduped else ""
 
         errors = validate_triage_text(deduped_text)
         if errors:
-            return ReconcileResult(status="invalid", errors=errors)
+            return ReconcileResult(status="invalid", errors=errors, warnings=warnings)
 
-        if deduped_text != raw:
+        rewrote = deduped_text != raw
+        if rewrote:
             _atomic_write(triage_path, deduped_text)
 
         # A dedup-only change may now match HEAD exactly → nothing to commit.
         drift_probe = _has_drift(main_root)
         if drift_probe is None:
-            return ReconcileResult(status="error", reason="git_timeout: status --porcelain")
+            return ReconcileResult(status="error", reason="git_timeout: status --porcelain",
+                                   warnings=warnings)
         if not drift_probe:
-            return ReconcileResult(status="no_drift")
+            return ReconcileResult(status="no_drift", warnings=warnings)
 
         head = _head_line_set(main_root)
         if head is None:
-            return ReconcileResult(status="error", reason="git_timeout: show HEAD")
+            return ReconcileResult(status="error", reason="git_timeout: show HEAD",
+                                   warnings=warnings)
+        head_before = _head_oid(main_root)   # "" when git could not answer → no rollback
         folded = sum(1 for ln in deduped if ln.strip() and ln.strip() not in head)
         subject = f"chore(triage): fold {folded} main-tree background append(s)"
         # ``git commit -- <path>`` commits the WORKING-TREE content of that path
@@ -294,7 +261,28 @@ def reconcile_main_triage(
             cwd=main_root, timeout=HOOK_GIT_TIMEOUT,
         )
         if commit.returncode == TIMEOUT_RETURNCODE:
-            return ReconcileResult(status="error", reason="commit_timeout")
+            # NO rollback here, deliberately. run_git KILLS on timeout, so we do not know
+            # whether the commit landed, and restoring the pre-dedup bytes over a commit
+            # that DID land would put the log back out of sync with HEAD — the very state
+            # this rollback exists to avoid. Say what is unknown, including the lock the
+            # kill may have stranded; do not touch it (it may be another process's).
+            return ReconcileResult(
+                status="error", warnings=warnings,
+                reason="commit_timeout: the dedup rewrite is UNCOMMITTED and was not rolled back "
+                       "(the commit was killed, so whether it landed is unknown). Until this is "
+                       "resolved the tracked log may not be an append-only extension of HEAD, and "
+                       "the outbox sweep will refuse `main_tracked_diverged` on every iterate. "
+                       "Check `git status` and `git log -1`; a stranded .git/index.lock is the "
+                       "other thing to look for.",
+            )
         if commit.returncode != 0:
-            return ReconcileResult(status="error", reason=f"commit_failed: {commit.stderr.strip()[:300]}")
-        return ReconcileResult(status="committed", folded=folded, commit_subject=subject)
+            return ReconcileResult(
+                status="error", warnings=warnings,
+                reason=_rollback_failed_commit(
+                    triage_path, main_root, head_before,
+                    rewrote=rewrote, expected=deduped_text, original=raw,
+                    stderr=commit.stderr.strip()[:300],
+                ),
+            )
+        return ReconcileResult(status="committed", folded=folded, commit_subject=subject,
+                               warnings=warnings)

@@ -1,0 +1,47 @@
+{
+  "stage": "doubt",
+  "gating": "advisory-must-address",
+  "reviewer": "shipwright-build:doubt-reviewer (opus)",
+  "trigger": "async/concurrency + irreversible operations (destructive rewrite of a git-tracked log, commit into the operator's main tree, rename-aside of the live log)",
+  "doubts": [
+    {"severity": "high", "lens": "boundary", "file": "shared/scripts/lib/triage_dedup.py", "line": 88,
+     "claim_under_doubt": "the anchor rule collapses a genuine refresh and only refuses a genuine collision",
+     "objection": "The anchor is compared as a RAW STRING, and the only writer that produces same-id appends mixes serializations. The corpus's own trg-60ef91fb line (.shipwright/triage.jsonl:285) carries ts as '...+00:00' beside originalTs as '...Z' — one record, one writer, two spellings of a UTC instant. If a refresh ever writes the anchor in offset form where the prior append wrote Z, set(anchors) has two members, the collision arm keeps both, validate_triage_text reports a duplicate append, the sweep returns invalid, and delivery is OFF on every subsequent iterate — the exact terminal state this card exists to forbid, reached through the rule meant to prevent it. No fixture used two serializations.",
+     "resolution": "FIXED — _anchor_of normalises via datetime.fromisoformat (falling back to the trimmed string when unparseable). Three tests added: the two spellings collapse; a 1-microsecond difference still collides; an unparseable anchor falls back to string equality in both directions. Verified against the real corpus: 684/684 anchors are currently Z, and exactly one record mixes the forms — trg-60ef91fb, the incident the rule is named for."},
+    {"severity": "high", "lens": "boundary", "file": "shared/scripts/lib/triage_gc_publish.py", "line": 104,
+     "claim_under_doubt": "commit_compaction still refuses on the guards its docstring lists",
+     "objection": "The docstring promised three refusals; the body performed one. commit_compaction is in the PINNED public re-export surface while commit_preflight is not, so the API this change freezes is the unguarded half — and an in-tree caller that skips preflight already exists (a test). Secondary: preflight now runs before apply_gc_reporting with two durable writes and a validation pass in between, so a HEAD detaching in that interval yields a cheerful 'committed:' on a dangling commit.",
+     "resolution": "FIXED — git_state_blocker() split out (the three re-checkable guards) and called INSIDE commit_compaction; commit_preflight keeps the pre-rewrite path-clean check the CLI needs. The first attempt re-ran the whole preflight and refused every commit it was asked to make, because the log is dirty by construction after the compaction — the tests caught it immediately."},
+    {"severity": "medium", "lens": "concurrency", "file": "shared/scripts/lib/triage_gc_core.py", "line": 267,
+     "claim_under_doubt": "moving the .bak after the fingerprint check is a pure improvement",
+     "objection": "It moved a whole-file fsync INTO the compare→publish window, roughly doubling the residual the comment sizes — and the comment was not updated. The property bought is also not absolute: nothing deletes a .bak left by an earlier SUCCESSFUL run, so a second --apply's refusal leaves a stale one.",
+     "resolution": "FIXED — the backup is fsynced to a .bak.tmp sibling BEFORE the compare and published onto .bak by a rename AFTER it, so neither property is traded; the tmp is unlinked on refusal, which also stops a good .bak from an earlier run being clobbered."},
+    {"severity": "medium", "lens": "concurrency", "file": "shared/scripts/lib/sweep_drift_restore.py", "line": 152,
+     "claim_under_doubt": "the put-back 'cannot clobber anyone'",
+     "objection": "The comment is checked once and replace_retrying may then loop for 0.5s. The retry's ONLY Windows trigger is a sharing violation, whose canonical cause on a rename is a destination that exists and is held open — precisely the state exists() ruled out. So the loop WAITS for the WebUI writer to release a file it recreated after the check, then destroys it. Before the retry this TOCTOU was microseconds; it is now up to 500ms and actively patient.",
+     "resolution": "FIXED — the put-back keeps a BARE os.replace, so a violation drops into the existing keep-both arm instead. The rename-aside keeps the retry (there the live log is still live and a late append is captured by _classify_salvage). The asymmetry is documented at the call site."},
+    {"severity": "medium", "lens": "hidden-coupling", "file": "shared/scripts/lib/main_tree_guards.py", "line": 82,
+     "claim_under_doubt": "a non-git run keeps working exactly as before",
+     "objection": "rc 128 ('not a git repository') returned 'unknown', so describe_post_gc_divergence printed the full 'deliver NOTHING on every iterate' text in a plain directory, contradicting triage_gc's own docstring — live and unasserted, since an existing test runs --apply on a non-repo tmp_path. Sharper: run_git_soft catches only TimeoutExpired, so git off PATH raises FileNotFoundError from describe_post_gc_divergence, which is called AFTER the rewrite and outside main()'s RuntimeError handler.",
+     "resolution": "FIXED — a fourth state, not_a_repo (probed via rev-parse --git-dir), which buys silence; and a _probe() wrapper so every predicate in the module survives git being absent. Test added on a non-git tmp_path asserting APPLIED with no WARNING."},
+    {"severity": "low-medium", "lens": "reversibility", "file": "shared/scripts/lib/sweep_drift_restore.py", "line": 157,
+     "claim_under_doubt": "the salvage is adequately announced on the unrecoverable path",
+     "objection": "The sole surviving copy is named exactly once, on stderr, mid worktree-setup, in a run that returns 0. From the next iterate onward the operator sees only main_tracked_diverged, and the file is gitignored, so git clean -xfd deletes it.",
+     "resolution": "FIXED — plan_main_tracked_drift enumerates any salvage sibling and names it in the main_tracked_diverged reason, so the pointer repeats on every later refusal. Test added."},
+    {"severity": "low", "lens": "boundary", "file": "shared/scripts/lib/main_tree_guards.py", "line": 85,
+     "claim_under_doubt": "probe.returncode > 1 cleanly separates 'differences' from 'git failed'",
+     "objection": "A negative returncode (signalled git) is neither 0 nor > 1, so it fell through to 'dirty' and advised running reconcile_main_triage.py, which would not help. Nothing unsound — both consumers fail safe — but the operator is misinformed.",
+     "resolution": "FIXED — `not in (0, 1)`, which also covers the timeout sentinel and drops a now-redundant clause."}
+  ],
+  "verified_and_not_changed": [
+    "with_adopt_note is applied at every return that can follow an adoption, and no pre-adoption return can wrongly carry one.",
+    "The relocated fingerprint injection is genuinely inside the window, and the test fails if the check is deleted.",
+    "The rollback's head_before is captured at the right point; the timeout branch correctly refuses to roll back; the byte comparison round-trips through the same surrogateescape encoding.",
+    "The error-status widening does not turn a data-loss report into a blocked iterate — setup_iterate_worktree prints and continues, which is pre-existing and deliberate.",
+    "The salvage gitignore claim is accurate, including the sharp edge it names."
+  ],
+  "epistemic_note": {
+    "raised": "The corpus measurements (684/684 anchors, 0 multi-append ids) come from the SETTLED tracked log, where the adjudicated input never occurs — so they say nothing about the conditional probability that a same-id pair agrees on the anchor, which is the only quantity the rule's accuracy depends on.",
+    "resolution": "ACCEPTED — the module docstring now states exactly what the measurement does and does not establish, and attributes the retain-on-missing-anchor choice to the never-lose-a-record direction rather than to the number."
+  }
+}
