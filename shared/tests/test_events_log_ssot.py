@@ -62,10 +62,6 @@ _MAIN_REPO_ONLY = {
         "resolver answer (both are project_root / EVENT_FILE).",
     "tools/verifiers/adopt_compliance.py":
         "/shipwright-adopt A7 verifier; adopt executes in the main repo",
-    "lib/phase_quality/_resolution.py":
-        "Phase-Quality Stop hook resolution helpers; runs with cwd = main "
-        "project root. Iterate Campaign B (B3) split: the raw join moved "
-        "from the pre-split lib/phase_quality.py into this submodule.",
 }
 
 # A path-join onto the event log: `<expr> / EVENT_FILE` or
