@@ -1,0 +1,405 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-08-06-parallel-global-state-tests",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-06T08:59:34.934717+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 11,
+      "findings": [
+        {
+          "severity": "low",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "The plan replaces a fixed deadline with a progress-based loop, but does not specify the values for `_FANOUT_IDLE_SECONDS` and `_FANOUT_MAX_SECONDS` beyond the constraint that max < 10.0 s. A poorly chosen idle timeout could reintroduce the same class of failure (timeout before all stragglers arrive) or add unnecessary latency.",
+          "suggestion": "Include in the mini‑plan the actual constants (or a bound/derivation) so they can be reviewed for the target environment’s observed fan‑out durations.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The unit tests claim to be “deterministic, no host load” but the plan does not say how clock advancement is controlled (mock `time.monotonic`, manual tick injection, etc.). Without that, the four exit path tests could become flaky.",
+          "suggestion": "Clarify that the tests will use a fake clock or cooperative sleep mechanism so the progress-based logic is exercised without real wall‑clock delays.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "The change touches the vendored `cache_repair_lock.py` in 12 directories. The plan says “re‑synced byte‑identically” but not whether the drift guard (`test_ensure_shared_cache_vendored.py`) already exists and will run before the change is considered complete. If the guard is missing or not invoked, a copy‑drift bug could go unnoticed.",
+          "suggestion": "Confirm the drift guard test exists and is part of the verification step, or add a note to create it if it doesn’t.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The integration test (AC‑6) requires a 22‑core saturated host. The plan does not discuss how this will be reproduced in CI or what alternative gating (e.g., a smaller‑scale soak) will be used if full saturation is not always available.",
+          "suggestion": "Document the test’s runtime requirements and a fallback scenario (e.g., lower‑core count with proportional load) so the integration test is not skipped on under‑provisioned runners.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "The progress-based rule is directionally sound, but the plan does not define the precise deadline semantics needed to preserve liveness. In particular, “extend to `now + _FANOUT_IDLE_SECONDS` whenever the observed count increases” must be capped against a hard deadline anchored at function entry; otherwise continuous arrivals can extend the wait indefinitely and violate AC-5.",
+          "suggestion": "Define the algorithm explicitly using a monotonic clock: `hard_deadline = started + _FANOUT_MAX_SECONDS`; on a newly observed valid peer, set `idle_deadline = min(now + _FANOUT_IDLE_SECONDS, hard_deadline)`; return on all expected peers, no-fanout probe expiry, idle expiry, or hard expiry. Add assertions/tests that the hard ceiling is measured from entry and cannot be reset by late arrivals.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "“Observed count increases” is not sufficiently precise for a process-coordination primitive. If marker discovery can include stale markers, duplicate markers, markers for another generation/token, or names outside the current expected peer set, those must not reset the idle deadline. Otherwise unrelated filesystem state can make SessionStart wait until the maximum ceiling, or potentially make it return incorrectly if the count is used rather than membership.",
+          "suggestion": "Track a set of valid observed peer identities, scoped to the current session/generation/token and intersected with the expected peer set. Only a newly added member of that set may extend the idle deadline. Unit tests should include stale prior-generation markers, duplicate writes for one peer, and an unexpected peer marker, verifying none count as progress.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "Progress-based waiting reduces the demonstrated failure mode but does not guarantee that all launched processes will arrive before the owner publishes `.done`: a process delayed longer than `_FANOUT_IDLE_SECONDS` can still miss the generation and roll over. AC-1’s 10 saturated runs is useful evidence, but it is probabilistic and may not prove the chosen idle window covers the scheduling delay that caused the original issue.",
+          "suggestion": "Select `_FANOUT_IDLE_SECONDS` and `_FANOUT_MAX_SECONDS` from the measured arrival distribution or an explicit operational budget, not just values that make the test pass. Add a deterministic integration/control test that delays participant registration beyond the old 2-second limit but within the new idle/max policy and verifies a single owner. Retain the 22-core measurement as supplementary regression evidence.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The plan should specify poll/deadline ordering. A marker can arrive between a scan that finds no progress and the decision to return for idle expiry. If the implementation checks time before processing a fresh scan, it can prematurely publish completion despite a marker already being present. This is especially relevant under the saturation condition being fixed.",
+          "suggestion": "On each iteration, scan and validate markers first, update the observed set and idle deadline, then evaluate exit conditions; perform one final scan before returning for idle or hard expiry. Use a monotonic clock throughout, and ensure sleep duration is bounded by the nearest active deadline.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "The plan identifies the canonical template and 12 copies, but it assumes byte-copy synchronization is the complete propagation mechanism. In this repository, vendored hook code is likely consumed through generated/plugin packaging paths as well; modifying only checked-in copies can leave packaged distributions or discovery metadata stale if those are generated elsewhere.",
+          "suggestion": "Confirm the repository’s established synchronization command and packaging validation, use that command rather than manual copy edits, and run the consumer-level hook invocation from at least one vendored plugin in addition to the byte-identical drift guard. If no generated artifact exists, state that explicitly in the implementation record.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "AC-3 says no fan-out should return by `_FANOUT_PROBE_SECONDS`, while AC-4 permits extension when peers arrive. The transition needs an explicit definition for the boundary case where the first observer appears at or immediately after probe expiry. Without it, small scheduling differences can yield inconsistent behavior between “no fan-out” and “fan-out in progress.”",
+          "suggestion": "Define whether a valid observer discovered during the final probe scan starts fan-out waiting, and test it. A sensible rule is that a valid marker present on the final probe scan enters the progress-based path; only an empty final scan returns via the probe path.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "security",
+          "file": null,
+          "line": null,
+          "finding": "No new external trust boundary is introduced, and the proposed change is not inherently a security concern. However, because progress is inferred from filesystem markers, accepting arbitrary marker filenames or contents as observer identities would let another process in the same writable area prolong startup waits.",
+          "suggestion": "Preserve existing ownership/path validation and ensure the new progress accounting uses only expected, session-scoped peer markers. Do not broaden marker parsing or relax validation as part of this fix.  Overall, the root-cause analysis and choice to fix arrival-side waiting rather than completion adoption are sound. The implementation should be revised to make deadline, marker-validity, and boundary-race semantics explicit, then validate them deterministically alongside the required loaded integration measurement. SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-08-06T08:36:24.750485+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[deepseek] ## Review\n\n**Category:** approach  \n**Severity:** low  \n**Finding:** The plan replaces a fixed deadline with a progress-based loop, but does not specify the values for `_FANOUT_IDLE_SECONDS` and `_FANOUT_MAX_SECONDS` beyond the constraint that max < 10.0 s. A poorly chosen idle timeout could reintroduce the same class of failure (timeout before all stragglers arrive) or add unnecessary latency.  \n**Suggestion:** Include in the mini‑plan the actual constants (or a bound/derivation) so they can be reviewed for the target environment’s observed fan‑out durations.\n\n**Category:** edge-case  \n**Severity:** low  \n**Finding:** The unit tests claim to be “deterministic, no host load” but the plan does not say how clock advancement is controlled (mock `time.monotonic`, manual tick injection, etc.). Without that, the four exit path tests could become flaky.  \n**Suggestion:** Clarify that the tests will use a fake clock or cooperative sleep mechanism so the progress-based logic is exercised without real wall‑clock delays.\n\n**Category:** risk  \n**Severity:** medium  \n**Finding:** The change touches the vendored `cache_repair_lock.py` in 12 directories. The plan says “re‑synced byte‑identically” but not whether the drift guard (`test_ensure_shared_cache_vendored.py`) already exists and will run before the change is considered complete. If the guard is missing or not invoked, a copy‑drift bug could go unnoticed.  \n**Suggestion:** Confirm the drift guard test exists and is part of the verification step, or add a note to create it if it doesn’t.\n\n**Category:** edge-case  \n**Severity:** low  \n**Finding:** The integration test (AC‑6) requires a 22‑core saturated host. The plan does not discuss how this will be reproduced in CI or what alternative gating (e.g., a smaller‑scale soak) will be used if full saturation is not always available.  \n**Suggestion:** Document the test’s runtime requirements and a fallback scenario (e.g., lower‑core count with proportional load) so th […truncated]\n\n[openai] 1. **Category:** approach  \n   **Severity:** medium  \n   **Finding:** The progress-based rule is directionally sound, but the plan does not define the precise deadline semantics needed to preserve liveness. In particular, “extend to `now + _FANOUT_IDLE_SECONDS` whenever the observed count increases” must be capped against a hard deadline anchored at function entry; otherwise continuous arrivals can extend the wait indefinitely and violate AC-5.  \n   **Suggestion:** Define the algorithm explicitly using a monotonic clock: `hard_deadline = started + _FANOUT_MAX_SECONDS`; on a newly observed valid peer, set `idle_deadline = min(now + _FANOUT_IDLE_SECONDS, hard_deadline)`; return on all expected peers, no-fanout probe expiry, idle expiry, or hard expiry. Add assertions/tests that the hard ceiling is measured from entry and cannot be reset by late arrivals.\n\n2. **Category:** edge-case  \n   **Severity:** medium  \n   **Finding:** “Observed count increases” is not sufficiently precise for a process-coordination primitive. If marker discovery can include stale markers, duplicate markers, markers for another generation/token, or names outside the current expected peer set, those must not reset the idle deadline. Otherwise unrelated filesystem state can make SessionStart wait until the maximum ceiling, or potentially make it return incorrectly if the count is used rather than membership.  \n   **Suggestion:** Track a set of valid observed peer identities, scoped to the current session/generation/token and intersected with the expected peer set. Only a newly added member of that set may extend the idle deadline. Unit tests should include stale prior-generation markers, duplicate writes for one peer, and an unexpected peer marker, verifying none count as progress.\n\n3. **Category:** risk  \n   **Severity:** medium  \n   **Finding:** Progress-based waiting reduces the demonstrated failure mode but does not guarantee that all launched processes will arrive before the owne […truncated]",
+      "verdicts": {
+        "openai": "revise",
+        "deepseek": "approve"
+      }
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 11,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "correctness",
+          "file": "shared/templates/hooks/cache_repair_lock.py",
+          "line": 30,
+          "finding": "The ceiling's documented coupling named the wrong neighbour and the new test pinned that wrong neighbour. The barrier runs BEFORE acquire_cache_lock, so the constant that binds is ensure_shared_cache._CLAIM_WAIT_SECONDS (5.0) — a peer queued in _claim_session gives up there and elects itself a recovering owner, the same duplicate scan the fix removes — not run_if_cache_ready._READY_WAIT_SECONDS (10.0). A green test stood in for a proof that was never made.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "shared/templates/hooks/cache_repair_lock.py",
+          "line": 243,
+          "finding": "`arrived` was an integer high-water mark, not the identity set the accepted external-review disposition specified, and the in-code comment asserted set semantics the code did not implement. The divergence is reachable: B validates, B's marker is tampered, C arrives — the count is 1 again, so C's genuine arrival does not register as progress.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "shared/tests/test_ensure_shared_cache_fanout_timing.py",
+          "line": 215,
+          "finding": "test_an_observation_that_stops_validating_stops_counting invalidated the marker BEFORE entry, so an implementation that accumulated `present` behaved identically — the rebuild-per-pass property its docstring claimed was untested.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "readability",
+          "file": "shared/tests/test_ensure_shared_cache_fanout_join.py",
+          "line": 78,
+          "finding": "Dead artifact: the monkeypatch of _FANOUT_PROBE_SECONDS no longer affects this test's path, and hands the next reader the exact mental model that produced the #543 defect.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "shared/templates/hooks/cache_repair_lock.py",
+          "line": 22,
+          "finding": "_FANOUT_PROBE_SECONDS kept a name describing a removed mechanism and was the only fan-out constant without a derivation comment.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "shared/tests/test_ensure_shared_cache_fanout_timing.py",
+          "line": 34,
+          "finding": "_VirtualClock replaced the whole `time` module but modelled only monotonic/sleep; a future helper reaching for time.time() would fail on the harness rather than on the property.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "shared/tests/test_ensure_shared_cache_fanout_timing.py",
+          "line": 3,
+          "finding": "Docstring claimed a split the diff does not show (no content moved).",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "integration-tests/test_ensure_shared_cache_fanout.py",
+          "line": 263,
+          "finding": "The staggered test's margin was interpreter-startup jitter: a 0.35s stagger left only ~0.65s before a slow CI runner could turn it red — the same under-provisioned-runner fragility DS-4 asked to design out. A later round also caught a stale 'a third of a second' phrase surviving in the same docstring.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "performance",
+          "file": "integration-tests/test_ensure_shared_cache_fanout.py",
+          "line": 421,
+          "finding": "hold_seconds=9 is a legitimate fixture-precondition repair — the assertions are unchanged, and a holder released mid-wait would make them FAIL rather than pass, the opposite direction from a widened tolerance — but it left ~3s of dead wall time.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "architecture",
+          "file": "shipwright_bloat_baseline.json",
+          "line": 1,
+          "finding": "cache_repair_lock.py crosses the 300-line limit at 440 and appeared in the baseline under none of its paths, so every copy had ZERO anti-ratchet protection — the next diff could add lines indefinitely with no gate. The crossing pre-dates this diff, so Group H (a producer) surfaces it and filing a triage card would duplicate a producer; but that answers 'should I file a card', not 'should the crossing be recorded'.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": ".shipwright/planning/iterate/2026-08-06-parallel-global-state-tests.md",
+          "line": 238,
+          "finding": "Two precision slips in a note whose whole value is precision: (a) 'the peers never reach the lock' holds for the False verdict but not for the fail-open None one, which falls through to acquire_cache_lock unguarded; (b) '0.77-1.36s to publish' is the barrier leg, not barrier+lock+scan, which is the quantity the paragraph is about.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-08-06T09:45:41.063240+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 8,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "concurrency",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: the new staggered integration test gates honestly on an under-provisioned CI runner — The margin was made out of interpreter startup, and _HEALER_WRAPPER runs every process under sys.settrace (a trace function returning itself = per-line tracing, 10-100x slowdown). On a 2-vCPU ubuntu-latest runner, eleven line-traced interpreters can miss the arrival grace for reasons unrelated to the property. Also the last peer must land inside the 3.0s ceiling, a bound the test never argued.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "hidden-coupling",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: the five artifact tests cannot be raced by a sibling, STRUCTURALLY — The structural argument refutes only 'a sibling writes into my directory'. It misses the channel by which sibling content legitimately enters this worktree: this run's OWN integrate. INDEX.md is in churn_merge.CHURN_ALLOWLIST resolving --theirs (mainline) then re-derive, and the re-derive is fail-soft by design (adr_index.refresh_best_effort warns rather than raises). Sibling merges to main, churn conflict takes mainline without my ADR row, re-derive fails, and the failure text is verbatim identical - driven by a concurrent run, in a worktree nobody else touched.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "concurrency",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: the barrier now waits while peers are still arriving — One transient filesystem error abandoned the barrier instantly and reproduced the fixed defect exactly: `if state is None: return`, where has_completion_observation returns None on any OSError but FileNotFoundError. On Windows one virus-scanner or indexer touch of a just-created zero-byte marker, on one of ~100 passes per second, publishes with 1/12 observed and sends eleven peers into re-election. No test covered the path.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "boundary",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: the root cause (the 0.1s existence probe) is removed — It is removed on the enumerable path only. When _installed_fanout_participants returns None - a partially written installed_plugins.json during a plugin install gives a JSONDecodeError - the function still does time.sleep(0.1); return, i.e. #543's behaviour verbatim, while a full 12-way fan-out may be in flight. None means 'I could not READ the manifest', not 'there is no fan-out'.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "boundary",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: the _FANOUT_WAIT_SECONDS < _CLAIM_WAIT_SECONDS inequality prevents a duplicate scan — The justification is contradicted by the code it describes. A peer that exhausts _CLAIM_WAIT_SECONDS takes the writer lock, finds session_repair_state True at ensure_shared_cache.py:271-273 and returns WITHOUT scanning. It scans only when the owner genuinely failed to publish, which is the designed recovery. So the inequality buys a stall and lock contention, not a duplicate scan. This is the run's own thesis one level up: a true assertion pinned with a false mechanism - the second such in this run, after Stage 2 caught the same shape against _READY_WAIT_SECONDS.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "reversibility",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: the bloat-baseline append merely records a pre-existing crossing — It records this diff's own growth as inherited. The pre-existing crossing was 389; the entries were written at the post-change size with state grandfathered, and nothing said how much of it arrived here. The asymmetry is visible inside the run: it split its own test files twice to stay under 300 while raising the recorded floor on the file it actually grew.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "blast-radius",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: the new rule costs nothing in the common case — peers is derived from INSTALLED plugins and installed_plugins.json carries no enabled/disabled field, so a user who disables some Shipwright plugins keeps phantom peers that never arrive. Old cost: the flat 2.0s cap. New cost: up to the 3.0s ceiling - +0.4s to +1.0s per SessionStart in a partially-disabled install, a configuration this change makes measurably worse.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "hidden-coupling",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: citing trg-db1de213 closes the durable_read_text sighting — The cross-reference is one-way. trg-db1de213 is written from the write-lock-primitives run's perspective, in German, and never names test_three_process_writers_no_truncation_no_lost_update. The next F0 that sees that test go red will search triage for the test name, find nothing, and file sighting number twelve - precisely the loop this run exists to break.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-08-06T10:12:14.445982+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 5,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "test / regression",
+          "file": "shared/tests/fanout_barrier_fixtures.py:28-29",
+          "line": null,
+          "finding": "The fixture imports `ensure_shared_cache` and `run_if_cache_ready` to access their hidden constants, but it only adds the hooks directory to `sys.path`. If the modules are not already on `sys.path` (e.g. from a conftest or runner), the imports will fail, causing `test_ensure_shared_cache_fanout_timing.py` to error and AC-5 to be untested.",
+          "suggestion": "Add `sys.path.insert(0, str(REPO / \"shared\" / \"scripts\"))` (or wherever those files live) before the imports, or ensure the test runner already sets the right `PYTHONPATH`.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "bug",
+          "file": "shared/templates/hooks/cache_repair_lock.py:284` (and all 12 vendored copies) — The loop always sleeps a fixed 10 ms without limiting that sleep to the nearest arrival, idle, or hard deadline. Consequently, when the loop reaches (for example) `hard_deadline - 0.001`, it intentionally sleeps past `_FANOUT_WAIT_SECONDS` and only returns on the following iteration. This violates AC-5’s r […truncated]",
+          "line": null,
+          "finding": "Sleep for `min(0.01, hard_deadline - now, idle_deadline - now)` (clamped to non-negative), then rescan; retain the fresh-scan-before-return ordering.",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "spec",
+          "file": ".shipwright/triage.jsonl:1483` — AC-8 requires the record to be corrected, but the retained `trg-02aedc85` append and dismissal records still assert that the artifact tests read “REAL GLOBAL STATE” in a shared tree, that sibling worktrees move committed `INDEX.md`/golden/baseline subjects, and recommend snapshotting/fixture changes. Those claims are explicitly falsified by the new spe […truncated]",
+          "line": null,
+          "finding": "Append a correction/status event to `trg-02aedc85` explicitly retracting the false shared-worktree diagnosis, documenting the worktree-local/own-artifact finding, and stating that the five artifact tests must not be changed.",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "test",
+          "file": "shared/tests/test_ensure_shared_cache_fanout_timing.py:96` — The ceiling test permits an overrun (`<= _FANOUT_WAIT_SECONDS + 0.05`) and therefore does not enforce AC-5’s entry-anchored hard ceiling. The current fixed `.01` sleep already overshoots the deadline, so this test accepts the defect rather than detecting it.",
+          "line": null,
+          "finding": "Use a virtual-clock assertion requiring no time beyond the exact hard deadline (or the explicitly documented scheduler tolerance if unavoidable), and add a schedule whose next poll would otherwise cross the deadline.",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "spec",
+          "file": ".shipwright/planning/iterate/2026-08-06-parallel-global-state-tests.md:177` — AC-1/AC-6 require a 10/10 saturated 22-core measurement and evidence/ledger record, but this diff adds neither the required evidence nor a tally. The existing integration test remains largely unchanged; the only integration edit changes the unrelated hung-writer fixture duration. Thus the claimed cross-compo […truncated]",
+          "line": null,
+          "finding": "Add the recorded 10-run tally and referenced JUnit/evidence artifact (or an auditable ledger entry) produced against the changed code, including the invocation/environment needed to establish the saturation condition.  Overall assessment: ship-with-fixes. The core progress-based arrival logic addresses the named early-probe defect, but the intentional polling overshoot violates the stated timing bound and the record/evidence acceptance criteria are incomplete.  SHIPWRIGHT_VERDICT: revise",
+          "suggestion": null,
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-08-06T10:52:22.544245+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[deepseek] - Category: test / regression\n- Severity: high\n- File: shared/tests/fanout_barrier_fixtures.py:28-29\n- Finding: The fixture imports `ensure_shared_cache` and `run_if_cache_ready` to access their hidden constants, but it only adds the hooks directory to `sys.path`. If the modules are not already on `sys.path` (e.g. from a conftest or runner), the imports will fail, causing `test_ensure_shared_cache_fanout_timing.py` to error and AC-5 to be untested.\n- Suggestion: Add `sys.path.insert(0, str(REPO / \"shared\" / \"scripts\"))` (or wherever those files live) before the imports, or ensure the test runner already sets the right `PYTHONPATH`.\n\n---\n\n**Overall assessment:** The change correctly implements the spec’s barrier logic, all acceptance criteria are addressed, and the tests are thorough and deterministic. However, the missing `sys.path` for importing guardian constants can cause test failures on a stock checkout. Fix that before merge.\n\nSHIPWRIGHT_VERDICT: revise\n\n[openai] - Category: bug  \n  Severity: medium  \n  File: `shared/templates/hooks/cache_repair_lock.py:284` (and all 12 vendored copies) — The loop always sleeps a fixed 10 ms without limiting that sleep to the nearest arrival, idle, or hard deadline. Consequently, when the loop reaches (for example) `hard_deadline - 0.001`, it intentionally sleeps past `_FANOUT_WAIT_SECONDS` and only returns on the following iteration. This violates AC-5’s requirement that the ceiling return by `_FANOUT_WAIT_SECONDS` from entry, and similarly makes the arrival-grace and idle exits late by up to one poll interval.  \n  Suggestion: Sleep for `min(0.01, hard_deadline - now, idle_deadline - now)` (clamped to non-negative), then rescan; retain the fresh-scan-before-return ordering.\n\n- Category: spec  \n  Severity: medium  \n  File: `.shipwright/triage.jsonl:1483` — AC-8 requires the record to be corrected, but the retained `trg-02aedc85` append and dismissal records still assert that the artifact tests read “REAL GLOBAL STATE” in a shared tree, that sibling worktrees move committed `INDEX.md`/golden/baseline subjects, and recommend snapshotting/fixture changes. Those claims are explicitly falsified by the new spec. Adding a separate planning document does not correct the actionable triage record that future triage searches will find.  \n  Suggestion: Append a correction/status event to `trg-02aedc85` explicitly retracting the false shared-worktree diagnosis, documenting the worktree-local/own-artifact finding, and stating that the five artifact tests must not be changed.\n\n- Category: test  \n  Severity: medium  \n  File: `shared/tests/test_ensure_shared_cache_fanout_timing.py:96` — The ceiling test permits an overrun (`<= _FANOUT_WAIT_SECONDS + 0.05`) and therefore does not enforce AC-5’s entry-anchored hard ceiling. The current fixed `.01` sleep already overshoots the deadline, so this test accepts the defect rather than detecting it.  \n  Suggestion: Use a virtual-clock assertion requiring […truncated]",
+      "verdicts": {
+        "openai": "revise",
+        "deepseek": "revise"
+      }
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-06T09:20:17.366427+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    }
+  }
+}
