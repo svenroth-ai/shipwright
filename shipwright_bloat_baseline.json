@@ -1330,6 +1330,90 @@
       "current": 322,
       "state": "grandfathered",
       "adr": null
+    },
+    {
+      "path": "plugins/shipwright-adopt/scripts/hooks/cache_repair_lock.py",
+      "limit": 300,
+      "current": 457,
+      "state": "grandfathered",
+      "adr": null
+    },
+    {
+      "path": "plugins/shipwright-changelog/scripts/hooks/cache_repair_lock.py",
+      "limit": 300,
+      "current": 457,
+      "state": "grandfathered",
+      "adr": null
+    },
+    {
+      "path": "plugins/shipwright-compliance/scripts/hooks/cache_repair_lock.py",
+      "limit": 300,
+      "current": 457,
+      "state": "grandfathered",
+      "adr": null
+    },
+    {
+      "path": "plugins/shipwright-deploy/scripts/hooks/cache_repair_lock.py",
+      "limit": 300,
+      "current": 457,
+      "state": "grandfathered",
+      "adr": null
+    },
+    {
+      "path": "plugins/shipwright-design/scripts/hooks/cache_repair_lock.py",
+      "limit": 300,
+      "current": 457,
+      "state": "grandfathered",
+      "adr": null
+    },
+    {
+      "path": "plugins/shipwright-iterate/scripts/hooks/cache_repair_lock.py",
+      "limit": 300,
+      "current": 457,
+      "state": "grandfathered",
+      "adr": null
+    },
+    {
+      "path": "plugins/shipwright-plan/scripts/hooks/cache_repair_lock.py",
+      "limit": 300,
+      "current": 457,
+      "state": "grandfathered",
+      "adr": null
+    },
+    {
+      "path": "plugins/shipwright-project/scripts/hooks/cache_repair_lock.py",
+      "limit": 300,
+      "current": 457,
+      "state": "grandfathered",
+      "adr": null
+    },
+    {
+      "path": "plugins/shipwright-run/scripts/hooks/cache_repair_lock.py",
+      "limit": 300,
+      "current": 457,
+      "state": "grandfathered",
+      "adr": null
+    },
+    {
+      "path": "plugins/shipwright-security/scripts/hooks/cache_repair_lock.py",
+      "limit": 300,
+      "current": 457,
+      "state": "grandfathered",
+      "adr": null
+    },
+    {
+      "path": "plugins/shipwright-test/scripts/hooks/cache_repair_lock.py",
+      "limit": 300,
+      "current": 457,
+      "state": "grandfathered",
+      "adr": null
+    },
+    {
+      "path": "shared/templates/hooks/cache_repair_lock.py",
+      "limit": 300,
+      "current": 457,
+      "state": "grandfathered",
+      "adr": null
     }
   ]
 }
