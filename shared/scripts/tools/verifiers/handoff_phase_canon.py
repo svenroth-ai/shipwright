@@ -5,8 +5,8 @@ phase's own completion record (``lib.phase_history``), both read from disk.
 
 **Why no run id.** iterate-2026-07-27-c3-phase-content-key keyed C3 on a run id
 supplied by the caller, and inherited every way its two production callers
-disagree about what that id is: ``phase_quality.resolve_run_id`` walks
-run-config → ``run_started`` event → loop vars → **session UUID**, while
+disagree about what that id is: ``phase_quality.resolve_run_id`` walks iterate
+run pointer → run-config → ``run_started`` → loop vars → **session UUID**, while
 ``phase_validators._run_canon_checks`` reads ``SHIPWRIGHT_RUN_ID`` from a
 subprocess that never inherits the skill's shell export. Neither yields the id
 the writer stamped, so C3 warned on every phase of every Stop. A check that

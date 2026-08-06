@@ -1,4 +1,4 @@
-"""Project / phase / run-id resolution.
+"""Project / phase / source resolution.
 
 Stop-hook resolution helpers — all best-effort, all fail-open.
 
@@ -6,8 +6,11 @@ Stop-hook resolution helpers — all best-effort, all fail-open.
 * :func:`phase_from_plugin_root` — ``CLAUDE_PLUGIN_ROOT`` → phase name.
 * :func:`cwd_is_strict_ancestor_of` + :func:`project_root_was_explicitly_selected`
   — monorepo auto-descent guard (plan v7).
-* :func:`resolve_run_id` — composite-fallback run_id resolution (§ 5.3).
 * :func:`resolve_source` — orchestrator / standalone / iterate classifier.
+
+:func:`resolve_run_id` (§ 5.3) now lives in ``_run_id`` and is re-exported here,
+so ``phase_quality.resolve_run_id`` callers are unchanged
+(iterate-2026-08-06-resolve-run-id-seam).
 
 Iterate Campaign B (B3): split out of the 1108-LOC monolith.
 """
@@ -30,7 +33,8 @@ from ._constants import PLUGIN_TO_PHASE  # noqa: E402
 # the marker set lives in exactly one place.
 from lib.project_root import is_shipwright_project  # noqa: E402
 from lib.events_log import resolve_events_path  # noqa: E402
-from lib.jsonl_records import read_jsonl_records  # noqa: E402
+# Re-export: run-id resolution moved to its own module, callers unchanged.
+from ._run_id import resolve_run_id  # noqa: E402,F401
 # Engagement predicate lives in _engagement, which imports nothing from this
 # package — so the edge is one-way and acyclic — and keeps resolve_engaged_phases
 # next to the other session-state resolvers.
@@ -138,63 +142,6 @@ def project_root_was_explicitly_selected(project_root: Path) -> bool:
     except OSError:
         return False
     return env_r == pr_r
-
-
-def resolve_run_id(project_root: Path, session_id: str) -> str:
-    """Composite-fallback run_id resolution (plan § 5.3).
-
-    Priority:
-    1. ``shipwright_run_config.json::run_id``
-    2. ``events.jsonl`` latest ``run_started`` event
-    3. ``SHIPWRIGHT_LOOP_ID`` + ``SHIPWRIGHT_LOOP_UNIT_ID``
-    4. ``session_id`` itself (standalone)
-
-    The ``isinstance(data, dict)`` check is load-bearing: valid JSON that is not
-    an object (``[1, 2]``, ``null``) made ``data.get`` raise ``AttributeError``,
-    which the ``except`` below does not catch. This runs FIRST in the Stop hook,
-    outside its per-phase ``try`` and after the once-per-Stop claim is taken — so
-    that raise killed the audit for EVERY phase and the sibling invocations then
-    no-oped on the burned claim.
-    """
-    run_config = project_root / "shipwright_run_config.json"
-    if run_config.exists():
-        try:
-            data = json.loads(run_config.read_text(encoding="utf-8"))
-            if isinstance(data, dict):
-                run_id = data.get("run_id")
-                if isinstance(run_id, str) and run_id:
-                    return run_id
-        except (json.JSONDecodeError, OSError):
-            pass
-
-    events_path = project_root / "shipwright_events.jsonl"
-    if events_path.exists():
-        try:
-            latest_run_id: str | None = None
-            # Record-boundary recovery via the shared SSoT: a merge=union merge can
-            # leave two records on one physical line, and the pre-fix per-line
-            # json.loads dropped BOTH — silently falling through to the session-id
-            # fallback and mis-attributing every audit row keyed on the resolved run
-            # (iterate-2026-07-20-events-record-boundary-remainder). read_jsonl_records
-            # returns only JSON objects, in wire order, so latest-wins is preserved.
-            for obj in read_jsonl_records(events_path).records:
-                if obj.get("type") == "run_started":
-                    rid = obj.get("run_id") or obj.get("id")
-                    if isinstance(rid, str) and rid:
-                        latest_run_id = rid
-            if latest_run_id:
-                return latest_run_id
-        except OSError:
-            pass
-
-    loop_id = os.environ.get("SHIPWRIGHT_LOOP_ID", "").strip()
-    loop_unit = os.environ.get("SHIPWRIGHT_LOOP_UNIT_ID", "").strip()
-    if loop_id and loop_unit:
-        return f"{loop_id}-{loop_unit}"
-    if loop_id:
-        return loop_id
-
-    return session_id or "unknown"
 
 
 def resolve_source(project_root: Path, phase: str) -> str:
