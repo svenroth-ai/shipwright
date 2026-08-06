@@ -1,0 +1,11 @@
+{
+  "run_id": "iterate-2026-08-05-p2-15-handoff-freshness",
+  "date": "2026-08-06T07:02:27.504820Z",
+  "event_at": "2026-08-05T19:42:54.206095+00:00",
+  "type": "bug",
+  "complexity": "medium",
+  "branch": "iterate/p2-15-handoff-freshness-derived",
+  "spec": ".shipwright/planning/iterate/2026-08-05-p2-15-handoff-freshness-derived.md",
+  "tests_passed": true,
+  "adr": "iterate-2026-08-05-p2-15-handoff-freshness"
+}

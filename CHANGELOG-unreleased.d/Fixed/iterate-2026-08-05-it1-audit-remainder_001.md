@@ -1,0 +1,1 @@
+Triage outbox GC: a buffered finding is no longer discarded just because an OLDER version of the same entry already reached the shared branch. Entries are now matched by content rather than by id, so an updated version survives until it is itself delivered (audit finding 14).

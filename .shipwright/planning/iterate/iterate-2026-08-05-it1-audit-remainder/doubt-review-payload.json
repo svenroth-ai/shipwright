@@ -1,0 +1,115 @@
+{
+  "stage": "doubt",
+  "doubts": [
+    {
+      "claim_under_doubt": "The canonical rule is strictly safer than the id-only rule it replaces ('direction of risk is safe').",
+      "disproof_attempt": "DISPROVED, round 1. Two same-id appends in the buffer: dedup_triage_lines keeps only the last at materialize, so the earlier never reaches a branch and never origin — and its canonical form is never in origin either, so it sits in the gitignored outbox forever. The old id-only rule drained it. Reproduced by probe.",
+      "what_would_resolve_it": "Drain superseded lines, or accept and record the accumulation.",
+      "lens": "correctness",
+      "severity": "high",
+      "file": "shared/scripts/lib/sweep_gc.py",
+      "line": 156,
+      "resolution": "ACCEPTED, then resolved the OTHER way in round 2. A drainage hatch was built and rejected twice for leaking in the DROP direction; on the third pass this reviewer argued the whole trade is inverted and the operator agreed. The hatch is DELETED. Without it the change retains a line the old rule dropped — strictly the fail-safe direction — so the accumulation is documented in the module docstring and carried by card trg-ed774f03 (P2.19g), which also records why the hatch must not simply be rebuilt."
+    },
+    {
+      "claim_under_doubt": "Canonical membership compares like with like across the origin and outbox sides.",
+      "disproof_attempt": "DISPROVED. Origin is decoded by run_git with errors='replace' (U+FFFD), the outbox by read_text_verbatim with errors='surrogateescape' (U+DCxx). A line carrying a non-UTF-8 byte therefore yields different strings on the two sides and can never match on either path. The old rule was immune for appends because it compared the ASCII id only. Separately FALSIFIED the adjacent hypothesis that a lone surrogate could raise UnicodeEncodeError out of json.dumps: dumps returns str and performs no encode, so the totality claim survives that attack.",
+      "what_would_resolve_it": "Decode both sides with the same handler, plus a test seeding a tracked line with a raw 0xFF byte.",
+      "lens": "data-loss",
+      "severity": "medium",
+      "file": "shared/scripts/lib/sweep_gc.py",
+      "line": 63,
+      "resolution": "DEFERRED by operator decision to card trg-94d3cb73 (P2.19f) and documented at the run_git_soft call where it bites. Direction is retention, never loss. Both remedies are disproportionate: run_git has 133 call sites, and bypassing run_git_soft locally would discard the TimeoutExpired handling audit findings 1 and 7 installed for this exact path."
+    },
+    {
+      "claim_under_doubt": "allow_nan=False keeps fail-safety true for the WHOLE numeric boundary.",
+      "disproof_attempt": "DISPROVED. It fires only on non-finite results. Underflow (1e-400 -> 0.0) and rounding (1.0 vs 1.0000000000000000001) produce finite doubles and still collide in the DROP direction. Also checked what does NOT collide, so the report is not a blanket: -0.0 vs 0.0 differ, NFC vs NFD differ, and escaped-vs-literal surrogate pairs denote the identical string so are benign.",
+      "what_would_resolve_it": "Narrow the docstring, or reject floats entirely.",
+      "lens": "correctness",
+      "severity": "medium",
+      "file": "shared/scripts/lib/sweep_gc.py",
+      "line": 103,
+      "resolution": "FIXED harder than suggested. parse_float and parse_constant hooks now reject the float TYPE, so overflow, underflow, rounding and NaN/Infinity are all outside the equivalence class. Pinned by a parametrized test over all four pairs."
+    },
+    {
+      "claim_under_doubt": "The e2e tests demonstrate that the pre-fix rule caused data loss.",
+      "disproof_attempt": "DISPROVED as written. The sweep COMMITS the refreshed line onto the iterate branch before the GC runs, so under the old rule the content was on a branch, not nowhere. Real loss needs the added premise that the branch is abandoned before merging, which neither test stated nor exercised — and neither e2e asserted anything about the branch at all.",
+      "what_would_resolve_it": "State the precise loss condition and assert branch_triage_lines.",
+      "lens": "test-validity",
+      "severity": "medium",
+      "file": "shared/tests/test_sweep_gc_canonical.py",
+      "line": 196,
+      "resolution": "ACCEPTED. Spec, module docstring and the e2e test now state the precise condition (lost iff the branch never reaches origin), and the test asserts where the content actually is at the moment of the drop decision."
+    },
+    {
+      "claim_under_doubt": "The remaining new assertions are falsifiable.",
+      "disproof_attempt": "Found the third of the run. test_numeric_reformatting_is_outside_the_equivalence_boundary passed VERBATIM against pre-fix code ({'n':1} has no event, so the old rule routed it to the text path and produced identical results) and could never fail against any variant of the new code either. Worse, its name generalised over a boundary that was leaky in exactly the direction it did not sample — the same failure mode as the FIX B fixture this run exists to correct.",
+      "what_would_resolve_it": "Rename it to what it pins, or extend it to the leaky cases.",
+      "lens": "test-validity",
+      "severity": "medium",
+      "file": "shared/tests/test_sweep_gc_canonical.py",
+      "line": 110,
+      "resolution": "ACCEPTED. Replaced by the parametrized float test above, which fails against every intermediate version of this change."
+    },
+    {
+      "claim_under_doubt": "The behaviour change is fully documented.",
+      "disproof_attempt": "DISPROVED by grep. Three documents still described the DELETED id-only rule, in the run whose thesis is that a docstring claimed what the code never did: sweep_outbox's own module docstring, shared/glossary.md, and docs/hooks-and-pipeline.md — the latter two designated authoritative and mandatory-read by CLAUDE.md.",
+      "what_would_resolve_it": "Update all three in this diff.",
+      "lens": "correctness",
+      "severity": "medium",
+      "file": "shared/glossary.md",
+      "line": 183,
+      "resolution": "ACCEPTED. All three updated in this diff."
+    },
+    {
+      "claim_under_doubt": "The added lock hold time is defensible.",
+      "disproof_attempt": "Could NOT break it, and corrected the brief in the fix's favour: the old parse_delivered already ran json.loads on every origin line, so the added work is one dumps per line. No pathological input constructible. Residual doubt is only that it was reasoned rather than measured, since this reviewer has no execution tool.",
+      "what_would_resolve_it": "One timed probe over the real origin log recorded in the confidence calibration.",
+      "lens": "performance",
+      "severity": "low",
+      "file": "shared/scripts/tools/triage_gc.py",
+      "line": 107,
+      "resolution": "MEASURED. On the real 1457-line tracked log: parse_delivered 25.5 ms, superseded_appends 14.1 ms, ~40 ms total, against a section budgeting 120 s for one commit. Also measured: all 1457 lines canonicalize, and ZERO superseded appends exist — the datum that decided the hatch's removal."
+    },
+    {
+      "claim_under_doubt": "The supersession hatch is worth its risk (round 2 of this review).",
+      "disproof_attempt": "Argued plainly, as requested. BENEFIT measured zero (no superseded appends in the real log) against harm that is retention in a gitignored buffer git clean -x deletes anyway — and the identical shape of limitation (D2) was deferred as a card in this same run, so building a deletion path for one while deferring the other is not a consistent line. COST: it was the only new way the diff could delete a line, and when it fires it deletes the LAST copy, since dedup kept that line off the branch by definition; FR-01.14 (quoted in this run's own Spec-Impact justification) says every entry written can afterwards be read back; its correctness was an agreement between two functions in two modules using two different append detectors on two different strings, with no test importing both; three attempts were needed and two leaked in the DROP direction.",
+      "what_would_resolve_it": "Delete the hatch and file the accumulation as a documented limitation like D2, or justify in writing why a measured-zero leak warrants the only irreversible deletion path in the diff.",
+      "lens": "data-loss",
+      "severity": "high",
+      "file": "shared/scripts/lib/sweep_gc.py",
+      "line": 168,
+      "resolution": "ACCEPTED AND ACTED ON. The operator was asked and chose deletion. superseded_appends, both hatch parameters, the call-site computation and the id set are gone; parse_delivered returns to a 2-tuple so the type system no longer offers a future caller the id-only anchor that caused finding 14. Four of this review's other doubts (whitespace axis, the 'both conditions' docstring, hatch observability, the missing property test) were resolved outright by the deletion."
+    },
+    {
+      "claim_under_doubt": "append_id's divergence from churn_merge._append_id is one-directional.",
+      "disproof_attempt": "Holds on the strictness axis (verified across four orderings) but NOT on a second axis the docstring never mentions: the two parse different strings. superseded_appends called append_id(line.strip()) while dedup calls json.loads on the RAW line, and str.strip() is Unicode-aware where JSON whitespace is exactly ' \\t\\n\\r'. A line padded with U+000C, U+000B, U+00A0, U+2028 or U+3000 was therefore named superseded while dedup KEEPS it. Then tried to make it reachable and FAILED: classify_triage_text blocks such a line first, so the sweep returns invalid before the GC runs. Real but fenced — by a third module neither function mentions.",
+      "what_would_resolve_it": "Key stage 2 on the raw line, or document the three-module dependency.",
+      "lens": "data-loss",
+      "severity": "medium",
+      "file": "shared/scripts/lib/sweep_canon.py",
+      "line": 135,
+      "resolution": "RESOLVED BY DELETION. append_id, append_id_of and superseded_appends no longer exist, so the divergence has no consumer. This doubt is a large part of why the hatch was judged not worth its risk."
+    },
+    {
+      "claim_under_doubt": "The new totality test proves that input class is survivable.",
+      "disproof_attempt": "The LEAF is total; the PATH is not, and the diff certified otherwise. churn_merge._append_id catches only (JSONDecodeError, ValueError), so a deeply nested line raises RecursionError out of dedup_triage_lines into sweep_outbox_to_branch, inside the lock, on step 5 — the abort three docstrings call unsurvivable. classify_triage_text has the same bare json.loads and cannot fence it. Pre-existing, but the green test now says the sweep survives an input that takes it down. Not speculative: jsonl_records.split_records catches RecursionError explicitly and documents it as plausible from a truncated write.",
+      "what_would_resolve_it": "Add RecursionError to churn_merge._append_id and classify_triage_text, or narrow the test docstring and file the path-level gap.",
+      "lens": "correctness",
+      "severity": "medium",
+      "file": "shared/scripts/lib/churn_merge.py",
+      "line": 231,
+      "resolution": "ACCEPTED, scoped out deliberately. The test docstring is narrowed to say it pins the canonicalization leaf ONLY and that the path-level gap remains; the gap is carried by card trg-ed774f03 (P2.19g). Not fixed here because churn_merge is cross_component machinery, which would pull integration-coverage obligations into a run scoped to the smallest certain change."
+    },
+    {
+      "claim_under_doubt": "is_delivered's silent-reinterpretation hazard was handled by growing parse_delivered's arity.",
+      "disproof_attempt": "Handled for one function and left open three functions below. is_delivered kept the same arity and types while parameter 2 changed meaning from an id set to a canonical-form set, so an old caller would pass ids positionally, get no error, and silently evaluate every line as not-delivered. Fail-safe in direction, but silence is the failure mode this change exists to end — and CLAUDE.md notes shared/ does not auto-sync to the plugin cache, so an old caller can genuinely coexist with a new callee.",
+      "what_would_resolve_it": "Make the membership sets keyword-only, or rename so an old call site fails loudly.",
+      "lens": "correctness",
+      "severity": "low",
+      "file": "shared/scripts/lib/sweep_gc.py",
+      "line": 214,
+      "resolution": "ACCEPTED. delivered_canonical and delivered_text are now KEYWORD-ONLY. Confirmed loud rather than silent: a leftover positional call site failed immediately with 'is_delivered() takes 1 positional argument but 3 were given' during verification."
+    }
+  ]
+}

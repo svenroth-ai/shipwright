@@ -1,0 +1,26 @@
+{
+  "stage": "spec",
+  "verdict": "PASS",
+  "rounds": 3,
+  "spec_citations": [],
+  "history": [
+    {
+      "round": 1,
+      "verdict": "REJECT",
+      "citation": "test_triage_gc_status_overlay.py:94 — the compaction assertion read plan.get(\"drop\", []), a key plan_gc does not return (it returns drop_ids/dropped/kept_count/total), so `assert ITEM_ID not in dropped` passed unconditionally, including against the pre-fix code. Presented in the mini-plan as verified; it was not.",
+      "resolution": "Rewritten to plan[\"drop_ids\"] with a plan[\"total\"] == 1 vacuity guard. Proven discriminating by reverting the triage_gc fix: pre-fix drop_ids == {'trg-human1'}, so the human decision WAS scheduled for deletion and the assertion fails."
+    },
+    {
+      "round": 2,
+      "verdict": "REJECT",
+      "citation": "sweep_gc.py superseded_appends — the AC-7 escape hatch was a back door to the id-only matching AC-1 forbids. superseded_appends mirrored the ordered list _materialize deduplicates but NOT dedup_triage_lines' FIRST stage (byte-identical collapse), and keyed its result by TEXT. So when one append text occurred at two indices, the AUTHORITATIVE occurrence's own text was in the superseded set; is_delivered then hit the hatch and dropped a refreshed record while origin held only the old version — finding 14 exactly. Reproduction: superseded_appends([v1,v2,v2]) == {v1, v2}. The new supersession tests never reached it because they used two DISTINCT texts, sampling the boundary only where it was safe and then asserting the general property.",
+      "resolution": "superseded_appends now mirrors BOTH dedup stages: byte-identical lines are collapsed (first-seen) before the keep-last-per-id pass, so each distinct append text occupies exactly one index and a text is returned iff a strictly later DISTINCT same-id append exists. Reproduction pinned by test_duplicated_authoritative_line_is_not_superseded."
+    },
+    {
+      "round": 3,
+      "verdict": "PASS",
+      "citation": null,
+      "resolution": "Back door closed for EVERY duplicate-text shape, verified across [v1,v2,v2], [v2,v1,v2], [X,' X'], [v1,'X',' X'] and a mixed non-canonicalizable case. Reviewer established the governing invariant: superseded_appends(L) is a SUBSET of what dedup_triage_lines(L) discards, because sweep_gc.append_id is strictly more conservative than churn_merge._append_id (it rejects float-bearing and duplicate-key objects), so sweep_gc's last index for an id is never later than dedup's. The two residual mismatches (stripped-vs-raw stage-1 key; non-canonicalizable appends skipped) both name FEWER lines than dedup discards — they point at retention, never at the drop direction. Reviewer explicitly endorsed mirroring dedup's own two stages over its own positional-keying suggestion, since AC-7's entire licence is 'dedup already discarded this line' and position-keying would have been correct by coincidence rather than by construction. AC-1..AC-6 unaffected; AC-8 total and unreachable through the hatch (a float-bearing line returns at the `form is None` text branch before the hatch); call site still passes worktree_lines_norm + outbox_lines including the quarantine rebind; findings 20-25/28/29 still out of scope; D2's deferral honestly recorded in the spec AND as a real card (trg-94d3cb73 confirmed present in the main-tree outbox, not a phantom id); new tests confirmed falsifiable at both levels."
+    }
+  ]
+}
