@@ -3,7 +3,7 @@
 iterate-2026-08-05-adopt-derived-evidence-rollout.
 
 Drives the REAL CLIs as subprocesses, exactly as the skill prose invokes them.
-Two chains are verified, and both are chains a unit test cannot close:
+Two chains, both of which a unit test cannot close:
 
 1. **stamp → commit → verify.** ``--stamp-adopted`` writes the worktree, the
    commit is built by pathspec, and ``--verify-commit`` reads the blobs back out
@@ -19,15 +19,13 @@ Two chains are verified, and both are chains a unit test cannot close:
    tree. So the ordered ``--restore`` → clean-tree claim is checked by running
    it, not by matching the suggestion string.
 
-**What is deliberately NOT tested here.** Adopt's Step H is agent-driven prose,
-not code — nothing orchestrates the adoption commit. A test that "runs Step F→H"
-could only re-implement that prose, and would then pass while the prose said
-something else. The ordering guarantee is held by the drift test over the prose
-(`plugins/shipwright-adopt/tests/test_adopt_evidence_disclosure.py`); what is
-mechanised here is the tool chain underneath it.
+**Deliberately NOT tested here.** Step H is agent-driven prose, not code, so a
+test that "runs Step F→H" could only re-implement that prose and would pass
+while the prose said something else. The ordering claim is held by the drift
+test over the prose (`shipwright-adopt/tests/test_adopt_evidence_disclosure.py`);
+what is mechanised here is the tool chain underneath it.
 
 Lives in integration-tests/ (a CI-run root) per ADR-044.
-
 @FR-01.10
 @FR-01.13
 """
@@ -77,9 +75,14 @@ def _tool(root: Path, *args: str) -> tuple[int, dict]:
     )
     try:
         return proc.returncode, json.loads(proc.stdout)
-    except json.JSONDecodeError:  # pragma: no cover — diagnostic path
-        pytest.fail(f"non-JSON stdout (rc={proc.returncode}):\n"
-                    f"{proc.stdout}\n{proc.stderr}")
+    except json.JSONDecodeError as exc:  # pragma: no cover — diagnostic path
+        # `raise`, not `pytest.fail`: CodeQL cannot know the latter is NoReturn,
+        # so it read this branch as an implicit `None` return and blocked the
+        # merge on a GHAS thread while every check was green.
+        raise AssertionError(
+            f"non-JSON stdout (rc={proc.returncode}):\n"
+            f"{proc.stdout}\n{proc.stderr}"
+        ) from exc
 
 
 @pytest.fixture
@@ -113,12 +116,10 @@ def test_the_adoption_commit_carries_the_stamp(onboarded: Path) -> None:
     code, report = _tool(onboarded, "--stamp-adopted", "--base", base)
     assert code == 0 and report["status"] == "ok", report
 
-    # Staged AFTER the stamp, which is what Step H now prescribes — the stamp
-    # writes the WORKTREE and the commit records the INDEX, so staging first
-    # would ship pre-stamp blobs. (Until the Stage-1 review, this line staged by
-    # pathspec and claimed that was "exactly as the skill prescribes"; the skill
-    # prescribed no staging at all, so the test was passing under a discipline
-    # the prose did not state.)
+    # Staged AFTER the stamp, as Step H now prescribes: the stamp writes the
+    # WORKTREE and the commit records the INDEX, so staging first ships pre-stamp
+    # blobs. Until the Stage-1 review this claimed to mirror a staging discipline
+    # the skill did not actually state anywhere.
     _git(onboarded, "add", "-A")
     _git(onboarded, "commit", "-m", f"chore(shipwright): adopt\n\nRun-ID: {RUN}")
     sha = _git(onboarded, "rev-parse", "HEAD").stdout.strip()
@@ -174,12 +175,11 @@ def test_a_writer_between_stamp_and_commit_is_caught(onboarded: Path) -> None:
     assert code == 0 and reverified["status"] == "verified", reverified
     assert amended != sha, "the amend produced no new commit"
 
-    # And that the amend PRESERVED the rest of the adoption. `git commit --amend
-    # -- <pathspec>` is git's partial-commit form: the whole commit survives only
-    # because git builds the false index from HEAD and overlays the pathspec.
-    # `verify_commit` looks at nothing outside the evidence set, so it would call
-    # a tree containing ONLY .shipwright/compliance/ "verified" — and this is the
-    # single repair instruction in a customer-facing skill (Stage-2 code review).
+    # And that the amend PRESERVED the rest of the adoption. `--amend -- <paths>`
+    # is git's partial-commit form: the commit survives whole only because git
+    # overlays the pathspec onto a false index from HEAD. `verify_commit` looks at
+    # nothing outside the evidence set, so it would call a tree containing ONLY
+    # .shipwright/compliance/ "verified" (Stage-2 code review).
     for survivor in (STAMPABLE[1], "CLAUDE.md"):
         assert _exists_in(onboarded, amended, survivor), (
             f"the amend dropped {survivor} — it rewrote the adoption commit "
