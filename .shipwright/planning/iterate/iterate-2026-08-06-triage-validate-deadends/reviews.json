@@ -329,10 +329,56 @@
     "spec": {
       "review_type": "spec",
       "status": "completed",
-      "findings_count": 0,
-      "findings": [],
+      "findings_count": 5,
+      "findings": [
+        {
+          "severity": null,
+          "category": "out-of-scope",
+          "file": "shared/scripts/lib/triage_validate.py:130-147 and the coupled second pass",
+          "line": null,
+          "finding": "ROUND-1 REJECT. The diff added a str-only identity rule on the APPEND side that no AC, ledger row, risk or mini-plan step described; the spec scoped the non-str-id rule to `status` records only. Two outcomes changed unrecorded: two appends sharing a non-str id no longer raise 'duplicate append', and an append+status pair sharing a non-str id was CLEAN before and is now quarantined. The ledger claimed a complete partition and '0 testable-but-untested' while two tests pinning this behaviour appeared in no row. — spec: 2026-08-06-triage-validate-deadends.md Confidence-pattern check + finding 18 / AC6; miniplan Step 1.2",
+          "suggestion": "2026-08-06-triage-validate-deadends.md Confidence-pattern check + finding 18 / AC6; miniplan Step 1.2",
+          "source": "spec-reviewer"
+        },
+        {
+          "severity": null,
+          "category": "unfaithful",
+          "file": "shared/tests/test_triage_validate.py::test_churn_resolver_triage_validation_shift",
+          "line": null,
+          "finding": "ROUND-1 REJECT. Row 24's evidence test asserted 'this change moves exactly two shapes across that line'. Three move; the third (duplicate append with a non-str id, previously reported and now silent) is a loosening on the same resolve_churn_conflicts path R7 exists to account for, and was neither asserted nor named. — spec: ledger row 24; miniplan R7",
+          "suggestion": "ledger row 24; miniplan R7",
+          "source": "spec-reviewer"
+        },
+        {
+          "severity": null,
+          "category": "unfaithful",
+          "file": "shared/tests/test_sweep_quarantine_dispositions.py",
+          "line": null,
+          "finding": "ROUND-1 REJECT. AC10 says 'as an ordered multiset' and row 18 claimed 'order and duplicates preserved', but the cited test asserted sorted(a+b+c) == sorted(outbox) plus lengths - a plain multiset check that discards order. No test pinned that two DISTINCT lines routed to the same list keep their input order. — spec: AC10; ledger row 18",
+          "suggestion": "AC10; ledger row 18",
+          "source": "spec-reviewer"
+        },
+        {
+          "severity": null,
+          "category": "out-of-scope",
+          "file": "shared/tests/test_sweep_drift_guards.py",
+          "line": null,
+          "finding": "ROUND-1 REJECT. A second pre-existing regression pin was rewritten (renamed, `result.status == 'invalid'` assertion removed) in a file the plan never declared; the Files table named only test_sweep_drift.py. The change was necessary and its docstring honest - the defect was that it was unrecorded. — spec: miniplan Test-Update-Klausel + Files table",
+          "suggestion": "miniplan Test-Update-Klausel + Files table",
+          "source": "spec-reviewer"
+        },
+        {
+          "severity": null,
+          "category": "unfaithful",
+          "file": "shared/scripts/lib/triage_validate.py, shared/scripts/lib/sweep_quarantine.py",
+          "line": null,
+          "finding": "ROUND-1 LOW x3. Row 16 described a 'write->read->validate' round-trip its test does not perform (in-memory only); row 25 said a glued line 'is materialized' but never asserted materialized_outbox; and two docstrings contradicted the diff (validate_triage_text still claimed callers were unaffected; the sweep_quarantine module header described only the orphan channel). — spec: ledger rows 16 and 25",
+          "suggestion": "ledger rows 16 and 25",
+          "source": "spec-reviewer"
+        }
+      ],
       "provider": null,
-      "completed_at": "2026-08-06T08:19:40.052543+00:00",
+      "completed_at": "2026-08-06T09:39:05.484435+00:00",
       "disposition": null,
       "recorded_by": "shipwright-build:spec-reviewer",
       "parse_status": null,
