@@ -1,0 +1,243 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-08-05-llm-review-gateway-route",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-05T20:24:58.905511+00:00",
+      "disposition": null,
+      "recorded_by": "claude",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 8,
+      "findings": [
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The detection logic (`gateway_configured`) may treat an empty string as a configured base URL (the spec says “set” but doesn’t clarify empty string). This would select the gateway route and then fail at API-call time with a potentially confusing error, rather than falling through to existing providers.",
+          "suggestion": "Make `gateway_configured` check that the env var is non‑empty (truthy) and add a test for an empty base URL to confirm it is ignored.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The `SHIPWRIGHT_REVIEW_GATEWAY_HEADER_<NAME>` mechanism copies the env‑var suffix exactly as the header name, keeping underscores. Many gateway APIs expect hyphens (e.g. `x-api-key`), and the current approach may not produce the correct header out‑of‑the‑box. The spec doesn’t define a mapping.",
+          "suggestion": "Either implement a conventional underscore‑to‑hyphen transformation, or clearly document that the header name is taken verbatim and show an example for a common header. This avoids operator confusion during live validation.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "Widening `_has_any_api_key()` in `review_runner.py` to accept a configured gateway may allow external review to be attempted when no per‑leg keys are set (only the base URL). The review will then error immediately with a missing‑key error, but the runner would have already decided to proceed, giving a less‑clear signal than if it refused at the capability check.",
+          "suggestion": "Consider checking that at least one of `SHIPWRIGHT_REVIEW_GATEWAY_KEY_MODEL_1` or `_KEY_MODEL_2` is set (or, ideally, both) before reporting external review as available. This is a small refinement, not a blocker.  Overall assessment: The implementation is methodical, well‑tested, and correctly separates the un‑locked gateway path from the existing policy‑constrained routes. The few edge‑case refinements above do not undermine the soundness of the approach; the change is ready for merge as planned.  SHIPWRIGHT_VERDICT: approve",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The arbitrary-header environment-variable contract is underspecified. Shell/CI environment variable names generally cannot conveniently express standard hyphenated header names such as `X-Portkey-Api-Key`; forwarding the suffix literally would produce `X_PORTKEY_API_KEY`, which many gateways/WAFs will not treat as equivalent. There is also no stated behavior for case normalization, empty suffixes/values, duplicate normalized names, or collision with SDK-generated headers such as `Authorization`.",
+          "suggestion": "Define and document one reversible naming convention, e.g. `SHIPWRIGHT_REVIEW_GATEWAY_HEADER_X_PORTKEY_API_KEY` maps to `X-Portkey-Api-Key` (or use an explicit encoding such as `__` for `-`). Reject malformed/empty header names, define collision precedence deliberately, and add tests for a real WAF-style hyphenated header plus an `Authorization` collision.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "security",
+          "file": null,
+          "line": null,
+          "finding": "The gateway base URL is an operator-supplied credential-bearing egress destination: it receives review prompts and the configured model keys. The plan names redaction helpers but does not specify URL validation, whether insecure `http://` endpoints are allowed, or tests proving that gateway keys and arbitrary header values cannot appear in returned `reason` fields, exceptions, logs, or diagnostic output. SDK/network exceptions can include request details, so merely defining redaction helpers is insufficient unless every gateway error path applies them.",
+          "suggestion": "Validate that the base URL is an absolute `https` URL before constructing the client (with a narrowly documented localhost/test exception only if needed). Apply `redact_all_configured_secrets()` at the common gateway error-reporting boundary before results are exposed, including both per-model keys and every configured header value. Add adversarial tests that raise exceptions containing each configured secret and assert no secret is present in the review result or captured diagnostics. Document that configuring this route authorizes prompt and credential egress to that endpoint.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "The stated test strategy is not actually mocked HTTP: replacing `openai.OpenAI` with a fake only verifies calls made to a test double. It does not validate OpenAI SDK request construction, base-URL path joining (especially whether `/v1` is expected), header serialization/merging, or parsing of a real SDK response object. This is particularly relevant because the primary compatibility claim is with heterogeneous “OpenAI-compatible” gateway products.",
+          "suggestion": "Keep unit tests with the fake client, but add at least one SDK-level mocked-transport/local ephemeral HTTP-server test that exercises the production `openai.OpenAI` client against a synthetic `/chat/completions` response. Assert the outbound URL, `Authorization` and custom headers, request model, and extraction of `response.model`. This can remain fully offline and does not require a new production abstraction or a live Portkey account.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "The new configuration surface is not listed for documentation or operator configuration updates. Without a documented exact base-URL format, required model/key pairs, header-name encoding, precedence behavior, and fail-closed semantics, operators can easily set only a base URL and unexpectedly disable otherwise working OpenRouter/direct reviews—as required by the route precedence, but difficult to diagnose safely.",
+          "suggestion": "Update the existing review/provider configuration documentation or environment-variable reference in the same change. Include a complete two-leg example, the required `/v1` convention if applicable, header mapping rules, the fact that gateway precedence is exclusive, and that missing gateway slots intentionally return errors rather than falling back.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The ledger verifies missing slot errors and a successful generic role pair, but does not explicitly verify that slot 1 and slot 2 each use their own distinct `MODEL_n` and `KEY_MODEL_n` values. A copy/paste error that uses model-1’s key for both legs, reverses the slots, or falls through to a non-gateway key would still plausibly pass the listed tests.",
+          "suggestion": "Add a two-leg test with intentionally distinct model names and keys that records each SDK constructor/request invocation and asserts the exact model/key pairing for `model-1` and `model-2`. Also assert gateway mode never reads or uses `OPENROUTER_API_KEY`/`OPENAI_API_KEY`, not merely that it does not invoke their route functions.  Overall, separating the gateway transport from the locked provider-routing policy is sound and appropriately scoped, and the explicit fail-closed routing decision is correct. The change should be revised to make the header and egress-security contracts concrete and to validate the actual SDK HTTP behavior rather than only a fake client. SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-08-05T21:00:33.723755+00:00",
+      "disposition": null,
+      "recorded_by": "claude",
+      "parse_status": "structured",
+      "raw_excerpt": "[deepseek] **Findings**\n\n- **Category:** edge-case  \n  **Severity:** low  \n  **Finding:** The detection logic (`gateway_configured`) may treat an empty string as a configured base URL (the spec says “set” but doesn’t clarify empty string). This would select the gateway route and then fail at API-call time with a potentially confusing error, rather than falling through to existing providers.  \n  **Suggestion:** Make `gateway_configured` check that the env var is non‑empty (truthy) and add a test for an empty base URL to confirm it is ignored.\n\n- **Category:** edge-case  \n  **Severity:** low  \n  **Finding:** The `SHIPWRIGHT_REVIEW_GATEWAY_HEADER_<NAME>` mechanism copies the env‑var suffix exactly as the header name, keeping underscores. Many gateway APIs expect hyphens (e.g. `x-api-key`), and the current approach may not produce the correct header out‑of‑the‑box. The spec doesn’t define a mapping.  \n  **Suggestion:** Either implement a conventional underscore‑to‑hyphen transformation, or clearly document that the header name is taken verbatim and show an example for a common header. This avoids operator confusion during live validation.\n\n- **Category:** risk  \n  **Severity:** low  \n  **Finding:** Widening `_has_any_api_key()` in `review_runner.py` to accept a configured gateway may allow external review to be attempted when no per‑leg keys are set (only the base URL). The review will then error immediately with a missing‑key error, but the runner would have already decided to proceed, giving a less‑clear signal than if it refused at the capability check.  \n  **Suggestion:** Consider checking that at least one of `SHIPWRIGHT_REVIEW_GATEWAY_KEY_MODEL_1` or `_KEY_MODEL_2` is set (or, ideally, both) before reporting external review as available. This is a small refinement, not a blocker.\n\n**Overall assessment:** The implementation is methodical, well‑tested, and correctly separates the un‑locked gateway path from the existing policy‑constrained routes. The few edge‑case […truncated]\n\n[openai] 1. **Category: edge-case**  \n   **Severity: medium**  \n   **Finding:** The arbitrary-header environment-variable contract is underspecified. Shell/CI environment variable names generally cannot conveniently express standard hyphenated header names such as `X-Portkey-Api-Key`; forwarding the suffix literally would produce `X_PORTKEY_API_KEY`, which many gateways/WAFs will not treat as equivalent. There is also no stated behavior for case normalization, empty suffixes/values, duplicate normalized names, or collision with SDK-generated headers such as `Authorization`.  \n   **Suggestion:** Define and document one reversible naming convention, e.g. `SHIPWRIGHT_REVIEW_GATEWAY_HEADER_X_PORTKEY_API_KEY` maps to `X-Portkey-Api-Key` (or use an explicit encoding such as `__` for `-`). Reject malformed/empty header names, define collision precedence deliberately, and add tests for a real WAF-style hyphenated header plus an `Authorization` collision.\n\n2. **Category: security**  \n   **Severity: high**  \n   **Finding:** The gateway base URL is an operator-supplied credential-bearing egress destination: it receives review prompts and the configured model keys. The plan names redaction helpers but does not specify URL validation, whether insecure `http://` endpoints are allowed, or tests proving that gateway keys and arbitrary header values cannot appear in returned `reason` fields, exceptions, logs, or diagnostic output. SDK/network exceptions can include request details, so merely defining redaction helpers is insufficient unless every gateway error path applies them.  \n   **Suggestion:** Validate that the base URL is an absolute `https` URL before constructing the client (with a narrowly documented localhost/test exception only if needed). Apply `redact_all_configured_secrets()` at the common gateway error-reporting boundary before results are exposed, including both per-model keys and every configured header value. Add adversarial tests that raise exceptions contain […truncated]",
+      "verdicts": {
+        "openai": "revise",
+        "deepseek": "approve"
+      }
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 4,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "spec",
+          "file": "plugins/shipwright-adopt/scripts/lib/review_runner.py",
+          "line": 38,
+          "finding": "review_runner.py's _has_any_api_key() gate didn't recognize a configured gateway (SHIPWRIGHT_REVIEW_GATEWAY_BASE_URL), so the gateway route was unreachable from its own named consumer, Adopt's Layer-3 review (FR-01.13). FIXED: gate now also checks SHIPWRIGHT_REVIEW_GATEWAY_BASE_URL, with a regression test (test_review_runner_gateway_reachable.py) pinning both the reachable and still-skips-with-nothing-configured cases.",
+          "suggestion": "Update _has_any_api_key() to also treat a configured gateway as configured.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "test",
+          "file": "shared/tests/test_llm_review_gateway_routing.py",
+          "line": 77,
+          "finding": "The fail-closed regression test only asserted result[\"provider\"]/success/per-key status, never that \"deepseek\"/\"openai\" keys were ABSENT from reviews — an accidental extra openrouter/direct execution could hide under keys the assertions never inspected. FIXED: added an exact-key-set assertion (set(result[\"reviews\"]) == {\"model-1\", \"model-2\"}).",
+          "suggestion": "Add assert set(result[\"reviews\"]) == {\"model-1\", \"model-2\"}.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "security",
+          "file": "shared/scripts/lib/external_review_gateway.py",
+          "line": 128,
+          "finding": "review_gateway()'s broad except Exception could let a misbehaving gateway/proxy echo the API key or header secrets back in an error body, and str(e) would carry that into the reason field — which review_assistant_ui_plan.py persists to disk for any non-success leg. FIXED: added _redact_secrets() (exact-substring redaction against the leg's own api_key + configured header values), documented as an accepted exact-match-only limitation, plus a defense-in-depth redact_all_configured_secrets() in llm_review.run_review()'s own fallback catch.",
+          "suggestion": "Scrub/truncate reason before it is persisted for the gateway leg, or document the risk.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "test",
+          "file": "shared/tests/test_llm_review_gateway.py",
+          "line": null,
+          "finding": "Every leg-level test exercised slot \"1\" only; a copy/paste bug specific to slot 2's f-string interpolation would not have been caught. FIXED: added test_gateway_leg_slot_2_reads_its_own_model_and_key_env_vars, calling _review_gateway directly with slot=\"2\".",
+          "suggestion": "Add one leg-level test that calls _review_gateway(..., \"2\", ...) directly.",
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": "code-reviewer",
+      "completed_at": "2026-08-05T20:53:15.044119+00:00",
+      "disposition": null,
+      "recorded_by": "claude",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 3,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "hidden coupling & blast radius",
+          "file": "shared/scripts/lib/llm_review.py",
+          "line": null,
+          "finding": "Claim under doubt: secrets can never leak through an exception raised on the gateway leg — run_review's own ThreadPoolExecutor catch (except Exception as e: reviews[name] = {\"status\": \"error\", \"reason\": str(e)}) had no redaction and cannot redact at that scope. Under the current code shape this second catch was unreachable for gateway secrets since review_gateway's try wraps its whole body, but that safety was incidental, not structural. FIXED: added redact_all_configured_secrets() applied in that outer catch too, plus a regression test (test_run_review_gateway_fallback_catch_also_redacts_secrets) that makes _review_gateway raise directly, bypassing its own internal handling, and asserts the aggregated result is still redacted.",
+          "suggestion": "Add a second redaction call in run_review's outer except for the gateway branch, and a test proving the fallback catch is not a silent leak path. DONE.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "boundary & contract",
+          "file": "shared/scripts/lib/external_review_gateway.py",
+          "line": null,
+          "finding": "Claim under doubt: _redact_secrets closes the echoed-secret leak for any misbehaving gateway — _redact_secrets does exact-substring matching; a gateway that re-encodes the secret (casing, URL-encoding, partial masking) would not match. Accepted as a known, documented limitation rather than building unreliable heuristic/regex redaction.",
+          "suggestion": "Documented explicitly in _redact_secrets' docstring rather than implying comprehensive coverage. Reasoned rebuttal accepted, no code change needed beyond the doc note (DONE).",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "boundary & contract",
+          "file": "shared/scripts/lib/external_review_gateway.py",
+          "line": null,
+          "finding": "Claim under doubt: _redact_secrets' docstring rationale cited review_runner.py (Adopt) as the caller that persists 'reason' to disk — Traced review_runner.py's actual writer: it only ever renders 'feedback', never 'reason' — so its own error-status legs never surface the secret-bearing field. The real at-risk consumer is review_assistant_ui_plan.py, which does write reason to disk for degraded/error legs. The fix still protects that real path correctly regardless of which file was cited; only the docstring's own example was wrong.",
+          "suggestion": "Corrected the docstring citation to review_assistant_ui_plan.py. DONE.",
+          "source": "doubt-reviewer"
+        }
+      ],
+      "provider": "doubt-reviewer",
+      "completed_at": "2026-08-05T20:53:41.894427+00:00",
+      "disposition": null,
+      "recorded_by": "claude",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 2,
+      "findings": [
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": "shared/scripts/lib/external_review_gateway.py:80 (in `gateway_headers`, the line `header_name = key[len(_HEADER_ENV_PREFIX):].replace(\"_\", \"-\")`)",
+          "line": null,
+          "finding": "If an operator sets the environment variable exactly `SHIPWRIGHT_REVIEW_GATEWAY_HEADER_` (empty suffix) with a non‑empty value, the derived header name becomes an empty string. Passing an empty header name to the HTTP client will cause a request failure with a confusing error instead of a clear misconfiguration message.",
+          "suggestion": "Add a guard to skip the header when `header_name` is empty, e.g. `if not header_name: continue`, so the invalid env var is harmless.  Overall assessment: The implementation faithfully addresses all acceptance criteria, includes thorough security hardening, and is well‑covered by mocked‑HTTP tests. The low‑severity edge case above does not affect correctness under typical operation. Ship as‑is. SHIPWRIGHT_VERDICT: approve",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "security",
+          "file": "shared/scripts/lib/external_review_gateway.py:146,183",
+          "line": null,
+          "finding": "Gateway error reasons can expose credentials embedded in `SHIPWRIGHT_REVIEW_GATEWAY_BASE_URL`. The insecure-URL validation returns the complete URL via `got {base_url!r}`, and SDK/network exceptions may also include the request URL. `_redact_secrets()` only removes per-leg API keys and custom-header values, not URL userinfo or query-string credentials. A configured URL such as `http://user:secret@gateway.example/v1` or one containing a token query parameter can therefore be persisted in callers’ error artifacts.",
+          "suggestion": "Do not include the raw configured URL in returned reasons; report only a sanitized origin/path or redact URL userinfo and sensitive query values. Include the base URL (or extracted URL credentials/query values) in the common redaction boundary and add a test using a credential-bearing URL.  Overall assessment: The routing, fail-closed behavior, generic reviewer roles, and coverage are otherwise aligned with the specification, but the gateway error-reporting path needs the URL-secret leak fixed before shipping.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-08-05T21:05:51.011909+00:00",
+      "disposition": null,
+      "recorded_by": "claude",
+      "parse_status": "structured",
+      "raw_excerpt": "[deepseek] - Category: edge-case\n- Severity: low\n- File: shared/scripts/lib/external_review_gateway.py:80 (in `gateway_headers`, the line `header_name = key[len(_HEADER_ENV_PREFIX):].replace(\"_\", \"-\")`)\n- Finding: If an operator sets the environment variable exactly `SHIPWRIGHT_REVIEW_GATEWAY_HEADER_` (empty suffix) with a non‑empty value, the derived header name becomes an empty string. Passing an empty header name to the HTTP client will cause a request failure with a confusing error instead of a clear misconfiguration message.\n- Suggestion: Add a guard to skip the header when `header_name` is empty, e.g. `if not header_name: continue`, so the invalid env var is harmless.\n\nOverall assessment: The implementation faithfully addresses all acceptance criteria, includes thorough security hardening, and is well‑covered by mocked‑HTTP tests. The low‑severity edge case above does not affect correctness under typical operation. Ship as‑is.\nSHIPWRIGHT_VERDICT: approve\n\n[openai] - Category: security\n- Severity: medium\n- File: `shared/scripts/lib/external_review_gateway.py:146,183`\n- Finding: Gateway error reasons can expose credentials embedded in `SHIPWRIGHT_REVIEW_GATEWAY_BASE_URL`. The insecure-URL validation returns the complete URL via `got {base_url!r}`, and SDK/network exceptions may also include the request URL. `_redact_secrets()` only removes per-leg API keys and custom-header values, not URL userinfo or query-string credentials. A configured URL such as `http://user:secret@gateway.example/v1` or one containing a token query parameter can therefore be persisted in callers’ error artifacts.\n- Suggestion: Do not include the raw configured URL in returned reasons; report only a sanitized origin/path or redact URL userinfo and sensitive query values. Include the base URL (or extracted URL credentials/query values) in the common redaction boundary and add a test using a credential-bearing URL.\n\nOverall assessment: The routing, fail-closed behavior, generic reviewer roles, and coverage are otherwise aligned with the specification, but the gateway error-reporting path needs the URL-secret leak fixed before shipping.\n\nSHIPWRIGHT_VERDICT: revise",
+      "verdicts": {
+        "openai": "revise",
+        "deepseek": "approve"
+      }
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": "spec-reviewer",
+      "completed_at": "2026-08-05T20:52:54.028641+00:00",
+      "disposition": null,
+      "recorded_by": "claude",
+      "parse_status": null,
+      "raw_excerpt": null
+    }
+  }
+}

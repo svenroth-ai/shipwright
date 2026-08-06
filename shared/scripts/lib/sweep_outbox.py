@@ -16,10 +16,12 @@ Three invariants make this loss-proof:
   branch-commit -> GC. A concurrent background producer appending to the outbox
   serializes against the ENTIRE sweep — it is never read-then-lost.
 * **Origin-delivered GC (Codex unlisted failure mode):** an outbox line is
-  dropped ONLY once present in ``origin/<default>``'s tracked log — by semantic
-  ``id`` for append lines (FIX B) + normalized text for status (see
-  :mod:`lib.sweep_gc`). A just-swept line stays until origin-delivered; re-sweeping
-  is harmless (``merge=union`` + dedup → exactly-once). NEVER reset-after-read.
+  dropped ONLY once present in ``origin/<default>``'s tracked log — matched by
+  CANONICAL FORM, with raw text for anything that has none (see
+  :mod:`lib.sweep_gc`; the earlier id-only rule for appends was audit finding 14).
+  A just-swept line stays until origin-delivered;
+  re-sweeping is harmless (``merge=union`` + dedup → exactly-once).
+  NEVER reset-after-read.
 * **No undelivered channel (iterate-2026-07-14-sweep-drift-dismiss-loss):** an
   append that lands in MAIN's TRACKED log is routed into the outbox first
   (:mod:`lib.sweep_drift`) — else it reaches no branch, its ``status`` looks like an
@@ -47,7 +49,7 @@ from lib.churn_merge import TRIAGE_LOG  # noqa: E402
 from lib.ci_env import ci_active  # noqa: E402
 from lib.git_base import HOOK_GIT_TIMEOUT, TIMEOUT_RETURNCODE, run_git_soft  # noqa: E402
 from lib.sweep_drift import commit_main_tracked_drift, plan_main_tracked_drift  # noqa: E402
-from lib.sweep_gc import delivered_membership, is_delivered  # noqa: E402
+from lib.sweep_gc import delivered_membership, partition_outbox  # noqa: E402
 from lib.sweep_quarantine import append_quarantine, decide as quarantine_decide, quarantine_path  # noqa: E402
 from lib.sweep_result import SweepResult, sweep_warnings  # noqa: E402,F401  (re-export: callers import both from here)
 from lib.sweep_text import normalize_lines, read_text_verbatim  # noqa: E402
@@ -160,9 +162,8 @@ def sweep_outbox_to_branch(
         # checkout); fall back to LF when the worktree log is absent/empty.
         eol = wt_eol if worktree_raw else "\n"
 
-        # Materialize + classify. Orphan-status lines that ORIGINATE IN THE OUTBOX are
-        # QUARANTINED rather than hard-blocking the whole sweep (genuine corruption —
-        # bad header / dup append / invalid JSON — still fails closed). See sweep_quarantine.
+        # Materialize + classify, then give every un-deliverable line a PROPORTIONAL
+        # disposition — quarantine / HOLD / deliver / block. Rules: sweep_quarantine.
         decision = quarantine_decide(
             worktree_lines_norm, outbox_lines, eol,
             known_append_ids=plan.known_append_ids,
@@ -178,14 +179,17 @@ def sweep_outbox_to_branch(
             done = commit_main_tracked_drift(plan, main_root, outbox_path)
             adopted, adopt_note = done.adopted, done.reason
 
-        quarantined = 0
-        if decision.action == "quarantine":
+        # Driven off the LISTS, not ``action``: quarantine and hold can occur in one sweep
+        # and ``action`` names only the stronger. Write order unchanged and load-bearing:
+        # quarantine, then branch commit, then the outbox rewrite LAST.
+        quarantined, held = len(decision.candidates), len(decision.held_lines)
+        if decision.candidates:
             append_quarantine(
                 quarantine_path(main_root), decision.candidates,
-                reason="orphan-status: no append anywhere in the combined triage log",
+                reason="un-deliverable status: no append anywhere in the combined triage log, or no usable id",
             )
-            outbox_lines = decision.trimmed_outbox
-            quarantined = len(decision.candidates)
+        # NOT ``outbox_lines``: putting branch content behind that name deletes HELD lines.
+        branch_outbox_lines = decision.materialized_outbox
         deduped_text = decision.deduped_text
 
         # Count genuinely-new lines (not already in the worktree tracked log).
@@ -193,7 +197,7 @@ def sweep_outbox_to_branch(
         # "\n"``), so the stripped membership set == the exact line set here —
         # strip is a CRLF/EOL absorber, not a content mutator.
         wt_set = {ln.strip() for ln in worktree_lines_norm if ln.strip()}
-        swept = sum(1 for ln in outbox_lines if ln.strip() and ln.strip() not in wt_set)
+        swept = sum(1 for ln in branch_outbox_lines if ln.strip() and ln.strip() not in wt_set)
 
         committed_subject = ""
         if deduped_text != worktree_raw:
@@ -241,9 +245,11 @@ def sweep_outbox_to_branch(
 
         # --- GC (still under the lock): drop ONLY origin-delivered lines ----
         # Survivors keep the OUTBOX's OWN EOL (gitignored → no cross-platform
-        # rewrite; OpenAI review). FIX B: membership is by semantic ``id`` for
-        # append lines (drift-immune) + stripped text for status/unparseable lines.
-        delivered_ids, delivered_text = delivered_membership(main_root, default_branch)
+        # rewrite; OpenAI review). FIX B: membership is by CANONICAL FORM for every
+        # JSON object (drift-immune, but content-sensitive) + stripped text for
+        # anything with no canonical form. The former id-only rule for appends was
+        # audit finding 14 — see ``lib/sweep_gc``.
+        membership = delivered_membership(main_root, default_branch)
 
         # RE-READ the outbox HERE rather than reusing the read from the top of the
         # section. Everything between the two — the drift adoption's own durable write,
@@ -260,20 +266,12 @@ def sweep_outbox_to_branch(
         # Two halves of one critical section disagreeing is the whole bug.
         current_lines, outbox_eol = normalize_lines(read_text_verbatim(outbox_path))
         # Quarantined candidates are still ON DISK — ``append_quarantine`` writes the
-        # quarantine log, not the outbox — so this rewrite is what removes them, and a
-        # re-read would otherwise resurrect them.
+        # quarantine log, not the outbox — so this rewrite removes them, and a re-read
+        # would otherwise resurrect them. CANDIDATES ONLY: a HELD line must survive here.
         quarantined_text = {ln.strip() for ln in decision.candidates} if quarantined else set()
 
-        survivors: list[str] = []
-        gc_dropped = 0
-        for ln in current_lines:
-            stripped = ln.strip()
-            if not stripped or stripped in quarantined_text:
-                continue
-            if is_delivered(stripped, delivered_ids, delivered_text):
-                gc_dropped += 1
-                continue
-            survivors.append(ln)
+        survivors, gc_dropped = partition_outbox(
+            current_lines, membership, quarantined_text)
         # Rewrite the outbox when GC trimmed delivered lines OR quarantine removed orphans
         # this run.
         if gc_dropped or quarantined:
@@ -288,9 +286,11 @@ def sweep_outbox_to_branch(
             return SweepResult(
                 status=status, reason=adopt_note or ("" if gc_dropped else "no_branch_change"),
                 swept=0, gc_dropped=gc_dropped, quarantined=quarantined, adopted=adopted,
+                held=held,
             )
 
         return SweepResult(
             status="committed", swept=swept, gc_dropped=gc_dropped, reason=adopt_note,
             quarantined=quarantined, adopted=adopted, commit_subject=committed_subject,
+            held=held,
         )

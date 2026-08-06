@@ -27,7 +27,15 @@
 - **Anti-Ratchet** — The hard rule that ratchets must not land. The
   pre-commit hook (this iterate, A.defense), the Stop hook
   (A.foundation), and the Group H detective audit (A.review) all
-  enforce it at different gates.
+  enforce it at different gates. **Two exist**, on different subjects —
+  the bloat one above (files, LOC) and the Suppression-Baseline below.
+- **Suppression-Baseline** — `shipwright_inline_suppressions.json`. The
+  anti-ratchet for inline `# nosemgrep` suppressions: per rule a frozen
+  `max_sites` + a `rationale_ref` naming a recorded decision. Exceeding
+  it blocks, as does a rule with no entry or one suppressed nowhere (a
+  *dead* entry); shrinking is advisory. The Accepted-Risk Register
+  deliberately has **no** `target` for these — see
+  `docs/security-ci-setup.md`.
 - **LOC-as-Router** — The principle that a line-count crossing
   ROUTES (escalates) a file to the reducibility reviewer instead of
   ruling it bloated. LOC is the cheap trigger; the reviewer is the
@@ -180,8 +188,8 @@
   which is out of contract. The
   Outbox is **swept** into the iterate PR branch by
   `setup_iterate_worktree` (`lib.sweep_outbox`, under the canonical triage
-  lock), then **GC'd** once the line is origin-delivered (by semantic `id`
-  for appends, normalized text for status flips). `triage.read_all_items`
+  lock), then **GC'd** once the line is origin-delivered (matched by canonical
+  form; raw text when it has none). `triage.read_all_items`
   **union-reads** tracked ∪ Outbox so Consumers see background findings
   immediately, before the sweep. The canon ignore block is self-healed
   into stale-cache managed repos by `lib.gitignore_selfheal` at the next

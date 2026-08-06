@@ -1,0 +1,1 @@
+Triage store: an unreadable span no longer reads as absence — corruption is reported on stderr (not a suppressible warning) and carried as data on `triage_cli list --json`, and a valid record behind a damaged prefix on the same physical line is now recovered instead of discarded (IT-1 audit 21/22).

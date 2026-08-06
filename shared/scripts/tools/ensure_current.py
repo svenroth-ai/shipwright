@@ -142,8 +142,14 @@ def main(argv: list[str] | None = None) -> int:
     print(json.dumps(result, indent=2))
     # Reuse integrate_main's status→exit mapping so the two CLIs agree on codes
     # (ok→0, blocked→2, events/triage_invalid→4, bad_ref→5, merge_failed→6,
-    # merge_commit_failed*→7, followup_commit_failed→8, else→3). already-current
-    # carries status "ok" → 0, the guard's happy path.
+    # merge_commit_failed*→7, followup_commit_failed→8, ledger_writeback_failed→9,
+    # else→3). already-current carries status "ok" → 0, the guard's happy path.
+    #
+    # The 9 was MISSING here while the comment already claimed the two agreed, so a lost
+    # run ledger exited 3 from this CLI and 9 from the other — and F11 prints "non-churn
+    # source conflict?" for anything non-zero, which is the wrong diagnosis for a merge
+    # that already landed. Found by the Stage-3 doubt review of P2.15, which made the
+    # status reachable for a second path; the drift itself predates that change.
     status = result.get("status")
     if status == "ok":
         return 0
@@ -161,6 +167,9 @@ def main(argv: list[str] | None = None) -> int:
         return 7
     if status == "followup_commit_failed":
         return 8
+    if status == "ledger_writeback_failed":
+        print(f"ABORT: {result.get('message')}: {result.get('failed')}", file=sys.stderr)
+        return 9
     return 3
 
 

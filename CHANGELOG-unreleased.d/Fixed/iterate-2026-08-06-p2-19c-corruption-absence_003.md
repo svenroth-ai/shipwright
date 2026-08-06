@@ -1,0 +1,1 @@
+`triage_repair.py` no longer deletes a record the reader recovers: it now uses the same record predicate, so a valid record behind a damaged prefix survives the repair rewrite instead of being quarantined away.

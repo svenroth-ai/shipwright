@@ -9,6 +9,7 @@ is the most data-loss-sensitive unit in the campaign, so nothing is mocked.
 
 from __future__ import annotations
 
+import json
 import subprocess
 import sys
 from pathlib import Path
@@ -48,6 +49,20 @@ def status(iid: str, new_status: str = "dismissed") -> str:
         f'{{"event":"status","id":"{iid}","ts":"2026-06-08T00:00:01Z",'
         f'"newStatus":"{new_status}"}}'
     )
+
+
+def reserialize(line: str) -> str:
+    """The SAME record with a different key order + insignificant whitespace.
+
+    THE definition of the equivalence class the GC's canonical-form membership
+    turns on, shared so the two test modules that assert it cannot drift apart
+    (Stage-2 code review, catalog D). NOT an added key: adding one is different
+    CONTENT, which the GC must KEEP (audit finding 14) — using it as the stand-in
+    for "re-serialized" is what made the FIX B tests assert that loss as correct
+    behaviour until iterate-2026-08-05-it1-audit-remainder.
+    """
+    obj = json.loads(line)
+    return json.dumps(dict(reversed(list(obj.items()))), indent=1).replace("\n", " ")
 
 
 def quarantine_text(work: Path) -> str:

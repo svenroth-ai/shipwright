@@ -35,7 +35,6 @@ from __future__ import annotations
 import json
 import os
 import sys
-import warnings
 from datetime import datetime, timezone
 from pathlib import Path
 from uuid import uuid4
@@ -259,22 +258,15 @@ def _ensure_header(project_root: Path | str) -> None:
 def _iter_raw_lines_at(path: Path) -> list[dict]:
     """Tolerant reader for ONE file — recover concatenated records, keep order.
 
-    A line holding several concatenated records (a writer left no trailing newline,
-    so the next writer appended onto its line) yields ALL of them rather than none:
-    this reader used to skip such a line whole, silently discarding every record on
-    it. Undecodable text still warns, but its valid neighbours survive and
-    the leaf's ``RecordRead.corrupt`` exposes it as data. Contract + rationale:
-    ``lib/jsonl_records.py`` (iterate-2026-07-18-outbox-newline-corruption).
+    Concatenated records on one physical line all survive, including after a damaged
+    prefix — which needs this store's record predicate so recovery cannot fabricate a
+    nested object as a record. Corruption goes to stderr via ``lib.triage_integrity``,
+    NOT ``warnings.warn`` (any global filter silences it — audit finding 22), and
+    stays retrievable as data. Contract: ``lib/jsonl_records.py``.
     """
-    result = _load_jsonl_records().read_jsonl_records(path)
-    for frag in result.corrupt:
-        # ASCII-only: surfaces on Windows cp1252 consoles.
-        warnings.warn(
-            f"Corrupt triage record at {path.name}:{frag.line_no} "
-            f"({len(frag.text)} bytes unrecoverable). Run triage_repair.py to "
-            f"quarantine it; the rest of the line was recovered.",
-            stacklevel=2,
-        )
+    integrity = load_shared_lib("triage_integrity")
+    result = _load_jsonl_records().read_jsonl_records(path, is_record=integrity.is_triage_record)
+    integrity.report_corruption(result.corrupt)
     return result.records
 
 
@@ -671,14 +663,19 @@ def mark_status(
     section. The precondition closes the Python producer/operator race — not
     every race.
 
-    **Write target is DERIVED (never a caller flag), under the lock:** idle main
-    with a delivery path (`should_route_to_outbox` — origin + HEAD==default) →
-    outbox, symmetric with `append_triage_item` (2026-06-12). Else a tracked-item
-    flip on idle main is undelivered drift (sweep delivers only the outbox;
-    `reconcile_main_triage` is manual-CLI-only post-D2) → blocks a hand pull,
-    never reaches origin; loss-proof via union-read + sweep + GC. Otherwise
-    residence-derived: outbox-only → outbox (no orphan/resurrect); tracked/both →
-    tracked (TRACKED-PREFERRED: a worktree flip ships in the PR).
+    **Write target is DERIVED (never a caller flag):** idle main with a delivery
+    path (`should_route_to_outbox` — origin + HEAD==default) → outbox, symmetric
+    with `append_triage_item` (2026-06-12); else a tracked-item flip on idle main is
+    undelivered drift (sweep delivers only the outbox; `reconcile_main_triage` is
+    manual-CLI-only post-D2) → blocks a hand pull, never reaches origin; loss-proof
+    via union-read + sweep + GC. Otherwise residence-derived: outbox-only → outbox
+    (no orphan/resurrect); tracked/both → tracked (TRACKED-PREFERRED: a worktree flip ships in the PR).
+
+    That first probe spawns three git subprocesses and reads nothing the lock
+    protects, so it runs BEFORE acquiring it (IT-1 audit finding 12; the lock is
+    shared with the D2 sweep). Always advisory — the lock never covered git refs —
+    but now staler by the lock wait plus the in-lock reads, and a REFUSED flip pays
+    a probe it skipped. Both accepted; moving it back in is what 12 forbids. RESIDENCE stays inside the lock.
 
     ``revisit_at`` (``YYYY-MM-DD``) is the day a parked entry returns to the
     open list by itself; rules in :mod:`lib.triage_defer`. Accepted ONLY on a
@@ -721,6 +718,9 @@ def mark_status(
             f"run /shipwright-adopt or append an item first"
         )
 
+    # Git-only half of the routing decision — OUTSIDE the lock (see docstring).
+    idle_main_routes_to_outbox = should_route_to_outbox(project_root)
+
     # Derive residence + write the status to the SAME store, under the lock.
     with _load_file_lock_cls()(_lock_path(project_root)):
         tracked_ids = _append_ids_at(_triage_path(project_root))
@@ -751,7 +751,7 @@ def mark_status(
         if expected is not None and previous not in expected:
             raise StatusPreconditionError(item_id, expected, previous)
         # Idle main → outbox (like append); else residence-derived. See docstring.
-        to_outbox = should_route_to_outbox(project_root) or (item_id in outbox_ids and item_id not in tracked_ids)
+        to_outbox = idle_main_routes_to_outbox or (item_id in outbox_ids and item_id not in tracked_ids)
 
         event = {
             "event": "status",

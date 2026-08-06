@@ -14,7 +14,7 @@ Covers:
 - JSON contract on both success and failure (stdout)
 - Markdown-injection safety: title with pipes/brackets/newlines is
   preserved on the wire but downstream escape_cell handles rendering
-- Schema shape parity vs hand-crafted reference item (only `frId` differs)
+- Schema shape parity vs hand-crafted reference item (`frId`/`launchPayload` differ)
 - subprocess invocation path (`uv run shared/scripts/tools/triage_add.py ...`)
 """
 
@@ -407,16 +407,16 @@ def test_schema_parity_only_fr_id_differs(tmp_path: Path, capsys: pytest.Capture
     # Schema parity: both items share identical key sets.
     assert set(ref.keys()) == set(cli.keys())
 
-    # Differing keys: id, ts, originalTs, title, frId. Everything else matches.
     common = {"source", "severity", "kind", "detail", "status",
               "evidencePath", "runId", "commit", "dedupKey",
-              "launchPayload", "suiteId", "eventId",
+              "suiteId", "eventId",
               "suggestedPriority", "suggestedDomain"}
     for key in common:
         assert ref[key] == cli[key], f"key {key!r} differs unexpectedly: {ref[key]!r} vs {cli[key]!r}"
 
     assert ref["frId"] is None
     assert cli["frId"] == "FR-01.01"
+    assert (ref["launchPayload"], cli["launchPayload"]) == (None, triage_add.DEFAULT_LAUNCH_PAYLOAD)
 
 
 # ---------------------------------------------------------------------------

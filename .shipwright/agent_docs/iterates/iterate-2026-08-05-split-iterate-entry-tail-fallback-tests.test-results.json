@@ -1,0 +1,50 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-08-05-split-iterate-entry-tail-fallback-tests",
+    "date": "2026-08-05",
+    "unit": {
+      "status": "pass",
+      "passed": 105,
+      "total": 106,
+      "note": "Behavior-preserving split of test_iterate_entry_encoding.py (which crossed the 300-line bloat guideline in iterate-2026-08-05-iterate-entry-tail-fallback-fail-closed, PR #565) into itself (161 lines, original decode-safety scope, trg-06216b9f) and a new sibling test_iterate_entry_tail_fallback.py (172 lines, the tail-fallback fail-closed fix, trg-e0a0f569). No test logic changed -- identical 105 passed, 1 skipped (symlink privilege) before and after the split."
+    },
+    "integration": {
+      "status": "n/a",
+      "reason": "no integration-test-relevant code touched; pure test-file reorganization"
+    },
+    "e2e": {
+      "status": "n/a",
+      "reason": "no UI or dev server touched"
+    },
+    "smoke": {
+      "status": "n/a",
+      "reason": "no startable server surface touched"
+    },
+    "pgtap": {
+      "status": "n/a",
+      "reason": "no RLS/migration touched"
+    },
+    "design_fidelity": {
+      "status": "n/a",
+      "reason": "no UI touched"
+    },
+    "degraded": [],
+    "test_completeness": {
+      "status": "n/a",
+      "justification": "Trivial complexity, behavior-preserving mechanical split of an existing test file into two files along its existing logical seam (encoding-safety vs. tail-fallback fix) -- no new behavior introduced, verified by an identical pass/skip count (105 passed, 1 skipped) before and after."
+    }
+  },
+  "coverage": {
+    "total": 80.2,
+    "measured_tier": "repo",
+    "source": "combined coverage.xml (all plugins + shared + integration)",
+    "measured_at": "2026-07-04T00:00:00Z"
+  },
+  "source_state": {
+    "run_id": "iterate-2026-08-05-split-iterate-entry-tail-fallback-tests",
+    "commit": "404bfbbcdaa85bcaaecc7484ae32d0ebe076b265",
+    "dirty": true,
+    "base": null,
+    "release": null
+  }
+}

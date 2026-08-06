@@ -31,6 +31,7 @@ import re
 from typing import Any
 
 __all__ = [
+    "GATEWAY_REVIEWERS",
     "HISTORICAL_REVIEWER_PAIRS",
     "REVIEWERS",
     "SENTINEL",
@@ -51,8 +52,17 @@ SENTINEL = "SHIPWRIGHT_VERDICT"
 #: supported read shape, but Gemini is never aliased into a new DeepSeek row.
 REVIEWERS: tuple[str, ...] = ("deepseek", "openai")
 HISTORICAL_REVIEWER_PAIRS: tuple[tuple[str, ...], ...] = (("gemini", "openai"),)
+#: Generic role pair for the operator-owned gateway route (llm_review.py's
+#: "gateway" provider). The gateway carries no model-identity lock, so the
+#: two legs are named by role — never aliased onto "deepseek"/"openai",
+#: which would misrepresent which route actually answered.
+GATEWAY_REVIEWERS: tuple[str, ...] = ("model-1", "model-2")
 _SUPPORTED_REVIEWER_SETS = frozenset(
-    {frozenset(REVIEWERS), *(frozenset(pair) for pair in HISTORICAL_REVIEWER_PAIRS)}
+    {
+        frozenset(REVIEWERS),
+        frozenset(GATEWAY_REVIEWERS),
+        *(frozenset(pair) for pair in HISTORICAL_REVIEWER_PAIRS),
+    }
 )
 
 VERDICTS: tuple[str, ...] = ("approve", "revise", "reject")
@@ -198,8 +208,9 @@ def contradiction_block(verdicts: dict[str, str]) -> dict[str, Any]:
         return {
             "detected": False, "comparable": False, "requires_resolution": True,
             "reason": (
-                "unexpected reviewer set; expected current deepseek/openai or "
-                f"historical gemini/openai, got {len(names)}: {pairs or 'none'}"
+                "unexpected reviewer set; expected current deepseek/openai, "
+                "gateway model-1/model-2, or historical gemini/openai, "
+                f"got {len(names)}: {pairs or 'none'}"
             ),
         }
 
