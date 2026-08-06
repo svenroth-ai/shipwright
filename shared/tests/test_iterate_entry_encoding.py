@@ -12,20 +12,14 @@ The sibling ``verifiers/_iterate_latest.py`` already catches ``UnicodeDecodeErro
 on the same kind of read, so the intended posture was settled — the two readers
 simply disagreed.
 
-**What this does and does not buy — stated precisely, because an earlier draft of
-this docstring overclaimed it.** An undecodable file is skipped, so the run's entry
-is absent from every EXACT-MATCH lookup, and the gates keyed on one (``code`` /
-``spec`` records, ADR presence, integration coverage) still refuse. It is NOT true
-that "every gate refuses without it": ``spec_checks._read_iterate_entry`` and
-``iterate_compliance._latest_iterate_entry`` TAIL-FALL-BACK to ``entries[-1]``, so a
-corrupt entry makes them hand back the most recent OTHER run, and S9 / S10 / W2 then
-decide on inherited ``category`` / ``complexity``. That substitution is PRE-EXISTING
-and not introduced here — it already happens for a malformed-JSON entry, which this
-reader has always skipped (both measured; see
-``test_a_corrupt_entry_substitutes_the_previous_run_in_tail_fallback_readers``).
-This change makes the non-UTF-8 class behave like the malformed-JSON class instead
-of crashing, which is strictly better than losing all 20 checks — but it does not
-close the tail-fallback hole. Fixing that is trg-e0a0f569.
+**What this does and does not buy.** An undecodable file is skipped, so the run's
+entry is absent from every EXACT-MATCH lookup, and the gates keyed on one (``code`` /
+``spec`` records, ADR presence, integration coverage) still refuse. It does NOT, by
+itself, make ``spec_checks._read_iterate_entry`` / ``iterate_compliance._latest_iterate_entry``
+correctly REFUSE a corrupt REQUESTED-run entry rather than tail-falling-back to a
+different run's data — that fix (trg-e0a0f569) and its tests live in the sibling
+``test_iterate_entry_tail_fallback.py``, split out once this file crossed the 300-line
+guideline.
 """
 
 from __future__ import annotations
@@ -113,39 +107,6 @@ def test_the_skip_is_announced_on_the_logger(tmp_path, caplog):
     rendered = [r.getMessage() for r in caplog.records]
     assert any("skip corrupt entry file" in m for m in rendered), rendered
     assert any(f"{_RUN}.json" in m and "utf-8" in m for m in rendered), rendered
-
-
-def test_a_corrupt_entry_substitutes_the_previous_run_in_tail_fallback_readers(tmp_path):
-    """Pins what skipping does NOT buy, so the limit is recorded rather than assumed.
-
-    ``spec_checks._read_iterate_entry`` and ``iterate_compliance._latest_iterate_entry``
-    end with ``return entries[-1]``, so a run whose own entry is unreadable gets handed
-    the most recent OTHER run — and S9 / S10 / W2 then branch on inherited ``category``
-    / ``complexity``. Asserted here in the fail-OPEN direction on purpose: this test
-    documents a hole, so it must fail if someone closes it, forcing the prose above and
-    trg-e0a0f569 to be revisited rather than silently going stale.
-
-    Both corruption classes are driven, because that is the whole scope argument: the
-    malformed-JSON case ALREADY behaved this way before this change (the reader has
-    always skipped it), so the tail fallback is pre-existing and the non-UTF-8 case is
-    merely joining it instead of crashing.
-    """
-    import sys as _sys  # noqa: PLC0415
-    _sys.path.insert(0, str(REPO_ROOT / "shared" / "scripts"))
-    from tools.verifiers import spec_checks as sc  # noqa: PLC0415
-
-    older = {"run_id": "iterate-2026-07-01-other", "date": "2026-07-01T00:00:00Z",
-             "type": "change", "complexity": "small", "branch": "b", "tests_passed": True}
-
-    for label, raw in (("non-utf8", _CP1252_ENTRY), ("malformed-json", b"{ not json")):
-        root = tmp_path / label
-        (root / ".shipwright" / "agent_docs" / "iterates").mkdir(parents=True)
-        _seed_entry_bytes(root, older["run_id"], json.dumps(older).encode("utf-8"))
-        _seed_entry_bytes(root, _RUN, raw)
-
-        got = sc._read_iterate_entry(root, _RUN)
-        assert got is not None and got["run_id"] == older["run_id"], (label, got)
-        assert got["complexity"] == "small", (label, got)
 
 
 # --- the legacy run-config reader --------------------------------------------

@@ -1,0 +1,58 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-08-05-prompt-scan-dynamic-import-fp",
+    "date": "2026-08-05",
+    "unit": {
+      "status": "passed",
+      "passed": 14857,
+      "total": 14857,
+      "note": "F0 canonical suite (run_test_suite.py): 18/18 units GREEN in 7.1 min, diff-coverage gate PASS (>=80% vs origin/main). Aggregate count derived from a --collect-only pass over the same 18 unit roots immediately after (integration-tests 475, shared/tests 7962, shared/scripts/tests 365, shared/scripts/tools/tests 497, plugins/* 4638) \u2014 post-hoc collection count, not F0's own emitted total (F0 discards per-unit JUnit reports on an all-green run)."
+    },
+    "integration": {
+      "status": "passed",
+      "passed": 475,
+      "total": 475
+    },
+    "e2e": {
+      "status": "n/a",
+      "reason": "no browser/UI surface; test-only change with zero production-code diff"
+    },
+    "smoke": {
+      "status": "n/a",
+      "reason": "no startable server surface touched by this change"
+    },
+    "pgtap": {
+      "status": "n/a",
+      "reason": "no database involved"
+    },
+    "design_fidelity": {
+      "status": "n/a",
+      "reason": "no UI surface"
+    },
+    "surface_verification": {
+      "surface": "none",
+      "tests_run": 0,
+      "exit_code": 0,
+      "evidence_path": ".shipwright/runs/iterate-2026-08-05-prompt-scan-dynamic-import-fp/surface_verification.json",
+      "justification": "Test-only fix (normalize __import__() literals to top-level imports in shared/tests) with zero production-code changes; not a feature or UI change; BUG at small complexity without touches_io_boundary, so the Phase Matrix does not require E2E authoring/execution. No API/store/UI/message-contract surface is touched."
+    },
+    "test_completeness": {
+      "status": "n/a",
+      "justification": "Behavior-preserving import-style normalization: __import__(\"json\")/__import__(\"os\") and the top-level `import json`/`import os` equivalents bind the identical module object, so no new or changed testable behavior is introduced. Verified two ways: (1) the existing suites for both files (17/17 tests) pass unchanged before and after; (2) negative control with the prompt-injection scanner \u2014 2 medium PY_DYNAMIC_IMPORT findings before the fix, 0 after, scoped to shared/tests (592 files), matching the CI artifact's exact file/line/rule for run 30996996377."
+    },
+    "degraded": []
+  },
+  "coverage": {
+    "total": 80.2,
+    "measured_tier": "repo",
+    "source": "combined coverage.xml (all plugins + shared + integration)",
+    "measured_at": "2026-07-04T00:00:00Z"
+  },
+  "source_state": {
+    "run_id": "iterate-2026-08-05-prompt-scan-dynamic-import-fp",
+    "commit": "c8ecb64a28f1f65bc349e772507116d8b535b43e",
+    "dirty": true,
+    "base": null,
+    "release": null
+  }
+}

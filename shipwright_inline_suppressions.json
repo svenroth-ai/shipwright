@@ -1,0 +1,65 @@
+{
+  "schema": 1,
+  "_readme": [
+    "Anti-ratchet baseline for inline `# nosemgrep` suppressions.",
+    "",
+    "An inline suppression silences a real security finding at one source site.",
+    "The accepted-risk register (shipwright_accepted_risks.yaml) deliberately has",
+    "NO target for it, because an offline reconciler would have to mirror Semgrep",
+    "and would drift, and because the register's defining field -- `expires` -- does",
+    "not fit a permanent false positive. That decision is recorded in",
+    "iterate-2026-08-05-inline-suppression-ratchet. THIS file is the control that",
+    "stands in its place.",
+    "",
+    "The rule: measured sites for a rule may not EXCEED `max_sites`. A rule with no",
+    "entry at all blocks too, so a new suppression cannot arrive unrecorded. So does a",
+    "file that could not be read -- a partial count is a bypass, not a warning.",
+    "",
+    "A count that SHRINKS is advisory: tighten `max_sites` to lock the improvement in.",
+    "The ONE reduction that blocks is a rule suppressed NOWHERE -- a `dead` entry.",
+    "Nothing in the tree corresponds to it any more, so it can never again be checked",
+    "against the thing it describes; delete it in the same change that removes the",
+    "last site. (This is the register's own STALE, under another name.)",
+    "",
+    "To add a suppression you must, in the same change: raise `max_sites`, and cite",
+    "a `rationale_ref` NAMING a recorded decision -- an ADR number, an",
+    "iterate-YYYY-MM-DD-slug run id, or a #NNN issue/PR. Prose like 'TODO' is",
+    "rejected. Enforced by shared/tests/test_inline_suppressions_repo_guard.py.",
+    "",
+    "Counts come from git-tracked source only -- prose and JSON/JSONL are excluded,",
+    "because a suppression comment cannot be in effect there. Check locally with:",
+    "  uv run shared/scripts/tools/inline_suppressions_cli.py check --project-root ."
+  ],
+  "rules": [
+    {
+      "rule": "python.lang.compatibility.python36.python36-compatibility-Popen1",
+      "max_sites": 2,
+      "rationale_ref": "iterate-2026-08-05-inline-suppression-ratchet",
+      "statement": "Not a security finding: the rule flags Popen's `encoding`/`errors` kwargs as unavailable before Python 3.6. This project requires 3.11+ (pyproject.toml), so the incompatibility it warns about cannot occur."
+    },
+    {
+      "rule": "python.lang.compatibility.python36.python36-compatibility-Popen2",
+      "max_sites": 2,
+      "rationale_ref": "iterate-2026-08-05-inline-suppression-ratchet",
+      "statement": "Sibling of Popen1 and suppressed at the same two sites for the same reason: a pre-3.6 compatibility warning on a codebase pinned to 3.11+."
+    },
+    {
+      "rule": "python.lang.security.audit.dynamic-urllib-use-detected.dynamic-urllib-use-detected",
+      "max_sites": 6,
+      "rationale_ref": "iterate-2026-08-05-inline-suppression-ratchet",
+      "statement": "Every urllib call site here takes an operator-supplied configuration URL -- the deploy target, the smoke-test target (two sites), the dev-server health probe, the performance-budget probe, and the OpenRouter review endpoint -- never user input reaching the process from outside the repo. The rule flags any non-literal URL and cannot distinguish a config-derived one from an attacker-derived one."
+    },
+    {
+      "rule": "python.lang.security.audit.non-literal-import.non-literal-import",
+      "max_sites": 9,
+      "rationale_ref": "iterate-2026-08-05-inline-suppression-ratchet",
+      "statement": "The ADR-044/045 shared-leaf loader imports first-party sibling modules by computed name. Every site constrains the name to a hard-coded allowlist of first-party identifiers before importing; none accepts an externally-supplied module name."
+    },
+    {
+      "rule": "python.lang.security.audit.subprocess-shell-true.subprocess-shell-true",
+      "max_sites": 1,
+      "rationale_ref": "iterate-2026-08-05-inline-suppression-ratchet",
+      "statement": "The test runner executes a command string from the version-controlled shipwright profile (testing.commands.*), which is project-internal configuration. Shell semantics are required because those profile entries are written as shell command lines."
+    }
+  ]
+}

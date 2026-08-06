@@ -10,7 +10,9 @@ Split out of the monolithic ``orchestrator.py`` in Campaign B5
 """
 from __future__ import annotations
 
+import json
 import os
+import sys
 import uuid
 from datetime import datetime, timezone
 from pathlib import Path
@@ -18,8 +20,9 @@ from typing import Any, Optional
 
 from phase_state_machine import freeze_run_conditions, initial_phase_spec
 
-from .config_io import load_run_config, save_run_config
+from .config_io import RunConfigUnreadable, read_run_config, save_run_config
 from .constants import (
+    CONFIG_NAME,
     DEFAULT_RUN_MODE,
     LEGACY_MODE_MESSAGE,
     LEGACY_MULTI_SESSION,
@@ -114,8 +117,32 @@ def create_config(
     now_iso = datetime.now(timezone.utc).isoformat()
     run_id = _new_run_id()
 
-    # Merge: carry over completed_steps from standalone invocations (legacy v1 shape)
-    existing = load_run_config(project_root)
+    # Merge: carry over completed_steps from standalone invocations (legacy v1 shape).
+    #
+    # BEST-EFFORT, by category. This is the documented recovery path — an unusable
+    # config is what the operator is told to fix by deleting and re-running — so
+    # damaged CONTENT must not stop it: we are here to replace that file, and the
+    # only thing lost is a merge of steps we cannot read anyway. The tolerant
+    # reader would have crashed on the `decode` arm, which it propagates, making
+    # the advertised recovery impossible for a non-UTF-8 file.
+    #
+    # An `io` failure still propagates: it will defeat the write below regardless,
+    # and "delete it and re-run" is the wrong thing to tell someone whose file is
+    # merely unreadable by permissions.
+    try:
+        existing, _present = read_run_config(project_root)
+    except RunConfigUnreadable as exc:
+        if exc.category == "io":
+            raise
+        print(json.dumps({
+            "warning": "Replacing an unusable orchestrator config",
+            "error_category": "validation",
+            "what_failed": f"Read the prior {CONFIG_NAME} to merge completed_steps",
+            "exception": exc.detail,
+            "alternative": "Prior completed_steps were NOT merged; the new config starts clean",
+        }), file=sys.stderr)
+        existing = {}
+
     prior_completed: list[str] = []
     if existing.get("standalone") and existing.get("completed_steps"):
         prior_completed = [s for s in existing["completed_steps"] if s in pipeline]

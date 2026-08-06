@@ -267,7 +267,7 @@ See `references/escape-hatch.md` and `references/iteration-planning.md` (handoff
 
 ### F0: Fresh Verification Gate
 
-See [F0](references/F0.md). Leak-guard (`check_iterate_isolation.py --stage f0`), then full test suite. STOP on any failure.
+See [F0](references/F0.md). Leak-guard (`check_iterate_isolation.py --stage f0`), then the mirrored merge gates where the project has them (`scripts/verify_local.py`, guarded on the file existing), then full test suite. STOP on any failure.
 
 ### F0.5: End-to-End Verification Gate
 

@@ -1,0 +1,378 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-08-05-wire-local-guard-scripts",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-05T20:54:05.315676+00:00",
+      "disposition": null,
+      "recorded_by": "step-7-self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 11,
+      "findings": [
+        {
+          "severity": "low",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "The hook wrapper is designed to be silent on stdout, but there is no mention of suppressing or capturing stderr. `check_required_checks.py` may emit warnings or errors to stderr (e.g., from `gh` CLI, Python stack traces) that would appear in the session‑start log even though the wrapper exits 0.",
+          "suggestion": "Ensure the wrapper also redirects stderr to `subprocess.DEVNULL` unless the design intentionally allows stderr to appear. Extend the integration test (AC-6) to verify that the chain produces no unexpected stderr as well.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The subprocess call to the producer has no timeout. If `gh` hangs due to network stalls or a frozen process, the session‑start chain could be delayed indefinitely.",
+          "suggestion": "Pass a reasonable timeout (e.g., 30 seconds) to `subprocess.run()` and treat a timeout as a fail‑soft condition (exit 0, no output).",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "The wrapper imports `lib.project_root.resolve_project_root()` to decide whether it is inside a Shipwright‑managed project. If that import fails (e.g., outside a project, missing library), the exception must be caught gracefully; the plan mentions “any unexpected exception are swallowed” but does not explicitly list `ImportError`.",
+          "suggestion": "Explicitly catch `ImportError` in the wrapper’s guard so the hook becomes a true no‑op in any environment where the library is absent.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "Should the producer file a triage card unsuccessfully (e.g., API rate limit, repository renamed), the wrapper silently exits 0. While the design accepts fail‑soft operation, complete silence means the operator will not notice the producer failed for reasons other than missing `gh`.",
+          "suggestion": "Consider writing a brief single‑line warning to a designated log file (e.g., `shipwright.log`) rather than displaying nothing, keeping the hook’s stdout/stderr free for the session schema.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "The mini‑plan states the wrapper will “drive the producer and let it file its own card” without specifying how the subprocess invocation passes the required `--project-root` argument (the producer accepts `--project-root`/`--repo`). A missing argument could cause the producer to fail silently.",
+          "suggestion": "Explicitly include passing `--project-root` or `--repo` using the resolved project root in the subprocess command line, and include this in the unit tests.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "The plugin-cache synchronization is scheduled “after merge,” but both `hooks.json` and `F0.md` are runtime-distributed plugin assets. If the generated cache/marketplace artifacts are committed or tested as part of the repository, the merged PR will either be inert for installed users or fail cache-sync validation until a separate follow-up change.",
+          "suggestion": "Run `scripts/update-marketplace.sh` and `check_plugin_cache_sync.py --strict` before merge, include every generated runtime/cache artifact in this PR where repository convention requires it, and make the integration test exercise the same manifest/cache path used at runtime. If cache publication is intentionally external, name the release/deployment prerequisite explicitly and ensure it is atomic with this merge.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "The proposed F0 instruction describes an existence guard in prose, but its shown command is unconditional. An agent or operator following only the code block will attempt to run a nonexistent file in consumer projects, violating AC-2. The planned anchor test could also pass merely by finding words such as “exists” and “skip,” without proving the command is guarded.",
+          "suggestion": "Put the guard in the executable snippet itself, for example an explicit `if [ -f ... ]` block, and run from the resolved project root so `uv` resolves the intended project. Test for the actual conditional structure and ordering, not only nearby prose and command text.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "The wrapper’s subprocess contract is underspecified. Hook processes may have an arbitrary current directory, while `check_required_checks.py` has import/path behavior called out as fragile. “Drive the producer” must define the absolute producer path, interpreter, working directory, and explicit `--project-root`/`--repo` arguments; otherwise it can work when run from this repository and fail from an installed plugin cache or consumer project.",
+          "suggestion": "Invoke the producer with `sys.executable` and an absolute path derived from the wrapper location, use `cwd=resolved_project_root`, and pass the resolved root/repository explicitly using an argv list. Add a test that runs the registered hook from a non-root working directory against a fixture consumer project.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "“Always exit 0, always print nothing” is not guaranteed merely by swallowing the producer’s return code. A subprocess can emit producer or `gh` diagnostics to inherited stderr, and an unreachable `gh` invocation can stall SessionStart indefinitely. Catching every unexpected exception also makes a broken wrapper silently ineffective with no operational signal.",
+          "suggestion": "Redirect/capture both child stdout and stderr, set a bounded subprocess timeout, and catch `Exception` rather than control-flow exceptions such as `KeyboardInterrupt`. Preserve fail-soft exit behavior, but record unexpected failures through an existing debug log/diagnostic channel that is not hook stdout; test stderr silence and timeout behavior in addition to the missing-`gh` case.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "A producer that files a triage card now runs once per SessionStart. The plan tests that one card can be filed, but not that repeated sessions with unchanged drift do not create duplicate cards or repeatedly mutate triage state. The live `Prepare review request` divergence makes this immediately relevant after rollout.",
+          "suggestion": "Confirm and test the producer’s idempotency/deduplication key by running it twice against the same fixture drift and asserting one open artifact/card remains. If the producer is not idempotent, add deduplication in the producer’s existing card-creation path rather than in this wrapper.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "security",
+          "file": null,
+          "line": null,
+          "finding": "The new automatic execution expands the set of consumer-project-controlled values involved in a process that uses the operator’s authenticated `gh` session. The plan says “subprocess” but does not explicitly constrain command construction or output handling.",
+          "suggestion": "Use `subprocess.run(..., shell=False)` with a fixed executable and argv list; never interpolate project, workflow, or repository values into a shell command. Ensure captured diagnostics and generated triage content do not include `gh` credentials, headers, or raw error output.  Overall, the placement decisions are sound and the split between an F0 verdict and a fail-soft SessionStart producer is well justified. The implementation should be revised to make the F0 guard executable, make subprocess/runtime-cache behavior deterministic, and prove repeated producer runs are safe. SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-08-05T20:32:30.628106+00:00",
+      "disposition": null,
+      "recorded_by": "external_review.py",
+      "parse_status": "structured",
+      "raw_excerpt": "[deepseek] ## Review Findings\n\n- **Category:** risk\n  **Severity:** low\n  **Finding:** The hook wrapper is designed to be silent on stdout, but there is no mention of suppressing or capturing stderr. `check_required_checks.py` may emit warnings or errors to stderr (e.g., from `gh` CLI, Python stack traces) that would appear in the session‑start log even though the wrapper exits 0.\n  **Suggestion:** Ensure the wrapper also redirects stderr to `subprocess.DEVNULL` unless the design intentionally allows stderr to appear. Extend the integration test (AC-6) to verify that the chain produces no unexpected stderr as well.\n\n- **Category:** edge-case\n  **Severity:** low\n  **Finding:** The subprocess call to the producer has no timeout. If `gh` hangs due to network stalls or a frozen process, the session‑start chain could be delayed indefinitely.\n  **Suggestion:** Pass a reasonable timeout (e.g., 30 seconds) to `subprocess.run()` and treat a timeout as a fail‑soft condition (exit 0, no output).\n\n- **Category:** dependency\n  **Severity:** low\n  **Finding:** The wrapper imports `lib.project_root.resolve_project_root()` to decide whether it is inside a Shipwright‑managed project. If that import fails (e.g., outside a project, missing library), the exception must be caught gracefully; the plan mentions “any unexpected exception are swallowed” but does not explicitly list `ImportError`.\n  **Suggestion:** Explicitly catch `ImportError` in the wrapper’s guard so the hook becomes a true no‑op in any environment where the library is absent.\n\n- **Category:** risk\n  **Severity:** low\n  **Finding:** Should the producer file a triage card unsuccessfully (e.g., API rate limit, repository renamed), the wrapper silently exits 0. While the design accepts fail‑soft operation, complete silence means the operator will not notice the producer failed for reasons other than missing `gh`.\n  **Suggestion:** Consider writing a brief single‑line warning to a designated log file (e.g., `shipwright.log […truncated]\n\n[openai] 1. **Category: dependency**\n   **Severity: high**\n   **Finding:** The plugin-cache synchronization is scheduled “after merge,” but both `hooks.json` and `F0.md` are runtime-distributed plugin assets. If the generated cache/marketplace artifacts are committed or tested as part of the repository, the merged PR will either be inert for installed users or fail cache-sync validation until a separate follow-up change.\n   **Suggestion:** Run `scripts/update-marketplace.sh` and `check_plugin_cache_sync.py --strict` before merge, include every generated runtime/cache artifact in this PR where repository convention requires it, and make the integration test exercise the same manifest/cache path used at runtime. If cache publication is intentionally external, name the release/deployment prerequisite explicitly and ensure it is atomic with this merge.\n\n2. **Category: approach**\n   **Severity: medium**\n   **Finding:** The proposed F0 instruction describes an existence guard in prose, but its shown command is unconditional. An agent or operator following only the code block will attempt to run a nonexistent file in consumer projects, violating AC-2. The planned anchor test could also pass merely by finding words such as “exists” and “skip,” without proving the command is guarded.\n   **Suggestion:** Put the guard in the executable snippet itself, for example an explicit `if [ -f ... ]` block, and run from the resolved project root so `uv` resolves the intended project. Test for the actual conditional structure and ordering, not only nearby prose and command text.\n\n3. **Category: dependency**\n   **Severity: medium**\n   **Finding:** The wrapper’s subprocess contract is underspecified. Hook processes may have an arbitrary current directory, while `check_required_checks.py` has import/path behavior called out as fragile. “Drive the producer” must define the absolute producer path, interpreter, working directory, and explicit `--project-root`/`--repo` arguments; otherwise  […truncated]",
+      "verdicts": {
+        "openai": "revise",
+        "deepseek": "approve"
+      }
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 9,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "shared/scripts/hooks/check_required_checks_hook.py",
+          "line": null,
+          "finding": "F7 fallback predicate was WIDER than the canonical one and the docstring cited track_tool_calls.py falsely; a bare .shipwright/ would have spent three authenticated gh calls on a stranger's repository.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "performance",
+          "file": "shared/scripts/hooks/check_required_checks_hook.py",
+          "line": null,
+          "finding": "Unthrottled network producer on SessionStart, while the cited precedent (import_github_findings.py) IS throttled - the throttle is what makes a network call acceptable in a chain that runs before the session opens.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "shared/scripts/hooks/check_required_checks_hook.py",
+          "line": null,
+          "finding": "TIMEOUT_SECONDS=45 wrong in both directions: below the producer's 210s worst case and ABOVE the 30s cap test_hook_output_schema_compliance puts on the whole chain.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "shared/scripts/hooks/check_required_checks_hook.py",
+          "line": null,
+          "finding": "main() called resolve_project_root() outside run()'s guard; PermissionError/FileNotFoundError from Path.cwd()/iterdir() would produce the traceback and non-zero exit the design exists to prevent.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "plugins/shipwright-iterate/skills/iterate/references/F0.md",
+          "line": null,
+          "finding": "The PowerShell missing-uv fix was INERT. CommandNotFoundException is statement-terminating, so the $LASTEXITCODE comparison never executes and no seeded value is ever read; the reviewer corrected its own round-1 mechanism claim to establish this.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "shared/tests/test_required_checks_hook_chain_integration.py",
+          "line": null,
+          "finding": "Two subprocess tests did not pin SHIPWRIGHT_PROJECT_ROOT, so they could run the live chain against the developer's REAL repository - three authenticated gh calls and a real card written into their tree - and still pass.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "shared/tests/test_required_checks_hook_chain_integration.py",
+          "line": null,
+          "finding": "_git_only_path() narrowed PATH to git's own directory, which isolates gh on Windows but NOT on ubuntu-latest where both are /usr/bin - so in CI the test would reach api.github.com and pass for the wrong reason.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": null,
+          "line": null,
+          "finding": "Six further low findings: vacuous leak assertion; a tautological assertion; getattr-default-0; Path(str()) round-trip; wall-clock-dependent throttle test; run-config throttle source missing; asymmetric now= seam; _warn unguarded (re-entrancy into main()'s handler); future lastRun meaning permanent silence; catch wording reporting a FAILED gate as 'could not be run'.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "architecture",
+          "file": null,
+          "line": null,
+          "finding": "Wrapper reached 299/300 by deleting prose, and the spec had used the identical 518/518 measurement to reject another placement.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-08-05T22:04:16.731528+00:00",
+      "disposition": null,
+      "recorded_by": "shipwright-build:code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 9,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "hidden-coupling",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: The producer hardcoded to_outbox=True against a repo-wide convention of conditional routing. — The producer hardcoded to_outbox=True against a repo-wide convention of conditional routing. resolve_project_root is cwd-based, so a session opened in .worktrees/<slug> resolves the WORKTREE - whose outbox is gitignored, which sweep_outbox_to_branch never reads (it reads only the MAIN root's), and which is deleted with the tree. The card would be written to a buffer nothing drains and then destroyed. Harmless while a human typed it on main; this change is what made it load-bearing.",
+          "suggestion": "FIXED - to_outbox=should_route_to_outbox(root), matching all four sibling producers. The suggested assertion was added too: the CLI test now asserts triage.jsonl exists, because read_all_items unions tracked+outbox and cannot tell them apart. The pre-existing test that pinned 'is True' was updated with the reason.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "high",
+          "category": "boundary-contract",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: Fail-soft silence is not always right. — Fail-soft silence is not always right. exit 2 covers NO AUTH; the wrapper is silent on that path by contract; the attempt still consumes its window; and nothing records outcome as distinct from attempt. An expired gh token would end the check permanently with no trace anywhere - and the failure correlates with the event being watched, since whoever rotates credentials is often whoever edits Settings -> Rules.",
+          "suggestion": "FIXED - state now records lastSuccess and an unhealthySince streak marker separately from lastRun, and stale_since() makes the wrapper say once that the check is running but not succeeding. Floored at STALE_FLOOR_DAYS so shortening the throttle does not shorten the patience. Three tests, including that a healthy check never nags and a fresh project is not greeted with a warning.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "high",
+          "category": "reversibility",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: 'F0 is the only home where the script's documented weakness disappears' is FALSE. — 'F0 is the only home where the script's documented weakness disappears' is FALSE. SKILL.md's own ordering note lists eight phases that write tracked artifacts after F0, and F11's ensure_current merges origin/<default> before the push - so the pushed commit is F0's tree plus eight phases plus a merge of main. The divergence lands on the input that matters, since check_ci_gate_coverage.py reads .github/workflows and the gate allowlist, which is exactly what arrives in that merge.",
+          "suggestion": "CLAIM CORRECTED in the spec, the verify_local.py docstring, docs/hooks-and-pipeline.md and the test module docstring - the honest statement is that F0 is the cheapest early catch and the F0->push window remains. The deeper remedy (a second invocation at F11 after ensure_current) is FILED as trg-64c159dc rather than smuggled into the delivering run.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "hidden-coupling",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: 'closed on measurement, not on taste' does not survive the anti-ratchet rule: it blocks only entries PRESENT in the baseline, run_test_suite. — 'closed on measurement, not on taste' does not survive the anti-ratchet rule: it blocks only entries PRESENT in the baseline, run_test_suite.py is a thin orchestrator over ~11 sibling modules none of which is baselined, and iterate-2026-08-01-f0-diff-coverage-gate added a mechanical F0 gate under the identical constraint four days earlier. The Non-Goal's 'would need a new recorded artifact' is also false - F5 already writes shipwright_test_results.json.",
+          "suggestion": "SPEC CORRECTED - restated as a scope judgement ('possible and unblocked; this run chose the documented step') rather than a measurement that forecloses it.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "boundary-contract",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: 'One rule, two homes' does no predictive work - it returns no answer for check_plugin_cache_sync. — 'One rule, two homes' does no predictive work - it returns no answer for check_plugin_cache_sync.py, the next member of the same class, and 'the form its answer takes' is an exit code someone chose rather than a property of the subject. The phantom direction is also a verdict about the push, actionable at F11.",
+          "suggestion": "SPEC CORRECTED - the rule is replaced by the three discriminators that actually did the deciding and are already the table's columns: portability, whose credentials it needs, and whether the answer moves with the diff.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "boundary-contract",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: AC-2's guard tests a PATH, not an identity. — AC-2's guard tests a PATH, not an identity. scripts/verify_local.py is not a distinctive name, so a consumer project carrying one gets an arbitrary local script executed by an agent under 'non-zero = STOP' - the exact outcome the guard's own paragraph says it prevents.",
+          "suggestion": "FIXED - both spellings now grep for the marker token SHIPWRIGHT_MIRRORED_MERGE_GATES, which verify_local.py declares in its docstring with a do-not-remove note. New executed test: a stub at the right path WITHOUT the marker must not run.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "hidden-coupling",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: Three residuals to 'the cards are closed': registration is not execution (hooks. — Three residuals to 'the cards are closed': registration is not execution (hooks.json does not reach the plugin cache until update-marketplace.sh runs); nothing records that the F0 step ran; F0 belongs to one plugin.",
+          "suggestion": "ACCEPTED and stated. The cache re-sync is the documented post-merge step and is in the F12 summary; the un-proven step is an explicit Non-Goal with its now-corrected justification; the one-plugin scope is stated in the hooks doc.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "boundary-contract",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: Four ledger rows claim coverage they do not have - row 4 describes an ABANDONED design ($LASTEXITCODE reset), rows 4/6 rest on a disjunction that passes on the weaker form, row 13 conflates one hook's budget with the chain's aggregate cap, row 31 calls the outbox the 'real triage store'. — Four ledger rows claim coverage they do not have - row 4 describes an ABANDONED design ($LASTEXITCODE reset), rows 4/6 rest on a disjunction that passes on the weaker form, row 13 conflates one hook's budget with the chain's aggregate cap, row 31 calls the outbox the 'real triage store'.",
+          "suggestion": "FIXED - row 4 rewritten to the shipped design with a note that it previously described an abandoned one; row 13 rescoped to what is actually proven; row 31 corrected and rows 32-34 added for the new behaviours.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "concurrency",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: test_hook_output_schema_compliance executes the whole registered chain with env=os. — test_hook_output_schema_compliance executes the whole registered chain with env=os.environ.copy() and does not pin SHIPWRIGHT_PROJECT_ROOT, so it can spend authenticated gh calls against a real tree. Rebuttal available: import_github_findings.py has the same exposure today.",
+          "suggestion": "FIXED - env.pop('SHIPWRIGHT_PROJECT_ROOT', None) added, which closes the sibling's exposure as well.",
+          "source": "doubt-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-08-05T22:04:41.893702+00:00",
+      "disposition": null,
+      "recorded_by": "shipwright-build:doubt-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 3,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "test",
+          "file": "shared/tests/test_required_checks_hook_chain_integration.py:108-125",
+          "line": null,
+          "finding": "The required integration scenario is not actually tested with `gh` unavailable. The fixture intentionally creates a project with no `origin`, causing the producer to return exit 2 before it needs to invoke `gh`; the test can pass on a host where `gh` is installed and authenticated. This does demonstrate one unreadable-host path, but does not meet AC-6’s explicit “when `gh` is unavailable” coverage.",
+          "suggestion": "Configure the fixture so repository resolution reaches the `gh` invocation, then run the real chain with a `PATH` that cannot resolve `gh` (or an executable fake that deterministically simulates the missing-command path), asserting exit 0 and clean stdout.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "test",
+          "file": "shared/tests/test_verify_local_f0_wiring.py:56-64",
+          "line": null,
+          "finding": "The F0 wiring tests only establish that a fenced block contains the text `verify_local.py`; they do not prove that either shell snippet invokes `uv run scripts/verify_local.py` or that a non-zero result stops F0. For example, replacing the command with `echo scripts/verify_local.py` would pass `test_f0_runs_verify_local`, the guard test, ordering test, and the PowerShell-presence test while violating AC-1.",
+          "suggestion": "Assert the command structure in both snippets and execute representative shell snippets in temporary projects: absent file must no-op, present successful script must run, and a failing script/command must return non-zero or throw.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": "shared/scripts/hooks/check_required_checks_hook.py:207-224",
+          "line": null,
+          "finding": "Throttle check and stamp are not atomic. Two SessionStart chains opened concurrently in the same project can both read an absent/expired state, both invoke the network producer, and only then each stamp the state. This violates the documented “at most once every 6 hours” behavior and can multiply authenticated `gh` calls during concurrent sessions.",
+          "suggestion": "Acquire a per-project lock or atomically create a short-lived lease/stamp before launching the producer; release or adjust it appropriately if the process cannot be started.  Overall assessment: The core wiring and fail-soft wrapper implementation appear sound, but the explicit `gh`-unavailable integration requirement is not covered and the F0 tests can certify a non-running command. Ship with the identified test fixes; consider making the throttle reservation atomic. SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-08-05T21:37:59.672029+00:00",
+      "disposition": null,
+      "recorded_by": "external_review.py",
+      "parse_status": "partial",
+      "raw_excerpt": "[deepseek] <no review returned: provider returned an empty reply>\n\n[openai] - Category: test  \n  Severity: medium  \n  File: `shared/tests/test_required_checks_hook_chain_integration.py:108-125`  \n  Finding: The required integration scenario is not actually tested with `gh` unavailable. The fixture intentionally creates a project with no `origin`, causing the producer to return exit 2 before it needs to invoke `gh`; the test can pass on a host where `gh` is installed and authenticated. This does demonstrate one unreadable-host path, but does not meet AC-6’s explicit “when `gh` is unavailable” coverage.  \n  Suggestion: Configure the fixture so repository resolution reaches the `gh` invocation, then run the real chain with a `PATH` that cannot resolve `gh` (or an executable fake that deterministically simulates the missing-command path), asserting exit 0 and clean stdout.\n\n- Category: test  \n  Severity: medium  \n  File: `shared/tests/test_verify_local_f0_wiring.py:56-64`  \n  Finding: The F0 wiring tests only establish that a fenced block contains the text `verify_local.py`; they do not prove that either shell snippet invokes `uv run scripts/verify_local.py` or that a non-zero result stops F0. For example, replacing the command with `echo scripts/verify_local.py` would pass `test_f0_runs_verify_local`, the guard test, ordering test, and the PowerShell-presence test while violating AC-1.  \n  Suggestion: Assert the command structure in both snippets and execute representative shell snippets in temporary projects: absent file must no-op, present successful script must run, and a failing script/command must return non-zero or throw.\n\n- Category: edge-case  \n  Severity: low  \n  File: `shared/scripts/hooks/check_required_checks_hook.py:207-224`  \n  Finding: Throttle check and stamp are not atomic. Two SessionStart chains opened concurrently in the same project can both read an absent/expired state, both invoke the network producer, and only then each stamp the state. This violates the documented “at most once every 6 hours” behavior and  […truncated]",
+      "verdicts": {
+        "openai": "revise",
+        "deepseek": "unavailable"
+      }
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-05T20:55:45.193920+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    }
+  }
+}

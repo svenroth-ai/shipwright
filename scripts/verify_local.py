@@ -1,6 +1,9 @@
 #!/usr/bin/env python3
 """Run the merge gates that exist only in CI — before you push.
 
+SHIPWRIGHT_MIRRORED_MERGE_GATES — identity marker, load-bearing. F0's step greps
+for this token instead of testing that a file exists at this path; see below.
+
     uv run scripts/verify_local.py
 
 `ci.yml`'s required job runs three bespoke guards that nothing runs locally: the
@@ -17,10 +20,21 @@ is a pre-flight that removes the common, boring reasons a push comes back red.
 Exit 0 = every mirrored gate passed. Non-zero = CI would reject this push, and the
 gate that would reject it is named.
 
-**Nothing invokes this for you** — no hook, no skill step, no workflow. Whether it
-should (a pre-push hook, an F0 step, or staying manual) changes how every push in the
-repo behaves, so it is the operator's decision and is tracked as trg-486cb11c. Until
-then this is a *runnable* pre-flight, not an automatic one.
+**F0 runs this** — `plugins/shipwright-iterate/skills/iterate/references/F0.md`, right
+after the leak-guard and before the test suite. That step greps this docstring for the
+marker token ``SHIPWRIGHT_MIRRORED_MERGE_GATES`` rather than merely testing that a file
+exists at this path, because `scripts/verify_local.py` is not a distinctive name and a
+consumer project carrying one must not have it executed under STOP semantics. **Do not
+remove that token**; without it the step silently stops running here.
+
+It covers the F0→push window only as far as F0 can see: eight phases write tracked
+artifacts after it (F0.5/F3/F3a/F4/F5/F5a/F5b/F5c), and F11's `ensure_current` merges
+`origin/main` before the push, so the commit CI judges is not the tree these gates
+read. That residue is real and tracked; F0 is the cheap early catch, not a proof.
+That placement was the operator's decision on trg-486cb11c;
+a blocking pre-push hook was rejected because these gates read the WORKING TREE, and
+F0 is the one moment the tree is what becomes the commit (see `describe_tree`). Typing
+it yourself stays valid and is still the way to check a tree outside an iterate run.
 
 **The gates are driven as subprocesses, never imported.** `check_ci_gate_coverage.py`
 mutates `sys.path` and does an eager `from lib.ci_gate_allowlist import ...` at module
