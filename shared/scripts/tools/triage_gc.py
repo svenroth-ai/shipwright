@@ -104,9 +104,9 @@ def _resolve_tracked_only(project_root: Path | str) -> list[dict]:
             if not isinstance(item_id, str) or item_id not in resolved:
                 continue
             item = resolved[item_id]
-            new_status = raw.get("newStatus")
-            if new_status in triage.STATUSES:
-                item["status"] = new_status
+            if (new_status := raw.get("newStatus")) not in triage.STATUSES:
+                continue  # damaged event: skip WHOLE, never half (F26; twin in triage.py)
+            item["status"] = new_status
             item["statusBy"] = raw.get("by")
             item["statusReason"] = raw.get("reason")
     return list(resolved.values())

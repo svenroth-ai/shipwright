@@ -1,0 +1,106 @@
+{
+  "run_id": "iterate-2026-08-05-it1-audit-remainder",
+  "date": "2026-08-06T08:59:44.189548Z",
+  "event_at": "2026-08-05T19:42:54.206095+00:00",
+  "type": "change",
+  "complexity": "medium",
+  "branch": "iterate/it1-audit-remainder",
+  "spec": ".shipwright/planning/iterate/2026-08-05-it1-audit-remainder.md",
+  "tests_passed": true,
+  "adr": "iterate-2026-08-05-it1-audit-remainder",
+  "test_completeness": {
+    "status": "complete",
+    "behaviors": [
+      {
+        "behavior": "AC-1 same-id, content-different append is not dropped",
+        "disposition": "tested",
+        "evidence": "test_same_id_changed_content_survives, test_gc_keeps_same_id_when_content_differs, test_e2e_same_id_changed_append_stays_in_outbox PASSED"
+      },
+      {
+        "behavior": "AC-2 re-serialized status line becomes GC-able",
+        "disposition": "tested",
+        "evidence": "test_reserialized_status_line_is_delivered, test_e2e_reserialized_status_line_is_gcd PASSED"
+      },
+      {
+        "behavior": "AC-3 key-order/whitespace immunity preserved (FIX B's stated goal)",
+        "disposition": "tested",
+        "evidence": "test_reserialized_append_is_delivered, test_gc_drops_delivered_append_even_if_reserialized PASSED"
+      },
+      {
+        "behavior": "Duplicate-key lines never cross-match",
+        "disposition": "tested",
+        "evidence": "test_duplicate_keys_do_not_cross_match PASSED"
+      },
+      {
+        "behavior": "AC-8 no float literal is canonicalizable (overflow/underflow/rounding/NaN)",
+        "disposition": "tested",
+        "evidence": "test_float_literals_never_cross_match[4 pairs], test_integers_remain_canonicalizable PASSED"
+      },
+      {
+        "behavior": "canonical_form is TOTAL \u2014 degrades to text membership, never raises",
+        "disposition": "tested",
+        "evidence": "test_unparseably_deep_object_degrades_instead_of_raising, test_non_dict_json_routes_to_text_membership, test_bare_scalar_routes_through_text_path PASSED"
+      },
+      {
+        "behavior": "Fail-safe: unreadable/missing origin GCs nothing",
+        "disposition": "tested",
+        "evidence": "test_empty_origin_delivers_nothing, test_delivered_membership_gcs_nothing_on_timeout PASSED"
+      },
+      {
+        "behavior": "AC-4 a damaged status event is skipped WHOLE, not half-applied",
+        "disposition": "tested",
+        "evidence": "test_damaged_status_does_not_rewrite_the_human_decision PASSED"
+      },
+      {
+        "behavior": "A damaged event cannot reclassify a human decision as machine churn",
+        "disposition": "tested",
+        "evidence": "test_damaged_status_cannot_turn_a_human_decision_into_machine_churn PASSED (pre-fix probe: drop_ids == {'trg-human1'})"
+      },
+      {
+        "behavior": "Non-string newStatus is ignored identically by both resolvers",
+        "disposition": "tested",
+        "evidence": "test_non_string_status_is_ignored_by_both_resolvers PASSED"
+      },
+      {
+        "behavior": "AC-5 both resolvers agree on a damaged status event (drift pin)",
+        "disposition": "tested",
+        "evidence": "test_both_resolvers_agree_on_a_damaged_status_event PASSED"
+      },
+      {
+        "behavior": "A valid status flip still applies (guard does not over-block)",
+        "disposition": "tested",
+        "evidence": "test_a_valid_status_event_still_applies PASSED"
+      },
+      {
+        "behavior": "is_delivered membership sets are keyword-only, so an old positional caller fails loudly",
+        "disposition": "tested",
+        "evidence": "every call site converted; a leftover positional call raised 'is_delivered() takes 1 positional argument but 3 were given' during verification"
+      },
+      {
+        "behavior": "AC-6 comment names an existing predicate and records that the guard is advisory",
+        "disposition": "untestable",
+        "evidence": "comment-only; the two asserted facts verified by reading (_has_staged_changes at :111, called at :201, lock taken at :218)",
+        "reason_code": "requires-manual-visual-judgment"
+      },
+      {
+        "behavior": "glossary.md and hooks-and-pipeline.md describe the shipped rule",
+        "disposition": "untestable",
+        "evidence": "prose accuracy; no drift gate covers these two sentences",
+        "reason_code": "requires-manual-visual-judgment"
+      }
+    ],
+    "counts": {
+      "total": 15,
+      "tested": 13,
+      "untestable": 2,
+      "untested": 0
+    },
+    "ledger_path": ".shipwright/planning/iterate/2026-08-05-it1-audit-remainder.md"
+  },
+  "surface_verification": {
+    "surface": "cli",
+    "tests_run": 30,
+    "exit_code": 0,
+    "runner": "uv run --extra dev pytest shared/tests/test_sweep_gc_canonical.py shared/tests/test_triage_gc_status_overlay.py shared/tests/test_sweep_outbox_review_cascade.py -q"
+  }
+}

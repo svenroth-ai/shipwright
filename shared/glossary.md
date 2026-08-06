@@ -180,8 +180,8 @@
   which is out of contract. The
   Outbox is **swept** into the iterate PR branch by
   `setup_iterate_worktree` (`lib.sweep_outbox`, under the canonical triage
-  lock), then **GC'd** once the line is origin-delivered (by semantic `id`
-  for appends, normalized text for status flips). `triage.read_all_items`
+  lock), then **GC'd** once the line is origin-delivered (matched by canonical
+  form; raw text when it has none). `triage.read_all_items`
   **union-reads** tracked ∪ Outbox so Consumers see background findings
   immediately, before the sweep. The canon ignore block is self-healed
   into stale-cache managed repos by `lib.gitignore_selfheal` at the next
