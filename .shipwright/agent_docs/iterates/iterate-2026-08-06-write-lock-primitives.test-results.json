@@ -1,0 +1,257 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-08-06-write-lock-primitives",
+    "date": "2026-08-06",
+    "unit": {
+      "status": "pass",
+      "passed": 13242,
+      "failed": 0,
+      "total": 13242,
+      "note": "F0 canonical suite: 18 units GREEN in 6.1 min, diff-coverage 94% (gate >=80%). The count is the sum of every pytest root measured directly this session: shared/tests 8146, integration-tests 475, shared/scripts/tests 372, shared/scripts/tools/tests 490, plugins/shipwright-run 393, plugins/shipwright-security 893, plugins/shipwright-adopt 602, plugins/shipwright-test 243, plugins/shipwright-compliance 1628. The four plugin roots were added after the doubt review showed they were the only place an import-shape regression in this diff could surface."
+    },
+    "integration": {
+      "status": "pass",
+      "passed": 475,
+      "failed": 0,
+      "total": 475
+    },
+    "e2e": {
+      "status": "n/a",
+      "reason": "no browser surface; these are shared library primitives (write + lock)"
+    },
+    "smoke": {
+      "status": "n/a",
+      "reason": "no startable server surface in this repo"
+    },
+    "pgtap": {
+      "status": "n/a",
+      "reason": "no database"
+    },
+    "design_fidelity": {
+      "status": "n/a",
+      "reason": "no UI surface"
+    },
+    "surface_verification": {
+      "surface": "cli",
+      "runner": "uv run --extra dev pytest shared/tests/test_atomic_write.py shared/tests/test_atomic_write_windows_retry.py shared/tests/test_atomic_write_windows_read_retry.py shared/tests/test_durable_publish.py shared/tests/test_durable_publish_winerrors.py shared/tests/test_file_lock.py shared/tests/test_file_lock_bounded.py shared/tests/test_file_lock_registry.py -q",
+      "exit_code": 0,
+      "tests_run": 60,
+      "evidence_path": ".shipwright/runs/iterate-2026-08-06-write-lock-primitives/surface_verification.json",
+      "timestamp": "2026-08-06T09:18:30.263Z",
+      "detail": "The two primitives are libraries with no startable UI or HTTP surface, so the cli surface drives them through their own suites. 60 tests, exit 0, one attempt."
+    },
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "AC-1 a rewrite carries the destination's existing mode",
+          "disposition": "tested",
+          "evidence": "test_atomic_write.py::test_rewrite_keeps_the_files_existing_mode PASSED (POSIX/CI leg)"
+        },
+        {
+          "behavior": "AC-2 a first write stays at mkstemp's 0600 - carry, never invent",
+          "disposition": "tested",
+          "evidence": "test_atomic_write.py::test_first_write_keeps_mkstemps_private_mode PASSED (POSIX/CI leg)"
+        },
+        {
+          "behavior": "the mode selected is the destination's, masked to 0o7777",
+          "disposition": "tested",
+          "evidence": "test_durable_publish.py::test_carries_the_destinations_exact_mode_bits PASSED (every host)"
+        },
+        {
+          "behavior": "AC-3 a refused fchmod never fails the write, and is counted",
+          "disposition": "tested",
+          "evidence": "test_durable_publish.py::test_write_survives_a_refused_mode_carry PASSED"
+        },
+        {
+          "behavior": "AC-3 a refused stat never fails the write, end-to-end",
+          "disposition": "tested",
+          "evidence": "test_durable_publish.py::test_write_survives_an_unstattable_destination PASSED"
+        },
+        {
+          "behavior": "a raising carrier still unlinks the temp (defence in depth, NOT AC-3)",
+          "disposition": "tested",
+          "evidence": "test_atomic_write.py::test_a_raising_carrier_still_unlinks_the_temp PASSED"
+        },
+        {
+          "behavior": "a refused fchmod is counted, not silently swallowed",
+          "disposition": "tested",
+          "evidence": "test_durable_publish.py::test_a_failed_carry_is_counted_not_raised PASSED"
+        },
+        {
+          "behavior": "a refused stat is counted (mode unknowable, not absent)",
+          "disposition": "tested",
+          "evidence": "test_durable_publish.py::test_an_unstattable_destination_is_counted_too PASSED"
+        },
+        {
+          "behavior": "an absent destination is 'nothing to carry', not a failure",
+          "disposition": "tested",
+          "evidence": "test_durable_publish.py::test_missing_destination_has_no_mode_to_carry PASSED"
+        },
+        {
+          "behavior": "the carry is applied BEFORE the fsync that lands the bytes",
+          "disposition": "tested",
+          "evidence": "test_atomic_write.py::test_mode_is_carried_before_the_fsync PASSED (ordering spy)"
+        },
+        {
+          "behavior": "no-op where os.fchmod does not exist",
+          "disposition": "tested",
+          "evidence": "test_durable_publish.py::test_no_op_where_fchmod_does_not_exist PASSED"
+        },
+        {
+          "behavior": "os.name=='nt' alone disables the carry even if fchmod appears",
+          "disposition": "tested",
+          "evidence": "test_durable_publish.py::test_windows_never_carries_even_if_fchmod_appears PASSED"
+        },
+        {
+          "behavior": "AC-4 winerror 33 is in the sharing-violation set",
+          "disposition": "tested",
+          "evidence": "test_durable_publish_winerrors.py::test_lock_violation_is_a_sharing_violation_code PASSED"
+        },
+        {
+          "behavior": "AC-4 a winerror-33 failure is retried end-to-end and each retry counted",
+          "disposition": "tested",
+          "evidence": "test_durable_publish_winerrors.py::test_replace_retries_winerror_33 PASSED (3 attempts, 2 retries counted)"
+        },
+        {
+          "behavior": "a winerror outside the set still re-raises immediately",
+          "disposition": "tested",
+          "evidence": "covered-by-existing-test: test_atomic_write_windows_retry.py 8 passed unmodified"
+        },
+        {
+          "behavior": "the atomic_write alias IS the leaf's frozenset, not a fork",
+          "disposition": "tested",
+          "evidence": "test_durable_publish_winerrors.py::test_atomic_write_alias_is_the_leaf_frozenset_not_a_fork PASSED"
+        },
+        {
+          "behavior": "AC-5 a contended FileLock raises LockTimeout inside its budget",
+          "disposition": "tested",
+          "evidence": "test_file_lock_bounded.py::test_timeout_raises_instead_of_blocking_forever PASSED"
+        },
+        {
+          "behavior": "AC-5 the LockTimeout message names the lock AND the wait",
+          "disposition": "tested",
+          "evidence": "same test - asserts str(lock_path) in message and 'waited' in message"
+        },
+        {
+          "behavior": "AC-7 timeout_seconds=0 is EXACTLY one non-blocking attempt",
+          "disposition": "tested",
+          "evidence": "test_file_lock_bounded.py::test_zero_timeout_is_one_non_blocking_attempt PASSED (attempt count, not timing)"
+        },
+        {
+          "behavior": "AC-7 timeout_seconds=None restores the unbounded block",
+          "disposition": "tested",
+          "evidence": "test_file_lock_bounded.py::test_none_timeout_restores_the_unbounded_block PASSED"
+        },
+        {
+          "behavior": "AC-7 NaN/inf/negative/non-numeric timeouts are rejected",
+          "disposition": "tested",
+          "evidence": "test_file_lock_bounded.py::test_invalid_timeout_is_rejected PASSED (4 params)"
+        },
+        {
+          "behavior": "AC-6 same-thread nesting enters immediately and holds to the outermost exit",
+          "disposition": "tested",
+          "evidence": "test_file_lock_bounded.py::test_same_thread_reentry_enters_immediately_and_holds_until_outermost_exit PASSED"
+        },
+        {
+          "behavior": "an exception inside a nested block still releases the lock",
+          "disposition": "tested",
+          "evidence": "test_file_lock_bounded.py::test_exception_inside_a_nested_block_still_releases PASSED"
+        },
+        {
+          "behavior": "AC-8 a timed-out instance leaks no handle and still works afterwards",
+          "disposition": "tested",
+          "evidence": "test_file_lock_bounded.py::test_instance_is_clean_after_a_timeout PASSED (asserts the opened handle is closed)"
+        },
+        {
+          "behavior": "a real fault propagates instead of being polled for the budget",
+          "disposition": "tested",
+          "evidence": "test_file_lock_bounded.py::test_a_real_fault_propagates_instead_of_being_polled PASSED"
+        },
+        {
+          "behavior": "AC-8 pre-existing behaviour preserved: exclusion, parent mkdir, reuse, aliasing",
+          "disposition": "tested",
+          "evidence": "covered-by-existing-test: the 4 original test_file_lock.py tests pass unmodified"
+        },
+        {
+          "behavior": "the registry key is independent of the working directory",
+          "disposition": "tested",
+          "evidence": "test_file_lock_registry.py::test_key_is_independent_of_the_working_directory PASSED"
+        },
+        {
+          "behavior": "lock_key never raises, so FileLock.__init__ stays infallible",
+          "disposition": "tested",
+          "evidence": "test_file_lock_registry.py::test_key_does_not_raise_on_an_unresolvable_path PASSED"
+        },
+        {
+          "behavior": "reentrancy is per-thread - a second thread never inherits ownership",
+          "disposition": "tested",
+          "evidence": "test_file_lock_registry.py::test_a_second_thread_is_not_treated_as_the_owner PASSED"
+        },
+        {
+          "behavior": "a release by a non-owner does not free the owner's lock",
+          "disposition": "tested",
+          "evidence": "test_file_lock_registry.py::test_release_by_a_non_owner_is_a_noop PASSED"
+        },
+        {
+          "behavior": "a forked child does not ACQUIRE the parent's lock reentrantly",
+          "disposition": "tested",
+          "evidence": "test_file_lock_registry.py::test_a_forked_child_does_not_inherit_ownership PASSED"
+        },
+        {
+          "behavior": "a forked child does not RELEASE the parent's lock",
+          "disposition": "tested",
+          "evidence": "test_file_lock_registry.py::test_a_forked_child_does_not_release_the_parents_lock PASSED"
+        },
+        {
+          "behavior": "the loader fallback still loads a lib module past a shadowing lib",
+          "disposition": "tested",
+          "evidence": "test_shared_lib_loader_fallback.py::test_fallback_loads_a_lib_module_past_a_shadowing_lib PASSED (4 params)"
+        },
+        {
+          "behavior": "a sibling import inside a loaded lib module resolves",
+          "disposition": "tested",
+          "evidence": "test_shared_lib_loader_fallback.py::test_a_sibling_import_resolves_inside_the_private_package PASSED"
+        },
+        {
+          "behavior": "the loader never puts shared/scripts/lib on sys.path",
+          "disposition": "tested",
+          "evidence": "test_shared_lib_loader_fallback.py::test_the_loader_never_puts_lib_on_sys_path PASSED"
+        },
+        {
+          "behavior": "an unknown module still raises ImportError",
+          "disposition": "tested",
+          "evidence": "test_shared_lib_loader_fallback.py::test_an_unknown_module_still_raises_importerror PASSED"
+        },
+        {
+          "behavior": "the E2E runner fixtures carry BOTH new sibling modules",
+          "disposition": "tested",
+          "evidence": "test_f0_cli_diff_coverage_e2e.py + test_f0_diff_coverage_e2e.py - 6 passed"
+        },
+        {
+          "behavior": "real POSIX chmod/fchmod semantics on a live filesystem",
+          "disposition": "untestable",
+          "reason_code": "covered-by-existing-test",
+          "reason": "the two end-to-end mode rows execute on the ubuntu-latest CI leg, where the defect lives; this Windows dev host cannot run POSIX mode bits at all. The selection logic is pinned on every host separately so the untested part is the syscall, not the decision."
+        }
+      ],
+      "counts": {
+        "testable": 38,
+        "tested": 37,
+        "untestable": 1,
+        "untested_testable": 0
+      },
+      "enumeration_basis": {
+        "acs": 8,
+        "covered_acs": 8
+      }
+    },
+    "degraded": []
+  },
+  "coverage": {
+    "total": 80.2,
+    "measured_tier": "repo",
+    "source": "combined coverage.xml (all plugins + shared + integration)",
+    "measured_at": "2026-07-04T00:00:00Z"
+  }
+}

@@ -210,11 +210,18 @@ def test_a_stray_blank_line_does_not_refuse_the_repair(seeded) -> None:
     assert result.status == "adopted" and result.adopted == 1
 
 
-def test_an_unplaceable_known_append_blocks_instead_of_eating_the_dismiss(seeded) -> None:
+def test_an_unplaceable_known_append_holds_instead_of_eating_the_dismiss(seeded) -> None:
     """AC2, on the path that actually reaches ``decide()``. The append is KNOWN (it is in
     main's log) but unadoptable (main is behind origin — no HEAD blob to restore to), so
-    it cannot be materialized. The sweep must fail CLOSED and leave the dismiss in the
-    outbox — never quarantine it. A loud stop is the correct failure; data loss is not."""
+    it cannot be materialized. The dismiss must survive in the outbox — never quarantined.
+
+    Disposition changed in iterate-2026-08-06-triage-validate-deadends: this asserted
+    ``invalid``, on the reasoning that a loud stop beats data loss. It does — but
+    ``invalid`` here was permanent (its stated remedy, delivering main by push/merge, is
+    unreachable in this workflow) and it stranded every unrelated pending append in a
+    gitignored buffer. The dismiss is now HELD: withheld from this delivery, retained in
+    the outbox, retried on the next sweep, while everything else ships. The three
+    invariants this test exists for are unchanged and asserted below."""
     work = seeded
     h.git(work, "reset", "--hard", "HEAD~1")  # no HEAD blob → unrepairable, sweep proceeds
     write_tracked(work, h.HEADER, DRIFT)      # the append is known ONLY from main's log
@@ -224,10 +231,11 @@ def test_an_unplaceable_known_append_blocks_instead_of_eating_the_dismiss(seeded
 
     result = sweep_outbox_to_branch(work, wt, default_branch="main")
 
-    assert result.status == "invalid", result.to_dict()
+    assert result.held == 1, result.to_dict()
     assert result.quarantined == 0, "the operator's dismiss was quarantined"
     assert h.quarantine_text(work) == "", "the dismiss was moved to the quarantine log"
     assert dismiss in h.outbox_lines(work), "the dismiss was dropped from the outbox"
+    assert dismiss not in h.branch_triage_lines(wt), "an unplaceable status reached the branch"
 
 
 def test_append_ids_admits_only_well_formed_appends() -> None:

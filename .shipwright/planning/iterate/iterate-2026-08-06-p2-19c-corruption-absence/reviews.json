@@ -1,0 +1,406 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-08-06-p2-19c-corruption-absence",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-06T07:54:58.512787+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 13,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "read_jsonl_records` switches from line‑by‑line iteration to reading the entire store file into memory (`durable_read_text` + `split(\"\\n\")`). The existing memory‑efficient parsing is replaced with a full buffered read. If any store file grows large (e.g., many megabytes of JSONL records), this can cause an out‑of‑memory regression or significant latency spike. The plan shows no analysis of store‑file size constraints and no fallback to incremental reading.",
+          "suggestion": "Keep the durability wrapper but yield lines incrementally. Wrap the `open` call in a retry loop that handles Windows delete‑pending errors (the relevant `FileNotFoundError`) and still reads line‑by‑line, or use `durable_read_text` only when file size is below a threshold and fall back to a line‑by‑line resilient reader. At minimum, document the expected maximum store size and validate it in‑test.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "Hoisting `should_route_to_outbox` above the lock in `mark_status` widens the TOCTOU window between probing the git‑ref/outbox state and acquiring the lock. Another process could deliver the status between the probe and the lock‑protected decision, causing a spurious outbox write that leaves an already‑delivered decision flagged as undelivered. The plan accepts this but does not discuss the effect on the correctness of `pendingStatusDelivery` or the risk of duplicate undelivered entries confusing operators.",
+          "suggestion": "Explicitly document the acceptable false‑positive rate and how the system tolerates it (e.g., the outbox write is idempotent, and a subsequent sweep will clean it). Consider adding a post‑lock re‑check of the outbox state inside the locked section (cheap now that the git probe is outside) to close the window further without holding the lock for a subprocess.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The resync algorithm in `split_records` recovers a valid record only if a `{` candidate consumes the entire remainder. If the damaged line contains multiple appended JSON objects (e.g., two truncated writes and two appends), this heuristic will reject all of them and fall back to the old behaviour of returning the whole tail as a fragment. While fail‑safe, it means some valid records that could be recovered are lost.",
+          "suggestion": "Describe this limitation explicitly in the docstring and confirm with the operator that the dominant corruption pattern is a single overwrite. No code change needed, but the expectation should be set.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "Adding the `pendingStatusDelivery` field to the contract envelope is safe under the module’s own additive‑field rule, but any consumer that performs strict schema validation and rejects unknown keys will break. The plan relies on the rule without verifying that existing consumers (e.g., the Command Center WebUI) gracefully ignore unknown fields.",
+          "suggestion": "Confirm with the WebUI maintainer that the JSON parser is tolerant of new keys, or document that this additive change is covered by the contract’s forward‑compatibility guarantee. No code change unless the guarantee is missing.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "The change to `read_jsonl_records` introduces a dependency on `durable_read_text` supporting the `errors=\"surrogateescape\"` parameter. The plan assumes this works but does not verify the function’s signature or behaviour with that argument.",
+          "suggestion": "Ensure `durable_read_text` accepts and correctly passes `errors` to the underlying `open`. If not, the encoding error handling might break. This is trivially testable during implementation.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The new module `triage_integrity` uses `read_jsonl_records` (which will now use the in‑memory durable read) for its own corruption scans. Any memory pressure from large store files thus also affects the integrity scan, potentially making it slow or exceed limits.",
+          "suggestion": "Consider a separate, line‑based resilient reader for the integrity scan if memory is a concern, or accept the shared implementation and document the assumed file sizes.  Overall assessment: The mini‑plan addresses the five defects with targeted, minimal changes. The main risk is the memory‑regression in the durable read path, which should be resolved before merging. The resync algorithm and the TOCTOU acceptance are sound but require explicit documentation. SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "The guarded resynchronization rule is still not a reliable discriminator between a genuine appended record and a complete JSON object embedded in corruption. Requiring decoding from a candidate `{` to consume the remainder avoids the measured example, but a corrupted prefix can contain a complete nested object followed by another complete object, e.g. a truncated outer object whose remaining bytes are `{\"embedded\":1}{\"real\":2}`. A decoder that accepts concatenated JSON values can consume that entire suffix and incorrectly surface `embedded` as a record.",
+          "suggestion": "Define and enforce a trustworthy record-start invariant beyond “starts with `{`”—for example, validate the expected triage-record schema/event envelope before accepting recovered objects, and test adversarial nested/crafted corruption. If no such invariant exists, document that recovery is necessarily heuristic and ensure it fails closed rather than fabricating records; the current “entire remainder” condition alone is not sufficient.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "Capping resynchronization attempts makes correctness depend on corruption shape. A valid record after more candidate braces than the cap will be discarded along with the tail, contrary to AC1’s promise to recover records after an unrecoverable prefix. It also leaves the underlying repeated decode-from-each-candidate algorithm potentially quadratic up to the cap.",
+          "suggestion": "Replace repeated whole-suffix decoding with a bounded-linear recovery strategy, or make the cap an explicit, tested operational limit with an acceptance-criteria exception. At minimum, add tests with many `{` characters in malformed strings/nested structures before a valid appended record and verify both recovery and bounded runtime.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "store_corruption(paths)` appears to reopen and rescan the files after the listing has already read them. Using the same paths is not the same as using the same snapshot: an append or an atomic replacement between the item read and corruption scan can make the JSON listing describe items from one version and corruption from another. This is especially relevant because the change explicitly addresses unlocked readers and atomic publishes.",
+          "suggestion": "Have the listing path retain and reuse the `RecordRead` results used to construct the resolved items, including their corruption fragments. If independent reads are unavoidable, document the best-effort nature and test replacement/append races so an exception or invalid JSON response cannot result.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "The proposed `undelivered_status_ids` definition does not yet fully establish the user-visible claim “has reached `origin`.” Presence in a locally tracked store establishes that the event was routed out of the gitignored outbox, but does not establish that its containing commit has been pushed to, or is visible on, `origin`. It also needs a precise cross-store ordering rule: an older outbox status event should not mark an item pending when a newer deciding status is already in the tracked store.",
+          "suggestion": "Verify the existing store topology and name the field according to what can actually be proved. If tracked-store presence is the established project definition of delivered, state that explicitly and test it. Otherwise incorporate the existing origin/reachability predicate. Compute the latest deciding event over the combined valid records from both stores using the application’s authoritative ordering/event identity, then mark pending only when that effective decision is outbox-only.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "Adding an always-present `pendingStatusDelivery` key is still a machine-contract shape change for strict consumers, even if the repository’s convention permits additive fields without a version increment. The plan asserts compatibility but does not identify the Command Center schema, typed client, fixtures, or any strict deserializer that must be updated.",
+          "suggestion": "Verify all `contractVersion: 2` consumers tolerate unknown row fields, and update any JSON schema, generated type, fixture, snapshot, and WebUI row model in the same change. Keep version 2 only if that compatibility rule is actually enforced across those consumers; otherwise bump the version or use the established compatibility mechanism.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The corruption-reporting path needs explicit behavior for missing files, unreadable files, and corruption in one store while the other remains readable. A reporting helper that itself fails can turn the intended “corruption is observable” improvement into a listing failure; repeated calls can also produce duplicate stderr notices.",
+          "suggestion": "Preserve the current reader behavior for absent optional stores and distinguish I/O failure from JSON corruption. Make reporting best-effort, stderr-only, and once per top-level operation/path set; add tests that `list --json` remains valid JSON when one store is missing, replace-locked, or corrupt.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "security",
+          "file": null,
+          "line": null,
+          "finding": "Avoiding fragment bytes and rendering paths with `ascii()` addresses terminal injection, but the new JSON corruption field also needs a bounded representation. Reporting an unbounded number of fragments or raw path/error metadata can make a deliberately malformed large log produce an excessively large operator response.",
+          "suggestion": "Emit structured, content-free corruption metadata with a bounded fragment count and an aggregate “additional fragments omitted” count. Ensure JSON serialization uses the same surrogate-safe policy as the existing contract.  Overall, the decomposition is appropriately small and the plan has addressed several important prior-review concerns, especially newline behavior and stderr safety. However, the resynchronization correctness/cap behavior and the exact delivery semantics need to be resolved and tested before implementation. SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-08-06T07:54:07.908050+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[deepseek] - **Category:** approach  \n  **Severity:** high  \n  **Finding:** `read_jsonl_records` switches from line‑by‑line iteration to reading the entire store file into memory (`durable_read_text` + `split(\"\\n\")`). The existing memory‑efficient parsing is replaced with a full buffered read. If any store file grows large (e.g., many megabytes of JSONL records), this can cause an out‑of‑memory regression or significant latency spike. The plan shows no analysis of store‑file size constraints and no fallback to incremental reading.  \n  **Suggestion:** Keep the durability wrapper but yield lines incrementally. Wrap the `open` call in a retry loop that handles Windows delete‑pending errors (the relevant `FileNotFoundError`) and still reads line‑by‑line, or use `durable_read_text` only when file size is below a threshold and fall back to a line‑by‑line resilient reader. At minimum, document the expected maximum store size and validate it in‑test.\n\n- **Category:** risk  \n  **Severity:** medium  \n  **Finding:** Hoisting `should_route_to_outbox` above the lock in `mark_status` widens the TOCTOU window between probing the git‑ref/outbox state and acquiring the lock. Another process could deliver the status between the probe and the lock‑protected decision, causing a spurious outbox write that leaves an already‑delivered decision flagged as undelivered. The plan accepts this but does not discuss the effect on the correctness of `pendingStatusDelivery` or the risk of duplicate undelivered entries confusing operators.  \n  **Suggestion:** Explicitly document the acceptable false‑positive rate and how the system tolerates it (e.g., the outbox write is idempotent, and a subsequent sweep will clean it). Consider adding a post‑lock re‑check of the outbox state inside the locked section (cheap now that the git probe is outside) to close the window further without holding the lock for a subprocess.\n\n- **Category:** edge-case  \n  **Severity:** medium  \n  **Finding:** The resync algo […truncated]\n\n[openai] 1. **Category:** approach  \n   **Severity:** high  \n   **Finding:** The guarded resynchronization rule is still not a reliable discriminator between a genuine appended record and a complete JSON object embedded in corruption. Requiring decoding from a candidate `{` to consume the remainder avoids the measured example, but a corrupted prefix can contain a complete nested object followed by another complete object, e.g. a truncated outer object whose remaining bytes are `{\"embedded\":1}{\"real\":2}`. A decoder that accepts concatenated JSON values can consume that entire suffix and incorrectly surface `embedded` as a record.  \n   **Suggestion:** Define and enforce a trustworthy record-start invariant beyond “starts with `{`”—for example, validate the expected triage-record schema/event envelope before accepting recovered objects, and test adversarial nested/crafted corruption. If no such invariant exists, document that recovery is necessarily heuristic and ensure it fails closed rather than fabricating records; the current “entire remainder” condition alone is not sufficient.\n\n2. **Category:** edge-case  \n   **Severity:** high  \n   **Finding:** Capping resynchronization attempts makes correctness depend on corruption shape. A valid record after more candidate braces than the cap will be discarded along with the tail, contrary to AC1’s promise to recover records after an unrecoverable prefix. It also leaves the underlying repeated decode-from-each-candidate algorithm potentially quadratic up to the cap.  \n   **Suggestion:** Replace repeated whole-suffix decoding with a bounded-linear recovery strategy, or make the cap an explicit, tested operational limit with an acceptance-criteria exception. At minimum, add tests with many `{` characters in malformed strings/nested structures before a valid appended record and verify both recovery and bounded runtime.\n\n3. **Category:** risk  \n   **Severity:** medium  \n   **Finding:** `store_corruption(*paths)` appears to re […truncated]",
+      "verdicts": {
+        "openai": "revise",
+        "deepseek": "unknown"
+      }
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 4,
+      "findings": [
+        {
+          "severity": "low",
+          "category": "architecture",
+          "file": "shared/scripts/lib/triage_contract.py",
+          "line": 40,
+          "finding": "The shared basename() closes the duplication finding but lands so that the contract layer now imports the store-reader layer. No cycle today, but the arrow points the wrong way; the tidier home is a name property on CorruptFragment, blocked because jsonl_records.py is at exactly its 300-line limit.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "shared/scripts/lib/triage_integrity.py",
+          "line": 201,
+          "finding": "After the store_facts refactor, undelivered_status_ids and store_corruption have no production callers; report_corruption's docstring cross-referenced store_corruption as though it were the live path.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/scripts/lib/triage_delivery.py",
+          "line": 61,
+          "finding": "applied_statuses was required but unvalidated: an EMPTY vocabulary filters every event out and returns 'nothing is pending' - the reassuring direction, i.e. exactly the defect the surface exists to close. Requiring the argument stops a caller forgetting it, not passing an empty one. Also positional-or-keyword while both wrappers are keyword-only.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "shared/tests/test_jsonl_records_load_modes.py",
+          "line": 152,
+          "finding": "The guard test's docstring said 'the three tests above' after a fourth was added - a stale count in the one test whose job is to assert the others are not vacuous.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-08-06T08:36:41.923569+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 10,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "boundary-and-contract",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: AC5 is delivered on both surfaces — pendingStatusDelivery is a per-ROW boolean, but the dominant case (an item dismissed while its flip sat in the outbox) resolves to a terminal status and leaves BOTH sections, so no row can carry it. list --json therefore showed everything-delivered on a store with 12 buffered decisions - the Command Center, the one consumer this was built for, got the surface that structurally cannot show the defect. The round-trip test named for this abandoned the CLI and asserted in-process, so it CONFIRMED the gap.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "high",
+          "category": "concurrency-and-ordering",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: AC4 reduces lock hold time — AC3 and AC4 work against each other. AC4 removes ~3 git subprocesses (~50-150ms) from the lock; AC3 routes four in-lock reads through durable_read_text, whose READ_RETRY_BUDGET_SECONDS is 2.0, so under exactly the Windows delete-pending condition AC3 exists for, in-lock time can grow by up to 8s where it previously failed fast. The AC4 ordering test stays green while the stated goal inverts.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "reversibility",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: the predicate-gated resync cannot fabricate — A nested status-shaped object inside a truncated append would satisfy the predicate and then be WRITTEN by triage_repair.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "boundary-and-contract",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: CONTRACT_VERSION staying at 2 is correct — The rule exempts an ITEM gaining a field; corruption is a new ENVELOPE key, and the envelope key set is exactly what v2 was minted to describe. Decisively: corruption.count > 0 means open and deferred may be INCOMPLETE, so a v2-pinned consumer ignoring it renders an incomplete board as complete - this repo's own defect relocated into the WebUI.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "hidden-coupling",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: the ADR-045 fallbacks are a local guarded import fix — Both fallbacks permanently PREPEND a 160+-module directory to sys.path, so every generic top-level name there resolves ahead of everything else for the process lifetime. The repo's own collectors/_lib_loader.py documents the opposite discipline and scopes front-precedence to the import.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "hidden-coupling",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: every external review finding is answered — The persisted round-2 payload holds six deepseek findings; the spec round-2 table maps one-to-one onto the seven openai findings. The deepseek half is unanswered, including a HIGH about reading the entire store into memory.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "concurrency-and-ordering",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: the hoist only misplaces, it does not lose — Confirmed it only misplaces - but the docstring never names the tracked-on-idle-main direction, which mark_status itself calls undelivered drift requiring a manual CLI to clear.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "boundary-and-contract",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: a docstring cites the test that enforces the _ts_key mirror — The cited test name does not exist anywhere in the tree - a false citation introduced BY the Stage-2 fix, the same false-reassurance shape the run spent the day closing.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "concurrency-and-ordering",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: one damaged span is announced once per process — _REPORTED is module-global, so the guarantee is per MODULE OBJECT; under the ADR-045 mixed load two sets coexist and the span is announced twice.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "reversibility",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: AC3 is a strict improvement to the read path — durable_read_text retries winerror 5, which atomic_write documents as AMBIGUOUS, so an ACL-denied store now stalls ~2s per read instead of failing instantly; and triage reads now increment the shared sharing_violation_retries tally previously write-only in practice.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-08-06T09:04:23.145371+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 3,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "bug",
+          "file": "shared/scripts/lib/jsonl_records.py:215` — `_resync` accepts any end-of-line decode run for which every object passes `is_record`, but `is_triage_record` only requires `event in (\"append\", \"status\")` and a string `id`. A damaged, unclosed outer object can contain a complete nested object with those fields, followed by a genuine appended record; resync begins at the nested `{`, decodes […truncated]",
+          "line": null,
+          "finding": "Strengthen recovery validation to the full wire-level requirements for each event type, including required fields and field types, and add a regression test with a nested object that satisfies the current `event`/`id` predicate. If no sufficiently discriminating historic-record predicate exists, recovery must remain conservative for ambiguous prefixes rather than treating a minimal shape match as proof of a top-level record boundary.",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "spec",
+          "file": "shared/scripts/lib/triage_contract.py:128` — The `corruption.spans[].bytes` value is computed with `len(f.text)`, which counts Python Unicode code points rather than UTF-8/surrogateescape bytes. The same defect appears in the stderr notice at `shared/scripts/lib/triage_integrity.py:149`. A corrupt JSON span containing valid non-ASCII text, such as `é`, is reported as one byte although […truncated]",
+          "line": null,
+          "finding": "Compute the count as `len(fragment.text.encode(\"utf-8\", \"surrogateescape\"))` in both machine and human reporting paths, ideally through one shared helper. Add coverage using malformed JSON containing valid multibyte UTF-8 as well as surrogateescaped invalid bytes.",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": "shared/scripts/lib/triage_integrity.py:145` — `format_corruption_notice` emits one detail line for every corrupt fragment and `_REPORTED` retains a key for every one. A malformed or hostile log containing many corrupt physical lines can produce an unbounded stderr report and unbounded process-memory growth, despite the stated requirement/review resolution that corruption representatio […truncated]",
+          "line": null,
+          "finding": "Cap displayed spans in the stderr notice and append a `(+N more)` summary, analogous to pending-delivery IDs; ensure deduplication bookkeeping is bounded or scoped to the command invocation.  Overall assessment: ship-with-fixes. The change covers the intended surfaces, but the core recovery logic can still fabricate qualifying nested records, and reporting does not accurately provide byte counts or bound the human corruption output.  SHIPWRIGHT_VERDICT: revise",
+          "suggestion": null,
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-08-06T08:49:05.417998+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "partial",
+      "raw_excerpt": "[deepseek] <no review returned: provider returned an empty reply>\n\n[openai] - Category: bug\n- Severity: high\n- File: `shared/scripts/lib/jsonl_records.py:215` — `_resync` accepts any end-of-line decode run for which every object passes `is_record`, but `is_triage_record` only requires `event in (\"append\", \"status\")` and a string `id`. A damaged, unclosed outer object can contain a complete nested object with those fields, followed by a genuine appended record; resync begins at the nested `{`, decodes both objects through EOL, and returns the nested object as a fabricated record. `triage_repair` then re-emits that fabricated object into the log. For example, a prefix like `{\"meta\":{\"event\":\"append\",\"id\":\"forged\"}` followed by a genuine append will satisfy the current run predicate.\n- Suggestion: Strengthen recovery validation to the full wire-level requirements for each event type, including required fields and field types, and add a regression test with a nested object that satisfies the current `event`/`id` predicate. If no sufficiently discriminating historic-record predicate exists, recovery must remain conservative for ambiguous prefixes rather than treating a minimal shape match as proof of a top-level record boundary.\n\n- Category: spec\n- Severity: medium\n- File: `shared/scripts/lib/triage_contract.py:128` — The `corruption.spans[].bytes` value is computed with `len(f.text)`, which counts Python Unicode code points rather than UTF-8/surrogateescape bytes. The same defect appears in the stderr notice at `shared/scripts/lib/triage_integrity.py:149`. A corrupt JSON span containing valid non-ASCII text, such as `é`, is reported as one byte although it occupies two UTF-8 bytes, violating the specified path/line/**byte count** contract.\n- Suggestion: Compute the count as `len(fragment.text.encode(\"utf-8\", \"surrogateescape\"))` in both machine and human reporting paths, ideally through one shared helper. Add coverage using malformed JSON containing valid multibyte UTF-8 as well as surrogateescaped invalid bytes.\n\n- Category: edge- […truncated]",
+      "verdicts": {
+        "openai": "revise",
+        "deepseek": "unavailable"
+      }
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 5,
+      "findings": [
+        {
+          "severity": null,
+          "category": "missing",
+          "file": "shared/scripts/lib/triage_contract.py",
+          "line": null,
+          "finding": "RESOLVED (was blocking). The field was never built and store_corruption had no production caller, so AC2's retrievable-data channel existed only in tests. build_listing now takes a required corruption argument; the envelope carries count/truncated/spans and triage_cli supplies it from the same resolved paths. — spec: External plan review round 1, finding 3: 'list --json carries the corruption as a field so stdout stays parseable'",
+          "suggestion": "External plan review round 1, finding 3: 'list --json carries the corruption as a field so stdout stays parseable'",
+          "source": "spec-reviewer"
+        },
+        {
+          "severity": null,
+          "category": "unfaithful",
+          "file": "shared/tests/test_triage_record_boundary_recovery.py",
+          "line": null,
+          "finding": "RESOLVED (was blocking). The test input had no predicate-satisfying candidate, so deleting _MAX_RESYNC_ATTEMPTS left it green - it pinned nothing. Replaced with a two-sided budget pair and mutation-verified in-process. — spec: Ledger row 9 / round-2 resolution 2: the resync cap is 'pinned'",
+          "suggestion": "Ledger row 9 / round-2 resolution 2: the resync cap is 'pinned'",
+          "source": "spec-reviewer"
+        },
+        {
+          "severity": null,
+          "category": "missing",
+          "file": "shared/scripts/tools/triage_repair.py",
+          "line": null,
+          "finding": "RESOLVED (was blocking). The new corruption notice sends the operator to triage_repair.py, which called split_records WITHOUT the predicate and would republish the file deleting the record the reader had just recovered. Reproduced end-to-end, then fixed by threading the predicate; pinned by test_repair_does_not_delete_the_record_the_reader_recovers. — spec: Goal + AC1: 'a valid record can no longer be discarded because a damaged neighbour precedes it on the same physical line'",
+          "suggestion": "Goal + AC1: 'a valid record can no longer be discarded because a damaged neighbour precedes it on the same physical line'",
+          "source": "spec-reviewer"
+        },
+        {
+          "severity": null,
+          "category": "unfaithful",
+          "file": "shared/scripts/lib/triage_integrity.py",
+          "line": null,
+          "finding": "RESOLVED (was medium). The module defining the store's record predicate did not use it for its own reads, so corruption spans disagreed with the reader's and a buffered decision behind a damaged prefix would have read as delivered. Both readers now pass the predicate. — spec: AC2 + AC5: corruption must reach consumers as retrievable data; a false reassurance is never acceptable",
+          "suggestion": "AC2 + AC5: corruption must reach consumers as retrievable data; a false reassurance is never acceptable",
+          "source": "spec-reviewer"
+        },
+        {
+          "severity": null,
+          "category": "unfaithful",
+          "file": "shared/scripts/lib/atomic_write.py",
+          "line": null,
+          "finding": "RESOLVED (was medium). That docstring still said 'no triage-store reader goes through here', falsified by this diff. Rewritten in the same diff, net-neutral in line count. — spec: Spec Impact NONE justification cites durable_read_text's stated expectation",
+          "suggestion": "Spec Impact NONE justification cites durable_read_text's stated expectation",
+          "source": "spec-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-08-06T08:37:25.418225+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    }
+  }
+}

@@ -113,6 +113,10 @@ def sweep_outbox_to_branch(
     The canonical triage lock is held across the ENTIRE read->commit->GC critical
     section (Codex Q4) so a concurrent background outbox producer serializes
     against the whole sweep rather than racing a read-then-lost window.
+
+    **``LockTimeout`` propagates** (trg-dc013d82): a canonical lock stuck for the
+    whole budget is a host fault, not a ``SweepResult`` — and it used to hang here
+    forever rather than return at all.
     """
     main_root = Path(main_root)
     worktree_path = Path(worktree_path)
@@ -162,9 +166,8 @@ def sweep_outbox_to_branch(
         # checkout); fall back to LF when the worktree log is absent/empty.
         eol = wt_eol if worktree_raw else "\n"
 
-        # Materialize + classify. Orphan-status lines that ORIGINATE IN THE OUTBOX are
-        # QUARANTINED rather than hard-blocking the whole sweep (genuine corruption —
-        # bad header / dup append / invalid JSON — still fails closed). See sweep_quarantine.
+        # Materialize + classify, then give every un-deliverable line a PROPORTIONAL
+        # disposition — quarantine / HOLD / deliver / block. Rules: sweep_quarantine.
         decision = quarantine_decide(
             worktree_lines_norm, outbox_lines, eol,
             known_append_ids=plan.known_append_ids,
@@ -180,14 +183,17 @@ def sweep_outbox_to_branch(
             done = commit_main_tracked_drift(plan, main_root, outbox_path)
             adopted, adopt_note = done.adopted, done.reason
 
-        quarantined = 0
-        if decision.action == "quarantine":
+        # Driven off the LISTS, not ``action``: quarantine and hold can occur in one sweep
+        # and ``action`` names only the stronger. Write order unchanged and load-bearing:
+        # quarantine, then branch commit, then the outbox rewrite LAST.
+        quarantined, held = len(decision.candidates), len(decision.held_lines)
+        if decision.candidates:
             append_quarantine(
                 quarantine_path(main_root), decision.candidates,
-                reason="orphan-status: no append anywhere in the combined triage log",
+                reason="un-deliverable status: no append anywhere in the combined triage log, or no usable id",
             )
-            outbox_lines = decision.trimmed_outbox
-            quarantined = len(decision.candidates)
+        # NOT ``outbox_lines``: putting branch content behind that name deletes HELD lines.
+        branch_outbox_lines = decision.materialized_outbox
         deduped_text = decision.deduped_text
 
         # Count genuinely-new lines (not already in the worktree tracked log).
@@ -195,7 +201,7 @@ def sweep_outbox_to_branch(
         # "\n"``), so the stripped membership set == the exact line set here —
         # strip is a CRLF/EOL absorber, not a content mutator.
         wt_set = {ln.strip() for ln in worktree_lines_norm if ln.strip()}
-        swept = sum(1 for ln in outbox_lines if ln.strip() and ln.strip() not in wt_set)
+        swept = sum(1 for ln in branch_outbox_lines if ln.strip() and ln.strip() not in wt_set)
 
         committed_subject = ""
         if deduped_text != worktree_raw:
@@ -264,8 +270,8 @@ def sweep_outbox_to_branch(
         # Two halves of one critical section disagreeing is the whole bug.
         current_lines, outbox_eol = normalize_lines(read_text_verbatim(outbox_path))
         # Quarantined candidates are still ON DISK — ``append_quarantine`` writes the
-        # quarantine log, not the outbox — so this rewrite is what removes them, and a
-        # re-read would otherwise resurrect them.
+        # quarantine log, not the outbox — so this rewrite removes them, and a re-read
+        # would otherwise resurrect them. CANDIDATES ONLY: a HELD line must survive here.
         quarantined_text = {ln.strip() for ln in decision.candidates} if quarantined else set()
 
         survivors, gc_dropped = partition_outbox(
@@ -284,9 +290,11 @@ def sweep_outbox_to_branch(
             return SweepResult(
                 status=status, reason=adopt_note or ("" if gc_dropped else "no_branch_change"),
                 swept=0, gc_dropped=gc_dropped, quarantined=quarantined, adopted=adopted,
+                held=held,
             )
 
         return SweepResult(
             status="committed", swept=swept, gc_dropped=gc_dropped, reason=adopt_note,
             quarantined=quarantined, adopted=adopted, commit_subject=committed_subject,
+            held=held,
         )
