@@ -111,6 +111,10 @@ def sweep_outbox_to_branch(
     The canonical triage lock is held across the ENTIRE read->commit->GC critical
     section (Codex Q4) so a concurrent background outbox producer serializes
     against the whole sweep rather than racing a read-then-lost window.
+
+    **``LockTimeout`` propagates** (trg-dc013d82): a canonical lock stuck for the
+    whole budget is a host fault, not a ``SweepResult`` — and it used to hang here
+    forever rather than return at all.
     """
     main_root = Path(main_root)
     worktree_path = Path(worktree_path)

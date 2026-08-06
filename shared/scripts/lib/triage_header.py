@@ -21,13 +21,16 @@ def _durable_atomic_write(path: Path, data: bytes) -> None:
     """``lib.atomic_write.durable_atomic_write``, resolved WITHOUT an intra-package import.
 
     ``triage.py`` reaches this module through ``shared_lib_loader.load_shared_lib``,
-    whose docstring is explicit: the by-file-location fallback is *"only safe for lib
-    modules with no intra-package imports"*, because a ``from lib.sibling import …``
-    still resolves against whichever shadowing ``lib`` package won — the very ADR-045
-    collision that loader exists to survive. So this module stays a stdlib-only leaf
-    (like its siblings ``jsonl_records`` and ``file_lock``) and goes back through the
-    loader for the one helper it needs. ``atomic_write`` is itself stdlib-only, so it
-    satisfies the same constraint.
+    and going back through the loader — rather than importing a sibling directly —
+    is what keeps this module immune to whichever shadowing ``lib`` package won, the
+    ADR-045 collision that loader exists to survive.
+
+    The loader's fallback used to be *"only safe for lib modules with no
+    intra-package imports"*, and this docstring cited ``file_lock`` and
+    ``atomic_write`` as leaves that satisfied it. Both grew a sibling import in
+    trg-dc013d82 and the fallback broke on them — measured, not theorised. The
+    loader now loads into a private *package*, so a sibling import resolves inside
+    it; the constraint is gone and the claim it rested on is no longer made here.
     """
     from shared_lib_loader import load_shared_lib  # noqa: PLC0415
 
