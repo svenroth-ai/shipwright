@@ -46,6 +46,7 @@ from tools.compliance_git import (  # noqa: E402
     staged_difference,
     write_back,
 )
+from tools.compliance_adopt_stamp import deliver_stamp_adopted  # noqa: E402
 from tools.compliance_refresh_produce import git, produce  # noqa: E402
 
 __all__ = ["deliver_stage", "main", "verify_commit"]
@@ -135,6 +136,15 @@ def main(argv: list[str] | None = None) -> int:
                       help="assert the named commit really carries the stamp — "
                            "`git commit -- <paths>` reads the WORKTREE, so the index "
                            "checks everything else does prove nothing about it")
+    mode.add_argument("--stamp-adopted", action="store_true",
+                      help="stamp the seeded evidence at onboarding with the commit "
+                           "the repository was read at (--base). Does NOT recompute "
+                           "and never resolves HEAD — only the caller knows that "
+                           "commit")
+    parser.add_argument("--base", default=None,
+                        help="the commit onboarding read, for --stamp-adopted. "
+                             "PASSED IN, never observed: at Step H this process's "
+                             "HEAD equals it only if nothing has committed since")
     parser.add_argument("--release", default=None,
                         help="the release this ships with, e.g. v0.5.2. PASSED IN — the "
                              "tag does not exist yet at the moment this runs")
@@ -163,6 +173,19 @@ def main(argv: list[str] | None = None) -> int:
             "restored": moved, "unresolved": unresolved,
         }, indent=2))
         return 0 if not unresolved else 1
+
+    # Onboarding's delivery. Returns HERE, before the `rev-parse HEAD` below:
+    # this mode must never resolve HEAD, and the surest way to guarantee that is
+    # for the code that does it to be unreachable from this path.
+    if args.stamp_adopted:
+        report = deliver_stamp_adopted(root, args.base)
+        print(json.dumps(report, indent=2))
+        # `no_base` is a success: a repository with no commits is a legitimate
+        # thing to onboard, and an unstamped banner is the honest outcome.
+        # `partial` (present but unstampable) and `no_documents` (Step F produced
+        # nothing) are errors, and must be non-zero ones — a wrapper that checks
+        # the exit code would otherwise commit a half-stamped or empty set.
+        return 0 if report["status"] in ("ok", "no_base") else 1
 
     # A documents-only branch off the default branch did not ship with any
     # release. Stamping the latest tag would claim it did; choosing silently would
