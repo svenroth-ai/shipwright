@@ -134,19 +134,34 @@ _S9_S10 = [
 
 _SEAM_ENV = ("SHIPWRIGHT_LOOP_ID", "SHIPWRIGHT_LOOP_UNIT_ID", "SHIPWRIGHT_RUN_ID")
 
+# Priority 0 (the run pointer) is deliberately absent from `proj` in the tests
+# below — see test_the_seam_still_skips_when_no_run_pointer_names_the_session.
+
 
 @pytest.mark.parametrize("session_id", ["unknown", "d269d6e9-14a6-4c50-b77c"])
-def test_the_stop_audit_seam_hands_these_checks_an_unresolvable_run_id(
+def test_the_seam_still_skips_when_no_run_pointer_names_the_session(
     proj: Path, would_warn: None, monkeypatch: pytest.MonkeyPatch,
     session_id: str,
 ) -> None:
     """Pin the CONSEQUENCE, so it is falsifiable rather than assumed.
 
     The only production caller is the phase-quality Stop audit, whose run_id
-    comes from ``pq.resolve_run_id``. That chain (run_config ``run_id`` → a
-    ``run_started`` event → SHIPWRIGHT_LOOP_ID → the session id) never yields
-    the canonical ``iterate-YYYY-MM-DD-slug`` an iterate_history entry is keyed
-    by, so post-guard S9/S10 SKIP on EVERY real invocation.
+    comes from ``pq.resolve_run_id``. Its lower four sources (run_config
+    ``run_id`` → a ``run_started`` event → SHIPWRIGHT_LOOP_ID → the session id)
+    never yield the canonical ``iterate-YYYY-MM-DD-slug`` an iterate_history
+    entry is keyed by, so whenever they are all that is available these checks
+    SKIP.
+
+    **This is no longer the normal case for an iterate.**
+    iterate-2026-08-06-resolve-run-id-seam added priority 0 — the per-session
+    run pointer ``setup_iterate_worktree.py`` writes at B1a — which does resolve
+    the canonical id, so a real iterate audited from its own worktree now
+    reaches these checks properly. What this test pins is the surviving
+    fall-through: no pointer names ``session_id`` (a non-iterate session, a
+    pruned pointer, a foreign audit context), so the guard must still refuse to
+    let an unrelated run's category decide the verdict. ``proj`` is a bare
+    tmp_path with no pointer, which is exactly that state. The live seam is
+    covered by ``test_resolve_run_id_pointer_composition.py``.
 
     The parameters are the two values the hook can actually pass: it coerces a
     blank env var to ``"unknown"`` before calling

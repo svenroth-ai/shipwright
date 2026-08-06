@@ -1,0 +1,314 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-08-06-resolve-run-id-seam",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-06T10:53:46.576326+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 10,
+      "findings": [
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The plan says “both sides are normalised before comparison here,” but does not explicitly state that the stored `session_id` read from the pointer will be stripped. The Stop hook passes a pre-stripped session ID, while the producer writes it directly from the environment (no strip). If the environment variable ever contained leading/trailing whitespace, the pointer would be rejected.",
+          "suggestion": "In the helper, apply `.strip()` to the stored `session_id` before comparing it with the (already stripped) input, or store it stripped in the pointer at write time. This closes the normalization gap definitively.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "A concurrent process could truncate or rewrite the pointer file at the exact moment the audit reads it, leading to a transient read error or partial JSON. The fail-open fall‑through handles this without crashing, but it will cause the checks to skip for that invocation.",
+          "suggestion": "No code change required; the risk is extremely small and the fail‑open posture is appropriate. The plan could note this in the “failure posture” section for completeness.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "The new `_pointer_run_id` uses lazy imports for `lib.repo_root` and `lib.worktree_isolation`, while the module already eagerly imports `lib.project_root`. The mix of eager and lazy imports within the same subsystem is a slight inconsistency, but it does not affect correctness or performance.",
+          "suggestion": "Minor style decision; not required to change. The lazy-import choice is justified by the cost analysis.  Overall assessment: The plan is thorough, addresses edge cases with validation guards, and uses an existing, safe data artifact to resolve the audit’s run identity. It is a minimal, backward‑compatible fix that correctly scopes the repair to the seam where it was broken. No material risks to existing functionality remain.  SHIPWRIGHT_VERDICT: approve",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The mini-plan does not explicitly implement or test two required acceptance conditions: pointer `run_id` value validation (AC-5b) and payload `session_id` verification (AC-9). Merely obtaining a mapping from `read_run_pointer` and returning its `run_id` would permit values such as `None`, whitespace, `\"unknown\"`, or a pointer selected through a sanitized-filename collision to alter resolution behavior.",
+          "suggestion": "Define `_pointer_run_id` to normalize the audited session ID once, reject blank/`\"unknown\"` sessions before any lookup, then accept a pointer only when: - its payload is an object; - `pointer[\"session_id\"]`, normalized with the same rule as the producer/hook contract, exactly matches the audited session ID; - `pointer[\"run_id\"]` is a string whose stripped value is non-empty and not `\"unknown\"`. Add direct tests for every AC-5b invalid value and both AC-9 mismatch cases.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "AC-6 and the mini-plan disagree about what is sanitized. The specification correctly says the session ID, not the `run_id`, determines the pointer filename. Step 1 instead promises a “sanitiser-rewritten run_id” test, which would not test the actual producer/consumer filename seam.",
+          "suggestion": "Correct the test description and construct the round-trip using a session ID containing characters rewritten by `sanitize_run_id_for_filename` (for example, slash/whitespace/punctuation as supported by the sanitizer). Assert that `write_run_pointer` and `resolve_run_id` locate the same file and that the payload `run_id` is returned unchanged.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "The plan relies on `read_run_pointer` as the SSoT reader, but does not establish its failure and validation contract. AC-5 requires malformed JSON, non-object JSON, unreadable files, and missing fields never to break the Stop hook. If the existing reader raises on malformed JSON, filesystem failures, or unexpected shapes, simply calling it first can violate the fail-open requirement.",
+          "suggestion": "Inspect and document `read_run_pointer`’s exact behavior before implementation. Put a narrow failure boundary around main-root resolution and pointer reading in `_pointer_run_id`, returning `None` on expected `OSError`, JSON/decode, and shape-related failures. Avoid allowing a pointer-read failure to escape `resolve_run_id`; preserve the existing four-source chain exactly after a failed pointer attempt.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "The lifecycle normalization contract is described in the review notes but not included in the implementation steps. The producer apparently retains the supplied session ID while the Stop hook strips it. Without explicit normalization before filename lookup and before payload comparison, a session ID with leading/trailing whitespace can produce a pointer that the consumer either fails to find or incorrectly rejects.",
+          "suggestion": "Make normalization part of `_pointer_run_id`’s explicit contract and test it. Prefer using the same normalized session value for sentinel detection, pointer lookup, and payload comparison; if changing producer normalization is needed to establish that invariant, make that dependency explicit and cover producer/consumer compatibility.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "The test plan proves only the composed S9/S10 case, while AC-10 requires proof that S2, S3, W2, S9, and S10 all route through `unresolvable_run_id_skip`. The plan’s documentation update also names only S9/S10. This leaves the claimed five-check blast radius partly inferred rather than guarded against future bypasses.",
+          "suggestion": "Add or extend a focused routing/tripwire test that enumerates all five checks and asserts each invokes or is gated by `unresolvable_run_id_skip`. Update the relevant test docstring and record this as a separate assertion from the S9/S10 end-to-end composition test.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "A matching payload `session_id` alone does not distinguish a genuinely current pointer from a stale or manually reused session ID when the prior worktree still exists. The stated pruning guarantee only prevents deletion of live pointers; it does not prevent intentional reuse of `--session-id` or a stale matching pointer from binding an audit to an older run.",
+          "suggestion": "Confirm whether caller-supplied/reused session IDs are supported. If they are, validate the pointer’s `worktree_path` against the audited linked-worktree root when `project_root` is a worktree, or document why session IDs are guaranteed unique for the pointer lifetime. Do not use the pointer’s `main_root` or worktree path for general path traversal; use it only as an equality/identity check if added.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "security",
+          "file": null,
+          "line": null,
+          "finding": "The proposed local-pointer trust model is reasonable for this hook, and downstream filename sanitization limits path traversal from `run_id`. However, the plan should ensure the `run_id` is treated solely as opaque data after validation; no logging format, shell invocation, or dynamically composed command should consume it unsafely. The new code’s broad fail-open handling should also not accidentally mask unrelated programming errors.",
+          "suggestion": "Keep pointer handling data-only, use existing structured finding APIs, and catch expected pointer/root-resolution exceptions rather than an unqualified `Exception` around the entire resolver. Retain the existing downstream filename sanitizer rather than introducing another sanitizer or transformation of the canonical payload `run_id`.  Overall, using the existing session-keyed run pointer as priority 0 is the right, low-surface repair and preserves the existing fallback chain. The implementation plan needs its pointer validation, session normalization, and five-check proof made explicit before it is ready to ship. SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-08-06T09:10:55.294676+00:00",
+      "disposition": null,
+      "recorded_by": "external_review.py",
+      "parse_status": "structured",
+      "raw_excerpt": "[deepseek] - **Category:** edge-case  \n  **Severity:** low  \n  **Finding:** The plan says “both sides are normalised before comparison here,” but does not explicitly state that the stored `session_id` read from the pointer will be stripped. The Stop hook passes a pre-stripped session ID, while the producer writes it directly from the environment (no strip). If the environment variable ever contained leading/trailing whitespace, the pointer would be rejected.  \n  **Suggestion:** In the helper, apply `.strip()` to the stored `session_id` before comparing it with the (already stripped) input, or store it stripped in the pointer at write time. This closes the normalization gap definitively.\n\n- **Category:** edge-case  \n  **Severity:** low  \n  **Finding:** A concurrent process could truncate or rewrite the pointer file at the exact moment the audit reads it, leading to a transient read error or partial JSON. The fail-open fall‑through handles this without crashing, but it will cause the checks to skip for that invocation.  \n  **Suggestion:** No code change required; the risk is extremely small and the fail‑open posture is appropriate. The plan could note this in the “failure posture” section for completeness.\n\n- **Category:** approach  \n  **Severity:** low  \n  **Finding:** The new `_pointer_run_id` uses lazy imports for `lib.repo_root` and `lib.worktree_isolation`, while the module already eagerly imports `lib.project_root`. The mix of eager and lazy imports within the same subsystem is a slight inconsistency, but it does not affect correctness or performance.  \n  **Suggestion:** Minor style decision; not required to change. The lazy-import choice is justified by the cost analysis.\n\n**Overall assessment:** The plan is thorough, addresses edge cases with validation guards, and uses an existing, safe data artifact to resolve the audit’s run identity. It is a minimal, backward‑compatible fix that correctly scopes the repair to the seam where it was broken. No material ris […truncated]\n\n[openai] 1. **Category:** edge-case  \n   **Severity:** medium  \n   **Finding:** The mini-plan does not explicitly implement or test two required acceptance conditions: pointer `run_id` value validation (AC-5b) and payload `session_id` verification (AC-9). Merely obtaining a mapping from `read_run_pointer` and returning its `run_id` would permit values such as `None`, whitespace, `\"unknown\"`, or a pointer selected through a sanitized-filename collision to alter resolution behavior.  \n   **Suggestion:** Define `_pointer_run_id` to normalize the audited session ID once, reject blank/`\"unknown\"` sessions before any lookup, then accept a pointer only when:\n   - its payload is an object;\n   - `pointer[\"session_id\"]`, normalized with the same rule as the producer/hook contract, exactly matches the audited session ID;\n   - `pointer[\"run_id\"]` is a string whose stripped value is non-empty and not `\"unknown\"`.  \n   Add direct tests for every AC-5b invalid value and both AC-9 mismatch cases.\n\n2. **Category:** approach  \n   **Severity:** medium  \n   **Finding:** AC-6 and the mini-plan disagree about what is sanitized. The specification correctly says the **session ID**, not the `run_id`, determines the pointer filename. Step 1 instead promises a “sanitiser-rewritten run_id” test, which would not test the actual producer/consumer filename seam.  \n   **Suggestion:** Correct the test description and construct the round-trip using a session ID containing characters rewritten by `sanitize_run_id_for_filename` (for example, slash/whitespace/punctuation as supported by the sanitizer). Assert that `write_run_pointer` and `resolve_run_id` locate the same file and that the payload `run_id` is returned unchanged.\n\n3. **Category:** dependency  \n   **Severity:** medium  \n   **Finding:** The plan relies on `read_run_pointer` as the SSoT reader, but does not establish its failure and validation contract. AC-5 requires malformed JSON, non-object JSON, unreadable files, and missing fields n […truncated]",
+      "verdicts": {
+        "openai": "revise",
+        "deepseek": "approve"
+      }
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 9,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "docs/hooks-and-pipeline.md",
+          "line": null,
+          "finding": "Headline claim ('these checks now evaluate for real') was never verified through the production path, and already_audited plausibly freezes the verdict at the first Stop of a run.",
+          "suggestion": "FIXED: ran the real audit_phase_quality_on_stop hook against this run as evidence; it resolved run=iterate-2026-08-06-resolve-run-id-seam but S2/S3/W2/S9/S10 still SKIP from the main root. Docs, _run_id docstring and _iterate_run_id docstring corrected to claim only that. already_audited filed as trg-b36fd844.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "shared/scripts/lib/phase_quality/_run_id.py",
+          "line": null,
+          "finding": "RecursionError (json.loads on a deeply nested pointer) and ImportError from the two function-local imports can escape past except (OSError, ValueError), after the once-per-Stop claim is burned.",
+          "suggestion": "FIXED: RecursionError added to the caught tuple (matching lib/jsonl_records); the function-local imports promoted to eager module-level module imports, eliminating the deferred-ImportError class while keeping monkeypatch on the module object working.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "shared/scripts/lib/phase_quality/_run_id.py",
+          "line": null,
+          "finding": "The pointer is honoured with no liveness or context check, so a finished run can be attributed later work in the same session; measured 64 pointer files vs ~36 live worktrees in the main tree.",
+          "suggestion": "FIXED as AC-11: worktree_path liveness predicate, matching the sibling consumer iterate_stop_finalize. The reviewer's stronger form (require project_root == pointer worktree) was REJECTED with reason: production audits from the main root, so it would reject the case carrying the delivered benefit. Residual (worktree retained post-merge) filed as trg-276994a4.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/scripts/lib/phase_quality/_run_id.py",
+          "line": null,
+          "finding": "The run-config branch keeps except (json.JSONDecodeError, OSError), missing the same UnicodeDecodeError escape the pointer branch guards against.",
+          "suggestion": "FIXED: widened to except (ValueError, OSError, RecursionError).",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "efficiency",
+          "file": "shared/scripts/lib/phase_quality/_run_id.py",
+          "line": null,
+          "finding": "Two extra git rev-parse subprocesses now run per Stop on a path that was pure file I/O.",
+          "suggestion": "ACCEPTED as-is; comment added recording that the call is unconditional and why (only git can locate the main tree from a linked worktree).",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "shared/scripts/lib/phase_quality/__init__.py",
+          "line": null,
+          "finding": "The package module map still described _resolution as owning run-id resolution and never listed _run_id.",
+          "suggestion": "FIXED in __init__.py and _resolution.py's summary line.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "simplification",
+          "file": "shared/tests/test_resolve_run_id_pointer_composition.py",
+          "line": null,
+          "finding": "would_warn and _history fixtures are duplicated verbatim from test_spec_checks_run_id_guard.py; hoisting to conftest would save ~22 LOC.",
+          "suggestion": "NOT TAKEN: that conftest is shared by ~8200 tests, and the regression surface is not worth 22 LOC in this diff.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "cleanup",
+          "file": "shared/tests/test_events_log_ssot.py",
+          "line": null,
+          "finding": "A six-line tombstone comment was left inside _MAIN_REPO_ONLY describing the entry that was removed.",
+          "suggestion": "FIXED: deleted. test_allowlist_entries_are_not_stale already prevents the rot it warned about.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "documentation",
+          "file": "shared/scripts/lib/phase_quality/_run_id.py",
+          "line": null,
+          "finding": "Tail behaviour change vs AC-3's 'byte-for-byte unchanged': resolve_run_id(root, '  ') returned '  ' and now returns 'unknown'.",
+          "suggestion": "FIXED: documented in the resolve_run_id docstring, with the note that it is unreachable from either production caller.",
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-08-06T10:02:05.563486+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-06T10:54:06.216797+00:00",
+      "disposition": "Stage-3 doubt-reviewer subagent was spawned per the CLAUDE.md standing grant and terminated mid-run by an Anthropic monthly spend limit (billing, not a finding). NOT a session-policy decline. Partially compensated: an independent adversarial pass ran via external_review.py --mode code on a different provider account (recorded as external_code, 2 reviewers, both 'revise', 3 findings accepted and fixed, 2 falsified against _constants.is_sentinel_run), plus a self-performed attack on the concurrency, liveness-predicate, fail-open, ADR-045 import-binding and bloat-extraction surfaces the doubt prompt named. Surfaced in the F12 summary so the operator can re-run it.",
+      "recorded_by": "iterate-skill",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 6,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "bug",
+          "file": "shared/scripts/lib/phase_quality/_run_id.py:168-172",
+          "line": null,
+          "finding": "pointer_run_id` checks `is_sentinel_run(run_id)` before stripping. A pointer with `\"run_id\": \" unknown \"` passes the check (the raw string `\" unknown \"` is not in the sentinel set) and then returns `\"unknown\"` after stripping. This is accepted and yields the sentinel string `\"unknown\"` as the resolved run_id. It violates AC-5b, which requires the pointer to be rejected if its run_id is the sentinel `\"unknown\"`. While the downstream guard will still SKIP, it defeats the intent that a bad pointer should fall through and not bind a sentinel-laden id.",
+          "suggestion": "Strip the string before the sentinel check and before the final return: `run_id = run_id.strip(); if not run_id or is_sentinel_run(run_id): return None; return run_id`.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "test (missing change / spec mismatch)",
+          "file": "shared/tests/test_resolve_run_id_pointer_seam.py:144` (`\"UNKNOWN\"` parameter), and the tested function `pointer_run_id` which calls `is_sentinel_run(session_id)`.",
+          "line": null,
+          "finding": "The test `test_sentinel_session_attempts_no_pointer_lookup` asserts that a session id of `\"UNKNOWN\"` triggers no pointer lookup. This requires `is_sentinel_run(\"UNKNOWN\")` to return `True`. The spec (AC-4) only mentions `\"\"` and `\"unknown\"` as sentinel values. If `is_sentinel_run` does not treat uppercase `\"UNKNOWN\"` as sentinel (its definition is not in the diff), the test will fail and the lookup would be attempted for that session id. The diff does not show any change to `_constants.is_sentinel_run` to make it case‑insensitive, so the implementation may be incomplete relative to the test’s expectation.",
+          "suggestion": "Either add a case‑insensitive sentinel check to `is_sentinel_run` (if uppercase should be treated as a sentinel) or remove the `\"UNKNOWN\"` case from the test. Align the test with the delivered code.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case (minor)",
+          "file": "shared/scripts/lib/phase_quality/_run_id.py",
+          "line": 218,
+          "finding": "The `resolve_run_id` tail returns `session_id or \"unknown\"` after normalization. A whitespace‑only `session_id` (e.g., `\"  \"`) is normalized to `\"\"`, which yields `\"unknown\"` correctly. However, there is no test explicitly covering `resolve_run_id(tmp_path, \"   \") == \"unknown\"`. While the logic is obviously correct, the spec specifically notes the behaviour change and AC‑3 expects byte‑for‑byte unchanged tails for non‑pointer cases; adding a one‑line test would concrete the announced change.",
+          "suggestion": "Add a trivial test `test_whitespace_session_yields_unknown` that asserts `resolve_run_id(path, \"   \") == \"unknown\"`.  Overall the change implements the spec’s core seam, includes thorough composition and guard‑routing tests, and does not break existing callers. The two above findings (the sentinel‑with‑spaces bypass and the unhandled uppercase sentinel mismatch) need attention before merge.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "spec",
+          "file": "shared/scripts/lib/phase_quality/_run_id.py:95-97",
+          "line": null,
+          "finding": "Pointer `run_id` values are transformed with `run_id.strip()` before being returned. AC-6 explicitly requires the `run_id` payload to survive producer→consumer round-trip unchanged, while AC-5b only requires rejecting a whitespace-only value. A usable payload such as `\" iterate-2026-08-06-x \"` is currently returned as a different identifier.",
+          "suggestion": "Validate with `if not run_id.strip()` (and sentinel validation on the normalized value if required), but return the original `run_id` unchanged. Add a round-trip test with leading/trailing whitespace to ensure the payload is not transformed.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "bug",
+          "file": "shared/scripts/lib/phase_quality/_run_id.py",
+          "line": 90,
+          "finding": "Payload session identity is coerced through `str(...)`, so a non-string payload can bind if its string representation equals the audited session id. For example, an audited `session_id=\"42\"` accepts a hand-edited pointer containing `\"session_id\": 42`; similarly `\"True\"` accepts `true`. This violates the structural payload-session validation required by AC-9 and weakens the filename-collision/stale-pointer defense.",
+          "suggestion": "Require `pointer[\"session_id\"]` to be a `str` before normalizing and comparing it, e.g. reject non-string values, then compare `payload_session.strip()` to the normalized audited session. Add tests for numeric and boolean payload session IDs matching their string representations.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "test",
+          "file": "shared/tests/test_resolve_run_id_pointer_composition.py:82-94",
+          "line": null,
+          "finding": "AC-2 requires behavior to be proven for a linked worktree, a plain checkout, and a non-git directory. The suite covers the first two, but contains no non-git-directory test. The implementation relies on `main_repo_root_or`’s fallback contract without validating the resolver’s behavior when git discovery fails.",
+          "suggestion": "Add a test rooted in a plain temporary non-git directory that writes a real pointer there with a live worktree directory and asserts `resolve_run_id` resolves its payload run ID.  Overall assessment: ship-with-fixes. The priority-0 seam and most failure handling are implemented well, but payload values are not fully validated/preserved as the acceptance criteria require. SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-08-06T10:53:54.823843+00:00",
+      "disposition": null,
+      "recorded_by": "external_review.py",
+      "parse_status": "structured",
+      "raw_excerpt": "[deepseek] - Category: bug\n- Severity: medium\n- File: `shared/scripts/lib/phase_quality/_run_id.py:168-172`\n- Finding: `pointer_run_id` checks `is_sentinel_run(run_id)` *before* stripping. A pointer with `\"run_id\": \" unknown \"` passes the check (the raw string `\" unknown \"` is not in the sentinel set) and then returns `\"unknown\"` after stripping. This is accepted and yields the sentinel string `\"unknown\"` as the resolved run_id. It violates AC-5b, which requires the pointer to be *rejected* if its run_id is the sentinel `\"unknown\"`. While the downstream guard will still SKIP, it defeats the intent that a bad pointer should fall through and not bind a sentinel-laden id.\n- Suggestion: Strip the string before the sentinel check and before the final return: `run_id = run_id.strip(); if not run_id or is_sentinel_run(run_id): return None; return run_id`.\n\n- Category: test (missing change / spec mismatch)\n- Severity: low\n- File: `shared/tests/test_resolve_run_id_pointer_seam.py:144` (`\"UNKNOWN\"` parameter), and the tested function `pointer_run_id` which calls `is_sentinel_run(session_id)`.\n- Finding: The test `test_sentinel_session_attempts_no_pointer_lookup` asserts that a session id of `\"UNKNOWN\"` triggers no pointer lookup. This requires `is_sentinel_run(\"UNKNOWN\")` to return `True`. The spec (AC-4) only mentions `\"\"` and `\"unknown\"` as sentinel values. If `is_sentinel_run` does not treat uppercase `\"UNKNOWN\"` as sentinel (its definition is not in the diff), the test will fail and the lookup would be attempted for that session id. The diff does not show any change to `_constants.is_sentinel_run` to make it case‑insensitive, so the implementation may be incomplete relative to the test’s expectation.\n- Suggestion: Either add a case‑insensitive sentinel check to `is_sentinel_run` (if uppercase should be treated as a sentinel) or remove the `\"UNKNOWN\"` case from the test. Align the test with the delivered code.\n\n- Category: edge-case (minor)\n- Severity: low\n- File: `share […truncated]\n\n[openai] - Category: spec\n- Severity: medium\n- File: `shared/scripts/lib/phase_quality/_run_id.py:95-97`\n- Finding: Pointer `run_id` values are transformed with `run_id.strip()` before being returned. AC-6 explicitly requires the `run_id` payload to survive producer→consumer round-trip unchanged, while AC-5b only requires rejecting a whitespace-only value. A usable payload such as `\" iterate-2026-08-06-x \"` is currently returned as a different identifier.\n- Suggestion: Validate with `if not run_id.strip()` (and sentinel validation on the normalized value if required), but return the original `run_id` unchanged. Add a round-trip test with leading/trailing whitespace to ensure the payload is not transformed.\n\n- Category: bug\n- Severity: medium\n- File: `shared/scripts/lib/phase_quality/_run_id.py:90`\n- Finding: Payload session identity is coerced through `str(...)`, so a non-string payload can bind if its string representation equals the audited session id. For example, an audited `session_id=\"42\"` accepts a hand-edited pointer containing `\"session_id\": 42`; similarly `\"True\"` accepts `true`. This violates the structural payload-session validation required by AC-9 and weakens the filename-collision/stale-pointer defense.\n- Suggestion: Require `pointer[\"session_id\"]` to be a `str` before normalizing and comparing it, e.g. reject non-string values, then compare `payload_session.strip()` to the normalized audited session. Add tests for numeric and boolean payload session IDs matching their string representations.\n\n- Category: test\n- Severity: low\n- File: `shared/tests/test_resolve_run_id_pointer_composition.py:82-94`\n- Finding: AC-2 requires behavior to be proven for a linked worktree, a plain checkout, and a non-git directory. The suite covers the first two, but contains no non-git-directory test. The implementation relies on `main_repo_root_or`’s fallback contract without validating the resolver’s behavior when git discovery fails.\n- Suggestion: Add a test rooted in […truncated]",
+      "verdicts": {
+        "openai": "revise",
+        "deepseek": "revise"
+      }
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-06T09:40:39.626998+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    }
+  }
+}
