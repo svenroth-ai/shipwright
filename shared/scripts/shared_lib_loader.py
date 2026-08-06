@@ -16,9 +16,22 @@ triage producer emitted from a subprocess; surfaced by the first in-process one
 common case — and falls back to loading the file directly under a private module
 name that touches no ``lib`` namespace at all.
 
-**Only safe for lib modules with no intra-package imports.** A module that does
-``from lib.sibling import …`` would still resolve that sibling against the
-shadowing package, so the fallback must not be used for it.
+**A module reached through here must not rely on a bare intra-package import.**
+``from lib.sibling import …`` would resolve that sibling against the *shadowing*
+package, and the plain relative ``from .sibling import …`` cannot resolve at all
+under the path fallback, which has no package context.
+
+The rule is therefore "spell it both ways", not "have no siblings": a module may
+depend on a sibling if it tries the relative import first and falls back to the
+sibling's unique top-level name, putting ``shared/scripts/lib`` on ``sys.path``
+itself (this loader adds ``shared/scripts``, not ``lib``). Two modules do exactly
+that and are pinned in both modes by ``shared/tests/test_jsonl_records_load_modes.py``
+— ``lib/jsonl_records.py`` (needs ``atomic_write``) and ``lib/triage_integrity.py``
+(needs ``jsonl_records`` + ``triage_delivery``), both since
+iterate-2026-08-06-p2-19c-corruption-absence. Note the consequence recorded in the
+latter: under the fallback a sibling is bound under its top-level name, a DISTINCT
+module object from any sentinel-named copy, so classes from the two do not compare
+equal — duck-type across that boundary, never ``isinstance``.
 """
 
 from __future__ import annotations
