@@ -1,0 +1,491 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-08-05-inline-suppression-ratchet",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-05T20:41:27.001248+00:00",
+      "disposition": null,
+      "recorded_by": "self-review (7-point checklist; 2 findings raised and fixed in-run: CLI skeleton placeholders validated clean, and the regex doc-comment matched itself)",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 12,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The “comment-marker anchored” regex for discovering `nosemgrep: rule-id` may miss files in languages whose comment syntax is not enumerated (e.g., `--` in SQL, `//` in C-like languages, `'` in VBA). If such files contain explicit suppressions, the ratchet would be blind to them, allowing unmonitored growth.",
+          "suggestion": "Explicitly define the set of comment markers the scanner supports (e.g., `#`, `//`, `--`, `;`) and construct the regex accordingly. Document the list so that a missing language is visible; a test asserting presence for each supported marker would reduce the risk.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The pattern might match inside string literals that contain `nosemgrep: rule-id` (e.g., a docstring referencing the syntax). While the baseline can absorb current false positives, new such strings would inflate counts and cause spurious blocks.",
+          "suggestion": "Acknowledge this limitation in the module docstring. The implementation can optionally limit matching to lines where the comment marker is the first non-whitespace token, though that would miss trailing comments. The trade-off is acceptable; just make it known.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "The guard test runs `reconcile` against this repo. The plan states “shrink is advisory, never a block,” but it does not detail how the test exactly distinguishes a block from an advisory. If the test checks for `ratchets` and `unrecorded` but also inadvertently fails on a non-empty `shrunk`, a legitimate baseline entry for a rule no longer present in source would break CI.",
+          "suggestion": "In the guard test, explicitly assert that `ratchets` and `unrecorded` are empty, while intentionally not asserting on `shrunk`. Add a code comment explaining that `shrunk` is advisory and does not block.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "The requirement to supply a `rationale_ref` matching `DECISION_REF_RE` for each baseline entry may slow down developers adding a new suppression. If the regex is strict (e.g., requires an ADR number that doesn’t exist yet), the process for generating a valid reference might be unclear or heavy.",
+          "suggestion": "Clarify in documentation what values are acceptable (e.g., this run ID, an issue number, or a free-text slug if the regex permits). If the gate is intentionally strict to enforce a recorded decision, explain the minimum steps to create one.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "The new module imports `DECISION_REF_RE` directly from `accepted_risks`. Both reside in `shared/scripts/`, so the import is safe now, but future restructuring could break it. The existing duplication in `verifiers/ci_supplychain` was for a different reason; here a bare import is intended.",
+          "suggestion": "Add a test that the import succeeds and that the regex behaves as expected. A comment noting the dependency for maintainers would be prudent.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "The proposed regex-based discovery does not yet define how it distinguishes an actual language comment from `nosemgrep:` text inside a string, docstring, heredoc, template literal, or source-code prose. Anchoring on a comment marker is insufficient in several supported languages—for example, Python strings can contain `# nosemgrep: rule`, and JavaScript strings can contain `// nosemgrep: rule`. This risks both blocking harmless text additions and recording false sites in the baseline.",
+          "suggestion": "Define the supported file types and comment forms explicitly, and implement a conservative recognizer for those forms. At minimum, test quoted-string/docstring/heredoc false positives for every supported comment marker. If exact comment recognition is not practical, limit scanning to the file types and line forms actually used by the repository’s Semgrep configuration, document that scope, and ensure the scanner does not claim broader Semgrep equivalence.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "The source-extension allowlist and skipped directories are unspecified and may not align with the actual Semgrep target set. A new suppression in a Semgrep-scanned extension omitted by this leaf will evade the ratchet; conversely, scanning a source-like extension Semgrep does not scan creates irrelevant blocking counts. Fixed exclusions such as `node_modules`, `site-packages`, and generated/vendor trees also need to match the repository’s Semgrep invocation rather than be assumed safe.",
+          "suggestion": "Derive and document the scanner’s supported extensions/exclusions from the repository’s Semgrep configuration or CI invocation. Add fixtures for every currently relevant language/comment style, plus a test demonstrating that an unsupported extension is intentionally ignored. Revisit this list whenever Semgrep target configuration changes.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "Baseline validation is described only at a high level. `json.loads` silently accepts duplicate object keys, and permissive coercion can accept problematic values such as `true` for `max_sites` in Python (`bool` is an `int` subclass). Without strict validation, a malformed hand-edited baseline may not fail closed as required.",
+          "suggestion": "Specify and test the exact JSON shape: schema version, top-level object/entries, allowed keys, non-empty rule IDs, non-negative integer `max_sites` excluding booleans, non-empty `statement`, and `rationale_ref` full-match validation. Use a duplicate-key-detecting `object_pairs_hook` and reject duplicate keys, unknown keys, invalid types, and invalid schema versions with `BaselineError`.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "Failure behavior for the source walk is not stated. Permission errors, decode errors, broken symlinks, or an unreadable eligible source file can otherwise result in a partial count and a passing live guard, creating a practical bypass for a security control. This is particularly important because the baseline itself is correctly planned to fail closed.",
+          "suggestion": "Make scanning failures explicit and fail closed in the live guard for any eligible file that cannot be read or decoded. Resolve and validate paths while walking so traversal cannot escape the requested project root through symlinks; alternatively, explicitly skip symlinks and test that behavior. Include the affected relative path in the diagnostic.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "security",
+          "file": null,
+          "line": null,
+          "finding": "The ratchet can be bypassed in the same pull request by raising `max_sites` or adding a new rule entry. That may be acceptable for a “cannot grow unnoticed” control, but the plan currently validates only the syntax of `rationale_ref`; it does not ensure that it resolves to the promised recorded decision. A contributor could attach an unrelated or nonexistent-looking-but-regex-valid reference and make a growth appear governed.",
+          "suggestion": "Confirm the repository review policy treats baseline changes as security-governance changes, and make the validation resolve `rationale_ref` against the decision-drop inventory if such an inventory exists. At minimum, add a test that the seeded run reference corresponds to the F3 decision drop and document the required workflow for future baseline increases: update count, provide rule-specific statement, and cite a recorded decision.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The reconciliation and dashboard contracts need deterministic, actionable output. A map of sites can produce non-deterministic diagnostics if filesystem traversal is not sorted, and the dashboard’s degradation-tolerant import path could silently display an empty or stale-looking block when the scanner/baseline is unavailable or invalid.",
+          "suggestion": "Sort paths, rule IDs, and sites before reconciliation and rendering. Have the dashboard distinguish “zero suppressions” from “suppression data unavailable/invalid”; only the latter may degrade, and it should render a conspicuous status note rather than an apparently valid zero count.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "The plan introduces `SCHEMA_VERSION` but does not state where or how that version is serialized in the baseline. An exported constant without an enforced on-disk version adds ambiguity rather than providing schema protection.",
+          "suggestion": "Either include and validate an explicit top-level `schema_version: 1` field, or omit `SCHEMA_VERSION` until versioned migration behavior is actually needed.  Overall, the per-rule count ratchet is an appropriate, lower-risk alternative to offline Semgrep reconciliation, and the live guard plus exact initial baseline are sound. It needs a tighter scanner scope and fail-closed parsing/walk semantics before it can be relied on as a binding security control. SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-08-05T21:40:41.645766+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[deepseek] ### Review Findings\n\n1. **Category:** edge-case  \n   **Severity:** medium  \n   **Finding:** The “comment-marker anchored” regex for discovering `nosemgrep: rule-id` may miss files in languages whose comment syntax is not enumerated (e.g., `--` in SQL, `//` in C-like languages, `'` in VBA). If such files contain explicit suppressions, the ratchet would be blind to them, allowing unmonitored growth.  \n   **Suggestion:** Explicitly define the set of comment markers the scanner supports (e.g., `#`, `//`, `--`, `;`) and construct the regex accordingly. Document the list so that a missing language is visible; a test asserting presence for each supported marker would reduce the risk.\n\n2. **Category:** edge-case  \n   **Severity:** low  \n   **Finding:** The pattern might match inside string literals that contain `nosemgrep: rule-id` (e.g., a docstring referencing the syntax). While the baseline can absorb current false positives, new such strings would inflate counts and cause spurious blocks.  \n   **Suggestion:** Acknowledge this limitation in the module docstring. The implementation can optionally limit matching to lines where the comment marker is the first non-whitespace token, though that would miss trailing comments. The trade-off is acceptable; just make it known.\n\n3. **Category:** risk  \n   **Severity:** medium  \n   **Finding:** The guard test runs `reconcile` against this repo. The plan states “shrink is advisory, never a block,” but it does not detail how the test exactly distinguishes a block from an advisory. If the test checks for `ratchets` and `unrecorded` but also inadvertently fails on a non-empty `shrunk`, a legitimate baseline entry for a rule no longer present in source would break CI.  \n   **Suggestion:** In the guard test, explicitly assert that `ratchets` and `unrecorded` are empty, while intentionally **not** asserting on `shrunk`. Add a code comment explaining that `shrunk` is advisory and does not block.\n\n4. **Category:** approach  \n    […truncated]\n\n[openai] 1. **Category:** approach  \n   **Severity:** high  \n   **Finding:** The proposed regex-based discovery does not yet define how it distinguishes an actual language comment from `nosemgrep:` text inside a string, docstring, heredoc, template literal, or source-code prose. Anchoring on a comment marker is insufficient in several supported languages—for example, Python strings can contain `# nosemgrep: rule`, and JavaScript strings can contain `// nosemgrep: rule`. This risks both blocking harmless text additions and recording false sites in the baseline.  \n   **Suggestion:** Define the supported file types and comment forms explicitly, and implement a conservative recognizer for those forms. At minimum, test quoted-string/docstring/heredoc false positives for every supported comment marker. If exact comment recognition is not practical, limit scanning to the file types and line forms actually used by the repository’s Semgrep configuration, document that scope, and ensure the scanner does not claim broader Semgrep equivalence.\n\n2. **Category:** dependency  \n   **Severity:** medium  \n   **Finding:** The source-extension allowlist and skipped directories are unspecified and may not align with the actual Semgrep target set. A new suppression in a Semgrep-scanned extension omitted by this leaf will evade the ratchet; conversely, scanning a source-like extension Semgrep does not scan creates irrelevant blocking counts. Fixed exclusions such as `node_modules`, `site-packages`, and generated/vendor trees also need to match the repository’s Semgrep invocation rather than be assumed safe.  \n   **Suggestion:** Derive and document the scanner’s supported extensions/exclusions from the repository’s Semgrep configuration or CI invocation. Add fixtures for every currently relevant language/comment style, plus a test demonstrating that an unsupported extension is intentionally ignored. Revisit this list whenever Semgrep target configuration changes.\n\n3. **Category:** edge […truncated]",
+      "verdicts": {
+        "openai": "revise",
+        "deepseek": "approve"
+      }
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 13,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "security",
+          "file": "shared/scripts/inline_suppression_scan.py",
+          "line": 84,
+          "finding": "SUPPRESSION_RE matches only the literal lowercase 'nosemgrep'; Semgrep also honours the 'nosem' alias and matches case-insensitively. '# nosem: <rule-id>' or '# NOSEMGREP: <rule-id>' suppresses for real and is invisible to the gate. Undisclosed (not one of the two stated limits).",
+          "suggestion": "Use nosem(?:grep)? with re.IGNORECASE, lowercase the pre-filter, re-measure, and add one negative control per variant.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "security",
+          "file": "shared/scripts/inline_suppression_scan.py",
+          "line": 157,
+          "finding": "Silent scope narrowing: symlink / not-a-regular-file / >MAX_BYTES all continue with no record. A suppression in a tracked file padded past 2 MB is never counted and never reported; an index entry absent from the worktree (sparse checkout, submodule gitlink) is dropped the same way. Contradicts the module's own reported-narrowing doctrine; no test covers MAX_BYTES.",
+          "suggestion": "Return a skipped list, surface it in format_report + the dashboard, and decide whether oversize blocks.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "shared/tests/test_inline_suppressions_repo_guard.py",
+          "line": 79,
+          "finding": "test_the_baseline_records_no_rule_that_is_not_suppressed_anywhere makes a shrink-to-zero a hard build failure, contradicting the AC ('shrink ... never a block'), reconcile's docstring ('shrunk never affects ok') and the sibling test's own rationale.",
+          "suggestion": "Either demote it to advisory, or amend the AC + both docstrings.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "performance",
+          "file": "plugins/shipwright-compliance/scripts/lib/inline_suppression_view.py",
+          "line": 68,
+          "finding": "Every dashboard regen now shells out git ls-files and read_text()s every tracked non-prose file, unbounded and uncached, in the consumer's repo. update_compliance.py fires on every phase and on the Stop hook. The repo guard itself scans the tree three times.",
+          "suggestion": "Memoize reconcile per project_root, or persist the counts into the tracked ci-security.json.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "shared/scripts/tools/inline_suppressions_cli.py",
+          "line": 133,
+          "finding": "check --project-root <typo> fails open: git errors -> walk over a nonexistent dir -> zero files -> no baseline -> ok -> prints 'no drift.' and exits 0.",
+          "suggestion": "Validate project_root.is_dir() before reconciling and return 2 with a named error.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/scripts/inline_suppression_scan.py",
+          "line": 47,
+          "finding": "COMMENT_MARKERS omits '(*' (OCaml, a Semgrep-supported language). The comment above it says a missed marker 'would silently under-count, which is the unsafe direction'.",
+          "suggestion": "Add '(*' (and consider '{-' for Haskell).",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/scripts/inline_suppression_scan.py",
+          "line": 69,
+          "finding": "PROSE_SUFFIXES excludes '.txt', but Semgrep supply-chain/generic rules do run over files such as requirements.txt; on the other side the denylist misses .mdx/.org/.tex.",
+          "suggestion": "Keep the denylist, but name '.txt' in the docstring as the one entry that is not purely prose, or drop it.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/scripts/inline_suppressions.py",
+          "line": 144,
+          "finding": "Top-level baseline keys are unvalidated while entry keys are strict (_ALLOWED_KEYS). '_readme' is load-bearing yet unchecked, and a governance-looking key such as 'expires' would be silently inert.",
+          "suggestion": "Restrict the top level to {schema, rules, _readme} symmetrically.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/tests/test_inline_suppressions_cli.py",
+          "line": 97,
+          "finding": "test_the_skeletons_placeholders_are_rejected_by_the_gate proves less than its docstring claims: _entry_error returns the FIRST violation and rationale_ref is checked before statement, so the test passes even if the statement placeholder became acceptable.",
+          "suggestion": "Parametrize: one skeleton with a valid ref + TODO statement, one with TODO ref + valid statement.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "shared/tests/test_inline_suppressions_repo_guard.py",
+          "line": 60,
+          "finding": "Statement-uniqueness is a proxy for non-boilerplate; Popen1/Popen2 genuinely share a reason at the same two sites, and the baseline entry was reworded around the test. The test shaped the artifact.",
+          "suggestion": "Assert each statement names its own rule's subject rather than requiring global distinctness.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "architecture",
+          "file": "plugins/shipwright-compliance/scripts/lib/inline_suppression_view.py",
+          "line": 117,
+          "finding": "The dashboard footer cites the Shipwright-internal run id in an artifact rendered into adopter projects, where it is unresolvable.",
+          "suggestion": "Drop the internal run id from the consumer-facing render.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "architecture",
+          "file": "docs/security-ci-setup.md",
+          "line": 242,
+          "finding": "docs/hooks-and-pipeline.md was updated but docs/security-ci-setup.md says nothing about the new channel/baseline/CLI, and shared/glossary.md defines Anti-Ratchet purely in bloat-baseline LOC terms while this run introduces a second anti-ratchet with different semantics. Both are mandatory-read surfaces per CLAUDE.md.",
+          "suggestion": "Add a short subsection under 'The accepted-risk register' and a glossary line distinguishing the two baselines.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "shared/tests/test_inline_suppressions.py",
+          "line": 49,
+          "finding": "Non-blocking reducibility note (catalog D): _repo()/_baseline() are duplicated near-verbatim across three shared/tests files (~25 LOC). G5 arguably exempts local test fixtures - advisory only, not a block.",
+          "suggestion": "Optional: move the two shared/tests helpers into shared/tests/conftest.py as fixtures.",
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-08-05T22:12:49.537635+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 14,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "D1",
+          "file": "shared/scripts/inline_suppression_scan.py",
+          "line": 224,
+          "finding": "Claim under doubt: the gate fails closed — A file that holds the suppression token but fails UTF-8 decode is silently dropped. Fail-open, and pinned by a test. The decode is only attempted for files where the token was ALREADY found in the bytes, so the branch reads 'this file contains nosem, and I will now discard it without reporting it'. Every other partial-count path goes to unreadable and blocks; this one — the only one reached AFTER evidence of a suppression — does not. Reproducible with any cp1252/latin-1 source file (the Windows editor default). test_a_binary_blob_is_skipped_without_suspicion is a fixture engineered to make this path look benign, which locks the hole in.",
+          "suggestion": "raw.decode('utf-8','replace'), or unreadable.append(rel) when decode fails after the token pre-filter matched.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "high",
+          "category": "D2",
+          "file": ".shipwright/planning/iterate/iterate-2026-08-05-inline-suppression-ratchet.md",
+          "line": 237,
+          "finding": "Claim under doubt: the evidence table is honest — The Test Completeness Ledger predates the Stage-2 fixes and was never re-derived. Row 14 states the delivered contract BACKWARDS (a rule that vanished entirely now blocks) and cites a test that no longer exists; rows 24 and 25 cite renamed/deleted tests; rows 16-21 attribute six tests to the wrong file; ~11 tests added by the Stage-2 fixes have no row at all, including the control for the HIGH finding; the confidence check still says 'three blocking classes' where there are four. For a run whose thesis is 'a control nobody runs is a comment', an evidence table nobody re-ran is the same defect one level up.",
+          "suggestion": "Re-derive from --collect-only.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "D3",
+          "file": "shared/scripts/inline_suppression_scan.py",
+          "line": 198,
+          "finding": "Claim under doubt: the gate fails closed — git ls-files returning zero files reads as a clean git-mode result: mode=='git', sites=={}, ok=True. The CLI prints 'no drift.' for a tree from which it read not one file. Nothing in the result reports a scanned-file count.",
+          "suggestion": "Report files_examined and surface it.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "D4",
+          "file": "shared/scripts/inline_suppression_scan.py",
+          "line": 210,
+          "finding": "Claim under doubt: the gate cannot be bypassed — A tracked file absent from the worktree is skipped silently. Path.is_file() swallows OSError, covering sparse checkout, a worktree rm without git rm, and Windows MAX_PATH. Result: a partial count landing as advisory shrunk. Directly contradicts the docstring's own reported-narrowing doctrine.",
+          "suggestion": "Report it.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "D5",
+          "file": "shared/scripts/inline_suppression_baseline.py",
+          "line": 145,
+          "finding": "Claim under doubt: the gate cannot be bypassed — The baseline counts SPELLINGS, not rules. Semgrep accepts an id prefix, so a short spelling suppresses the same rule as the fully-qualified one but is a different key here. The rule can then be silenced more often than either entry records, and neither ratchets.",
+          "suggestion": "Disclose, or resolve ids as Semgrep does.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "D6",
+          "file": "shipwright_inline_suppressions.json",
+          "line": 14,
+          "finding": "Claim under doubt: the docs are accurate — Three of the five places that state the contract omit the dead block; the operator-facing _readme says only 'A count that SHRINKS is advisory'. The operator who removes the last subprocess-shell-true suppression reads that and gets a red build.",
+          "suggestion": "State the dead block everywhere.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "D7",
+          "file": "shared/scripts/inline_suppression_baseline.py",
+          "line": 69,
+          "finding": "Claim under doubt: the dead-entry rule is coherent — The dead-entry rule is incoherent at both edges. (a) max_sites: 0 is admitted but DEAD on arrival and blocks forever. (b) The stated justification (a dormant licence up to max_sites) applies verbatim at 9/1, which is advisory — so the gate blocks the case with the LOWEST residual risk. The rename does not make the threshold principled.",
+          "suggestion": "Reject 0, and justify the line as record-vs-reality rather than residual risk.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "D8",
+          "file": "shared/scripts/inline_suppression_scan.py",
+          "line": 78,
+          "finding": "Claim under doubt: the gate cannot false-block — Tracked append-logs are scanned. shipwright_events.jsonl and .shipwright/triage.jsonl are git-tracked and .jsonl is not excluded; a triage card quoting an offending source line — exactly what an agent pastes when filing about a suppression — is counted and blocks. The argument that excludes .md applies identically.",
+          "suggestion": "Exclude them.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "D9",
+          "file": "plugins/shipwright-security/skills/security/SKILL.md",
+          "line": 256,
+          "finding": "Claim under doubt: the docs are accurate — The two documents that tell an agent to ADD a nosemgrep were not updated, nor guide.md:2165. The pipeline's own suppression PRODUCER now emits changes a shared/tests guard rejects, with no instruction to update the baseline in the same commit.",
+          "suggestion": "Update all three.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "D10",
+          "file": "shared/scripts/inline_suppression_scan.py",
+          "line": 112,
+          "finding": "Claim under doubt: the perf trade-off was forced — The perf decline is a false dilemma, and the 50 MB cap turned a bypass into a memory hazard and a false-block. A third option was not considered: keep git ls-files as the authoritative set and stream-match in chunks, which gets both properties. As shipped, read_bytes slurps every tracked file up to 50 MB into memory; and a file OVER 50 MB now blocks with a remedy that is wrong.",
+          "suggestion": "Stream.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "D11",
+          "file": "shared/scripts/inline_suppression_baseline.py",
+          "line": 157,
+          "finding": "Claim under doubt: the seeded counts are exact — scan --as-baseline seeds from a partial count with no warning: seed_baseline calls scan_sites, which discards unreadable. The docstring promises counts 'exactly'.",
+          "suggestion": "Refuse.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "D12",
+          "file": "shared/scripts/inline_suppression_scan.py",
+          "line": 132,
+          "finding": "Claim under doubt: the gate cannot be bypassed — Whitespace divergence from Semgrep: the gate uses [ \\t]* where Semgrep uses \\s*, so a NBSP before the colon is honoured by Semgrep and invisible here.",
+          "suggestion": "Widen to non-newline whitespace.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "D13",
+          "file": "plugins/shipwright-security/skills/security/references/suppression-syntax.md",
+          "line": 118,
+          "finding": "Claim under doubt: the gate cannot false-block — A comma in the justification prose invents a rule id and blocks — and the repo's own reference doc leads people into it. Safe direction, but a false-block.",
+          "suggestion": "Diagnose it in the report.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "D14",
+          "file": "plugins/shipwright-compliance/scripts/lib/inline_suppression_view.py",
+          "line": 26,
+          "finding": "Claim under doubt: dashboard degradation is transient — Dashboard degradation may be permanent at runtime, not just on error: in the plugin cache the shared tree can be orphaned or partially reaped. Same pattern as accepted_risk_view, so pre-existing — but this block is new surface area on it.",
+          "suggestion": "Note it.",
+          "source": "doubt-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-08-05T22:16:46.812068+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-05T21:40:14.123500+00:00",
+      "disposition": "Phase Matrix: External LLM Review is 'auto' at medium for the PLAN (run at Step 3.5, GPT+DeepSeek, verdicts revise/approve, all findings addressed). A separate external CODE review is Advisory per Override Classes and was not run: the internal cascade (spec/code/doubt, all opus) produced 33 findings on this diff, of which 2 were HIGH, and both were found by the internal reviewers rather than the external one.",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 6,
+      "findings": [
+        {
+          "severity": null,
+          "category": "recorded-accuracy",
+          "file": ".shipwright/planning/iterate/iterate-2026-08-05-inline-suppression-ratchet-miniplan.md",
+          "line": null,
+          "finding": "The mini-plan contradicts what shipped on the property that matters most: it still says the walk 'limits to source extensions', but the implementation deliberately reversed that to a git-derived file set plus a prose denylist. Same file: '4 rules, 18 sites' vs the delivered 5 rules / 20 sites, and '17 files' vs the 21-file staged diff. — spec: Update Step 1/Step 2 and the risk-flag counts to the delivered design and numbers.",
+          "suggestion": "Update Step 1/Step 2 and the risk-flag counts to the delivered design and numbers.",
+          "source": "spec-reviewer"
+        },
+        {
+          "severity": null,
+          "category": "recorded-accuracy",
+          "file": "docs/hooks-and-pipeline.md",
+          "line": null,
+          "finding": "'Enforced in CI by test_inline_suppressions_repo_guard.py OVER inline_suppressions_cli.py check' asserts a wiring that does not exist — the guard imports the leaf and never touches the CLI. The register's phrasing was accurate because its reconcile() is defined IN its CLI; here it lives in the library. In the file the repo treats as single source of truth, in a run whose whole premise is 'a gate nothing invokes constrains nothing'. — spec: Reword both this and the CLI docstring to say the guard runs inline_suppressions.reconcile while the CLI has its own tests.",
+          "suggestion": "Reword both this and the CLI docstring to say the guard runs inline_suppressions.reconcile while the CLI has its own tests.",
+          "source": "spec-reviewer"
+        },
+        {
+          "severity": null,
+          "category": "recorded-accuracy",
+          "file": ".shipwright/planning/iterate/iterate-2026-08-05-inline-suppression-ratchet.md",
+          "line": null,
+          "finding": "Stale counts in the spec's own narrative: 'Forcing 18 such sites' (measured: 20) and '7 new files' (actual: 11). The 18 will be carried into the F3 decision drop. — spec: Correct both.",
+          "suggestion": "Correct both.",
+          "source": "spec-reviewer"
+        },
+        {
+          "severity": null,
+          "category": "recorded-accuracy",
+          "file": ".shipwright/planning/iterate/iterate-2026-08-05-inline-suppression-ratchet.md",
+          "line": null,
+          "finding": "The recorded Runner command omits test_inline_suppressions_cli.py, so the surface-verification evidence would not execute Ledger rows 31-35. — spec: Add the file to the runner command.",
+          "suggestion": "Add the file to the runner command.",
+          "source": "spec-reviewer"
+        },
+        {
+          "severity": null,
+          "category": "recorded-accuracy",
+          "file": ".shipwright/planning/iterate/iterate-2026-08-05-inline-suppression-ratchet.md",
+          "line": null,
+          "finding": "Cites trg-095cd2bf, which this same diff dismisses and re-files as trg-9a2539df. — spec: Reconcile so the run's card linkage resolves.",
+          "suggestion": "Reconcile so the run's card linkage resolves.",
+          "source": "spec-reviewer"
+        },
+        {
+          "severity": null,
+          "category": "recorded-accuracy",
+          "file": "shipwright_inline_suppressions.json",
+          "line": null,
+          "finding": "The dynamic-urllib statement enumerates four call sites for six suppressions; performance_check.py:136 is not clearly one of the four. The umbrella claim still covers it; only the parenthetical is incomplete. — spec: Name all six, or drop the enumeration.",
+          "suggestion": "Name all six, or drop the enumeration.",
+          "source": "spec-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-08-05T22:16:46.669145+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    }
+  }
+}

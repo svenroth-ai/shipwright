@@ -27,6 +27,15 @@
 # the *stale* half of the rule above, and FAILS THE BUILD. Same for
 # `SHIPWRIGHT_SCAN_EXCLUDES`, which scopes paths rather than rules.
 #
+# That inline suppressions are absent here is a DECISION, taken deliberately in
+# iterate-2026-08-05-inline-suppression-ratchet, not a gap left open: an offline
+# reconciler would have to mirror Semgrep and would drift, and `expires` does
+# not fit a permanent false positive at a fixed source site. They have their own
+# control — a per-rule anti-ratchet in `shipwright_inline_suppressions.json`
+# that blocks the count from growing without a recorded decision:
+#
+#     uv run shared/scripts/tools/inline_suppressions_cli.py check --project-root .
+#
 # Fields (all required unless noted):
 #   id             stable, human-readable, unique
 #   target         trivy-ignore | semgrep-rule-exclusion | semgrep-policy-toggle

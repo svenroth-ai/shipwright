@@ -301,6 +301,74 @@ is precisely the row somebody has to act on.
 GitHub alert state rather than a file, so `check` reports it as *unchecked* (it
 never treats "not checkable here" as "checked and fine").
 
+#### Inline `# nosemgrep` — governed by a ratchet, not by the register
+
+An inline suppression is the third way a finding gets silenced, and the register
+has **no `target` for it**. That is a decision, not a gap
+(`iterate-2026-08-05-inline-suppression-ratchet`):
+
+- an offline reconciler would have to mirror the scanner's own suppression
+  semantics — both spellings, per-language comment syntax, the
+  matched-or-preceding-line adjacency rule — and every one of those is a place
+  it drifts;
+- in the register's *both-directions* gate a discovery error produces a false
+  `STALE`, which tells you to delete an entry that is doing its job. A **count**
+  has the opposite bias: over-counting is absorbed by the baseline and never
+  advises a deletion;
+- `expires` — the field the register exists for — does not fit a permanent false
+  positive at a fixed source site. Renewing such an entry yearly is ritual, and
+  ritual devalues the entries whose date genuinely means something.
+
+Registering one in `shipwright_accepted_risks.yaml` anyway matches no discovered
+suppression and **fails the build** as the stale half of the drift rule.
+
+Instead they are governed by an **anti-ratchet baseline**,
+`shipwright_inline_suppressions.json`: per rule a frozen `max_sites`, a
+`rationale_ref` naming a recorded decision, and a rule-specific `statement`.
+
+```bash
+uv run shared/scripts/tools/inline_suppressions_cli.py check --project-root .
+uv run shared/scripts/tools/inline_suppressions_cli.py scan --as-baseline
+```
+
+Exceeding `max_sites` blocks; a rule with no entry blocks; a file that could not
+be read blocks (a partial count in a security gate is a bypass); a rule
+suppressed nowhere blocks as a *dead* entry, because leaving it would license
+the rule to be silenced again with no fresh decision. A count that merely
+*shrinks* is advisory — blocking a reduction would penalise the outcome the gate
+exists to encourage. Enforced in CI by
+`shared/tests/test_inline_suppressions_repo_guard.py`, and rendered on the
+compliance dashboard as **visibility, not per-site review**: unlike a register
+entry, no site there carries an owner or a re-review date.
+
+**Three limits are disclosed rather than engineered around.** Each is a refusal
+to re-implement Semgrep's own semantics, which is the drift the whole design
+exists to avoid — closing them by mirroring the scanner would recreate the
+problem the register was declined for.
+
+1. **A rule id inside a string literal is counted.** Excluding them needs a
+   per-language parser. The failure is in the safe direction: a spurious block
+   whose diagnostic names the exact `path:line`, never a hidden suppression.
+   (This is not theoretical — the scanner's own explanatory comment tripped it
+   twice during development.)
+2. **The bare `nosemgrep` form is not counted.** Without a rule id it
+   suppresses *every* rule on its line, so it is the more dangerous form — but
+   on this repo all nine occurrences of the bare token are prose in docstrings,
+   so counting it would be 100% false-positive.
+3. **Rule ids are matched as written, not as Semgrep resolves them.** Semgrep
+   accepts an id *prefix*, so a short spelling silences the same rule as the
+   fully-qualified one while counting as a different key here. The count is
+   therefore per *spelling*, not per rule: the same rule under two spellings
+   becomes two entries and neither ratchets, even though the rule is silenced
+   more often than either records. What still holds is that no spelling grows
+   unrecorded, and the second entry is visible on the dashboard beside the
+   first.
+
+Two things are **not** limits but fixed defects, noted because their absence
+would be a bypass: the `nosem` alias and uppercase spellings are matched
+(Semgrep honours both), and a file that cannot be read blocks rather than being
+skipped.
+
 ### Converging the live surface
 
 `converge` resolves `github-dismissal` entries against GitHub code scanning, so

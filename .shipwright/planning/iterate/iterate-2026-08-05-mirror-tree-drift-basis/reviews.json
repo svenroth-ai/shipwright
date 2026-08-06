@@ -1,0 +1,169 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-08-05-mirror-tree-drift-basis",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-05T20:03:12.862342+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-05T20:05:06.085923+00:00",
+      "disposition": "Complexity small: no iterate spec / mini-plan / external plan review is authored at this tier per the Phase Matrix (mini-plan skip, external LLM review skip at trivial/small)",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 10,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "scripts/cache_mirror_compare.py",
+          "line": 75,
+          "finding": "FIXED: not_mirrored now covers an existing-but-empty mirror dir too (walk_tracked_files(mirror_dir) checked for emptiness, not just dir absence), matching the docstring. Pinned by test_cache_mirror_compare.py::TestNotMirrored::test_empty_mirror_dir_is_also_not_mirrored.",
+          "suggestion": "n/a - fixed",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "scripts/cache_mirror_compare.py",
+          "line": 71,
+          "finding": "FIXED: _NO_SOURCE module constant replaced with a _no_source() factory, matching the project's own _shared_na() convention. Pinned by test_no_source_records_do_not_share_the_sample_list.",
+          "suggestion": "n/a - fixed",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "scripts/cache_mirror_compare.py",
+          "line": 115,
+          "finding": "ACCEPTED, not fixed: latest_cache_version_dir's unreadable-vs-absent reason is discarded on the mirror path. Exotic (unlistable-parent/accessible-child ACL); left as documented residual risk rather than threading a detail field through for a case with no reproducer.",
+          "suggestion": "deferred",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "shared/tests/test_plugin_cache_sync.py",
+          "line": 30,
+          "finding": "ACCEPTED, not fixed: the newest-version-seeded-last ordering invariant in _seed_cache_plugin is real but every current caller satisfies it; SemVer-aware hardening deferred as a boy-scout item, not required for this diff.",
+          "suggestion": "deferred",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/tests/test_plugin_cache_sync.py",
+          "line": 245,
+          "finding": "FIXED: TestCrLfNormalization::test_crlf_vs_lf_identical_hash now seeds a matching CRLF mirror alongside the version dir, so the run's overall status is no longer silently 'drift' underneath an assertion that only checks the plugins record.",
+          "suggestion": "n/a - fixed",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/tests/test_plugin_cache_sync_verdict.py",
+          "line": 110,
+          "finding": "FIXED: test_a_plugin_with_no_cached_version_reports_no_source_not_drift now also asserts drifted_count == 1, pinning the no-double-count rule on the arithmetic, not just the two states.",
+          "suggestion": "n/a - fixed",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "scripts/cache_mirror_compare.py",
+          "line": 54,
+          "finding": "FIXED: added shared/tests/test_cache_mirror_compare.py exercising compare_mirror_tree directly across all four states, including the empty-mirror-dir edge and the no-shared-sample-list invariant.",
+          "suggestion": "n/a - fixed",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "scripts/check_plugin_cache_sync.py",
+          "line": 101,
+          "finding": "FIXED: collapsed the four consecutive blank lines and moved the cache_mirror_compare import beside the other cache_* imports instead of splitting the _UNSET comment block.",
+          "suggestion": "n/a - fixed",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "architecture",
+          "file": "scripts/check_plugin_cache_sync.py",
+          "line": 255,
+          "finding": "FIXED: filed the shipwright_bloat_baseline.json entry for scripts/check_plugin_cache_sync.py (state: grandfathered, current: 321) in this diff rather than deferring to the Group H audit.",
+          "suggestion": "n/a - fixed",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "performance",
+          "file": "scripts/cache_mirror_compare.py",
+          "line": 72,
+          "finding": "ACCEPTED, not fixed: the mirror's source dir may be walked twice when it coincides with the plugins tree's own cache-side walk. Reviewer's own assessment: acceptable as-is for a manual dev command; revisit only if this moves into a hook.",
+          "suggestion": "deferred",
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-08-05T20:04:45.363960+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-05T20:04:54.175011+00:00",
+      "disposition": "Stage 3 is conditional on migrations/async-concurrency/cross-plugin-imports/irreversible-ops per iteration-reviews.md; this diff touches none of those (pure local filesystem comparison tooling within one repo), so it is not due",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-05T20:05:06.191018+00:00",
+      "disposition": "Complexity small: the external code-review cascade's own trigger (diff>100 lines OR security-sensitive files OR complexity medium+) is independent of the internal cascade's diff-size trigger already satisfied above, but external review transmits the diff to a third-party LLM provider and the internal spec+code cascade already ran and is sufficient per iteration-planning.md's trivial/small default (opt-in via --review, not requested this run)",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-05T20:04:16.213886+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    }
+  }
+}

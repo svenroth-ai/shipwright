@@ -4,8 +4,9 @@ Companion to ``test_plugin_cache_sync_shared_tree.py`` (which pins what is
 compared) and to ``test_plugin_cache_sync.py`` (at its grandfathered size
 ceiling). Claiming coverage the loop does not deliver is the defect the whole
 iterate exists to close, so it must not reappear in the reporting layer:
-deletions the syncer never propagated, trees skipped as ``n/a``, the un-gated
-mirror, and an advisory that fires on every healthy run all belong here.
+deletions the syncer never propagated, trees skipped as ``n/a``, the
+cross-plugin mirror's own basis/verdict semantics, and an advisory that fires
+on every healthy run all belong here.
 """
 from __future__ import annotations
 
@@ -27,6 +28,7 @@ if str(_SCRIPTS) not in sys.path:
 
 from check_plugin_cache_sync import check_sync, main  # noqa: E402
 from cache_sync_fixtures import seed_repo_and_cache as _seed  # noqa: E402
+from cache_sync_fixtures import write_tree as _write  # noqa: E402
 
 
 class TestDeletionsAndUnreadableTrees:
@@ -47,8 +49,9 @@ class TestDeletionsAndUnreadableTrees:
         files = {"scripts/lib/a.py": "a = 1\n"}
         repo, cache = _seed(tmp_path, shared=files, cache_shared=files)
         result = check_sync(repo_root=repo, cache_root=cache)
-        assert result["verified"] == ["plugins", "shared"]
-        assert result["ungated"] and "trg-5005bf57" in result["ungated"][0]
+        assert result["verified"] == ["plugins", "shared", "mirror"]
+        # All three trees are gated now — nothing left un-gated to name.
+        assert result["ungated"] == []
 
     def test_a_repo_without_shared_does_not_claim_to_have_verified_it(
             self, tmp_path: Path):
@@ -58,32 +61,110 @@ class TestDeletionsAndUnreadableTrees:
         assert "shared" not in result["verified"]
 
 
-class TestTheCrossPluginMirrorIsOutOfScope:
-    """The third cache tree is deliberately not gated here — yet.
+class TestTheCrossPluginMirrorIsInScope:
+    """The third cache tree gets its own basis and verdict semantics (P2.29).
 
     ``cache/plugins/<name>/`` backs ``../../plugins/shipwright-X``. Gating it
     once needed ``ensure_shared_cache._plugins_healthy`` fixed first — it judged
     all 14 mirrors from ONE sentinel file, so a green built on it would have
     restated the bug one tree over. That blocker is gone since
     iterate-2026-08-01-cache-heal-per-plugin: the healer now compares each
-    tree's FILE SET against its repair source. Joining the mirror here is now
-    plain follow-up work, tracked as ``trg-5005bf57``.
+    tree's FILE SET against its repair source, so joining the mirror is no
+    longer blocked (supersedes trg-5005bf57).
 
     The healer does not make this check redundant: it detects ABSENCE
     (presence-only, because clone and cache differ in line endings), while this
-    check detects STALENESS (CRLF-normalised content hashes).
+    check detects STALENESS (CRLF-normalised content hashes) against a basis of
+    its own — ``"cache"``, never ``"git"`` — since the mirror's repair source is
+    itself a cache-side copy, not the repo.
     """
 
-    def test_a_stale_mirror_neither_drifts_nor_joins_the_walk(self, tmp_path: Path):
+    def test_a_stale_mirror_is_drift(self, tmp_path: Path):
         repo, cache = _seed(tmp_path, mirror={"skills/x/SKILL.md": "# stale\n",
                                               "scripts/extra.py": "x = 1\n"})
         result = check_sync(repo_root=repo, cache_root=cache)
+        assert result["status"] == "drift"
+        entry = result["mirror"][0]
+        assert entry["state"] == "drift"
+        assert entry["basis"] == "cache"
+        assert entry["plugin"] == "shipwright-foo"
+        assert "skills/x/SKILL.md" in entry["sample"]
+        # A mirror-only file (no source counterpart) is an unpropagated
+        # deletion, counted but not itself a reason to fail — same rule as
+        # the plugins/shared trees' cache_only_count.
+        assert entry["cache_only_count"] == 1
+
+    def test_an_in_sync_mirror_is_ok_and_verified(self, tmp_path: Path):
+        repo, cache = _seed(tmp_path)  # default mirror matches the source
+        result = check_sync(repo_root=repo, cache_root=cache)
         assert result["status"] == "ok"
-        # cache_only_count is the assertion the mirror's two files COULD move:
-        # were the mirror folded into this record under any key, the extra
-        # file with no repo counterpart would land here.
-        assert result["plugins"][0]["cache_only_count"] == 0
-        assert "plugins" in result["verified"]
+        assert result["mirror"][0]["state"] == "ok"
+        assert "mirror" in result["verified"]
+
+    def test_a_missing_mirror_is_drift(self, tmp_path: Path):
+        repo, cache = _seed(tmp_path, mirror=None)
+        result = check_sync(repo_root=repo, cache_root=cache)
+        assert result["status"] == "drift"
+        assert result["mirror"][0]["state"] == "not_mirrored"
+
+    def test_the_warn_line_names_the_drifted_mirror(self, tmp_path: Path, capsys):
+        repo, cache = _seed(tmp_path, mirror={"skills/x/SKILL.md": "# stale\n"})
+        main(["--repo-root", str(repo), "--cache-root", str(cache)])
+        err = capsys.readouterr().err
+        assert "mirror shipwright-foo" in err
+        assert "skills/x/SKILL.md" in err
+
+    def test_a_green_mirror_never_triggers_the_git_fallback_basis_note(
+            self, tmp_path: Path, capsys):
+        """The mirror's permanent "cache" basis must not read as a degraded
+        git-vs-walk fallback — that note exists to flag the OTHER two trees."""
+        repo, cache = _seed(tmp_path)
+        rc = main(["--repo-root", str(repo), "--cache-root", str(cache)])
+        assert rc == 0
+        out = capsys.readouterr().out
+        assert "basis: cache" not in out
+
+    def test_a_plugin_with_no_cached_version_reports_no_source_not_drift(
+            self, tmp_path: Path):
+        """Nothing to hold the mirror accountable to — already a `plugins` finding."""
+        import shutil
+        repo, cache = _seed(tmp_path, mirror=None)
+        shutil.rmtree(cache / "shipwright-foo")
+        result = check_sync(repo_root=repo, cache_root=cache)
+        assert result["mirror"][0]["state"] == "no_source"
+        assert result["plugins"][0]["state"] == "not_in_cache"
+        # The double-count rule, pinned on the arithmetic: only the `plugins`
+        # record's own absence counts, never the mirror's `no_source` too.
+        assert result["drifted_count"] == 1
+
+    def test_the_mirror_source_is_the_newest_cached_version_not_installed_plugins(
+            self, tmp_path: Path):
+        """The healer this check audits never reads installed_plugins.json.
+
+        A stray newer version dir left over from an aborted sync (P2.06) is
+        exactly what the healer would mirror from, so this tree has to judge
+        the mirror by the SAME rule the healer used to write it — even where
+        that disagrees with the `plugins` tree's own installed_plugins-based
+        choice.
+        """
+        repo, cache = _seed(tmp_path)  # mirror defaults to the 0.1.0 content
+        _write(cache / "shipwright-foo" / "0.2.0", {"skills/x/SKILL.md": "# v2\n"})
+        # installed_plugins.json names 0.1.0 as the live version — what the
+        # `plugins` tree compares against.
+        manifest = tmp_path / "installed_plugins.json"
+        manifest.write_text(json.dumps({"plugins": {
+            "shipwright-foo@shipwright": [
+                {"installPath": str(cache / "shipwright-foo" / "0.1.0")},
+            ],
+        }}), encoding="utf-8")
+
+        result = check_sync(repo_root=repo, cache_root=cache,
+                            installed_plugins=manifest)
+        assert result["plugins"][0]["cache_version"] == "0.1.0"
+        # The mirror is judged against 0.2.0 (the newest cached version, what
+        # the healer mirrors from) — drifting against the DEFAULT (0.1.0
+        # content) mirror proves it, since judging against 0.1.0 would be ok.
+        assert result["mirror"][0]["state"] == "drift"
 
 
 class TestOrphanMarkersAreSurfaced:
@@ -100,15 +181,18 @@ class TestOrphanMarkersAreSurfaced:
         assert result["status"] == "ok"
         assert "shared/scripts" in result["orphan_markers"]
 
-    def test_an_ungated_tree_never_crowds_out_the_gated_one(
+    def test_the_gated_mirror_tree_surfaces_its_own_orphan_markers(
             self, tmp_path: Path, capsys):
-        """The failure this scan was measured doing on the live cache.
+        """Now that the mirror is gated (P2.29), its markers are read too.
 
-        22 markers existed, 14 of them under the un-gated ``plugins/`` mirror.
-        Sorted, every ``plugins/`` path precedes every ``shared/`` one, so a
-        truncated advisory named five mirror dirs and never mentioned
-        ``shared/scripts`` — the directory whose reap breaks F11. Scanning only
-        the gated trees is what makes that structurally impossible.
+        Measured on the live cache pre-gating: 22 markers existed, 14 of them
+        under the then-un-gated ``plugins/`` mirror, and — sorted — every
+        ``plugins/`` path precedes every ``shared/`` one, so a truncated
+        advisory named five mirror dirs and never mentioned
+        ``shared/scripts``, the directory whose reap breaks F11. That drove
+        scanning ONLY the gated trees. Now the mirror IS gated, so scanning it
+        too is consistent with that same rule, not a regression of it —
+        ``shared/scripts`` still shows up alongside the mirror's own markers.
         """
         files = {"scripts/lib/a.py": "a = 1\n"}
         repo, cache = _seed(tmp_path, shared=files, cache_shared=files)
@@ -120,14 +204,19 @@ class TestOrphanMarkersAreSurfaced:
             "1785539695046", encoding="utf-8")
 
         result = check_sync(repo_root=repo, cache_root=cache)
-        assert result["orphan_markers"] == ["shared/scripts"]
+        assert set(result["orphan_markers"]) == {
+            "shared/scripts", "plugins/shipwright-aaa",
+            "plugins/shipwright-bbb", "plugins/shipwright-ccc",
+        }
 
         # The advisory prints only alongside drift (it is permanently on
         # otherwise), so drift the shared tree to see it reach the operator.
         (cache / "shared" / "scripts" / "lib" / "a.py").write_text(
             "stale = 1\n", encoding="utf-8")
         main(["--repo-root", str(repo), "--cache-root", str(cache)])
-        assert "shared/scripts" in capsys.readouterr().err
+        err = capsys.readouterr().err
+        assert "shared/scripts" in err
+        assert "plugins/shipwright-aaa" in err
 
     def test_a_marker_on_a_cached_plugin_is_reported(self, tmp_path: Path):
         """Pins ``scopes.append(plugin_cache)``, which no test reached before.
@@ -165,7 +254,7 @@ class TestTheGreenLineDoesNotOverclaim:
         out = capsys.readouterr().out
         assert "shared" in out, "an OK that never mentions shared/ overclaims"
         assert "3 files" in out, "the count proves the tree was walked"
-        assert "trg-5005bf57" in out, "the un-gated tree is named where it is read"
+        assert "mirror" in out, "the third gated tree is named where it is read"
 
     def test_warn_line_names_the_shared_tree_when_it_drifted(
             self, tmp_path: Path, capsys):
@@ -178,17 +267,17 @@ class TestTheGreenLineDoesNotOverclaim:
         # satisfy a bare substring check.
         assert "scripts/lib/a.py" in err
 
-    def test_json_payload_carries_both_trees(self, tmp_path: Path, capsys):
+    def test_json_payload_carries_all_three_trees(self, tmp_path: Path, capsys):
         files = {"scripts/lib/a.py": "a = 1\n"}
         repo, cache = _seed(tmp_path, shared=files, cache_shared=files)
         main(["--repo-root", str(repo), "--cache-root", str(cache), "--json"])
         payload = json.loads(capsys.readouterr().out)
-        assert {"plugins", "shared", "orphan_markers"} <= set(payload)
+        assert {"plugins", "shared", "mirror", "orphan_markers"} <= set(payload)
 
     def test_early_return_statuses_carry_the_documented_shape(
             self, tmp_path: Path, capsys):
         """A ``--json`` consumer gets the same keys on BOTH early returns."""
-        keys = {"plugins", "shared", "orphan_markers", "drifted_count"}
+        keys = {"plugins", "shared", "mirror", "orphan_markers", "drifted_count"}
 
         repo = tmp_path / "empty_repo"
         repo.mkdir()

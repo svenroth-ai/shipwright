@@ -253,9 +253,7 @@ Process the subagent's response:
 - If `escalation_reason` → move to `needs-review` category
 - **Max 3 retries per finding.**
 
-**Suppression syntax (`# nosemgrep:`):** read `references/suppression-syntax.md`
-first — the suppression must sit on the matched line or *immediately* above it,
-and any intervening comment silently breaks the attribution.
+**Suppression syntax (`# nosemgrep:`):** read `references/suppression-syntax.md` first — it must sit on the matched line or *immediately* above it, an intervening comment silently breaks attribution, and the new site must be recorded in the ratcheted `shipwright_inline_suppressions.json` in the same commit or CI blocks.
 
 ---
 

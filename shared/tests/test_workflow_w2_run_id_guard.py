@@ -104,3 +104,35 @@ def test_w2_guard_does_not_fire_for_real_run_with_exact_entry(proj: Path) -> Non
     f = iterate_compliance.check_w2_external_review_marker(proj, "run-1")
     assert f["status"] == pq.STATUS_FAIL
     assert "not a resolvable" not in f["evidence"]
+
+
+def test_w2_does_not_green_skip_on_a_corrupt_current_run_entry(proj: Path) -> None:
+    """Closes trg-e0a0f569 for W2: a corrupt CURRENT-run entry must not be
+    read as a different (older, small-complexity) run's evidence.
+
+    Before the fix, ``_latest_iterate_entry`` fell back to ``entries[-1]``
+    when the current run's own entry file failed to parse, so this exact
+    fixture read the older run's ``complexity=small`` and SKIPped
+    ("external review not required") before ever inspecting the per-run
+    marker below — a false green. The marker's status is deliberately
+    outside the closed vocabulary, so once the corrupt entry no longer
+    masks it, the check must FAIL on it instead of SKIPping blind.
+    """
+    run_id = "iterate-2026-08-05-current"
+    _write_run_config(proj, iterate_history=[
+        {"run_id": "iterate-2026-07-01-other", "complexity": "small"},
+    ])
+    iterates_dir = proj / ".shipwright" / "agent_docs" / "iterates"
+    iterates_dir.mkdir(parents=True, exist_ok=True)
+    (iterates_dir / f"{run_id}.json").write_bytes(b"{ not json")
+
+    marker_dir = _iter_dir(proj) / run_id
+    marker_dir.mkdir(parents=True, exist_ok=True)
+    (marker_dir / "external_review_state.json").write_text(
+        json.dumps({"status": "in_progress"}), encoding="utf-8",
+    )
+
+    f = iterate_compliance.check_w2_external_review_marker(proj, run_id)
+    assert f["status"] == pq.STATUS_FAIL
+    assert "external review not required" not in f["evidence"]
+    assert "unknown review status" in f["evidence"]

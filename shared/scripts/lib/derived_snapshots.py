@@ -13,7 +13,7 @@ a pure derivation of ``shipwright_events.jsonl`` + ``.shipwright/triage.jsonl`` 
 git history — all of which DO ship in the PR. Committing the *view* alongside the
 truth was both:
 
-- **conflict-generating** — every iterate rewrites the same eleven shared paths
+- **conflict-generating** — every iterate rewrites the same twelve shared paths
   regardless of what it changed, so N parallel iterates collide N(N-1)/2 times on
   files carrying no information about any of the changes; and
 - **wrong** — a branch-local derivation reads the *branch's* git history
@@ -27,11 +27,19 @@ correctly across branches) and every per-run / per-campaign path
 (``.shipwright/agent_docs/iterates/<run_id>.json``, ``reviews.json``, campaign
 ``status.json``) — those cannot collide, so they still ship.
 
-One of the eleven does not belong on the list and cannot simply be dropped from it:
-``shipwright_test_results.json`` must stay OUT of the commit like the rest, but a run
-WRITES it and nothing can re-derive it, so it is carried across the merge rather than
-reset. That mechanism is ``lib/run_written_ledger.py``; this module keeps the single
-job of saying what must be absent.
+**Two of the twelve** must stay OUT of the commit like the rest, but cannot simply be
+reset either, because the reset destroys something no producer downstream puts back:
+
+- ``shipwright_test_results.json`` — a run WRITES it and nothing can re-derive it at
+  all (trg-ad29a709);
+- ``.shipwright/agent_docs/session_handoff.md`` — its body is re-derivable, but the
+  canon marker naming the run that wrote it is not (P2.15, trg-01cd6aef).
+
+Both are carried across the merge rather than reset. That mechanism is
+``lib/run_written_ledger.py``; this module keeps the single job of saying what must be
+absent. The two exclusions are spelled out at :data:`RESTORABLE_SNAPSHOTS`, and their
+count is asserted in ``test_derived_snapshots_run_written.py`` rather than narrated
+here — this paragraph read "one of the eleven" while the set held twelve.
 """
 
 from __future__ import annotations
@@ -48,7 +56,23 @@ from lib.churn_merge import (
     norm,
 )
 
-__all__ = ["DERIVED_SNAPSHOTS", "RESTORABLE_SNAPSHOTS", "restore_derived_to_head"]
+__all__ = [
+    "DERIVED_SNAPSHOTS",
+    "RESTORABLE_SNAPSHOTS",
+    "SESSION_HANDOFF",
+    "restore_derived_to_head",
+]
+
+#: The per-session handover note. Carved out of :data:`RESTORABLE_SNAPSHOTS` below.
+#:
+#: The literal sits HERE rather than in ``lib/churn_merge.py``, which owns the registry
+#: this set is derived from and would be the natural home. That module is at exactly the
+#: 300-line source limit its own docstring says it was split out to respect, so a constant
+#: there costs a fresh bloat crossing for no behavioural gain. What buys the duplication
+#: back is a forward drift assertion — ``SESSION_HANDOFF in DERIVED_MDS``, in
+#: ``test_handoff_survives_restore.py`` — so a rename over there fails loudly here instead
+#: of silently emptying the carve-out.
+SESSION_HANDOFF = ".shipwright/agent_docs/session_handoff.md"
 
 #: The twelve paths. Derived from the churn registry so a new derived MD is picked
 #: up here automatically instead of drifting into a second hand-maintained list.
@@ -95,7 +119,44 @@ DERIVED_SNAPSHOTS: frozenset[str] = DERIVED_MDS | {
 #: ``lib/run_written_ledger.py``: the bytes are carried across the merge instead of
 #: being restored. This module is left with one job — say what must be absent — and
 #: that one is the complement, its :data:`RUN_WRITTEN_SNAPSHOTS` derived from this set.
-RESTORABLE_SNAPSHOTS: frozenset[str] = DERIVED_SNAPSHOTS - {TEST_RESULTS}
+#:
+#: **The second exclusion is :data:`SESSION_HANDOFF`, and it is the same defect one file
+#: over** (P2.15, trg-01cd6aef). F5b stamps the note with a canon marker naming the run
+#: that is finishing; ``integrate_main`` restored it to ``HEAD`` — some earlier run's note
+#: — and F11's refresh then runs ``--preserve-canon-marker``, which faithfully carries
+#: forward *that* marker (``carry_forward_marker`` preserves one "of ANY age … unchanged",
+#: by design). Both readers then reported a staleness the run inflicted on itself:
+#: ``check_session_handoff_fresh`` at F11, and Canon **C3** on every Stop. Measured, not
+#: assumed — both reproduced in ``test_handoff_survives_restore.py``, and the WARN fires
+#: whenever the branch was behind at F11, which on this repo is the common case
+#: (``origin/main`` takes a commit every 0.9 h, median of the last 40).
+#:
+#: The premise "everything a producer can RE-DERIVE" is what fails here. The note's BODY
+#: is re-derivable — ``generate_session_handoff`` rebuilds it from project state — but its
+#: canon marker is **run identity**: rebuilding it requires the ``run_id``/``phase``/
+#: ``reason`` the session holds, and **on the integrate path nothing is handed them.**
+#: The claim is exactly that narrow, and the narrowness is the point (Stage-2 code review,
+#: low): ``regenerate_tracked_snapshots`` DOES have a handoff branch that re-stamps
+#: through ``finalize_iterate._generate_handoff(…, run_id, reason)``, and it is the right
+#: resolution on the ``--mode regenerate`` escape hatch. It simply never runs here, because
+#: ``integrate_regenerate`` passes ``only=set()``. A future change to that argument would
+#: make the restore survivable by a different route — it must not be reached by reading
+#: this note as "no producer exists". Re-STAMPING from HERE was the rejected
+#: alternative, and rejected on safety rather than cost: a re-stamp manufactures the claim
+#: "this phase's C3 closure happened", which ``ensure_current`` — holding a ``--run-id``
+#: and nothing else — cannot know. Carrying bytes that already exist cannot forge
+#: anything; if F5b never ran there is nothing to carry and both checks correctly stay red.
+#:
+#: The note STAYS in :data:`DERIVED_SNAPSHOTS`, so ``check_no_derived_snapshots_committed``
+#: still keeps it out of every iterate commit and the N(N-1)/2 collision class stays
+#: closed. This changes who may RESET the file mid-run, nothing about who may COMMIT it.
+#:
+#: **Not to be harmonised with ``lib/compliance_refresh.CLASSIFICATION``**, which labels
+#: the same path ``session_scoped``. That register answers a different question — *"can
+#: the release refresh recompute this on the default branch?"* — and its answer is
+#: correctly "no, a refresh could only invent a run id". This set answers *"may the
+#: mid-run restore reset this to HEAD?"*. Two axes, deliberately not one.
+RESTORABLE_SNAPSHOTS: frozenset[str] = DERIVED_SNAPSHOTS - {TEST_RESULTS, SESSION_HANDOFF}
 
 
 def _git(project_root: Path, *args: str) -> subprocess.CompletedProcess[str]:
@@ -113,6 +174,7 @@ def _git(project_root: Path, *args: str) -> subprocess.CompletedProcess[str]:
 def restore_derived_to_head(project_root: Path) -> list[str]:
     """Restore every dirty :data:`RESTORABLE_SNAPSHOTS` path to ``HEAD`` — plus a
     run-written one whose content is already GONE (see below; a deletion loses nothing).
+    ``RESTORABLE_SNAPSHOTS`` is ten of the twelve; the two it omits are named below.
 
     An iterate no longer commits these, but producers still WRITE them during the
     run: F5a/F5b regenerate them for the run's own readers, and a merge's conflict
@@ -127,10 +189,11 @@ def restore_derived_to_head(project_root: Path) -> list[str]:
     must not claim a file it did not touch. Returns the restored relpaths, sorted.
     Never raises — restoring is hygiene, not a gate.
 
-    **Not** :data:`DERIVED_SNAPSHOTS`: ``shipwright_test_results.json`` is written by
-    the run and cannot be re-derived, so resetting it destroys the F5 ledger rather
-    than merely undoing a regeneration (trg-ad29a709 — see
-    :data:`RESTORABLE_SNAPSHOTS`).
+    **Not** :data:`DERIVED_SNAPSHOTS`: two of its members are run-written and resetting
+    them destroys evidence rather than undoing a regeneration —
+    ``shipwright_test_results.json`` (the F5 ledger, trg-ad29a709) and
+    ``.shipwright/agent_docs/session_handoff.md`` (the canon marker naming this run,
+    P2.15). Why each, in full, at :data:`RESTORABLE_SNAPSHOTS`.
 
     Three things this must NOT do, all found in review:
 
@@ -150,10 +213,12 @@ def restore_derived_to_head(project_root: Path) -> list[str]:
       one path unknown to ``HEAD`` can abort the whole call and silently leave the
       others dirty. Restoring per path keeps one odd file from defeating the rest,
       and makes the return value honest about what actually moved.
-    - **Overwrite a MODIFIED run-written path.** There is no producer to put its
-      content back. A DELETED one is different and is still restored: a deletion has
-      no content to lose, and letting it ride into the commit would drop a tracked
-      file. So the exclusion is about content, not about the path.
+    - **Overwrite a MODIFIED run-written path.** No producer downstream re-supplies
+      what the reset destroys — the F5 ledger has no producer at all, and the handoff's
+      marker is run identity, which the integrate path is never handed the inputs to
+      rebuild. A DELETED one is different and is still restored: a deletion has no
+      content to lose, and letting it ride into the commit would drop a tracked file.
+      So the exclusion is about content, not about the path.
     """
     project_root = Path(project_root)
     dirty = _git(project_root, "status", "--porcelain", "--", *sorted(DERIVED_SNAPSHOTS))
