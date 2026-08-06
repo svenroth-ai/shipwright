@@ -296,4 +296,5 @@ def test_integrate_rollback_restores_test_traceability_on_regen_failure(
 # Campaign status.json concurrent-sibling regenerate (S3) lives in
 # test_integrate_campaign_status.py (reuses _set_repo_identity / _write / _git here).
 # ensure_current (the F11 / campaign refresh-if-behind guard) lives in
-# test_ensure_current.py (also reuses _set_repo_identity / _write / _git here).
+# test_ensure_current.py + test_ensure_current_triage_absorb.py (also reuse
+# _set_repo_identity / _write / _git here).

@@ -1,0 +1,205 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-08-06-triage-backlog-outbox-routing",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-06T17:11:47.167138+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 7,
+      "findings": [
+        {
+          "severity": "low",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "The mini-plan states the new helper \"never raises,\" which could be read as swallowing git errors silently. If `git add` or `git commit` fails (e.g., disk full, permission problems), the file remains dirty and the subsequent merge will still fail — but the user would lose the diagnostic of why it failed.",
+          "suggestion": "Clarify that the helper lets underlying `run_cmd` exceptions propagate (matching the existing helpers in the file). That keeps the error posture consistent and avoids a misleading “never raises” in the description.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The fix commits the dirty file just before the merge. If the background producer (or any other process) appends to the file again in the narrow window between that commit and the merge completing, the worktree could become dirty again and produce the same git error.",
+          "suggestion": "This is unlikely in practice (the producer that left the dirty state is a one‑time Stop hook), but it could be documented in a comment or acceptance‑criteria note. No code change needed.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "The fix is scoped exclusively to `.shipwright/triage.jsonl`. If another tracked file ever becomes unexpectedly dirty from a background job, the same merge refusal could occur.",
+          "suggestion": "This is correctly listed as out‑of‑scope; the fix targets the only reported path. A generic “auto‑stash known churn files before merge” pattern could be considered only if the problem recurs. No action required now.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "_absorb_dirty_triage_log()` is specified to “never raise,” but the subsequent merge cannot safely proceed if either `git add` or `git commit` failed. A failed commit leaves the worktree dirty and produces the same merge refusal the change is intended to eliminate, likely surfaced only as a generic `merge_failed` result with no indication that absorption failed.",
+          "suggestion": "Check and preserve command results. If staging or committing the triage file fails, do not attempt the merge; return a distinct, actionable failure such as `triage_absorb_failed`, including stderr/context. Add regression coverage for a commit failure path where practical.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "This introduces a new runtime prerequisite: `ensure_current.py` now creates a Git commit. Environments that previously only fetched/merged may lack `user.name`/`user.email`, may require commit signing, or may have a rejecting commit hook. The plan’s real-repository fixtures may already configure identity and therefore not reveal this production dependency.",
+          "suggestion": "Confirm the iterate/worktree setup guarantees a usable local Git identity and compatible commit-hook/signing behavior before F11 runs. If that is an established lifecycle invariant, document or assert it near the absorption operation; otherwise add a clear preflight/error path. Include a test or fixture-level verification that the required identity is deliberately configured rather than incidentally inherited.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The producer is described as background activity, but the plan performs a single status check followed by add/commit. A write occurring after the file is staged or committed, but before `git merge`, leaves the path dirty again and can still trigger Git’s overwrite protection.",
+          "suggestion": "Verify that the Stop-hook producer is completed and cannot write during F11’s merge section. If that ordering is not guaranteed, serialize producer completion with finalization or re-check the path immediately before merge and absorb/retry in a bounded, well-reported manner.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "A generic porcelain-dirty check includes deletion, unmerged/conflicted index states, and potentially manually staged edits to the tracked triage file. Automatically committing these as a background-write absorption can create an unexpected deletion or feed a non-JSONL conflict shape into the churn resolver.",
+          "suggestion": "Explicitly define supported states as normal modifications/appends to `.shipwright/triage.jsonl`. For deletion or unmerged states, fail with a targeted diagnostic rather than silently committing them. Add at least one test covering an unsupported unmerged/deletion state if those are possible in the lifecycle.  Overall, the selected pre-merge absorption approach is appropriately narrow and correctly reuses the established churn-conflict path; it is materially safer than rerouting to an undelivered worktree outbox. It should be revised to make commit prerequisites and absorption failures explicit, and to close or formally rule out the background-write timing window.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-08-06T16:53:33.536343+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[deepseek] ## Review Findings\n\n- **Category:** approach  \n  **Severity:** low  \n  **Finding:** The mini-plan states the new helper \"never raises,\" which could be read as swallowing git errors silently. If `git add` or `git commit` fails (e.g., disk full, permission problems), the file remains dirty and the subsequent merge will still fail — but the user would lose the diagnostic of *why* it failed.  \n  **Suggestion:** Clarify that the helper lets underlying `run_cmd` exceptions propagate (matching the existing helpers in the file). That keeps the error posture consistent and avoids a misleading “never raises” in the description.\n\n- **Category:** edge-case  \n  **Severity:** low  \n  **Finding:** The fix commits the dirty file just before the merge. If the background producer (or any other process) appends to the file again in the narrow window between that commit and the merge completing, the worktree could become dirty again and produce the same git error.  \n  **Suggestion:** This is unlikely in practice (the producer that left the dirty state is a one‑time Stop hook), but it could be documented in a comment or acceptance‑criteria note. No code change needed.\n\n- **Category:** risk  \n  **Severity:** low  \n  **Finding:** The fix is scoped exclusively to `.shipwright/triage.jsonl`. If another tracked file ever becomes unexpectedly dirty from a background job, the same merge refusal could occur.  \n  **Suggestion:** This is correctly listed as out‑of‑scope; the fix targets the only reported path. A generic “auto‑stash known churn files before merge” pattern could be considered only if the problem recurs. No action required now.\n\n## Overall Assessment\n\nThe approach is sound, directly solving the root cause (pre‑merge dirty‑tree refusal) without altering any producer or outbox routing. The change is ~25 lines in a single file, backed by real‑git integration tests that reproduce the original failure and prove no data loss. All findings are refinements only.\n\nSHIPWRIGHT_VERDICT: approve\n\n[openai] 1. **Category:** risk  \n   **Severity:** medium  \n   **Finding:** `_absorb_dirty_triage_log()` is specified to “never raise,” but the subsequent merge cannot safely proceed if either `git add` or `git commit` failed. A failed commit leaves the worktree dirty and produces the same merge refusal the change is intended to eliminate, likely surfaced only as a generic `merge_failed` result with no indication that absorption failed.  \n   **Suggestion:** Check and preserve command results. If staging or committing the triage file fails, do not attempt the merge; return a distinct, actionable failure such as `triage_absorb_failed`, including stderr/context. Add regression coverage for a commit failure path where practical.\n\n2. **Category:** dependency  \n   **Severity:** medium  \n   **Finding:** This introduces a new runtime prerequisite: `ensure_current.py` now creates a Git commit. Environments that previously only fetched/merged may lack `user.name`/`user.email`, may require commit signing, or may have a rejecting commit hook. The plan’s real-repository fixtures may already configure identity and therefore not reveal this production dependency.  \n   **Suggestion:** Confirm the iterate/worktree setup guarantees a usable local Git identity and compatible commit-hook/signing behavior before F11 runs. If that is an established lifecycle invariant, document or assert it near the absorption operation; otherwise add a clear preflight/error path. Include a test or fixture-level verification that the required identity is deliberately configured rather than incidentally inherited.\n\n3. **Category:** edge-case  \n   **Severity:** medium  \n   **Finding:** The producer is described as background activity, but the plan performs a single status check followed by add/commit. A write occurring after the file is staged or committed, but before `git merge`, leaves the path dirty again and can still trigger Git’s overwrite protection.  \n   **Suggestion:** Verify that the Stop-hook […truncated]",
+      "verdicts": {
+        "openai": "revise",
+        "deepseek": "approve"
+      }
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-06T16:53:24.959984+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 6,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "reversibility",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: AC2 -- 'the dirty content is not discarded ... so nothing a background producer wrote is lost' — _absorb_dirty_triage_log ran only after the behind==0 early return, so it never fired on an already-current branch -- exactly the state the delivery-ladder's repeat refresh calls and the post-merge window normally find. Any triage write arriving after the last integrating ensure_current call was still silently destroyed by F11's worktree teardown -- the same failure class the miniplan cites to reject the outbox-routing alternative.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "concurrency",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: 'a failure here just leaves the log dirty and the merge below fails exactly as it would have without this step' — git add mutates the index before the commit is attempted, so on a commit-failure path the file was left STAGED, not unstaged -- a strictly worse state that can turn a recoverable merge-abort into a wedged, not-uptodate-entry failure this codebase has previously measured.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "boundary",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: a bare MERGE_HEAD rev-parse is a sufficient guard against touching the index during a wedged operation — The established primitive for this exact class of commit (lib.main_tree_guards.op_in_progress, already used by reconcile_triage.py for the same operation on the same file) checks six states -- MERGE_HEAD, CHERRY_PICK_HEAD, REVERT_HEAD, rebase-merge, rebase-apply, BISECT_LOG -- fail-closed on an unanswerable probe. The narrower check missed rebase/cherry-pick/revert/bisect and read a probe failure as 'no operation in progress', the wrong direction.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "hidden_coupling",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: an absorb-commit failure (e.g. this repo's own pre-commit anti-ratchet hook rejecting it) is diagnosable — The original code discarded git's stderr entirely, returning only a bare step token. An operator would see triage-absorb-commit-failed followed by merge_failed carrying git's original overwritten-by-merge message, with no hint that a hook had refused.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "hidden_coupling",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: 'this is a purely additive absorption' (AC4) -- it only touches a file the project already tracks — git status --porcelain reports an untracked file as '??'; the original guard's dirty-check did not distinguish that from a tracked modification, so an untracked triage.jsonl (a real state in a fresh consumer project) would be silently promoted to tracked and shipped in the PR by this merge-guard side effect.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "reversibility",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: committing the dirty content is no worse than leaving it dirty — The sibling primitive doing the same job (resolve_churn_conflicts, via reconcile_triage) validates the triage text before committing. This guard did not, so a torn write racing the git add could be committed as the log's permanent next line, whereas pre-fix an invalid dirty file could still be discarded with a plain git checkout.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-08-06T17:11:21.094625+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": "openrouter",
+      "completed_at": "2026-08-06T16:37:12.043345+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "unstructured",
+      "raw_excerpt": "[deepseek] I reviewed the diff against the spec. The implementation of `_absorb_dirty_triage_log` correctly absorbs an uncommitted `triage.jsonl` into a scoped commit before the merge, satisfying AC1–AC4. The tests use real git repos and validate that both sides' appends survive, the absorb step is conditional, and existing behaviors are preserved. There are no correctness bugs, security issues, or regression concerns visible in this change.\n\nSHIPWRIGHT_VERDICT: approve\n\n[openai] No concrete defects found. The helper conditionally commits only `.shipwright/triage.jsonl` immediately before the existing integration path, preserves normal clean-tree behavior, and the integration test exercises a real divergent merge and verifies both local and origin records survive.\n\nOverall assessment: ship-as-is.\n\nSHIPWRIGHT_VERDICT: approve",
+      "verdicts": {
+        "openai": "approve",
+        "deepseek": "approve"
+      }
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-06T16:32:26.969575+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    }
+  }
+}
