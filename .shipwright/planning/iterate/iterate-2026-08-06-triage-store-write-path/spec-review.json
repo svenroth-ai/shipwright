@@ -1,26 +1,49 @@
 {
-  "stage": "spec-compliance",
-  "verdict": "PASS",
+  "section": "iterate-2026-08-06-triage-store-write-path",
   "reviewer": "shipwright-build:spec-reviewer (opus)",
-  "rounds": 2,
-  "spec_citations": [],
-  "summary": "Round 1 REJECTED with 5 divergences; all five were closed in CODE, with no acceptance criterion and no accepted revision amended or weakened. Round 2 PASS: AC-1..AC-8 and R1..R8 all delivered and covered, scope discipline clean (findings 14/15/17-22/24/26-29 untouched, sweep_outbox's duplicate guard left alone). Three non-blocking documentation nits, all since fixed.",
-  "round_1_divergences": [
-    {"ref": "AC-2", "kind": "unfaithful",
-     "divergence": "--commit applied only two of the three named main-tree guards; has_staged_changes was omitted, which also left the extraction's own stated rationale false (the third guard then had no second caller).",
-     "resolution": "FIXED — guard added, plus a test that stages an unrelated file."},
-    {"ref": "R2", "kind": "contradiction",
-     "divergence": "An added 'unverifiable' arm collapsed anchorless same-id appends and merely warned, defended in a module docstring as a departure from an ACCEPTED revision. The plan was not amended, so the file and the code disagreed silently.",
-     "resolution": "FIXED — arm removed, R2 implemented as written. The defence's premise was false: both of triage.py's append constructors set originalTs unconditionally and 684/684 real appends carry one, so anchorless records and id collisions are the same-sized population. Fallout: three existing fixtures modelled a 'refresh' with anchorless lines no writer can emit and now carry originalTs."},
-    {"ref": "R5", "kind": "unfaithful",
-     "divergence": "'Reports fatally' returned the soft 'buffered' status when a failed checkout AND a failed put-back leave the tracked log MISSING — a state no replay can complete.",
-     "resolution": "FIXED — dedicated 'error' status, propagated so sweep_outbox stops on it."},
-    {"ref": "R7", "kind": "missing",
-     "divergence": "Five of the enumerated fault-injection items had no test: backup-write failure, publish failure, failed salvage adoption, invalid-UTF-8 byte-faithfulness, and the old/new import smoke test.",
-     "resolution": "FIXED — all added, including a per-module import in an isolated -I subprocess."},
-    {"ref": "R1", "kind": "missing",
-     "divergence": "The named unit pin (action == 'clean' AND warnings != [] at sweep_quarantine.decide) did not exist; only the end-to-end proof did.",
-     "resolution": "FIXED — added with a collision contrast and a no-same-id control."}
+  "stage": "spec-compliance",
+  "verdict": "PASS (round 2; round 1 REJECT)",
+  "review": [
+    {
+      "severity": "high",
+      "category": "spec",
+      "file": "shared/scripts/lib/triage_gc_publish.py",
+      "line": 96,
+      "finding": "AC-2 named three main-tree guards; --commit shipped two. has_staged_changes was omitted, which also left the extraction's stated rationale false — the third guard then had no second caller.",
+      "resolution": "FIXED: guard added, plus a test that stages an unrelated file."
+    },
+    {
+      "severity": "high",
+      "category": "spec",
+      "file": "shared/scripts/lib/triage_dedup.py",
+      "line": 96,
+      "finding": "R2 was CONTRADICTED by an added 'unverifiable' arm that collapsed anchorless same-id appends and merely warned, defended in a docstring as a departure from an ACCEPTED revision while the plan still said the opposite.",
+      "resolution": "FIXED: arm removed, R2 implemented as written. The defence's premise was false — both triage.py append constructors set originalTs, so anchorless records and id collisions are the same-sized population."
+    },
+    {
+      "severity": "medium",
+      "category": "spec",
+      "file": "shared/scripts/lib/sweep_drift_restore.py",
+      "line": 149,
+      "finding": "R5's 'reports fatally' returned the soft 'buffered' status when a failed checkout AND a failed put-back leave the tracked log MISSING — a state no replay can complete.",
+      "resolution": "FIXED: dedicated 'error' status, propagated so sweep_outbox stops on it."
+    },
+    {
+      "severity": "medium",
+      "category": "test",
+      "file": "shared/tests/test_triage_gc_durability.py",
+      "line": 1,
+      "finding": "R7's fault-injection list was half-built: backup-write failure, publish failure, failed salvage adoption, invalid-UTF-8 byte-faithfulness and the old/new import smoke test had no test.",
+      "resolution": "FIXED: all added, including a per-module import in an isolated -I subprocess."
+    },
+    {
+      "severity": "medium",
+      "category": "test",
+      "file": "shared/tests/test_triage_write_path_contracts.py",
+      "line": 42,
+      "finding": "R1's named unit pin (action == 'clean' AND warnings != [] at sweep_quarantine.decide) did not exist; only the end-to-end proof did.",
+      "resolution": "FIXED: added, with a collision contrast and a no-same-id control."
+    }
   ],
   "round_2_verification": {
     "fixture_updates_challenged": "Judged FAITHFUL on independent evidence, not on assertion: both append constructors in shared/scripts/triage.py set the anchor; the tracked log shows a 1:1 ratio of append lines to non-empty originalTs; and .shipwright/triage.jsonl:285 (trg-60ef91fb — the very incident the regression is named after) is a refreshed append carrying the FIRST append's timestamp as originalTs while ts moved. The pre-change fixtures omitted the field entirely, a shape no writer produces. Assertions unchanged; only the inputs were corrected.",

@@ -464,10 +464,56 @@
     "spec": {
       "review_type": "spec",
       "status": "completed",
-      "findings_count": 0,
-      "findings": [],
-      "provider": null,
-      "completed_at": "2026-08-06T09:38:17.176671+00:00",
+      "findings_count": 5,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "spec",
+          "file": "shared/scripts/lib/triage_gc_publish.py",
+          "line": 96,
+          "finding": "AC-2 named three main-tree guards; --commit shipped two. has_staged_changes was omitted, which also left the extraction's stated rationale false — the third guard then had no second caller.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "high",
+          "category": "spec",
+          "file": "shared/scripts/lib/triage_dedup.py",
+          "line": 96,
+          "finding": "R2 was CONTRADICTED by an added 'unverifiable' arm that collapsed anchorless same-id appends and merely warned, defended in a docstring as a departure from an ACCEPTED revision while the plan still said the opposite.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "spec",
+          "file": "shared/scripts/lib/sweep_drift_restore.py",
+          "line": 149,
+          "finding": "R5's 'reports fatally' returned the soft 'buffered' status when a failed checkout AND a failed put-back leave the tracked log MISSING — a state no replay can complete.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "test",
+          "file": "shared/tests/test_triage_gc_durability.py",
+          "line": 1,
+          "finding": "R7's fault-injection list was half-built: backup-write failure, publish failure, failed salvage adoption, invalid-UTF-8 byte-faithfulness and the old/new import smoke test had no test.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "test",
+          "file": "shared/tests/test_triage_write_path_contracts.py",
+          "line": 42,
+          "finding": "R1's named unit pin (action == 'clean' AND warnings != [] at sweep_quarantine.decide) did not exist; only the end-to-end proof did.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": "shipwright-build:spec-reviewer",
+      "completed_at": "2026-08-06T11:26:14.727907+00:00",
       "disposition": null,
       "recorded_by": "shipwright-build:spec-reviewer",
       "parse_status": null,
