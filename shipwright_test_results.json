@@ -1,161 +1,276 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-08-06-architecture-review-pass",
-    "date": "2026-08-06",
+    "run_id": "iterate-2026-07-28-main-self-heal",
+    "date": "2026-07-28",
     "unit": {
-      "status": "passed",
-      "passed": 8136,
-      "total": 8136
+      "status": "pass",
+      "passed": 1066,
+      "failed": 0,
+      "note": "Green and complete: integration-tests 422, shared/scripts/tests, shared/scripts/tools/tests, plugins/shipwright-iterate 521, and all 123 tests this iterate adds. shared/tests could not be completed in one local process - see degraded[]; CI runs it as a Required Check."
     },
     "integration": {
-      "status": "passed",
-      "passed": 479,
-      "total": 479
-    },
-    "pgtap": {
-      "status": "not_run",
-      "passed": 0,
-      "total": 0
+      "status": "pass",
+      "passed": 422,
+      "failed": 0
     },
     "e2e": {
-      "status": "skipped",
-      "passed": 0,
-      "total": 0
-    },
-    "design_fidelity": {
-      "status": "skipped",
-      "passed": 0,
-      "total": 0
+      "status": "n/a",
+      "reason": "no browser surface; this is framework machinery (CLI + skill prose + CI workflow triggers)"
     },
     "smoke": {
-      "status": "not_run"
+      "status": "n/a",
+      "reason": "no startable server surface in this repo"
+    },
+    "pgtap": {
+      "status": "n/a",
+      "reason": "no database"
+    },
+    "design_fidelity": {
+      "status": "n/a",
+      "reason": "no UI surface"
     },
     "surface_verification": {
       "surface": "cli",
-      "runner": "uv run pytest shared/tests/test_architecture_review_mode.py shared/tests/test_architecture_review_prompts.py -q -p no:randomly",
+      "tests_run": 8,
       "exit_code": 0,
-      "tests_run": 19,
-      "evidence_path": "C:\\01_Development\\shipwright\\.worktrees\\architecture-review-pass\\.shipwright\\runs\\iterate-2026-08-06-architecture-review-pass\\surface_verification.log",
-      "timestamp": "2026-08-06T10:01:40.017Z",
-      "attempts": 1
+      "evidence_path": ".shipwright/runs/iterate-2026-07-28-main-self-heal/f05-surface/",
+      "detail": "Both CLIs driven against the REAL repository and the REAL gh/git. main_health.py: status green, exit 0, one API call, unknown[] empty. check_repair_safety.py: verdict 'review' on this very diff - the gate fired on its own author's changed assertion, which is the rule working. test_repair_gate_bites.py: 6 cases against throwaway git repositories, every weakening refused, the honest repair allowed."
     },
     "test_completeness": {
       "status": "complete",
       "behaviors": [
         {
-          "behavior": "--mode architecture requires --brief-file (usage error, exit 2)",
+          "behavior": "AC-1 main runs are never cancelled (ci.yml + security.yml)",
           "disposition": "tested",
-          "evidence": "test_architecture_mode_requires_brief_file PASSED"
+          "evidence": "test_main_attribution_workflows::test_main_runs_are_never_cancelled[2] PASSED"
         },
         {
-          "behavior": "a flag from another mode is rejected AS a foreign flag in architecture mode",
+          "behavior": "AC-1 main runs get a per-commit group so they do not queue",
           "disposition": "tested",
-          "evidence": "test_architecture_mode_rejects_plan_file_as_a_foreign_flag PASSED"
+          "evidence": "test_main_attribution_workflows::test_main_runs_get_their_own_group_so_they_do_not_queue[2] PASSED"
         },
         {
-          "behavior": "the same rule holds for the three pre-existing modes (--mode code --brief-file)",
+          "behavior": "AC-2 bloat-check runs on merges; comments stay PR-only",
           "disposition": "tested",
-          "evidence": "test_foreign_flag_is_rejected_in_a_pre_existing_mode_too PASSED"
+          "evidence": "test_main_attribution_workflows (2 cases) PASSED"
         },
         {
-          "behavior": "a missing brief path reports itself as 'Brief not found'",
+          "behavior": "AC-2 base ref guarded against empty / all-zero / unresolvable",
           "disposition": "tested",
-          "evidence": "test_architecture_mode_missing_brief_path_reports_it PASSED"
+          "evidence": "test_main_attribution_workflows::test_bloat_check_guards_every_shape_its_base_ref_can_take PASSED"
         },
         {
-          "behavior": "an empty brief is an ERROR (exit 1), incl. a BOM-only file",
+          "behavior": "AC-3 a PR run never masks the push-to-main run for the same sha",
           "disposition": "tested",
-          "evidence": "test_empty_brief_is_an_error_not_a_skip PASSED"
+          "evidence": "test_main_health::test_pr_run_for_the_same_sha_never_masks_the_main_run PASSED"
         },
         {
-          "behavior": "{BRIEF} substitutes and emits no unknown-placeholder warning",
+          "behavior": "AC-3 conclusion mapping; cancelled is inconclusive, not a pass",
           "disposition": "tested",
-          "evidence": "test_brief_placeholder_is_substituted, ..._emits_no_unknown_warning PASSED"
+          "evidence": "test_main_health (4 cases) PASSED"
         },
         {
-          "behavior": "an unknown placeholder still warns on stderr",
+          "behavior": "AC-3 only the overlap class decides health",
           "disposition": "tested",
-          "evidence": "test_unknown_placeholder_still_warns PASSED"
+          "evidence": "test_main_health::test_a_red_finding_class_workflow_does_not_make_the_commit_red PASSED"
         },
         {
-          "behavior": "substitution is one pass over the TEMPLATE: {SPEC}/{BRIEF} inside injected content survive literally (behaviour change for plan/iterate/code)",
+          "behavior": "AC-3 first bad = oldest red after the anchor; latest red reported too",
           "disposition": "tested",
-          "evidence": "test_injected_content_is_never_rescanned_for_placeholders PASSED"
+          "evidence": "test_main_health_attribution::test_first_bad_is_the_oldest_red_and_latest_red_is_reported_separately PASSED"
         },
         {
-          "behavior": "architecture mode emits the standard envelope incl. verdicts/contradiction",
+          "behavior": "AC-3 gaps downgrade confidence; three refusals have distinct reason codes",
           "disposition": "tested",
-          "evidence": "test_architecture_mode_emits_the_standard_envelope PASSED"
+          "evidence": "test_main_health_attribution (6 cases) PASSED"
         },
         {
-          "behavior": "prompts load from shared/prompts/architecture_reviewer/; missing dir -> ('','')",
+          "behavior": "AC-3 unknown is never green, whatever failed",
           "disposition": "tested",
-          "evidence": "test_architecture_prompts_explicit_root, ..._missing_returns_empty PASSED"
+          "evidence": "test_main_health_tool (4 cases: gh, git, no runs, running) PASSED"
         },
         {
-          "behavior": "the shipped prompts exist and carry {BRIEF} + {SPEC}",
+          "behavior": "AC-3 a broken diagnosis call does not cost the verdict",
           "disposition": "tested",
-          "evidence": "test_architecture_prompts_ship_and_are_non_empty PASSED"
+          "evidence": "test_main_health_tool::test_a_broken_diagnosis_call_degrades_without_losing_the_verdict PASSED"
         },
         {
-          "behavior": "the system prompt states the rejection reasons were withheld",
+          "behavior": "AC-3 failing step from structured data; excerpt reduced, capped, redacted, untrusted",
           "disposition": "tested",
-          "evidence": "test_architecture_system_prompt_states_the_withholding PASSED"
+          "evidence": "test_main_health_diagnosis (9 cases) PASSED"
         },
         {
-          "behavior": "the user template pulls no plan (no {PLAN}/{DIFF}, no plan vocabulary)",
+          "behavior": "AC-3 a commit sha is not redacted as if it were a secret",
           "disposition": "tested",
-          "evidence": "test_architecture_user_template_pulls_no_plan PASSED"
+          "evidence": "test_main_health_diagnosis::test_a_commit_sha_is_not_mistaken_for_a_secret PASSED"
         },
         {
-          "behavior": "findings are asked for in the parseable Category/Severity/Finding/Suggestion shape — on-disk prompt AND inline default",
+          "behavior": "AC-3 main-advanced detected; older commits do not false-positive",
           "disposition": "tested",
-          "evidence": "test_architecture_prompt_mandates_the_parseable_finding_labels[file,default] PASSED"
+          "evidence": "test_main_health_status (2 cases) PASSED"
         },
         {
-          "behavior": "the inline default carries the SHIPWRIGHT_VERDICT instruction",
+          "behavior": "AC-3 a detected race downgrades the status instead of annotating it",
           "disposition": "tested",
-          "evidence": "test_architecture_inline_default_carries_the_verdict_instruction PASSED"
+          "evidence": "test_main_health_status::test_a_detected_race_downgrades_the_answer_it_does_not_just_annotate_it PASSED"
         },
         {
-          "behavior": "the brief template carries the anti-anchoring rule + the three-line shape",
+          "behavior": "AC-3 monitored policy and real YAML agree, both directions",
           "disposition": "tested",
-          "evidence": "test_brief_template_ships_with_the_anti_anchoring_rule PASSED"
+          "evidence": "test_main_attribution_workflows (3 cases) PASSED"
         },
         {
-          "behavior": "the BRIEF (not the plan) is what reaches both model arms, under the architecture system prompt",
+          "behavior": "AC-4 the start hook sits between cutting the worktree and loading context",
           "disposition": "tested",
-          "evidence": "test_the_brief_is_what_reaches_the_model PASSED"
+          "evidence": "test_main_repair_hooks::test_the_start_hook_runs_right_after_the_worktree_is_cut PASSED"
         },
         {
-          "behavior": "the envelope is itemizable into findings (PARSE_STRUCTURED, 2 findings)",
+          "behavior": "AC-4 the F11 hook runs before the arm",
           "disposition": "tested",
-          "evidence": "test_the_envelope_is_itemizable_into_findings PASSED"
+          "evidence": "test_main_repair_hooks::test_the_f11_hook_runs_before_the_merge_is_armed PASSED"
         },
         {
-          "behavior": "the `plan` review row is NOT this pass's destination — a second write is silently treated as a marker repair and the findings are discarded",
+          "behavior": "AC-4 both hooks say unknown is never green",
           "disposition": "tested",
-          "evidence": "test_the_plan_row_is_not_this_passs_destination PASSED"
+          "evidence": "test_main_repair_hooks::test_unknown_is_never_treated_as_green_at_either_hook PASSED"
         },
         {
-          "behavior": "Step 3.5 step 2a / Step 5a run the second call and STOP on a reject verdict, asking the operator",
+          "behavior": "AC-4 the green path costs exactly one API call",
+          "disposition": "tested",
+          "evidence": "test_main_health_tool::test_the_green_path_costs_exactly_one_api_call PASSED"
+        },
+        {
+          "behavior": "AC-5 the procedure carries every repair step and stays in budget",
+          "disposition": "tested",
+          "evidence": "test_main_repair_hooks (3 cases) PASSED"
+        },
+        {
+          "behavior": "AC-5 the repair is based on origin/main, not on this iterate's HEAD",
+          "disposition": "tested",
+          "evidence": "test_main_repair_hooks::test_the_repair_is_based_on_the_shared_branch_not_on_this_iterate PASSED"
+        },
+        {
+          "behavior": "AC-6 every unambiguous coverage loss is blocked",
+          "disposition": "tested",
+          "evidence": "test_assertion_weakening (12 cases incl. rename-out-of-collection) PASSED"
+        },
+        {
+          "behavior": "AC-6 the fences that would make the gate unusable hold",
+          "disposition": "tested",
+          "evidence": "test_assertion_weakening (5 fence cases) PASSED"
+        },
+        {
+          "behavior": "AC-6 a changed expectation is reported, never blocked",
+          "disposition": "tested",
+          "evidence": "test_assertion_weakening (3 cases) PASSED"
+        },
+        {
+          "behavior": "AC-6 the gate bites through real git; the honest repair passes",
+          "disposition": "tested",
+          "evidence": "test_repair_gate_bites (6 cases, real throwaway repositories) PASSED"
+        },
+        {
+          "behavior": "AC-6 the CI step blocks, keys on the shared grammar, runs the checker from the BASE revision",
+          "disposition": "tested",
+          "evidence": "test_main_attribution_workflows (4 cases) PASSED"
+        },
+        {
+          "behavior": "AC-6 escalation classes and idempotency keys",
+          "disposition": "tested",
+          "evidence": "test_main_health_diagnosis (4 cases) PASSED"
+        },
+        {
+          "behavior": "AC-6 a red finding-class workflow gets its own non-green status",
+          "disposition": "tested",
+          "evidence": "test_main_health_status::test_a_failing_finding_class_workflow_is_reported_AND_changes_the_status PASSED"
+        },
+        {
+          "behavior": "AC-7 claim matching: branch, fork rejected, sha prefix, stale, failed attempts",
+          "disposition": "tested",
+          "evidence": "test_main_health_diagnosis (8 cases) PASSED"
+        },
+        {
+          "behavior": "AC-7 a same-SHA claim push is NOT a lock (the falsification create-ref rests on)",
+          "disposition": "tested",
+          "evidence": "test_repair_claim_is_atomic::test_pushing_the_claim_branch_before_working_is_NOT_a_lock PASSED"
+        },
+        {
+          "behavior": "AC-7 a push only rejects once histories diverged",
+          "disposition": "tested",
+          "evidence": "test_repair_claim_is_atomic::test_a_push_only_rejects_once_the_histories_have_diverged PASSED"
+        },
+        {
+          "behavior": "AC-7 the loser can read who holds the claim; a released claim lets the next through",
+          "disposition": "tested",
+          "evidence": "test_repair_claim_is_atomic (2 cases) PASSED"
+        },
+        {
+          "behavior": "AC-7 a branch-only claim reports staleness unknown, and stale once its PRs are closed",
+          "disposition": "tested",
+          "evidence": "test_main_health_diagnosis (2 cases) PASSED"
+        },
+        {
+          "behavior": "AC-7 releasing deletes the ref, not only the pull request",
+          "disposition": "tested",
+          "evidence": "test_main_repair_hooks::test_releasing_a_claim_deletes_the_ref_and_not_only_the_pull_request PASSED"
+        },
+        {
+          "behavior": "A repaired red further back is history; a red under a running tip is not",
+          "disposition": "tested",
+          "evidence": "test_main_health_attribution (2 cases) PASSED"
+        },
+        {
+          "behavior": "The retrieval limit is derived from the window, and saturation is reported",
+          "disposition": "tested",
+          "evidence": "test_main_health_status::test_run_limit_is_derived_from_the_window_not_fixed + attribution truncation cases PASSED"
+        },
+        {
+          "behavior": "An unreadable diff fails the safety gate closed rather than reporting clean",
+          "disposition": "tested",
+          "evidence": "test_repair_gate_bites::test_an_unreadable_base_fails_closed_rather_than_reporting_clean PASSED"
+        },
+        {
+          "behavior": "An agent actually OBEYS the two skill hooks at runtime",
           "disposition": "untestable",
-          "reason_code": "requires-interactive-tty",
-          "reason": "the STOP is an operator question in a runtime prompt; the prose is the contract, as for every other skill step"
+          "reason_code": "covered-by-existing-test",
+          "note": "no test can compel a model to follow prose; that the prose exists, sits in the right place and says the right thing IS tested"
+        },
+        {
+          "behavior": "GitHub create-ref returns 422 for a duplicate claim; Actions' own step dispatch",
+          "disposition": "untestable",
+          "reason_code": "requires-external-nondeterministic-service",
+          "note": "host properties, not git ones. The git-side half is tested against a real remote; the gate's DECISION is tested through real git and its WIRING through parsed YAML"
         }
       ],
       "counts": {
-        "testable": 20,
-        "tested": 19,
-        "untestable": 1,
+        "total": 40,
+        "tested": 38,
+        "untestable": 2,
         "untested_testable": 0
       },
-      "enumeration_basis": {
-        "acs": 10,
-        "covered_acs": 10
-      }
+      "ledger_path": ".shipwright/planning/iterate/2026-07-28-main-self-heal.md"
     },
-    "degraded": []
+    "degraded": [
+      {
+        "condition": "local_f0_incomplete",
+        "detail": "shared/tests was terminated by the environment at 79%, then 94%, then 94% again - including one run deliberately detached from the session. ZERO failing tests in every attempt, and no Windows crash event for any of them. Memory pressure, a duplicated WebUI server and the pty idle-reaper were each investigated and FALSIFIED. The remainder of shared/tests is therefore unverified locally and is verified by CI as a Required Check on this PR."
+      },
+      {
+        "condition": "internal_review_cascade_lost",
+        "detail": "The Step-8 cascade was started twice and lost twice to the same environment fault. Substituted on the operator's instruction with two independent rounds of external_review.py --mode code, which returned 11 findings; 7 were fixed in-diff, three of them high."
+      }
+    ],
+    "ci_supplychain_ack": {
+      "run_id": "iterate-2026-07-28-main-self-heal",
+      "paths_fingerprint": "5647ce7a00cfc1a31ebcfcfba56e5a41bbecb6c9fa8d80e3991ab2a7f0219d06",
+      "consistent_with": "ADR-118",
+      "statement": "Adds no action and changes no pin: the third-party setup-uv stays SHA-pinned and GitHub-owned actions stay on mutable tags, exactly as ADR-118 decided. Three trust-boundary changes, each narrowing rather than widening it. On main the concurrency group becomes per-commit with cancelling off (ci.yml, security.yml), so every merge is verified instead of a later one cancelling an earlier one's checks. bloat-check gains a push-to-main trigger with a guarded base ref (empty, all-zero and unresolvable bases are detected rather than diffed against). And ci.yml gains ONE gating step, conditional on the fix-main-* repair convention, which materialises its checker from pull_request.base.sha and runs THAT against the PR tree — so a repair pull request cannot be judged by a checker it just edited. Token permissions are unchanged: read-only at the top level, no job widens itself.",
+      "ci_paths": [
+        ".github/workflows/bloat-check.yml",
+        ".github/workflows/ci.yml",
+        ".github/workflows/security.yml"
+      ]
+    }
   },
   "coverage": {
     "total": 80.2,
