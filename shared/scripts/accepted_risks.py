@@ -35,6 +35,19 @@ a truncated file.
 reconciles it *like* an empty register, not that it skips the comparison —
 otherwise deleting this file would silence the gate while every suppression it
 recorded stayed live (iterate-2026-07-31-accepted-risk-gate-holes).
+
+**Inline ``# nosemgrep`` suppressions have no ``target`` here, by decision.**
+That was an open question until
+iterate-2026-08-05-inline-suppression-ratchet settled it, and the answer was
+NO on three grounds: an offline reconciler would have to mirror Semgrep's own
+suppression semantics and would drift; in a both-directions gate a discovery
+error produces a false STALE, which advises deleting an entry that is doing its
+job; and ``expires`` — the field this register is *for* — does not fit a
+permanent false positive at a fixed source site. The control that stands in its
+place is a per-rule anti-ratchet, ``inline_suppressions``, whose baseline
+(``shipwright_inline_suppressions.json``) blocks the count from growing without
+a recorded decision. Registering an inline suppression HERE still fails the
+build, as the stale half of the drift rule — that is intended, not a gap.
 """
 
 from __future__ import annotations

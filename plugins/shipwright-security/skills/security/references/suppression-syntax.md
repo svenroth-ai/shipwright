@@ -8,6 +8,17 @@ Use this when the security-fixer subagent (Step 4) decides the right
 remediation is a justified suppression rather than a code fix, and any time you
 add a by-design `# nosemgrep:` comment to existing code.
 
+> **Getting the syntax right is only half of it.** Inline suppressions are
+> ratcheted: `shipwright_inline_suppressions.json` freezes a `max_sites` per
+> rule, and `shared/tests/test_inline_suppressions_repo_guard.py` blocks a rule
+> that gained a site or has no entry. Adding a suppression therefore means
+> raising that count **in the same change**, with a `rationale_ref` naming a
+> recorded decision and a rule-specific `statement`. Removing the *last* site
+> of a rule means deleting its entry, likewise in the same change. Check with
+> `uv run shared/scripts/tools/inline_suppressions_cli.py check --project-root .`
+> Full reasoning — and why the accepted-risk register deliberately has no
+> `target` for these — in `docs/security-ci-setup.md`.
+
 ---
 
 ## The adjacency rule

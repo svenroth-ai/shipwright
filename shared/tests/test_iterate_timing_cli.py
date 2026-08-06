@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import os
 import subprocess
 import sys
 from pathlib import Path
@@ -39,7 +40,7 @@ def test_resume_across_real_separate_os_processes(tmp_path):
     filesystem, exactly as a resumed Claude Code session would — proving the
     second invocation sees the first's write purely through the sidecar
     file, with no shared interpreter state to lean on."""
-    env = {**__import__("os").environ}
+    env = {**os.environ}
     common = ["--parent", "none", "--project-root", str(tmp_path), "--run-id", RUN]
     start = subprocess.run(
         [sys.executable, str(_ITERATE_TIMING_PY), "start", "review", *common],

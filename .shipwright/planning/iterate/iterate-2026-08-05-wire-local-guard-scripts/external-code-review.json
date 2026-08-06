@@ -1,0 +1,34 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "openrouter",
+  "degraded": false,
+  "reviews_succeeded": 1,
+  "reviews": {
+    "openai": {
+      "feedback": "- Category: test  \n  Severity: medium  \n  File: `shared/tests/test_required_checks_hook_chain_integration.py:108-125`  \n  Finding: The required integration scenario is not actually tested with `gh` unavailable. The fixture intentionally creates a project with no `origin`, causing the producer to return exit 2 before it needs to invoke `gh`; the test can pass on a host where `gh` is installed and authenticated. This does demonstrate one unreadable-host path, but does not meet AC-6\u2019s explicit \u201cwhen `gh` is unavailable\u201d coverage.  \n  Suggestion: Configure the fixture so repository resolution reaches the `gh` invocation, then run the real chain with a `PATH` that cannot resolve `gh` (or an executable fake that deterministically simulates the missing-command path), asserting exit 0 and clean stdout.\n\n- Category: test  \n  Severity: medium  \n  File: `shared/tests/test_verify_local_f0_wiring.py:56-64`  \n  Finding: The F0 wiring tests only establish that a fenced block contains the text `verify_local.py`; they do not prove that either shell snippet invokes `uv run scripts/verify_local.py` or that a non-zero result stops F0. For example, replacing the command with `echo scripts/verify_local.py` would pass `test_f0_runs_verify_local`, the guard test, ordering test, and the PowerShell-presence test while violating AC-1.  \n  Suggestion: Assert the command structure in both snippets and execute representative shell snippets in temporary projects: absent file must no-op, present successful script must run, and a failing script/command must return non-zero or throw.\n\n- Category: edge-case  \n  Severity: low  \n  File: `shared/scripts/hooks/check_required_checks_hook.py:207-224`  \n  Finding: Throttle check and stamp are not atomic. Two SessionStart chains opened concurrently in the same project can both read an absent/expired state, both invoke the network producer, and only then each stamp the state. This violates the documented \u201cat most once every 6 hours\u201d behavior and can multiply authenticated `gh` calls during concurrent sessions.  \n  Suggestion: Acquire a per-project lock or atomically create a short-lived lease/stamp before launching the producer; release or adjust it appropriately if the process cannot be started.\n\nOverall assessment: The core wiring and fail-soft wrapper implementation appear sound, but the explicit `gh`-unavailable integration requirement is not covered and the F0 tests can certify a non-running command. Ship with the identified test fixes; consider making the throttle reservation atomic.  \nSHIPWRIGHT_VERDICT: revise",
+      "via": "openrouter",
+      "status": "success"
+    },
+    "deepseek": {
+      "feedback": null,
+      "via": "openrouter",
+      "status": "degraded",
+      "reason": "provider returned an empty reply"
+    }
+  },
+  "verdicts": {
+    "openai": "revise",
+    "deepseek": "unavailable"
+  },
+  "statuses": {
+    "openai": "success",
+    "deepseek": "degraded"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": false,
+    "requires_resolution": true,
+    "reason": "only one reviewer answered \u2014 deepseek did not (deepseek=unavailable, openai=revise)"
+  }
+}
