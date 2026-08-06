@@ -1,14 +1,27 @@
 #!/usr/bin/env python3
-"""Carry the run's own ledger across an integrate merge (trg-ad29a709).
+"""Carry what the run itself wrote across an integrate merge (trg-ad29a709, P2.15).
 
 The sibling of ``lib/derived_snapshots.py``, and the seam between them is a difference
-in KIND, not a slice for size. That module enforces an ABSENCE: eleven shared derived
+in KIND, not a slice for size. That module enforces an ABSENCE: twelve shared derived
 views must not enter an iterate commit, so any dirty one is reset to ``HEAD``. This one
-preserves a PRESENCE: ``shipwright_test_results.json`` is on that list of eleven and
-does not belong there, because the run WRITES it — the F5 ledger, ``iterate_latest``,
-the test totals, ``test_completeness``, ``surface_verification``, ``ci_supplychain_ack``
-— and no producer can recompute it. Resetting it is not undoing a regeneration; it is
-deleting the run's evidence, which it did silently in two separate sessions.
+preserves a PRESENCE — **two of the twelve**, each for its own reason, and neither of
+them a derivation at all:
+
+* ``shipwright_test_results.json`` — the run WRITES it (the F5 ledger, ``iterate_latest``,
+  the test totals, ``test_completeness``, ``surface_verification``, ``ci_supplychain_ack``)
+  and no producer can recompute it. Resetting it is not undoing a regeneration; it is
+  deleting the run's evidence, which it did silently in two separate sessions
+  (trg-ad29a709).
+* ``.shipwright/agent_docs/session_handoff.md`` — its BODY is re-derivable, but its canon
+  marker is **run identity**: knowable only from the session that wrote it, and no
+  producer downstream of the restore is given the ``run_id``/``phase``/``reason`` to
+  rebuild it. Resetting it left F11's ``check_session_handoff_fresh`` and Canon **C3**
+  both reporting a staleness the run had inflicted on itself, on every run whose branch
+  fell behind (P2.15, trg-01cd6aef).
+
+Written-and-unrecomputable is the property; *how* a path came to be unrecomputable —
+no producer at all, or a producer with no way to know the inputs — does not change what
+must happen to the bytes.
 
 **Excluding it from the restore is only half an answer, and the other half is why this
 module exists.** A run-written path kept out of the restore stays tracked-and-dirty, and
@@ -39,14 +52,51 @@ import subprocess
 from pathlib import Path
 
 from lib.atomic_write import durable_atomic_write, durable_read_bytes
-from lib.derived_snapshots import DERIVED_SNAPSHOTS, RESTORABLE_SNAPSHOTS
+from lib.derived_snapshots import DERIVED_SNAPSHOTS, RESTORABLE_SNAPSHOTS, SESSION_HANDOFF
 
-__all__ = ["RUN_WRITTEN_SNAPSHOTS", "stash_run_written", "unstash_run_written"]
+__all__ = [
+    "BEST_EFFORT_CARRY",
+    "RUN_WRITTEN_SNAPSHOTS",
+    "stash_run_written",
+    "unstash_run_written",
+]
 
 #: The complement — snapshots a RUN writes and no producer can re-derive. Derived from
 #: the sibling's two sets rather than written out, so excluding a second path there
 #: cannot leave this one behind.
 RUN_WRITTEN_SNAPSHOTS: frozenset[str] = DERIVED_SNAPSHOTS - RESTORABLE_SNAPSHOTS
+
+#: Run-written paths whose CARRY is best-effort, because losing them costs less than
+#: stopping the branch. **The two members of the set above are not worth the same, and
+#: pretending they are is what this constant exists to prevent** (Stage-3 doubt review,
+#: two medium doubts).
+#:
+#: Carrying can fail in two places, and before this constant both were terminal for
+#: every member:
+#:
+#: - :func:`stash_run_written` could not take the bytes off the worktree (an unreadable
+#:   file, a lost ``index.lock``). The path then stays dirty, and since P2.15 the restore
+#:   no longer cleans it either — so ``git merge`` refuses outright the moment mainline
+#:   moved it, which is the normal case. A new pipeline-stopping mode, imported by the
+#:   carve-out itself.
+#: - :func:`unstash_run_written` could not write them back. ``integrate_main`` then
+#:   returns ``ledger_writeback_failed`` and no branch advances.
+#:
+#: For ``shipwright_test_results.json`` stopping is CORRECT: the failure means the run's
+#: only copy of its test evidence is gone, and continuing would deliver a PR whose
+#: evidence silently reverted to another run's. For ``session_handoff.md`` it is not: the
+#: worst case is that the note holds mainline's canon marker, which costs exactly two
+#: WARNINGs (F11 freshness and Canon C3, both ``Severity.WARNING`` by deliberate choice —
+#: "the handoff is advisory, not load-bearing"). Blocking delivery over a warning inverts
+#: the trade, and it does so on the most likely trigger: ``durable_atomic_write`` gives up
+#: after ~0.5 s, and a ``.md`` is far likelier than a JSON ledger to be held open by an
+#: editor, previewer, indexer or AV — the same Windows holder class this module already
+#: documents as measured.
+#:
+#: So for a member of this set, ``integrate_main`` resets an uncarried copy to ``HEAD``
+#: (the pre-P2.15 behaviour, which is safe precisely because the loss is a warning) and
+#: reports a failed write-back as a step rather than a terminal status.
+BEST_EFFORT_CARRY: frozenset[str] = frozenset({SESSION_HANDOFF})
 
 
 def _git(project_root: Path, *args: str) -> subprocess.CompletedProcess[str]:
