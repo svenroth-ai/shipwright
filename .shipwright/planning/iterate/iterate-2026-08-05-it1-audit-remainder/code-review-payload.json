@@ -1,0 +1,116 @@
+{
+  "review": [
+    {
+      "severity": "medium",
+      "category": "correctness",
+      "file": "shared/tests/test_sweep_gc_canonical.py",
+      "line": 160,
+      "finding": "ROUND 1. test_deeply_nested_line_does_not_raise did not exercise the totality guarantee it claimed. The fixture was a JSON ARRAY, so canonical_form returned at the non-dict guard before json.dumps ran, and 400 levels is inside the default recursion limit — so the test passed byte-identically against the pre-fix implementation. A non-discriminating test reading as coverage for the most dangerous edge in the diff.",
+      "suggestion": "APPLIED. Renamed to test_non_dict_json_routes_to_text_membership (what it really pins) and added test_unparseably_deep_object_degrades_instead_of_raising using a 20000-deep OBJECT, with pytest.raises(RecursionError) as an explicit precondition proving the parser really fails."
+    },
+    {
+      "severity": "low",
+      "category": "correctness",
+      "file": "shared/scripts/lib/sweep_canon.py",
+      "line": 119,
+      "finding": "ROUND 1. canonical_form claimed 'never raises, for any input' but the first except omitted TypeError, which json.loads raises for non-str/bytes input. Asymmetric with the dumps handler, which had it.",
+      "suggestion": "APPLIED. TypeError added; the two handlers are now symmetric and the absolute contract holds."
+    },
+    {
+      "severity": "low",
+      "category": "correctness",
+      "file": "shared/scripts/lib/sweep_canon.py",
+      "line": 80,
+      "finding": "ROUND 1. Non-finite floats were a cross-match vector in the DROP direction: json.loads maps every overflowing literal to inf and accepts NaN/Infinity, so {\"n\":1e400} and {\"n\":1e999} shared the canonical form {\"n\":Infinity}. Same class as the duplicate-key hazard, pointing the dangerous way.",
+      "suggestion": "APPLIED, then SUPERSEDED by a stronger fix after Stage 3 showed allow_nan=False closed only the overflow tail (1e-400 vs 0.0 still collided). Float literals are now rejected outright via parse_float/parse_constant, making the numeric boundary total rather than sampled."
+    },
+    {
+      "severity": "medium",
+      "category": "risk",
+      "file": "shared/tests/test_sweep_gc_canonical.py",
+      "line": 1,
+      "finding": "ROUND 1. Tests exercised parse_delivered/is_delivered directly, but the behaviour at risk is the sweep's decision under its canonical lock. The tuple also kept its arity while its first element changed meaning, making a silent call-site misinterpretation easy to miss.",
+      "suggestion": "APPLIED. Real-git end-to-end tests added for both consequential directions; the tuple arity was later grown to 3 deliberately so a reinterpretation cannot be silent."
+    },
+    {
+      "severity": "low",
+      "category": "dependency",
+      "file": "shared/scripts/lib/sweep_outbox.py",
+      "line": 248,
+      "finding": "ROUND 1. The plan assumed sweep_outbox.py was the only consumer because arity was unchanged; a stale consumer of the old (append_ids, text) semantics would not surface as a signature error.",
+      "suggestion": "APPLIED. Repo-wide reference search recorded: sweep_outbox.py is the only production consumer, unpacking and forwarding without a direct membership test. Locals renamed; arity later grown to 3."
+    },
+    {
+      "severity": "low",
+      "category": "architecture",
+      "file": "shared/tests/test_sweep_gc_canonical.py",
+      "line": 50,
+      "finding": "ROUND 1. Duplication introduced by this diff: the re-serializer existed in two copies across two test modules, and a local _append duplicated _sweep_helpers.item. The re-serializer IS the definition of the equivalence class both AC-2 and AC-3 turn on, so two copies means one can drift and its module silently stops testing re-serialization.",
+      "suggestion": "APPLIED. reserialize moved to shared/tests/_sweep_helpers.py; local _append dropped in favour of h.item. The cascade module keeps its own _append(..., extra=) because that parameter is a real difference."
+    },
+    {
+      "severity": "medium",
+      "category": "correctness",
+      "file": "shared/scripts/lib/sweep_gc.py",
+      "line": 251,
+      "finding": "ROUND 2, THE LOSS PATH. superseded_appends mirrored dedup's INPUT list but not its stage-1 RULE. dedup_triage_lines collapses byte-identical RAW lines; this collapsed on line.strip(), and normalize_lines deliberately does not strip. Concrete shape [X, Y, X+' ']: dedup keeps X, but superseded_appends named X superseded, and partition_outbox matches by stripped text — so BOTH copies of X were dropped while origin held only an older version. Finding 14 re-entering through the hatch meant to protect finding 27.",
+      "suggestion": "APPLIED, reviewer's derivation taken verbatim. The set is now derived by SUBTRACTING what dedup keeps (texts - set(kept.values())), with stage 1 keyed on the RAW line. One-directional by construction: a stripped text with ANY kept occurrence can never be named superseded. Verified empty intersection with dedup's kept set across [X,Y,X+' '], [X,Y], [Y,X], [X,Y,Y], [X,X], [X]."
+    },
+    {
+      "severity": "low",
+      "category": "correctness",
+      "file": "shared/scripts/lib/sweep_canon.py",
+      "line": 144,
+      "finding": "ROUND 2. append_id held the module's only unguarded parse — json.loads(form) with no handler — in a module whose contract is that nothing raises inside the lock. Encoder output cannot be malformed, but the parse is recursive and ran at a different stack depth. It also cost a third JSON round-trip per line.",
+      "suggestion": "APPLIED. canonicalize(stripped) -> (form, dict) extracted; canonical_form returns element 0, append_id derives from element 1. The unguarded parse is gone and both redundant re-parses with it."
+    },
+    {
+      "severity": "low",
+      "category": "correctness",
+      "file": "shared/tests/test_sweep_gc_supersession.py",
+      "line": 116,
+      "finding": "ROUND 2. Third unfalsifiable assertion of the run: the 'status lines are never superseded' check used two BYTE-IDENTICAL fixtures, which stage 1 collapses, so it held even if append_id wrongly claimed status events — the exact regression it guards.",
+      "suggestion": "APPLIED. Fixtures are now different status values (dismissed/promoted), plus a whitespace-variant case pinning the round-2 loss path directly."
+    },
+    {
+      "severity": "low",
+      "category": "correctness",
+      "file": "shared/tests/test_sweep_gc_supersession.py",
+      "line": 130,
+      "finding": "ROUND 2. The hatch's DROP authority — the one genuinely new way this change can delete a line — had no coverage through the real sweep; it was proven only by units that hand-built the superseded set and passed it as a keyword, leaving the call-site composition untested where both prior defects lived.",
+      "suggestion": "APPLIED. test_e2e_superseded_append_drains_through_the_real_sweep: origin holds only v0, outbox holds v1+v2, so neither matches canonically and only the superseded v1 may drain. Asserts gc_dropped == 1, v1 gone, v2 retained, v2 on the branch."
+    },
+    {
+      "severity": "low",
+      "category": "readability",
+      "file": "shared/scripts/lib/sweep_gc.py",
+      "line": 65,
+      "finding": "ROUND 2. The accepted D2 limitation had no trace at the line where it bites — a module that spends ten lines each on the duplicate-key and float hazards left its one known never-matching input undocumented, so the next reader re-derives it or files it again as fresh.",
+      "suggestion": "APPLIED. Comment on the run_git_soft call in delivered_membership naming the decode asymmetry, the direction (retention, never loss), and card trg-94d3cb73."
+    },
+    {
+      "severity": "low",
+      "category": "readability",
+      "file": "shared/scripts/lib/sweep_canon.py",
+      "line": 25,
+      "finding": "ROUND 3. The new module banner stated 'Everything here is TOTAL — no function raises, for any input', which the module disproves three functions later: _reject_duplicate_keys and _reject_float raise BY DESIGN. Accurate as a function-level contract, false once hoisted to a file banner during the split — and a contributor trusting it could move a hook call outside canonicalize's try.",
+      "suggestion": "APPLIED. Scoped to the public entry points, naming the two hooks as deliberate raisers and canonicalize as the sole absorber."
+    },
+    {
+      "severity": "low",
+      "category": "performance",
+      "file": "shared/scripts/lib/sweep_gc.py",
+      "line": 104,
+      "finding": "ROUND 3. The extraction was only half-applied: parse_delivered called canonical_form then append_id, i.e. two independent canonicalize runs per origin line inside the lock, and is_delivered did the same on the hatch path — four JSON ops per line, not the two the docstring claimed 'suffice'.",
+      "suggestion": "APPLIED. canonicalize promoted to public and append_id_of(obj) added; parse_delivered and is_delivered now canonicalize once and read the id from the dict they already hold."
+    },
+    {
+      "severity": "low",
+      "category": "architecture",
+      "file": "shared/tests/test_sweep_gc_canonical.py",
+      "line": 40,
+      "finding": "ROUND 3. The split created a leaf with no test importer: sweep_canon was reached only through sweep_gc's re-export, so traceability would attribute canonicalization coverage to the wrong module and the tests would break for a non-obvious reason if sweep_gc stopped importing canonical_form.",
+      "suggestion": "APPLIED. The pure canonicalization assertions now import and call sweep_canon directly; the membership tests stay on sweep_gc, so the module docstring's stated seam holds in the tests too."
+    }
+  ]
+}

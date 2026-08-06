@@ -12,14 +12,23 @@ Split out of the monolithic ``orchestrator.py`` in Campaign B5
 from __future__ import annotations
 
 import sys
-from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
 from .build_progress import get_build_progress
-from .config_factory import build_pipeline
-from .config_io import load_run_config, save_run_config
+# No tolerant ``load_run_config`` import here, deliberately: every read in this
+# module can advance or change a run, so the strict reader is the only one in
+# scope. Pinned by test_no_mutating_path_reaches_a_tolerant_read.
+from .config_io import RunConfigUnreadable, read_run_config, save_run_config
 from .constants import PIPELINE_STEPS
+# The two strict chokepoints update_step reads through. Re-exported into this
+# namespace because callers and tests reach them as
+# ``step_planning._read_standalone_flag`` / ``._load_or_bootstrap``.
+from .step_config_access import (  # noqa: F401
+    _bootstrap_standalone_config,
+    _load_or_bootstrap,
+    _read_standalone_flag,
+)
 from .validation_record import (
     normalise_override_reason,
     record_inform_notes,
@@ -33,14 +42,32 @@ from run_config_store import run_config_lock  # noqa: E402
 
 
 def get_next_step(project_root: Path) -> dict[str, Any]:
-    """Determine what the next pipeline step should be."""
-    config = load_run_config(project_root)
+    """Determine what the next pipeline step should be.
 
+    A reporter, so an unusable config must not make it CRASH — but it must stop
+    it LYING: it answered "no config found, start from beginning" for a truncated
+    config recording two completed phases. ``blocked`` distinguishes that refusal
+    from all-steps-complete, which also carries ``next_step: None``.
+    """
+    try:
+        config, present = read_run_config(project_root)
+    except RunConfigUnreadable as exc:
+        return {"next_step": None, "blocked": True, **exc.payload()}
+
+    # `not config` alone, deliberately: `_read_parse_shape` returns `({}, False)`
+    # for absent, so a `not present` clause could never decide anything on its
+    # own. A PRESENT-but-empty `{}` shares this answer ON PURPOSE — unlike
+    # `_load_or_bootstrap`, which must not overwrite it, a reporter asked "what
+    # runs next?" about a config recording no pipeline and no completed steps has
+    # nothing to resume, so "start from the beginning" is the true answer here.
     if not config:
         return {"next_step": "project", "reason": "no config found, start from beginning"}
 
-    completed = set(config.get("completed_steps", []))
-    pipeline = config.get("pipeline", PIPELINE_STEPS)
+    # `or`, not a .get default: an EXPLICIT null passes the shape gate (it is a
+    # well-formed object) and would then raise TypeError out of a reporter that
+    # promises not to crash. `update_step` already tolerates it the same way.
+    completed = set(config.get("completed_steps") or [])
+    pipeline = config.get("pipeline") or PIPELINE_STEPS
 
     for step in pipeline:
         if step not in completed:
@@ -82,44 +109,6 @@ def _run_compliance_update(project_root: Path, phase: str) -> dict[str, Any] | N
         return shim.run_compliance_update(project_root, phase)
     from .compliance_runner import run_compliance_update
     return run_compliance_update(project_root, phase)
-
-
-def _bootstrap_standalone_config(step: str) -> dict[str, Any]:
-    """Synthesise a standalone config for a bare phase invocation (no /shipwright-run)."""
-    return {
-        "pipeline": build_pipeline(),
-        "status": "in_progress",
-        "current_step": step,
-        "completed_steps": [],
-        "standalone": True,
-        "created_at": datetime.now(timezone.utc).isoformat(),
-        # Iterate 12.0 (ADR-027): empty phase_history on bootstrap so
-        # append_phase_history.py never has to synthesise the schema.
-        "phase_history": {},
-    }
-
-
-def _load_or_bootstrap(project_root: Path, step: str) -> dict[str, Any]:
-    """Load the on-disk config fresh, or bootstrap a standalone one if absent."""
-    config = load_run_config(project_root)
-    return config if config else _bootstrap_standalone_config(step)
-
-
-def _read_standalone_flag(project_root: Path) -> bool:
-    """Return the ``standalone`` flag WITHOUT triggering the legacy-migration
-    write that a full ``load_run_config`` would perform UNLOCKED.
-
-    ``standalone`` is invariant under migration (which only rewrites
-    ``pipeline`` / ``phase_tasks``), so the raw read matches the migrated
-    value; the migration still runs later, on the in-lock ``_load_or_bootstrap``
-    reload, where its ``save_run_config`` write is serialized by
-    ``run_config_lock`` (audit WP2/F11 residual window). Mirrors
-    ``_load_or_bootstrap(...).get("standalone", False)``: an absent config
-    means a standalone bootstrap (``standalone=True``)."""
-    config = load_run_config(project_root, migrate=False)
-    if not config:
-        return True
-    return config.get("standalone", False)
 
 
 def update_step(
