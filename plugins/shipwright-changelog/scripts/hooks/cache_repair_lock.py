@@ -19,8 +19,36 @@ _WINDOWS_LOCK_BYTES = 65
 CACHE_LOCK_NAME = ".sessionstart-cache-repair.lock"
 CLAIM_TTL_SECONDS = 30.0
 COMPLETION_CLOCK_SKEW_SECONDS = 1.0
+# Bounded settle sleep on the UN-ENUMERABLE path only (`peers is None` or fewer
+# than 2), where there is no peer set to wait on. It no longer probes for a
+# fan-out's existence — that was the #543 defect.
 _FANOUT_PROBE_SECONDS = 0.1
-_FANOUT_WAIT_SECONDS = 2.0
+# How long to wait for the FIRST peer before concluding the configured fan-out
+# is not actually running this session. Measured max first-peer arrival under
+# 22-core saturation: 0.41s (iterate-2026-08-06-parallel-global-state-tests).
+_FANOUT_ARRIVAL_GRACE_SECONDS = 1.0
+# How long to keep waiting after the LAST new peer joined. Measured max
+# inter-arrival gap under the same saturation: 0.41s.
+_FANOUT_IDLE_SECONDS = 1.0
+# Hard ceiling, anchored at entry and never reset by a late arrival. Measured
+# max full 12-way fan-out: 1.36s.
+#
+# The BINDING neighbour is ensure_shared_cache's _CLAIM_WAIT_SECONDS (5.0), not
+# run_if_cache_ready's _READY_WAIT_SECONDS (10.0): a peer queued inside
+# _claim_session gives up after _CLAIM_WAIT_SECONDS and enters the recovering-
+# owner path.
+#
+# What that costs is a STALL, not a duplicate scan — do not restate it as one.
+# The recovering peer takes the writer lock, finds session_repair_state already
+# True and returns without scanning, so a published generation is still
+# honoured; it only scans when the owner genuinely failed to publish, which is
+# the designed recovery. So this inequality buys SessionStart latency and lock
+# contention (a 5s stall plus a spurious "owner timed out" line), and the
+# barrier must not consume the peers' patience for that reason.
+# It does not follow that barrier + lock-wait fits inside it — see the
+# composition note in the iterate spec; that budget is not proven here and this
+# constant is not what would carry it.
+_FANOUT_WAIT_SECONDS = 3.0
 
 
 def _opened_regular_at_path(path: Path, fd: int) -> bool:
@@ -200,24 +228,64 @@ def await_fanout_observers(cache_root: Path, done: Path,
         time.sleep(_FANOUT_PROBE_SECONDS)
         return
     started = time.monotonic()
-    probe_deadline = started + _FANOUT_PROBE_SECONDS
-    fanout_deadline = started + _FANOUT_WAIT_SECONDS
-    fanout_seen = False
+    hard_deadline = started + _FANOUT_WAIT_SECONDS
+    arrived: set[str] = set()
+    last_arrival: float | None = None
     while True:
-        observed = 0
+        # Rescan every pass and evaluate deadlines only AFTER updating state,
+        # so a marker that landed during the last sleep cannot be missed by an
+        # expiry decision taken on stale state. `present` is rebuilt rather
+        # than accumulated: an observation marker is valid only while it stays
+        # zero bytes, so a marker that stops validating must stop counting
+        # toward completion.
+        present: set[str] = set()
         for peer in peers:
             state = has_completion_observation(done, peer)
-            if state is None:
-                return
-            observed += state is True
-        if observed == len(peers):
+            # An unreadable marker means "cannot tell yet", NOT "no fan-out".
+            # Abandoning here reproduced the very defect this barrier fixes: on
+            # Windows a transient sharing violation against one just-created
+            # marker — a virus scanner or the indexer touching it — used to
+            # publish the generation with 1/12 observed and send eleven peers
+            # into their own re-election. Keep polling instead; `hard_deadline`
+            # already bounds a marker that never becomes readable.
+            if state is True:
+                present.add(peer)
+        if len(present) == len(peers):
             return
-        fanout_seen = fanout_seen or observed > 1
         now = time.monotonic()
-        if (not fanout_seen and now >= probe_deadline) or \
-                now >= fanout_deadline:
+        # The ceiling is anchored at entry and is never reset, so a steady
+        # trickle of arrivals cannot hold SessionStart open indefinitely.
+        if now >= hard_deadline:
             return
-        time.sleep(0.01)
+        # Progress is a NEW member of the EXPECTED peer set — tracked by
+        # identity, not by a count. A duplicate marker, or one written by an
+        # identity outside `peers`, must not extend the wait; the caller's own
+        # observation is not an arrival, because one participant is not a
+        # fan-out. Identity matters over counting: if B's marker stops
+        # validating and C then arrives, the count is 1 again and a
+        # count-based rule would miss a genuine arrival. `arrived` only grows,
+        # so a marker that later stops validating cannot rewind the idle clock
+        # and re-open the wait.
+        newcomers = (present - {participant}) - arrived
+        if newcomers:
+            arrived |= newcomers
+            last_arrival = now
+        # Waiting on whether peers are still ARRIVING, rather than on a fixed
+        # window, is the correction: the previous rule read "nobody here
+        # within 0.1s" as "there is no fan-out to wait for", while a peer
+        # process needs longer than that merely to spawn on a loaded host.
+        idle_deadline = (
+            started + _FANOUT_ARRIVAL_GRACE_SECONDS if last_arrival is None
+            else last_arrival + _FANOUT_IDLE_SECONDS
+        )
+        if now >= idle_deadline:
+            return
+        # Clamp the poll to the nearest deadline. A flat 0.01 would step PAST
+        # the ceiling and return on the following pass, so the barrier would
+        # exceed the bound it advertises by up to one poll interval. Both
+        # deltas are strictly positive here — the two checks above already
+        # returned on expiry.
+        time.sleep(min(0.01, hard_deadline - now, idle_deadline - now))
 
 
 def session_event_key(payload: object) -> str:
