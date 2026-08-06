@@ -121,7 +121,7 @@
         "total": 15,
         "tested": 13,
         "untestable": 2,
-        "untested": 0
+        "untested_testable": 0
       },
       "ledger_path": ".shipwright/planning/iterate/2026-08-05-it1-audit-remainder.md"
     },

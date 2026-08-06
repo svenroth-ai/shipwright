@@ -37,7 +37,7 @@
         "evidence": "test_float_literals_never_cross_match[4 pairs], test_integers_remain_canonicalizable PASSED"
       },
       {
-        "behavior": "canonical_form is TOTAL \u2014 degrades to text membership, never raises",
+        "behavior": "canonical_form is TOTAL — degrades to text membership, never raises",
         "disposition": "tested",
         "evidence": "test_unparseably_deep_object_degrades_instead_of_raising, test_non_dict_json_routes_to_text_membership, test_bare_scalar_routes_through_text_path PASSED"
       },
@@ -93,7 +93,7 @@
       "total": 15,
       "tested": 13,
       "untestable": 2,
-      "untested": 0
+      "untested_testable": 0
     },
     "ledger_path": ".shipwright/planning/iterate/2026-08-05-it1-audit-remainder.md"
   },
