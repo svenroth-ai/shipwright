@@ -1,0 +1,23 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-08-06-shared-read-run-config-mode-guard",
+  "risk_recheck": {
+    "changed_file_count": 3,
+    "diff_loc": 125,
+    "risk_flags": [
+      "touches_rls"
+    ],
+    "diff_risk_flags": [],
+    "complexity_floor": "trivial",
+    "stage1_complexity": "small",
+    "effective_complexity": "small",
+    "upgraded": false,
+    "plan_review_required": true,
+    "ci_ack_recorded": false,
+    "escalate": {
+      "required": false,
+      "reason_code": null,
+      "paths": []
+    }
+  }
+}

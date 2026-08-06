@@ -63,8 +63,9 @@ def run_canon_checks(phase: str, project_root: Path) -> list[dict[str, Any]]:
 
     Takes NO run id. iterate-2026-07-27-c3-phase-content-key threaded one in for
     C3 and C3 warned on every phase of every Stop, because the id this wrapper's
-    caller resolves (``resolve_run_id`` → run-config → ``run_started`` → loop
-    vars → session UUID) is never the id the handoff writer stamps. C3 now joins
+    caller resolves (``resolve_run_id`` → iterate run pointer → run-config →
+    ``run_started`` → loop vars → session UUID) is never the id the handoff
+    writer stamps for a PIPELINE phase — which is all C3 audits. C3 now joins
     the marker against ``phase_history`` on disk, so the parameter is gone rather
     than defaulted — a default is what let the mismatch reach the check quietly.
     """

@@ -1896,7 +1896,7 @@ evidence (plan § 4.5).
 | S6 | project | FAIL | 1 | `CLAUDE.md` exists at project root, non-empty. |
 | S7 | project | WARN (never FAIL) | 2 | `CLAUDE.md` has a `## Structure` fenced code block (via `lib/drift_parsers.extract_structure_block`). |
 | S8 | project | FAIL | 1 | `README.md` exists, non-empty. |
-| S9 | iterate (type=feature + UI-facing diff) | WARN (never FAIL — R17) | 2 | `README.md` touched within last 10 commits AND recent diff includes `webui/client/`, `frontend/`, `client/`, `web/`, `src/components/`, or `mobile/` path. SKIPs otherwise. Like S2/S3/W2, SKIPs unless the audited `run_id` has an exact `iterate_history` entry — otherwise the `type` it gates on would be inherited from an unrelated run. Under today's `resolve_run_id` chain the Stop audit supplies an id that is never an `iterate_history` key (a sentinel when neither a session nor a loop id reaches the hook; the session/loop id otherwise), so this SKIP is the normal outcome. In the sentinel branch the pre-guard verdicts were already excluded from every rollup consumer, so the behaviour change is confined to the loop-id branch of campaign / autonomous-loop runs. Upstream seam tracked as trg-0a80a7e7. |
+| S9 | iterate (type=feature + UI-facing diff) | WARN (never FAIL — R17) | 2 | `README.md` touched within last 10 commits AND recent diff includes `webui/client/`, `frontend/`, `client/`, `web/`, `src/components/`, or `mobile/` path. SKIPs otherwise. Like S2/S3/W2, SKIPs unless the audited `run_id` has an exact `iterate_history` entry — otherwise the `type` it gates on would be inherited from an unrelated run. `iterate-2026-08-06-resolve-run-id-seam` gave `resolve_run_id` a priority-0 source (the per-session iterate run pointer), so the audit is now keyed by the canonical run id instead of a session UUID — but **that alone does not make this check evaluate**, and measured against a live run it still SKIPs. The remaining condition is the ledger: `has_exact_iterate_entry` needs the run's own `iterates/<run_id>.json`, which F5c writes into the run's WORKTREE, while the Stop hook resolves `project_root` from the session's cwd — usually the main repo, where an in-flight run's entry does not exist yet. It evaluates when the audited tree does hold the entry (an audit rooted in the worktree, or the main root after the PR merges). Non-iterate sessions and campaign / autonomous-loop runs (which fall through to `SHIPWRIGHT_LOOP_ID`) SKIP as before. |
 | S10 | iterate (type ∈ {feature, bug, bugfix}) | WARN (never FAIL — R17) | 2 | `CLAUDE.md` touched recently when new top-level directories appear in last 10 commits that aren't listed in the CLAUDE.md Structure block. SKIPs otherwise. Same `run_id` precondition as S9. |
 
 Tier-2 checks (W1, I4, T2, Q1, S3-S5, S7, S9, S10, Cmp1, D2) are
@@ -1920,12 +1920,55 @@ Aggregate rewrites serialise through
 `.shipwright/locks/phase-quality.lock` so concurrent Stop events from
 multiple sessions don't lost-update the summaries.
 
+**Which `run_id` the audit is keyed by (`phase_quality.resolve_run_id`).** Both
+Stop-time audits — `audit_phase_quality_on_stop` and `audit_compliance_on_stop`
+— resolve it, in this order:
+
+| # | Source | Scope |
+|---|---|---|
+| 0 | `<main_root>/.shipwright/iterate_active/<session_id>.json` → `run_id` | **this session** |
+| 1 | `shipwright_run_config.json` top-level `run_id` | project |
+| 2 | latest `run_started` event in `shipwright_events.jsonl` | project |
+| 3 | `SHIPWRIGHT_LOOP_ID` (+ `SHIPWRIGHT_LOOP_UNIT_ID`) | process (campaign) |
+| 4 | the session id, else `"unknown"` | session |
+
+Source 0 is the per-session run pointer `setup_iterate_worktree.py` writes at
+B1a (`iterate-2026-08-06-resolve-run-id-seam`). Sources 1-3 are structurally
+inert for an iterate — nothing writes a top-level `run_id`, no producer emits a
+`run_started` event, and the loop vars are campaign-only — so before source 0
+existed the audit was handed the raw session UUID (or `"unknown"`), neither of
+which is an `iterate_history` key, and **every check behind
+`unresolvable_run_id_skip` (S2, S3, W2, S9, S10) SKIPped on every real
+invocation**. The pointer is read via `worktree_isolation.read_run_pointer`
+after resolving the MAIN root (it lives in the main tree even when the audit
+runs from a worktree). It is honoured only when the payload's own `session_id`
+matches the audited session, its `worktree_path` is still a live directory, and
+its `run_id` is a non-empty, non-sentinel string; anything else — including a
+malformed, non-object or invalid-UTF-8 pointer file — falls through to sources
+1-4 rather than raising, because `resolve_run_id` runs outside the hook's
+per-phase `try` and after the once-per-Stop claim is taken, where an escape
+would burn the claim and leave the whole Stop unaudited.
+
+**What source 0 does and does not fix.** It makes the audit *attributable*: the
+Stop hook now reports `run=iterate-<date>-<slug>`, per-run finding JSONs are
+keyed by it, `audit_compliance_on_stop` labels its triage cards with it, and a
+SKIP names the real run. It does **not** by itself make the five guarded checks
+evaluate — that additionally needs the audited tree to hold the run's own
+`iterates/<run_id>.json`, which F5c writes into the run's worktree. Verified
+against a live run: `run_id` resolved correctly and S2/S3/W2/S9/S10 still
+SKIPped, because the audit was rooted at the main repo. Fail-safe in that state
+(a SKIP, never a false FAIL). The follow-ups are tracked as trg-276994a4 (a
+retained post-merge worktree keeps a pointer looking live) and trg-b36fd844
+(`already_audited` keys on `(phase, run_id, session_id)`, so the first Stop of a
+run can record SKIPs that later Stops never revisit).
+
 **Sentinel-run exclusion at the rollup layer
 (iterate-2026-06-14-phasequality-sentinel-rollup-filter).** A per-run Finding
 JSON whose `run_id` is a sentinel (`""` / `"unknown"`) comes from an audit that
 ran with NO resolvable run/session context (`resolve_run_id` only yields
-`"unknown"` when there is no run-config run_id / `run_started` event / loop var
-AND the session id is empty). By the audit-time canon (`unresolvable_run_id_skip`,
+`"unknown"` when there is no iterate run pointer / run-config run_id /
+`run_started` event / loop var AND the session id is empty). By the audit-time
+canon (`unresolvable_run_id_skip`,
 `_skip_unengaged_fails`) such findings are "not applicable", but those guards
 only fire at WRITE time — so a pre-fix or degenerate sentinel snapshot used to
 keep driving the triage backlog action-unit, the SessionStart injection, and
@@ -3469,7 +3512,9 @@ caller-supplied run id turned out to be unusable in both directions:
   replaced.
 - **It warned on every phase of every Stop.** The two callers resolve the
   id differently by construction: `phase_quality.resolve_run_id` walks
-  run-config → `run_started` event → loop vars → **session UUID**, while
+  iterate run pointer → run-config → `run_started` event → loop vars →
+  **session UUID** (the pointer names an *iterate* run, never one of the
+  pipeline phases C3 audits), while
   `phase_validators._run_canon_checks` reads `SHIPWRIGHT_RUN_ID` from a
   hook-launched subprocess that never inherits the skill's shell export.
   Neither is the id the writer stamped.
