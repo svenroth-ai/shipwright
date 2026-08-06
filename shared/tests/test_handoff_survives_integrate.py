@@ -23,7 +23,6 @@ Three things the external plan review asked to see proved rather than argued:
 
 from __future__ import annotations
 
-import subprocess
 import sys
 from pathlib import Path
 
