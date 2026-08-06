@@ -1,0 +1,342 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-08-06-triage-validate-deadends",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 3,
+      "findings": [
+        {
+          "severity": null,
+          "category": "2 correctness",
+          "file": null,
+          "line": null,
+          "finding": "Self-review found a real bug in my own new code before any reviewer saw it: the partition tested `iid in orphan_ids` BEFORE `isinstance(iid, str)`, so an unhashable id such as [] raised TypeError from inside the sweep's file lock - worse than the dead end the function exists to remove. Reproduced with a probe, fixed by swapping the evaluation order, pinned by test_an_unhashable_status_id_does_not_crash_the_sweep.",
+          "suggestion": null,
+          "source": "self-review"
+        },
+        {
+          "severity": null,
+          "category": "5 file size",
+          "file": null,
+          "line": null,
+          "finding": "Three files crossed the 300-LOC guideline during the run. sweep_outbox brought back to exactly 300 by compressing my own comments rather than restructuring data-loss-sensitive code mid-change; sweep_quarantine split at the rules/writer seam into lib/quarantine_log.py with a re-export so no importer breaks; the disposition tests split at the which-disposition / what-a-block-says seam. ruff re-run after each late split, since F401 is a required check.",
+          "suggestion": null,
+          "source": "self-review"
+        },
+        {
+          "severity": null,
+          "category": "6 docs",
+          "file": null,
+          "line": null,
+          "finding": "docs/hooks-and-pipeline.md documented the OLD behavior ('Unplaceable -> fail closed (invalid), never quarantine'), which this change makes false. Updated in the same diff with a disposition table, per the CLAUDE.md same-diff rule.",
+          "suggestion": null,
+          "source": "self-review"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-08-06T09:00:20.944925+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 11,
+      "findings": [
+        {
+          "severity": "low",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "The ordering in `decide()` first checks “candidates and held are both empty while the verdict reported a defect → block” before the re‑validation step. If that `verdict` accidentally refers to the outbox classification result rather than the dedicated tracked‑log validation, a multi‑record outbox defect with a coincident tracked defect could be misattributed and block without the `triage_repair.py` hint.",
+          "suggestion": "Clarify that the `verdict` in that condition is the validation result of the worktree‑tracked log only, or move the block‑for‑tracked‑defect check after the residual re‑validation so that the outbox multi‑record case is always handled by the re‑validate‑and‑block path (with the repair hint). Either way, make the provenance of the `verdict` explicit in the implementation docstring or inline comment.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "A held line that never becomes reachable (e.g., its originating branch is abandoned) stays in the outbox indefinitely. Subsequent sweeps will report `held` counts via `sweep_warnings`, but only when the sweep succeeds; if no other lines are deliverable the sweep is quiet, so the operator may not notice the orphaned held line.",
+          "suggestion": "Consider logging a warning (not blocking) in later sweeps when a line remains held across consecutive runs, or note this case in the operator documentation.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "The plan deliberately changes behaviour for bare‑scalar lines (`123`): they now cause a block instead of being silently tolerated. This could break previously‑working outbox logs that contain such lines, requiring manual intervention via `triage_repair.py`.",
+          "suggestion": "Ensure the release notes clearly mention this behavioural change and the remedy, so operators are not surprised by a new blocking state.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "The plan renames `trimmed_outbox` to `materialized_outbox` in the `QuarantineDecision` dataclass. The rename is internal and no external consumers are known, but any off‑label script that references `trimmed_outbox` by attribute name will break silently.",
+          "suggestion": "Add a one‑line comment in the dataclass noting that the name is newly‑renamed for clarity, in case any future reader traces blame.  No security findings. The approach is sound, the risk management is thorough, and the test ledger is exhaustive.  SHIPWRIGHT_VERDICT: approve",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "The persistence flow is still ambiguous and contains a likely held-line deletion hazard. `materialized_outbox` explicitly excludes `held`, yet Step 3 says `outbox_lines = decision.materialized_outbox` whenever candidates or held exist. If that variable is subsequently used by any existing GC/rewrite path, held records disappear. The plan says this assignment is “used only to count `swept`,” but that is not a sufficiently enforceable contract—especially in code where `outbox_lines` conventionally represents the content to persist.",
+          "suggestion": "Keep separate, explicitly named values throughout `sweep_outbox`, for example: - `original_outbox_lines` - `branch_materialization_lines` - `quarantine_candidate_indexes` - `retained_outbox_lines`  Derive persisted content only from `original_outbox_lines`, removing candidate indexes and then applying the existing origin-delivery GC rule. Do not assign branch-materialization content back into an `outbox_lines` variable. Add an integration assertion over the actual persisted file containing ordinary retained lines, held lines, and candidates in the same run.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "The stated lifecycle guarantee that held lines are “never” removed is stronger than the implementation can guarantee if origin changes between `decide()` and the final outbox rewrite. A held line can become origin-delivered during that interval and be removed by the pre-existing GC predicate. That removal is likely correct—it is no longer held in the meaningful sense—but it contradicts the documented invariant and can make tests race-sensitive if they assume byte-for-byte retention.",
+          "suggestion": "Define the invariant in terms of the decision snapshot: a held line must not be removed because it is held; it may be removed only if the existing GC observes it as delivered in origin at rewrite time. If atomic snapshot semantics are required, pass the origin/delivery snapshot used for `decide()` into GC; otherwise document and test the safe race behavior.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "TriageValidation` is described as public through `lib.churn_merge`, but adding `unidentified_status` as a required dataclass field can break direct construction outside the audited in-repository callers. The same concern applies to new `held` fields on decision/result dataclasses where test doubles, fixtures, or scripts may instantiate them. Repository grep is useful but does not establish compatibility for a re-exported type.",
+          "suggestion": "Preserve construction compatibility where practical by adding safe defaults (`False`, `0`, or `field(default_factory=list)`) and place new defaulted fields after existing required fields. Update any serialization, equality snapshots, repr-based assertions, and keyword-only factory helpers as part of the change.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "Step 2a treats every `len(recs) != 1` outbox line as non-dispositionable, including a fully recoverable glued line containing only ordinary deliverable events. The narrative says that case is delivered verbatim, but the mechanics append it to `materialized_outbox` and rely on later validation to permit it. This is sound only if the residual validation sees exactly the same combined tracked-plus-materialized text and does not introduce an unrelated line-level interpretation discrepancy. The plan should make clear that `multi_record` changes only repair-hint selection when a residual error exists; it must not itself cause a block.",
+          "suggestion": "Make this explicit in code and tests: `multi_record` should be advisory metadata, not a blocking condition. Add a direct unit-level decision test for a glued, fully valid outbox line alongside a normal pending line, asserting both are materialized and neither is held nor quarantined.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "The classifier and partition both invoke `split_records`, but apparently over differently normalized inputs: classification is described in terms of text and line numbers, while Step 2a uses `split_records(ln.strip())`. Stripping can change record bytes and potentially boundary behavior for whitespace-only lines, CRLF-adjacent content, or records where preservation of original bytes matters to deduplication and later persistence. This is particularly relevant because the plan explicitly preserves glued lines verbatim and cites byte-identity deduplication as a constraint.",
+          "suggestion": "Use one shared parsing helper with a clearly defined normalization policy, preferably parsing the original line content and treating line-ending handling separately. Ensure the branch write and persisted outbox retain original physical-line bytes unless an intentional repair tool performs normalization. Add CRLF and leading/trailing-whitespace coverage if those forms are accepted by the existing log format.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The proposed test ledger covers a glued line with a disposition and an unrecoverable remainder independently, but does not clearly cover a glued line containing more than one record where one is protected and another is unidentified/orphan. This is the highest-risk line-granularity conflict because it combines both new dispositions and must block without creating a quarantine append or changing the outbox.",
+          "suggestion": "Add a focused test for a single glued outbox line containing a valid deliverable record plus protected and/or quarantine-eligible status record(s), asserting an actionable block and zero mutation. This validates that no partial candidate extraction occurs before the line-granularity safety check.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "security",
+          "file": null,
+          "line": null,
+          "finding": "No material security concern is introduced by the proposed static repair guidance. Avoiding interpolation of log content, IDs, paths, or project-root data into the operator command appropriately prevents command-injection and misleading-output risks.",
+          "suggestion": "Keep the repair hint fully static as planned, and ensure any lower-level validation errors that include raw malformed content are not forwarded into shell-oriented output without quoting or truncation.  Overall, the disposition model and boundary-recovery alignment are sound, and the proposed tests address the core dead-end cases well. The main change needed before implementation is to make the persisted-outbox rewrite data flow unambiguous so that `held` cannot be accidentally dropped by reuse of `materialized_outbox`. SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-08-06T07:01:14.412540+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[deepseek] - **Category:** approach  \n  **Severity:** low  \n  **Finding:** The ordering in `decide()` first checks “candidates and held are both empty while the verdict reported a defect → block” before the re‑validation step. If that `verdict` accidentally refers to the outbox classification result rather than the dedicated tracked‑log validation, a multi‑record outbox defect with a coincident tracked defect could be misattributed and block without the `triage_repair.py` hint.  \n  **Suggestion:** Clarify that the `verdict` in that condition is the validation result of the **worktree‑tracked log** only, or move the block‑for‑tracked‑defect check after the residual re‑validation so that the outbox multi‑record case is always handled by the re‑validate‑and‑block path (with the repair hint). Either way, make the provenance of the `verdict` explicit in the implementation docstring or inline comment.\n\n- **Category:** edge-case  \n  **Severity:** low  \n  **Finding:** A held line that never becomes reachable (e.g., its originating branch is abandoned) stays in the outbox indefinitely. Subsequent sweeps will report `held` counts via `sweep_warnings`, but only when the sweep succeeds; if no other lines are deliverable the sweep is quiet, so the operator may not notice the orphaned held line.  \n  **Suggestion:** Consider logging a warning (not blocking) in later sweeps when a line remains held across consecutive runs, or note this case in the operator documentation.\n\n- **Category:** risk  \n  **Severity:** low  \n  **Finding:** The plan deliberately changes behaviour for bare‑scalar lines (`123`): they now cause a block instead of being silently tolerated. This could break previously‑working outbox logs that contain such lines, requiring manual intervention via `triage_repair.py`.  \n  **Suggestion:** Ensure the release notes clearly mention this behavioural change and the remedy, so operators are not surprised by a new blocking state.\n\n- **Category:** dependency  \n  **Severity […truncated]\n\n[openai] 1. **Category: risk — Severity: high**  \n   **Finding:** The persistence flow is still ambiguous and contains a likely held-line deletion hazard. `materialized_outbox` explicitly excludes `held`, yet Step 3 says `outbox_lines = decision.materialized_outbox` whenever candidates or held exist. If that variable is subsequently used by any existing GC/rewrite path, held records disappear. The plan says this assignment is “used only to count `swept`,” but that is not a sufficiently enforceable contract—especially in code where `outbox_lines` conventionally represents the content to persist.  \n   **Suggestion:** Keep separate, explicitly named values throughout `sweep_outbox`, for example:\n   - `original_outbox_lines`\n   - `branch_materialization_lines`\n   - `quarantine_candidate_indexes`\n   - `retained_outbox_lines`\n   \n   Derive persisted content only from `original_outbox_lines`, removing candidate indexes and then applying the existing origin-delivery GC rule. Do not assign branch-materialization content back into an `outbox_lines` variable. Add an integration assertion over the actual persisted file containing ordinary retained lines, held lines, and candidates in the same run.\n\n2. **Category: approach — Severity: medium**  \n   **Finding:** The stated lifecycle guarantee that held lines are “never” removed is stronger than the implementation can guarantee if origin changes between `decide()` and the final outbox rewrite. A held line can become origin-delivered during that interval and be removed by the pre-existing GC predicate. That removal is likely correct—it is no longer held in the meaningful sense—but it contradicts the documented invariant and can make tests race-sensitive if they assume byte-for-byte retention.  \n   **Suggestion:** Define the invariant in terms of the decision snapshot: a held line must not be removed *because it is held*; it may be removed only if the existing GC observes it as delivered in origin at rewrite time. If atomic snap […truncated]",
+      "verdicts": {
+        "openai": "revise",
+        "deepseek": "approve"
+      }
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 9,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "correctness",
+          "file": "shared/scripts/lib/sweep_drift_events.py",
+          "line": 24,
+          "finding": "append_ids_of (the protection universe gating quarantine) still parses one json.loads per physical line while the validator now recovers glued records; a status whose append is glued in local-main's tracked log is unprotected and its dismiss is quarantined away.",
+          "suggestion": "Parse with lib.jsonl_records.split_records and union the ids of every recovered record.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "shared/scripts/lib/sweep_quarantine.py",
+          "line": 209,
+          "finding": "_block_errors receives the full protected set including ids that were successfully held, then states 'it is not in the outbox, so it cannot be held' - false whenever the block came from the residual re-validation with a non-empty held list.",
+          "suggestion": "Collect held_ids during the partition and pass protected - held_ids.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "shared/scripts/lib/sweep_quarantine.py",
+          "line": 20,
+          "finding": "'Every such message names a reachable remedy' is false: the early has_non_orphan_error return covers bad header, duplicate append and empty log with no remedy, and a duplicate append hidden in a glued outbox line blocks with a misdirecting message while triage_repair.py would fix it.",
+          "suggestion": "Compute the multi_record scan before the early return, or soften the claim.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "architecture",
+          "file": "shared/scripts/lib/churn_merge.py",
+          "line": 228,
+          "finding": "dedup_triage_lines._append_id still uses json.loads, so the keep-last collapse cannot see an append inside a glued line while the new validator can - producing a 'duplicate append' block on a log the dedup would otherwise reconcile.",
+          "suggestion": "Route _append_id through split_records.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "shared/scripts/lib/triage_validate.py",
+          "line": 85,
+          "finding": "TriageValidation.unidentified_status is set but read by no production code; decide re-derives the same condition inline.",
+          "suggestion": "Drop the field, or make decide select on it.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/scripts/lib/sweep_quarantine.py",
+          "line": 168,
+          "finding": "multi_record is set for zero-record (blank) and fragment lines too, so the emitted 'an outbox line holds more than one record' can be false.",
+          "suggestion": "Rename to unsplittable_line, or set the flag only when len(records) > 1.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "shared/scripts/lib/sweep_quarantine.py",
+          "line": 73,
+          "finding": "The docstring claims the three lists partition the input exactly; on every block return all three are empty.",
+          "suggestion": "Scope the invariant to clean/hold/quarantine explicitly.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "shared/tests/test_sweep_outbox_dispositions_integration.py",
+          "line": 36,
+          "finding": "Unused module constant GHOST.",
+          "suggestion": "Remove.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "shared/scripts/lib/sweep_result.py",
+          "line": 44,
+          "finding": "SweepResult.held (int) and QuarantineDecision.held (list[str]) share a name across a boundary where the sibling pair deliberately does not (candidates -> quarantined).",
+          "suggestion": "Rename one side, e.g. held_lines on the decision.",
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-08-06T08:19:53.085055+00:00",
+      "disposition": null,
+      "recorded_by": "shipwright-build:code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 5,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "boundary-and-contract",
+          "file": "shared/scripts/lib/sweep_quarantine.py",
+          "line": null,
+          "finding": "Claim under doubt: Every block says something TRUE about why it blocked, and every protected id gets an explanation correcting the validator's 'no append anywhere'. — DISPROVED. `protected` was computed AFTER the has_non_orphan_error early return, so that path passed frozenset() and the protected_status_unplaceable note was silently dropped. Repro: decide(tracked, ['123', status(MAIN_ONLY,'dismissed')], known_append_ids={MAIN_ONLY}) - the bare scalar sets has_non_orphan_error, the early return fires, and the operator receives the validator's raw \"status for id 'trg-in-main' has no append anywhere - the merge dropped it\" with no correction. sweep_warnings forwards result.errors verbatim, so it reaches them unfiltered. Any corruption anywhere in the log co-occurring with a legitimately protected dismiss elsewhere reproduces it: the exact misleading-diagnostic class this run exists to remove, reborn on another path. FIXED - protected/orphan_ids hoisted above the early return.",
+          "suggestion": "Compute protected/orphan_ids before the has_non_orphan_error check (they depend only on the verdict) and pass the real set. Done; pinned by test_corruption_elsewhere_does_not_swallow_the_protected_correction (ledger row 33).",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "boundary-and-contract",
+          "file": "shared/scripts/lib/sweep_quarantine.py",
+          "line": null,
+          "finding": "Claim under doubt: The protected-status note's wording is accurate in both of its two cases (held / not held). — DISPROVED. The binary was_held wording emitted 'it is not in the outbox, so it cannot be held' for any non-held id, which is false when the status IS in the outbox but glued to another record on one physical line - _sole_record returns None, so the line goes to materialized and is never a holding candidate. Repro: decide(tracked, [status(MAIN_ONLY,'dismissed') + item(PENDING)], known_append_ids={MAIN_ONLY}) prints both 'it is not in the outbox' and the unsplittable_outbox_line message, which contradict each other on a factual point. FIXED - the note no longer claims to know WHERE the status sits.",
+          "suggestion": "State only what is true on every path (the append exists on local main, so the validator line is wrong about it; deliver main and re-run), plus the one extra fact always known when true (the outbox copy was withheld). Done; pinned by ledger rows 34 and 35.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "test-adequacy",
+          "file": "shared/tests/test_sweep_block_diagnostics.py",
+          "line": null,
+          "finding": "Claim under doubt: The new tests are non-vacuous and would fail against the pre-fix implementation. — NOT disproved for vacuity - each new test pins a specific previously-different disposition or count, and test_a_dismiss_survives_when_its_append_is_glued_on_local_main was verified to fail (quarantined=1) against a reverted append_ids_of. But a real coverage GAP let objection 1 through: no test combined has_non_orphan_error with a simultaneously protected id. test_defect_in_both_sources_still_blocks combines corruption with an orphan, but that orphan is never in the protected set, so it could not catch it.",
+          "suggestion": "Add the corruption-plus-protected combination. Done - ledger rows 33-35.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "scope-residual",
+          "file": "shared/scripts/lib/sweep_drift_events.py",
+          "line": null,
+          "finding": "Claim under doubt: No single bad line can strand the whole outbox any more. — PARTIALLY disproved, outside this run's scope. sweep_drift._is_producer_event - the drift ADOPTION gate, not the protection universe - still parses one json.loads per physical line, so an UNCOMMITTED glued line in main's tracked drift window yields DriftPlan('refused', 'main_tracked_unparseable') and the sweep skips, delivering nothing that run. It mutates nothing and loses nothing, and it retries every sweep, but it is a narrower echo of the same class and its reason does not name triage_repair.py.",
+          "suggestion": "NOT fixed here, filed as a triage card. This run widened append_ids_of, the PROTECTION parser, where the failure DESTROYS an operator dismiss; the adoption gate is a different file and a safe refusal. Expanding scope a third time after AC13 and AC14 is the wrong call.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": null,
+          "category": "claims-that-held",
+          "file": "shared/scripts/lib/sweep_quarantine.py",
+          "line": null,
+          "finding": "Claim under doubt: Claims 1 (no operator decision destroyed), 2 (holding is self-healing), 3 (partition total, block mutates nothing) and 4 (str-only identity, nothing raises inside the lock). — COULD NOT DISPROVE any of the four. (1) Every candidates.append path requires either a non-str id - confirmed inert, read_all_items skips it in both passes - or membership in orphan_ids computed from the same materialized text, with known_append_ids widening protection beyond it. (2) setup_iterate_worktree always branches off a freshly fetched origin/<default>, so a held line's append reappearing on origin is picked up by worktree_lines on the next run; is_delivered on a status requires a byte-identical match against origin's own log, so no false GC-drop. (3) the single-pass loop appends every line to exactly one list before any continue, and every block return site precedes commit_main_tracked_drift and every durable write. (4) all five parsers check isinstance before any membership test, with correct short-circuit order.",
+          "suggestion": "Nothing outstanding.",
+          "source": "doubt-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-08-06T08:59:19.741500+00:00",
+      "disposition": null,
+      "recorded_by": "shipwright-build:doubt-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": "openrouter",
+      "completed_at": "2026-08-06T09:07:52.084860+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "unstructured",
+      "raw_excerpt": "[deepseek] <no review returned: provider returned an empty reply>\n\n[openai] No concrete defects found in the diff. The implementation covers the requested parser recovery, hold/quarantine partitioning, held-line outbox retention, `str`-only identity behavior, protection-universe recovery, warning propagation, and the specified no-side-effect block paths. The added unit and real-git integration tests exercise the important disposition and persistence behaviors rather than merely invoking the changed functions.\n\nOverall assessment: ship-as-is. The change appears specification-compliant and does not introduce an evident correctness, security, or compatibility regression within the affected internal APIs.\n\nSHIPWRIGHT_VERDICT: approve",
+      "verdicts": {
+        "openai": "approve",
+        "deepseek": "unavailable"
+      }
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-06T08:19:40.052543+00:00",
+      "disposition": null,
+      "recorded_by": "shipwright-build:spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    }
+  }
+}
