@@ -1,0 +1,166 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-08-06-architecture-review-pass",
+    "date": "2026-08-06",
+    "unit": {
+      "status": "passed",
+      "passed": 8136,
+      "total": 8136
+    },
+    "integration": {
+      "status": "passed",
+      "passed": 479,
+      "total": 479
+    },
+    "pgtap": {
+      "status": "not_run",
+      "passed": 0,
+      "total": 0
+    },
+    "e2e": {
+      "status": "skipped",
+      "passed": 0,
+      "total": 0
+    },
+    "design_fidelity": {
+      "status": "skipped",
+      "passed": 0,
+      "total": 0
+    },
+    "smoke": {
+      "status": "not_run"
+    },
+    "surface_verification": {
+      "surface": "cli",
+      "runner": "uv run pytest shared/tests/test_architecture_review_mode.py shared/tests/test_architecture_review_prompts.py -q -p no:randomly",
+      "exit_code": 0,
+      "tests_run": 19,
+      "evidence_path": "C:\\01_Development\\shipwright\\.worktrees\\architecture-review-pass\\.shipwright\\runs\\iterate-2026-08-06-architecture-review-pass\\surface_verification.log",
+      "timestamp": "2026-08-06T10:01:40.017Z",
+      "attempts": 1
+    },
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "--mode architecture requires --brief-file (usage error, exit 2)",
+          "disposition": "tested",
+          "evidence": "test_architecture_mode_requires_brief_file PASSED"
+        },
+        {
+          "behavior": "a flag from another mode is rejected AS a foreign flag in architecture mode",
+          "disposition": "tested",
+          "evidence": "test_architecture_mode_rejects_plan_file_as_a_foreign_flag PASSED"
+        },
+        {
+          "behavior": "the same rule holds for the three pre-existing modes (--mode code --brief-file)",
+          "disposition": "tested",
+          "evidence": "test_foreign_flag_is_rejected_in_a_pre_existing_mode_too PASSED"
+        },
+        {
+          "behavior": "a missing brief path reports itself as 'Brief not found'",
+          "disposition": "tested",
+          "evidence": "test_architecture_mode_missing_brief_path_reports_it PASSED"
+        },
+        {
+          "behavior": "an empty brief is an ERROR (exit 1), incl. a BOM-only file",
+          "disposition": "tested",
+          "evidence": "test_empty_brief_is_an_error_not_a_skip PASSED"
+        },
+        {
+          "behavior": "{BRIEF} substitutes and emits no unknown-placeholder warning",
+          "disposition": "tested",
+          "evidence": "test_brief_placeholder_is_substituted, ..._emits_no_unknown_warning PASSED"
+        },
+        {
+          "behavior": "an unknown placeholder still warns on stderr",
+          "disposition": "tested",
+          "evidence": "test_unknown_placeholder_still_warns PASSED"
+        },
+        {
+          "behavior": "substitution is one pass over the TEMPLATE: {SPEC}/{BRIEF} inside injected content survive literally (behaviour change for plan/iterate/code)",
+          "disposition": "tested",
+          "evidence": "test_injected_content_is_never_rescanned_for_placeholders PASSED"
+        },
+        {
+          "behavior": "architecture mode emits the standard envelope incl. verdicts/contradiction",
+          "disposition": "tested",
+          "evidence": "test_architecture_mode_emits_the_standard_envelope PASSED"
+        },
+        {
+          "behavior": "prompts load from shared/prompts/architecture_reviewer/; missing dir -> ('','')",
+          "disposition": "tested",
+          "evidence": "test_architecture_prompts_explicit_root, ..._missing_returns_empty PASSED"
+        },
+        {
+          "behavior": "the shipped prompts exist and carry {BRIEF} + {SPEC}",
+          "disposition": "tested",
+          "evidence": "test_architecture_prompts_ship_and_are_non_empty PASSED"
+        },
+        {
+          "behavior": "the system prompt states the rejection reasons were withheld",
+          "disposition": "tested",
+          "evidence": "test_architecture_system_prompt_states_the_withholding PASSED"
+        },
+        {
+          "behavior": "the user template pulls no plan (no {PLAN}/{DIFF}, no plan vocabulary)",
+          "disposition": "tested",
+          "evidence": "test_architecture_user_template_pulls_no_plan PASSED"
+        },
+        {
+          "behavior": "findings are asked for in the parseable Category/Severity/Finding/Suggestion shape — on-disk prompt AND inline default",
+          "disposition": "tested",
+          "evidence": "test_architecture_prompt_mandates_the_parseable_finding_labels[file,default] PASSED"
+        },
+        {
+          "behavior": "the inline default carries the SHIPWRIGHT_VERDICT instruction",
+          "disposition": "tested",
+          "evidence": "test_architecture_inline_default_carries_the_verdict_instruction PASSED"
+        },
+        {
+          "behavior": "the brief template carries the anti-anchoring rule + the three-line shape",
+          "disposition": "tested",
+          "evidence": "test_brief_template_ships_with_the_anti_anchoring_rule PASSED"
+        },
+        {
+          "behavior": "the BRIEF (not the plan) is what reaches both model arms, under the architecture system prompt",
+          "disposition": "tested",
+          "evidence": "test_the_brief_is_what_reaches_the_model PASSED"
+        },
+        {
+          "behavior": "the envelope is itemizable into findings (PARSE_STRUCTURED, 2 findings)",
+          "disposition": "tested",
+          "evidence": "test_the_envelope_is_itemizable_into_findings PASSED"
+        },
+        {
+          "behavior": "the `plan` review row is NOT this pass's destination — a second write is silently treated as a marker repair and the findings are discarded",
+          "disposition": "tested",
+          "evidence": "test_the_plan_row_is_not_this_passs_destination PASSED"
+        },
+        {
+          "behavior": "Step 3.5 step 2a / Step 5a run the second call and STOP on a reject verdict, asking the operator",
+          "disposition": "untestable",
+          "reason_code": "requires-interactive-tty",
+          "reason": "the STOP is an operator question in a runtime prompt; the prose is the contract, as for every other skill step"
+        }
+      ],
+      "counts": {
+        "testable": 20,
+        "tested": 19,
+        "untestable": 1,
+        "untested_testable": 0
+      },
+      "enumeration_basis": {
+        "acs": 10,
+        "covered_acs": 10
+      }
+    },
+    "degraded": []
+  },
+  "coverage": {
+    "total": 80.2,
+    "measured_tier": "repo",
+    "source": "combined coverage.xml (all plugins + shared + integration)",
+    "measured_at": "2026-07-04T00:00:00Z"
+  }
+}

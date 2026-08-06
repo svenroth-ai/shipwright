@@ -1,0 +1,13 @@
+Below is a change that is about to be built. Answer the one question you were given: should this new standing mechanism exist at all, and what is the smallest thing that would do?
+
+## What the change is for (specification)
+
+{SPEC}
+
+## Architecture brief
+
+{BRIEF}
+
+---
+
+Remember: the options listed in the brief are given without the author's reasons for rejecting any of them. That is deliberate. Judge them as if the choice were still open, and name the one you would take.
