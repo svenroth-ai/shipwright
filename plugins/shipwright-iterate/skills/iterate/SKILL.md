@@ -10,7 +10,7 @@ compatibility: Requires uv (Python 3.11+), git repository required, completed Sh
 Complexity-adaptive change lifecycle for completed Shipwright projects. Detects intent (feature, change, bug), assesses complexity, runs the right amount of process.
 
 > **How invoked:** directly via `/shipwright-iterate`, or via the `suggest_iterate.py` UserPromptSubmit hook context.
-> **External review (v0.5.x+):** medium+ uses `{shared_root}/scripts/tools/external_review.py --mode iterate`, `check-external-review-keys.py`, `mark-review-state.py` (Branch A/B/C gate).
+> **External review (v0.5.x+):** medium+ uses `{shared_root}/scripts/tools/external_review.py --mode iterate`, `check-external-review-keys.py`, `mark-review-state.py` (Branch A/B/C gate). Branch A makes a **second** call — `--mode architecture`, over a short brief instead of the mini-plan — asking whether the change should be built at all (`references/iteration-planning.md` → Step 3.5 step 2a). Same step, same two models, no extra row and no marker — its verdicts, findings and the reconciliation land in the iterate spec's `## Architecture Review` section and the ADR, because step 5's `plan` row takes one payload and the FIRST call already fills it.
 
 ## Phase Index — Where the prose lives
 
@@ -221,7 +221,7 @@ See `references/campaign-mode.md` for the full protocol: campaign setup, autonom
 | Spec Impact (ADD/MODIFY/REMOVE/NONE) | always (BUG: classify; NONE default) | always (BUG: classify; NONE default) | always (BUG: classify; NONE default) | — |
 | Mini-Plan | skip | FEATURE only | yes + alternative (all types) | — |
 | User Approval | skip | skip | before build | — |
-| External LLM Review | skip | skip | auto | — |
+| External LLM Review | skip | skip | auto (+ a 2nd `--mode architecture` call over a brief, same step) | — |
 | Design Check | skip | Tier 1 (text) | Tier 2 (markdown) | — |
 | Build (TDD) | always | always | always | — |
 | Boundary Probe | skip | if `touches_io_boundary` | if `touches_io_boundary` | — |
@@ -267,7 +267,7 @@ See `references/escape-hatch.md` and `references/iteration-planning.md` (handoff
 
 ### F0: Fresh Verification Gate
 
-See [F0](references/F0.md). Leak-guard (`check_iterate_isolation.py --stage f0`), then full test suite. STOP on any failure.
+See [F0](references/F0.md). Leak-guard (`check_iterate_isolation.py --stage f0`), then the mirrored merge gates where the project has them (`scripts/verify_local.py`, guarded on the file existing), then full test suite. STOP on any failure.
 
 ### F0.5: End-to-End Verification Gate
 

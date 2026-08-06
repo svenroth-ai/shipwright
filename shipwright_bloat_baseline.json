@@ -548,6 +548,13 @@
       "adr": null
     },
     {
+      "path": "scripts/check_plugin_cache_sync.py",
+      "limit": 300,
+      "current": 321,
+      "state": "grandfathered",
+      "adr": null
+    },
+    {
       "path": "shared/scripts/github_api.py",
       "limit": 300,
       "current": 321,
@@ -1045,6 +1052,13 @@
       "adr": null
     },
     {
+      "path": "shared/tests/test_plugin_cache_sync_verdict.py",
+      "limit": 300,
+      "current": 306,
+      "state": "grandfathered",
+      "adr": null
+    },
+    {
       "path": "shared/tests/test_record_event.py",
       "limit": 300,
       "current": 501,
@@ -1314,6 +1328,90 @@
       "path": "plugins/shipwright-test/scripts/hooks/ensure_shared_cache.py",
       "limit": 300,
       "current": 322,
+      "state": "grandfathered",
+      "adr": null
+    },
+    {
+      "path": "plugins/shipwright-adopt/scripts/hooks/cache_repair_lock.py",
+      "limit": 300,
+      "current": 457,
+      "state": "grandfathered",
+      "adr": null
+    },
+    {
+      "path": "plugins/shipwright-changelog/scripts/hooks/cache_repair_lock.py",
+      "limit": 300,
+      "current": 457,
+      "state": "grandfathered",
+      "adr": null
+    },
+    {
+      "path": "plugins/shipwright-compliance/scripts/hooks/cache_repair_lock.py",
+      "limit": 300,
+      "current": 457,
+      "state": "grandfathered",
+      "adr": null
+    },
+    {
+      "path": "plugins/shipwright-deploy/scripts/hooks/cache_repair_lock.py",
+      "limit": 300,
+      "current": 457,
+      "state": "grandfathered",
+      "adr": null
+    },
+    {
+      "path": "plugins/shipwright-design/scripts/hooks/cache_repair_lock.py",
+      "limit": 300,
+      "current": 457,
+      "state": "grandfathered",
+      "adr": null
+    },
+    {
+      "path": "plugins/shipwright-iterate/scripts/hooks/cache_repair_lock.py",
+      "limit": 300,
+      "current": 457,
+      "state": "grandfathered",
+      "adr": null
+    },
+    {
+      "path": "plugins/shipwright-plan/scripts/hooks/cache_repair_lock.py",
+      "limit": 300,
+      "current": 457,
+      "state": "grandfathered",
+      "adr": null
+    },
+    {
+      "path": "plugins/shipwright-project/scripts/hooks/cache_repair_lock.py",
+      "limit": 300,
+      "current": 457,
+      "state": "grandfathered",
+      "adr": null
+    },
+    {
+      "path": "plugins/shipwright-run/scripts/hooks/cache_repair_lock.py",
+      "limit": 300,
+      "current": 457,
+      "state": "grandfathered",
+      "adr": null
+    },
+    {
+      "path": "plugins/shipwright-security/scripts/hooks/cache_repair_lock.py",
+      "limit": 300,
+      "current": 457,
+      "state": "grandfathered",
+      "adr": null
+    },
+    {
+      "path": "plugins/shipwright-test/scripts/hooks/cache_repair_lock.py",
+      "limit": 300,
+      "current": 457,
+      "state": "grandfathered",
+      "adr": null
+    },
+    {
+      "path": "shared/templates/hooks/cache_repair_lock.py",
+      "limit": 300,
+      "current": 457,
       "state": "grandfathered",
       "adr": null
     }

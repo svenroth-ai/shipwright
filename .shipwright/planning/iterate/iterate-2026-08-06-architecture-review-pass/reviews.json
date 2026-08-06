@@ -1,0 +1,442 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-08-06-architecture-review-pass",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-06T10:42:02.366020+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 12,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "dependency / edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The mini-plan does not specify the path convention for the architecture brief file, nor does it describe how the iterate/plan workflows generate or locate that file when a standing mechanism is declared. Without this, a run that correctly declares a standing mechanism may fail with an unhelpful error (e.g. file-not-found) if the brief file is missing, or the external_review invocation may use an undefined `--brief-file`.",
+          "suggestion": "Agree on a standard path (e.g. `.shipwright/planning/iterate/{run_id}/architecture_brief.md` as used in the self-review) and ensure the skill implementations for `shipwright-iterate` Step 3.5 and `shipwright-plan` Step 5 construct the `--brief-file` argument from that convention. Add a pre-flight check that the file exists before invoking `external_review.py`; if it is missing, stop with a clear operator message rather than a cryptic CLI error.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "The plan does not include any change to `record_review_pass.py`, yet the new `architecture` review type must be recorded by that script. If the script has any hardcoded dispatch on `review_type` (beyond what the schema change allows), the integration could break.",
+          "suggestion": "Verify that `record_review_pass.py` will accept an envelope with `review_type: \"architecture\"` without code changes (i.e. it uses the schema’s `REVIEW_TYPES` to accept new types). If not, add a corresponding case.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The architecture brief’s anti-anchoring guarantee depends entirely on the author manually omitting rejection reasons; there is no mechanical check. A brief that accidentally includes “rejected because …” undermines the pass’s independence.",
+          "suggestion": "Consider a lightweight warning in the brief‑generation step if the file contains patterns like `rejected because` or `alternative approach`—a gentle reminder rather than a hard gate—to preserve the review’s value.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "The trigger for the architecture pass rests solely on the author‑declared `Standing mechanism:` line in the mini-plan. Deliberate or accidental omission of this line (or declaring `none` when a mechanism is indeed introduced) bypasses the review. The design note acknowledges this as a known, accepted weakness.",
+          "suggestion": "Monitor the actual trigger rate over early usage. If bypass becomes common, follow up with the already‑planned diff‑based verifier (card filed) or a simpler heuristic check that does not require a full fail‑closed gate.  The approach is sound, the known trade-offs are explicitly recorded, and the implementation work items are clear. The only blocker is the missing specification around brief-file generation and error handling, which should be resolved before moving to implementation.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "The proposed `shared/prompts/architecture_reviewer/user` artifact is not a short `{BRIEF}`-based prompt as required. In the file table it contains repeated copies of the full spec and mini-plan before `{BRIEF}`. If implemented literally, this both defeats the anti-anchoring purpose (the reviewer receives the plan’s conclusion and rejection rationale) and greatly increases prompt size/cost.",
+          "suggestion": "Make the user template deliberately minimal: state the requested decision/output format and insert only a clearly delimited `{BRIEF}`. Do not include the iterate spec, mini-plan, decision log, or alternative-rejection rationale in this prompt artifact. Add a test asserting that rendering the architecture prompt contains the supplied brief but does not contain plan-only sections such as `Alternative approach considered` or `rejected-with-reason`.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The review-record lifecycle is underspecified for runs whose `Standing mechanism:` is `none`. AC5 says a live run leaves `architecture` pending until closed, while AC8 says the call only runs conditionally. If every new live record gets an `architecture` row, non-triggering runs will fail F11 unless they explicitly close it as skipped; if they do not get a row, “absence tolerated for reading, never for a live run” cannot hold. The current plan only says the campaign runner closes the row and does not define the normal non-trigger disposition.",
+          "suggestion": "Define the state machine explicitly and test it: - historical records: missing `architecture` is valid; - newly created live records: always create an `architecture` row; - `none`: close it with an explicit `not-applicable`/`skipped-no-standing-mechanism` disposition without making an external call; - non-`none`: leave pending until the architecture review and any operator disposition are recorded; - campaigns: use the same explicit disposition or completion outcome. Ensure `check_review_record` validates the allowed closed dispositions, not merely “not pending.”",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "“On a `reject` verdict STOPs” is ambiguous with two independent reviewers and the stated `contradiction` behavior. The example itself has differing grades (`approve` and `revise`) with `contradiction=false`; it does not establish whether one reviewer returning `reject` is sufficient, whether only unanimous reject stops, or how a reject paired with an unavailable/degraded reviewer behaves.",
+          "suggestion": "Specify a deterministic policy in the workflow and recorder instructions: e.g., stop on any available reviewer’s `reject`, preserve both verdicts, and require an operator disposition before closure. State separate handling for `reject + provider failure`, `reject + approve`, and malformed/missing verdicts. Add stub-provider tests for each combination.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "Adding `architecture` to a shared record schema affects more consumers than the listed validator and web UI. Record creation, record mutation/closure, CLI validation choices, serialization fixtures, reporting/count logic, and any code that assumes exactly six review types can all fail or silently omit the new row. Editing `review_record_schema.py` alone may not update these locations.",
+          "suggestion": "Trace all references to `REVIEW_TYPES`, hard-coded review-type lists, expected review counts, record constructors, closure commands, and rendered table columns. Include at least one end-to-end test that creates a fresh live record, records the architecture envelope, closes the disposition, and passes the actual F11 check. Keep the historical-118 validation regression test.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "The plan workflow and iterate workflow have different artifact lifecycles, but the approach does not say whether `/shipwright-plan` creates or updates `reviews.json`, or where architecture-envelope provenance is retained for plan-only runs. AC10 only requires `decision_log.md` and a `plan.md` section, whereas AC5 describes a fail-closed review-record row.",
+          "suggestion": "Explicitly separate the two contracts. If plan runs are not review-record-backed, state that architecture reviews there are documented-only and must not create a pending record. If they are record-backed, add the necessary record creation/closure and artifact path behavior to the plan workflow. Ensure the same brief location, output retention, and operator-disposition format are defined for both flows.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The `Standing mechanism:` grammar is described as a closed vocabulary but permits unrestricted `other:<x>`. The approach does not define parsing rules for whitespace, casing, an empty `other:`, multiple values, an absent line in older or manually authored mini-plans, or a malformed value. Those cases could silently suppress the very conditional pass being introduced.",
+          "suggestion": "Define and test a strict parser: exactly one line, normalized values for the five fixed tokens, and a non-empty constrained suffix for `other:<x>`. For medium+ live plans, treat a missing or malformed line as a planning validation failure rather than as `none`. For lower-complexity plans, explicitly document whether the field is absent or must still be present.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "security",
+          "file": null,
+          "line": null,
+          "finding": "The brief is inserted into an external-model prompt and is author-controlled text. It can contain prompt-injection instructions, and it may unintentionally contain implementation secrets or credentials while discussing “credential” mechanisms. The anti-anchoring rule does not protect against either issue.",
+          "suggestion": "Delimit the brief as untrusted quoted content in the user prompt and instruct reviewers not to follow instructions embedded in it. Reuse any existing external-review secret redaction/scanning policy before provider submission; if none exists, add a focused preflight warning/fail behavior for credential-like values in briefs. Test that delimiter/instruction text is present in both file-backed and inline fallback prompts.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "A dedicated `load_architecture_review_prompts` function may be a single-use wrapper if the current prompt loader can select prompt directories/defaults by mode. That creates another mode-specific branch to maintain without adding behavior.",
+          "suggestion": "Extend the existing generic prompt-loading path with an architecture mode-to-directory/default mapping where practical. Retain a separate function only if existing loader structure genuinely cannot express mode-specific placeholders/defaults cleanly.  Overall, the two-call/brief approach is sound and appropriately preserves reviewer disagreement, but the actual prompt content, record lifecycle for non-triggered runs, and two-reviewer stop semantics must be made precise before implementation. The proposed tests should exercise those runtime states rather than relying primarily on prose pins. SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-08-06T10:43:18.299657+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[deepseek] - **Category:** dependency / edge-case  \n  **Severity:** medium  \n  **Finding:** The mini-plan does not specify the path convention for the architecture brief file, nor does it describe how the iterate/plan workflows generate or locate that file when a standing mechanism is declared. Without this, a run that correctly declares a standing mechanism may fail with an unhelpful error (e.g. file-not-found) if the brief file is missing, or the external_review invocation may use an undefined `--brief-file`.  \n  **Suggestion:** Agree on a standard path (e.g. `.shipwright/planning/iterate/{run_id}/architecture_brief.md` as used in the self-review) and ensure the skill implementations for `shipwright-iterate` Step 3.5 and `shipwright-plan` Step 5 construct the `--brief-file` argument from that convention. Add a pre-flight check that the file exists before invoking `external_review.py`; if it is missing, stop with a clear operator message rather than a cryptic CLI error.\n\n- **Category:** dependency  \n  **Severity:** low  \n  **Finding:** The plan does not include any change to `record_review_pass.py`, yet the new `architecture` review type must be recorded by that script. If the script has any hardcoded dispatch on `review_type` (beyond what the schema change allows), the integration could break.  \n  **Suggestion:** Verify that `record_review_pass.py` will accept an envelope with `review_type: \"architecture\"` without code changes (i.e. it uses the schema’s `REVIEW_TYPES` to accept new types). If not, add a corresponding case.\n\n- **Category:** edge-case  \n  **Severity:** low  \n  **Finding:** The architecture brief’s anti-anchoring guarantee depends entirely on the author manually omitting rejection reasons; there is no mechanical check. A brief that accidentally includes “rejected because …” undermines the pass’s independence.  \n  **Suggestion:** Consider a lightweight warning in the brief‑generation step if the file contains patterns like `rejected because` or `alt […truncated]\n\n[openai] 1. **Category:** approach  \n   **Severity:** high  \n   **Finding:** The proposed `shared/prompts/architecture_reviewer/user` artifact is not a short `{BRIEF}`-based prompt as required. In the file table it contains repeated copies of the full spec and mini-plan before `{BRIEF}`. If implemented literally, this both defeats the anti-anchoring purpose (the reviewer receives the plan’s conclusion and rejection rationale) and greatly increases prompt size/cost.  \n   **Suggestion:** Make the user template deliberately minimal: state the requested decision/output format and insert only a clearly delimited `{BRIEF}`. Do not include the iterate spec, mini-plan, decision log, or alternative-rejection rationale in this prompt artifact. Add a test asserting that rendering the architecture prompt contains the supplied brief but does not contain plan-only sections such as `Alternative approach considered` or `rejected-with-reason`.\n\n2. **Category:** edge-case  \n   **Severity:** high  \n   **Finding:** The review-record lifecycle is underspecified for runs whose `Standing mechanism:` is `none`. AC5 says a live run leaves `architecture` pending until closed, while AC8 says the call only runs conditionally. If every new live record gets an `architecture` row, non-triggering runs will fail F11 unless they explicitly close it as skipped; if they do not get a row, “absence tolerated for reading, never for a live run” cannot hold. The current plan only says the campaign runner closes the row and does not define the normal non-trigger disposition.  \n   **Suggestion:** Define the state machine explicitly and test it:  \n   - historical records: missing `architecture` is valid;  \n   - newly created live records: always create an `architecture` row;  \n   - `none`: close it with an explicit `not-applicable`/`skipped-no-standing-mechanism` disposition without making an external call;  \n   - non-`none`: leave pending until the architecture review and any operator disposition are rec […truncated]",
+      "verdicts": {
+        "openai": "revise",
+        "deepseek": "revise"
+      }
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 7,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "correctness",
+          "file": "shared/scripts/tools/external_review.py",
+          "line": 161,
+          "finding": "Adding {BRIEF} to the chained str.replace ladder made plan/iterate/code amplify primary content containing the token: replace runs over the string the previous call produced, so a literal {BRIEF} inside the injected diff was replaced with the entire primary again. Repro: ('Diff:\\n{DIFF}', 'a{BRIEF}b') -> 'Diff:\\naa{BRIEF}bb'. This repo's own diff carries 24 {BRIEF} literals, so its next --mode code review was the trigger. The same flaw let primary content containing {SPEC} inject the spec.",
+          "suggestion": "Substitute in ONE pass with _PLACEHOLDER_RE.sub and a callable repl. ACCEPTED-AND-FIXED — probed before and after; regression test test_injected_content_is_never_rescanned_for_placeholders now uses a {SPEC}-in-primary fixture, which is the case that actually regressed for the pre-existing modes.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "plugins/shipwright-iterate/agents/sub-iterate-runner.md",
+          "line": 102,
+          "finding": "The campaign sub-iterate-runner carries its own inlined copy of Step 3.5 Branch A and was not wired to the second call, so the pass does not run for a campaign unit — while the spec, the guide and the skill all claimed 'every medium+ Branch A'. The runner is also autonomous, so the reject -> ask-the-operator contract has no defined behavior there.",
+          "suggestion": "Wire it in, or scope it explicitly. ACCEPTED — scoped explicitly: the runner sits at exactly its ADR-119 bloat cap and cannot ask an operator, so it is named in Out of Scope and the three overclaiming prose sites were corrected. Follow-up card at F12.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "shared/tests/test_architecture_review_mode.py",
+          "line": 181,
+          "finding": "test_architecture_mode_ignores_plan_file did not exercise the foreign-flag loop it claimed to guard: it omitted --brief-file, so the missing-flag branch fired first and the loop was never reached. It would pass verbatim against an implementation with the loop deleted — a duplicate of the test above it.",
+          "suggestion": "Move the foreign-flag check above the required-flag check and assert the specific message. ACCEPTED-AND-FIXED — renamed to test_architecture_mode_rejects_plan_file_as_a_foreign_flag; it now asserts '--plan-file belongs to --mode plan', and the operator gets the useful diagnosis for the likeliest real mistake.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/scripts/tools/external_review.py",
+          "line": 365,
+          "finding": "An empty or whitespace-only brief was accepted and sent to both providers, producing a full envelope with real verdicts over nothing — recorded as a completed review.",
+          "suggestion": "ACCEPTED-AND-FIXED — an empty brief is an error (exit 1), deliberately the opposite of code mode's empty-diff skip, since an empty diff has nothing to review while an empty brief means the input was never written.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "integration-tests/test_architecture_review_composition.py",
+          "line": 46,
+          "finding": "The _REPLY fixture used a category-less lowercase layout instead of the Category/Severity/Finding/Suggestion shape the shipped prompt mandates, so the end-to-end chain never proved that a reply in the mandated shape parses.",
+          "suggestion": "ACCEPTED-AND-FIXED — rewritten in the exact mandated shape.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "plugins/shipwright-iterate/skills/iterate/references/iteration-planning.md",
+          "line": 198,
+          "finding": "The inserted sub-step was labelled 4a but sits between numbered items 2 and 3, and 4a is not a valid ordered-list marker.",
+          "suggestion": "ACCEPTED-AND-FIXED — renumbered to 2a (it belongs to Branch A, item 2) and the pointer in SKILL.md updated.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "architecture",
+          "file": "plugins/shipwright-iterate/skills/iterate/references/F6.md",
+          "line": 34,
+          "finding": "F6's inline enumeration of what the run-scoped directory add picks up was not updated for architecture_brief.md, so the authoritative list is incomplete in the file that performs the staging.",
+          "suggestion": "ACCEPTED-AND-FIXED — added to the F6.md line-34 comment.",
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-08-06T10:43:07.099039+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 12,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "correctness",
+          "file": "plugins/shipwright-iterate/skills/iterate/references/iteration-planning.md",
+          "line": null,
+          "finding": "Claim under doubt: the change's claim at plugins/shipwright-iterate/skills/iterate/references/iteration-planning.md — 'Findings ride in the plan review row' was false on the iterate side. Step 5 records that row from ONE --payload-file and the FIRST call's envelope fills it; a completed row is immutable. So the architecture envelope had nowhere to go, and the claim appeared in three documents. Worse than an error: because the restating write matches the recorded status, record_review_pass treats it as a marker repair and returns success with record_unchanged, so the findings are silently DISCARDED.",
+          "suggestion": "ACCEPTED-AND-FIXED — destination corrected to the iterate spec's ## Architecture Review section and the ADR (the same shape Step 5a already named for plan.md), in iteration-planning.md, SKILL.md, hooks-and-pipeline.md, guide.md and the spec. Pinned by test_the_plan_row_is_not_this_passs_destination.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "high",
+          "category": "test-coverage",
+          "file": "integration-tests/test_architecture_review_composition.py",
+          "line": null,
+          "finding": "Claim under doubt: the change's claim at integration-tests/test_architecture_review_composition.py — test_envelope_records_into_a_row_the_gate_accepts recorded the architecture envelope into a pending plan row — a composition unreachable at runtime. The test green-lit a sequence the skill never performs and could not fail for the one it does, while its docstring claimed to walk the real chain.",
+          "suggestion": "ACCEPTED-AND-FIXED — replaced by test_the_envelope_is_itemizable_into_findings (envelope -> build_review_evidence -> PARSE_STRUCTURED, the seam that actually exists) plus the immutability test above.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "overclaim",
+          "file": ".shipwright/planning/iterate/2026-08-06-architecture-review-pass.md",
+          "line": null,
+          "finding": "Claim under doubt: the change's claim at .shipwright/planning/iterate/2026-08-06-architecture-review-pass.md — AC5 called the foreign-flag refusal 'the structural half of the anti-anchoring guarantee'. It guards a flag NAME, not the document: --mode architecture --brief-file {miniplan_path} passes every check and reverts the pass to a second anchored review with no detectable difference anywhere in the record.",
+          "suggestion": "ACCEPTED-AND-FIXED — AC5 rewritten to say it stops a typo, not the failure mode, and to name what the guarantee actually rests on (the author's discipline, the template, and the brief shipping in the diff).",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "test-coverage",
+          "file": ".shipwright/planning/iterate/2026-08-06-architecture-review-pass.md",
+          "line": null,
+          "finding": "Claim under doubt: the change's claim at .shipwright/planning/iterate/2026-08-06-architecture-review-pass.md — Two ledger honesty defects in the artifact whose whole job is honesty: row 2 cited test_architecture_mode_ignores_plan_file PASSED, a test renamed by the Stage-2 fix and therefore resolving to nothing; and the _render_user_prompt rewrite — behaviour this diff changes for the three pre-existing modes — had no row at all, so '0 untested-testable' was false.",
+          "suggestion": "ACCEPTED-AND-FIXED — citation corrected and rows 14b/14c/14d added; a Ledger-integrity note records that nothing checks whether a cited test name exists.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "test-coverage",
+          "file": "shared/tests/test_architecture_review_mode.py",
+          "line": null,
+          "finding": "Claim under doubt: the change's claim at shared/tests/test_architecture_review_mode.py — test_injected_content_is_never_rescanned_for_placeholders could not fail against the pre-change code: with a {BRIEF}-only fixture the old chain (which never substituted {BRIEF}) produced a byte-identical string. It pinned the intermediate bug that never shipped, not the {SPEC}-in-primary case that actually regressed for --mode code.",
+          "suggestion": "ACCEPTED-AND-FIXED — fixture changed to 'a{SPEC}b{BRIEF}c', which the old chain would have corrupted.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "dead-code",
+          "file": "shared/scripts/tools/external_review.py",
+          "line": null,
+          "finding": "Claim under doubt: the change's claim at shared/scripts/tools/external_review.py — _KNOWN_PLACEHOLDERS lost its only reader in the rewrite (the closure tests _SUBSTITUTIONS_FOR directly); ruff's curated ruleset does not flag an unused module-level binding.",
+          "suggestion": "ACCEPTED-AND-FIXED — removed from the CLI; the name survives in lib/external_review_modes where it is exported deliberately.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/scripts/tools/external_review.py",
+          "line": null,
+          "finding": "Claim under doubt: the change's claim at shared/scripts/tools/external_review.py — The empty-brief guard used .strip(), which a UTF-8 BOM defeats: '\\ufeff'.isspace() is False, and PowerShell 5.1's Set-Content -Encoding UTF8 '' writes exactly BOM+CRLF. Both models would be asked to judge one invisible character.",
+          "suggestion": "ACCEPTED-AND-FIXED — is_blank() strips BOM and zero-width space; regression test writes the exact BOM+CRLF bytes.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "documentation",
+          "file": ".shipwright/planning/iterate/iterate-2026-08-06-architecture-review-pass/architecture_brief.md",
+          "line": null,
+          "finding": "Claim under doubt: the change's claim at .shipwright/planning/iterate/iterate-2026-08-06-architecture-review-pass/architecture_brief.md — The shipped brief is the repo's only example of one and describes the REJECTED v1 (a Standing mechanism header field, a conditional trigger, a review-record row), contradicting both the template and the delivered scope.",
+          "suggestion": "ACCEPTED-AND-FIXED — a banner names it as the round-1 input kept as evidence, not a model brief.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "refuted",
+          "file": "shared/scripts/tools/external_review.py",
+          "line": null,
+          "finding": "Claim under doubt: REFUTED (tried to disprove, could not) — REFUTED — tried to break the _MODE_INPUT tightening against every shipped caller. Enumerated all nine --plan-file/--diff-file/--brief-file occurrences outside .shipwright/; each passes exactly one input flag, each in its own fenced block. No caller regresses.",
+          "suggestion": "no change needed",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "refuted",
+          "file": "shared/scripts/lib/external_review_modes.py",
+          "line": null,
+          "finding": "Claim under doubt: REFUTED (tried to disprove, could not) — REFUTED — tried to construct a replacement-template corruption (\\g<0>, \\1, trailing backslash). re.sub applies template parsing only when repl is a str; a callable's return value is spliced verbatim, so behaviour matches the chained replace it replaced.",
+          "suggestion": "no change needed",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "refuted",
+          "file": "shared/scripts/lib/external_review_modes.py",
+          "line": null,
+          "finding": "Claim under doubt: REFUTED (tried to disprove, could not) — REFUTED — tried to show the unknown-placeholder warning frequency or multi-occurrence substitution changed for plan/iterate/code. findall and sub visit the same non-overlapping matches of the same regex over the same template: identical counts, identical scope, identical multi-occurrence behaviour.",
+          "suggestion": "no change needed",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "refuted",
+          "file": "plugins/shipwright-iterate/skills/iterate/references/F6.md",
+          "line": null,
+          "finding": "Claim under doubt: REFUTED (tried to disprove, could not) — REFUTED — tried to show the stated last-resort mitigation ('only review of the diff catches a dishonest brief') does not exist. F6 stages the run-scoped directory with architecture_brief.md named explicitly, .gitignore re-includes /.shipwright/planning/, and this run's brief is tracked. The mitigation is real.",
+          "suggestion": "no change needed",
+          "source": "doubt-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-08-06T10:43:07.233085+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 5,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "bug",
+          "file": "shared/scripts/tools/external_review.py line near 301 (reading primary_text)",
+          "line": null,
+          "finding": "The `--brief-file` value is used directly with `Path(value).read_text()` without checking file existence. A missing file causes an unhandled `FileNotFoundError` (traceback) instead of the structured JSON error `\"Brief not found\"` that the unit test `test_architecture_mode_missing_brief_path_reports_it` expects.",
+          "suggestion": "Wrap the brief-file read in a try/except `FileNotFoundError` block and emit the same JSON error shape used for an empty brief (including `\"error\": \"Brief not found: …\"`) before returning 1.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "test",
+          "file": "shared/tests/test_architecture_review_mode.py (test_architecture_mode_missing_brief_path_reports_it)",
+          "line": null,
+          "finding": "The test asserts that a missing brief path produces error `\"Brief not found\"` and a valid JSON envelope, but the current implementation does not handle missing files—it crashes. The test will fail, meaning either the implementation is incomplete or the test is incorrect (both indicate a defect).",
+          "suggestion": "Implement the missing-file handling in `external_review.py` (see above) to match the test’s expectation, or adjust the test to match the actual crash behavior if graceful handling is not intended.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "spec",
+          "file": "shared/scripts/tools/external_review.py (overall)",
+          "line": null,
+          "finding": "AC1 states “rejects the mode without it (usage error),” which is satisfied for a missing `--brief-file` flag, but a missing file path (e.g., typo) is not handled as a usage error and crashes. The spec does not mandate graceful file-not-found handling, but the included test expects it, leaving a gap.",
+          "suggestion": "Clarify the acceptance criterion or implement the graceful error as requested by the test.  Overall assessment: The change implements the architecture review pass almost completely, but the missing-file crash contradicts the provided test and is a high-severity bug. Ship-with-fixes after adding file-existence handling.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "spec",
+          "file": "shared/prompts/architecture_reviewer/system",
+          "line": 3,
+          "finding": "The pass is required to run even for changes that add nothing permanent, but the primary question presupposes “this new standing mechanism” exists. The template’s normal no-permanent-change case says “Nothing,” yet neither the on-disk system prompt nor the inline fallback explicitly tells reviewers that “no new standing mechanism” is a valid expected conclusion. This biases reviewers toward inventing or evaluating a mechanism that the brief says does not exist, undermining the intended cheap three-line confirmation path.",
+          "suggestion": "State explicitly that a brief may describe no new standing mechanism and that, in that case, reviewers should confirm whether changing existing machinery is proportionate rather than assume a new mechanism exists. Make the inline `architecture` fallback use the same rule.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "spec",
+          "file": "docs/guide.md",
+          "line": 1459,
+          "finding": "The guide says architecture-mode findings “ride in the plan review’s own record,” but the implemented workflow explicitly prohibits writing the architecture envelope to the already-completed `plan` row because it silently discards the second payload. The actual destination is `## Architecture Review` in the iterate spec or `plan.md`, plus the decision log. Following this documentation can cause architecture findings to be lost.",
+          "suggestion": "Replace this statement with the actual destinations: the iterate spec’s `## Architecture Review` section and iterate ADR, or `plan.md`’s section and `decision_log.md` on the plan side. Do not describe the immutable plan review row as the destination.  Overall assessment: ship-with-fixes. The CLI mode, prompt loading/rendering, envelope behavior, and main workflow wiring substantially implement the requested feature, but the unconditional-pass prompt framing and contradictory operator documentation should be corrected before release. SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-08-06T10:43:18.614577+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[deepseek] - Category: bug\n- Severity: high\n- File: shared/scripts/tools/external_review.py line near 301 (reading primary_text)\n- Finding: The `--brief-file` value is used directly with `Path(value).read_text()` without checking file existence. A missing file causes an unhandled `FileNotFoundError` (traceback) instead of the structured JSON error `\"Brief not found\"` that the unit test `test_architecture_mode_missing_brief_path_reports_it` expects.\n- Suggestion: Wrap the brief-file read in a try/except `FileNotFoundError` block and emit the same JSON error shape used for an empty brief (including `\"error\": \"Brief not found: …\"`) before returning 1.\n\n- Category: test\n- Severity: high\n- File: shared/tests/test_architecture_review_mode.py (test_architecture_mode_missing_brief_path_reports_it)\n- Finding: The test asserts that a missing brief path produces error `\"Brief not found\"` and a valid JSON envelope, but the current implementation does not handle missing files—it crashes. The test will fail, meaning either the implementation is incomplete or the test is incorrect (both indicate a defect).\n- Suggestion: Implement the missing-file handling in `external_review.py` (see above) to match the test’s expectation, or adjust the test to match the actual crash behavior if graceful handling is not intended.\n\n- Category: spec\n- Severity: low\n- File: shared/scripts/tools/external_review.py (overall)\n- Finding: AC1 states “rejects the mode without it (usage error),” which is satisfied for a missing `--brief-file` flag, but a missing file path (e.g., typo) is not handled as a usage error and crashes. The spec does not mandate graceful file-not-found handling, but the included test expects it, leaving a gap.\n- Suggestion: Clarify the acceptance criterion or implement the graceful error as requested by the test.\n\nOverall assessment: The change implements the architecture review pass almost completely, but the missing-file crash contradicts the provided test and is a high-severit […truncated]\n\n[openai] - Category: spec\n- Severity: medium\n- File: `shared/prompts/architecture_reviewer/system:3`\n- Finding: The pass is required to run even for changes that add nothing permanent, but the primary question presupposes “this new standing mechanism” exists. The template’s normal no-permanent-change case says “Nothing,” yet neither the on-disk system prompt nor the inline fallback explicitly tells reviewers that “no new standing mechanism” is a valid expected conclusion. This biases reviewers toward inventing or evaluating a mechanism that the brief says does not exist, undermining the intended cheap three-line confirmation path.\n- Suggestion: State explicitly that a brief may describe no new standing mechanism and that, in that case, reviewers should confirm whether changing existing machinery is proportionate rather than assume a new mechanism exists. Make the inline `architecture` fallback use the same rule.\n\n- Category: spec\n- Severity: medium\n- File: `docs/guide.md:1459`\n- Finding: The guide says architecture-mode findings “ride in the plan review’s own record,” but the implemented workflow explicitly prohibits writing the architecture envelope to the already-completed `plan` row because it silently discards the second payload. The actual destination is `## Architecture Review` in the iterate spec or `plan.md`, plus the decision log. Following this documentation can cause architecture findings to be lost.\n- Suggestion: Replace this statement with the actual destinations: the iterate spec’s `## Architecture Review` section and iterate ADR, or `plan.md`’s section and `decision_log.md` on the plan side. Do not describe the immutable plan review row as the destination.\n\nOverall assessment: ship-with-fixes. The CLI mode, prompt loading/rendering, envelope behavior, and main workflow wiring substantially implement the requested feature, but the unconditional-pass prompt framing and contradictory operator documentation should be corrected before release.  \nSHIPWR […truncated]",
+      "verdicts": {
+        "openai": "revise",
+        "deepseek": "revise"
+      }
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 3,
+      "findings": [
+        {
+          "severity": null,
+          "category": "spec-impact",
+          "file": ".shipwright/planning/iterate/2026-08-06-architecture-review-pass.md",
+          "line": null,
+          "finding": "The spec declared `Classification: add` / `ADD: FR-08.14`, but the diff minted no FR and this repo has no split 08 at all — the next free id would be FR-01.20. F11's check_spec_impact_recorded FAILS a feature/change iterate whose commit touches no spec.md. ACCEPTED-AND-FIXED: folded to MODIFY FR-01.03, which already governs 'no plan reaches the build phase unreviewed', with three appended acceptance criteria; spec.md is in the commit. — spec: iterate spec § Spec Impact + path-a-feature.md:121-192 (MINT-vs-FOLD)",
+          "suggestion": "iterate spec § Spec Impact + path-a-feature.md:121-192 (MINT-vs-FOLD)",
+          "source": "spec-reviewer"
+        },
+        {
+          "severity": null,
+          "category": "doc-consistency",
+          "file": "docs/guide.md:1473",
+          "line": null,
+          "finding": "guide.md was changed to 'runs four review modes' while a line three below the table still read 'same for all three modes'. ACCEPTED-AND-FIXED. — spec: AC10 — docs updated in the same diff",
+          "suggestion": "AC10 — docs updated in the same diff",
+          "source": "spec-reviewer"
+        },
+        {
+          "severity": null,
+          "category": "ledger",
+          "file": "shared/scripts/tools/external_review.py",
+          "line": null,
+          "finding": "Row 2 claimed the generic 'a flag from another mode is a usage error' but both cited tests exercised architecture mode only; the _MODE_INPUT table also tightened plan/iterate/code, where `--mode code --plan-file X` used to be silently ignored. ACCEPTED-AND-FIXED: added test_foreign_flag_is_rejected_in_a_pre_existing_mode_too and row 2b. — spec: Test Completeness Ledger row 2",
+          "suggestion": "Test Completeness Ledger row 2",
+          "source": "spec-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-08-06T10:43:06.971612+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    }
+  }
+}

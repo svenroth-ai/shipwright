@@ -1,0 +1,1 @@
+The required-check drift producer now runs by itself, once every 6 hours, as a background step while a session opens. It reports when the checks a repository must pass before merging no longer match the checks it actually has. It never blocks, and stays quiet unless it has stopped working.

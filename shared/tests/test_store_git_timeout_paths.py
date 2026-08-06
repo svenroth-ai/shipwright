@@ -143,8 +143,14 @@ def test_commit_timeout_is_reported_structurally(repo, monkeypatch) -> None:
 # ---------------------------------------------------------------------------
 
 def test_delivered_membership_gcs_nothing_on_timeout(repo, monkeypatch) -> None:
-    """Empty sets mean "drop nothing", which is already this function's safe answer."""
-    monkeypatch.setattr(sgc, "run_git_soft",
+    """Empty sets mean "drop nothing", which is already this function's safe answer.
+
+    Reads origin through ``run_git_bytes_soft`` since
+    iterate-2026-08-06-gc-decode-parity — the blob must be decoded with the STORE's
+    rule, not the text helper's lossy ``errors="replace"``. The timeout fail-safe is
+    unchanged and pinned here on the new seam: ``b""`` stdout, same empty sets.
+    """
+    monkeypatch.setattr(sgc, "run_git_bytes_soft",
                         lambda *a, **k: subprocess.CompletedProcess(
-                            ["git"], TIMEOUT_RETURNCODE, "", "timed out"))
+                            ["git"], TIMEOUT_RETURNCODE, b"", b"timed out"))
     assert sgc.delivered_membership(repo, "main") == (set(), set())

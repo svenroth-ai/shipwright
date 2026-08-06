@@ -136,28 +136,28 @@ what it presupposes — in [section-index.md](references/section-index.md).
 Full branch logic: [step-5-external-review.md](references/step-5-external-review.md);
 underlying protocol: [external-review.md](references/external-review.md).
 
-**This step is NOT optional.** One of three branches must run to completion,
-and `{planning_dir}/external_review_state.json` must be written. Step 6 is
-gated on that marker.
+**This step is NOT optional.** One of three branches must run to completion, and
+`{planning_dir}/external_review_state.json` must be written. Step 6 is gated on it.
 
 Read `external_review_status` from the session report (First Actions
 > F). Branch on its value:
 
-- **Branch A — `available`:** run
-  `shared/scripts/tools/external_review.py --mode plan ...` (DeepSeek +
-  OpenAI in parallel), integrate findings, log every finding to
-  `decision_log.md`, then go to Step 5b. **Read the `contradiction` block
-  first:** `requires_resolution: true` means the two reviewers contradict
-  each other, a verdict could not be read, or only one answered. That is its
-  own outcome, not a finding count — put it to the user, take their decision,
-  and carry it into Step 5b. Never proceed on the approving review alone.
-- **Branch B — `missing_keys`:** STOP. Ask user verbatim (Option 1:
-  add key + retry → Branch A; Option 2: skip → Self-Review Fallback).
-  Do NOT proceed until the user chooses.
-- **Branch C — `user_disabled`:** print the disabled notice, run
-  the Self-Review Fallback sub-block ("2x denken" — 5-item checklist:
-  architectural soundness / section boundaries / TDD coverage / risk
-  hotspots / assumptions).
+- **Branch A — `available`:** run `external_review.py --mode plan ...` (DeepSeek +
+  OpenAI in parallel), integrate findings, log every one to `decision_log.md`.
+  **Read the `contradiction` block first:** `requires_resolution: true` — reviewers
+  contradict, a verdict is unreadable, or only one answered — is its own outcome,
+  not a finding count. Put it to the user, carry the decision into Step 5b, never
+  proceed on the approving review alone. Then **Step 5a**: a SECOND call, `--mode
+  architecture` over a short brief *instead of* the plan, asking what no other pass
+  asks — should this be built at all. `reject` STOPs and asks the user before Step
+  6; outcome appended to `plan.md` under `## Architecture Review`, no marker of its
+  own. Then Step 5b.
+- **Branch B — `missing_keys`:** STOP. Ask user verbatim (Option 1: add key +
+  retry → Branch A; Option 2: skip → Self-Review Fallback). Do NOT proceed until
+  the user chooses.
+- **Branch C — `user_disabled`:** print the disabled notice, run the Self-Review
+  Fallback sub-block ("2x denken" — 5-item checklist: architectural soundness /
+  section boundaries / TDD coverage / risk hotspots / assumptions).
 
 After exactly one branch completes, **Step 5b** writes the marker with
 `{shared_root}/scripts/checks/mark-review-state.py` — `--status`,

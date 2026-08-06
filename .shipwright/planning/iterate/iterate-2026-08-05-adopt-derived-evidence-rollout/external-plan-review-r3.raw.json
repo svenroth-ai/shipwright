@@ -1,0 +1,33 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "openrouter",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviews": {
+    "openai": {
+      "feedback": "1. **Category:** edge-case  \n   **Severity:** high  \n   **Finding:** The proposed `--stamp-adopted` resolution rule conflicts with AC-2 for an adoption record that lacks `commit_at_adoption`. The mode treats an absent `--base` as permission to resolve current `HEAD`, but in an adopted-repo flow a missing recorded adoption commit means the authoritative value cannot be established. Falling back to Step H\u2019s current `HEAD` can produce plausible but incorrect provenance after a resume, retry, or intervening commit\u2014the timing failure the plan otherwise correctly identifies.  \n   **Suggestion:** Make the adoption caller always pass an explicit base state: either the recorded `commit_at_adoption` value or an explicit no-base sentinel. For `--stamp-adopted`, absent `--base` should either yield `no_base` or be rejected as a caller bug; it should not resolve `HEAD`. If retaining a generic CLI fallback is required for another caller, separate that behavior from the adoption path and test an older/malformed adoption event with no `commit_at_adoption`.\n\n2. **Category:** risk  \n   **Severity:** medium  \n   **Finding:** The partial-stamp failure path appears to write the successfully stamped subset before detecting that another expected document was banner-less: the listed sequence calls `write_back` before comparing `stamped` with the expected set. Adoption then aborts without a commit, but leaves the target repository dirty and partially mutated. That can interfere with retry behavior, clean-tree checks, or an operator\u2019s recovery, even though it avoids shipping a bad commit.  \n   **Suggestion:** Validate completeness before writing anything. Build the stamped payload in memory, compare the returned stamped paths to the expected set, and only call `write_back` on a complete stamp or the intentional `no_base` outcome. Extend the partial-stamp integration test to assert both that no commit is created and that the worktree/index remain unchanged.\n\n3. **Category:** edge-case  \n   **Severity:** medium  \n   **Finding:** The Group E remedy sequence only becomes executable when the evidence files are the sole working-tree changes. `--restore` resolves the reported evidence drift, but `--refresh-pr` still fails preflight if unrelated uncommitted changes exist, which is a common operator state when running an audit. The proposed integration test covers only the narrow clean-after-restore case.  \n   **Suggestion:** Keep the ordered `--restore` then `--refresh-pr` recommendation, but explicitly state that unrelated changes must be committed, stashed, or otherwise cleared before the PR command. Add a test with an unrelated dirty file to ensure the finding text does not imply that restoring the evidence files alone guarantees preflight success.\n\n4. **Category:** approach  \n   **Severity:** low  \n   **Finding:** \u201cCanonical commit object\u201d is required in prose, but the plan does not explicitly say that the banner uses the canonical SHA returned by `git rev-parse --verify`, rather than the supplied lexical input. If abbreviated hashes are accepted by `safe_commit`, stamping the input rather than the resolved object weakens the stated canonical-provenance guarantee and can make evidence less stable or ambiguous.  \n   **Suggestion:** Have the resolver return the full verified commit ID and pass that returned value to `stamp_fixed_point`. Add a test using an accepted abbreviated SHA, asserting that the emitted `base=` is the full resolved commit hash.\n\nOverall, the design is appropriately narrow and reuses the established fixed-point stamping and verification mechanisms well. It should be revised to prevent an absent adoption record from silently becoming a current-HEAD claim and to make failed partial stamping non-mutating.  \nSHIPWRIGHT_VERDICT: revise",
+      "via": "openrouter",
+      "status": "success"
+    },
+    "deepseek": {
+      "feedback": "- **Category:** integration / risk  \n  **Severity:** medium  \n  **Finding:** The plan relies on the adopt script\u2019s Step H to parse the JSON output of `--stamp-adopted` (status, base, stamped) and branch accordingly\u2014commit only on success or `no_base`, abort on `partial` or non\u2011zero exit. The exact decision logic (exit\u2011code handling, JSON parsing, distinguishing `no_base` from errors) is not detailed, and an oversight here could allow a half\u2011stamped commit to be pushed.  \n  **Suggestion:** Include a precise specification of the subprocess invocation and response\u2011parsing sequence in the mini\u2011plan, and cover it with an integration test that mocks the tool\u2019s output to verify the adopt script\u2019s guarding behaviour.\n\n- **Category:** edge\u2011case  \n  **Severity:** low  \n  **Finding:** The stamp tool\u2019s `--stamp-adopted` mode prints JSON to stdout, but any incidental INFO/WARNING output (e.g., from file operations) could leak to stdout and corrupt the JSON if not properly separated, making parsing fragile.  \n  **Suggestion:** Explicitly audit the tool to ensure all non\u2011result output goes to stderr, and verify in the adopt script\u2019s subprocess call that stdout is read exclusively for JSON and stderr is captured for logging. A quick smoke test with injected log messages would confirm.\n\n**Overall assessment:** The approach is thorough, addresses all three gaps with careful handling of edge cases, and avoids reintroducing deterministic churn. The remaining integration detail is low\u2011risk but should be pinned down to guarantee the commit gating works perfectly.\n\nSHIPWRIGHT_VERDICT: approve",
+      "via": "openrouter",
+      "status": "success"
+    }
+  },
+  "verdicts": {
+    "openai": "revise",
+    "deepseek": "approve"
+  },
+  "statuses": {
+    "openai": "success",
+    "deepseek": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: deepseek=approve, openai=revise"
+  }
+}

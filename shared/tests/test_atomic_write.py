@@ -171,3 +171,115 @@ def test_replace_failure_cleans_tmp_and_raises(tmp_path, monkeypatch):
     # No temp cruft left behind, and the target was never created.
     assert list(tmp_path.iterdir()) == []
 
+
+# --- POSIX mode is carried across the publish (trg-dc013d82, finding 20) ---
+#
+# ``mkstemp`` creates 0600 and ``os.replace`` publishes the SOURCE inode, mode
+# included — so without the carrier every rewrite silently stripped a file's
+# group and other permissions, and git recorded nothing (only the x-bit is
+# tracked). These run natively; the real ``chmod`` semantics only exist on
+# POSIX, and CI is ubuntu-latest so this leg always runs there.
+
+_POSIX_ONLY = pytest.mark.skipif(
+    os.name == "nt", reason="real POSIX mode bits (CI runs this leg on ubuntu)",
+)
+
+
+@_POSIX_ONLY
+def test_rewrite_keeps_the_files_existing_mode(tmp_path):
+    """AC-1: a 0o400 file rewritten through the primitive is still 0o400.
+
+    0o400 is deliberately MORE restrictive than mkstemp's 0600, not less. It
+    discriminates exactly as well — the bug leaves 0600, the fix leaves 0400 —
+    while granting nobody any access, so proving the carry never requires a test
+    to create a group- or world-readable file (CodeQL py/overly-permissive-file
+    is a SECURITY query, and this repo's config disarms none of those). That the
+    permissive bits are carried too is pinned, without any real chmod, by
+    test_carries_the_destinations_exact_mode_bits.
+    """
+    import stat as _stat  # noqa: PLC0415
+
+    target = tmp_path / "cfg.json"
+    durable_atomic_write(target, "first")
+    os.chmod(target, 0o400)
+
+    durable_atomic_write(target, "second")
+
+    assert target.read_text(encoding="utf-8") == "second"
+    assert _stat.S_IMODE(target.stat().st_mode) == 0o400
+
+
+@_POSIX_ONLY
+def test_first_write_keeps_mkstemps_private_mode(tmp_path):
+    """AC-2: a brand-new file stays 0600 — the rule is *carry*, never *invent*.
+
+    Pinned so "keep the mode a file already had" cannot quietly grow into
+    "guess a mode for one that has none", which would need the process umask
+    and a global mutation to read it.
+    """
+    import stat as _stat  # noqa: PLC0415
+
+    target = tmp_path / "fresh.json"
+    durable_atomic_write(target, "new")
+
+    assert _stat.S_IMODE(target.stat().st_mode) == 0o600
+
+
+# AC-3 (a refused mode carry never costs the write) lives in
+# test_durable_publish.py, beside the ``os`` stand-in it needs — importing that
+# helper across test modules would be a worse coupling than the move.
+
+
+def test_a_raising_carrier_still_unlinks_the_temp(tmp_path, monkeypatch):
+    """Defence in depth, NOT AC-3 — read the previous test for that.
+
+    ``carry_destination_mode`` swallows OS refusals, so it cannot raise today.
+    This pins what happens if a future edit ever lets it: the temp file is still
+    removed and the error propagates, so a caller never finds ``path`` pointing
+    at a half-written temp. It deliberately asserts the write FAILS, which is
+    why it must not be mistaken for AC-3's evidence (found in Stage-1 review).
+    """
+    import lib.atomic_write as aw  # noqa: PLC0415
+
+    def boom(fd, dest):
+        raise OSError("mode carry blew up")
+
+    monkeypatch.setattr(aw, "carry_destination_mode", boom)
+    with pytest.raises(OSError, match="mode carry blew up"):
+        durable_atomic_write(tmp_path / "f.txt", "data")
+    assert list(tmp_path.iterdir()) == [], "a raising carrier must still unlink the temp"
+
+
+def test_mode_is_carried_before_the_fsync(tmp_path, monkeypatch):
+    """The mode change must be covered by the SAME fsync that lands the bytes.
+
+    Applying it after the file fsync would leave the metadata change resting on
+    the best-effort parent-directory fsync, which does not cover the inode —
+    weakening the one guarantee this primitive exists to provide (external plan
+    review, openai high).
+    """
+    import lib.atomic_write as aw  # noqa: PLC0415
+
+    calls: list[str] = []
+    real_fsync = os.fsync
+    real_carry = aw.carry_destination_mode
+
+    def spy_carry(fd, dest):
+        calls.append("carry")
+        return real_carry(fd, dest)
+
+    def spy_fsync(fd):
+        calls.append("fsync")
+        return real_fsync(fd)
+
+    monkeypatch.setattr(aw, "carry_destination_mode", spy_carry)
+    monkeypatch.setattr(aw.os, "fsync", spy_fsync)
+
+    target = tmp_path / "f.txt"
+    durable_atomic_write(target, "first")
+    calls.clear()
+    durable_atomic_write(target, "second")
+
+    assert "carry" in calls and "fsync" in calls
+    assert calls.index("carry") < calls.index("fsync")
+

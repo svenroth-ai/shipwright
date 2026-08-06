@@ -9,14 +9,19 @@ let a real loss slip through).
 
 * FIX A (LF outbox): the producer writes the gitignored outbox as LF on every
   platform, then the real sweep delivers it exactly-once.
-* FIX B (GC by id): a delivered append is GC'able even if re-serialized with a
-  different key order / whitespace; a non-delivered id always survives; status
-  lines still text-match; missing origin → nothing GC'd.
+* FIX B (GC membership): a delivered append is GC'able even if re-serialized with
+  a different key order / whitespace; a non-delivered line always survives;
+  missing origin → nothing GC'd. FIX B originally implemented this as an ID match,
+  which ignored content and destroyed refreshed records (audit finding 14) while
+  leaving re-serialized status lines un-GC-able forever (finding 27); it is now a
+  CANONICAL-FORM match, which is what these tests always claimed to check.
+  See ``lib/sweep_gc.py`` and ``test_sweep_gc_canonical.py``.
 * FIX F (swept-count comment): exercised implicitly by the swept-count asserts.
 """
 
 from __future__ import annotations
 
+import json
 import sys
 from pathlib import Path
 
@@ -75,7 +80,8 @@ def test_producer_writes_outbox_as_lf(repo) -> None:
 
 
 # --------------------------------------------------------------------------- #
-# FIX B — GC drops by APPEND ID (serialization-drift-immune), not raw text
+# FIX B — GC drops by CANONICAL FORM (serialization-drift-immune), not raw text
+#         and not by id alone (audit findings 14 + 27)
 # --------------------------------------------------------------------------- #
 
 
@@ -89,18 +95,24 @@ def _append(iid: str, *, title: str = "x", extra: str = "") -> str:
 
 
 def test_gc_drops_delivered_append_even_if_reserialized(repo) -> None:
-    """FIX B core: origin carries the delivered append with ONE serialization;
-    the outbox carries the SAME id re-serialized differently (an added key → the
-    bytes differ, the id does not). The GC must still drop the outbox copy because
-    membership is by id, NOT raw text.
+    """FIX B core: origin carries the delivered append with ONE serialization; the
+    outbox carries the SAME record re-serialized (different key order + whitespace,
+    same key/value set). The GC must still drop the outbox copy, because membership
+    is by CANONICAL FORM, not raw text.
 
     The branch (from main) already carries the re-serialized form so the verbatim
     sweep does not double the id at materialize — this test isolates the GC's
-    delivered-membership decision, which is the only thing FIX B changed."""
+    delivered-membership decision.
+
+    The fixture used to add a ``detail`` key and call that a re-serialization, so
+    it pinned finding 14's loss as expected behaviour while never exercising the
+    key-order/whitespace immunity this docstring claims. Corrected here; the
+    content-differs case is its own test below."""
     work, _ = repo
-    reserialized = _append("trg-deliv", extra=',"detail":"re-serialized"')
     canonical = _append("trg-deliv")
-    assert reserialized != canonical  # precondition: bytes differ, id identical
+    reserialized = h.reserialize(canonical)
+    assert reserialized != canonical  # precondition: bytes differ...
+    assert json.loads(reserialized) == json.loads(canonical)  # ...record does not
     # The BRANCH/origin tracked log carries the re-serialized form (so materialize
     # sees the id once); but origin's delivered form is the CANONICAL bytes.
     h.seed_tracked(work, h.item("trg-aaaa"), reserialized)
@@ -120,10 +132,32 @@ def test_gc_drops_delivered_append_even_if_reserialized(repo) -> None:
 
     result = sweep_outbox_to_branch(work, wt, default_branch="main")
 
-    # The re-serialized outbox line is recognised as delivered (by id) → GC'd,
-    # even though its raw bytes never appear in origin.
+    # The re-serialized outbox line is recognised as delivered (same canonical
+    # form) → GC'd, even though its raw bytes never appear in origin.
     assert result.gc_dropped == 1, result.to_dict()
     assert reserialized not in h.outbox_lines(work)
+
+
+def test_gc_keeps_same_id_when_content_differs(repo) -> None:
+    """Audit finding 14 — the case the corrected fixture above used to occupy.
+
+    Same id, DIFFERENT content (an added key). Only the OLD version is in origin,
+    so the outbox copy is the only place the new content exists — the outbox is
+    gitignored, so dropping it destroys the record while the sweep reports success.
+    It must SURVIVE."""
+    work, _ = repo
+    original = _append("trg-deliv")
+    refreshed = _append("trg-deliv", extra=',"detail":"refreshed by a foreign producer"')
+    h.seed_tracked(work, h.item("trg-aaaa"), original)
+    wt = h.make_worktree(work, "f14-content")
+    p = work / h.OUTBOX
+    p.parent.mkdir(parents=True, exist_ok=True)
+    p.write_text(refreshed + "\n", encoding="utf-8", newline="\n")
+
+    result = sweep_outbox_to_branch(work, wt, default_branch="main")
+
+    assert result.gc_dropped == 0, result.to_dict()
+    assert refreshed in h.outbox_lines(work), "refreshed content was destroyed"
 
 
 def test_gc_keeps_undelivered_id(repo) -> None:
@@ -178,21 +212,27 @@ def test_gc_missing_origin_drops_nothing(repo) -> None:
 
 
 def test_sweep_gc_membership_unit() -> None:
-    """Pure membership unit (no git): id-match for appends, text for status,
-    unparseable → text path, and an undelivered id survives."""
+    """Pure membership unit (no git): canonical-form match for any JSON object,
+    raw text for anything without a canonical form, undelivered lines survive.
+
+    Broader coverage of the canonical rule (duplicate keys, scalars, the numeric
+    boundary, total-ness) lives in ``test_sweep_gc_canonical.py``."""
     a_canon = _append("trg-1")
-    a_reser = _append("trg-1", extra=',"detail":"x"')
+    a_changed = _append("trg-1", extra=',"detail":"x"')
     status = '{"event":"status","id":"trg-1","newStatus":"dismissed"}'
     origin = {a_canon.strip(), status, "garbage-not-json"}
-    ids, text = sweep_gc.parse_delivered(origin)
-    assert ids == {"trg-1"}
-    assert status in text and "garbage-not-json" in text
-    # Re-serialized append: delivered by id.
-    assert sweep_gc.is_delivered(a_reser.strip(), ids, text) is True
+    canonical, text = sweep_gc.parse_delivered(origin)
+    assert len(canonical) == 2  # the append AND the status now carry canonical forms
+    assert text == {"garbage-not-json"}
+    # Genuinely re-serialized append: delivered (FIX B's actual goal).
+    assert sweep_gc.is_delivered(h.reserialize(a_canon), delivered_canonical=canonical, delivered_text=text) is True
+    # SAME id, different content: NOT delivered — audit finding 14.
+    assert sweep_gc.is_delivered(a_changed.strip(), delivered_canonical=canonical, delivered_text=text) is False
     # Undelivered append id: survives.
-    assert sweep_gc.is_delivered(_append("trg-9").strip(), ids, text) is False
-    # Status line: text-matched.
-    assert sweep_gc.is_delivered(status, ids, text) is True
+    assert sweep_gc.is_delivered(_append("trg-9").strip(), delivered_canonical=canonical, delivered_text=text) is False
+    # Status line: canonical-matched, and now also across re-serialization (F27).
+    assert sweep_gc.is_delivered(status, delivered_canonical=canonical, delivered_text=text) is True
+    assert sweep_gc.is_delivered(h.reserialize(status), delivered_canonical=canonical, delivered_text=text) is True
     # Unparseable line present in text: delivered; absent: survives.
-    assert sweep_gc.is_delivered("garbage-not-json", ids, text) is True
-    assert sweep_gc.is_delivered("other-garbage", ids, text) is False
+    assert sweep_gc.is_delivered("garbage-not-json", delivered_canonical=canonical, delivered_text=text) is True
+    assert sweep_gc.is_delivered("other-garbage", delivered_canonical=canonical, delivered_text=text) is False

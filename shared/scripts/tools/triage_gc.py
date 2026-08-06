@@ -1,242 +1,79 @@
 #!/usr/bin/env python3
 """Compact the triage backlog by dropping pure machine-churn dismissals.
 
-Sub-iterate B of campaign ``2026-06-05-track-triage-jsonl`` — a one-off
-maintenance tool run **before** ``.shipwright/triage.jsonl`` becomes
-git-tracked (sub-iterate C), so the churn produced by background producers
-does not enter permanent history.
-Policy (decided 2026-06-05): **machine-churn ONLY**. The dismissed pile is
-~half *human-curated* (hand-written reasons: re-prioritisations, "resolved
-by PR #N", supersessions) — that is real audit history and is **kept**. An
-item is droppable iff its final status is ``dismissed`` AND it was dismissed
-by a background producer (``statusBy`` in the producer set) AND its
-``statusReason`` is an exact machine auto-resolve token. Both conditions
-must hold, so a human dismissal that happens to reuse a token survives.
+Sub-iterate B of campaign ``2026-06-05-track-triage-jsonl`` — a maintenance tool
+for the git-tracked ``.shipwright/triage.jsonl``.
 
-``promoted`` and open (``triage``/``snoozed``) items are never dropped.
-The triage store is an append-only event log (``append`` + ``status``
-events, both carrying ``id``). "Dropping" an item means rewriting the log
-without that item's lines — a destructive compaction. Therefore:
+The engine (policy vocabulary, plan, apply, post-rewrite validation) lives in
+:mod:`lib.triage_gc_core`, and what happens to main's git state afterwards in
+:mod:`lib.triage_gc_publish`; both were extracted so this file has room for the
+warning below. Every name is re-exported here, so ``import triage_gc`` and
+``from tools import triage_gc`` are unchanged.
+
+Policy (decided 2026-06-05): **machine-churn ONLY** — see
+:mod:`lib.triage_gc_core` for the rule and why human dismissals are kept.
+
+"Dropping" an item means rewriting an append-only log without that item's lines —
+a destructive compaction. Therefore:
 
 - **dry-run is the default**; ``--apply`` is required to rewrite.
 - ``--apply`` writes a ``.bak`` backup first and re-validates the result
   (header intact, no orphan ``status`` events, no droppable item survives).
+- ``--apply`` **always** reports whether it left the tracked log uncommitted, and
+  ``--commit`` folds the compaction into a ``chore(triage)`` commit. Without that,
+  the rewrite silently disables the outbox delivery channel for every subsequent
+  iterate (audit 2026-07-28, finding 16).
 """
 
 from __future__ import annotations
 
 import argparse
-import json
-import os
+import subprocess
 import sys
 from pathlib import Path
 
-# Make the triage store importable whether invoked from the repo root or
+# Make lib/ + the triage store importable whether invoked from the repo root or
 # elsewhere (mirrors the audit_detector lazy-import shim).
 _SHARED_SCRIPTS = Path(__file__).resolve().parents[1]
 if str(_SHARED_SCRIPTS) not in sys.path:
     sys.path.insert(0, str(_SHARED_SCRIPTS))
 
-import triage  # noqa: E402
-
-# Pure background-producer dismissers (NOT user/operator/webui/cli/manual).
-MACHINE_DISMISSERS = frozenset({
-    "sbomGenerator",
-    "auditDetector",
-    "driftDetector",
-    "f05Detector",  # legacy: F0.5 triage producer removed 2026-06-13; kept for historical dismissals
-    "githubImporter",
-    "complianceBacklog",
-    "phaseQualityBacklog",  # phase_quality _triage_bundle producer
-    "testEvidence",         # shipwright-compliance test_evidence producer
-    "acceptedRiskConverger",  # tools/accepted_risks_converge (register -> surfaces)
-})
-
-# Exact machine auto-resolve tokens. A human free-text reason (even one that
-# starts with one of these) will not match — exact equality only.
-MACHINE_REASONS = frozenset({
-    "sbomResolved",
-    "auditResolved",  # legacy: pre-bundle audit dismissals; no current emitter (audit now → complianceBacklog)
-    "driftResolved",
-    "f05Resolved",  # legacy: F0.5 triage producer removed 2026-06-13; kept for historical churn
-    "githubResolved",
-    "complianceResolved",
-    "complianceRefreshed",  # stale-signature backlog rollup superseded (triage_bundle ~L165)
-    "phaseQualityResolved",
-    "phaseQualityRefreshed",  # F30: stale-signature phase-quality rollup superseded (phase_quality/_triage_bundle ~L268)
-    "testEvidenceResolved",
-    "prChecksResolved",  # github_triage PR-CI: a tracked PR's failing checks went green (resolve_pr_ci, by=githubImporter). prMerged/prClosed are terminal lifecycle markers, kept as history (not *Resolved churn).
-    "acceptedRiskResolved",  # accepted_risks_converge: a local-scanner finding is covered by a register acceptance. Recurring — ingest suppression cannot retract an item filed BEFORE the acceptance, and each re-scan refiles it once dismissed, so this is churn and must be GC'd.
-})
+from lib.worktree_isolation import GitError, main_repo_root  # noqa: E402
+# Re-export surface: the engine moved to lib/triage_gc_core.py and the git-state
+# half to lib/triage_gc_publish.py (extracted to keep this CLI under the 300-LOC
+# guideline). Historical importers — shared/tests/test_triage_gc.py,
+# test_accepted_risk_convergence.py, alert_convergence's registry note — resolve
+# these names from THIS module and must keep doing so.
+from lib.triage_gc_core import (  # noqa: E402,F401
+    MACHINE_DISMISSERS,
+    MACHINE_REASONS,
+    GcApply,
+    _resolve_tracked_only,
+    _union_droppable_ids,
+    _validate_after,
+    apply_gc,
+    apply_gc_reporting,
+    is_machine_churn,
+    plan_gc,
+)
+from lib.triage_gc_publish import (  # noqa: E402,F401
+    DIVERGENCE_CONSEQUENCE,
+    commit_compaction,
+    commit_preflight,
+    describe_post_gc_divergence,
+)
 
 
-def is_machine_churn(item: dict) -> bool:
-    """True iff ``item`` is a pure producer auto-resolve dismissal."""
-    return (
-        item.get("status") == "dismissed"
-        and item.get("statusBy") in MACHINE_DISMISSERS
-        and item.get("statusReason") in MACHINE_REASONS
-    )
+def _main_root_or(root: Path) -> Path:
+    """The MAIN repo root for ``root``, or ``root`` itself when it is not a git repo.
 
-
-def _resolve_tracked_only(project_root: Path | str) -> list[dict]:
-    """Resolve items from the TRACKED store only (ignore the outbox).
-
-    D1: GC compacts the durable tracked log; the gitignored outbox is the D2
-    sweep's concern. Mirrors ``triage.read_all_items`` resolution (append +
-    last-status-wins) but over a single file so GC never touches outbox state.
-    """
-    resolved: dict[str, dict] = {}
-    for raw in triage._iter_raw_lines_at(triage._triage_path(project_root)):
-        if not isinstance(raw, dict):
-            continue
-        event = raw.get("event")
-        if event == "append":
-            item_id = raw.get("id")
-            if not isinstance(item_id, str):
-                continue
-            item = {k: v for k, v in raw.items() if k != "event"}
-            item["statusBy"] = None
-            item["statusReason"] = None
-            resolved[item_id] = item
-        elif event == "status":
-            item_id = raw.get("id")
-            if not isinstance(item_id, str) or item_id not in resolved:
-                continue
-            item = resolved[item_id]
-            new_status = raw.get("newStatus")
-            if new_status in triage.STATUSES:
-                item["status"] = new_status
-            item["statusBy"] = raw.get("by")
-            item["statusReason"] = raw.get("reason")
-    return list(resolved.values())
-
-
-def plan_gc(project_root: Path | str) -> dict:
-    """Compute the GC plan without writing anything.
-
-    Operates on the TRACKED store only (D1) — the outbox is GC'd by the D2
-    sweep, never by this CLI.
-
-    Returns ``{"drop_ids": set, "dropped": [item...], "kept_count": int,
-    "total": int}``.
-    """
-    items = _resolve_tracked_only(project_root)
-    dropped = [i for i in items if is_machine_churn(i)]
-    drop_ids = {i["id"] for i in dropped}
-    return {
-        "drop_ids": drop_ids,
-        "dropped": dropped,
-        "kept_count": len(items) - len(dropped),
-        "total": len(items),
-    }
-
-
-def _union_droppable_ids(project_root: Path | str) -> set[str]:
-    """Ids that are machine-churn by UNION residence (tracked ∪ outbox,
-    last-status-wins — :func:`triage.read_all_items`).
-
-    The under-lock recompute in :func:`apply_gc` uses THIS, not the tracked-only
-    :func:`plan_gc`, so a concurrent re-open routed to the gitignored OUTBOX
-    (idle-main-with-origin) flips the item out of the set and survives. The
-    report stays tracked-only (D1); the intersection keeps it an upper bound.
-    """
-    return {
-        i["id"] for i in triage.read_all_items(project_root)
-        if is_machine_churn(i)
-    }
-
-
-def _validate_after(project_root: Path | str, drop_ids: set[str]) -> None:
-    """Fail loudly if the rewrite produced an inconsistent TRACKED log.
-
-    D1: GC compacts the tracked store only, so validation reads the tracked
-    path directly (NOT the union ``read_all_items`` / ``_iter_raw_lines``) —
-    otherwise an OUTBOX-resident status whose append GC just dropped from the
-    tracked log would false-trip the orphan-status check, and an outbox item
-    would count as a survivor.
-    """
-    raw = triage._iter_raw_lines_at(triage._triage_path(project_root))
-    if not raw or raw[0].get("schema") != "triage":
-        raise RuntimeError("post-GC validation: header missing or malformed")
-    append_ids = {r.get("id") for r in raw if r.get("event") == "append"}
-    for r in raw:
-        if r.get("event") == "status" and r.get("id") not in append_ids:
-            raise RuntimeError(
-                f"post-GC validation: orphan status event for id={r.get('id')}"
-            )
-        if r.get("id") in drop_ids:
-            raise RuntimeError(
-                f"post-GC validation: dropped id={r.get('id')} still present"
-            )
-    survivors = {i["id"] for i in _resolve_tracked_only(project_root)}
-    if survivors & drop_ids:
-        raise RuntimeError("post-GC validation: a dropped item resolved as surviving")
-
-
-def apply_gc(project_root: Path | str, drop_ids: set[str], backup: bool = True) -> Path:
-    """Rewrite the log dropping the machine-churn lines. Returns the backup path
-    (or the live path when ``backup`` is False). Holds the store's file lock.
-
-    F19 (TOCTOU): the ``drop_ids`` argument is the plan the CALLER computed
-    outside the lock (the dry-run report / ``main()`` short-circuit). The drop
-    decision is **recomputed under the lock** here over UNION residence (tracked
-    ∪ outbox, last-status-wins), intersected with the caller's plan, so a status
-    flip appended BETWEEN plan and apply is honored regardless of which file it
-    landed in — the tracked log (WebUI/producer on a branch) OR the gitignored
-    outbox (idle-main-with-origin re-open). A re-opened item is no longer
-    machine-churn under the fresh union plan and is NOT dropped. We still rewrite
-    only the tracked file (D1); intersecting with the caller's set keeps the
-    operator-facing report (printed from the stale tracked-only plan) an upper
-    bound — apply never drops MORE than the report announced, only same-or-fewer.
-
-    Refuses to rewrite if any non-blank line is malformed JSON — the tolerant
-    reader would otherwise silently compact a corrupt line away (data loss). The
-    rewrite is atomic (temp file + ``os.replace``) so a crash never truncates the
-    live log; the ``.bak`` backup is written first.
-    """
-    path = triage._triage_path(project_root)
-    with triage._FileLock(triage._lock_path(project_root)):
-        original_text = path.read_text(encoding="utf-8") if path.exists() else ""
-        for n, line in enumerate(original_text.splitlines(), start=1):
-            if line.strip():
-                try:
-                    json.loads(line)
-                except json.JSONDecodeError as exc:
-                    raise RuntimeError(
-                        f"triage_gc: refusing to rewrite — malformed JSON at line "
-                        f"{n} ({exc.msg}); fix or remove it first"
-                    )
-        # Recompute UNDER the lock over union residence (see docstring): a
-        # concurrent re-open in the tracked log OR the gitignored outbox flips
-        # the item out of the set and survives. Closes the a1-6/F19 outbox-route
-        # gap. Intersect with the caller's plan; rewrite only the tracked file.
-        fresh_drop_ids = _union_droppable_ids(project_root)
-        effective_drop_ids = fresh_drop_ids & set(drop_ids)
-        # Tracked store only — never read/rewrite the gitignored outbox (D1).
-        raw = triage._iter_raw_lines_at(triage._triage_path(project_root))
-        kept = [
-            r for r in raw
-            if r.get("event") not in ("append", "status") or r.get("id") not in effective_drop_ids
-        ]
-        backup_path = path.with_suffix(path.suffix + ".bak")
-        if backup and path.exists():
-            backup_path.write_text(original_text, encoding="utf-8")
-        new_text = "\n".join(
-            json.dumps(r, ensure_ascii=False, separators=(",", ":")) for r in kept
-        ) + "\n"
-        tmp = path.with_suffix(path.suffix + ".tmp")
-        with open(tmp, "w", encoding="utf-8") as fp:
-            fp.write(new_text)
-            fp.flush()
-            os.fsync(fp.fileno())
-        os.replace(tmp, path)
-        # Validate against the SET WE ACTUALLY DROPPED (F19): an id present in the
-        # caller's stale plan but re-opened (so excluded from effective_drop_ids)
-        # is legitimately still present — validating against the stale plan would
-        # false-fail. Run under the lock so no concurrent writer interleaves.
-        _validate_after(project_root, effective_drop_ids)
-    return backup_path if backup else path
+    Not a hard failure: the GC engine works on any directory holding a triage store,
+    and only the git-state half needs a repo. Falling back keeps a non-git run working
+    exactly as before while a worktree run stops committing to the iterate branch."""
+    try:
+        return main_repo_root(root)
+    except (GitError, OSError, subprocess.TimeoutExpired):
+        return root
 
 
 def _safe(value: object) -> str:
@@ -279,7 +116,14 @@ def main(argv: list[str] | None = None) -> int:
         "--no-backup", action="store_true",
         help="skip the .bak backup on --apply (NOT recommended)",
     )
+    ap.add_argument(
+        "--commit", action="store_true",
+        help="with --apply: also commit the compaction, so the outbox sweep keeps "
+             "working. Refuses if the triage log already carried uncommitted drift.",
+    )
     args = ap.parse_args(argv)
+    if args.commit and not args.apply:
+        ap.error("--commit requires --apply (there is nothing to commit without a rewrite)")
 
     plan = plan_gc(args.project_root)
     if not args.apply:
@@ -289,11 +133,59 @@ def main(argv: list[str] | None = None) -> int:
         _print_report(plan, applied=False)
         print("triage_gc: nothing to drop — no rewrite performed.")
         return 0
-    backup_path = apply_gc(args.project_root, plan["drop_ids"], backup=not args.no_backup)
+
+    if args.commit:
+        # `--commit` is MAIN-TREE ONLY. The store half compacts whatever root it is
+        # pointed at, but committing that file from inside an iterate worktree would
+        # put a `chore(triage): compact ...` commit on somebody's feature branch. The
+        # first attempt at this resolved the main root for the git half and kept the
+        # store on --project-root, which is incoherent: it compacted one file and
+        # then compared the OTHER against it. Refuse instead (code review).
+        resolved = args.project_root.resolve()
+        if _main_root_or(args.project_root).resolve() != resolved:
+            print(f"triage_gc: --commit refused, nothing was rewritten — {resolved} is not the "
+                  "main repo root (a compaction commit here would land on this worktree's "
+                  "branch). Re-run --commit from the main tree, or drop --commit.")
+            return 2
+        # ALL preconditions BEFORE the destructive rewrite. Deciding afterwards left
+        # a detached HEAD / mid-rebase / staged-index run compacted-but-uncommitted:
+        # exactly the divergence --commit exists to prevent (code review).
+        blocked = commit_preflight(args.project_root)
+        if blocked:
+            print(f"triage_gc: --commit refused, nothing was rewritten — {_safe(blocked)}.")
+            print("  Re-run without --commit to compact anyway (you must then commit it "
+                  "yourself), or clear the condition above first.")
+            return 2
+
+    try:
+        applied = apply_gc_reporting(args.project_root, plan["drop_ids"],
+                                     backup=not args.no_backup)
+    except RuntimeError as exc:
+        # apply_gc refuses on malformed JSON or a log that moved under the lock. It is
+        # a refusal, not a crash — print it rather than dumping a traceback out of the
+        # one tool this change rewrote for legibility (code review).
+        print(f"triage_gc: {_safe(exc)}")
+        return 1
     _print_report(plan, applied=True)
     if not args.no_backup:
-        print(f"  backup:        {backup_path}")
-    return 0
+        print(f"  backup:        {applied.backup_path}")
+
+    committed = True
+    if args.commit:
+        committed, note = commit_compaction(args.project_root, applied.written_text,
+                                            applied.dropped)
+        print(f"  {_safe(note)}")
+
+    # Probed on the tree whose file we rewrote — not a resolved main root, which
+    # would report on a file this run never touched.
+    warning = describe_post_gc_divergence(args.project_root)
+    if warning:
+        print()
+        print(_safe(warning))
+    # A refused/failed/timed-out --commit is NOT success: the log is compacted and the
+    # delivery channel is off, and automation reading only the exit code would take
+    # that for a clean run (external code review).
+    return 0 if committed else 3
 
 
 if __name__ == "__main__":

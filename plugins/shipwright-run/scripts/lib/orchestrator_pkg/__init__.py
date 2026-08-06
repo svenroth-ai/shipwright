@@ -30,11 +30,13 @@ from .build_progress import get_build_progress
 from .compliance_runner import run_compliance_update
 from .config_factory import build_pipeline, create_config
 from .config_io import (
+    RunConfigUnreadable,
     is_legacy_multi_session,
     is_single_session,
     is_v2_config,
     load_run_config,
     mode_rejection,
+    read_run_config,
     save_run_config,
 )
 from .constants import (
@@ -73,6 +75,8 @@ __all__ = [
     "get_next_step",
     "is_v2_config",
     "load_run_config",
+    "read_run_config",
+    "RunConfigUnreadable",
     "is_single_session",
     "is_legacy_multi_session",
     "mode_rejection",

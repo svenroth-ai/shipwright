@@ -1,11 +1,16 @@
-"""External LLM review client — DeepSeek + OpenAI.
+"""External LLM review client — DeepSeek + OpenAI, plus an operator-owned gateway.
 
 Shared by plan and build plugins for external code/plan review.
 
-Supports three routes:
-1. OpenRouter (recommended): single OPENROUTER_API_KEY for both models
-2. Direct OpenAI: DeepSeek is unavailable; GPT keeps its direct route
-3. Skip: no keys → review skipped gracefully
+Supports four routes:
+1. Gateway (operator-owned, exclusive when configured — see
+   external_review_gateway.py): any OpenAI-compatible gateway via
+   SHIPWRIGHT_REVIEW_GATEWAY_* env vars. No identity lock, no ZDR check.
+2. OpenRouter / 3. Direct OpenAI (identity-locked — see
+   external_review_default_legs.py): single OPENROUTER_API_KEY covers both
+   models; OPENAI_API_KEY alone runs the GPT arm only (DeepSeek always
+   requires the approved OpenRouter ZDR route).
+4. Skip: no keys → review skipped gracefully
 
 Usage — BOTH import names are live and supported (see the import block below):
 
@@ -47,31 +52,32 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 #     and possibly binding a second copy of the module this file exists to keep
 #     in lockstep. The plugin cache is documented to go stale that way.
 try:  # bare: this directory is on sys.path
-    from external_review_degraded import (
-        DEFAULT_TIMEOUT_SECONDS,
-        MAX_OUTPUT_TOKENS,
-        classify_reply,
-        openai_finish_reason,
-    )
+    from external_review_degraded import DEFAULT_TIMEOUT_SECONDS
     from external_review_config import load_review_config
-    from external_review_routing import openrouter_extra_body, resolve_reviewer_model
+    from external_review_default_legs import (
+        review_openai as _review_openai,
+        review_openrouter as _review_openrouter,
+    )
+    from external_review_gateway import (
+        gateway_configured,
+        redact_all_configured_secrets,
+        review_gateway as _review_gateway,
+    )
 except ModuleNotFoundError as exc:  # package-qualified: shared/scripts is on sys.path
     if exc.name != "external_review_degraded":
         raise
-    from lib.external_review_degraded import (  # type: ignore[no-redef]
-        DEFAULT_TIMEOUT_SECONDS,
-        MAX_OUTPUT_TOKENS,
-        classify_reply,
-        openai_finish_reason,
-    )
+    from lib.external_review_degraded import DEFAULT_TIMEOUT_SECONDS  # type: ignore[no-redef]
     from lib.external_review_config import load_review_config  # type: ignore[no-redef]
-    from lib.external_review_routing import (  # type: ignore[no-redef]
-        openrouter_extra_body,
-        resolve_reviewer_model,
+    from lib.external_review_default_legs import (  # type: ignore[no-redef]
+        review_openai as _review_openai,
+        review_openrouter as _review_openrouter,
+    )
+    from lib.external_review_gateway import (  # type: ignore[no-redef]
+        gateway_configured,
+        redact_all_configured_secrets,
+        review_gateway as _review_gateway,
     )
 
-
-OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1"
 
 # Identity-locked model bindings. The shipping config must match exactly.
 DEFAULT_MODELS = {
@@ -81,87 +87,14 @@ DEFAULT_MODELS = {
 }
 
 
-def _review_openrouter(
-    content: str, context: str, system_prompt: str, user_prompt: str,
-    config: dict, model_key: str, timeout: int,
-) -> dict:
-    """Send content for review via OpenRouter."""
-    api_key = os.environ.get("OPENROUTER_API_KEY")
-    if not api_key:
-        return {"status": "skipped", "reason": "No OPENROUTER_API_KEY set"}
-
-    try:
-        from openai import OpenAI
-
-        model_name = resolve_reviewer_model(config, model_key, "openrouter")
-        extra_body = openrouter_extra_body(model_key, config)
-
-        client = OpenAI(api_key=api_key, base_url=OPENROUTER_BASE_URL, timeout=timeout)
-        prompt = user_prompt.replace("{CONTENT}", content).replace("{CONTEXT}", context)
-
-        response = client.chat.completions.create(
-            model=model_name,
-            messages=[
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": prompt},
-            ],
-            max_tokens=MAX_OUTPUT_TOKENS,
-            extra_body=extra_body,
-        )
-        return classify_reply(
-            response.choices[0].message.content,
-            openai_finish_reason(response),
-            via="openrouter",
-        )
-
-    except ImportError:
-        return {"status": "error", "reason": "openai package not installed"}
-    except Exception as e:
-        return {"status": "error", "reason": str(e)}
-
-def _review_openai(
-    content: str, context: str, system_prompt: str, user_prompt: str,
-    config: dict, timeout: int,
-) -> dict:
-    """Send content for review to OpenAI (direct API)."""
-    api_key = os.environ.get("OPENAI_API_KEY")
-    if not api_key:
-        return {"status": "skipped", "reason": "No OPENAI_API_KEY set"}
-
-    try:
-        from openai import OpenAI
-
-        model_name = resolve_reviewer_model(config, "openai", "direct")
-        client = OpenAI(api_key=api_key, timeout=timeout)
-        prompt = user_prompt.replace("{CONTENT}", content).replace("{CONTEXT}", context)
-
-        response = client.chat.completions.create(
-            model=model_name,
-            messages=[
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": prompt},
-            ],
-            # gpt-5.x rejects `max_tokens` on the direct Chat Completions API;
-            # `max_completion_tokens` is the supported replacement.
-            max_completion_tokens=MAX_OUTPUT_TOKENS,
-        )
-        return classify_reply(
-            response.choices[0].message.content,
-            openai_finish_reason(response),
-            via="direct",
-        )
-
-    except ImportError:
-        return {"status": "error", "reason": "openai package not installed"}
-    except Exception as e:
-        return {"status": "error", "reason": str(e)}
-
-
 def detect_provider() -> str:
     """Detect which review provider to use.
 
-    Fallback chain: openrouter → direct → none
+    Fallback chain: gateway → openrouter → direct → none. Gateway is
+    exclusive once configured — see module docstring and ``run_review``.
     """
+    if gateway_configured():
+        return "gateway"
     if os.environ.get("OPENROUTER_API_KEY"):
         return "openrouter"
     if os.environ.get("OPENAI_API_KEY"):
@@ -210,7 +143,26 @@ def run_review(
     provider = detect_provider()
     reviews: dict[str, dict] = {}
 
-    if provider == "openrouter":
+    if provider == "gateway":
+        # Exclusive — no fallback to openrouter/direct below (module docstring).
+        with ThreadPoolExecutor(max_workers=2) as executor:
+            futures = {
+                executor.submit(
+                    _review_gateway, content, context, system_prompt, user_prompt, "1", timeout
+                ): "model-1",
+                executor.submit(
+                    _review_gateway, content, context, system_prompt, user_prompt, "2", timeout
+                ): "model-2",
+            }
+            for future in as_completed(futures):
+                name = futures[future]
+                try:
+                    reviews[name] = future.result()
+                except Exception as e:
+                    # review_gateway() redacts internally; this is defense in depth only.
+                    reviews[name] = {"status": "error", "reason": redact_all_configured_secrets(str(e))}
+
+    elif provider == "openrouter":
         with ThreadPoolExecutor(max_workers=2) as executor:
             futures = {
                 executor.submit(

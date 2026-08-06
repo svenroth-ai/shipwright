@@ -24,6 +24,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))  # for _sweep_helpers
 import pytest  # noqa: E402
 
 import _sweep_helpers as h  # noqa: E402
+from lib import main_tree_guards as mtg  # noqa: E402
 from lib import reconcile_triage as rt  # noqa: E402
 from lib import sweep_drift as sd  # noqa: E402
 from lib import sweep_outbox as so  # noqa: E402
@@ -62,7 +63,10 @@ def test_reconcile_commit_timeout_returns_a_structured_error(repo, monkeypatch) 
     monkeypatch.setattr(rt, "run_git_soft", wrapper)
     result = rt.reconcile_main_triage(repo)
     assert result.status == "error", result.to_dict()
-    assert result.reason == "commit_timeout", result.to_dict()
+    assert result.reason.startswith("commit_timeout"), result.to_dict()
+    # NOT rolled back (git's state is unknown after a kill), but the reason must say what
+    # that costs (audit 2026-07-28 f16): a silent `commit_timeout` is what hid this.
+    assert "main_tracked_diverged" in result.reason and "not rolled back" in result.reason
 
 
 def test_reconcile_read_failure_is_structured_not_raised(repo, monkeypatch) -> None:
@@ -105,9 +109,12 @@ def test_unreadable_head_refuses_instead_of_claiming_no_blob(repo, monkeypatch) 
     retryable refusal.
     """
     h.seed_tracked(repo, h.item("trg-seed"))
-    monkeypatch.setattr(sd, "run_git_soft",
+    # ``_head_lines`` reads the blob through ``run_git_bytes_soft`` since
+    # iterate-2026-08-06-gc-decode-parity. The fail-safe is unchanged; pin it on the
+    # seam that now carries it.
+    monkeypatch.setattr(sd, "run_git_bytes_soft",
                         lambda *a, **k: subprocess.CompletedProcess(
-                            ["git"], TIMEOUT_RETURNCODE, "", "timed out"))
+                            ["git"], TIMEOUT_RETURNCODE, b"", b"timed out"))
     plan = sd.plan_main_tracked_drift(repo, repo / ".shipwright" / "triage.outbox.jsonl")
     assert plan.status == "refused", plan
     assert "head_unreadable" in plan.reason, plan.reason
@@ -198,8 +205,9 @@ def test_op_in_progress_says_yes_when_only_the_gitpath_probe_times_out(repo, mon
 
 
 def test_reconcile_op_in_progress_gitpath_timeout_also_fails_closed(repo, monkeypatch) -> None:
-    """Same gap, same fix, in the module whose commit lands in the MAIN tree."""
-    real = rt.run_git_soft
+    """Same gap, same fix, in the module whose commit lands in the MAIN tree. The predicate
+    moved to ``lib.main_tree_guards``, so the patch target moved with it."""
+    real = mtg.run_git_soft
 
     def only_gitpath_times_out(args, **kwargs):
         if args[:2] == ["rev-parse", "--git-path"]:
@@ -207,8 +215,9 @@ def test_reconcile_op_in_progress_gitpath_timeout_also_fails_closed(repo, monkey
                 ["git", *args], TIMEOUT_RETURNCODE, "", "timed out")
         return real(args, **kwargs)
 
-    monkeypatch.setattr(rt, "run_git_soft", only_gitpath_times_out)
+    monkeypatch.setattr(mtg, "run_git_soft", only_gitpath_times_out)
     assert rt._op_in_progress(repo) is True
+    assert rt._op_in_progress is mtg.op_in_progress   # the re-export is the same object
 
 
 def test_has_drift_timeout_is_an_error_not_no_drift(repo, monkeypatch) -> None:
@@ -233,10 +242,11 @@ def test_has_drift_timeout_is_an_error_not_no_drift(repo, monkeypatch) -> None:
 
 def test_head_line_set_timeout_is_an_error_not_an_empty_head(repo, monkeypatch) -> None:
     """Row 44's other half: an empty set would count every existing line as newly
-    folded and misreport the total."""
-    monkeypatch.setattr(rt, "run_git_soft",
+    folded and misreport the total. Reads the blob through ``run_git_bytes_soft``
+    since iterate-2026-08-06-gc-decode-parity; the fail-safe is unchanged."""
+    monkeypatch.setattr(rt, "run_git_bytes_soft",
                         lambda *a, **k: subprocess.CompletedProcess(
-                            ["git"], TIMEOUT_RETURNCODE, "", "timed out"))
+                            ["git"], TIMEOUT_RETURNCODE, b"", b"timed out"))
     assert rt._head_line_set(repo) is None
 
 

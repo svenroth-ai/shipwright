@@ -29,8 +29,96 @@ from .constants import (
 from run_config_store import atomic_write_json, durable_read_text  # noqa: E402
 
 
+# The error contract lives in its own module (five importers, and this one is at
+# its LOC budget); re-exported so callers keep a single import site.
+from .run_config_errors import MAX_DETAIL_CHARS, RunConfigUnreadable  # noqa: E402,F401
+
+
+def _read_parse_shape(path: Path) -> tuple[dict[str, Any], bool]:
+    """The whole read boundary, once: read -> decode -> parse -> is-it-an-object.
+
+    Returns ``(config, present)``; raises :class:`RunConfigUnreadable`. Shared by
+    BOTH readers so the tolerant and strict paths can never drift on what counts
+    as absent, malformed or usable — they differ only in how they DISPOSE of a
+    failure, never in how they DETECT one.
+
+    Absence is decided by the READ (``FileNotFoundError``), never by a preceding
+    ``path.exists()``: a check-then-read pair can straddle a concurrent delete.
+    No migration happens here — see :func:`read_run_config`.
+    """
+    try:
+        # durable_read_text, not path.read_text: this read is deliberately
+        # UNLOCKED, so a concurrent writer's os.replace can leave the entry
+        # delete-pending and the open fails with PermissionError on Windows.
+        #
+        # utf-8-SIG, matching the five sibling readers moved there for this
+        # reason (CHANGELOG: "Config readers now uniformly tolerate a UTF-8 BOM").
+        # It decodes plain UTF-8 identically; without it a BOM — emitted by
+        # PowerShell 5.1 `Out-File -Encoding utf8` and VS Code's `utf8bom` on this
+        # repo's primary platform — fails at "line 1 column 1" on a file that
+        # looks valid in any editor, so fail-closed would turn an INVISIBLE byte
+        # into a wedged run.
+        raw = durable_read_text(path, encoding="utf-8-sig")
+    except (FileNotFoundError, NotADirectoryError):
+        # NotADirectoryError = a FILE sits where project_root should be, so the
+        # config genuinely is not there. `Path.exists()` (the old absence test)
+        # answered False for it, and the tolerant reader must keep degrading.
+        return {}, False  # Valid: first run, no config yet
+    except UnicodeDecodeError as exc:
+        raise RunConfigUnreadable(
+            path, f"{type(exc).__name__}: {exc}", "decode", original=exc) from exc
+    except OSError as exc:
+        raise RunConfigUnreadable(
+            path, f"{type(exc).__name__}: {exc}", "io", original=exc) from exc
+
+    try:
+        config = json.loads(raw)
+    except json.JSONDecodeError as exc:
+        raise RunConfigUnreadable(path, str(exc), "parse", original=exc) from exc
+    except RecursionError as exc:
+        # json.loads raises this — NOT JSONDecodeError — past its nesting limit.
+        # Left unclassified it would bypass the taxonomy AND defeat recovery.
+        # MemoryError and other process-level failures are deliberately not caught.
+        raise RunConfigUnreadable(
+            path, "JSON nested too deeply to parse", "parse", original=exc) from exc
+
+    if not isinstance(config, dict):
+        # `null`, `[]`, `123`, `"str"` all parse cleanly, so this never reached
+        # the JSONDecodeError arm: the falsy ones demoted the run with NO warning
+        # at all, and the truthy ones crashed on `.get` with a bare AttributeError.
+        raise RunConfigUnreadable(
+            path, f"top-level JSON is {type(config).__name__}, expected an object", "shape",
+        )
+    return config, True
+
+
+def read_run_config(
+    project_root: Path, *, migrate: bool = True,
+) -> tuple[dict[str, Any], bool]:
+    """STRICT read: returns ``(config, present)``, or raises ``RunConfigUnreadable``.
+
+    Used by every path that can ADVANCE or CHANGE a run, so an unusable config
+    stops it rather than being guessed at. ``present`` is what separates an absent
+    config from one that merely holds ``{}`` — a truthiness test cannot, and a
+    file containing ``{}`` was therefore bootstrapped over.
+
+    **Total at the read boundary only.** Migration runs after it and its own
+    failures propagate UNCHANGED: a ``KeyError`` there is a bug in our migration
+    and an ``OSError`` from the write it performs is a disk fault. Relabelling
+    either as "your config is corrupt" would send the operator to delete a file
+    that is fine.
+    """
+    config, present = _read_parse_shape(project_root / CONFIG_NAME)
+    if not present or not migrate:
+        return config, present
+    # Lazy import to avoid a circular dep: legacy_migration imports config_io.
+    from .legacy_migration import _migrate_legacy_pipeline_if_needed
+    return _migrate_legacy_pipeline_if_needed(project_root, config), True
+
+
 def load_run_config(project_root: Path, *, migrate: bool = True) -> dict[str, Any]:
-    """Load orchestrator config (with implicit legacy migration).
+    """TOLERANT read (with implicit legacy migration) — for callers that only
+    DISPLAY. Anything that can advance or change a run uses ``read_run_config``.
 
     ``migrate=False`` returns the RAW parsed config and runs NO legacy
     migration — so it performs none of the migration's UNLOCKED
@@ -39,29 +127,29 @@ def load_run_config(project_root: Path, *, migrate: bool = True) -> dict[str, An
     ``phase_tasks`` — the only keys migration rewrites) use it to avoid an
     out-of-lock write; the migration still runs on the next in-lock load
     (audit WP2/F11 residual window).
+
+    Damaged CONTENT (``parse`` / ``shape``) warns and degrades to ``{}``. A
+    ``decode`` or ``io`` failure re-raises the ORIGINAL exception, not the
+    wrapper: ``durable_read_text`` is deliberately strict and
+    ``test_read_gives_up_loudly_rather_than_inventing_an_empty_config`` pins that
+    a decode failure is never turned into an empty config. Re-typing it would
+    regress that pin just as surely as swallowing it.
     """
-    path = project_root / CONFIG_NAME
-    if not path.exists():
-        return {}  # Valid: first run, no config yet
     try:
-        # durable_read_text, not path.read_text: this read is deliberately
-        # UNLOCKED, so a concurrent writer's os.replace can leave the entry
-        # delete-pending and the open fails with PermissionError on Windows.
-        config = json.loads(durable_read_text(path))
-    except json.JSONDecodeError as exc:
+        config, _present = read_run_config(project_root, migrate=migrate)
+    except RunConfigUnreadable as exc:
+        if exc.category in ("decode", "io"):
+            # self.original, not __cause__: see RunConfigUnreadable.__init__.
+            raise (exc.original if exc.original is not None else exc) from None
         print(json.dumps({
             "warning": "Corrupt orchestrator config",
             "error_category": "validation",
             "what_failed": f"Parse {CONFIG_NAME}",
-            "exception": str(exc),
+            "exception": exc.detail,
             "alternative": "Delete the file and re-run /shipwright-run to recreate",
         }), file=sys.stderr)
         return {}
-    if not migrate:
-        return config
-    # Lazy import to avoid a circular dep: legacy_migration imports config_io.
-    from .legacy_migration import _migrate_legacy_pipeline_if_needed
-    return _migrate_legacy_pipeline_if_needed(project_root, config)
+    return config
 
 
 def save_run_config(project_root: Path, config: dict[str, Any]) -> None:
@@ -90,9 +178,33 @@ def is_v2_config(config: dict[str, Any]) -> bool:
 # records the explicit literal `mode: "single_session"`.** Nothing is inferred.
 #
 # `gate_policy.read_run_config_mode` applies the identical explicit-literal test,
-# so the orchestrator loop and the gate mechanism can never disagree about
-# whether a run is being driven — the conflation that made the old
-# multi_session-as-fallback model dangerous to remove.
+# so on any config BOTH readers can read, the orchestrator loop and the gate
+# mechanism agree about whether a run is being driven — the conflation that made
+# the old multi_session-as-fallback model dangerous to remove.
+#
+# Scoped to CONTENT on purpose, and the scope is now narrow enough to be worth
+# stating precisely. The gap this comment used to name — `read_run_config_mode`
+# guarding only `(JSONDecodeError, OSError)`, so `shape` and `decode` escaped it —
+# was closed in iterate-2026-08-06-shared-read-run-config-mode-guard. The two now
+# agree on every content class: decode, parse (incl. the `RecursionError` past
+# json's nesting limit), shape, and the UTF-8 BOM.
+#
+# ONE divergence remains, and it is on the READ leg, not the content: this module
+# reads via `durable_read_text`, which retries for READ_RETRY_BUDGET_SECONDS past
+# the delete-pending `PermissionError` a concurrent `os.replace` causes on Windows;
+# `read_run_config_mode` uses a plain `Path.read_text` and answers INERT_MODE on the
+# first one. So a config being rewritten underneath them can still split the two.
+# Left open deliberately (a sibling import inside `shared/scripts/lib` is invisible
+# to the usual pytest roots, and that file is at its LOC cap) — stated, not papered
+# over with an unconditional parity claim.
+#
+# Note the disposal asymmetry too: the STRICT reader raises `RunConfigUnreadable`,
+# `load_run_config` degrades `parse`/`shape` to `{}` and re-raises the ORIGINAL
+# exception for `decode`/`io`, and the reporter degrades everything to INERT_MODE.
+#
+# They cannot be unified (`shared/` must not import a plugin), so the lockstep is by
+# convention: a new failure mode classified HERE must be handled THERE in the same
+# diff, or the two silently start answering differently again.
 # --------------------------------------------------------------------------- #
 
 # NOTE: there is deliberately NO ``run_mode()`` reporter here. One existed briefly and

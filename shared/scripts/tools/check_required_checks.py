@@ -40,7 +40,7 @@ from lib.required_checks_drift import (  # noqa: E402
     dedup_key,
     render_drift,
 )
-from triage import append_triage_item_idempotent  # noqa: E402
+from triage import append_triage_item_idempotent, should_route_to_outbox  # noqa: E402
 
 
 _HTTP_STATUS_RE = re.compile(r"\(HTTP (\d{3})\)")
@@ -238,7 +238,18 @@ def main(argv: list[str] | None = None) -> int:
         dedup_key=dedup_key(result, target),
         match_commit=False,
         window_seconds=None,
-        to_outbox=True,
+        # Routed, not hardcoded. `to_outbox=True` was harmless while a human typed
+        # this on main; wiring it to a SessionStart hook
+        # (iterate-2026-08-05-wire-local-guard-scripts) made it load-bearing,
+        # because `resolve_project_root` is cwd-based and a session opened inside
+        # `.worktrees/<slug>` resolves the WORKTREE. The outbox there is gitignored,
+        # `sweep_outbox_to_branch` only ever reads the MAIN root's outbox, and the
+        # tree is deleted after the PR merges — so the finding was written to a
+        # buffer nothing drains and then destroyed. Every sibling producer routes
+        # conditionally (`check_drift`, `triage_add`, `github_triage/consumer`,
+        # `_triage_bundle`); on an iterate branch that means the tracked log, which
+        # F6 stages and which ships in the PR.
+        to_outbox=should_route_to_outbox(root),
     )
     return 0
 

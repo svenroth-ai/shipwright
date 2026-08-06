@@ -12,7 +12,7 @@ Shipwright is an AI-powered SDLC framework built on Claude Code. It is structure
 |---|---|---|---|---|---|---|
 | FR-01.01 | Adopted | /shipwright-run | Must | Run the whole delivery pipeline end to end in one conversation — requirements, design, planning, build, test, release notes and hosting, in that order — so a change moves from a plain description to delivered work without the operator driving each phase by hand. Security scanning and audit evidence are deliberately not steps of it: the first runs on its own, the second happens alongside every phase. | code | unit (inferred) |
 | FR-01.02 | Adopted | /shipwright-project | Must | Turn a project description into well-scoped, individually deliverable requirements, and write the starting guidance an assistant needs to work inside that project. | code | unit (inferred) |
-| FR-01.03 | Adopted | /shipwright-plan | Must | Produce an implementation plan from research and an optional interview, structured so the build phase can consume it one section at a time, tests first. No plan reaches the build phase unreviewed: two independent external language models review it by default, and declining them obliges a structured self-review in their place. | code | unit (inferred) |
+| FR-01.03 | Adopted | /shipwright-plan | Must | Produce an implementation plan from research and an optional interview, structured so the build phase can consume it one section at a time, tests first. No plan reaches the build phase unreviewed: two independent external language models review it by default, and declining them obliges a structured self-review in their place. The same review step asks a second, separate question — whether the work should be built at all — of the same two reviewers, over a short brief that withholds the plan's own reasons for rejecting the alternatives. | code | unit (inferred) |
 | FR-01.04 | Adopted | /shipwright-design | Should | Turn requirements into clickable mockups — standalone screens and the flows between them — that can be refined by conversation before any production code is written. | code | e2e (inferred) |
 | FR-01.05 | Adopted | /shipwright-build | Must | Turn one planned section into working code that does what the section specified and matches its design mockup — one section at a time, on its own branch. The engineering discipline it works under — test-first, code review, safe conventional commits — is the framework's, applied here rather than owned here. | code | unit (inferred) |
 | FR-01.06 | Adopted | /shipwright-test | Must | Run the project's tests at every level it has — unit, integration, database, end-to-end and smoke — and produce one record in which each level carries an explicit outcome or a stated reason it did not run. Compare the built screens back to their mockups, hold the project to the performance budgets it declared, and report which of the declared pairs of code that write and read the same stored format appear to have no test covering them. | code | unit (inferred) |
@@ -192,6 +192,20 @@ _Where the work detail lives_ at the end of this document.
   the prerequisites it names is enough to implement it — a builder does not have
   to read the other sections to know what to do, because the section names what
   it depends on, the files it expects to touch, and how it will be tested.
+- (E) Given the outside reviewers are available, when the plan is reviewed, then
+  they are asked a second question as well — whether the work should be built at
+  all, and what the smallest thing that would do is — and they are asked it over
+  a short summary of the problem and the options rather than over the plan, with
+  the plan's own reasons for rejecting those options left out, so their answer
+  is not a restatement of the author's.
+- (E) Given that second question is being asked, when the summary is assembled,
+  then handing the reviewers the plan in its place is refused outright rather
+  than quietly accepted, because a review of the plan reads identically to a
+  review of the summary and would be trusted as one.
+- (E) Given either reviewer answers that the work should not be built this way,
+  when the plan is declared finished, then the run stops and asks a person to
+  choose — take the alternative, keep the plan with the reason written down, or
+  rework it — and the choice is on record before any code exists.
 - (E) Given an outside review raised findings, when the plan is declared
   finished, then each finding has been either folded into the plan or recorded
   with the reason it was rejected — a review whose findings were only counted has
@@ -611,6 +625,21 @@ _Where the work detail lives_ at the end of this document.
   read from the project rather than asserted by whoever wrote the record. Where it
   cannot be established, the artifact says so instead of showing a plausible-looking
   value.
+- (E) Given a project is onboarded, when its first evidence documents are produced,
+  then they name the state of the code they were built from — taken from what
+  onboarding recorded, not from wherever the project happens to stand by the time
+  the documents are written, which is a different thing whenever the onboarding was
+  resumed or retried. Where that state cannot be established the documents name
+  none, and onboarding still finishes: a project with nothing recorded yet is a
+  legitimate thing to onboard, and an unstated origin is honest where a guessed one
+  is not.
+- (E) Given an evidence document is reported as no longer matching the state it was
+  produced from, when a way to put it right is offered, then that way can actually
+  resolve the case at hand: re-producing the document where it merely drifted
+  locally, and — where the recorded copy itself is the one left behind — the ordered
+  steps that get a corrected copy recorded, including clearing unrelated unfinished
+  work first. An offered remedy that cannot complete from the state being reported
+  sends the reader in a circle.
 - (E) Given a completed change that says it affects behaviour but names no
   requirement and gives no reason for naming none, when the cross-check audit
   runs, then it is reported together with a suggested command to fix it, without
@@ -848,6 +877,17 @@ _Where the work detail lives_ at the end of this document.
 - (E) Given onboarding derives a requirement's name and description from the
   code it read, when they are written, then they name a capability and describe
   it in plain business language, rather than describing what the code does.
+- (E) Given an operator's egress policy requires all outbound traffic through
+  an OpenAI-compatible gateway, when onboarding's Layer-3 external review runs,
+  then it can be routed through that gateway instead of OpenRouter or direct
+  OpenAI — and if the gateway is unreachable or misconfigured, the review fails
+  rather than silently falling back to a direct call the egress policy forbids.
+- (E) Given onboarding has produced the audit evidence for a project, when it
+  hands over, then it says that this evidence is brought up to date at releases
+  and on request rather than continuously, and names both ways to bring it up to
+  date — so whoever relies on it learns that it ages at the moment they are
+  handed it, instead of from an audit months later. The same statement is left
+  behind in the project's own guidance, because a handover is read once.
 
 <a id="fr-0114"></a>
 ### FR-01.14 — Triage Inbox
