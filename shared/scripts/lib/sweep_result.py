@@ -28,7 +28,9 @@ class SweepResult:
     already origin-delivered; ``quarantined`` is the count of orphan-status lines moved to
     the quarantine log this run; ``adopted`` is the count of undelivered main-tree TRACKED
     drift appends routed into the outbox this run (see :mod:`lib.sweep_drift`); ``errors``
-    holds validator messages for ``invalid``.
+    holds validator messages for ``invalid``; ``dedup_notes`` holds whatever
+    :mod:`lib.triage_dedup` reported while materializing the log — a same-id ``append``
+    collapsed keep-last, or a probable 32-bit id collision it refused to collapse.
     """
 
     status: str
@@ -39,6 +41,7 @@ class SweepResult:
     adopted: int = 0
     commit_subject: str = ""
     errors: list[str] = field(default_factory=list)
+    dedup_notes: list[str] = field(default_factory=list)
 
     def to_dict(self) -> dict:
         return {
@@ -50,7 +53,19 @@ class SweepResult:
             "adopted": self.adopted,
             "commit_subject": self.commit_subject,
             "errors": self.errors,
+            "dedup_notes": self.dedup_notes,
         }
+
+
+def with_adopt_note(adopt_note: str, reason: str) -> str:
+    """``reason``, carrying any adoption note along.
+
+    Lives here rather than in the orchestrator because it is the same rule this module
+    exists for: what a human is told. A ``main_tracked_salvage_*`` note can name the
+    ONLY surviving copy of salvaged lines, and every post-adoption error return in the
+    sweep used to overwrite it with its own message (code review).
+    """
+    return f"{reason} (adoption: {adopt_note})" if adopt_note else reason
 
 
 def sweep_warnings(result: SweepResult) -> list[str]:
@@ -64,9 +79,13 @@ def sweep_warnings(result: SweepResult) -> list[str]:
     if result.status in ("invalid", "error", "skipped"):
         notes.append(f"sweep-outbox {result.status}: {result.errors or result.reason}")
     elif result.reason.startswith("main_tracked_"):
-        # A successful sweep that could not finish the main-tree repair (e.g. HEAD moved
-        # mid-restore). No loss — the drift is buffered and the next sweep completes it —
-        # but the operator hears about it rather than reading "committed" and assuming all is well.
+        # A successful sweep that could not finish the main-tree repair. MOST of these are
+        # self-healing (HEAD moved mid-restore → the drift is buffered and the next sweep
+        # completes it) and the operator merely hears about it instead of reading
+        # "committed". But the `main_tracked_salvage_*` reasons are NOT that class: there
+        # the content survives only in a gitignored salvage file that no replay collects,
+        # so the reason itself says "do not delete it" / "review before deleting". Do not
+        # read this whole branch as benign.
         notes.append(f"sweep-outbox {result.reason}")
     if result.quarantined:
         notes.append(
@@ -78,4 +97,9 @@ def sweep_warnings(result: SweepResult) -> list[str]:
             f"sweep-outbox adopted {result.adopted} undelivered main-tree drift append(s) "
             f"into the outbox — they ride this PR to origin"
         )
+    # Dedup notes carry ids and counts only, never a title or a reason, so they honour
+    # the COUNTS-ONLY rule above. They are reported on a SUCCESSFUL sweep too: a keep-last
+    # collapse is benign and must not block, but the path that can drop a record is
+    # exactly the one that must not be silent (audit 2026-07-28, finding 25).
+    notes.extend(f"sweep-outbox dedup: {note}" for note in result.dedup_notes)
     return notes

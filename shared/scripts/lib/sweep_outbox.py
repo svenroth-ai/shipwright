@@ -49,7 +49,7 @@ from lib.git_base import HOOK_GIT_TIMEOUT, TIMEOUT_RETURNCODE, run_git_soft  # n
 from lib.sweep_drift import commit_main_tracked_drift, plan_main_tracked_drift  # noqa: E402
 from lib.sweep_gc import delivered_membership, is_delivered  # noqa: E402
 from lib.sweep_quarantine import append_quarantine, decide as quarantine_decide, quarantine_path  # noqa: E402
-from lib.sweep_result import SweepResult, sweep_warnings  # noqa: E402,F401  (re-export: callers import both from here)
+from lib.sweep_result import SweepResult, sweep_warnings, with_adopt_note as _with  # noqa: E402,F401  (re-export: callers import both from here)
 from lib.sweep_text import normalize_lines, read_text_verbatim  # noqa: E402
 
 
@@ -169,7 +169,8 @@ def sweep_outbox_to_branch(
         )
         if decision.action == "block":
             # Nothing has been mutated yet — not the outbox, not main's tracked log.
-            return SweepResult(status="invalid", errors=decision.errors)
+            # Dedup notes ride in ``errors``, not ``dedup_notes`` (``sweep_warnings`` prints both).
+            return SweepResult(status="invalid", errors=decision.errors + decision.warnings)
 
         # The decision holds: NOW make the adoption real (durable outbox write, then the
         # git restore of main's tracked log).
@@ -177,6 +178,9 @@ def sweep_outbox_to_branch(
         if plan.status == "adoptable":
             done = commit_main_tracked_drift(plan, main_root, outbox_path)
             adopted, adopt_note = done.adopted, done.reason
+            if done.status == "error":  # tracked log MISSING — no replay can finish it,
+                # unlike every `buffered` reason, which rides along in `reason` below.
+                return SweepResult(status="error", reason=done.reason, adopted=adopted)
 
         quarantined = 0
         if decision.action == "quarantine":
@@ -206,7 +210,7 @@ def sweep_outbox_to_branch(
                 worktree_triage, deduped_text.encode('utf-8', errors='surrogateescape'))
             add = run_git_soft(["add", "--", TRIAGE_LOG], cwd=worktree_path)
             if add.returncode != 0:
-                return SweepResult(status="error", reason=f"add_failed: {add.stderr.strip()[:300]}", adopted=adopted)
+                return SweepResult(status="error", adopted=adopted, reason=_with(adopt_note, f"add_failed: {add.stderr.strip()[:300]}"))
             # FIX D (D2 review cascade): gate the commit on a REAL staged delta.
             # ``deduped_text != worktree_raw`` can be EOL-only (materialized LF vs
             # a CRLF-checked-out log) that git's index — governed by autocrlf —
@@ -220,9 +224,7 @@ def sweep_outbox_to_branch(
             # means "there IS a staged delta" — that would read an unknown state as a
             # definite one and commit on the strength of it.
             if staged.returncode == TIMEOUT_RETURNCODE:
-                return SweepResult(
-                    status="error", reason="git_timeout: diff --cached", adopted=adopted,
-                )
+                return SweepResult(status="error", adopted=adopted, reason=_with(adopt_note, "git_timeout: diff --cached"))
             if staged.returncode != 0:
                 subject = f"chore(triage): sweep {swept} outbox append(s) into branch"
                 # The commit fires the bloat pre-commit hook, whose cold ``uv run``
@@ -234,9 +236,9 @@ def sweep_outbox_to_branch(
                     cwd=worktree_path, timeout=HOOK_GIT_TIMEOUT,
                 )
                 if commit.returncode == TIMEOUT_RETURNCODE:
-                    return SweepResult(status="error", reason="commit_timeout", adopted=adopted)
+                    return SweepResult(status="error", adopted=adopted, reason=_with(adopt_note, "commit_timeout"))
                 if commit.returncode != 0:
-                    return SweepResult(status="error", reason=f"commit_failed: {commit.stderr.strip()[:300]}", adopted=adopted)
+                    return SweepResult(status="error", adopted=adopted, reason=_with(adopt_note, f"commit_failed: {commit.stderr.strip()[:300]}"))
                 committed_subject = subject
 
         # --- GC (still under the lock): drop ONLY origin-delivered lines ----
@@ -286,11 +288,11 @@ def sweep_outbox_to_branch(
             # report no_change unless the GC alone trimmed the outbox.
             status = "committed" if gc_dropped else "no_change"
             return SweepResult(
-                status=status, reason=adopt_note or ("" if gc_dropped else "no_branch_change"),
-                swept=0, gc_dropped=gc_dropped, quarantined=quarantined, adopted=adopted,
+                status=status, reason=_with(adopt_note, "" if gc_dropped else "no_branch_change"),
+                swept=0, gc_dropped=gc_dropped, quarantined=quarantined, adopted=adopted, dedup_notes=decision.warnings,
             )
 
         return SweepResult(
             status="committed", swept=swept, gc_dropped=gc_dropped, reason=adopt_note,
-            quarantined=quarantined, adopted=adopted, commit_subject=committed_subject,
+            quarantined=quarantined, adopted=adopted, commit_subject=committed_subject, dedup_notes=decision.warnings,
         )

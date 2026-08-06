@@ -1,0 +1,477 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-08-06-triage-store-write-path",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-06T09:49:29.338743+00:00",
+      "disposition": null,
+      "recorded_by": "iterate-step-7",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 13,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "The plan folds `dedup_triage_lines` warnings into a block’s `errors` (via `sweep_quarantine._materialize` / `decide`). If the sweep treats any errors as blocking, the new “keep‑both” collision warning will prevent the block from being delivered, turning a safety‑surface into a delivery‑break.",
+          "suggestion": "Clarify that these warnings are surfaced without making the block undeliverable (e.g., attach them as informational notices, not as blocking errors). The card’s requirement is “surface them,” not “block delivery.”",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The `reconcile_triage` rollback (fix 3) verifies the file equals the written bytes before restoring. A writer that appends between the equality check and the restore will have its new data silently lost — a TOCTOU window that the design does not call out.",
+          "suggestion": "Document this residual window explicitly, or consider an atomic rename‑based restore (write old bytes to a temp file, then `os.rename`; if the original changed in the meantime the rename will succeed but the new content is lost — still a window, but at least acknowledge it). The defect card is specifically about silent failure, so naming the window is acceptable.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "The salvage‑rename for finding 23 (fix 6) plans to “put the file back” if `git checkout` fails after the `os.replace`. If that restore‑back also fails (e.g., disk full, permission change), the log path is left missing.",
+          "suggestion": "Add a fallback that copies the salvage content back atomically or logs a fatal error so the operator knows the file is gone. A missing `.shipwright/triage.jsonl` could be worse than a salvage‑file artefact.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "In `dedup_triage_lines` the identity‑anchor fallback includes `title`, which is user‑controlled text. No injection or length risk, but it means the “agree / disagree” decision can be influenced by any change to the title, even typo fixes, which could spuriously flag a collision warning.",
+          "suggestion": "Document this in the module docstring so that operators know why two versions of the same item might be kept. No code change needed.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "The extraction plan relies on re‑exports to maintain existing import paths, but does not mention updating any explicit import‑lint rules or package‑level `__init__.py` files that may gate imports.",
+          "suggestion": "Verify that the re‑exported names remain reachable from the old locations for all callers (including tests and any external scripts), and run the current suite with no changes other than the one contract‑fix test edit.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "apply_gc` is still described as a read/compute/write sequence without an explicit concurrency protocol. `durable_atomic_write` makes each replacement durable and atomic, but does not prevent a cooperating append from landing after GC reads the log and before GC replaces it. In that case GC can overwrite a newly appended record; the `.bak` may faithfully preserve the earlier bytes but not the file state actually replaced.",
+          "suggestion": "Hold the canonical `_FileLock` across reading the source bytes, deriving the compacted content, writing the backup, replacing the tracked log, and—when requested—staging/committing it. For the non-cooperating web UI writer, revalidate a source byte fingerprint immediately before replacement and abort/report rather than overwrite if it changed. Read bytes once and derive the `surrogateescape` text view from those bytes so the backup and compaction input are the same version.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "The proposed `reconcile_main_triage` rollback addresses only the worktree file. A failed `git commit` commonly leaves the rewritten file staged because `git add` occurred before commit; restoring only `.shipwright/triage.jsonl` leaves index/worktree disagreement and may still cause drift logic or later commands to behave unexpectedly. This is especially likely for hook rejection, author/config failures, or a failed signing step.",
+          "suggestion": "Define rollback as restoring both the file and the index entry for this path, while preserving unrelated index state. Since the precondition is “nothing staged,” restore the path to its pre-rewrite index/HEAD state using a path-limited operation only after verifying the worktree bytes are still the tool’s bytes. Report separately if either worktree restoration or index restoration cannot be completed. Do not attempt this on timeout, but explicitly report that both worktree and index state may be indeterminate.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The salvage-rename failure recovery can itself destroy a late write unless restoration is conditional. After moving the live file to the salvage path, `git checkout` may fail after creating or modifying a new tracked-file path. Blindly replacing that new path with the salvage file to “put the file back” would overwrite a writer that opened the path after the initial rename—the very race this change is intended to reduce.",
+          "suggestion": "Make restoration conditional on the post-rename path being absent or matching the expected checkout-created bytes/state. If it differs, retain both artifacts, do not overwrite either, and return a clearly actionable buffered/diverged result. Use a unique salvage filename, retain it on every ambiguous failure path, and ensure cleanup only occurs after outbox adoption and restoration have both succeeded.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "“A late append found in the salvage is adopted into the outbox” needs a precise classification rule. The salvage may contain the entire prior tracked log, an append, truncation/replacement by a non-cooperating writer, malformed JSONL, or lines already present in the outbox. Treating every difference as a late append could duplicate old records or convert corruption/replacement into apparently valid delivery input.",
+          "suggestion": "Compare salvage bytes to the last known tracked snapshot using an append-only prefix check. Only adopt a well-formed suffix that is demonstrably appended after that snapshot; otherwise preserve the salvage artifact and return a repair-required result. Route outbox adoption through its existing locking/deduplication and durable-write mechanism, and make adoption idempotent so retrying after a partial failure cannot duplicate events.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "triage_gc --apply --commit` can accidentally commit pre-existing unstaged changes to `.shipwright/triage.jsonl`. The stated reused guards reject staged changes but apparently allow unstaged changes; applying compaction and then `git add <path>` would stage both the user’s prior edit and the GC rewrite. Holding the lock alone does not solve the pre-existing-change case.",
+          "suggestion": "Before `--commit`, require the tracked triage path itself to be clean relative to HEAD, or explicitly establish and validate a pre-apply path fingerprint/diff that proves the only staged change is GC’s output. Continue allowing unrelated unstaged files if that is existing reconcile behavior, but stage and commit only the validated triage path. If the triage path was already modified, refuse with a remedy rather than silently folding it into `chore(triage)`.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The identity-anchor rule is underspecified for partially populated and malformed append records. In particular, “agree on `originalTs` (falling back to `source`+`kind`+`title`)\" could collapse distinct records that happen to share a timestamp, and does not state whether empty, absent, type-mismatched, or normalized values count as agreement. This is a data-retention rule, so ambiguity is risky.",
+          "suggestion": "Specify a deterministic, conservative predicate: only use `originalTs` when it is present and valid on both records, and require the intended full anchor fields if timestamps are not uniquely sufficient in the existing schema. Treat missing/invalid/incompatible anchor fields as collision/keep-both, never as permission to collapse. Add focused tests for missing anchors, equal timestamps with different metadata, malformed JSON lines, and a duplicate generated by a normal union merge.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "Folding all dedup warnings into sweep quarantine `block.errors` may turn benign, expected keep-last duplicate collapse into a delivery-stopping condition. This meets “surface warnings,” but can create a new persistent delivery wedge for records that are safe to deduplicate, contrary to the change’s broader objective of avoiding silent channel disablement.",
+          "suggestion": "Preserve the required loud blocking behavior for probable collisions that are kept and require `triage_repair.py`, but distinguish it from the informational warning for an anchor-matching keep-last collapse. Surface the latter in the normal operator-visible result/log without quarantining unless the existing policy explicitly requires all dedup warnings to block delivery.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "The composition test is necessary but does not cover the newly introduced failure-sensitive behavior: definitive commit failure with unchanged versus changed worktree bytes, timeout behavior, rename failure, checkout failure after rename, and outbox-adoption retry. These are the paths where the change can still lose data or leave delivery disabled.",
+          "suggestion": "Add focused fault-injection tests around filesystem replacement and git subprocess results in addition to the real-repository composition test. Verify bytes and index state, emitted operator messages, retained salvage artifacts, and that retries are idempotent. Also run an import smoke test for both old re-export paths and new module paths to catch circular-import regressions caused by moving shared helpers.  Overall, extraction is a reasonable way to satisfy the LOC constraint, and the proposed warning, rollback, collision-retention, and salvage directions are sound. The plan needs explicit read-modify-write locking/fingerprinting, index-aware rollback, and conditional salvage recovery before it is safe for this write path. SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-08-06T06:56:55.164130+00:00",
+      "disposition": null,
+      "recorded_by": "external_review.py",
+      "parse_status": "structured",
+      "raw_excerpt": "[deepseek] ### Findings\n\n- **Category:** risk  \n  **Severity:** medium  \n  **Finding:** The plan folds `dedup_triage_lines` warnings into a block’s `errors` (via `sweep_quarantine._materialize` / `decide`). If the sweep treats **any** errors as blocking, the new “keep‑both” collision warning will **prevent the block from being delivered**, turning a safety‑surface into a delivery‑break.  \n  **Suggestion:** Clarify that these warnings are surfaced **without** making the block undeliverable (e.g., attach them as informational notices, not as blocking errors). The card’s requirement is “surface them,” not “block delivery.”\n\n- **Category:** edge-case  \n  **Severity:** low  \n  **Finding:** The `reconcile_triage` rollback (fix 3) verifies the file equals the written bytes before restoring. A writer that appends **between** the equality check and the restore will have its new data silently lost — a TOCTOU window that the design does not call out.  \n  **Suggestion:** Document this residual window explicitly, or consider an atomic rename‑based restore (write old bytes to a temp file, then `os.rename`; if the original changed in the meantime the rename will succeed but the new content is lost — still a window, but at least acknowledge it). The defect card is specifically about silent failure, so naming the window is acceptable.\n\n- **Category:** approach  \n  **Severity:** low  \n  **Finding:** The salvage‑rename for finding 23 (fix 6) plans to “put the file back” if `git checkout` fails after the `os.replace`. If that restore‑back **also** fails (e.g., disk full, permission change), the log path is left missing.  \n  **Suggestion:** Add a fallback that copies the salvage content back atomically or logs a fatal error so the operator knows the file is gone. A missing `.shipwright/triage.jsonl` could be worse than a salvage‑file artefact.\n\n- **Category:** edge-case  \n  **Severity:** low  \n  **Finding:** In `dedup_triage_lines` the identity‑anchor fallback includes `title`, which  […truncated]\n\n[openai] 1. **Category:** risk  \n   **Severity:** high  \n   **Finding:** `apply_gc` is still described as a read/compute/write sequence without an explicit concurrency protocol. `durable_atomic_write` makes each replacement durable and atomic, but does not prevent a cooperating append from landing after GC reads the log and before GC replaces it. In that case GC can overwrite a newly appended record; the `.bak` may faithfully preserve the earlier bytes but not the file state actually replaced.  \n   **Suggestion:** Hold the canonical `_FileLock` across reading the source bytes, deriving the compacted content, writing the backup, replacing the tracked log, and—when requested—staging/committing it. For the non-cooperating web UI writer, revalidate a source byte fingerprint immediately before replacement and abort/report rather than overwrite if it changed. Read bytes once and derive the `surrogateescape` text view from those bytes so the backup and compaction input are the same version.\n\n2. **Category:** risk  \n   **Severity:** high  \n   **Finding:** The proposed `reconcile_main_triage` rollback addresses only the worktree file. A failed `git commit` commonly leaves the rewritten file staged because `git add` occurred before commit; restoring only `.shipwright/triage.jsonl` leaves index/worktree disagreement and may still cause drift logic or later commands to behave unexpectedly. This is especially likely for hook rejection, author/config failures, or a failed signing step.  \n   **Suggestion:** Define rollback as restoring both the file and the index entry for this path, while preserving unrelated index state. Since the precondition is “nothing staged,” restore the path to its pre-rewrite index/HEAD state using a path-limited operation only after verifying the worktree bytes are still the tool’s bytes. Report separately if either worktree restoration or index restoration cannot be completed. Do not attempt this on timeout, but explicitly report that both worktree  […truncated]",
+      "verdicts": {
+        "openai": "revise",
+        "deepseek": "revise"
+      }
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 15,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "correctness",
+          "file": "shared/scripts/lib/sweep_drift_restore.py",
+          "line": 161,
+          "finding": "restore_tracked_log promises it never raises for an expected condition, because an exception strands a half-created worktree. Every I/O is guarded EXCEPT _classify_salvage, whose read_text_verbatim is unprotected. On Windows a handle on the just-renamed file surfaces as PermissionError, which propagates through commit_main_tracked_drift and sweep_outbox_to_branch (both also never-raises) into setup_iterate_worktree step 5 AFTER git worktree add succeeded — and by then the log has been renamed aside and recreated from HEAD, so the salvage is orphaned with no reason naming it.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "shared/scripts/lib/sweep_drift_restore.py",
+          "line": 128,
+          "finding": "Both os.replace calls are bare, with no retry past a Windows sharing violation, in the module whose stated threat model IS the WebUI writer. Failure is safe but persistent: a holder that reappears each sweep yields main_tracked_salvage_rename_failed forever. Linux CI can never surface it.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "shared/scripts/lib/sweep_drift_restore.py",
+          "line": 169,
+          "finding": "On three return paths the salvage is the ONLY copy of the preserved data, and it is gitignored — a file git clean -x deletes. That is precisely the hazard sweep_drift and sweep_outbox refuse for the outbox; the module docstring presented the gitignoring purely as an upside.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "shared/scripts/lib/sweep_outbox.py",
+          "line": 213,
+          "finding": "adopt_note is captured but discarded on every post-adoption error return (add_failed, git_timeout, commit_timeout, commit_failed), so the only pointer to the sole surviving copy of salvaged lines never reaches a human.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "shared/scripts/tools/reconcile_main_triage.py",
+          "line": 58,
+          "finding": "The new ReconcileResult.warnings never reach a human on the default output path — only --json emits them. The invalid branch is the worst case and is newly reachable via the finding-25 change.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "shared/scripts/tools/triage_gc.py",
+          "line": 125,
+          "finding": "--apply --commit evaluates its main-tree guards AFTER the destructive rewrite. On a detached HEAD, inside a rebase, or with anything staged, --commit leaves the operator with exactly the divergence the flag exists to prevent. reconcile_main_triage checks all three BEFORE it mutates. The tests assert post-rewrite behaviour and would keep passing under the correct ordering, so they do not defend it.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "shared/scripts/lib/main_tree_guards.py",
+          "line": 240,
+          "finding": "path_matches_head collapses 'git could not answer' into 'dirty'. Fail-closed for the --commit precondition but fail-LOUD for the warning: a non-git directory printed the full 'deliver NOTHING' text. The inverse bites AC-1: on a timeout it returned None and --apply printed nothing at all.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "shared/scripts/lib/triage_gc_core.py",
+          "line": 281,
+          "finding": "'Last look before we publish' is followed by durable_atomic_write, which fsyncs before its os.replace — the slowest call in the function — so the residual window is materially larger than the wording implies. Secondary: the .bak is published BEFORE the fingerprint check, so a refusal leaves a .bak for a compaction that never happened, and the RuntimeError escapes main() as a traceback.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/scripts/lib/sweep_drift_restore.py",
+          "line": 173,
+          "finding": "main_tracked_late_append_salvaged formats the FRESH count, which is 0 on an idempotent replay — so the operator reads '0 append(s) recovered' on a path that did preserve something.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "architecture",
+          "file": "shared/scripts/lib/triage_gc_core.py",
+          "line": 300,
+          "finding": "triage_gc_core.py is a brand-new file at exactly 300 lines — zero headroom, created by a change justifying each extraction as one that 'gives both headroom'. sweep_outbox.py went from 296 to 300.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/scripts/tools/triage_gc.py",
+          "line": 114,
+          "finding": "--commit without --apply is silently ignored: main() returns before the commit block. Exit 0, no note.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/scripts/tools/triage_gc.py",
+          "line": 143,
+          "finding": "--project-root is treated as the main tree while every docstring says MAIN. Run from an iterate worktree, --commit would land the compaction commit on the iterate branch.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "shared/scripts/lib/sweep_result.py",
+          "line": 71,
+          "finding": "The main_tracked_ branch comment still says 'No loss — the drift is buffered and the next sweep completes it', now false for three new salvage reasons printed under that banner.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/tests/test_triage_write_path_integration.py",
+          "line": 86,
+          "finding": "The central assertion of the cross_component test is hedged with an `or`; the mechanism produces exactly skipped + main_tracked_diverged. Line 93's `in (no_drift, adoptable)` has the same problem in reverse — adoptable would mean the commit did NOT clean the log.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/tests/test_sweep_drift_restore_faults.py",
+          "line": 122,
+          "finding": "Two monkeypatches discriminate on a hardcoded '.salvage-' substring, so renaming the naming scheme silently turns both into no-ops that still pass green — a self-disarming test.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-08-06T09:38:17.305694+00:00",
+      "disposition": null,
+      "recorded_by": "shipwright-build:code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 7,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "boundary",
+          "file": "shared/scripts/lib/triage_dedup.py",
+          "line": 88,
+          "finding": "the anchor rule collapses a genuine refresh and only refuses a genuine collision",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "high",
+          "category": "boundary",
+          "file": "shared/scripts/lib/triage_gc_publish.py",
+          "line": 104,
+          "finding": "commit_compaction still refuses on the guards its docstring lists",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "concurrency",
+          "file": "shared/scripts/lib/triage_gc_core.py",
+          "line": 267,
+          "finding": "moving the .bak after the fingerprint check is a pure improvement",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "concurrency",
+          "file": "shared/scripts/lib/sweep_drift_restore.py",
+          "line": 152,
+          "finding": "the put-back 'cannot clobber anyone'",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "hidden-coupling",
+          "file": "shared/scripts/lib/main_tree_guards.py",
+          "line": 82,
+          "finding": "a non-git run keeps working exactly as before",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "reversibility",
+          "file": "shared/scripts/lib/sweep_drift_restore.py",
+          "line": 157,
+          "finding": "the salvage is adequately announced on the unrecoverable path",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "boundary",
+          "file": "shared/scripts/lib/main_tree_guards.py",
+          "line": 85,
+          "finding": "probe.returncode > 1 cleanly separates 'differences' from 'git failed'",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-08-06T09:38:17.448752+00:00",
+      "disposition": null,
+      "recorded_by": "shipwright-build:doubt-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 8,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "bug",
+          "file": "shared/scripts/lib/reconcile_rollback.py:73-75 (`run_git_soft([\"rev-parse\", \"HEAD\"], cwd=main_root)`)",
+          "line": null,
+          "finding": "rollback_failed_commit` calls `run_git_soft` without a try-except for `OSError` (e.g., git not found). If the call raises, the function crashes instead of returning a reason string, propagating an unhandled exception through the reconcile failure path and aborting the tool.",
+          "suggestion": "Wrap the `run_git_soft` call in a try-except that catches `OSError` and returns a descriptive reason (e.g., \"HEAD could not be read (git unavailable)\") without restoring.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "bug",
+          "file": "shared/scripts/lib/reconcile_triage.py:228 (`head_before = run_git_soft(...)`)",
+          "line": null,
+          "finding": "The newly added `head_before` assignment calls `run_git_soft` without any exception handling. If `git` is missing or the command fails (e.g., `FileNotFoundError`), an unhandled exception crashes the whole reconcile tool, even though the rest of the function already correctly returns error results for git trouble.",
+          "suggestion": "Catch potential exceptions around the call (or use a helper that never raises) and set `head_before` to `None` on failure, so that `rollback_failed_commit` can handle the case safely.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "spec",
+          "file": "shared/scripts/tools/resolve_churn_conflicts.py (untouched function body, but dedup caller discards warnings)",
+          "line": null,
+          "finding": "The `_reconcile_triage` function still discards the second element returned by `dedup_triage_lines` (e.g., `deduped, _ = dedup_triage_lines(...)`), while the comment was updated to say it does warn now. This violates AC-6 (“Every caller surfaces those warnings”) and means the merge-resolution path still silently drops dedup warnings.",
+          "suggestion": "Capture the warnings list, include it in the returned tuple, and surface them to the user (e.g., by printing or including in the result). Update the function signature if needed.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "spec",
+          "file": "shared/scripts/lib/sweep_outbox.py: after adoption, error returns (add_failed, git_timeout, commit_timeout, commit_failed)",
+          "line": null,
+          "finding": "These error exit paths construct `SweepResult` without setting `dedup_notes=decision.warnings`. Dedup warnings (same-id supersessions, probable collisions) from the quarantine decision are lost when the sweep fails before committing, even though they might indicate a collision that needs operator attention.",
+          "suggestion": "Include `decision.warnings` in every `SweepResult` returned by `sweep_outbox_to_branch` (e.g.,",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "spec",
+          "file": "shared/scripts/lib/sweep_drift_restore.py:163-184",
+          "line": null,
+          "finding": "On a failed `git checkout` after the live log has been renamed to salvage, the original file is restored only when `triage_path` does not exist. If checkout leaves a partial file behind, or a writer recreates the path, this returns `buffered` and leaves the tracked path as the checkout artifact rather than putting the original log back. This does not meet AC-7’s requirement that a failed checkout after rename puts the file back, and can leave the tracked delivery path diverged/invalid despite the original bytes being available only in the salvage file.",
+          "suggestion": "Preserve any reappeared path under a separate salvage name, then restore the original salvage atomically to `triage_path`; if that cannot be done safely, return a failure status that explicitly requires repair rather than claiming the next sweep can complete it.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": "shared/scripts/lib/triage_dedup.py:111-122",
+          "line": null,
+          "finding": "_anchor_of` treats whitespace-only `originalTs` values as present anchors. For example, two distinct same-id appends with `\"originalTs\": \" \"` both normalize to `\"\"`; `_is_supersession` then accepts them because `\"\" is not None`, and the earlier append is dropped. This contradicts the stated missing/blank-anchor safety rule and can silently delete a collision record.",
+          "suggestion": "Strip the value before testing emptiness, and return `None` when `value.strip()` is empty. Only nonblank anchors should be eligible for supersession collapse.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "bug",
+          "file": "shared/scripts/tools/triage_gc.py:175-183",
+          "line": null,
+          "finding": "After `--commit`, the CLI ignores the boolean returned by `commit_compaction` and always returns `0`, including when the commit was refused, failed, or timed out. Automation invoking `triage_gc --apply --commit` will therefore treat a still-diverged tracked log and disabled delivery channel as success.",
+          "suggestion": "Return a nonzero exit status when `_ok` is false. Keep printing the divergence warning, but make the process result accurately signal that the requested commit did not happen.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "test",
+          "file": "shared/tests/test_triage_write_path_integration.py: absent from diff",
+          "line": null,
+          "finding": "AC-8 explicitly requires a real-repository `category:\"integration\"` behavior covering GC warning → dead sweep → `--commit` → green drift plan → delivery, plus late-append salvage end to end. No test changes are included in the diff, so this acceptance criterion is not implemented or demonstrated; the substantial new failure/race paths also have no visible unit or fault-injection coverage.",
+          "suggestion": "Add the specified integration test and targeted tests for checkout failure with a reappeared/partial path, whitespace-only anchors, and a failed `--commit` producing a nonzero CLI exit status.  Overall assessment: ship-with-fixes. The core design addresses the intended defects, but the failed-restore path does not meet the required rollback behavior and the missing AC-8 test coverage leaves critical write-path behavior unverified. SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-08-06T09:49:48.517085+00:00",
+      "disposition": null,
+      "recorded_by": "external_review.py",
+      "parse_status": "structured",
+      "raw_excerpt": "[deepseek] - Category: bug\n- Severity: high\n- File: shared/scripts/lib/reconcile_rollback.py:73-75 (`run_git_soft([\"rev-parse\", \"HEAD\"], cwd=main_root)`)\n- Finding: `rollback_failed_commit` calls `run_git_soft` without a try-except for `OSError` (e.g., git not found). If the call raises, the function crashes instead of returning a reason string, propagating an unhandled exception through the reconcile failure path and aborting the tool.\n- Suggestion: Wrap the `run_git_soft` call in a try-except that catches `OSError` and returns a descriptive reason (e.g., \"HEAD could not be read (git unavailable)\") without restoring.\n\n- Category: bug\n- Severity: high\n- File: shared/scripts/lib/reconcile_triage.py:228 (`head_before = run_git_soft(...)`)\n- Finding: The newly added `head_before` assignment calls `run_git_soft` without any exception handling. If `git` is missing or the command fails (e.g., `FileNotFoundError`), an unhandled exception crashes the whole reconcile tool, even though the rest of the function already correctly returns error results for git trouble.\n- Suggestion: Catch potential exceptions around the call (or use a helper that never raises) and set `head_before` to `None` on failure, so that `rollback_failed_commit` can handle the case safely.\n\n- Category: spec\n- Severity: medium\n- File: shared/scripts/tools/resolve_churn_conflicts.py (untouched function body, but dedup caller discards warnings)\n- Finding: The `_reconcile_triage` function still discards the second element returned by `dedup_triage_lines` (e.g., `deduped, _ = dedup_triage_lines(...)`), while the comment was updated to say it does warn now. This violates AC-6 (“Every caller surfaces those warnings”) and means the merge-resolution path still silently drops dedup warnings.\n- Suggestion: Capture the warnings list, include it in the returned tuple, and surface them to the user (e.g., by printing or including in the result). Update the function signature if needed.\n\n- Category: spec\n- Severity: me […truncated]\n\n[openai] - Category: spec\n- Severity: medium\n- File: shared/scripts/lib/sweep_drift_restore.py:163-184\n- Finding: On a failed `git checkout` after the live log has been renamed to salvage, the original file is restored only when `triage_path` does not exist. If checkout leaves a partial file behind, or a writer recreates the path, this returns `buffered` and leaves the tracked path as the checkout artifact rather than putting the original log back. This does not meet AC-7’s requirement that a failed checkout after rename puts the file back, and can leave the tracked delivery path diverged/invalid despite the original bytes being available only in the salvage file.\n- Suggestion: Preserve any reappeared path under a separate salvage name, then restore the original salvage atomically to `triage_path`; if that cannot be done safely, return a failure status that explicitly requires repair rather than claiming the next sweep can complete it.\n\n- Category: edge-case\n- Severity: medium\n- File: shared/scripts/lib/triage_dedup.py:111-122\n- Finding: `_anchor_of` treats whitespace-only `originalTs` values as present anchors. For example, two distinct same-id appends with `\"originalTs\": \" \"` both normalize to `\"\"`; `_is_supersession` then accepts them because `\"\" is not None`, and the earlier append is dropped. This contradicts the stated missing/blank-anchor safety rule and can silently delete a collision record.\n- Suggestion: Strip the value before testing emptiness, and return `None` when `value.strip()` is empty. Only nonblank anchors should be eligible for supersession collapse.\n\n- Category: bug\n- Severity: medium\n- File: shared/scripts/tools/triage_gc.py:175-183\n- Finding: After `--commit`, the CLI ignores the boolean returned by `commit_compaction` and always returns `0`, including when the commit was refused, failed, or timed out. Automation invoking `triage_gc --apply --commit` will therefore treat a still-diverged tracked log and disabled delivery channel as success […truncated]",
+      "verdicts": {
+        "openai": "revise",
+        "deepseek": "unavailable"
+      }
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-06T09:38:17.176671+00:00",
+      "disposition": null,
+      "recorded_by": "shipwright-build:spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    }
+  }
+}

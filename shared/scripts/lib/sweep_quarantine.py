@@ -44,6 +44,14 @@ class QuarantineDecision:
       * ``block``      — genuine corruption (or a residual orphan the sweep cannot
         rewrite, e.g. an origin-side one) remains; ``errors`` carries the validator output.
     ``deduped_text`` is the post-(trim)-dedup materialized log to write to the branch.
+
+    ``warnings`` carries whatever :func:`lib.triage_dedup.dedup_triage_lines` reported
+    while materializing — a same-id ``append`` collapse, or a probable 32-bit id
+    collision it refused to collapse. They are **informational and never blocking**:
+    a benign keep-last collapse leaves ``action == "clean"``. What blocks a collision
+    is the retained duplicate reaching ``validate_triage_text``, not this list. Before
+    audit 2026-07-28 finding 25 the dedup could not warn at all and this caller
+    discarded the value it returned.
     """
 
     action: str
@@ -51,6 +59,7 @@ class QuarantineDecision:
     trimmed_outbox: list[str] = field(default_factory=list)
     candidates: list[str] = field(default_factory=list)
     errors: list[str] = field(default_factory=list)
+    warnings: list[str] = field(default_factory=list)
 
 
 def _is_status_with_id(line: str, ids: frozenset[str]) -> bool:
@@ -62,9 +71,15 @@ def _is_status_with_id(line: str, ids: frozenset[str]) -> bool:
     return isinstance(obj, dict) and obj.get("event") == "status" and obj.get("id") in ids
 
 
-def _materialize(worktree_lines: list[str], outbox_lines: list[str], eol: str) -> str:
-    deduped, _ = dedup_triage_lines(worktree_lines + outbox_lines)
-    return (eol.join(deduped) + eol) if deduped else ""
+def _materialize(
+    worktree_lines: list[str], outbox_lines: list[str], eol: str
+) -> tuple[str, list[str]]:
+    """The merged log plus whatever the dedup had to say about it. The warnings are
+    returned rather than dropped: this is the sweep, i.e. the delivery channel, and
+    a record the dedup declined to collapse (or collapsed) is exactly the thing an
+    operator needs told."""
+    deduped, warnings = dedup_triage_lines(worktree_lines + outbox_lines)
+    return ((eol.join(deduped) + eol) if deduped else ""), warnings
 
 
 def decide(
@@ -88,10 +103,14 @@ def decide(
     it in the materialized log), every remaining error is a protected one → ``block``:
     a loud hard stop is the correct failure, silent data loss is not.
     """
-    text = _materialize(worktree_lines, outbox_lines, eol)
+    text, warnings = _materialize(worktree_lines, outbox_lines, eol)
     verdict = classify_triage_text(text)
     if not verdict.errors:
-        return QuarantineDecision("clean", deduped_text=text, trimmed_outbox=list(outbox_lines))
+        # A dedup warning does NOT make the log undeliverable — a keep-last collapse
+        # is expected and benign. It rides along on a `clean` decision so the sweep
+        # can report it without quarantining anything.
+        return QuarantineDecision("clean", deduped_text=text,
+                                  trimmed_outbox=list(outbox_lines), warnings=warnings)
     protected = verdict.orphan_status_ids & frozenset(known_append_ids)
     orphan_ids = verdict.orphan_status_ids - frozenset(known_append_ids)
     if verdict.has_non_orphan_error or not orphan_ids:
@@ -104,21 +123,22 @@ def decide(
             f"not reachable from this branch — deliver main (push / merge origin), then re-run"
             for iid in sorted(protected)
         ]
-        return QuarantineDecision("block", errors=errors)
+        return QuarantineDecision("block", errors=errors, warnings=warnings)
 
     candidates = [ln for ln in outbox_lines if _is_status_with_id(ln, orphan_ids)]
     if not candidates:
         # Every orphan lives in the worktree-tracked log; the sweep cannot fix it.
-        return QuarantineDecision("block", errors=list(verdict.errors))
+        return QuarantineDecision("block", errors=list(verdict.errors), warnings=warnings)
 
     candidate_set = set(candidates)
     trimmed = [ln for ln in outbox_lines if ln not in candidate_set]
-    trimmed_text = _materialize(worktree_lines, trimmed, eol)
+    trimmed_text, _ = _materialize(worktree_lines, trimmed, eol)
     if validate_triage_text(trimmed_text):
         # A residual error after trimming (e.g. an origin-side orphan) → fail closed.
-        return QuarantineDecision("block", errors=list(verdict.errors))
+        return QuarantineDecision("block", errors=list(verdict.errors), warnings=warnings)
     return QuarantineDecision(
-        "quarantine", deduped_text=trimmed_text, trimmed_outbox=trimmed, candidates=candidates,
+        "quarantine", deduped_text=trimmed_text, trimmed_outbox=trimmed,
+        candidates=candidates, warnings=warnings,
     )
 
 

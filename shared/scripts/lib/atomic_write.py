@@ -60,7 +60,7 @@ from pathlib import Path
 
 __all__ = ["durable_atomic_write", "durable_read_bytes", "durable_read_text",
            "REPLACE_RETRY_BUDGET_SECONDS", "READ_RETRY_BUDGET_SECONDS",
-           "sharing_violation_retries", "reset_sharing_violation_retries"]
+           "replace_retrying", "sharing_violation_retries", "reset_sharing_violation_retries"]
 
 #: Sharing-violation retries this process has performed. Rationale and the residual
 #: limit are in the module docstring's second bullet (card ``trg-0a294ef3``).
@@ -160,7 +160,7 @@ def durable_atomic_write(path: Path | str, data: str | bytes) -> None:
             fh.write(raw)
             fh.flush()
             os.fsync(fh.fileno())
-        _replace_retrying_sharing_violations(tmp, path)
+        replace_retrying(tmp, path)
     except BaseException:
         with contextlib.suppress(OSError):
             os.unlink(tmp)
@@ -219,9 +219,10 @@ def _retry_past_sharing_violations(operation, budget_seconds: float):
             delay = min(delay * 2, _RETRY_MAX_SLEEP_SECONDS)
 
 
-def _replace_retrying_sharing_violations(tmp: str, path: Path) -> None:
-    """``os.replace``, retried while Windows reports the destination as in use."""
-    _retry_past_sharing_violations(lambda: os.replace(tmp, path),
+def replace_retrying(src: str | Path, dst: str | Path) -> None:
+    """``os.replace``, retried while Windows reports the destination as in use. Public because
+    ``lib.sweep_drift_restore`` renames the tracked log aside in the same threat model."""
+    _retry_past_sharing_violations(lambda: os.replace(src, dst),
                                    REPLACE_RETRY_BUDGET_SECONDS)
 
 

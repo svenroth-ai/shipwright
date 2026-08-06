@@ -1,0 +1,1 @@
+reconcile_main_triage rolls its dedup rewrite back when the commit definitively fails, so a failed fold no longer strands main diverged and the outbox sweep keeps delivering — but only when HEAD has not moved and the file is still byte-for-byte what it wrote, because restoring over another writer's append would trade a delivery outage for data loss (audit finding 16).
