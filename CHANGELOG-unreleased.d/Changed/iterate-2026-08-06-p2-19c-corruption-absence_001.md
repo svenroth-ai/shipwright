@@ -1,0 +1,1 @@
+`mark_status` no longer spawns git subprocesses while holding the canonical append-log lock — the idle-main routing probe runs before acquiring it, while the residence half stays inside (IT-1 audit 12).

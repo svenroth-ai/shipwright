@@ -79,9 +79,30 @@ def test_list_json_emits_the_open_section(tmp_path: Path, tracked_item: str) -> 
 
 
 def test_list_json_empty_is_two_empty_sections(tmp_path: Path) -> None:
-    assert _list_json(tmp_path) == {
-        "contractVersion": 2, "open": [], "deferred": [],
-    }
+    """An empty store: both sections empty, and the store itself reported clean.
+
+    Pinned key-SET plus key-by-key, rather than by whole-dict equality. The
+    envelope gained ``corruption`` in iterate-2026-08-06-p2-19c-corruption-absence
+    — additively, with `contractVersion` deliberately held at 2 because a consumer
+    reading `open`/`deferred` is unaffected.
+
+    The split matters: a whole-payload `==` couples "which keys exist" to "what
+    each key contains", so every additive field fails the test for the wrong
+    reason. Asserting the key SET separately keeps the exhaustiveness (a fifth key
+    still fails) while letting the per-key assertions say what they mean. The
+    first version of this rewrite dropped the key-set line and was therefore
+    weaker, not stronger, than what it replaced — caught by the Stage-1 review.
+    """
+    payload = _list_json(tmp_path)
+    # Exhaustive on the top level, which the old whole-dict `==` also gave us: an
+    # unnoticed FIFTH key is exactly the drift a cross-repo contract must not have.
+    assert set(payload) == {"contractVersion", "open", "deferred", "corruption",
+                            "undeliveredDecisions"}
+    assert payload["contractVersion"] == 2
+    assert payload["open"] == []
+    assert payload["deferred"] == []
+    assert payload["corruption"] == {"count": 0, "truncated": False, "spans": []}
+    assert payload["undeliveredDecisions"] == {"count": 0, "truncated": False, "ids": []}
 
 
 def test_list_json_excludes_dismissed(tmp_path: Path, tracked_item: str) -> None:

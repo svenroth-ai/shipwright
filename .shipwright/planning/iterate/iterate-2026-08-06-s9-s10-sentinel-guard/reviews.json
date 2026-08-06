@@ -1,0 +1,161 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-08-06-s9-s10-sentinel-guard",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-06T07:23:27.045879+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-06T07:23:50.947925+00:00",
+      "disposition": "Phase Matrix: Mini-Plan is FEATURE-only at small complexity; this run is intent=bug at small, so no plan artifact exists to review.",
+      "recorded_by": "iterate-skill",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 5,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "shared/scripts/tools/verifiers/spec_checks.py",
+          "line": 607,
+          "finding": "The guard is unconditionally true in production, so S9/S10 can now never emit a verdict. The only production caller is audit_phase_quality_on_stop.py -> pq.run_spec_checks('iterate', ...), whose run_id comes from pq.resolve_run_id. Nothing writes a top-level run_id into shipwright_run_config.json and no producer emits a run_started event, so the canonical iterate id never reaches S9/S10 and has_exact_iterate_entry is always False. Confirmed on disk: .shipwright/compliance/skill-compliance/iterate-unknown-unknown.json has run_id='unknown' with S9/S10 skipping on 'category=change' - an unrelated run's category, i.e. the bug being fixed. The verdicts lost are unsound ones, so this is an improvement, not a regression, but it must not be left implicit.",
+          "suggestion": "Land the guard; disclose the consequence in docs + docstring, pin it with a seam test, and file a follow-up card for the upstream run_id seam.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "shared/tests/test_spec_checks_run_id_guard.py",
+          "line": 162,
+          "finding": "test_s9_s10_exact_entry_still_warns feeds run_id='real', a shape resolve_run_id cannot produce for the Stop audit. No test pins what run_id the production seam actually hands S9/S10, so the suite would stay green even if the guard fired on 100% of real invocations.",
+          "suggestion": "Add a test at the audit seam that calls pq.resolve_run_id and asserts against the resulting id.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "shared/scripts/tools/verifiers/spec_checks.py",
+          "line": 9,
+          "finding": "Module docstring still read 'The S2/S3 run_id guard lives in _iterate_run_id.py' after S9/S10 were routed through the same helper, so the two files disagreed about the guard's fan-in.",
+          "suggestion": "Update to S2/S3/S9/S10.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "docs/hooks-and-pipeline.md",
+          "line": 1756,
+          "finding": "The S9/S10 catalog rows list only category/UI-path/new-dir triggers and 'SKIPs otherwise'; they now also SKIP whenever the audited run_id has no exact iterate_history entry.",
+          "suggestion": "Append the run_id precondition to the S9/S10 rows.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "shared/tests/test_spec_checks_run_id_guard.py",
+          "line": 173,
+          "finding": "check/check_id parametrize args carried no type annotations, and check_id was unused in two of the five parametrized tests.",
+          "suggestion": "Annotate as Callable[[Path, str], dict[str, Any]] and drop check_id where unread.",
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-08-06T07:23:40.254695+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 4,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "boundary & contract",
+          "file": "shared/tests/test_spec_checks_run_id_guard.py:134-161",
+          "line": null,
+          "finding": "Claim under doubt: the seam test pins the production seam and will fail loudly if the seam is ever fixed — Production never passes the value the test passes. audit_phase_quality_on_stop.py coerces a blank SHIPWRIGHT_SESSION_ID to 'unknown' BEFORE calling resolve_run_id, so session_id='' is not a reachable input; the test asserted is_sentinel_run, a property of one branch only. Consequently the 'fails loudly when fixed' promise does not hold for the most likely fix, and if a session id ever reaches the hook the docs sentence 'the Stop audit supplies a sentinel' becomes false.",
+          "suggestion": "Parametrize over the two values the hook can actually emit, assert has_exact_iterate_entry is False as the carrying invariant, add SHIPWRIGHT_RUN_ID to delenv, and reword the docs row.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "hidden coupling & blast radius",
+          "file": "shared/scripts/tools/verifiers/_iterate_run_id.py:11-20",
+          "line": null,
+          "finding": "Claim under doubt: the recorded rationale identifies the case this guard protects — The docstring justified the non-sentinel half with 'a real run whose F5c entry is not written yet', which is unreachable through this seam. The only reachable non-sentinel is SHIPWRIGHT_LOOP_ID(+UNIT_ID) from campaign / autonomous-loop runs - and that is precisely the branch where the bogus verdict was ACTIONABLE, because non-sentinel snapshots survive load_actionable_findings. The fix is right; the reason on record was not, and would mis-scope the follow-up card.",
+          "suggestion": "Name the reachable trigger - loop-var run ids in campaign / autonomous-loop runs - in the module docstring.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "reversibility",
+          "file": "docs/hooks-and-pipeline.md:1756",
+          "line": null,
+          "finding": "Claim under doubt: the accepted trade is 'two checks go permanently inert' — In the sentinel branch both sides of the trade are invisible: sentinel-run findings were already excluded from all four rollup consumers, so the pre-fix bogus verdicts never reached the backlog, the SessionStart digest or the dashboard, and the post-fix SKIP removes nothing from them either. 'Permanently inert' overstates the loss.",
+          "suggestion": "State that in the sentinel branch the findings were already excluded from every rollup, confining the delta to the loop-id branch.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "boundary & contract",
+          "file": "shared/scripts/tools/verifiers/_iterate_run_id.py:180-182",
+          "line": null,
+          "finding": "Claim under doubt: the SKIP evidence string is accurate for S9/S10 — unresolvable_run_id_skip hardcodes '(no exact iterate_history entry, no matching file)'; with candidates=[] the second clause is vacuous for S9/S10. Separately has_exact_iterate_entry swallows every exception, so an UNREADABLE iterate store yields the identical SKIP as a foreign audit context - pre-existing for S2/S3 but now extended to two more checks without note.",
+          "suggestion": "Emit the clause conditionally, or note the conflation next to the candidates=[] comments.",
+          "source": "doubt-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-08-06T07:23:40.406324+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-06T07:23:51.108495+00:00",
+      "disposition": "Phase Matrix: External LLM Review is 'skip' at small complexity (auto only at medium+). No risk flags fired to raise the floor. Internal cascade spec-reviewer/code-reviewer/doubt-reviewer all ran and are recorded completed.",
+      "recorded_by": "iterate-skill",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-06T07:23:27.197712+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    }
+  }
+}

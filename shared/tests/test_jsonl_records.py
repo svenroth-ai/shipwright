@@ -191,7 +191,29 @@ def test_deeply_nested_blob_does_not_raise_recursionerror() -> None:
 
 
 def test_unicode_whitespace_is_not_accepted_between_records() -> None:
-    """str.isspace() would accept NBSP/U+000C; JSON does not."""
+    """str.isspace() would accept NBSP/U+000C; JSON does not.
+
+    With no ``is_record`` predicate the leaf does not resync at all, so this is
+    unchanged by iterate-2026-08-06-p2-19c-corruption-absence: everything from the
+    bad byte to end-of-line is the remainder.
+    """
     records, remainder = split_records(_j(APPEND) + "\x0c" + _j(STATUS))
     assert records == [APPEND]
     assert remainder == "\x0c" + _j(STATUS)
+
+
+def test_a_predicate_recovers_the_record_behind_the_bad_separator() -> None:
+    """The same line, read the way a caller that knows its record shape reads it.
+
+    The separator alphabet is still the property under test and is still unchanged:
+    U+000C is NOT consumed as whitespace, so it remains the reported damaged span.
+    What the predicate buys is the record BEHIND it, which one-directional recovery
+    discarded (IT-1 audit finding 21). Pinning the two modes separately is what
+    makes each falsifiable on its own.
+    """
+    records, remainder = split_records(
+        _j(APPEND) + "\x0c" + _j(STATUS),
+        is_record=lambda o: isinstance(o.get("event"), str),
+    )
+    assert records == [APPEND, STATUS]
+    assert remainder == "\x0c"

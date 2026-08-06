@@ -10,13 +10,12 @@ see ``triage_promote``'s header for the known divergence.
 
 Subcommands (positional ``<id>`` for every decision):
 
-  list [--json]                         open items, then any deferred ones in
-                                        their own capped section. ``--json`` is
-                                        the machine contract for the WebUI —
-                                        an envelope with `contractVersion`,
-                                        `open` and `deferred`, both complete
-                                        and each item carrying pendingDelivery.
-                                        Shape + version: `lib.triage_contract`
+  list [--json]                         open items, then any deferred ones in their
+                                        own capped section. ``--json`` is the machine
+                                        contract for the WebUI: an envelope with
+                                        `contractVersion`, `open`, `deferred` and
+                                        `corruption`; rows carry pendingDelivery +
+                                        pendingStatusDelivery. `lib.triage_contract`
   promote <id> --task-ref EXT:<ref>     promote → backlog task
   dismiss <id> --reason <reason>        dismiss (false-positive / won't-fix)
   defer   <id> --reason <r> --revisit D defer until day D (YYYY-MM-DD), after
@@ -25,13 +24,11 @@ Subcommands (positional ``<id>`` for every decision):
                                         not recorded a second time
   unpark  <id> --reason <reason>        reverse a defer, back onto the open list
 
-Fix-now flow:
-  - operators open ``.shipwright/agent_docs/triage_inbox.md`` (or run
-    ``triage_cli.py list``)
-  - they copy the ``launchPayload`` fence into a new Claude session
-  - the matching slash command (``/shipwright-security``,
-    ``/shipwright-iterate --type bug``, etc.) auto-fires there
-  - the lifecycle hook flips this item once the resulting run completes
+Fix-now flow: operators open ``.shipwright/agent_docs/triage_inbox.md`` (or run
+``triage_cli.py list``), copy the ``launchPayload`` fence into a new Claude
+session, the matching slash command (``/shipwright-security``,
+``/shipwright-iterate --type bug``, ...) auto-fires there, and the lifecycle hook
+flips this item once the resulting run completes.
 """
 
 from __future__ import annotations
@@ -48,12 +45,15 @@ if str(_SCRIPTS_DIR) not in sys.path:
 
 from triage import (  # noqa: E402
     SEVERITY_RANK,
+    STATUSES,
     _append_ids_at,
     _outbox_path,
     _triage_path,
     read_all_items,
 )
 from lib.triage_contract import build_listing  # noqa: E402
+from lib.triage_delivery import format_pending_delivery_notice  # noqa: E402
+from lib.triage_integrity import store_facts  # noqa: E402
 from lib.triage_render import format_item, render_deferred_section  # noqa: E402
 from tools.triage_promote import defer, dismiss, promote, unpark  # noqa: E402
 
@@ -89,8 +89,9 @@ def _cmd_list(args: argparse.Namespace) -> int:
     # above, so it lands in the open list without anything here noticing —
     # which is the whole point of deriving expiry in the reader.
     deferred = [it for it in resolved if it.get("status") == "snoozed"]
+    corruption, undelivered = store_facts(_triage_path(project_root), _outbox_path(project_root), applied_statuses=STATUSES)
     if getattr(args, "json", False):
-        return _emit_json(project_root, items, deferred)
+        return _emit_json(project_root, items, deferred, undelivered, corruption)
     if not items:
         sys.stdout.write("No open triage items.\n\n")
     for item in items:
@@ -102,17 +103,22 @@ def _cmd_list(args: argparse.Namespace) -> int:
     # crowds out the work that is actually open.
     for block in render_deferred_section(deferred, SEVERITY_RANK):
         sys.stdout.write(block + "\n\n")
+    # A dismissed-but-buffered item is in NEITHER section above (it resolved to a
+    # terminal status), so this summary is the only place it can appear (finding 28).
+    if undelivered:
+        sys.stdout.write(format_pending_delivery_notice(undelivered) + "\n\n")
     return 0
 
 
-def _emit_json(project_root: Path, items: list[dict],
-               deferred: list[dict]) -> int:
+def _emit_json(project_root: Path, items: list[dict], deferred: list[dict], undelivered: set, corruption: list) -> int:
     """Serialise the machine contract. Its shape lives in `lib.triage_contract`."""
     payload = build_listing(
         items, deferred,
         tracked_ids=_append_ids_at(_triage_path(project_root)),
         outbox_ids=_append_ids_at(_outbox_path(project_root)),
         severity_rank=SEVERITY_RANK,
+        undelivered_status_ids=undelivered,
+        corruption=corruption,
     )
     sys.stdout.write(json.dumps(payload, indent=2, ensure_ascii=False) + "\n")
     return 0
