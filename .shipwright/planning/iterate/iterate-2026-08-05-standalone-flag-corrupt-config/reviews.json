@@ -1,0 +1,342 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-08-05-standalone-flag-corrupt-config",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-06T07:31:57.964362+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 7,
+      "findings": [
+        {
+          "severity": "low",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "The CLI `get-next-step` branch checks `result.get(\"reason\") == \"config_unreadable\"` with a string literal. If the reason key or value changes, this comparison silently breaks the exit-code behaviour.",
+          "suggestion": "Define a module-level constant (e.g., `BLOCKED_REASON_CONFIG_UNREADABLE = \"config_unreadable\"`) and use it in both `get_next_step` and the CLI check to keep them in sync.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "_read_standalone_flag` relies on `config.get(\"standalone\") is True` to determine demotion. While this fixes the boolean‑type bug, a config explicitly setting `\"standalone\": 1` (or any truthy non‑boolean) is treated as a gate‑run, which is the safe default.",
+          "suggestion": "No change required; this is already documented in the acceptance criteria and is consistent with the `is True` fail‑safe.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "security",
+          "file": null,
+          "line": null,
+          "finding": "The CLI payload includes the file path. If a project root contains a newline or quote, the structured JSON handling will prevent output corruption, but the path itself could still carry sensitive directory information when logged externally.",
+          "suggestion": "Confirm that this is acceptable for the plugin’s deployment context; no change needed to the plan.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "test-coverage",
+          "file": null,
+          "line": null,
+          "finding": "The test matrix includes a row for `PermissionError` → strict `io` category. The tolerant path propagates `OSError` unchanged. The plan should ensure that the `PermissionError` mock does not accidentally trigger the tolerant reader’s file‑existence fallback (the helper must raise from the read, not from a preceding `exists()` probe).",
+          "suggestion": "The plan already derives presence from `FileNotFoundError` on the read itself; verify that the test for `PermissionError` indeed simulates a failed read (e.g., `durable_read_text` raising `PermissionError`) to exercise the correct branch.  Overall Assessment The approach is meticulously designed, catalogues all failure modes, and scrupulously addresses external review feedback. The strict/tolerant reader split is justified and the data‑loss guarantee is correctly scoped. The implementation plan is production‑ready; any remaining findings are refinements.  SHIPWRIGHT_VERDICT: approve",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "The shared-helper design must explicitly preserve the tolerant reader’s existing exception behavior. If `_read_parse_shape()` converts decode/I/O failures into `RunConfigUnreadable`, `load_run_config()` cannot simply re-raise that wrapper without violating AC3, which requires callers to still receive the original `UnicodeDecodeError` or `OSError`. The plan says the tolerant and strict readers differ in “disposition,” but does not specify how the original exception type and useful traceback are recovered.",
+          "suggestion": "Make the wrapper behavior explicit: have `RunConfigUnreadable` retain the original exception as a typed `cause`/`__cause__`; in `load_run_config`, return `{}` and warn only for `parse` and `shape`, and re-raise the original cause for `decode` and `io`. Add direct assertions that tolerant reads raise `UnicodeDecodeError`, `PermissionError`, and `IsADirectoryError` as those concrete types, not as `RunConfigUnreadable`.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "“Total at the read-decode-parse-shape boundary” is stronger than the stated parsing handling. `json.loads()` can raise `RecursionError` for sufficiently deeply nested JSON, rather than `JSONDecodeError`; a malformed or hostile local config could therefore bypass the strict `parse` category and crash with an unclassified exception. This would also cause the recovery path to fail rather than treating the content as replaceable.",
+          "suggestion": "Deliberately handle `RecursionError` from JSON parsing as `category=\"parse\"` (while continuing not to swallow process-level failures such as `MemoryError`). Add a deep-nesting regression test for both strict refusal and `write-config` recovery.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "security",
+          "file": null,
+          "line": null,
+          "finding": "The proposed `get_next_step` result includes an `\"error\"` field, while AC10 only clearly specifies bounded structured formatting for the CLI payload. If that field is populated from a raw exception string or cause, it can reintroduce the content/path leakage the new exception formatting is intended to prevent, especially when library consumers serialize the result themselves.",
+          "suggestion": "Define the blocked result schema precisely and populate `\"error\"` only from the same bounded, content-free formatter used by `RunConfigUnreadable` and the CLI payload. Test the library result as well as stderr using malformed JSON containing distinctive secret-like text and paths containing quotes/newlines.  Overall, the core design is sound: separating absence from unreadability, using the in-lock strict read for mutating paths, and preserving `write-config` as a category-aware recovery path directly address the observed data-loss failure. The exception-disposition contract and parser totality need to be nailed down before implementation so the refactor does not regress existing tolerant callers or leave an unclassified corrupt-content path. SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-08-05T20:43:52.400375+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[deepseek] **Findings**\n\n- **Category:** approach  \n  **Severity:** low  \n  **Finding:** The CLI `get-next-step` branch checks `result.get(\"reason\") == \"config_unreadable\"` with a string literal. If the reason key or value changes, this comparison silently breaks the exit-code behaviour.  \n  **Suggestion:** Define a module-level constant (e.g., `BLOCKED_REASON_CONFIG_UNREADABLE = \"config_unreadable\"`) and use it in both `get_next_step` and the CLI check to keep them in sync.\n\n- **Category:** edge-case  \n  **Severity:** low  \n  **Finding:** `_read_standalone_flag` relies on `config.get(\"standalone\") is True` to determine demotion. While this fixes the boolean‑type bug, a config explicitly setting `\"standalone\": 1` (or any truthy non‑boolean) is treated as a gate‑run, which is the safe default.  \n  **Suggestion:** No change required; this is already documented in the acceptance criteria and is consistent with the `is True` fail‑safe.\n\n- **Category:** security  \n  **Severity:** low  \n  **Finding:** The CLI payload includes the file path. If a project root contains a newline or quote, the structured JSON handling will prevent output corruption, but the path itself could still carry sensitive directory information when logged externally.  \n  **Suggestion:** Confirm that this is acceptable for the plugin’s deployment context; no change needed to the plan.\n\n- **Category:** test-coverage  \n  **Severity:** low  \n  **Finding:** The test matrix includes a row for `PermissionError` → strict `io` category. The tolerant path propagates `OSError` unchanged. The plan should ensure that the `PermissionError` mock does not accidentally trigger the tolerant reader’s file‑existence fallback (the helper must raise from the read, not from a preceding `exists()` probe).  \n  **Suggestion:** The plan already derives presence from `FileNotFoundError` on the read itself; verify that the test for `PermissionError` indeed simulates a failed read (e.g., `durable_read_text` raising `PermissionE […truncated]\n\n[openai] 1. **Category:** approach  \n   **Severity:** medium  \n   **Finding:** The shared-helper design must explicitly preserve the tolerant reader’s existing exception behavior. If `_read_parse_shape()` converts decode/I/O failures into `RunConfigUnreadable`, `load_run_config()` cannot simply re-raise that wrapper without violating AC3, which requires callers to still receive the original `UnicodeDecodeError` or `OSError`. The plan says the tolerant and strict readers differ in “disposition,” but does not specify how the original exception type and useful traceback are recovered.  \n   **Suggestion:** Make the wrapper behavior explicit: have `RunConfigUnreadable` retain the original exception as a typed `cause`/`__cause__`; in `load_run_config`, return `{}` and warn only for `parse` and `shape`, and re-raise the original cause for `decode` and `io`. Add direct assertions that tolerant reads raise `UnicodeDecodeError`, `PermissionError`, and `IsADirectoryError` as those concrete types, not as `RunConfigUnreadable`.\n\n2. **Category:** edge-case  \n   **Severity:** medium  \n   **Finding:** “Total at the read-decode-parse-shape boundary” is stronger than the stated parsing handling. `json.loads()` can raise `RecursionError` for sufficiently deeply nested JSON, rather than `JSONDecodeError`; a malformed or hostile local config could therefore bypass the strict `parse` category and crash with an unclassified exception. This would also cause the recovery path to fail rather than treating the content as replaceable.  \n   **Suggestion:** Deliberately handle `RecursionError` from JSON parsing as `category=\"parse\"` (while continuing not to swallow process-level failures such as `MemoryError`). Add a deep-nesting regression test for both strict refusal and `write-config` recovery.\n\n3. **Category:** security  \n   **Severity:** low  \n   **Finding:** The proposed `get_next_step` result includes an `\"error\"` field, while AC10 only clearly specifies bounded structured formatting  […truncated]",
+      "verdicts": {
+        "openai": "revise",
+        "deepseek": "approve"
+      }
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 8,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "shared/scripts/lib/gate_policy.py",
+          "line": 159,
+          "finding": "read_run_config_mode does not honour its own inert-on-corrupt docstring for the shape/decode categories; the parity claim in config_io overstated after this change.",
+          "suggestion": "Amend the parity claim (done) and file the gap (trg-406d7c3c, done).",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "plugins/shipwright-run/scripts/lib/orchestrator_pkg/config_io.py",
+          "line": 191,
+          "finding": "raise exc.__cause__ from None is sound only while every raise site remembers from-exc; a future one that forgets turns the tolerant reader into TypeError.",
+          "suggestion": "Hold the original explicitly on the exception (done).",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "plugins/shipwright-run/scripts/lib/orchestrator_pkg/cli.py",
+          "line": 237,
+          "finding": "Exit-2 branch keyed on the reason string rather than the blocked discriminator the contract promises.",
+          "suggestion": "Key on blocked (done).",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "plugins/shipwright-run/tests/test_runconfig_corrupt_cli.py",
+          "line": 169,
+          "finding": "pytest.raises tuple also passes against a create_config reverted to the tolerant reader, so the io arm is pinned by nothing.",
+          "suggestion": "Assert the exact type and category (done).",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "plugins/shipwright-run/tests/test_runconfig_corrupt_fail_closed.py",
+          "line": 262,
+          "finding": "The pin cannot detect a tolerant read reintroduced in _load_or_bootstrap; update_step refuses at its first statement so that chokepoint is never reached.",
+          "suggestion": "Pin each chokepoint independently (done).",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "plugins/shipwright-run/scripts/lib/orchestrator_pkg/step_planning.py",
+          "line": 57,
+          "finding": "Dead not-present clause, and the present-empty-object carry-over of the legacy answer was uncommented.",
+          "suggestion": "Drop the clause and state the carry-over (done).",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "plugins/shipwright-run/scripts/lib/orchestrator_pkg/step_config_access.py",
+          "line": 77,
+          "finding": "Obsolete Mirrors claim adjacent to the is-True behaviour that contradicts it.",
+          "suggestion": "Narrow the mirror claim (done).",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "security",
+          "file": "plugins/shipwright-run/scripts/lib/orchestrator_pkg/config_io.py",
+          "line": 95,
+          "finding": "payload() caps detail and path but message embedded the full unbounded path, defeating the cap via the field carrying both.",
+          "suggestion": "Build the message from the bounded fields (done).",
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-08-06T07:29:00.252375+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 10,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "hidden-coupling",
+          "file": "plugins/shipwright-run/scripts/lib/orchestrator_pkg/router.py:93",
+          "line": null,
+          "finding": "Claim under doubt: Nothing that advances a run still reads tolerantly — router.py:93 gated the ADVANCING commands with load_run_config; an unusable config returned an empty dict so the guard fell through, and only phase_task_lifecycle stopped it, with a bare traceback and exit 1 instead of the documented payload and exit 2.",
+          "suggestion": "Route the guard through read_run_config and add router to the AC9 pin. DONE.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "boundary-contract",
+          "file": "plugins/shipwright-run/scripts/lib/orchestrator_pkg/step_planning.py:66-67",
+          "line": null,
+          "finding": "Claim under doubt: The four doors are closed — A fifth shape: pipeline null / completed_steps null pass the shape gate and then raise TypeError out of get_next_step, a reporter that promises not to crash.",
+          "suggestion": "Use the null-tolerant form update_step already used. DONE.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "boundary-contract",
+          "file": "plugins/shipwright-run/tests/test_runconfig_corrupt_chokepoints.py",
+          "line": null,
+          "finding": "Claim under doubt: The AC9 pin is mutation-verified — hasattr only sees module-level imports; a function-local import (router's own idiom), an alias, or an attribute call all keep it green.",
+          "suggestion": "Assert on the module AST. DONE, and re-mutated with a function-local import to prove it goes red.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "boundary-contract",
+          "file": "shared/scripts/lib/atomic_write.py:228 via config_io",
+          "line": null,
+          "finding": "Claim under doubt: A BOM-prefixed config still works — json.loads rejects a UTF-8 BOM, so fail-closed turned an invisible byte into a wedged run, against this repo's shipped convention of utf-8-sig in five sibling readers.",
+          "suggestion": "Read with utf-8-sig and pin it. DONE.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "boundary-contract",
+          "file": "plugins/shipwright-run/scripts/lib/orchestrator_pkg/step_planning.py:159-179",
+          "line": null,
+          "finding": "Claim under doubt: A present empty object is usable so update_step proceeds, which is correct — No test reached update_step with an empty object; it now runs the gate and parks the run at needs_validation instead of silently completing.",
+          "suggestion": "Test it end-to-end. DONE - behaviour confirmed correct (fails toward asking) and now asserted.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "reversibility",
+          "file": "plugins/shipwright-run/scripts/lib/orchestrator_pkg/config_factory.py",
+          "line": null,
+          "finding": "Claim under doubt: The file is never overwritten when unusable — Holds in the library, but the error message sends the operator to /shipwright-run, whose write-config overwrites unconditionally with no quarantine.",
+          "suggestion": "Message now states that re-running REPLACES the file and to copy it aside first. DONE; auto-quarantine deliberately not added because the operator declined automatic backup.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "concurrency",
+          "file": "plugins/shipwright-run/scripts/lib/orchestrator_pkg/step_planning.py:149",
+          "line": null,
+          "finding": "Claim under doubt: The guarantees are never reached in a demoted state — is_standalone is fixed by the unlocked read and consumed about 30s later; an absent-then-created config completes under standalone rules.",
+          "suggestion": "Pre-existing; DECLINED with reason and recorded as a residual window in AC6 - closing it needs a lock-scope change.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "boundary-contract",
+          "file": "plugins/shipwright-run/scripts/lib/orchestrator_pkg/config_io.py",
+          "line": null,
+          "finding": "Claim under doubt: Only the non-object case changed for tolerant callers — Path.exists swallowed OSError, so NotADirectoryError and parent-permission cases previously returned an empty dict and now raise.",
+          "suggestion": "NotADirectoryError now reads as absent. DONE; the permission case is classified io by design.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "boundary-contract",
+          "file": "plugins/shipwright-run/scripts/lib/orchestrator_pkg/step_planning.py:55",
+          "line": null,
+          "finding": "Claim under doubt: blocked is distinguishable from all-steps-complete — Both carry next_step null, so a naive consumer reads a blocked config as finished.",
+          "suggestion": "DECLINED - the exit code is the signal; documented. Blast radius verified small.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "boundary-contract",
+          "file": "plugins/shipwright-run/tests/test_runconfig_corrupt_reader.py",
+          "line": null,
+          "finding": "Claim under doubt: One shared helper means the readers cannot drift — The drift table is text-only, so decode and io - the only categories where the readers branch differently - were never compared.",
+          "suggestion": "Extend the table to both categories. DONE.",
+          "source": "doubt-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-08-06T07:29:10.124017+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 3,
+      "findings": [
+        {
+          "severity": "low",
+          "category": "security",
+          "file": "plugins/shipwright-run/scripts/lib/orchestrator_pkg/config_io.py` (in `_read_parse_shape`, the `JSONDecodeError` branch)",
+          "line": null,
+          "finding": "The detail passed to `RunConfigUnreadable` for `category=\"parse\"` is `str(exc)`, which can include a snippet of the input file content from `json.JSONDecodeError`. Although bounded to 300 characters, a malformed config could leak sensitive portions of the file. The test `test_message_never_echoes_file_content` covers one shape, but a different truncation or error position might still include content.",
+          "suggestion": "Build the detail from `exc.msg` and `exc.lineno` without the raw document snippet (e.g. `f\"{exc.msg} at line {exc.lineno}\"`). This would strictly prevent any file content from reaching the error payload.  No other defects were found; the change meets all acceptance criteria, includes strong tests, and correctly implements the strict/tolerant reader split with the anti‑data‑loss guarantee.  SHIPWRIGHT_VERDICT: approve",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "spec",
+          "file": "plugins/shipwright-run/scripts/lib/orchestrator_pkg/cli.py:235-245",
+          "line": null,
+          "finding": "For an unreadable config, `get-next-step` serializes the same blocked/error payload to stdout and then again to stderr. AC8 requires the actionable CLI payload to be emitted to stderr exactly once; emitting it on two streams can cause consumers that aggregate output or parse stdout to observe duplicate diagnostics.",
+          "suggestion": "Keep the normal result on stdout only if that is an intentional compatibility requirement, but emit a distinct minimal status there; otherwise, for blocked results print the payload only to stderr and return 2. Document and test the intended stream contract explicitly.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "test",
+          "file": "plugins/shipwright-run/tests/test_runconfig_corrupt_cli.py:55-61",
+          "line": null,
+          "finding": "The “printed twice” test exercises only `update-step`. The separate `get-next-step` branch is the one that explicitly prints the result both before and after checking `blocked`, but its test checks only the exit code and stdout payload, not that stderr contains exactly one structured diagnostic.",
+          "suggestion": "Add a `get-next-step` unreadable-config test that asserts the expected stderr JSON payload and its occurrence count, and asserts the intended stdout behavior so a duplicate-stream regression is caught.  Overall assessment: The strict/tolerant reader split and fail-closed mutation paths substantially implement the specified safety behavior, but the blocked `get-next-step` CLI output does not cleanly meet the single-emission stderr contract and lacks coverage for that branch. Ship with fixes.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-08-06T07:29:10.311240+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[deepseek] The diff thoroughly implements the specification’s acceptance criteria.  \nOne minor point:\n\n- **Category:** security  \n  **Severity:** low  \n  **File:** `plugins/shipwright-run/scripts/lib/orchestrator_pkg/config_io.py` (in `_read_parse_shape`, the `JSONDecodeError` branch)  \n  **Finding:** The detail passed to `RunConfigUnreadable` for `category=\"parse\"` is `str(exc)`, which can include a snippet of the input file content from `json.JSONDecodeError`. Although bounded to 300 characters, a malformed config could leak sensitive portions of the file. The test `test_message_never_echoes_file_content` covers one shape, but a different truncation or error position might still include content.  \n  **Suggestion:** Build the detail from `exc.msg` and `exc.lineno` without the raw document snippet (e.g. `f\"{exc.msg} at line {exc.lineno}\"`). This would strictly prevent any file content from reaching the error payload.\n\nNo other defects were found; the change meets all acceptance criteria, includes strong tests, and correctly implements the strict/tolerant reader split with the anti‑data‑loss guarantee.\n\nSHIPWRIGHT_VERDICT: approve\n\n[openai] - Category: spec\n- Severity: medium\n- File: `plugins/shipwright-run/scripts/lib/orchestrator_pkg/cli.py:235-245`\n- Finding: For an unreadable config, `get-next-step` serializes the same blocked/error payload to stdout and then again to stderr. AC8 requires the actionable CLI payload to be emitted to stderr exactly once; emitting it on two streams can cause consumers that aggregate output or parse stdout to observe duplicate diagnostics.\n- Suggestion: Keep the normal result on stdout only if that is an intentional compatibility requirement, but emit a distinct minimal status there; otherwise, for blocked results print the payload only to stderr and return 2. Document and test the intended stream contract explicitly.\n\n- Category: test\n- Severity: low\n- File: `plugins/shipwright-run/tests/test_runconfig_corrupt_cli.py:55-61`\n- Finding: The “printed twice” test exercises only `update-step`. The separate `get-next-step` branch is the one that explicitly prints the result both before and after checking `blocked`, but its test checks only the exit code and stdout payload, not that stderr contains exactly one structured diagnostic.\n- Suggestion: Add a `get-next-step` unreadable-config test that asserts the expected stderr JSON payload and its occurrence count, and asserts the intended stdout behavior so a duplicate-stream regression is caught.\n\nOverall assessment: The strict/tolerant reader split and fail-closed mutation paths substantially implement the specified safety behavior, but the blocked `get-next-step` CLI output does not cleanly meet the single-emission stderr contract and lacks coverage for that branch. Ship with fixes.\n\nSHIPWRIGHT_VERDICT: revise",
+      "verdicts": {
+        "openai": "revise",
+        "deepseek": "approve"
+      }
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-06T07:29:00.098857+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    }
+  }
+}
