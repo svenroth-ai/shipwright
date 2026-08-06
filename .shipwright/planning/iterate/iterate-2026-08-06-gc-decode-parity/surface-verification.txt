@@ -1,0 +1,6 @@
+shared/tests/test_store_git_timeout_paths.py::test_sweep_skips_when_the_guard_times_out PASSED [ 96%]
+shared/tests/test_store_git_timeout_paths.py::test_staged_probe_timeout_does_not_read_as_a_staged_delta PASSED [ 97%]
+shared/tests/test_store_git_timeout_paths.py::test_commit_timeout_is_reported_structurally PASSED [ 98%]
+shared/tests/test_store_git_timeout_paths.py::test_delivered_membership_gcs_nothing_on_timeout PASSED [100%]
+
+============================= 92 passed in 43.61s =============================

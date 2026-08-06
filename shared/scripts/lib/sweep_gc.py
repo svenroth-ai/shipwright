@@ -55,9 +55,9 @@ from __future__ import annotations
 from pathlib import Path
 
 from lib.churn_merge import TRIAGE_LOG
-from lib.git_base import run_git_soft
+from lib.git_base import run_git_bytes_soft
 from lib.sweep_canon import canonical_form
-from lib.sweep_text import normalized_set
+from lib.sweep_text import decode_store_text, normalized_set
 
 
 def delivered_membership(
@@ -68,25 +68,35 @@ def delivered_membership(
     reachable from ``origin``. A non-zero exit yields two EMPTY sets —
     nothing GC'd (fail-safe; a line origin does not provably hold always survives).
 
-    Via :func:`lib.git_base.run_git_soft`, so a TIMEOUT lands in that same fail-safe
-    branch instead of raising. This runs inside the sweep's canonical triage lock and
-    on the ``setup_iterate_worktree`` step-5 path, where an escaping ``TimeoutExpired``
-    aborts setup after ``git worktree add`` has already succeeded. "Could not read
-    origin" and "origin has nothing" call for the identical, already-safe answer:
-    drop nothing.
+    Via :func:`lib.git_base.run_git_bytes_soft`, so a TIMEOUT lands in that same
+    fail-safe branch instead of raising. This runs inside the sweep's canonical triage
+    lock and on the ``setup_iterate_worktree`` step-5 path, where an escaping
+    ``TimeoutExpired`` aborts setup after ``git worktree add`` has already succeeded.
+    "Could not read origin" and "origin has nothing" call for the identical,
+    already-safe answer: drop nothing.
+
+    **BYTES, then :func:`lib.sweep_text.decode_store_text`** — the same rule the outbox
+    is read with. The text-mode helper decodes with ``errors="replace"``, so a line
+    carrying a byte that is not valid UTF-8 came back as ``U+FFFD`` here while the
+    buffer read it as ``U+DCFF``: the two sides could never match, the line was never
+    recognised as delivered, and it stayed in the gitignored buffer forever. This was
+    the P2.19f limitation recorded here as deferred (card ``trg-94d3cb73``); the two
+    remedies it named as disproportionate — re-decoding ``run_git`` for its 133 call
+    sites, or bypassing it and losing the audit-1/7 ``TimeoutExpired`` handling — are
+    both avoided by taking the bytes from a primitive that keeps that handling
+    (iterate-2026-08-06-gc-decode-parity).
+
+    It matters MORE under canonical-form membership than it did under the old id
+    rule: an id is pure ASCII, so ``append`` lines used to match anyway and only
+    status/unparseable lines were stranded. Canonicalizing runs over the whole
+    record, so every line with such a byte is now affected — the fix and the rule
+    landed for each other, not merely alongside.
     """
-    # KNOWN LIMITATION, deferred by decision to card ``trg-94d3cb73`` (P2.19f):
-    # ``run_git_soft`` decodes with ``errors="replace"`` while the outbox is read with
-    # ``errors="surrogateescape"``, so a line carrying a non-UTF-8 byte yields a
-    # DIFFERENT string on each side and matches on neither path — it is retained
-    # forever. Direction is retention, never loss. Not fixed here because both
-    # remedies are disproportionate: changing ``run_git`` touches its 133 call sites,
-    # and bypassing it locally would discard the ``TimeoutExpired`` handling that
-    # audit findings 1 and 7 installed for this exact path.
-    proc = run_git_soft(["show", f"origin/{default_branch}:{TRIAGE_LOG}"], cwd=main_root)
+    proc = run_git_bytes_soft(
+        ["show", f"origin/{default_branch}:{TRIAGE_LOG}"], cwd=main_root)
     if proc.returncode != 0:
         return set(), set()
-    return parse_delivered(normalized_set(proc.stdout))
+    return parse_delivered(normalized_set(decode_store_text(proc.stdout)))
 
 
 def parse_delivered(normalized_lines: set[str]) -> tuple[set[str], set[str]]:

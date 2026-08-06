@@ -1,43 +1,44 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-07-28-docs-placement-rule"
+run_id: "iterate-2026-08-06-gc-decode-parity"
 phase: "iterate"
-reason: "iterate: docs/ placement rule + remove one generated artifact and five finished records"
-timestamp: "2026-07-28T12:18:50.089137+00:00"
+reason: "iterate: decode both sides of the triage-log seam the same way"
+timestamp: "2026-08-06T11:15:46.858499+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-07-28 12:18:50 UTC
+> Auto-generated 2026-08-06 11:15:46 UTC
 
 ## Session Info
 
-- **Session ID**: 7c6c7b07-d3a2-4c91-ba4e-fab3535b5067
-- **Timestamp**: 2026-07-28 12:18:50 UTC
-- **Reason**: iterate: docs/ placement rule + remove one generated artifact and five finished records
+- **Session ID**: d0c8b17d-bbf1-4ae4-a31b-0f0814101741
+- **Timestamp**: 2026-08-06 11:15:46 UTC
+- **Reason**: iterate: decode both sides of the triage-log seam the same way
 
 ## Last Iterate
 
-- **Run ID**: iterate-2026-07-28-docs-placement-rule
-- **Date**: 2026-07-28T12:18:44.151571Z
-- **Type**: change
+- **Run ID**: iterate-2026-08-06-gc-decode-parity
+- **Date**: 2026-08-06T11:15:46.671994Z
+- **Type**: bug
 - **Complexity**: medium
-- **Branch**: iterate/docs-placement-rule
-- **ADR**: iterate-2026-07-28-docs-placement-rule
+- **Branch**: iterate/gc-decode-parity
+- **ADR**: iterate-2026-08-06-gc-decode-parity
 - **Tests passed**: True
-- **Spec**: .shipwright/planning/iterate/iterate-2026-07-28-docs-placement-rule.md
+- **Spec**: .shipwright/planning/iterate/2026-08-06-gc-decode-parity.md
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/docs-placement-rule
-- **Run ID**: iterate-2026-07-28-docs-placement-rule
-- **Spec**: .shipwright/planning/iterate/iterate-2026-07-28-docs-placement-rule.md
-- **Complexity**: medium · **spec_impact:** none · **affected_frs:** [] ·
-- **External Review Marker**: completed (external_review_state.json @ 2026-07-28T11:58:04)
+- **Branch**: iterate/gc-decode-parity
+- **Run ID**: iterate-2026-08-06-gc-decode-parity
+- **Spec**: .shipwright/planning/iterate/2026-08-06-gc-decode-parity.md
+- **Complexity**: medium
+- **External Review Marker**: stale (predates spec (2026-08-06T09:07:22))
 
 ### Mandatory replay on Resume
 
 Before dispatching to the handoff's Remaining phase, run these if missing:
+- Step 4 — External LLM Review (marker missing/stale)
 - Finalization (F0–F11) after all mandatory phases pass
 
 ## Legacy build state
@@ -51,8 +52,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/docs-placement-rule
-- **Last Commit**: 7ec426a2 chore(triage): sweep 54 outbox append(s) into branch
+- **Branch**: iterate/gc-decode-parity
+- **Last Commit**: 0c8f0f6d fix(triage): decode both sides of the triage-log seam the same way
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -68,17 +69,17 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 | Event | Type | Source | Date |
 |-------|------|--------|------|
-| evt-003a4ccb | grade_snapshot | — | 2026-07-28 |
-| evt-a25fc820 | work_completed | iterate (iterate: docs/ placement rule + remove one generated artifact and five finished records) | 2026-07-28 |
-| evt-7963d51e | grade_snapshot | — | 2026-07-28 |
-| evt-2df150c5 | work_completed | iterate (Make a conditional session policy gating subagents a question asked before Stage 1 rather than a silent not_run at F11, and define what a real blocker is.) | 2026-07-28 |
-| evt-5f7e67f6 | grade_snapshot | — | 2026-07-28 |
+| evt-dff667b4 | work_completed | iterate (iterate: decode both sides of the triage-log seam the same way) | 2026-08-06 |
+| evt-212583cb | work_completed | iterate (iterate: S9/S10 sentinel run_id guard) | 2026-08-06 |
+| evt-be7a47a0 | work_completed | iterate (iterate: P2.19c — corruption reads as absence; delivered vs buffered) | 2026-08-06 |
+| evt-3241b7ad | work_completed | iterate (Give every un-deliverable outbox line a proportional disposition (hold / quarantine / block) so no single line can stop triage delivery permanently; add record-boundary recovery to the validator and the protection universe.) | 2026-08-06 |
+| evt-cec39fd7 | work_completed | iterate (Normalize __import__("json")/__import__("os") literals to top-level imports in shared/tests/test_check_test_results_infra.py and shared/tests/test_iterate_timing_cli.py, clearing a benign PY_DYNAMIC_IMPORT prompt-scan finding (CI run 30996996377, 2 medium).) | 2026-08-05 |
 
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 400
-- **Last iterate**: change — iterate: docs/ placement rule + remove one generated artifact and five finished records (2026-07-28)
+- **Total work events**: 481
+- **Last iterate**: change — iterate: decode both sides of the triage-log seam the same way (2026-08-06)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
 ## Recent Decisions
