@@ -1,0 +1,105 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-08-05-windows-ci-tests",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-05T20:40:34.317975+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-05T20:25:18.214370+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "unstructured",
+      "raw_excerpt": "[deepseek] Category: approach, Severity: medium - concurrency group isolation; Category: edge-case - job-level shell default; Category: risk - main_health.py monitoring divergence (documented as intentional in Out of Scope); Category: dependency - confirm SHA matches ci.yml. Overall assessment: well-scoped, empirically verified. SHIPWRIGHT_VERDICT: approve\n\n[openai] 1. Category: security, Severity: medium - Finding: The plan explicitly says astral-sh/setup-uv will use the pinned SHA from ci.yml, but describes checkout only as checkout. Suggestion: Copy the exact immutable actions/checkout SHA... Overall the approach is appropriately scoped and sound. SHIPWRIGHT_VERDICT: revise",
+      "verdicts": {
+        "openai": "unknown",
+        "deepseek": "unknown"
+      }
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 2,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "correctness",
+          "file": "shared/tests/test_main_attribution_workflows.py",
+          "line": 184,
+          "finding": "windows-tests.yml push-triggers main but was registered in neither MONITORED_WORKFLOWS nor DELIBERATELY_UNMONITORED, breaking test_no_push_to_main_workflow_is_silently_left_out_of_the_policy. FIXED: added to DELIBERATELY_UNMONITORED with a rationale comment; re-verified 14 passed locally.",
+          "suggestion": "Register the new push-to-main workflow in the monitored-workflow drift test, deliberately-unmonitored side, since IT-9 Unit 3 owns the must-pass reconciliation decision.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "procedural-correctness",
+          "file": ".shipwright/planning/iterate/iterate-2026-08-05-windows-ci-tests/ci_supplychain_ack.json",
+          "line": 1,
+          "finding": "ci_supplychain_ack.json cited consistent_with: ADR-118, which collides with an unrelated formal ADR file at .shipwright/planning/adr/118-a-branch-carried-view-needs-a-merge-register.md (a different numbering space than decision_log.md's informal ADR-118). FIXED: re-recorded citing the unambiguous run-id iterate-2026-06-01-ci-launch-hardening instead.",
+          "suggestion": "Cite the iterate run-id form when a repo has two independent ADR-numbering registries, to avoid an accidental cross-registry collision.",
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-08-05T20:37:13.382167+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-05T20:36:35.150322+00:00",
+      "disposition": "Stage 3 doubt-reviewer conditional rule not met: diff touches no migrations, async/concurrency, cross-plugin imports, or irreversible ops (a new CI workflow YAML + a one-line test-registry frozenset entry + planning JSON artifacts).",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-05T20:40:07.677804+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "unstructured",
+      "raw_excerpt": "[deepseek] No concrete defects found. All acceptance criteria satisfied: runs specified test directories on windows-latest with same triggers as ci.yml, does not modify ci.yml, fails closed. DELIBERATELY_UNMONITORED addition correctly accounts for the new push-to-main workflow without pre-empting a sibling unit's decision. Scoped, locally verified, consistent with documented supply-chain posture. SHIPWRIGHT_VERDICT: approve\n\n[openai] No concrete defects found. Satisfies required triggers, runs all three specified shared test directories on windows-latest, fail-closed commands, ci.yml unchanged. DELIBERATELY_UNMONITORED registration prevents the workflow-policy invariant from regressing without incorrectly making the workflow part of the post-merge health mechanism. SHIPWRIGHT_VERDICT: approve",
+      "verdicts": {
+        "openai": "unknown",
+        "deepseek": "unknown"
+      }
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-05T20:36:34.896131+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    }
+  }
+}
