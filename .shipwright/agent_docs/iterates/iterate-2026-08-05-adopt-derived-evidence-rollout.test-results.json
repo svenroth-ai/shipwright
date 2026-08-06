@@ -170,7 +170,17 @@
           "disposition": "tested",
           "evidence": "test_generated_claude_md_carries_the_same_statement PASSED"
         }
-      ]
+      ],
+      "counts": {
+        "behaviors": 26,
+        "tested": 26,
+        "untestable": 0,
+        "untested_testable": 0
+      },
+      "enumeration_basis": {
+        "acs": 6,
+        "covered_acs": 6
+      }
     },
     "degraded": [
       {
