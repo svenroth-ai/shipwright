@@ -1,0 +1,378 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-08-05-adopt-derived-evidence-rollout",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-06T09:22:15.978960+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 6,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "integration / risk",
+          "file": null,
+          "line": null,
+          "finding": "The plan relies on the adopt script’s Step H to parse the JSON output of `--stamp-adopted` (status, base, stamped) and branch accordingly—commit only on success or `no_base`, abort on `partial` or non‑zero exit. The exact decision logic (exit‑code handling, JSON parsing, distinguishing `no_base` from errors) is not detailed, and an oversight here could allow a half‑stamped commit to be pushed.",
+          "suggestion": "Include a precise specification of the subprocess invocation and response‑parsing sequence in the mini‑plan, and cover it with an integration test that mocks the tool’s output to verify the adopt script’s guarding behaviour.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge‑case",
+          "file": null,
+          "line": null,
+          "finding": "The stamp tool’s `--stamp-adopted` mode prints JSON to stdout, but any incidental INFO/WARNING output (e.g., from file operations) could leak to stdout and corrupt the JSON if not properly separated, making parsing fragile.",
+          "suggestion": "Explicitly audit the tool to ensure all non‑result output goes to stderr, and verify in the adopt script’s subprocess call that stdout is read exclusively for JSON and stderr is captured for logging. A quick smoke test with injected log messages would confirm.  Overall assessment: The approach is thorough, addresses all three gaps with careful handling of edge cases, and avoids reintroducing deterministic churn. The remaining integration detail is low‑risk but should be pinned down to guarantee the commit gating works perfectly.  SHIPWRIGHT_VERDICT: approve",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The proposed `--stamp-adopted` resolution rule conflicts with AC-2 for an adoption record that lacks `commit_at_adoption`. The mode treats an absent `--base` as permission to resolve current `HEAD`, but in an adopted-repo flow a missing recorded adoption commit means the authoritative value cannot be established. Falling back to Step H’s current `HEAD` can produce plausible but incorrect provenance after a resume, retry, or intervening commit—the timing failure the plan otherwise correctly identifies.",
+          "suggestion": "Make the adoption caller always pass an explicit base state: either the recorded `commit_at_adoption` value or an explicit no-base sentinel. For `--stamp-adopted`, absent `--base` should either yield `no_base` or be rejected as a caller bug; it should not resolve `HEAD`. If retaining a generic CLI fallback is required for another caller, separate that behavior from the adoption path and test an older/malformed adoption event with no `commit_at_adoption`.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "The partial-stamp failure path appears to write the successfully stamped subset before detecting that another expected document was banner-less: the listed sequence calls `write_back` before comparing `stamped` with the expected set. Adoption then aborts without a commit, but leaves the target repository dirty and partially mutated. That can interfere with retry behavior, clean-tree checks, or an operator’s recovery, even though it avoids shipping a bad commit.",
+          "suggestion": "Validate completeness before writing anything. Build the stamped payload in memory, compare the returned stamped paths to the expected set, and only call `write_back` on a complete stamp or the intentional `no_base` outcome. Extend the partial-stamp integration test to assert both that no commit is created and that the worktree/index remain unchanged.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The Group E remedy sequence only becomes executable when the evidence files are the sole working-tree changes. `--restore` resolves the reported evidence drift, but `--refresh-pr` still fails preflight if unrelated uncommitted changes exist, which is a common operator state when running an audit. The proposed integration test covers only the narrow clean-after-restore case.",
+          "suggestion": "Keep the ordered `--restore` then `--refresh-pr` recommendation, but explicitly state that unrelated changes must be committed, stashed, or otherwise cleared before the PR command. Add a test with an unrelated dirty file to ensure the finding text does not imply that restoring the evidence files alone guarantees preflight success.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "“Canonical commit object” is required in prose, but the plan does not explicitly say that the banner uses the canonical SHA returned by `git rev-parse --verify`, rather than the supplied lexical input. If abbreviated hashes are accepted by `safe_commit`, stamping the input rather than the resolved object weakens the stated canonical-provenance guarantee and can make evidence less stable or ambiguous.",
+          "suggestion": "Have the resolver return the full verified commit ID and pass that returned value to `stamp_fixed_point`. Add a test using an accepted abbreviated SHA, asserting that the emitted `base=` is the full resolved commit hash.  Overall, the design is appropriately narrow and reuses the established fixed-point stamping and verification mechanisms well. It should be revised to prevent an absent adoption record from silently becoming a current-HEAD claim and to make failed partial stamping non-mutating. SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-08-06T08:17:34.069656+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[deepseek] - **Category:** integration / risk  \n  **Severity:** medium  \n  **Finding:** The plan relies on the adopt script’s Step H to parse the JSON output of `--stamp-adopted` (status, base, stamped) and branch accordingly—commit only on success or `no_base`, abort on `partial` or non‑zero exit. The exact decision logic (exit‑code handling, JSON parsing, distinguishing `no_base` from errors) is not detailed, and an oversight here could allow a half‑stamped commit to be pushed.  \n  **Suggestion:** Include a precise specification of the subprocess invocation and response‑parsing sequence in the mini‑plan, and cover it with an integration test that mocks the tool’s output to verify the adopt script’s guarding behaviour.\n\n- **Category:** edge‑case  \n  **Severity:** low  \n  **Finding:** The stamp tool’s `--stamp-adopted` mode prints JSON to stdout, but any incidental INFO/WARNING output (e.g., from file operations) could leak to stdout and corrupt the JSON if not properly separated, making parsing fragile.  \n  **Suggestion:** Explicitly audit the tool to ensure all non‑result output goes to stderr, and verify in the adopt script’s subprocess call that stdout is read exclusively for JSON and stderr is captured for logging. A quick smoke test with injected log messages would confirm.\n\n**Overall assessment:** The approach is thorough, addresses all three gaps with careful handling of edge cases, and avoids reintroducing deterministic churn. The remaining integration detail is low‑risk but should be pinned down to guarantee the commit gating works perfectly.\n\nSHIPWRIGHT_VERDICT: approve\n\n[openai] 1. **Category:** edge-case  \n   **Severity:** high  \n   **Finding:** The proposed `--stamp-adopted` resolution rule conflicts with AC-2 for an adoption record that lacks `commit_at_adoption`. The mode treats an absent `--base` as permission to resolve current `HEAD`, but in an adopted-repo flow a missing recorded adoption commit means the authoritative value cannot be established. Falling back to Step H’s current `HEAD` can produce plausible but incorrect provenance after a resume, retry, or intervening commit—the timing failure the plan otherwise correctly identifies.  \n   **Suggestion:** Make the adoption caller always pass an explicit base state: either the recorded `commit_at_adoption` value or an explicit no-base sentinel. For `--stamp-adopted`, absent `--base` should either yield `no_base` or be rejected as a caller bug; it should not resolve `HEAD`. If retaining a generic CLI fallback is required for another caller, separate that behavior from the adoption path and test an older/malformed adoption event with no `commit_at_adoption`.\n\n2. **Category:** risk  \n   **Severity:** medium  \n   **Finding:** The partial-stamp failure path appears to write the successfully stamped subset before detecting that another expected document was banner-less: the listed sequence calls `write_back` before comparing `stamped` with the expected set. Adoption then aborts without a commit, but leaves the target repository dirty and partially mutated. That can interfere with retry behavior, clean-tree checks, or an operator’s recovery, even though it avoids shipping a bad commit.  \n   **Suggestion:** Validate completeness before writing anything. Build the stamped payload in memory, compare the returned stamped paths to the expected set, and only call `write_back` on a complete stamp or the intentional `no_base` outcome. Extend the partial-stamp integration test to assert both that no commit is created and that the worktree/index remain unchanged.\n\n3. **Category:** edge- […truncated]",
+      "verdicts": {
+        "openai": "revise",
+        "deepseek": "approve"
+      }
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 14,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "shared/scripts/tools/compliance_adopt_stamp.py",
+          "line": 90,
+          "finding": "no_base short-circuited BEFORE the presence check, so a commitless repository whose Step F also produced nothing returned no_base/exit 0, Step H continued, and verify is skipped on no_base by design. Zero evidence documents shipped with every layer reporting success - bypassing no_documents in exactly the branch that needs it.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "plugins/shipwright-adopt/skills/adopt/references/step-h-validate-commit-handoff.md",
+          "line": 44,
+          "finding": "Step H's status list was presented as exhaustive but omitted no_documents, and its ok bullet over-claimed: ok with a non-empty absent list means an incomplete set, which verify_commit presence-filters and calls verified.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "security",
+          "file": "plugins/shipwright-adopt/skills/adopt/references/step-h-validate-commit-handoff.md",
+          "line": 95,
+          "finding": "git add -A was newly prescribed with no precondition. Adopt runs on a brownfield repository; an untracked file there was never forced into .gitignore, so a .env, a database dump or a scratch key would be staged into a commit titled 'adopt repository into Shipwright SDLC'. Adopt's own gitignore check classifies only adopt's outputs.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "plugins/shipwright-compliance/scripts/audit/group_e.py",
+          "line": 78,
+          "finding": "The remedy named --restore, which /shipwright-compliance does not accept - it is an internal flag of refresh_compliance_docs.py, and Step 2c runs it itself as the first line of the --refresh-pr procedure. An operator typing /shipwright-compliance --restore hits the very circle AC-6 exists to break. The mini-plan's premise misread an internal step as an operator precondition.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "shared/scripts/tools/compliance_adopt_stamp.py",
+          "line": 126,
+          "finding": "The non-mutating guarantee held for validation but not for write_back itself, which writes the set in a loop with no rollback - a raise on the fourth file leaves three stamped. This mode also returns before the crash handler the other modes have, so the agent would get a traceback with no status field.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/scripts/tools/compliance_adopt_stamp.py",
+          "line": 68,
+          "finding": "The resolver validated the TRIMMED value and interpolated the UNTRIMMED one, so a padded --base passed the lexical gate and then failed to resolve, silently degrading an establishable commit to no_base.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/scripts/tools/compliance_adopt_stamp.py",
+          "line": 70,
+          "finding": "An abbreviated --base that is also a ref name resolves as the REF: for 7-39 hex git tries dwim_ref first and falls back to short-oid only if no ref matched. In a repo with a branch named deadbeef, --base deadbeef stamps that branch's tip - a real, plausible, wrong commit. The docstring claimed symbolic revisions could not get through.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "architecture",
+          "file": "shared/scripts/tools/compliance_adopt_stamp.py",
+          "line": 22,
+          "finding": "The new module omitted the unconditional sys.path preamble all four sibling compliance_* modules carry, so its ADR-045 protection was importer-dependent.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/scripts/tools/compliance_adopt_stamp.py",
+          "line": 128,
+          "finding": "expected: len(present) was vacuous - in the ok branch present == set(stamped) by construction, so a consumer comparing them got a guarantee that could not fail.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/tests/test_stamp_adopted_base.py",
+          "line": null,
+          "finding": "The never-resolves-HEAD guard asserted tuple MEMBERSHIP, so the natural fall-through rev-parse --verify HEAD^{commit} would not match; and in the exercised path git is never reached at all, so the assertion was vacuously true.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "integration-tests/test_adopt_evidence_stamp_e2e.py",
+          "line": null,
+          "finding": "The amend repair was verified only for the property it fixes, not the one it must preserve: git commit --amend -- <pathspec> survives as a whole commit only because git overlays the pathspec onto a false index from HEAD, and verify_commit looks at nothing outside the evidence set.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "plugins/shipwright-adopt/skills/adopt/references/step-h-validate-commit-handoff.md",
+          "line": 178,
+          "finding": "The handoff banner read 'Evidence: current as of this commit' three lines above 'Commit: <sha>', but the stamp deliberately records the PRE-adoption HEAD. Two different SHAs, in a change whose entire subject is evidence that names its own state honestly.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/scripts/tools/compliance_provenance.py",
+          "line": 118,
+          "finding": "The banner replacement ends in a bare LF while the pattern consumes the original CR, so a CRLF document ends with one LF-only line among CRLF lines. No CI-vs-local divergence found in the delivered tests; the residue is a mixed-ending committed artifact, and a git add failure under core.safecrlf=true.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "plugins/shipwright-adopt/scripts/lib/claude_md_renderer.py",
+          "line": 112,
+          "finding": "The AC-5 section was a 15-line essay restating the Step H banner and guide.md in a file whose own footer states every line costs context in every future session of every adopted repository.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-08-06T10:09:09.627497+00:00",
+      "disposition": null,
+      "recorded_by": "shipwright-build:code-reviewer (opus) — 14 findings, 13 fixed, 1 filed as trg-00ecedd6",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-06T10:48:30.682169+00:00",
+      "disposition": "Stage-3 doubt-reviewer was spawned (opus, per the CLAUDE.md standing grant) and terminated mid-run by the account's MONTHLY SPEND LIMIT, not by policy, not by an agent error, and not by a decision of this run. It produced no findings. Retrying is not available on this account state. NOT substituted by a self-pass: the value of Stage 3 is fresh context adversarially biased to disprove, and the reviewer that wrote the code is the one party who cannot supply that (see the cascade's own rationale). What partially compensates, recorded so the gap is sized rather than hand-waved: the external code review DID run (separate billing path) and returned 3 findings, one medium that BOTH internal stages had missed - no_base bypassing the evidence-completeness gate - which is exactly the class Stage 3 hunts. Residual risk is therefore real but bounded: five passes ran, four of them adversarial in some form.",
+      "recorded_by": "spend-limit termination, 2026-08-06",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 3,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": "shared/scripts/tools/compliance_adopt_stamp.py:130-136",
+          "line": null,
+          "finding": "A non-empty but incomplete evidence set is accepted when the base cannot be established. If one or more markdown documents are absent and `--base` is absent/`HEAD`/invalid, this returns `status: \"no_base\"` with exit 0 before evaluating the incomplete set. Step H explicitly says `no_base` continues and skips verification, so adoption can commit only some evidence documents. This contradicts the Step H handling for `ok` plus `absent`, which says not to commit, and undermines AC-1’s requirement that each markdown evidence document be seeded. The same ordering also masks present banner-less documents in a commitless repository.",
+          "suggestion": "Treat `absent` as an incomplete/fatal result independently of base resolution, or require Step H to reject any `no_base` result with non-empty `absent`. Validate present documents’ banners before allowing the `no_base` continuation path as well.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "test",
+          "file": "shared/tests/test_stamp_adopted_evidence.py:135-149",
+          "line": null,
+          "finding": "The test suite codifies the incomplete-set success behavior rather than testing the required commit-blocking behavior. `test_an_absent_document_is_not_confused_with_an_unstampable_one` asserts an exit-0 `ok` result for a missing markdown evidence document, but no test covers the more dangerous `no_base` plus partially absent set that Step H will explicitly continue past. As a result, the incomplete commit path above remains green.",
+          "suggestion": "Add cases for absent evidence with valid and unavailable bases, asserting that adoption cannot proceed/commit unless the intended non-blocking behavior is explicitly implemented in Step H with a separate hard gate.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "test",
+          "file": "plugins/shipwright-adopt/tests/test_adopt_evidence_disclosure.py:134-150",
+          "line": null,
+          "finding": "The generated-CLAUDE.md test does not verify the cadence portion of AC-5. It checks for the heading, refresh commands, and `Source-State:`, but would pass if “at releases and on demand, not continuously” were removed or inverted in the generated guidance.",
+          "suggestion": "Assert the rendered template states both the release/on-demand cadence and adjacent negation of continuous refresh, similarly to the handover test.  Overall assessment: ship-with-fixes. The principal implementation issue is that `no_base` can bypass the evidence-completeness stop condition and permit an incomplete adoption commit. SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-08-06T10:48:16.875480+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "partial",
+      "raw_excerpt": "[deepseek] The implementation is thorough and matches the specification. All acceptance criteria are covered, the code is correct, and the tests are comprehensive and validate actual behavior, including edge cases and error paths. No security issues or regressions are introduced.\n\nSHIPWRIGHT_VERDICT: approve\n\n[openai] - Category: edge-case  \n  Severity: medium  \n  File: `shared/scripts/tools/compliance_adopt_stamp.py:130-136`  \n  Finding: A non-empty but incomplete evidence set is accepted when the base cannot be established. If one or more markdown documents are absent and `--base` is absent/`HEAD`/invalid, this returns `status: \"no_base\"` with exit 0 before evaluating the incomplete set. Step H explicitly says `no_base` continues and skips verification, so adoption can commit only some evidence documents. This contradicts the Step H handling for `ok` plus `absent`, which says not to commit, and undermines AC-1’s requirement that each markdown evidence document be seeded. The same ordering also masks present banner-less documents in a commitless repository.  \n  Suggestion: Treat `absent` as an incomplete/fatal result independently of base resolution, or require Step H to reject any `no_base` result with non-empty `absent`. Validate present documents’ banners before allowing the `no_base` continuation path as well.\n\n- Category: test  \n  Severity: medium  \n  File: `shared/tests/test_stamp_adopted_evidence.py:135-149`  \n  Finding: The test suite codifies the incomplete-set success behavior rather than testing the required commit-blocking behavior. `test_an_absent_document_is_not_confused_with_an_unstampable_one` asserts an exit-0 `ok` result for a missing markdown evidence document, but no test covers the more dangerous `no_base` plus partially absent set that Step H will explicitly continue past. As a result, the incomplete commit path above remains green.  \n  Suggestion: Add cases for absent evidence with valid and unavailable bases, asserting that adoption cannot proceed/commit unless the intended non-blocking behavior is explicitly implemented in Step H with a separate hard gate.\n\n- Category: test  \n  Severity: low  \n  File: `plugins/shipwright-adopt/tests/test_adopt_evidence_disclosure.py:134-150`  \n  Finding: The generated-CLAUDE.md test does not verify the caden […truncated]",
+      "verdicts": {
+        "openai": "revise",
+        "deepseek": "approve"
+      }
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 9,
+      "findings": [
+        {
+          "severity": null,
+          "category": "missing",
+          "file": "integration-tests/test_adopt_evidence_stamp_e2e.py",
+          "line": null,
+          "finding": "No test exercised the commitless/no_base onboarding path, and nothing proved the claim that makes Step H's skip load-bearing: that --verify-commit REJECTS a base-less commit. The promised amend then re-verify branch was likewise absent, while the ledger asserted zero testable-but-untested. — spec: miniplan Tests table (empty-repo onboarding) + external-plan-review.md R2-5/R2-6 ACCEPTED + spec 'zero testable-but-untested'",
+          "suggestion": "miniplan Tests table (empty-repo onboarding) + external-plan-review.md R2-5/R2-6 ACCEPTED + spec 'zero testable-but-untested'",
+          "source": "spec-reviewer"
+        },
+        {
+          "severity": null,
+          "category": "unfaithful",
+          "file": "plugins/shipwright-adopt/skills/adopt/references/step-h-validate-commit-handoff.md",
+          "line": null,
+          "finding": "Step 1a writes the stamp to the WORKTREE, but Step H prescribed a bare git commit (index-only) and no step in the adopt skill ever staged anything - confirmed by grep across skill, references and scripts. Staging before 1a, the natural reading, ships pre-stamp blobs. The integration test invented a pathspec add and claimed it was exactly as the skill prescribes, which was false. — spec: AC-1 + miniplan 'immediately before the commit'",
+          "suggestion": "AC-1 + miniplan 'immediately before the commit'",
+          "source": "spec-reviewer"
+        },
+        {
+          "severity": null,
+          "category": "unfaithful",
+          "file": "plugins/shipwright-adopt/tests/test_adopt_evidence_disclosure.py",
+          "line": null,
+          "finding": "The cited test could not fail. Substring 'not' matches Nothing, cannot and Do not commit elsewhere in the same file, so the assertion reduced to 'the word continuous appears somewhere' and an inverted banner reading refreshed continuously passed it. — spec: Ledger row 16 (handover says not continuously)",
+          "suggestion": "Ledger row 16 (handover says not continuously)",
+          "source": "spec-reviewer"
+        },
+        {
+          "severity": null,
+          "category": "unfaithful",
+          "file": "integration-tests/test_adopt_evidence_stamp_e2e.py",
+          "line": null,
+          "finding": "The cited test passed when --restore did nothing at all (the tree was already dirty from the drifted evidence file) and also when it DELETED the unrelated file, since a staged-then-deleted path still appears in porcelain. It could not detect the failure its own message named. — spec: Ledger row 13 (restore does not clear unrelated work)",
+          "suggestion": "Ledger row 13 (restore does not clear unrelated work)",
+          "source": "spec-reviewer"
+        },
+        {
+          "severity": null,
+          "category": "unfaithful",
+          "file": "plugins/shipwright-adopt/tests/test_adopt_evidence_disclosure.py",
+          "line": null,
+          "finding": "The cited test asserted only that the stamp anchor precedes the verify anchor. Moving the stamp instruction to after the commit step kept it green, so the before-committing half - the whole reason for placing it at Step H - was unpinned. — spec: Ledger row 17 (Step H stamps before committing)",
+          "suggestion": "Ledger row 17 (Step H stamps before committing)",
+          "source": "spec-reviewer"
+        },
+        {
+          "severity": null,
+          "category": "unfaithful",
+          "file": "integration-tests/test_adopt_evidence_stamp_e2e.py",
+          "line": null,
+          "finding": "preflight_pr is never imported or called by any test in the diff; the delivered test asserts git status instead. The substitution is defensible but was undeclared, unlike the module-split deviation which was recorded. — spec: miniplan 'Verified against preflight_pr in an integration test' + external-plan-review R2-1 ACCEPTED",
+          "suggestion": "miniplan 'Verified against preflight_pr in an integration test' + external-plan-review R2-1 ACCEPTED",
+          "source": "spec-reviewer"
+        },
+        {
+          "severity": null,
+          "category": "out-of-scope",
+          "file": "shared/scripts/tools/compliance_adopt_stamp.py",
+          "line": null,
+          "finding": "An ABSENT evidence document was folded into the same fatal partial branch as a bannerless one and aborted onboarding, with a detail that misstated the cause - 'carries no Source-State banner' said of a file that is not there. Both sibling deliveries presence-filter instead, and Step F's seeder is documented non-blocking. — spec: miniplan (shortfall is FATAL, justified solely for a document with no Source-State line) + AC-2 principle that onboarding still finishes",
+          "suggestion": "miniplan (shortfall is FATAL, justified solely for a document with no Source-State line) + AC-2 principle that onboarding still finishes",
+          "source": "spec-reviewer"
+        },
+        {
+          "severity": null,
+          "category": "unfaithful",
+          "file": "shared/tests/test_stamp_adopted_evidence.py",
+          "line": null,
+          "finding": "The banner never carries the full id - banner_line truncates to 12 - and the cited test asserted the JSON report field rather than the document, so the row's claim was false as written and unproven where it mattered. — spec: Ledger row 3 (abbreviated base stamped as the resolved full id)",
+          "suggestion": "Ledger row 3 (abbreviated base stamped as the resolved full id)",
+          "source": "spec-reviewer"
+        },
+        {
+          "severity": null,
+          "category": "unfaithful",
+          "file": "shared/tests/test_stamp_adopted_evidence.py",
+          "line": null,
+          "finding": "The guard patched the resolver module only. The CLI's own rev-parse HEAD goes through its own module reference and was unpatched, so the early-return guarantee asserted in the code comments was not pinned. — spec: Ledger row 6 (this mode never resolves HEAD)",
+          "suggestion": "Ledger row 6 (this mode never resolves HEAD)",
+          "source": "spec-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-08-06T09:41:22.477649+00:00",
+      "disposition": null,
+      "recorded_by": "shipwright-build:spec-reviewer (opus) — REJECT, 9 findings, all fixed and re-run",
+      "parse_status": null,
+      "raw_excerpt": null
+    }
+  }
+}

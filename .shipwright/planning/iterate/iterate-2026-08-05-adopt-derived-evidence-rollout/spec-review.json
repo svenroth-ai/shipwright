@@ -1,0 +1,88 @@
+{
+  "stage": "spec-compliance",
+  "verdict": "REJECT",
+  "reviewer": "shipwright-build:spec-reviewer (opus)",
+  "note": "REJECT is recorded as issued. All nine findings were accepted and fixed in the same iterate; per-finding dispositions are in the `dispositions` block below and the code/test changes are in this diff.",
+  "spec_citations": [
+    {
+      "spec_ref": "miniplan Tests table (empty-repo onboarding) + external-plan-review.md R2-5/R2-6 ACCEPTED + spec 'zero testable-but-untested'",
+      "divergence": "No test exercised the commitless/no_base onboarding path, and nothing proved the claim that makes Step H's skip load-bearing: that --verify-commit REJECTS a base-less commit. The promised amend then re-verify branch was likewise absent, while the ledger asserted zero testable-but-untested.",
+      "diff_location": "integration-tests/test_adopt_evidence_stamp_e2e.py",
+      "kind": "missing",
+      "severity": "high"
+    },
+    {
+      "spec_ref": "AC-1 + miniplan 'immediately before the commit'",
+      "divergence": "Step 1a writes the stamp to the WORKTREE, but Step H prescribed a bare git commit (index-only) and no step in the adopt skill ever staged anything - confirmed by grep across skill, references and scripts. Staging before 1a, the natural reading, ships pre-stamp blobs. The integration test invented a pathspec add and claimed it was exactly as the skill prescribes, which was false.",
+      "diff_location": "plugins/shipwright-adopt/skills/adopt/references/step-h-validate-commit-handoff.md",
+      "kind": "unfaithful",
+      "severity": "high"
+    },
+    {
+      "spec_ref": "Ledger row 16 (handover says not continuously)",
+      "divergence": "The cited test could not fail. Substring 'not' matches Nothing, cannot and Do not commit elsewhere in the same file, so the assertion reduced to 'the word continuous appears somewhere' and an inverted banner reading refreshed continuously passed it.",
+      "diff_location": "plugins/shipwright-adopt/tests/test_adopt_evidence_disclosure.py",
+      "kind": "unfaithful",
+      "severity": "medium"
+    },
+    {
+      "spec_ref": "Ledger row 13 (restore does not clear unrelated work)",
+      "divergence": "The cited test passed when --restore did nothing at all (the tree was already dirty from the drifted evidence file) and also when it DELETED the unrelated file, since a staged-then-deleted path still appears in porcelain. It could not detect the failure its own message named.",
+      "diff_location": "integration-tests/test_adopt_evidence_stamp_e2e.py",
+      "kind": "unfaithful",
+      "severity": "medium"
+    },
+    {
+      "spec_ref": "Ledger row 17 (Step H stamps before committing)",
+      "divergence": "The cited test asserted only that the stamp anchor precedes the verify anchor. Moving the stamp instruction to after the commit step kept it green, so the before-committing half - the whole reason for placing it at Step H - was unpinned.",
+      "diff_location": "plugins/shipwright-adopt/tests/test_adopt_evidence_disclosure.py",
+      "kind": "unfaithful",
+      "severity": "medium"
+    },
+    {
+      "spec_ref": "miniplan 'Verified against preflight_pr in an integration test' + external-plan-review R2-1 ACCEPTED",
+      "divergence": "preflight_pr is never imported or called by any test in the diff; the delivered test asserts git status instead. The substitution is defensible but was undeclared, unlike the module-split deviation which was recorded.",
+      "diff_location": "integration-tests/test_adopt_evidence_stamp_e2e.py",
+      "kind": "unfaithful",
+      "severity": "medium"
+    },
+    {
+      "spec_ref": "miniplan (shortfall is FATAL, justified solely for a document with no Source-State line) + AC-2 principle that onboarding still finishes",
+      "divergence": "An ABSENT evidence document was folded into the same fatal partial branch as a bannerless one and aborted onboarding, with a detail that misstated the cause - 'carries no Source-State banner' said of a file that is not there. Both sibling deliveries presence-filter instead, and Step F's seeder is documented non-blocking.",
+      "diff_location": "shared/scripts/tools/compliance_adopt_stamp.py",
+      "kind": "out-of-scope",
+      "severity": "medium"
+    },
+    {
+      "spec_ref": "Ledger row 3 (abbreviated base stamped as the resolved full id)",
+      "divergence": "The banner never carries the full id - banner_line truncates to 12 - and the cited test asserted the JSON report field rather than the document, so the row's claim was false as written and unproven where it mattered.",
+      "diff_location": "shared/tests/test_stamp_adopted_evidence.py",
+      "kind": "unfaithful",
+      "severity": "low"
+    },
+    {
+      "spec_ref": "Ledger row 6 (this mode never resolves HEAD)",
+      "divergence": "The guard patched the resolver module only. The CLI's own rev-parse HEAD goes through its own module reference and was unpatched, so the early-return guarantee asserted in the code comments was not pinned.",
+      "diff_location": "shared/tests/test_stamp_adopted_evidence.py",
+      "kind": "unfaithful",
+      "severity": "low"
+    }
+  ],
+  "dispositions": [
+    "1 FIXED - test_a_repository_with_no_commits_can_still_be_onboarded asserts the base-less rejection directly; the amend then re-verify branch appended to test_a_writer_between_stamp_and_commit_is_caught.",
+    "2 FIXED - Step H now prescribes git add -A explicitly AFTER step 1a with the reason stated; test_step_h_stages_after_stamping pins the order; the integration test's false claim removed and corrected to stage after the stamp.",
+    "3 FIXED - the assertion now matches the negation adjacent to the word it negates, so an inverted banner fails.",
+    "4 FIXED - asserts the exit code, the restored content, and that the unrelated file still exists and is still staged.",
+    "5 FIXED - anchors stamp before the commit-message step before verify.",
+    "6 FIXED - substitution declared in the test docstring with its reason: preflight_pr also requires an origin, a resolvable default branch and a committer identity, which would refuse for reasons unrelated to the claim under test.",
+    "7 FIXED - presence-filtered with a distinct absent field; a wholly empty set reports no_documents and exits non-zero, so the filter cannot buy green-on-vacuum.",
+    "8 FIXED - row reworded to 'resolved before stamping'; the test now asserts the document, where an 8-char input is the discriminating case.",
+    "9 FIXED - both module objects are spied and the assertion is made over the recorded call list."
+  ],
+  "clean": [
+    "All six ACs present and faithful in substance",
+    "No Weg-A drift, no widened refresh set, no customer-side precondition introduced",
+    "Spec Impact is a genuine FOLD on FR-01.10 and FR-01.13, correctly placed, with no file paths, symbols or flags leaking into the criteria",
+    "Docs obligations met in the same diff (guide.md, hooks-and-pipeline.md)"
+  ]
+}

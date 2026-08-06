@@ -1,0 +1,1 @@
+Onboarding now stamps the compliance evidence it seeds with the commit it read, so an adopted repository's audit documents state which snapshot of the code they describe instead of implying they are live. Where no commit can be established they name none rather than something plausible, and onboarding still completes.

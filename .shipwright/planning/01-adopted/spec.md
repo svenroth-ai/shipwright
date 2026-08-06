@@ -611,6 +611,21 @@ _Where the work detail lives_ at the end of this document.
   read from the project rather than asserted by whoever wrote the record. Where it
   cannot be established, the artifact says so instead of showing a plausible-looking
   value.
+- (E) Given a project is onboarded, when its first evidence documents are produced,
+  then they name the state of the code they were built from — taken from what
+  onboarding recorded, not from wherever the project happens to stand by the time
+  the documents are written, which is a different thing whenever the onboarding was
+  resumed or retried. Where that state cannot be established the documents name
+  none, and onboarding still finishes: a project with nothing recorded yet is a
+  legitimate thing to onboard, and an unstated origin is honest where a guessed one
+  is not.
+- (E) Given an evidence document is reported as no longer matching the state it was
+  produced from, when a way to put it right is offered, then that way can actually
+  resolve the case at hand: re-producing the document where it merely drifted
+  locally, and — where the recorded copy itself is the one left behind — the ordered
+  steps that get a corrected copy recorded, including clearing unrelated unfinished
+  work first. An offered remedy that cannot complete from the state being reported
+  sends the reader in a circle.
 - (E) Given a completed change that says it affects behaviour but names no
   requirement and gives no reason for naming none, when the cross-check audit
   runs, then it is reported together with a suggested command to fix it, without
@@ -848,6 +863,12 @@ _Where the work detail lives_ at the end of this document.
 - (E) Given onboarding derives a requirement's name and description from the
   code it read, when they are written, then they name a capability and describe
   it in plain business language, rather than describing what the code does.
+- (E) Given onboarding has produced the audit evidence for a project, when it
+  hands over, then it says that this evidence is brought up to date at releases
+  and on request rather than continuously, and names both ways to bring it up to
+  date — so whoever relies on it learns that it ages at the moment they are
+  handed it, instead of from an audit months later. The same statement is left
+  behind in the project's own guidance, because a handover is read once.
 
 <a id="fr-0114"></a>
 ### FR-01.14 — Triage Inbox

@@ -54,9 +54,32 @@ _CHECK_ID_BY_DOC = {
 
 
 def _suggest(doc_key: str) -> str:
+    """The remedy — and ``--fix`` alone is not it when the snapshot is behind.
+
+    This group compares the on-disk document against the last snapshot COMMIT.
+    ``--fix`` rewrites the working tree, which clears the case the group was built
+    for — a hand-edit, where re-rendering restores the snapshot's content — but it
+    cannot clear a snapshot that is genuinely *behind*: re-rendering moves on-disk
+    further from it and the next audit reports the same finding. Only a new
+    snapshot commit clears that, i.e. a release or ``--refresh-pr``.
+
+    **Only flags the operator can actually type.** ``--refresh-pr``'s preflight
+    does require a clean tree, but resetting the evidence files is *its own*
+    first step — the compliance skill's Step 2c runs the internal
+    ``refresh_compliance_docs.py --restore`` itself. ``--restore`` is not in the
+    skill's accepted flag list, so naming it here sent the operator to type
+    ``/shipwright-compliance --restore``, which does not exist: the very circle
+    this remedy exists to break (Stage-2 code review). What genuinely remains
+    theirs is clearing *unrelated* work, which no restore touches.
+
+    **One line, by contract:** ``audit_report`` renders this inside a single
+    inline code span, so a newline would break the finding's markdown.
+    """
     return (
-        "/shipwright-compliance --fix "
-        f"# regenerates {doc_key} (Group E)"
+        "/shipwright-compliance --fix  "
+        f"# re-renders {doc_key} if a hand-edit drifted it (Group E); if the "
+        "COMMITTED snapshot is behind instead, commit or stash unrelated work, "
+        "then /shipwright-compliance --refresh-pr"
     )
 
 

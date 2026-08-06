@@ -663,6 +663,8 @@ Everything afterward is identical to a natively-built Shipwright project:
 - `/shipwright-test`: first real test run populates test-evidence compliance
 - `/shipwright-compliance`: on-demand detective audit of artifacts
 
+**The audit evidence adoption seeds does not keep itself current — plan for that on day one.** The five markdown evidence documents are stamped at onboarding with the commit your repository was at when adopt read it, so each one states which snapshot of the code it describes rather than implying it is live. From then on they are refreshed **at releases and on request, not continuously**: a `/shipwright-changelog` release recomputes them and checks them in, and `/shipwright-compliance --refresh-pr` opens a documents-only pull request in between. Ordinary `/shipwright-iterate` work deliberately does *not* carry them, because a branch computes them from its own history and gets them wrong for the default branch (§ 10, ["How current are these documents?"](#how-current-are-these-documents)). Nothing about this needs branch-protection changes, a bot account, or a deploy key in your repository. If your onboarded repository has no commits yet, the documents simply name no snapshot rather than an invented one.
+
 Do **not** run `/shipwright-project`, `/shipwright-plan`, or `/shipwright-build` on an adopted repo: adoption replaces those phases, and iterate covers ongoing work.
 
 ## 4. The Pipeline: Phase by Phase

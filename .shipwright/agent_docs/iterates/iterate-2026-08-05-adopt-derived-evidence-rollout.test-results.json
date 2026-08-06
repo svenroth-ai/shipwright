@@ -1,0 +1,192 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-08-05-adopt-derived-evidence-rollout",
+    "date": "2026-08-06",
+    "unit": {
+      "status": "pass",
+      "passed": 10152,
+      "failed": 0,
+      "note": "Four test roots, one pytest process each (ADR-044): shared/tests 7950 passed / 23 skipped; plugins/shipwright-compliance 1621 passed / 5 skipped; plugins/shipwright-adopt 581 passed. junit per root under .shipwright/runs/iterate-2026-08-05-adopt-derived-evidence-rollout/."
+    },
+    "integration": {
+      "status": "pass",
+      "passed": 475,
+      "failed": 0,
+      "note": "Full integration-tests root. Two failures appeared in an earlier run and both were resolved: test_every_criterion_is_assertion_shaped was THIS run's defect (a new FR-01.13 criterion had no 'when' clause) and is fixed; test_ready_guard_holds_reader_lease_through_target was contention from a concurrently running background suite, confirmed by 22/22 in isolation and by passing on main - see degraded[]."
+    },
+    "e2e": {
+      "status": "n/a",
+      "reason": "no browser surface; this is framework machinery (a CLI mode plus skill prose)"
+    },
+    "smoke": {
+      "status": "n/a",
+      "reason": "no startable server surface in this repo"
+    },
+    "pgtap": {
+      "status": "n/a",
+      "reason": "no database"
+    },
+    "design_fidelity": {
+      "status": "n/a",
+      "reason": "no UI surface"
+    },
+    "surface_verification": {
+      "surface": "cli",
+      "tests_run": 5,
+      "exit_code": 0,
+      "evidence_path": ".shipwright/runs/iterate-2026-08-05-adopt-derived-evidence-rollout/surface_verification.json",
+      "detail": "The real CLI driven as a subprocess against real git repositories: stamp -> git add -> commit -> --verify-commit, the adversarial writer between stamp and commit, the commitless-repository path, and the Group E remedy's first step. Reads blobs out of the COMMIT, not the worktree."
+    },
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "AC-1 the supplied base reaches every markdown evidence banner",
+          "disposition": "tested",
+          "evidence": "test_stamps_every_markdown_member_with_the_supplied_base PASSED"
+        },
+        {
+          "behavior": "AC-1 an existing run id survives stamping",
+          "disposition": "tested",
+          "evidence": "test_the_run_id_already_in_the_banner_survives PASSED"
+        },
+        {
+          "behavior": "AC-2 absent / literal HEAD / malformed / non-resolving base all yield no_base, nothing written",
+          "disposition": "tested",
+          "evidence": "test_no_base_is_claimed_when_it_cannot_be_established[4 params] PASSED"
+        },
+        {
+          "behavior": "AC-2 an abbreviated base is REFUSED (git resolves a short id as a ref first, which would stamp a real-but-wrong commit)",
+          "disposition": "tested",
+          "evidence": "test_an_abbreviated_base_is_refused_rather_than_resolved PASSED"
+        },
+        {
+          "behavior": "AC-2 a padded base is still accepted (validate the trimmed value, send the trimmed value)",
+          "disposition": "tested",
+          "evidence": "test_a_padded_base_is_still_accepted PASSED"
+        },
+        {
+          "behavior": "AC-2 this mode never resolves HEAD - asserted over both module objects, by substring, and by never reaching git at all",
+          "disposition": "tested",
+          "evidence": "test_head_is_never_resolved_by_this_mode PASSED"
+        },
+        {
+          "behavior": "AC-3 a stale release= is removed rather than inherited",
+          "disposition": "tested",
+          "evidence": "test_a_stale_release_claim_is_removed_not_merely_left_alone PASSED"
+        },
+        {
+          "behavior": "A present but banner-less document yields partial, a non-zero exit, and an untouched tree",
+          "disposition": "tested",
+          "evidence": "test_a_bannerless_document_aborts_without_touching_the_tree PASSED"
+        },
+        {
+          "behavior": "An INCOMPLETE set stops the adoption whether or not a base resolves (the no_base bypass)",
+          "disposition": "tested",
+          "evidence": "test_an_incomplete_set_stops_the_adoption_either_way[2 params] PASSED"
+        },
+        {
+          "behavior": "Nothing to stamp at all yields no_documents, non-zero - no green-on-vacuum",
+          "disposition": "tested",
+          "evidence": "test_nothing_to_stamp_at_all_is_reported_rather_than_passing PASSED"
+        },
+        {
+          "behavior": "A write failing mid-set puts the originals back (write_back has no rollback)",
+          "disposition": "tested",
+          "evidence": "test_a_failed_write_puts_the_originals_back PASSED"
+        },
+        {
+          "behavior": "The stamped set is exactly the .md half of REFRESH_SET (seven documents, five stamped)",
+          "disposition": "tested",
+          "evidence": "test_the_stamped_set_is_exactly_the_markdown_half_of_the_refresh_set PASSED"
+        },
+        {
+          "behavior": "Boundary round-trip: what is written parses back through the banner's own parser",
+          "disposition": "tested",
+          "evidence": "test_what_is_written_parses_back_to_what_was_meant PASSED"
+        },
+        {
+          "behavior": "integration: the adoption COMMIT carries the stamp (blobs read out of the commit, plus an independent git show)",
+          "disposition": "tested",
+          "evidence": "test_the_adoption_commit_carries_the_stamp PASSED"
+        },
+        {
+          "behavior": "integration: a writer between stamp and commit is caught, repaired by one amend, re-verified, and the amend overlays rather than replaces",
+          "disposition": "tested",
+          "evidence": "test_a_writer_between_stamp_and_commit_is_caught PASSED"
+        },
+        {
+          "behavior": "integration: a commitless repository still onboards, and --verify-commit genuinely rejects a base-less commit (what makes Step H's skip load-bearing)",
+          "disposition": "tested",
+          "evidence": "test_a_repository_with_no_commits_can_still_be_onboarded PASSED"
+        },
+        {
+          "behavior": "integration: the Group E remedy's first step reaches a clean tree",
+          "disposition": "tested",
+          "evidence": "test_the_group_e_remedy_reaches_a_clean_tree PASSED"
+        },
+        {
+          "behavior": "integration: --restore restores the evidence and preserves unrelated staged work",
+          "disposition": "tested",
+          "evidence": "test_restore_does_not_clear_unrelated_work PASSED"
+        },
+        {
+          "behavior": "AC-6 the Group E remedy names a path that can actually clear the finding, on one line",
+          "disposition": "tested",
+          "evidence": "test_suggestion_names_a_path_that_can_actually_clear_the_finding PASSED"
+        },
+        {
+          "behavior": "AC-6 the remedy names only flags /shipwright-compliance accepts - validated against the SKILL, not a hardcoded list",
+          "disposition": "tested",
+          "evidence": "test_suggestion_names_only_flags_the_skill_actually_accepts PASSED"
+        },
+        {
+          "behavior": "AC-4 the handover names both refresh paths",
+          "disposition": "tested",
+          "evidence": "test_handoff_names_both_ways_to_refresh_the_evidence PASSED"
+        },
+        {
+          "behavior": "AC-4 the handover says the evidence is NOT refreshed continuously (adjacent match, so an inverted banner fails)",
+          "disposition": "tested",
+          "evidence": "test_handoff_says_the_evidence_does_not_stay_current PASSED"
+        },
+        {
+          "behavior": "Step H orders stamp -> commit -> verify, anchored on step headings rather than flag mentions",
+          "disposition": "tested",
+          "evidence": "test_step_h_stamps_before_committing_and_verifies_after PASSED"
+        },
+        {
+          "behavior": "Step H stages AFTER stamping (the stamp writes the worktree; the commit records the index)",
+          "disposition": "tested",
+          "evidence": "test_step_h_stages_after_stamping PASSED"
+        },
+        {
+          "behavior": "Step H distinguishes no_base (continue) from partial (stop)",
+          "disposition": "tested",
+          "evidence": "test_step_h_distinguishes_no_base_from_partial PASSED"
+        },
+        {
+          "behavior": "AC-5 the generated CLAUDE.md carries the statement including the cadence, not merely the two commands",
+          "disposition": "tested",
+          "evidence": "test_generated_claude_md_carries_the_same_statement PASSED"
+        }
+      ]
+    },
+    "degraded": [
+      {
+        "condition": "stage_3_doubt_review_not_run",
+        "detail": "The Stage-3 doubt-reviewer was spawned per the CLAUDE.md standing grant and was terminated mid-run by the account's MONTHLY SPEND LIMIT. No findings were produced and a retry is not available. Deliberately NOT substituted by a self-pass: the value of Stage 3 is adversarial FRESH context, which the author of the code cannot supply. Partial compensation, recorded so the gap is sized rather than waved away: the external code review ran on a separate billing path and returned the one medium finding both internal stages had missed (no_base bypassing the evidence-completeness gate). Five review passes ran in total."
+      },
+      {
+        "condition": "integration_suite_contention_flake",
+        "detail": "test_ensure_shared_cache_fanout::test_ready_guard_holds_reader_lease_through_target failed once while a second full pytest root was running concurrently in the background. It passes 22/22 in isolation in this worktree and passes on main. This change touches no cache-fanout code. Recorded rather than silently re-run."
+      }
+    ]
+  },
+  "coverage": {
+    "total": 80.2,
+    "measured_tier": "repo",
+    "source": "combined coverage.xml (all plugins + shared + integration)",
+    "measured_at": "2026-07-04T00:00:00Z"
+  }
+}

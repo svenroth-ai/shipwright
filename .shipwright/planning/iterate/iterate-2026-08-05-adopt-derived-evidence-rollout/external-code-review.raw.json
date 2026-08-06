@@ -1,0 +1,33 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "openrouter",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviews": {
+    "openai": {
+      "feedback": "- Category: edge-case  \n  Severity: medium  \n  File: `shared/scripts/tools/compliance_adopt_stamp.py:130-136`  \n  Finding: A non-empty but incomplete evidence set is accepted when the base cannot be established. If one or more markdown documents are absent and `--base` is absent/`HEAD`/invalid, this returns `status: \"no_base\"` with exit 0 before evaluating the incomplete set. Step H explicitly says `no_base` continues and skips verification, so adoption can commit only some evidence documents. This contradicts the Step H handling for `ok` plus `absent`, which says not to commit, and undermines AC-1\u2019s requirement that each markdown evidence document be seeded. The same ordering also masks present banner-less documents in a commitless repository.  \n  Suggestion: Treat `absent` as an incomplete/fatal result independently of base resolution, or require Step H to reject any `no_base` result with non-empty `absent`. Validate present documents\u2019 banners before allowing the `no_base` continuation path as well.\n\n- Category: test  \n  Severity: medium  \n  File: `shared/tests/test_stamp_adopted_evidence.py:135-149`  \n  Finding: The test suite codifies the incomplete-set success behavior rather than testing the required commit-blocking behavior. `test_an_absent_document_is_not_confused_with_an_unstampable_one` asserts an exit-0 `ok` result for a missing markdown evidence document, but no test covers the more dangerous `no_base` plus partially absent set that Step H will explicitly continue past. As a result, the incomplete commit path above remains green.  \n  Suggestion: Add cases for absent evidence with valid and unavailable bases, asserting that adoption cannot proceed/commit unless the intended non-blocking behavior is explicitly implemented in Step H with a separate hard gate.\n\n- Category: test  \n  Severity: low  \n  File: `plugins/shipwright-adopt/tests/test_adopt_evidence_disclosure.py:134-150`  \n  Finding: The generated-CLAUDE.md test does not verify the cadence portion of AC-5. It checks for the heading, refresh commands, and `Source-State:`, but would pass if \u201cat releases and on demand, not continuously\u201d were removed or inverted in the generated guidance.  \n  Suggestion: Assert the rendered template states both the release/on-demand cadence and adjacent negation of continuous refresh, similarly to the handover test.\n\nOverall assessment: ship-with-fixes. The principal implementation issue is that `no_base` can bypass the evidence-completeness stop condition and permit an incomplete adoption commit.  \nSHIPWRIGHT_VERDICT: revise",
+      "via": "openrouter",
+      "status": "success"
+    },
+    "deepseek": {
+      "feedback": "The implementation is thorough and matches the specification. All acceptance criteria are covered, the code is correct, and the tests are comprehensive and validate actual behavior, including edge cases and error paths. No security issues or regressions are introduced.\n\nSHIPWRIGHT_VERDICT: approve",
+      "via": "openrouter",
+      "status": "success"
+    }
+  },
+  "verdicts": {
+    "openai": "revise",
+    "deepseek": "approve"
+  },
+  "statuses": {
+    "openai": "success",
+    "deepseek": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: deepseek=approve, openai=revise"
+  }
+}

@@ -254,15 +254,8 @@ Full procedure → [references/step-g-layer3-review.md](references/step-g-layer3
 
 ### Step H — Validate, Commit, Handoff
 
-Validate via `validate_adoption.py` — hard-stop on `errors[]` (which now
-include the two honesty artifacts), surface `warnings[]`. Build the commit
-message via `lib.adopt_commit_template.build_adopt_commit_message`;
-`unconfirmed_fr_count` is **required** and read from
-`.shipwright/adopt/derived-catalogue.json`. The handoff banner reports how
-many requirements are derived-and-unconfirmed and names the follow-up, and
-derives the "Edit .env.local" list from `results["env_local"]["missing_keys"]`
-(profile `required_env_vars` + framework keys; NOT hardcoded), rendering
-whenever it is non-empty.
+Validate via `validate_adoption.py` — hard-stop on `errors[]` (which now include the two honesty artifacts), surface `warnings[]`. **Stamp the seeded evidence immediately before committing** (`refresh_compliance_docs.py --stamp-adopted --base <commit_at_adoption>`) — not in Step F, since Step G sits between — then prove it against the commit with `--verify-commit`.
+Build the commit message via `lib.adopt_commit_template.build_adopt_commit_message`; `unconfirmed_fr_count` is **required** and read from `.shipwright/adopt/derived-catalogue.json`. The handoff banner reports how many requirements are derived-and-unconfirmed, names the follow-up, states that the committed evidence refreshes at releases and on demand, and derives the "Edit .env.local" list from `results["env_local"]["missing_keys"]` (profile `required_env_vars` + framework keys; NOT hardcoded), rendering whenever it is non-empty.
 
 Full procedure → [references/step-h-validate-commit-handoff.md](references/step-h-validate-commit-handoff.md).
 
