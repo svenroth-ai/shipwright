@@ -59,7 +59,7 @@ from pathlib import Path
 
 from lib.atomic_write import durable_atomic_write
 from lib.churn_merge import TRIAGE_LOG
-from lib.git_base import TIMEOUT_RETURNCODE, run_git_soft
+from lib.git_base import TIMEOUT_RETURNCODE, run_git_bytes_soft, run_git_soft
 from lib.sweep_drift_events import (  # noqa: F401  (re-export: existing importers)
     _EVENTS,
     _is_header,
@@ -70,7 +70,7 @@ from lib.sweep_drift_events import (  # noqa: F401  (re-export: existing importe
 # The restore half lives in its own module (audit 2026-07-28 finding 23): it renames
 # the live log aside before letting git recreate it, so a late append is preserved.
 from lib.sweep_drift_restore import restore_tracked_log
-from lib.sweep_text import normalize_lines, read_text_verbatim
+from lib.sweep_text import decode_store_text, normalize_lines, read_text_verbatim
 
 
 @dataclass(frozen=True)
@@ -130,15 +130,24 @@ class _HeadUnreadable(RuntimeError):
 def _head_lines(main_root: Path) -> list[str] | None:
     """Lines of ``HEAD:<triage>`` in MAIN's tree VERBATIM, or ``None`` when there is no
     such blob. ``cwd=main_root`` is load-bearing: ``HEAD`` must be main's branch tip, NOT
-    the iterate worktree's (external review)."""
-    proc = run_git_soft(["show", f"HEAD:{TRIAGE_LOG}"], cwd=main_root)
+    the iterate worktree's (external review).
+
+    BYTES + :func:`lib.sweep_text.decode_store_text`, so this side decodes exactly like
+    the working-file read these lines are compared against. Under the text helper's
+    ``errors="replace"`` a committed line carrying a byte that is not valid UTF-8 came
+    back as ``U+FFFD`` while the caller's ``read_text_verbatim`` produced ``U+DCFF``, so
+    a working log BYTE-IDENTICAL to HEAD failed the append-only prefix check and the
+    whole sweep refused with ``main_tracked_diverged`` — no outbox delivery at all,
+    every iterate, until the log was repaired by hand
+    (iterate-2026-08-06-gc-decode-parity)."""
+    proc = run_git_bytes_soft(["show", f"HEAD:{TRIAGE_LOG}"], cwd=main_root)
     if proc.returncode == TIMEOUT_RETURNCODE:
         # NOT ``None`` — the caller reports that as ``main_tracked_no_head_blob``, a
         # diagnosis we did not earn, and it licenses PROCEEDING. We never read HEAD.
         raise _HeadUnreadable("main_tracked_head_unreadable: git show timed out")
     if proc.returncode != 0:
         return None
-    lines, _ = normalize_lines(proc.stdout)
+    lines, _ = normalize_lines(decode_store_text(proc.stdout))
     return lines
 
 

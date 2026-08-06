@@ -1,0 +1,181 @@
+{
+  "run_id": "iterate-2026-08-06-gc-decode-parity",
+  "date": "2026-08-06T11:15:46.671994Z",
+  "event_at": "2026-08-06T09:31:32.603756+00:00",
+  "type": "bug",
+  "complexity": "medium",
+  "branch": "iterate/gc-decode-parity",
+  "spec": ".shipwright/planning/iterate/2026-08-06-gc-decode-parity.md",
+  "tests_passed": true,
+  "adr": "iterate-2026-08-06-gc-decode-parity",
+  "test_completeness": {
+    "status": "complete",
+    "behaviors": [
+      {
+        "behavior": "run_git_bytes_soft returns the blob byte-for-byte",
+        "disposition": "tested",
+        "evidence": "test_git_base_bytes.py::TestBytesMode::test_blob_comes_back_byte_for_byte PASSED"
+      },
+      {
+        "behavior": "its stderr is bytes, never mixed with str",
+        "disposition": "tested",
+        "evidence": "test_git_base_bytes.py::TestBytesMode::test_stderr_is_bytes_too PASSED"
+      },
+      {
+        "behavior": "a missing blob reports instead of raising",
+        "disposition": "tested",
+        "evidence": "test_git_base_bytes.py::TestBytesMode::test_a_missing_blob_reports_rather_than_raises PASSED"
+      },
+      {
+        "behavior": "timeout maps to TIMEOUT_RETURNCODE with empty stdout; partial output discarded",
+        "disposition": "tested",
+        "evidence": "test_git_base_bytes.py::TestTimeoutContract::test_timeout_is_reported_not_raised PASSED"
+      },
+      {
+        "behavior": "run_git_soft's own timeout mapping is unchanged",
+        "disposition": "tested",
+        "evidence": "test_git_base_bytes.py::TestTimeoutContract::test_text_soft_timeout_mapping_is_unchanged PASSED"
+      },
+      {
+        "behavior": "run_git text mode still yields U+FFFD, not a surrogate",
+        "disposition": "tested",
+        "evidence": "test_git_base_bytes.py::TestTextModeUnchanged::test_text_mode_still_replaces_the_broken_byte PASSED"
+      },
+      {
+        "behavior": "run_git text stderr still decodes to str",
+        "disposition": "tested",
+        "evidence": "test_git_base_bytes.py::TestTextModeUnchanged::test_text_mode_stderr_decodes_to_str PASSED"
+      },
+      {
+        "behavior": "check=True still raises GitError",
+        "disposition": "tested",
+        "evidence": "test_git_base_bytes.py::TestTextModeUnchanged::test_check_true_still_raises_giterror PASSED"
+      },
+      {
+        "behavior": "check=False still reports the exit code",
+        "disposition": "tested",
+        "evidence": "test_git_base_bytes.py::TestTextModeUnchanged::test_check_false_reports_the_exit_code PASSED"
+      },
+      {
+        "behavior": "bytes mode preserves CRLF (no universal-newline translation)",
+        "disposition": "tested",
+        "evidence": "test_git_base_bytes.py::TestNewlineTranslation::test_bytes_mode_preserves_crlf PASSED"
+      },
+      {
+        "behavior": "text mode translates CRLF to LF (the second mode difference)",
+        "disposition": "tested",
+        "evidence": "test_git_base_bytes.py::TestNewlineTranslation::test_text_mode_translates_crlf_to_lf PASSED"
+      },
+      {
+        "behavior": "blob and file decode to the SAME string for an invalid byte",
+        "disposition": "tested",
+        "evidence": "test_store_decode_parity.py::TestDecodeParity::test_git_blob_and_file_read_agree_on_a_broken_byte PASSED"
+      },
+      {
+        "behavior": "ordinary UTF-8 reads are unchanged",
+        "disposition": "tested",
+        "evidence": "test_store_decode_parity.py::TestDecodeStoreText::test_plain_utf8_is_unaffected PASSED"
+      },
+      {
+        "behavior": "LF and CRLF survive verbatim (no translation)",
+        "disposition": "tested",
+        "evidence": "test_store_decode_parity.py::TestDecodeStoreText::test_line_endings_survive_verbatim (both params) PASSED"
+      },
+      {
+        "behavior": "surrogateescape round-trips to the original bytes",
+        "disposition": "tested",
+        "evidence": "test_store_decode_parity.py::TestDecodeStoreText::test_surrogateescape_round_trips_to_the_original_bytes PASSED"
+      },
+      {
+        "behavior": "a BOM is preserved, not stripped",
+        "disposition": "tested",
+        "evidence": "test_store_decode_parity.py::TestDecodeStoreText::test_a_bom_is_preserved_not_stripped PASSED"
+      },
+      {
+        "behavior": "a missing file still reads as the empty string",
+        "disposition": "tested",
+        "evidence": "test_store_decode_parity.py::TestDecodeStoreText::test_missing_file_is_empty_string PASSED"
+      },
+      {
+        "behavior": "a delivered broken status line is GC'd from the outbox",
+        "disposition": "tested",
+        "evidence": "test_sweep_store_decode_parity.py::TestGcDeliversABrokenLine::test_a_delivered_status_line_with_a_broken_byte_is_gc_d PASSED (CI=true)"
+      },
+      {
+        "behavior": "an UNDELIVERED broken line still survives the GC (anti-promiscuity)",
+        "disposition": "tested",
+        "evidence": "test_sweep_store_decode_parity.py::TestGcDeliversABrokenLine::test_an_undelivered_line_still_survives PASSED (CI=true) - the pair collides under errors=replace, so a non-injective membership rule FAILS it"
+      },
+      {
+        "behavior": "the full round trip preserves the survivor's bytes exactly",
+        "disposition": "tested",
+        "evidence": "test_sweep_store_decode_parity.py::TestBoundaryProbeRoundTrip::test_a_surviving_broken_line_is_byte_identical_after_the_sweep PASSED (CI=true)"
+      },
+      {
+        "behavior": "an unchanged log with a broken byte is not reported as diverged",
+        "disposition": "tested",
+        "evidence": "test_sweep_store_decode_parity.py::TestDriftPlanStopsFalseRefusing::test_an_unchanged_log_with_a_broken_byte_is_not_diverged PASSED (CI=true)"
+      },
+      {
+        "behavior": "genuine drift is still detected over a broken HEAD line",
+        "disposition": "tested",
+        "evidence": "test_sweep_store_decode_parity.py::TestDriftPlanStopsFalseRefusing::test_real_drift_is_still_detected_over_a_broken_head PASSED (CI=true)"
+      },
+      {
+        "behavior": "adopting drift over a broken HEAD moves it without loss",
+        "disposition": "tested",
+        "evidence": "test_sweep_store_decode_parity.py::TestDriftPlanStopsFalseRefusing::test_adopting_drift_over_a_broken_head_moves_it_without_loss PASSED (CI=true)"
+      },
+      {
+        "behavior": "reconcile counts a committed broken line as already-folded",
+        "disposition": "tested",
+        "evidence": "test_sweep_store_decode_parity.py::TestReconcileFoldCount::test_a_broken_head_line_is_not_counted_as_newly_folded PASSED (CI=true)"
+      },
+      {
+        "behavior": "the GC timeout fail-safe holds on the new seam",
+        "disposition": "tested",
+        "evidence": "test_store_git_timeout_paths.py::test_delivered_membership_gcs_nothing_on_timeout PASSED"
+      },
+      {
+        "behavior": "the drift head_unreadable refusal holds on the new seam",
+        "disposition": "tested",
+        "evidence": "test_main_tree_git_timeout_paths.py::test_unreadable_head_refuses_instead_of_claiming_no_blob PASSED"
+      },
+      {
+        "behavior": "_head_line_set timeout returns None on the new seam",
+        "disposition": "tested",
+        "evidence": "test_main_tree_git_timeout_paths.py::test_head_line_set_timeout_is_an_error_not_an_empty_head PASSED"
+      },
+      {
+        "behavior": "the fix composes with the newly-landed canonical-form membership rule",
+        "disposition": "tested",
+        "category": "integration",
+        "evidence": "test_sweep_gc_canonical.py (18 cases, main's own) green against this branch after rebasing onto 5bad6c31; test_sweep_store_decode_parity.py drives sweep_outbox_to_branch end-to-end over a real repo/worktree/origin, and verify_local.py's Sweep delivery surface gate passes 8/8"
+      },
+      {
+        "behavior": "reconcile's working-file read now uses the shared decode rule",
+        "disposition": "untestable",
+        "reason_code": "covered-by-existing-test",
+        "reason": "test_reconcile_triage* (17 cases) exercise this read on every path; the decode is byte-equivalent and the absence case is preserved by reading bytes at the call site"
+      }
+    ],
+    "counts": {
+      "testable": 29,
+      "tested": 28,
+      "untestable": 1,
+      "untested_testable": 0
+    },
+    "enumeration_basis": {
+      "acs": 7,
+      "covered_acs": 7
+    }
+  },
+  "surface_verification": {
+    "surface": "cli",
+    "runner": "uv run --extra dev python -m pytest shared/tests/test_store_decode_parity.py shared/tests/test_sweep_store_decode_parity.py shared/tests/test_git_base_bytes.py shared/tests/test_sweep_gc_canonical.py -q",
+    "exit_code": 0,
+    "tests_run": 43,
+    "evidence_path": ".shipwright/planning/iterate/iterate-2026-08-06-gc-decode-parity/surface-verification.txt",
+    "timestamp": "2026-08-06T00:00:00Z"
+  }
+}

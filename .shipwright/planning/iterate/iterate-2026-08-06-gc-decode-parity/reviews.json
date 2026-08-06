@@ -1,0 +1,274 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-08-06-gc-decode-parity",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-06T09:24:10.757135+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 5,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "The `git_base` refactor touches the execution primitive used by roughly 133 existing callers, but the plan does not explicitly require byte-for-byte preservation of the existing text-mode subprocess configuration and failure behavior. In particular, text-mode `stdout` and `stderr` decoding, environment, `cwd`, command argument construction, timeout cleanup/reaping, and `run_git_soft` behavior must remain unchanged. A generic `_popen_git(..., binary=...)` extraction can easily alter one of these incidentally.",
+          "suggestion": "Keep the shared execution path as small as possible and explicitly preserve the current `Popen`/`communicate` arguments in the text branch, including `encoding=\"utf-8\"` and `errors=\"replace\"` for every captured text stream. Add characterization tests for `stdout`, `stderr`, non-zero return codes, and the existing `run_git_soft` timeout behavior—not only `run_git` stdout decoding.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The timeout contract is stated for the bytes helper, but the implementation description only says it “maps `TimeoutExpired`.” A timed-out `Popen.communicate()` must also kill and reap the child process before returning. Further, `TimeoutExpired` may contain partial captured output, while AC-6 requires deliberately returning `stdout == b\"\"`; this needs to be intentional and tested rather than inherited accidentally.",
+          "suggestion": "Define the bytes helper’s timeout branch concretely: catch `TimeoutExpired`, kill the process if needed, call `communicate()` to reap it, discard any partial output, and return a `CompletedProcess` with `TIMEOUT_RETURNCODE`, `stdout=b\"\"`, and a consistently typed bytes `stderr`. Reuse the existing timeout-cleanup logic if one exists rather than creating a divergent implementation.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "The proposed verification command runs only the two new test files. That is insufficient coverage for a refactor of the shared git primitive and does not validate the existing callers whose behavior is explicitly required to remain unchanged.",
+          "suggestion": "Run the existing `git_base` tests and all tests for the affected sweep/reconciliation modules in addition to the new parity tests; ideally run the project’s normal `shared/tests` suite if it is reasonably scoped. Ensure the new tests assert all acceptance outcomes explicitly: GC count and removal from outbox, `no_drift`, and exactly `folded == 1`.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "Centralizing the store decode rule is sound, but changing `read_text_verbatim` from text-file reading with `newline=\"\"` to binary reading plus decode is a behavior-sensitive refactor beyond the immediate git-blob issue. It should preserve current newline and file-read semantics, but the plan asserts this rather than proving it.",
+          "suggestion": "Add a small characterization test for ordinary UTF-8 content, CRLF/LF preservation, and surrogateescape round-tripping through `read_text_verbatim`. Keep `decode_store_text` narrowly documented as the triage-store byte decode rule, not a general-purpose text decoding API.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "security",
+          "file": null,
+          "line": null,
+          "finding": "No new material injection or authorization risk is introduced if the bytes helper continues to invoke git with an argument list and no shell. The practical security-relevant concern is accidental logging or re-encoding of surrogate-containing text introduced by the new path.",
+          "suggestion": "Keep the bytes result confined to the three storage-comparison boundaries and avoid routing decoded store text into JSON serialization, subprocess arguments, or logging paths that assume valid Unicode. The proposed scope already largely does this; preserve that boundary discipline.  Overall, decoding git blobs as bytes and applying the existing surrogateescape store decoding rule is the correct, lossless fix and appropriately avoids changing global `run_git` semantics. The plan should be revised to make the shared subprocess refactor’s compatibility and timeout-cleanup guarantees explicit and test them beyond the new regression cases. SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-08-06T09:07:22.915805+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "partial",
+      "raw_excerpt": "[deepseek] **Findings**\n\n| Category | Severity | Finding | Suggestion |\n|----------|----------|---------|-------------|\n| Risk | Low | The mini-plan asserts “none of them reads stderr”, but the three call sites (`sweep_gc`, `sweep_drift`, `reconcile_triage`) currently receive `CompletedProcess[str]` where `stderr` is a string. After the change they will receive `CompletedProcess[bytes]`. If any site inadvertently logs or includes `proc.stderr` in exception messages, mixing `bytes` with string formatting will raise a runtime error. | Before merging, verify that all three consumers never access `stderr`, or add a trivial `stderr.decode('utf-8', 'replace')` call in an error path. The acceptance-test AC-3/AC-4/AC-5 can catch this if they exercise a non-zero return code, but explicit review is safer. |\n| Edge‑case | Low | The plan rewires `read_text_verbatim` to read bytes and call `decode_store_text`. The original implementation opened the file in text mode, which would strip an UTF‑8 BOM if it existed; reading as bytes preserves the BOM (U+FEFF). The triage log is JSONL and has no BOM today, but an unexpected file could yield a string that differs from the previous behaviour. | This is negligible for the intended use; no action required unless the codebase might encounter BOM‑prefixed files. |\n| Approach | None | The chosen approach (a single `decode_store_text` using `surrogateescape`) is sound and preserves injectivity, avoiding the silent data‑loss risk of `errors='replace'`. The private `_popen_git` core cleanly isolates the byte variant without changing the 133 existing text‑based callers. | None – proceed. |\n\n**Overall assessment**  \nThe plan correctly fixes the decode asymmetry by introducing a byte‑level git primitive and a single store‑decode rule, keeping all existing callers unchanged. Minor edge cases around stderr and BOM handling are easily addressable during implementation, and the thorough test strategy covers all acceptance criteria.\n\nSHIPWRIGHT_VERDICT: approve\n\n[openai] 1. **Category: risk**  \n   **Severity: high**  \n   **Finding:** The `git_base` refactor touches the execution primitive used by roughly 133 existing callers, but the plan does not explicitly require byte-for-byte preservation of the existing text-mode subprocess configuration and failure behavior. In particular, text-mode `stdout` *and* `stderr` decoding, environment, `cwd`, command argument construction, timeout cleanup/reaping, and `run_git_soft` behavior must remain unchanged. A generic `_popen_git(..., binary=...)` extraction can easily alter one of these incidentally.  \n   **Suggestion:** Keep the shared execution path as small as possible and explicitly preserve the current `Popen`/`communicate` arguments in the text branch, including `encoding=\"utf-8\"` and `errors=\"replace\"` for every captured text stream. Add characterization tests for `stdout`, `stderr`, non-zero return codes, and the existing `run_git_soft` timeout behavior—not only `run_git` stdout decoding.\n\n2. **Category: edge-case**  \n   **Severity: medium**  \n   **Finding:** The timeout contract is stated for the bytes helper, but the implementation description only says it “maps `TimeoutExpired`.” A timed-out `Popen.communicate()` must also kill and reap the child process before returning. Further, `TimeoutExpired` may contain partial captured output, while AC-6 requires deliberately returning `stdout == b\"\"`; this needs to be intentional and tested rather than inherited accidentally.  \n   **Suggestion:** Define the bytes helper’s timeout branch concretely: catch `TimeoutExpired`, kill the process if needed, call `communicate()` to reap it, discard any partial output, and return a `CompletedProcess` with `TIMEOUT_RETURNCODE`, `stdout=b\"\"`, and a consistently typed bytes `stderr`. Reuse the existing timeout-cleanup logic if one exists rather than creating a divergent implementation.\n\n3. **Category: dependency**  \n   **Severity: medium**  \n   **Finding:** The proposed verification command  […truncated]",
+      "verdicts": {
+        "openai": "revise",
+        "deepseek": "approve"
+      }
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 10,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "shared/tests/test_sweep_store_decode_parity.py",
+          "line": null,
+          "finding": "delivered and other spliced the SAME bad byte at DIFFERENT offsets, which does NOT collide under errors='replace' - so a non-injective membership rule would also leave `other` in the outbox and the test would still pass. Verified: collide-under-replace was False. FIXED by varying the byte VALUE at the SAME offset (BAD_BYTE 0xFF vs OTHER_BAD_BYTE 0xFE); the pair now collides under replace and stays distinct under surrogateescape, and the test asserts that precondition inline. Proven in isolation: with the shipped rule is_delivered(other)=False (survives); with a lossy rule is_delivered(other)=True, i.e. the GC would DELETE an undelivered operator finding.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "shared/scripts/lib/git_base.py",
+          "line": null,
+          "finding": "It claimed `binary` selects 'the ONLY difference'. Text mode also performs universal-newline translation (TextIOWrapper, newline=None), so CRLF and lone CR become LF; binary mode does not. Harmless for the three migrated sites (all funnel through normalize_lines/.strip()) and strictly more faithful for a lone CR, but the docstring is what a future migration reads. FIXED: docstring now names both differences and why the store readers are unaffected, plus a new TestNewlineTranslation class pinning bytes-preserves-CRLF vs text-translates-to-LF.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/scripts/lib/reconcile_triage.py",
+          "line": null,
+          "finding": "It returns '' for a missing/unstattable path, so a log that vanished under the lock would be reported as 'empty after merge - the header was dropped' instead of read_failed, aiming the operator's repair at the wrong thing. FIXED by reading bytes at the call site and decoding with decode_store_text - keeps the one decode rule while preserving the OSError the handler was written for. This also removes the ledger row-26 caveat at its source.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "shared/scripts/lib/reconcile_triage.py",
+          "line": null,
+          "finding": "It explained the ValueError catch via a UnicodeDecodeError that surrogateescape cannot raise. FIXED: rewritten to state the actual reason.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "shared/scripts/lib/git_base.py",
+          "line": null,
+          "finding": "The operator-facing index.lock hint was written out twice and could drift. FIXED: extracted _timeout_message(); one literal remains.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "architecture",
+          "file": "shared/scripts/lib/git_base.py",
+          "line": null,
+          "finding": "FIXED: core annotated tuple[int, Any, Any] so the two wrappers' narrow public types are the only claims made.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "shared/tests/_sweep_helpers.py",
+          "line": null,
+          "finding": "FIXED: renamed to spliceable_status() to name its purpose; the 10 existing status() call sites are untouched.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "CHANGELOG-unreleased.d",
+          "line": null,
+          "finding": "Correct at review time - F4 had not yet run. FIXED: CHANGELOG-unreleased.d/Fixed/iterate-2026-08-06-gc-decode-parity_001.md written, in plain user-facing language.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "shared/scripts/lib/git_base.py",
+          "line": null,
+          "finding": "DEFERRED, deliberately. Attempted verification was INCONCLUSIVE: p/python does not carry the python36-compatibility rules, and --config auto (what the repo's scanner uses) needs network. Removing a suppression on an inconclusive test risks reddening a Required Check for cosmetic gain, so it is KEPT and its adjacent comment now states the uncertainty and that the kwargs arrive via ** spread. Surfaced in the run summary for re-check when the scanner next runs.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "shared/scripts/lib/sweep_gc.py",
+          "line": null,
+          "finding": "PARTIALLY ACCEPTED. The reviewer marked this non-blocking and noted the repo convention is heavy per-site rationale (G2 clarity). The full argument lives in decode_store_text (the declared SSoT); the three call sites already carry only their own site-specific symptom plus a cross-reference. Left as is rather than trimming rationale a future reader of a single call site would need.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-08-06T10:00:17.383117+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 6,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "hidden-coupling-and-blast-radius",
+          "file": null,
+          "line": null,
+          "finding": "canonical_form is unlanded, so this fix is independent of it",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "reversibility",
+          "file": null,
+          "line": null,
+          "finding": "the drift fix only stops a false refusal; nothing new is mutated",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "concurrency-and-ordering",
+          "file": null,
+          "line": null,
+          "finding": "run_git_bytes_soft has the same kill-and-reap hygiene as run_git",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "boundary-and-contract",
+          "file": null,
+          "line": null,
+          "finding": "AC-2's test proves the two sides agree",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "boundary-and-contract",
+          "file": null,
+          "line": null,
+          "finding": "keeping the nosemgrep suppression is the safe default",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": null,
+          "category": "adversarial-sweep",
+          "file": null,
+          "line": null,
+          "finding": "five other attack vectors",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-08-06T10:50:06.011083+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-06T10:50:22.254036+00:00",
+      "disposition": "Not owed: external_code is the escalation-ladder substitute for a code-review cascade that could not run (iteration-reviews.md blocker #4). The full internal cascade DID run under CLAUDE.md's standing grant - spec-reviewer HARD-GATE (REJECT then APPROVE), code-reviewer (10 findings), doubt-reviewer (5 doubts incl. the moved-base HIGH) - so no substitute is required. External review was run at the PLAN stage instead and is recorded as the 'plan' pass (openrouter: gpt + deepseek, both approve).",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-06T09:41:19.013223+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    }
+  }
+}

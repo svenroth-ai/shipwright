@@ -109,9 +109,12 @@ def test_unreadable_head_refuses_instead_of_claiming_no_blob(repo, monkeypatch) 
     retryable refusal.
     """
     h.seed_tracked(repo, h.item("trg-seed"))
-    monkeypatch.setattr(sd, "run_git_soft",
+    # ``_head_lines`` reads the blob through ``run_git_bytes_soft`` since
+    # iterate-2026-08-06-gc-decode-parity. The fail-safe is unchanged; pin it on the
+    # seam that now carries it.
+    monkeypatch.setattr(sd, "run_git_bytes_soft",
                         lambda *a, **k: subprocess.CompletedProcess(
-                            ["git"], TIMEOUT_RETURNCODE, "", "timed out"))
+                            ["git"], TIMEOUT_RETURNCODE, b"", b"timed out"))
     plan = sd.plan_main_tracked_drift(repo, repo / ".shipwright" / "triage.outbox.jsonl")
     assert plan.status == "refused", plan
     assert "head_unreadable" in plan.reason, plan.reason
@@ -239,10 +242,11 @@ def test_has_drift_timeout_is_an_error_not_no_drift(repo, monkeypatch) -> None:
 
 def test_head_line_set_timeout_is_an_error_not_an_empty_head(repo, monkeypatch) -> None:
     """Row 44's other half: an empty set would count every existing line as newly
-    folded and misreport the total."""
-    monkeypatch.setattr(rt, "run_git_soft",
+    folded and misreport the total. Reads the blob through ``run_git_bytes_soft``
+    since iterate-2026-08-06-gc-decode-parity; the fail-safe is unchanged."""
+    monkeypatch.setattr(rt, "run_git_bytes_soft",
                         lambda *a, **k: subprocess.CompletedProcess(
-                            ["git"], TIMEOUT_RETURNCODE, "", "timed out"))
+                            ["git"], TIMEOUT_RETURNCODE, b"", b"timed out"))
     assert rt._head_line_set(repo) is None
 
 

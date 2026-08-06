@@ -32,7 +32,13 @@ if str(_SCRIPTS_ROOT) not in sys.path:
 import triage  # noqa: E402  — reuse the canonical producer lock (see _triage_lock)
 from lib.churn_merge import TRIAGE_LOG, dedup_triage_lines, validate_triage_text  # noqa: E402
 from lib.ci_env import ci_active  # noqa: E402
-from lib.git_base import HOOK_GIT_TIMEOUT, TIMEOUT_RETURNCODE, run_git_soft  # noqa: E402
+from lib.git_base import (  # noqa: E402
+    HOOK_GIT_TIMEOUT,
+    TIMEOUT_RETURNCODE,
+    run_git_bytes_soft,
+    run_git_soft,
+)
+from lib.sweep_text import decode_store_text  # noqa: E402
 # The dedup rewrite's durable writer + its rollback live in lib.reconcile_rollback
 # (extracted to keep this file under the 300-LOC guideline; the rollback is audit
 # 2026-07-28 finding 16). ``_atomic_write`` keeps its historical private name here.
@@ -110,15 +116,19 @@ def _head_line_set(main_root: Path) -> set[str] | None:
     """Stripped non-blank lines of ``HEAD:<triage>`` (empty if absent, ``None`` when
     git could not be asked). Used to
     count genuinely-new lines; comparison is whitespace-normalised so a CRLF vs
-    LF difference doesn't inflate the count."""
-    proc = run_git_soft(["show", f"HEAD:{TRIAGE_LOG}"], cwd=main_root)
+    LF difference doesn't inflate the count.
+
+    BYTES + ``decode_store_text``, matching this module's own read: the text helper's
+    lossy ``errors="replace"`` kept a committed invalid-UTF-8 byte from ever matching
+    its working copy, inflating the count (iterate-2026-08-06-gc-decode-parity)."""
+    proc = run_git_bytes_soft(["show", f"HEAD:{TRIAGE_LOG}"], cwd=main_root)
     if proc.returncode == TIMEOUT_RETURNCODE:
         # ``None``, not an empty set: empty means "HEAD holds nothing", which would
         # count every existing line as newly folded and misreport the total.
         return None
     if proc.returncode != 0:
         return set()
-    return {ln.strip() for ln in proc.stdout.split("\n") if ln.strip()}
+    return {ln.strip() for ln in decode_store_text(proc.stdout).split("\n") if ln.strip()}
 
 
 def reconcile_main_triage(
@@ -189,17 +199,12 @@ def reconcile_main_triage(
             # checkout). Don't auto-commit a deletion — leave it for the operator.
             return ReconcileResult(status="skipped", reason="triage_missing")
         try:
-            # ``errors="surrogateescape"`` for the same reason the sweep readers use it:
-            # an interrupted append truncates the log mid multi-byte sequence, and a
-            # STRICT decode raises ``UnicodeDecodeError`` — which is a ``ValueError``,
-            # NOT an ``OSError``, so it escaped the handler below and crashed the caller
-            # rather than producing the structured ``read_failed`` this path promises.
-            # ``ValueError`` is caught too, so any residual decode/seek failure lands in
-            # the structured result instead of propagating.
-            with triage_path.open(
-                "r", encoding="utf-8", newline="", errors="surrogateescape"
-            ) as fh:
-                raw = fh.read()
+            # The store's ONE decode rule, but reading bytes HERE rather than via
+            # ``read_text_verbatim``: that helper answers a missing file with ``""``,
+            # which would report a log that vanished under the lock as "empty after
+            # merge" and aim the operator's repair at the wrong thing. ``read_bytes``
+            # still raises, so the real cause survives into ``read_failed``.
+            raw = decode_store_text(triage_path.read_bytes())
         except (OSError, ValueError) as exc:
             return ReconcileResult(status="error", reason=f"read_failed: {exc}")
 
