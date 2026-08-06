@@ -118,6 +118,95 @@ adds a CI workflow definition, not an I/O boundary.
   permanently skipped) are independently probed and closed by the same
   fix.
 
+### Live-CI finding (mid-flight, this iterate)
+
+The workflow's first real run on `windows-latest` went RED: 37 failures,
+all one root cause. `windows-latest` ships a WSL launcher stub at
+`C:\Windows\System32\bash.exe` earlier in PATH than Git's real `bash.exe`.
+GitHub Actions' own `shell: bash` steps already resolve to Git Bash
+correctly, but the shared/ test SUITE itself spawns
+`subprocess.run(["bash", ...])` directly (`test_hooks.py`,
+`test_bloat_defense_artifacts.py`, `test_hook_block_channel.py`, and
+others) — that resolves via Windows' own executable search and hit the WSL
+stub instead ("Windows Subsystem for Linux has no installed
+distributions"). Never reproduced by the local-Windows-host empirical
+probes above, because a normal dev machine never carries this stub on a
+system with no WSL distro installed — a genuine local/CI environment gap
+the local probe could not have caught. All 37 failures were this one
+cause, confirmed by their shared stdout.
+
+**First fix attempt (wrong): prepend `C:\Program Files\Git\bin` to
+`$GITHUB_PATH`.** Re-ran live — all 37 failures identical, byte-for-byte.
+Root-caused why: Windows' executable search order for a bare name
+(`CreateProcess`/`SearchPath`) checks the calling app's own directory, then
+the current directory, then the **system directory**, and only *after*
+that the `PATH` environment variable. `System32\bash.exe` always wins
+over anything in `PATH`, however it is ordered — a `PATH` prepend cannot
+touch this.
+
+**Actual fix: remove the `System32\bash.exe` stub** (take ownership +
+grant ACL first, since it may be `TrustedInstaller`-owned) as the
+workflow's first real step, plus a fast (~seconds) verification step
+(`Get-Command bash` must resolve under `*Git*`) so a broken removal fails
+in seconds instead of only being discovered after the ~20-minute suite
+runs. This is not scope creep into the 37 tests' own content: nothing
+about them changed, only the runner's own environment. The runner is
+ephemeral (destroyed after the job), so removing this stub has no lasting
+effect beyond this one job.
+
+**Result:** confirmed live — `Get-Command bash` resolved to
+`C:\Program Files\Git\bin\bash.exe`, and the shared/tests run dropped from
+37 failures to 2: `7961 passed, 2 failed, 13 skipped, 26 deselected`. Both
+remaining failures share one further cause —
+`test_worktree_evidence_recovery.py`'s `_VALIDATED_MAIN_TIP` reads a git
+blob from a specific historical commit that a shallow (default depth-1)
+`actions/checkout@v4` does not have in its history. **Third fix: add
+`fetch-depth: 0`** to the checkout step, matching `ci.yml`'s own existing
+setting (which needs full history for its diff-coverage gate). Also found:
+the PR's own `pull_request` synchronize event stopped triggering ANY
+workflow (not just this one) for two consecutive pushes on this branch,
+while other PRs in the repo ran normally in the same window — an
+apparent one-off GitHub-side webhook-delivery gap, not caused by this
+diff. Worked around with `gh workflow run --ref` (`workflow_dispatch`,
+already one of this workflow's declared triggers) to get a live signal
+without waiting on it to recover.
+
+**Fourth round (live, after `fetch-depth: 0`):** the 2 `_VALIDATED_MAIN_TIP`
+failures were gone, but 9 new ones appeared, all in
+`shared/scripts/tools/tests`. 8 were ADR-044 silent-skip-discipline
+hard-fails: `test_combine_coverage.py`, `test_measure_diff_coverage_gate.py`,
+and `test_f0_cli_diff_coverage_e2e.py` test the **coverage tooling itself**
+and need `pytest-cov`/`coverage`/`diff-cover` importable even though this
+job runs no `--cov` measurement of its own. **Fix: provision the three
+packages** (`--with pytest-cov --with coverage --with "diff-cover==10.3.0"`)
+without adding any `--cov` flags to the actual invocation — closes all 8.
+The 9th, `test_run_test_suite_faults.py::test_main_cancellation_releases_
+real_locks_and_next_run_resets_state`, is a genuine new finding: on
+Windows `run_test_suite.py`'s cancellation path returns exit `2`, not the
+POSIX `128+signal` convention (`130`) the test expects and that passes on
+`ci.yml`'s Linux job today. Filed as `trg-e82d8771` (root-causing which
+side — `main()`'s Windows path or the test's platform-agnostic assumption
+— needs normalizing is separate follow-up work) and `--deselect`ed from
+this job only, with a comment pointing at the card; it still runs, and
+passes, on Linux.
+
+**Fifth round (live, after provisioning the 3 packages):** 8/9 fixed as
+expected. The 9th, `test_f0_cli_diff_coverage_e2e.py::test_the_f0_cli_stops
+_on_an_under_covered_diff_then_passes_once_covered`, turned out to be a
+*different* cause than assumed — not a missing package, but
+`host_resource_lease`'s ownership check (`shared/scripts/lib/_windows_acl.py`)
+rejecting GitHub-hosted `windows-latest`'s `runneradmin` profile directory
+as "not owned by the current user". A security-hardening check
+(guards lock files against tampering by another user), deliberately not
+weakened here. Filed as `trg-d0f585b2` and `--deselect`ed the same way;
+still runs, and passes, on Linux (no equivalent check fires there).
+
+Re-verified locally after all fixes: `488 passed, 0 failed, 7 skipped, 4
+deselected` in `shared/scripts/tools/tests` (the one directory any of the
+five fixes touched); `shared/tests` and `shared/scripts/tests` were
+already clean from the fourth round and none of the later fixes touch
+them.
+
 ## Verification (medium+)
 
 - **Surface:** none (CI/workflow-infrastructure change; no web/UI/API/store/SSE
