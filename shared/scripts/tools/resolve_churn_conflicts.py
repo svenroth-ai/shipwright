@@ -165,10 +165,10 @@ def _reconcile_events(
 def _reconcile_triage(
     project_root: Path, resolved: list[str]
 ) -> tuple[list[str], list[str]]:
-    """Dedup + validate ``triage.jsonl`` unconditionally (mirrors
-    ``_reconcile_events``; triage dedup never warns — shared append/status ids
-    are by design). Mutates ``resolved``; returns ``(errors, warnings)``.
-    """
+    """Dedup + validate ``triage.jsonl`` unconditionally (mirrors ``_reconcile_events``;
+    the triage dedup DOES warn now — a same-id ``append`` collapse or a refused 32-bit id
+    collision, see :mod:`lib.triage_dedup`; a shared append/status id is by design and
+    warns about nothing). Mutates ``resolved``; returns ``(errors, warnings)``."""
     log = project_root / TRIAGE_LOG
     if not log.exists():
         return [], []

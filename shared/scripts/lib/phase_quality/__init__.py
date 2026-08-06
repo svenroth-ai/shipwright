@@ -16,7 +16,9 @@ Submodule layout:
 
 * :mod:`._constants` — phase maps, category sets, paths, status strings.
 * :mod:`._flags` — ``SHIPWRIGHT_*`` env-flag readers.
-* :mod:`._resolution` — project / phase / run-id / source resolution.
+* :mod:`._resolution` — project / phase / source resolution.
+* :mod:`._run_id` — run-id resolution (run pointer → config → event → loop
+  vars → session), re-exported through ``._resolution``.
 * :mod:`._findings` — finding-dict schema + atomic JSON writer.
 * :mod:`._runners` — canon / workflow / infra / trace / quality / spec
   category runners.

@@ -47,6 +47,7 @@ if str(_SCRIPTS_ROOT) not in sys.path:
 
 from lib.gitattributes_selfheal import self_heal_gitattributes  # noqa: E402
 from lib.gitignore_selfheal import self_heal_gitignore  # noqa: E402
+from lib.file_lock import LockTimeout  # noqa: E402
 from lib.sweep_outbox import sweep_outbox_to_branch, sweep_warnings  # noqa: E402
 from lib.worktree_isolation import (  # noqa: E402
     GitError,
@@ -216,11 +217,9 @@ def setup(
                                  + (f": {_heal.reason}" if _heal.reason else ""))
 
     # 5. SWEEP the gitignored main-tree triage outbox into THIS worktree's tracked
-    #    triage.jsonl + commit on iterate/<slug> BEFORE snapshotting (D2): appends ride
-    #    the PR to origin, not local main. Step-3 refreshed origin/<default> for the GC.
-    #    Surface any non-clean sweep so a caller never assumes delivery — incl. `skipped`
-    #    (e.g. staged_changes from a self-heal residue) which else SILENTLY defers it, and
-    #    a QUARANTINE (an operator action withheld — it used to look like a clean run).
+    #    triage.jsonl + commit on iterate/<slug> BEFORE snapshotting (D2): appends ride the
+    #    PR to origin, not local main. Step-3 refreshed origin/<default> for the GC. Surface
+    #    any non-clean sweep — `skipped`/QUARANTINE both used to look like clean runs.
     sweep = sweep_outbox_to_branch(main_root, worktree_path, default_branch=db)
     sweep_notes = sweep_warnings(sweep)
     for note in sweep_notes:
@@ -281,11 +280,12 @@ def main(argv: list[str] | None = None) -> int:
             main_override=args.main,
             session_id=args.session_id,
         )
-    except (GitError, OSError) as exc:
+    # LockTimeout JOINS the tuple (trg-dc013d82): a step-5 failure after the worktree
+    except (LockTimeout, GitError, OSError) as exc:
+        stuck = isinstance(exc, LockTimeout)
         exit_code, payload = 1, {
-            "action": "error",
-            "reason": "exception",
-            "detail": str(exc),
+            "action": "error", "detail": str(exc),
+            "reason": "triage_lock_timeout" if stuck else "exception",
         }
 
     print(json.dumps(payload, indent=2, ensure_ascii=False))

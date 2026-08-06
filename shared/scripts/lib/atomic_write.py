@@ -20,7 +20,7 @@ compose.
 on Windows only when it *succeeds*. Windows refuses to replace a file that any
 process holds open without ``FILE_SHARE_DELETE``, and CPython's ``open()`` does
 not request it — so a plain reader is enough to make the call raise
-``PermissionError`` (``WinError`` 5 ``ACCESS_DENIED`` / 32 ``SHARING_VIOLATION``)
+``PermissionError`` (the codes, and why each one, live in ``durable_publish``)
 and the write is lost. Locking does not close this: the run-config design
 deliberately permits unlocked readers (``_read_standalone_flag`` reads on every
 ``update_step``), and the WebUI, an editor, an indexer or antivirus are outside
@@ -58,9 +58,14 @@ import threading
 import time
 from pathlib import Path
 
+try:  # loaded as ``lib.atomic_write``
+    from .durable_publish import SHARING_VIOLATION_WINERRORS, carry_destination_mode
+except ImportError:  # loaded as top-level ``atomic_write`` (lib/ is on sys.path)
+    from durable_publish import SHARING_VIOLATION_WINERRORS, carry_destination_mode
+
 __all__ = ["durable_atomic_write", "durable_read_bytes", "durable_read_text",
            "REPLACE_RETRY_BUDGET_SECONDS", "READ_RETRY_BUDGET_SECONDS",
-           "sharing_violation_retries", "reset_sharing_violation_retries"]
+           "replace_retrying", "sharing_violation_retries", "reset_sharing_violation_retries"]
 
 #: Sharing-violation retries this process has performed. Rationale and the residual
 #: limit are in the module docstring's second bullet (card ``trg-0a294ef3``).
@@ -90,18 +95,10 @@ def _note_retry() -> None:
     with _retry_count_lock:
         _retry_count += 1
 
-#: Windows codes seen when someone else has the destination open. Measured on
-#: Windows 11: a plain reader, a memory-mapped holder (what AV/indexers do) and
-#: a byte-range lock ALL surface as ``PermissionError`` winerror 5; 32 is kept
-#: because ``ERROR_SHARING_VIOLATION`` is documented for this path.
-#:
-#: **5 is ambiguous and we cannot fix that.** ``ERROR_ACCESS_DENIED`` is equally
-#: what a read-only destination, a deny-ACL, or a destination that is a
-#: directory returns (all three measured). Those now stall for the budget below
-#: before failing. Accepted knowingly: a bounded stall that still fails loudly
-#: beats silently losing a write, and the two are indistinguishable at this
-#: layer.
-_SHARING_VIOLATION_WINERRORS = frozenset({5, 32})
+#: The historical private name, kept resolvable for existing lookups. It IS the
+#: leaf's frozenset, never a copy — ``test_durable_publish`` asserts identity, so
+#: a rebind here cannot fork the source of truth. Which codes, and why: the leaf.
+_SHARING_VIOLATION_WINERRORS = SHARING_VIOLATION_WINERRORS
 #: How long a transient holder may keep the destination before the write fails.
 #: Deliberately SHORT. A config read is ~1 ms, so this is still ~500x headroom,
 #: and every extra millisecond is paid twice: a genuine denial (winerror 5, see
@@ -145,11 +142,14 @@ def durable_atomic_write(path: Path | str, data: str | bytes) -> None:
     ``triage_header``), so the leniency lives with the two modules that need it
     instead of on a primitive shared by thirty-five that do not.
 
-    Sequence: write to a same-directory temp file → ``fsync`` it → ``os.replace``
-    onto ``path`` (atomic on POSIX; on Windows retried past a concurrent reader,
-    see the module docstring) → best-effort directory fsync. On any failure the
-    temp file is removed and the original error re-raised, so ``path`` is never
-    left pointing at a half-written temp.
+    Sequence: write to a same-directory temp file → carry the destination's
+    POSIX mode onto it → ``fsync`` it → ``os.replace`` onto ``path`` (atomic on
+    POSIX; on Windows retried past a concurrent reader, see the module
+    docstring) → best-effort directory fsync. The mode is applied BEFORE the
+    fsync so one fsync covers bytes and metadata together; see
+    :func:`durable_publish.carry_destination_mode` for why it is carried at all.
+    On any failure the temp file is removed and the original error re-raised, so
+    ``path`` is never left pointing at a half-written temp.
     """
     path = Path(path)
     raw = data.encode("utf-8") if isinstance(data, str) else data
@@ -159,8 +159,9 @@ def durable_atomic_write(path: Path | str, data: str | bytes) -> None:
         with os.fdopen(fd, "wb") as fh:
             fh.write(raw)
             fh.flush()
+            carry_destination_mode(fh.fileno(), path)
             os.fsync(fh.fileno())
-        _replace_retrying_sharing_violations(tmp, path)
+        replace_retrying(tmp, path)
     except BaseException:
         with contextlib.suppress(OSError):
             os.unlink(tmp)
@@ -219,9 +220,9 @@ def _retry_past_sharing_violations(operation, budget_seconds: float):
             delay = min(delay * 2, _RETRY_MAX_SLEEP_SECONDS)
 
 
-def _replace_retrying_sharing_violations(tmp: str, path: Path) -> None:
-    """``os.replace``, retried while Windows reports the destination as in use."""
-    _retry_past_sharing_violations(lambda: os.replace(tmp, path),
+def replace_retrying(src: str | Path, dst: str | Path) -> None:
+    """``os.replace`` retried while Windows says the destination is in use. Public because ``lib.sweep_drift_restore`` renames the tracked log aside in the same threat model."""
+    _retry_past_sharing_violations(lambda: os.replace(src, dst),
                                    REPLACE_RETRY_BUDGET_SECONDS)
 
 

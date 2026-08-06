@@ -43,12 +43,20 @@ _GIT_ENV = {
     "GIT_COMMITTER_NAME": "t", "GIT_COMMITTER_EMAIL": "t@t.invalid",
 }
 #: What `run_test_suite.py` needs on disk to run standalone in a synthetic repo.
+#: `durable_publish` and `file_lock_registry` are here because `atomic_write` and
+#: `file_lock` import them at module scope and deliberately do NOT degrade when
+#: they are absent — a fallback that quietly skipped carrying the destination's
+#: mode, or the lock's reentrancy, would reintroduce trg-dc013d82 invisibly.
+#: BOTH must be listed: the first pass of this fix added only `durable_publish`
+#: and the external code review caught `file_lock`'s sibling still missing.
 _RUNNER_FILES = (
     "scripts/lib/_host_resource_locking.py",
     "scripts/lib/_windows_acl.py",
     "scripts/lib/atomic_write.py",
+    "scripts/lib/durable_publish.py",
     "scripts/lib/diff_coverage_gate.py",
     "scripts/lib/file_lock.py",
+    "scripts/lib/file_lock_registry.py",
     "scripts/lib/git_base.py",
     "scripts/lib/host_resource_lease.py",
     "scripts/lib/iterate_entry.py",

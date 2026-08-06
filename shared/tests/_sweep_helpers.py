@@ -36,10 +36,20 @@ def set_identity(work: Path) -> None:
     git(work, "config", "user.name", "Sweep Test")
 
 
-def item(iid: str, title: str = "x") -> str:
+def item(iid: str, title: str = "x", original_ts: str | None = None) -> str:
+    """An append line. ``original_ts`` is OPTIONAL and omitted by default, so every
+    existing fixture keeps its exact bytes.
+
+    Pass it when the fixture means a REFRESH of an existing item. Two same-id appends
+    that do not agree on ``originalTs`` are treated as a possible 32-bit id collision
+    and both are kept (``lib.triage_dedup``), which is not what a refresh fixture
+    intends — and an append without one is a shape neither of ``triage.py``'s
+    constructors can emit, so omitting it there models something that cannot occur.
+    """
+    anchor = f'"originalTs":"{original_ts}",' if original_ts else ""
     return (
         f'{{"event":"append","id":"{iid}","ts":"2026-06-08T00:00:00Z",'
-        f'"title":"{title}","status":"triage"}}'
+        f'{anchor}"title":"{title}","status":"triage"}}'
     )
 
 

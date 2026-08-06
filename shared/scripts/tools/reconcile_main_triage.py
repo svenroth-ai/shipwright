@@ -60,6 +60,14 @@ def main(argv: list[str] | None = None) -> int:
     else:
         print(f"reconcile-main-triage: error — {result.reason}", file=sys.stderr)
 
+    # On EVERY status, not just --json. The dedup's warnings are the actionable half
+    # of an `invalid` run: the validator says "duplicate append for id trg-x" while the
+    # diagnosis — "possibly a 32-bit id collision ... resolve it with triage_repair.py
+    # rather than by deleting a line" — lives here. This is the module's only human
+    # entry point, and it used to drop them (code review).
+    for warning in result.warnings:
+        print(f"reconcile-main-triage: {warning}", file=sys.stderr)
+
     return _EXIT.get(result.status, 4)
 
 

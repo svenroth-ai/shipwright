@@ -1,0 +1,13 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-08-05-windows-ci-tests",
+  "ci_supplychain_ack": {
+    "run_id": "iterate-2026-08-05-windows-ci-tests",
+    "paths_fingerprint": "06316be33d49e0291de709c1689b3cb263cd09cd0d498538e788c4de25067fef",
+    "consistent_with": "iterate-2026-06-01-ci-launch-hardening",
+    "statement": "Adds a new workflow (.github/workflows/windows-tests.yml) running shared/ tests on windows-latest. GitHub-owned actions/checkout stays on its mutable @v4 tag; the third-party astral-sh/setup-uv step reuses ci.yml's existing SHA-pinned reference verbatim (caf0cab7a618c569241d31dcd442f54681755d39). No new third-party action is introduced and ci.yml is not modified. Final revision also removes the WSL bash.exe launcher shim (taking ownership first if TrustedInstaller-owned) as a runner-local PowerShell step, not a new supply-chain surface. Consistent with the actions-pinning posture decided in iterate-2026-06-01-ci-launch-hardening (decision_log.md ADR-118 -- NOT the same numbering space as the formal .shipwright/planning/adr/ files, whose own ADR-118 is an unrelated topic; citing the run-id here to avoid that collision).",
+    "ci_paths": [
+      ".github/workflows/windows-tests.yml"
+    ]
+  }
+}
