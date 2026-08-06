@@ -280,7 +280,7 @@ to the default branch.
 
 | Path | Class | Refreshed by |
 |---|---|---|
-| the five `.shipwright/compliance/*.md` | `derives_from_tree` | release Step 5.5 · `/shipwright-compliance --refresh-pr` |
+| the five `.shipwright/compliance/*.md` | `derives_from_tree` | release Step 5.5 · `/shipwright-compliance --refresh-pr` · **adopt Step H** (`--stamp-adopted`, the onboarding baseline) |
 | `.shipwright/compliance/test-traceability.json` | `derives_from_tree` | same (side effect of the same `_update_compliance` call) |
 | `.shipwright/compliance/ci-security.json` | `derives_from_ci_history` | same, but **not** tree-derived — it carries the latest COMPLETED `security.yml` run, so its freshness is not a property of the commit. Excluded from the fixpoint claim; reported with `stale` + `scan_date`; never blocks a release |
 | `.shipwright/agent_docs/build_dashboard.md` | `session_scoped` | nobody — embeds one session's run id, and the default branch has no run |
@@ -294,7 +294,20 @@ Registry + classification: `shared/scripts/lib/compliance_refresh.py`
 eligibility is declared and never inferred from a file shape). Producer:
 `shared/scripts/tools/compliance_refresh_produce.py` (fixpoint loop, failed-pass
 detection, content floor). Delivery: `shared/scripts/tools/refresh_compliance_docs.py`
-(`--stage` · `--pr` · `--restore`).
+(`--stage` · `--pr` · `--restore` · `--verify-commit` · `--stamp-adopted`), whose
+onboarding path lives in the sibling `shared/scripts/tools/compliance_adopt_stamp.py`.
+
+**Onboarding is the third fixed point, and the only one whose base is supplied.**
+`--stage` and `--pr` describe *now*, so they resolve `HEAD` themselves;
+`--stamp-adopted` describes *the commit onboarding read* — a fact only the caller
+holds — and therefore **never resolves `HEAD`**. Adopt Step H passes the `adopted`
+event's `commit_at_adoption` as `--base`; absent, malformed, the literal `"HEAD"`
+or a non-resolving value all yield `no_base`, which writes nothing and lets the
+onboarding finish (a repository with no commits is legitimate to onboard). It does
+NOT recompute — Step F has just done that — and it stamps in memory, validating the
+set before writing, so a document missing its banner aborts the adoption without
+leaving the tree mutated. Step H then proves the result against the COMMIT with
+`--verify-commit`, skipping it only on `no_base`.
 
 **The release regenerates them twice, and the second one must lose.**
 `orchestrator update-step --step changelog --status complete` (Step 8) runs

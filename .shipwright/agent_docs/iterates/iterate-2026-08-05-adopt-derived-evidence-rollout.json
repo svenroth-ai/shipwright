@@ -1,0 +1,11 @@
+{
+  "run_id": "iterate-2026-08-05-adopt-derived-evidence-rollout",
+  "date": "2026-08-06T11:10:34.194957Z",
+  "event_at": "2026-08-05T19:42:54.206095+00:00",
+  "type": "change",
+  "complexity": "medium",
+  "branch": "iterate/adopt-derived-evidence-rollout",
+  "spec": ".shipwright/planning/iterate/2026-08-05-adopt-derived-evidence-rollout.md",
+  "tests_passed": true,
+  "adr": "iterate-2026-08-05-adopt-derived-evidence-rollout"
+}

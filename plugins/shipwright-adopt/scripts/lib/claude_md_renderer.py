@@ -105,9 +105,15 @@ What `/shipwright-iterate` automates:
 - CHANGELOG fragment under `CHANGELOG-unreleased.d/<category>/`
 - Conventional Commits on an `iterate/<slug>` branch, merged to main on green tests
 - FR / acceptance-criteria sync in `.shipwright/planning/`
-- Compliance + dashboard refresh
+- Compliance + dashboard refresh **in your working tree** (see below for what is committed)
 
 Do NOT invoke `/shipwright-project`, `/shipwright-plan`, or `/shipwright-build` directly — those are pre-onboarding phases.
+
+## How current is the audit evidence?
+
+**Working tree:** current. **Committed on the default branch:** as of the last release or refresh, not continuously — each document's `Source-State:` line names the commit it was computed from. Iterate branches deliberately do not carry them (a branch derives them from its own history and is wrong for the default branch).
+
+Refresh with `/shipwright-changelog` (a release checks them in) or `/shipwright-compliance --refresh-pr` (a documents-only PR in between). The moment you need current evidence is the moment to run it.
 
 
 See `{AGENT_DOCS_DIR}/decision_log.md` for the adoption ADR (the topmost

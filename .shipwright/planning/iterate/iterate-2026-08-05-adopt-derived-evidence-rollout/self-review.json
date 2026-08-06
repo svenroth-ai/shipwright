@@ -1,0 +1,22 @@
+{
+  "items": [
+    {"name": "Correctness vs acceptance criteria", "verdict": "pass",
+     "note": "All six ACs implemented and pinned. AC-2's four failure modes are parametrised rather than sampled, because the R3 finding was that one of the four had been handled differently from the others."},
+    {"name": "Error handling and failure semantics", "verdict": "pass",
+     "note": "Three outcomes, deliberately asymmetric: ok (0), no_base (0, legitimate empty repo), partial (non-zero, aborts before any write). The asymmetry is documented at both the tool and the Step H call site so a later hand does not 'fix' no_base into a refusal."},
+    {"name": "No invented data on the unhappy path", "verdict": "pass",
+     "note": "The mode never resolves HEAD. Asserted by failing on the CALL rather than by comparing SHAs - a comparison passes by accident whenever HEAD happens to be the right commit, which is exactly the case that hid the defect."},
+    {"name": "Tests prove the artifact, not the return value", "verdict": "pass",
+     "note": "The integration test reads blobs out of the commit, and cross-checks with an independent git show rather than trusting the verifier that just passed. An adversarial-writer case reproduces the failure --verify-commit exists for."},
+    {"name": "Scope discipline", "verdict": "pass",
+     "note": "The run=(unknown) root cause was left out and filed as trg-8ee5ae02: latest_work_event feeds BOTH banner lines for every repo, so widening it risks re-opening the deterministic-render-timestamps churn. Fixing it here would have been cheaper and wrong."},
+    {"name": "Documentation kept in the same diff", "verdict": "pass",
+     "note": "guide.md (adopt chapter), hooks-and-pipeline.md (refresh matrix + the third fixed point), adopt SKILL.md + step-h reference, generated CLAUDE.md template. Spec MODIFY on FR-01.10 and FR-01.13, folded not minted."},
+    {"name": "Affected Boundaries", "verdict": "pass",
+     "note": "Banner producer/consumer round-trip covered by a parse-back test (Boundary Probe). The CLI gained a fifth mode; the two .json refresh-set members are untouched by design and pinned by a set-agreement test."},
+    {"name": "Size and placement discipline", "verdict": "pass",
+     "note": "Two caps were hit and respected rather than worked around: refresh_compliance_docs.py crossed 300 (split into compliance_adopt_stamp.py along the file's own documented architecture), and adopt SKILL.md hit its hard 300-LOC test (reflowed, detail left in references/). test_refresh_compliance_docs.py was at 299, so the new tests took their own file."},
+    {"name": "Test isolation", "verdict": "pass",
+     "note": "One test initially imported scripts.lib and collided with the compliance plugin's package under ADR-045 - passing alone, failing in-suite. Fixed by reading the template by path; nothing in that module imports at all now."}
+  ]
+}
