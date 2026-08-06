@@ -12,11 +12,13 @@ from __future__ import annotations
 
 import argparse
 import json
+import sys
 from pathlib import Path
 
 from .build_progress import get_build_progress
 from .config_factory import create_config
-from .config_io import is_single_session, load_run_config
+from .cli_update_step import dispatch_update_step
+from .config_io import RunConfigUnreadable
 from .constants import (
     DEFAULT_RUN_MODE,
     LEGACY_MODE_MESSAGE,
@@ -26,7 +28,7 @@ from .constants import (
 )
 from .router import LIFECYCLE_COMMANDS, dispatch_lifecycle
 from .single_session_cli import SINGLE_SESSION_COMMANDS, dispatch_single_session
-from .step_planning import get_next_step, update_step
+from .step_planning import get_next_step
 
 
 def _mode_value(value: str) -> str:
@@ -67,7 +69,12 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--deploy-target", default="jelastic-dev")
     p.add_argument("--project-root", default=".")
 
-    p = subparsers.add_parser("get-next-step")
+    p = subparsers.add_parser(
+        "get-next-step",
+        help='Report the next pipeline step. Exits 2 with {"blocked": true} when '
+             "the run config exists but cannot be used (distinct from "
+             "next_step: null, which means every step is complete).",
+    )
     p.add_argument("--project-root", default=".")
 
     p = subparsers.add_parser("update-step")
@@ -203,6 +210,17 @@ def main() -> int:
     args = parser.parse_args()
     project_root = Path(args.project_root).resolve()
 
+    try:
+        return _dispatch(args, parser, project_root)
+    except RunConfigUnreadable as exc:
+        # The MUTATING arms propagate here; ``get-next-step`` catches inside
+        # ``get_next_step`` and returns a blocked payload instead, so exactly one
+        # of the two paths emits. Exit 2, not 1: "refused, nothing changed".
+        print(json.dumps(exc.payload(), indent=2), file=sys.stderr)
+        return 2
+
+
+def _dispatch(args, parser, project_root: Path) -> int:
     if args.command == "write-config":
         # The removed mode is intercepted by the parser itself (``_mode_value``), so it
         # can never arrive here. ``create_config`` guards it a second time for library
@@ -216,65 +234,23 @@ def main() -> int:
     elif args.command == "get-next-step":
         result = get_next_step(project_root)
         print(json.dumps(result, indent=2))
+        # Blocked is still a RESULT, so it goes to stdout like every other arm
+        # and is NOT echoed to stderr: one payload, one stream, with the exit
+        # code carrying the failure. Echoing produced the same diagnostic twice
+        # for anything aggregating both streams (external code review).
+        #
+        # Keyed on `blocked`, which the library contract designates as THE
+        # discriminator, NOT on the `reason` string: `reason` is one of four
+        # values, so renaming it would silently return 0 while printing a
+        # blocked payload — a fail-open the exit-code tests could not catch.
+        #
+        # get_next_step CATCHES (a reporter must not crash), so this never
+        # reaches main()'s handler; this branch is what makes the exit 2.
+        if result.get("blocked"):
+            return 2
 
     elif args.command == "update-step":
-        # Drivability guard (iterate-2026-07-14-phase-invocation-mode). `update-step` is the
-        # v1 completion path; in a driven single_session run `single-session-apply` owns
-        # phase completion — run/SKILL.md is explicit: "Do NOT ... call `orchestrator
-        # update-step`. The loop's two subcommands are the only way phases advance." Every
-        # real caller of this command is a phase skill's completion step or the
-        # generate_handoff_on_stop fallback; both reach it here at the CLI. Under the bug the
-        # phase skills misclassified as standalone and skipped the call, so it stayed
-        # harmless by accident. Correcting that classification would make them call it for
-        # real — and update_step writes status="needs_validation" on any ask-level issue, the
-        # same key resolve_next_dispatch reads BEFORE the phase_tasks frontier, permanently
-        # halting a healthy run. So refuse it mechanically here rather than trusting prose.
-        # The underlying update_step() function is unchanged: it still serves standalone /
-        # legacy / adopted runs (no mode, or mode != single_session), and its state-machine
-        # unit tests call it directly.
-        cfg = load_run_config(project_root, migrate=False)
-        if cfg and is_single_session(cfg):
-            print(json.dumps({
-                "driven_run": True,
-                "state_mutated": False,
-                "step": args.step,
-                "requested_status": args.status,
-                "message": (
-                    "update-step is inert in a driven single_session run: single-session-apply "
-                    f"owns phase completion (run/SKILL.md). Ignored '{args.step}' -> "
-                    f"'{args.status}'."
-                ),
-            }, indent=2))
-            return 0
-
-        # An override with no recorded reason is the gap FR-01.01 exists to close,
-        # so refuse it here with a readable message rather than letting update_step
-        # raise ValueError. Placed AFTER the drivability guard so an inert command
-        # stays inert, and gated on `complete` because `--force` on any other
-        # status overrides nothing.
-        #
-        # This is DELIBERATELY stricter than the library on one arm: `update_step`
-        # skips the demand for a standalone (bare-phase) run, because there the
-        # gate never runs and nothing is recorded. The CLI still demands it —
-        # a person typing `--force` at a terminal is making an interactive
-        # override whether or not we have somewhere to file it. Do not "unify"
-        # these by loosening the CLI.
-        if (
-            args.status == "complete"
-            and args.force
-            and not (args.force_reason or "").strip()
-        ):
-            parser.error(
-                '--force requires --force-reason "<why>": the validator still runs '
-                "under --force and what it found is recorded, but the person's "
-                "reason for going ahead has to be recorded with it."
-            )
-
-        config = update_step(
-            project_root, args.step, args.status,
-            force=args.force, force_reason=args.force_reason,
-        )
-        print(json.dumps(config, indent=2))
+        return dispatch_update_step(args, parser, project_root)
 
     elif args.command == "get-build-progress":
         result = get_build_progress(project_root)
