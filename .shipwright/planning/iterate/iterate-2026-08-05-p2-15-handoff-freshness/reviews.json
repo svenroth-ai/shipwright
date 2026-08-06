@@ -1,0 +1,288 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-08-05-p2-15-handoff-freshness",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-06T05:57:08.622439+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 9,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The mini‑plan omits the explicit logic needed to restore a deleted `session_handoff.md` (AC1). Removing it from `RESTORABLE_SNAPSHOTS` stops the reset-on-modify, but a plain removal also means a deleted file is never restored – the test expects the restoration to still happen for deletions.",
+          "suggestion": "Add a small guard inside (or after) `restore_derived_to_head`: if `SESSION_HANDOFF` is missing from the worktree, run `git checkout HEAD -- <path>` for it. Keep the test that verifies the deleted-handoff case in `test_handoff_survives_restore.py`.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "The `stash_run_written` / `unstash_run_written` pair currently iterates over a list of paths; if F5b hasn't written the handoff yet (e.g., the flow is called before that point), a `git stash push -- <handoff>` on a non‑existent file may silently fail or cause noise.",
+          "suggestion": "Ensure `stash_run_written` only stashes paths that actually exist and are dirty, or document that the handoff is guaranteed present by the time `integrate_main` runs. The integration test in step 4 should exercise the real call chain and confirm it doesn't break.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "The plan updates `docs/hooks-and-pipeline.md` (restore‑exclusion paragraph and merge‑reconciliation matrix), but there may be other docs or inline comments that still label the handoff as “restorable.”",
+          "suggestion": "Grep for “restorable” and “session_handoff” across the codebase and documentation; update any stale mentions. The plan’s doc change file list is necessary, just ensure completeness.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "If the handoff is both modified and staged (e.g., via `git add`), the stash will capture the staged state and re‑apply it after the merge, leaving the file staged. This does not violate any gate, but a later step that inspects the index might behave unexpectedly.",
+          "suggestion": "Confirm that no subsequent phase (e.g., commit‑gate checks) relies on the handoff being unstaged. The existing `check_no_derived_snapshots_committed` only inspects committed changes, so it’s safe, but document the expected working‑tree state after unstash if clarity helps.  Overall assessment: The approach is sound – reclassifying the file as run‑written and reusing the existing stash/unstash mechanism correctly prevents the handoff from being reset. The main gap is the missing explicit restore for the deleted‑file case, which the spec requires. Adding that small logic and a guard on the stash side will make the implementation complete and safe.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "The proposed set subtraction does not satisfy AC1 for a deleted handoff. With `SESSION_HANDOFF` removed from `RESTORABLE_SNAPSHOTS`, `restore_derived_to_head` will no longer visit that path at all, so a worktree deletion remains a deletion. The mini-plan says the deleted-handoff case will still restore, but no described implementation provides status-sensitive handling.",
+          "suggestion": "Keep the handoff excluded from ordinary destructive restore, but add an explicit restore rule for this path when it is absent/deleted. For example, have `restore_derived_to_head` restore `SESSION_HANDOFF` from `HEAD` only when the tracked path is missing (including a staged deletion), while preserving it when a file exists and has run-written bytes. Add unit coverage for both unstaged and staged deletion if the restore command affects the index.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "The plan assumes that changing `DERIVED_SNAPSHOTS - RESTORABLE_SNAPSHOTS` automatically makes `stash_run_written` / `unstash_run_written` carry the handoff, but it only proposes a `run_written_ledger.py` docstring edit. If the ledger has its own explicit path list, cache, or call-site filtering, the handoff will be preserved across restore but still cause `git merge` to reject due to the dirty tracked file.",
+          "suggestion": "Trace and state the exact source of the ledger’s path set. If it is derived from the registry difference, add a direct test asserting `SESSION_HANDOFF` is in the ledger’s effective stash set. If it is explicit, update that implementation rather than only its documentation. The integration test should assert both that the merge succeeds and that the post-merge bytes equal the F5b-written bytes.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The integration coverage exercises the successful merge path only. This change adds the handoff to the set stashed around integration, so a merge failure or conflict in another file is a practical path where `unstash_run_written` must still restore the handoff exactly once and leave it available for retry. The plan asserts this is handled by `finally`, but does not test it.",
+          "suggestion": "Add a focused failure-path test that causes the merge to fail after stashing (for example, a conflict on an unrelated tracked file), then verify the handoff remains present with the current run marker and original bytes. Also verify expected behavior for staged handoff edits, since `git checkout HEAD -- <path>` and a raw-byte stash can affect worktree and index state differently.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "The new `SESSION_HANDOFF` constant is intentionally placed outside the stated “natural registry home” to avoid a source-line limit and detector scope. A membership assertion reduces drift risk, but this still creates a second representation of a shared path and makes future registry changes easier to miss.",
+          "suggestion": "Prefer importing or relocating the authoritative path constant through an existing small shared constants module if dependency direction permits. If duplication is unavoidable, make the test assert the effective ledger path and restore path resolve to the same canonical constant, not only that the new value happens to be in `DERIVED_MDS`.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "The documentation update should reflect the changed cardinality precisely. If the current model is “ten of eleven” restorable and this change creates a second exclusion, the resulting statement is “nine of eleven,” not merely an updated handoff row.",
+          "suggestion": "Make the documentation and registry test name/count explicit: eleven derived snapshots, two run-written/non-restorable exceptions, and nine normally restored snapshots.  The preservation strategy is sound and preferable to re-stamping canon evidence, but the described implementation currently conflicts with the required deleted-file behavior. Resolve that status-sensitive restore rule and verify the ledger/failure paths before shipping. SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-08-06T05:46:52.252499+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[deepseek] - **Category:** edge-case  \n  **Severity:** medium  \n  **Finding:** The mini‑plan omits the explicit logic needed to restore a *deleted* `session_handoff.md` (AC1). Removing it from `RESTORABLE_SNAPSHOTS` stops the reset-on-modify, but a plain removal also means a deleted file is never restored – the test expects the restoration to still happen for deletions.  \n  **Suggestion:** Add a small guard inside (or after) `restore_derived_to_head`: if `SESSION_HANDOFF` is missing from the worktree, run `git checkout HEAD -- <path>` for it. Keep the test that verifies the deleted-handoff case in `test_handoff_survives_restore.py`.  \n\n- **Category:** risk  \n  **Severity:** low  \n  **Finding:** The `stash_run_written` / `unstash_run_written` pair currently iterates over a list of paths; if F5b hasn't written the handoff yet (e.g., the flow is called before that point), a `git stash push -- <handoff>` on a non‑existent file may silently fail or cause noise.  \n  **Suggestion:** Ensure `stash_run_written` only stashes paths that actually exist and are dirty, or document that the handoff is guaranteed present by the time `integrate_main` runs. The integration test in step 4 should exercise the real call chain and confirm it doesn't break.  \n\n- **Category:** dependency  \n  **Severity:** low  \n  **Finding:** The plan updates `docs/hooks-and-pipeline.md` (restore‑exclusion paragraph and merge‑reconciliation matrix), but there may be other docs or inline comments that still label the handoff as “restorable.”  \n  **Suggestion:** Grep for “restorable” and “session_handoff” across the codebase and documentation; update any stale mentions. The plan’s doc change file list is necessary, just ensure completeness.  \n\n- **Category:** edge-case  \n  **Severity:** low  \n  **Finding:** If the handoff is both modified and staged (e.g., via `git add`), the stash will capture the staged state and re‑apply it after the merge, leaving the file staged. This does not violate any gate, but a  […truncated]\n\n[openai] 1. **Category:** approach  \n   **Severity:** high  \n   **Finding:** The proposed set subtraction does not satisfy AC1 for a deleted handoff. With `SESSION_HANDOFF` removed from `RESTORABLE_SNAPSHOTS`, `restore_derived_to_head` will no longer visit that path at all, so a worktree deletion remains a deletion. The mini-plan says the deleted-handoff case will still restore, but no described implementation provides status-sensitive handling.  \n   **Suggestion:** Keep the handoff excluded from ordinary destructive restore, but add an explicit restore rule for this path when it is absent/deleted. For example, have `restore_derived_to_head` restore `SESSION_HANDOFF` from `HEAD` only when the tracked path is missing (including a staged deletion), while preserving it when a file exists and has run-written bytes. Add unit coverage for both unstaged and staged deletion if the restore command affects the index.\n\n2. **Category:** dependency  \n   **Severity:** medium  \n   **Finding:** The plan assumes that changing `DERIVED_SNAPSHOTS - RESTORABLE_SNAPSHOTS` automatically makes `stash_run_written` / `unstash_run_written` carry the handoff, but it only proposes a `run_written_ledger.py` docstring edit. If the ledger has its own explicit path list, cache, or call-site filtering, the handoff will be preserved across restore but still cause `git merge` to reject due to the dirty tracked file.  \n   **Suggestion:** Trace and state the exact source of the ledger’s path set. If it is derived from the registry difference, add a direct test asserting `SESSION_HANDOFF` is in the ledger’s effective stash set. If it is explicit, update that implementation rather than only its documentation. The integration test should assert both that the merge succeeds and that the post-merge bytes equal the F5b-written bytes.\n\n3. **Category:** edge-case  \n   **Severity:** medium  \n   **Finding:** The integration coverage exercises the successful merge path only. This change adds the handoff to th […truncated]",
+      "verdicts": {
+        "openai": "revise",
+        "deepseek": "revise"
+      }
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 7,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "readability",
+          "file": "shared/scripts/lib/derived_snapshots.py",
+          "line": 30,
+          "finding": "The module's own front-door docstring was not updated by this diff and now states the opposite of the code it introduces. Line 16 still reads \"every iterate rewrites the same eleven shared paths\" (the set is twelve — DERIVED_MDS 8 + 4) and lines 30-34 still read \"One of the eleven does not belong on the list and cannot simply be dropped from it: shipwright_test_results.json ... so it is carried across the merge rather than reset\". After this change the carve-out is TWO paths, and the second one is the subject of the whole diff. This is the exact drift the diff names as a defect elsewhere: it fixes \"ten of the eleven\" in docs/hooks-and-pipeline.md and adds assert (len(DERIVED_SNAPSHOTS), len(RESTORABLE_SNAPSHOTS)) == (12, 10) to pin the count, while leaving the same stale count in the module that owns the registry — where a reader arrives first.",
+          "suggestion": "Update the module docstring in the same diff: \"twelve shared paths\" at line 16, and rewrite lines 30-34 as \"Two of the twelve do not belong on the list...\" naming both shipwright_test_results.json and .shipwright/agent_docs/session_handoff.md with their distinct reasons (no producer at all vs. a producer that cannot know the run identity).",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "shared/scripts/lib/derived_snapshots.py",
+          "line": 177,
+          "finding": "restore_derived_to_head's docstring — the function's public contract, and the one a caller reads instead of the module-level RESTORABLE_SNAPSHOTS comment — still describes a single run-written path. Line 161 says \"plus a run-written one whose content is already GONE\" (singular); lines 177-180 say \"**Not** DERIVED_SNAPSHOTS: shipwright_test_results.json is written by the run and cannot be re-derived\" and name no second path; and line 201 asserts of the modified run-written case \"There is no producer to put its content back\", which is false for session_handoff.md — its BODY is re-derivable by generate_session_handoff, and only the canon marker is not. The precise claim is made correctly 60 lines above at RESTORABLE_SNAPSHOTS; the function docstring restates it in a form the new member contradicts.",
+          "suggestion": "Pluralise the summary line and the third bullet, name both paths in the \"**Not** DERIVED_SNAPSHOTS\" paragraph, and replace \"There is no producer to put its content back\" with the accurate form.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/scripts/lib/derived_snapshots.py",
+          "line": 129,
+          "finding": "The rationale states more than the code supports, and this diff contradicts itself on it. Lines 128-130 claim the marker \"is knowable only from the session that wrote it (run_id/phase/reason), and no producer downstream of the restore is given those\" (repeated verbatim at docs/hooks-and-pipeline.md:187). resolve_churn_conflicts.regenerate_tracked_snapshots IS downstream of the pre-merge restore and IS handed run_id and reason; when session_handoff is in its target set it calls finalize_iterate._generate_handoff(project_root, session_id, run_id, reason), which builds a fresh canon marker (build_marker(run_id=run_id, phase=\"iterate\", ...), finalize_iterate.py:369). The integrate path is safe only because integrate_regenerate passes only=set() — not because no producer exists. The same diff's new docs row (hooks-and-pipeline.md:139) says exactly the opposite of the docstring. A future maintainer flipping only would read the docstring as licence.",
+          "suggestion": "Narrow the claim to what holds: no producer on the INTEGRATE path rebuilds it, because integrate_regenerate passes only=set(). Apply the same narrowing to the hooks-and-pipeline.md bullet so the two halves of the diff agree.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "architecture",
+          "file": "shared/tests/test_handoff_survives_integrate.py",
+          "line": 64,
+          "finding": "Both new test files hand-roll fixtures that shared/tests/_c3_fixtures.py already owns, and the hand-rolled shape diverges from the producer in exactly the way that module exists to prevent. _c3_fixtures.write_handoff() writes the canon-marked note and _c3_fixtures.write_iterate_entry() writes the iterate ledger entry; test_completeness_writers.py drives the REAL tools to keep them honest. The two new files instead each define their own _handoff() and _ledger() plus duplicated THIS_RUN/PREV_RUN/THIS_AT/PREV_AT constants (~40 duplicated LOC). The hand-rolled ledger entry omits branch and tests_passed, which validate_iterate_entry requires (so the real writer would refuse this entry), and it collapses date/at/event_at onto one value, whereas the shared builder deliberately stamps the wall clock 900ms LATER because collapsing the two would make every suite built on this helper return the same verdict whether the code read the anchor or the wall clock. The C3 assertions in these tests therefore carry less than they appear to.",
+          "suggestion": "Import write_handoff / write_iterate_entry from _c3_fixtures and delete both local _handoff/_ledger pairs. Est. ~35-45 LOC removed, no assertion weakened.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "shared/tests/test_handoff_survives_integrate.py",
+          "line": 186,
+          "finding": "# noqa: PERF203 on the except RuntimeError line is inapplicable: PERF203 is try-except-within-a-loop, and there is no loop here. The suppression is a copy-paste artifact, and the trailing justification does not describe PERF203 either. It is also inert — PERF is not in the repo's curated select — so it suppresses nothing today and would mislead whoever widens the ruleset.",
+          "suggestion": "Delete the # noqa: PERF203 and keep the prose comment.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "shared/tests/test_handoff_survives_integrate.py",
+          "line": 173,
+          "finding": "Dead setup in test_the_note_survives_a_merge_that_FAILS_after_the_stash: lines 173-175 move the note on main and push, but integrate_main.merge_and_reconcile is monkeypatched to raise before any merge runs, so the mainline commit is never fetched into a merge and cannot affect any assertion. It reads as load-bearing scenario setup when the test would behave identically without it.",
+          "suggestion": "Drop the three lines, or move the monkeypatch to a later point (e.g. patch integrate_regenerate.regenerate_after_merge) so the real merge does run and the mainline move actually participates in the scenario the docstring claims.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "docs/hooks-and-pipeline.md",
+          "line": 139,
+          "finding": "The session_handoff.md row of the merge-reconciliation matrix — a table whose stated contract is exactly one documented resolution strategy per artifact and whose other rows are a word or a phrase — now carries a ~180-word essay. Most of it is about a DIFFERENT question (the restore_derived_to_head carve-out and how shipwright_test_results.json resolves), which the blockquote 40 lines below already covers at length. A reader scanning the table for which side wins a conflict has to read the whole carve-out argument to find the answer, which is the first word.",
+          "suggestion": "Keep the cell to its answer plus a pointer, and move the contrast with shipwright_test_results.json into that blockquote, where the carve-out is already explained.",
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-08-06T06:20:55.027162+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 4,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "operability",
+          "file": "shared/scripts/tools/integrate_main.py",
+          "line": 181,
+          "finding": "Claim under doubt: Adding SESSION_HANDOFF to the run-written set is 'safe' because the existing stash/unstash pair already handles this shape — so nothing about the change alters what a failure costs. — It alters it materially, and in the direction of a hard stop for an artifact both of whose readers are WARNING severity. integrate_main.py:163-188: any non-empty writeback_failed DISCARDS the successful outcome and returns status ledger_writeback_failed with the fixed message 're-run F5 before F11 reads it'. With a second member that status is now reachable with failed == ['.shipwright/agent_docs/session_handoff.md'] alone — and F5 does not write the handoff (F5b does), so the printed remedy cannot clear it. Worse downstream: ensure_current.main has NO branch for ledger_writeback_failed; it falls to return 3, while its own comment claims it reuses integrate_main's mapping, which maps it to 9. F11 turns any non-zero into 'STOP: ensure_current failed (non-churn/source conflict?)' — a wrong diagnosis for a branch whose merge commit has already LANDED. Likelihood is not theoretical: durable_atomic_write retries winerror 5/32 for only 0.5 s, and a .md note is far likelier than shipwright_test_results.json to be held open by an editor, previewer, indexer or AV.",
+          "suggestion": "Branch the terminal result on WHICH path failed — keep the hard ledger_writeback_failed for TEST_RESULTS and degrade a handoff-only failure to a named step; and add the missing ledger_writeback_failed branch to ensure_current.main. A test that drives integrate with durable_atomic_write patched to raise settles it.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "concurrency",
+          "file": "shared/scripts/lib/run_written_ledger.py",
+          "line": 176,
+          "finding": "Claim under doubt: AC2 — 'the run's handoff bytes are carried across the integrate merge by the existing stash/unstash pair, so a git merge cannot refuse on a tracked-and-dirty handoff.' — It cannot refuse only when the stash SUCCEEDS. stash_run_written has four exits that append to not_carried and leave the path untouched, and after the carve-out restore_derived_to_head no longer cleans up behind it. So a handoff that could not be read (OSError after the durable_read_bytes budget) or could not be cleared (git checkout HEAD -- losing to an index.lock) rides into git merge DIRTY. Mainline moving the note is the normal case, so git refuses outright, merge_and_reconcile returns merge_failed, ensure_current exits 6, and F11 STOPS the run. Before this change that state was unreachable for the handoff: the restore cleaned it unconditionally. That is a genuinely NEW pipeline-stopping failure mode, and the trade is not the same one trg-ad29a709 made — there 'the pipeline stops' bought the run's only copy of its test evidence; here it buys a note whose loss produces two WARNINGs. Nothing in the diff, the spec's risk table, or the tests acknowledged it, and no test covered not_carried for the handoff at all.",
+          "suggestion": "Add a test that forces not_carried for SESSION_HANDOFF only and assert the resulting status. Then decide deliberately: accept merge_failed and record it in the spec's risk table, or make the handoff fall back to the restore when it cannot be carried — losing a WARN-severity marker is strictly cheaper than blocking the branch.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "test-validity",
+          "file": "shared/tests/test_handoff_survives_integrate.py",
+          "line": 202,
+          "finding": "Claim under doubt: The new tests prove the fix, and the ones that pass either way are honestly labelled as guards. — Mostly true — eight of eleven genuinely fail without the carve-out. The three that pass either way are test_the_registry_path_is_the_one_the_churn_registry_knows, test_a_DELETED_handoff_is_still_restored and test_an_untouched_note_is_a_no_op. The first two are labelled correctly. The third is not: its docstring asserts a mechanism it does not exercise — 'stash_run_written asks git status per path and skips a clean one' — but with the carve-out reverted the handoff is not in RUN_WRITTEN_SNAPSHOTS at all, so stash_run_written never looks at the path and the test passes for a different reason than the one written down. The larger gap is what the eleven do NOT cover: neither of the two new failure modes above has a test.",
+          "suggestion": "Reword the docstring to say what it actually pins, and add the two failure-path tests named above, monkeypatching by module object per ADR-045.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "operability",
+          "file": "shared/scripts/tools/verifiers/derived_snapshot_gate.py",
+          "line": 55,
+          "finding": "Claim under doubt: The remedy narrowing is pure gain — '_restore_flags narrows the gate's printed remedy to --staged … so following the gate's own instruction can no longer destroy the run's evidence'. — _restore_flags tests set(offenders) - RESTORABLE_SNAPSHOTS and narrows the flags for ALL offenders, not per path. The realistic trigger — a stray git add -A — sweeps the note in TOGETHER with build_dashboard.md, triage_inbox.md and the compliance MDs. Before this change that commit got --staged --worktree and one command cleaned the tree; now it gets --staged, so the operator unstages and is left with up to nine derived paths modified-but-unstaged, which is the state that makes the next git merge refuse. Recoverable on the integrate path; not on a repair branch that never integrates. The new single-offender test locks the behaviour in without covering the mixed case, and the docs describe only the gain.",
+          "suggestion": "Either split the remedy per path, or add a mixed-offender test plus one sentence in the doc block stating the cost and how to clear it.",
+          "source": "doubt-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-08-06T06:38:40.440925+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 2,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "spec",
+          "file": "shared/scripts/lib/derived_snapshots.py` — the body of `restore_derived_to_head` (not shown in the diff, but its logic is unchanged while the constant `RESTORABLE_SNAPSHOTS` now excludes `SESSION_HANDOFF`).",
+          "line": null,
+          "finding": "AC1 requires that a deleted `session_handoff.md` is still restored. The carve-out from `RESTORABLE_SNAPSHOTS` stops the function from restoring a modified handoff, but the existing deletion‑restore branch almost certainly still only checks for `TEST_RESULTS` (the previous only run‑written path). A deleted handoff will not be restored, which would drop a tracked file and violate the acceptance criterion.",
+          "suggestion": "Update `restore_derived_to_head`’s deletion‑restore condition to include `SESSION_HANDOFF` (e.g., by using `RUN_WRITTEN_SNAPSHOTS` instead of a hardcoded path).  No other defects found. The rest of the diff implements AC2–AC7 correctly, tests are thorough, and no security issues are introduced.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "bug",
+          "file": "shared/scripts/tools/integrate_main.py:167-169",
+          "line": null,
+          "finding": "The best-effort fallback only attempts `git checkout HEAD -- <handoff>` with `check=False` and continues into `merge_and_reconcile` even when that reset fails. A failed stash commonly arises from filesystem/lock/access conditions that can also make the checkout fail; in that state the handoff remains dirty and a mainline change to it causes `git merge` to refuse, precisely the pipeline-stopping failure AC7 requires this carve-out to prevent. The current test injects only a read failure while allowing checkout to succeed, so it does not validate this failure path.",
+          "suggestion": "Do not proceed to the merge with an uncarried best-effort path still dirty. Retry/reset through a robust mechanism and verify the path is clean; if cleanup cannot succeed, return a distinct controlled failure before attempting the merge (and add a test that makes the reset fail and confirms no merge is attempted).  The primary implementation and integration coverage satisfy the normal carry/restore path, but AC7 is incomplete for reset failures and can still result in the exact merge refusal the change is intended to avoid. Ship with the cleanup failure handling fixed. SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-08-06T06:51:51.955198+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[deepseek] - Category: spec\n- Severity: high\n- File: `shared/scripts/lib/derived_snapshots.py` — the body of `restore_derived_to_head` (not shown in the diff, but its logic is unchanged while the constant `RESTORABLE_SNAPSHOTS` now excludes `SESSION_HANDOFF`).\n- Finding: AC1 requires that a **deleted** `session_handoff.md` is still restored. The carve-out from `RESTORABLE_SNAPSHOTS` stops the function from restoring a modified handoff, but the existing deletion‑restore branch almost certainly still only checks for `TEST_RESULTS` (the previous only run‑written path). A deleted handoff will not be restored, which would drop a tracked file and violate the acceptance criterion.\n- Suggestion: Update `restore_derived_to_head`’s deletion‑restore condition to include `SESSION_HANDOFF` (e.g., by using `RUN_WRITTEN_SNAPSHOTS` instead of a hardcoded path).\n\nNo other defects found. The rest of the diff implements AC2–AC7 correctly, tests are thorough, and no security issues are introduced.\n\nSHIPWRIGHT_VERDICT: revise\n\n[openai] - Category: bug\n- Severity: medium\n- File: `shared/scripts/tools/integrate_main.py:167-169`\n- Finding: The best-effort fallback only *attempts* `git checkout HEAD -- <handoff>` with `check=False` and continues into `merge_and_reconcile` even when that reset fails. A failed stash commonly arises from filesystem/lock/access conditions that can also make the checkout fail; in that state the handoff remains dirty and a mainline change to it causes `git merge` to refuse, precisely the pipeline-stopping failure AC7 requires this carve-out to prevent. The current test injects only a read failure while allowing checkout to succeed, so it does not validate this failure path.\n- Suggestion: Do not proceed to the merge with an uncarried best-effort path still dirty. Retry/reset through a robust mechanism and verify the path is clean; if cleanup cannot succeed, return a distinct controlled failure before attempting the merge (and add a test that makes the reset fail and confirms no merge is attempted).\n\nThe primary implementation and integration coverage satisfy the normal carry/restore path, but AC7 is incomplete for reset failures and can still result in the exact merge refusal the change is intended to avoid. Ship with the cleanup failure handling fixed.  \nSHIPWRIGHT_VERDICT: revise",
+      "verdicts": {
+        "openai": "revise",
+        "deepseek": "revise"
+      }
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-06T06:04:23.341684+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    }
+  }
+}

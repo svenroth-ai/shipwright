@@ -175,3 +175,115 @@ def test_a_run_written_offender_still_never_gets_worktree(
         wt, _RUN_ID, _git(wt, "rev-parse", "HEAD").stdout.strip()).detail
     assert "--staged --worktree" not in detail
     assert "--staged" in detail
+
+
+# --- P2.15: the run-written carve-out, seen from the gate --------------------
+#
+# `session_handoff.md` left `RESTORABLE_SNAPSHOTS` (trg-01cd6aef) so a mid-run restore
+# stops destroying the run's canon marker. Two consequences land here rather than in
+# `test_derived_snapshot_gate.py`, which sits at 272 of the 300-line source limit and
+# would cross it: what the gate still CATCHES, and what it now TELLS the operator.
+
+def _committed_handoff(git_origin_repo, make_worktree):
+    """A branch whose commit carries the note. Returns ``(worktree, head_sha)``."""
+    from lib.derived_snapshots import SESSION_HANDOFF
+
+    work, _origin = git_origin_repo
+    _set_repo_identity(work)
+    _write(work, "app.py", "seed\n")
+    _git(work, "add", "-A")
+    _git(work, "commit", "-m", "seed")
+    _git(work, "push", "origin", "main")
+
+    wt = make_worktree(work, "gate-handoff")
+    _write(wt, SESSION_HANDOFF, '---\ncanon_generated: true\nrun_id: "r"\n---\n')
+    _git(wt, "add", "-A")
+    _git(wt, "commit", "-m", "a commit that must not be allowed to carry the note")
+    return wt, _git(wt, "rev-parse", "HEAD").stdout.strip()
+
+
+def test_the_gate_still_blocks_the_session_handoff(git_origin_repo, make_worktree) -> None:
+    """The carve-out must never read as "so now it may ship".
+
+    Keeping the note out of the PR is what removed the N(N-1)/2 collision class; P2.15
+    changed who may RESET it mid-run, nothing about who may COMMIT it. Two adjacent
+    registers, one of which moved — worth a test rather than a reader's confidence.
+    """
+    from lib.derived_snapshots import SESSION_HANDOFF
+    from tools.verifiers.derived_snapshot_gate import check_no_derived_snapshots_committed
+
+    wt, head = _committed_handoff(git_origin_repo, make_worktree)
+
+    result = check_no_derived_snapshots_committed(wt, _RUN_ID, head)
+
+    assert result.ok is False, "the derived-snapshot commit gate must still block it"
+    assert SESSION_HANDOFF in result.detail
+
+
+def test_the_remedy_never_offers_to_reset_the_note_on_disk(git_origin_repo, make_worktree) -> None:
+    """This file's own subject: what an operator is told to type.
+
+    `_restore_flags` suggests `--staged --worktree` only when every offender is
+    re-derivable; a run-written offender narrows it to `--staged`, because `--worktree`
+    resets the file on disk to its pre-iterate state. The rule was written for the F5
+    ledger (trg-ad29a709) and keys off `RESTORABLE_SNAPSHOTS`, so the note inherited the
+    protection the moment it joined the carve-out — following the gate's own printed
+    instruction can no longer destroy this run's canon marker.
+    """
+    from tools.verifiers.derived_snapshot_gate import check_no_derived_snapshots_committed
+
+    wt, head = _committed_handoff(git_origin_repo, make_worktree)
+
+    detail = check_no_derived_snapshots_committed(wt, _RUN_ID, head).detail
+
+    assert "--staged" in detail, detail
+    assert "--worktree" not in detail, (
+        "the remedy offered to reset the note on disk, which would destroy the very "
+        "marker the carve-out preserves"
+    )
+
+
+def test_the_narrowing_applies_to_EVERY_offender_not_just_the_run_written_one(
+    git_origin_repo, make_worktree,
+) -> None:
+    """The cost of the narrowing, pinned rather than only its benefit.
+
+    `_restore_flags` tests the offender SET, so one run-written path narrows the flags for
+    all of them. The realistic trigger for this gate is a stray `git add -A`, which sweeps
+    the note in together with its neighbours in the same directory — so after P2.15 that
+    commit is told `--staged` alone, and following the instruction leaves the re-derivable
+    offenders modified-but-unstaged, which is the state a later `git merge` refuses on.
+
+    Recoverable on the integrate path, where `restore_derived_to_head` cleans them; not on
+    a repair branch that never integrates. Splitting the remedy into two commands (one per
+    class) is the real fix and is deliberately NOT done here — it rewrites operator-facing
+    text well beyond this card. Recording the behaviour is what stops the next reader
+    assuming the narrowing is free (Stage-3 doubt review, low).
+    """
+    from lib.derived_snapshots import SESSION_HANDOFF
+    from tools.verifiers.derived_snapshot_gate import check_no_derived_snapshots_committed
+
+    work, _origin = git_origin_repo
+    _set_repo_identity(work)
+    _write(work, "app.py", "seed\n")
+    _git(work, "add", "-A")
+    _git(work, "commit", "-m", "seed")
+    _git(work, "push", "origin", "main")
+
+    wt = make_worktree(work, "gate-mixed")
+    _write(wt, SESSION_HANDOFF, '---\ncanon_generated: true\nrun_id: "r"\n---\n')
+    _write(wt, _DASH, "a re-derivable view swept in by the same `git add -A`\n")
+    _git(wt, "add", "-A")
+    _git(wt, "commit", "-m", "a stray add -A carried both")
+    head = _git(wt, "rev-parse", "HEAD").stdout.strip()
+
+    result = check_no_derived_snapshots_committed(wt, _RUN_ID, head)
+
+    assert result.ok is False
+    assert SESSION_HANDOFF in result.detail and _DASH in result.detail
+    # One run-written offender narrows the flags for the re-derivable one too.
+    assert "--staged" in result.detail
+    assert "--worktree" not in result.detail, (
+        "if this ever flips, the remedy would reset the note on disk and destroy the "
+        "run's canon marker — the narrowing must hold for the whole set"
+    )

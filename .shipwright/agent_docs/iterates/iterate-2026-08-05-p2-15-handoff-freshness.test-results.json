@@ -1,0 +1,181 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-08-05-p2-15-handoff-freshness",
+    "date": "2026-08-06",
+    "unit": {
+      "status": "passed",
+      "passed": 18,
+      "total": 18
+    },
+    "integration": {
+      "status": "passed",
+      "passed": 18,
+      "total": 18
+    },
+    "pgtap": {
+      "status": "skipped",
+      "passed": 0,
+      "total": 0
+    },
+    "e2e": {
+      "status": "skipped",
+      "passed": 0,
+      "total": 0
+    },
+    "design_fidelity": {
+      "status": "skipped",
+      "passed": 0,
+      "total": 0
+    },
+    "smoke": {
+      "status": "skipped"
+    },
+    "degraded": [],
+    "surface_verification": {
+      "surface": "cli",
+      "runner": "uv run pytest shared/tests/test_handoff_survives_restore.py shared/tests/test_handoff_survives_integrate.py shared/tests/test_handoff_carry_failures.py -q",
+      "exit_code": 0,
+      "tests_run": 14,
+      "evidence_path": ".shipwright/runs/iterate-2026-08-05-p2-15-handoff-freshness/surface_verification.json",
+      "timestamp": "2026-08-06T07:20:00Z"
+    },
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "A MODIFIED session_handoff.md is no longer reset by restore_derived_to_head",
+          "disposition": "tested",
+          "evidence": "test_handoff_survives_restore.py::test_the_f11_freshness_check_survives_a_restore PASSED"
+        },
+        {
+          "behavior": "A STAGED-and-modified note also survives the restore",
+          "disposition": "tested",
+          "evidence": "test_handoff_survives_restore.py::test_a_staged_handoff_also_survives PASSED"
+        },
+        {
+          "behavior": "The restore's return value never claims the note it left alone",
+          "disposition": "tested",
+          "evidence": "test_handoff_survives_restore.py::test_the_return_value_never_claims_the_handoff PASSED"
+        },
+        {
+          "behavior": "A DELETED note is still restored (the carve-out is about content, not path)",
+          "disposition": "tested",
+          "evidence": "test_handoff_survives_restore.py::test_a_DELETED_handoff_is_still_restored PASSED"
+        },
+        {
+          "behavior": "An MD note (index holds it, worktree does not) is NOT restored",
+          "disposition": "tested",
+          "evidence": "test_handoff_survives_restore.py::test_a_STAGED_handoff_whose_worktree_copy_is_gone_is_not_restored PASSED"
+        },
+        {
+          "behavior": "A git rm --cached note (D with content on disk) is NOT restored",
+          "disposition": "tested",
+          "evidence": "test_handoff_survives_restore.py::test_a_handoff_unstaged_with_rm_cached_is_not_restored PASSED"
+        },
+        {
+          "behavior": "Canon C3 for phase=iterate also survives the restore",
+          "disposition": "tested",
+          "evidence": "test_handoff_survives_restore.py::test_canon_c3_also_reads_the_destroyed_marker PASSED"
+        },
+        {
+          "behavior": "Forward drift: the new SESSION_HANDOFF constant resolves into DERIVED_MDS",
+          "disposition": "tested",
+          "evidence": "test_handoff_survives_restore.py::test_the_registry_path_is_the_one_the_churn_registry_knows PASSED"
+        },
+        {
+          "behavior": "Reverse drift: the carve-out is exactly two paths and the set is 12/10",
+          "disposition": "tested",
+          "evidence": "test_derived_snapshots_run_written.py::test_restorable_excludes_exactly_the_run_written_paths PASSED"
+        },
+        {
+          "behavior": "The carve-out reaches RUN_WRITTEN_SNAPSHOTS, the set that carries the bytes",
+          "disposition": "tested",
+          "evidence": "test_derived_snapshots_run_written.py::test_the_carve_out_reaches_the_ledger_that_carries_the_bytes PASSED"
+        },
+        {
+          "behavior": "A real integrate_main against a mainline that MOVED the note: bytes survive, F11 freshness AND Canon C3 both green, note ends unstaged, absent from the PR diff",
+          "disposition": "tested",
+          "category": "integration",
+          "evidence": "test_handoff_survives_integrate.py::test_the_note_survives_a_real_integrate_and_both_readers_agree PASSED"
+        },
+        {
+          "behavior": "A failure AFTER the real merge commit still writes the note back (the finally)",
+          "disposition": "tested",
+          "category": "integration",
+          "evidence": "test_handoff_survives_integrate.py::test_the_note_survives_a_merge_that_FAILS_after_the_stash PASSED"
+        },
+        {
+          "behavior": "An untouched note is a no-op and the check honestly reports 'not this run'",
+          "disposition": "tested",
+          "evidence": "test_handoff_survives_integrate.py::test_an_untouched_note_is_a_no_op PASSED (guard: passes with or without the carve-out, stated in its docstring)"
+        },
+        {
+          "behavior": "A note that cannot be CARRIED is reset to HEAD instead of blocking the merge",
+          "disposition": "tested",
+          "category": "integration",
+          "evidence": "test_handoff_carry_failures.py::test_a_note_that_cannot_be_CARRIED_does_not_block_the_merge PASSED"
+        },
+        {
+          "behavior": "A note that cannot be WRITTEN BACK is a step, not the terminal ledger_writeback_failed",
+          "disposition": "tested",
+          "category": "integration",
+          "evidence": "test_handoff_carry_failures.py::test_a_note_that_cannot_be_WRITTEN_BACK_does_not_abort_the_integrate PASSED"
+        },
+        {
+          "behavior": "A fallback reset that itself fails is NAMED, and the resulting merge refusal is attributable",
+          "disposition": "tested",
+          "category": "integration",
+          "evidence": "test_handoff_carry_failures.py::test_a_reset_that_ALSO_fails_is_named_rather_than_silent PASSED"
+        },
+        {
+          "behavior": "ensure_current maps ledger_writeback_failed to exit 9, agreeing with integrate_main",
+          "disposition": "tested",
+          "evidence": "test_ensure_current.py::test_a_lost_run_ledger_exits_9_from_this_cli_too PASSED"
+        },
+        {
+          "behavior": "The derived-snapshot commit gate still BLOCKS a commit carrying the note",
+          "disposition": "tested",
+          "evidence": "test_derived_snapshot_gate_remedy.py::test_the_gate_still_blocks_the_session_handoff PASSED"
+        },
+        {
+          "behavior": "The gate's printed remedy never offers --worktree for a run-written offender",
+          "disposition": "tested",
+          "evidence": "test_derived_snapshot_gate_remedy.py::test_the_remedy_never_offers_to_reset_the_note_on_disk PASSED"
+        },
+        {
+          "behavior": "That narrowing applies to the whole offender set, not per path (the accepted cost)",
+          "disposition": "tested",
+          "evidence": "test_derived_snapshot_gate_remedy.py::test_the_narrowing_applies_to_EVERY_offender_not_just_the_run_written_one PASSED"
+        },
+        {
+          "behavior": "The churn doc table stays in sync with CHURN_ALLOWLIST after the row edit",
+          "disposition": "tested",
+          "evidence": "test_churn_merge_doc_sync.py (4 tests) PASSED"
+        }
+      ],
+      "counts": {
+        "testable": 21,
+        "tested": 21,
+        "untestable": 0,
+        "untested_testable": 0
+      },
+      "enumeration_basis": {
+        "acs": 7,
+        "covered_acs": 7
+      }
+    }
+  },
+  "coverage": {
+    "total": 80.2,
+    "measured_tier": "repo",
+    "source": "combined coverage.xml (all plugins + shared + integration)",
+    "measured_at": "2026-07-04T00:00:00Z"
+  },
+  "source_state": {
+    "run_id": "iterate-2026-08-05-p2-15-handoff-freshness",
+    "commit": "54a6d9c4887862e89b5d7b677d04bcdd6873744b",
+    "dirty": true,
+    "base": null,
+    "release": null
+  }
+}

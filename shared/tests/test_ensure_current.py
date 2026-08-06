@@ -149,3 +149,35 @@ def test_ensure_current_cli(git_origin_repo, make_worktree, capsys) -> None:
     out = capsys.readouterr().out
     assert '"action": "already-current"' in out
     assert '"integrated": false' in out
+
+
+def test_a_lost_run_ledger_exits_9_from_this_cli_too(tmp_path, monkeypatch, capsys) -> None:
+    """The exit code both CLIs claim to share, and one of them did not.
+
+    `integrate_main`'s own `main()` maps `ledger_writeback_failed` to 9. This CLI had no
+    branch for it and fell through to the generic 3 — while the comment above the ladder
+    already claimed the two agreed. F11 turns any non-zero into "STOP: ensure_current
+    failed (non-churn/source conflict?)", which is the wrong diagnosis for a status whose
+    merge commit has already LANDED and whose real cause is a lost ledger.
+
+    The drift predates P2.15; that change made the status reachable for a second path
+    (Stage-3 doubt review, medium), which is what surfaced it.
+    """
+    def _lost_ledger(*_args, **_kwargs):
+        return {
+            "status": "ledger_writeback_failed",
+            "failed": ["shipwright_test_results.json"],
+            "message": "the merge itself is intact, but this run's ledger ...",
+            "steps": ["fetched", "ledger-writeback-failed"],
+            "behind": 1,
+            "integrated": True,
+        }
+
+    # Patched on the module that BINDS the name: main() calls the module-global
+    # ensure_current(), not integrate_main.integrate directly (ADR-045).
+    monkeypatch.setattr(ec, "ensure_current", _lost_ledger)
+
+    code = ec.main(["--project-root", str(tmp_path), "--run-id", _RUN_ID])
+
+    assert code == 9, "ensure_current must agree with integrate_main on this code"
+    assert "shipwright_test_results.json" in capsys.readouterr().err

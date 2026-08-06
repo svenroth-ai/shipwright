@@ -136,7 +136,7 @@ artifact has exactly one documented resolution strategy:
 | `.shipwright/compliance/ci-security.json` | **regenerate** (structured CI-security summary; best-effort refresh from the latest `security.yml` run, else the mainline `--theirs` placeholder stands) |
 | `.shipwright/compliance/test-traceability.json` | **regenerate** (structured requirement→test traceability snapshot from the `test_links` collector; re-derived by the same `_update_compliance --phase iterate` producer, else the `--theirs` placeholder stands). **Fold-map resolution (iterate-2026-07-18-fr-fold-map-resolution):** when a spec declares a `## FR-Fold-Map`, a tag on a folded FR id is filed against its surviving FR (link carries `resolved_from`) instead of orphaning, and the manifest additionally carries `fold_map` + `fold_defects`. Those three keys are **omitted entirely** when the repo declares no fold-map, so a project without one regenerates a byte-identical artifact and this row's merge behaviour is unchanged. |
 | `.shipwright/agent_docs/build_dashboard.md` | **regenerate** |
-| `.shipwright/agent_docs/session_handoff.md` | **regenerate** |
+| `.shipwright/agent_docs/session_handoff.md` | **regenerate** (re-derived by `finalize_iterate._generate_handoff`, which re-stamps the canon marker for the run that is resolving — so regenerating preserves run identity here rather than destroying it). Unreachable on the ITERATE path, where `only=set()` and the note's bytes are carried across the merge instead — see the run-written blockquote below |
 | `.shipwright/agent_docs/triage_inbox.md` | **regenerate** |
 | `.shipwright/planning/adr/INDEX.md` | **regenerate** (re-derived from the MERGED ADR folder listing by `lib.adr_index.rebuild_adr_index`, so a row added on each side survives). The one entry here that the BRANCH legitimately carries — iterate F3 refreshes it so its row ships in the same commit as its ADR (iterate-2026-07-31-adr-index-producer), which is exactly what created this conflict class (trg-1acb5304). Re-deriving is correct by construction, not a heuristic: the index is a pure function of the folder, and after the merge the folder holds both sides' ADR files. Deliberately **not** a `DERIVED_SNAPSHOTS` member (that register is for views that are *wrong* when derived on a branch) and **not** `merge=union` (union would concatenate two sorted lists into an unsorted one with a duplicated header). **Scope note:** unlike every other `regenerate` row this one is NOT produced by `regenerate_tracked_snapshots` — it is refreshed by `integrate_regenerate.regenerate_after_merge`, after `restore_derived_to_head`, so the integration path covers it but the manual `resolve_churn_conflicts.py --mode regenerate` escape hatch does not. Refresh that case with `uv run {shared_root}/scripts/tools/rebuild_adr_index.py --project-root .`. |
 | `.shipwright/compliance/performance/iterate-throughput.md` | **theirs** (cleared like the other regenerated snapshots; no dedicated branch is wired in `regenerate_tracked_snapshots` yet, so a conflict leaves it stale until the next iterate's own F5b run refreshes it — see `iterate_throughput_report.py`) |
@@ -173,14 +173,63 @@ artifact has exactly one documented resolution strategy:
 > reported **skipped**, never clean — a merge HEAD reports no paths, so "clean"
 > cannot be told from "blind".
 >
-> **Ten of the eleven, not all eleven** (trg-ad29a709). The restore resets
-> `RESTORABLE_SNAPSHOTS` — everything a producer can RE-DERIVE.
-> `shipwright_test_results.json` is excluded, because the run WRITES it (the F5
-> ledger) and nothing can recompute it: resetting a MODIFIED copy is not undoing a
-> regeneration, it is deleting this run's evidence, and it did so silently in two
-> separate sessions. A *deleted* one is still restored — a deletion has no content
-> to lose, and letting it ride would drop a tracked file — so the exclusion is
-> about content, not about the path.
+> **Ten of the twelve, not all twelve** (trg-ad29a709, then P2.15/trg-01cd6aef). The
+> restore resets `RESTORABLE_SNAPSHOTS` — everything a producer can RE-DERIVE. **Two
+> paths are excluded**, and the counts are asserted, not narrated
+> (`test_derived_snapshots_run_written.py`), because this paragraph had already fallen a
+> path behind — it read "ten of the eleven" after the throughput report joined the set.
+>
+> - `shipwright_test_results.json` — the run WRITES it (the F5 ledger) and nothing can
+>   recompute it: resetting a MODIFIED copy is not undoing a regeneration, it is deleting
+>   this run's evidence, and it did so silently in two separate sessions.
+> - `.shipwright/agent_docs/session_handoff.md` — its BODY is re-derivable, but its canon
+>   marker is **run identity**, and identity is not a derivation: it is knowable only from
+>   the session that wrote it, and no producer downstream of the restore is handed the
+>   `run_id`/`phase`/`reason` to rebuild it. F5b stamped it, `integrate_main` reset it to
+>   `HEAD` (some earlier run's note, since no iterate commits this path), and F11's
+>   `--preserve-canon-marker` refresh then carried *that* marker forward — by design, it
+>   preserves one of any age. Both readers reported the resulting staleness:
+>   `check_session_handoff_fresh` at F11 and Canon **C3** on every Stop. Re-STAMPING the
+>   marker after the merge was the rejected alternative — `ensure_current` holds a
+>   `--run-id` and nothing else, so it cannot know whether F5b ran, and a re-stamp would
+>   forge the C3 closure claim for a phase that wrote nothing. Carrying bytes that already
+>   exist cannot forge anything. (The claim is "no producer *on the integrate path*", not
+>   "no producer": `regenerate_tracked_snapshots` has a handoff branch that re-stamps
+>   correctly, and it is the right resolution on the `--mode regenerate` escape hatch —
+>   the merge-reconciliation row above. It simply never runs here, because
+>   `integrate_regenerate` passes `only=set()`.)
+>
+> **The two do not resolve the same way in the churn table above, and that is deliberate.**
+> `shipwright_test_results.json` is **ours** because it cannot be recomputed at all, so its
+> side must be kept; `session_handoff.md` is **regenerate** because it *can* be — the
+> resolver's rebuild is handed the `run_id` and re-stamps the marker. Being run-written
+> answers *"may the mid-run restore reset this to `HEAD`?"*; it does not answer *"which
+> side wins a conflict?"*.
+>
+> A *deleted* copy of either is still restored — a deletion has no content to lose, and
+> letting it ride would drop a tracked file — so the exclusion is about content, not about
+> the path. Both stay in `DERIVED_SNAPSHOTS`, so
+> `check_no_derived_snapshots_committed` keeps them out of every iterate commit
+> regardless; this list decides who may RESET them mid-run, never who may COMMIT them.
+> One operator-facing consequence rides along, and it cuts both ways: `_restore_flags`
+> narrows the gate's printed remedy to `--staged` (never `--staged --worktree`) whenever
+> **any** offender is run-written, so following the gate's own instruction can no longer
+> destroy the run's evidence — but it narrows for the whole offender set, not per path.
+> The realistic trigger is a stray `git add -A`, which sweeps the note in alongside its
+> neighbours, so the operator unstages and is left with the re-derivable offenders still
+> modified. On the integrate path the restore cleans them; on a repair branch that never
+> integrates, `git restore --source=<base> --staged --worktree -- <the re-derivable paths>`
+> finishes the job. Splitting the remedy into one command per class is the real fix and is
+> deliberately not done here — it rewrites operator-facing text well beyond the carve-out.
+>
+> **Carrying is best-effort for the note and terminal for the ledger** — the two members
+> are not worth the same (`run_written_ledger.BEST_EFFORT_CARRY`). If the bytes cannot be
+> taken off the worktree, the note is reset to `HEAD` so the merge is not blocked; if they
+> cannot be written back, that is a step rather than the terminal `ledger_writeback_failed`.
+> Both would otherwise stop delivery over an artifact whose total loss costs two WARNINGs,
+> and the carve-out itself is what made them reachable for this path — before it, the
+> restore cleaned the note unconditionally. For `shipwright_test_results.json` stopping
+> stays correct: there the failure means the run's only copy of its test evidence is gone.
 >
 > **So the path is CARRIED, not left dirty** — a second between-phase step, and it
 > is here because leaving it dirty is a pipeline failure mode. `integrate_main`
@@ -208,9 +257,9 @@ artifact has exactly one documented resolution strategy:
 > before the abort paths breaks them, silently (`error: Entry '<path>' not uptodate`,
 > exit 128, `MERGE_HEAD` left standing). The `finally` runs after any abort.
 >
-> **Write matrix consequence.** No *phase* writes these eleven onto the default
+> **Write matrix consequence.** No *phase* writes these twelve onto the default
 > branch. Seven of them — the compliance directory — are written by the **release**
-> and by an **on-demand documents-only PR**; the other four stay frozen by
+> and by an **on-demand documents-only PR**; the other five stay frozen by
 > classification (see the next block). Freezing was deliberate rather than
 > incidental: a branch-local derivation is not merely conflict-prone but wrong,
 > reading the branch's git history (pre-squash SHAs) and an event log missing every
@@ -235,8 +284,9 @@ to the default branch.
 | `.shipwright/compliance/test-traceability.json` | `derives_from_tree` | same (side effect of the same `_update_compliance` call) |
 | `.shipwright/compliance/ci-security.json` | `derives_from_ci_history` | same, but **not** tree-derived — it carries the latest COMPLETED `security.yml` run, so its freshness is not a property of the commit. Excluded from the fixpoint claim; reported with `stale` + `scan_date`; never blocks a release |
 | `.shipwright/agent_docs/build_dashboard.md` | `session_scoped` | nobody — embeds one session's run id, and the default branch has no run |
-| `.shipwright/agent_docs/session_handoff.md` | `session_scoped` | nobody — same |
+| `.shipwright/agent_docs/session_handoff.md` | `session_scoped` | nobody — same. **This class is a different axis from the restore carve-out above and must not be harmonised with it** (P2.15): here the question is *"can the release refresh recompute this on the default branch?"* — no, it could only invent a run id — while `RESTORABLE_SNAPSHOTS` answers *"may the mid-run restore reset this to `HEAD`?"*, where the same path is run-written because its canon marker is run identity |
 | `.shipwright/agent_docs/triage_inbox.md` | `derives_from_tree` | nobody — refreshable, but outside the compliance directory and not recomputed by the release phase. Excluded by scope pin, not by classification |
+| `.shipwright/compliance/performance/iterate-throughput.md` | `derives_from_tree` | nobody — refreshable by its OWN producer (`iterate_throughput_report.py` at F5b), same scope pin as `triage_inbox.md`. Row added in P2.15: the register has carried it since the throughput report shipped, and the table read as eleven paths while the set held twelve |
 | `shipwright_test_results.json` | `run_written` | nobody — a run WRITES it and nothing can recompute it (trg-ad29a709) |
 
 Registry + classification: `shared/scripts/lib/compliance_refresh.py`
