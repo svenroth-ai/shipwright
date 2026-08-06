@@ -1,0 +1,93 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-08-05-windows-ci-tests",
+    "date": "2026-08-05",
+    "unit": {
+      "status": "pass",
+      "passed": 7933,
+      "failed": 0,
+      "note": "F0 canonical suite (run_test_suite.py): 18/18 units GREEN across every plugin + shared/tests + shared/scripts/tests + shared/scripts/tools/tests + integration-tests (4.5 min; diff-coverage n/a -- no measurable Python source lines in this diff vs origin/main). Directly-affected unit is shared/tests (holds the edited test_main_attribution_workflows.py): exact count captured across two runs on this working tree -- pre-fix isolated run 7932 passed/1 failed/23 skipped/26 deselected in 789.79s (the 1 failure was test_no_push_to_main_workflow_is_silently_left_out_of_the_policy, found by the Stage-2 code-reviewer and fixed by registering windows-tests.yml in DELIBERATELY_UNMONITORED); post-fix isolated re-run of that file 14/14 passed; F0's own fresh full-suite run of shared/tests (post-fix, this exact tree) reported PASS in 193.5s. 7932 + 1 (now-fixed) = 7933. Per-test counts for the other 17 GREEN F0 units were not individually retained -- F0 only persists diagnostics for a failing/retried unit, and none failed."
+    },
+    "integration": {
+      "status": "pass",
+      "passed": 0,
+      "failed": 0,
+      "note": "This change has no CRUD/DB surface. The repo's own integration-tests/ unit nonetheless ran GREEN in 250.0s as part of F0's mandatory full-suite run; exact pytest count not individually retained since it passed."
+    },
+    "pgtap": {
+      "status": "n/a",
+      "reason": "no database; this is a CI-workflow-only change"
+    },
+    "e2e": {
+      "status": "n/a",
+      "reason": "no browser/UI surface -- adds a CI workflow, no web/UI/API/store/SSE surface"
+    },
+    "design_fidelity": {
+      "status": "n/a",
+      "reason": "no UI surface"
+    },
+    "smoke": {
+      "status": "n/a",
+      "reason": "no startable server surface touched"
+    },
+    "surface_verification": {
+      "surface": "none",
+      "justification": "CI/workflow-infrastructure change; no web/UI/API/store/SSE surface touched. Verified instead via a native-Windows local run of the exact pytest invocation the new workflow runs, plus F0's fresh full-suite run on this tree; the live PR's own windows-latest Actions run is the remaining external, non-deterministic proof (Test Completeness Ledger row 5)."
+    },
+    "windows_native_verification": "The Confidence Calibration empirical probe (separate from F0, run before it): the exact 3-directory pytest invocation the new windows-tests.yml workflow runs (shared/tests, shared/scripts/tests, shared/scripts/tools/tests, -m 'not slow and not cross_plugin') was executed natively on this Windows host. shared/tests 7932 passed/23 skipped/26 deselected (the 1 pre-fix failure above), shared/scripts/tests 365 passed, shared/scripts/tools/tests 482 passed/15 skipped/2 deselected. All 4 currently Windows-gated tests (test_atomic_write_windows_retry.py, test_audit_phase_quality.py::test_strict_ancestor_windows_case_insensitive, test_playwright_setup_multiservice.py::test_setup_uses_resolved_executable_for_npm, and 4 cases in test_host_resource_locking.py) confirmed PASSED, not SKIPPED.",
+    "degraded": [],
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "windows-tests.yml runs shared/tests, shared/scripts/tests, and shared/scripts/tools/tests on windows-latest, on the same triggers ci.yml uses (pull_request/main, push/main, workflow_dispatch)",
+          "disposition": "tested",
+          "evidence": "spec-reviewer PASS (Stage 1) confirmed the trigger block and per-dir loop match the spec verbatim; the exact invocation was additionally run natively on this Windows host with all 3 dirs green"
+        },
+        {
+          "behavior": "all 4 currently Windows-gated tests (previously permanently skipped in CI) actually execute under the new job's filter (-m 'not slow and not cross_plugin')",
+          "disposition": "tested",
+          "evidence": "confirmed PASSED (not SKIPPED) in the native-Windows local run: test_atomic_write_windows_retry.py (8 cases), test_audit_phase_quality.py::test_strict_ancestor_windows_case_insensitive, test_playwright_setup_multiservice.py::test_setup_uses_resolved_executable_for_npm, 4 cases in test_host_resource_locking.py::test_windows_*"
+        },
+        {
+          "behavior": "ci.yml is not modified by this change",
+          "disposition": "tested",
+          "evidence": "spec-reviewer PASS: git diff --cached --stat carries no ci.yml entry; ci.yml read directly and confirmed unmodified"
+        },
+        {
+          "behavior": "the new job fails closed (no continue-on-error / || true) so check_ci_gate_coverage.py's loose-gate check stays green",
+          "disposition": "tested",
+          "evidence": "shared/scripts/tools/check_ci_gate_coverage.py run locally against the worktree with the new file present -- OK, 18 covered test dirs, no loose gates"
+        },
+        {
+          "behavior": "adding a new push-to-main workflow does not silently regress the existing monitored-workflow drift test",
+          "disposition": "tested",
+          "evidence": "test_no_push_to_main_workflow_is_silently_left_out_of_the_policy -- found failing by Stage-2 code review, fixed by registering windows-tests.yml in DELIBERATELY_UNMONITORED with a rationale comment, re-verified 14/14 passed in shared/tests/test_main_attribution_workflows.py"
+        }
+      ],
+      "counts": {
+        "total": 5,
+        "tested": 5,
+        "untestable": 0,
+        "untested_testable": 0
+      },
+      "enumeration_basis": {
+        "acs": 4,
+        "covered_acs": 4
+      }
+    }
+  },
+  "coverage": {
+    "total": 80.2,
+    "measured_tier": "repo",
+    "source": "combined coverage.xml (all plugins + shared + integration); this diff itself carried no measurable Python source lines (F0's diff-coverage gate: 'No lines with coverage information in this diff' -- PASS vacuously)",
+    "measured_at": "2026-07-04T00:00:00Z"
+  },
+  "source_state": {
+    "run_id": "iterate-2026-08-05-windows-ci-tests",
+    "commit": "cd64ab92a6814b6be89e2e840c5d9e004e3717ac",
+    "dirty": true,
+    "base": null,
+    "release": null
+  }
+}

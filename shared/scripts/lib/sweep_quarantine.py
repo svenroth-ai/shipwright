@@ -87,6 +87,9 @@ class QuarantineDecision:
       the same reason ``candidates`` becomes ``quarantined`` there.
 
     ``deduped_text`` is the post-partition, post-dedup materialized log for the branch.
+
+    ``warnings`` is what the dedup reported while materializing — informational, NEVER
+    blocking: a benign keep-last collapse still leaves ``clean`` (finding 25).
     """
 
     action: str
@@ -95,6 +98,7 @@ class QuarantineDecision:
     candidates: list[str] = field(default_factory=list)
     errors: list[str] = field(default_factory=list)
     held_lines: list[str] = field(default_factory=list)
+    warnings: list[str] = field(default_factory=list)
 
 
 def _sole_record(line: str) -> dict | None:
@@ -114,9 +118,10 @@ def _sole_record(line: str) -> dict | None:
     return records[0]
 
 
-def _materialize(worktree_lines: list[str], outbox_lines: list[str], eol: str) -> str:
-    deduped, _ = dedup_triage_lines(worktree_lines + outbox_lines)
-    return (eol.join(deduped) + eol) if deduped else ""
+def _materialize(worktree: list[str], outbox: list[str], eol: str) -> tuple[str, list[str]]:
+    """Merged log + what the dedup said — returned, not dropped: a record it declined to collapse is what an operator needs told."""
+    deduped, warnings = dedup_triage_lines(worktree + outbox)
+    return ((eol.join(deduped) + eol) if deduped else ""), warnings
 
 
 def decide(
@@ -145,12 +150,10 @@ def decide(
     one ``git clean -xfd`` from empty. Holding delivers the rest and retries the line on
     the next sweep, which runs off a freshly fetched ``origin/<default>``.
     """
-    text = _materialize(worktree_lines, outbox_lines, eol)
+    text, warnings = _materialize(worktree_lines, outbox_lines, eol)
     verdict = classify_triage_text(text)
     if not verdict.errors:
-        return QuarantineDecision(
-            "clean", deduped_text=text, materialized_outbox=list(outbox_lines),
-        )
+        return QuarantineDecision("clean", deduped_text=text, warnings=warnings, materialized_outbox=list(outbox_lines))
 
     # Computed BEFORE the corruption return, not inside the partition, so the hint is
     # attached to EVERY block a split would fix (Stage-2 code review, finding 3). The
@@ -174,7 +177,7 @@ def decide(
         # side effect can be half-applied. Nothing was held (the partition never ran), so
         # the note stays on its unconditional wording.
         return QuarantineDecision(
-            "block", errors=_block_errors(verdict, protected, frozenset(), unsplittable),
+            "block", errors=_block_errors(verdict, protected, frozenset(), unsplittable), warnings=warnings,
         )
 
     # Partition BY INDEX in one pass: order and duplicate count are preserved exactly.
@@ -215,21 +218,21 @@ def decide(
     if not candidates and not held:
         # Nothing in the OUTBOX explains the verdict, so every defect lives in the
         # worktree-tracked log — which the sweep cannot rewrite. Fail closed.
-        return QuarantineDecision("block", errors=_block_errors(verdict, protected, frozenset(held_ids), unsplittable))
+        return QuarantineDecision("block", errors=_block_errors(verdict, protected, frozenset(held_ids), unsplittable), warnings=warnings)
 
-    trimmed_text = _materialize(worktree_lines, materialized, eol)
+    trimmed_text, _ = _materialize(worktree_lines, materialized, eol)
     if validate_triage_text(trimmed_text):
         # A residual error after the partition — e.g. a byte-identical copy of the same
         # defect in the worktree-tracked log, or a defect inside a glued line. This
         # re-validation, NOT the partition, is what enforces provenance (external plan
         # review, r2 openai #3).
-        return QuarantineDecision("block", errors=_block_errors(verdict, protected, frozenset(held_ids), unsplittable))
+        return QuarantineDecision("block", errors=_block_errors(verdict, protected, frozenset(held_ids), unsplittable), warnings=warnings)
     return QuarantineDecision(
         "quarantine" if candidates else "hold",
         deduped_text=trimmed_text,
         materialized_outbox=materialized,
         candidates=candidates,
-        held_lines=held,
+        held_lines=held, warnings=warnings,
     )
 
 

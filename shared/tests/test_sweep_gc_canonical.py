@@ -221,8 +221,12 @@ def test_e2e_same_id_changed_append_stays_in_outbox(repo) -> None:
     where the content actually is at the moment of the drop decision, so the test
     can no longer be read as proving more than it does."""
     work, _ = repo
-    h.seed_tracked(work, h.item("trg-1", title="original"))
-    refreshed = h.item("trg-1", title="REFRESHED")
+    # Same `originalTs` on both: that is what makes this ONE item refreshed rather than
+    # two items colliding on a 32-bit id (lib.triage_dedup, audit finding 25). Every real
+    # append carries it, so the anchorless pair this fixture used to build could not occur.
+    _ANCHOR = "2026-06-08T00:00:00Z"
+    h.seed_tracked(work, h.item("trg-1", title="original", original_ts=_ANCHOR))
+    refreshed = h.item("trg-1", title="REFRESHED", original_ts=_ANCHOR)
     h.write_outbox(work, refreshed)
     wt = h.make_worktree(work, "canon-changed")
 

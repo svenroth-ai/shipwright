@@ -181,7 +181,15 @@ def test_every_monitored_workflow_actually_runs_on_pushes_to_main():
 
 #: Workflows that run on push-to-main and are deliberately NOT health signals.
 #: Named here rather than omitted, so adding a workflow forces a decision.
-DELIBERATELY_UNMONITORED: frozenset[str] = frozenset()
+#:
+#: windows-tests.yml (IT-9 Unit 5, iterate-2026-08-05-windows-ci-tests): also
+#: runs on pull_request, so a red result is visible pre-merge in the PR's own
+#: Checks tab — the detection mechanism this workflow relies on. Reconciling
+#: which checks become branch-protection-required (and, by extension, which
+#: post-merge failures the main-health repair path should watch) is IT-9 Unit
+#: 3's (trg-a089c9f7) explicit remit; registering it in MONITORED_WORKFLOWS
+#: here would pre-empt that decision.
+DELIBERATELY_UNMONITORED: frozenset[str] = frozenset({"windows-tests.yml"})
 
 
 def test_no_push_to_main_workflow_is_silently_left_out_of_the_policy():

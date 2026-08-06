@@ -11,10 +11,13 @@ from __future__ import annotations
 import fnmatch
 import json
 
-# Triage-log validation lives in lib.triage_validate (extracted so this module
-# stays under the 300-LOC guideline). Re-exported so the historical
-# `from lib.churn_merge import validate_triage_text` import path is unchanged.
+# Triage-log validation lives in lib.triage_validate and the triage dedup in
+# lib.triage_dedup (both extracted so this module stays under the 300-LOC
+# guideline). Re-exported so the historical
+# `from lib.churn_merge import validate_triage_text` / `dedup_triage_lines`
+# import paths are unchanged.
 from lib.jsonl_records import split_records
+from lib.triage_dedup import dedup_triage_lines  # noqa: F401  (re-export: see lib/triage_dedup.py)
 from lib.triage_validate import (  # noqa: F401  (re-export surface)
     TriageValidation,
     classify_triage_text,
@@ -36,9 +39,9 @@ DERIVED_MDS: frozenset[str] = COMPLIANCE_MDS | AGENT_DOC_MDS
 EVENTS_LOG = "shipwright_events.jsonl"
 TEST_RESULTS = "shipwright_test_results.json"
 #: The triage backlog — an append-only JSONL log tracked since campaign
-#: 2026-06-05-track-triage-jsonl (C). Reconciled like ``EVENTS_LOG`` but with
-#: a triage-specific dedup (no id-collision warning — see
-#: :func:`dedup_triage_lines`).
+#: 2026-06-05-track-triage-jsonl (C). Reconciled like ``EVENTS_LOG`` but with a
+#: triage-specific dedup whose id-collision rule differs from the events one —
+#: see :mod:`lib.triage_dedup`.
 TRIAGE_LOG = ".shipwright/triage.jsonl"
 
 #: The committed CI-security scan summary — a DERIVED compliance snapshot like the
@@ -191,68 +194,11 @@ def dedup_event_lines(lines: list[str]) -> tuple[list[str], list[str]]:
     return out, warnings
 
 
-def dedup_triage_lines(lines: list[str]) -> tuple[list[str], list[str]]:
-    """Dedup for the triage log, preserving order. Two collapses, in order:
-
-    1. **Byte-identical** lines (the same event recorded on both merge sides)
-       are dropped, first-seen order preserved.
-    2. **Same-id ``append`` events** are collapsed to keep the LAST one. A
-       producer that re-appends an UPDATED version of an existing finding writes
-       a second, NON-byte-identical ``append`` for that id; the append-log reader
-       (``triage.read_all_items`` pass 1) keeps the LAST append's content, so
-       collapsing to keep-last mirrors that reduction. Without it the
-       one-append-per-id invariant ``validate_triage_text`` enforces false-trips
-       on a legitimate update and wedges the WHOLE outbox sweep (the
-       trg-60ef91fb double-append that blocked the 2026-06-08 delivery).
-       ``status`` events — which INTENTIONALLY share an id with their ``append``
-       — and any non-append / unparseable lines (and appends with a non-str id)
-       pass through untouched. The reader overlays status in a SEPARATE pass 2
-       (ts-sorted), so dropping an earlier append never un-flips a status,
-       regardless of where the kept append lands relative to a status line.
-
-    Returns ``(deduped, warnings)`` for interface parity with
-    :func:`dedup_event_lines`, but ``warnings`` is **always empty**: a triage id
-    is shared by design (append + status; updated re-appends), so the event-log
-    "distinct lines share an id → warn" heuristic would false-fire.
-    """
-    # (1) byte-identical dedup, first-seen order.
-    seen: set[str] = set()
-    interim: list[str] = []
-    for line in lines:
-        if not line.strip() or line in seen:
-            continue
-        seen.add(line)
-        interim.append(line)
-
-    # (2) collapse same-id `append` events → keep LAST (reader parity).
-    def _append_id(line: str) -> str | None:
-        try:
-            obj = json.loads(line)
-        except (json.JSONDecodeError, ValueError):
-            return None
-        if isinstance(obj, dict) and obj.get("event") == "append":
-            iid = obj.get("id")
-            return iid if isinstance(iid, str) else None
-        return None
-
-    last_idx: dict[str, int] = {}
-    for i, line in enumerate(interim):
-        iid = _append_id(line)
-        if iid is not None:
-            last_idx[iid] = i
-
-    out: list[str] = []
-    for i, line in enumerate(interim):
-        iid = _append_id(line)
-        if iid is not None and last_idx[iid] != i:
-            continue  # earlier same-id append — superseded by a later one
-        out.append(line)
-    return out, []
-
-
 # `TriageValidation`, `classify_triage_text`, and `validate_triage_text` now live in
-# lib.triage_validate (re-exported at the top of this module). See that module for
-# the triage-log validation + orphan-status classification rules.
+# lib.triage_validate; `dedup_triage_lines` lives in lib.triage_dedup (both
+# re-exported at the top of this module, both extracted to keep this file under the
+# 300-LOC guideline). See those modules for the triage-log validation +
+# orphan-status rules and for the same-id append collision rule respectively.
 
 
 def validate_events_text(text: str, *, require_run_id: str | None = None) -> list[str]:

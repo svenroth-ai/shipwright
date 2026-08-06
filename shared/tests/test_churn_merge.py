@@ -230,14 +230,22 @@ def test_triage_validate_flags_duplicate_append() -> None:
 # (the trg-60ef91fb double-append that wedged the 2026-06-08 outbox delivery).
 
 # Two NON-byte-identical appends for the SAME id (compact vs spaced serialization).
-_A1 = '{"event":"append","id":"trg-x","ts":"2026-06-09T06:17:00Z","title":"draft"}'
-_A2 = '{"event": "append", "id": "trg-x", "ts": "2026-06-09T06:29:00Z", "title": "resolved"}'
+# Both carry the SAME `originalTs`, which is what makes them one refreshed item
+# rather than a 32-bit id collision between two — see lib/triage_dedup.py. Every
+# real append has one (both of triage.py's constructors set it unconditionally), so
+# omitting it here made these fixtures unrepresentative of the case ADR-163 is about.
+_A1 = ('{"event":"append","id":"trg-x","ts":"2026-06-09T06:17:00Z",'
+       '"originalTs":"2026-06-09T06:17:00Z","title":"draft"}')
+_A2 = ('{"event": "append", "id": "trg-x", "ts": "2026-06-09T06:29:00Z", '
+       '"originalTs": "2026-06-09T06:17:00Z", "title": "resolved"}')
 
 
 def test_triage_dedup_collapses_same_id_appends_keep_last() -> None:
     out, warn = dedup_triage_lines([_TRIAGE_HEADER, _A1, _A2])
     assert out == [_TRIAGE_HEADER, _A2]   # earlier append dropped, LAST kept (reader parity)
-    assert warn == []
+    # ADR-163's collapse is unchanged, but it is no longer SILENT: the drop reports
+    # itself. `warnings == []` was the contract audit finding 25 rejected.
+    assert len(warn) == 1 and "superseded" in warn[0]
     assert validate_triage_text("\n".join(out) + "\n") == []
 
 
@@ -260,7 +268,7 @@ def test_triage_dedup_keep_last_preserves_status_and_order() -> None:
     status = '{"event":"status","id":"trg-x","newStatus":"dismissed"}'
     out, warn = dedup_triage_lines([_TRIAGE_HEADER, _A1, status, _A2])
     assert out == [_TRIAGE_HEADER, status, _A2]
-    assert warn == []
+    assert len(warn) == 1          # the collapse reports itself (lib.triage_dedup)
     assert validate_triage_text("\n".join(out) + "\n") == []
 
 
