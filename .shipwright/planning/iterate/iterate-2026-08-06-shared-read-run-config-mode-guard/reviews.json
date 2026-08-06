@@ -1,0 +1,116 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-08-06-shared-read-run-config-mode-guard",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-06T10:56:56.984541+00:00",
+      "disposition": null,
+      "recorded_by": "iterate-step-7",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-06T10:56:57.189897+00:00",
+      "disposition": "Phase Matrix: External LLM Review is medium+ only; this run locked at small (Stage-1 small, diff-driven re-check confirmed no upgrade, complexity_floor trivial).",
+      "recorded_by": "iterate-step-8",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 2,
+      "findings": [
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/scripts/lib/gate_policy.py",
+          "line": 156,
+          "finding": "The except tuple did not cover a non-None, non-path-like project_root: Path() raises an uncaught TypeError, contradicting the TOTAL-at-the-read-boundary docstring claim. Unreachable today because the sole production caller passes an argparse str. ADDRESSED: TypeError added to the guard tuple and pinned by an assertion verified falsifiable (pre-fix the same call raised TypeError).",
+          "suggestion": "Add TypeError to the tuple, or narrow the signature from Any to Optional[str | Path].",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "test-quality",
+          "file": "shared/tests/test_gate_policy.py",
+          "line": 239,
+          "finding": "The not-a-directory test docstring framed it as pinning the exists() removal, but it would also pass against the pre-fix implementation (Path.exists() returns False rather than raising there), so it did not uniquely discriminate the reverted case. ADDRESSED: docstring rescoped and a genuinely discriminating TypeError assertion added alongside.",
+          "suggestion": "Soften the docstring claim or add a discriminating case.",
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-08-06T10:56:17.036593+00:00",
+      "disposition": null,
+      "recorded_by": "shipwright-build:code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 2,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "hidden coupling & blast radius",
+          "file": "shared/scripts/lib/gate_policy.py",
+          "line": 147,
+          "finding": "Claim under doubt: The two readers are kept in lockstep, so a future edit to either cannot silently re-open a divergence. — The lockstep contract and the residual read-leg divergence are documented ONLY in config_io.py's Mode section. gate_policy.read_run_config_mode's own docstring never mentioned config_io, the lockstep requirement, or the retry asymmetry, so an engineer editing gate_policy.py in isolation - the likelier direction, since it is the lower-level shared file with more callers - had no signpost back to the sibling contract. This documented-on-one-side-only drift is the exact bug class this run exists to fix. ADDRESSED: a LOCKSTEP back-pointer to config_io._read_parse_shape and its Mode section was added to the docstring within the file's 301-line cap.",
+          "suggestion": "A one-line pointer in read_run_config_mode's docstring back to config_io's Mode section, so the contract is discoverable from either file.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "boundary & contract",
+          "file": "shared/scripts/lib/gate_policy.py",
+          "line": 160,
+          "finding": "Claim under doubt: Catching RecursionError and TypeError cannot hide a genuine programming bug. — The catch is scoped to the whole try block rather than narrowed to json.loads. The full call graph was traced and no recursive path reaches this reporter today, so it is provably safe for every current call site; but a future caller invoking it from deep inside another recursive traversal would have that bug silently converted to INERT_MODE instead of a loud traceback. ACCEPTED as a watch-item, not reachable today.",
+          "suggestion": "Narrow the RecursionError catch to the json.loads call if a recursive caller is ever introduced.",
+          "source": "doubt-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-08-06T10:56:41.268608+00:00",
+      "disposition": null,
+      "recorded_by": "shipwright-build:doubt-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-06T10:57:07.504592+00:00",
+      "disposition": "Phase Matrix: External LLM Review is medium+ only; this run locked at small. The internal cascade (spec/code/doubt) ran in full and is recorded above.",
+      "recorded_by": "iterate-step-8",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-06T10:54:52.048786+00:00",
+      "disposition": null,
+      "recorded_by": "shipwright-build:spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    }
+  }
+}

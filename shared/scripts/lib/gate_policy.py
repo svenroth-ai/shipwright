@@ -147,19 +147,19 @@ def load_catalog(path: Optional[Path] = None) -> dict[str, Any]:
 def read_run_config_mode(project_root: Any) -> str:
     """Return ``SINGLE_SESSION`` or ``INERT_MODE``.
 
-    Fail-safe: a missing / mode-less / corrupt config reads as ``INERT_MODE`` so
-    the mechanism stays inert. Only the exact literal ``single_session``
-    activates it.
+    Fail-safe: a missing / mode-less / corrupt config reads as ``INERT_MODE``; only
+    the literal ``single_session`` activates it. TOTAL at the read boundary, since
+    the caller does not guard it — ``UnicodeDecodeError`` IS a ``ValueError``,
+    ``RecursionError`` is NOT, a non-object raises ``AttributeError``, a BOM needs
+    ``utf-8-sig``. LOCKSTEP with ``config_io._read_parse_shape``; read its Mode section.
     """
     if project_root is None:
         return INERT_MODE
-    cfg = Path(project_root) / _CONFIG_NAME
-    if not cfg.exists():
-        return INERT_MODE
     try:
-        mode = json.loads(cfg.read_text(encoding="utf-8")).get("mode")
-    except (json.JSONDecodeError, OSError):
+        parsed = json.loads((Path(project_root) / _CONFIG_NAME).read_text(encoding="utf-8-sig"))
+    except (ValueError, OSError, RecursionError, TypeError):
         return INERT_MODE
+    mode = parsed.get("mode") if isinstance(parsed, dict) else None
     return SINGLE_SESSION if mode == SINGLE_SESSION else INERT_MODE
 
 
