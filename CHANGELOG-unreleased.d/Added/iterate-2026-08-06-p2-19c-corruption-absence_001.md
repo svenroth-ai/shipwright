@@ -1,0 +1,1 @@
+`triage_cli list` now says when a decision has not been committed to any branch: a `pendingStatusDelivery` flag per row, an `undeliveredDecisions` block on the `list --json` envelope for decisions whose item no longer appears in any section, and a store-level notice on the human listing (IT-1 audit 28).
