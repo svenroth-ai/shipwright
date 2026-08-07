@@ -29,6 +29,7 @@ Shipwright is an AI-powered SDLC framework built on Claude Code. It is structure
 | FR-01.17 | Adopted | Independent re-check on the code host | Must | Re-check every proposed change on the code host before it can merge — the project's tests, its lint, its security scans and the host's own code analysis — independently of whatever already ran on the author's machine, and have the change reviewed there automatically rather than on request. A local pass is never accepted in place of the host's. | interview | unit (inferred) |
 | FR-01.18 | Adopted | /shipwright-grade | Should | Give any git repository a control grade from A to F without changing anything in it: derive what can honestly be derived from its history, its tests and its configuration, and score it on the same rubric the framework's own dashboard uses. A dimension that cannot be determined is marked as exactly that and left out of the calculation rather than filled in, and the report says for each judgement whether it was read from the project's own records or estimated from the outside. Nothing about a repository that is not public leaves the machine without two separate consents. | interview | unit (inferred) |
 | FR-01.19 | Adopted | Recovery of a broken shared branch | Should | When the shared branch breaks after a change is merged, say so and name the single change that broke it, instead of leaving whoever comes next to discover it. That naming is only trustworthy because every merged change is checked on its own rather than only the newest one, and what a repair needs travels with it: what failed, and which other changes the broken one had never been tested alongside. A repair corrects the mismatch and is never allowed to make a test ask for less — that is refused outright, and refused again independently on the code host. Where repairing would be a guess rather than a correction — a security finding, too many changes implicated, or two attempts already spent — the matter is filed for a decision instead, with the way back included. Only one repair is ever under way for the same breakage, and one that is abandoned releases its place rather than blocking every later attempt. | interview | unit (inferred) |
+| FR-01.20 | Adopted | Context-Cost Meter | Should | Measure what a session actually costs, from the assistant's own record of what it sent and received, counted once per exchange no matter how many lines that exchange left behind — and break the total down by which pipeline phase spent it, shown as the session runs rather than only after it ends. Adds this real, priced figure as an alternative to a rough stand-in that only counted tool calls, usable at the same points that stand-in already warns at — the stand-in itself keeps running until a later change compares the two and switches over. Also checks, the way the existing pre-push checks do, whether the session's own auto-compaction setting and effort level are set sanely for its context window. | code | unit (inferred) |
 
 ## Quality Requirements
 
@@ -1224,6 +1225,39 @@ _Where the work detail lives_ at the end of this document.
   not that it is safe, and never in place of an examination by a person. Where
   it works without the project's own records it is an estimate made from the
   outside and says so, and it recommends nothing and changes nothing.
+
+<a id="fr-0120"></a>
+### FR-01.20 — Context-Cost Meter
+
+- (E) Given the assistant finishes a turn, when its transcript is read, then
+  every exchange with the model is counted exactly once — never once per
+  transcript line — because a single exchange is written as several lines that
+  all share one request id, and those are folded together before anything is
+  counted.
+- (E) Given a counted exchange happened while a pipeline phase was active, when
+  it is recorded, then it carries that phase's label, so the running total can
+  be broken down by phase instead of standing as one number nobody can
+  attribute.
+- (E) Given no phase is active — no pipeline is running, or the session is
+  outside one — when an exchange is recorded, then it is still recorded, only
+  labelled as belonging to no phase, never silently dropped and never
+  attributed to a phase it did not happen in.
+- (E) Given a session is running, when its status line is shown, then the
+  exchanges counted and the modelled cost seen so far are shown as a running
+  total — available while the session is still running, not only after it has
+  already ended. Given the same running session, when its per-phase breakdown
+  is asked for directly, then it is shown broken down by phase on demand,
+  without waiting for the session to end.
+- (E) Given the existing warning that a session's working context is getting
+  full, when it is asked to use this measured exchange count instead of its
+  original count of tool calls, then it does so at the same two thresholds
+  it already used. It still counts tool calls by default until a follow-up
+  change compares the two and switches over — this one only adds the choice.
+- (E) Given a session's automatic-compaction setting is left unset or set above
+  what the active model's context window allows, or its reasoning-effort level
+  is worth flagging, when a readiness check is run, then each is reported as a
+  finding, in the same reported shape as the project's existing pre-push
+  checks — never silently accepted.
 
 This catalog states **what the product does**. It deliberately does not carry
 the record of how each capability got there.

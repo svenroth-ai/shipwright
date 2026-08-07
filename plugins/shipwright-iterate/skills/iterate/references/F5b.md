@@ -99,6 +99,23 @@ event unchanged, so partial history and pre-M-Pre-1 runs are fine — the WebUI
 Iterate-Rail reads the field only when present. You do **not** pass timings on the
 CLI; the fold is automatic (`lib.iterate_phase_groups.fold_into_event`).
 
+**Context-cost meter (context-cost-meter).** Same shape: `finalize_iterate`
+also reads THIS session's per-`Stop` cost summary
+(`.shipwright/compliance/context-cost/<SHIPWRIGHT_SESSION_ID>.json`, kept
+current by the additive `track_context_cost.py` `Stop` hook) and folds it
+into `work_completed.context_cost` (`lib.context_cost_core.fold_into_event`),
+additive + best-effort like `phase_timings` — no session id or no summary
+file (no `Stop` has fired yet) leaves the event unchanged. This is a READ of
+that file, not a fresh recompute — F5b has no `transcript_path` to recompute
+from — so it is current through the end of the previous assistant turn
+(`Stop` fires at every turn end). The block is stamped `measured_through:
+"F5b"` + `measured_at`: it cannot include F6-F12 (commit, PR delivery, CI
+rework), so it is always a *floor* on the run's real cost, never the whole
+session — read it as such, not as the final total. `context_cost_summary.py
+show --session-id "{session_id}" --project-root "{project_root}"` prints the
+same file directly if you want to see it at any point without waiting for
+F5b.
+
 Reads back: `result["steps"]["event"]["id"]` — capture it so F6 can confirm
 the event is present before staging `shipwright_events.jsonl` (and for the
 legacy F6.5 SHA patch, used only by non-worktree callers).
