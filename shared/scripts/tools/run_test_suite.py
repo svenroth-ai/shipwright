@@ -104,6 +104,7 @@ class UnitResult:
     rc: int
     seconds: float
     output: str = ""
+    started_utc: str = ""  # real per-unit dispatch time, not the suite's
     race: bool = False           # passed only on a retry
     retry_kind: str | None = None
     serial_rc: int | None = None
@@ -157,10 +158,6 @@ def classify(rc: int, pytest_ran: bool = False) -> str:
     if rc == 1:
         return TEST_FAILURE if pytest_ran else INFRA
     return INFRA
-
-
-def cpu_budget(config: SuiteConfig | None) -> int:
-    return normalize_cpu_weight(config.max_workers if config is not None else None)
 
 
 def warm_up(project_root: Path) -> None:
@@ -307,6 +304,7 @@ def run_suite(project_root: Path, config: SuiteConfig | None = None, *,
             idx, unit = indexed
             workers = _xdist_workers(unit.id)
             weight = budget.acquire(workers or 1, cancel_event=cancel_event)
+            started_utc = datetime.now(timezone.utc).isoformat()
             _emit_unit_event(stream, run_id=run_id, event="start", unit_id=unit.id,
                              weight=weight)
             try:  # a unit may never fan out wider than the budget it holds
@@ -317,7 +315,7 @@ def run_suite(project_root: Path, config: SuiteConfig | None = None, *,
                 budget.release(weight)
             outcome = classify(rc, ran)
             result = UnitResult(
-                unit.id, outcome, rc, secs, out,
+                unit.id, outcome, rc, secs, out, started_utc=started_utc,
                 truncated=truncated, cancelled=cancelled)
             if outcome != PASS:
                 result.evidence_path, result.evidence_error = _retain_attempt_evidence(
@@ -377,10 +375,12 @@ def run_suite(project_root: Path, config: SuiteConfig | None = None, *,
                     seconds=retry_secs, phase="serial-retry",
                     retry_kind=retry_state)
                 raise KeyboardInterrupt
+            # retry_kind + the extra wall-clock apply either way (doubt review).
+            res.retry_kind = RETRY_INFRA if keep_xdist else RETRY_SERIAL
+            res.seconds += retry_secs
             if classify(rc, ran) == PASS:
                 res.race = True  # keep the FIRST output: it is the evidence
                 res.outcome = PASS
-                res.retry_kind = RETRY_INFRA if keep_xdist else RETRY_SERIAL
             else:
                 res.outcome, res.output = classify(rc, ran), out
                 res.truncated = retry_truncated
@@ -429,12 +429,12 @@ def _run_host_leased_suite(root: Path, run_id: str | None):
         # window later than the real one by however long they took (doubt
         # review). f0_cpu_lease's own call below was already correct.
         record_f0_queue_span(root, run_id, waited_seconds=warmup_grant.waited_seconds,
-                             weight=1, capacity=1)
+                             weight=1, capacity=1, stage="warmup")
         ensure_xdist_available(config, root)
         warm_up(root)
     with f0_cpu_lease(root, config, run_id=run_id) as grant:
         record_f0_queue_span(root, run_id, waited_seconds=grant.waited_seconds,
-                             weight=grant.weight, capacity=grant.capacity)
+                             weight=grant.weight, capacity=grant.capacity, stage="cpu")
         active_start = datetime.now(timezone.utc)
         try:
             result = run_suite(root, config, budget_total=grant.weight,

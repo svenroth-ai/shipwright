@@ -36,15 +36,16 @@ self-records (producer) alongside its `delivery_wait`/`ci_wait` children when
 delivery` is harmless (multiple top-level instances of the same name are
 valid; the tightest-fitting one wins for attaching children).
 
-14 nested spans (parent in parentheses; a name may be valid under more than
+15 nested spans (parent in parentheses; a name may be valid under more than
 one parent):
 
 | Span | Parent(s) | Owner |
 |---|---|---|
 | `focused_tests` | `implementation` | agent |
 | `pre_f0_validation` | `verification` | **producer** — `check_iterate_isolation.py --stage f0` self-instruments |
-| `f0_queue` | `verification` | **producer** — `run_test_suite.py` (host-lease `waited_seconds`) |
+| `f0_queue` | `verification` | **producer** — `run_test_suite.py` (host-lease `waited_seconds`; `extra.stage` is `warmup` or `cpu`) |
 | `canonical_f0_active` | `verification` | **producer** — `run_test_suite.py` (`SuiteResult.duration`) |
+| `f0_unit_result` | `canonical_f0_active` | **producer** — `run_test_suite.py`/`suite_timing.py`, one per pytest unit on the normal-return path (`extra.unit`/`extra.conclusion`/`extra.retry_shape`) |
 | `self_review` | `review` | agent |
 | `spec_review` | `review` | agent (Task-tool subagent spawn — no OS process to instrument) |
 | `code_review` | `review` | agent |
