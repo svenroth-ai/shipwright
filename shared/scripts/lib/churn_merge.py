@@ -73,6 +73,20 @@ TEST_TRACEABILITY = ".shipwright/compliance/test-traceability.json"
 #: a DERIVED_MD (``--theirs``, then re-derive). Why: ADR-118 + the doc table row.
 ADR_INDEX = ".shipwright/planning/adr/INDEX.md"
 
+#: ``decision_log.md``'s generated index — same treatment as :data:`ADR_INDEX`
+#: and for the same reason: ``write_decision_log.py`` (plan/build/deploy) and
+#: ``aggregate_decisions.py`` (release) each refresh it as a pure function of
+#: ``decision_log.md``'s own content, so a merge conflict on it is always
+#: correctly resolved by re-deriving from the MERGED file rather than picking
+#: a side. NOT a :data:`DERIVED_MDS` member for the same reason ADR_INDEX
+#: isn't: that register is for views that are *wrong* when derived on a
+#: branch, and this one is correct on a branch by construction. The sibling
+#: decision-drops index is deliberately absent — see
+#: ``lib/decision_drops_index.py``: that directory is gitignored, so git can
+#: never see a conflict on it and an allowlist entry would be exercised by
+#: nothing.
+DECISION_LOG_INDEX = ".shipwright/agent_docs/decision_log_index.md"
+
 #: Derived iterate-throughput report, regenerated every F5b run — own constant like :data:`CI_SECURITY_SUMMARY`.
 THROUGHPUT_REPORT = ".shipwright/compliance/performance/iterate-throughput.md"
 
@@ -81,7 +95,7 @@ THROUGHPUT_REPORT = ".shipwright/compliance/performance/iterate-throughput.md"
 #: (curated prose — must reach a human; folds external-review G4/O1).
 CHURN_ALLOWLIST: frozenset[str] = DERIVED_MDS | {
     EVENTS_LOG, TEST_RESULTS, TRIAGE_LOG, CI_SECURITY_SUMMARY, TEST_TRACEABILITY,
-    ADR_INDEX, THROUGHPUT_REPORT,
+    ADR_INDEX, DECISION_LOG_INDEX, THROUGHPUT_REPORT,
 }
 
 #: Per-campaign status boards (campaign 2026-06-07-tracked-campaign-status, S3)

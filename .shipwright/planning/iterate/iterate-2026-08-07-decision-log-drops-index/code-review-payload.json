@@ -1,0 +1,13 @@
+{
+  "section": "iterate-2026-08-07-decision-log-drops-index",
+  "review": [
+    {
+      "severity": "high",
+      "category": "correctness",
+      "file": "shared/scripts/tools/write_decision_log.py",
+      "line": null,
+      "finding": "write_decision_log.py has no sys.path bootstrap for its lazy `from lib....` imports, unlike every sibling tool. The new unconditional `from lib.decision_log_index import refresh_best_effort` import (previously only the conditional `--architecture-impact` path needed a `lib.` import) means a plain `append_decision()` call now raises ModuleNotFoundError when invoked as a bare CLI with no PYTHONPATH set — the exact invocation shape plan/build/deploy use.",
+      "suggestion": "Add the same `_SCRIPTS_ROOT = Path(__file__).resolve().parents[1]; sys.path.insert(0, str(_SCRIPTS_ROOT))` bootstrap every other shared/scripts/tools/*.py CLI already carries, and add a regression test that runs the CLI with PYTHONPATH unset."
+    }
+  ]
+}

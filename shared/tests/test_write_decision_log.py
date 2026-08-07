@@ -1,4 +1,6 @@
-"""Tests for decision log writer (compact ADR format)."""
+"""Tests for decision log writer (compact ADR format).
+
+CLI-invocation-shape test: ``test_write_decision_log_bootstrap.py``."""
 
 import pytest
 

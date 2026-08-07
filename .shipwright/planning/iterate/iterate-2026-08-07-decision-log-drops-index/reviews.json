@@ -1,0 +1,261 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-08-07-decision-log-drops-index",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-07T23:00:02.609874+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 8,
+      "findings": [
+        {
+          "severity": "low",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "Removal of the dead `status` kwarg/CLI flag was verified with a static grep, but if any external scripts, CI pipelines, or documentation still reference it, the change could cause a runtime failure. No such usage was found, but the check is purely static.",
+          "suggestion": "Confirm no runtime invocations exist (e.g., search across all non-repo tooling if any). The current evidence is strong; if none found, the removal is safe.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The decision-drops index deliberately skips a CI drift guard because the directory is gitignored. However, a user could force-add a drop file, causing the index to drift without automated detection. The spec acknowledges this, but the code itself might benefit from a brief comment reiterating the design.",
+          "suggestion": "Add a docstring note or comment in `lib/decision_drops_index.py` clarifying that no drift guard exists because the directory is gitignored, and that forced commits are not protected. This aligns with the “documented, not silently omitted” acceptance criteria.  Overall Assessment: The approach mirrors the established ADR index pattern, is backed by comprehensive tests covering parsing edge cases, atomicity, and churn integration. The two minor points above do not undermine the change’s soundness; the implementation plan is coherent and low-risk.  SHIPWRIGHT_VERDICT: approve",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "The decision-drops index is refreshed only by `write_decision_drop.py`’s CLI path, while the decision-log index is refreshed by the underlying direct mutation path (`append_decision`). This creates a stale-index path whenever the drop-writing function is invoked programmatically, from a test helper, or by a future command that bypasses the CLI. That conflicts with the stated principle that regeneration follows source changes.",
+          "suggestion": "Attach the refresh to the lowest practical successful drop-write operation, or require every direct writer to call an explicitly named refresh function. If the direct writer intentionally cannot determine the canonical repository/drop directory, make that contract explicit and add a guard/test showing that no production caller bypasses the CLI.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "The shared post-merge refresh-and-stage helper must not stage an existing/stale index when regeneration fails. The plan verifies that a failure appears in `steps`, but does not state that staging is skipped on a failed refresh. After a merge, staging a pre-merge or conflict-resolved stale `decision_log_index.md` would turn a recoverable regeneration failure into a committed inconsistency.",
+          "suggestion": "Make the rebuild/refresh result explicit (`success`/`changed`/failure), and invoke `git add` only after successful regeneration. Preserve the diagnostic in `steps`; do not let a refresh failure silently stage the prior artifact. Add an assertion to the existing failure integration test that the index is not staged or modified by the failed refresh path.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "aggregate_decisions.py` can mutate more than one source artifact in one run: append/fold into `decision_log.md` and remove or alter drop files. The described refresh-at-the-end behavior covers successful folds and zero drops, but not a partial aggregation failure after one or more mutations. In that case either index may remain stale even though its source changed.",
+          "suggestion": "Track whether each source was successfully mutated and refresh the corresponding index in a cleanup/finalization path before propagating the original aggregation error. Do not mask the original failure with an index-refresh failure; report the latter separately using the existing best-effort diagnostics convention.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "“Fence-aware” parsing needs a defined Markdown-fence model beyond the tested quoted duplicate case. A parser that only toggles on literal triple backticks can incorrectly index headings in `~~~` fences, longer backtick fences, or fenced blocks with language/info strings, and can fail to exit only on a compatible closing fence.",
+          "suggestion": "Match CommonMark-style opening and closing fences sufficiently for this document format: support backtick and tilde fences, record the opening character and length, and close only on a matching fence of at least that length. Add focused tests for tilde fences and nested-length backtick examples.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "security",
+          "file": null,
+          "line": null,
+          "finding": "Decision-drop JSON is now rendered into Markdown, but the plan only explicitly calls out bracket escaping for decision-log titles. Drop titles and fallback decision snippets may contain Markdown control characters, line breaks, or link-like text from agent-generated JSON, producing misleading index content or unintended external links in a locally viewed artifact.",
+          "suggestion": "Normalize rendered drop text to a single line and escape Markdown link-label/control characters consistently. If the index links to a drop file, derive the target solely from a validated basename rather than any JSON field.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "Best-effort producer refreshes intentionally permit a successful decision-log/drop write to leave its generated index stale. That is reasonable for developer tooling, but for the committed decision-log index it predictably converts transient filesystem/lock failures into later CI drift failures unless the warning gives a clear recovery action.",
+          "suggestion": "Retain the best-effort policy if it matches the ADR-index precedent, but make the warning include the exact regeneration command/path and ensure the command is usable from the invoking worktree. The existing CI guard then remains the final enforcement mechanism rather than the first actionable diagnostic.  Overall, the render/rebuild split, source-oriented wiring, deliberate distinction between committed and gitignored artifacts, and focused test coverage are sound. The main changes needed are to ensure every actual drop-write path triggers refresh and to make partial/failing aggregation and post-merge staging behavior unambiguously safe. SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-08-07T22:03:50.831776+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[deepseek] - **Category:** risk  \n  **Severity:** low  \n  **Finding:** Removal of the dead `status` kwarg/CLI flag was verified with a static grep, but if any external scripts, CI pipelines, or documentation still reference it, the change could cause a runtime failure. No such usage was found, but the check is purely static.  \n  **Suggestion:** Confirm no runtime invocations exist (e.g., search across all non-repo tooling if any). The current evidence is strong; if none found, the removal is safe.\n\n- **Category:** edge-case  \n  **Severity:** low  \n  **Finding:** The decision-drops index deliberately skips a CI drift guard because the directory is gitignored. However, a user could force-add a drop file, causing the index to drift without automated detection. The spec acknowledges this, but the code itself might benefit from a brief comment reiterating the design.  \n  **Suggestion:** Add a docstring note or comment in `lib/decision_drops_index.py` clarifying that no drift guard exists because the directory is gitignored, and that forced commits are not protected. This aligns with the “documented, not silently omitted” acceptance criteria.\n\n**Overall Assessment:** The approach mirrors the established ADR index pattern, is backed by comprehensive tests covering parsing edge cases, atomicity, and churn integration. The two minor points above do not undermine the change’s soundness; the implementation plan is coherent and low-risk.\n\nSHIPWRIGHT_VERDICT: approve\n\n[openai] 1. **Category:** approach  \n   **Severity:** medium  \n   **Finding:** The decision-drops index is refreshed only by `write_decision_drop.py`’s CLI path, while the decision-log index is refreshed by the underlying direct mutation path (`append_decision`). This creates a stale-index path whenever the drop-writing function is invoked programmatically, from a test helper, or by a future command that bypasses the CLI. That conflicts with the stated principle that regeneration follows source changes.  \n   **Suggestion:** Attach the refresh to the lowest practical successful drop-write operation, or require every direct writer to call an explicitly named refresh function. If the direct writer intentionally cannot determine the canonical repository/drop directory, make that contract explicit and add a guard/test showing that no production caller bypasses the CLI.\n\n2. **Category:** risk  \n   **Severity:** medium  \n   **Finding:** The shared post-merge refresh-and-stage helper must not stage an existing/stale index when regeneration fails. The plan verifies that a failure appears in `steps`, but does not state that staging is skipped on a failed refresh. After a merge, staging a pre-merge or conflict-resolved stale `decision_log_index.md` would turn a recoverable regeneration failure into a committed inconsistency.  \n   **Suggestion:** Make the rebuild/refresh result explicit (`success`/`changed`/failure), and invoke `git add` only after successful regeneration. Preserve the diagnostic in `steps`; do not let a refresh failure silently stage the prior artifact. Add an assertion to the existing failure integration test that the index is not staged or modified by the failed refresh path.\n\n3. **Category:** edge-case  \n   **Severity:** medium  \n   **Finding:** `aggregate_decisions.py` can mutate more than one source artifact in one run: append/fold into `decision_log.md` and remove or alter drop files. The described refresh-at-the-end behavior covers successful folds  […truncated]",
+      "verdicts": {
+        "openai": "revise",
+        "deepseek": "approve"
+      }
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 1,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "correctness",
+          "file": "shared/scripts/tools/write_decision_log.py",
+          "line": null,
+          "finding": "write_decision_log.py has no sys.path bootstrap for its lazy `from lib....` imports, unlike every sibling tool. The new unconditional `from lib.decision_log_index import refresh_best_effort` import (previously only the conditional `--architecture-impact` path needed a `lib.` import) means a plain `append_decision()` call now raises ModuleNotFoundError when invoked as a bare CLI with no PYTHONPATH set — the exact invocation shape plan/build/deploy use.",
+          "suggestion": "Add the same `_SCRIPTS_ROOT = Path(__file__).resolve().parents[1]; sys.path.insert(0, str(_SCRIPTS_ROOT))` bootstrap every other shared/scripts/tools/*.py CLI already carries, and add a regression test that runs the CLI with PYTHONPATH unset.",
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-08-07T23:00:02.294913+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 7,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "cross-plugin",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: The decision-log index rides the same, already-accepted post-merge minting mechanism the ADR index uses, so nothing new is introduced for adopted downstream repos. — Checked whether plan/build/deploy's skills carry an explicit staging step for write_decision_log.py's output. Neither plan nor deploy has one; build uses `git add -A`. Concluded this is a pre-existing contract (identical to how decision_log.md itself was already staged) rather than a new gap introduced by this change — recorded as a reasoned rebuttal in the iterate spec's Doubt Review section, not a code fix.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "completeness",
+          "file": "shared/scripts/lib/decision_log_index.py",
+          "line": null,
+          "finding": "Claim under doubt: The index lists every real decision-log entry. — shipwright-design writes a second, independently-numbered entry class (### DR-NNN) into the same decision_log.md. The pre-fix `_ENTRY_RE` was ADR-only, so DR-NNN entries were silently absent from the index despite the completeness claim. Confirmed by constructing a log with both an ADR and a DR heading and observing the DR row missing from the render. Fixed via a kind-aware refactor keyed on (kind, num).",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "consistency",
+          "file": "shared/scripts/tools/integrate_regenerate.py",
+          "line": null,
+          "finding": "Claim under doubt: Refreshing and staging both post-merge indexes is effectively one atomic step. — Traced `regenerate_after_merge`: the ADR index and the decision-log index are staged via two independent `_refresh_and_stage_index` calls. A failure in the second leaves the first already staged — an inconsistent-looking partial outcome. Considered making this transactional; rejected because rolling back an already-correct ADR-index stage on an unrelated decision-log-index failure would itself be a regression. Each call reports its own step token, so the partial outcome is visible, not silent.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "concurrency",
+          "file": "shared/scripts/tools/write_decision_log.py",
+          "line": null,
+          "finding": "Claim under doubt: The decision-log collection is now race-safe end to end because its index write is locked. — `append_decision()`'s `log_path.write_text(...)` on decision_log.md itself carries no lock, unlike the new locked index write. Two concurrent `append_decision()` calls can both read the same prior content and one write clobbers the other. Confirmed this race pre-exists write_decision_log.py and is unrelated to this change (which adds a lock only around the index it introduces, not the source it reads). Recorded as a known pre-existing condition, out of scope for an index-only change.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/scripts/lib/decision_log_index.py",
+          "line": null,
+          "finding": "Claim under doubt: The supersession position map correctly represents every ADR number's file-order position. — A duplicate ADR number in this repo's own 328-entry history means `position` keeps only the LAST occurrence. Confirmed this is a pre-existing corpus characteristic (also handled the same way by lib/adr_index.py), already documented in `_supersession_map`'s own docstring, and out of scope per the spec's explicit 'no retroactive renumbering' exclusion.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "documentation",
+          "file": "shared/scripts/lib/decision_log_index.py",
+          "line": null,
+          "finding": "Claim under doubt: A comment near `_ENTRY_RE` might imply it matches the same heading shape `get_next_adr_number`'s regex does, which would misdescribe the parser. — Read the current comment text directly: it already states the two are 'intentionally not the same regex' and names the concrete difference (anchored + fence-aware + DR-aware vs. unanchored, non-fence-aware, numbering-only). No change needed — the doubt does not describe the comment's current text.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/scripts/tools/integrate_regenerate.py",
+          "line": null,
+          "finding": "Claim under doubt: A `-refreshed` step token always means the index was actually re-derived from a real source. — `refresh()` on a missing source (e.g. decision_log.md deleted) returns None — the same shape a successful no-warning refresh returns. Constructed a scenario (source deleted post-merge, stale index still committed) and confirmed `_refresh_and_stage_index` would append `{label}-refreshed` even though nothing was read or written. Fixed with an explicit source-exists guard before calling refresh(); regression test added (real-git merge with the source deleted).",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-08-07T23:00:02.464507+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 3,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "spec",
+          "file": "shared/scripts/tools/write_decision_drop.py:285-296",
+          "line": null,
+          "finding": "The decision-drops index refresh is attached only to `main()` after CLI argument handling, not to the successful `write_decision_drop()` mutation path. Programmatic callers of `write_decision_drop()` can therefore add a JSON drop without updating `decision-drops/INDEX.md`, violating the requirement that regeneration follow source writes. The added test explicitly drives only the CLI, so it does not cover this stale-index path.",
+          "suggestion": "Invoke the drops-index refresh immediately after the drop is successfully written in `write_decision_drop()` (or require and verify all direct writers call a shared refresh helper). Add a test that calls `write_decision_drop()` directly and asserts the index is updated.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "bug",
+          "file": "shared/scripts/lib/decision_log_index.py:118-128",
+          "line": null,
+          "finding": "_supersession_map()` applies a `(supersedes ADR-NNN)` marker regardless of the relative order of the two entries. A malformed or backfilled earlier entry such as `ADR-001: ... (supersedes ADR-002)` marks the later ADR-002 row as superseded, contrary to the specified rule that status is derived from a marker in a later entry’s title.",
+          "suggestion": "While traversing entries in file order, only record a target when it has already appeared earlier in the log (or compare entry positions before rendering). Add a regression test where an earlier entry references a later ADR and verify that the later entry is not annotated.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "security",
+          "file": "shared/scripts/lib/decision_drops_index.py:112-113",
+          "line": null,
+          "finding": "Agent-authored JSON fields (`date`, `section`, `title`, and fallback `decision`) are interpolated directly into Markdown without escaping Markdown controls. A drop title such as `![tracking](https://example.invalid/x)` or `[misleading](https://...)` becomes active Markdown in previewing clients; a filename containing backticks can also break the code span. Collapsing newlines does not prevent this.",
+          "suggestion": "Escape Markdown-special characters in rendered field values and the displayed filename, or render all untrusted values as escaped code/plain text. Add tests covering link/image syntax and backticks in a filename/title.  Overall assessment: The change implements the bulk of the requested producer/index pattern and has substantial coverage, but it leaves a real programmatic drop-write stale path and can mislabel supersession status for out-of-order references. Ship with fixes.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-08-07T22:10:23.340649+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "partial",
+      "raw_excerpt": "[deepseek] The diff implements the specification’s acceptance criteria fully: new decision‑log and decision‑drops index modules, committed/churn‑registered drift‑guarded decision‑log index, gitignored drops index, integrated freshening in all producers, and shared post‑merge refresh helper.  The tests exercise the rendering, atomicity, lock anchoring, churn registration, and integration paths thoroughly; I could not find a concrete correctness, regression, or security defect in the added code.\n\nSHIPWRIGHT_VERDICT: approve\n\n[openai] - Category: spec\n- Severity: medium\n- File: shared/scripts/tools/write_decision_drop.py:285-296\n- Finding: The decision-drops index refresh is attached only to `main()` after CLI argument handling, not to the successful `write_decision_drop()` mutation path. Programmatic callers of `write_decision_drop()` can therefore add a JSON drop without updating `decision-drops/INDEX.md`, violating the requirement that regeneration follow source writes. The added test explicitly drives only the CLI, so it does not cover this stale-index path.\n- Suggestion: Invoke the drops-index refresh immediately after the drop is successfully written in `write_decision_drop()` (or require and verify all direct writers call a shared refresh helper). Add a test that calls `write_decision_drop()` directly and asserts the index is updated.\n\n- Category: bug\n- Severity: medium\n- File: shared/scripts/lib/decision_log_index.py:118-128\n- Finding: `_supersession_map()` applies a `(supersedes ADR-NNN)` marker regardless of the relative order of the two entries. A malformed or backfilled earlier entry such as `ADR-001: ... (supersedes ADR-002)` marks the later ADR-002 row as superseded, contrary to the specified rule that status is derived from a marker in a **later** entry’s title.\n- Suggestion: While traversing entries in file order, only record a target when it has already appeared earlier in the log (or compare entry positions before rendering). Add a regression test where an earlier entry references a later ADR and verify that the later entry is not annotated.\n\n- Category: security\n- Severity: low\n- File: shared/scripts/lib/decision_drops_index.py:112-113\n- Finding: Agent-authored JSON fields (`date`, `section`, `title`, and fallback `decision`) are interpolated directly into Markdown without escaping Markdown controls. A drop title such as `![tracking](https://example.invalid/x)` or `[misleading](https://...)` becomes active Markdown in previewing clients; a filename containing backt […truncated]",
+      "verdicts": {
+        "openai": "revise",
+        "deepseek": "approve"
+      }
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-07T23:00:02.139775+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    }
+  }
+}

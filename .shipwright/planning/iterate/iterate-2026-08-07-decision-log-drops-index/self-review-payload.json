@@ -1,0 +1,11 @@
+{
+  "items": [
+    {"name": "ruff clean", "verdict": "pass", "note": "uvx ruff@0.15.15 check . — all checks passed"},
+    {"name": "full shared/tests suite green", "verdict": "pass", "note": "targeted suites re-run after every fix; full-suite pass confirms zero regressions"},
+    {"name": "Test Completeness Ledger has 0 untested-testable rows", "verdict": "pass", "note": "50 rows, all tested, per iterate spec"},
+    {"name": "review cascade findings folded in", "verdict": "pass", "note": "internal Opus review, external plan/architecture/code review, spec/code/doubt-reviewer findings all fixed or reasoned-rebutted in ADR-127 and the iterate spec"},
+    {"name": "docs/hooks-and-pipeline.md updated", "verdict": "pass", "note": "Merge Reconciliation table + Artifact Write Matrix rows added, doc-sync test green"},
+    {"name": "bloat baseline respected", "verdict": "pass", "note": "write_decision_log.py stayed within its frozen 377-line ceiling"},
+    {"name": "ADR written with rationale and rejected alternatives", "verdict": "pass", "note": "ADR-127"}
+  ]
+}

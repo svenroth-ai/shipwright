@@ -40,6 +40,8 @@ from lib.adr_index import (  # noqa: E402,F401  (re-exports)
     ADR_SPEC_FOLDER,
     rebuild_adr_index,
 )
+from lib.decision_drops_index import rebuild_decision_drops_index  # noqa: E402
+from lib.decision_log_index import rebuild_decision_log_index  # noqa: E402
 from lib.file_lock import LockTimeout, file_lock  # noqa: E402
 from lib.repo_root import resolve_main_repo_root  # noqa: E402
 from tools.write_decision_log import (  # noqa: E402
@@ -140,21 +142,30 @@ def aggregate(
     }
 
     def _refresh_index() -> None:
-        """Refresh INDEX.md on EVERY non-dry-run pass, drops or not.
+        """Refresh every derived index on EVERY non-dry-run pass, drops or not.
 
-        This call used to sit inside the fold branch below, so the index was
+        This call used to sit inside the fold branch below, so an index was
         only ever refreshed as a side-effect of folding decision-drops — an ADR
-        an iterate wrote straight into the spec folder never reached it. A
-        missing ADR folder is a no-op inside ``rebuild_adr_index``.
+        or decision an iterate wrote straight into its source never reached
+        its index. A missing source is a no-op inside each ``rebuild_*``.
+        decision-drops' own index is included here too: folding just deleted
+        some of the drops it lists, which is itself a change to its source.
         """
         if dry_run:
             return
-        try:
-            rebuild_adr_index(project_root)
-        except (OSError, LockTimeout) as exc:
-            # LockTimeout is a RuntimeError: letting it escape would abort a release
-            # pass whose aggregation already succeeded, under the wrong message.
-            result["errors"].append(f"INDEX.md: regenerate failed: {exc}")
+        for name, rebuild in (
+            ("ADR INDEX.md", rebuild_adr_index),
+            ("decision_log_index.md", rebuild_decision_log_index),
+            ("decision-drops INDEX.md", rebuild_decision_drops_index),
+        ):
+            try:
+                rebuild(project_root)
+            except (OSError, LockTimeout, UnicodeDecodeError) as exc:
+                # LockTimeout is a RuntimeError: letting it escape would abort a
+                # release pass whose aggregation already succeeded, under the
+                # wrong message. UnicodeDecodeError comes from decision_log.md's
+                # strict-decode read in rebuild_decision_log_index.
+                result["errors"].append(f"{name}: regenerate failed: {exc}")
 
     if not dd.is_dir():
         _refresh_index()
@@ -204,29 +215,36 @@ def aggregate(
             result["adr_numbers"].append(number)
             result["processed"].append(drop_path.name)
 
-        if rendered and not dry_run:
-            log_path.parent.mkdir(parents=True, exist_ok=True)
-            log_path.write_text(content + "".join(rendered), encoding="utf-8")
-            agent_docs = project_root / ".shipwright" / "agent_docs"
-            for offset, (drop_path, data) in enumerate(valid):
-                impact = data.get("architecture_impact", "none")
-                # Canonical anchor = run_id: skip the dup ADR bullet when the F2 run_id bullet already documents this drop (only the rare undocumented drop gets a fallback ADR bullet).
-                documented = architecture_doc.run_id_documented_for_impact(
-                    agent_docs, impact, (data.get("run_id") or "").strip())
-                if impact and impact != "none" and not documented:
-                    summary = data.get("title") or data.get("decision", "")[:60]
-                    _append_architecture_update(
-                        project_root, next_num + offset, impact, summary,
-                        entry_date=data.get("date"),
-                    )
-                try:
-                    drop_path.unlink()
-                except OSError as exc:
-                    result["errors"].append(
-                        f"{drop_path.name}: could not delete after aggregation: {exc}"
-                    )
-
-        _refresh_index()
+        try:
+            if rendered and not dry_run:
+                log_path.parent.mkdir(parents=True, exist_ok=True)
+                log_path.write_text(content + "".join(rendered), encoding="utf-8")
+                agent_docs = project_root / ".shipwright" / "agent_docs"
+                for offset, (drop_path, data) in enumerate(valid):
+                    impact = data.get("architecture_impact", "none")
+                    # Canonical anchor = run_id: skip the dup ADR bullet when the F2 run_id bullet already documents this drop (only the rare undocumented drop gets a fallback ADR bullet).
+                    documented = architecture_doc.run_id_documented_for_impact(
+                        agent_docs, impact, (data.get("run_id") or "").strip())
+                    if impact and impact != "none" and not documented:
+                        summary = data.get("title") or data.get("decision", "")[:60]
+                        _append_architecture_update(
+                            project_root, next_num + offset, impact, summary,
+                            entry_date=data.get("date"),
+                        )
+                    try:
+                        drop_path.unlink()
+                    except OSError as exc:
+                        result["errors"].append(
+                            f"{drop_path.name}: could not delete after aggregation: {exc}"
+                        )
+        finally:
+            # `finally`, not a trailing call: decision_log.md above is already
+            # written to disk by the time any of this loop could raise, so a
+            # mid-loop exception (e.g. from _append_architecture_update) must
+            # not skip the refresh and leave the index stale under a source
+            # that already changed — that would surface later as an unrelated
+            # CI drift failure instead of at the actual point of failure.
+            _refresh_index()
         result["aggregated"] = len(valid)
 
     return result

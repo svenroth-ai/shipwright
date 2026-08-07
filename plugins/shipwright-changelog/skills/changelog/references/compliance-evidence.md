@@ -42,6 +42,18 @@ It is a *directory* pathspec on purpose, unlike the evidence paths: its contents
 are release output whose file names are not known in advance, whereas the seven
 are a pinned set that a directory pathspec would silently widen.
 
+## Why `decision_log_index.md` is staged as its own file, every pass
+
+Same reasoning, one file instead of a directory. `aggregate_decisions.py` refreshes
+`.shipwright/agent_docs/decision_log_index.md` on every non-dry-run pass too —
+it is a pure function of `decision_log.md`'s own (possibly just-folded) content,
+so whichever of that file or the log itself changed, the index can too. Leaving
+it unstaged commits the log while the index sits at old bytes: the local drift
+guard (a repaired working tree) passes while CI (the committed tree)
+fails — `test_decision_log_index_producers.py::test_committed_index_is_not_stale`.
+It is a single pinned filename, not a directory, because — unlike the ADR
+folder — a release never mints an unpredictable new filename for it.
+
 ## Reading the tool's output
 
 `status: "ok"` — proceed. `staged` lists what actually differed from `HEAD`, and

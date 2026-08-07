@@ -19,6 +19,12 @@ import sys
 from datetime import date
 from pathlib import Path
 
+# Bootstrap for the lazy `from lib.…` imports below (ADR-045) — this tool is
+# invoked as a bare CLI with no PYTHONPATH set (conventions.md, 2026-07-19).
+_SCRIPTS_ROOT = Path(__file__).resolve().parents[1]
+if str(_SCRIPTS_ROOT) not in sys.path:
+    sys.path.insert(0, str(_SCRIPTS_ROOT))
+
 
 def get_next_adr_number(content: str) -> int:
     """Extract the highest ADR number and return next."""
@@ -46,9 +52,8 @@ def _truncate_title(text: str, max_len: int = 60) -> str:
 # write time; existing bloated entries are left alone (no retroactive rewrite).
 ADR_FIELD_MAX_CHARS = 500
 
-# Canonical ADR-spec folder for the long-form details that don't fit the 500
-# char per-field budget. ``spec_ref`` in a decision-drop points into this
-# folder. Aggregator renders the link verbatim and rebuilds INDEX.md.
+# Canonical ADR-spec folder for long-form details over budget; ``spec_ref``
+# in a decision-drop points here, and the aggregator renders + indexes it.
 ADR_SPEC_FOLDER = ".shipwright/planning/adr"
 ADR_SPEC_FOLDER_HINT = (
     f"{ADR_SPEC_FOLDER}/<NNN>-<slug>.md (flat, one file per ADR, "
@@ -57,12 +62,8 @@ ADR_SPEC_FOLDER_HINT = (
 
 
 class FieldLengthError(ValueError):
-    """Raised when an ADR field exceeds ``ADR_FIELD_MAX_CHARS`` at write time.
-
-    Iterate A.3 promotes the prior advisory warning to a hard reject for new
-    drops. The error message includes the spec-folder hint so the operator
-    knows where to move overflowed prose.
-    """
+    """Raised when an ADR field exceeds ``ADR_FIELD_MAX_CHARS`` at write time
+    (Iterate A.3 hard-reject); the message names the spec-folder hint."""
 
 # Header written when decision_log.md does not yet exist. Shared with
 # aggregate_decisions.py so the iterate decision-drop path and the direct
@@ -75,11 +76,8 @@ DECISION_LOG_HEADER = (
 
 
 def check_field_length(field_name: str, value: str, max_chars: int = ADR_FIELD_MAX_CHARS) -> str | None:
-    """Return a warning string if `value` exceeds the budget, else None.
-
-    Pure helper, no side effects. Used by `collect_length_warnings` to build
-    the full list of warnings and by tests to assert per-field behavior.
-    """
+    """Return a warning string if `value` exceeds the budget, else None. Pure
+    helper — used by `collect_length_warnings` and directly by tests."""
     if not value:
         return None
     if len(value) <= max_chars:
@@ -273,7 +271,6 @@ def append_decision(
     rejected: str = "",
     title: str = "",
     rationale: str = "",
-    status: str = "Accepted",  # kept for backwards compat, not used in compact format
     architecture_impact: str = "none",  # "component" | "data-flow" | "convention" | "none"
     entry_date: str | None = None,
     run_id: str = "",
@@ -312,6 +309,9 @@ def append_decision(
 
     log_path.write_text(content, encoding="utf-8")
 
+    from lib.decision_log_index import refresh_best_effort  # lazy import: ADR-045
+    warning = refresh_best_effort(project_root)
+    if warning: print(f"WARNING: {warning}", file=sys.stderr)
     # Append architecture/convention update if applicable
     if architecture_impact != "none":
         summary = title or _truncate_title(decision)
@@ -334,7 +334,6 @@ def main() -> None:
     parser.add_argument("--rejected", default="", help="Rejected alternatives")
     parser.add_argument("--title", default="", help="Short title for the ADR entry (default: truncated decision)")
     parser.add_argument("--rationale", default="", help="Rationale (if different from consequences)")
-    parser.add_argument("--status", default="Accepted", help="Status (kept for backwards compat)")
     parser.add_argument("--architecture-impact", default="none",
                         choices=["component", "data-flow", "convention", "none"],
                         help="If not 'none', appends update to architecture.md or conventions.md")
@@ -363,7 +362,6 @@ def main() -> None:
             rejected=args.rejected,
             title=args.title,
             rationale=args.rationale,
-            status=args.status,
             architecture_impact=args.architecture_impact,
             spec_ref=args.spec_ref,
         )
