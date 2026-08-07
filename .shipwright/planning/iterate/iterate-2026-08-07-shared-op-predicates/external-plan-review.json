@@ -1,0 +1,33 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "openrouter",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviews": {
+    "openai": {
+      "feedback": "1. **Category:** risk  \n   **Severity:** medium  \n   **Finding:** The proposed import swap is not fully behavior-preserving: `main_tree_guards` catches `OSError` from `run_git_soft`, while the current sweep-local predicates propagate it. This is a sensible fail-closed improvement, but it conflicts with the stated “mechanical”/behavior-preserving framing and acceptance criterion unless that criterion is explicitly understood to exclude an unrunnable Git executable. The claim that this is unreachable because earlier Git calls succeeded is not a complete guarantee: executable availability, permissions, or process-launch conditions can change between calls.  \n   **Suggestion:** Treat this as an explicit, narrowly scoped behavior change in the implementation record and commit description, rather than describing the extraction as pure/mechanical. More importantly, test the public `sweep_outbox_to_branch` outcome under `OSError`, not only the private predicate, so the promised structured skip result and reason are verified.\n\n2. **Category:** edge-case  \n   **Severity:** medium  \n   **Finding:** The new `OSError` coverage only exercises `_op_in_progress`. `_has_staged_changes` receives the same changed `OSError` behavior after delegation: it will now fail closed rather than raise. Its path can result in a different structured skip classification than the operation-in-progress path, so testing only the shared sentinel behavior through the first predicate does not cover the second changed sweep outcome.  \n   **Suggestion:** Add coverage for `mtg.run_git_soft` raising during the staged-change probe, ideally through `sweep_outbox_to_branch`, and assert that it returns the expected structured skip result without performing a commit. If direct predicate coverage is retained, add `so._has_staged_changes(repo) is True` as well, but prefer an API-level assertion for the observable contract.\n\n3. **Category:** risk  \n   **Severity:** low  \n   **Finding:** Renaming `main_tree_guards` parameters from `main_root` to `root` is unrelated to deduplicating the predicates and can break keyword callers outside the repository, even if all in-repo callers are positional. The import extraction does not require this API rename.  \n   **Suggestion:** Keep the existing parameter names for this iterate and update only prose/docstrings to clarify that the guarded tree may be a worktree. Perform a parameter rename separately only if the module’s caller boundary is known to be private or compatibility is intentionally managed.\n\n4. **Category:** dependency  \n   **Severity:** low  \n   **Finding:** The verification plan permits “full `shared/tests` root once more (or the scoped 27-file set).” Since `main_tree_guards` is already used by `reconcile_triage` and `triage_gc_publish`, this shared-leaf change can affect consumers outside sweep-specific tests. A curated scoped list is useful for iteration but is weaker as the final gate.  \n   **Suggestion:** Require the full `shared/tests` suite as the final verification gate. Keep the scoped snapshot and targeted tests for fast feedback, but do not make them an alternative to the full suite.\n\nOverall, delegation to `main_tree_guards` is the right simplification, and retaining the `is_detached` asymmetry is well justified. The plan needs to acknowledge and fully test the intentional `OSError` behavior change, while avoiding the unnecessary shared-function parameter rename.  \nSHIPWRIGHT_VERDICT: revise",
+      "via": "openrouter",
+      "status": "success"
+    },
+    "deepseek": {
+      "feedback": "**Findings**\n\n| # | Category | Severity | Finding | Suggestion |\n|---|----------|----------|---------|------------|\n| 1 | approach | medium | The plan bases the `main_root` → `root` rename on “grepped every call site; none pass it as a keyword”, but does **not** explicitly verify internal references inside `main_tree_guards.py`’s own function bodies (e.g. in `_probe`, `op_in_progress`, `has_staged_changes`). If a leftover `main_root` reference remains, the module will raise `NameError` on first invocation. | After the rename, search **all** occurrences of `main_root` in the repo (including within `main_tree_guards.py` itself). Confirm zero hits before committing. The plan already says “throughout” – this is a belt-and-suspenders check before code review. |\n| 2 | edge-case | low | The new `FileNotFoundError` test only covers `so._op_in_progress`. `_has_staged_changes` shares the same `_probe` path, so the risk is negligible, but nothing explicitly guards against someone later diverging the two predicates’ failure‑closed behavior. | Either add an analogous one‑line assert for `so._has_staged_changes(repo) is True` when `mtg.run_git_soft` raises `FileNotFoundError`, or note in the test docstring / commit message that `_probe` centralizes the `except OSError` branch and is already covered. Not a blocker. |\n\n**Overall assessment**\n\nThe approach is sound: a mechanical import swap that eliminates the duplicated predicates with a documented, tested behavior‑tightening instead of a silent change. The plan correctly scopes the work, preserves the `is_detached` asymmetry for good reasons, updates all affected tests, and adds new coverage for the latent contract‑violation fix. The only actionable concern is verifying the internal rename in `main_tree_guards.py` to avoid a `NameError` – a trivial grep that can be done before the final diff is merged.\n\nSHIPWRIGHT_VERDICT: approve",
+      "via": "openrouter",
+      "status": "success"
+    }
+  },
+  "verdicts": {
+    "openai": "revise",
+    "deepseek": "approve"
+  },
+  "statuses": {
+    "openai": "success",
+    "deepseek": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: deepseek=approve, openai=revise"
+  }
+}
