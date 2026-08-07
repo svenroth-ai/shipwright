@@ -1,0 +1,188 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-08-07-gate-policy-durable-read-parity",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-07T21:35:25.270590+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 4,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "The plan assumes that calling `lib.atomic_write.durable_read_text` preserves the exact decoding contract of the old `Path.read_text` call and of `config_io._read_parse_shape`, but does not specify the call signature. If the existing reader passes an explicit encoding/errors policy while the new call relies on `durable_read_text` defaults, this can silently reopen the already-closed BOM/decode parity issue.",
+          "suggestion": "Make the gate call use the same explicit arguments as `config_io`’s `durable_read_text` invocation, especially encoding. Run or retain an assertion covering UTF-8/BOM behavior through `read_run_config_mode`, rather than relying only on the pre-existing content-parity test indirectly.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The proposed tests need a deterministic retry-clock simulation, not merely a patched Windows predicate and a transient `PermissionError`. The exhausted-budget test can otherwise sleep for the real two-second budget, be timing-sensitive, or accidentally loop indefinitely if `monotonic()` and `sleep()` are patched inconsistently. This matters more because the two import paths load separate `atomic_write` module instances.",
+          "suggestion": "Patch the read primitive used by each module instance and use a controlled fake clock/sleep sequence that advances beyond the retry deadline. Assert both the successful transient path and the exhausted path’s final result (`INERT_MODE`), plus that retries actually occurred. Keep the patches scoped so modifying the shared stdlib `time` module does not affect unrelated test execution.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "gate_policy` will now import `lib.atomic_write` at runtime in every read path. The plan addresses an unresolved import by degrading to `INERT_MODE`, which is appropriate for the total/fail-safe boundary, but this could conceal an unintended packaging or invocation regression that previously would have been visible during deployment validation.",
+          "suggestion": "In addition to the fail-safe test for an import failure if one is retained, add/retain a normal invocation test for each supported production entry point (`resolve_gate_policy.py` and the shared-test import setup) that verifies the import resolves to the intended `shared/scripts/lib/atomic_write.py`. This should be a narrow smoke assertion, not a new abstraction or packaging change.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "The direct shared sibling import is the right architectural direction; routing shared code through `orchestrator_pkg` would invert the stated dependency boundary. However, the two distinct module loads remain a practical maintenance seam: a later change to one import path or its source resolution can make retry semantics diverge again without changing either reader’s local code.",
+          "suggestion": "Keep this small fix as proposed, but make the parity test assert the observable contract rather than implementation details: same simulated error sequence, same resulting resolved mode, and same exhausted-budget fallback. This provides regression coverage for the duplicate-load seam without expanding this change into the proposed extraction refactor.  Overall, the implementation direction is sound and appropriately minimal: use the established durable read primitive while retaining the existing conservative fallback. Tighten the explicit decoding contract and deterministic retry test mechanics before merging so the fix cannot regress the parity it is intended to establish. SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-08-07T21:48:54.491541+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "partial",
+      "raw_excerpt": "[deepseek] ## Review: gate_policy durable-read parity\n\n**Category** | **Severity** | **Finding** | **Suggestion**\n-------------|--------------|-------------|----------------\napproach | low | The plan replaces `.read_text(encoding=\"utf-8\")` with a call to `durable_read_text`, but does not confirm that the same explicit encoding is passed. If left to its default (often platform-dependent), the function could decode the file with the wrong encoding, producing spurious `INERT_MODE` on every invocation even when the file is perfectly readable. | Verify that the `durable_read_text` call includes `encoding=\"utf-8\"` (or explicitly defaults to the same). In the test, assert that the decoded string matches what the previous path produced for the same valid config.\nrisk | low | The grandfathered line limit is 300 but the file already sits at 301. The plan offsets one added line by deleting a comment, so 301 → 301. While this passes the bloat cap, any future incidental growth (white-space, comment, import reorder) that bumps the count to 302 would break the baseline. | Consider adding an acceptance-criterion comment in the test file or CI that this particular file is permitted 301 lines, so the maintainer won’t be surprised later. (This is a housekeeping note, not a blocker.)\nedge-case | low | The `import` of `durable_read_text` is inside the `try` block, and `ImportError` is caught. If the module `lib.atomic_write` is present but contains a syntax error → `SyntaxError` would bubble up uncought (outside the fail-safe). | The risk is negligible for a stable module already imported by `adr_index`. No action required, but worth a 1-line comment that “only ImportError is expected; SyntaxError would indicate a corrupted checkout and is acceptable to crash.”\ndependency | low | The two duplicate loads of `atomic_write` (plugin vs shared) are known and handled in the parity test by patching both `_is_windows` attributes. This is correct for the test but could become a trap if the mod […truncated]\n\n[openai] 1. **Category: dependency**  \n   **Severity: medium**  \n   **Finding:** The plan assumes that calling `lib.atomic_write.durable_read_text` preserves the exact decoding contract of the old `Path.read_text` call and of `config_io._read_parse_shape`, but does not specify the call signature. If the existing reader passes an explicit encoding/errors policy while the new call relies on `durable_read_text` defaults, this can silently reopen the already-closed BOM/decode parity issue.  \n   **Suggestion:** Make the gate call use the same explicit arguments as `config_io`’s `durable_read_text` invocation, especially encoding. Run or retain an assertion covering UTF-8/BOM behavior through `read_run_config_mode`, rather than relying only on the pre-existing content-parity test indirectly.\n\n2. **Category: edge-case**  \n   **Severity: medium**  \n   **Finding:** The proposed tests need a deterministic retry-clock simulation, not merely a patched Windows predicate and a transient `PermissionError`. The exhausted-budget test can otherwise sleep for the real two-second budget, be timing-sensitive, or accidentally loop indefinitely if `monotonic()` and `sleep()` are patched inconsistently. This matters more because the two import paths load separate `atomic_write` module instances.  \n   **Suggestion:** Patch the read primitive used by each module instance and use a controlled fake clock/sleep sequence that advances beyond the retry deadline. Assert both the successful transient path and the exhausted path’s final result (`INERT_MODE`), plus that retries actually occurred. Keep the patches scoped so modifying the shared stdlib `time` module does not affect unrelated test execution.\n\n3. **Category: risk**  \n   **Severity: low**  \n   **Finding:** `gate_policy` will now import `lib.atomic_write` at runtime in every read path. The plan addresses an unresolved import by degrading to `INERT_MODE`, which is appropriate for the total/fail-safe boundary, but this could conceal an u […truncated]",
+      "verdicts": {
+        "openai": "revise",
+        "deepseek": "approve"
+      }
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 2,
+      "findings": [
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/tests/test_atomic_write_windows_read_retry.py",
+          "line": 44,
+          "finding": "The os.name drift guard walked a hardcoded list of Windows-simulating test files and did not include the new shared/tests/test_gate_policy_read_retry.py, which patches aw._is_windows.",
+          "suggestion": "Add test_gate_policy_read_retry.py to the tuple. FIXED: added at line 47.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "shared/scripts/lib/gate_policy.py",
+          "line": 160,
+          "finding": "ImportError was added to the except tuple but the docstring, whose purpose is to justify every caught class, was silent about it.",
+          "suggestion": "Extend the existing docstring sentence in place (zero line cost) rather than adding a source comment. FIXED: docstring now says '...utf-8-sig (as does an unresolvable lib.atomic_write import)...'; file remains exactly 301 lines.",
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-08-07T21:59:14.160103+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 5,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "consistency",
+          "file": "shared/scripts/lib/gate_policy.py",
+          "line": 27,
+          "finding": "Claim under doubt: The lazy, try:-scoped `from lib.atomic_write import durable_read_text` plus adding `ImportError` to the except tuple (from the internal Opus fold-in) is a safe, zero-cost hardening of the read boundary. — It contradicts the 4 other shared/scripts/lib siblings (lib.adr_index, lib.gitattributes_selfheal, lib.gitignore_selfheal, lib.reconcile_rollback) that all import atomic_write at module level, loud on a broken install. It also contradicts resolve_gate_policy.py's own precedent of warning on stderr for an analogous degrade-safely case, and the documented consumer contract in shared/prompts/single-session-gate-discipline.md ('fail safe, not fail-blocking... behave interactively'). Silently catching ImportError trades the only diagnostic signal for a misreport indistinguishable from a legitimately mode-less config.",
+          "suggestion": "Revert to a module-level import matching the other 4 siblings; drop ImportError from the except tuple.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "shared/scripts/lib/gate_policy.py",
+          "line": 154,
+          "finding": "Claim under doubt: The docstring's 'LOCKSTEP with config_io._read_parse_shape' claim describes full parity between the two readers. — Parity holds only within the retry budget. Past READ_RETRY_BUDGET_SECONDS, config_io's strict reader still raises RunConfigUnreadable / re-raises the original OSError, while read_run_config_mode still degrades to INERT_MODE — a genuinely different verdict for a holder stuck past the window.",
+          "suggestion": "Qualify the docstring to 'within the retry budget' and document the post-budget divergence in config_io.py's Mode comment block.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "high",
+          "category": "correctness",
+          "file": "plugins/shipwright-run/scripts/lib/orchestrator_pkg/config_io.py",
+          "line": 194,
+          "finding": "Claim under doubt: config_io.py's Mode comment block correctly states that this module reads via lib.atomic_write.durable_read_text, reached because the module-level sys.path shared/scripts/lib gives it. — Both claims are factually wrong. run_config_store.py line 49 imports the top-level atomic_write module ('from atomic_write import durable_atomic_write, durable_read_text'), not lib.atomic_write. And the directory that yields lib.atomic_write as an importable name is shared/scripts (the PARENT of shared/scripts/lib), not shared/scripts/lib itself — shared/scripts/lib on sys.path is what gives the top-level atomic_write name this module actually uses.",
+          "suggestion": "Rewrite the comment to correctly attribute each reader's import path and each directory's role.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "completeness",
+          "file": "plugins/shipwright-run/scripts/lib/orchestrator_pkg/config_io.py",
+          "line": 199,
+          "finding": "Claim under doubt: The read-leg parity claim in config_io.py's Mode block is complete as stated. — It silently assumes mode is write-once (never mutated in place after create_config / an explicit mode change). If mode could change between a config write and either reader's poll, 'the two readers agree on a settled value' would not follow from 'the two readers use the same retry primitive' — the assumption is load-bearing and undocumented.",
+          "suggestion": "State the write-once assumption explicitly in the Mode comment block.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "test-validity",
+          "file": "plugins/shipwright-run/tests/test_runconfig_read_retry_parity.py",
+          "line": 64,
+          "finding": "Claim under doubt: test_the_two_readers_agree_under_the_identical_flaky_read correctly replays an identical race against both readers using two independently-constructed _flaky_read_text(flips=2) closures. — The second _flaky_read_text(flips=2) call captures `real_read_text = Path.read_text` AFTER the first call's flaky wrapper is already installed via monkeypatch.setattr — so its fallback path delegates into the FIRST flaky function, not the genuine original Path.read_text. The test passes today only because the first wrapper's accumulated counter state happens to let calls through, not because the construction is correct.",
+          "suggestion": "Capture Path.read_text once, at module import time, before either test can monkeypatch it, and have both flaky wrappers close over that single captured reference.",
+          "source": "doubt-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-08-07T22:17:06.266046+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": "openrouter",
+      "completed_at": "2026-08-07T22:19:52.230014+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "unstructured",
+      "raw_excerpt": "[deepseek] No defects found. The diff implements all acceptance criteria: `read_run_config_mode` now uses `durable_read_text` for retry parity, the cross-tree parity test validates lockstep under identical transient read failures, fail‑safe degradation past the budget is preserved, and the line‑count budget is maintained. The tests exercise both success and exhaustion paths correctly; no security or regression concerns.\n\nSHIPWRIGHT_VERDICT: approve\n\n[openai] No concrete defects found. The change routes `read_run_config_mode` through the same durable read primitive, preserves fail-safe degradation after retry exhaustion and existing content handling, and maintains the gate-policy line-count baseline. The added tests exercise successful transient-retry behavior, exhausted-budget inert behavior, and cross-tree reader parity.\n\nOverall assessment: ship-as-is.\n\nSHIPWRIGHT_VERDICT: approve",
+      "verdicts": {
+        "openai": "approve",
+        "deepseek": "approve"
+      }
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-07T21:59:14.041310+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    }
+  }
+}
