@@ -21,19 +21,26 @@ import scripts.tools.suite_timing as mod
 
 RUN = "iterate-2026-08-04-iterate-timing-attribution"
 
+# Attempt auto-numbering, per-unit f0_unit_result emission, and the
+# import-path landmine probe (test-phase-attribution) live in the sibling
+# test_run_test_suite_attempt_attribution.py, split out at the ~300-line
+# file-size guideline.
+
 
 def test_f0_queue_span_recorded_for_canonical_run_id(tmp_path):
-    mod.record_f0_queue_span(tmp_path, RUN, waited_seconds=1080.0, weight=22, capacity=22)
+    mod.record_f0_queue_span(tmp_path, RUN, waited_seconds=1080.0, weight=22, capacity=22,
+                             stage="cpu")
     raw = itn.read_raw_events(tmp_path, RUN)
     assert len(raw) == 1
     assert raw[0]["name"] == "f0_queue"
     assert raw[0]["duration_ms"] == 1080000
-    assert raw[0]["extra"] == {"weight": 22, "capacity": 22}
+    assert raw[0]["extra"] == {"weight": 22, "capacity": 22, "stage": "cpu"}
+    assert raw[0]["attempt"] == 1
 
 
 def test_f0_queue_span_skipped_for_non_canonical_run_id(tmp_path):
     mod.record_f0_queue_span(tmp_path, "f0-ad-hoc-probe", waited_seconds=5.0,
-                             weight=1, capacity=1)
+                             weight=1, capacity=1, stage="cpu")
     assert itn.read_raw_events(tmp_path, "f0-ad-hoc-probe") == []
 
 
@@ -43,20 +50,22 @@ def test_f0_queue_span_skipped_for_a_run_id_that_only_LOOKS_canonical(tmp_path):
     same regex ``iterate_timing.py``'s own CLI enforces) is what must gate
     this, not a loose prefix."""
     mod.record_f0_queue_span(tmp_path, "iterate-not-canonical", waited_seconds=5.0,
-                             weight=1, capacity=1)
+                             weight=1, capacity=1, stage="cpu")
     assert itn.read_raw_events(tmp_path, "iterate-not-canonical") == []
 
 
 def test_f0_queue_span_skipped_when_no_wait_occurred(tmp_path):
     """Zero wait is not a span worth recording — avoids a flood of 0ms entries
     on every F0 run where nothing was ever queued."""
-    mod.record_f0_queue_span(tmp_path, RUN, waited_seconds=0.0, weight=1, capacity=1)
+    mod.record_f0_queue_span(tmp_path, RUN, waited_seconds=0.0, weight=1, capacity=1,
+                             stage="cpu")
     assert itn.read_raw_events(tmp_path, RUN) == []
 
 
 def test_f0_queue_span_never_raises_on_bad_project_root():
     """Best-effort: an unwritable/invalid root must not fail F0 itself."""
-    mod.record_f0_queue_span(Path("\0invalid"), RUN, waited_seconds=5.0, weight=1, capacity=1)
+    mod.record_f0_queue_span(Path("\0invalid"), RUN, waited_seconds=5.0, weight=1, capacity=1,
+                             stage="cpu")
 
 
 def test_canonical_f0_active_span_recorded_from_the_real_result_shape(tmp_path):

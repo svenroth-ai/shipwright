@@ -61,6 +61,7 @@ _RUNNER_FILES = (
     "scripts/lib/host_resource_lease.py",
     "scripts/lib/iterate_entry.py",
     "scripts/lib/iterate_timings.py",
+    "scripts/lib/iterate_timings_catalog.py",
     "scripts/lib/iterate_timings_extra.py",
     "scripts/lib/main_health_diagnosis.py",
     "scripts/lib/repo_root.py",

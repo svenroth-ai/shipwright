@@ -1,0 +1,128 @@
+{
+  "run_id": "iterate-2026-08-07-test-phase-attribution",
+  "date": "2026-08-07T11:37:21.851551Z",
+  "event_at": "2026-08-07T10:51:49.259786+00:00",
+  "type": "change",
+  "complexity": "medium",
+  "prior_source": "history",
+  "branch": "iterate/test-phase-attribution",
+  "spec": ".shipwright/planning/iterate/iterate-2026-08-07-test-phase-attribution.md",
+  "tests_passed": true,
+  "adr": "iterate-2026-08-07-test-phase-attribution",
+  "test_completeness": {
+    "status": "complete",
+    "behaviors": [
+      {
+        "behavior": "AC1 f0_queue/canonical_f0_active/f0_unit_result emit into a REAL run's iterate_timings",
+        "disposition": "tested",
+        "evidence": "this run's own F0 (18/18 units PASS, exit 0): the sidecar carries f0_queue x2 (both with the new extra.stage - warmup and cpu), canonical_f0_active x1, and f0_unit_result x18 attached under it"
+      },
+      {
+        "behavior": "AC2 attempt resolves to N+1 from a synthetic sidecar holding N prior entries",
+        "disposition": "tested",
+        "evidence": "test_run_test_suite_attempt_attribution.py::test_attempt_resolves_to_n_plus_1_from_a_synthetic_sidecar PASSED"
+      },
+      {
+        "behavior": "AC3 each UnitResult of a normally-returned run_suite call becomes an f0_unit_result span carrying unit/conclusion (and retry_shape when set), attached under its canonical_f0_active parent, with its OWN started_utc",
+        "disposition": "tested",
+        "evidence": "test_normal_return_emits_one_span_per_unit_under_the_parent PASSED (writes real spans and reads them back through the actual normalize_iterate_timings fold, rejected == []); live F0 shows 11 distinct start_utc across 18 unit spans, where a shared anchor would show 1",
+        "category": "integration"
+      },
+      {
+        "behavior": "AC4 the runner-fault (_failed) path emits no f0_unit_result span and never raises into F0",
+        "disposition": "tested",
+        "evidence": "test_failed_run_never_emits_unit_results PASSED"
+      },
+      {
+        "behavior": "AC5 the new SPAN_PARENTS/EXTRA_FIELD_TYPES entries are reflected in all three doc locations in the same diff",
+        "disposition": "tested",
+        "evidence": "iterate-timings.md span table, docs/hooks-and-pipeline.md copy, and the catalog's own header comment all show 15 nested spans in this diff. The count travelled with SPAN_PARENTS into iterate_timings_catalog.py during the post-cascade bloat split, so it is now colocated with the registry it describes"
+      },
+      {
+        "behavior": "AC6 no existing iterate_timings test regresses",
+        "disposition": "tested",
+        "evidence": "F0 GREEN across all 18 discovered suite units, including shared/tests and shared/scripts/tools/tests"
+      },
+      {
+        "behavior": "AC7 an orphaned cpu-stage f0_queue at attempt N advances to N+1 rather than colliding with N",
+        "disposition": "tested",
+        "evidence": "test_orphaned_cpu_f0_queue_with_no_canonical_still_advances PASSED"
+      },
+      {
+        "behavior": "AC8 an orphaned warmup-only f0_queue at attempt N advances to N+1 rather than colliding with N",
+        "disposition": "tested",
+        "evidence": "test_orphaned_warmup_only_f0_queue_still_advances PASSED"
+      },
+      {
+        "behavior": "AC9 suite_timing.py imports and runs with ONLY shared/ on sys.path, in a genuinely fresh subprocess",
+        "disposition": "tested",
+        "evidence": "test_suite_timing_imports_cleanly_with_only_shared_on_sys_path PASSED (real python -c subprocess, PYTHONPATH stripped, cwd outside the repo import graph)"
+      },
+      {
+        "behavior": "AC10 run_test_suite.py stays at or under its baselined 518 lines",
+        "disposition": "tested",
+        "evidence": "measured 518 lines; shared/scripts/hooks/anti_ratchet_check.py exits 0 against the staged tree with no baseline bump"
+      },
+      {
+        "behavior": "AC11 record_producer_span_counted serializes attempt numbering across real OS processes",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_iterate_timings.py::test_record_producer_span_counted_serializes_across_real_OS_processes PASSED (real subprocesses, with a deliberate delay inside count_prior so the proof is not scheduling-lucky)"
+      },
+      {
+        "behavior": "AC12 a legacy f0_queue entry with no stage key is read without error and counted as cpu",
+        "disposition": "tested",
+        "evidence": "test_legacy_f0_queue_with_no_stage_key_counts_as_cpu PASSED"
+      },
+      {
+        "behavior": "AC13 an over-length unit id degrades only that one span while sibling units still emit",
+        "disposition": "tested",
+        "evidence": "test_overlength_unit_id_degrades_only_that_span PASSED"
+      },
+      {
+        "behavior": "same-process calls share one resolved attempt via the process-local cache",
+        "disposition": "tested",
+        "evidence": "test_same_process_calls_share_one_resolved_attempt PASSED"
+      },
+      {
+        "behavior": "a unit interval can never invert: end_utc is clamped to parent_end, seconds floored at 0, and start_utc clamped too",
+        "disposition": "tested",
+        "evidence": "test_unit_end_utc_is_clamped_to_the_parent_and_never_negative and test_unit_started_after_parent_end_never_inverts_the_interval PASSED"
+      },
+      {
+        "behavior": "a corrupt sidecar line (non-dict extra, non-iterable results) degrades instead of raising inside the resolver lock",
+        "disposition": "tested",
+        "evidence": "test_a_truthy_non_dict_extra_counts_as_cpu_without_raising and test_a_truthy_non_iterable_results_field_degrades_instead_of_raising PASSED"
+      },
+      {
+        "behavior": "a serially-retried unit records the RETRY's own wall-clock and is marked retried even when the retry also fails (doubt-review fix to the pre-existing loop)",
+        "disposition": "tested",
+        "evidence": "test_run_test_suite.py::test_red_in_parallel_but_green_serially_is_a_RACE_not_a_stop and ::test_red_in_parallel_and_red_serially_fails_the_gate now both assert retry_kind == RETRY_SERIAL and seconds == 0.02"
+      },
+      {
+        "behavior": "post-cascade bloat split: SPAN_PARENTS/EXTRA_FIELD_TYPES extracted to iterate_timings_catalog.py with re-exports from iterate_timings.py, and two 300+ test files trimmed - behaviour-preserving, no importer changed",
+        "disposition": "tested",
+        "evidence": "full F0 re-run against the final byte state (all 18 suite units GREEN, diff-coverage gate PASS) - the prior F0 verdict was discarded when the source changed; plus a dedicated code-reviewer pass over the split diff alone (zero findings, all 11 importer call sites covered by the re-exports, no circular import) and ruff clean"
+      }
+    ],
+    "counts": {
+      "testable": 18,
+      "tested": 18,
+      "untestable": 0,
+      "untested_testable": 0
+    },
+    "enumeration_basis": {
+      "acs": 13,
+      "covered_acs": 13
+    }
+  },
+  "surface_verification": {
+    "surface": "cli",
+    "runner": "uv run shared/scripts/tools/suite_host_resources.py --probe --project-root . --run-id iterate-2026-08-07-test-phase-attribution",
+    "exit_code": 0,
+    "tests_run": 1,
+    "evidence_path": "C:\\01_Development\\shipwright\\.worktrees\\test-phase-attribution\\.shipwright\\runs\\iterate-2026-08-07-test-phase-attribution\\surface_verification.log",
+    "timestamp": "2026-08-07T11:36:50.038Z",
+    "attempts": 1
+  },
+  "declared_removals": []
+}

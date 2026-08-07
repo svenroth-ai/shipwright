@@ -11,7 +11,11 @@ so the calling session marks it as the boundary is crossed).
 
 Read-side (normalization + the ``work_completed.iterate_timings`` fold) lives
 in the sibling ``iterate_timings_normalize.py`` — this file is the write path
-only, kept under the file-size guideline.
+only, kept under the file-size guideline. That includes the counted-
+resolution variant (:func:`record_producer_span_counted`): its tolerant
+sidecar read exists only to resolve ``attempt`` atomically alongside the
+write it performs in the same locked critical section, never to normalize
+or fold data for a reader.
 
 Boundary (touches_io_boundary):
     Producer: either a Shipwright script self-instrumenting via
@@ -28,6 +32,7 @@ from __future__ import annotations
 import json
 import sys
 import time
+from collections.abc import Callable
 from contextlib import contextmanager
 from datetime import datetime, timezone
 from pathlib import Path
@@ -50,57 +55,18 @@ from iterate_timings_extra import (  # noqa: E402, F401
     IterateTimingError,
     validate_extra,
 )
-
-# ---------------------------------------------------------------------------
-# Catalog (SSoT) — 7 top-level groups + 14 nested spans named in the card.
-# ---------------------------------------------------------------------------
-
-TOP_LEVEL_SPANS: tuple[str, ...] = (
-    "discovery_diagnosis", "planning", "implementation", "verification",
-    "review", "finalization", "delivery",
+# Catalog (span-name SSoT) + name/parent validation split out at the same
+# ~300-line guideline (test-phase-attribution) — re-exported below for
+# existing callers exactly like the iterate_timings_extra import above.
+from iterate_timings_catalog import (  # noqa: E402, F401
+    FOLD_TIME_CAPTURABLE_SPANS,
+    OUTCOMES,
+    SOURCES,
+    SPAN_NAMES,
+    SPAN_PARENTS,
+    TOP_LEVEL_SPANS,
+    validate_name_parent,
 )
-
-# F5b (finalize_iterate.py) folds the durable event BEFORE F6 commits and
-# BEFORE F11 pushes/delivers — the SKILL places "end finalization" at F11
-# entry and "delivery" only self-records from the real F11 CLI invocation, so
-# neither can EVER be closed (or, for delivery, exist at all) when the fold
-# runs, in every run, structurally — not an occasional gap (doubt review).
-# Coverage/degraded is measured against this achievable subset so a genuinely
-# complete pre-fold run reads as complete, not permanently "degraded";
-# finalization/delivery are still shown per-run, just not penalized for an
-# incompleteness the architecture guarantees. See iterate-timings.md.
-FOLD_TIME_CAPTURABLE_SPANS: tuple[str, ...] = (
-    "discovery_diagnosis", "planning", "implementation", "verification", "review",
-)
-
-# name -> frozenset of valid parent names. Top-level spans parent to ``None``.
-SPAN_PARENTS: dict[str, frozenset] = {
-    "discovery_diagnosis": frozenset({None}),
-    "planning": frozenset({None}),
-    "implementation": frozenset({None}),
-    "verification": frozenset({None}),
-    "review": frozenset({None}),
-    "finalization": frozenset({None}),
-    "delivery": frozenset({None}),
-    "focused_tests": frozenset({"implementation"}),
-    "pre_f0_validation": frozenset({"verification"}),
-    "f0_queue": frozenset({"verification"}),
-    "canonical_f0_active": frozenset({"verification"}),
-    "self_review": frozenset({"review"}),
-    "spec_review": frozenset({"review"}),
-    "code_review": frozenset({"review"}),
-    "doubt_review": frozenset({"review"}),
-    "external_review": frozenset({"planning", "review"}),
-    "reviewer_wait": frozenset({"planning", "review"}),
-    "remediation": frozenset({"review"}),
-    "delivery_wait": frozenset({"delivery"}),
-    "ci_wait": frozenset({"delivery", "delivery_wait"}),
-    "post_ci_remediation": frozenset({"delivery"}),
-}
-SPAN_NAMES: frozenset = frozenset(SPAN_PARENTS)
-
-SOURCES: frozenset = frozenset({"producer", "agent", "derived"})
-OUTCOMES: frozenset = frozenset({"completed", "incomplete", "cancelled", "unavailable"})
 
 
 def sidecar_path(project_root, run_id: str) -> Path:
@@ -121,6 +87,15 @@ def _now_iso() -> str:
     return datetime.now(timezone.utc).isoformat()
 
 
+def _write_line_unlocked(path: Path, obj: dict) -> None:
+    """The raw append, with no locking of its own — callers hold the lock
+    for the region this sits inside (either just this write, via
+    :func:`_append_line`, or a read-then-write region, via
+    :func:`record_producer_span_counted`)."""
+    with path.open("a", encoding="utf-8") as fh:
+        fh.write(json.dumps(obj, ensure_ascii=False, sort_keys=True) + "\n")
+
+
 def _append_line(project_root, run_id: str, obj: dict) -> Path:
     """Append one line under the run's lock — the same serialization
     ``record_event.py``/``triage.py`` use for their own JSONL append-logs.
@@ -130,17 +105,21 @@ def _append_line(project_root, run_id: str, obj: dict) -> Path:
     path = sidecar_path(project_root, run_id)
     path.parent.mkdir(parents=True, exist_ok=True)
     with FileLock(path.with_name(path.name + ".lock")):
-        with path.open("a", encoding="utf-8") as fh:
-            fh.write(json.dumps(obj, ensure_ascii=False, sort_keys=True) + "\n")
+        _write_line_unlocked(path, obj)
     return path
 
 
-def validate_name_parent(name: str, parent: str | None) -> None:
-    if name not in SPAN_NAMES:
-        raise IterateTimingError(f"unknown span name {name!r}")
-    if parent not in SPAN_PARENTS[name]:
-        allowed = ", ".join(str(p) for p in sorted(SPAN_PARENTS[name], key=lambda p: p or ""))
-        raise IterateTimingError(f"span {name!r} does not accept parent {parent!r} (allowed: {allowed})")
+def _span_obj(*, name: str, parent: str | None, attempt: int, source: str, outcome: str,
+              start_utc: str, end_utc: str | None, duration_ms: int | None,
+              extra: dict) -> dict:
+    """The one span-shaped dict both span writers below produce — kept in one
+    place so the two write paths (locked-then-append vs. locked-read-then-
+    append) cannot drift on the object they write (external code review)."""
+    return {
+        "event": "span", "name": name, "parent": parent, "attempt": int(attempt),
+        "source": source, "outcome": outcome, "start_utc": start_utc,
+        "end_utc": end_utc, "duration_ms": duration_ms, "extra": extra,
+    }
 
 
 # ---------------------------------------------------------------------------
@@ -182,11 +161,76 @@ def record_producer_span(project_root, run_id: str, *, name: str, parent: str | 
     if source not in SOURCES:
         raise IterateTimingError(f"unknown source {source!r}")
     clean_extra = validate_extra(extra)
-    return _append_line(project_root, run_id, {
-        "event": "span", "name": name, "parent": parent, "attempt": int(attempt),
-        "source": source, "outcome": outcome, "start_utc": start_utc,
-        "end_utc": end_utc, "duration_ms": duration_ms, "extra": clean_extra,
-    })
+    obj = _span_obj(name=name, parent=parent, attempt=attempt, source=source, outcome=outcome,
+                    start_utc=start_utc, end_utc=end_utc, duration_ms=duration_ms,
+                    extra=clean_extra)
+    return _append_line(project_root, run_id, obj)
+
+
+def _tolerant_read_lines(path: Path) -> list[dict]:
+    """Minimal JSONL parse for this run's own sidecar. Missing file -> ``[]``,
+    a malformed line is skipped, never raised — the counted resolver below
+    must never fail a first-ever invocation (no sidecar yet) or a run with
+    one bad line ahead of it. A deliberate, small duplication of
+    ``iterate_timings_normalize.read_raw_events``'s tolerant-read shape
+    rather than an import of it: that module imports THIS one, so importing
+    back would cycle."""
+    if not path.exists():
+        return []
+    out: list[dict] = []
+    for line in path.read_text(encoding="utf-8").splitlines():
+        line = line.strip()
+        if not line:
+            continue
+        try:
+            obj = json.loads(line)
+        except (ValueError, TypeError):
+            continue
+        if isinstance(obj, dict):
+            out.append(obj)
+    return out
+
+
+def record_producer_span_counted(project_root, run_id: str, *, name: str, parent: str | None,
+                                  start_utc: str, end_utc: str | None, duration_ms: int | None,
+                                  outcome: str = "completed", source: str = "producer",
+                                  extra: dict | None = None,
+                                  count_prior: Callable[[list[dict]], int]) -> tuple[Path, int]:
+    """Resolve ``attempt`` from ``count_prior`` and append this span, atomically.
+
+    A caller-side "count, then call :func:`record_producer_span`" is NOT
+    atomic across two OS processes: that function acquires and releases its
+    own lock internally, so the count and the write are two separate
+    critical sections with a gap between them a concurrent process can land
+    in. This function closes that gap by doing both under ONE lock
+    acquisition: a tolerant read of this run's existing sidecar entries,
+    ``attempt = count_prior(entries) + 1``, then the validated append —
+    mirroring :func:`record_producer_span`'s own validation exactly, just
+    with the attempt resolved from inside the lock instead of passed in.
+    ``count_prior`` is the caller's own policy (e.g. "the max of several
+    per-stage counts") — this function stays span-shape-agnostic, matching
+    the rest of this module. Returns ``(path, attempt)`` only once the
+    append has durably succeeded; on any failure (bad extra, count_prior
+    raising, disk error) nothing is written and the exception propagates —
+    callers that must never break their own process wrap this the same way
+    every other call in this module is already wrapped at its call sites.
+    """
+    validate_name_parent(name, parent)
+    if outcome not in OUTCOMES:
+        raise IterateTimingError(f"unknown outcome {outcome!r}")
+    if source not in SOURCES:
+        raise IterateTimingError(f"unknown source {source!r}")
+    clean_extra = validate_extra(extra)
+    path = sidecar_path(project_root, run_id)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with FileLock(path.with_name(path.name + ".lock")):
+        prior_entries = _tolerant_read_lines(path)
+        attempt = int(count_prior(prior_entries)) + 1
+        obj = _span_obj(name=name, parent=parent, attempt=attempt, source=source,
+                        outcome=outcome, start_utc=start_utc, end_utc=end_utc,
+                        duration_ms=duration_ms, extra=clean_extra)
+        _write_line_unlocked(path, obj)
+    return path, attempt
 
 
 @contextmanager

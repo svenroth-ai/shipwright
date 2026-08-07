@@ -1,12 +1,10 @@
 """F0 suite runner — command construction, exit-code classes, the safety net.
 
-Covers AC1/AC3/AC4/AC5/AC11/AC12/AC13 (iterate-2026-07-14-f0-parallel-suite). The
-load-bearing behaviours: a unit red in parallel but green when re-run serially must NOT
-stop the gate (no false STOP); a DETERMINISTIC infrastructure fault reproduces on its
-retry and still stops it; and an infra retry never strips xdist — that would green a
-suite that never ran the fan-out its config demands. Discovery + the config boundary
-live in `test_suite_units.py`; process/fault behaviour in `test_run_test_suite_faults.py`;
-console-encoding safety in `test_run_test_suite_console.py`.
+Covers AC1/AC3/AC4/AC5/AC11/AC12/AC13 (iterate-2026-07-14-f0-parallel-suite). Load-bearing:
+a unit red in parallel but green serially must not false-STOP; a deterministic infra fault
+reproduces on retry and still stops the gate; an infra retry never strips xdist (would
+green a suite that skipped its configured fan-out). Discovery/config: `test_suite_units.py`;
+faults: `test_run_test_suite_faults.py`; console-encoding: `test_run_test_suite_console.py`.
 """
 
 from __future__ import annotations
@@ -84,11 +82,10 @@ def test_command_is_argv_never_a_shell_string(tmp_path):
 
 # --- AC1/AC2: every uv invocation names the interpreter CI judges the push with ---
 def test_every_unit_runs_the_interpreter_ci_pins(tmp_path):
-    """Without this, uv resolves per-DIRECTORY from ambient state.
-
-    Measured before the fix: the 14 plugin units built 3.13.13/3.12.13 while CI ran
-    3.11.15 — F0 green, CI red, every parity guard passing. A plugin dir is its own uv
-    project, so a root `.python-version` does NOT reach it; only the argv does.
+    """Without this, uv resolves per-DIRECTORY from ambient state. Measured before the
+    fix: the 14 plugin units built 3.13.13/3.12.13 while CI ran 3.11.15 — F0 green, CI
+    red, every parity guard passing. A plugin dir is its own uv project, so a root
+    `.python-version` does NOT reach it; only the argv does.
     """
     units = discover_units(_project(tmp_path, plugins=("shipwright-alpha", "shipwright-beta")))
     # Load-bearing, not decoration: without it the loop below passes vacuously on an
@@ -214,6 +211,10 @@ def test_red_in_parallel_but_green_serially_is_a_RACE_not_a_stop(tmp_path, monke
     assert result.exit_code == 0, "a race must never produce a false STOP"
     race = next(r for r in result.results if r.unit_id == "shared/tests")
     assert race.race is True and race.outcome == PASS
+    # doubt review: the retry's own wall-clock must be visible on the unit,
+    # not only the discarded first (failed) attempt's.
+    assert race.retry_kind == mod.RETRY_SERIAL
+    assert race.seconds == pytest.approx(0.02)
     # the re-verify ran WITHOUT xdist — that is what makes it authoritative
     assert any(c[:2] == ("shared/tests", None) for c in calls)
     # ...and in a CLEAN temp root: the authoritative verdict must not inherit the
@@ -231,6 +232,11 @@ def test_red_in_parallel_and_red_serially_fails_the_gate(tmp_path, monkeypatch):
     assert result.exit_code == 1
     bad = next(r for r in result.results if r.unit_id == "shared/tests")
     assert bad.outcome == TEST_FAILURE and bad.race is False
+    # doubt review: a unit that failed its retry TOO previously left no
+    # trace of having been retried at all (retry_kind was only set on the
+    # success branch) - it must still show up as retried.
+    assert bad.retry_kind == mod.RETRY_SERIAL
+    assert bad.seconds == pytest.approx(0.02)
 
 
 @pytest.mark.parametrize("fault_rc", [2, 3, 4, 5])

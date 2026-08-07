@@ -20,7 +20,7 @@ from scripts.lib.host_resource_lease import (
 from scripts.tools.suite_units import SuiteConfig
 
 __all__ = [
-    "HostLeaseError", "f0_cpu_lease", "hardware_cpu_budget",
+    "HostLeaseError", "cpu_budget", "f0_cpu_lease", "hardware_cpu_budget",
     "lease_cpu_weight", "normalize_cpu_weight", "uv_warmup_lease",
 ]
 
@@ -42,6 +42,12 @@ def normalize_cpu_weight(requested: int | None) -> int:
 def lease_cpu_weight(config: SuiteConfig) -> int:
     """Normalize every F0 request so it can fit within the host capacity."""
     return normalize_cpu_weight(config.max_workers)
+
+
+def cpu_budget(config: SuiteConfig | None) -> int:
+    """Same normalization, tolerant of a missing config (relocated from
+    run_test_suite.py — ADR-123's extraction pattern, this file's own)."""
+    return normalize_cpu_weight(config.max_workers if config is not None else None)
 
 
 def _owner(root: Path) -> str:

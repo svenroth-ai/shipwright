@@ -3385,7 +3385,7 @@ WebUI Iterate-Rail renders it. Origin: iterate-2026-07-11-iterate-phase-timing.
 separate, richer sibling of the per-phase durations above — `phase_timings`
 is 5 flat groups; this is a **tree** of 7 top-level groups
 (`discovery_diagnosis planning implementation verification review
-finalization delivery`) plus 14 nested spans, spanning the full lifecycle
+finalization delivery`) plus 15 nested spans, spanning the full lifecycle
 through finalization/review/CI/delivery, not just Build. Catalog + SSoT:
 `shared/scripts/lib/iterate_timings.py::SPAN_PARENTS`. Full producer/agent
 split and per-span table: `plugins/shipwright-iterate/skills/iterate/references/iterate-timings.md`.
@@ -3394,8 +3394,12 @@ split and per-span table: `plugins/shipwright-iterate/skills/iterate/references/
   `shared/scripts/checks/check_iterate_isolation.py` (F0 leak-guard, `--stage
   f0` only) records `pre_f0_validation`. `shared/scripts/tools/run_test_suite.py`
   records `f0_queue` (persists `host_resource_lease.LeaseGrant.waited_seconds`,
-  previously computed and discarded) and `canonical_f0_active`
-  (`SuiteResult.duration`). `shared/scripts/tools/external_review.py` records
+  previously computed and discarded, tagged `extra.stage` `warmup`/`cpu` so a
+  process killed mid-wait can still be attempt-counted) and
+  `canonical_f0_active` (`SuiteResult.duration`), which itself folds in one
+  `f0_unit_result` child per pytest unit on the normal-return path
+  (`extra.unit`/`extra.conclusion`/`extra.retry_shape`) — origin:
+  iterate-2026-08-07-test-phase-attribution. `shared/scripts/tools/external_review.py` records
   `external_review` when invoked with `--run-id` (additive; the flag is
   optional so every existing non-iterate caller is unaffected).
   `shared/scripts/tools/deliver_pr.py::deliver()` records `delivery_wait`

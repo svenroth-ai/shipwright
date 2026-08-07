@@ -11,6 +11,7 @@ import io
 import sys
 import threading
 import time
+from datetime import datetime, timezone
 from pathlib import Path
 
 import pytest
@@ -65,6 +66,32 @@ def test_unit_lifecycle_is_bounded_ascii_and_ordered(tmp_path, monkeypatch):
         assert "event=queued" in own[0]
         assert any("event=start" in line for line in own[1:])
         assert "event=complete" in own[-1]
+
+
+def test_unit_results_carry_a_real_started_utc_from_the_actual_dispatch(tmp_path, monkeypatch):
+    """External code review (plan review round 4): every other test of
+    UnitResult.started_utc hand-builds the fixture — this is the one place
+    that goes through the real _one()/budget.acquire() path, proving the
+    field is actually wired, not just consumed correctly downstream. Checks
+    validity, not distinctness (a coarse clock CAN legitimately produce
+    equal reads for fast/parallel units — the review's own flakiness
+    warning) — plausibility (inside a bounded window around the call) is
+    what's testable without a controlled clock."""
+    root = _project(tmp_path)
+
+    def _exec(unit, *_args, **_kwargs):
+        return 0, "pass", .01, True, False, False
+
+    monkeypatch.setattr(mod, "_exec", _exec)
+    before = datetime.now(timezone.utc)
+    result = mod.run_suite(root, SuiteConfig(max_workers=2), budget_total=2,
+                           preflight=False, run_id="run-timestamps")
+    after = datetime.now(timezone.utc)
+    units = discover_units(root)
+    assert len(result.results) == len(units)
+    for unit_result in result.results:
+        started = datetime.fromisoformat(unit_result.started_utc)
+        assert before <= started <= after
 
 
 def test_parallel_runner_ignores_a_closed_heartbeat_stream(tmp_path):
