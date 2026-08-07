@@ -195,9 +195,9 @@
       "findings_count": 0,
       "findings": [],
       "provider": null,
-      "completed_at": "2026-08-07T10:03:16.099024+00:00",
-      "disposition": "none",
-      "recorded_by": "spec-reviewer:PASS-after-3-fixes-see-iterate-spec-ledger",
+      "completed_at": "2026-08-07T11:53:44.384306+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
       "parse_status": null,
       "raw_excerpt": null
     }
