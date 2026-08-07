@@ -60,12 +60,6 @@ MODEL_CONTEXT_WINDOWS = {
 
 _VALID_EFFORT_LEVELS = {"low", "medium", "high", "xhigh", "max"}
 
-_SETTINGS_LOCATIONS = (
-    "user",
-    "shared-project",
-    "local-project",
-)
-
 
 def _read_json_defensively(path: Path) -> dict:
     if not path.exists():
