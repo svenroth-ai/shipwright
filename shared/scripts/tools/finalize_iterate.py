@@ -37,6 +37,7 @@ from lib.fr_classification import normalize_fr_impact as _normalize_fr_impact  #
 from lib.iterate_phase_groups import fold_into_event as _fold_phase_timings  # noqa: E402
 from lib.iterate_tests_block import fold_into_event as _fold_tests_block  # noqa: E402
 from lib.iterate_timings_normalize import fold_into_event as _fold_iterate_timings  # noqa: E402
+from tools.context_cost_summary import read_and_fold_into_event as _fold_context_cost  # noqa: E402
 
 
 class FinalizeGateError(RuntimeError):
@@ -284,9 +285,8 @@ def _record_event(
         if session and "session" not in event:
             event["session"] = session
 
-        # Iterate-Rail per-phase durations (M-Pre-1, trg-8efeb3d7) — additive fold
-        # of the boundary-mark sidecar into ``phase_timings`` (best-effort).
-        _fold_phase_timings(event, project_root, run_id)
+        _fold_phase_timings(event, project_root, run_id)  # boundary-mark durations, additive/best-effort
+        _fold_context_cost(event, project_root, session)  # per-Stop cost (context_cost_core.py), additive/best-effort
 
         # Hierarchical lifecycle spans — separate sidecar, additive fold.
         _fold_iterate_timings(event, project_root, run_id)

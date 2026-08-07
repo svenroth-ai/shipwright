@@ -78,6 +78,10 @@
           {
             "type": "command",
             "command": "uv run \"${CLAUDE_PLUGIN_ROOT}/../../shared/scripts/hooks/plugin_sync_reminder_on_stop.py\""
+          },
+          {
+            "type": "command",
+            "command": "uv run \"${CLAUDE_PLUGIN_ROOT}/../../shared/scripts/hooks/track_context_cost.py\""
           }
         ]
       }

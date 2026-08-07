@@ -34,7 +34,11 @@ from ._constants import PLUGIN_TO_PHASE  # noqa: E402
 from lib.project_root import is_shipwright_project  # noqa: E402
 from lib.events_log import resolve_events_path  # noqa: E402
 # Re-export: run-id resolution moved to its own module, callers unchanged.
-from ._run_id import resolve_run_id  # noqa: E402,F401
+# pointer_run_id re-exported alongside it (context-cost-meter, doubt-review
+# finding): it is the one source scoped to "which run IS this session
+# executing" -- the other resolve_run_id fallbacks (run_config, events.jsonl)
+# are project-global and can outlive the run that minted them.
+from ._run_id import pointer_run_id, resolve_run_id  # noqa: E402,F401
 # Engagement predicate lives in _engagement, which imports nothing from this
 # package — so the edge is one-way and acyclic — and keeps resolve_engaged_phases
 # next to the other session-state resolvers.
@@ -240,6 +244,7 @@ __all__ = [
     "cwd_is_strict_ancestor_of",
     "is_shipwright_project",
     "phase_from_plugin_root",
+    "pointer_run_id",
     "project_root_was_explicitly_selected",
     "resolve_engaged_phases",
     "resolve_run_id",

@@ -2132,12 +2132,20 @@ its result. The only session-lifecycle hook left in this area is:
 | `check_drift.py` | SessionStart | CLAUDE.md vs filesystem drift (Structure block, package.json scripts) |
 | `check_artifact_drift.py` | SessionStart | Cross-artifact drift detection (configs, planning, .shipwright/agent_docs) |
 | `track_tool_calls.py` | PostToolUse | Counts tool calls for context-pressure detection |
+| `track_context_cost.py` | Stop | Recomputes the session's real, priced API cost from the transcript (dedup by `requestId`, priced per token type) and writes `.shipwright/compliance/context-cost/<session_id>.json` — additive alongside `track_tool_calls.py` above, not a replacement |
 | `audit_phase_quality_on_stop.py` | Stop | Runs the 36-check Phase-Quality audit (see Section 9 below) |
 | `generate_handoff_on_stop.py` | Stop | Writes the **gitignored runtime mirror** `.shipwright/agent_docs/runtime/session_handoff.md`; iterate-finalize is the sole producer of the tracked `session_handoff.md` |
 | `suggest_iterate.py` | UserPromptSubmit | Multilingual phase router; auto-suggests `/shipwright-iterate` for post-test code changes |
 | `write_terminal_marker.py` | SessionStart | Writes a terminal marker the WebUI Command Center watches |
 
 Hooks use **exit code 2 (soft-block)**: you can say "Continue anyway," but the override is logged to `.shipwright/agent_docs/compliance_overrides.log` and flagged at the next checkpoint.
+
+**Viewing measured context cost.** `track_context_cost.py` writes the file above on every turn; a plugin cannot wire it into anything Claude Code shows you automatically (it can no more edit your personal `~/.claude/settings.json` than it can set `autoCompactWindow` for you), so these are opt-in, operator-run:
+
+- `uv run shared/scripts/tools/context_cost_summary.py show --project-root . --session-id <id>` -- print the current session's totals and per-phase breakdown on demand.
+- Point your own `statusLine.command` (in `~/.claude/settings.json` or the project's `.claude/settings.json`) at `shared/scripts/tools/context_cost_statusline.py` for a running `$cost (N calls)` in the prompt line.
+- `uv run shared/scripts/tools/estimate_context_pressure.py --source context-cost` -- the same checkpoint-recommendation `/shipwright-build` and `/shipwright-run` already compute from tool-call count, against measured cost instead (opt-in; tool-call count stays the default source).
+- `uv run shared/scripts/tools/context_cost_readiness.py [--model <id>] [--effort <level>]` -- a `verify_local.py`-shaped check for whether `autoCompactWindow` is set and sized for the model, plus an honest report of the effort level you passed (never fabricated when you don't pass one).
 
 ### TDD Workflow
 

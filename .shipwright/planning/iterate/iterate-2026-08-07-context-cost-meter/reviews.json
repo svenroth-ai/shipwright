@@ -1,0 +1,205 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-08-07-context-cost-meter",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-07T08:52:27.705066+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 9,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "The phase-boundary surface is not actually wired by the listed file changes. Step 10 says to call `context_cost_summary.py show` at the same skill boundaries as `iterate_phase_timing.py summarize`, but no iterate skill/workflow/prompt file containing those calls is identified for modification. Editing `docs/hooks-and-pipeline.md` documents the command but will not cause it to run.",
+          "suggestion": "Identify and modify the concrete skill/workflow definition that invokes the existing phase-timing summary. Add the cost-summary invocation there, or explicitly narrow the requirement to an operator-invoked command if automatic phase-boundary printing is not intended.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "“Fresh by construction” is not guaranteed for the F5b fold or phase-boundary output. The summary is only recomputed by a `Stop` hook, while F5b and intermediate phase boundaries occur during an active session. The file can be absent on a newly started session or represent an earlier Stop firing, omitting the latest assistant responses and especially finalize-phase usage.",
+          "suggestion": "At the F5b fold and automatic phase-boundary display points, explicitly recompute from the current transcript using `compute_summary` and atomically write the current session summary before reading/folding it. This reuses the planned shared core and does not reintroduce a cache or a second aggregation engine. If those paths intentionally accept stale data, mark the result as partial/stale and do not describe it as final run cost.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "The proposed persisted schema does not show where per-call data is retained, despite requirements that each call have a phase and that unpriced calls retain raw token counts and `cost_usd: null`. The stated aggregate shape has numeric `calls` and aggregate fields only; `context_cost_core.py` is described as doing per-call work but the output contract never includes call records.",
+          "suggestion": "Define a versioned summary schema that keeps aggregates plus a separate `call_records`/`entries` array containing at least `request_id`, timestamp, model, phase, raw token components, context tokens, `cost_usd`, and `unpriced_model`. Keep `calls` as the aggregate count to preserve the required aggregate shape. This also makes unpriced-model diagnosis actionable.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "Transcript record selection and duplicate resolution are underspecified. The plan says to deduplicate by `requestId`, but does not define how to identify an assistant record in the actual transcript format, whether validation occurs before adding an ID to the seen set, or what happens when duplicate records disagree. If a malformed duplicate is encountered first and its ID is claimed, a later valid representation of the same response could be discarded.",
+          "suggestion": "Define parsing order explicitly: select only assistant response records; validate `requestId`, model, usage object, timestamp, and token values; then deduplicate valid records. For conflicting valid duplicates, choose a deterministic canonical record and emit a diagnostic/count. Add fixtures for malformed-first/valid-later duplicates, malformed JSON lines, missing or unparsable timestamps, and non-numeric or negative token fields.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "Per-session files avoid cross-session contention, but they do not eliminate same-session overlap or reader/writer races. Two Stop invocations for one session can read different transcript states and the older invocation can overwrite a newer result; statusline and phase-boundary readers can also observe a partially written JSON file.",
+          "suggestion": "Write to a unique temporary file under the target directory, flush it, and atomically replace the summary file. Include a transcript-derived freshness indicator (for example source size/mtime or computed-through timestamp) and avoid replacing a summary with one demonstrably older than the existing result. Readers should treat parse failures as unavailable rather than crashing.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "Phase attribution depends on timestamp normalization, but the plan does not define the timestamp source or comparison semantics. Transcript and mark timestamps may differ in timezone representation, precision, or format; calls with missing/unparseable timestamps have no specified outcome. A permissive or lexical comparison could silently misattribute costs.",
+          "suggestion": "Parse both sources into timezone-aware UTC instants using the existing sidecar’s documented format. Treat absent or invalid assistant timestamps as `unphased` and count/report them separately. Add boundary tests for exact mark time, timezone offsets, fractional precision, post-last-mark behavior, and invalid timestamps.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "security",
+          "file": null,
+          "line": null,
+          "finding": "SHIPWRIGHT_SESSION_ID` is used in a filesystem path without a stated validation rule. Environment variables are process-controlled rather than inherently trustworthy; path separators, `..`, or unusual names could cause writes outside `.shipwright/compliance/context-cost` or create unexpected files.",
+          "suggestion": "Validate session IDs against a restrictive allowlist (for example, UUID-compatible characters or `[A-Za-z0-9._-]+`), reject empty/path-like values, and verify the resolved target remains below the resolved context-cost directory. Apply the same validation in all readers and CLI `--session-id` handling.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "The readiness checker’s prerequisites are not defined. `MODEL_PRICING` contains prices, not active-model context-window sizes, and the plan does not identify the authoritative source or precedence rules for the Claude Code settings hierarchy, active model, or effort level. This risks a reassuring but incorrect readiness report, particularly for unknown/versioned models.",
+          "suggestion": "Specify the exact settings files and precedence used by existing tooling, introduce a small explicit model-context-window mapping if no existing source exists, and report `unknown`/`warn` rather than guessing for an unmatched active model. Test project, user, and absent configuration cases.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "skipped_malformed` is required but omitted from the declared summary aggregate schema and data-model description. Consumers will have no stable location to distinguish “zero malformed records” from “not reported,” and malformed data can otherwise disappear behind a partial aggregate.",
+          "suggestion": "Add `skipped_malformed` to the top-level summary contract and, if useful for diagnosis, per-phase only when attribution is possible. Ensure statusline/CLI can expose it without treating malformed records as calls or unpriced calls.  Overall, full-transcript recomputation and per-session summaries are a sound simplification, and the additive hook strategy appropriately preserves the existing proxy. The implementation needs explicit automatic boundary wiring, a freshness strategy for non-Stop consumers, and a complete persisted call schema before it can reliably meet the stated measurement and tracked-event goals.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-08-07T08:13:32.586355+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "partial",
+      "raw_excerpt": "[deepseek] <no review returned: Expecting value: line 675 column 1 (char 3707)>\n\n[openai] 1. **Category:** dependency  \n   **Severity:** high  \n   **Finding:** The phase-boundary surface is not actually wired by the listed file changes. Step 10 says to call `context_cost_summary.py show` at the same skill boundaries as `iterate_phase_timing.py summarize`, but no iterate skill/workflow/prompt file containing those calls is identified for modification. Editing `docs/hooks-and-pipeline.md` documents the command but will not cause it to run.  \n   **Suggestion:** Identify and modify the concrete skill/workflow definition that invokes the existing phase-timing summary. Add the cost-summary invocation there, or explicitly narrow the requirement to an operator-invoked command if automatic phase-boundary printing is not intended.\n\n2. **Category:** risk  \n   **Severity:** high  \n   **Finding:** “Fresh by construction” is not guaranteed for the F5b fold or phase-boundary output. The summary is only recomputed by a `Stop` hook, while F5b and intermediate phase boundaries occur during an active session. The file can be absent on a newly started session or represent an earlier Stop firing, omitting the latest assistant responses and especially finalize-phase usage.  \n   **Suggestion:** At the F5b fold and automatic phase-boundary display points, explicitly recompute from the current transcript using `compute_summary` and atomically write the current session summary before reading/folding it. This reuses the planned shared core and does not reintroduce a cache or a second aggregation engine. If those paths intentionally accept stale data, mark the result as partial/stale and do not describe it as final run cost.\n\n3. **Category:** approach  \n   **Severity:** medium  \n   **Finding:** The proposed persisted schema does not show where per-call data is retained, despite requirements that each call have a phase and that unpriced calls retain raw token counts and `cost_usd: null`. The stated aggregate shape has numeric `calls` and aggregate fields only; `context_ […truncated]",
+      "verdicts": {
+        "openai": "revise",
+        "deepseek": "unavailable"
+      }
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-07T10:03:24.623023+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer:REJECT-then-PASS-after-2-blocking-fixes-see-iterate-spec-ledger",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-07T10:03:24.738533+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer:2-HIGH-1-MEDHIGH-3-MEDIUM-1-LOW-then-all-closed-see-iterate-spec-ledger",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 4,
+      "findings": [
+        {
+          "severity": "low",
+          "category": "spec",
+          "file": "docs/hooks-and-pipeline.md:2251 (in the added Stop row description)",
+          "line": null,
+          "finding": "The documentation claims “the persisted summary has … no `unpriced_model` field, so a caller cannot tell WHICH model id went unpriced from the file alone.” In fact the code (and the spec) include an `unpriced_models` list in the summary JSON. This discrepancy misleads operators about the file’s contents.",
+          "suggestion": "Update the description to match the actual schema — note that `unpriced_models` is present and contains the sorted, deduplicated model ids.  Other than that one documentation mismatch, the implementation faithfully covers every acceptance criterion and the extensive suite of tests demonstrates the required behavior. No correctness, security, or regression defects were found in the code.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "bug",
+          "file": "shared/scripts/lib/model_pricing.py",
+          "line": 139,
+          "finding": "Per-call costs are rounded to six decimal USD places before they are accumulated in `compute_summary`. Token-level cache-read costs can be below $0.000001 per call (e.g. one Sonnet cache-read token costs $0.0000003), so each call becomes `0.0` and the aggregate permanently loses real cost. This violates the required per-token-type cost calculation.",
+          "suggestion": "Keep full floating-point/decimal precision from `compute_cost_usd` through aggregation, and round only for display or at the final persisted-total precision. Add a regression test with multiple sub-microdollar calls whose aggregate is nonzero.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": "shared/scripts/lib/context_cost_session.py:43-45",
+          "line": null,
+          "finding": "If both the Stop payload lacks `session_id` and `SHIPWRIGHT_SESSION_ID` is absent, every such hook invocation uses the literal `\"unknown\"` and writes `.shipwright/compliance/context-cost/unknown.json`. This reintroduces cross-session pooling/clobbering precisely in the unreliable-hook-environment case described by the change, rather than preserving per-session isolation.",
+          "suggestion": "Return `None` when no real session id is available and have the hook skip the write with a stderr diagnostic. Readers should likewise return no-data rather than reading a shared `\"unknown\"` file.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": "shared/scripts/lib/context_cost_core.py:165-179",
+          "line": null,
+          "finding": "Token fields and `model` are treated as trusted numeric/hashable values. A transcript record with, for example, `{\"input_tokens\": \"100\"}` raises during token addition, while a truthy unhashable `model` (such as a list) raises in `resolve_model_id`; the exception aborts the entire transcript computation and the hook writes no updated summary. The malformed-record tests only cover missing fields, so this failure mode is untested.",
+          "suggestion": "Validate that `requestId` and `model` are strings and every token field is a non-negative integer/number before processing; count invalid assistant records as `skipped_malformed` and continue processing valid records. Add tests showing malformed token/model values do not discard unrelated valid calls.  Overall assessment: ship-with-fixes. The core design and main acceptance paths are implemented, but precision loss, fallback session-id collisions, and malformed-value handling can produce incorrect or missing production measurements. SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-08-07T10:51:38.524972+00:00",
+      "disposition": null,
+      "recorded_by": "external-review:round-2-of-2(round-1-6-findings-fixed-round-2-3-findings-fixed)-see-iterate-spec-ledger",
+      "parse_status": "structured",
+      "raw_excerpt": "[deepseek] - Category: spec\n- Severity: low\n- File: docs/hooks-and-pipeline.md:2251 (in the added Stop row description)\n- Finding: The documentation claims “the persisted summary has … no `unpriced_model` field, so a caller cannot tell WHICH model id went unpriced from the file alone.” In fact the code (and the spec) include an `unpriced_models` list in the summary JSON. This discrepancy misleads operators about the file’s contents.\n- Suggestion: Update the description to match the actual schema — note that `unpriced_models` is present and contains the sorted, deduplicated model ids.\n\nOther than that one documentation mismatch, the implementation faithfully covers every acceptance criterion and the extensive suite of tests demonstrates the required behavior. No correctness, security, or regression defects were found in the code.\n\nSHIPWRIGHT_VERDICT: revise\n\n[openai] - Category: bug  \n  Severity: medium  \n  File: `shared/scripts/lib/model_pricing.py:139`  \n  Finding: Per-call costs are rounded to six decimal USD places before they are accumulated in `compute_summary`. Token-level cache-read costs can be below $0.000001 per call (e.g. one Sonnet cache-read token costs $0.0000003), so each call becomes `0.0` and the aggregate permanently loses real cost. This violates the required per-token-type cost calculation.  \n  Suggestion: Keep full floating-point/decimal precision from `compute_cost_usd` through aggregation, and round only for display or at the final persisted-total precision. Add a regression test with multiple sub-microdollar calls whose aggregate is nonzero.\n\n- Category: edge-case  \n  Severity: medium  \n  File: `shared/scripts/lib/context_cost_session.py:43-45`  \n  Finding: If both the Stop payload lacks `session_id` and `SHIPWRIGHT_SESSION_ID` is absent, every such hook invocation uses the literal `\"unknown\"` and writes `.shipwright/compliance/context-cost/unknown.json`. This reintroduces cross-session pooling/clobbering precisely in the unreliable-hook-environment case described by the change, rather than preserving per-session isolation.  \n  Suggestion: Return `None` when no real session id is available and have the hook skip the write with a stderr diagnostic. Readers should likewise return no-data rather than reading a shared `\"unknown\"` file.\n\n- Category: edge-case  \n  Severity: medium  \n  File: `shared/scripts/lib/context_cost_core.py:165-179`  \n  Finding: Token fields and `model` are treated as trusted numeric/hashable values. A transcript record with, for example, `{\"input_tokens\": \"100\"}` raises during token addition, while a truthy unhashable `model` (such as a list) raises in `resolve_model_id`; the exception aborts the entire transcript computation and the hook writes no updated summary. The malformed-record tests only cover missing fields, so this failure mode is untested.  \n  Suggestion: Valid […truncated]",
+      "verdicts": {
+        "openai": "revise",
+        "deepseek": "revise"
+      }
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-07T10:03:16.099024+00:00",
+      "disposition": "none",
+      "recorded_by": "spec-reviewer:PASS-after-3-fixes-see-iterate-spec-ledger",
+      "parse_status": null,
+      "raw_excerpt": null
+    }
+  }
+}

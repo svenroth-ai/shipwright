@@ -204,6 +204,12 @@ Spec/
 # The FileLock sidecar the writer above takes while appending (concurrent
 # producers within one run) — never contains data, must never be tracked.
 /.shipwright/agent_docs/iterates/*.iterate_timings.jsonl.lock
+# Context-cost meter per-session summaries (<session_id>.json), recomputed and
+# overwritten in full by track_context_cost.py on every Stop. Same transient-
+# run-scoped-state rationale as *.phase_timings.jsonl above — the durable copy
+# is the tracked event field (work_completed.context_cost, folded at F5b).
+# iterate-2026-08-07-context-cost-meter.
+/.shipwright/compliance/context-cost/
 /.shipwright/compliance/skill-compliance/
 # Detective-audit report (run_audit.py / /shipwright-compliance) — transient,
 # regenerated each run, not in audit_staleness.DOC_REGISTRY. The .json was
