@@ -12,6 +12,12 @@ boundary the F11 + campaign prose parse, so these tests round-trip those keys.
 Reuses the shared `git_origin_repo` + `make_worktree` conftest fixtures and the
 `_git` / `_set_repo_identity` / `_write` helpers from `test_integrate_main` (same
 import pattern as `test_integrate_campaign_status`).
+
+The P2.43 triage-log-absorb tests live in the sibling
+`test_ensure_current_triage_absorb.py` (split out to stay under the 300-line
+guideline — same pattern as `shared/tests/test_sweep_outbox_review_cascade2.py`
+next to `test_triage_outbox.py`), which imports `_fake_regen`/`_DASH`/`_RUN_ID`
+from here rather than duplicating them.
 """
 
 from __future__ import annotations
@@ -31,6 +37,12 @@ from tools import integrate_merge  # noqa: E402
 
 _DASH = ".shipwright/compliance/dashboard.md"
 _RUN_ID = "iterate-2026-06-12-automerge-serial-integrate"
+
+
+def _fake_regen(project_root, run_id, **_kw):
+    _write(Path(project_root), _DASH, f"regenerated ({run_id})\n")
+    _git(Path(project_root), "add", "--", _DASH)
+    return {_DASH: "regenerated"}
 
 
 def test_ensure_current_noop_when_current(git_origin_repo, make_worktree, monkeypatch) -> None:
@@ -80,12 +92,7 @@ def test_ensure_current_integrates_when_behind(git_origin_repo, make_worktree, m
     _git(work, "commit", "-am", "main changes dashboard")
     _git(work, "push", "origin", "main")
 
-    def fake_regen(project_root, run_id, **kw):
-        _write(Path(project_root), _DASH, f"regenerated ({run_id})\n")
-        _git(Path(project_root), "add", "--", _DASH)
-        return {_DASH: "regenerated"}
-
-    monkeypatch.setattr(integrate_merge.rcc, "regenerate_tracked_snapshots", fake_regen)
+    monkeypatch.setattr(integrate_merge.rcc, "regenerate_tracked_snapshots", _fake_regen)
 
     result = ec.ensure_current(wt, _RUN_ID, do_fetch=True)
 

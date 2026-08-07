@@ -1,0 +1,155 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-08-06-triage-backlog-outbox-routing",
+    "date": "2026-08-06",
+    "unit": {
+      "status": "passed",
+      "passed": 15197,
+      "total": 15197,
+      "failed": 0,
+      "note": "F0 canonical suite runner (run_test_suite.py): all 18 discovered units PASS, zero failures, exit 0, plus the CI diff-coverage gate at 100% on the changed lines (0 missing of 40). Counts are pytest collection totals per root; the runner's verdict is a per-unit exit code and it emits no per-test tallies, so skipped tests are included in both figures."
+    },
+    "integration": {
+      "status": "passed",
+      "passed": 486,
+      "total": 486,
+      "failed": 0
+    },
+    "pgtap": {
+      "status": "skipped",
+      "reason": "no database in this repo"
+    },
+    "e2e": {
+      "status": "skipped",
+      "reason": "no browser surface; framework CLI machinery"
+    },
+    "design_fidelity": {
+      "status": "skipped",
+      "reason": "no UI surface"
+    },
+    "smoke": {
+      "status": "skipped",
+      "reason": "no startable server surface in this repo"
+    },
+    "degraded": [],
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "A dirty tracked .shipwright/triage.jsonl no longer blocks ensure_current's merge",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_ensure_current_triage_absorb.py::test_ensure_current_absorbs_dirty_triage_log_before_merging PASSED"
+        },
+        {
+          "behavior": "The absorbed content is committed, not discarded, and both sides of a genuine divergence survive the churn-resolved merge",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_ensure_current_triage_absorb.py::test_ensure_current_absorbs_dirty_triage_log_before_merging PASSED - asserts trg-main and trg-worktree both present in the merged file"
+        },
+        {
+          "behavior": "A clean, TRACKED triage.jsonl triggers no absorb step (no behavior change on the common path)",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_ensure_current_triage_absorb.py::test_ensure_current_clean_triage_log_adds_no_absorb_step PASSED - seeds a real committed log, not merely an absent one"
+        },
+        {
+          "behavior": "cross_component integration: the absorb step composes correctly with the REAL git merge + REAL churn resolver, not a mocked one",
+          "disposition": "tested",
+          "category": "integration",
+          "evidence": "shared/tests/test_ensure_current_triage_absorb.py::test_ensure_current_absorbs_dirty_triage_log_before_merging PASSED - real git_origin_repo/make_worktree fixtures, no mocking of integrate_main/churn_merge"
+        },
+        {
+          "behavior": "An absorb commit that is the ONLY commit that lands (the underlying merge is a genuine no-op) is still reported integrated=True, so the caller re-pushes and the content is not lost",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_ensure_current_triage_absorb.py::test_ensure_current_absorb_commit_alone_counts_as_integrated PASSED - regression for a Stage-2-caught ordering bug (head_before was captured after the absorb)"
+        },
+        {
+          "behavior": "A dirty triage.jsonl while a merge is already wedged (MERGE_HEAD standing) is left untouched, not staged into a possibly-unmerged index",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_ensure_current_triage_absorb.py::test_absorb_skips_when_a_merge_is_already_in_progress PASSED - regression for a Stage-2-caught unconditional-git-add bug"
+        },
+        {
+          "behavior": "The pre-existing ensure_current regression tests (noop-when-current, integrates-when-behind, blocks-on-source-conflict, CLI, lost-ledger-exit-9) are unaffected",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_ensure_current.py 5/5 PASSED"
+        },
+        {
+          "behavior": "The absorb fires on the ALREADY-CURRENT path too (not only 'behind, about to merge'), so background writes accumulating between the delivery ladder's repeat refresh calls are not silently lost at worktree teardown",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_ensure_current_triage_absorb.py::test_ensure_current_absorbs_on_the_already_current_path_too PASSED - Stage-3 doubt review, high"
+        },
+        {
+          "behavior": "The op-in-progress guard covers merge/rebase/cherry-pick/revert/bisect (reusing lib.main_tree_guards.op_in_progress, fail-closed), not just a bare MERGE_HEAD check",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_ensure_current_triage_absorb.py::test_absorb_skips_when_a_merge_is_already_in_progress PASSED, plus shared/tests/test_reconcile_triage_guards.py 10/10 PASSED covering the primitive itself"
+        },
+        {
+          "behavior": "An untracked triage.jsonl is not silently promoted to tracked by this guard",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_ensure_current_triage_absorb_guards.py::test_absorb_skips_an_untracked_triage_log PASSED - asserts the ?? state directly and that nothing was staged"
+        },
+        {
+          "behavior": "Malformed/torn content is never committed by the absorb (validated via lib.triage_validate.validate_triage_text before staging)",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_ensure_current_triage_absorb_guards.py::test_absorb_refuses_to_commit_torn_content PASSED"
+        },
+        {
+          "behavior": "A failed commit resets the index, leaving it exactly as it was before the call rather than staged-and-uncommitted",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_ensure_current_triage_absorb_guards.py::test_absorb_resets_the_index_when_the_commit_fails PASSED - asserts the unstage AND that the producer's content survives in the worktree"
+        },
+        {
+          "behavior": "A failed add leaves the index untouched and git's stderr reaches the operator",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_ensure_current_triage_absorb_guards.py::test_absorb_reports_a_failed_stage_and_leaves_the_index_alone PASSED - Stage-3 doubt review, medium"
+        },
+        {
+          "behavior": "A deletion of the append-only log is never absorbed (the guard would otherwise propagate it to main)",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_ensure_current_triage_absorb_guards.py::test_absorb_skips_a_deleted_triage_log PASSED - external review, openai low"
+        },
+        {
+          "behavior": "An unreadable log declines rather than staging bytes nothing validated",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_ensure_current_triage_absorb_guards.py::test_absorb_skips_when_the_log_cannot_be_read PASSED"
+        },
+        {
+          "behavior": "A best-effort diagnostic that itself fails never propagates out of the merge guard",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_ensure_current_triage_absorb_guards.py::test_a_failed_diagnostic_never_crashes_the_guard PASSED"
+        }
+      ],
+      "counts": {
+        "testable": 16,
+        "tested": 16,
+        "untestable": 0,
+        "untested_testable": 0
+      },
+      "enumeration_basis": {
+        "acs": 4,
+        "covered_acs": 4
+      }
+    },
+    "surface_verification": {
+      "surface": "none",
+      "runner": "",
+      "exit_code": 0,
+      "tests_run": 0,
+      "evidence_path": "",
+      "timestamp": "2026-08-06T17:30:18.455Z",
+      "attempts": 0,
+      "justification": "Pure backend/CLI plumbing: ensure_current.py is a script invoked by the iterate finalization pipeline. No dev_url, no browser-reachable surface, no HTTP endpoint. Verified instead by the integration test suite against real git repositories (real merges, real churn resolver) - shared/tests/test_ensure_current_triage_absorb.py and test_ensure_current_triage_absorb_guards.py, 17/17 passing."
+    }
+  },
+  "coverage": {
+    "total": 80.2,
+    "measured_tier": "repo",
+    "source": "combined coverage.xml (all plugins + shared + integration)",
+    "measured_at": "2026-07-04T00:00:00Z"
+  },
+  "source_state": {
+    "run_id": "iterate-2026-08-06-triage-backlog-outbox-routing",
+    "commit": "d4b96e8054481469e8b918db92942edab5cabc47",
+    "dirty": true,
+    "base": null,
+    "release": null
+  }
+}
