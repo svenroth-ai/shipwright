@@ -1,8 +1,7 @@
-"""F0 suite runner — process execution, isolation, and the fault classes.
-
-The gate's whole safety argument rests on being able to tell "pytest ran and failed"
-apart from "uv never got pytest started", and on a hang/spawn failure never becoming an
-exception that discards the other units' results.
+"""F0 suite runner — process execution, isolation, and the fault classes. The gate's
+whole safety argument rests on being able to tell "pytest ran and failed" apart from
+"uv never got pytest started", and on a hang/spawn failure never becoming an exception
+that discards the other units' results.
 """
 
 from __future__ import annotations
@@ -20,9 +19,8 @@ import pytest
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent.parent))
 
 import scripts.tools.run_test_suite as mod
-from scripts.tools.run_test_suite import (
-    INFRA, TEST_FAILURE, classify, cpu_budget, discover_units,
-)
+from scripts.tools.run_test_suite import INFRA, TEST_FAILURE, classify, discover_units
+from scripts.tools.suite_host_resources import cpu_budget
 from scripts.tools.suite_process import ProcessResult
 from scripts.tools.suite_report import TRUNCATION_MARKER
 
@@ -63,11 +61,10 @@ def test_exec_isolates_tmpdir_and_cwd_and_never_uses_a_shell(tmp_path, monkeypat
 
 
 def test_pytest_ran_is_proven_by_the_junit_report_not_by_prose(tmp_path, monkeypatch):
-    """The discriminator between 'pytest failed' and 'uv never got there'.
-
-    The PLURAL "errors" summary is exactly what a fixture-level race emits (pytest
-    pluralises `error` when count != 1). A prose regex would misread it as an infra
-    fault, skip the serial re-verify, and STOP the gate on good code.
+    """The discriminator between 'pytest failed' and 'uv never got there'. The PLURAL
+    "errors" summary is exactly what a fixture-level race emits (pytest pluralises
+    `error` when count != 1) — a prose regex would misread it as an infra fault, skip
+    the serial re-verify, and STOP the gate on good code.
     """
     def _pytest_ran(cmd, **kw):
         Path(cmd[cmd.index("--junit-xml") + 1]).write_text("<testsuite/>", encoding="utf-8")

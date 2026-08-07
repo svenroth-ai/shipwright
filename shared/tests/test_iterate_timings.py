@@ -9,6 +9,7 @@ malformed rejection) live in test_iterate_timings_hierarchy.py — split at
 
 from __future__ import annotations
 
+import subprocess
 import sys
 from pathlib import Path
 
@@ -93,6 +94,125 @@ def test_sidecar_is_append_only_across_sequential_calls(tmp_path):
     valid, rejected = itn.normalize_iterate_timings(raw_second)
     assert not rejected
     assert valid[0]["name"] == "planning" and valid[0]["outcome"] == "completed"
+
+
+# --------------------------------------------------------------------------- #
+# record_producer_span_counted — atomic count-then-append
+# --------------------------------------------------------------------------- #
+
+def test_record_producer_span_counted_resolves_attempt_1_on_empty_sidecar(tmp_path):
+    path, attempt = it.record_producer_span_counted(
+        tmp_path, RUN, name="f0_queue", parent="verification",
+        start_utc="2026-08-07T10:00:00+00:00", end_utc="2026-08-07T10:00:01+00:00",
+        duration_ms=1000, extra={"weight": 1, "capacity": 1},
+        count_prior=len)
+    assert attempt == 1
+    raw = itn.read_raw_events(tmp_path, RUN)
+    assert len(raw) == 1
+    assert raw[0]["attempt"] == 1
+    assert path == it.sidecar_path(tmp_path, RUN)
+
+
+def test_record_producer_span_counted_passes_tolerant_parsed_prior_entries(tmp_path):
+    it.record_producer_span(tmp_path, RUN, name="f0_queue", parent="verification",
+                            start_utc="2026-08-07T10:00:00+00:00",
+                            end_utc="2026-08-07T10:00:01+00:00", duration_ms=1000)
+    seen = {}
+
+    def count_prior(entries):
+        seen["entries"] = entries
+        return len(entries)
+
+    _, attempt = it.record_producer_span_counted(
+        tmp_path, RUN, name="f0_queue", parent="verification",
+        start_utc="2026-08-07T10:05:00+00:00", end_utc="2026-08-07T10:05:01+00:00",
+        duration_ms=1000, count_prior=count_prior)
+    assert attempt == 2
+    assert len(seen["entries"]) == 1
+    assert seen["entries"][0]["name"] == "f0_queue"
+
+
+def test_record_producer_span_counted_never_returns_after_a_failed_count(tmp_path):
+    def boom(_entries):
+        raise ValueError("boom")
+
+    with pytest.raises(ValueError):
+        it.record_producer_span_counted(
+            tmp_path, RUN, name="f0_queue", parent="verification",
+            start_utc="2026-08-07T10:00:00+00:00", end_utc="2026-08-07T10:00:01+00:00",
+            duration_ms=1000, count_prior=boom)
+    assert itn.read_raw_events(tmp_path, RUN) == []
+
+
+def test_record_producer_span_counted_rejects_bad_extra_before_writing(tmp_path):
+    with pytest.raises(it.IterateTimingError):
+        it.record_producer_span_counted(
+            tmp_path, RUN, name="f0_queue", parent="verification",
+            start_utc="2026-08-07T10:00:00+00:00", end_utc="2026-08-07T10:00:01+00:00",
+            duration_ms=1000, extra={"raw_console_output": "nope"},
+            count_prior=len)
+    assert itn.read_raw_events(tmp_path, RUN) == []
+
+
+def test_record_producer_span_counted_two_calls_never_collide_same_process(tmp_path):
+    """Sequential same-process calls each see the other's durable write —
+    the property the F0-specific attempt policy (suite_timing.py) depends
+    on when its own process-local cache is cold."""
+    _, first = it.record_producer_span_counted(
+        tmp_path, RUN, name="f0_queue", parent="verification",
+        start_utc="2026-08-07T10:00:00+00:00", end_utc="2026-08-07T10:00:01+00:00",
+        duration_ms=1000, count_prior=len)
+    _, second = it.record_producer_span_counted(
+        tmp_path, RUN, name="f0_queue", parent="verification",
+        start_utc="2026-08-07T10:05:00+00:00", end_utc="2026-08-07T10:05:01+00:00",
+        duration_ms=1000, count_prior=len)
+    assert first == 1
+    assert second == 2
+
+
+def test_record_producer_span_counted_serializes_across_real_OS_processes(tmp_path):
+    """External code review (Branch A architecture-mode follow-up, plan
+    review round 4): the same-process test above proves the lock serializes
+    within one interpreter, but record_producer_span_counted's own docstring
+    claims atomicity specifically across separate OS processes — the exact
+    property record_producer_span's FileLock already has a subprocess proof
+    for (test_iterate_timings_concurrency.py). This is that proof for the
+    counted resolver: N real `python -c` subprocesses race to
+    count-then-append against the SAME sidecar; every one must resolve to a
+    distinct attempt, never a duplicate — a duplicate would mean two
+    processes read the same prior count before either had written.
+
+    A second external-review pass (over this exact test) flagged that with
+    no deliberate delay, the read-count-append critical section is so fast
+    that even a BROKEN lock could pass by luck of OS scheduling alone — not
+    a reliable proof. `count_prior` here sleeps AFTER the read (inside the
+    section the lock is supposed to hold exclusively): with a working lock
+    every process serializes through that sleep one at a time and still
+    produces {1..N}; with a broken one, multiple processes would overlap
+    inside the sleep, read the same prior count, and collide deterministically
+    rather than by chance."""
+    n = 6
+    write_one = (
+        "import sys; sys.path.insert(0, {scripts!r}); "
+        "from lib import iterate_timings as it; "
+        "it.record_producer_span_counted({root!r}, {run!r}, name='f0_queue', "
+        "parent='verification', start_utc='2026-08-07T10:00:00+00:00', "
+        "end_utc='2026-08-07T10:00:01+00:00', duration_ms=1000, "
+        "count_prior=lambda entries: __import__('time').sleep(0.05) or len(entries))"
+    )
+    procs = [
+        subprocess.Popen([sys.executable, "-c", write_one.format(
+            scripts=str(_SCRIPTS), root=str(tmp_path), run=RUN)],
+            stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+        for _ in range(n)
+    ]
+    for p in procs:
+        _, stderr = p.communicate(timeout=30)
+        assert p.returncode == 0, stderr
+
+    raw = itn.read_raw_events(tmp_path, RUN)
+    assert len(raw) == n
+    assert {e["attempt"] for e in raw} == set(range(1, n + 1))
 
 
 def test_clock_regression_between_marks_never_fabricates_a_zero(tmp_path):

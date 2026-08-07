@@ -37,6 +37,7 @@ EXTRA_FIELD_TYPES: dict[str, tuple[type, ...]] = {
     "reviewer": (str,),
     "stage": (str,),
     "resource": (str,),
+    "unit": (str,),
 }
 _EXTRA_STR_MAX = 80
 _EXTRA_MAX_KEYS = 10

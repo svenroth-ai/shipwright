@@ -16,6 +16,13 @@ _NESTED_CALLOUTS: tuple[str, ...] = (
     "self_review", "spec_review", "code_review", "doubt_review",
     "external_review", "reviewer_wait", "remediation",
     "ci_wait", "post_ci_remediation", "delivery_wait",
+    # "f0_unit_result" (test-phase-attribution) is deliberately absent: one
+    # row per test unit per attempt (~18 rows) would flood this table before
+    # any view exists to make that useful — the deferred latency follow-up
+    # designs that rendering once real multi-attempt data exists (external
+    # code review: this file is a second span registry out of sync with
+    # SPAN_PARENTS with no drift guard; the omission must be visible here,
+    # not just in the iterate spec).
 )
 
 

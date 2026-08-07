@@ -1,0 +1,279 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-08-07-test-phase-attribution",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-07T09:45:35.468764+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 7,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "The atomic resolver must explicitly refactor the existing append implementation, not merely acquire an outer `FileLock` and call `_append_line`. If `_append_line` acquires the same non-reentrant lock internally, this can deadlock; if it is called outside the outer lock, the count-and-append race remains. The mini-plan says “reusing `_append_line`’s lock/path derivation,” but does not state the required internal structure clearly enough.",
+          "suggestion": "Extract shared internals into an unlocked helper such as `_append_line_locked(...)` / `_write_span_locked(...)`, with public `record_producer_span` acquiring the lock and calling it, and `record_producer_span_counted` acquiring the same lock, reading, resolving, validating, and calling that unlocked helper. Keep span construction and `extra` validation shared so the two public write paths cannot drift.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "UnitResult.started_utc: str = \"\"` preserves constructor compatibility, but it also makes missing timestamps silently possible. Any existing direct `UnitResult(...)` construction in tests, alternate runner paths, or future callers that does not populate the field will cause `suite_timing` to fail while parsing the empty timestamp and skip that unit’s span under the intended best-effort handler. That could make per-unit attribution quietly incomplete.",
+          "suggestion": "Search and update all `UnitResult` constructors as part of the change. In emission, explicitly treat a missing or invalid `started_utc` as an observable per-unit instrumentation failure—log a unit-specific diagnostic and skip only that unit—or make the field required once all constructors are migrated. Add a test for an absent/invalid timestamp so this degradation is intentional and stable.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The plan describes tolerant sidecar parsing for missing and empty files, but does not define behavior for malformed/truncated JSONL, which is the relevant failure mode if an append is interrupted or storage fails partway through a write. Since the counted resolver now reads the file before every first producer write, an unhandled malformed trailing line could prevent all subsequent F0 timing writes for that run or, worse, produce an incorrect count if parsing behavior is inconsistent.",
+          "suggestion": "Specify and test the same recovery policy used by the existing sidecar reader: normally skip a malformed trailing/incomplete line with a stderr diagnostic, while treating malformed non-tail content according to the established corruption policy. Ensure `count_prior` receives only validated parsed entries and that a malformed entry cannot be mistaken for an attempt boundary.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The timestamp placement is internally inconsistent. One section says `started_utc` is captured after `budget.acquire(...)`, where the current `\"start\"` event is emitted; another says it is captured before budget-acquire waiting and relies on that wait being represented in the unit interval. Those choices produce materially different per-unit coverage and `canonical_f0_active.exclusive_ms`.",
+          "suggestion": "Resolve this before implementation and document the intended semantic: either capture at actual dispatch after budget acquisition, or capture before acquisition and explicitly define the span as “unit lifecycle including local scheduler wait.” Align the existing unit-start event, `UnitResult.seconds` measurement boundary, emission calculation, and tests to that one definition.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "The new lock-protected resolver makes a correctness claim specifically about separate processes, but the plan deliberately does not test actual cross-process contention. Single-process tests exercise locking APIs but cannot prove that lock-file location, lock scope, and append behavior are shared correctly across independent interpreters—the exact property the new primitive exists to provide. This is especially relevant because the implementation is changing the lock ownership model.",
+          "suggestion": "Add one small deterministic subprocess test at the `iterate_timings.py` primitive level, not an end-to-end concurrent-F0 test. Start two subprocesses against the same temporary root/run ID using a barrier, invoke the counted writer once in each, and assert two persisted entries with distinct attempts `{1, 2}`. This directly verifies the primitive without endorsing concurrent F0 attribution as a supported workflow.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The proposed test asserting that timestamps are “distinct across units” is potentially flaky and does not establish the important property. Consecutive wall-clock reads can legitimately be equal under a coarse or mocked clock, while distinct values alone do not prove the value was captured at dispatch.",
+          "suggestion": "Assert that each emitted unit span’s `start_utc` equals its corresponding `UnitResult.started_utc`, that values are valid UTC timestamps, and use a controlled clock or dispatch synchronization only if distinct dispatch moments themselves are a required behavior.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "security",
+          "file": null,
+          "line": null,
+          "finding": "No material new security boundary is introduced. The new `unit` value originates from repository-controlled pytest roots and remains constrained by the existing closed-vocabulary/type/length validation. The main integrity concern is sidecar corruption handling rather than input injection.",
+          "suggestion": "Retain the existing validation path for the counted writer rather than duplicating it, and ensure malformed sidecar entries are never trusted as valid counting inputs.  Overall, the producer-owned attribution design is sound and appropriately avoids changing F0 execution behavior. It needs a precise shared-lock implementation, explicit corrupted-sidecar behavior, and a focused process-contention test before the atomicity and recovery guarantees can be considered reliable. SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-08-07T09:43:24.433746+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "partial",
+      "raw_excerpt": "[deepseek] **Findings**\n\n| Category | Severity | Finding | Suggestion |\n|----------|----------|---------|-------------|\n| edge-case | medium | `record_producer_span_counted` reads the existing sidecar line‑by‑line and parses each line as JSON. A single corrupted line (e.g., truncated JSON due to a previous crash) would cause an unhandled `json.JSONDecodeError`, aborting the entire attempt resolution and potentially blocking further spans for that run id. The spec says “tolerantly parses … (missing/empty file → [], not an exception)” but does not explicitly describe handling of invalid lines. | Wrap the per‑line `json.loads` in a try/except that catches `json.JSONDecodeError`, skips the offending line, and logs a warning. This keeps the counting loop resilient to one‑off corruption while still counting valid lines. |\n| edge-case | low | `unit.started_utc` could be an empty string if a `UnitResult` is constructed without a real dispatch time (e.g., in a hand‑built test fixture that predates the field addition). The per‑unit emission code uses `parse(unit.started_utc)` without an explicit empty‑check, which would raise a `ValueError` inside the nested try/except that is meant to catch shape mismatches. The span would be silently skipped, but the cause would be opaque. | Add an explicit guard: if `unit.started_utc` is an empty string, log a warning and skip that unit’s span without calling `parse`. This makes the invariant clear and avoids relying on the exception handler to mask a genuine programming error in tests. |\n| risk | low | The `count_prior` closure computes `max(prior_warmup_count, prior_cpu_count, prior_canonical_count)`. If a future change adds another `f0_queue` stage without also updating this closure, the new stage would be invisible to the counter and could lead to attempt-number collisions. The design currently hard‑codes the three known stages. | Document the connection between **any** new stage value introduced in `record_f0_queue_span` and the `co […truncated]\n\n[openai] 1. **Category:** approach  \n   **Severity:** high  \n   **Finding:** The atomic resolver must explicitly refactor the existing append implementation, not merely acquire an outer `FileLock` and call `_append_line`. If `_append_line` acquires the same non-reentrant lock internally, this can deadlock; if it is called outside the outer lock, the count-and-append race remains. The mini-plan says “reusing `_append_line`’s lock/path derivation,” but does not state the required internal structure clearly enough.  \n   **Suggestion:** Extract shared internals into an unlocked helper such as `_append_line_locked(...)` / `_write_span_locked(...)`, with public `record_producer_span` acquiring the lock and calling it, and `record_producer_span_counted` acquiring the same lock, reading, resolving, validating, and calling that unlocked helper. Keep span construction and `extra` validation shared so the two public write paths cannot drift.\n\n2. **Category:** risk  \n   **Severity:** medium  \n   **Finding:** `UnitResult.started_utc: str = \"\"` preserves constructor compatibility, but it also makes missing timestamps silently possible. Any existing direct `UnitResult(...)` construction in tests, alternate runner paths, or future callers that does not populate the field will cause `suite_timing` to fail while parsing the empty timestamp and skip that unit’s span under the intended best-effort handler. That could make per-unit attribution quietly incomplete.  \n   **Suggestion:** Search and update all `UnitResult` constructors as part of the change. In emission, explicitly treat a missing or invalid `started_utc` as an observable per-unit instrumentation failure—log a unit-specific diagnostic and skip only that unit—or make the field required once all constructors are migrated. Add a test for an absent/invalid timestamp so this degradation is intentional and stable.\n\n3. **Category:** edge-case  \n   **Severity:** medium  \n   **Finding:** The plan describes tolerant sidecar parsin […truncated]",
+      "verdicts": {
+        "openai": "revise",
+        "deepseek": "approve"
+      }
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 7,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "shared/scripts/tools/suite_timing.py",
+          "line": null,
+          "finding": "_record_unit_results's getattr/for-loop sat outside any try/except, and the call site was unwrapped at run_test_suite.py:449 - a truthy-but-not-iterable result.results would raise out of a timing helper and abort a passed F0 run.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "architecture",
+          "file": "shared/scripts/lib/iterate_timings.py",
+          "line": null,
+          "finding": "record_producer_span_counted duplicated _append_line/record_producer_span's path derivation, lock convention and span-dict serialization instead of sharing them - drift risk between the two write paths.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "shared/scripts/lib/iterate_throughput_render.py",
+          "line": null,
+          "finding": "_NESTED_CALLOUTS is a second hardcoded span registry, out of sync with SPAN_PARENTS with no drift guard; f0_unit_result is folded/stored but structurally unrenderable, and Design SS6 claimed rendering was generic when it is not.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/scripts/tools/suite_timing.py",
+          "line": null,
+          "finding": "end_utc was clamped to parent_end but start_utc was not - a unit.started_utc after parent_end (clock skew, hand-built UnitResult) produced an inverted end_utc < start_utc interval.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/scripts/tools/tests/test_run_test_suite_attempt_attribution.py",
+          "line": null,
+          "finding": "The AC9 import-path probe asserted only that the import succeeded, not that the new counted-resolver path actually ran under the restricted sys.path - record_f0_queue_span swallows runtime exceptions, so the probe would stay green even if the new code failed at call time.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "architecture",
+          "file": "shared/scripts/tools/run_test_suite.py",
+          "line": null,
+          "finding": "cpu_budget was re-exported from run_test_suite.py purely to spare a one-line test import edit, in the one file pinned at a zero-headroom bloat baseline.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "shared/scripts/tools/suite_timing.py",
+          "line": null,
+          "finding": "_resolve_attempt is named for its return value, but its dominant effect is writing the span - two of its three call sites discard the return value entirely.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-08-07T10:03:29.309623+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 5,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "boundary-contract",
+          "file": null,
+          "line": null,
+          "finding": "f0_unit_result decomposes test time into runtime vs. repetition, and retry_shape marks the units that were re-run",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "hidden-coupling",
+          "file": null,
+          "line": null,
+          "finding": "the attempt number is legible directly in the row, so no reader tooling is needed",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "concurrency-ordering",
+          "file": null,
+          "line": null,
+          "finding": "two concurrent F0 processes for one run_id 'cannot occur in production' because F0.md's STOP-before-retry protocol structurally prevents it",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "boundary-contract",
+          "file": null,
+          "line": null,
+          "finding": "clamping the unit interval to parent_end makes containment true by construction at negligible cost",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "reversibility",
+          "file": null,
+          "line": null,
+          "finding": "the tolerant sidecar read means one bad line cannot break attempt resolution for a run",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-08-07T10:21:21.431742+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 2,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": "shared/scripts/tools/suite_timing.py",
+          "line": 183,
+          "finding": "The unit end timestamp is clamped to `parent_end`, but the unit start timestamp is not. If `unit.started_utc` is later than `parent_end`—possible with wall-clock skew, a short/incorrect `result.seconds`, or a hand-built/alternate `UnitResult`—`min(started + duration, parent_end)` produces `end_utc < start_utc`. This creates the inverted child interval the specification explicitly says must not be emitted, and can cause rejection or incorrect hierarchy folding.",
+          "suggestion": "Clamp or validate `started` against the parent interval before constructing the child interval, then ensure `end >= start` (for example, clamp `started` to `parent_end` and calculate `end = max(started, min(..., parent_end))`). Add a test where `started_utc` is after `parent_end`.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "test",
+          "file": "shared/tests/test_iterate_timings.py",
+          "line": 151,
+          "finding": "test_record_producer_span_counted_serializes_across_real_OS_processes` starts subprocesses without a start barrier or an intentionally widened count-to-write window. A broken implementation with no effective cross-process lock can still pass whenever the OS happens to schedule the six very short read/count/write operations sequentially. The test therefore does not reliably prove the cross-process atomicity claimed by the new primitive.",
+          "suggestion": "Synchronize subprocesses before the counted call and make `count_prior` deliberately pause after reading entries. With a functioning lock, calls serialize and produce `{1..N}`; without one, multiple processes read the same prior count and deterministically collide.  Overall assessment: ship-with-fixes. The core implementation largely follows the specified producer-owned attempt and unit-span design, but the interval construction has a concrete invalid-timestamp edge case and the new cross-process proof is not reliable enough to validate the atomicity guarantee. SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-08-07T10:04:12.984417+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "partial",
+      "raw_excerpt": "[deepseek] No real defects found. The diff implements the spec's attempt auto-numbering and per-unit emission correctly, using atomic count-then-append and a process-local cache, with proper catalog/doc updates. Tests cover all testable acceptance criteria (AC2–AC13), including orphan recovery, legacy compatibility, import-path isolation, per-unit clamping, over-length degradation, and cross-process lock serialization. No regressions in existing callers, no new security vulnerabilities, and no unhandled edge cases that would break production behavior.\n\nSHIPWRIGHT_VERDICT: approve\n\n[openai] - Category: edge-case\n- Severity: medium\n- File: `shared/scripts/tools/suite_timing.py:183`\n- Finding: The unit end timestamp is clamped to `parent_end`, but the unit start timestamp is not. If `unit.started_utc` is later than `parent_end`—possible with wall-clock skew, a short/incorrect `result.seconds`, or a hand-built/alternate `UnitResult`—`min(started + duration, parent_end)` produces `end_utc < start_utc`. This creates the inverted child interval the specification explicitly says must not be emitted, and can cause rejection or incorrect hierarchy folding.\n- Suggestion: Clamp or validate `started` against the parent interval before constructing the child interval, then ensure `end >= start` (for example, clamp `started` to `parent_end` and calculate `end = max(started, min(..., parent_end))`). Add a test where `started_utc` is after `parent_end`.\n\n- Category: test\n- Severity: medium\n- File: `shared/tests/test_iterate_timings.py:151`\n- Finding: `test_record_producer_span_counted_serializes_across_real_OS_processes` starts subprocesses without a start barrier or an intentionally widened count-to-write window. A broken implementation with no effective cross-process lock can still pass whenever the OS happens to schedule the six very short read/count/write operations sequentially. The test therefore does not reliably prove the cross-process atomicity claimed by the new primitive.\n- Suggestion: Synchronize subprocesses before the counted call and make `count_prior` deliberately pause after reading entries. With a functioning lock, calls serialize and produce `{1..N}`; without one, multiple processes read the same prior count and deterministically collide.\n\nOverall assessment: ship-with-fixes. The core implementation largely follows the specified producer-owned attempt and unit-span design, but the interval construction has a concrete invalid-timestamp edge case and the new cross-process proof is not reliable enough to validate the atomicity guarantee.   […truncated]",
+      "verdicts": {
+        "openai": "revise",
+        "deepseek": "approve"
+      }
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-07T09:50:06.303168+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    }
+  }
+}

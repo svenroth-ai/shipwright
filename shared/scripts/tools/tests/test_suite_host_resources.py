@@ -32,7 +32,7 @@ def test_every_host_request_is_capped_to_the_hardware_budget(monkeypatch):
     assert lease_cpu_weight(SuiteConfig(max_workers=440)) == 22
     assert lease_cpu_weight(SuiteConfig(max_workers=8)) == 8
     assert lease_cpu_weight(SuiteConfig()) == 22
-    assert mod.cpu_budget(SuiteConfig(max_workers=440)) == 22
+    assert host_mod.cpu_budget(SuiteConfig(max_workers=440)) == 22
 
 
 def test_repo_policy_allows_two_siblings_and_keeps_integration_serial():
