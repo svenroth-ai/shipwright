@@ -64,12 +64,6 @@
           "note": "the full existing test_sweep_*/test_triage_*/test_reconcile_* suite (27 files) is unchanged and re-run as the behavior-snapshot baseline; this diff does not touch any of that logic"
         },
         {
-          "behavior": "sweep_outbox still does not check is_detached (the asymmetric-risk decision documented in main_tree_guards.py's docstring)",
-          "disposition": "untestable",
-          "reason_code": "not-a-runtime-behavior",
-          "note": "a deliberate non-change, not a new/changed behavior to pin -- it never checked before; the decision is recorded in prose in the module docstring and the mini-plan, not as a runtime assertion"
-        },
-        {
           "behavior": "sweep_outbox's op-in-progress AND staged-changes guards now fail closed (skip) rather than raising when git itself cannot be run, closing a latent contract violation -- proven at both the predicate and the public API",
           "disposition": "tested",
           "evidence": "shared/tests/test_store_git_timeout_paths.py::test_op_in_progress_fails_closed_when_git_is_unrunnable + ::test_has_staged_changes_fails_closed_when_git_is_unrunnable + ::test_sweep_skips_when_git_is_unrunnable_end_to_end (public SweepResult(status=\"skipped\", reason=\"op_in_progress\") contract)"
@@ -78,12 +72,12 @@
       "counts": {
         "testable": 4,
         "tested": 4,
-        "untestable": 2,
+        "untestable": 1,
         "untested_testable": 0
       },
       "enumeration_basis": {
-        "acs": 6,
-        "covered_acs": 6
+        "acs": 5,
+        "covered_acs": 5
       },
       "ledger_path": ".shipwright/planning/iterate/iterate-2026-08-07-shared-op-predicates-miniplan.md"
     },

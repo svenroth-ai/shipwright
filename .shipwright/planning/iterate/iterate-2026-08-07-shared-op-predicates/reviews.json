@@ -156,9 +156,9 @@
       "findings_count": 0,
       "findings": [],
       "provider": null,
-      "completed_at": "2026-08-07T22:12:09.472669+00:00",
+      "completed_at": "2026-08-07T23:07:57.490273+00:00",
       "disposition": null,
-      "recorded_by": "spec-reviewer(opus)",
+      "recorded_by": "spec-reviewer",
       "parse_status": null,
       "raw_excerpt": null
     }
