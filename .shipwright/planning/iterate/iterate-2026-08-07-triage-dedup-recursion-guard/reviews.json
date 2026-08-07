@@ -252,9 +252,9 @@
       "findings_count": 0,
       "findings": [],
       "provider": null,
-      "completed_at": "2026-08-07T22:01:52.551005+00:00",
+      "completed_at": "2026-08-07T22:52:55.618196+00:00",
       "disposition": null,
-      "recorded_by": "spec-reviewer (re-review, agent a89ba88050817674f)",
+      "recorded_by": "spec-reviewer",
       "parse_status": null,
       "raw_excerpt": null
     }
