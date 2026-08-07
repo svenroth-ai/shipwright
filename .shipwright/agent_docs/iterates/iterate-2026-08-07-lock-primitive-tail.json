@@ -1,6 +1,6 @@
 {
   "run_id": "iterate-2026-08-07-lock-primitive-tail",
-  "date": "2026-08-07T23:17:40.713061Z",
+  "date": "2026-08-07T23:35:49.415679Z",
   "event_at": "2026-08-07T23:16:48.880688+00:00",
   "type": "bug",
   "complexity": "small",
@@ -96,5 +96,10 @@
     "evidence_path": ".shipwright/runs/iterate-2026-08-07-lock-primitive-tail/surface_verification.json",
     "detail": "Pure Python library/plugin change (file-locking primitives + retry predicate in shared/scripts/lib and plugins/shipwright-run/scripts/lib) with no dev_url, no web UI, no running server surface -- coverage is via the F0 pytest suite (554+38 unit/integration tests touching the diff directly, 96% diff-coverage) plus real-OS-primitive fidelity tests (msvcrt byte-range locks, cross-thread FileLock exclusion), not a browser/API/CLI-fixture surface."
   },
-  "declared_removals": []
+  "declared_removals": [
+    {
+      "path": "shared/tests/test_atomic_write_windows_read_retry.py",
+      "reason": "Merge with origin/main (P2.41a, #592): origin added a 4th hardcoded tuple entry (test_gate_policy_read_retry.py) to the drift guard's file list; this run's branch had already replaced that hardcoded tuple with a glob (test_atomic_write*.py + test_durable_publish*.py + an explicit test_gate_policy_read_retry.py entry, floor >=8) that is a verified superset -- it covers every file the removed tuple named, plus 4 more. Resolved by keeping the glob version; the 2 removed lines are the now-redundant hardcoded tuple entries, not a loss of coverage. Verified: `pytest shared/tests/test_atomic_write_windows_read_retry.py shared/tests/test_gate_policy_read_retry.py -q` -- 8 passed post-merge."
+    }
+  ]
 }
