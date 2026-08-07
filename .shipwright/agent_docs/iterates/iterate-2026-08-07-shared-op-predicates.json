@@ -1,0 +1,32 @@
+{
+  "run_id": "iterate-2026-08-07-shared-op-predicates",
+  "date": "2026-08-07T23:03:10.201814Z",
+  "event_at": "2026-08-07T23:02:47.746996+00:00",
+  "type": "change",
+  "complexity": "small",
+  "prior_source": "history",
+  "branch": "iterate/shared-op-predicates",
+  "spec": null,
+  "tests_passed": true,
+  "adr": "iterate-2026-08-07-shared-op-predicates",
+  "test_completeness": {
+    "status": "complete",
+    "counts": {
+      "testable": 4,
+      "tested": 4,
+      "untestable": 2,
+      "untested_testable": 0
+    },
+    "enumeration_basis": {
+      "acs": 6,
+      "covered_acs": 6
+    }
+  },
+  "surface_verification": {
+    "surface": "none",
+    "exit_code": 0,
+    "tests_run": 0,
+    "justification": "No startable surface: internal shared library predicate dedup, exercised only by the pytest suite."
+  },
+  "declared_removals": []
+}

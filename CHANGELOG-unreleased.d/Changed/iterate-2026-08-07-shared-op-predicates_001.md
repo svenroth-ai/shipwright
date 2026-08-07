@@ -1,0 +1,1 @@
+Merged sweep_outbox's duplicate git-state predicates (op-in-progress, staged-changes) into the shared main_tree_guards module, closing a latent gap where an unrunnable git binary raised instead of failing closed

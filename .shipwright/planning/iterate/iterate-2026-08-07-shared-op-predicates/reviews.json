@@ -1,0 +1,166 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-08-07-shared-op-predicates",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-07T22:07:54.713811+00:00",
+      "disposition": null,
+      "recorded_by": "claude-self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 4,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "The proposed import swap is not fully behavior-preserving: `main_tree_guards` catches `OSError` from `run_git_soft`, while the current sweep-local predicates propagate it. This is a sensible fail-closed improvement, but it conflicts with the stated “mechanical”/behavior-preserving framing and acceptance criterion unless that criterion is explicitly understood to exclude an unrunnable Git executable. The claim that this is unreachable because earlier Git calls succeeded is not a complete guarantee: executable availability, permissions, or process-launch conditions can change between calls.",
+          "suggestion": "Treat this as an explicit, narrowly scoped behavior change in the implementation record and commit description, rather than describing the extraction as pure/mechanical. More importantly, test the public `sweep_outbox_to_branch` outcome under `OSError`, not only the private predicate, so the promised structured skip result and reason are verified.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The new `OSError` coverage only exercises `_op_in_progress`. `_has_staged_changes` receives the same changed `OSError` behavior after delegation: it will now fail closed rather than raise. Its path can result in a different structured skip classification than the operation-in-progress path, so testing only the shared sentinel behavior through the first predicate does not cover the second changed sweep outcome.",
+          "suggestion": "Add coverage for `mtg.run_git_soft` raising during the staged-change probe, ideally through `sweep_outbox_to_branch`, and assert that it returns the expected structured skip result without performing a commit. If direct predicate coverage is retained, add `so._has_staged_changes(repo) is True` as well, but prefer an API-level assertion for the observable contract.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "Renaming `main_tree_guards` parameters from `main_root` to `root` is unrelated to deduplicating the predicates and can break keyword callers outside the repository, even if all in-repo callers are positional. The import extraction does not require this API rename.",
+          "suggestion": "Keep the existing parameter names for this iterate and update only prose/docstrings to clarify that the guarded tree may be a worktree. Perform a parameter rename separately only if the module’s caller boundary is known to be private or compatibility is intentionally managed.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "The verification plan permits “full `shared/tests` root once more (or the scoped 27-file set).” Since `main_tree_guards` is already used by `reconcile_triage` and `triage_gc_publish`, this shared-leaf change can affect consumers outside sweep-specific tests. A curated scoped list is useful for iteration but is weaker as the final gate.",
+          "suggestion": "Require the full `shared/tests` suite as the final verification gate. Keep the scoped snapshot and targeted tests for fast feedback, but do not make them an alternative to the full suite.  Overall, delegation to `main_tree_guards` is the right simplification, and retaining the `is_detached` asymmetry is well justified. The plan needs to acknowledge and fully test the intentional `OSError` behavior change, while avoiding the unnecessary shared-function parameter rename. SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter (deepseek+openai)",
+      "completed_at": "2026-08-07T22:07:09.763354+00:00",
+      "disposition": null,
+      "recorded_by": "opus-plan-reviewer+external_review.py",
+      "parse_status": "partial",
+      "raw_excerpt": "[deepseek] **Findings**\n\n| # | Category | Severity | Finding | Suggestion |\n|---|----------|----------|---------|------------|\n| 1 | approach | medium | The plan bases the `main_root` → `root` rename on “grepped every call site; none pass it as a keyword”, but does **not** explicitly verify internal references inside `main_tree_guards.py`’s own function bodies (e.g. in `_probe`, `op_in_progress`, `has_staged_changes`). If a leftover `main_root` reference remains, the module will raise `NameError` on first invocation. | After the rename, search **all** occurrences of `main_root` in the repo (including within `main_tree_guards.py` itself). Confirm zero hits before committing. The plan already says “throughout” – this is a belt-and-suspenders check before code review. |\n| 2 | edge-case | low | The new `FileNotFoundError` test only covers `so._op_in_progress`. `_has_staged_changes` shares the same `_probe` path, so the risk is negligible, but nothing explicitly guards against someone later diverging the two predicates’ failure‑closed behavior. | Either add an analogous one‑line assert for `so._has_staged_changes(repo) is True` when `mtg.run_git_soft` raises `FileNotFoundError`, or note in the test docstring / commit message that `_probe` centralizes the `except OSError` branch and is already covered. Not a blocker. |\n\n**Overall assessment**\n\nThe approach is sound: a mechanical import swap that eliminates the duplicated predicates with a documented, tested behavior‑tightening instead of a silent change. The plan correctly scopes the work, preserves the `is_detached` asymmetry for good reasons, updates all affected tests, and adds new coverage for the latent contract‑violation fix. The only actionable concern is verifying the internal rename in `main_tree_guards.py` to avoid a `NameError` – a trivial grep that can be done before the final diff is merged.\n\nSHIPWRIGHT_VERDICT: approve\n\n[openai] 1. **Category:** risk  \n   **Severity:** medium  \n   **Finding:** The proposed import swap is not fully behavior-preserving: `main_tree_guards` catches `OSError` from `run_git_soft`, while the current sweep-local predicates propagate it. This is a sensible fail-closed improvement, but it conflicts with the stated “mechanical”/behavior-preserving framing and acceptance criterion unless that criterion is explicitly understood to exclude an unrunnable Git executable. The claim that this is unreachable because earlier Git calls succeeded is not a complete guarantee: executable availability, permissions, or process-launch conditions can change between calls.  \n   **Suggestion:** Treat this as an explicit, narrowly scoped behavior change in the implementation record and commit description, rather than describing the extraction as pure/mechanical. More importantly, test the public `sweep_outbox_to_branch` outcome under `OSError`, not only the private predicate, so the promised structured skip result and reason are verified.\n\n2. **Category:** edge-case  \n   **Severity:** medium  \n   **Finding:** The new `OSError` coverage only exercises `_op_in_progress`. `_has_staged_changes` receives the same changed `OSError` behavior after delegation: it will now fail closed rather than raise. Its path can result in a different structured skip classification than the operation-in-progress path, so testing only the shared sentinel behavior through the first predicate does not cover the second changed sweep outcome.  \n   **Suggestion:** Add coverage for `mtg.run_git_soft` raising during the staged-change probe, ideally through `sweep_outbox_to_branch`, and assert that it returns the expected structured skip result without performing a commit. If direct predicate coverage is retained, add `so._has_staged_changes(repo) is True` as well, but prefer an API-level assertion for the observable contract.\n\n3. **Category:** risk  \n   **Severity:** low  \n   **Finding:** Renaming `main_t […truncated]",
+      "verdicts": {
+        "openai": "revise",
+        "deepseek": "approve"
+      }
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 3,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "architecture",
+          "file": "shared/tests/test_main_tree_git_timeout_paths.py",
+          "line": 310,
+          "finding": "File was 304 lines (already over the 300-line guideline, no baseline entry) before this diff; retargeting the missed third test plus a docstring note and a re-export identity assert grew it to 310, then 308 after an initial trim.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/tests/test_store_git_timeout_paths.py",
+          "line": 140,
+          "finding": "test_sweep_skips_when_git_is_unrunnable_end_to_end's docstring overclaimed scope: it only proves the guard seam (mtg.run_git_soft) fails closed through the public sweep_outbox_to_branch contract, not that sweep_outbox.py's own bare run_git_soft calls (add/diff --cached/commit) also fail closed on OSError.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "shared/tests/test_store_git_timeout_paths.py",
+          "line": 111,
+          "finding": "The two-line `_unrunnable` test double was defined as a local closure identically 3 times, when the file already keeps this exact pattern (`_timeout`) at module level (line 40).",
+          "suggestion": null,
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-08-07T22:37:38.949724+00:00",
+      "disposition": null,
+      "recorded_by": "opus-code-reviewer, findings dispositioned by main session",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 2,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "hidden coupling & blast radius",
+          "file": "shared/scripts/lib/main_tree_guards.py",
+          "line": null,
+          "finding": "Claim under doubt: for sweep_outbox a stranded (detached-HEAD) commit is 'a wasted commit, never lost operator data' — The argument covers only the GC rule. It omits the OTHER mutation the same run performs: sweep_outbox.py:153 calls commit_main_tracked_drift, which (sweep_drift.py:263-289) writes the drift into the GITIGNORED outbox and then `git restore`s main's tracked log — removing those lines from the tracked copy. On a detached worktree HEAD the delivery commit is unreferenced and dies with the worktree, leaving main's log clean and the sole copy in .shipwright/triage.outbox.jsonl — exactly the state sweep_outbox.py:126-128 itself labels 'code review, high'. Recoverable (the outbox lives on main_root and a later sweep redelivers), so not data loss — but the stated risk profile is narrower than reality, and this docstring is what a future second caller will rely on.",
+          "suggestion": "Extend the docstring's asymmetry paragraph to name the drift-adoption side effect and say why 'outbox survives on main_root' still holds, OR state plainly that the omission is licensed by the single-caller invariant (setup_iterate_worktree always -b) rather than by the loss argument.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "reversibility / observability",
+          "file": "shared/scripts/lib/main_tree_guards.py",
+          "line": null,
+          "finding": "Claim under doubt: the OSError widening only turns a crash into a graceful skip — _probe builds `str(exc)` into the sentinel's stderr and op_in_progress then discards it, returning bare True. A transient non-missing-git OSError at step 5 (PermissionError from AV quarantining git.exe mid-run, EMFILE, WinError 1455) now surfaces to the operator as `sweep-outbox skipped: op_in_progress` (sweep_result.py:83) — a cause that is factually false and sends them hunting a nonexistent merge/rebase in the worktree. Previously the OSError text was in the traceback. Note the 'git missing' case is unreachable in production (step 4's worktree add would already have failed), so the reachable cases are precisely the mislabelled ones.",
+          "suggestion": "Either surface the sentinel distinctly (e.g. reason `git_unrunnable` when returncode==_UNRUNNABLE) or add a one-line note to main_tree_guards.py:45-47 that the diagnostic string is deliberately dropped and the caller-visible reason is intentionally the hazard name, not the cause.",
+          "source": "doubt-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-08-07T22:31:09.536196+00:00",
+      "disposition": null,
+      "recorded_by": "opus-doubt-reviewer, both findings dispositioned by main session",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-07T22:31:17.634356+00:00",
+      "disposition": "Operator's explicit process instruction for this run named internal Opus plan review + external LLM plan review (mode=iterate) + internal Opus review cascade (spec-reviewer/code-reviewer/doubt-reviewer) — no external code-diff review was requested, and this is a small mechanical SIMPLIFY extraction already covered by 2 internal Opus review stages plus an external plan-review round that examined the same behavior delta (OSError widening) the code diff implements. Skipping external_code is a scoped, reasoned disposition, not a session-policy default.",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-07T22:12:09.472669+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer(opus)",
+      "parse_status": null,
+      "raw_excerpt": null
+    }
+  }
+}

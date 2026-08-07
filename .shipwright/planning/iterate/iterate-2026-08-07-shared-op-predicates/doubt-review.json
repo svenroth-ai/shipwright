@@ -1,0 +1,31 @@
+{
+  "stage": "doubt",
+  "gating": "advisory-must-address",
+  "trigger": "cross-module-import + irreversible-write-path",
+  "doubts": [
+    {
+      "severity": "medium",
+      "lens": "hidden coupling & blast radius",
+      "category": "reasoning-incomplete",
+      "file": "shared/scripts/lib/main_tree_guards.py",
+      "line": "15-25",
+      "claim_under_doubt": "for sweep_outbox a stranded (detached-HEAD) commit is 'a wasted commit, never lost operator data'",
+      "disproof_attempt": "The argument covers only the GC rule. It omits the OTHER mutation the same run performs: sweep_outbox.py:153 calls commit_main_tracked_drift, which (sweep_drift.py:263-289) writes the drift into the GITIGNORED outbox and then `git restore`s main's tracked log — removing those lines from the tracked copy. On a detached worktree HEAD the delivery commit is unreferenced and dies with the worktree, leaving main's log clean and the sole copy in .shipwright/triage.outbox.jsonl — exactly the state sweep_outbox.py:126-128 itself labels 'code review, high'. Recoverable (the outbox lives on main_root and a later sweep redelivers), so not data loss — but the stated risk profile is narrower than reality, and this docstring is what a future second caller will rely on.",
+      "what_would_resolve_it": "Extend the docstring's asymmetry paragraph to name the drift-adoption side effect and say why 'outbox survives on main_root' still holds, OR state plainly that the omission is licensed by the single-caller invariant (setup_iterate_worktree always -b) rather than by the loss argument.",
+      "disposition": "fixed. Independently verified against sweep_drift.py:252-291: the outbox write (step 1) is durable and happens before, and independent of, the later worktree commit's success/loss — so the docstring's ultimate 'no data loss' conclusion holds, but its stated path to it was narrower than the actual reasoning chain. Docstring's asymmetry paragraph extended to name the drift-adoption side effect, cite sweep_drift.py's write-order, and note both the GC rule and the single-caller invariant jointly license the decision. No behavior change — docstring only."
+    },
+    {
+      "severity": "low",
+      "lens": "reversibility / observability",
+      "category": "error-masking",
+      "file": "shared/scripts/lib/main_tree_guards.py",
+      "line": "58-61, 76",
+      "claim_under_doubt": "the OSError widening only turns a crash into a graceful skip",
+      "disproof_attempt": "_probe builds `str(exc)` into the sentinel's stderr and op_in_progress then discards it, returning bare True. A transient non-missing-git OSError at step 5 (PermissionError from AV quarantining git.exe mid-run, EMFILE, WinError 1455) now surfaces to the operator as `sweep-outbox skipped: op_in_progress` (sweep_result.py:83) — a cause that is factually false and sends them hunting a nonexistent merge/rebase in the worktree. Previously the OSError text was in the traceback. Note the 'git missing' case is unreachable in production (step 4's worktree add would already have failed), so the reachable cases are precisely the mislabelled ones.",
+      "what_would_resolve_it": "Either surface the sentinel distinctly (e.g. reason `git_unrunnable` when returncode==_UNRUNNABLE) or add a one-line note to main_tree_guards.py:45-47 that the diagnostic string is deliberately dropped and the caller-visible reason is intentionally the hazard name, not the cause.",
+      "disposition": "fixed via the minimal in-scope option offered (not the distinct-reason alternative, which would be an observable behavior change beyond a mechanical extraction). Added a docstring note to _probe stating the diagnostic string is deliberately dropped and every caller's hazard name already means 'could not confirm this is safe', not 'confirmed this specific hazard'. No behavior change — docstring only."
+    }
+  ],
+  "summary": "2 doubts raised (1 medium reasoning-completeness on the is_detached justification, 1 low error-masking/mislabelled skip reason). Doubt-reviewer explicitly tried and failed to find: hidden importers/patchers of the old private names, a circular import, whether _PRIVATE_ALIASES is actually CI-collected, blast radius beyond the 3 known callers, and whether the is_detached omission is reachable for the sole production caller — all disproved. Both surviving doubts verified independently against source (sweep_drift.py, sweep_outbox.py) before disposition; both resolved with docstring-only precision fixes, no behavior change, consistent with SIMPLIFY's Iron Law.",
+  "verification": "Re-ran the 4 relevant test files after applying both docstring fixes: `uv run pytest tests/test_store_git_timeout_paths.py tests/test_main_tree_git_timeout_paths.py tests/test_triage_write_path_contracts.py tests/test_sweep_outbox_gc_reread.py -q` -> 29 passed. `uvx ruff@0.15.15 check shared/scripts/lib/main_tree_guards.py` -> All checks passed. File grew 159 -> 175 lines (docstring-only); no baseline entry existed or is needed (still under 300)."
+}
