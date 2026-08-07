@@ -43,17 +43,27 @@ def test_no_test_here_forces_the_platform_by_patching_os_name():
     Globs the family rather than naming each file (code-reviewer, MEDIUM): a
     hardcoded tuple silently stops covering a new sibling — exactly what
     happened when `test_atomic_write_read_winerror_none.py` was added and
-    this guard, at the time, did not see it.
+    this guard, at the time, did not see it. Two prefixes, not one
+    (P2.41a merge, #592): `test_durable_publish*.py` patches the same
+    `aw._is_windows` lever for the write-mode-carry path, and
+    `test_gate_policy_read_retry.py` for `gate_policy`'s own read retry —
+    a single `test_atomic_write*` glob silently missed both families.
     """
     here = Path(__file__)
-    paths = sorted(here.parent.glob("test_atomic_write*.py"))
+    paths = sorted(
+        {
+            *here.parent.glob("test_atomic_write*.py"),
+            *here.parent.glob("test_durable_publish*.py"),
+            here.with_name("test_gate_policy_read_retry.py"),
+        }
+    )
     # A floor, not a ceiling (doubt-reviewer, D7): a glob trades "a new
     # sibling goes uncovered" for "a rename out of the prefix, or any bug
     # that shrinks the match, goes uncovered instead" -- an empty or
     # shrunk-below-known result must fail loudly, not just do less work.
-    assert len(paths) >= 5, (
+    assert len(paths) >= 8, (
         f"only found {[p.name for p in paths]} -- the glob itself may be "
-        f"broken, or files were renamed out of the test_atomic_write* family"
+        f"broken, or files were renamed out of the covered families"
     )
     for path in paths:
         src = path.read_text(encoding="utf-8")
