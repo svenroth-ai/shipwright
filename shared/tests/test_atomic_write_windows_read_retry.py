@@ -43,7 +43,8 @@ def test_no_test_here_forces_the_platform_by_patching_os_name():
     here = Path(__file__)
     for path in (here,
                  here.with_name("test_atomic_write.py"),
-                 here.with_name("test_atomic_write_windows_retry.py")):
+                 here.with_name("test_atomic_write_windows_retry.py"),
+                 here.with_name("test_gate_policy_read_retry.py")):
         src = path.read_text(encoding="utf-8")
         # Built from parts so this guard does not match its own source.
         needle = 'setattr(aw.os, ' + '"name"'
