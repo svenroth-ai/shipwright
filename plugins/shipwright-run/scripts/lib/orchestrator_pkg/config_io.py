@@ -189,22 +189,31 @@ def is_v2_config(config: dict[str, Any]) -> bool:
 # agree on every content class: decode, parse (incl. the `RecursionError` past
 # json's nesting limit), shape, and the UTF-8 BOM.
 #
-# ONE divergence remains, and it is on the READ leg, not the content: this module
-# reads via `durable_read_text`, which retries for READ_RETRY_BUDGET_SECONDS past
-# the delete-pending `PermissionError` a concurrent `os.replace` causes on Windows;
-# `read_run_config_mode` uses a plain `Path.read_text` and answers INERT_MODE on the
-# first one. So a config being rewritten underneath them can still split the two.
-# Left open deliberately (a sibling import inside `shared/scripts/lib` is invisible
-# to the usual pytest roots, and that file is at its LOC cap) — stated, not papered
-# over with an unconditional parity claim.
+# The READ leg is now in lockstep too, WITHIN THE RETRY BUDGET (closed in
+# iterate-2026-08-07-gate-policy-durable-read-parity, P2.41a): `read_run_config_mode`
+# reads via `lib.atomic_write.durable_read_text` (a module-level sibling import,
+# mirroring `lib.adr_index`'s), retrying for READ_RETRY_BUDGET_SECONDS past a
+# concurrent `os.replace`'s delete-pending `PermissionError` on Windows exactly
+# like this module's `_read_parse_shape` — instead of answering INERT_MODE on the
+# first one. NOTE the two are distinct loaded instances of the same source file:
+# this module reaches `durable_read_text` through the top-level `atomic_write`
+# import in `run_config_store.py` (needs `shared/scripts/lib` on sys.path), while
+# `gate_policy` reaches it through `lib.atomic_write` (needs the PARENT dir,
+# `shared/scripts`, on sys.path instead) — a pre-existing, harmless ADR-045-shaped
+# duplicate load, not something either side should try to collapse.
 #
-# Note the disposal asymmetry too: the STRICT reader raises `RunConfigUnreadable`,
-# `load_run_config` degrades `parse`/`shape` to `{}` and re-raises the ORIGINAL
-# exception for `decode`/`io`, and the reporter degrades everything to INERT_MODE.
+# PAST the budget the lockstep ends: the STRICT reader still raises
+# `RunConfigUnreadable`, `load_run_config` still degrades `parse`/`shape` to `{}`
+# and re-raises the ORIGINAL exception for `decode`/`io` — but the reporter still
+# degrades to INERT_MODE regardless, a genuinely different verdict for a holder
+# stuck past the retry window. Also load-bearing: `mode` is write-once (never
+# mutated in place after `create_config`/an explicit mode change), so the parity
+# claim above is about reading a settled value mid-rewrite, not about the two
+# readers observing a value that is itself changing between polls.
 #
-# They cannot be unified (`shared/` must not import a plugin), so the lockstep is by
-# convention: a new failure mode classified HERE must be handled THERE in the same
-# diff, or the two silently start answering differently again.
+# The two readers cannot be unified (`shared/` must not import a plugin), so the
+# lockstep is by convention: a new failure mode classified HERE must be handled
+# THERE in the same diff, or the two silently start answering differently again.
 # --------------------------------------------------------------------------- #
 
 # NOTE: there is deliberately NO ``run_mode()`` reporter here. One existed briefly and

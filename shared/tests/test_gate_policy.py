@@ -203,7 +203,7 @@ def test_read_run_config_mode_degrades_instead_of_crashing_the_caller(tmp_path, 
 
     Availability, not safety: all of these still resolve INERT, so no gate is ever
     weakened by this test passing. ``config_io._read_parse_shape`` detects the same
-    CONTENT classes (the two still differ on the read leg — see its Mode section).
+    CONTENT classes, and (P2.41a) now the same read leg too — see its Mode section.
     """
     (tmp_path / "shipwright_run_config.json").write_bytes(payload)
     assert read_run_config_mode(tmp_path) == INERT_MODE

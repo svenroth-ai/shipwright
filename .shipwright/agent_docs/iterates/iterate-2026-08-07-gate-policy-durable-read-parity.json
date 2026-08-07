@@ -1,0 +1,63 @@
+{
+  "run_id": "iterate-2026-08-07-gate-policy-durable-read-parity",
+  "date": "2026-08-07T22:47:15.387758Z",
+  "event_at": "2026-08-07T22:46:17.474982+00:00",
+  "type": "bug",
+  "complexity": "small",
+  "prior_source": "history",
+  "branch": "iterate/gate-policy-durable-read-parity",
+  "spec": ".shipwright/planning/iterate/iterate-2026-08-07-gate-policy-durable-read-parity/spec.md",
+  "tests_passed": true,
+  "adr": "iterate-2026-08-07-gate-policy-durable-read-parity",
+  "test_completeness": {
+    "status": "complete",
+    "behaviors": [
+      {
+        "behavior": "read_run_config_mode retries a transient Windows delete-pending read and resolves SINGLE_SESSION instead of degrading on the first violation",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_gate_policy_read_retry.py::test_read_run_config_mode_survives_a_windows_delete_pending_read PASSED; verified via git-stash to FAIL against the pre-fix gate_policy.py"
+      },
+      {
+        "behavior": "read_run_config_mode still degrades to INERT_MODE past retry-budget exhaustion (fail-safe direction preserved)",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_gate_policy_read_retry.py::test_read_run_config_mode_still_fails_safe_past_the_retry_budget PASSED"
+      },
+      {
+        "behavior": "the orchestrator loop reader (config_io) and the gate-policy reporter agree under an identical simulated concurrent-rewrite race",
+        "disposition": "tested",
+        "evidence": "plugins/shipwright-run/tests/test_runconfig_read_retry_parity.py::test_the_two_readers_agree_under_the_identical_flaky_read PASSED; verified via git-stash to FAIL against the pre-fix gate_policy.py"
+      },
+      {
+        "behavior": "content-class parity (decode/parse/shape/BOM, closed by iterate-2026-08-06-shared-read-run-config-mode-guard) is unaffected by this read-leg change",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_gate_policy.py full suite (34 tests) re-run green, no assertions changed"
+      },
+      {
+        "behavior": "gate_policy.py stays within its grandfathered 301-line bloat-baseline cap (zero headroom)",
+        "disposition": "tested",
+        "evidence": "wc -l shared/scripts/lib/gate_policy.py == 301; uvx ruff@0.15.15 check passed; re-verified after every edit including the doubt-review revert"
+      },
+      {
+        "behavior": "the Windows-vs-non-Windows platform branch is forced via the supported aw._is_windows lever, not os.name (drift guard)",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_atomic_write_windows_read_retry.py::test_no_test_here_forces_the_platform_by_patching_os_name PASSED (now also walks test_gate_policy_read_retry.py)"
+      }
+    ],
+    "counts": {
+      "testable": 6,
+      "tested": 6,
+      "untestable": 0,
+      "untested_testable": 0
+    },
+    "enumeration_basis": {
+      "acs": 5,
+      "covered_acs": 5
+    },
+    "ledger_path": ".shipwright/planning/iterate/iterate-2026-08-07-gate-policy-durable-read-parity/spec.md"
+  },
+  "surface_verification": {
+    "status": "n/a",
+    "justification": "no dev_url / web surface for this pure-library change; F0.5 does not apply"
+  },
+  "declared_removals": []
+}
