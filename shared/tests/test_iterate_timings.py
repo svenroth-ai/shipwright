@@ -105,7 +105,7 @@ def test_record_producer_span_counted_resolves_attempt_1_on_empty_sidecar(tmp_pa
         tmp_path, RUN, name="f0_queue", parent="verification",
         start_utc="2026-08-07T10:00:00+00:00", end_utc="2026-08-07T10:00:01+00:00",
         duration_ms=1000, extra={"weight": 1, "capacity": 1},
-        count_prior=lambda entries: len(entries))
+        count_prior=len)
     assert attempt == 1
     raw = itn.read_raw_events(tmp_path, RUN)
     assert len(raw) == 1
@@ -150,7 +150,7 @@ def test_record_producer_span_counted_rejects_bad_extra_before_writing(tmp_path)
             tmp_path, RUN, name="f0_queue", parent="verification",
             start_utc="2026-08-07T10:00:00+00:00", end_utc="2026-08-07T10:00:01+00:00",
             duration_ms=1000, extra={"raw_console_output": "nope"},
-            count_prior=lambda entries: len(entries))
+            count_prior=len)
     assert itn.read_raw_events(tmp_path, RUN) == []
 
 
@@ -161,11 +161,11 @@ def test_record_producer_span_counted_two_calls_never_collide_same_process(tmp_p
     _, first = it.record_producer_span_counted(
         tmp_path, RUN, name="f0_queue", parent="verification",
         start_utc="2026-08-07T10:00:00+00:00", end_utc="2026-08-07T10:00:01+00:00",
-        duration_ms=1000, count_prior=lambda entries: len(entries))
+        duration_ms=1000, count_prior=len)
     _, second = it.record_producer_span_counted(
         tmp_path, RUN, name="f0_queue", parent="verification",
         start_utc="2026-08-07T10:05:00+00:00", end_utc="2026-08-07T10:05:01+00:00",
-        duration_ms=1000, count_prior=lambda entries: len(entries))
+        duration_ms=1000, count_prior=len)
     assert first == 1
     assert second == 2
 
