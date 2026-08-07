@@ -1,44 +1,43 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-08-07-windows-ci-perf"
+run_id: "iterate-2026-07-28-docs-placement-rule"
 phase: "iterate"
-reason: "iterate: windows-tests.yml perf + ACL owner-check bugfix"
-timestamp: "2026-08-07T23:17:47.920155+00:00"
+reason: "iterate: docs/ placement rule + remove one generated artifact and five finished records"
+timestamp: "2026-07-28T12:18:50.089137+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-08-07 23:17:47 UTC
+> Auto-generated 2026-07-28 12:18:50 UTC
 
 ## Session Info
 
-- **Session ID**: 51e684eb-1055-4c5c-8870-1685eff87453
-- **Timestamp**: 2026-08-07 23:17:47 UTC
-- **Reason**: iterate: windows-tests.yml perf + ACL owner-check bugfix
+- **Session ID**: 7c6c7b07-d3a2-4c91-ba4e-fab3535b5067
+- **Timestamp**: 2026-07-28 12:18:50 UTC
+- **Reason**: iterate: docs/ placement rule + remove one generated artifact and five finished records
 
 ## Last Iterate
 
-- **Run ID**: iterate-2026-08-07-context-cost-meter
-- **Date**: 2026-08-07T11:40:38.715687Z
-- **Type**: feature
+- **Run ID**: iterate-2026-07-28-docs-placement-rule
+- **Date**: 2026-07-28T12:18:44.151571Z
+- **Type**: change
 - **Complexity**: medium
-- **Branch**: iterate/context-cost-meter
-- **ADR**: iterate-2026-08-07-context-cost-meter
+- **Branch**: iterate/docs-placement-rule
+- **ADR**: iterate-2026-07-28-docs-placement-rule
 - **Tests passed**: True
-- **Spec**: .shipwright/planning/iterate/2026-08-07-context-cost-meter.md
+- **Spec**: .shipwright/planning/iterate/iterate-2026-07-28-docs-placement-rule.md
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/windows-ci-perf
-- **Run ID**: iterate-2026-08-07-windows-ci-perf
-- **Spec**: .shipwright/planning/iterate/2026-08-07-windows-ci-perf.md
-- **Complexity**: medium
-- **External Review Marker**: stale (predates spec (2026-08-07T21:54:25))
+- **Branch**: iterate/docs-placement-rule
+- **Run ID**: iterate-2026-07-28-docs-placement-rule
+- **Spec**: .shipwright/planning/iterate/iterate-2026-07-28-docs-placement-rule.md
+- **Complexity**: medium · **spec_impact:** none · **affected_frs:** [] ·
+- **External Review Marker**: completed (external_review_state.json @ 2026-07-28T11:58:04)
 
 ### Mandatory replay on Resume
 
 Before dispatching to the handoff's Remaining phase, run these if missing:
-- Step 4 — External LLM Review (marker missing/stale)
 - Finalization (F0–F11) after all mandatory phases pass
 
 ## Legacy build state
@@ -52,8 +51,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/windows-ci-perf
-- **Last Commit**: 357b3baa chore(triage): sweep 58 outbox append(s) into branch
+- **Branch**: iterate/docs-placement-rule
+- **Last Commit**: 7ec426a2 chore(triage): sweep 54 outbox append(s) into branch
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -69,17 +68,17 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 | Event | Type | Source | Date |
 |-------|------|--------|------|
-| evt-6dc2f9fe | work_completed | iterate (windows-tests.yml: single provisioning + shared/tests xdist (24-28min -> predicted 10-14min), plus root-caused fix for two Windows-only F0 test failures (trg-eed74a42): _windows_acl.py's owner check now accepts BUILTIN\Administrators/LocalSystem alongside the current user.) | 2026-08-07 |
-| evt-174cc3a7 | work_completed | iterate (test-phase-attribution) | 2026-08-07 |
-| evt-62ce2123 | grade_snapshot | — | 2026-08-07 |
-| evt-e18963b8 | work_completed | iterate (Context-cost meter: measure real per-token session cost from the transcript, phase-tagged, surfaced live) | 2026-08-07 |
-| evt-dfebda74 | work_completed | iterate (ensure_current absorbs a dirty tracked triage.jsonl before every merge attempt, so a background producer can no longer abort an iterate's pre-merge refresh with exit 6) | 2026-08-06 |
+| evt-003a4ccb | grade_snapshot | — | 2026-07-28 |
+| evt-a25fc820 | work_completed | iterate (iterate: docs/ placement rule + remove one generated artifact and five finished records) | 2026-07-28 |
+| evt-7963d51e | grade_snapshot | — | 2026-07-28 |
+| evt-2df150c5 | work_completed | iterate (Make a conditional session policy gating subagents a question asked before Stage 1 rather than a silent not_run at F11, and define what a real blocker is.) | 2026-07-28 |
+| evt-5f7e67f6 | grade_snapshot | — | 2026-07-28 |
 
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 494
-- **Last iterate**: change — windows-tests.yml: single provisioning + shared/tests xdist (24-28min -> predicted 10-14min), plus root-caused fix for two Windows-only F0 test failures (trg-eed74a42): _windows_acl.py's owner check now accepts BUILTIN\Administrators/LocalSystem alongside the current user. (2026-08-07)
+- **Total work events**: 400
+- **Last iterate**: change — iterate: docs/ placement rule + remove one generated artifact and five finished records (2026-07-28)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
 ## Recent Decisions
