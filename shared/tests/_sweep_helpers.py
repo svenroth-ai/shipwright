@@ -14,6 +14,8 @@ import subprocess
 import sys
 from pathlib import Path
 
+import pytest
+
 _SHARED_SCRIPTS = Path(__file__).resolve().parents[1] / "scripts"
 if str(_SHARED_SCRIPTS) not in sys.path:
     sys.path.insert(0, str(_SHARED_SCRIPTS))
@@ -183,3 +185,31 @@ def branch_triage_lines(wt: Path) -> set[str]:
 
 def outbox_lines(work: Path) -> set[str]:
     return {ln.strip() for ln in read_store_text(work / OUTBOX).splitlines() if ln.strip()}
+
+
+def outbox(work: Path) -> Path:
+    return work / OUTBOX
+
+
+def write_tracked(work: Path, *lines: str) -> str:
+    body = "\n".join(lines) + "\n"
+    write_store_bytes(work / TRIAGE, body)
+    return body
+
+
+@pytest.fixture
+def seeded(git_origin_repo):
+    """A main tree whose tracked triage log holds one committed item.
+
+    A bare top-level name so pytest resolves it as a fixture when imported
+    (``from _sweep_helpers import seeded``) — unlike the plain functions above,
+    a fixture cannot be called through the ``h.`` module-qualified convention
+    the rest of this file uses. Extracted here (code review, Stage 2) so a
+    third test module did not duplicate what ``test_sweep_drift_guards.py`` and
+    ``test_sweep_drift_commit.py`` each already define inline; those two keep
+    their own copies for now — de-duplicating pre-existing code is a separate,
+    boy-scout change."""
+    work, _origin = git_origin_repo
+    set_identity(work)
+    seed_tracked(work, item("trg-seed"))
+    return work

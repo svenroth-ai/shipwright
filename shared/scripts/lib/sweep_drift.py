@@ -1,5 +1,4 @@
-"""Adopt undelivered main-tree TRACKED triage drift into the outbox (the real
-delivery channel).
+"""Adopt undelivered main-tree TRACKED triage drift into the outbox (the real delivery channel).
 
 iterate-2026-07-14-sweep-drift-dismiss-loss. ``.shipwright/triage.jsonl`` is tracked, so
 an append that lands there while still UNCOMMITTED is delivered by nothing: the D2 sweep
@@ -27,7 +26,9 @@ The plan refuses (mutating NOTHING) unless it fully understands main's state:
   drift in the index → ``main_tracked_index_diverged``.
 * **well-formed drift** — every adoptable line must be a producer event, so adoption
   cannot poison the outbox with corruption whose source it then hides →
-  ``main_tracked_unparseable``.
+  ``main_tracked_unparseable``, or the narrower, still-refused ``main_tracked_glued_line``
+  (the AC14 shape — iterate-2026-08-06-triage-validate-deadends) — both name
+  ``triage_repair.py``.
 
 ``unrepairable`` is the third outcome and is NOT a refusal: a state we understand but
 cannot repair (no HEAD blob to restore to — e.g. local main is behind origin, or the
@@ -62,6 +63,8 @@ from lib.churn_merge import TRIAGE_LOG
 from lib.git_base import TIMEOUT_RETURNCODE, run_git_bytes_soft, run_git_soft
 from lib.sweep_drift_events import (  # noqa: F401  (re-export: existing importers)
     _EVENTS,
+    _bad_drift_reason,
+    _is_glued_producer_line,
     _is_header,
     _is_producer_event,
     _parsed,
@@ -231,11 +234,7 @@ def plan_main_tracked_drift(main_root: Path | str, outbox_path: Path) -> DriftPl
         )
     bad = next((n for n, ln in enumerate(drift, start=1) if not _is_producer_event(ln)), None)
     if bad is not None:
-        return DriftPlan(
-            "refused",
-            reason=f"main_tracked_unparseable: drift line {bad} is not a triage producer event",
-            known_append_ids=known,
-        )
+        return DriftPlan("refused", reason=_bad_drift_reason(bad, drift[bad - 1]), known_append_ids=known)
 
     buffered, _ = normalize_lines(read_text_verbatim(outbox_path))
     already = {ln.strip() for ln in buffered if ln.strip()}
