@@ -39,11 +39,23 @@ def test_no_test_here_forces_the_platform_by_patching_os_name():
     Patching `os.name` to reach the Windows branch is green on Windows and red
     on Linux CI (and vice versa), so nothing local catches a reintroduction.
     Assert on the source instead: the predicate is the only supported lever.
+
+    Globs the family rather than naming each file (code-reviewer, MEDIUM): a
+    hardcoded tuple silently stops covering a new sibling — exactly what
+    happened when `test_atomic_write_read_winerror_none.py` was added and
+    this guard, at the time, did not see it.
     """
     here = Path(__file__)
-    for path in (here,
-                 here.with_name("test_atomic_write.py"),
-                 here.with_name("test_atomic_write_windows_retry.py")):
+    paths = sorted(here.parent.glob("test_atomic_write*.py"))
+    # A floor, not a ceiling (doubt-reviewer, D7): a glob trades "a new
+    # sibling goes uncovered" for "a rename out of the prefix, or any bug
+    # that shrinks the match, goes uncovered instead" -- an empty or
+    # shrunk-below-known result must fail loudly, not just do less work.
+    assert len(paths) >= 5, (
+        f"only found {[p.name for p in paths]} -- the glob itself may be "
+        f"broken, or files were renamed out of the test_atomic_write* family"
+    )
+    for path in paths:
         src = path.read_text(encoding="utf-8")
         # Built from parts so this guard does not match its own source.
         needle = 'setattr(aw.os, ' + '"name"'

@@ -1,0 +1,305 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-08-07-lock-primitive-tail",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-07T21:59:16.080444+00:00",
+      "disposition": null,
+      "recorded_by": "claude-sonnet-5",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 6,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "The `_guard_lock_timeout` decorator changes the failure mode from an unhandled `LockTimeout` exception to a return dict with `ok: False`. This is safe only if every caller of the six decorated functions already checks the `ok` field and handles the error path gracefully. The plan notes that four callers lacked try/except, so the decorator prevents a crash, but it does not explicitly confirm that those callers inspect the return value rather than assuming success. If any caller ignores the return, a timeout would be silently ignored, leading to incorrect state (e.g., a phase not marked as failed).",
+          "suggestion": "Verify (by code review or a targeted integration test) that all callers of `mark_phase_failed`, `complete_phase_task`, and the other four wrapped functions correctly process an `ok: False` / `reason: \"lock_timeout\"` return. If any caller does not, add handling or switch that specific function to raise a specific error that the caller already catches. The existing unit test `test_a_lock_timeout_becomes_ok_false_not_a_raised_exception` demonstrates the decorator’s behaviour but does not prove end-to-end caller handling.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The decorator’s error shape (`ok: False`, `reason: \"lock_timeout\"`) is assumed to match the module’s existing error dict convention. If any of the six decorated functions previously returned a non-dict (e.g., a `PhaseTask` object or `None`) on success, the decorator would silently change the return type, breaking callers that expect that type.",
+          "suggestion": "Confirm (via a quick audit of the function signatures) that all six functions already return a dict, and that the synchronous success path returns a dict with `ok: True`. The test `test_a_lock_timeout_becomes_ok_false_not_a_raised_exception` likely mocks success, but a direct inspection is cheap and removes any doubt.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "The plugin-cache update is treated as a later “standard finalization” action rather than an explicit deliverable of this change. Since the modified file is under `plugins/shipwright-run/scripts/lib/`, consumers that run the marketplace/plugin cache may continue to receive the old `_PhaseTasksLock` implementation even though repository-source tests pass. Running sync “after push” also risks separating generated cache changes from the source change that requires them.",
+          "suggestion": "Make `scripts/update-marketplace.sh` and `check_plugin_cache_sync.py --strict` an explicit pre-merge step, include the resulting cache artifact changes in the same change set where applicable, and run at least one test/import path against the packaged plugin form if that is how production loads it.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "_guard_lock_timeout` changes the error contract of six public operations, but the described regression coverage names only one timeout-to-`ok: False` test. Missing the decorator on even one operation, or returning a malformed failure dict from one path, would leave a rare contention condition as an uncaught `LockTimeout` for a caller documented to receive a dict.",
+          "suggestion": "Add a parameterized test covering all six decorated public functions, forcing `_PhaseTasksLock` acquisition to raise `LockTimeout` and asserting each returns the established `{\"ok\": False, \"reason\": \"lock_timeout\"}`-compatible shape. This also verifies that no operation performs partial state changes before lock acquisition failure is converted.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "Introducing `_guard_lock_timeout` as a decorator can affect function metadata unless implemented with `functools.wraps`. This is especially relevant in a module reached through a router/dispatcher, where function names, docstrings, annotations, or signatures may be used for diagnostics, registration, or future introspection. The plan does not state that metadata preservation is required.",
+          "suggestion": "Implement the decorator with `functools.wraps`, preserve the wrapped callable’s type annotations/signature as far as practical, and ensure router dispatch uses explicit operation identifiers rather than decorator-altered function metadata.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The new read retry condition necessarily treats any Windows `PermissionError` with `errno == EACCES` and `winerror is None` as potentially transient. Although this is the measured byte-range-lock shape, a genuinely permanent ACL/access failure with the same Python exception shape will now consume the read retry budget before surfacing. This is an acceptable trade-off for the requested behavior, but it should remain observable and bounded.",
+          "suggestion": "Keep the existing bounded-budget behavior and documented shared retry counter, and ensure the raised final exception remains the original access error after budget exhaustion. Consider including elapsed retry time/cause in debug diagnostics if the module already has a logging mechanism; do not add a new telemetry system solely for this case.  Overall, the core approach is sound: the read-only retry opt-in is appropriately narrow, and delegating the third lock-loop implementation to `FileLock` removes meaningful drift risk. The timeout-contract coverage and plugin-cache delivery step should be made explicit before merge; no new security boundary is introduced by the proposed changes. SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-08-07T21:55:14.321051+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[deepseek] **Category:** risk  \n**Severity:** medium  \n**Finding:** The `_guard_lock_timeout` decorator changes the failure mode from an unhandled `LockTimeout` exception to a return dict with `ok: False`. This is safe only if every caller of the six decorated functions already checks the `ok` field and handles the error path gracefully. The plan notes that four callers lacked try/except, so the decorator prevents a crash, but it does not explicitly confirm that those callers inspect the return value rather than assuming success. If any caller ignores the return, a timeout would be silently ignored, leading to incorrect state (e.g., a phase not marked as failed).  \n**Suggestion:** Verify (by code review or a targeted integration test) that all callers of `mark_phase_failed`, `complete_phase_task`, and the other four wrapped functions correctly process an `ok: False` / `reason: \"lock_timeout\"` return. If any caller does not, add handling or switch that specific function to raise a specific error that the caller already catches. The existing unit test `test_a_lock_timeout_becomes_ok_false_not_a_raised_exception` demonstrates the decorator’s behaviour but does not prove end-to-end caller handling.\n\n---\n\n**Category:** edge-case  \n**Severity:** low  \n**Finding:** The decorator’s error shape (`ok: False`, `reason: \"lock_timeout\"`) is assumed to match the module’s existing error dict convention. If any of the six decorated functions previously returned a non-dict (e.g., a `PhaseTask` object or `None`) on success, the decorator would silently change the return type, breaking callers that expect that type.  \n**Suggestion:** Confirm (via a quick audit of the function signatures) that all six functions already return a dict, and that the synchronous success path returns a dict with `ok: True`. The test `test_a_lock_timeout_becomes_ok_false_not_a_raised_exception` likely mocks success, but a direct inspection is cheap and removes any doubt.\n\n---\n\n**Overall assessment:** The a […truncated]\n\n[openai] 1. **Category: dependency**  \n   **Severity: medium**  \n   **Finding:** The plugin-cache update is treated as a later “standard finalization” action rather than an explicit deliverable of this change. Since the modified file is under `plugins/shipwright-run/scripts/lib/`, consumers that run the marketplace/plugin cache may continue to receive the old `_PhaseTasksLock` implementation even though repository-source tests pass. Running sync “after push” also risks separating generated cache changes from the source change that requires them.  \n   **Suggestion:** Make `scripts/update-marketplace.sh` and `check_plugin_cache_sync.py --strict` an explicit pre-merge step, include the resulting cache artifact changes in the same change set where applicable, and run at least one test/import path against the packaged plugin form if that is how production loads it.\n\n2. **Category: risk**  \n   **Severity: medium**  \n   **Finding:** `_guard_lock_timeout` changes the error contract of six public operations, but the described regression coverage names only one timeout-to-`ok: False` test. Missing the decorator on even one operation, or returning a malformed failure dict from one path, would leave a rare contention condition as an uncaught `LockTimeout` for a caller documented to receive a dict.  \n   **Suggestion:** Add a parameterized test covering all six decorated public functions, forcing `_PhaseTasksLock` acquisition to raise `LockTimeout` and asserting each returns the established `{\"ok\": False, \"reason\": \"lock_timeout\"}`-compatible shape. This also verifies that no operation performs partial state changes before lock acquisition failure is converted.\n\n3. **Category: approach**  \n   **Severity: low**  \n   **Finding:** Introducing `_guard_lock_timeout` as a decorator can affect function metadata unless implemented with `functools.wraps`. This is especially relevant in a module reached through a router/dispatcher, where function names, docstrings, annotations, or sign […truncated]",
+      "verdicts": {
+        "openai": "revise",
+        "deepseek": "approve"
+      }
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 10,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "architecture",
+          "file": "plugins/shipwright-run/scripts/lib/phase_task_lifecycle.py",
+          "line": null,
+          "finding": "Local LOCK_NAME string duplicated run_config_store.LOCK_NAME with nothing enforcing sync.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "plugins/shipwright-run/tests/test_phase_tasks_lock.py",
+          "line": null,
+          "finding": "test_targets_the_canonical_run_config_lock_path re-derived the class's own former local constant instead of consulting run_config_store, so it could not catch the drift it claimed to guard.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "shared/tests/test_atomic_write_windows_read_retry.py",
+          "line": null,
+          "finding": "The platform-drift guard's hardcoded file tuple did not include the new test_atomic_write_read_winerror_none.py.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "shared/tests/test_atomic_write_read_winerror_none.py",
+          "line": null,
+          "finding": "test_read_text_still_gives_up_loudly_past_the_budget asserted only PermissionError, which would also pass if retry_none_winerror were removed entirely (never retried at all).",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "plugins/shipwright-run/scripts/lib/phase_task_lifecycle.py",
+          "line": null,
+          "finding": "_guard_lock_timeout's docstring overclaimed it restores 'every function returns a dict' absolutely; FileNotFoundError (missing config) and a raw OSError from the lock sidecar's truncating open still propagate uncaught.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "plugins/shipwright-run/scripts/lib/orchestrator_pkg/single_session_apply.py",
+          "line": null,
+          "finding": "The new ok:False branch carried freeze_result but not an 'error' key, while the sibling exception branch does -- a consumer reading .get('error') would see None for the new failure mode.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "performance",
+          "file": "shared/tests/test_atomic_write_read_winerror_none.py",
+          "line": null,
+          "finding": "test_real_byte_range_lock_is_retried_past's docstring claimed 'cannot run in CI, local fidelity check only' but it actually runs unconditionally on Windows -- this project's primary dev + local-gate platform.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "plugins/shipwright-run/tests/test_phase_tasks_lock.py",
+          "line": null,
+          "finding": "test_nested_same_thread_acquisition_does_not_self_deadlock used the real 30s timeout, so a reentrancy regression would wedge the suite for 30s instead of failing fast.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "plugins/shipwright-run/tests/test_phase_tasks_lock.py",
+          "line": null,
+          "finding": "Two different short-timeout techniques coexisted (monkeypatched __init__ vs direct _timeout_seconds mutation).",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "plugins/shipwright-run/scripts/lib/phase_task_lifecycle.py",
+          "line": null,
+          "finding": "_guard_lock_timeout had no type annotations; combined with @wraps it erased all six public functions' real signatures for a type checker.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-08-07T22:30:20.436938+00:00",
+      "disposition": null,
+      "recorded_by": "shipwright-build:code-reviewer(opus)",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 8,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "boundary-and-contract",
+          "file": "plugins/shipwright-run/scripts/lib/orchestrator_pkg/router.py",
+          "line": null,
+          "finding": "Claim under doubt: converting LockTimeout to ok:false preserves the module's contract — lock_timeout is transient while every sibling reason is terminal; it is absent from FAIL_CLOSED_REASONS and no plan section discusses exit codes or a retryable marker",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "hidden-coupling",
+          "file": "plugins/shipwright-run/scripts/lib/run_config_store.py",
+          "line": null,
+          "finding": "Claim under doubt: all three lock users now share one implementation — only FileLock subclasses join file_lock_registry; run_config_lock/append_phase_history use the non-registering file_lock function, so same-thread nesting across them still self-deadlocks and now returns a silent ok:false instead of hanging",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "boundary-and-contract",
+          "file": "shared/scripts/lib/atomic_write.py",
+          "line": null,
+          "finding": "Claim under doubt: the errno.EACCES check matches exactly the measured byte-range-lock shape — _dosmaperr maps LOCK_VIOLATION, SHARING_VIOLATION, ACCESS_DENIED and NETWORK_ACCESS_DENIED all to EACCES, so a permanently denied read is retried too",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "reversibility",
+          "file": "shared/scripts/lib/atomic_write.py",
+          "line": null,
+          "finding": "Claim under doubt: the read-retry closes a live race — every lock target in the repo is a .lock sidecar and no sidecar is read via durable_read_*, so no in-repo producer of the shape exists",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "concurrency-and-ordering",
+          "file": "shared/tests/test_atomic_write_read_winerror_none.py",
+          "line": null,
+          "finding": "Claim under doubt: the new tests are deterministic — a 0.02s budget with assert len(attempts) > 1 fails if the first attempt is preempted >20ms",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "boundary-and-contract",
+          "file": "plugins/shipwright-run/tests/test_single_session_loop.py",
+          "line": null,
+          "finding": "Claim under doubt: the freeze-failure regression test proves freeze did not apply — freeze_splits is stubbed to a no-op, so splits_frozen == [] holds regardless of production code",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "hidden-coupling",
+          "file": "shared/tests/test_atomic_write_windows_read_retry.py",
+          "line": null,
+          "finding": "Claim under doubt: the glob permanently fixes the drift guard's coverage — a rename out of the prefix, or any shrinking glob, silently reduces coverage and stays green",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": null,
+          "category": "hidden-coupling",
+          "file": "plugins/shipwright-run/tests/test_phase_tasks_lock.py",
+          "line": null,
+          "finding": "Claim under doubt: the run-plugin suite evidence covers sys.path shadowing — the new test inserts shared/scripts/lib at sys.path[0] at collection time; only a single full-root process would expose shadowing",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-08-07T22:43:20.537974+00:00",
+      "disposition": null,
+      "recorded_by": "shipwright-build:doubt-reviewer(opus)",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": "openrouter",
+      "completed_at": "2026-08-07T22:54:50.647865+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "unstructured",
+      "raw_excerpt": "[deepseek] No defects found — the diff correctly implements both spec items (retry predicate for winerror‑None read failures, delegation to shared FileLock to eliminate the third lock copy). The added guard decorator, lock delegation, freeze‑failure handling, and new tests are consistent and thorough. All changes are well‑reasoned and no security, correctness, or regression issues are introduced.\n\nSHIPWRIGHT_VERDICT: approve\n\n[openai] No concrete defects found. The change addresses both bundled items: read operations now retry the measured Windows `PermissionError(errno=EACCES, winerror=None)` shape within the existing read budget, and `_PhaseTasksLock` delegates to the shared bounded, reentrant `FileLock` while converting timeouts to the module’s result-dict contract. The added tests exercise retry/success, budget exhaustion, non-matching errors, write-path non-retry behavior, lock delegation, canonical-path coordination, and propagation of freeze failures.\n\nOverall assessment: ship-as-is. No security or caller-compatibility regressions are evident from this diff.\n\nSHIPWRIGHT_VERDICT: approve",
+      "verdicts": {
+        "openai": "approve",
+        "deepseek": "approve"
+      }
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-07T22:18:42.044498+00:00",
+      "disposition": null,
+      "recorded_by": "shipwright-build:spec-reviewer(opus)",
+      "parse_status": null,
+      "raw_excerpt": null
+    }
+  }
+}
