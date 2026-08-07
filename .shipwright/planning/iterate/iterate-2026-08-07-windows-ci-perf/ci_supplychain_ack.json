@@ -1,0 +1,13 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-08-07-windows-ci-perf",
+  "ci_supplychain_ack": {
+    "run_id": "iterate-2026-08-07-windows-ci-perf",
+    "paths_fingerprint": "302ebbc4b000f2bcca34506948f45faf4a5087cfb029ecf9dd905a41d1c58733",
+    "consistent_with": "iterate-2026-06-01-ci-launch-hardening",
+    "statement": "Restructures windows-tests.yml's existing 'Run shared tests' step: single uv run --with ... provisioning instead of three, pytest-xdist added and scoped to shared/tests only, both --deselect flags removed once their shared root cause was fixed, plus a non-gating diagnostic line (prints path_acl_is_private()'s verdict for the real LOCALAPPDATA, added per Stage 3 doubt review) and corrected comments. No new action is introduced, no existing action pin is changed (actions/checkout@v4 stays on its mutable tag, astral-sh/setup-uv keeps ci.yml's existing SHA pin caf0cab7a618c569241d31dcd442f54681755d39 verbatim), and ci.yml is not touched. pytest-xdist (the one new PyPI package this step adds) is deliberately left unpinned via --with, on the same footing as this step's existing --with pytest/pytest-mock/pytest-cov/coverage (all unpinned): none of the four carries a flag/exit-code contract this job's own logic depends on the way diff-cover's pinned ==10.3.0 does. Consistent with the actions-pinning posture decided in iterate-2026-06-01-ci-launch-hardening.",
+    "ci_paths": [
+      ".github/workflows/windows-tests.yml"
+    ]
+  }
+}

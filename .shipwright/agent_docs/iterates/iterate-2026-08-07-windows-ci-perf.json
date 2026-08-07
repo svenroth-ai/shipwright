@@ -1,0 +1,103 @@
+{
+  "run_id": "iterate-2026-08-07-windows-ci-perf",
+  "date": "2026-08-07T23:24:17.392341Z",
+  "event_at": "2026-08-07T23:17:47.920155+00:00",
+  "type": "change",
+  "complexity": "medium",
+  "branch": "iterate/windows-ci-perf",
+  "spec": ".shipwright/planning/iterate/2026-08-07-windows-ci-perf.md",
+  "tests_passed": true,
+  "adr": "iterate-2026-08-07-windows-ci-perf",
+  "test_completeness": {
+    "status": "complete",
+    "behaviors": [
+      {
+        "behavior": "The restructured single-provision, xdist-on-shared/tests step collects and passes locally on native Windows, all three directories, no --deselect",
+        "disposition": "tested",
+        "evidence": "local run of the exact restructured command: shared/scripts/tools/tests 535 passed/8 skipped/2 deselected(marker-only); shared/tests confirmed 4/4 xdist workers engaged (gw0..gw3)"
+      },
+      {
+        "behavior": "shared/scripts/tests and shared/scripts/tools/tests still run serially (no -n passed)",
+        "disposition": "tested",
+        "evidence": "inspected the emitted pytest command per directory in the local run stdout -- no -n flag for either"
+      },
+      {
+        "behavior": "path_acl_is_private accepts an Administrators-owned directory (takeown /A reproduction)",
+        "disposition": "tested",
+        "evidence": "test_windows_private_root_accepts_administrators_owned_directory -- skips only outside CI (this dev account is Administrators-group but not elevated, a UAC split token), raise AssertionError (not a swallow) if that same failure happens with CI set"
+      },
+      {
+        "behavior": "path_acl_is_private owner check still rejects a genuinely foreign SID, and separately accepts a trusted-system SID",
+        "disposition": "tested",
+        "evidence": "test_owner_trust_rejects_a_genuinely_foreign_owner_sid and test_owner_trust_accepts_a_trusted_system_principal -- pure _owner_is_trusted() calls, no OS privilege, run in the required Linux gate too"
+      },
+      {
+        "behavior": "Pre-fix, the Administrators-owner scenario is rejected (root-cause pin)",
+        "disposition": "tested",
+        "evidence": "ran the new takeown /A test against the unmodified code before applying the fix -- failed with the exact not-owned-by-current-user AssertionError"
+      },
+      {
+        "behavior": "Both previously-deselected tests pass with no --deselect applied",
+        "disposition": "tested",
+        "evidence": "pytest shared/scripts/tools/tests -k \"test_main_cancellation... or test_the_f0_cli_stops...\" -> 2 passed"
+      },
+      {
+        "behavior": "Full shared/scripts/tools/tests has no regression from the _windows_acl.py change",
+        "disposition": "tested",
+        "evidence": "full directory run, definitive count: 535 passed/8 skipped/2 deselected(marker)"
+      },
+      {
+        "behavior": "shared/tests under -n 4 is not flaky and runs the identical test set the serial baseline does",
+        "disposition": "tested",
+        "evidence": "run twice to completion with zero failures; collection-only run with the production filter reports 8621/8647 collected (26 deselected), exactly matching the last live serial Windows CI run (GH Actions run 31180329620: 8604+17=8621)"
+      },
+      {
+        "behavior": "The restructured bash -c wrapper fails closed: a failure in an earlier directory is not masked by a later directory succeeding",
+        "disposition": "tested",
+        "evidence": "ran the wrapper with a deliberately-failing first directory (pytest -k matches_nothing, exit 5) -- script exit code 5, second directory never reached"
+      },
+      {
+        "behavior": "path_acl_is_private() itself (not just the pure helper) rejects a genuinely foreign owner (AC6 at the function boundary)",
+        "disposition": "tested",
+        "evidence": "test_windows_private_root_rejects_a_spoofed_foreign_current_user -- monkeypatches _current_sid on a directory the process genuinely owns"
+      },
+      {
+        "behavior": "A future rename breaking the _windows_acl.py -> _windows_acl_trust.py import is caught even though _windows_acl.py cannot itself be imported on Linux",
+        "disposition": "tested",
+        "evidence": "test_windows_acl_module_still_imports_the_trust_helper_from_its_sibling -- source-text assertion, runs on any platform"
+      },
+      {
+        "behavior": "owner_sid_of() reports the current user's own SID on a normal directory, and raises on a nonexistent path (F0 diff-coverage gate)",
+        "disposition": "tested",
+        "evidence": "test_owner_sid_of_reports_the_current_users_own_sid_on_a_normal_directory and test_owner_sid_of_raises_on_a_path_that_does_not_exist"
+      },
+      {
+        "behavior": "GitHub Actions windows-latest runner (real runneradmin account) actually accepts its own Administrators-owned LOCALAPPDATA, completes the job green, faster than the 24-28 min baseline, with both previously-deselected tests now passing",
+        "disposition": "untestable",
+        "reason_code": "requires-external-nondeterministic-service",
+        "note": "verified post-push by observing the live CI run wall-clock, pass/fail state, and the two specific test outcomes"
+      }
+    ],
+    "counts": {
+      "total": 13,
+      "tested": 12,
+      "untestable": 1,
+      "untested_testable": 0
+    },
+    "enumeration_basis": {
+      "acs": 8,
+      "covered_acs": 8
+    },
+    "ledger_path": ".shipwright/planning/iterate/2026-08-07-windows-ci-perf.md"
+  },
+  "surface_verification": {
+    "surface": "none",
+    "runner": "",
+    "exit_code": 0,
+    "tests_run": 0,
+    "evidence_path": ".shipwright/runs/iterate-2026-08-07-windows-ci-perf/surface_verification.json",
+    "timestamp": "2026-08-07T23:22:41.416Z",
+    "justification": "CI/workflow-performance + internal-tooling security-check fix; no web/UI/API/store/SSE surface touched"
+  },
+  "declared_removals": []
+}
