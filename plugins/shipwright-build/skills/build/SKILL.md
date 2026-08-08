@@ -49,7 +49,7 @@ SHIPWRIGHT-BUILD: TDD Implementation
 ================================================================================
 Implements code from /shipwright-plan section files.
 
-Usage: /shipwright-build @path/to/sections/01-auth.md
+Usage: /shipwright-build @path/to/sections/01-auth.md [--review-model opus|sonnet|haiku|inherit] [--finalization-model ...] [--execution-model ...]
    or: Invoked by /shipwright-run (orchestrator)
 
 Workflow per section:
@@ -108,7 +108,7 @@ Read `shipwright_build_config.json` from project root; defaults in [first-action
 
 ### G. Print Session Report
 
-Print the SESSION REPORT block (Mode / Section / Branch / Auto-push / Migration safe / Resume from). Template in [first-actions](references/first-actions.md).
+Resolve model tiers first (**Model tiers** in [first-actions](references/first-actions.md)). Print the SESSION REPORT block (Mode / Section / Branch / Auto-push / Migration safe / Resume from / Model tiers). Template in [first-actions](references/first-actions.md).
 
 ---
 

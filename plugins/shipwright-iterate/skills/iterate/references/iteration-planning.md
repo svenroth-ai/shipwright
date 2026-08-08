@@ -58,6 +58,37 @@ All of Quick Scout, plus:
 
 ---
 
+## Model Tier Resolution (SKILL.md §F)
+
+Run once, before printing the summary:
+
+```bash
+uv run "{shared_root}/scripts/tools/resolve_model_tier.py" \
+  --project-root "{project_root}" \
+  [--review-model {flag}] [--finalization-model {flag}]
+```
+
+`--review-model`/`--finalization-model` come from this invocation's own
+flags, if present, else omitted. Parse the JSON and keep `review.resolved` /
+`finalization.resolved` — `review` feeds Step 8's cascade spawns and its
+`record_review_pass.py --model-tier` calls; `finalization` feeds
+campaign-mode's step 3c (`sub-iterate-runner`) and step 3f-bis (delegated
+cascade — see `campaign-mode.md`). `execution` is also in the tool's output
+(it always resolves all three roles in one call) but has no live Agent-tool
+spawn inside this skill's own tree — browser-fixer's spawn is build's (see
+`references/F0.5.md`) — so a standalone iterate reads only the two fields
+above. Absent `shipwright_model_config.json` and no flag ⇒ both resolve to
+`"inherit"`, bit-identical to today's behavior (the Agent tool's `model`
+parameter is omitted at every spawn). Use only the CLI's own JSON fields —
+`resolved` for the `Model tiers:` summary line and every `--model-tier`
+recording, `agent_param` for the Agent tool's `model=` parameter (already
+`null` for `"inherit"`, so "omit the parameter" is just "the field was
+null") — never a raw value read back out of `shipwright_model_config.json`
+directly; the CLI is the only place invalid/hostile config values are
+filtered out.
+
+---
+
 ## Iterate Spec (medium+ only)
 
 **Location:** `.shipwright/planning/iterate/{date}-{short-description}.md`

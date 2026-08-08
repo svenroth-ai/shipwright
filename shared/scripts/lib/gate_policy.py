@@ -24,6 +24,7 @@ import json
 from pathlib import Path
 from typing import Any, Optional
 
+from lib.atomic_write import durable_read_text
 # Policies (order = escalation strength).
 AUTO_DEFAULT = "auto-default"
 ORCHESTRATOR_APPROVE = "orchestrator-approve"
@@ -118,7 +119,6 @@ def validate_catalog(data: Any) -> list[str]:
                 errors.append(f"{where}: auto-default gate needs a non-empty default_answer")
         elif answer is not None:
             errors.append(f"{where}: only auto-default gates may carry a default_answer")
-        # The core safety invariant.
         if g.get("constitution") is True and policy == AUTO_DEFAULT:
             errors.append(f"{where}: constitution-locked gate must not be auto-default")
 
@@ -151,12 +151,12 @@ def read_run_config_mode(project_root: Any) -> str:
     the literal ``single_session`` activates it. TOTAL at the read boundary, since
     the caller does not guard it — ``UnicodeDecodeError`` IS a ``ValueError``,
     ``RecursionError`` is NOT, a non-object raises ``AttributeError``, a BOM needs
-    ``utf-8-sig``. LOCKSTEP with ``config_io._read_parse_shape``; read its Mode section.
+    ``utf-8-sig``. LOCKSTEP with ``config_io._read_parse_shape`` within the retry budget.
     """
     if project_root is None:
         return INERT_MODE
     try:
-        parsed = json.loads((Path(project_root) / _CONFIG_NAME).read_text(encoding="utf-8-sig"))
+        parsed = json.loads(durable_read_text(Path(project_root) / _CONFIG_NAME, encoding="utf-8-sig"))
     except (ValueError, OSError, RecursionError, TypeError):
         return INERT_MODE
     mode = parsed.get("mode") if isinstance(parsed, dict) else None

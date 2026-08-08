@@ -1,0 +1,102 @@
+{
+  "run_id": "iterate-2026-08-07-agent-model-tiers",
+  "date": "2026-08-08T00:03:11.226736Z",
+  "event_at": "2026-08-07T11:39:38.141439+00:00",
+  "type": "change",
+  "complexity": "medium",
+  "prior_source": "history",
+  "branch": "iterate/agent-model-tiers",
+  "spec": ".shipwright/planning/iterate/2026-08-07-agent-model-tiers.md",
+  "tests_passed": true,
+  "adr": "iterate-2026-08-07-agent-model-tiers",
+  "test_completeness": {
+    "status": "complete",
+    "behaviors": [
+      {
+        "behavior": "AC-1: config file absent -> all three roles unset",
+        "disposition": "tested",
+        "evidence": "test_model_tier_config.py::test_missing_config_file_returns_empty PASSED"
+      },
+      {
+        "behavior": "AC-2: precedence flag > project config > unset, inherit accepted as an explicit literal",
+        "disposition": "tested",
+        "evidence": "test_model_tier_config.py::test_flag_wins_over_project_config, ::test_project_config_wins_over_unset, ::test_explicit_inherit_flag_is_source_flag_not_unset, ::test_unset_resolves_to_inherit_with_source_unset PASSED"
+      },
+      {
+        "behavior": "AC-2: unset/inherit resolves to no Agent-tool model parameter (bit-identical to today)",
+        "disposition": "tested",
+        "evidence": "test_model_tier_config.py::test_agent_model_param_omits_for_inherit, ::test_agent_model_param_passes_through_explicit_tier PASSED"
+      },
+      {
+        "behavior": "AC-3: iterate's CLI resolves review/finalization independently per role, no execution-model flag",
+        "disposition": "tested",
+        "evidence": "test_resolve_model_tier_cli.py::test_flags_resolve_independently_per_role, ::test_default_run_resolves_all_three_roles_to_inherit PASSED"
+      },
+      {
+        "behavior": "AC-4: build's CLI resolves all three roles in one call",
+        "disposition": "tested",
+        "evidence": "test_resolve_model_tier_cli.py::test_default_run_resolves_all_three_roles_to_inherit PASSED (build and iterate share the same resolve_model_tier.py CLI)"
+      },
+      {
+        "behavior": "AC-5: spawn-tier instruction present at every in-scope spawn site in both SKILL.md trees",
+        "disposition": "tested",
+        "evidence": "test_model_tier_spawn_instructions_present.py::test_spawn_time_model_instruction_present, ::test_build_reference_files_carry_the_model_tier_note, ::test_iterate_reference_files_carry_the_model_tier_note PASSED"
+      },
+      {
+        "behavior": "AC-6: reviews.json carries --model-tier when supplied, key absent (no stray null) when omitted",
+        "disposition": "tested",
+        "evidence": "test_record_review_pass_model_tier.py::test_model_tier_round_trips_into_the_entry, ::test_omitted_model_tier_leaves_no_stray_key, ::test_inherit_is_a_recordable_literal, ::test_invalid_model_tier_rejected_at_the_cli PASSED"
+      },
+      {
+        "behavior": "AC-7: F11 floor predicate flags below-floor/inherit/absent tiers, advisory-only, never crashes",
+        "disposition": "tested",
+        "evidence": "test_review_record_model_tier_floor.py::test_no_floor_configured_is_silent, ::test_below_floor_tier_is_flagged_but_still_passes, ::test_inherit_tier_is_flagged_as_unconfirmed_when_floor_configured, ::test_unrecorded_tier_is_flagged_not_silent, ::test_at_or_above_floor_is_silent, ::test_malformed_model_tier_never_raises_and_is_unflagged PASSED"
+      },
+      {
+        "behavior": "AC-7: floor is read from the main repo root, not a linked worktree's cwd",
+        "disposition": "tested",
+        "evidence": "test_review_record_model_tier_floor.py::test_floor_read_from_main_repo_root_not_worktree PASSED"
+      },
+      {
+        "behavior": "AC-8: campaign mode resolves tiers once and threads the same literal into sub-iterate-runner spawns and delegated review-cascade recordings",
+        "disposition": "tested",
+        "evidence": "test_model_tier_resolver_review_record_integration.py::test_project_config_resolved_tier_composes_into_the_review_record, ::test_flag_overrides_project_config_end_to_end, ::test_unset_role_resolves_to_inherit_and_is_never_recorded PASSED",
+        "category": "integration"
+      },
+      {
+        "behavior": "AC-9: drift test asserts the flag-parsing + spawn-tier instruction text exists in both SKILL.md files",
+        "disposition": "tested",
+        "evidence": "test_model_tier_spawn_instructions_present.py::test_model_tier_flags_present_in_banner, ::test_build_skill_md_points_to_tier_resolution PASSED"
+      },
+      {
+        "behavior": "AC-10: resolver rejects an unknown role, malformed/hostile project config fails soft without echoing the raw value",
+        "disposition": "tested",
+        "evidence": "test_model_tier_config.py::test_unknown_role_raises, ::test_malformed_config_fails_soft_to_empty, ::test_config_not_a_json_object_fails_soft, ::test_invalid_config_tier_value_dropped_not_raised, ::test_hostile_config_value_never_echoed_into_resolved_output, ::test_undecodable_config_bytes_fail_soft_to_empty PASSED"
+      },
+      {
+        "behavior": "AC-11: no agent frontmatter file changes model: across all 11 tracked agents",
+        "disposition": "tested",
+        "evidence": "test_agent_model_frontmatter_unchanged.py::test_model_frontmatter_unchanged (11 cases), ::test_unpinned_agents_are_registered_as_inherit, ::test_reverse_drift_every_matched_agent_file_is_in_the_registry PASSED"
+      }
+    ],
+    "counts": {
+      "testable": 13,
+      "tested": 13,
+      "untestable": 0,
+      "untested_testable": 0
+    },
+    "enumeration_basis": {
+      "acs": 11,
+      "covered_acs": 11
+    }
+  },
+  "surface_verification": {
+    "surface": "cli",
+    "runner": "uv run pytest shared/tests/test_model_tier_resolver_review_record_integration.py shared/tests/test_resolve_model_tier_cli.py shared/tests/test_record_review_pass_model_tier.py -v",
+    "exit_code": 0,
+    "tests_run": 7,
+    "evidence_path": ".shipwright/runs/iterate-2026-08-07-agent-model-tiers/surface_verification.log",
+    "timestamp": "2026-08-08T00:00:18.348Z"
+  },
+  "declared_removals": []
+}

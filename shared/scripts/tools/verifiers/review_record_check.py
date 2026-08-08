@@ -49,6 +49,20 @@ from .review_record_floor import (  # noqa: E402
     stage_one_precedes_stage_two,
     substitution_note,
 )
+from .review_record_model_tier import model_tier_note  # noqa: E402
+
+
+def _safe_model_tier_note(record: dict, project_root: Path) -> str:
+    """``model_tier_note`` is advisory — it must never be able to take the
+    whole F11 verifier down. This is the second line of defense (the first
+    is `model_tier_note`'s own input validation); anything unanticipated
+    here still degrades to "no note" rather than an uncaught exception
+    reaching `run_all_checks`'s unguarded list literal."""
+    try:
+        return model_tier_note(record, project_root)
+    except Exception as exc:  # noqa: BLE001 — advisory path, must never raise
+        sys.stderr.write(f"warning: model-tier floor note failed ({exc}); omitting\n")
+        return ""
 
 #: Complexities the gate applies at. Trivial runs still get a record if one is
 #: written; they are simply not blocked for lacking one.
@@ -146,7 +160,8 @@ def check_review_record(project_root: Path, run_id: str, commit_hash: str = "") 
 
     return CheckResult(
         CHECK_NAME, True,
-        "every review pass is recorded" + substitution_note(record, complexity),
+        "every review pass is recorded" + substitution_note(record, complexity)
+        + _safe_model_tier_note(record, project_root),
     )
 
 

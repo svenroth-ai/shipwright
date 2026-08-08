@@ -103,6 +103,29 @@ def test_header_glued_to_first_event() -> None:
     assert v.errors == [], v.errors
 
 
+def test_deeply_nested_line_is_reported_not_raised() -> None:
+    """AC-4 (card trg-57d0d6d3 / P2.19g) — DRIFT PIN, not a red/green fix.
+
+    ``classify_triage_text`` already parses via ``split_records``, which
+    explicitly catches ``RecursionError`` at both its own ``json`` call sites
+    (``lib/jsonl_records.py`` lines 195, 251) — this function was fixed
+    independently by iterate-2026-08-06-triage-validate-deadends, BEFORE this
+    card was even filed. This test exists so the two resolvers this card names
+    (this one and ``lib.triage_dedup._parsed_append``, fixed in this same run)
+    cannot silently diverge again — mirroring AC-5 of
+    iterate-2026-08-05-it1-audit-remainder, which did the same thing for the
+    ``status``-event resolver pair. This test is expected to ALREADY pass
+    before any code in this run changes; it pins existing behaviour, not new.
+    """
+    deep = '{"a":' * 20000 + "1" + "}" * 20000
+    line = f'{{"event":"append","id":"trg-classify-deep","ts":"2026-08-07T00:00:00Z","val":{deep}}}'
+    v = classify_triage_text(_log(APPEND, line))
+
+    assert v.has_non_orphan_error is True
+    assert any("not valid JSON (unrecoverable fragment)" in e for e in v.errors), v.errors
+    assert any(REPAIR_TOOL in e for e in v.errors), v.errors
+
+
 def test_unrecoverable_fragment_names_the_repair_tool() -> None:
     """AC2. Genuine corruption still blocks — but never without a remedy. The
     pre-fix message said only 'union may have corrupted a historic line'."""

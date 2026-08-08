@@ -1,10 +1,36 @@
-"""Git-state preconditions for a tool that is about to COMMIT in the operator's
-main tree.
+"""Git-state preconditions for a tool that is about to commit into the tree it
+is guarding.
 
 Extracted from :mod:`lib.reconcile_triage` (which sits exactly at the 300-LOC
-guideline) so a second caller — ``tools/triage_gc.py --commit`` — can share one
-copy rather than grow a third. ``reconcile_triage`` re-exports all three under
-their historical private names, so its import path and call sites are unchanged.
+guideline). Despite the ``main_root`` parameter name (kept for historical
+compatibility — see below), the tree in question is not always the operator's
+*main* tree: three callers share this module today. ``reconcile_triage`` and
+``triage_gc_publish`` (``tools/triage_gc.py --commit``) probe the operator's main
+tree, as the name suggests. ``lib.sweep_outbox`` probes the **iterate worktree**
+it is about to commit into — a linked worktree, not main — and re-exports
+``op_in_progress`` / ``has_staged_changes`` under its own historical private
+names (iterate-2026-08-07-shared-op-predicates), the same pattern
+``reconcile_triage`` already used for all three guards below.
+
+**Why ``sweep_outbox`` does not use ``is_detached``, unlike the other two
+callers:** the risk is not symmetric. For ``reconcile_triage`` and
+``triage_gc_publish``, a detached-HEAD commit in the main tree is the
+operator's *only* copy of that data — losing the ref loses the data. For
+``sweep_outbox``, the outbox line the commit carries is only GC'd once it is
+independently confirmed present in ``origin/<default>`` (see
+:mod:`lib.sweep_gc`), so an unreferenced commit there still leaves the source
+outbox line on disk for the next sweep to redeliver — a wasted commit, never
+lost operator data. This holds even for the drift ``sweep_outbox`` adopts from
+main's tracked log mid-run (:func:`lib.sweep_drift.commit_main_tracked_drift`):
+that path writes the adopted lines into the *outbox* durably, before it ever
+touches main's tracked log, and before the worktree commit this module's guards
+protect is attempted — so a lost worktree commit still leaves that drift on the
+same outbox safety net, not orphaned by it (doubt review round 2, which also
+traced the reachable failure to a real caller-count argument, not the GC rule
+alone: nothing in today's call graph reaches the sweep with a detached worktree
+HEAD, because ``setup_iterate_worktree.py`` always creates the worktree on a
+freshly-checked-out named branch). Both hold jointly; neither alone is meant to
+carry this decision.
 
 Every predicate answers in the **fail-closed** direction: a probe git could not
 answer reads as "yes, the hazard is present", so the caller skips. An unanswered
@@ -14,8 +40,6 @@ question must never license a commit into a half-finished operation.
 ``.git/index.lock``. No guard did before the extraction either — an external
 review round suspected one had been dropped, and the answer is that there never
 was one. A stranded lock surfaces as a non-zero return from the commit itself.
-``lib.sweep_outbox`` still carries its own byte-identical ``_op_in_progress``
-copy (audit 2026-07-28 finding 29, out of this change's scope).
 """
 
 from __future__ import annotations
@@ -38,6 +62,14 @@ def _probe(args: list[str], cwd: Path) -> subprocess.CompletedProcess:
     predicates run in a tool that has already rewritten a tracked file by the time some
     of them are called — a traceback there leaves the operator with a compacted log and
     a stack trace instead of a remedy (doubt review).
+
+    ``exc``'s text lands in the sentinel's stderr but every caller here reads only
+    ``returncode`` — a real (non-missing-git) ``OSError``, e.g. a transient permission
+    or handle-exhaustion fault, therefore surfaces to the operator as the hazard's own
+    name (``"op_in_progress"``, ...), not as its actual cause. Deliberate: the
+    fail-closed contract is "skip on an unanswered question", and every caller already
+    means that name as "could not confirm this is safe", not "confirmed this specific
+    hazard" (doubt review round 2).
     """
     try:
         return run_git_soft(args, cwd=cwd)
@@ -87,11 +119,13 @@ def is_detached(main_root: Path) -> bool:
 
 
 def has_staged_changes(main_root: Path) -> bool:
-    """True when ANYTHING is staged in the index. We skip rather than risk a
+    """True when ANYTHING is staged in the index. Callers skip rather than risk a
     partial ``git commit -- <path>`` interacting with a user's staged WIP — or,
-    if ``triage.jsonl`` itself is staged, committing a hand-staged index state we
-    never validated. The drift we act on is always UNSTAGED background appends,
-    so a non-empty index means "not our case" → no-op (AC-3)."""
+    if the target file itself is staged, committing a hand-staged index state
+    that was never validated. The drift each caller acts on is always UNSTAGED
+    background appends, so a non-empty index means "not our case" → no-op
+    (``reconcile_triage``'s AC-3; ``sweep_outbox`` applies the same reasoning to
+    its worktree)."""
     # Any non-zero, timeout included, reads as "something is staged" → skip.
     return _probe(["diff", "--cached", "--quiet"], main_root).returncode != 0
 
