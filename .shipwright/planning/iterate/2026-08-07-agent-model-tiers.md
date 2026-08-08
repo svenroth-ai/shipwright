@@ -9,7 +9,7 @@
   and both plugins' `tests/` — a cross-plugin, cross-split touch that Stage 1's
   message-only detectors under-count. Set per SKILL.md §7 ("under-classification
   stays cheap... over-classification does not, because complexity locks").
-- **Status:** draft
+- **Status:** implemented
 
 ## Goal
 
@@ -25,16 +25,16 @@ tier every review pass actually ran on.
 
 ## Acceptance Criteria
 
-- [ ] A new optional `shipwright_model_config.json` (schema:
+- [x] A new optional `shipwright_model_config.json` (schema:
   `shared/schemas/model_config.schema.json`) maps `review` / `finalization` /
   `execution` to `opus` | `sonnet` | `haiku` | `inherit`; file absent = all
   three unset.
-- [ ] A shared resolver (`shared/scripts/lib/model_tier_config.py` +
+- [x] A shared resolver (`shared/scripts/lib/model_tier_config.py` +
   `shared/scripts/tools/resolve_model_tier.py` CLI) implements precedence
   **flag > project config > unset**, where unset/`inherit` both resolve to "no
   `model` parameter" (bit-identical to current behavior — the Agent tool has no
   literal `inherit` value, so deferral is omitting the parameter).
-- [ ] `/shipwright-iterate` accepts `--review-model` / `--finalization-model`
+- [x] `/shipwright-iterate` accepts `--review-model` / `--finalization-model`
   flags (documented in the banner usage line), resolves them at Planned Run
   Summary time, and prints `review=<resolved> (<source>),
   finalization=<resolved> (<source>)`. **`--execution-model` is deliberately
@@ -45,11 +45,11 @@ tier every review pass actually ran on.
   consumer was flagged and corrected during review (internal Opus plan
   review, finding "completeness/medium: `--execution-model` is a dead flag
   on iterate").
-- [ ] `/shipwright-build` accepts all three flags — `--review-model` /
+- [x] `/shipwright-build` accepts all three flags — `--review-model` /
   `--finalization-model` / `--execution-model` — same resolution point
   (SKILL.md §G), same printed format (`<resolved> (<source>)` per role, via
   `first-actions.md`'s SESSION REPORT template).
-- [ ] Every Agent-tool spawn instruction reachable from iterate's and build's
+- [x] Every Agent-tool spawn instruction reachable from iterate's and build's
   own skill trees for the 6 in-scope agents (`spec-reviewer`, `code-reviewer`,
   `doubt-reviewer` = review; `section-builder`, `sub-iterate-runner` =
   finalization; `browser-fixer` = execution) is updated to pass the resolved
@@ -57,13 +57,13 @@ tier every review pass actually ran on.
   `code-review.md`/`code-review-protocol.md`) and the campaign-delegated one
   (`campaign-mode.md` step 3f-bis and the `sub-iterate-runner` spawn at step
   3c).
-- [ ] `record_review_pass.py record` accepts `--model-tier`; the persisted
+- [x] `record_review_pass.py record` accepts `--model-tier`; the persisted
   entry in `reviews.json` carries the tier the session resolved and reported
   for this role (a self-report — nothing correlates it with the Agent-tool
   `model=` parameter actually used at the spawn, an honest, known limit) — or
   the key is absent entirely when not supplied (no stray `null`, so
   pre-existing records and old readers stay valid).
-- [ ] A new F11 predicate reads an optional `floors` block from
+- [x] A new F11 predicate reads an optional `floors` block from
   `shipwright_model_config.json` and flags (never blocks — advisory only,
   regardless of whether a floor is configured) a completed review-role pass
   whose `model_tier` is below the configured floor, ran under `inherit`, or
@@ -80,36 +80,34 @@ tier every review pass actually ran on.
   existing shape), never into the blocking predicate chain — and the call is
   itself wrapped in a try/except that degrades to no note on any unexpected
   failure, so the advisory path can never take F11 down.
-- [ ] Campaign mode: the orchestrator resolves tiers once per campaign run and
+- [x] Campaign mode: the orchestrator resolves tiers once per campaign run and
   passes them into every `sub-iterate-runner` spawn (finalization role) and
   into its own delegated review-cascade spawns (step 3f-bis, review role).
-- [ ] Drift test asserts the flag-parsing + spawn-tier instruction is present
+- [x] Drift test asserts the flag-parsing + spawn-tier instruction is present
   in both `plugins/shipwright-iterate/skills/iterate/SKILL.md` and
   `plugins/shipwright-build/skills/build/SKILL.md`, mirroring
   `tests/test_skill_step_6_rules_present.py`'s anchor pattern.
-- [ ] Unit tests for the resolver (precedence, `inherit` literal accepted,
+- [x] Unit tests for the resolver (precedence, `inherit` literal accepted,
   unknown role rejected, malformed project config fails soft) adapted from the
   reusable frontmatter-drift test at
   `<scratchpad>/test_agent_model_pinning.reusable.py`, re-pointed from the
   abandoned `PINNED_OPUS` hardcode design at the new config-driven resolver.
-- [ ] No agent frontmatter file changes `model:` — all 11 stay exactly as they
+- [x] No agent frontmatter file changes `model:` — all 11 stay exactly as they
   are today (`inherit` / `opus` / `sonnet`); the feature is additive-only via
   Agent-tool call parameters, never frontmatter edits.
 
 ## Spec Impact
 
-- **Classification:** modify
+- **Classification:** none
 - **ADD:** none
-- **MODIFY:** FR covering the iterate/build subagent-invocation contract —
-  folded as an additive capability (per-role model override) on the existing
-  "review cascade" / "autonomous finalization" behavior; not a new
-  user-observable capability on its own (MINT-vs-FOLD gate: this completes
-  existing subagent-spawning machinery with an operator control, it does not
-  introduce a capability the product lacked). Exact FR ID resolved during
-  Step 2 (Repo Scout has not yet located `spec.md`'s split index at spec-write
-  time; recorded in the mini-plan and F7 payload once located).
+- **MODIFY:** none
 - **REMOVE:** none
-- **NONE justification:** n/a (Classification is MODIFY)
+- **NONE justification:** this monorepo (profile `python-plugin-monorepo`,
+  confirmed via `shipwright_run_config.json`) carries no `spec.md` / FR catalog
+  of its own — that IREB machinery is what Shipwright generates FOR consumer
+  projects via `shipwright-project`, not something the framework's own
+  development applies to itself. F5b therefore records this as the no-FR
+  branch (`change_type: tooling`), not FR-linked.
 
 ## Out of Scope
 
