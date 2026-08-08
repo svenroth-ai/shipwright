@@ -2,7 +2,7 @@
 name: shipwright-plan
 description: "Creates detailed implementation plans from spec files via research, interview, external LLM review, and TDD approach. Generates section-based plans for /shipwright-build.\nTRIGGER when: user wants to plan implementation, create an implementation plan, break down a spec into sections, plan how to build something, create a technical design, generate build sections, or plan test strategy for a spec.\nDO NOT TRIGGER when: user asks to implement or write code (/shipwright-build), run tests (/shipwright-test), fix a bug or make a small change (/shipwright-iterate), deploy (/shipwright-deploy), define requirements (/shipwright-project), or design UI mockups (/shipwright-design)."
 license: MIT
-compatibility: Requires uv (Python 3.11+), git repository recommended. Recommended: OPENROUTER_API_KEY for DeepSeek + OpenAI review; OPENAI_API_KEY can run the GPT arm only. If missing, the skill will ask you whether to skip external review and fall back to mandatory self-review.
+compatibility: Requires uv (Python 3.11+), git repository recommended. Recommended: OPENROUTER_API_KEY for DeepSeek + OpenAI review; OPENAI_API_KEY can run the GPT arm only. An internal Opus review always runs first; if external keys are missing, the skill asks whether to skip and rely on that internal review.
 ---
 
 # Shipwright Plan Skill
@@ -136,36 +136,43 @@ what it presupposes — in [section-index.md](references/section-index.md).
 Full branch logic: [step-5-external-review.md](references/step-5-external-review.md);
 underlying protocol: [external-review.md](references/external-review.md).
 
-**This step is NOT optional.** One of three branches must run to completion, and
-`{planning_dir}/external_review_state.json` must be written. Step 6 is gated on it.
+**This step is NOT optional.** An internal Opus review always runs first
+(Step 5-int); then one of three branches must run to completion, and
+`{planning_dir}/external_review_state.json` must be written. Step 6 is
+gated on both.
 
-Read `external_review_status` from the session report (First Actions
-> F). Branch on its value:
+**Step 5-int (always, first):** spawn `shipwright-plan:opus-plan-reviewer`
+over `plan.md` + `spec.md`; triage every finding fix/disclose/decline
+(reason required; scope-ratchet guard) — a declined/disclosed
+`severity: high` finding STOPs and asks the user before Step 6, per
+`gate_catalog.json`. Write `## Internal Plan Review` to `plan.md`
+(`Ran: yes|no`; replace in place on retry), log to `decision_log.md`. No
+marker of its own — on failure record `Ran: no` and continue to the branch
+below; the **Pre-5b Checkpoint** decides whether the Self-Review Fallback
+runs. Then read `external_review_status` from the session report (First
+Actions > F) and branch on its value:
 
-- **Branch A — `available`:** run `external_review.py --mode plan ...` (DeepSeek +
-  OpenAI in parallel), integrate findings, log every one to `decision_log.md`.
-  **Read the `contradiction` block first:** `requires_resolution: true` — reviewers
-  contradict, a verdict is unreadable, or only one answered — is its own outcome,
-  not a finding count. Put it to the user, carry the decision into Step 5b, never
-  proceed on the approving review alone. Then **Step 5a**: a SECOND call, `--mode
-  architecture` over a short brief *instead of* the plan, asking what no other pass
-  asks — should this be built at all. `reject` STOPs and asks the user before Step
-  6; outcome appended to `plan.md` under `## Architecture Review`, no marker of its
-  own. Then Step 5b.
+- **Branch A — `available`:** run `external_review.py --mode plan ...`
+  (DeepSeek + OpenAI in parallel), integrate findings, log each to
+  `decision_log.md`. Read `contradiction.requires_resolution` first — put any
+  disagreement to the user, never proceed on the approving review alone. Then
+  **Step 5a**: a second call, `--mode architecture` over a short brief
+  *instead of* the plan, asking what no other pass asks — should this be
+  built at all; `reject` STOPs before Step 6. Then the Pre-5b Checkpoint.
 - **Branch B — `missing_keys`:** STOP. Ask user verbatim (Option 1: add key +
-  retry → Branch A; Option 2: skip → Self-Review Fallback). Do NOT proceed until
-  the user chooses.
-- **Branch C — `user_disabled`:** print the disabled notice, run the Self-Review
-  Fallback sub-block ("2x denken" — 5-item checklist: architectural soundness /
-  section boundaries / TDD coverage / risk hotspots / assumptions).
+  retry → Branch A; Option 2: skip — Step 5-int's `Ran:` value decides the
+  fallback, per the Pre-5b Checkpoint). Do NOT proceed until chosen.
+- **Branch C — `user_disabled`:** print the disabled notice, then the
+  Pre-5b Checkpoint.
 
-After exactly one branch completes, **Step 5b** writes the marker with
+After exactly one branch completes, the **Pre-5b Checkpoint** runs the
+Self-Review Fallback if neither Step 5-int nor Branch A produced a completed
+independent review, then **Step 5b** writes the marker with
 `{shared_root}/scripts/checks/mark-review-state.py` — `--status`,
 `--provider`, `--findings-count`, `--reason`, one
-`--verdict {deepseek|openai}={verdict}` per reviewer, and
-`--contradiction-resolution` when they disagreed. The contradiction is
-**derived** from the two verdicts; there is no flag to assert agreement they do
-not support. Exact invocation:
+`--verdict {deepseek|openai}={verdict}` per reviewer,
+`--contradiction-resolution` when they disagreed, and
+`--self-review-fallback-ran` when the checkpoint ran it. Exact invocation:
 [step-5-external-review.md](references/step-5-external-review.md).
 
 **Checkpoint:** `{planning_dir}/external_review_state.json` exists and records
@@ -283,18 +290,11 @@ and context-window pressure (save, `/clear`, resume from any step).
 
 ## Reference Documents
 
-Per-step refs: [first-actions.md](references/first-actions.md),
-[step-0-context-recovery.md](references/step-0-context-recovery.md),
-[step-5-external-review.md](references/step-5-external-review.md),
-[step-9-completion.md](references/step-9-completion.md),
-[error-handling.md](references/error-handling.md).
+Per-step refs:
+- [first-actions.md](references/first-actions.md)
+- [step-0-context-recovery.md](references/step-0-context-recovery.md)
+- [step-5-external-review.md](references/step-5-external-review.md)
+- [step-9-completion.md](references/step-9-completion.md)
+- [error-handling.md](references/error-handling.md)
 
-Topical refs: [research-protocol.md](references/research-protocol.md),
-[interview-protocol.md](references/interview-protocol.md),
-[context-check.md](references/context-check.md),
-[plan-writing.md](references/plan-writing.md),
-[tdd-approach.md](references/tdd-approach.md),
-[section-index.md](references/section-index.md),
-[section-splitting.md](references/section-splitting.md),
-[external-review.md](references/external-review.md),
-[e2e-test-plan.md](references/e2e-test-plan.md).
+Topical refs: [research-protocol.md](references/research-protocol.md), [interview-protocol.md](references/interview-protocol.md), [context-check.md](references/context-check.md), [plan-writing.md](references/plan-writing.md), [tdd-approach.md](references/tdd-approach.md), [section-index.md](references/section-index.md), [section-splitting.md](references/section-splitting.md), [external-review.md](references/external-review.md), [e2e-test-plan.md](references/e2e-test-plan.md).
