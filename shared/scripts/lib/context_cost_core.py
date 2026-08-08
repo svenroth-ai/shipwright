@@ -93,7 +93,7 @@ def _iter_transcript_records(transcript_path):
             continue
         try:
             obj = json.loads(line)
-        except (ValueError, TypeError):
+        except (RecursionError, ValueError, TypeError):
             continue
         if isinstance(obj, dict):
             yield obj

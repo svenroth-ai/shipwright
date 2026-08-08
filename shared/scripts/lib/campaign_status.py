@@ -153,7 +153,7 @@ def _project_events(events_lines: Iterable[str], slug: str) -> tuple[dict[str, d
             continue
         try:
             ev = json.loads(line)
-        except (json.JSONDecodeError, TypeError):
+        except (json.JSONDecodeError, RecursionError, TypeError):
             corrupt += 1
             continue
         if not isinstance(ev, dict):  # valid JSON but not an object (e.g. 42, [])

@@ -1,0 +1,103 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-08-08-six-small-defects",
+    "date": "2026-08-08",
+    "unit": {
+      "status": "passed",
+      "passed": 18,
+      "total": 18,
+      "note": "Canonical F0 suite: 18 isolated units GREEN; diff coverage 100% (9/9 changed executable lines)."
+    },
+    "integration": {
+      "status": "passed",
+      "passed": 1,
+      "total": 1,
+      "note": "integration-tests unit GREEN in canonical F0."
+    },
+    "pgtap": {
+      "status": "skipped",
+      "reason": "no database"
+    },
+    "e2e": {
+      "status": "skipped",
+      "reason": "no user-facing surface"
+    },
+    "design_fidelity": {
+      "status": "skipped",
+      "reason": "no UI surface"
+    },
+    "smoke": {
+      "status": "skipped",
+      "reason": "no startable service"
+    },
+    "surface_verification": {
+      "surface": "none",
+      "runner": "",
+      "exit_code": 0,
+      "tests_run": 0,
+      "evidence_path": "",
+      "timestamp": "2026-08-08T22:54:04.627Z",
+      "attempts": 0,
+      "justification": "Internal plugin and shared-script defect repairs change no startable user-facing web, API, or CLI behavior; the affected behavior is verified by the focused and canonical pytest suites."
+    },
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "AC1 physical plan command continuations",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-plan/tests/test_review_routing_contract.py and F0 shipwright-plan PASSED"
+        },
+        {
+          "behavior": "AC2 skipped review marker preserves only explicit fallback",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_mark_review_state.py::test_mark_skipped_user_opt_out_records_explicit_self_review PASSED"
+        },
+        {
+          "behavior": "AC3 each routing branch is structurally bounded",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-plan/tests/test_review_routing_contract.py PASSED"
+        },
+        {
+          "behavior": "AC4 four event readers tolerate RecursionError",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_best_effort_event_readers.py PASSED"
+        },
+        {
+          "behavior": "AC5 subprocess readers replace malformed UTF-8",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_subprocess_decode_guards.py PASSED"
+        },
+        {
+          "behavior": "AC6 provenance stamping preserves CRLF",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_compliance_provenance_crlf.py PASSED"
+        }
+      ],
+      "counts": {
+        "testable": 6,
+        "tested": 6,
+        "untestable": 0,
+        "untested_testable": 0
+      },
+      "enumeration_basis": {
+        "acs": 6,
+        "covered_acs": 6
+      }
+    },
+    "degraded": []
+  },
+  "coverage": {
+    "total": 80.2,
+    "measured_tier": "repo",
+    "source": "combined coverage.xml (all plugins + shared + integration)",
+    "measured_at": "2026-07-04T00:00:00Z"
+  },
+  "source_state": {
+    "run_id": "iterate-2026-08-08-six-small-defects",
+    "commit": "c13d273aceaa36debd1e9f5628a2c9171af541aa",
+    "dirty": true,
+    "base": null,
+    "release": null
+  }
+}

@@ -4,9 +4,7 @@ description: "Creates detailed implementation plans from spec files via research
 license: MIT
 compatibility: Requires uv (Python 3.11+), git repository recommended. Recommended: OPENROUTER_API_KEY for DeepSeek + OpenAI review; OPENAI_API_KEY can run the GPT arm only. An internal review (model resolved via the `plan_review` role — inherit unless a project configures it) always runs first; if external keys are missing, the skill asks whether to skip and rely on that internal review.
 ---
-
 # Shipwright Plan Skill
-
 Creates detailed, section-based implementation plans from spec files.
 Enhanced fork of deep-plan with E2E test plan generation and sprint tracking.
 
@@ -186,7 +184,8 @@ compliance `W5` ask, through one shared evaluator.
 **Gate — run it, don't eyeball it:**
 
 ```bash
-uv run --project {plugin_root} {plugin_root}/scripts/checks/check-plan-gates.py \n  --planning-dir "{planning_dir}" --gate review
+uv run --project {plugin_root} {plugin_root}/scripts/checks/check-plan-gates.py \
+  --planning-dir "{planning_dir}" --gate review
 ```
 
 Non-zero exit = STOP. It fails when Step 5 left no marker, or the marker
@@ -256,7 +255,8 @@ policy: plan is internal decomposition, not user-facing).
 **Verification gates (all must pass).** Gates 5–8 are one command — run it:
 
 ```bash
-uv run --project {plugin_root} {plugin_root}/scripts/checks/check-plan-gates.py \n  --planning-dir "{planning_dir}" --gate sections
+uv run --project {plugin_root} {plugin_root}/scripts/checks/check-plan-gates.py \
+  --planning-dir "{planning_dir}" --gate sections
 ```
 
 1. plan.md exists with SECTION_MANIFEST

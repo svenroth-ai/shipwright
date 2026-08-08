@@ -28,7 +28,7 @@ def run_mark(args: list[str]) -> tuple[int, dict]:
         [sys.executable, SCRIPT] + args,
         capture_output=True,
         text=True,
-        encoding="utf-8",
+        encoding="utf-8", errors="replace",
     )
     payload = json.loads(result.stdout) if result.stdout else {}
     return result.returncode, payload
@@ -55,7 +55,7 @@ def test_mark_completed(tmp_planning):
     assert "timestamp" in state
 
 
-def test_mark_skipped_user_opt_out_flags_self_review(tmp_planning):
+def test_mark_skipped_user_opt_out_does_not_claim_self_review(tmp_planning):
     rc, payload = run_mark([
         "--planning-dir", str(tmp_planning),
         "--status", "skipped_user_opt_out",
@@ -67,8 +67,22 @@ def test_mark_skipped_user_opt_out_flags_self_review(tmp_planning):
     state = json.loads((tmp_planning / "external_review_state.json").read_text(encoding="utf-8"))
     assert state["status"] == "skipped_user_opt_out"
     assert state["reason"] == "offline demo"
-    assert state["self_review_fallback_ran"] is True
+    assert state["self_review_fallback_ran"] is False
 
+
+def test_mark_skipped_user_opt_out_records_explicit_self_review(tmp_planning):
+    rc, payload = run_mark([
+        "--planning-dir", str(tmp_planning),
+        "--status", "skipped_user_opt_out",
+        "--reason", "offline demo",
+        "--self-review-fallback-ran",
+    ])
+    assert rc == 0
+    assert payload["success"] is True
+
+    state = json.loads((tmp_planning / "external_review_state.json").read_text(encoding="utf-8"))
+    assert state["status"] == "skipped_user_opt_out"
+    assert state["self_review_fallback_ran"] is True
 
 def test_mark_skipped_config_disabled(tmp_planning):
     rc, _ = run_mark([
@@ -78,7 +92,7 @@ def test_mark_skipped_config_disabled(tmp_planning):
     assert rc == 0
     state = json.loads((tmp_planning / "external_review_state.json").read_text(encoding="utf-8"))
     assert state["status"] == "skipped_config_disabled"
-    assert state["self_review_fallback_ran"] is True
+    assert state["self_review_fallback_ran"] is False
 
 
 def test_mark_rejects_invalid_status(tmp_planning):
@@ -214,4 +228,4 @@ def test_mark_review_type_code_skipped_user_opt_out(tmp_planning):
     )
     assert state["status"] == "skipped_user_opt_out"
     assert state["reason"] == "operator declined external code review"
-    assert state["self_review_fallback_ran"] is True
+    assert state["self_review_fallback_ran"] is False
