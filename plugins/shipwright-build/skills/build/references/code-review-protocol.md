@@ -16,6 +16,9 @@ git diff HEAD > /tmp/shipwright-review-diff.txt
 2. Spawn `code-reviewer` subagent with:
    - Section spec file path
    - Diff file path
+   - `model=<review tier resolved at SKILL.md §G>` (omit when `inherit`) —
+     see `code-review.md`'s "Model tier" note; the same value applies at
+     every stage of this cascade
 
 3. Receive structured review:
 ```json

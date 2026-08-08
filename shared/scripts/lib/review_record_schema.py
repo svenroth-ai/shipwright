@@ -130,7 +130,7 @@ _MIN_DISPOSITION_CHARS = 12
 
 _OPTIONAL_STRINGS = (
     "provider", "completed_at", "disposition", "recorded_by",
-    "parse_status", "raw_excerpt", "contradiction_resolution",
+    "parse_status", "raw_excerpt", "contradiction_resolution", "model_tier",
 )
 
 

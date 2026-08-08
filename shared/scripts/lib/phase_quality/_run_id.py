@@ -1,11 +1,9 @@
 """Run-id resolution for the Stop-time audits (plan § 5.3).
 
-Split out of ``_resolution.py``, which had reached its 300-LOC ceiling and was
-already hosting several unrelated concerns (project predicate, plugin-root →
-phase, monorepo-descent guards, source classification). Same one-way,
-acyclic-edge reasoning as the earlier ``_engagement`` split.
-``_resolution`` re-exports :func:`resolve_run_id` so every existing
-``phase_quality.resolve_run_id`` caller is unchanged.
+Split out of ``_resolution.py`` (300-LOC ceiling; unrelated concerns already
+hosted there — same reasoning as the earlier ``_engagement`` split).
+``_resolution`` re-exports :func:`resolve_run_id` so existing
+``phase_quality.resolve_run_id`` callers are unchanged.
 """
 
 from __future__ import annotations
@@ -31,6 +29,11 @@ from lib.jsonl_records import read_jsonl_records  # noqa: E402
 from lib import repo_root, worktree_isolation  # noqa: E402
 
 from ._constants import is_sentinel_run  # noqa: E402
+from ._worktree_identity import (  # noqa: E402
+    fast_main_root,
+    is_worktree_of,
+    pointer_owned_by_session,
+)
 
 
 def pointer_run_id(project_root: Path, session_id: str) -> str | None:
@@ -76,8 +79,12 @@ def pointer_run_id(project_root: Path, session_id: str) -> str | None:
     binding a finished run to later, unrelated work in the same session. The
     sibling consumer of this same artifact (``iterate_stop_finalize``) already
     refuses a pointer whose worktree is not a live directory; this matches it.
-    It bounds, but does not eliminate, staleness: a worktree RETAINED after its
-    PR merges still looks live (trg-276994a4).
+    On its own this bounds, but does not eliminate, staleness: a worktree
+    RETAINED after its PR merges still looks live. What closes the gap is
+    ``lib.run_pointer_retirement.retire_run_pointer`` — F11 calls it on a
+    DELIVERED exit, giving the pointer an explicit end-of-run signal instead
+    of leaving liveness to infer from the worktree directory alone
+    (trg-276994a4, fixed).
     """
     if is_sentinel_run(session_id):
         return None
@@ -119,6 +126,60 @@ def pointer_run_id(project_root: Path, session_id: str) -> str | None:
     return run_id.strip()
 
 
+def pointer_worktree_root(cwd: Path, session_id: str) -> Path | None:
+    """This session's active iterate worktree, resolved from ``cwd`` — or
+    ``None``. Used by ``audit_phase_quality_on_stop.py`` to root the
+    phase-quality Stop audit there instead of wherever ``resolve_project_
+    root``'s plain cwd/env/subdir chain lands.
+
+    Exists because a Stop-subprocess's cwd is the MAIN repo even while an
+    iterate runs in a linked worktree — the same fact
+    ``context_cost_session.resolve_active_project_root`` was built to work
+    around, and the reason trg-b36fd844's re-audit trigger (``already_audited``
+    via ``_staleness.is_stale_finding``) could not observe F5c's ledger
+    entry appearing: that entry lands in the WORKTREE, so an audit rooted at
+    main never saw the transition (external review, this fix). Re-validates
+    independently rather than importing ``context_cost_session`` — this
+    package's own convention (see ``iterate_stop_finalize._active_worktree_
+    root``) is that each caller re-checks pointer validity locally rather
+    than sharing one cross-module import.
+
+    Ownership and identity are both verified (external review, round 3): the
+    pointer's own ``session_id`` must name THIS session (closing a gap where
+    two ids sanitising to the same pointer filename could redirect this
+    session's audit into the other's worktree), and the resolved path must be
+    a genuine linked worktree of ``main_root`` (:func:`is_worktree_of`), not
+    merely a directory a spoofed ``worktree_path`` happens to name.
+    """
+    if is_sentinel_run(session_id):
+        return None
+    try:
+        main_root = fast_main_root(cwd)
+        if main_root is None:
+            resolved = repo_root.resolve_main_repo_root(cwd)
+            if resolved is None:
+                return None
+            main_root = resolved.resolve()
+        pointer = worktree_isolation.read_run_pointer(main_root, session_id)
+        if not pointer_owned_by_session(pointer, session_id):
+            return None
+        worktree_str = pointer.get("worktree_path", "")
+        if not worktree_str:
+            return None
+        worktree = Path(worktree_str).resolve()
+        if not worktree.is_dir():
+            return None
+        # is_worktree_of alone proves identity via the gitdir chain
+        # (doubt-review D5) — a prior relative_to(main_root) pre-check added
+        # no coverage and silently rejected a worktree git legitimately
+        # placed outside main_root's own tree; dropped rather than logged.
+        if not is_worktree_of(worktree, main_root):
+            return None
+        return worktree
+    except Exception:  # noqa: BLE001 — best-effort, caller falls back
+        return None
+
+
 def _worktree_is_live(worktree_path: object) -> bool:
     """True when the pointer's worktree is still a directory on disk."""
     if not isinstance(worktree_path, str) or not worktree_path.strip():
@@ -156,10 +217,14 @@ def resolve_run_id(project_root: Path, session_id: str) -> str:
     are attributable to the run, and a SKIP now names it. Whether the five
     guarded checks then *evaluate* is a separate condition this does not
     change: they need the audited tree to hold the run's own ledger entry, and
-    F5c writes that into the run's WORKTREE. An audit rooted at the main repo
-    — which is the usual shape, since the hook resolves ``project_root`` from
-    the session's cwd — therefore still SKIPs for an in-flight run. That is
-    fail-safe (never a false FAIL) and deliberately out of scope here.
+    F5c writes that into the run's WORKTREE. The hook resolves ``project_root``
+    from the session's cwd, which is the MAIN repo even mid-iterate — that used
+    to leave an in-flight run's audit rooted at main, unable to observe the
+    ledger entry appearing (fail-safe, but a permanent SKIP). Closed by
+    :func:`pointer_worktree_root`, which the hook now prefers: it redirects
+    ``project_root`` to the run's own worktree via the same per-session pointer
+    this function reads, so the re-audit this docstring's step 0 exists for can
+    actually fire (trg-b36fd844, external review round 2).
 
     ``session_id`` is normalised ONCE here and that one value is reused for the
     sentinel test, the pointer lookup, the payload comparison and the tail —
@@ -231,4 +296,4 @@ def resolve_run_id(project_root: Path, session_id: str) -> str:
     return session_id or "unknown"
 
 
-__all__ = ["pointer_run_id", "resolve_run_id"]
+__all__ = ["pointer_run_id", "pointer_worktree_root", "resolve_run_id"]

@@ -93,6 +93,8 @@ _REEXPORTS = [
 
 #: Private names history depends on: ``reconcile_triage`` re-exports the three guards
 #: under their old underscore spellings, and its tests patch/call them that way.
+#: ``sweep_outbox`` re-exports the same two it uses (no ``is_detached`` — see its
+#: module docstring for the asymmetry) since iterate-2026-08-07-shared-op-predicates.
 _PRIVATE_ALIASES = [
     ("lib.reconcile_triage", "_op_in_progress", "lib.main_tree_guards", "op_in_progress"),
     ("lib.reconcile_triage", "_is_detached", "lib.main_tree_guards", "is_detached"),
@@ -100,6 +102,8 @@ _PRIVATE_ALIASES = [
     ("lib.reconcile_triage", "_atomic_write", "lib.reconcile_rollback", "atomic_write_verbatim"),
     ("lib.reconcile_triage", "_rollback_failed_commit", "lib.reconcile_rollback",
      "rollback_failed_commit"),
+    ("lib.sweep_outbox", "_op_in_progress", "lib.main_tree_guards", "op_in_progress"),
+    ("lib.sweep_outbox", "_has_staged_changes", "lib.main_tree_guards", "has_staged_changes"),
 ]
 
 

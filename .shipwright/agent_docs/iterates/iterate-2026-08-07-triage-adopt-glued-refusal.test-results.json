@@ -1,0 +1,133 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-08-07-triage-adopt-glued-refusal",
+    "date": "2026-08-08",
+    "unit": {
+      "status": "passed",
+      "passed": 15773,
+      "total": 15773,
+      "note": "F0 canonical suite runner: 18/18 units GREEN in 7.1 min (integration-tests, shared/tests, shared/scripts/tests, shared/scripts/tools/tests, all 14 plugin dirs); count is the sum of --collect-only totals per pytest root, all confirmed passing by the suite's own green verdict."
+    },
+    "integration": {
+      "status": "passed",
+      "passed": 484,
+      "total": 484,
+      "note": "integration-tests unit, part of the F0 green run"
+    },
+    "e2e": {
+      "status": "n/a",
+      "reason": "no browser surface; this is a CLI/library refusal-message change"
+    },
+    "smoke": {
+      "status": "n/a",
+      "reason": "no startable server surface touched by this change"
+    },
+    "pgtap": {
+      "status": "n/a",
+      "reason": "no database"
+    },
+    "design_fidelity": {
+      "status": "n/a",
+      "reason": "no UI surface"
+    },
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "A glued drift line (two complete records) refuses, mutates nothing, names triage_repair.py --project-root <root> (AC1, AC2)",
+          "disposition": "tested",
+          "evidence": "test_sweep_drift_glued_refusal.py::test_a_glued_drift_line_refuses_but_names_the_repair_tool PASSED"
+        },
+        {
+          "behavior": "A genuinely unparseable drift line keeps main_tracked_unparseable, names triage_repair.py --project-root <root> (AC3)",
+          "disposition": "tested",
+          "evidence": "test_sweep_drift_guards.py::test_malformed_drift_is_never_copied_into_the_outbox PASSED"
+        },
+        {
+          "behavior": "_is_glued_producer_line fires only on glue, never on a clean event, corruption, or a blank line (AC4, AC5)",
+          "disposition": "tested",
+          "evidence": "test_sweep_drift_glued_refusal.py::test_is_glued_producer_line_distinguishes_glue_from_corruption_and_from_clean PASSED"
+        },
+        {
+          "behavior": "A truncated-prefix glue (backward resync) is also recognised as glued, not unparseable (AC6)",
+          "disposition": "tested",
+          "evidence": "test_sweep_drift_glued_refusal.py::test_a_truncated_predecessor_glued_to_a_full_append_is_also_recognised PASSED"
+        },
+        {
+          "behavior": "_is_glued_producer_line agrees with append_ids_of on the same glued bytes, append+append and append+status (AC5, directional)",
+          "disposition": "tested",
+          "evidence": "test_sweep_drift_glued_refusal.py::test_is_glued_producer_line_agrees_with_the_protection_universe[append+append,append+status] PASSED"
+        },
+        {
+          "behavior": "A recoverable record glued to unrelated garbage is still recognised as glued",
+          "disposition": "tested",
+          "evidence": "test_sweep_drift_glued_refusal.py::test_is_glued_producer_line_fires_on_a_record_followed_by_unrelated_garbage PASSED"
+        },
+        {
+          "behavior": "_is_producer_event and _is_glued_producer_line share one shape definition, not two that could drift",
+          "disposition": "tested",
+          "evidence": "covered by every drift/glue test continuing to pass post-refactor"
+        },
+        {
+          "behavior": "The full existing drift/adoption/sweep/reconcile/main-tree/GC-publish suite is unaffected by the message-only change",
+          "disposition": "tested",
+          "evidence": "uv run pytest shared/tests -k \"sweep or reconcile or main_tree or triage_gc\" -- 285/285 PASSED"
+        },
+        {
+          "behavior": "A decodable line with no recognisable producer shape (e.g. {\"foo\":1}) is not glued",
+          "disposition": "tested",
+          "evidence": "test_sweep_drift_glued_refusal.py::test_is_glued_producer_line_distinguishes_glue_from_corruption_and_from_clean (extended) PASSED"
+        },
+        {
+          "behavior": "The repair hint tells the operator to commit the repaired log, not just run the repair tool (Stage-3 doubt review, medium)",
+          "disposition": "tested",
+          "evidence": "test_sweep_drift_glued_refusal.py::test_a_glued_drift_line_refuses_but_names_the_repair_tool (extended, asserts 'commit' in reason) PASSED"
+        },
+        {
+          "behavior": "A glued line landing during the restore's residual window is preserved (not adopted); its salvage reason names triage_repair.py, not left as unexplained corruption on a success-reported sweep (Stage-3 doubt review, medium)",
+          "disposition": "tested",
+          "evidence": "test_sweep_drift_restore_faults.py::test_a_glued_late_line_is_kept_but_names_the_repair_tool PASSED"
+        },
+        {
+          "behavior": "Wording quality of the operator-facing hint text",
+          "disposition": "untestable",
+          "reason_code": "requires-manual-visual-judgment",
+          "reason": "the exact prose is reviewed, not asserted; the presence of triage_repair.py and the correct placeholder are behaviors 1-2, 10"
+        }
+      ],
+      "counts": {
+        "testable": 11,
+        "tested": 11,
+        "untestable": 1,
+        "untested_testable": 0
+      },
+      "enumeration_basis": {
+        "acs": 6,
+        "covered_acs": 6
+      }
+    },
+    "degraded": [],
+    "surface_verification": {
+      "surface": "cli",
+      "runner": "uv run pytest shared/tests/test_sweep_drift_glued_refusal.py shared/tests/test_sweep_drift_guards.py shared/tests/test_sweep_drift_restore_faults.py -q",
+      "exit_code": 0,
+      "tests_run": 27,
+      "evidence_path": "C:\\01_Development\\shipwright\\.worktrees\\triage-adopt-glued-refusal\\.shipwright\\runs\\iterate-2026-08-07-triage-adopt-glued-refusal\\surface_verification.log",
+      "timestamp": "2026-08-07T23:08:39.191Z",
+      "attempts": 1
+    }
+  },
+  "coverage": {
+    "total": 80.2,
+    "measured_tier": "repo",
+    "source": "combined coverage.xml (all plugins + shared + integration)",
+    "measured_at": "2026-07-04T00:00:00Z"
+  },
+  "source_state": {
+    "run_id": "iterate-2026-08-07-triage-adopt-glued-refusal",
+    "commit": "85bf510269f75d3a17459de7fd344428f43994a5",
+    "dirty": true,
+    "base": null,
+    "release": null
+  }
+}
