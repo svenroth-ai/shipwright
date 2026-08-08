@@ -30,7 +30,8 @@
       {
         "behavior": "AC4 RecursionError event readers",
         "disposition": "tested",
-        "evidence": "shared/tests/test_campaign_paths.py::test_regenerate_campaign_status (event JSONL -> campaign-status projection) and shared/tests/test_best_effort_event_readers.py PASSED in F0"
+        "evidence": "shared/tests/test_campaign_paths.py::test_regenerate_campaign_status (event JSONL to campaign-status projection) and shared/tests/test_best_effort_event_readers.py PASSED in F0",
+        "category": "integration"
       },
       {
         "behavior": "AC5 malformed UTF-8 subprocess output",
