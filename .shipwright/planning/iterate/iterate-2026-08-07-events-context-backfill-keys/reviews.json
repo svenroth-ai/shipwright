@@ -1,0 +1,296 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-08-07-events-context-backfill-keys",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-08T06:54:54.862939+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 10,
+      "findings": [
+        {
+          "severity": "low",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "The git log parsing for Call B (`--name-only --pretty=format:%x00%H`) does not use `-z` to null-separate filenames. This means filenames containing newlines may be misparsed (split across lines), leading to incomplete or incorrect `changed_files` lists.",
+          "suggestion": "Use `-z` in the command and adjust parsing to split on NUL for both hashes and filenames, or explicitly document the known limitation (newline-in-filename paths are extremely rare) so the expectation is clear.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "In a shallow-cloned repository (e.g., CI environments with `depth=1`), many commits referenced by Run-IDs may be missing from the history visited by `git log`. The backfill will silently produce `unavailable` for those entries without any indication that the lack of data is due to clone depth, not genuine missing data.",
+          "suggestion": "Consider adding a shallow-detection heuristic (e.g., checking for `.git/shallow` or the output of `git rev-parse --is-shallow-repository`) and, if shallow, either emit a warning in the coverage envelope or skip the scan entirely with a status like `shallow-repo` to avoid misleadingly sparse `unavailable` counts without context. At minimum, note the limitation in documentation.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "The `extraction` block is removed entirely, and the index schema version bump will force a rebuild. If any downstream tool or dashboard directly reads the raw JSON index and expects `extraction` to exist, it will break silently until it encounters the new shape. While the spec states zero consumers exist, the assurance is based on a repo-wide grep; dynamic consumers (e.g., external monitoring scripts) could still be affected.",
+          "suggestion": "Before deploying, consider a quick survey of any known external consumers (e.g., team dashboards, alerting tools) that might read the index file. If none are found, proceed; the schema-version bump is an adequate guard for in-repo code.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The `timeout=60` on the two `git log` subprocesses may be insufficient for very large repositories with deep histories, causing the scan to fail and all entries to become `unavailable`. The coverage envelope will record `timeout`, so the degradation is visible, but the fixed timeout may need tuning for different environments.",
+          "suggestion": "Accept as-is, with the understanding that the timeout is a reasonable starting point for the known repository size; no change required unless this becomes a recurring operational issue.  Overall assessment: The implementation approach is sound, thoroughly thought through, and addresses the core problem with careful attention to edge cases, security, and determinism. The two-call git extraction, duplicate-run-ID handling, and provenance system are appropriate. Minor refinements around shallow clones and filename parsing are low-risk and do not block the change.  SHIPWRIGHT_VERDICT: approve",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The proposed `--name-only` parser is not safe for valid Git pathnames containing newline characters. `core.quotepath=false` causes such names to be emitted literally, while Call B is parsed as newline-delimited filenames. A repository can legally contain newline/control characters in a filename, so this can split one path into multiple paths, corrupt `changed_files`, and consequently produce incorrect `area_ids` and relevance results. The planned hostile-path test should expose this rather than assuming control characters are safe with line parsing.",
+          "suggestion": "Use Git’s NUL-delimited path output (`-z`) and implement a record format/parser that unambiguously distinguishes commit boundaries from path records. If `--name-only -z` cannot provide robust per-commit framing with the desired two-call contract, use a NUL-safe raw/numstat representation with explicit record types, or revise the two-call implementation while preserving the “no subprocess per event” requirement.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "Call A’s claimed resynchronization protection is not actually robust against arbitrary NUL-containing commit bodies. Checking that a token matches `^[0-9a-f]{40}$` does not prove it is a genuine record boundary: a crafted body can contain a NUL followed by 40 hex characters. This can create a fabricated record or desynchronize subsequent records, contrary to the stated “one skipped record” blast-radius guarantee.",
+          "suggestion": "Avoid parsing raw `%B` using an unescaped delimiter if NUL-bearing hostile bodies are in scope. Prefer Git’s trailer-aware formatting for only the `Run-ID` value, or use a length-framed Git output mechanism. At minimum, validate parsed SHAs against a separately reliable set of scanned commit IDs and add a test demonstrating that delimiter-like content cannot invent or misassociate a Run-ID mapping.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "A timeout/failure result can be cached as a schema-valid v2 index. Because Git state is intentionally excluded from cache validity, a transient timeout may leave all affected entries `unavailable` until the event log changes or an operator manually removes the cache. The plan describes timeout visibility, but visibility alone does not make the degradation recover on its own.",
+          "suggestion": "Do not persist a cache built with `commit_map.status` such as `timeout` or transient Git error, or assign such payloads a short retry TTL. Successful scans can remain cacheable without adding a Git scan to ordinary cache hits.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The two Git walks are performed against a ref name such as `origin/main`, not a resolved commit object ID. If that ref advances between Call A and Call B, the body scan and file scan can cover different histories, yielding missing file data or inconsistent mappings for otherwise valid commits. This is particularly relevant in a checkout being updated concurrently.",
+          "suggestion": "Resolve the selected base-ref name once to an immutable commit SHA before either scan, run both commands against that SHA, and record both the winning ref label and resolved SHA in coverage. This also improves reproducibility of a single rebuild.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "The plan relies on Git output features and exact parsing behavior but does not state a supported Git-version prerequisite. In particular, any move to trailer-specific pretty-format handling or NUL-safe output needs verification on the project’s supported Git versions, including CI and developer environments.",
+          "suggestion": "Keep the implementation limited to already-supported Git features, document the minimum required Git version if a newer formatter capability is used, and add one CI-compatible fixture test that exercises the exact command output rather than mocked subprocess data.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "The new shared module is justified because the producer is in `shared/scripts/lib`, but `parse_trailers(body) -> dict` is broader than the actual required contract and invites later unsupported trailer semantics. The specification explicitly wants only a Run-ID-scoped reader.",
+          "suggestion": "Keep the public and internal implementation narrowly named and typed around extracting `Run-ID` values (for example, `_extract_run_ids`), rather than introducing a generic trailer dictionary API. This preserves the architecture-review YAGNI decision and reduces the chance of accidental reuse for ADR/Area/FR semantics.  Overall, history-based recovery remains the sound approach for repairing the existing append-only corpus, and the provenance/schema/cache work is appropriately scoped. The Git-output framing and failure-cache recovery issues need resolution before implementation, because both can silently produce persistently incorrect relevance inputs. SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter(openai+deepseek)",
+      "completed_at": "2026-08-08T06:59:04.508305+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[deepseek] - **Category:** approach  \n  **Severity:** low  \n  **Finding:** The git log parsing for Call B (`--name-only --pretty=format:%x00%H`) does not use `-z` to null-separate filenames. This means filenames containing newlines may be misparsed (split across lines), leading to incomplete or incorrect `changed_files` lists.  \n  **Suggestion:** Use `-z` in the command and adjust parsing to split on NUL for both hashes and filenames, or explicitly document the known limitation (newline-in-filename paths are extremely rare) so the expectation is clear.\n\n- **Category:** edge-case  \n  **Severity:** low  \n  **Finding:** In a shallow-cloned repository (e.g., CI environments with `depth=1`), many commits referenced by Run-IDs may be missing from the history visited by `git log`. The backfill will silently produce `unavailable` for those entries without any indication that the lack of data is due to clone depth, not genuine missing data.  \n  **Suggestion:** Consider adding a shallow-detection heuristic (e.g., checking for `.git/shallow` or the output of `git rev-parse --is-shallow-repository`) and, if shallow, either emit a warning in the coverage envelope or skip the scan entirely with a status like `shallow-repo` to avoid misleadingly sparse `unavailable` counts without context. At minimum, note the limitation in documentation.\n\n- **Category:** risk  \n  **Severity:** low  \n  **Finding:** The `extraction` block is removed entirely, and the index schema version bump will force a rebuild. If any downstream tool or dashboard directly reads the raw JSON index and expects `extraction` to exist, it will break silently until it encounters the new shape. While the spec states zero consumers exist, the assurance is based on a repo-wide grep; dynamic consumers (e.g., external monitoring scripts) could still be affected.  \n  **Suggestion:** Before deploying, consider a quick survey of any known external consumers (e.g., team dashboards, alerting tools) that might read the index f […truncated]\n\n[openai] 1. **Category:** edge-case  \n   **Severity:** high  \n   **Finding:** The proposed `--name-only` parser is not safe for valid Git pathnames containing newline characters. `core.quotepath=false` causes such names to be emitted literally, while Call B is parsed as newline-delimited filenames. A repository can legally contain newline/control characters in a filename, so this can split one path into multiple paths, corrupt `changed_files`, and consequently produce incorrect `area_ids` and relevance results. The planned hostile-path test should expose this rather than assuming control characters are safe with line parsing.  \n   **Suggestion:** Use Git’s NUL-delimited path output (`-z`) and implement a record format/parser that unambiguously distinguishes commit boundaries from path records. If `--name-only -z` cannot provide robust per-commit framing with the desired two-call contract, use a NUL-safe raw/numstat representation with explicit record types, or revise the two-call implementation while preserving the “no subprocess per event” requirement.\n\n2. **Category:** edge-case  \n   **Severity:** medium  \n   **Finding:** Call A’s claimed resynchronization protection is not actually robust against arbitrary NUL-containing commit bodies. Checking that a token matches `^[0-9a-f]{40}$` does not prove it is a genuine record boundary: a crafted body can contain a NUL followed by 40 hex characters. This can create a fabricated record or desynchronize subsequent records, contrary to the stated “one skipped record” blast-radius guarantee.  \n   **Suggestion:** Avoid parsing raw `%B` using an unescaped delimiter if NUL-bearing hostile bodies are in scope. Prefer Git’s trailer-aware formatting for only the `Run-ID` value, or use a length-framed Git output mechanism. At minimum, validate parsed SHAs against a separately reliable set of scanned commit IDs and add a test demonstrating that delimiter-like content cannot invent or misassociate a Run-ID mapping.\n\n3. **Category […truncated]",
+      "verdicts": {
+        "openai": "revise",
+        "deepseek": "approve"
+      }
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 10,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "shared/scripts/lib/event_context_index.py",
+          "line": 270,
+          "finding": "The index now has a third input (git history) that the cache-validity check does not cover. load_or_rebuild_index validates index_schema_version, event_log_fingerprint, presence of coverage, entry shape and catalogue_version -- nothing about git state. So load_or_rebuild_index() can serve a payload that differs from a fresh build_index() for the same fingerprint: entries whose commit did not exist yet when the index was built (F5b appends the work_completed event BEFORE F6 creates the commit that carries its Run-ID: trailer) stay pinned at provenance: unavailable until some unrelated event append happens to change the fingerprint. That is the exact staleness the fingerprint check was supposed to make impossible.",
+          "suggestion": "Fold the scan's own pin into the validity test -- store coverage.commit_map.resolved_sha (already recorded) and rebuild when a fresh resolve_base_ref + rev-parse disagrees with it.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "shared/scripts/lib/commit_trailers.py",
+          "line": 176,
+          "finding": "The 50-file cap truncates an alphabetically sorted list (files = sorted(entry['files']), then files[:MAX_CHANGED_FILES]), which is not an arbitrary subset -- it is systematically biased toward dot-prefixed bookkeeping paths. ASCII sort puts every dot-path first, so for any run with >50 changed files the kept 50 are bookkeeping and the source paths -- the only ones carrying the ranking signal this whole change exists to create -- are dropped. area_ids is then computed from bookkeeping paths and labelled derived, i.e. confidently wrong rather than unavailable.",
+          "suggestion": "Keep sorted() for determinism but choose the kept subset by a signal-bearing rule, not by prefix order -- e.g. drop framework-bookkeeping paths first and only then cap.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "performance",
+          "file": "shared/scripts/lib/commit_trailers.py",
+          "line": 142,
+          "finding": "Both walks are unbounded full-history scans with no --grep, --since or --max-count, and the second one (--name-only) computes a diff for every non-merge commit in the repo. build_index() re-pays this on every cache miss -- which is every event append -- and query_events' two fail-soft branches call build_index(persist=False) again, so a degraded query can pay it up to three times.",
+          "suggestion": "Filter to trailer-bearing commits at the git layer: --grep with the Run-ID predicate on BOTH walks cuts the expensive --name-only diff to the handful of commits that can possibly match.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "architecture",
+          "file": "docs/hooks-and-pipeline.md",
+          "line": 2754,
+          "finding": "The Artifact Write Matrix still describes .shipwright/runtime/events-context-index.json as 'disposable, gitignored, fingerprint-validated and fully rebuildable from the unchanged raw event log + area catalog'. After this change git history is a third input -- and it is precisely the input the fingerprint does not validate, so the sentence now misstates the property a reader would rely on.",
+          "suggestion": "Update the cell to name git history as an input, state that the commit-map scan is degradable, and say plainly whether a cached index may lag git state.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/scripts/lib/commit_trailers.py",
+          "line": 39,
+          "finding": "git -C <project_root> log --name-only returns paths relative to the REPOSITORY root, while every other path in the index is relative to the PROJECT root. When the Shipwright project root is a subdirectory of the git repo, backfilled paths arrive silently mis-prefixed.",
+          "suggestion": "Compare git rev-parse --show-toplevel against project_root once; when they differ, skip the backfill rather than emitting wrong-but-derived data.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/scripts/lib/commit_trailers.py",
+          "line": 168,
+          "finding": "_RUN_ID_TRAILER_RE.search(body) matches a Run-ID: line anywhere in the message, and setdefault gives the sha of the NEWEST matching commit. git revert copies the reverted commit's full body -- trailers included -- so a revert of an iterate commit both wins the sha and unions its inverse diff into that run's changed_files.",
+          "suggestion": "Restrict the match to the trailer block and/or skip commits whose subject starts with 'Revert '.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/scripts/lib/event_context_index.py",
+          "line": 170,
+          "finding": "changed_files_truncated is only ever set on the derived branch: an event that DECLARES 5,000 changed_files is stored unbounded and reports changed_files_truncated: false, so the flag reads as a general truncation signal but only describes half the entries.",
+          "suggestion": "Either apply the same MAX_CHANGED_FILES cap to declared lists or rename it to something branch-specific, and add a truncated-entry count to coverage.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "security",
+          "file": "shared/scripts/lib/commit_trailers.py",
+          "line": 136,
+          "finding": "base_ref is a public parameter interpolated straight into git's argv. Every in-repo caller passes a value from the fixed tuple in resolve_base_ref, so there is no live exposure, but a future caller passing a '-'-prefixed value would have it parsed as a git option rather than a rev.",
+          "suggestion": "Add --end-of-options before the ref in rev-parse and a trailing -- in the two git log calls, and validate pinned_sha against _SHA_RE before reusing it.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "shared/scripts/lib/commit_trailers.py",
+          "line": 66,
+          "finding": "Reducibility catalog D (duplication): resolve_base_ref runs rev-parse --verify --quiet <ref> and discards the sha it just resolved, then build_run_id_commit_map runs the identical command again on the same ref to pin it.",
+          "suggestion": "Have resolve_base_ref return (ref_name, sha) and let build_run_id_commit_map accept the pinned pair.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "shared/scripts/tests/test_event_context_backfill.py",
+          "line": 497,
+          "finding": "Reducibility catalog T/D (test repetition): _git, _init_repo and _commit are byte-identical between the two new test files, ~22 LOC duplicated inside one diff.",
+          "suggestion": "Optional boy-scout: move the three helpers into conftest.py as a git_repo fixture. Non-blocking; two pre-existing files in the directory already roll their own git helpers (house style).",
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-08-08T07:19:59.873661+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-08T07:20:06.639072+00:00",
+      "disposition": "Stage 3 conditional trigger (code-review.md): migrations, async/concurrency, cross-plugin imports, or irreversible ops. This diff is read-only git subprocess calls + regex parsing within shared/scripts/lib (same package, no cross-plugin edge), no schema/migration, no async, no destructive/external-side-effect operations -- none of the four triggers apply.",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 3,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "spec",
+          "file": "shared/scripts/lib/commit_trailers.py",
+          "line": 186,
+          "finding": "The map builder excludes every matching commit whose subject starts with `Revert `. The specification requires recovery for any event whose run ID matches a reachable commit’s `Run-ID:` trailer, with merge commits as the stated exclusion; it does not exclude revert commits. This causes a legitimate run whose shipped commit is intentionally a revert (and carries its own Run-ID) to remain unavailable.",
+          "suggestion": "Remove the subject-based revert exclusion. If associating a pasted Run-ID on a revert with an earlier run must be prevented, define and implement a join rule that does not also discard valid runs whose actual commit is a revert.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "bug",
+          "file": "shared/scripts/lib/commit_trailers.py:157, shared/scripts/lib/commit_trailers.py",
+          "line": 166,
+          "finding": "_RUN_ID_TRAILER_RE` is case-insensitive (`(?i)`), but both `git log --grep=Run-ID:` prefilters are case-sensitive by default. A commit containing `run-id: some-run` would be accepted by the documented Python trailer parser if scanned, but is never returned by either git walk and therefore cannot backfill. This contradicts the module’s intended loose trailer matching.",
+          "suggestion": "Add `--regexp-ignore-case` to both git-log invocations, or make the Python trailer matcher case-sensitive if exact `Run-ID:` casing is the intended contract.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "test",
+          "file": "shared/scripts/tests/test_event_context_backfill.py:48-70",
+          "line": null,
+          "finding": "The tests do not cover the two explicit provenance edge cases: a matching non-merge empty-diff commit must make `changed_files` `derived` despite `[]`, and non-empty changed files that match zero catalog areas must make `area_ids` `derived` despite `[]`. Every successful backfill fixture has at least one changed path and at least one matching area, so implementations that derive these labels only when the resulting lists are non-empty would still pass.",
+          "suggestion": "Add an `--allow-empty` commit fixture with a Run-ID and assert derived empty `changed_files`; add a changed path outside the seeded catalog and assert `area_ids == []` with `provenance[\"area_ids\"] == \"derived\"`.  Overall assessment: ship-with-fixes. The core two-walk backfill, provenance fields, coverage, cache invalidation, and schema bump are implemented, but the undocumented revert exclusion violates the specified recovery scope and the case-sensitivity mismatch makes the advertised loose matching internally inconsistent. SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-08-08T07:27:30.422911+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "partial",
+      "raw_excerpt": "[deepseek] The change correctly implements all acceptance criteria from the spec, including the two-phase git log recovery, provenance fields, coverage envelope, cache invalidation, and schema bump. The new tests exercise the backfill logic across positive, negative, and edge-case scenarios (merge exclusion, duplicate Run‑ID, truncation, v1‑cache rejection, etc.). No correctness bugs, security flaws, or regression risks are apparent. The implementation is deterministic and the test coverage matches the specification’s ledger.\n\nSHIPWRIGHT_VERDICT: approve\n\n[openai] - Category: spec  \n  Severity: medium  \n  File: shared/scripts/lib/commit_trailers.py:186  \n  Finding: The map builder excludes every matching commit whose subject starts with `Revert `. The specification requires recovery for any event whose run ID matches a reachable commit’s `Run-ID:` trailer, with merge commits as the stated exclusion; it does not exclude revert commits. This causes a legitimate run whose shipped commit is intentionally a revert (and carries its own Run-ID) to remain unavailable.  \n  Suggestion: Remove the subject-based revert exclusion. If associating a pasted Run-ID on a revert with an earlier run must be prevented, define and implement a join rule that does not also discard valid runs whose actual commit is a revert.\n\n- Category: bug  \n  Severity: low  \n  File: shared/scripts/lib/commit_trailers.py:157, shared/scripts/lib/commit_trailers.py:166  \n  Finding: `_RUN_ID_TRAILER_RE` is case-insensitive (`(?i)`), but both `git log --grep=Run-ID:` prefilters are case-sensitive by default. A commit containing `run-id: some-run` would be accepted by the documented Python trailer parser if scanned, but is never returned by either git walk and therefore cannot backfill. This contradicts the module’s intended loose trailer matching.  \n  Suggestion: Add `--regexp-ignore-case` to both git-log invocations, or make the Python trailer matcher case-sensitive if exact `Run-ID:` casing is the intended contract.\n\n- Category: test  \n  Severity: low  \n  File: shared/scripts/tests/test_event_context_backfill.py:48-70  \n  Finding: The tests do not cover the two explicit provenance edge cases: a matching non-merge empty-diff commit must make `changed_files` `derived` despite `[]`, and non-empty changed files that match zero catalog areas must make `area_ids` `derived` despite `[]`. Every successful backfill fixture has at least one changed path and at least one matching area, so implementations that derive these labels only when the resulting lists are no […truncated]",
+      "verdicts": {
+        "openai": "revise",
+        "deepseek": "approve"
+      }
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-08T07:08:29.892585+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    }
+  }
+}

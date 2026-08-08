@@ -1,0 +1,6 @@
+{
+  "stage": "spec-compliance",
+  "verdict": "PASS",
+  "spec_citations": [],
+  "summary": "All 9 acceptance criteria are present, faithful and in scope. The git-history backfill joins on exactly one key (entry.run_id <-> Run-ID: trailer) via two git log walks; area_ids is recomputed through the existing match_area; the 5-key provenance object replaces extraction (zero consumers repo-wide, verified by grep); the coverage envelope carries per-field counts plus commit-map status/base_ref_used; INDEX_SCHEMA_VERSION is 2 with provenance in the required key-set. The ADR:/Area:/FR: trailer surface, the area_catalog.py match subcommand and the F6.md change are all correctly absent per the recorded architecture-review cut. Two non-blocking observations, neither a spec divergence, passed to Stage 2: (1) the spec's Design Notes parenthetical 'one skill-reference doc change' (L157) is stale text from the pre-cut draft and is overridden by AC-7/Out of Scope, which explicitly forbid the F6.md change; (2) docs/hooks-and-pipeline.md:2754 still describes the index as 'fully rebuildable from the unchanged raw event log + area catalog', which the new git-history input makes incomplete - no AC requires that edit, so it is a doc-accuracy call for Stage 2 or the operator. Code-reviewer may proceed."
+}
