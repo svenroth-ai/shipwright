@@ -16,8 +16,10 @@ C.2:
   don't are flagged. Shares the oracle with the F11
   ``check_architecture_documented`` finalize gate via
   ``lib.architecture_doc``. (Replaced the prior ``git log``/marker oracle,
-  which never fired on the gitignored decision-drops —
-  iterate-2026-06-06-arch-drift-detector.)
+  which as of iterate-2026-06-06-arch-drift-detector never fired because
+  decision-drops was gitignored then — tracked since
+  iterate-2026-08-08-track-decision-drops, see ``_check_f5``'s own
+  docstring below.)
 - F6 — CLAUDE.md size. CLAUDE.md > 200 lines is a sign that per-
   iterate detail is leaking into the file (webui hit this at 270;
   Phase 0e refactored it down via ADR-spec-folder extraction).
@@ -164,20 +166,19 @@ def _check_f5(project_root: Path) -> tuple[str, str, str, list[str]]:
     ``lib.architecture_doc`` so the detective and the F11 finalize gate
     (``check_architecture_documented``) cannot diverge.
 
-    Worktree-aware: decision-drops are gitignored staging that live in the MAIN
-    repo, so the drops dir is resolved via
-    ``events_log.resolve_main_repo_root``; ``architecture.md`` is tracked, so it
-    is read from ``project_root`` (the same file in a worktree and the main
-    tree). In a clean CI checkout the drops dir is absent → ``skip`` — F5 is a
-    local/worktree detective; the authoritative prevention is the F11
-    ``check_architecture_documented`` gate (decision-drops never reach CI).
+    Worktree-local: decision-drops are TRACKED since
+    iterate-2026-08-08-track-decision-drops, resolved directly against
+    ``project_root`` (no main-root redirect, pinned by
+    ``test_decision_drop_ssot.py``), same as ``architecture.md``. No drops
+    dir at all → ``skip`` — F5 is a local/worktree detective; the F11
+    ``check_architecture_documented`` gate is the authoritative prevention.
 
     Event-ownership scoped: only drops whose ``run_id`` is in this tree's
-    committed ``shipwright_events.jsonl`` (``events_log.finalized_run_ids``) are
-    reconciled. A cross-branch campaign sibling's drop bleeds into the shared
-    main-rooted drops dir but its target-doc entry lands only on the sibling's
-    own unmerged branch — without scoping it false-flags drift on every other
-    branch. Fail-open when no event log exists (ownership unknowable).
+    committed ``shipwright_events.jsonl`` (``events_log.finalized_run_ids``)
+    are reconciled — a campaign's sub-iterates share one worktree and
+    branch-hop inside it, so a prior sub-iterate's uncommitted drop can
+    still be on disk when a later branch is checked out; scoping keeps that
+    from false-flagging drift. Fail-open when no event log exists.
 
     Drift states:
     - drops dir absent → skip
@@ -190,17 +191,15 @@ def _check_f5(project_root: Path) -> tuple[str, str, str, list[str]]:
     - unknown (non-canonical, non-none) impact value → fail (blind-spot guard)
     - else → pass
 
-    Replaces the prior ``git log <marker>..HEAD`` oracle, which could never fire
-    on the gitignored drops (they are never committed, so the diff was always
-    empty) — iterate-2026-06-06-arch-drift-detector. The adopt-side marker
-    producer is untouched; F5 no longer gates on the marker.
+    Replaces the prior ``git log <marker>..HEAD`` oracle, which could never
+    fire on the then-gitignored drops (never committed, diff always empty) —
+    iterate-2026-06-06-arch-drift-detector. Adopt-side marker producer is
+    untouched; F5 no longer gates on the marker.
     """
     archdoc = load_shared_lib("architecture_doc")
     events_log = load_shared_lib("events_log")
 
-    main_root = events_log.resolve_main_repo_root(project_root)
-    base = Path(main_root) if main_root is not None else Path(project_root)
-    drops_dir = base / ".shipwright" / "agent_docs" / "decision-drops"
+    drops_dir = project_root / ".shipwright" / "agent_docs" / "decision-drops"
 
     if not drops_dir.is_dir():
         return "skip", "LOW", "no decision-drops dir", []
@@ -216,12 +215,9 @@ def _check_f5(project_root: Path) -> tuple[str, str, str, list[str]]:
             corrupt,
         )
 
-    # Scope to drops OWNED by this tree's lineage (run_id in this tree's committed
-    # events.jsonl) so cross-branch campaign sibling drops — which bleed through
-    # the shared main-rooted decision-drops dir but whose target-doc entry lives
-    # only on the sibling's own unmerged branch — aren't flagged as drift here.
-    # Fail-open when no event log exists (ownership unknowable): keeps the
-    # clean-checkout / hermetic behavior, and is never weaker than whole-set.
+    # Scope to drops OWNED by this tree's lineage — see docstring's
+    # "Event-ownership scoped" paragraph. Fail-open when no event log
+    # exists: keeps clean-checkout behavior, never weaker than whole-set.
     owned = events_log.finalized_run_ids(project_root)
     if owned is not None:
         records = archdoc.records_in_run_set(records, owned)

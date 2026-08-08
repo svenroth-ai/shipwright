@@ -9,6 +9,10 @@ do not ratchet that grandfathered file. Covers:
   not when it is an empty ``{}`` placeholder;
 - (c) ``check_iterate_no_direct_decision_log``: an iterate commit that writes
   ``decision_log.md`` directly fails the F11 gate.
+- (d) ``check_decision_drop_committed``: a decision-drop present only in the
+  working copy (F6 forgot to ``git add`` it) fails, closing the gap
+  doubt-reviewer found in iterate-2026-08-08-track-decision-drops — the
+  working-tree-only checks above would read it as present regardless.
 
 (The happy-path acceptance tests for check_adr_in_iterate_history — pending drop,
 Run-ID-line aggregation, worktree resolution, numbered-ADR backward-compat — stay
@@ -24,6 +28,7 @@ from pathlib import Path
 
 from tools.verifiers.iterate_checks import (
     check_adr_in_iterate_history,
+    check_decision_drop_committed,
     check_iterate_no_direct_decision_log,
 )
 
@@ -144,3 +149,96 @@ def test_no_direct_decision_log_ignores_unrelated_decision_log_named_files(tmp_p
     _git(repo, "commit", "-m", "test: add decision_log fixture")
     result = check_iterate_no_direct_decision_log(repo, "iterate-x", _head_sha(repo))
     assert result.ok is True
+
+
+# ─── (d) decision-drop reached a commit, not just the working copy ─────────
+
+_DROP_REL = ".shipwright/agent_docs/decision-drops/iterate-x_001.json"
+
+
+def _write_drop(repo: Path, run_id: str = "iterate-x") -> Path:
+    p = repo / _DROP_REL
+    p.parent.mkdir(parents=True, exist_ok=True)
+    p.write_text(json.dumps({"run_id": run_id, "decision": "did the thing"}))
+    return p
+
+
+def test_decision_drop_committed_skips_when_no_drop_on_disk(tmp_path):
+    repo = tmp_path / "proj"
+    _init_repo_with_baseline(repo)
+    result = check_decision_drop_committed(repo, "iterate-x", _head_sha(repo))
+    assert result.ok is True and result.severity == "skipped"
+
+
+def test_decision_drop_committed_skips_without_commit(tmp_path):
+    repo = tmp_path / "proj"
+    _init_repo_with_baseline(repo)
+    _write_drop(repo)
+    result = check_decision_drop_committed(repo, "iterate-x", "")
+    assert result.ok is True and result.severity == "skipped"
+
+
+def test_decision_drop_committed_passes_when_staged_and_committed(tmp_path):
+    repo = tmp_path / "proj"
+    _init_repo_with_baseline(repo)
+    _write_drop(repo)
+    _git(repo, "add", _DROP_REL)
+    _git(repo, "commit", "-m", "feat: iterate F6 (drop staged)")
+    result = check_decision_drop_committed(repo, "iterate-x", _head_sha(repo))
+    assert result.ok is True, result.detail
+    assert "committed" in result.detail
+
+
+def test_decision_drop_committed_fails_when_drop_is_unstaged(tmp_path):
+    """The exact failure doubt-reviewer surfaced: F3 writes the drop, F6
+    forgets to `git add` it — the working tree has it, HEAD does not."""
+    repo = tmp_path / "proj"
+    _init_repo_with_baseline(repo)
+    _write_drop(repo)
+    # An unrelated commit lands on top; the drop itself is never staged.
+    (repo / "unrelated.txt").write_text("x\n")
+    _git(repo, "add", "unrelated.txt")
+    _git(repo, "commit", "-m", "feat: unrelated change (drop never staged)")
+    result = check_decision_drop_committed(repo, "iterate-x", _head_sha(repo))
+    assert result.ok is False
+    assert "git add" in result.detail
+    assert "iterate-x_001.json" in result.detail
+
+
+def test_decision_drop_committed_passes_when_drop_landed_in_an_earlier_commit(
+    git_origin_repo, make_worktree
+):
+    """Multi-commit-aware: the drop was staged and committed in an EARLIER
+    commit than the one passed as --commit — same class of blindness
+    check_events_has_commit's docstring guards against for events.jsonl.
+    ``_init_repo_with_baseline``'s single-branch history can't exercise this
+    (no trunk to diverge from, so ``_iterate_changed_paths`` takes its
+    single-commit fallback) — needs a real origin/main to diff against."""
+    work, _ = git_origin_repo
+    wt = make_worktree(work, "drop-earlier-commit")
+    _write_drop(wt)
+    _git(wt, "add", _DROP_REL)
+    _git(wt, "commit", "-m", "feat: F6 (drop committed here)")
+    (wt / "followup.txt").write_text("x\n")
+    _git(wt, "add", "followup.txt")
+    _git(wt, "commit", "-m", "fix: follow-up commit on the same iterate branch")
+    result = check_decision_drop_committed(wt, "iterate-x", _head_sha(wt))
+    assert result.ok is True, result.detail
+
+
+def test_decision_drop_committed_skips_when_directory_gitignored(tmp_path):
+    """A project that still gitignores the directory (opted out, or self-heal
+    hasn't landed yet) is a legitimate SKIP, not a hard fail — the
+    committed-assertion simply does not apply there."""
+    repo = tmp_path / "proj"
+    repo.mkdir(parents=True)
+    _git(repo, "init")
+    (repo / ".gitignore").write_text(
+        "/.shipwright/agent_docs/decision-drops/\n", encoding="utf-8"
+    )
+    _git(repo, "add", ".gitignore")
+    _git(repo, "commit", "-m", "baseline with legacy blanket ignore")
+    _write_drop(repo)  # on disk, but gitignored — cannot be `git add`ed
+    result = check_decision_drop_committed(repo, "iterate-x", _head_sha(repo))
+    assert result.ok is True and result.severity == "skipped"
+    assert "gitignored" in result.detail

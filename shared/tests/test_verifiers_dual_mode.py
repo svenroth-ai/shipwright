@@ -116,20 +116,21 @@ class TestIterateChecksDirOnly:
         assert result.ok is False
         assert "ADR-999" in result.detail
 
-    def test_adr_check_accepts_strict_local_drop_fallback(self, tmp_path, monkeypatch):
-        main = tmp_path / "main"
-        main.mkdir()
+    def test_adr_check_accepts_strict_local_drop_fallback(self, tmp_path):
+        """decision-drops resolve directly against project_root since
+        iterate-2026-08-08-track-decision-drops (no main-root redirect) — a
+        drop written into THIS worktree's own decision-drops/ is found
+        without needing any other checkout to exist."""
         project = tmp_path / "worktree"
         entry = _canonical_entry(slug="local-drop")
         entry["adr"] = entry["run_id"]
         _seed_dir_only_project(project, [entry])
         drops = project / ".shipwright" / "agent_docs" / "decision-drops"
-        drops.mkdir()
+        drops.mkdir(parents=True)
         (drops / f"{entry['run_id']}_001.json").write_text(
             json.dumps({"run_id": entry["run_id"], "decision": "kept local"}),
             encoding="utf-8",
         )
-        monkeypatch.setattr(decision_log_gate, "resolve_main_repo_root", lambda _: main)
 
         result = decision_log_gate.check_adr_in_iterate_history(
             project, entry["run_id"]

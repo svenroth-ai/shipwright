@@ -62,4 +62,5 @@ _Regenerate:_ `uv run {shared_root}/scripts/tools/rebuild_adr_index.py --project
 - [ADR-127 — Backfill events-context-index selection keys from git history (Run-ID trailer only)](127-events-context-backfill-keys.md)
 - [ADR-127 — Run-id pointer lifecycle: retirement + stale-verdict re-audit](127-run-id-lifecycle-fixes.md)
 - [ADR-128 — Split coverage.fields.<key>.unavailable into not_applicable / missing](128-coverage-envelope-not-applicable-missing-split.md)
+- [ADR-128 — Track decision-drops in git; redirect the write path into the calling worktree](128-track-decision-drops.md)
 - [Archive — Agent-Doc Update Backlog (verbatim)](_archive-agent-doc-updates.md)

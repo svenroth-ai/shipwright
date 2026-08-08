@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-08-08-track-decision-drops",
+  "date": "2026-08-08",
+  "section": "Iterate — feature: track decision-drops in git",
+  "title": "Track decision-drops in git; redirect the write path into the calling worktree",
+  "context": "214 real ADR decision-drops existed only on one machine, gitignored — invisible to CI or any other checkout; the write path also pointed at the main repo's disk, not the calling worktree.",
+  "decision": "Track decision-drops/ in git across this repo, the shared gitignore template, and shipwright-webui; redirect the write path to the calling worktree; quarantine pre-cutoff drops (never scanned) rather than aggregate them.",
+  "consequences": "Drops become ordinary tracked, mergeable state shipping with their own branch. F6 stages decision-drops/ glob-scoped per run_id, not the whole directory. See spec for full detail.",
+  "rationale": "Fixing only the write path would still leave existing drops gitignored; fixing only tracking would still misdirect worktree writes to the wrong disk. Both share one root cause.",
+  "rejected": "Committing the 214 pre-existing drops unscanned; folding this into ADR-127; tracking without redirecting the write path. See spec.",
+  "commit": "",
+  "architecture_impact": "data-flow",
+  "spec_ref": ".shipwright/planning/adr/128-track-decision-drops.md"
+}

@@ -81,10 +81,13 @@ ADR_INDEX = ".shipwright/planning/adr/INDEX.md"
 #: a side. NOT a :data:`DERIVED_MDS` member for the same reason ADR_INDEX
 #: isn't: that register is for views that are *wrong* when derived on a
 #: branch, and this one is correct on a branch by construction. The sibling
-#: decision-drops index is deliberately absent — see
-#: ``lib/decision_drops_index.py``: that directory is gitignored, so git can
+#: decision-drops INDEX.md is deliberately absent — see
+#: ``lib/decision_drops_index.py``: unlike the JSON payload files it
+#: renders, INDEX.md itself stays gitignored (iterate-2026-08-08), so git can
 #: never see a conflict on it and an allowlist entry would be exercised by
-#: nothing.
+#: nothing. The JSON payloads need no allowlist entry either: each is a
+#: uniquely-named new file per run, so two branches adding different ones
+#: merges cleanly without a conflict to resolve.
 DECISION_LOG_INDEX = ".shipwright/agent_docs/decision_log_index.md"
 
 #: Derived iterate-throughput report, regenerated every F5b run — own constant like :data:`CI_SECURITY_SUMMARY`.
