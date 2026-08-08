@@ -1,0 +1,122 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-08-07-plan-reviewer-wiring",
+    "date": "2026-08-08",
+    "unit": {
+      "status": "pass",
+      "passed": 17,
+      "total": 17,
+      "note": "17 plugin/shared pytest suites (unit + tooling), all green via run_test_suite.py in 5.6 min, zero races. No Python source changed in this diff (agent-instruction prose + config docs) -- this is the pre-existing regression net, not new coverage for this run."
+    },
+    "integration": {
+      "status": "pass",
+      "passed": 1,
+      "total": 1,
+      "note": "integration-tests suite (274.2s) green as one of the 18 F0 units."
+    },
+    "e2e": {
+      "status": "n/a",
+      "reason": "no browser surface; this change edits agent-instruction prose and a generated config doc"
+    },
+    "smoke": {
+      "status": "n/a",
+      "reason": "no startable server surface in this repo"
+    },
+    "pgtap": {
+      "status": "n/a",
+      "reason": "no database"
+    },
+    "design_fidelity": {
+      "status": "n/a",
+      "reason": "no UI surface"
+    },
+    "surface_verification": {
+      "surface": "none",
+      "runner": "n/a",
+      "exit_code": 0,
+      "tests_run": 0,
+      "evidence_path": ".shipwright/runs/iterate-2026-08-07-plan-reviewer-wiring/surface_verification.json",
+      "timestamp": "2026-08-08T00:00:00Z",
+      "justification": "This change edits agent instructions (Markdown prose consumed by an LLM at plan-time) and a generated config doc -- there is no startable web/cli/api surface to drive. Verification is the pytest suites plus the live dogfood spawn recorded in Confidence Calibration and the ADR."
+    },
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "SKILL.md stays <=300 LOC after the edit",
+          "disposition": "tested",
+          "evidence": "test_kern_skill_md_under_300_loc PASSED"
+        },
+        {
+          "behavior": "step-5-external-review.md stays <=400 LOC",
+          "disposition": "tested",
+          "evidence": "test_every_new_reference_under_loc_budget PASSED"
+        },
+        {
+          "behavior": "Every references/*.md link in Kern SKILL.md still resolves",
+          "disposition": "tested",
+          "evidence": "test_every_kern_link_resolves PASSED"
+        },
+        {
+          "behavior": "opus-plan-reviewer invocation actually returns parseable JSON matching the documented schema",
+          "disposition": "tested",
+          "evidence": "live dogfood spawn, this run -- see ADR (decision-drop iterate-2026-08-07-plan-reviewer-wiring)"
+        },
+        {
+          "behavior": "gate_catalog.json still validates (policy/fires/phase enums, auto-default carries a default_answer)",
+          "disposition": "tested",
+          "evidence": "test_gate_catalog.py::test_every_gate_has_valid_fields PASSED"
+        },
+        {
+          "behavior": "gate_catalog.md matches the regenerated render after the entry-text edit",
+          "disposition": "tested",
+          "evidence": "test_doc_matches_generated_catalog PASSED"
+        },
+        {
+          "behavior": "Existing plan-plugin test suite has no regression from the SKILL.md/reference edits",
+          "disposition": "tested",
+          "evidence": "pytest plugins/shipwright-plan/tests/ -v PASSED"
+        },
+        {
+          "behavior": "New gate_catalog.json entry plan.internal-review-high-severity-declined validates",
+          "disposition": "tested",
+          "evidence": "test_gate_catalog.py::test_every_gate_has_valid_fields + test_auto_default_gates_carry_a_default_answer PASSED"
+        },
+        {
+          "behavior": "disclose triage category has a real destination (not silently dropped)",
+          "disposition": "tested",
+          "evidence": "live dogfood run produced a genuine disclose disposition -- decision_log.md"
+        },
+        {
+          "behavior": "A severity:high finding can be legitimately declined with a recorded reason (scope-ratchet guard exercised, not just specified)",
+          "disposition": "tested",
+          "evidence": "live dogfood run declined a finding with a reason tied to the card's own scope language, not a rubber stamp"
+        }
+      ],
+      "counts": {
+        "testable": 10,
+        "tested": 10,
+        "untestable": 0,
+        "untested_testable": 0
+      },
+      "enumeration_basis": {
+        "acs": 11,
+        "covered_acs": 11
+      }
+    },
+    "degraded": []
+  },
+  "coverage": {
+    "total": 80.2,
+    "measured_tier": "repo",
+    "source": "combined coverage.xml (all plugins + shared + integration)",
+    "measured_at": "2026-07-04T00:00:00Z"
+  },
+  "source_state": {
+    "run_id": "iterate-2026-08-07-plan-reviewer-wiring",
+    "commit": "dcae2d5920cb0b0c09d9bc5b3bc5804a8b5fd9e4",
+    "dirty": true,
+    "base": null,
+    "release": null
+  }
+}

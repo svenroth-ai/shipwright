@@ -4,8 +4,8 @@
 
 Handled interactively in Step 5 Branch B. If no API key is detected in
 `.env.local`, the skill STOPS and asks the user whether to add a key
-(Option 1) or opt out into self-review fallback (Option 2). Never
-silently skipped.
+(Option 1) or opt out and rely on the internal Opus review that already
+ran (Option 2). Never silently skipped.
 
 ```
 Note (legacy): silent-skip behavior was removed. See Step 5 Branch B for the

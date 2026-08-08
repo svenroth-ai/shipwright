@@ -1,0 +1,296 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-08-07-plan-reviewer-wiring",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-07T21:45:10.346463+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 9,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "The implementation plan does not fully specify how the new high-severity-declined gate is actually invoked. Adding `plan.internal-review-high-severity-declined` to `gate_catalog.json` only makes the gate valid catalog data; it does not cause Step 5 to stop, present the user decision, or apply the configured default. Further, an auto-default may conflict with AC-6b’s requirement that the decision be put to the user before Step 6 if the default can advance the run without an explicit user response.",
+          "suggestion": "Add explicit Step 5-int instructions for the exact trigger (“any individual internal finding with `severity: high` and disposition `decline`”), the gate invocation mechanism, its allowed responses, and the behavior for each response. Confirm that the `single_session` auto-default pauses rather than silently continues, or change the gate policy/default to one that satisfies the required user decision.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "Reusing Branch B/C’s external-review marker fields to report an internal-review result may be semantically incompatible with existing consumers, even if the JSON schema accepts the values. `check-plan-gates.py`, session reporting, resume behavior, and future diagnostics may interpret `findings-count` and `reason` as evidence of an external provider attempt/result, rather than an internal Opus review. The plan asserts the Step 5a precedent is sufficient, but does not map the exact existing marker calls, statuses, and consumer expectations for both `missing_keys` Option 2 and `user_disabled`.",
+          "suggestion": "Trace each existing Branch B and C marker write and each reader of its status/reason/count fields. Document the exact values to write for a successful internal review, zero findings, malformed output, and unavailable Agent tool. Verify that these values satisfy the review gate without falsely reporting an external-provider interaction. If the current marker semantics cannot represent this truthfully, do not overload it merely to avoid a schema change.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The idempotency rule is underspecified for partial execution. A session can apply fixes or append decision-log entries and then fail before writing `## Internal Plan Review`, causing a resume to rerun the reviewer and duplicate mutations/log decisions. Conversely, a pre-existing user-authored or malformed heading could incorrectly suppress the pass. The plan mentions replacing `Ran: no` in place, but its work breakdown only says to skip when the heading exists.",
+          "suggestion": "Define a fixed, machine-recognizable block format with required fields such as `Ran: yes|no`, outcome, and a run identifier. Specify replacement behavior for `Ran: no`, incomplete blocks, malformed blocks, and a reviewer result received but not fully triaged. Write/update the block only after triage and logging complete, or explicitly define a recovery procedure that reconciles existing decision-log entries before rerunning.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "The plan conflicts with AC-2 by saying to log “each non-trivial finding,” while the acceptance criterion requires every internal finding to be triaged and logged under `Internal Plan Review — {split_name}`. This leaves low-severity findings vulnerable to silent omission.",
+          "suggestion": "Replace “each non-trivial finding” with “every finding,” including fixed findings. Require a disposition and rationale appropriate to all three outcomes, and ensure the plan block and decision log contain a stable finding identifier or summary sufficient to correlate them.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "JSON handling is only partially defined. The approach handles wholly malformed or absent output as `not_run`, but does not define behavior for valid JSON with missing required fields, a non-list `findings`, unknown severities, findings without per-finding severity, duplicate findings, or an overall `severity` that disagrees with a finding severity. These cases matter directly to the high-severity decline escalation and findings-count marker values.",
+          "suggestion": "State the minimum schema validation required at the instruction layer and treat schema-invalid output as `Ran: no`/fallback. Define that escalation is based on individual finding severity, define allowed severity values, and specify whether marker count is the number of parsed findings, triaged findings, or unresolved findings.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "Several listed documentation changes are not included in the work breakdown: `first-actions.md`, `error-handling.md`, `step-9-completion.md`, and the `opus-plan-reviewer.md` frontmatter update. There is also a mismatch between the file table’s three `external-review.md` locations and WBS item 4’s “two sentences.” This creates a realistic risk that the implementation updates the main path while leaving startup, error, completion, or discovery guidance contradictory.",
+          "suggestion": "Add explicit work items for every file in the file table, including the exact behavior/text each must reflect. Reconcile the external-review document locations and include a final repository search for the old self-review-fallback wording scoped to `/shipwright-plan`, excluding the explicitly out-of-scope iterate mechanism.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "The scope-ratchet guard is required to apply once across internal, external, and architecture passes, but the proposed implementation places it in the new Step 5-int section. That does not reliably constrain Branch A external review or Step 5a architecture review, and it risks diverging wording or enforcement across passes.",
+          "suggestion": "Put a single shared Step 5 rule before Step 5a/5-int/Branch A that applies to all review passes, then have each pass reference it. Keep Branch A’s existing “addressed or declined” vocabulary intact as required; the shared rule should govern what is eligible to be integrated, not replace its disposition terminology.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "security",
+          "file": null,
+          "line": null,
+          "finding": "The reviewer’s input is plan/spec/repository-derived text and can contain prompt-injection content. Its resulting summaries, reasons, and findings are then incorporated into `plan.md` and passed to `write_decision_log.py`. Avoiding raw JSON in `plan.md` protects the manifest format, but does not address tool-argument injection or untrusted reviewer text being treated as instructions.",
+          "suggestion": "Explicitly instruct the planning agent to treat plan/spec/reviewer content as data, not commands; use structured/quoted tool arguments rather than shell-concatenated reviewer strings; and constrain the persisted template to escaped, bounded text. The reviewer’s Read/Grep/Glob-only tool set is appropriately limited and should remain so.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "The proposed verification primarily proves formatting, link resolution, catalog validity, and one successful live invocation. It does not protect the critical branch matrix: successful internal review plus Branch A; malformed/unavailable internal review plus successful Branch A; internal failure plus B Option 2; internal failure plus C; resume after `Ran: yes`; retry after `Ran: no`; and declined high severity. A future prose edit could easily reintroduce branch-local fallback behavior while all listed tests remain green.",
+          "suggestion": "Add focused structural tests that assert the required Step 5 instruction invariants and references: one Step 5-int definition, Branch B/C use it rather than self-review, fallback condition requires both review mechanisms to be absent, and the high-severity-decline gate is named. This need not attempt to test an LLM’s judgment, but it should protect the wiring contract beyond LOC and link checks.  Overall, the core design—an internal independent pass before branching, retaining external review on Branch A, and using self-review only as last resort—is sound and appropriately avoids unnecessary code/schema changes. The plan needs tighter operational semantics for gate invocation, marker reuse, recovery/idempotency, and branch-level verification before implementation. SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-08-07T22:52:09.902600+00:00",
+      "disposition": null,
+      "recorded_by": "external-review",
+      "parse_status": "partial",
+      "raw_excerpt": "[deepseek] **Review of Implementation Approach**\n\n| Category | Severity | Finding | Suggestion |\n|----------|----------|---------|------------|\n| approach | medium | The plan adds `gate_catalog.json` entry `plan.internal-review-high-severity-declined` with an auto-default, but the WBS item for drafting Step 5‑int does not mention integrating a gate‑check call (`check-plan-gates.py` or equivalent) into the stop‑and‑prompt flow. Without that instruction, the auto‑default will not be respected and the user will always be prompted. | In the Step 5‑int draft, explicitly add a step that invokes the gate check (e.g., `check-plan-gates.py --gate plan.internal-review-high-severity-declined`) before prompting the user, and use the answer to auto‑approve if the policy says `approved`. |\n| dependency | medium | The new gate entry may rely on a marker file to fire, but the internal pass intentionally writes no marker. The plan does not specify how the gate’s `fires` field will be defined to support a markerless trigger (e.g., `on_demand`), nor whether `check-plan-gates.py` can evaluate such a gate. | Verify the gate catalog schema supports markerless gates (or a direct query). If not, adjust the design to use a lightweight marker written by the planning agent before the stop‑and‑ask, or use the existing user‑prompt mechanism and document the auto‑default separately. |\n| risk | low | Branch B/C reports internal‑pass outcome by repurposing the external‑review marker’s `--findings-count` / `--reason` fields. Downstream tools or future maintainers might misinterpret the marker as genuinely external, leading to confusion. | Confirm the precedent (Step 5a Architecture Review) follows the same pattern and that no tooling consumes the marker’s semantics beyond the existing `review` gate. Add a comment in the code or decision log if any ambiguity exists. |\n| edge‑case | low | The plan assumes `write_decision_log.py --section \"…\"` exists and works; if the tool does not support `--sectio […truncated]\n\n[openai] 1. **Category:** approach  \n   **Severity:** high  \n   **Finding:** The implementation plan does not fully specify how the new high-severity-declined gate is actually invoked. Adding `plan.internal-review-high-severity-declined` to `gate_catalog.json` only makes the gate valid catalog data; it does not cause Step 5 to stop, present the user decision, or apply the configured default. Further, an auto-default may conflict with AC-6b’s requirement that the decision be put to the user before Step 6 if the default can advance the run without an explicit user response.  \n   **Suggestion:** Add explicit Step 5-int instructions for the exact trigger (“any individual internal finding with `severity: high` and disposition `decline`”), the gate invocation mechanism, its allowed responses, and the behavior for each response. Confirm that the `single_session` auto-default pauses rather than silently continues, or change the gate policy/default to one that satisfies the required user decision.\n\n2. **Category:** risk  \n   **Severity:** high  \n   **Finding:** Reusing Branch B/C’s external-review marker fields to report an internal-review result may be semantically incompatible with existing consumers, even if the JSON schema accepts the values. `check-plan-gates.py`, session reporting, resume behavior, and future diagnostics may interpret `findings-count` and `reason` as evidence of an external provider attempt/result, rather than an internal Opus review. The plan asserts the Step 5a precedent is sufficient, but does not map the exact existing marker calls, statuses, and consumer expectations for both `missing_keys` Option 2 and `user_disabled`.  \n   **Suggestion:** Trace each existing Branch B and C marker write and each reader of its status/reason/count fields. Document the exact values to write for a successful internal review, zero findings, malformed output, and unavailable Agent tool. Verify that these values satisfy the review gate without falsely reporting an e […truncated]",
+      "verdicts": {
+        "openai": "revise",
+        "deepseek": "revise"
+      }
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 8,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": ".shipwright/planning/01-adopted/spec.md",
+          "line": null,
+          "finding": "FR-01.03 AC dropped AC-3's carve-out for the double-failure path — fixed.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "plugins/shipwright-plan/skills/plan/references/step-5-external-review.md",
+          "line": null,
+          "finding": "self-review-fallback-ran flag cited a fabricated triage id (trg-32a4bd9c) — filed the real card (trg-43ba84df) and corrected the reference.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "plugins/shipwright-plan/skills/plan/references/step-5-external-review.md",
+          "line": null,
+          "finding": "Step 5a rationale's broken 'item 1' cross-reference to the compressed Self-Review Fallback sub-block — fixed.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "plugins/shipwright-plan/skills/plan/references/step-5-external-review.md",
+          "line": null,
+          "finding": "Branch B Option 1 did not route through Step 5a/Pre-5b Checkpoint and named the pre-consolidation CLI name — fixed.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "plugins/shipwright-plan/skills/plan/references/step-5-external-review.md",
+          "line": null,
+          "finding": "instruction to pass literal --provider null instead of omitting the flag — fixed.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "plugins/shipwright-plan/skills/plan/SKILL.md",
+          "line": null,
+          "finding": "Kern said 'Append' instead of describing the replace-in-place retry rule — fixed.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "plugins/shipwright-plan/skills/plan/references/external-review.md",
+          "line": null,
+          "finding": "pointed at Step 5-int's Degraded Handling to decide the fallback, which no longer decides that — repointed at the Pre-5b Checkpoint.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "plugins/shipwright-plan/skills/plan/references/step-5-external-review.md",
+          "line": null,
+          "finding": "Branch A degraded's short reason string diverged from Step 5b's composite string — aligned.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-08-07T22:47:13.508857+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-07T22:47:20.266234+00:00",
+      "disposition": "iteration-reviews.md doubt-reviewer trigger rule: docs/runtime-prompt-only diff, no migrations, no async/concurrency, no cross-plugin imports, no irreversible ops",
+      "recorded_by": "self",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 6,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "spec",
+          "file": "step-5-external-review.md (in the new “Step 5‑int” section, around the “Log each non‑trivial finding” sentence)",
+          "line": null,
+          "finding": "AC‑2 requires “Every internal‑review finding … — logged to `decision_log.md` under `Internal Plan Review — {split_name}`.” The instruction in the reference doc says “Log each non‑trivial finding to `decision_log.md`”, which drops trivial findings from the decision log and violates the acceptance criterion. The decision not to fix this is recorded in ADR‑363, but the gap remains in the shipped instructions.",
+          "suggestion": "Change the instruction to log every finding (including fixed ones) to `decision_log.md`, matching AC‑2. Alternatively, update AC‑2 to allow filtering, but the spec must match the implementation.  Overall assessment: The diff implements most acceptance criteria correctly, but the logging divergence means a mandatory audit trail requirement is not fully met. Ship-with-fixes.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "bug",
+          "file": "plugins/shipwright-plan/skills/plan/references/step-5-external-review.md",
+          "line": 91,
+          "finding": "The Step 5-int instructions require triaging “every finding,” but the persistence instruction immediately below says to log only “each non-trivial finding.” This permits low-severity findings—including declined or disclosed ones—to be omitted from `decision_log.md`, violating AC-2’s requirement that every internal-review finding be logged under `Internal Plan Review — {split_name}`.",
+          "suggestion": "Change the logging requirement to “log every finding,” including fixed findings, and require each log entry to carry its disposition and rationale.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": "plugins/shipwright-plan/skills/plan/references/step-5-external-review.md:32-45",
+          "line": null,
+          "finding": "Degraded handling only treats absent or non-parseable JSON as a failed internal review. A parseable but schema-invalid report (for example `{}`, `{\"findings\":\"none\"}`, findings without severity, or an unknown severity) has no defined failure path. The planning agent can therefore record `Ran: yes` and pass the independent-review gate despite being unable to triage every finding or reliably enforce the high-severity escalation.",
+          "suggestion": "Define minimum report validation (`reviewer`, `summary`, and an array of findings with allowed per-finding severities/dispositions). Treat any invalid report as `Ran: no (parse failure)` and route it through the existing checkpoint/fallback path.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "security",
+          "file": "plugins/shipwright-plan/skills/plan/references/step-5-external-review.md:64-91",
+          "line": null,
+          "finding": "The new reviewer output is derived from untrusted plan/spec text and is persisted into `plan.md` and decision-log tool arguments without an instruction to sanitize or escape it. “One-line” template fields are not enforcement: a prompt-injected reviewer response can include newlines, Markdown headings such as `## SECTION_MANIFEST`, or instructions targeted at the parent agent, undermining the stated protection against corrupting downstream plan parsing.",
+          "suggestion": "Explicitly treat plan/spec/reviewer content as data, not instructions; normalize/escape newlines and Markdown control headings, impose concrete length limits, and persist only safely quoted summaries/reasons rather than verbatim reviewer-provided text.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "test",
+          "file": "plugins/shipwright-plan/skills/plan/references/step-5-external-review.md:20-399",
+          "line": null,
+          "finding": "No automated test is added for the critical instruction-routing contract. The cited existing tests only check LOC limits, link resolution, and catalog/doc validity; they would still pass if Step 5-int were removed from a branch, the Pre-5b checkpoint were bypassed, the fallback were reintroduced per branch, or the high-severity gate were omitted. The added `reviews.json` itself records this gap as an external-review finding.",
+          "suggestion": "Add structural tests over the Step 5 reference/SKILL text that assert one Step 5-int definition, all A/B/C exits route through the Pre-5b checkpoint, fallback is conditioned on both independent-review mechanisms being absent, and the high-severity escalation/catalog gate is present.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "bug",
+          "file": "plugins/shipwright-plan/skills/plan/references/step-5-external-review.md:59-62",
+          "line": null,
+          "finding": "The new high-severity gate is documented in `gate_catalog.json`, but Step 5-int does not specify any gate-policy resolution/invocation or how the catalog’s `auto-default` is applied. It only says “STOP and ask the user,” which conflicts with the catalog’s single-session auto-default and leaves the newly added catalog entry as passive metadata unless an unstated mechanism notices this runtime condition.",
+          "suggestion": "Add the explicit policy-resolution step used for conditional gates, identify the trigger as each declined/disclosed high-severity internal finding, and state the interactive and single-session outcomes before continuing toward Step 6.  Overall assessment: the central wiring and shared fallback checkpoint are largely implemented, but AC-2 logging, malformed report handling, unsafe reviewer-text persistence, and the untested/rule-only gate routing need concrete fixes before shipping. SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-08-07T22:57:49.902894+00:00",
+      "disposition": null,
+      "recorded_by": "external-review",
+      "parse_status": "structured",
+      "raw_excerpt": "[deepseek] - Category: spec\n- Severity: medium\n- File: step-5-external-review.md (in the new “Step 5‑int” section, around the “Log each non‑trivial finding” sentence)\n- Finding: AC‑2 requires “Every internal‑review finding … — logged to `decision_log.md` under `Internal Plan Review — {split_name}`.” \n  The instruction in the reference doc says “Log each **non‑trivial** finding to `decision_log.md`”, which drops trivial\n  findings from the decision log and violates the acceptance criterion. The decision not to fix this is recorded in ADR‑363,\n  but the gap remains in the shipped instructions.\n- Suggestion: Change the instruction to log every finding (including fixed ones) to `decision_log.md`, matching AC‑2.\n  Alternatively, update AC‑2 to allow filtering, but the spec must match the implementation.\n\nOverall assessment: The diff implements most acceptance criteria correctly, but the logging divergence means\na mandatory audit trail requirement is not fully met. Ship-with-fixes.\n\nSHIPWRIGHT_VERDICT: revise\n\n[openai] - Category: bug  \n  Severity: medium  \n  File: `plugins/shipwright-plan/skills/plan/references/step-5-external-review.md:91`  \n  Finding: The Step 5-int instructions require triaging “every finding,” but the persistence instruction immediately below says to log only “each non-trivial finding.” This permits low-severity findings—including declined or disclosed ones—to be omitted from `decision_log.md`, violating AC-2’s requirement that every internal-review finding be logged under `Internal Plan Review — {split_name}`.  \n  Suggestion: Change the logging requirement to “log every finding,” including fixed findings, and require each log entry to carry its disposition and rationale.\n\n- Category: edge-case  \n  Severity: medium  \n  File: `plugins/shipwright-plan/skills/plan/references/step-5-external-review.md:32-45`  \n  Finding: Degraded handling only treats absent or non-parseable JSON as a failed internal review. A parseable but schema-invalid report (for example `{}`, `{\"findings\":\"none\"}`, findings without severity, or an unknown severity) has no defined failure path. The planning agent can therefore record `Ran: yes` and pass the independent-review gate despite being unable to triage every finding or reliably enforce the high-severity escalation.  \n  Suggestion: Define minimum report validation (`reviewer`, `summary`, and an array of findings with allowed per-finding severities/dispositions). Treat any invalid report as `Ran: no (parse failure)` and route it through the existing checkpoint/fallback path.\n\n- Category: security  \n  Severity: medium  \n  File: `plugins/shipwright-plan/skills/plan/references/step-5-external-review.md:64-91`  \n  Finding: The new reviewer output is derived from untrusted plan/spec text and is persisted into `plan.md` and decision-log tool arguments without an instruction to sanitize or escape it. “One-line” template fields are not enforcement: a prompt-injected reviewer response can include newlines, Markdown headings such as  […truncated]",
+      "verdicts": {
+        "openai": "revise",
+        "deepseek": "revise"
+      }
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-07T22:46:50.177989+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    }
+  }
+}

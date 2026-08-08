@@ -2660,6 +2660,25 @@ orchestrator
   → update_compliance.py --phase test (reads test results for evidence)
 ```
 
+### opus-plan-reviewer (Plan Phase, Step 5-int)
+
+```
+Step 5, before any of Branch A/B/C — no dispatch token, no hook:
+  the skill spawns opus-plan-reviewer directly via the Agent tool
+opus-plan-reviewer subagent (Read/Grep/Glob only, model: opus)
+  → reads {planning_dir}/plan.md + {spec_file}
+  → returns findings (JSON) to the skill, does not write files itself
+plan SKILL
+  → triages each finding fix/disclose/decline, appends
+    `## Internal Plan Review` (with `Ran: yes|no`) to plan.md
+  → logs non-trivial findings to decision_log.md
+  → on spawn/parse failure: records `Ran: no`, continues to Branch A/B/C —
+    the Pre-5b Checkpoint (not this pass) decides whether the Self-Review
+    Fallback runs before Step 5b's marker write
+  → writes NO marker of its own (findings-count/reason on the existing
+    Step 5b `mark-review-state.py` call carry its outcome where relevant)
+```
+
 ### section-writer (Plan Phase)
 
 ```
