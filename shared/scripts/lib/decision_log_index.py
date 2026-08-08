@@ -159,8 +159,7 @@ def render_decision_log_index(text: str) -> str:
     entries = _entries(text)
     if not entries:
         lines += [
-            "_No decisions yet. Add one via `write_decision_log.py` and "
-            "regenerate._",
+            "_No decisions yet. Add one via `write_decision_log.py` and regenerate._",
             "",
         ]
         return "\n".join(lines)
