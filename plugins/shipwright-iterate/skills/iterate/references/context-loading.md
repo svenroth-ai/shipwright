@@ -31,7 +31,26 @@ context-loading discipline.
     error.
 5. `.shipwright/agent_docs/architecture.md` — app structure, component tree, data flow
 6. `shipwright_sync_config.json` — file-to-FR mappings (if exists)
-7. `.shipwright/planning/*/spec.md` — ALL spec files across all splits (read completely)
+7. `.shipwright/planning/*/spec.md` — every spec file across all splits. Run
+   the coverage check first (small — a check, not an architecture; TC3.2,
+   trg-c0d83dce):
+   ```bash
+   uv run "{shared_root}/scripts/tools/check_mandated_load_coverage.py" \
+     --project-root "{project_root}" --glob ".shipwright/planning/*/spec.md"
+   ```
+   A file with `exceeds_cap: false` is fully covered by one ordinary `Read`.
+   A file with `exceeds_cap: true` is longer than a single `Read` call
+   returns — the applied limit is the row's own `cap_lines`, not a number to
+   hardcode — read it via `offset`/`limit` across enough calls to cover every
+   line, or, if that is skipped, say so explicitly: "read K of N lines of
+   {path} — not fully read" instead of proceeding as if the whole file were
+   seen. A row with `exists: false` is a path the mandate names that is not
+   on disk — say so ("{path} not found") rather than treating it as read. A
+   row carrying an `error` key could not be checked at all (permission
+   denied, vanished mid-check) — report that fact too, never assume it was
+   read. Declaring the shortfall is the fix, not avoiding it; a small
+   project with every file under the cap needs nothing beyond the ordinary
+   `Read`.
 8. `git log --oneline -20` — recent commits (prevents duplicate work)
 9. `shipwright_test_results.json` — last test run status, degraded conditions
 10. Event history is deliberately deferred until after Repo Scout. Do **not**
