@@ -29,6 +29,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))  # for _sweep_helpers
 
 import _sweep_helpers as h  # noqa: E402
 import triage  # noqa: E402
+from lib import file_lock_registry  # noqa: E402
 from lib.sweep_outbox import sweep_outbox_to_branch  # noqa: E402
 
 MAIN_ONLY = "trg-main-only"
@@ -166,6 +167,72 @@ def test_unrecoverable_fragment_blocks_with_no_side_effects(repo) -> None:
     assert (work / h.OUTBOX).read_bytes() == outbox_before, "the outbox was rewritten"
     assert h.quarantine_text(work) == "", "a quarantine was appended on a blocked sweep"
     assert h.item(PENDING) not in h.branch_triage_lines(wt), "a blocked sweep committed"
+
+
+def _deep_item(iid: str) -> str:
+    """An append line nested deep enough to defeat json.loads' RecursionError
+    guard — same idiom as the unit-level tests, never sys.setrecursionlimit."""
+    nested = '{"a":' * 20000 + "1" + "}" * 20000
+    return f'{{"event":"append","id":"{iid}","ts":"2026-08-07T00:00:00Z","val":{nested}}}'
+
+
+def test_deeply_nested_line_blocks_cleanly_instead_of_crashing_the_lock(repo) -> None:
+    """AC-3 (card trg-57d0d6d3 / P2.19g, TEIL 2). Real regression, real lock.
+
+    Pre-fix, this line reaching ``dedup_triage_lines`` (by sitting beside a
+    valid same-id-shaped append in the outbox, so it is not filtered out
+    earlier) raised ``RecursionError`` out of ``sweep_outbox_to_branch`` —
+    INSIDE the canonical lock, on the exact `setup_iterate_worktree.py` Step 5
+    path this card names. Measured directly against ``sweep_quarantine.decide``
+    before writing this assertion (Confidence Calibration probe): the deep
+    line's real disposition is the SAME `block` outcome any other corrupt line
+    already gets (`classify_triage_text` reports it as an unrecoverable
+    fragment regardless of which side of the outbox/tracked-log split it sits
+    on) — not the `quarantine` this AC originally assumed. The fix's actual,
+    narrower, measured value is that the sweep returns THAT clean result
+    instead of crashing.
+    """
+    work = repo
+    h.seed_tracked(work, h.item("trg-seed"))
+    # Same id as the deep line (spec-reviewer Stage 1 finding): the deep line
+    # never parses as an append at all (RecursionError caught in
+    # _parsed_append), so it can never enter the same-id GROUPING regardless
+    # of whether a same-id twin is present — but the spec names this exact
+    # setup, so the test matches it rather than a weaker distinct-id stand-in.
+    deep = _deep_item("trg-deepend2end")
+    h.write_outbox(work, h.item("trg-deepend2end"), deep)
+    wt = h.make_worktree(work, "deep-line-block")
+    outbox_before = (work / h.OUTBOX).read_bytes()
+    wt_head_before = h.git(wt, "rev-parse", "HEAD").stdout.strip()
+
+    result = sweep_outbox_to_branch(work, wt, default_branch="main")
+
+    assert result.status == "invalid", result.to_dict()
+    assert any("triage_repair.py" in e for e in result.errors), result.errors
+    assert (work / h.OUTBOX).read_bytes() == outbox_before, "the outbox was rewritten on a block"
+    assert h.quarantine_text(work) == "", "a quarantine was appended on a blocked sweep"
+    assert "trg-deepend2end" not in "".join(h.branch_triage_lines(wt)), "a blocked sweep committed"
+    # external review (openai): the prior assertions only prove the deep item's
+    # id is absent from the branch triage file, not that NOTHING was committed
+    # or mutated anywhere else in the worktree — check the branch HEAD and the
+    # worktree's git status directly.
+    assert h.git(wt, "rev-parse", "HEAD").stdout.strip() == wt_head_before, "a blocked sweep advanced HEAD"
+    assert h.git(wt, "status", "--porcelain").stdout == "", "a blocked sweep left the worktree dirty"
+
+    # AC-3(d): the canonical lock was genuinely RELEASED, checked against the
+    # process-wide registry directly (doubt-reviewer finding 2, Stage 3: a
+    # same-thread reacquire alone is vacuous — FileLock's reentrancy
+    # short-circuit (`enter_reentrant`) makes it succeed even if the release
+    # had leaked, since it only checks whether THIS thread already holds the
+    # key, never the filesystem or OS lock).
+    lock_key = file_lock_registry.lock_key(triage._lock_path(work))
+    registry_state = sys.modules.get("_shipwright_file_lock_state")
+    assert registry_state is None or lock_key not in registry_state.held, (
+        "the canonical lock was not released after a blocked sweep"
+    )
+    # Smoke-test a fresh acquisition too — belt and suspenders, not the proof.
+    with triage._FileLock(triage._lock_path(work)):
+        pass
 
 
 def test_unidentified_status_is_quarantined_and_the_rest_ships(repo) -> None:
