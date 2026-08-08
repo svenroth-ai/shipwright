@@ -1,0 +1,33 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "openrouter",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviews": {
+    "openai": {
+      "feedback": "- Category: spec  \n  Severity: medium  \n  File: shared/scripts/lib/commit_trailers.py:186  \n  Finding: The map builder excludes every matching commit whose subject starts with `Revert `. The specification requires recovery for any event whose run ID matches a reachable commit\u2019s `Run-ID:` trailer, with merge commits as the stated exclusion; it does not exclude revert commits. This causes a legitimate run whose shipped commit is intentionally a revert (and carries its own Run-ID) to remain unavailable.  \n  Suggestion: Remove the subject-based revert exclusion. If associating a pasted Run-ID on a revert with an earlier run must be prevented, define and implement a join rule that does not also discard valid runs whose actual commit is a revert.\n\n- Category: bug  \n  Severity: low  \n  File: shared/scripts/lib/commit_trailers.py:157, shared/scripts/lib/commit_trailers.py:166  \n  Finding: `_RUN_ID_TRAILER_RE` is case-insensitive (`(?i)`), but both `git log --grep=Run-ID:` prefilters are case-sensitive by default. A commit containing `run-id: some-run` would be accepted by the documented Python trailer parser if scanned, but is never returned by either git walk and therefore cannot backfill. This contradicts the module\u2019s intended loose trailer matching.  \n  Suggestion: Add `--regexp-ignore-case` to both git-log invocations, or make the Python trailer matcher case-sensitive if exact `Run-ID:` casing is the intended contract.\n\n- Category: test  \n  Severity: low  \n  File: shared/scripts/tests/test_event_context_backfill.py:48-70  \n  Finding: The tests do not cover the two explicit provenance edge cases: a matching non-merge empty-diff commit must make `changed_files` `derived` despite `[]`, and non-empty changed files that match zero catalog areas must make `area_ids` `derived` despite `[]`. Every successful backfill fixture has at least one changed path and at least one matching area, so implementations that derive these labels only when the resulting lists are non-empty would still pass.  \n  Suggestion: Add an `--allow-empty` commit fixture with a Run-ID and assert derived empty `changed_files`; add a changed path outside the seeded catalog and assert `area_ids == []` with `provenance[\"area_ids\"] == \"derived\"`.\n\nOverall assessment: ship-with-fixes. The core two-walk backfill, provenance fields, coverage, cache invalidation, and schema bump are implemented, but the undocumented revert exclusion violates the specified recovery scope and the case-sensitivity mismatch makes the advertised loose matching internally inconsistent.  \nSHIPWRIGHT_VERDICT: revise",
+      "via": "openrouter",
+      "status": "success"
+    },
+    "deepseek": {
+      "feedback": "The change correctly implements all acceptance criteria from the spec, including the two-phase git log recovery, provenance fields, coverage envelope, cache invalidation, and schema bump. The new tests exercise the backfill logic across positive, negative, and edge-case scenarios (merge exclusion, duplicate Run\u2011ID, truncation, v1\u2011cache rejection, etc.). No correctness bugs, security flaws, or regression risks are apparent. The implementation is deterministic and the test coverage matches the specification\u2019s ledger.\n\nSHIPWRIGHT_VERDICT: approve",
+      "via": "openrouter",
+      "status": "success"
+    }
+  },
+  "verdicts": {
+    "openai": "revise",
+    "deepseek": "approve"
+  },
+  "statuses": {
+    "openai": "success",
+    "deepseek": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: deepseek=approve, openai=revise"
+  }
+}

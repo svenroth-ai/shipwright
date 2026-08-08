@@ -1,0 +1,85 @@
+{
+  "section": "iterate-2026-08-07-events-context-backfill-keys",
+  "review": [
+    {
+      "severity": "medium",
+      "category": "correctness",
+      "file": "shared/scripts/lib/event_context_index.py",
+      "line": 270,
+      "finding": "The index now has a third input (git history) that the cache-validity check does not cover. load_or_rebuild_index validates index_schema_version, event_log_fingerprint, presence of coverage, entry shape and catalogue_version -- nothing about git state. So load_or_rebuild_index() can serve a payload that differs from a fresh build_index() for the same fingerprint: entries whose commit did not exist yet when the index was built (F5b appends the work_completed event BEFORE F6 creates the commit that carries its Run-ID: trailer) stay pinned at provenance: unavailable until some unrelated event append happens to change the fingerprint. That is the exact staleness the fingerprint check was supposed to make impossible.",
+      "suggestion": "Fold the scan's own pin into the validity test -- store coverage.commit_map.resolved_sha (already recorded) and rebuild when a fresh resolve_base_ref + rev-parse disagrees with it."
+    },
+    {
+      "severity": "medium",
+      "category": "correctness",
+      "file": "shared/scripts/lib/commit_trailers.py",
+      "line": 176,
+      "finding": "The 50-file cap truncates an alphabetically sorted list (files = sorted(entry['files']), then files[:MAX_CHANGED_FILES]), which is not an arbitrary subset -- it is systematically biased toward dot-prefixed bookkeeping paths. ASCII sort puts every dot-path first, so for any run with >50 changed files the kept 50 are bookkeeping and the source paths -- the only ones carrying the ranking signal this whole change exists to create -- are dropped. area_ids is then computed from bookkeeping paths and labelled derived, i.e. confidently wrong rather than unavailable.",
+      "suggestion": "Keep sorted() for determinism but choose the kept subset by a signal-bearing rule, not by prefix order -- e.g. drop framework-bookkeeping paths first and only then cap."
+    },
+    {
+      "severity": "medium",
+      "category": "performance",
+      "file": "shared/scripts/lib/commit_trailers.py",
+      "line": 142,
+      "finding": "Both walks are unbounded full-history scans with no --grep, --since or --max-count, and the second one (--name-only) computes a diff for every non-merge commit in the repo. build_index() re-pays this on every cache miss -- which is every event append -- and query_events' two fail-soft branches call build_index(persist=False) again, so a degraded query can pay it up to three times.",
+      "suggestion": "Filter to trailer-bearing commits at the git layer: --grep with the Run-ID predicate on BOTH walks cuts the expensive --name-only diff to the handful of commits that can possibly match."
+    },
+    {
+      "severity": "medium",
+      "category": "architecture",
+      "file": "docs/hooks-and-pipeline.md",
+      "line": 2754,
+      "finding": "The Artifact Write Matrix still describes .shipwright/runtime/events-context-index.json as 'disposable, gitignored, fingerprint-validated and fully rebuildable from the unchanged raw event log + area catalog'. After this change git history is a third input -- and it is precisely the input the fingerprint does not validate, so the sentence now misstates the property a reader would rely on.",
+      "suggestion": "Update the cell to name git history as an input, state that the commit-map scan is degradable, and say plainly whether a cached index may lag git state."
+    },
+    {
+      "severity": "low",
+      "category": "correctness",
+      "file": "shared/scripts/lib/commit_trailers.py",
+      "line": 39,
+      "finding": "git -C <project_root> log --name-only returns paths relative to the REPOSITORY root, while every other path in the index is relative to the PROJECT root. When the Shipwright project root is a subdirectory of the git repo, backfilled paths arrive silently mis-prefixed.",
+      "suggestion": "Compare git rev-parse --show-toplevel against project_root once; when they differ, skip the backfill rather than emitting wrong-but-derived data."
+    },
+    {
+      "severity": "low",
+      "category": "correctness",
+      "file": "shared/scripts/lib/commit_trailers.py",
+      "line": 168,
+      "finding": "_RUN_ID_TRAILER_RE.search(body) matches a Run-ID: line anywhere in the message, and setdefault gives the sha of the NEWEST matching commit. git revert copies the reverted commit's full body -- trailers included -- so a revert of an iterate commit both wins the sha and unions its inverse diff into that run's changed_files.",
+      "suggestion": "Restrict the match to the trailer block and/or skip commits whose subject starts with 'Revert '."
+    },
+    {
+      "severity": "low",
+      "category": "correctness",
+      "file": "shared/scripts/lib/event_context_index.py",
+      "line": 170,
+      "finding": "changed_files_truncated is only ever set on the derived branch: an event that DECLARES 5,000 changed_files is stored unbounded and reports changed_files_truncated: false, so the flag reads as a general truncation signal but only describes half the entries.",
+      "suggestion": "Either apply the same MAX_CHANGED_FILES cap to declared lists or rename it to something branch-specific, and add a truncated-entry count to coverage."
+    },
+    {
+      "severity": "low",
+      "category": "security",
+      "file": "shared/scripts/lib/commit_trailers.py",
+      "line": 136,
+      "finding": "base_ref is a public parameter interpolated straight into git's argv. Every in-repo caller passes a value from the fixed tuple in resolve_base_ref, so there is no live exposure, but a future caller passing a '-'-prefixed value would have it parsed as a git option rather than a rev.",
+      "suggestion": "Add --end-of-options before the ref in rev-parse and a trailing -- in the two git log calls, and validate pinned_sha against _SHA_RE before reusing it."
+    },
+    {
+      "severity": "low",
+      "category": "readability",
+      "file": "shared/scripts/lib/commit_trailers.py",
+      "line": 66,
+      "finding": "Reducibility catalog D (duplication): resolve_base_ref runs rev-parse --verify --quiet <ref> and discards the sha it just resolved, then build_run_id_commit_map runs the identical command again on the same ref to pin it.",
+      "suggestion": "Have resolve_base_ref return (ref_name, sha) and let build_run_id_commit_map accept the pinned pair."
+    },
+    {
+      "severity": "low",
+      "category": "readability",
+      "file": "shared/scripts/tests/test_event_context_backfill.py",
+      "line": 497,
+      "finding": "Reducibility catalog T/D (test repetition): _git, _init_repo and _commit are byte-identical between the two new test files, ~22 LOC duplicated inside one diff.",
+      "suggestion": "Optional boy-scout: move the three helpers into conftest.py as a git_repo fixture. Non-blocking; two pre-existing files in the directory already roll their own git helpers (house style)."
+    }
+  ]
+}

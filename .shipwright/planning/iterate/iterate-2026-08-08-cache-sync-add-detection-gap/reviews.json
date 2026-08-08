@@ -1,0 +1,78 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-08-08-cache-sync-add-detection-gap",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-08T09:36:52.747701+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-08T09:37:05.878541+00:00",
+      "disposition": "advisory-only at small complexity per Phase Matrix; no mini-plan authored for this scoped BUG fix",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "code": {
+      "review_type": "code",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-08T09:37:06.135231+00:00",
+      "disposition": "cascade trigger not met: small complexity, no risk flags, 85-line diff (<100), no security-sensitive files (Self-Review Sufficient rule, iteration-reviews.md)",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-08T09:37:06.264431+00:00",
+      "disposition": "Stage 3 conditional on a Stage 2 pass, which did not run: cascade trigger not met at this diff size/complexity",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-08T09:37:06.390988+00:00",
+      "disposition": "external cascade trigger not met: small complexity, no risk flags, 85-line diff (<100), no security-sensitive files",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-08T09:37:06.005181+00:00",
+      "disposition": "cascade trigger not met: small complexity, no risk flags, 85-line diff (<100), no security-sensitive files (Self-Review Sufficient rule, iteration-reviews.md)",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    }
+  }
+}

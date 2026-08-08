@@ -92,6 +92,29 @@ else
     echo "[OK] Marketplace synced via git"
 fi
 
+# Verify the clone actually reached origin/main's true tip. The CLI path
+# above can exit 0 without a guaranteed fresh fetch (its internal update
+# mechanism is opaque to this script) — trusting that blindly let a file that
+# "landed on main just ahead of the sync run" go missing from the cache
+# after a reported-successful sync, because Steps 2-3 below copy whatever is
+# in $MARKETPLACE_DIR without ever checking it against the real remote.
+# Cross-check regardless of which branch above ran, and force a hard sync
+# when the clone lags, BEFORE any file is copied.
+if [ -d "$MARKETPLACE_DIR/.git" ]; then
+    # `|| true` on each: under `set -euo pipefail` an offline `ls-remote` (or a
+    # `rev-parse` on a corrupt clone) would otherwise abort the whole sync here
+    # instead of degrading to "skip this check" like every other advisory probe
+    # in this script.
+    remote_head=$( (git ls-remote "$HTTPS_URL" refs/heads/main 2>/dev/null | cut -f1) || true)
+    local_head=$(git -C "$MARKETPLACE_DIR" rev-parse HEAD 2>/dev/null || echo "")
+    if [ -n "$remote_head" ] && [ "$remote_head" != "$local_head" ]; then
+        echo "[!!] Marketplace clone lagging origin/main (${local_head:-none} != $remote_head), forcing hard sync..."
+        git -C "$MARKETPLACE_DIR" remote set-url origin "$HTTPS_URL" 2>/dev/null || true
+        git -C "$MARKETPLACE_DIR" fetch origin main
+        git -C "$MARKETPLACE_DIR" reset --hard origin/main
+    fi
+fi
+
 # Step 2: Full file sync from marketplace into installed plugin caches
 # Reads the installed cache path from installed_plugins.json so we always
 # write to the correct version directory (e.g. 0.2.0), not whatever version
