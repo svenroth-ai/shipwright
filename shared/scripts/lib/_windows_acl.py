@@ -6,6 +6,8 @@ import ctypes
 from ctypes import wintypes
 from pathlib import Path
 
+from scripts.lib._windows_acl_trust import _TRUSTED_SYSTEM_SIDS, _owner_is_trusted
+
 _SE_FILE_OBJECT = 1
 _OWNER_SECURITY_INFORMATION = 0x1
 _DACL_SECURITY_INFORMATION = 0x4
@@ -15,12 +17,6 @@ _DANGEROUS = (
     0x00000002 | 0x00000004 | 0x00000010 | 0x00000040 | 0x00000100
     | 0x00010000 | 0x00040000 | 0x00080000 | 0x10000000 | 0x40000000
 )
-_TRUSTED_SYSTEM_SIDS = {
-    "S-1-3-0",       # creator-owner inheritance placeholder
-    "S-1-3-4",       # owner-rights principal
-    "S-1-5-18",      # LocalSystem
-    "S-1-5-32-544",  # built-in Administrators
-}
 
 
 class _ACL(ctypes.Structure):
@@ -116,6 +112,31 @@ def _current_sid(advapi, kernel) -> str:
         kernel.CloseHandle(token)
 
 
+def owner_sid_of(path: Path) -> str:
+    """The raw owner SID string of *path*, with no trust decision applied --
+    split out of path_acl_is_private() so a caller (a test, a diagnostic)
+    can observe the actual owner independently of whether this module
+    currently trusts it. The owner/dacl/sacl pointers GetNamedSecurityInfoW
+    returns all point INTO the one ppSecurityDescriptor allocation, so that
+    parameter must still be supplied (and freed) even though only the
+    owner is wanted here -- mirrors path_acl_is_private's own call shape."""
+    advapi, kernel = _apis()
+    owner, descriptor = wintypes.LPVOID(), wintypes.LPVOID()
+    code = advapi.GetNamedSecurityInfoW(
+        str(path), _SE_FILE_OBJECT, _OWNER_SECURITY_INFORMATION,
+        ctypes.byref(owner), None, None, None, ctypes.byref(descriptor),
+    )
+    if code:
+        raise OSError(f"GetNamedSecurityInfoW failed with {code}")
+    try:
+        if not owner:
+            raise OSError("owner is absent")
+        return _sid_string(owner, advapi, kernel)
+    finally:
+        if descriptor:
+            kernel.LocalFree(descriptor)
+
+
 def path_acl_is_private(path: Path) -> tuple[bool, str]:
     """Require current-user ownership and no dangerous allow ACE for others."""
     advapi, kernel = _apis()
@@ -131,8 +152,15 @@ def path_acl_is_private(path: Path) -> tuple[bool, str]:
         if not owner or not dacl:
             return False, "owner or DACL is absent"
         current = _current_sid(advapi, kernel)
-        if _sid_string(owner, advapi, kernel) != current:
-            return False, "directory is not owned by the current user"
+        owner_sid = _sid_string(owner, advapi, kernel)
+        if not _owner_is_trusted(owner_sid, current):
+            # Names the observed owner (the actionable diagnostic value) but
+            # not the current-process SID -- this string reaches a public
+            # CI log via HostLeaseError, and the current SID identifies the
+            # machine/domain + account RID for no diagnostic benefit the
+            # owner SID doesn't already provide (Stage 3 doubt review).
+            return False, (f"path is owned by {owner_sid}, which is neither "
+                            f"the current user nor a trusted system principal")
         trusted = _TRUSTED_SYSTEM_SIDS | {current}
         acl = ctypes.cast(dacl, ctypes.POINTER(_ACL)).contents
         for index in range(acl.AceCount):

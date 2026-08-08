@@ -1,0 +1,148 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-08-07-windows-ci-perf",
+    "date": "2026-08-07",
+    "unit": {
+      "status": "pass",
+      "passed": 535,
+      "failed": 0,
+      "note": "F0 (run_test_suite.py) GREEN across all 18 discovered units in 5.7 min. shared/scripts/tools/tests (the diff-touched unit): 535 passed, 8 skipped, 2 deselected. shared/tests (weight 8, xdist-eligible): PASS, and separately verified under the production -n 4 flags to collect the identical 8621/8647 set (26 deselected) the serial baseline does (see iterate spec Ledger row 9). Diff-coverage gate: 95% on the changed lines (>= 80% threshold)."
+    },
+    "integration": {
+      "status": "pass",
+      "passed": null,
+      "failed": 0,
+      "note": "integration-tests unit: PASS (F0), 339.4s then 286.7s on re-run; not separately tallied by F0 stdout"
+    },
+    "e2e": {
+      "status": "n/a",
+      "reason": "no browser surface; this is CI-workflow + internal-tooling machinery"
+    },
+    "smoke": {
+      "status": "n/a",
+      "reason": "no startable server surface touched by this change"
+    },
+    "pgtap": {
+      "status": "n/a",
+      "reason": "no database"
+    },
+    "design_fidelity": {
+      "status": "n/a",
+      "reason": "no UI surface"
+    },
+    "surface_verification": {
+      "surface": "none",
+      "runner": "",
+      "exit_code": 0,
+      "tests_run": 0,
+      "evidence_path": ".shipwright/runs/iterate-2026-08-07-windows-ci-perf/surface_verification.json",
+      "timestamp": "2026-08-07T23:22:41.416Z",
+      "justification": "CI/workflow-performance + internal-tooling security-check fix; no web/UI/API/store/SSE surface touched"
+    },
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "The restructured single-provision, xdist-on-shared/tests step collects and passes locally on native Windows, all three directories, no --deselect",
+          "disposition": "tested",
+          "evidence": "local run of the exact restructured command: shared/scripts/tools/tests 535 passed/8 skipped/2 deselected(marker-only); shared/tests confirmed 4/4 xdist workers engaged (gw0..gw3)"
+        },
+        {
+          "behavior": "shared/scripts/tests and shared/scripts/tools/tests still run serially (no -n passed)",
+          "disposition": "tested",
+          "evidence": "inspected the emitted pytest command per directory in the local run stdout -- no -n flag for either"
+        },
+        {
+          "behavior": "path_acl_is_private accepts an Administrators-owned directory (takeown /A reproduction)",
+          "disposition": "tested",
+          "evidence": "test_windows_private_root_accepts_administrators_owned_directory -- skips only outside CI (this dev account is Administrators-group but not elevated, a UAC split token), raise AssertionError (not a swallow) if that same failure happens with CI set"
+        },
+        {
+          "behavior": "path_acl_is_private owner check still rejects a genuinely foreign SID, and separately accepts a trusted-system SID",
+          "disposition": "tested",
+          "evidence": "test_owner_trust_rejects_a_genuinely_foreign_owner_sid and test_owner_trust_accepts_a_trusted_system_principal -- pure _owner_is_trusted() calls, no OS privilege, run in the required Linux gate too"
+        },
+        {
+          "behavior": "Pre-fix, the Administrators-owner scenario is rejected (root-cause pin)",
+          "disposition": "tested",
+          "evidence": "ran the new takeown /A test against the unmodified code before applying the fix -- failed with the exact not-owned-by-current-user AssertionError"
+        },
+        {
+          "behavior": "Both previously-deselected tests pass with no --deselect applied",
+          "disposition": "tested",
+          "evidence": "pytest shared/scripts/tools/tests -k \"test_main_cancellation... or test_the_f0_cli_stops...\" -> 2 passed"
+        },
+        {
+          "behavior": "Full shared/scripts/tools/tests has no regression from the _windows_acl.py change",
+          "disposition": "tested",
+          "evidence": "full directory run, definitive count: 535 passed/8 skipped/2 deselected(marker)"
+        },
+        {
+          "behavior": "shared/tests under -n 4 is not flaky and runs the identical test set the serial baseline does",
+          "disposition": "tested",
+          "evidence": "run twice to completion with zero failures; collection-only run with the production filter reports 8621/8647 collected (26 deselected), exactly matching the last live serial Windows CI run (GH Actions run 31180329620: 8604+17=8621)"
+        },
+        {
+          "behavior": "The restructured bash -c wrapper fails closed: a failure in an earlier directory is not masked by a later directory succeeding",
+          "disposition": "tested",
+          "evidence": "ran the wrapper with a deliberately-failing first directory (pytest -k matches_nothing, exit 5) -- script exit code 5, second directory never reached"
+        },
+        {
+          "behavior": "path_acl_is_private() itself (not just the pure helper) rejects a genuinely foreign owner (AC6 at the function boundary)",
+          "disposition": "tested",
+          "evidence": "test_windows_private_root_rejects_a_spoofed_foreign_current_user -- monkeypatches _current_sid on a directory the process genuinely owns"
+        },
+        {
+          "behavior": "A future rename breaking the _windows_acl.py -> _windows_acl_trust.py import is caught even though _windows_acl.py cannot itself be imported on Linux",
+          "disposition": "tested",
+          "evidence": "test_windows_acl_module_still_imports_the_trust_helper_from_its_sibling -- source-text assertion, runs on any platform"
+        },
+        {
+          "behavior": "owner_sid_of() reports the current user's own SID on a normal directory, and raises on a nonexistent path (F0 diff-coverage gate)",
+          "disposition": "tested",
+          "evidence": "test_owner_sid_of_reports_the_current_users_own_sid_on_a_normal_directory and test_owner_sid_of_raises_on_a_path_that_does_not_exist"
+        },
+        {
+          "behavior": "GitHub Actions windows-latest runner (real runneradmin account) actually accepts its own Administrators-owned LOCALAPPDATA, completes the job green, faster than the 24-28 min baseline, with both previously-deselected tests now passing",
+          "disposition": "untestable",
+          "reason_code": "requires-external-nondeterministic-service",
+          "note": "verified post-push by observing the live CI run wall-clock, pass/fail state, and the two specific test outcomes"
+        }
+      ],
+      "counts": {
+        "total": 13,
+        "tested": 12,
+        "untestable": 1,
+        "untested_testable": 0
+      },
+      "enumeration_basis": {
+        "acs": 8,
+        "covered_acs": 8
+      },
+      "ledger_path": ".shipwright/planning/iterate/2026-08-07-windows-ci-perf.md"
+    },
+    "degraded": [],
+    "ci_supplychain_ack": {
+      "run_id": "iterate-2026-08-07-windows-ci-perf",
+      "paths_fingerprint": "302ebbc4b000f2bcca34506948f45faf4a5087cfb029ecf9dd905a41d1c58733",
+      "consistent_with": "iterate-2026-06-01-ci-launch-hardening",
+      "statement": "Restructures windows-tests.yml's existing 'Run shared tests' step: single uv run --with ... provisioning instead of three, pytest-xdist added and scoped to shared/tests only, both --deselect flags removed once their shared root cause was fixed, plus a non-gating diagnostic line (prints path_acl_is_private()'s verdict for the real LOCALAPPDATA, added per Stage 3 doubt review) and corrected comments. No new action is introduced, no existing action pin is changed (actions/checkout@v4 stays on its mutable tag, astral-sh/setup-uv keeps ci.yml's existing SHA pin caf0cab7a618c569241d31dcd442f54681755d39 verbatim), and ci.yml is not touched. pytest-xdist (the one new PyPI package this step adds) is deliberately left unpinned via --with, on the same footing as this step's existing --with pytest/pytest-mock/pytest-cov/coverage (all unpinned): none of the four carries a flag/exit-code contract this job's own logic depends on the way diff-cover's pinned ==10.3.0 does. Consistent with the actions-pinning posture decided in iterate-2026-06-01-ci-launch-hardening.",
+      "ci_paths": [
+        ".github/workflows/windows-tests.yml"
+      ]
+    }
+  },
+  "coverage": {
+    "total": 80.2,
+    "measured_tier": "repo",
+    "source": "combined coverage.xml (all plugins + shared + integration)",
+    "measured_at": "2026-07-04T00:00:00Z"
+  },
+  "source_state": {
+    "run_id": "iterate-2026-08-07-windows-ci-perf",
+    "commit": "357b3baa6e3d4236273e9afa3d7fe1797384a4d0",
+    "dirty": true,
+    "base": null,
+    "release": null
+  }
+}

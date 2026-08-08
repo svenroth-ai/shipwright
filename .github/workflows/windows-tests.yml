@@ -113,8 +113,8 @@ jobs:
       - name: Run shared tests
         run: |
           set -euo pipefail
-          # Same per-dir loop as ci.yml's "Run shared tests" step, minus
-          # the actual --cov measurement flags (no diff-coverage GATE
+          # Same three directories ci.yml's "Run shared tests" step covers,
+          # minus the actual --cov measurement flags (no diff-coverage GATE
           # applies to this job). pytest-cov/coverage/diff-cover ARE still
           # provisioned though: shared/scripts/tools/tests/test_combine_
           # coverage.py and test_measure_diff_coverage_gate.py test the
@@ -127,24 +127,63 @@ jobs:
           # processes (one dir per invocation) or collection collides on
           # the duplicate package name.
           #
-          # Two genuine Windows-environment findings deselected here, each
-          # tracked as its own triage card and still running (and passing)
-          # on ci.yml's Linux job -- neither is a provisioning gap this
-          # job can close, and neither is this unit's remit to root-cause:
-          #   - test_main_cancellation_releases_real_locks_and_next_run_resets_state:
-          #     run_test_suite.py's cancellation path returns exit 2 on
-          #     Windows, not the POSIX 128+signal convention (130) the
-          #     test expects. trg-e82d8771.
-          #   - test_the_f0_cli_stops_on_an_under_covered_diff_then_passes_once_covered:
-          #     host_resource_lease's ownership check rejects GitHub-hosted
-          #     windows-latest's runneradmin profile directory as "not
-          #     owned by the current user" -- a security hardening check,
-          #     deliberately not weakened here. trg-d0f585b2.
-          for dir in shared/tests shared/scripts/tests shared/scripts/tools/tests; do
-            echo "--- Running tests in $dir (windows) ---"
-            uv run --with pytest --with pytest-mock --with pytest-cov \
-              --with coverage --with "diff-cover==10.3.0" \
-              pytest "$dir" -v -m "not slow and not cross_plugin" \
-              --deselect "shared/scripts/tools/tests/test_run_test_suite_faults.py::test_main_cancellation_releases_real_locks_and_next_run_resets_state" \
-              --deselect "shared/scripts/tools/tests/test_f0_cli_diff_coverage_e2e.py::test_the_f0_cli_stops_on_an_under_covered_diff_then_passes_once_covered"
-          done
+          # ONE `uv run --with ...` provisions the ephemeral environment for
+          # the whole step (previously resolved once per directory, three
+          # times over) -- the pytest calls run inside that single
+          # provisioned shell via `bash -c`. pytest-xdist is provisioned
+          # here too, for shared/tests below.
+          #
+          # shared/tests is the only unit in shipwright_test_config.json's
+          # suite.xdist allowlist, an F0/developer-machine measurement --
+          # ci.yml itself runs all three directories SERIALLY, so this is
+          # the first time shared/tests runs under xdist on ANY hosted
+          # runner (correction, Stage 3 doubt review: the comment here
+          # previously claimed Linux CI validation that does not exist).
+          # Mirrored as `-n 4` rather than that config's `8` -- sized to
+          # windows-latest's 4 cores, not the Linux runner's.
+          # shared/scripts/tests and shared/scripts/tools/tests stay
+          # serial: neither is in that allowlist and no measurement backs
+          # adding them here. If shared/tests flakes under -n 4 on this
+          # runner, the fix is dropping to -n 2, never re-deselecting the
+          # two tests fixed below -- that would be a different failure
+          # class entirely.
+          #
+          # The two Windows-only findings previously deselected here
+          # (trg-e82d8771, trg-d0f585b2; bundled and root-caused together
+          # as trg-eed74a42) both go through shared/scripts/lib/_windows_acl.py's
+          # owner check, which required an exact SID match against the
+          # current user -- but GitHub-hosted windows-latest provisions the
+          # runneradmin profile's LOCALAPPDATA tree with an owner of
+          # BUILTIN\Administrators, a trusted system principal the ACE check
+          # a few lines below already recognized, just not the earlier
+          # owner check. Fixed in this same change (see the iterate spec's
+          # Root Cause section for the full chain and its falsifier: if the
+          # cancellation test alone stays red after this fix, it is a
+          # second, independent defect and gets re-deselected on its own).
+          # No longer deselected.
+          #
+          # The bash -c body below must stay apostrophe-free -- it is
+          # itself single-quoted by the outer `uv run ... bash -c '...'`.
+          uv run --with pytest --with pytest-mock --with pytest-cov \
+            --with coverage --with "diff-cover==10.3.0" --with pytest-xdist \
+            bash -c '
+              set -euo pipefail
+              # Informational only -- never gates the step. The owner-check
+              # fix below is proven by the unit tests; this line observes
+              # the SEPARATE, pre-existing ACE-danger half of the same
+              # function against the runner real LOCALAPPDATA tree, which
+              # no local test exercises (the takeown /A regression test
+              # deliberately resets the DACL to isolate the owner branch).
+              # A disagreement here is the "ACL fix insufficient" branch of
+              # the iterate spec Root Cause falsifier, not evidence against
+              # the owner-check fix itself -- Stage 3 doubt review.
+              python -c "import sys; sys.path.insert(0, \"shared\"); from pathlib import Path; from scripts.lib import _windows_acl; private, reason = _windows_acl.path_acl_is_private(Path(sys.argv[1])); print(f\"LOCALAPPDATA ACL diagnostic: private={private} reason={reason!r}\")" "$LOCALAPPDATA"
+              for dir in shared/tests shared/scripts/tests shared/scripts/tools/tests; do
+                echo "--- Running tests in $dir (windows) ---"
+                xdist_args=()
+                if [ "$dir" = "shared/tests" ]; then
+                  xdist_args=(-n 4)
+                fi
+                pytest "$dir" -v -m "not slow and not cross_plugin" ${xdist_args[@]+"${xdist_args[@]}"}
+              done
+            '
