@@ -22,6 +22,7 @@ import triage  # noqa: E402
 
 APPEND = {"event": "append", "id": "trg-aaaaaaaa", "ts": "2026-07-18T10:00:00Z"}
 STATUS = {"event": "status", "id": "trg-aaaaaaaa", "newStatus": "dismissed", "by": "webui"}
+AMEND = {"event": "amend", "id": "trg-aaaaaaaa", "ts": "2026-08-08T10:00:00Z", "by": "cli", "title": "corrected"}
 
 
 def j(obj: dict) -> str:
@@ -38,6 +39,16 @@ def corrupt_outbox(proj: Path, *, tail: str = "") -> Path:
     """The reported incident on disk: append + status on ONE physical line."""
     p = triage._outbox_path(proj)
     p.write_bytes((j(APPEND) + j(STATUS) + tail + "\n").encode())
+    return p
+
+
+def corrupt_outbox_with_amend(proj: Path, *, tail: str = "") -> Path:
+    """The amend variant of :func:`corrupt_outbox`: append + amend glued onto
+    ONE physical line, proving `triage_repair` splits and preserves an `amend`
+    record end-to-end the same way it already does for `status`
+    (iterate-2026-08-08-triage-amend-event)."""
+    p = triage._outbox_path(proj)
+    p.write_bytes((j(APPEND) + j(AMEND) + tail + "\n").encode())
     return p
 
 

@@ -5,14 +5,20 @@ warning and ``--commit`` that audit 2026-07-28 finding 16 asks for had nowhere t
 go). That module is now a thin CLI and re-exports every name below, so
 ``import triage_gc`` / ``from tools import triage_gc`` are unchanged.
 
-Policy (decided 2026-06-05): **machine-churn ONLY** — see :func:`is_machine_churn`.
-The dismissed pile is ~half human-curated (re-prioritisations, "resolved by PR #N",
-supersessions); that is real audit history and is kept, as are ``promoted`` and open
-items. Both conditions must hold, so a human dismissal reusing a token survives.
+Policy vocabulary (``MACHINE_DISMISSERS``/``MACHINE_REASONS``/``is_machine_churn``)
+lives in :mod:`lib.triage_gc_policy`, and tracked-only resolution
+(``_resolve_tracked_only``) lives in :mod:`lib.triage_gc_resolve` — both
+re-exported here — split out when this module crossed the 300-LOC guideline
+(iterate-2026-08-08-triage-amend-event's amend overlay, then again for that
+resolution's Stage-3 doubt-review fix). See those modules for their own
+rationale.
 
-The store is an append-only event log (``append`` + ``status``, both carrying ``id``);
-"dropping" an item rewrites the log without its lines — a destructive compaction, which
-is why the CLI defaults to a dry run.
+The store is an append-only event log (``append`` + ``status`` + ``amend``, all
+carrying ``id``); "dropping" an item rewrites the log without its lines — a
+destructive compaction, which is why the CLI defaults to a dry run. A dropped id's
+``amend`` lines are compacted away with its ``append``/``status`` — see the `kept`
+filter in :func:`apply_gc_reporting` and the matching orphan check in
+:func:`_validate_after` (iterate-2026-08-08-triage-amend-event, AC11).
 """
 
 from __future__ import annotations
@@ -32,78 +38,12 @@ if str(_SHARED_SCRIPTS) not in sys.path:
 import triage  # noqa: E402
 from lib.atomic_write import durable_atomic_write, replace_retrying  # noqa: E402
 from lib.jsonl_records import split_records  # noqa: E402
-
-# Pure background-producer dismissers (NOT user/operator/webui/cli/manual).
-MACHINE_DISMISSERS = frozenset({
-    "sbomGenerator",
-    "auditDetector",
-    "driftDetector",
-    "f05Detector",  # legacy: F0.5 triage producer removed 2026-06-13; kept for historical dismissals
-    "githubImporter",
-    "complianceBacklog",
-    "phaseQualityBacklog",  # phase_quality _triage_bundle producer
-    "testEvidence",         # shipwright-compliance test_evidence producer
-    "acceptedRiskConverger",  # tools/accepted_risks_converge (register -> surfaces)
-})
-
-# Exact machine auto-resolve tokens. A human free-text reason (even one that
-# starts with one of these) will not match — exact equality only.
-MACHINE_REASONS = frozenset({
-    "sbomResolved",
-    "auditResolved",  # legacy: pre-bundle audit dismissals; no current emitter (audit now → complianceBacklog)
-    "driftResolved",
-    "f05Resolved",  # legacy: F0.5 triage producer removed 2026-06-13; kept for historical churn
-    "githubResolved",
-    "complianceResolved",
-    "complianceRefreshed",  # stale-signature backlog rollup superseded (triage_bundle ~L165)
-    "phaseQualityResolved",
-    "phaseQualityRefreshed",  # F30: stale-signature phase-quality rollup superseded (phase_quality/_triage_bundle ~L268)
-    "testEvidenceResolved",
-    "prChecksResolved",  # github_triage PR-CI: a tracked PR's failing checks went green (resolve_pr_ci, by=githubImporter). prMerged/prClosed are terminal lifecycle markers, kept as history (not *Resolved churn).
-    "acceptedRiskResolved",  # accepted_risks_converge: a local-scanner finding is covered by a register acceptance. Recurring — ingest suppression cannot retract an item filed BEFORE the acceptance, and each re-scan refiles it once dismissed, so this is churn and must be GC'd.
-})
-
-
-def is_machine_churn(item: dict) -> bool:
-    """True iff ``item`` is a pure producer auto-resolve dismissal."""
-    return (
-        item.get("status") == "dismissed"
-        and item.get("statusBy") in MACHINE_DISMISSERS
-        and item.get("statusReason") in MACHINE_REASONS
-    )
-
-
-def _resolve_tracked_only(project_root: Path | str) -> list[dict]:
-    """Resolve items from the TRACKED store only (ignore the outbox).
-
-    D1: GC compacts the durable tracked log; the gitignored outbox is the D2
-    sweep's concern. Mirrors ``triage.read_all_items`` resolution (append +
-    last-status-wins) but over a single file so GC never touches outbox state.
-    """
-    resolved: dict[str, dict] = {}
-    for raw in triage._iter_raw_lines_at(triage._triage_path(project_root)):
-        if not isinstance(raw, dict):
-            continue
-        event = raw.get("event")
-        if event == "append":
-            item_id = raw.get("id")
-            if not isinstance(item_id, str):
-                continue
-            item = {k: v for k, v in raw.items() if k != "event"}
-            item["statusBy"] = None
-            item["statusReason"] = None
-            resolved[item_id] = item
-        elif event == "status":
-            item_id = raw.get("id")
-            if not isinstance(item_id, str) or item_id not in resolved:
-                continue
-            item = resolved[item_id]
-            if (new_status := raw.get("newStatus")) not in triage.STATUSES:
-                continue  # damaged event: skip WHOLE, never half (F26; twin in triage.py)
-            item["status"] = new_status
-            item["statusBy"] = raw.get("by")
-            item["statusReason"] = raw.get("reason")
-    return list(resolved.values())
+from lib.triage_gc_policy import (  # noqa: E402,F401  (re-export surface)
+    MACHINE_DISMISSERS,
+    MACHINE_REASONS,
+    is_machine_churn,
+)
+from lib.triage_gc_resolve import resolve_tracked_only as _resolve_tracked_only  # noqa: E402,F401  (re-export surface)
 
 
 def plan_gc(project_root: Path | str) -> dict:
@@ -154,9 +94,13 @@ def _validate_after(project_root: Path | str, drop_ids: set[str]) -> None:
         raise RuntimeError("post-GC validation: header missing or malformed")
     append_ids = {r.get("id") for r in raw if r.get("event") == "append"}
     for r in raw:
-        if r.get("event") == "status" and r.get("id") not in append_ids:
+        # `amend` alongside `status` (iterate-2026-08-08-triage-amend-event, AC11) —
+        # MUST ship with the `kept` filter below also dropping amend lines for a
+        # churned id, or this raises on every future run over a survivor it can
+        # never un-drop (a permanent GC block, the exact class this fix prevents).
+        if r.get("event") in ("status", "amend") and r.get("id") not in append_ids:
             raise RuntimeError(
-                f"post-GC validation: orphan status event for id={r.get('id')}"
+                f"post-GC validation: orphan {r.get('event')} event for id={r.get('id')}"
             )
         if r.get("id") in drop_ids:
             raise RuntimeError(
@@ -251,7 +195,7 @@ def apply_gc_reporting(
         # Tracked store only, and from the bytes read above — never a second read.
         kept = [
             r for r in _records_from_text(original_text)
-            if r.get("event") not in ("append", "status") or r.get("id") not in effective_drop_ids
+            if r.get("event") not in ("append", "status", "amend") or r.get("id") not in effective_drop_ids
         ]
         new_text = "\n".join(
             json.dumps(r, ensure_ascii=False, separators=(",", ":")) for r in kept

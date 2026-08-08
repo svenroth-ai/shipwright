@@ -62,3 +62,4 @@ _Regenerate:_ `uv run {shared_root}/scripts/tools/rebuild_adr_index.py --project
 - [ADR-127 — Backfill events-context-index selection keys from git history (Run-ID trailer only)](127-events-context-backfill-keys.md)
 - [ADR-127 — Run-id pointer lifecycle: retirement + stale-verdict re-audit](127-run-id-lifecycle-fixes.md)
 - [Archive — Agent-Doc Update Backlog (verbatim)](_archive-agent-doc-updates.md)
+- [A third append-only event kind for the triage store](iterate-2026-08-08-triage-amend-event-third-event-kind.md)

@@ -46,8 +46,9 @@ A missing anchor is therefore never permission to collapse. The tempting third a
 removed: it was defended as protecting an anchorless log from wedging, but the
 defence assumed anchorless appends are common enough to matter while collisions
 are not. They are equally rare. Both of ``triage.py``'s two append constructors
-set ``originalTs`` unconditionally (``:408``, ``:530``), and every append line in the
-tracked log carries a valid one, so an anchorless record can only come from a
+(``append_triage_item``, ``append_triage_item_idempotent``) set ``originalTs``
+unconditionally, and every append line in the tracked log carries a valid one,
+so an anchorless record can only come from a
 hand-edit or a foreign writer — the same population as a collision. With no asymmetry
 to trade on, the data-retention direction wins. The incident this function is named
 for confirms the shape: ``.shipwright/triage.jsonl:285`` (``trg-60ef91fb``) is a
@@ -68,9 +69,9 @@ Residual, stated rather than hidden: two items minted in the SAME microsecond th
 also collide on a 32-bit id would read as a supersession and one would be dropped
 (with a warning). The corpus does contain 2 same-microsecond ``originalTs`` pairs,
 so that half is real; the conjunction with an id collision is what makes it
-negligible. ``status`` events — which intentionally share an id with their
-``append`` — non-append lines, unparseable lines, and appends with a non-``str``
-id are never touched by any of this.
+negligible. ``status`` and ``amend`` events — which intentionally share an id
+with their ``append`` — non-append lines, unparseable lines, and appends with a
+non-``str`` id are never touched by any of this.
 """
 
 from __future__ import annotations

@@ -2,11 +2,12 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://shipwright.local/schemas/triage_item.schema.json",
   "title": "Shipwright Triage JSONL Wire Format",
-  "description": "Codifies the line-level wire shape of `<project>/.shipwright/triage.jsonl` — the pre-backlog triage inbox. Three event kinds share the file: a one-time header (line 1), append events (one per new triage item), and status events (one per Promote / Dismiss / Park / Un-park). Producers go through `shared/scripts/triage.py::append_triage_item` or `::append_triage_item_idempotent`; consumers (`triage_cli.py`, `aggregate_triage.py`, WebUI Triage tab) read via `read_all_items` which collapses status events into the latest per id.",
+  "description": "Codifies the line-level wire shape of `<project>/.shipwright/triage.jsonl` — the pre-backlog triage inbox. Four event kinds share the file: a one-time header (line 1), append events (one per new triage item), status events (one per Promote / Dismiss / Park / Un-park), and amend events (one per in-place title/detail/severity/kind correction — iterate-2026-08-08-triage-amend-event). Producers go through `shared/scripts/triage.py::append_triage_item`, `::append_triage_item_idempotent`, or `::amend_triage_item`; consumers (`triage_cli.py`, `aggregate_triage.py`, WebUI Triage tab) read via `read_all_items` which collapses status and amend events into the latest per id.",
   "oneOf": [
     { "$ref": "#/$defs/header" },
     { "$ref": "#/$defs/append" },
-    { "$ref": "#/$defs/status" }
+    { "$ref": "#/$defs/status" },
+    { "$ref": "#/$defs/amend" }
   ],
   "$defs": {
     "header": {
@@ -66,7 +67,8 @@
         },
         "title": {
           "type": "string",
-          "minLength": 1
+          "minLength": 1,
+          "pattern": "\\S"
         },
         "detail": { "type": "string" },
         "evidencePath": {
@@ -160,6 +162,37 @@
           },
           "then": { "not": { "required": ["revisitAt"] } }
         }
+      ]
+    },
+    "amend": {
+      "type": "object",
+      "description": "An in-place correction of one or more content fields — id stable, prior lines never mutated. Emitted by `triage.amend_triage_item` (via `triage_cli.py`). Resolved by `read_all_items` in the SAME merged pass as `status`, ordered by (ts, file-order); a field absent here leaves the resolved item's current value untouched, a field present but invalid skips the WHOLE event. See `lib.triage_amend`.",
+      "required": ["event", "id", "ts", "by"],
+      "additionalProperties": false,
+      "properties": {
+        "event": { "const": "amend" },
+        "id": { "type": "string", "pattern": "^trg-[0-9a-f]{8}$" },
+        "ts": { "$ref": "#/$defs/_isoZ" },
+        "by": {
+          "type": "string",
+          "description": "What surface emitted the correction: `cli` (only writer this iterate ships)."
+        },
+        "title": { "type": "string", "minLength": 1, "pattern": "\\S" },
+        "detail": { "type": "string" },
+        "severity": {
+          "type": "string",
+          "enum": ["critical", "high", "medium", "low", "info"]
+        },
+        "kind": {
+          "type": "string",
+          "enum": ["bug", "feature", "improvement", "compliance", "maintenance"]
+        }
+      },
+      "anyOf": [
+        { "required": ["title"] },
+        { "required": ["detail"] },
+        { "required": ["severity"] },
+        { "required": ["kind"] }
       ]
     },
     "_isoZ": {

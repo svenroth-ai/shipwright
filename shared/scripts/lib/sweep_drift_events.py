@@ -21,7 +21,8 @@ __all__ = ["append_ids_of"]
 
 #: Producer event kinds a drift line may carry. Anything else is not a line this module
 #: is willing to move (and therefore not one it is willing to delete from the log either).
-_EVENTS = frozenset({"append", "status"})
+#: `amend` joins `append`/`status` per iterate-2026-08-08-triage-amend-event, AC8.
+_EVENTS = frozenset({"append", "status", "amend"})
 
 
 def append_ids_of(lines: list[str]) -> frozenset[str]:
@@ -71,7 +72,7 @@ def _parsed(line: str) -> dict | None:
 
 
 def _looks_like_producer_record(obj: object) -> bool:
-    """Shaped like a producer event (append / status with a str id) — the ONE
+    """Shaped like a producer event (append / status / amend with a str id) — the ONE
     definition :func:`_is_producer_event` and :func:`_is_glued_producer_line` both
     defer to (external review: two independent copies of this shape would drift the
     moment ``_EVENTS`` or the id contract changes). Also usable as :func:`split_records`'s
