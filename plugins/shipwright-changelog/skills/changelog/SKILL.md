@@ -274,11 +274,11 @@ no file aborts the whole commit.
 
 ```bash
 git add CHANGELOG.md
-git add .shipwright/agent_docs/decision_log.md            # if Step 4 folded any decision-drops
+git add .shipwright/agent_docs/decision_log.md .shipwright/agent_docs/decision_log_index.md  # if Step 4 folded/refreshed
 git add .shipwright/planning/adr/                         # if dirty - see below
 git commit -m "chore(release): v{version}" -- \
-  CHANGELOG.md .shipwright/agent_docs/decision_log.md .shipwright/planning/adr/ \
-  <every path from evidence_pathspec>
+  CHANGELOG.md .shipwright/agent_docs/decision_log.md .shipwright/agent_docs/decision_log_index.md \
+  .shipwright/planning/adr/ <every path from evidence_pathspec>
 git tag -a v{version} -m "Release v{version}"
 
 # `git commit -- <paths>` records the WORKTREE, not the index: a writer between
@@ -287,7 +287,7 @@ uv run "{shared_root}/scripts/tools/refresh_compliance_docs.py" \
   --project-root "$(pwd)" --verify-commit "$(git rev-parse HEAD)"
 ```
 
-> `.shipwright/planning/adr/` is a DIRECTORY pathspec deliberately, and leaving it unstaged breaks CI — both in [compliance-evidence.md](references/compliance-evidence.md).
+> `.shipwright/planning/adr/` is a DIRECTORY pathspec deliberately, and leaving it unstaged breaks CI — both in [compliance-evidence.md](references/compliance-evidence.md). `decision_log_index.md` needs the same treatment (Step 4 refreshes it every non-dry-run pass, drops or not) — leaving it unstaged reds `test_decision_log_index_producers.py::test_committed_index_is_not_stale` on main.
 
 ---
 
