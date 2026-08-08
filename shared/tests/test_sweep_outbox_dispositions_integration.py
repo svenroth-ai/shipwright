@@ -258,3 +258,24 @@ def test_unidentified_status_is_quarantined_and_the_rest_ships(repo) -> None:
     assert preserved == [no_id], "the line was dropped instead of preserved"
     assert h.item(PENDING) in h.branch_triage_lines(wt)
     assert no_id not in h.outbox_lines(work), "the quarantined line stayed in the outbox"
+
+
+def test_orphan_amend_is_quarantined_with_its_own_reason(repo) -> None:
+    """Stage-3 doubt review, finding 3. A quarantined `amend` candidate must be
+    logged with an amend-specific `reason` — before the fix, every candidate
+    was logged with the "un-deliverable status" wording regardless of its
+    actual event kind, mislabeling the ONLY surviving copy of a line just
+    deleted from the gitignored outbox."""
+    work = repo
+    h.seed_tracked(work, h.item("trg-seed"))
+    orphan_amend = h.amend("trg-ghost", "corrected")
+    h.write_outbox(work, orphan_amend, h.item(PENDING))
+    wt = h.make_worktree(work, "orphan-amend-reason")
+
+    result = sweep_outbox_to_branch(work, wt, default_branch="main")
+
+    assert result.status == "committed", result.to_dict()
+    assert result.quarantined == 1, result.to_dict()
+    records = [json.loads(ln) for ln in h.quarantine_text(work).splitlines() if ln.strip()]
+    assert [r["original"] for r in records] == [orphan_amend]
+    assert records[0]["reason"].startswith("un-deliverable amend"), records

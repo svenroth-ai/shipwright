@@ -59,6 +59,7 @@ from lib.main_tree_guards import (  # noqa: E402,F401  (re-export: see lib/main_
 from lib.sweep_drift import commit_main_tracked_drift, plan_main_tracked_drift  # noqa: E402
 from lib.sweep_gc import delivered_membership, partition_outbox  # noqa: E402
 from lib.sweep_quarantine import append_quarantine, decide as quarantine_decide, quarantine_path  # noqa: E402
+from lib.sweep_quarantine_messages import quarantine_reason, split_candidates_by_kind  # noqa: E402
 from lib.sweep_result import SweepResult, sweep_warnings, with_adopt_note as _with  # noqa: E402,F401  (re-export: callers import both from here)
 from lib.sweep_text import normalize_lines, read_text_verbatim  # noqa: E402
 
@@ -160,10 +161,19 @@ def sweep_outbox_to_branch(
         # quarantine, then branch commit, then the outbox rewrite LAST.
         quarantined, held = len(decision.candidates), len(decision.held_lines)
         if decision.candidates:
-            append_quarantine(
-                quarantine_path(main_root), decision.candidates,
-                reason="un-deliverable status: no append anywhere in the combined triage log, or no usable id",
-            )
+            # Kind-correct reason per candidate (Stage-3 doubt review, finding 3) — a
+            # single shared "status" wording used to be written for amend candidates
+            # too, into the log that is the ONLY surviving copy of a line just
+            # deleted from the gitignored outbox.
+            status_candidates, amend_candidates = split_candidates_by_kind(decision.candidates)
+            if status_candidates:
+                append_quarantine(
+                    quarantine_path(main_root), status_candidates, reason=quarantine_reason("status"),
+                )
+            if amend_candidates:
+                append_quarantine(
+                    quarantine_path(main_root), amend_candidates, reason=quarantine_reason("amend"),
+                )
         # NOT ``outbox_lines``: putting branch content behind that name deletes HELD lines.
         branch_outbox_lines = decision.materialized_outbox
         deduped_text = decision.deduped_text

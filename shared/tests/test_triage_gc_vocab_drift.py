@@ -78,9 +78,15 @@ def _emitted_recurring_dismiss_tokens() -> set[str]:
     the non-producer did not); the anchor test below fails loudly if this ever
     hides a real producer.
     """
-    # The engine module (wherever MACHINE_REASONS now lives) plus the CLI that
-    # re-exports it — both resolved, so a move relocates the exclusion with them.
+    # The module that DEFINES MACHINE_REASONS/is_machine_churn (resolved via
+    # is_machine_churn.__module__, not triage_gc.plan_gc.__module__ — the two
+    # split apart in iterate-2026-08-08-triage-amend-event when the policy
+    # vocabulary moved to lib/triage_gc_policy.py but plan_gc stayed in
+    # lib/triage_gc_core.py), the engine module (plan_gc's home), and the CLI
+    # that re-exports both — all resolved, so a future move relocates the
+    # exclusion with it rather than needing a hand edit here.
     vocab_defining = {
+        Path(sys.modules[triage_gc.is_machine_churn.__module__].__file__).resolve(),
         Path(sys.modules[triage_gc.plan_gc.__module__].__file__).resolve(),
         Path(triage_gc.__file__).resolve(),
     }
