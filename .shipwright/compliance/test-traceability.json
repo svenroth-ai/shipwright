@@ -1,8 +1,8 @@
 {
   "schema_version": 3,
   "collector_version": "test_links/1.0.0",
-  "generated_at": "2026-08-08T22:25:50.551611+00:00",
-  "source_commit": "c976c2639559770f8183682decfe02e6103a4125",
+  "generated_at": "2026-08-08T19:53:58.646645+00:00",
+  "source_commit": "7a01ee66b247b0066e8f8fbe1afdf48b6d1cb34b",
   "spec_hash": "sha256:5a33de2f505b0fb5137864830fbeaeb85fd0a4e9e6def149da89b89b1030dd26",
   "requirements": {
     "01::FR-01.01": {
@@ -12455,9 +12455,6 @@
     "shared/tests/test_iterate_phase_timing.py::test_normalize_rejects_malformed",
     "shared/tests/test_iterate_phase_timing.py::test_read_marks_skips_malformed_lines",
     "shared/tests/test_iterate_phase_timing.py::test_sidecar_path_contains_crafted_run_id",
-    "shared/tests/test_iterate_retention_pins.py::test_malformed_retention_pins_fail_before_retention",
-    "shared/tests/test_iterate_retention_pins.py::test_retention_keeps_configured_pins_beyond_the_unpinned_window",
-    "shared/tests/test_iterate_retention_pins.py::test_retention_pin_schema_requires_unique_non_empty_strings",
     "shared/tests/test_iterate_skill_prose.py::test_skill_campaign_paragraph_scopes_the_adr_029_sentence",
     "shared/tests/test_iterate_skill_prose.py::test_skill_step_8_does_not_promise_more_than_the_cascade_sees",
     "shared/tests/test_iterate_skill_prose.py::test_stage_1_has_its_own_row_and_the_ordering_is_enforced",
@@ -16254,7 +16251,6 @@
     "shared/tests/test_worktree_evidence_recovery.py::test_p1_10_already_self_delivered_its_own_immutable_snapshot",
     "shared/tests/test_worktree_evidence_recovery.py::test_recovered_evidence_matches_declared_bytes_and_validates",
     "shared/tests/test_worktree_evidence_recovery.py::test_recovered_runs_have_a_durable_f5c_summary_reachable_from_main",
-    "shared/tests/test_worktree_evidence_recovery.py::test_recovered_summaries_are_pinned_and_present_in_the_current_checkout",
     "shared/tests/test_worktree_evidence_recovery.py::test_stale_worktree_run_ids_are_not_imported_as_their_own_evidence",
     "shared/tests/test_worktree_evidence_recovery.py::test_supplemental_manifest_records_recoveries_and_exclusions",
     "shared/tests/test_worktree_identity_branches.py::test_fast_main_root_returns_none_on_a_resolve_failure",

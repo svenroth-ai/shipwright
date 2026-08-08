@@ -1,14 +1,12 @@
 # Project Activity Dashboard
-> Updated: 2026-08-08 22:25 UTC | Session: unknown | Run: iterate-2026-08-08-retention-pins
+> Updated: 2026-08-08 20:34 UTC | Session: 5e606322-4b30-42ed-9e6b-72bfd03df7be
 
-## Recent Changes (515 iterations)
+## Recent Changes (513 iterations)
 
 | Type | Description | Tests | Commit | FRs | Date |
 |------|-------------|-------|--------|-----|------|
-| bug | Protect permanent F5c retention pins. | 18/18 |  | tooling | 2026-08-08 |
 | feature | mandated-load truncation is now declared, not silent (TC3.2) | 9880/9880 |  | tooling | 2026-08-08 |
 | change | iterate: normalize benign __import__ dynamic-import pattern flagged by shipwright-prompt-scan (trg-133f2ca6) | 9/9 |  | tooling | 2026-08-08 |
-| change | Track AGENTS.md as the durable Codex operating contract. | 18/18 |  | docs | 2026-08-08 |
 | change | iterate: fix shipwright_model_config.json review tier (opus, not sonnet) | 0/0 |  | tooling | 2026-08-08 |
 | bug | Fixed two SDLC-framework defects: decision_log.md readers promised a complete read no single Read call can deliver; ADR spec-folder filenames guessed at branch time collided across parallel iterates. | 8855/8887 |  | tooling | 2026-08-08 |
 | bug | update-marketplace.sh Step 1's happy path never verified the marketplace clone reached origin/main's true tip, so a 'successful' sync could leave recently-landed files missing from the plugin cache | 28/28 |  | tooling | 2026-08-08 |
@@ -522,7 +520,7 @@
 | change | post-adoption framework cleanup (Sub-1A through 1D) | 225/225 | 3db485b | FR-01.01, FR-01.02, FR-01.03 | 2026-05-02 |
 
 ## Test Status
-Last run: 2026-08-08 | Unit: 18/18 | Integration: 1/1 | Smoke: not_run | (iterate)
+Last run: 2026-07-28 | Smoke: n/a | (iterate)
 
 ## Pipeline
 
