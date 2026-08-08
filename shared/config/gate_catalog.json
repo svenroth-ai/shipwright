@@ -225,10 +225,10 @@
       "id": "plan.external-review-missing-keys",
       "phase": "plan",
       "policy": "auto-default",
-      "default_answer": "Option 2: skip external review, fall back to the mandatory self-review ('2x denken') pass, and log the opt-out reason ('non-interactive single-session run; no OPENROUTER key provisioned').",
+      "default_answer": "Option 2: skip external review, rely on the internal Opus review (opus-plan-reviewer, Step 5-int) which already ran and carries the gate, and log the opt-out reason ('non-interactive single-session run; no OPENROUTER key provisioned').",
       "constitution": false,
       "fires": "conditional",
-      "summary": "Step 5 Branch B: no external-review API key. Not silently skippable; the self-review fallback preserves the gate."
+      "summary": "Step 5 Branch B: no external-review API key. Not silently skippable; the internal Opus review (Step 5-int, always runs first, one extra subagent call) preserves the gate rather than self-assessment."
     },
     {
       "id": "plan.external-review-findings",
@@ -238,6 +238,15 @@
       "constitution": false,
       "fires": "conditional",
       "summary": "Step 5 Branch A: adjudicate external-review findings. Soft gate ('discuss') — auto-integrate + log under single_session."
+    },
+    {
+      "id": "plan.internal-review-high-severity-declined",
+      "phase": "plan",
+      "policy": "auto-default",
+      "default_answer": "Autonomously decline or disclose only with a specific, falsifiable reason tied to project context; if none exists, integrate the finding instead. Surface the finding + reason in the plan.md Internal Plan Review section and decision_log.md so it stays auditable even though no human was asked.",
+      "constitution": false,
+      "fires": "conditional",
+      "summary": "Step 5-int: a severity:high finding from opus-plan-reviewer was declined or disclosed rather than fixed. Interactive runs STOP and ask (mirrors Step 5a's reject prompt); single_session auto-answers with a recorded reason."
     },
     {
       "id": "build.section-file-required",

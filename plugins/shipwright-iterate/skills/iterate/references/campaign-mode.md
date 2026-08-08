@@ -131,6 +131,21 @@ If campaign directory doesn't exist yet:
    not by prose). Extract `loop_id` from stdout. Then:
    `export SHIPWRIGHT_LOOP_ID="{loop_id}"`.
 
+   **Resolve model tiers once for the whole campaign** (not per sub-iterate —
+   the operator's choice applies uniformly across every unit this loop
+   drives):
+   ```bash
+   uv run "{shared_root}/scripts/tools/resolve_model_tier.py" \
+     --project-root "$(pwd)" [--review-model {flag}] [--finalization-model {flag}]
+   ```
+   Keep `review.resolved` for step 3f-bis's delegated cascade and
+   `finalization.resolved` for step 3c's `sub-iterate-runner` spawn. Both
+   values are substituted as literal `model=` Agent-tool parameters at each
+   spawn below — never re-resolved by the runner or by the reviewers it
+   receives, since neither reads `shipwright_model_config.json` itself; a
+   config edit or worktree switch mid-campaign therefore cannot desync one
+   unit's spawns from another's within the same run.
+
    Then **mark the campaign started** (top-level lifecycle status
    `draft` → `active`, so the WebUI Campaigns lane shows it on the board —
    a `draft` campaign is planned-only / triage-only and stays hidden):
@@ -150,6 +165,7 @@ If campaign directory doesn't exist yet:
 
    3c. Spawn sub-iterate-runner subagent:
        result = Task(subagent_type="shipwright-iterate:sub-iterate-runner",
+                     model=<finalization tier resolved at loop step 2, omit if "inherit">,
                      prompt=<brief with sub_iterate_id, spec, base_branch, etc.>)
        The runner branches off base_branch (fresh origin/<default>), builds,
        finalizes, pushes, and leaves the PR OPEN (auto-merge deferred). The brief
@@ -197,14 +213,18 @@ If campaign directory doesn't exist yet:
        b) `code-reviewer`  — Stage 2, only once Stage 1 PASSES.
        c) `doubt-reviewer` — Stage 3, conditional, advisory-must-address.
 
+       Pass `model=<review tier resolved at loop step 2>` to each of the three
+       spawns above (omit when `inherit`).
+
        Promote the rows IN THAT ORDER. The runner already closed them and a
        closed row is immutable, so `--force` is REQUIRED (without it the CLI
        exits 3). A `code` row completed over a non-completed `spec` FAILS the
        gate, so Stage 1 must land first — `…` is the invocation prefix from
-       `iteration-reviews.md`:
-         … record --review-type spec  --status completed --from spec-reviewer              --payload-file "{reply}" --recorded-by spec-reviewer --force
-         … record --review-type code  --status completed --from code-reviewer   … --force
-         … record --review-type doubt --status completed --from doubt-reviewer  … --force
+       `iteration-reviews.md`, and every call also carries
+       `--model-tier "{resolved_review_tier}"`:
+         … record --review-type spec  --status completed --from spec-reviewer              --payload-file "{reply}" --recorded-by spec-reviewer --model-tier "{resolved_review_tier}" --force
+         … record --review-type code  --status completed --from code-reviewer   … --model-tier "{resolved_review_tier}" --force
+         … record --review-type doubt --status completed --from doubt-reviewer  … --model-tier "{resolved_review_tier}" --force
 
        When Stage 3 does NOT fire (it is conditional), do not leave the runner's
        row standing — its disposition says the cascade did not run, which is now

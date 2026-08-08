@@ -141,6 +141,12 @@ ALLOWLIST: dict[str, list[str]] = {
         ".shipwright/adopt/enrichment.json",
         ".shipwright/agent_docs/architecture.md",
         ".shipwright/agent_docs/decision_log.md",
+        # Generated sibling of decision_log.md (lib/decision_log_index.py,
+        # ADR-127): its rows re-render each entry's own title verbatim as a
+        # link label, so any legacy-path substring already tolerated in
+        # decision_log.md itself (e.g. ADR-259's "compliance/security")
+        # necessarily reappears here too. Same exempt class, same source.
+        ".shipwright/agent_docs/decision_log_index.md",
         ".shipwright/agent_docs/conventions.md",
         # shipwright_test_results.json accumulates per-iterate prose `note`
         # fields that legitimately mention "planning" / "designs" /
@@ -244,6 +250,9 @@ ALLOWLIST: dict[str, list[str]] = {
         ".shipwright/adopt/enrichment.json",
         ".shipwright/agent_docs/architecture.md",
         ".shipwright/agent_docs/decision_log.md",
+        # See "planning" entry above: generated sibling, same source, same
+        # exempt class.
+        ".shipwright/agent_docs/decision_log_index.md",
         ".shipwright/agent_docs/conventions.md",
         # See "planning" entry for shipwright_test_results.json rationale.
         "shipwright_test_results.json",
@@ -320,6 +329,9 @@ ALLOWLIST: dict[str, list[str]] = {
         ".shipwright/adopt/enrichment.json",
         ".shipwright/agent_docs/architecture.md",
         ".shipwright/agent_docs/decision_log.md",
+        # See "planning" entry above: generated sibling, same source, same
+        # exempt class.
+        ".shipwright/agent_docs/decision_log_index.md",
         ".shipwright/agent_docs/conventions.md",
         # See "planning" entry for shipwright_test_results.json rationale.
         "shipwright_test_results.json",
@@ -434,6 +446,10 @@ ALLOWLIST: dict[str, list[str]] = {
         ".shipwright/adopt/enrichment.json",
         ".shipwright/agent_docs/architecture.md",
         ".shipwright/agent_docs/decision_log.md",
+        # See "planning" entry above: generated sibling, same source, same
+        # exempt class. (This is the one with a CURRENT finding: ADR-259's
+        # own title re-renders here as a link label.)
+        ".shipwright/agent_docs/decision_log_index.md",
         # conventions.md accumulates Learnings prose that mentions "compliance"
         # as a phase name, the `shipwright-compliance` plugin dir, or a triage
         # `source=` enum value — never as a legacy artifact path. Same class as

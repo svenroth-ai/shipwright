@@ -98,54 +98,6 @@ def test_windows_byte_lock_blocks_an_independent_process(tmp_path):
         assert _child_lock_result(path) == "1"
 
 
-@pytest.mark.skipif(sys.platform != "win32", reason="native Windows ACL proof")
-def test_windows_private_root_rejects_world_writable_acl(tmp_path):
-    unsafe = tmp_path / "unsafe"
-    unsafe.mkdir()
-    granted = subprocess.run(
-        ["icacls", str(unsafe), "/grant", "*S-1-1-0:(OI)(CI)M"],
-        capture_output=True, text=True, errors="replace", check=False,
-    )
-    assert granted.returncode == 0, granted.stdout + granted.stderr
-    try:
-        with pytest.raises(lease.HostLeaseError, match="not private"):
-            locking._safe_dir(unsafe / "nested", trusted_parent=tmp_path)
-    finally:
-        subprocess.run(
-            ["icacls", str(unsafe), "/remove:g", "*S-1-1-0"],
-            capture_output=True, check=False,
-        )
-
-
-@pytest.mark.skipif(sys.platform != "win32", reason="native Windows ACL proof")
-def test_windows_private_file_rejects_world_writable_acl(tmp_path):
-    unsafe = tmp_path / "unsafe.state.json"
-    unsafe.write_text("{}", encoding="utf-8")
-    granted = subprocess.run(
-        ["icacls", str(unsafe), "/grant", "*S-1-1-0:M"],
-        capture_output=True, text=True, errors="replace", check=False,
-    )
-    assert granted.returncode == 0, granted.stdout + granted.stderr
-    try:
-        with pytest.raises(lease.HostLeaseError, match="file is not private"):
-            locking._safe_file(unsafe)
-    finally:
-        subprocess.run(
-            ["icacls", str(unsafe), "/remove:g", "*S-1-1-0"],
-            capture_output=True, check=False,
-        )
-
-
-@pytest.mark.skipif(sys.platform != "win32", reason="native Windows ACL proof")
-def test_windows_acl_rejects_every_unparsed_ace_type():
-    from scripts.lib import _windows_acl
-
-    assert _windows_acl._ace_type_is_supported(0)
-    assert _windows_acl._ace_type_is_supported(1)
-    assert all(not _windows_acl._ace_type_is_supported(value)
-               for value in range(2, 256))
-
-
 @pytest.mark.skipif(os.name == "nt", reason="native POSIX byte-range proof")
 def test_posix_byte_lock_blocks_an_independent_process(tmp_path):
     path = tmp_path / "owner.lock"

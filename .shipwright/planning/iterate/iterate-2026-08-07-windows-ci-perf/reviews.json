@@ -1,0 +1,310 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-08-07-windows-ci-perf",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-07T21:56:02.189416+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 11,
+      "findings": [
+        {
+          "severity": "low",
+          "category": "security",
+          "file": null,
+          "line": null,
+          "finding": "The fix unconditionally trusts any owner SID in `_TRUSTED_SYSTEM_SIDS` without checking whether the current process token actually carries that SID. This means a directory owned by, e.g., `BUILTIN\\Administrators` will be accepted as private even when the running user is not an administrator—a scenario that the previous exact-owner check correctly rejected.",
+          "suggestion": "Either (a) restrict the new trust to cases where the current process token contains the trusted SID (the token‑group check discussed and rejected in the spec) or (b) document the deliberate relaxation and confirm that outside the CI runner the only callers are themselves privileged. The spec’s own “zero marginal capability” argument relies on the current user being an administrator; the fix should enforce that rather than assume it.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "Introducing pytest‑xdist on the `shared/tests` directory could expose Windows‑specific test‑isolation bugs (file‑locking, global state) that the serial runs never hit. The plan shows a single successful local run, but that does not guarantee robustness under CI timing.",
+          "suggestion": "Add a comment to the workflow acknowledging the risk, and be prepared to reduce the worker count (or revert to serial) if the job becomes noisy. The `-n 4` choice is reasonable; the mitigation is just a plan for follow-up.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "The change to `path_acl_is_private()` relaxes the owner check for all callers. The spec assumes only `host_resource_lease` uses it, but there is no explicit audit of other call sites in `shared/scripts/lib/`.",
+          "suggestion": "Before merging, grep for `path_acl_is_private` across the codebase to confirm no other caller depends on the exact‑owner verification. If another sensitive caller exists, either revert the change there or apply the same token‑group membership restriction.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "The restructured single `uv run --with …` step must preserve the existing property “any test failure fails the step”. The mini‑plan does not detail the shell command, but a naive `uv run bash -c \"pytest …; pytest …\"` would hide failures of the last command if `;` is used instead of `&&` or `set -e`.",
+          "suggestion": "Ensure the workflow’s shell invocation uses `set -e` or chains commands with `&&`, and verify that the job exit code is non‑zero on test failure (as AC4 requires).",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "The plan does not explicitly mention the “falsifier” mitigation described in the spec (if test (1) still fails after the fix, re‑deselect it and reopen the triage card).",
+          "suggestion": "Include a brief note in the workflow comment or the PR description so the next engineer observing the CI run knows the expected follow‑up; this makes the “single‑cause theory” testable in practice.  Overall Assessment: The root cause is correctly identified and the fix is narrowly scoped. The parallelism and provisioning changes are well‑justified by live timing data, and the pre‑change local verification de‑risks the approach significantly. The remaining concerns are small and can be addressed with a few documentation or validation additions before merge.  SHIPWRIGHT_VERDICT: approve",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "The proposed single `uv run ... bash -c` wrapper can accidentally violate fail-closed behavior if the three pytest commands are separated with `;` or otherwise lack `set -e`/`&&`. In that case, a failure in `shared/tests` could be overwritten by a successful later serial suite, and the step would exit zero.",
+          "suggestion": "Make failure propagation explicit in the command, e.g. invoke Bash with `-euo pipefail` and use `&&` between the three pytest invocations. Ensure the `shared/tests -n 4` command is first or otherwise that every suite’s result is preserved. This should be verified from the rendered workflow command, not only from a successful local run.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "The workflow restructuring depends on Bash being available and correctly invoked on `windows-latest`, while Windows workflow steps commonly default to PowerShell. The plan says `bash -c` but does not specify the workflow shell, quoting strategy, or whether the `uv run` invocation resolves the Bash executable reliably. YAML/PowerShell/Bash quoting is a practical source of CI-only breakage.",
+          "suggestion": "Make the shell contract explicit: either set `shell: bash` for the step and use a Bash-native multiline script, or invoke the known Git-for-Windows Bash path/command in a way tested on the hosted runner. Keep the one `uv run` boundary, but validate the final YAML with an Actions-aware linter or at least a workflow syntax check in addition to running the extracted command locally.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "security",
+          "file": null,
+          "line": null,
+          "finding": "Extending owner trust to the entire `_TRUSTED_SYSTEM_SIDS` set is defensible only if every SID in that set is truly a privileged, machine-trusted principal when used as an owner, not merely acceptable as an ACE grantee. The plan names Administrators and LocalSystem but does not enumerate or review the complete set. A broad identity such as a generic group or a special SID would be materially more dangerous in owner position.",
+          "suggestion": "Explicitly audit and document the exact members of `_TRUSTED_SYSTEM_SIDS` before reusing it for ownership. Add table-driven tests covering each allowed well-known owner SID, or introduce a narrowly named owner-trust subset if the ACE-trust set includes anything broader than system/service/administrative principals. Retain the foreign-SID rejection test.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The `takeown /A` regression test proves that an isolated directory can become Administrators-owned, but it does not by itself prove that the actual `LOCALAPPDATA` anchor used by `host_resource_lease()` has the expected owner and ACL combination on the hosted runner. The plan also inconsistently describes the privilege case as “gracefully skipping otherwise” while the ledger requires a CI hard failure.",
+          "suggestion": "Make the platform/privilege behavior unambiguous: skip only for non-Windows or non-CI developer environments; on Windows CI, fail if ownership reassignment or ownership inspection cannot be performed. After `takeown`, assert the observed owner SID is specifically `S-1-5-32-544` before asserting `path_acl_is_private()` succeeds. In the live workflow, add temporary diagnostic output or a focused assertion sufficient to establish that the runner’s actual `LOCALAPPDATA` owner is one of the newly accepted SIDs, without printing sensitive paths or ACL details.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "The first formerly deselected test is still only inferentially tied to the ACL failure. Removing its deselection is appropriate because the workflow should expose a remaining independent defect, but the plan’s success claim should not assume the cancellation/Job Object path is fixed until it executes on the hosted runner.",
+          "suggestion": "Treat the first live Windows result as a gating falsifier exactly as described, but prepare a narrow follow-up diagnosis path: retain enough test output to distinguish `HostLeaseError`/exit `2` from the actual cancellation-path exit status, and reapply a deselection only for that test if the ACL fix unblocks it but exposes the separate failure.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "AC8 says the change is limited to `windows-tests.yml`, `_windows_acl.py`, and its test file, but the mini-plan also creates `.shipwright/.../ci_supplychain_ack.json`. This is likely an intended governance artifact, but it is a literal acceptance-criteria mismatch.",
+          "suggestion": "Amend AC8 to explicitly allow the required generated supply-chain acknowledgment artifact, or revise the files-to-modify list/acceptance wording so reviewers and automation do not interpret the planned artifact as scope creep.  Overall, the core approach is sound: using the already-supported xdist dependency for the dominant suite and narrowly aligning Windows owner trust with existing trusted principals is proportionate. The implementation should be revised to make shell and exit semantics explicit and to validate the exact trusted-owner set and CI reproduction behavior. SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-08-07T21:54:25.689947+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[deepseek] - **Category:** security  \n  **Severity:** low  \n  **Finding:** The fix unconditionally trusts any owner SID in `_TRUSTED_SYSTEM_SIDS` without checking whether the current process token actually carries that SID. This means a directory owned by, e.g., `BUILTIN\\Administrators` will be accepted as private even when the running user is not an administrator—a scenario that the previous exact-owner check correctly rejected.  \n  **Suggestion:** Either (a) restrict the new trust to cases where the current process token contains the trusted SID (the token‑group check discussed and rejected in the spec) or (b) document the deliberate relaxation and confirm that outside the CI runner the only callers are themselves privileged. The spec’s own “zero marginal capability” argument relies on the current user being an administrator; the fix should enforce that rather than assume it.\n\n- **Category:** edge-case  \n  **Severity:** medium  \n  **Finding:** Introducing pytest‑xdist on the `shared/tests` directory could expose Windows‑specific test‑isolation bugs (file‑locking, global state) that the serial runs never hit. The plan shows a single successful local run, but that does not guarantee robustness under CI timing.  \n  **Suggestion:** Add a comment to the workflow acknowledging the risk, and be prepared to reduce the worker count (or revert to serial) if the job becomes noisy. The `-n 4` choice is reasonable; the mitigation is just a plan for follow-up.\n\n- **Category:** dependency  \n  **Severity:** low  \n  **Finding:** The change to `path_acl_is_private()` relaxes the owner check for **all** callers. The spec assumes only `host_resource_lease` uses it, but there is no explicit audit of other call sites in `shared/scripts/lib/`.  \n  **Suggestion:** Before merging, grep for `path_acl_is_private` across the codebase to confirm no other caller depends on the exact‑owner verification. If another sensitive caller exists, either revert the change there or apply the same token […truncated]\n\n[openai] 1. **Category: risk**  \n   **Severity: medium**  \n   **Finding:** The proposed single `uv run ... bash -c` wrapper can accidentally violate fail-closed behavior if the three pytest commands are separated with `;` or otherwise lack `set -e`/`&&`. In that case, a failure in `shared/tests` could be overwritten by a successful later serial suite, and the step would exit zero.  \n   **Suggestion:** Make failure propagation explicit in the command, e.g. invoke Bash with `-euo pipefail` and use `&&` between the three pytest invocations. Ensure the `shared/tests -n 4` command is first or otherwise that every suite’s result is preserved. This should be verified from the rendered workflow command, not only from a successful local run.\n\n2. **Category: dependency**  \n   **Severity: medium**  \n   **Finding:** The workflow restructuring depends on Bash being available and correctly invoked on `windows-latest`, while Windows workflow steps commonly default to PowerShell. The plan says `bash -c` but does not specify the workflow shell, quoting strategy, or whether the `uv run` invocation resolves the Bash executable reliably. YAML/PowerShell/Bash quoting is a practical source of CI-only breakage.  \n   **Suggestion:** Make the shell contract explicit: either set `shell: bash` for the step and use a Bash-native multiline script, or invoke the known Git-for-Windows Bash path/command in a way tested on the hosted runner. Keep the one `uv run` boundary, but validate the final YAML with an Actions-aware linter or at least a workflow syntax check in addition to running the extracted command locally.\n\n3. **Category: security**  \n   **Severity: medium**  \n   **Finding:** Extending owner trust to the entire `_TRUSTED_SYSTEM_SIDS` set is defensible only if every SID in that set is truly a privileged, machine-trusted principal when used as an *owner*, not merely acceptable as an ACE grantee. The plan names Administrators and LocalSystem but does not enumerate or review the complete […truncated]",
+      "verdicts": {
+        "openai": "revise",
+        "deepseek": "approve"
+      }
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 8,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "shared/scripts/tools/tests/test_host_resource_locking.py",
+          "line": 189,
+          "finding": "AC6 ('path_acl_is_private() still rejects a genuinely foreign owner SID') was not proven by any test at the function boundary — only via the pure _owner_is_trusted() helper. Applied: added a win32-gated test that monkeypatches _current_sid on a directory the process genuinely owns and asserts path_acl_is_private() returns (False, ...).",
+          "suggestion": "Add a Windows-gated test driving the real reject path via monkeypatch on _current_sid.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "security",
+          "file": "shared/scripts/lib/_windows_acl_trust.py",
+          "line": 41,
+          "finding": "The docstring's security argument was factually wrong: it claimed the ACE-danger loop already accepted these SIDs before this change, but the owner check ran first and is exactly what rejected them. Applied: rewrote the docstring to the correct SeRestorePrivilege / owner-assignment-privilege argument, and propagated the correction into the spec's Root Cause section and its rejection of the narrower-alternative.",
+          "suggestion": "Replace the 'already accepted / zero capability' clause with the owner-assignment argument.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "security",
+          "file": "shared/scripts/lib/_windows_acl.py",
+          "line": 159,
+          "finding": "The widened owner set changes what an S-1-3-4 (OWNER RIGHTS) ACE can mean, since the owner may now be Administrators rather than always the current user. Applied: recorded this observation in _windows_acl_trust.py's docstring; no code change needed, per the reviewer's own suggestion.",
+          "suggestion": "One sentence recording the observation; no code change needed.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/scripts/lib/_windows_acl.py",
+          "line": 157,
+          "finding": "The rejection message hardcoded 'directory is owned by...' but the function is also called for files. Applied: changed to 'path is owned by...'.",
+          "suggestion": "s/directory is owned by/path is owned by/ in the f-string.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "architecture",
+          "file": "shared/scripts/lib/_windows_acl.py",
+          "line": 9,
+          "finding": "Nothing in the required Linux gate proves the cross-module import (_windows_acl.py -> _windows_acl_trust.py) stays wired, since _windows_acl.py itself cannot be imported on Linux. Applied: added a platform-independent source-text wiring-pin test.",
+          "suggestion": "Add a source-text assertion test that runs on any platform.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/scripts/tools/tests/test_host_resource_locking.py",
+          "line": 150,
+          "finding": "The takeown /A test's assertion conflates the owner check with the ACE-danger loop over whatever DACL the runner's tmp_path inherits, risking a misattributed failure. Applied: added an icacls /inheritance:r /grant:r reset before the ownership reassignment to isolate the owner branch.",
+          "suggestion": "Normalize the DACL before the assertion.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "shared/scripts/tools/tests/test_host_resource_locking.py",
+          "line": 189,
+          "finding": "The two pure _owner_is_trusted() tests were named as if they proved path_acl_is_private()-level behavior. Applied: renamed to test_owner_trust_rejects_a_genuinely_foreign_owner_sid and test_owner_trust_accepts_a_trusted_system_principal; updated the spec's Ledger row 4 to match.",
+          "suggestion": "Rename to describe the unit actually under test.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "security",
+          "file": ".github/workflows/windows-tests.yml",
+          "line": 161,
+          "finding": "pytest-xdist is a new, unpinned PyPI dependency the ci_supplychain_ack.json statement didn't address (it argued only actions-pinning posture).",
+          "suggestion": "Either pin pytest-xdist or add a clause to the ack recording it is deliberately unpinned on the same footing as the step's other unpinned packages.",
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": "anthropic-opus",
+      "completed_at": "2026-08-07T22:49:24.877733+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer-agent",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 6,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "boundary_contract",
+          "file": null,
+          "line": null,
+          "finding": "the narrower alternative (require the trusted owner SID to be present in the current process token) was correctly rejected",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "boundary_contract",
+          "file": null,
+          "line": null,
+          "finding": "the single-cause theory is only inferred for test (1), and a Windows Job-Object exit-code mismatch would produce the identical symptom",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "hidden_coupling",
+          "file": null,
+          "line": null,
+          "finding": "fixing the owner check makes path_acl_is_private accept the runner's LOCALAPPDATA",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "boundary_contract",
+          "file": null,
+          "line": null,
+          "finding": "the improved error message is a pure diagnostics win",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "concurrency",
+          "file": null,
+          "line": null,
+          "finding": "shared/tests is proven parallel-safe, so -n 4 on windows-latest is backed by measurement",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "hidden_coupling",
+          "file": null,
+          "line": null,
+          "finding": "the -n 4 run executed the same test set the serial run does",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        }
+      ],
+      "provider": "anthropic-opus",
+      "completed_at": "2026-08-07T22:49:31.218627+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer-agent",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-07T22:50:35.198616+00:00",
+      "disposition": "The code-review floor is carried by the INTERNAL cascade (Stage 2 code-reviewer, opus, per the operator's explicit instruction to spawn the review cascade with model=opus) -- the phase matrix's external LLM code-review pass is a separate, independent route to the same floor, not additionally required once the internal route is completed. Recorded not_run rather than dressed up: no external code-review pass ran on this diff.",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": "anthropic-opus",
+      "completed_at": "2026-08-07T22:49:18.451041+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer-agent",
+      "parse_status": null,
+      "raw_excerpt": null
+    }
+  }
+}

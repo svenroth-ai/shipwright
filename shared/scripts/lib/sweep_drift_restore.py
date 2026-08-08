@@ -51,7 +51,7 @@ from pathlib import Path
 from lib.atomic_write import durable_atomic_write, replace_retrying
 from lib.churn_merge import TRIAGE_LOG
 from lib.git_base import TIMEOUT_RETURNCODE, run_git_soft
-from lib.sweep_drift_events import _is_producer_event
+from lib.sweep_drift_events import _is_glued_producer_line, _is_producer_event, _REPAIR_HINT
 from lib.sweep_text import normalize_lines, read_text_verbatim
 
 #: Cap on the per-pid salvage-name search. A three-digit collision run means
@@ -111,7 +111,10 @@ def _classify_salvage(salvage: Path, planned_raw: str) -> tuple[str, list[str]]:
     suffix, _eol = normalize_lines(text[len(planned_raw):])
     late = [ln for ln in suffix if ln.strip()]
     if not late or not all(_is_producer_event(ln) for ln in late):
-        return "unparseable", []
+        # ``late`` (not ``[]``) even here: the caller inspects it to tell a glued-but-
+        # recoverable line apart from genuine corruption in the reason it composes
+        # (doubt review, medium) — nothing here is adopted differently either way.
+        return "unparseable", late
     return "late_append", late
 
 
@@ -200,9 +203,18 @@ def restore_tracked_log(
                 f"restore and were preserved rather than overwritten ({adopted} newly buffered; "
                 f"any remainder was already in the outbox)")
         return "adopted", note, adopted
-    reason = ("main_tracked_salvage_needs_review: the log gained content during the restore that "
-              "is not a well-formed producer append"
-              if verdict == "unparseable" else
-              "main_tracked_salvage_not_an_extension: the log was rewritten (not appended to) "
-              "during the restore")
+    if verdict == "unparseable" and any(_is_glued_producer_line(ln) for ln in late):
+        # Same glued shape :func:`lib.sweep_drift_events._bad_drift_reason` names for the
+        # plan path — surfaced here too (doubt review, medium): this branch already
+        # reports the sweep as ``adopted`` (success), so an unnamed remedy would be
+        # easier to miss than an outright refusal.
+        reason = ("main_tracked_salvage_glued_line: the log gained a line during the restore "
+                  f"that holds a recognisable triage producer event glued to other content; "
+                  f"{_REPAIR_HINT}")
+    elif verdict == "unparseable":
+        reason = ("main_tracked_salvage_needs_review: the log gained content during the restore "
+                  "that is not a well-formed producer append")
+    else:
+        reason = ("main_tracked_salvage_not_an_extension: the log was rewritten (not appended to) "
+                  "during the restore")
     return "adopted", f"{reason}; it is preserved at {salvage.name} — review before deleting", 0

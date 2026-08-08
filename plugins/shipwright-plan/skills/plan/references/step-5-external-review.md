@@ -2,17 +2,96 @@
 
 See [external-review.md](external-review.md) for the underlying protocol.
 
-**Goal:** Get the plan reviewed for blind spots — either by external LLMs
-(default) or, if unavailable, by a mandatory self-review pass ("2x denken").
+**Goal:** Get the plan reviewed for blind spots — always by an internal
+Opus reviewer first (Step 5-int), then external LLMs by default. Mandatory
+self-review ("2x denken") is a last resort only for when Step 5-int itself
+could not run.
 
-**This step is NOT optional.** One of the three branches below must run
-to completion, and the marker file
-`{planning_dir}/external_review_state.json` must be written. Step 6 is
-gated on that marker.
+**This step is NOT optional.** Step 5-int always runs first, then one of the
+three branches must run to completion, and `{planning_dir}/external_review_state.json`
+must be written — Step 6 is gated on it.
 
-Read `external_review_status` from the session report (printed in
-First Actions > F). It is one of: `available`, `missing_keys`,
-`user_disabled`.
+Read `external_review_status` from the session report (First Actions > F):
+`available`, `missing_keys`, or `user_disabled`.
+
+---
+
+## Step 5-int — Internal Plan Review (Opus, always, before branching)
+
+**Runs exactly once, before Branch A/B/C, regardless of
+`external_review_status`.** An external-only gate degrades to the plan's own
+author whenever external review is unavailable — this pass is what keeps the
+gate independent even then. If `## Internal Plan Review` already exists in
+`plan.md` **and records `Ran: yes`** (a resumed session, or Branch B's retry
+loop re-entering Step 5), skip straight to the branch below — do not
+re-spawn. A recorded `Ran: no` is not a completed pass — retry it.
+
+Spawn the `shipwright-plan:opus-plan-reviewer` subagent (Read/Grep/Glob only,
+`model: opus` from its own frontmatter — no override here; model tiering is
+a separate concern, see trg-88621183) over `{planning_dir}/plan.md` +
+`{spec_file}`. Tell it in the prompt when the plan is
+infrastructure/documentation-shaped rather than an application feature, so
+its security/performance/architecture/completeness rubric maps sensibly
+instead of forcing categories that do not apply.
+
+**Degraded handling.** If the subagent cannot be spawned (Agent tool
+unavailable), its reply has no parseable JSON block, or the JSON parses but
+lacks a recognizable `findings` array or `summary` (garbage-in still counts
+as a parse failure): the internal pass did NOT run. Record `Ran: no`
+(reason: capability or parse failure) in the `## Internal Plan Review`
+section and in `decision_log.md`, then **continue to the branch below as
+normal** — do not fall back yet. Branch A may still produce an independent
+(external) review; the single checkpoint right before Step 5b is what
+decides whether the Self-Review Fallback is actually needed, so the same
+rule covers every branch instead of one condition per branch.
+
+**Triage every finding — one of three, always with a reason:**
+- **fix** — integrate into `plan.md` now.
+- **disclose** — accepted as a known limitation, not acted on now. Record it
+  under `**Known limitations:**` below — a disclosed finding with no bullet
+  is indistinguishable from a dropped one.
+- **decline** — record why. **Scope-ratchet guard:** a finding that would add
+  plan or spec scope the spec itself calls unsupported must be declined, not
+  integrated — this applies to every pass in this step (internal, external,
+  architecture), not only this one.
+
+A declined or disclosed `severity: high` finding is not the planning agent's
+call alone: **STOP and ask the user** before Step 6, in the same shape as
+Step 5a's `reject` prompt. Under `single_session`, `gate_catalog.json`'s
+`plan.internal-review-high-severity-declined` entry carries the auto-default.
+
+**Write, always** (even when `findings` is empty — a `Ran: yes` section with
+no findings still reads as a completed clean pass; a missing section reads as
+"did not run", which must never be true after this step runs once). If a
+`## Internal Plan Review` section already exists (a `Ran: no` retry), REPLACE
+it in place — never append a second one; `plan.md` holds exactly one. Never
+paste the reviewer's raw JSON or fenced blocks through — `plan.md` is parsed
+downstream for `SECTION_MANIFEST`, and unbounded content risks corrupting
+that parse:
+
+```markdown
+## Internal Plan Review (opus-plan-reviewer)
+- **Ran:** {yes | no (capability failure) | no (parse failure)}
+- **Severity:** {low|medium|high, or n/a if Ran: no}
+- **Summary:** {reviewer's one-line assessment, or the failure reason if Ran: no}
+- **Findings:** {one line per finding: category, severity, disposition, one-line reason}
+- **Known limitations:** {each disclosed finding, one line, or `none`}
+- **Status:** {clean | N fixed | N fixed, M disclosed, K declined | not_run}
+```
+
+**Log every finding** (fixed, disclosed, or declined — none omitted) to
+`decision_log.md` (`write_decision_log.py`) with
+`--section "Internal Plan Review — {split_name}"`, `--decision` one of
+`{fixed: what changed | disclosed: why accepted as-is | declined: why not}`,
+and `--rejected` the declined finding itself (or, if fixed, the prior
+approach).
+
+**No marker of its own** — same precedent as Step 5a Architecture Review.
+Provenance is `plan.md` + `decision_log.md`. Step 5b's *existing*
+`--findings-count`/`--reason`/`--self-review-fallback-ran` flags carry this
+pass's outcome where relevant (see Step 5b) — the marker schema is unchanged.
+
+Then branch on `external_review_status`:
 
 ---
 
@@ -29,19 +108,16 @@ uv run --project {plugin_root} {shared_root}/scripts/tools/external_review.py \
   --plugin-root "{plugin_root}"
 ```
 
-(`{shared_root}` resolves to the monorepo's `shared/` directory — typically
-`{plugin_root}/../../shared`. The CLI consolidated into `shared/` in v0.5.x;
-plan-mode prompts still load from `{plugin_root}/prompts/plan_reviewer/`.)
+(`{shared_root}` is typically `{plugin_root}/../../shared`; plan-mode
+prompts load from `{plugin_root}/prompts/plan_reviewer/`.)
 
-This runs DeepSeek and OpenAI reviews **in parallel** via ThreadPoolExecutor
-(both through OpenRouter when set; direct OpenAI otherwise leaves DeepSeek unavailable).
-Every DeepSeek request uses the configured, code-approved ZDR endpoint allowlist
-and disables provider fallback. A missing allowed endpoint degrades only that arm.
+This runs DeepSeek and OpenAI reviews **in parallel** (both via OpenRouter
+when set; direct OpenAI otherwise leaves DeepSeek unavailable). DeepSeek
+uses the configured, code-approved ZDR endpoint allowlist with provider
+fallback disabled — a missing allowed endpoint degrades only that arm.
 
-**Process findings:**
-1. Present both reviews to the user
-2. Integrate accepted suggestions into `plan.md`
-3. Mark each finding as addressed or declined (with reason)
+**Process findings:** present both reviews to the user, integrate accepted
+suggestions into `plan.md`, mark each finding addressed or declined (reason).
 
 ### Read the two verdicts before anything else
 
@@ -85,22 +161,20 @@ the finding list already carries — those do not require a resolution.
 
 **If the CLI exits non-zero or the JSON has `"degraded": true`** (keys were
 present but every review leg failed), the external review did NOT run. Do not
-record Step 5b as `completed`: surface the `degraded_reason` and treat it like
-Branch B `missing_keys` — re-check keys or run the Self-Review Fallback and
-mark the state accordingly. A degraded gate is not a passing review.
+record Step 5b as `completed`: surface the `degraded_reason`, mark the state
+`skipped_user_opt_out` with the `; both external providers failed` reason
+suffix from Step 5b below. Re-checking keys and retrying Branch A remains
+available too. A degraded gate is not a passing review — whether the plan
+still has an independent one depends on Step 5-int's `Ran:` value. **Skip
+Step 5a** (the same two providers just failed) and **go straight to the
+Pre-5b Checkpoint below**, which resolves it.
 
-**Write each finding to decision_log.md** via:
-```bash
-uv run "{plugin_root}/../../shared/scripts/tools/write_decision_log.py" \
-  --section "External Review — {split_name}" \
-  --commit "n/a" \
-  --context "External LLM review finding: {finding summary}" \
-  --decision "{accepted: what changed | rejected: why not}" \
-  --consequences "{impact on plan}" \
-  --rejected "{if accepted: original approach | if rejected: the suggestion itself}"
-```
+**Log each finding** to `decision_log.md` with
+`--section "External Review — {split_name}"` (same `write_decision_log.py`
+shape as Step 5-int above, `--context`/`--decision` covering
+accepted/rejected instead of fixed/disclosed/declined).
 
-Then run **Step 5a**, then go to **Step 5b**.
+Then run **Step 5a**, then the **Pre-5b Checkpoint**, then **Step 5b**.
 
 ---
 
@@ -113,7 +187,7 @@ what is the smallest thing that would do?*
 **Why a second call and not one more paragraph in the prompt above.** The
 difference that produces a different answer is the **input**, not the question.
 `plan.md` carries the approach together with its justification, and the
-Self-Review Fallback's own item 1 asks about architectural soundness over that
+Self-Review Fallback's own architectural-soundness check asks over that
 same document — a reviewer handed the plan has been handed the answer. Measured
 twice on the iterate side: the same two models, the same change, `approve` when
 shown the plan and `reject` when shown a brief, both then naming a simpler
@@ -175,7 +249,7 @@ Step 5b is unchanged: this pass writes **no marker of its own**, and
 provenance is `plan.md` + `decision_log.md`, both git-tracked and both read by
 the compliance audit.
 
-Then go to **Step 5b**.
+Then go to the **Pre-5b Checkpoint**.
 
 ---
 
@@ -187,7 +261,7 @@ Then go to **Step 5b**.
 > External LLM review is the recommended quality gate for this plan, but no `OPENROUTER_API_KEY` or `OPENAI_API_KEY` was found in `.env.local`.
 >
 > **Option 1 (recommended):** Add `OPENROUTER_API_KEY=...` to `.env.local` at the repo root and say "ready" — I'll re-check and run the external review.
-> **Option 2:** Skip external review. I'll fall back to a mandatory self-review ("2x denken") pass and log the opt-out in the decision log.
+> **Option 2:** Skip external review. The internal review already checked the plan and carries the gate — I'll log the opt-out in the decision log.
 >
 > Which option?
 
@@ -197,9 +271,14 @@ Do NOT proceed until the user explicitly chooses.
   ```bash
   uv run --project {plugin_root} {shared_root}/scripts/checks/check-external-review-keys.py
   ```
-  If `available: true`, fall into Branch A (run `review.py`, integrate, log, then Step 5b).
-  If still `false`, ask the user again (they may have edited the wrong file or forgotten to save).
-- **User picks Option 2:** run the **Self-Review Fallback** sub-block below. Capture their reason (e.g., "offline", "keys not yet provisioned") for the marker.
+  If `available: true`, fall into Branch A and follow it to the end
+  (`external_review.py`, integrate, log → Step 5a → Pre-5b Checkpoint →
+  Step 5b). If still `false`, ask the user again (they may have edited the
+  wrong file or forgotten to save).
+- **User picks Option 2:** the **Internal Plan Review**'s `Ran:` value
+  decides whether this needs the Self-Review Fallback — see the **Pre-5b
+  Checkpoint** below. Capture the user's reason (e.g., "offline", "keys not
+  yet provisioned") for the marker either way.
 
 ---
 
@@ -209,27 +288,38 @@ Do NOT proceed until the user explicitly chooses.
 
 ```
 External LLM review disabled via config (feedback_iterations: 0).
-Running mandatory self-review fallback ("2x denken") instead.
+Internal Plan Review (Step 5-int) already ran and carries the gate.
 ```
 
-Run the **Self-Review Fallback** sub-block.
+Go to the **Pre-5b Checkpoint** below, which resolves whether Step 5-int's
+`Ran:` value leaves this branch needing the Self-Review Fallback.
 
 ---
 
-## Self-Review Fallback (sub-block)
+## Pre-5b Checkpoint — did an independent review actually complete?
 
-This is the "2x denken" pass. Re-read `plan.md` with a critic's eye and
-apply this checklist. For each item, write a 1–2 sentence finding to
-`plan.md` under a new `## Self-Review (2x denken)` section, integrate
-any corrections, and log each finding to `decision_log.md`.
+**One rule, checked once, whichever branch ran:** has the plan been
+independently reviewed at all — Step 5-int with `Ran: yes`, OR a completed
+Branch A external review? If **either** is true, skip straight to Step 5b.
+If **neither** is true, the plan has had no independent review yet — run
+the **Self-Review Fallback** below now, before Step 5b. This is the single
+place that decides it; no other section re-triggers or skips it.
 
-1. **Architectural soundness:** Are there design decisions I would second-guess if I were reviewing someone else's plan? List concrete blind spots.
-2. **Section boundaries:** Is each section self-contained? Are there hidden cross-dependencies that will surface during /shipwright-build?
-3. **TDD coverage:** Does every section's test strategy validate behavior, or just implementation details?
-4. **Risk hotspots:** What's the single riskiest section? What could go wrong? Is there a mitigation in the plan?
-5. **Assumptions:** What assumptions did I make that the user did not explicitly confirm? List them and flag for user review.
+---
 
-**Output format (append to plan.md):**
+## Self-Review Fallback (sub-block) — last resort only
+
+**Runs only when the Pre-5b Checkpoint above says no independent review
+completed.** This is the true last resort — every other path relies on
+Step 5-int or a completed Branch A review instead.
+
+This is the "2x denken" pass: re-read `plan.md` with a critic's eye against
+five checks — **architectural soundness** (design decisions worth
+second-guessing), **section boundaries** (hidden cross-dependencies),
+**TDD coverage** (behavior vs. implementation detail), **risk hotspots**
+(riskiest section + mitigation), **assumptions** (unconfirmed by the user) —
+integrate corrections, and append:
+
 ```
 ## Self-Review (2x denken)
 - **Architectural soundness:** {finding + action taken}
@@ -241,9 +331,8 @@ any corrections, and log each finding to `decision_log.md`.
 ```
 
 Log each non-trivial finding to `decision_log.md` using
-`write_decision_log.py` with `--section "Self-Review — {split_name}"`.
-
-Then go to **Step 5b**.
+`write_decision_log.py --section "Self-Review — {split_name}"`. Then go to
+**Step 5b**.
 
 ---
 
@@ -261,15 +350,33 @@ uv run --project {plugin_root} {shared_root}/scripts/checks/mark-review-state.py
   --reason "{optional reason for skip}" \
   --verdict deepseek={approve|revise|reject|unknown|unavailable} \
   --verdict openai={approve|revise|reject|unknown|unavailable} \
-  --contradiction-resolution "{only when the reviewers disagreed}"
+  --contradiction-resolution "{only when the reviewers disagreed}" \
+  [--self-review-fallback-ran]
 ```
 
-- Branch A → `--status completed --provider {actual provider}`, plus one
-  `--verdict` per reviewer, copied from the CLI's `verdicts` block. The
-  contradiction is **derived** from the pair — there is no flag to assert
-  agreement the verdicts do not support.
-- Branch B Option 2 → `--status skipped_user_opt_out --reason "{user's reason}"`
-- Branch C → `--status skipped_config_disabled`
+- Branch A, external review completed → `--status completed --provider
+  {actual provider}`, plus one `--verdict` per reviewer, copied from the
+  CLI's `verdicts` block. The contradiction is **derived** from the pair —
+  there is no flag to assert agreement the verdicts do not support.
+- Branch A degraded, Branch B Option 2, and Branch C all share one shape
+  (`--status skipped_user_opt_out` for A/B, `skipped_config_disabled` for C;
+  omit `--provider` — it defaults to `null`), set by the Pre-5b Checkpoint's
+  outcome and by the branch's own reason suffix — `"; both external
+  providers failed"` (Branch A degraded), `"; user opt-out: {reason}"`
+  (Branch B), or `"; external review disabled in config
+  (feedback_iterations: 0)"` (Branch C):
+  - **Checkpoint found an independent review** (Step 5-int `Ran: yes`) →
+    `--findings-count {internal review's finding count} --reason "internal
+    review (opus-plan-reviewer) carried the gate{suffix above}"`.
+  - **Checkpoint ran the Self-Review Fallback** (neither review completed)
+    → `--findings-count 0 --reason "self-review fallback ran instead (no
+    independent review completed){suffix above}" --self-review-fallback-ran`.
+    **Known limitation** (trg-43ba84df, disclosed, out of scope): the marker
+    schema (`review_marker.py`, unchanged by this iterate) coerces
+    `self_review_fallback_ran: true` for *any* `skipped_*` status, flag or
+    not — so the checkpoint's other outcome above reads the same field as
+    `true` too. The `--reason` string is the only place the two outcomes are
+    actually distinguishable.
 
 Pass `--contradiction-resolution` only when the CLI reported
 `requires_resolution: true`, and only with the decision the **user** made —
@@ -277,11 +384,13 @@ which side was taken and why, why the unreadable verdict does not block, or
 why proceeding on a single review is acceptable. Without it Step 6 refuses to
 begin.
 
-Reviewer names must be `deepseek` and `openai` (the two current arms), each given
-once. Branch B/C skips record no verdicts, which is correct — a skipped review
-has no reviewers. But a **`completed`** review with no verdicts is treated as
-not-yet-recorded and blocks Step 6: omitting the flags must not be a way to
-opt out of the disagreement check.
+Reviewer names must be `deepseek` and `openai` (the two current arms), each
+given once. Branch A degraded, Branch B and Branch C all record **no
+verdicts** — a skipped marker carrying reviewer evidence is refused even when
+the degraded CLI reported `deepseek`/`openai: unavailable`; that is correct,
+a skipped review has no reviewers. But a **`completed`** review with no
+verdicts is treated as not-yet-recorded and blocks Step 6: omitting the flags
+must not be a way to opt out of the disagreement check.
 
 **Checkpoint:** `{planning_dir}/external_review_state.json` exists, and the
 state it records is clear to proceed past — which is the same question the

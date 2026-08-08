@@ -253,6 +253,11 @@ Spec/
 # A hard kill during immutable evidence publication may leave the fsynced private
 # hard-link source behind. F6 stages iterates/ recursively; never stage that residue.
 /.shipwright/agent_docs/iterates/*.test-results.json.*.tmp
+# decision_log_index.md is written through `durable_atomic_write` too — a
+# same-directory temp-then-rename, like the ADR index above — and
+# `agent_docs/` is re-included wholesale, so a hard-killed refresh would leave
+# its temp file committed.
+/.shipwright/agent_docs/*.tmp
 # === END Shipwright canonical .shipwright artifact-ignore (managed) ===
 
 # Crash residue from `lib/atomic_write.durable_atomic_write`: it writes a

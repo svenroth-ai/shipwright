@@ -20,11 +20,20 @@ This module is the single home for the two primitives that close that gap:
   * :func:`run_config_lock` -- an advisory lock on the canonical
     ``shipwright_run_config.json.lock`` path.
 
-Coordination is **by lock-file path, not by shared code**: this lock,
-``phase_task_lifecycle._PhaseTasksLock`` and ``append_phase_history``'s
-``file_lock`` all target the same ``*.lock`` file with the same
-``fcntl.flock`` / ``msvcrt.locking`` primitive, so they mutually exclude
-regardless of which implementation acquired the lock.
+Coordination is **guaranteed by lock-file path, not by which wrapper
+acquired it**: this lock, ``phase_task_lifecycle._PhaseTasksLock`` (now a
+``lib.file_lock.FileLock`` subclass — trg-2e961fee) and
+``append_phase_history``'s ``file_lock`` all target the same ``*.lock`` file
+with the same ``fcntl.flock`` / ``msvcrt.locking`` primitive underneath, so
+they mutually exclude regardless of which implementation acquired it — even
+though all three now do, in fact, share that underlying wait/lock loop.
+**Reentrancy does not follow the same shared-code claim** (doubt-reviewer,
+D2): only a :class:`FileLock` (sub)instance registers with the same-thread
+reentrancy registry, so ``_PhaseTasksLock`` nests cleanly with itself, but
+this module's ``run_config_lock`` and ``append_phase_history``'s
+``file_lock`` — both the CONTEXT-MANAGER FUNCTION, never a ``FileLock``
+instance the caller holds onto — still self-exclude on a same-thread nest
+against any of the three, same as before this diff.
 """
 from __future__ import annotations
 

@@ -73,6 +73,20 @@ TEST_TRACEABILITY = ".shipwright/compliance/test-traceability.json"
 #: a DERIVED_MD (``--theirs``, then re-derive). Why: ADR-118 + the doc table row.
 ADR_INDEX = ".shipwright/planning/adr/INDEX.md"
 
+#: ``decision_log.md``'s generated index — same treatment as :data:`ADR_INDEX`
+#: and for the same reason: ``write_decision_log.py`` (plan/build/deploy) and
+#: ``aggregate_decisions.py`` (release) each refresh it as a pure function of
+#: ``decision_log.md``'s own content, so a merge conflict on it is always
+#: correctly resolved by re-deriving from the MERGED file rather than picking
+#: a side. NOT a :data:`DERIVED_MDS` member for the same reason ADR_INDEX
+#: isn't: that register is for views that are *wrong* when derived on a
+#: branch, and this one is correct on a branch by construction. The sibling
+#: decision-drops index is deliberately absent — see
+#: ``lib/decision_drops_index.py``: that directory is gitignored, so git can
+#: never see a conflict on it and an allowlist entry would be exercised by
+#: nothing.
+DECISION_LOG_INDEX = ".shipwright/agent_docs/decision_log_index.md"
+
 #: Derived iterate-throughput report, regenerated every F5b run — own constant like :data:`CI_SECURITY_SUMMARY`.
 THROUGHPUT_REPORT = ".shipwright/compliance/performance/iterate-throughput.md"
 
@@ -81,7 +95,7 @@ THROUGHPUT_REPORT = ".shipwright/compliance/performance/iterate-throughput.md"
 #: (curated prose — must reach a human; folds external-review G4/O1).
 CHURN_ALLOWLIST: frozenset[str] = DERIVED_MDS | {
     EVENTS_LOG, TEST_RESULTS, TRIAGE_LOG, CI_SECURITY_SUMMARY, TEST_TRACEABILITY,
-    ADR_INDEX, THROUGHPUT_REPORT,
+    ADR_INDEX, DECISION_LOG_INDEX, THROUGHPUT_REPORT,
 }
 
 #: Per-campaign status boards (campaign 2026-06-07-tracked-campaign-status, S3)
@@ -168,6 +182,21 @@ def dedup_event_lines(lines: list[str]) -> tuple[list[str], list[str]]:
     line). Returns ``(deduped, warnings)``; a warning is emitted — never a drop —
     when two *distinct* lines share an ``evt`` ``id`` (32-bit ids can collide;
     folds external-review G2/O6).
+
+    The ``id`` extraction below is total: never raises. A deeply-nested value
+    makes ``json.loads`` raise ``RecursionError`` — the sibling of the defect
+    fixed in ``lib.triage_dedup._parsed_append`` for the same reason (card
+    trg-57d0d6d3 / P2.19g, TEIL 2; found here by the internal Opus plan
+    review, not by the originating card, which named only the triage-log call
+    site). A line whose id cannot be extracted degrades to ``ev_id = None``
+    and is neither dropped nor mutated — it is simply invisible to the
+    id-collision warning below, exactly as an unparseable line already was.
+
+    ``isinstance`` FIRST, same load-bearing order as ``sweep_quarantine.py``'s
+    orphan-id check: an id may be any JSON value, and ``[] in {}`` raises
+    ``TypeError: unhashable type`` — testing membership first would crash this
+    function from inside the same canonical-lock caller the RecursionError
+    guard exists to protect (doubt-reviewer finding, Stage 3, this run).
     """
     seen_lines: set[str] = set()
     id_to_line: dict[str, str] = {}
@@ -182,9 +211,9 @@ def dedup_event_lines(lines: list[str]) -> tuple[list[str], list[str]]:
         out.append(line)
         try:
             ev_id = json.loads(line).get("id")
-        except (json.JSONDecodeError, AttributeError):
+        except (AttributeError, ValueError, RecursionError):
             ev_id = None
-        if ev_id:
+        if isinstance(ev_id, str) and ev_id:
             if ev_id in id_to_line and id_to_line[ev_id] != line:
                 warnings.append(
                     f"evt id {ev_id!r} shared by two DISTINCT event lines "

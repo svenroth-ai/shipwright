@@ -1,0 +1,12 @@
+{
+  "items": [
+    {"name": "spec_compliance", "verdict": "pass", "note": "Extraction matches trg-ca82a057 exactly: sweep_outbox.py delegates _op_in_progress/_has_staged_changes to main_tree_guards, no more/no less; _ci_active correctly left untouched (already unified); is_detached asymmetry decided explicitly and documented, not silently aligned either way."},
+    {"name": "error_handling", "verdict": "pass", "note": "N/A boundary-wise (no API routes/DB), but the predicates' own error handling improved: an unrunnable git now fails closed (SweepResult skipped) instead of raising, closing a latent contract violation flagged by both internal and external review and now pinned by 3 new tests."},
+    {"name": "security_basics", "verdict": "n/a", "note": "No user input, no secrets, no auth surface touched — pure internal git-state predicate delegation."},
+    {"name": "test_quality", "verdict": "pass", "note": "All new/retargeted tests assert on outcomes (SweepResult.status/.reason, boolean predicate return) not internal state; happy-path (existing 244) + 3 new error-path (unrunnable git) tests; re-export identity pinned via the canonical _PRIVATE_ALIASES contract table."},
+    {"name": "performance_basics", "verdict": "n/a", "note": "No loops over DB/network calls; predicate git-subprocess call count is unchanged by the delegation."},
+    {"name": "naming_structure", "verdict": "pass", "note": "sweep_outbox.py 270 lines (was under 300 before and after); main_tree_guards.py 159 lines. One pre-existing exception: test_main_tree_git_timeout_paths.py was ALREADY 304 lines before this diff (over the 300 guideline, not in the bloat baseline) and grows to 310 (+6, docstring context + one identity assert) — required for correctness of the retargeted test, not gratuitous; splitting that file is a separate, out-of-scope improvement per F-simplify's scope-to-what-changed principle."},
+    {"name": "affected_boundaries", "verdict": "n/a", "note": "No serialized format (triage.jsonl, outbox, config JSON) touched or changed — pure Python function delegation between two already-existing internal modules. touches_io_boundary risk flag did not fire (confirmed: classify_complexity returned risk_flags=[])."},
+    {"name": "test_hygiene_probe", "verdict": "pass", "note": "uv run shared/scripts/tools/scan_test_hygiene.py --diff -> 'no findings'."}
+  ]
+}

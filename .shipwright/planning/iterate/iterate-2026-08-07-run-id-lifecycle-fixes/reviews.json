@@ -1,0 +1,355 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-08-07-run-id-lifecycle-fixes",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-08T00:57:55.611220+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-08T00:59:57.581603+00:00",
+      "disposition": "external plan/iterate review is medium+ only (SKILL.md Phase Matrix); this small-complexity run has no iterate-spec/mini-plan for it to review, so the row's own --from external-review-json shape does not apply. The operator's explicit requirement (internal Opus review before the external cascade) was satisfied instead by an opus-plan-reviewer pass over an ad-hoc spec+plan pair, verdict PROCEED WITH CHANGES, findings folded into the build (documented in the ADR spec-ref); the external second-opinion requirement was met by the 3-round external CODE-review cascade (external_code row) against the actual diff instead.",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 12,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "security",
+          "file": "shared/scripts/lib/phase_quality/_worktree_identity.py",
+          "line": 87,
+          "finding": "`gitdir.relative_to(worktrees_root)` succeeds when the two paths are EQUAL (Path('/a').relative_to('/a') -> Path('.')), and `.git/worktrees` is a real directory in any repo that has ever had a worktree. So a hand-written `.git` FILE containing `gitdir: <main>/.git/worktrees` in ANY directory passes the identity check and redirects the Stop audit there — the exact spoofing class this function was added (round 3) to close. A strict-descendant check alone is also insufficient: `gitdir: <main>/.git/worktrees/<other-worktree>` names ANOTHER live worktree's admin dir and would still pass.",
+          "suggestion": "Require exactly one level (`gitdir.parent == worktrees_root`) AND verify git's own back-link: `(gitdir / \"gitdir\").read_text()` must resolve to `worktree / \".git\"`. The back-link cannot be forged without write access inside main's `.git`, which closes the whole class. Add a test for `gitdir: <main>/.git/worktrees` (container) and for a foreign-but-sibling worktree admin dir.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "readability",
+          "file": "shared/scripts/lib/phase_quality/_resolution.py",
+          "line": 279,
+          "finding": "`resolve_project_roots(cwd, session_id)` honours `cwd` only for the pointer lookup; `plain_root` comes from `resolve_project_root()`, which reads the REAL process cwd and ignores the parameter entirely. The new unit test documents the divergence in a comment instead of removing it — a caller passing anything other than `Path.cwd()` gets an `audit_root` and a `plain_root` derived from two different directories, silently.",
+          "suggestion": "Drop the `cwd` parameter and bind `cwd = Path.cwd()` inside the function, or thread the value into the plain resolution.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "architecture",
+          "file": "shared/scripts/lib/phase_quality/_resolution.py",
+          "line": 273,
+          "finding": "Lines 273-277 re-implement lib/project_root.py's env-read + validation verbatim — the SSoT for both the greenfield predicate and the resolution priority; a future change there now silently diverges here.",
+          "suggestion": "Resolve plain_root first (it already returns the env path when valid) and detect the env win with project_root_was_explicitly_selected(plain_root) before trying the pointer.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "architecture",
+          "file": "shared/scripts/tools/deliver_pr.py",
+          "line": 320,
+          "finding": "The terminal-exit POLICY is documented at length in run_pointer_retirement.py's module docstring but IMPLEMENTED as a bare tuple literal in deliver_pr.py — the file that pays the bloat cost owns none of the reasoning.",
+          "suggestion": "Expose retire_if_terminal(exit_code, project_root, run_id) in run_pointer_retirement.py; deliver_pr.py's main() then costs 1 line instead of 3.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/scripts/hooks/audit_phase_quality_on_stop.py",
+          "line": 166,
+          "finding": "_gc_best_effort(plain_root) never GCs a redirected run's own worktree findings, so they accumulate un-GC'd for the run's lifetime.",
+          "suggestion": "Also GC audit_root when it differs from plain_root, or correct the 'short-lived' comment.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/scripts/hooks/audit_phase_quality_on_stop.py",
+          "line": 165,
+          "finding": "The stated reason for anchoring regenerate_all_aggregates at audit_root ('otherwise findings would vanish, unread, when pruned') does not follow — the render lands in the same tree that gets pruned. The real gap: main's dashboard never refreshes during a redirected run.",
+          "suggestion": "Render BOTH roots when they differ, or correct the comment.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "security",
+          "file": "shared/scripts/lib/phase_quality/_run_id.py",
+          "line": 178,
+          "finding": "pointer_worktree_root returns the worktree without checking is_shipwright_project(worktree), contradicting the hook's own comment asserting it is inherently valid.",
+          "suggestion": "Add an is_shipwright_project(worktree) guard.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/scripts/lib/run_pointer_retirement.py",
+          "line": 169,
+          "finding": "The 'pointer retirement did not complete' stderr warning fires on every routine no-pointer-exists delivery, not only on a genuine per-file unlink failure — alarm-fatigue risk on F11's stderr.",
+          "suggestion": "Distinguish 'nothing to do' (silent or info) from 'matched but could not unlink' (warn).",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/tests/test_run_pointer_retirement.py",
+          "line": 2434,
+          "finding": "test_best_effort_swallows_errors never actually triggers an exception — it exercises the same normal no-op path as test_retire_run_pointer_no_op_when_absent; deleting the except block would leave it green.",
+          "suggestion": "Monkeypatch to force a raise, then assert False + the diagnostic reached stderr.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "shared/scripts/lib/phase_quality/_worktree_identity.py",
+          "line": 30,
+          "finding": "fast_main_root's docstring claims it returns None for a coincidental nested repo, but the code returns it as main_root (fail-safe, but the docstring states the opposite).",
+          "suggestion": "Correct the docstring.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "architecture",
+          "file": "docs/hooks-and-pipeline.md",
+          "line": 2034,
+          "finding": "~180 of ~270 added lines are review provenance (round-by-round findings/rebuttals) rather than reference material, diluting the doc CLAUDE.md says should hold what/how, not a review changelog.",
+          "suggestion": "Keep the behavioural contract; move round-by-round findings to the iterate ADR spec-ref or PR body.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "performance",
+          "file": "shared/scripts/hooks/audit_phase_quality_on_stop.py",
+          "line": 79,
+          "finding": "resolve_project_roots runs the pointer resolution BEFORE the once-per-Stop claim, so all ~11 fan-out invocations pay a git subprocess + JSON read when cwd is not the main checkout itself.",
+          "suggestion": "Evaluate guards against plain_root, take the claim, resolve the pointer once afterward.",
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": "claude-opus (shipwright-build:code-reviewer)",
+      "completed_at": "2026-08-08T00:58:57.245504+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 8,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "boundary-contract",
+          "file": "shared/scripts/lib/phase_quality/_worktree_identity.py",
+          "line": 87,
+          "finding": "Claim under doubt: is_worktree_of now correctly identifies only a genuine linked worktree, closing the spoofing class round 3 found. — The back-link is resolved against the process CWD, not against the admin dir: `Path(back_link).resolve() == git_entry`. git >= 2.48's worktree.useRelativePaths writes the admin dir's own gitdir back-link relative too — the forward gitdir: line was fixed for exactly this reason, the back-link half was not. Result: is_worktree_of returns False for a genuine relative-gitdir worktree, silently reverting trg-b36fd844's redirect to pre-fix behaviour with no diagnostic. The existing relative-gitdir test wrote its back-link ABSOLUTELY and could not have caught this.",
+          "suggestion": "Resolve (gitdir / back_link) instead of Path(back_link) alone, plus a test whose admin-dir gitdir back-link is itself relative.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "blast-radius",
+          "file": "shared/scripts/lib/run_pointer_retirement.py",
+          "line": 44,
+          "finding": "Claim under doubt: Not retiring on EXIT_NO_MERGER/EXIT_PENDING is bounded and safe, per the module's own documented reasoning. — That reasoning was written against the PRE-redirect consequence (a misattributed run_id string). Post-redirect (this same bundle's fix 2), a stale-but-live pointer misroutes EVERY phase-quality finding write for the rest of the session into a finished run's worktree, not just one id string. The bound cited (worktree.is_dir()) does not shrink because the run's own premise is that worktrees are RETAINED after merge (64 pointers vs ~36 live worktrees).",
+          "suggestion": "Either retire on any exit where the PR is independently observed MERGED/CLOSED, gate the redirect on pointer freshness, or state in writing that a stale-pointer session mis-roots audits for its remaining lifetime and why that is accepted.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "hidden-coupling",
+          "file": "shared/scripts/lib/phase_quality/_resolution.py",
+          "line": 246,
+          "finding": "Claim under doubt: Anchoring the triage backlog write at plain_root avoids corrupting main's tracked backlog from a redirected run's mid-run state. — True for corruption, but it also means plain_root's backlog reads main's LAST pre-redirect findings for the run's whole duration — a FAIL the run fixes keeps being reported, a FAIL it introduces is invisible there. The tail-routing test proves the two roots differ; it proves nothing about main's backlog staying current.",
+          "suggestion": "Name the trade-off explicitly in the docstring/docs, or feed the backlog computation the union of both trees while keeping the write itself at plain_root.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "boundary-contract",
+          "file": "shared/scripts/lib/phase_quality/_staleness.py",
+          "line": 56,
+          "finding": "Claim under doubt: A malformed finding or broken transitive import falls back safely to 'not stale' without side effects. — Safely in the sense of not destroying a finding, yes — but silently. An import/packaging regression in the deferred tools.verifiers import turns trg-b36fd844 into a permanent no-op with every gate still green, and nothing else in this diff's silent-failure surface stays silent (retirement always prints on a non-outcome).",
+          "suggestion": "One stderr diagnostic in the except handler.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "reversibility",
+          "file": "shared/scripts/lib/run_pointer_retirement.py",
+          "line": 103,
+          "finding": "Claim under doubt: Retirement cannot delete the wrong pointer file — 'two pointer files can legitimately name the same run' is the only same-run_id collision case. — run_id = iterate-{date}-{slug} has no uniqueness suffix. A same-day re-run of the same slug (after a CLOSED PR, an abandoned run, or two sessions on one topic) mints an IDENTICAL id. A late-finishing delivery for run A then unlinks the LIVE pointer of a second, unrelated run sharing that id — the D3 re-check cannot catch this since it re-compares run_id, which matches by construction.",
+          "suggestion": "Additionally require the candidate's worktree_path to match the delivering project_root, or its created_at to precede this delivery call; or document the assumption and its narrow reachability.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "boundary-contract",
+          "file": "shared/scripts/lib/context_cost_session.py",
+          "line": 1,
+          "finding": "Claim under doubt: The worktree-identity spoofing class round 3 found is closed. — Closed in phase_quality's own pointer_worktree_root only. context_cost_session.resolve_active_project_root and iterate_stop_finalize._active_worktree_root still accept any .git-bearing directory contained under main via their own separate, looser checks, and both redirect writes off that same pointer field.",
+          "suggestion": "Scope the claim explicitly in docs to phase_quality, or lift is_worktree_of into a shared helper the other two consumers also call.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "reversibility",
+          "file": "shared/scripts/lib/run_pointer_retirement.py",
+          "line": 1,
+          "finding": "Claim under doubt: unlink() was the right choice given the spec offered a reversible flag alternative. — A retired_at flag would give byte-identical resolver behaviour, be idempotent, survive a wrong-run_id invocation harmlessly, stay auditable after the fact, and still be reaped by the existing pruner — with no recorded reason in the docstring for why delete was chosen instead.",
+          "suggestion": "A paragraph recording the reasoning, or switch to the flag.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "performance",
+          "file": "shared/scripts/lib/phase_quality/_worktree_identity.py",
+          "line": 22,
+          "finding": "Claim under doubt: fast_main_root's zero-git fast path closes round 3's performance finding. — It only short-circuits when cwd/.git is itself a directory. A session whose cwd is the worktree itself, or any subdirectory of main, falls through to a git subprocess on each of the ~11 Stop-hook fan-out invocations, all before the once-per-Stop claim.",
+          "suggestion": "Walk up to the nearest .git-directory ancestor before falling back to git, or document the residual cost explicitly.",
+          "source": "doubt-reviewer"
+        }
+      ],
+      "provider": "claude-opus (shipwright-build:doubt-reviewer)",
+      "completed_at": "2026-08-08T00:59:38.968251+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 10,
+      "findings": [
+        {
+          "severity": "low",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "The pointer retirement is triggered only inside `deliver_pr.py` at EXIT_DELIVERED/EXIT_CLOSED. If the delivery script is never run for a finished run (e.g., manual branch deletion without delivery), stale pointers persist and the misattribution bug remains for that session.",
+          "suggestion": "Document this constraint, and consider adding a secondary clean‑up path (e.g., a session‑end sweep) only if the operator’s workflow risk warrants it.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The new `retire_run_pointer` requires a `worktree_path` key in the JSON before unlinking. A pointer file written by an older version of the system that lacks that field (unlikely but possible during upgrade) would be silently skipped, leaving a stale pointer.",
+          "suggestion": "In a follow‑up, fall back to deleting a matching file that otherwise fits the pointer naming/structure conventions if `worktree_path` is absent, after verifying it is not a stray non‑pointer file.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "The pointer‑first project‑root resolution in `audit_phase_quality_on_stop.py` now affects all Stop‑hook phase‑quality audits when a live pointer exists, not just the provisional‑skip re‑audit case. While the existing tests pass and the behaviour is likely an improvement, this is a broader change than strictly required for the defect fix.",
+          "suggestion": "The comprehensive test suite and the explicit handling of the monorepo auto‑descent guard mitigate the risk; no immediate change required, but document the expanded scope in the change log.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "The new `staleness.py` module depends on `has_exact_iterate_entry` (likely from `lib.iterate_history`). The plan does not explicitly call out that this dependency already exists and is reachable from the phase‑quality module’s import chain.",
+          "suggestion": "Verify that the import works in all execution contexts (unit tests, production hooks) and add a comment noting the dependency for future maintainers.  Overall assessment: The implementation is well‑reasoned, has survived multiple rounds of targeted review, and now closes the identified reachability gap. Remaining concerns are low‑severity edge cases or documentation notes that do not block shipping.  SHIPWRIGHT_VERDICT: approve",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "Pointer retirement is explicitly best-effort and swallows unlink failures. If a matching pointer cannot be removed—for example due to permissions, a transient filesystem failure, or a locked file—it remains resolvable and reproduces the original misattribution defect after delivery. A stderr diagnostic makes this observable but does not satisfy the “must stop being resolvable” acceptance criterion.",
+          "suggestion": "Make failed retirement durable rather than merely observable. For example, write a resolver-checked retirement/tombstone state before or alongside unlinking, or have the resolver reject pointers for runs known to have reached a terminal delivery state. If delivery cannot be failed after a merge, queue/retry cleanup and ensure the resolver has a fail-closed terminal-state check.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "Retirement is wired only to `deliver_pr.py` terminal exits. The plan needs to establish that every supported run-ending path—especially F11/F12 paths, externally merged/closed PRs later observed by the tool, abort/cleanup flows, and any alternate delivery command—passes through these two exits. Otherwise retained pointers from those paths remain live for the session.",
+          "suggestion": "Enumerate the terminal lifecycle entry points and either route all of them through `retire_run_pointer` or document and test the single authoritative terminal path. Add at least one regression test for the non-happy-path terminal flow that previously could leave a retained worktree pointer behind.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "Treating every `source=\"error\"` finding as stale creates an unbounded re-audit loop when the underlying hook failure is persistent. This is distinct from the addressed provisional-SKIP loop: every Stop event will run the audit again, emit another error finding, and remain stale indefinitely. The plan calls this “bounded,” but no bound, backoff, or state transition is described.",
+          "suggestion": "Limit retry behavior for error findings, such as retrying once per relevant input/state change, recording an attempt count or timestamp with a backoff, or only retrying when the run ledger/pointer resolution state changes. Preserve the desired recovery behavior without repeatedly executing a known-failing hook on every Stop.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "security",
+          "file": null,
+          "line": null,
+          "finding": "The new pointer-based project-root redirect expands the trust placed in pointer JSON: it can now select the repository tree whose audit data and configuration are read by the Stop hook. “Under the resolved main root” and “`.git`-bearing” must be enforced using canonical paths; lexical-prefix checks can be bypassed by symlinks, and merely finding a `.git` file can accept an unrelated nested repository.",
+          "suggestion": "Ensure `pointer_worktree_root` resolves both paths canonically, verifies containment with path-aware comparison, and confirms the candidate is an actual worktree associated with the resolved main repository/common Git directory (not merely an arbitrary nested Git repository). Add tests for a symlink escaping the main root and for an unrelated nested Git repository.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "Requiring only a `worktree_path` field before deleting a matching JSON file is not a sufficient pointer identity check. A non-pointer JSON in `.shipwright/iterate_active/` containing both `run_id` and `worktree_path` would still be unlinked. This is unlikely in normal operation, but the change performs irreversible deletion.",
+          "suggestion": "Validate the complete expected pointer schema before unlinking, including required session/pointer identity fields and a canonical, valid worktree association with `main_root`. Ignore and diagnose malformed or schema-incompatible JSON rather than deleting it.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "The final full shared-test-suite result is still described as “in flight,” while the acceptance criteria require no regression across the 8600+ suite. The targeted tests are valuable but do not yet establish that criterion.",
+          "suggestion": "Require the final complete suite and bloat gate to complete successfully against the final reachability-redirect revision before merging, since that revision changes Stop-hook project-root selection beyond the initially targeted stale-finding logic.  The core direction is sound: retiring pointers by run ID and making idempotency depend on verdict inputs address the two lifecycle defects directly, and closing the main-root reachability gap was necessary. The remaining work is to make retirement reliable across failures and terminal paths, and to bound the newly introduced error-finding retry behavior. SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-08-08T00:59:48.605712+00:00",
+      "disposition": "3-round cascade (GPT+DeepSeek via OpenRouter); round 1: 2 genuine gaps fixed; round 2: both providers converged on the main-root/worktree reachability gap, fixed in-bundle; round 3 (this payload): deepseek=approve, openai=revise on the pointer-retirement best-effort/observable-not-durable design, accepted-with-reason (documented in run_pointer_retirement.py's own module docstring) rather than fixed. Internal Stage 2/3 re-review after round 3 found and fixed 2 further genuine issues (a worktree-identity spoofing gap and its own back-link bug) not run through a 4th external round, given cost/time — see ADR disposition table.",
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[deepseek] - **Category:** approach  \n  **Severity:** low  \n  **Finding:** The pointer retirement is triggered only inside `deliver_pr.py` at EXIT_DELIVERED/EXIT_CLOSED. If the delivery script is never run for a finished run (e.g., manual branch deletion without delivery), stale pointers persist and the misattribution bug remains for that session.  \n  **Suggestion:** Document this constraint, and consider adding a secondary clean‑up path (e.g., a session‑end sweep) only if the operator’s workflow risk warrants it.\n\n- **Category:** edge-case  \n  **Severity:** low  \n  **Finding:** The new `retire_run_pointer` requires a `worktree_path` key in the JSON before unlinking. A pointer file written by an older version of the system that lacks that field (unlikely but possible during upgrade) would be silently skipped, leaving a stale pointer.  \n  **Suggestion:** In a follow‑up, fall back to deleting a matching file that otherwise fits the pointer naming/structure conventions if `worktree_path` is absent, after verifying it is not a stray non‑pointer file.\n\n- **Category:** approach  \n  **Severity:** low  \n  **Finding:** The pointer‑first project‑root resolution in `audit_phase_quality_on_stop.py` now affects **all** Stop‑hook phase‑quality audits when a live pointer exists, not just the provisional‑skip re‑audit case. While the existing tests pass and the behaviour is likely an improvement, this is a broader change than strictly required for the defect fix.  \n  **Suggestion:** The comprehensive test suite and the explicit handling of the monorepo auto‑descent guard mitigate the risk; no immediate change required, but document the expanded scope in the change log.\n\n- **Category:** dependency  \n  **Severity:** low  \n  **Finding:** The new `staleness.py` module depends on `has_exact_iterate_entry` (likely from `lib.iterate_history`). The plan does not explicitly call out that this dependency already exists and is reachable from the phase‑quality module’s import chain.  \n  **Su […truncated]\n\n[openai] 1. **Category: risk**  \n   **Severity: medium**  \n   **Finding:** Pointer retirement is explicitly best-effort and swallows unlink failures. If a matching pointer cannot be removed—for example due to permissions, a transient filesystem failure, or a locked file—it remains resolvable and reproduces the original misattribution defect after delivery. A stderr diagnostic makes this observable but does not satisfy the “must stop being resolvable” acceptance criterion.  \n   **Suggestion:** Make failed retirement durable rather than merely observable. For example, write a resolver-checked retirement/tombstone state before or alongside unlinking, or have the resolver reject pointers for runs known to have reached a terminal delivery state. If delivery cannot be failed after a merge, queue/retry cleanup and ensure the resolver has a fail-closed terminal-state check.\n\n2. **Category: dependency**  \n   **Severity: medium**  \n   **Finding:** Retirement is wired only to `deliver_pr.py` terminal exits. The plan needs to establish that every supported run-ending path—especially F11/F12 paths, externally merged/closed PRs later observed by the tool, abort/cleanup flows, and any alternate delivery command—passes through these two exits. Otherwise retained pointers from those paths remain live for the session.  \n   **Suggestion:** Enumerate the terminal lifecycle entry points and either route all of them through `retire_run_pointer` or document and test the single authoritative terminal path. Add at least one regression test for the non-happy-path terminal flow that previously could leave a retained worktree pointer behind.\n\n3. **Category: edge-case**  \n   **Severity: medium**  \n   **Finding:** Treating every `source=\"error\"` finding as stale creates an unbounded re-audit loop when the underlying hook failure is persistent. This is distinct from the addressed provisional-SKIP loop: every Stop event will run the audit again, emit another error finding, and remain stale ind […truncated]",
+      "verdicts": {
+        "openai": "revise",
+        "deepseek": "approve"
+      }
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": "claude-opus (shipwright-build:spec-reviewer)",
+      "completed_at": "2026-08-08T00:58:01.151802+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    }
+  }
+}
