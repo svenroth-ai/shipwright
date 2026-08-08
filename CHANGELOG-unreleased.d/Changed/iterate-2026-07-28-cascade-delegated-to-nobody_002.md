@@ -1,1 +1,0 @@
-campaign-mode.md no longer claims the orchestrator spawns the reviewer cascade 'in parallel with the runner after Build'. That window does not exist — the orchestrator blocks on the runner's terminal marker, which arrives after commit and push — so the doc now states that runner-built sub-iterates get the external review only.

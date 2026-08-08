@@ -1,1 +1,0 @@
-Triage sweep: a glued drift line on main's tracked triage log now refuses with a named remedy (triage_repair.py, plus the commit step it needs) instead of an unescapable 'not a triage producer event' stall.

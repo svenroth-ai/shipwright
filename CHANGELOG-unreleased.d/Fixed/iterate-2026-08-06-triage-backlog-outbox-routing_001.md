@@ -1,1 +1,0 @@
-A background producer's uncommitted `.shipwright/triage.jsonl` no longer aborts an iterate's pre-merge refresh: `ensure_current` absorbs the dirty tracked log into its own path-scoped commit before every merge attempt, so the existing churn resolver reconciles a genuine divergence instead of `git merge` refusing outright.

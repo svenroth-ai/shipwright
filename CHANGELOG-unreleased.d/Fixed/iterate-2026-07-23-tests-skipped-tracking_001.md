@@ -1,1 +1,0 @@
-D4 no longer reports an FR as landing in a failing build when its latest covering event merely skipped host-gated tests; the detective is re-enabled on the framework monorepo now that its false-positive root cause is fixed.

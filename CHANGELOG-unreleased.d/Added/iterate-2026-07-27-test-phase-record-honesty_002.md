@@ -1,1 +1,0 @@
-Every non-blocking test layer now leaves a follow-up that outlives the session. Browser tests, cross-page consistency and screen-vs-mockup fidelity join the performance budget, deduplicated on the finding rather than the commit so a long-standing failure stays one item instead of multiplying.

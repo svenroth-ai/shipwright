@@ -1,1 +1,0 @@
-The grant is explicitly scoped to reviewers: dynamic workflows, deep-research and parallel implementation subagents still need an explicit go-ahead every time, and a negative test asserts the section never affirmatively grants fan-out.

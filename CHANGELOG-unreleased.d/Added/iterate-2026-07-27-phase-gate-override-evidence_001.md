@@ -1,1 +1,0 @@
-The generated session handoff now carries a `## Pipeline Phases` block stating which phases are finished, which one was interrupted (a phase that merely started is not counted as finished), and which phase task the orchestrator had dispatched — rendered from state the run already holds, and absent entirely for projects without a phase-task pipeline

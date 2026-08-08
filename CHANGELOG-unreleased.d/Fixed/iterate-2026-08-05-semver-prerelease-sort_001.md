@@ -1,1 +1,0 @@
-Plugin-cache version-directory comparison now ranks a SemVer release (e.g. 1.0.0) above a prerelease of the same version (e.g. 1.0.0-rc1), in both the shared helper and its vendored SessionStart hook mirror

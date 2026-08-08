@@ -1,1 +1,0 @@
-A repair of the shared branch may never make a test ask for less. Removing an assertion, deleting a test, switching one off, or renaming it out of collection is refused locally and again on the code host, using a copy of the rule the proposed change cannot edit.

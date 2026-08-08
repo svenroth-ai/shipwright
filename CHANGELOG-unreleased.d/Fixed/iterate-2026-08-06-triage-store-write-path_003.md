@@ -1,1 +1,0 @@
-apply_gc writes durably: both the log and its .bak now go through durable_atomic_write (Windows sharing-violation retries + a parent-directory fsync) and derive from a single read, and the .bak is byte-identical to what it backs up — an LF log's backup previously came back CRLF, so the recovery artifact was not a copy of the thing it backed up (audit finding 9).

@@ -1,1 +1,0 @@
-The check that keeps generated compliance documents out of a pull request no longer passes blind: it reads what the whole branch changed instead of only the last commit, so files that slipped in earlier are caught.

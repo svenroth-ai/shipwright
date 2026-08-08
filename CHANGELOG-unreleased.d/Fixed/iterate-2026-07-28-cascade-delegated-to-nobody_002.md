@@ -1,1 +1,0 @@
-A campaign sub-iterate records each review pass under the name of whoever performed it: the external review as external_code, the delegated internal cascade as not_run with the capability limit spelled out. Previously one marker closed `code` as completed on the strength of the external run, so the record claimed an internal review that never happened.

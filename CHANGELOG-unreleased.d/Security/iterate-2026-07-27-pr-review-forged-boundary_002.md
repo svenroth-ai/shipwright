@@ -1,1 +1,0 @@
-PR review: the prompt template is filled in a single pass and rejects a missing placeholder, so a file legally named `{DIFF}` can no longer push the whole diff outside the block the reviewer is told to distrust. Path names rendered to the model and to the PR comment are code-spanned, length-bounded, and stripped of control, bidi and zero-width characters.

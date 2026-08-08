@@ -1,1 +1,0 @@
-Pending entries left over from the older way of writing release notes are now reported however the pending-section heading is capitalised; a lower-case spelling used to be silently skipped, so the operator was never told those entries were being left behind.

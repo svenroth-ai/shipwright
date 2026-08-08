@@ -1,1 +1,0 @@
-Reading the triage store no longer crashes on an interrupted append: `read_text_verbatim`, `has_header`, `append_quarantine` and the reconcile read decode with `surrogateescape`, matching the reader that already documented why. `ends_without_newline` now fails closed, so an I/O error can no longer be read as "safely appendable" and concatenate two records onto one line.

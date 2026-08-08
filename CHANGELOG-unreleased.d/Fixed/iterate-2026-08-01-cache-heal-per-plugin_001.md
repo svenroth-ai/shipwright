@@ -1,1 +1,0 @@
-The SessionStart plugin-cache self-heal now repairs a *partially* reaped cache. Both the shared/ tree and the 14 cross-plugin mirrors were judged from a single sentinel file each, so a reap that left that one file standing read as healthy and was never repaired — the exact failure the hook exists to catch. Each tree is now compared file-by-file against its repair source.

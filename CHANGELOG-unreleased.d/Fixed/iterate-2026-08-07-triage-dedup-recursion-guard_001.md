@@ -1,1 +1,0 @@
-A deeply-nested triage/events log line no longer crashes the canonical triage lock (RecursionError from json.loads is now caught in dedup_triage_lines and dedup_event_lines, degrading the line to unparseable/no-id instead of propagating)

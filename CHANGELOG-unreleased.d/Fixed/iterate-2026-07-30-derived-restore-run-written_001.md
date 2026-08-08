@@ -1,1 +1,0 @@
-An iterate's own test ledger (`shipwright_test_results.json`) is no longer wiped by the F11 integration: it is carried across the merge instead of reset to HEAD, so the run's evidence survives a merge, an abort, and a mainline deletion.

@@ -1,1 +1,0 @@
-Inline-suppression anti-ratchet: `shipwright_inline_suppressions.json` freezes a per-rule `max_sites` for `# nosemgrep` suppressions, each citing a recorded decision. A rule that gains a site, arrives unrecorded, is suppressed nowhere, or sits in an unreadable file blocks in CI; a shrinking count is advisory. Operator front-end: `shared/scripts/tools/inline_suppressions_cli.py`.

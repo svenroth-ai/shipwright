@@ -1,1 +1,0 @@
-Re-running a release no longer adds a second entry for the same version. The changelog is written before the pending entries are cleared, so a release interrupted in between used to leave both behind and produce a duplicate section; it now updates the entry already there and clears the pending items.

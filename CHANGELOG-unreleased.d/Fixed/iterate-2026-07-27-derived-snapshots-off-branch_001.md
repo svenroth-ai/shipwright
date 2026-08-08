@@ -1,1 +1,0 @@
-Parallel change-runs no longer block each other at merge time. The generated compliance and dashboard views are now produced from the main branch after a change lands, instead of each run committing its own copy — those copies were both the sole cause of the conflicts and, because they were computed from a partial view of history, wrong about the project.

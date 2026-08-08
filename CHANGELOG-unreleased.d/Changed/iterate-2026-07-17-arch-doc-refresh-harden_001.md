@@ -1,1 +1,0 @@
-Refreshed the project architecture.md: a portability-hardened System-Overview Mermaid diagram (renders in strict/older renderers) and a Data Flow section restructured into Plugins + GitHub subsections.

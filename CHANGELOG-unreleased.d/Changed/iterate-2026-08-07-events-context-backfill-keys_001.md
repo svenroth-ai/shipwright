@@ -1,1 +1,0 @@
-events-context-index.json now backfills commit/changed_files from git history (Run-ID: commit trailer) and recomputes area_ids from them, replacing the unused extraction field with per-field provenance and a coverage summary

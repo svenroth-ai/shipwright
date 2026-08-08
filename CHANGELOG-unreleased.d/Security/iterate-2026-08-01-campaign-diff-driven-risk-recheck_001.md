@@ -1,1 +1,0 @@
-iterate campaign mode: a sub-iterate that touches the CI trust boundary now stops and hands back to an operator instead of proceeding. Renaming a workflow out of the boundary is caught too — git reports only the new path by default, so disabling a security workflow by renaming it previously raised nothing.

@@ -1,1 +1,0 @@
-The integration-coverage gate no longer credits another run's integration test. Its fallback to the shared test-results file is now checked against the run it belongs to, matching the three sibling checks that already did so -- on a branch behind main that file is restored to the trunk's copy, so an unattributed read saw the previous run's ledger.

@@ -1,1 +1,0 @@
-/shipwright-plan: a malformed SECTION_MANIFEST — duplicate section ids, an invalid dependency id, or an empty dependency entry — now reports the offending line and fails, instead of the surviving entries being able to report success.

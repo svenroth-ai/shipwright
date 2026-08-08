@@ -1,1 +1,0 @@
-One versioned requirement-model contract (id / status / required-layers + provenance / spec-path namespace) to be shared by spec_parser, the compliance RTM collector, the future test_links collector, and Group D.

@@ -1,1 +1,0 @@
-Two iterates running in parallel that each add an architecture decision no longer block each other. The generated ADR index is now reconciled automatically when their branches merge — both entries survive, rebuilt from the merged folder — instead of stopping the merge and waiting for someone to resolve it by hand.

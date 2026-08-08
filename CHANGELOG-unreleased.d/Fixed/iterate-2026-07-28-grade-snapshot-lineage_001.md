@@ -1,1 +1,0 @@
-Control-Grade snapshots now record which tree they were measured in (lineage, branch, and the merge-base with the default branch), so a grade trend can be filtered to one lineage instead of mixing measurements from different worktrees into a single misleading series.

@@ -1,1 +1,0 @@
-The local verification step reports a new outcome when coverage is short, separate from a failing test, and says what to do about it — including when the lines ARE covered by tests that only skip on this machine. The CI check stays in place as the final word.

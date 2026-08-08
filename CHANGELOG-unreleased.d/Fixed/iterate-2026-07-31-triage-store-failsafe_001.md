@@ -1,1 +1,0 @@
-The triage outbox sweep no longer deletes an append made while it commits: the GC survivor set is computed from a re-read taken after the commit window, not from the read taken before it. The window spans the drift adoption's own write, `git add`, `git diff --cached` and a `git commit` budgeted 120 s, and the sweep previously reported success while losing the line.

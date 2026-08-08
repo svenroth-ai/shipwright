@@ -1,1 +1,0 @@
-A pull request no longer stays blocked by a code review the automated reviewer has already withdrawn. When its later review passes, the reviewer now retracts its own earlier change-requests about commits that are no longer there — previously those stayed on the pull request forever, holding it back with every check green and nothing on the page saying why.

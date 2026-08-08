@@ -1,1 +1,0 @@
-A panel-verified traceability test-harness/fixture package: a tagged mini-repo, base/head diffs (incl. a pure-refactor green case), execution-evidence (incl. a skipped sample), a stubbed record/replay LLM adapter, predeclared decisions, and schema-pinned golden snapshots.

@@ -1,1 +1,0 @@
-update-marketplace.sh now verifies the marketplace clone reached origin/main's true tip before syncing files, closing a race where a 'successful' sync could leave recently-landed files missing from the plugin cache

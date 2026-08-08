@@ -1,1 +1,0 @@
-/shipwright-plan: section files declare the requirements they serve on a `Requirements:` line. Ids must be written in full — a typo like `FR-01.01x` is reported as a linkage error rather than silently counted as coverage for `FR-01.01`.

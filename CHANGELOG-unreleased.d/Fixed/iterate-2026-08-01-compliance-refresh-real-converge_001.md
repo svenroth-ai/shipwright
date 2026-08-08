@@ -1,1 +1,0 @@
-The refresh's own test run no longer depends on whether the machine has a logged-in `gh` CLI. Its producer subprocess inherited the working directory and was reading the real repository over the network, which made one assertion pass locally and fail in CI.

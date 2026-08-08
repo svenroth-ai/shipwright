@@ -1,1 +1,0 @@
-Triage outbox GC: a decision line that was re-written in a cosmetically different form can be cleaned up again instead of sitting in the local buffer forever, which had let that buffer grow without bound or signal (audit finding 27).

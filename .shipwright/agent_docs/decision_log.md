@@ -4377,3 +4377,258 @@ shipwright/
 - **Consequences:** The gap is pinned in both directions so it can neither drift nor silently re-green. The CLI reports coverage (61 of 342, 18 percent) beside every answer and points at the commit log for what it cannot account for. The catalog's false claim of complete coverage is removed. Retired requirements stay answerable; amendment folding is pinned to the compliance collector's.
 - **Rejected:** Writing reconciliation events for the three missing run ids (forges the audit trail; amending D4/S7 is an operator decision). Unioning git log --grep into the query (scope creep). An event-schema alias field for ADR-030 (invents a mapping the data lacks). Rendering into the RTM (churn artifact on the final campaign PR).
 - **Details:** [110-change-history-as-a-derived-view.md](../planning/adr/110-change-history-as-a-derived-view.md)
+
+---
+
+### ADR-329: Per-role model tiers for spawned subagents, resolved by flag > project config > unset
+- **Date:** 2026-08-08
+- **Section:** Iterate — change: agent model tiers
+- **Run-ID:** iterate-2026-08-07-agent-model-tiers
+- **Context:** Agent frontmatter is model: inherit, so subagents silently follow a dropped session tier -- including the review cascade and F0-F11 drivers -- with no record of what tier ran.
+- **Decision:** Optional shipwright_model_config.json (review/finalization/execution roles) + per-run flags, precedence flag > project config > unset; unset is bit-identical to today. Resolved tier threaded through every in-scope spawn and recorded (self-report) in reviews.json; F11 gets a non-blocking floor note.
+- **Commit:** (assigned post-merge)
+- **Rationale:** The defect is the silence, not the tier -- per-role split matches the operator's stated need to move review independently of finalization/execution.
+- **Consequences:** Additive-only, no frontmatter changed (11 files drift-tested); unconfigured runs are byte-identical to today; configured runs get independent per-role control and an honest, non-blocking record of what each pass reports having run on.
+- **Rejected:** Frontmatter pinning (abandoned once already -- forecloses operator choice) and a flat single-flag/env-var design (both external reviewers proposed it; already considered and rejected in the mini-plan's own Alternative Approach section, reconciled per iteration-planning.md's revise-is-not-a-stop rule).
+- **Details:** [127-agent-model-tiers-per-role-tiers.md](../planning/adr/127-agent-model-tiers-per-role-tiers.md)
+
+---
+
+### ADR-330: Backfill events-context-index keys from git history (Run-ID trailer only)
+- **Date:** 2026-08-08
+- **Section:** Iterate — change: events-context-index selection-key backfill
+- **Run-ID:** iterate-2026-08-07-events-context-backfill-keys
+- **Context:** Selection keys in events-context-index.json were mostly empty (23% area_ids, 9% commit), making relevance ranking mostly a no-op. Root cause was the write-side commit field being empty by design, not a stale extraction path.
+- **Decision:** Backfill commit/changed_files via the existing Run-ID: commit trailer only (two git log walks per build, not per-event); recompute area_ids via existing match_area; replace extraction with provenance+coverage; bump schema 1->2.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Two external reviewers split (revise/reject) on a broader ADR:/Area:/FR: trailer brief; delegated internal Opus arbitration read F5b.md, found the write-side-fix premise disproven (commit does not exist yet when the event is written), and found zero consumers for the other trailers.
+- **Consequences:** Ranking now has real signal for any event whose run_id resolves to a reachable commit. No new authoring convention added; zero migration needed for future commits.
+- **Rejected:** Write-side fix (disproven by F5b ordering); ADR:/Area:/FR: trailers (zero consumers); ADR-graph-derived supersedes (no such graph exists); a one-off migration script (build_index already rebuilds from scratch).
+- **Details:** [127-events-context-backfill-keys.md](../planning/adr/127-events-context-backfill-keys.md)
+
+---
+
+### ADR-331: Route gate_policy's config read through durable_read_text
+- **Date:** 2026-08-08
+- **Section:** Iterate — bug: gate_policy read-leg retry parity (P2.41a)
+- **Run-ID:** iterate-2026-08-07-gate-policy-durable-read-parity
+- **Context:** gate_policy.read_run_config_mode used a plain Path.read_text while config_io._read_parse_shape retries via durable_read_text past a Windows delete-pending PermissionError, so the two readers could disagree about run mode mid-rewrite (P2.41a, tail of P2.41 / PR #585).
+- **Decision:** Import lib.atomic_write.durable_read_text at module level, matching the other shared/scripts/lib siblings, and read the config through it; the existing fail-safe except tuple is unchanged.
+- **Commit:** (assigned post-merge)
+- **Rationale:** A lazy call-time import with an ImportError catch was tried first but rejected by doubt review: it silently traded the only diagnostic signal for a misreport indistinguishable from a legitimate INERT_MODE, contradicting every sibling import's loud-on-failure precedent.
+- **Consequences:** The two readers now agree under an identical simulated Windows race, within the retry budget; read_run_config_mode can block up to READ_RETRY_BUDGET_SECONDS under contention, the accepted cost of parity.
+- **Rejected:** Routing gate_policy through orchestrator_pkg.run_config_store (shared can't import a plugin); the lazy import + ImportError catch (doubt-reviewer D-1, superseded).
+- **Details:** [plan.md](../planning/iterate/iterate-2026-08-07-gate-policy-durable-read-parity/plan.md)
+
+---
+
+### ADR-332: Retry byte-range-locked reads; delegate _PhaseTasksLock to shared FileLock
+- **Date:** 2026-08-08
+- **Section:** Iterate — change: lock-primitive tail fixes
+- **Run-ID:** iterate-2026-08-07-lock-primitive-tail
+- **Context:** P2.19d fixed two lock-wait copies but scoped a third out; separately its read retry predicate missed errno-only PermissionError (winerror=None) from byte-range locks, since CPython's _dosmaperr collapses several WinError causes onto EACCES.
+- **Decision:** Added opt-in retry_none_winerror on the read-path retry predicate; delegated _PhaseTasksLock to file_lock.FileLock at run_config_store.lock_path with the shared bounded timeout.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Follows the shared-primitive pattern P2.19d established for the other two lock copies; avoids a third literal reimplementation of wait/timeout mechanics.
+- **Consequences:** Byte-range-locked reads now retry instead of raising. Phase-task lock waits are bounded and same-thread reentrant via the shared registry; all 6 lock-taking functions convert LockTimeout to a retryable ok:false result.
+- **Rejected:** Extracting retry logic into a new module now (breaks 3 tests' direct module monkeypatching); leaving the third lock copy as-is (repeats the exact duplication P2.19d fixed elsewhere).
+
+---
+
+### ADR-333: Wire opus-plan-reviewer into /shipwright-plan Step 5
+- **Date:** 2026-08-08
+- **Section:** Iterate -- change: plan-reviewer-wiring
+- **Run-ID:** iterate-2026-08-07-plan-reviewer-wiring
+- **Context:** opus-plan-reviewer existed since the plugin's history with no caller (verified by grep). The plan review gate previously relied on self-assessment alone whenever external review was unavailable (missing keys, or disabled by config).
+- **Decision:** Step 5-int now always spawns opus-plan-reviewer before branching; a new Pre-5b Checkpoint runs the Self-Review Fallback only when neither the internal review nor a completed external review exists.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Internal review is cheap (Opus subagent, no external key dependency) and closes a dead-registry-entry defect while leaving model-tier configuration out of scope (trg-88621183).
+- **Consequences:** Self-assessment-only gating is eliminated on Branch B/C. Findings triage fix/disclose/decline, decline needs a recorded reason; gate_catalog gained plan.internal-review-high-severity-declined for the STOP-and-ask escalation.
+- **Rejected:** Leaving self-review as the sole fallback (does not satisfy never-gated-by-self-assessment-alone); pinning a model tier here (belongs to trg-88621183).
+
+---
+
+### ADR-334: Retire pointers by run_id; re-audit stale provisional verdicts
+- **Date:** 2026-08-08
+- **Section:** Iterate — change: run-id pointer lifecycle fixes
+- **Run-ID:** iterate-2026-08-07-run-id-lifecycle-fixes
+- **Context:** A retained post-merge worktree kept a finished run's pointer resolvable (trg-276994a4); a provisional unresolvable-run-id SKIP froze forever once the run's own ledger entry later appeared (trg-b36fd844).
+- **Decision:** F11 retires every pointer file matching a delivered/closed run_id; already_audited() re-audits a stale SKIP or error finding once the run's ledger entry or crash cause resolves; the Stop-hook redirects to the run's own worktree via a verified pointer so the re-audit trigger is reachable.
+- **Commit:** (assigned post-merge)
+- **Rationale:** 3-round external code-review cascade (GPT+DeepSeek) plus an internal Opus plan review and Stage 1-3 cascade converged independently on the same reachability gap; run_id (not session_id) keys retirement because the session env var is not guaranteed to reach the delivery subprocess.
+- **Consequences:** Pointer misattribution and frozen provisional verdicts stop after this run; the Stop hook now trusts a git-verified worktree identity (gitdir back-link) rather than a lexical path check; main's own dashboard renders on every Stop even during a redirected run.
+- **Rejected:** A retired-flag instead of unlink() (no reconciliation benefit over the existing scan-every-file design); durable failure-tracking for retirement (materially larger than either fix); rooting every phase-quality audit at the worktree unconditionally (would have widened scope well beyond these two defects).
+- **Details:** [127-run-id-lifecycle-fixes.md](../planning/adr/127-run-id-lifecycle-fixes.md)
+
+---
+
+### ADR-335: Merge sweep_outbox's duplicate git-state predicates into main_tree_guards
+- **Date:** 2026-08-08
+- **Section:** Iterate — change: shared-op-predicates
+- **Run-ID:** iterate-2026-08-07-shared-op-predicates
+- **Context:** sweep_outbox.py and reconcile_triage.py each carried near-identical _op_in_progress/_has_staged_changes predicates; reconcile_triage's copies already lived in shared lib.main_tree_guards, used by 2 other callers.
+- **Decision:** Deleted sweep_outbox's local copies, re-exported main_tree_guards.op_in_progress/has_staged_changes under sweep_outbox's own historical private names. Kept the is_detached asymmetry: sweep_outbox deliberately does not import it, reasoned in the module docstring.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Mechanical dedup — both predicates already took a root path param. Verified behavior-preserving except the deliberate OSError widening via behavior_snapshot + a full review cascade (internal Opus plan, external OpenAI/DeepSeek plan, code, doubt).
+- **Consequences:** Predicates now fail closed on a git OSError (widened from raising uncaught) instead of raising; pinned by 3 new tests. sweep_outbox's 3 other bare run_git_soft call sites (add/diff/commit) are untouched, tracked separately under trg-fd3fa3c1's fail-open family.
+- **Rejected:** Renaming main_root to root (external review flagged as unrelated scope creep beyond a mechanical extraction; reverted). Adding is_detached to sweep_outbox (asymmetric risk: a lost worktree commit there is a wasted commit, not lost data, given the outbox's durable write-order).
+
+---
+
+### ADR-336: Recognise, never adopt, a glued drift line
+- **Date:** 2026-08-08
+- **Section:** Iterate — change: name the escape in the adoption gate's glued-line refusal
+- **Run-ID:** iterate-2026-08-07-triage-adopt-glued-refusal
+- **Context:** The adoption gate (_is_producer_event) parses one json.loads per drift line; its sibling PROTECTION parser (append_ids_of) was widened to record-boundary recovery in P2.19b/AC14. A glued line now refuses main_tracked_unparseable with no remedy named, stranding the whole outbox sweep every run.
+- **Decision:** Add _is_glued_producer_line (record-boundary recovery, backward resync) to tell a glued-but-recoverable line apart from genuine corruption in the refusal REASON only. Adoption still never moves a glued line — only the message changes. Both codes now name triage_repair.py and the commit step it requires.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Mirrors P2.19b's precedent for the PROTECTION parser without widening what adoption is willing to move: recognising glue only changes the message, never the mutation, preserving the module's byte-for-byte verbatim-adoption invariant.
+- **Consequences:** DriftPlan.reason gains main_tracked_glued_line; DriftResult.reason gains main_tracked_salvage_glued_line on the sibling restore path. No change to what bytes get adopted or moved.
+- **Rejected:** Recover and re-serialize the glued records into the outbox (breaks the byte-for-byte invariant for the first time); leaving the salvage-restore sibling site unfixed (Stage-3 doubt review found it reports sweep SUCCESS with an unnamed remedy for the identical shape).
+
+---
+
+### ADR-337: Widen best-effort JSON parse boundaries to catch RecursionError (and TypeError)
+- **Date:** 2026-08-08
+- **Section:** Iterate — bug: triage/churn RecursionError guard
+- **Run-ID:** iterate-2026-08-07-triage-dedup-recursion-guard
+- **Context:** A deeply-nested triage/events JSONL line raises RecursionError from json.loads, uncaught inside the canonical triage file lock (sweep_outbox_to_branch), crashing setup_iterate_worktree.py Step 5 mid-lock.
+- **Decision:** Widen the except tuples of triage_dedup._parsed_append and churn_merge.dedup_event_lines to catch RecursionError (and TypeError, non-str ids), matching the total-parse contract sweep_canon.canonical_form already establishes.
+- **Commit:** (assigned post-merge)
+- **Rationale:** jsonl_records.py already documents and catches this exact failure mode at two call sites; this run extends the same established pattern to the sites missed during the triage_dedup.py extraction, plus a second call site found by internal review.
+- **Consequences:** A pathological line now degrades to unparseable/no-id instead of crashing; nothing is dropped; the lock is provably released. Four sibling json.loads readers of the same events log still lack the guard (deferred, trg-acc195bf).
+- **Rejected:** TEIL 1 (draining superseded outbox appends) explicitly excluded — three prior attempts deleted after review, zero measured benefit. Broad except Exception rejected as masking real bugs (see mini-plan).
+- **Details:** [2026-08-07-triage-dedup-recursion-guard.md](../planning/iterate/2026-08-07-triage-dedup-recursion-guard.md)
+
+---
+
+### ADR-338: Windows CI: single provisioning + shared/tests xdist, plus Administrators-owner ACL fix
+- **Date:** 2026-08-08
+- **Section:** Iterate — change: windows-tests.yml perf + ACL owner-check bugfix
+- **Run-ID:** iterate-2026-08-07-windows-ci-perf
+- **Context:** windows-tests.yml took 24-28min at 2x billing (no xdist, 3x provisioning); trg-eed74a42 (two Windows-only F0 defects) root-caused to one cause: _windows_acl.py's owner check rejected BUILTIN\Administrators-owned LOCALAPPDATA, which is how windows-latest provisions runneradmin's profile.
+- **Decision:** Single uv run provisioning wraps all 3 dirs; -n 4 xdist scoped to shared/tests only (mirrors the suite.xdist allowlist inclusion). _windows_acl.py's owner check now also accepts a narrow _TRUSTED_OWNER_SIDS set (LocalSystem, Administrators), split into a new ctypes-free _windows_acl_trust.py sibling module so the regression tests run in the required Linux gate.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Owner-assignment requires SeRestorePrivilege absent SeRestorePrivilege a non-admin cannot forge the trusted owner SIDs, so the widened branch is unreachable by the low-privilege-sibling threat this check guards against; an adversary who can reach it is already a local admin who defeats the check via SeTakeOwnershipPrivilege regardless.
+- **Consequences:** Predicted 10-14min (down from 24-28); both previously-deselected tests now run un-deselected. Two new source files (_windows_acl_trust.py, test_windows_acl.py, the latter split from test_host_resource_locking.py at the 300-line bloat gate).
+- **Rejected:** Routing through run_test_suite.py (folds in unwanted F0-specific machinery); dropping the push trigger (larger lever, explicitly out of scope); removing the owner check entirely (removes real hardening); token-membership-only trust (adds ctypes token-group enumeration for a security delta already closed by privilege).
+- **Details:** [2026-08-07-windows-ci-perf.md](../planning/iterate/2026-08-07-windows-ci-perf.md)
+
+---
+
+### ADR-339: Verify marketplace clone reaches origin/main's tip unconditionally
+- **Date:** 2026-08-08
+- **Section:** Iterate — bug: marketplace clone freshness
+- **Run-ID:** iterate-2026-08-08-cache-sync-add-detection-gap
+- **Context:** update-marketplace.sh trusted a successful 'claude plugin marketplace update' exit code blindly, so a stale clone could leave recently-landed files missing from the cache after a reported-clean sync.
+- **Decision:** Cross-check the clone HEAD against git ls-remote origin/main after Step 1 regardless of which branch ran, and force a hard fetch+reset when they disagree, before any file copy.
+- **Commit:** (assigned post-merge)
+- **Rationale:** The prior code only verified freshness in the SSH-failure fallback branch, never on the CLI happy path, which is opaque to this script.
+- **Consequences:** One extra lightweight ls-remote per sync; closes the race without changing the file-copy logic itself.
+- **Rejected:** Trusting the CLI exit code as sufficient (status quo, reproduced the bug); always forcing a full fetch+reset regardless of freshness (unneeded network cost on every run).
+
+---
+
+### ADR-340: Split coverage.fields.<key>.unavailable into not_applicable / missing
+- **Date:** 2026-08-08
+- **Section:** Iterate — bug: coverage envelope not_applicable/missing split
+- **Run-ID:** iterate-2026-08-08-coverage-envelope-split
+- **Context:** coverage.fields.<key>.unavailable conflated two populations: entries that structurally cannot carry a selection key vs. work_completed entries whose commit-trailer join found no match, hiding a real 95% fill rate behind a misleading 58%.
+- **Decision:** Split unavailable into not_applicable (no run_id/commit linkage) and missing (linked but unresolved); eligibility is derived per-entry from the data, never a hardcoded event-type list. Per-entry provenance stays unchanged.
+- **Commit:** (assigned post-merge)
+- **Rationale:** supersedes_event_id and area_ids both lack an independent eligibility signal and false-alarmed under uniform eligibility; MISSING_ELIGIBLE_FIELDS is scoped to fields with real join semantics. Landmines detailed in spec-ref.
+- **Consequences:** Operators see the real work_completed fill rate instead of a conflated one; selection ranking (_score) is unaffected -- reporting-only. Full rationale + external-review disposition table in spec-ref.
+- **Rejected:** Uniform eligibility across all fields (503/831 false missing on supersedes_event_id); including area_ids in MISSING_ELIGIBLE_FIELDS (re-created the empty-diff false alarm); lexicographic-by-id truncation. Detail in spec-ref.
+- **Details:** [128-coverage-envelope-not-applicable-missing-split.md](../planning/adr/128-coverage-envelope-not-applicable-missing-split.md)
+
+---
+
+### ADR-341: ADR spec-folder files named by run_id; decision_log.md readers go index-first
+- **Date:** 2026-08-08
+- **Section:** Iterate — bug: index-readers-adr-lock
+- **Run-ID:** iterate-2026-08-08-index-readers-adr-lock
+- **Context:** Numeric spec-folder filenames guessed at branch time collided (15 files/6 numbers across parallel iterates); four skills promised a complete decision_log.md read a single 2000-line-capped Read call cannot deliver.
+- **Decision:** Name new .shipwright/planning/adr/ files <run_id_sanitized>-<slug>.md (collision-proof, no allocator); the four readers go index-first via decision_log_index.md with a named grep/offset fallback.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Both external reviewers rejected/revised a claim-time allocator on proportionality grounds; the operator's own question (why number at branch time at all, when decision_log.md already defers this to release) led to the simpler, allocator-free design.
+- **Consequences:** No new spec file claims a numeric ADR-NNN in filename or heading; decision_log.md's own release-assigned numbering is unaffected. 15 existing colliding files left unrenamed, reported for the operator.
+- **Rejected:** Claim-time allocator (lock+watermark, 11 bugs fixed then rejected on approach); merge-time blocking check (both reviewers' fallback, superseded); leave convention as-is with only a post-hoc guard.
+- **Details:** [iterate-2026-08-08-index-readers-adr-lock-spec-folder-naming.md](../planning/adr/iterate-2026-08-08-index-readers-adr-lock-spec-folder-naming.md)
+
+---
+
+### ADR-342: Coverage-declaration check for the spec.md mandated-load read (TC3.2)
+- **Date:** 2026-08-08
+- **Section:** Iterate — bug: mandated-load truncation is declared, not silent
+- **Run-ID:** iterate-2026-08-08-mandated-load-truncation-report
+- **Context:** TC3.2 (trg-c0d83dce): a mandated read-completely instruction silently breaks once a file exceeds the single-Read 2000-line cap. TC3.2a (#608, bf2efc95) already fixed decision_log.md via an index; the one remaining unindexed instance is the .shipwright/planning/*/spec.md mandate.
+- **Decision:** Added a small shared helper (check_coverage + a thin CLI, check_mandated_load_coverage.py) reporting each mandated file against the cap. Wired it into the spec.md mandate in shipwright-iterate and shipwright-project: read within cap normally, or declare a partial read instead of proceeding silently.
+- **Commit:** (assigned post-merge)
+- **Consequences:** Truncated mandated spec.md loads are now a declared fact. decision_log.md wording is untouched (TC3.2a's surface, already dismissed separately). The same unqualified mandate still exists in shipwright-design Step 1 and shipwright-project SKILL.md's summary line -- disclosed as a follow-up, not fixed here, to keep this run's scope to what was approved.
+- **Rejected:** An index-based workaround (decision_log.md's approach) was not applicable: spec.md content varies per project and has no canonical single-file index to substitute for a full read.
+
+---
+
+### ADR-343: Pin the review role to opus (not the sonnet PR #606 shipped)
+- **Date:** 2026-08-08
+- **Section:** Iterate — bug: model-tier config review value
+- **Run-ID:** iterate-2026-08-08-model-tier-review-opus
+- **Context:** shared/scripts/lib/model_tier_config.py (PR #599) added a per-role model-tier resolver, but this repo's own shipwright_model_config.json was still untracked, so every role silently resolved 'inherit'. While committing it, PR #606 (a separate, concurrently in-flight iterate) merged first and committed the file with review: sonnet, on the stated rationale that 'this repo already pins review: sonnet' -- treating that value as an existing given rather than a placeholder.
+- **Decision:** Ship shipwright_model_config.json with review: opus (not sonnet), plus finalization: sonnet, execution: sonnet, plan_review: opus (unchanged from PR #606), floors.review: sonnet. Operator confirmed opus was the intended value after being shown the PR #606 conflict directly.
+- **Commit:** (assigned post-merge)
+- **Rationale:** PR #606's design (plan_review as an independent role rather than reusing review) remains correct regardless of review's value -- this change only corrects which value review itself carries.
+- **Consequences:** The review-cascade subagents (spec-reviewer/code-reviewer/doubt-reviewer and any Agent-tool spawn passing model=<resolved review tier>) now run on opus in this repo instead of silently inheriting the session model. plan_review stays independently opus, unaffected by this change.
+
+---
+
+### ADR-344: Configurable plan-reviewer model tier (plan_review role)
+- **Date:** 2026-08-08
+- **Section:** Iterate — feature: plan-reviewer-configurable
+- **Run-ID:** iterate-2026-08-08-plan-reviewer-configurable
+- **Context:** The internal plan reviewer's model was hardcoded to opus in opus-plan-reviewer.md's frontmatter, immune to the per-role model-tier mechanism the review/finalization/execution roles already have (trg-88621183/PR #599). /shipwright-iterate's own mini-plan review had no internal-reviewer arm at all, unlike /shipwright-plan's Step 5-int.
+- **Decision:** Add a fourth plan_review role to model_tier_config.py's ROLES, wire both /shipwright-plan Step 5-int and a new /shipwright-iterate Internal Plan Review step (medium+ only) to resolve it and pass it as the Agent tool's model= param, and drop the frontmatter pin (model: inherit).
+- **Commit:** (assigned post-merge)
+- **Rationale:** plan_review is independent of the shared review role because this repo already pins review: sonnet; reusing it would silently downgrade the plan reviewer instead of making it configurable.
+- **Consequences:** opus-plan-reviewer now runs on the session model unless plan_review is set in shipwright_model_config.json; this repo's own config sets plan_review: opus to preserve its pre-existing always-opus behavior. plan_internal joins REVIEW_TYPES additively.
+- **Rejected:** Reusing the existing review role for the plan reviewer too -- rejected because it would couple an unrelated dial and silently change this repo's own behavior.
+
+---
+
+### ADR-345: Replace literal __import__("subprocess") with a normal import in a test file
+- **Date:** 2026-08-08
+- **Section:** Iterate — Simplify: normalize a benign dynamic-import in a test mock
+- **Run-ID:** iterate-2026-08-08-prompt-scan-dynamic-import-fault-test
+- **Context:** shipwright-prompt-scan's PY_DYNAMIC_IMPORT rule fires on ANY literal __import__( token, including a hardcoded, no-attacker-input call. shared/tests/test_sweep_drift_restore_faults.py:231 used `__import__("subprocess").CompletedProcess(...)` inside a monkeypatch lambda, tripping the scanner (medium, triage trg-133f2ca6) even though the same file already uses the clean `import subprocess as _sp` idiom twice elsewhere (lines 137, 247) for the identical purpose.
+- **Decision:** Normalize the import: add `import subprocess as _sp` as a local import inside test_checkout_failure_puts_the_log_back and use `_sp.CompletedProcess(...)`, matching the file's own existing convention. No suppression, no allowlist entry.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Fix-not-suppress at the source, per the established repo pattern for this scanner-rule class: the fix is a style normalization, not a scanner exemption, so it stays correct even if the scanner's own logic changes later.
+- **Consequences:** Zero observable behavior change (verified via behavior_snapshot.py: 9/9 tests green before and after, source LOC unchanged). The scanner finding clears (re-scan: 1 -> 0). This is the third recurrence of this exact benign-PY_DYNAMIC_IMPORT class in this repo (#321, #426), each resolved the same way.
+- **Details:** [trg-133f2ca6](trg-133f2ca6)
+
+---
+
+### ADR-346: Track decision-drops in git; redirect the write path into the calling worktree
+- **Date:** 2026-08-08
+- **Section:** Iterate — feature: track decision-drops in git
+- **Run-ID:** iterate-2026-08-08-track-decision-drops
+- **Context:** 214 real ADR decision-drops existed only on one machine, gitignored — invisible to CI or any other checkout; the write path also pointed at the main repo's disk, not the calling worktree.
+- **Decision:** Track decision-drops/ in git across this repo, the shared gitignore template, and shipwright-webui; redirect the write path to the calling worktree; quarantine pre-cutoff drops (never scanned) rather than aggregate them.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Fixing only the write path would still leave existing drops gitignored; fixing only tracking would still misdirect worktree writes to the wrong disk. Both share one root cause.
+- **Consequences:** Drops become ordinary tracked, mergeable state shipping with their own branch. F6 stages decision-drops/ glob-scoped per run_id, not the whole directory. See spec for full detail.
+- **Rejected:** Committing the 214 pre-existing drops unscanned; folding this into ADR-127; tracking without redirecting the write path. See spec.
+- **Details:** [128-track-decision-drops.md](../planning/adr/128-track-decision-drops.md)
+
+---
+
+### ADR-347: A third append-only event kind for the triage store
+- **Date:** 2026-08-08
+- **Section:** Iterate — feature: triage amend event
+- **Run-ID:** iterate-2026-08-08-triage-amend-event
+- **Context:** triage.jsonl had only append/status; correcting title/detail/severity/kind required dismiss-and-re-file, breaking cross-references. Measured 2026-08-05/07: ~30 cards/week re-filed for content-identical corrections.
+- **Decision:** Add a third append-only event kind, amend, folded into read_all_items's existing (ts, file-order) second pass alongside status -- never a separate third pass. Absent field untouched; present-but-invalid field skips the whole event.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Reuses the store's proven (ts, file-order) resolution contract and the status event's own precedent end-to-end, instead of inventing a new mechanism. 4 independent review rounds converged; architecture round returned zero findings from either provider.
+- **Consequences:** Every store consumer must now recognize amend (triage core+schema, triage_integrity, triage_validate+triage_gc_core, sweep_quarantine, sweep_drift_events, triage_cli). Two follow-ups deferred to trg-d5ef8039: delivery-visibility parity (mitigated inline) and WebUI TS reader parity (open question, unverified from this repo).
+- **Rejected:** A mutable field update (reintroduces the concurrent-write collision class); dismiss-and-re-file kept as the only path (the measured problem); widening undeliveredDecisions (silent miscounting); a separate third resolution pass for amend (ordering disagreement risk).
+- **Details:** [iterate-2026-08-08-triage-amend-event-third-event-kind.md](../planning/adr/iterate-2026-08-08-triage-amend-event-third-event-kind.md)

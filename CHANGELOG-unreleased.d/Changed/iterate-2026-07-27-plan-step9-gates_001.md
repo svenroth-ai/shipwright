@@ -1,1 +1,0 @@
-/shipwright-plan: splitting a plan into sections now refuses to begin unless the external-review step left a recorded route, as a command rather than an instruction. Plans written before these formats are flagged with a migration hint instead of being blocked.

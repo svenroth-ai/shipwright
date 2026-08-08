@@ -1,1 +1,0 @@
-A shared library module that imports one of its siblings now loads correctly through the shadowing-proof loader. It previously failed in plugin sessions in a way that could drop triage findings without any error being shown.

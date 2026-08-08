@@ -1,1 +1,0 @@
-gate_policy's read of shipwright_run_config.json now retries a Windows delete-pending concurrent-rewrite the same way the orchestrator's reader does (P2.41a), instead of misreporting inert on the first transient error.

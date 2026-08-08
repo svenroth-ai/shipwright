@@ -1,1 +1,0 @@
-A test unit re-run by F0 serial retry now records the retry own wall-clock and is marked as retried; previously a twice-failing unit reported only its first attempt duration and no retry marker at all

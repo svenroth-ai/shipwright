@@ -1,1 +1,0 @@
-Phases that never write a handover marker (security, compliance, adopt) are reported as out of scope for that check rather than carrying a permanent warning, and a check that cannot reach an answer now states which part it could not read instead of passing.

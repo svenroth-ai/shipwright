@@ -1,1 +1,0 @@
-Canon C3 now reports a phase that finished without leaving a handover note, instead of passing it silently. It asks whether that phase itself wrote the note, rather than trusting a run identifier several phases share.

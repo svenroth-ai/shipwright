@@ -1,1 +1,0 @@
-A change touching `.github/workflows/**` can satisfy both F11 gates at once again. The CI supply-chain acknowledgement now lives at `.shipwright/planning/iterate/<run_id>/ci_supplychain_ack.json` instead of inside the derived `shipwright_test_results.json`, which the iterate commit may not carry and which finalization reset mid-run.

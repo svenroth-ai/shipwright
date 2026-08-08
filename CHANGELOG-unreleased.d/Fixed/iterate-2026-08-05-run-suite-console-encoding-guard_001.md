@@ -1,1 +1,0 @@
-F0's console report no longer crashes with UnicodeEncodeError when a test unit's captured output contains a character a Windows cp1252 console can't display -- it now shows a replacement character instead of losing the summary.

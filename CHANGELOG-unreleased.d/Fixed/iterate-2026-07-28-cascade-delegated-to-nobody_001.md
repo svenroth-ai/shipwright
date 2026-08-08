@@ -1,1 +1,0 @@
-A standalone iterate now spawns the spec-reviewer -> code-reviewer -> doubt-reviewer cascade itself before committing, instead of delegating it to a document that pointed back at the delegation. ADR-029's 'the runner has no Agent tool' is marked campaign-only wherever it appears, so it can no longer be read as telling every iterate not to review.

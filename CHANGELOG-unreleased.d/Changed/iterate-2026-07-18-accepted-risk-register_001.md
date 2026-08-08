@@ -1,1 +1,0 @@
-The compliance dashboard's accepted-risk table now shows one row per acceptance with its expiry, target and authorising decision, reads the classic flat `.trivyignore` the scanner also honours, and marks an unrecorded suppression as drift rather than presenting it as an accepted risk.

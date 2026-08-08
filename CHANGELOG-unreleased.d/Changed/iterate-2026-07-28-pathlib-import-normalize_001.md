@@ -1,1 +1,0 @@
-Build the profile-reader test's REPO_ROOT with a normal `from pathlib import Path` instead of `__import__("pathlib")`, clearing a recurring prompt-scan PY_DYNAMIC_IMPORT medium without suppressing the rule

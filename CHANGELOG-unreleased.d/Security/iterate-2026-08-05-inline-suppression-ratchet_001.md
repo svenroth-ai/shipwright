@@ -1,1 +1,0 @@
-Decided the long-open question of whether the accepted-risk register should cover inline suppressions: it should not, and the position is now enforced by a ratchet rather than only asserted in prose. `docs/security-ci-setup.md` carries the reasoning and the three disclosed limits.

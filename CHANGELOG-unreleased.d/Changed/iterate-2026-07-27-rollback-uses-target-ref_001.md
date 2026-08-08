@@ -1,1 +1,0 @@
-Deploy profiles are now read at runtime, not only as declarative reference: the liveness deadline (`smoke_test.poll_interval_seconds` / `max_wait_seconds`) and the data-rollback strategy come from the target's own profile via the new shared `deploy_profile.py`.

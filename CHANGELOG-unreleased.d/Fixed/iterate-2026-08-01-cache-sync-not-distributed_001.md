@@ -1,1 +1,0 @@
-The plugin-cache check no longer reports every plugin as out of date. It was counting a file the sync deliberately never copies, so the warning could not be cleared by re-syncing - and a genuine problem would have been lost among the false ones.

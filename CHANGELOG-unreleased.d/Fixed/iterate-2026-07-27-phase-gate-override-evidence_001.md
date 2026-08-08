@@ -1,1 +1,0 @@
-Overriding a phase validation gate no longer skips the check: `orchestrator.py update-step --force` runs the validator either way, requires `--force-reason "<why>"`, and records what the gate found together with the reason in `shipwright_run_config.json` → `validation_overrides[]` — so a phase that passed its checks stays distinguishable from one that was waved through

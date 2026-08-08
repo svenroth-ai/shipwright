@@ -1,1 +1,0 @@
-Build-dashboard regeneration no longer crashes on WebUI iterates whose test-status layers (unit/integration/pgtap/e2e/smoke) are a human-readable string instead of the documented {status,passed,total} mapping.

@@ -1,1 +1,0 @@
-A phase validator that raises is now surfaced as an actionable `[gate-error]` finding instead of crashing the completion — the run pauses fail-closed with a readable reason, and can still be overridden with the crash recorded as what was overridden

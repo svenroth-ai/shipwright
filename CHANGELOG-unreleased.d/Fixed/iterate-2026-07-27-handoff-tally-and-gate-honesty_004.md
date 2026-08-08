@@ -1,1 +1,0 @@
-Completing a phase after a paused one no longer leaves the run reporting `needs_validation` with no findings left on disk to explain it, and a pause set by the phase-task lifecycle is no longer silently lifted by a v1 step completion

@@ -1,1 +1,0 @@
-Before a change is handed over, it is now checked that bringing it up to date did not quietly undo work someone else had already finished. Anything that arrived with that work and is no longer there is named — including which lines — and the hand-over is refused. Removing something on purpose is still allowed, but has to be stated with a reason.

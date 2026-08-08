@@ -1,1 +1,0 @@
-_windows_acl.py's private-directory owner check now accepts BUILTIN\Administrators/LocalSystem in addition to the current user, fixing two Windows-only F0 test failures caused by how windows-latest provisions its runneradmin profile (trg-eed74a42)

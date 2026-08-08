@@ -1,1 +1,0 @@
-The compliance-evidence refresh is now driven through its real producer by a test: one `converge()` pass over a seeded fixture project proves the seven documents regenerate, the producer's own inputs come back where they started, and the fixpoint is reached in the measured three passes.

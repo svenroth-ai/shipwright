@@ -1,1 +1,0 @@
-Security: the scan emits one collapsed `security-scan:{repo}` triage card carrying the count at every severity and the classes nothing examined, and `/shipwright-security` now has a mandatory scope gate that states those counts and asks how far to go instead of deciding silently.

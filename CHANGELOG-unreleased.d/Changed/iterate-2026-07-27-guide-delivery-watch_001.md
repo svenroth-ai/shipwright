@@ -1,1 +1,0 @@
-The guide's walkthrough of finishing a change now ends where the work actually ends. It explains that arming an automatic merge is not the same as having delivered, that the run keeps watching the pull request until it has really merged, and that an open one reports what is holding it up rather than only how long it waited.

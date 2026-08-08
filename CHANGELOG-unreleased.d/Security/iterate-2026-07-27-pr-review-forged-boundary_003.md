@@ -1,1 +1,0 @@
-PR review: a pull request that leaves the reviewer with no file section — an empty diff, a body with no header, or one where every section was filtered — now fails closed with a comment naming what was withheld, instead of being handed to the model as nothing and approved.

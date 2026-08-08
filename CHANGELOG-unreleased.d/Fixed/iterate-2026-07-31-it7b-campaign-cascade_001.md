@@ -1,1 +1,0 @@
-Campaign sub-iterates now get the spec-compliance review they were promised: the autonomous loop runs the delegated cascade at step 3f-bis, after the sub-iterate is recorded and before its PR merges, so a REJECT can still stop delivery. ADR-029 named the orchestrator the delegate in May and never gave it a step.

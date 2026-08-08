@@ -1,1 +1,0 @@
-Closed the standing F0 parallel-race follow-up for the shipwright-run test unit after measurement: the Windows atomic-write root cause is verified still fixed, four parallel suite rounds are green with zero retries, and the record states the two undiagnosed post-fix failures are closed as undiagnosable rather than as proven absent.

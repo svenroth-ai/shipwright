@@ -1,1 +1,0 @@
-When the medium+ code-review floor is carried by the external review alone, the gate now says so in its own output — the external route is a generic quality opinion and covers neither the Stage-1 spec-compliance HARD-GATE nor the Stage-3 adversarial pass.

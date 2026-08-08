@@ -1,1 +1,0 @@
-The CI supply-chain fingerprint binds content for non-ASCII workflow filenames. git escapes those paths octally, so both readers reported the file absent and the fingerprint stopped depending on content — an acknowledgement of a benign workflow licensed any later edit to it.

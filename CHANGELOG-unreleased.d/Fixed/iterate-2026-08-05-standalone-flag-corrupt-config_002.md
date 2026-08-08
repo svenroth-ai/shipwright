@@ -1,1 +1,0 @@
-A run config that parses but is not a JSON object (`null`, `[]`, a number) no longer demotes a run silently or crashes with a bare `AttributeError`, a file containing only `{}` is no longer mistaken for an absent one and overwritten, and `standalone` is honoured only as the literal `true` — so `"false"` no longer reads as standalone.

@@ -1,1 +1,0 @@
-`/shipwright-build`: when the approved mockup and the section description contradict each other, building stops and puts the decision to a person instead of silently following one of them. The expected resolution is that the requirement is corrected to match the mockup, and the decision is recorded.

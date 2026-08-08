@@ -1,1 +1,0 @@
-The PR-review path sanitiser writes its character class as `\uXXXX` escapes instead of literal bidi controls, and a test pins the matched alphabet by enumeration. Behaviour is unchanged — verified against the previous revision — but the file no longer renders its own source right-to-left, nor reports a line count Python and git disagree on.

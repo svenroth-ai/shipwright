@@ -1,1 +1,0 @@
-A triage entry built from a failing GitHub check no longer carries an unbounded detail line. It is capped at 1024 characters like the security and pull-request entries, so one entry with a very long workflow or branch name cannot crowd the others out of a view that shows a limited number of items.

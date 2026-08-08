@@ -1,1 +1,0 @@
-A triage card filed under CI now routes to the git-tracked store instead of the gitignored outbox, which a runner discards. The `$CI` predicate is a single shared `lib.ci_env` helper — it previously existed as four byte-identical copies that all had to agree about which environments count as CI.

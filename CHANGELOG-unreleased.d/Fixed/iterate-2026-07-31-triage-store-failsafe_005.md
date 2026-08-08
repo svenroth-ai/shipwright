@@ -1,1 +1,0 @@
-The triage schema-header bootstrap is durable and byte-preserving: it writes through `durable_atomic_write` instead of truncate-then-write on the git-tracked store, and prepends bytes rather than round-tripping text, so a `merge=union` artifact no longer picks up a whole-file line-ending diff. The tracked log is now written with `newline=""` like the outbox.

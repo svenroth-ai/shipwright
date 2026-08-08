@@ -1,1 +1,0 @@
-Canon C3 now checks the iterate phase against its own clock, not only its run id: the F5c ledger writer stamps the `event_at` anchor from the same source as the handover note's canon marker, so an iterate that completed again without re-writing its note is reported instead of passing silently.

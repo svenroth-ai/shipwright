@@ -1,1 +1,0 @@
-A handover note written mid-build, per section, or at the end of an iterate no longer erases the marker that records which phase closed last — which had been blanking the freshness check for all eight pipeline phases at once.

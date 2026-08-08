@@ -1,1 +1,0 @@
-The grade_snapshot event shape has one owner shared by the compliance emitter and the record_event CLI, so the two producers of that durable event can no longer drift apart; attribution is always derived from the tree on disk and cannot be supplied by a caller.

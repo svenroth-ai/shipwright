@@ -1,1 +1,0 @@
-Pull requests raised from a fork now actually get the required Tier-3 review instead of a permanent failed status — the resolver looked up the PR via an endpoint that is always empty for a fork commit

@@ -1,1 +1,0 @@
-An outside reviewer that answers without delivering a review — nothing at all, or an answer the provider itself reports as cut off — is now recorded as having failed, with the reason, rather than as having reviewed.

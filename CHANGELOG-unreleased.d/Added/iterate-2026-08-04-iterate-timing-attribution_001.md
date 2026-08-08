@@ -1,1 +1,0 @@
-Hierarchical iterate-timing instrumentation: producer + agent-emitted spans across the full Iterate lifecycle, folded into `work_completed.iterate_timings` and rendered as a derived throughput report at `.shipwright/compliance/performance/iterate-throughput.md` (measurement only — no gate/verdict/retry behavior changed).

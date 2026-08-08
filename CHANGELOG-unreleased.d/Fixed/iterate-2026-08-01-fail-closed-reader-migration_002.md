@@ -1,1 +1,0 @@
-An iterate entry file saved in the wrong text encoding no longer kills the whole finalization report. Such a file used to crash the check run, so the operator lost the results of every check rather than just the affected one; it is now skipped and logged like any other corrupt entry while the remaining checks still report.

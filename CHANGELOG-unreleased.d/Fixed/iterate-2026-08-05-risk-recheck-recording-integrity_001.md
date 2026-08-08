@@ -1,1 +1,0 @@
-Iterate: campaign sub-iterates now persist Step 3.4's diff-driven risk re-check result, and a new F11 gate fails the run when F5c's recorded complexity is outranked by it — closing a silent recording-integrity gap that could otherwise corrupt future complexity classification

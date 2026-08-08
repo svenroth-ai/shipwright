@@ -1,1 +1,0 @@
-Compliance `test_links` collector honors an optional `traceability.test_roots` (+ `exclude_dirs`) in `shipwright_compliance_config.json`, making `plugins/*/tests` + `shared/tests` scannable so `@FR` tags written there persist in the traceability manifest; default scan behavior is unchanged when the config is absent.

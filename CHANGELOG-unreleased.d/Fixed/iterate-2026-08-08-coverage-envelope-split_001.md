@@ -1,1 +1,0 @@
-Events-context coverage envelope no longer conflates entries that cannot carry a selection key with ones that should but don't -- coverage.fields.<key>.unavailable is split into not_applicable / missing, and coverage.missing_work_completed surfaces the actionable subset.

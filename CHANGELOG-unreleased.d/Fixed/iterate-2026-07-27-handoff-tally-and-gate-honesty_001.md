@@ -1,1 +1,0 @@
-The session handoff's `## Pipeline Phases` block no longer overstates progress: the finished tally counts against the real pipeline (including per-split expansion and legacy phases outside it) instead of against the phase tasks created so far, which made a run one phase into seven read as "1 of 2" and a fully-built three-split run read as 100% complete

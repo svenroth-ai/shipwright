@@ -1,1 +1,0 @@
-F0 timing spans now decompose the test phase: each whole-suite invocation stamps a self-resolved attempt number, and every test unit gets its own f0_unit_result span with a real dispatch timestamp, so a slow test phase can be told apart from a repeated one

@@ -1,1 +1,0 @@
-`orchestrator get-next-step` exits 2 and reports `{"blocked": true, "reason": "config_unreadable"}` when the run config cannot be used — distinct from `next_step: null`, which still means every step is complete and still exits 0.

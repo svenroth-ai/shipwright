@@ -1,1 +1,0 @@
-The handover note a run writes at finalization is no longer thrown away by the same run's merge-hygiene step, so the two checks that ask "does this note describe this run" stop reporting a staleness the run caused itself (P2.15).

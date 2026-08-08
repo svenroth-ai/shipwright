@@ -1,1 +1,0 @@
-**changelog:** re-running an interrupted release no longer duplicates a version. Because tagging is instruction rather than code, a run that stopped after writing the note left it unmarked; the next run appended the same section again. The writer now replaces that version's section, so one version appears exactly once.

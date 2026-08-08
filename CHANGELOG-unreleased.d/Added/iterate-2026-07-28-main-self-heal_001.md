@@ -1,1 +1,0 @@
-When the shared branch breaks after a merge, the framework says so and names the single change that broke it, instead of leaving whoever comes next to discover it — together with what failed and which other changes that one had never been tested alongside (FR-01.19).

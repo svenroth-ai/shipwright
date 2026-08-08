@@ -1,1 +1,0 @@
-Phase-quality spec checks S9 (README freshness) and S10 (CLAUDE.md sync) no longer inherit an unrelated iterate's category when the audited run_id cannot be resolved — they now SKIP, matching sibling checks S2/S3/W2.

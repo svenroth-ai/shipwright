@@ -1,1 +1,0 @@
-`/shipwright-design`: each feedback round now declares what it changed about the requirements. A round that changes what a screen or flow *does* — rather than how it looks — must correct the requirement it belongs to before the design can be approved, and finalizing is blocked while any round is silent.

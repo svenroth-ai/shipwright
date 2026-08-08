@@ -1,1 +1,0 @@
-record_event `--tests-skipped`: work_completed events carry a first-class `tests.skipped` count, and a shared `tests_block` SSOT (validate / skip_suffix / progression_result) that the writer, D4, the test-evidence report and the build dashboard all share.

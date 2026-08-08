@@ -1,1 +1,0 @@
-/shipwright-adopt now states that its requirements catalogue was derived by reading the code and that nobody has confirmed it — in the generated spec.md, in a machine-readable `.shipwright/adopt/derived-catalogue.json`, in the adoption commit, and in the handoff banner.

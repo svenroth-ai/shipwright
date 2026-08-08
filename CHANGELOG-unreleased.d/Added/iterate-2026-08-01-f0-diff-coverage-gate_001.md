@@ -1,1 +1,0 @@
-F0 now runs the same diff-coverage gate CI runs, so an under-tested change stops the run locally instead of reddening the pull request after the work is reported finished. It measures the lines the change actually touches — including files just added and not yet committed — and asks that at least 80% of them are covered by tests.

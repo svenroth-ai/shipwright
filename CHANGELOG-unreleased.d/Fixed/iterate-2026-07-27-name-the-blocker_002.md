@@ -1,1 +1,0 @@
-Recording a change as a new acceptance criterion on an existing requirement — the way this project asks such changes to be recorded — is now attributed to that requirement and checked at the levels it demands, instead of being reported as impossible to determine. A change that touches no requirement at all is still reported as undetermined for a person to settle.

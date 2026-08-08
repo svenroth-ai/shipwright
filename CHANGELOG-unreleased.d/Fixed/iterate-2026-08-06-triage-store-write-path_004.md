@@ -1,1 +1,0 @@
-The triage dedup no longer deletes a record silently: a same-id append is collapsed keep-last only when every record in the group agrees on a normalised originalTs, and anything else — disagreeing, mixed, absent or blank — keeps every line and warns that this is probably a 32-bit id collision, naming triage_repair.py. Every caller now surfaces those warnings (audit finding 25).

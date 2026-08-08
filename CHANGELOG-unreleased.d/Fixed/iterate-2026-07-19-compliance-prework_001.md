@@ -1,1 +1,0 @@
-The requirement-existence gate shipped on 2026-07-18 was missing its one-line entry in the conventions record, which had been failing the consistency check that verifies every architectural decision is written down where it belongs.

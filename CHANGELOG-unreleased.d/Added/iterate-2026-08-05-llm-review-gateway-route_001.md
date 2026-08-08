@@ -1,1 +1,0 @@
-External LLM review (shared/scripts/lib/llm_review.py, used by Adopt's Layer-3 review) supports a 4th, operator-owned 'gateway' route for any OpenAI-compatible proxy (Portkey, Helicone, LiteLLM, Azure AI Foundry) via SHIPWRIGHT_REVIEW_GATEWAY_* env vars — fail-closed, no fallback to openrouter/direct once configured (issue #547)

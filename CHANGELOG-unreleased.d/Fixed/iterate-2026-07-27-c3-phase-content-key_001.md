@@ -1,1 +1,0 @@
-The phase-completion check on the session handover note now asks whether the note belongs to the run being checked, instead of how recently the file was written — so a run that spent a long time waiting on the build service is no longer reported as stale, and a note left behind by an earlier run is now caught.

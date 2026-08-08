@@ -1,1 +1,0 @@
-A required-check finding raised from inside an iterate worktree was written to a buffer nothing drains and then deleted with the worktree. Routing is now conditional, so the finding reaches the tracked log and ships in the pull request.

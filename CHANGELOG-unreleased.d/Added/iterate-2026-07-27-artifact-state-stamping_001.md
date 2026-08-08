@@ -1,1 +1,0 @@
-Compliance evidence documents (traceability matrix, test evidence, change history, SBOM, dashboard) now state which version of the project they describe, not just when they were written — so a document regenerated from an old state can be told apart from one regenerated from the current state.

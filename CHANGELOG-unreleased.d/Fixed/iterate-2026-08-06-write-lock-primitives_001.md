@@ -1,1 +1,0 @@
-Files written through the shared durable-write primitive keep their permissions on Linux and macOS. Every rewrite used to silently replace an existing file's mode with owner-only 0600, and git never showed it because only the executable bit is tracked.

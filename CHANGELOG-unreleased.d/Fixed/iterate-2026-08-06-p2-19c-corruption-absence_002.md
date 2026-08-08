@@ -1,1 +1,0 @@
-Triage store readers go through the durable reader, so an unlocked read retries past the Windows delete-pending window the sweep's atomic publish creates instead of raising; the record-separator alphabet is measured unchanged (IT-1 audit 5).

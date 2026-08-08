@@ -1,1 +1,0 @@
-A Control-Grade snapshot taken in a work branch is no longer labelled as the main branch's own. Previously a branch measured before its first commit was recorded as if it described main, which is the exact confusion the attribution was added to prevent.

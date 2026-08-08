@@ -1,1 +1,0 @@
-A deferred triage entry whose reason was present but blank — only spaces, or an invisible character — printed an empty `reason:` line instead of "(no reason recorded)". The placeholder now depends on whether anything visible survives, not on whether the field is non-empty.

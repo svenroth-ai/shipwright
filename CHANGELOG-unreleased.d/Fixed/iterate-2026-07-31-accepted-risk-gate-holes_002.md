@@ -1,1 +1,0 @@
-Accepted-risk drift gate: a Trivy ignore entry whose own expiry has lapsed no longer counts as an active suppression. Both ignore-file forms are honoured (`expired_at:` in YAML, `exp:YYYY-MM-DD` in the classic flat form), mirroring Trivy's own rule, so renewing only the register's date now reports `STALE` instead of reading as reconciled.

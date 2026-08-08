@@ -1,1 +1,0 @@
-The PR-review path filter's reliance on git quoting non-ASCII paths is now pinned by test rather than assumed: one test records that a quoted path reaches the model carrying nothing invisible, and one fails if the diff parser ever decodes the escapes back into characters.

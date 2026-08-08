@@ -1,1 +1,0 @@
-Per-role model tiers (review/finalization/execution) for spawned subagents, configurable via shipwright_model_config.json or --review-model/--finalization-model/--execution-model flags on iterate/build; unconfigured runs are unchanged.
