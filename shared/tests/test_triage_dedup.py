@@ -214,3 +214,66 @@ def test_distinct_ids_are_never_compared() -> None:
     out, warn = dedup_triage_lines([HEADER, a, b])
     assert out == [HEADER, a, b]
     assert warn == []
+
+
+# --- RecursionError guard (card trg-57d0d6d3 / P2.19g, TEIL 2) ----------------
+# AC-1: a deeply-nested line must not raise RecursionError out of
+# _parsed_append / dedup_triage_lines. AC-2 (bounded invariant/matrix test):
+# a hand-written combinatorial matrix, not a generated-input property test —
+# renamed per external plan review round 2b.
+
+def _deep_append(iid: str) -> str:
+    """An ``append`` line whose value nests deep enough to defeat json.loads'
+    RecursionError guard — reuses the proven idiom from
+    test_sweep_gc_canonical.py's test_unparseably_deep_object_degrades_instead_of_raising,
+    never sys.setrecursionlimit (internal Opus review + external review round 2b,
+    both flagged the setrecursionlimit footgun)."""
+    nested = '{"a":' * 20000 + "1" + "}" * 20000
+    return f'{{"event":"append","id":"{iid}","ts":"2026-08-07T00:00:00Z","val":{nested}}}'
+
+
+def test_deeply_nested_append_does_not_raise_and_passes_through() -> None:
+    """AC-1. Direct unit regression: pre-fix this raises RecursionError out of
+    dedup_triage_lines; post-fix the line is treated as unparseable (kept,
+    routed to raw-text handling upstream), matching the outcome a
+    JSONDecodeError already gets."""
+    deep = _deep_append("trg-deep")
+    out, warn = dedup_triage_lines([HEADER, deep])
+    assert deep in out, "the unparseable line must survive, not be dropped"
+    assert warn == [], "a line that never entered the same-id grouping warns nothing"
+
+
+def test_deeply_nested_line_beside_a_valid_same_id_twin_is_a_collision() -> None:
+    """AC-2 matrix cell: deep line × same id as a normal, parseable append. The
+    deep line is invisible to `_parsed_append` (returns None), so it can never
+    be grouped with its same-id twin at all — the twin is untouched, and BOTH
+    lines survive (this is not a supersession-collapse scenario; the deep line
+    was never a group member)."""
+    normal = _append("trg-deep2", title="valid twin")
+    deep = _deep_append("trg-deep2")
+    out, warn = dedup_triage_lines([HEADER, normal, deep])
+    assert out == [HEADER, normal, deep], "ordered-subsequence preservation (external review, openai)"
+    assert warn == []
+
+
+def test_deeply_nested_line_matrix_placement_first_and_last() -> None:
+    """AC-2 matrix cell: placement (first / last) must not change the outcome —
+    order-preservation and no-raise hold either way."""
+    valid = _append("trg-order")
+    deep = _deep_append("trg-deepfirst")
+    out_first, _ = dedup_triage_lines([HEADER, deep, valid])
+    assert out_first == [HEADER, deep, valid]
+    deep2 = _deep_append("trg-deeplast")
+    out_last, _ = dedup_triage_lines([HEADER, valid, deep2])
+    assert out_last == [HEADER, valid, deep2]
+
+
+def test_deeply_nested_line_beside_a_malformed_line() -> None:
+    """AC-2 matrix cell: deep line × syntactically-malformed line — two
+    different failure modes of `_parsed_append` (RecursionError vs
+    JSONDecodeError) must both degrade the same way, side by side."""
+    deep = _deep_append("trg-deepmixed")
+    malformed = "NOT JSON"
+    out, warn = dedup_triage_lines([HEADER, deep, malformed])
+    assert out == [HEADER, deep, malformed], "ordered-subsequence preservation (external review, openai)"
+    assert warn == []
