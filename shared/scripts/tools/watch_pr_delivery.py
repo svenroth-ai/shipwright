@@ -101,7 +101,7 @@ def _gh_pr_json(pr: str, repo: str | None) -> dict:
     if repo:
         cmd += ["--repo", repo]
     try:
-        proc = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8",
+        proc = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8", errors="replace",
                               timeout=_GH_TIMEOUT_SECONDS)
     except (OSError, subprocess.SubprocessError) as exc:
         raise RuntimeError(f"could not run gh: {type(exc).__name__}: {exc}") from exc

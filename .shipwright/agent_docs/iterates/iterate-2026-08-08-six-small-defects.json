@@ -1,0 +1,68 @@
+{
+  "run_id": "iterate-2026-08-08-six-small-defects",
+  "date": "2026-08-08T22:55:52.333132Z",
+  "event_at": "2026-08-08T22:34:51.172844+02:00",
+  "type": "bug",
+  "complexity": "small",
+  "prior_source": "keyword",
+  "branch": "iterate/six-small-defects",
+  "spec": null,
+  "tests_passed": true,
+  "adr": "iterate-2026-08-08-six-small-defects",
+  "test_completeness": {
+    "status": "complete",
+    "behaviors": [
+      {
+        "behavior": "AC1 physical plan command continuations",
+        "disposition": "tested",
+        "evidence": "F0 shipwright-plan passed"
+      },
+      {
+        "behavior": "AC2 explicit skipped-review fallback marker",
+        "disposition": "tested",
+        "evidence": "test_mark_review_state passed"
+      },
+      {
+        "behavior": "AC3 bounded three-branch routing",
+        "disposition": "tested",
+        "evidence": "test_review_routing_contract passed"
+      },
+      {
+        "behavior": "AC4 RecursionError event readers",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_campaign_paths.py::test_regenerate_campaign_status (event JSONL to campaign-status projection) and shared/tests/test_best_effort_event_readers.py PASSED in F0",
+        "category": "integration"
+      },
+      {
+        "behavior": "AC5 malformed UTF-8 subprocess output",
+        "disposition": "tested",
+        "evidence": "test_subprocess_decode_guards passed"
+      },
+      {
+        "behavior": "AC6 CRLF provenance stamping",
+        "disposition": "tested",
+        "evidence": "test_compliance_provenance_crlf passed"
+      }
+    ],
+    "counts": {
+      "testable": 6,
+      "tested": 6,
+      "untestable": 0,
+      "untested_testable": 0
+    },
+    "enumeration_basis": {
+      "acs": 6,
+      "covered_acs": 6
+    }
+  },
+  "surface_verification": {
+    "surface": "none",
+    "runner": "",
+    "exit_code": 0,
+    "tests_run": 0,
+    "evidence_path": "",
+    "timestamp": "2026-08-08T22:54:04.627Z",
+    "justification": "Internal plugin and shared-script defect repairs change no startable user-facing web, API, or CLI behavior; the affected behavior is verified by the focused and canonical pytest suites."
+  },
+  "declared_removals": []
+}

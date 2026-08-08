@@ -109,6 +109,10 @@
     ]
   },
   "iterate_history": [],
+  "iterate_retention_pins": [
+    "iterate-2026-08-01-triage-defer-lifecycle",
+    "iterate-2026-08-01-grade-snapshot-dedup"
+  ],
   "_iterate_migration_state": "complete",
   "_iterate_migration_ts": "2026-05-02T18:37:57.870696+00:00",
   "_iterate_migration_quarantined_count": 0,

@@ -75,7 +75,7 @@ def read_marks(project_root, run_id: str) -> list[dict]:
             continue
         try:
             obj = json.loads(line)
-        except (ValueError, TypeError):
+        except (RecursionError, ValueError, TypeError):
             continue
         if not isinstance(obj, dict):
             continue
