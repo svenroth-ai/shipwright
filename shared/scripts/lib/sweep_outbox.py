@@ -48,6 +48,14 @@ from lib.atomic_write import durable_atomic_write  # noqa: E402
 from lib.churn_merge import TRIAGE_LOG  # noqa: E402
 from lib.ci_env import ci_active  # noqa: E402
 from lib.git_base import HOOK_GIT_TIMEOUT, TIMEOUT_RETURNCODE, run_git_soft  # noqa: E402
+# The two guards moved to lib.main_tree_guards (iterate-2026-08-07-shared-op-predicates)
+# — reconcile_triage.py already re-exported them under these historical private names;
+# this file now does too. No `is_detached`: see lib/main_tree_guards.py's docstring for
+# why sweep_outbox does not need it (the worktree it commits into is never detached).
+from lib.main_tree_guards import (  # noqa: E402,F401  (re-export: see lib/main_tree_guards.py)
+    has_staged_changes as _has_staged_changes,
+    op_in_progress as _op_in_progress,
+)
 from lib.sweep_drift import commit_main_tracked_drift, plan_main_tracked_drift  # noqa: E402
 from lib.sweep_gc import delivered_membership, partition_outbox  # noqa: E402
 from lib.sweep_quarantine import append_quarantine, decide as quarantine_decide, quarantine_path  # noqa: E402
@@ -59,44 +67,6 @@ def _ci_active() -> bool:
     """Delegates to the shared leaf — see :mod:`lib.ci_env` for why this is not
     a local copy."""
     return ci_active()
-
-
-def _op_in_progress(root: Path) -> bool:
-    """True when a merge / rebase / cherry-pick / revert / bisect is underway in
-    ``root`` — committing into a half-finished operation would corrupt it.
-    Mirrors :func:`lib.reconcile_triage._op_in_progress`."""
-    for ref in ("MERGE_HEAD", "CHERRY_PICK_HEAD", "REVERT_HEAD"):
-        probe = run_git_soft(["rev-parse", "--verify", "--quiet", ref], cwd=root)
-        if probe.returncode == 0:
-            return True
-        # A timeout leaves the tree's state UNKNOWN. Reporting "no operation in
-        # progress" would let the sweep commit into a half-finished merge on the
-        # strength of a question we never got an answer to, so say yes and skip.
-        if probe.returncode == TIMEOUT_RETURNCODE:
-            return True
-    for rel in ("rebase-merge", "rebase-apply", "BISECT_LOG"):
-        probe = run_git_soft(["rev-parse", "--git-path", rel], cwd=root)
-        # A timeout must NOT fall into the `continue` below: `continue` means "this
-        # marker is absent", which is a definite answer to a question git never
-        # answered. A rebase sets none of the pseudo-refs above, so this loop is the
-        # ONLY thing that detects one — reading a timeout as absence here is what
-        # would let the commit land inside a half-finished rebase.
-        if probe.returncode == TIMEOUT_RETURNCODE:
-            return True
-        if probe.returncode != 0:
-            continue
-        p = Path(probe.stdout.strip())
-        full = p if p.is_absolute() else root / p
-        if full.exists():
-            return True
-    return False
-
-
-def _has_staged_changes(root: Path) -> bool:
-    """True when ANYTHING is staged in ``root``'s index. We skip rather than risk
-    a ``git commit -- <triage>`` interacting with a user's staged WIP (AC-3 of
-    reconcile)."""
-    return run_git_soft(["diff", "--cached", "--quiet"], cwd=root).returncode != 0
 
 
 def sweep_outbox_to_branch(
