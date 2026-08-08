@@ -1,0 +1,27 @@
+{
+  "run_id": "iterate-2026-08-08-codex-operating-contract",
+  "date": "2026-08-08T20:24:35.885397Z",
+  "event_at": "2026-08-08T14:24:09.672907+00:00",
+  "type": "change",
+  "complexity": "trivial",
+  "prior_source": "history",
+  "branch": "iterate/codex-operating-contract",
+  "spec": null,
+  "tests_passed": true,
+  "adr": "iterate-2026-08-08-codex-operating-contract",
+  "test_completeness": {
+    "status": "n/a",
+    "justification": "Trivial documentation-only operating-contract change; semantic and path assertions plus the full repository suite passed."
+  },
+  "surface_verification": {
+    "surface": "none",
+    "runner": "",
+    "exit_code": 0,
+    "tests_run": 0,
+    "evidence_path": "",
+    "timestamp": "2026-08-08T20:17:34.754Z",
+    "attempts": 0,
+    "justification": "Documentation-only operating-contract change; no startable user-visible behavior changed."
+  },
+  "declared_removals": []
+}

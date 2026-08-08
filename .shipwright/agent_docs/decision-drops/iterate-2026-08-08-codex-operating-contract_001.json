@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-08-08-codex-operating-contract",
+  "date": "2026-08-08",
+  "section": "Iterate — change",
+  "title": "Track Codex operating contract",
+  "context": "Codex operating rules were supplied repeatedly instead of being tracked as durable repository guidance.",
+  "decision": "Track the source AGENTS.md, align runtime-specific facts with CLAUDE.md, and keep stable Codex policy concise.",
+  "consequences": "Future iterates can rely on the tracked contract while detailed F0-F11 procedures remain in the iterate skill.",
+  "rationale": "",
+  "rejected": "",
+  "commit": "",
+  "architecture_impact": "none",
+  "spec_ref": ""
+}
