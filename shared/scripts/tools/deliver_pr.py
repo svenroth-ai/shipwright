@@ -67,6 +67,7 @@ from lib.pr_delivery import (  # noqa: E402
     wrong_pr,
 )
 from lib.pr_self_merge import self_merge  # noqa: E402
+from lib.run_pointer_retirement import retire_run_pointer_best_effort  # noqa: E402
 from tools import watch_pr_delivery as wpd  # noqa: E402
 
 __all__ = [
@@ -306,16 +307,19 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--no-arm", action="store_true",
                    help="skip the arm (already armed, or deferred to an orchestrator)")
     args = p.parse_args(argv)
-
+    project_root = Path(args.project_root).resolve()
     result = deliver(
-        args.pr, project_root=Path(args.project_root).resolve(), run_id=args.run_id,
+        args.pr, project_root=project_root, run_id=args.run_id,
         head_branch=args.head_branch, base_branch=args.base_branch, repo=args.repo,
         timeout_seconds=args.timeout_seconds, poll_seconds=args.poll_seconds,
         arm=not args.no_arm, verified_commit=args.verified_commit, record_timing=True,
     )
     print(json.dumps(result, indent=2))
     print(summary(result), file=sys.stderr)
-    return int(result["exit_code"])
+    exit_code = int(result["exit_code"])
+    if exit_code in (EXIT_DELIVERED, EXIT_CLOSED):
+        retire_run_pointer_best_effort(project_root, args.run_id)
+    return exit_code
 
 
 if __name__ == "__main__":

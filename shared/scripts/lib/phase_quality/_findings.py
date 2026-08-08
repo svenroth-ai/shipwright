@@ -42,6 +42,7 @@ from ._constants import (
     TIER_2_CHECK_IDS,
 )
 from ._flags import override_reason, skipped_check_ids
+from ._staleness import is_stale_finding
 
 
 # ---------------------------------------------------------------------------
@@ -67,13 +68,21 @@ def already_audited(project_root: Path, phase: str, run_id: str, session_id: str
     Returns True when a valid Finding-JSON already exists for the
     ``(phase, run_id, session_id)`` triple. Corrupt JSONs count as "not
     audited" so we overwrite rather than skip (plan § 4.13).
+
+    **Not final when the recorded verdict was provisional, or was never a
+    verdict at all** — see :func:`_staleness.is_stale_finding` for both
+    conditions (an under-informed ``unresolvable_run_id_skip`` SKIP, or a
+    hook-level error finding) and why the seam made them worth re-checking
+    (trg-b36fd844).
     """
     path = finding_path(project_root, phase, run_id, session_id)
     if not path.exists():
         return False
     try:
-        json.loads(path.read_text(encoding="utf-8"))
+        payload = json.loads(path.read_text(encoding="utf-8"))
     except (json.JSONDecodeError, OSError):
+        return False
+    if is_stale_finding(payload, project_root, run_id):
         return False
     return True
 
@@ -140,9 +149,16 @@ def make_finding(
     remediation: str = "",
     provenance: str = "",
     tier: int | None = None,
+    reason_code: str = "",
 ) -> dict[str, Any]:
     """Build a finding dict with Tier-2 tagging auto-applied from
     ``TIER_2_CHECK_IDS`` unless a caller supplies an explicit ``tier``.
+
+    ``reason_code`` is a closed-vocabulary machine-readable tag for a
+    PROVISIONAL verdict — one that depends on state which may later change
+    (e.g. ``"unresolvable_run_id"``, read back by :func:`already_audited` to
+    decide whether a recorded finding is still final). Omitted by default so
+    the common case carries no extra key.
     """
     finding: dict[str, Any] = {
         "id": check_id,
@@ -157,6 +173,8 @@ def make_finding(
     effective_tier = tier if tier is not None else (2 if check_id in TIER_2_CHECK_IDS else None)
     if effective_tier is not None:
         finding["tier"] = effective_tier
+    if reason_code:
+        finding["reason_code"] = reason_code
     return finding
 
 
@@ -173,6 +191,9 @@ def apply_skip_override(
     new["status"] = STATUS_SKIP
     new["evidence"] = override
     new["provenance"] = "override"
+    # An operator override is final, never provisional — drop any
+    # already_audited() staleness tag the overridden finding carried.
+    new.pop("reason_code", None)
     return new
 
 
