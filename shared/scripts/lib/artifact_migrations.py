@@ -446,9 +446,8 @@ ALLOWLIST: dict[str, list[str]] = {
         ".shipwright/adopt/enrichment.json",
         ".shipwright/agent_docs/architecture.md",
         ".shipwright/agent_docs/decision_log.md",
-        # See "planning" entry above: generated sibling, same source, same
-        # exempt class. (This is the one with a CURRENT finding: ADR-259's
-        # own title re-renders here as a link label.)
+        # See "planning" entry above: generated sibling, same source/exempt
+        # class. (CURRENT finding: ADR-259's own title re-renders as a link label.)
         ".shipwright/agent_docs/decision_log_index.md",
         # conventions.md accumulates Learnings prose that mentions "compliance"
         # as a phase name, the `shipwright-compliance` plugin dir, or a triage
@@ -554,6 +553,7 @@ ALLOWLIST: dict[str, list[str]] = {
         # mirror_findings_to_triage uses `source="compliance"` /
         # `kind="compliance"` for the wire format.
         "shared/scripts/triage.py",
+        "shared/scripts/lib/triage_fields.py",  # same literal, split out iterate-2026-08-08
         "plugins/shipwright-compliance/scripts/audit/audit_detector.py",
         # record_event.py — argparse choices=["docs", "tooling",
         # "compliance", "infra"] enumerates change-type values; the
