@@ -230,6 +230,119 @@
       "parse_status": null,
       "raw_excerpt": null,
       "model_tier": "opus"
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "completed",
+      "findings_count": 11,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "correctness",
+          "file": null,
+          "line": null,
+          "finding": "Baseline stale — 15 files/6 numbers on disk at build time, not the 13/5 the brief was drafted against (ADR-128 collided via #604/#605 after the brief was written).",
+          "suggestion": "Regenerate the baseline from the tree at build time, never hand-transcribe; reword AC5/AC6 accordingly.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "correctness",
+          "file": null,
+          "line": null,
+          "finding": "Reusing adr_index.lock for the proposed allocator self-deadlocks (no reentrancy) and creates unrelated contention with release-time index renders.",
+          "suggestion": "A dedicated adr_spec_number.lock, sub-millisecond critical section.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "correctness",
+          "file": null,
+          "line": null,
+          "finding": "Watermark floor invisible to in-flight sibling worktrees; a gitignored dir is cleanable.",
+          "suggestion": "Floor = max(watermark, main-root max, every linked worktree's max via git worktree list).",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": null,
+          "line": null,
+          "finding": "resolve_main_repo_root() degrades to worktree-local silently on several real paths.",
+          "suggestion": "CLI states resolved scope explicitly every call; degraded path loud on stderr.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": null,
+          "line": null,
+          "finding": "No idempotency; number and filename can diverge (recreates the original defect in miniature).",
+          "suggestion": "Idempotent per run_id; CLI prints/returns the exact target path.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": null,
+          "line": null,
+          "finding": "Collision report under .shipwright/planning/adr/ would render as a pseudo-ADR in the committed INDEX.md.",
+          "suggestion": "Move the report to .shipwright/planning/iterate/.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": null,
+          "line": null,
+          "finding": "Anti-ratchet rule ambiguous between count and membership — both readings exploitable.",
+          "suggestion": "actual subset-of pinned per number, shared parse_adr_number() helper.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "test-coverage",
+          "file": null,
+          "line": null,
+          "finding": "AC1 (the primary defect) had no permanent regression guard, unlike AC5.",
+          "suggestion": "Add AC1b: committed drift-guard test.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "process",
+          "file": null,
+          "line": null,
+          "finding": "Missing same-diff obligations — marketplace sync (plugin-side files) + guide.md Appendix B check (new shipped command).",
+          "suggestion": "Add to mini-plan work breakdown.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "process",
+          "file": null,
+          "line": null,
+          "finding": "Allocator formally widens the pre-existing spec-folder-number vs. log-number divergence.",
+          "suggestion": "State explicitly as an accepted consequence.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": null,
+          "line": null,
+          "finding": "Index-first fix inherits the same unbounded-growth curve; no fallback named for \"no matching index entry\".",
+          "suggestion": "Name a fallback in the reader instruction.  All 11 findings were folded into the design before the external review call (deepseek + openai) proceeded. The Round-1 allocator design this review evaluated was itself later superseded (both external reviewers rejected/revised the allocator approach on proportionality grounds; the operator chose a simpler run_id-named-file design with no allocator) — see the iterate spec's Architecture Review section. The internal review's individual bug-fixes (e.g. lock reentrancy, watermark durability) became moot once the allocator itself was retired, but the process-level findings (AC1b regression guard, marketplace sync, report placement, anti-ratchet subset rule) carried forward into the final design and were implemented.",
+          "source": "external-review"
+        }
+      ],
+      "provider": "shipwright-plan:opus-plan-reviewer",
+      "completed_at": "2026-08-08T14:28:32.507619+00:00",
+      "disposition": null,
+      "recorded_by": "external-prose",
+      "parse_status": "structured",
+      "raw_excerpt": "Internal plan review (opus-plan-reviewer, model=opus, mandatory at medium+), run at Step 5 over the Round-1 allocator design brief before external review.\n\nVerdict: high-severity findings, all folded in before external review proceeded. 11 findings total:\n\n- Category: correctness - Severity: high\n  Finding: Baseline stale — 15 files/6 numbers on disk at build time, not the 13/5 the brief was drafted against (ADR-128 collided via #604/#605 after the brief was written).\n  Suggestion: Regenerate the baseline from the tree at build time, never hand-transcribe; reword AC5/AC6 accordingly.\n\n- Category: correctness - Severity: high\n  Finding: Reusing adr_index.lock for the proposed allocator self-deadlocks (no reentrancy) and creates unrelated contention with release-time index renders.\n  Suggestion: A dedicated adr_spec_number.lock, sub-millisecond critical section.\n\n- Category: correctness - Severity: high\n  Finding: Watermark floor invisible to in-flight sibling worktrees; a gitignored dir is cleanable.\n  Suggestion: Floor = max(watermark, main-root max, every linked worktree's max via git worktree list).\n\n- Category: correctness - Severity: medium\n  Finding: resolve_main_repo_root() degrades to worktree-local silently on several real paths.\n  Suggestion: CLI states resolved scope explicitly every call; degraded path loud on stderr.\n\n- Category: correctness - Severity: medium\n  Finding: No idempotency; number and filename can diverge (recreates the original defect in miniature).\n  Suggestion: Idempotent per run_id; CLI prints/returns the exact target path.\n\n- Category: correctness - Severity: medium\n  Finding: Collision report under .shipwright/planning/adr/ would render as a pseudo-ADR in the committed INDEX.md.\n  Suggestion: Move the report to .shipwright/planning/iterate/.\n\n- Category: correctness - Severity: medium\n  Finding: Anti-ratchet rule ambiguous between count and membership — both readings exploitable.\n  Suggestion: actual subset-of pinned per number, shared parse_adr_number() helper.\n\n- Category: test-coverage - Severity: medium\n  Finding: AC1 (the primary defect) had no permanent regression guard, unlike AC5.\n  Suggestion: Add AC1b: committed drift-guard test.\n\n- Category: process - Severity: medium\n  Finding: Missing same-diff obligations — marketplace sync (plugin-side files) + guide.md Appendix B check (new shipped command).\n  Suggestion: Add to mini-plan work breakdown.\n\n- Category: process - Severity: low\n  Finding: Allocator formally widens the pre-existing spec-folder-number vs. log-number divergence.\n  Suggestion: State explicitly as an accepted consequence.\n\n- Category: correctness - Severity: low\n  Finding: Index-first fix inherits the same unbounded-growth curve; no fallback named for \"no matching index entry\".\n  Suggestion: Name a fallback in the reader instruction.\n\nAll 11 findings were folded into the design before the external review call (deepseek + openai) proceeded. The Round-1 allocator design this review evaluated was itself later superseded (both external reviewers rejected/revised the allocator approach on proportionality grounds; the operator chose a simpler run_id-named-file design with no allocator) — see the iterate spec's Architecture Review section. The internal review's individual bug-fixes (e.g. lock reentrancy, watermark durability) became moot once the allocator itself was retired, but the process-level findings (AC1b regression guard, marketplace sync, report placement, anti-ratchet subset rule) carried forward into the final design and were implemented.\n",
+      "model_tier": "opus"
     }
   }
 }
