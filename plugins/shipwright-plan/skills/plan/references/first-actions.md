@@ -28,8 +28,9 @@ Output:
 Requirements:
   - Spec file from /shipwright-project
   - Recommended: OPENROUTER_API_KEY for DeepSeek + OpenAI review;
-    OPENAI_API_KEY can run the GPT arm only. If missing, the skill will ask whether to
-    skip external review and fall back to mandatory self-review.
+    OPENAI_API_KEY can run the GPT arm only. An internal Opus review always
+    runs first; if keys are missing, the skill will ask whether to skip
+    external review and rely on that internal review instead.
 ================================================================================
 ```
 
@@ -192,9 +193,10 @@ uv run "${SHIPWRIGHT_PLUGIN_ROOT}/../../shared/scripts/tools/resolve_gate_policy
 Apply the printed `effective_policy`:
 
 - `auto-default` → proceed with the `default_answer`, **no END-TURN**. (The
-  interview is answered from loaded project context; a missing external-review key
-  falls back to the mandatory self-review. Human plan-review is deferred to the
-  orchestrator's cross-phase gate.)
+  interview is answered from loaded project context; a missing external-review
+  key falls back to the internal Opus review already on record, not a
+  self-review checklist. Human plan-review is deferred to the orchestrator's
+  cross-phase gate.)
 - `orchestrator-approve` / `hard-stop` → **STILL STOP** and hand a gate-pending
   result back to the orchestrator; never auto-answer.
 - `interactive` (any non-single-session run) → behave exactly as documented.

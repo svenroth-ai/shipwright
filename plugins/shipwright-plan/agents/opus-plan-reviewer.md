@@ -1,6 +1,6 @@
 ---
 name: opus-plan-reviewer
-description: Reviews implementation plans for footguns, security issues, performance problems, and architecture concerns. Used as fallback when external LLM review is unavailable.
+description: Reviews implementation plans for footguns, security issues, performance problems, and architecture concerns. Runs first in /shipwright-plan Step 5, before external LLM review, and carries the gate when external review is unavailable.
 tools: Read, Grep, Glob
 model: opus
 ---

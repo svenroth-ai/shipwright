@@ -12,7 +12,7 @@ Shipwright is an AI-powered SDLC framework built on Claude Code. It is structure
 |---|---|---|---|---|---|---|
 | FR-01.01 | Adopted | /shipwright-run | Must | Run the whole delivery pipeline end to end in one conversation — requirements, design, planning, build, test, release notes and hosting, in that order — so a change moves from a plain description to delivered work without the operator driving each phase by hand. Security scanning and audit evidence are deliberately not steps of it: the first runs on its own, the second happens alongside every phase. | code | unit (inferred) |
 | FR-01.02 | Adopted | /shipwright-project | Must | Turn a project description into well-scoped, individually deliverable requirements, and write the starting guidance an assistant needs to work inside that project. | code | unit (inferred) |
-| FR-01.03 | Adopted | /shipwright-plan | Must | Produce an implementation plan from research and an optional interview, structured so the build phase can consume it one section at a time, tests first. No plan reaches the build phase unreviewed: two independent external language models review it by default, and declining them obliges a structured self-review in their place. The same review step asks a second, separate question — whether the work should be built at all — of the same two reviewers, over a short brief that withholds the plan's own reasons for rejecting the alternatives. | code | unit (inferred) |
+| FR-01.03 | Adopted | /shipwright-plan | Must | Produce an implementation plan from research and an optional interview, structured so the build phase can consume it one section at a time, tests first. No plan reaches the build phase unreviewed: an independent reviewer always checks it first, two independent external language models review it by default on top of that, and if the outside reviewers cannot be reached the independent reviewer's check is what carries the gate rather than the plan's own author re-reading it (unless that reviewer itself could not be reached either, in which case the route taken is recorded as such). The same review step asks a second, separate question — whether the work should be built at all — of the same two external reviewers, over a short brief that withholds the plan's own reasons for rejecting the alternatives. | code | unit (inferred) |
 | FR-01.04 | Adopted | /shipwright-design | Should | Turn requirements into clickable mockups — standalone screens and the flows between them — that can be refined by conversation before any production code is written. | code | e2e (inferred) |
 | FR-01.05 | Adopted | /shipwright-build | Must | Turn one planned section into working code that does what the section specified and matches its design mockup — one section at a time, on its own branch. The engineering discipline it works under — test-first, code review, safe conventional commits — is the framework's, applied here rather than owned here. | code | unit (inferred) |
 | FR-01.06 | Adopted | /shipwright-test | Must | Run the project's tests at every level it has — unit, integration, database, end-to-end and smoke — and produce one record in which each level carries an explicit outcome or a stated reason it did not run. Compare the built screens back to their mockups, hold the project to the performance budgets it declared, and report which of the declared pairs of code that write and read the same stored format appear to have no test covering them. | code | unit (inferred) |
@@ -177,6 +177,14 @@ _Where the work detail lives_ at the end of this document.
   outside reviewers check it cannot run because no access key is configured,
   then the run stops and asks whether to add a key or continue without that
   review — it is never skipped quietly.
+- (E) Given the outside reviewers cannot be reached or have been switched
+  off, when the plan's review step ends, then an independent reviewer has
+  still checked the plan against the requirements and its findings are each
+  folded in or recorded with a reason — the step is never satisfied by the
+  plan's own author re-reading it, unless that independent reviewer itself
+  could not be reached either, in which case the route taken (a self-review
+  by the plan's own author) is recorded as what happened rather than
+  presented as an independent check.
 - (E) Given that review step has ended by any route — reviewed, declined by the
   operator, or switched off in configuration — when the plan is divided into
   sections, then the route taken is on record, and dividing it refuses to begin
