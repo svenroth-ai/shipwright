@@ -1,0 +1,325 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-08-07-decision-log-drops-index",
+    "date": "2026-08-07",
+    "unit": {
+      "status": "passed",
+      "passed": 8663,
+      "total": 8663,
+      "note": "Full shared/tests suite (8663 passed, 32 skipped, 20 deselected) run fresh against the current code state after all review-cascade fixes. Targeted new/changed test files also re-run individually throughout: test_decision_log_index*.py, test_decision_drops_index*.py, test_write_decision_log*.py, test_aggregate_decisions.py, test_write_decision_drop.py, test_adr_index_churn_integration.py. Row 51 added after a real CI failure (ADR-045 in-process lib collision, plugins/shipwright-build's own Required Check) was reproduced locally and fixed."
+    },
+    "integration": {
+      "status": "passed",
+      "passed": 5,
+      "total": 5,
+      "note": "test_decision_log_index_churn_integration.py \u2014 real-git diverged-merge scenarios"
+    },
+    "pgtap": {
+      "status": "n/a",
+      "reason": "no database"
+    },
+    "e2e": {
+      "status": "n/a",
+      "reason": "no browser/HTTP/CLI-user-facing surface of its own \u2014 pure Python library/CLI/doc change"
+    },
+    "design_fidelity": {
+      "status": "n/a",
+      "reason": "no UI surface"
+    },
+    "smoke": {
+      "status": "n/a",
+      "reason": "no startable server surface in this repo"
+    },
+    "degraded": [],
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "`render_decision_log_index` parses `### ADR-NNN: Title` headings, fence-aware",
+          "disposition": "tested",
+          "evidence": "`test_decision_log_index.py::test_headings_inside_a_fenced_code_block_are_ignored` PASSED"
+        },
+        {
+          "behavior": "Bare heading with no title still renders",
+          "disposition": "tested",
+          "evidence": "`test_decision_log_index.py::test_a_bare_heading_with_no_title_still_renders` PASSED"
+        },
+        {
+          "behavior": "`current-status` derived from `(supersedes ADR-NNN)` marker",
+          "disposition": "tested",
+          "evidence": "`test_decision_log_index.py::test_supersedes_marker_annotates_the_superseded_entry` PASSED"
+        },
+        {
+          "behavior": "Supersedes match is case-insensitive",
+          "disposition": "tested",
+          "evidence": "`test_decision_log_index.py::test_supersedes_is_case_insensitive` PASSED"
+        },
+        {
+          "behavior": "Title brackets escaped so link label isn't truncated",
+          "disposition": "tested",
+          "evidence": "`test_decision_log_index.py::test_bracket_in_title_is_escaped_so_the_link_label_is_not_truncated` PASSED"
+        },
+        {
+          "behavior": "GitHub-heading-anchor slugify matches expected shape",
+          "disposition": "tested",
+          "evidence": "`test_decision_log_index.py::test_slugify_matches_github_heading_anchor_shape` PASSED"
+        },
+        {
+          "behavior": "Missing `decision_log.md` \u2192 strict no-op",
+          "disposition": "tested",
+          "evidence": "`test_decision_log_index_writing.py::test_missing_decision_log_is_a_strict_noop` PASSED"
+        },
+        {
+          "behavior": "Write is atomic (failed replace leaves prior index intact)",
+          "disposition": "tested",
+          "evidence": "`test_decision_log_index_writing.py::test_failed_write_leaves_the_previous_index_intact` PASSED"
+        },
+        {
+          "behavior": "Written index is LF-only even on Windows",
+          "disposition": "tested",
+          "evidence": "`test_decision_log_index_writing.py::test_render_is_written_verbatim_lf_even_on_windows` PASSED"
+        },
+        {
+          "behavior": "CLI regenerates against a real folder",
+          "disposition": "tested",
+          "evidence": "`test_decision_log_index_writing.py::test_cli_regenerates_the_index` PASSED"
+        },
+        {
+          "behavior": "`append_decision()` (direct path) refreshes the index in the same call",
+          "disposition": "tested",
+          "evidence": "`test_decision_log_index_producers.py::test_append_decision_refreshes_the_index` PASSED"
+        },
+        {
+          "behavior": "Index refresh at append is best-effort and warns, not raises",
+          "disposition": "tested",
+          "evidence": "`test_decision_log_index_producers.py::test_append_decision_refresh_is_best_effort_and_warns` PASSED"
+        },
+        {
+          "behavior": "`aggregate_decisions.py` refreshes with zero drops (fixes the fold-only-refresh defect)",
+          "disposition": "tested",
+          "evidence": "`test_decision_log_index_producers.py::test_aggregate_refreshes_with_zero_drops` PASSED"
+        },
+        {
+          "behavior": "`aggregate_decisions.py` dry-run writes nothing",
+          "disposition": "tested",
+          "evidence": "`test_decision_log_index_producers.py::test_aggregate_dry_run_writes_nothing` PASSED"
+        },
+        {
+          "behavior": "Committed `decision_log_index.md` in THIS repo is not stale (drift guard)",
+          "disposition": "tested",
+          "evidence": "`test_decision_log_index_producers.py::test_committed_index_is_not_stale` PASSED"
+        },
+        {
+          "behavior": "Drift guard actually fails on a stale index (guard is provably not vacuous)",
+          "disposition": "tested",
+          "evidence": "`test_decision_log_index_producers.py::test_drift_guard_actually_fails_on_a_stale_index` PASSED"
+        },
+        {
+          "behavior": "Every real decision-log entry (fence-aware) is listed in the committed index",
+          "disposition": "tested",
+          "evidence": "`test_decision_log_index_producers.py::test_every_entry_in_this_repo_is_listed` PASSED"
+        },
+        {
+          "behavior": "`DECISION_LOG_INDEX` is registered as resolvable churn",
+          "disposition": "tested",
+          "evidence": "`test_decision_log_index_producers.py::test_the_index_is_registered_as_resolvable_churn` PASSED"
+        },
+        {
+          "behavior": "`DECISION_LOG_INDEX` is not a `DERIVED_SNAPSHOTS` member",
+          "disposition": "tested",
+          "evidence": "`test_decision_log_index_producers.py::test_the_index_is_not_a_derived_snapshot` PASSED"
+        },
+        {
+          "behavior": "Two-diverged-branch real merge refreshes+stages the index end-to-end (`cross_component` integration)",
+          "disposition": "tested",
+          "evidence": "`test_decision_log_index_churn_integration.py::test_index_refreshes_and_ships_through_a_real_diverged_merge` PASSED",
+          "category": "integration"
+        },
+        {
+          "behavior": "A failed post-merge refresh is reported in `steps`, not swallowed",
+          "disposition": "tested",
+          "evidence": "`test_decision_log_index_churn_integration.py::test_a_failed_index_refresh_is_reported_not_swallowed` PASSED",
+          "category": "integration"
+        },
+        {
+          "behavior": "Decision-drops index: no pending drops renders the empty state",
+          "disposition": "tested",
+          "evidence": "`test_decision_drops_index.py::test_no_drops_renders_the_empty_state` PASSED"
+        },
+        {
+          "behavior": "A pending drop is listed with its title",
+          "disposition": "tested",
+          "evidence": "`test_decision_drops_index.py::test_a_pending_drop_is_listed` PASSED"
+        },
+        {
+          "behavior": "Missing title falls back to a decision snippet",
+          "disposition": "tested",
+          "evidence": "`test_decision_drops_index.py::test_missing_title_falls_back_to_a_decision_snippet` PASSED"
+        },
+        {
+          "behavior": "Scaffolding files (`.gitkeep`, `_*.json`) are skipped",
+          "disposition": "tested",
+          "evidence": "`test_decision_drops_index.py::test_scaffolding_files_are_skipped` PASSED"
+        },
+        {
+          "behavior": "A malformed drop is skipped, not fatal to the whole render",
+          "disposition": "tested",
+          "evidence": "`test_decision_drops_index.py::test_a_malformed_drop_is_skipped_not_fatal` PASSED"
+        },
+        {
+          "behavior": "Missing drops dir \u2192 strict no-op",
+          "disposition": "tested",
+          "evidence": "`test_decision_drops_index_producers.py::test_missing_drops_dir_is_a_strict_noop` PASSED"
+        },
+        {
+          "behavior": "Drops-index write is atomic",
+          "disposition": "tested",
+          "evidence": "`test_decision_drops_index_producers.py::test_failed_write_leaves_the_previous_index_intact` PASSED"
+        },
+        {
+          "behavior": "Drops-index CLI regenerates against a real folder",
+          "disposition": "tested",
+          "evidence": "`test_decision_drops_index_producers.py::test_cli_regenerates_the_index` PASSED"
+        },
+        {
+          "behavior": "`write_decision_drop.py`'s CLI refreshes the drops index",
+          "disposition": "tested",
+          "evidence": "`test_decision_drops_index_producers.py::test_write_decision_drop_refreshes_the_drops_index` PASSED"
+        },
+        {
+          "behavior": "Drops-index refresh at write is best-effort and warns",
+          "disposition": "tested",
+          "evidence": "`test_decision_drops_index_producers.py::test_write_decision_drop_index_refresh_is_best_effort_and_warns` PASSED"
+        },
+        {
+          "behavior": "`aggregate_decisions.py` folding a drop refreshes the drops index back to empty",
+          "disposition": "tested",
+          "evidence": "`test_decision_drops_index_producers.py::test_aggregate_folding_a_drop_refreshes_the_drops_index_to_empty` PASSED"
+        },
+        {
+          "behavior": "The drops index carries no `CHURN_ALLOWLIST` entry (deliberate, asserted not just narrated)",
+          "disposition": "tested",
+          "evidence": "`test_decision_drops_index_producers.py::test_the_drops_index_carries_no_churn_allowlist_entry` PASSED"
+        },
+        {
+          "behavior": "`docs/hooks-and-pipeline.md` churn table stays in sync both directions",
+          "disposition": "tested",
+          "evidence": "`test_churn_merge_doc_sync.py::test_doc_table_matches_churn_allowlist_both_directions` PASSED (pre-existing test, re-run green after the new entry)"
+        },
+        {
+          "behavior": "Full pre-existing ADR-index + decision-log/drop suite has zero regressions",
+          "disposition": "tested",
+          "evidence": "116 pre-existing tests in `test_adr_index*.py`, `test_write_decision_log.py`, `test_write_decision_drop.py`, `test_aggregate_decisions.py`, `test_decision_drop_ssot.py`, `test_churn_merge_doc_sync.py` \u2014 all PASSED"
+        },
+        {
+          "behavior": "Supersedes marker matches an unpadded reference (`ADR-42`) against a zero-padded heading (`ADR-042`)",
+          "disposition": "tested",
+          "evidence": "`test_decision_log_index.py::test_supersedes_matches_an_unpadded_reference_to_a_zero_padded_heading` PASSED"
+        },
+        {
+          "behavior": "A multi-target marker (`supersedes ADR-042 and ADR-100`) annotates every target",
+          "disposition": "tested",
+          "evidence": "`test_decision_log_index.py::test_supersedes_annotates_every_target_in_a_multi_target_marker` PASSED"
+        },
+        {
+          "behavior": "Supersedes marker need not be the last thing in the title",
+          "disposition": "tested",
+          "evidence": "`test_decision_log_index.py::test_supersedes_marker_need_not_be_the_last_thing_in_the_title` PASSED"
+        },
+        {
+          "behavior": "`refresh_best_effort` warns (not raises) on an undecodable `decision_log.md`",
+          "disposition": "tested",
+          "evidence": "`test_decision_log_index_producers.py::test_refresh_best_effort_warns_instead_of_raising_on_undecodable_log` PASSED"
+        },
+        {
+          "behavior": "Decision-drops index lock is anchored at the resolved drops-dir's own root, not the caller's `project_root` (two worktrees contend on the SAME lock file)",
+          "disposition": "tested",
+          "evidence": "`test_decision_drops_index_producers.py::test_lock_is_anchored_at_the_resolved_drops_dirs_own_root` PASSED"
+        },
+        {
+          "behavior": "An embedded newline in a drop's title cannot break its bullet row",
+          "disposition": "tested",
+          "evidence": "`test_decision_drops_index.py::test_an_embedded_newline_in_a_title_cannot_break_the_bullet_row` PASSED"
+        },
+        {
+          "behavior": "A mid-loop exception in `aggregate()`'s per-drop architecture-doc step still refreshes the index (via `finally`), not just a clean pass",
+          "disposition": "tested",
+          "evidence": "`test_aggregate_decisions.py::test_a_mid_loop_exception_still_refreshes_the_index` PASSED"
+        },
+        {
+          "behavior": "`write_decision_log.py`'s CLI runs with no `PYTHONPATH` set (the invocation shape plan/build/deploy actually use)",
+          "disposition": "tested",
+          "evidence": "`test_write_decision_log_bootstrap.py::test_cli_runs_with_no_pythonpath_set` PASSED (split out of `test_write_decision_log.py` \u2014 bloat-gate crossing at 301 lines)"
+        },
+        {
+          "behavior": "A `### DR-NNN` entry (shipwright-design's own numbering, sharing the log with ADR-NNN) is indexed alongside ADR entries",
+          "disposition": "tested",
+          "evidence": "`test_decision_log_index.py::test_design_dr_entries_are_indexed_alongside_adr_entries` PASSED"
+        },
+        {
+          "behavior": "A DR-NNN and an ADR-NNN sharing digits never collide through the supersession lookup",
+          "disposition": "tested",
+          "evidence": "`test_decision_log_index.py::test_dr_entries_are_never_annotated_as_superseded` PASSED"
+        },
+        {
+          "behavior": "`(supersedes ADR-042, see ADR-100)` annotates only the named target, not every ADR the trailing text happens to mention",
+          "disposition": "tested",
+          "evidence": "`test_decision_log_index.py::test_supersedes_does_not_over_derive_from_an_unrelated_adr_mention` PASSED"
+        },
+        {
+          "behavior": "A `null` (or non-string) `decision` field in a drop does not crash the title fallback",
+          "disposition": "tested",
+          "evidence": "`test_decision_drops_index.py::test_a_null_decision_with_no_title_does_not_raise` PASSED"
+        },
+        {
+          "behavior": "Markdown-active characters in a drop's title cannot become a live link/image or break a code span",
+          "disposition": "tested",
+          "evidence": "`test_decision_drops_index.py::test_markdown_syntax_in_a_title_cannot_become_a_live_link_or_image` PASSED"
+        },
+        {
+          "behavior": "An uncommitted local edit to `decision_log.md` at merge time is skipped, not staged as an index describing content no commit contains",
+          "disposition": "tested",
+          "evidence": "`test_decision_log_index_churn_integration.py::test_an_uncommitted_decision_log_skips_the_refresh_instead_of_staging_it` PASSED",
+          "category": "integration"
+        },
+        {
+          "behavior": "A deleted `decision_log.md` post-merge does not falsely report `-refreshed` for an unchanged, stale committed index",
+          "disposition": "tested",
+          "evidence": "`test_decision_log_index_churn_integration.py::test_a_deleted_decision_log_does_not_falsely_report_a_refresh` PASSED",
+          "category": "integration"
+        },
+        {
+          "behavior": "`write_decision_log.py` works when imported IN-PROCESS by a test session whose own `lib` package already shadows shared's (ADR-045 collision, distinct from row 43's bare-CLI bootstrap)",
+          "disposition": "tested",
+          "evidence": "`plugins/shipwright-build/tests/test_integration.py::test_setup_and_track_section` + `tests/test_tools.py::test_write_decision_log` + `::test_write_decision_log_creates_dir` \u2014 reproduced the CI failure locally before the fix (`load_shared_lib` + relative imports in `decision_log_index.py`/`decision_drops_index.py`), all PASSED after"
+        }
+      ],
+      "counts": {
+        "testable": 51,
+        "tested": 51,
+        "untestable": 0,
+        "untested_testable": 0
+      },
+      "enumeration_basis": {
+        "acs": 8,
+        "covered_acs": 8
+      }
+    },
+    "surface_verification": {
+      "surface": "none",
+      "runner": "",
+      "exit_code": 0,
+      "tests_run": 0,
+      "evidence_path": "",
+      "timestamp": "2026-08-07T23:17:27.146Z",
+      "justification": "pure Python library/CLI/doc change with no HTTP, browser, or CLI-user-facing surface of its own \u2014 the framework's dev-loop test suite (shared/tests/) is the executable surface, exercised directly via the full-suite run recorded in unit."
+    }
+  },
+  "source_state": {
+    "run_id": "iterate-2026-08-07-decision-log-drops-index",
+    "commit": "f8407006f9d8a6307b5f8d7141ca488ddca467ee",
+    "dirty": true,
+    "base": null,
+    "release": null
+  }
+}

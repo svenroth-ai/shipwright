@@ -89,6 +89,28 @@ def test_unparseable_late_content_is_kept_not_adopted(repo, monkeypatch) -> None
     assert "half-written" not in _outbox(repo).read_text(encoding="utf-8")
 
 
+def test_a_glued_late_line_is_kept_but_names_the_repair_tool(repo, monkeypatch) -> None:
+    """Stage-3 doubt review, medium. A late line that GLUES two well-formed appends
+    (the same shape ``plan_main_tracked_drift`` now names on the refusal path) landed
+    here as unexplained corruption, on a branch that already reports the sweep as
+    ``adopted`` (success) — an unnamed remedy is easier to miss on a success than on a
+    refusal. It must still be preserved, not adopted (this predicate never licenses
+    moving a glued line), but the reason must say why and how to fix it."""
+    _add_drift(repo, h.item("trg-drift"))
+    plan = plan_main_tracked_drift(repo, _outbox(repo))
+    glued = h.item("trg-glued-a") + h.item("trg-glued-b")
+    _writer_lands_in_the_window(monkeypatch, repo, glued + "\n")
+
+    result = commit_main_tracked_drift(plan, repo, _outbox(repo))
+
+    assert result.status == "adopted"
+    assert "main_tracked_salvage_glued_line" in result.reason, result.reason
+    assert "triage_repair.py" in result.reason, "the escape hatch is unnamed: " + result.reason
+    kept = _salvages(repo)
+    assert len(kept) == 1 and "trg-glued-a" in kept[0].read_text(encoding="utf-8")
+    assert "trg-glued-a" not in _outbox(repo).read_text(encoding="utf-8"), "glue reached delivery"
+
+
 def test_failed_adoption_keeps_the_salvage_rather_than_dropping_it(repo, monkeypatch) -> None:
     """The salvage is the ONLY copy of a late append until the outbox write lands.
     If that write fails, deleting it would destroy the very line we preserved."""

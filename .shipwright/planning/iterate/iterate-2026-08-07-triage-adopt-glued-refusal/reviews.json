@@ -1,0 +1,220 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-08-07-triage-adopt-glued-refusal",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-07T21:54:22.794662+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 4,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "_looks_like_producer_record(obj)` defines producer validity separately from `_is_producer_event`. The mini-plan only requires `event in {\"append\", \"status\"}` and a string `id`, which may be weaker or drift over time from the gate's actual producer-event contract. That can cause malformed or non-producer-shaped JSON fragments to be labeled `main_tracked_glued_line` merely because resynchronization finds an object with those two fields.",
+          "suggestion": "Extract or reuse the canonical decoded-object validation underlying `_is_producer_event` (for example, make `_is_producer_event` parse then delegate to `_looks_like_producer_record`). This keeps clean-event acceptance and recovered-record recognition aligned as the event schema evolves.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The proposed predicate returns true when any recoverable producer record exists after whole-line parsing fails. This intentionally covers AC6's damaged-prefix case, but it also labels cases such as a valid producer record followed by arbitrary garbage, or a valid record embedded in unrelated corrupted content, as \"glued.\" The delivery behavior remains safely unchanged, but the reason may overstate what `triage_repair.py` can repair automatically.",
+          "suggestion": "Either explicitly document that `main_tracked_glued_line` means \"a recoverable producer record exists within an otherwise invalid physical line\", or add a test for valid-record-plus-non-record garbage and ensure the hint is phrased as \"inspect/report with\" rather than promising repair. Report-mode guidance is appropriate for both cases.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "The AC5 composition test is described as a single agreement test, while the stated guarantee is directional over the protection parser's accepted input space. A fixture containing two ordinary append records would not catch differences in optional fields, status/append combinations, or parser-valid append variants.",
+          "suggestion": "Parameterize the composition test with the representative valid append record shapes already used by `append_ids_of` tests, including append-plus-status and records with permitted extra fields. Assert that every fixture for which `append_ids_of` returns at least one ID is recognized by `_is_glued_producer_line`.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "The plan relies on backward resynchronization being bounded by `_MAX_RESYNC_ATTEMPTS`, but does not state how that bound is passed or verified at this new call site. Since malformed tracked content is the trigger, this should not accidentally introduce a more expensive recovery path than existing callers.",
+          "suggestion": "Use the same explicit bounded invocation pattern as the established resynchronizing callers, and add or retain a test with a malformed prefix sufficient to exercise resync without relying on unbounded scanning behavior.  Overall, the conservative recognize-without-moving approach is sound and preserves the important verbatim adoption invariant. The remaining work is primarily to ensure the new classifier shares the gate's real producer-record definition and that its broader \"recoverable record\" labeling is intentional and tested. SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openai+deepseek",
+      "completed_at": "2026-08-07T21:52:22.516040+00:00",
+      "disposition": null,
+      "recorded_by": "external_review.py --mode iterate",
+      "parse_status": "partial",
+      "raw_excerpt": "[deepseek] **Findings**\n\n*(No substantive issues identified beyond what has already been addressed by the plan and its internal review. The implementation is carefully scoped, well-tested, and consistent with existing conventions.)*\n\n---\n\n**Overall assessment:** The approach is sound, correctly limits the change to a refusal-message refinement without altering what is adopted, comprehensively handles the documented failure shapes, and aligns with the module's existing patterns and tooling. All risks noted by the earlier internal review have been resolved.\n\nSHIPWRIGHT_VERDICT: approve\n\n[openai] 1. **Category:** approach\n   **Severity:** medium\n   **Finding:** `_looks_like_producer_record(obj)` defines producer validity separately from `_is_producer_event`. The mini-plan only requires `event in {\"append\", \"status\"}` and a string `id`, which may be weaker or drift over time from the gate's actual producer-event contract. That can cause malformed or non-producer-shaped JSON fragments to be labeled `main_tracked_glued_line` merely because resynchronization finds an object with those two fields.\n   **Suggestion:** Extract or reuse the canonical decoded-object validation underlying `_is_producer_event` (for example, make `_is_producer_event` parse then delegate to `_looks_like_producer_record`). This keeps clean-event acceptance and recovered-record recognition aligned as the event schema evolves.\n\n2. **Category:** edge-case\n   **Severity:** low\n   **Finding:** The proposed predicate returns true when *any* recoverable producer record exists after whole-line parsing fails. This intentionally covers AC6's damaged-prefix case, but it also labels cases such as a valid producer record followed by arbitrary garbage, or a valid record embedded in unrelated corrupted content, as \"glued.\" The delivery behavior remains safely unchanged, but the reason may overstate what `triage_repair.py` can repair automatically.\n   **Suggestion:** Either explicitly document that `main_tracked_glued_line` means \"a recoverable producer record exists within an otherwise invalid physical line\", or add a test for valid-record-plus-non-record garbage and ensure the hint is phrased as \"inspect/report with\" rather than promising repair. Report-mode guidance is appropriate for both cases.\n\n3. **Category:** risk\n   **Severity:** low\n   **Finding:** The AC5 composition test is described as a single agreement test, while the stated guarantee is directional over the protection parser's accepted input space. A fixture containing two ordinary append records would not catch differences in […truncated]",
+      "verdicts": {
+        "openai": "revise",
+        "deepseek": "approve"
+      }
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 8,
+      "findings": [
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": ".shipwright/planning/iterate/iterate-2026-08-07-triage-adopt-glued-refusal.md",
+          "line": 317,
+          "finding": "Ledger row 8 claims 'the full existing drift/adoption/sweep suite is unaffected' but enumerates only 5 modules. At least 5 more shared/tests modules call plan_main_tracked_drift and were neither named nor reported: test_sweep_drift_restore.py, test_sweep_drift_restore_faults.py, test_reconcile_rollback.py, test_main_tree_git_timeout_paths.py, test_sweep_store_decode_parity.py (plus test_sweep_outbox* via sweep_outbox.py:146). The refactor of _is_producer_event is byte-equivalent so they should pass, but the 'unaffected' claim is currently unevidenced for the modules most likely to notice a gate change.",
+          "suggestion": "They are all in the same pytest root — one `uv run pytest shared/tests -k 'sweep or reconcile or main_tree'` covers them. Extend row 8's evidence cell with the result.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "shared/scripts/lib/sweep_drift_events.py",
+          "line": 85,
+          "finding": "The docstring justifies a production-code shape decision with test-fixture convenience ('a functional swap would also require reworking the shared test fixtures several unrelated modules depend on'). That sentence inverts the dependency direction and is already at risk of rotting — this very diff moved those fixtures. The durable reason ('Nothing here is ever written back: this module only picks the wording of a refusal message') is stated two lines above and is sufficient on its own.",
+          "suggestion": "Delete the trailing fixture clause (~3 lines); keep the write-path argument. Catalog M.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "architecture",
+          "file": "shared/tests/_sweep_helpers.py",
+          "line": 200,
+          "finding": "This is the only @pytest.fixture in an underscore helper module anywhere in shared/tests, and it forces the only two # noqa: F811 in shared/ plus an F401. The repo's existing home for sweep fixtures is shared/tests/conftest.py, which already owns git_origin_repo, make_worktree, remove_worktree and the sweep-specific _sweep_tests_unset_ci. A new convention was introduced to resolve a duplication finding rather than reusing the established one.",
+          "suggestion": "Move `seeded` to shared/tests/conftest.py: zero suppressions needed. Non-blocking — the current form works and is documented.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/tests/_sweep_helpers.py",
+          "line": 196,
+          "finding": "write_tracked used Path.write_text(..., encoding='utf-8'), but this module's own write_store_bytes exists precisely because write_text raises UnicodeEncodeError on a lone surrogate. Promoted to the shared surface it is a trap for the first caller that writes a broken-byte line in a suite whose whole point is bad-byte fidelity.",
+          "suggestion": "Body becomes write_store_bytes(work / TRIAGE, body); return body.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "shared/scripts/lib/sweep_drift.py",
+          "line": 174,
+          "finding": "The new constant and helper sat at exactly 300 lines with zero headroom and 100+ column lines, visible artifacts of the 300-LOC ceiling.",
+          "suggestion": "Move _REPAIR_HINT + _bad_drift_reason into sweep_drift_events.py — both are pure, stdlib-only, I/O-free and that module has ~160 lines of headroom.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "shared/scripts/lib/sweep_drift.py",
+          "line": 29,
+          "finding": "Two dangling 'AC14' references with no run id — the rest of the module consistently cites full run ids.",
+          "suggestion": "Cite it as '(the AC14 shape — iterate-2026-08-06-triage-validate-deadends)'.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "shared/tests/test_sweep_drift_glued_refusal.py",
+          "line": 28,
+          "finding": "The same module is imported twice in two styles (`import _sweep_helpers as h` and `from _sweep_helpers import outbox, seeded, write_tracked`), against the module's own stated h.-qualified convention. Only seeded genuinely requires the bare form.",
+          "suggestion": "Keep `from _sweep_helpers import seeded` only; call h.outbox(work) / h.write_tracked(...).",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "architecture",
+          "file": "shared/tests/test_sweep_drift_guards.py",
+          "line": 51,
+          "finding": "Net duplication of outbox/write_tracked/seeded went up (three definition sites) until this file's copies were also folded into the shared import.",
+          "suggestion": "Delete guards' local copies and import from _sweep_helpers, matching the new module.",
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-08-07T22:30:29.998738+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 3,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "reversibility",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: naming triage_repair.py makes the refusal escapable, and following the hint can only improve the operator's situation — The new _REPAIR_HINT is the first call site to point an operator at triage_repair.py --apply for main's GIT-TRACKED triage.jsonl. triage_repair.py rewrites the tracked file in place and never commits. Repro: (1) main's tracked log has a glued line inside the HEAD-committed region; (2) a new glued drift line fires main_tracked_glued_line; (3) the operator follows the hint and runs --apply --writers-quiesced; (4) both lines are split, so the working log no longer starts with HEAD's committed lines; (5) every subsequent sweep returns main_tracked_diverged and delivers NOTHING until someone commits the repair. lib.triage_gc_publish.DIVERGENCE_CONSEQUENCE already names this exact hazard for the sibling triage_gc --apply tool. The hint said nothing about committing.",
+          "suggestion": "Extend _REPAIR_HINT with the commit step, quoting triage_gc_publish.DIVERGENCE_CONSEQUENCE so the two remedies cannot drift.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "hidden coupling & blast radius",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: the sibling glued-line site in sweep_drift_restore is safely out of scope (miniplan R3: a narrower and already-conservative check with no reported stall) — sweep_drift_restore._classify_salvage still calls the unchanged _is_producer_event on each late line, so a late-landing GLUED line yields verdict 'unparseable' -> restore_tracked_log returns status 'adopted' (the sweep reports SUCCESS) with a reason naming no remedy. The only copy of those records then lives in a gitignored salvage file git clean -xfd deletes. For the identical byte shape this diff exists to explain, the mutating path still says 'not a well-formed producer append', names no remedy, and reports success rather than refusal — worse than a stall, not milder.",
+          "suggestion": "Reuse the glued-line naming (_is_glued_producer_line / _REPAIR_HINT) in the salvage 'unparseable' branch.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "boundary & contract",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: spec Coverage: all four reachable shapes for a drift line that fails _is_producer_event are covered — A fifth composed shape (truncated prefix + valid record + unrelated non-record garbage, or a prefix past the resync attempt cap) still falls back to main_tracked_unparseable, because backward resync requires every object in a candidate run to satisfy the shape predicate. Message precision only (the hint is folded into both reason codes), but the docstring and spec overstated completeness.",
+          "suggestion": "Correct the docstring and spec Coverage bullet to state the bound honestly; no code change needed.",
+          "source": "doubt-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-08-07T22:49:34.487037+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-07T22:49:46.880142+00:00",
+      "disposition": "advisory-at-small-complexity: external code review is Advisory (not mandatory) at small complexity per the iterate skill's Override Classes; the internal cascade (spec-reviewer, two code-reviewer passes, doubt-reviewer, all model=opus per the run's explicit instruction) already covered this diff, including a fresh-context adversarial disprove pass",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-07T23:16:43.988354+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    }
+  }
+}

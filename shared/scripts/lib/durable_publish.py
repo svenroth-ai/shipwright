@@ -54,11 +54,13 @@ __all__ = ["SHARING_VIOLATION_WINERRORS", "carry_destination_mode",
 #: **What the same probe DID measure is not a code number at all.** A read of a
 #: byte-range-locked region fails inside the read syscall, not ``CreateFile``, so
 #: CPython raises an errno-only ``PermissionError`` with ``winerror`` **None** —
-#: which no set of codes can ever match, so ``durable_read_text`` /
-#: ``durable_read_bytes`` re-raise it instead of retrying. Deliberately NOT fixed
-#: here: it is the read side, it needs its own decision about stalling a genuinely
-#: denied read for the full read budget, and this run is scoped to three named
-#: findings. Filed as its own card.
+#: which no set of codes can ever match. This module's set stays winerror-only
+#: (the write path never retries a ``None`` winerror — a different, real failure
+#: there); the read side's opt-in retry lives in
+#: ``atomic_write._retry_past_sharing_violations``'s ``retry_none_winerror``
+#: flag instead (``trg-db1de213``, fixed after this run deliberately deferred
+#: it — the decision to stall a genuinely denied read for the full read budget
+#: needed its own reasoning, not to ride along with three unrelated findings).
 #:
 #: **5 is ambiguous and we cannot fix that.** ``ERROR_ACCESS_DENIED`` is equally
 #: what a read-only destination, a deny-ACL, or a destination that is a

@@ -177,6 +177,31 @@ def test_aggregation_regenerates_adr_index(tmp_path):
     assert "(002-beta.md)" in index
 
 
+def test_a_mid_loop_exception_still_refreshes_the_index(tmp_path, monkeypatch):
+    """decision_log.md is already written to disk by the time the per-drop
+    architecture-doc loop runs; an exception partway through that loop (e.g.
+    from _append_architecture_update) must not skip the index refresh in the
+    `finally` and leave it stale against content that already changed."""
+    import tools.aggregate_decisions as agg_mod
+
+    _seed_log(tmp_path, "# Decision Log\n")
+    _drop(tmp_path, "iterate-20260520-x", architecture_impact="component")
+
+    def boom(*a, **k):
+        raise RuntimeError("boom")
+
+    monkeypatch.setattr(agg_mod, "_append_architecture_update", boom)
+    try:
+        agg_mod.aggregate(tmp_path)
+    except RuntimeError:
+        pass
+    index = (
+        tmp_path / ".shipwright" / "agent_docs" / "decision_log_index.md"
+    ).read_text(encoding="utf-8")
+    assert "iterate-20260520-x" in _log(tmp_path).read_text(encoding="utf-8")
+    assert "ADR-001" in index
+
+
 def test_dry_run_does_not_touch_index(tmp_path):
     _seed_log(tmp_path, "# Decision Log\n")
     _seed_adr_spec(tmp_path, "001-alpha.md")

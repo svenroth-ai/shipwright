@@ -1,0 +1,176 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-08-07-agent-model-tiers",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-07T23:40:05.807713+00:00",
+      "disposition": null,
+      "recorded_by": "claude",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 10,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "The mini-plan’s \"Files to create/modify\" list omits `shared/scripts/lib/review_record_schema.py`. The spec states `model_tier` must be registered in `_OPTIONAL_STRINGS` so that `validate_entry` accepts the new field; otherwise, any `reviews.json` entry carrying the new key will be rejected as an unknown field, causing the closed-fail path described in the spec.",
+          "suggestion": "Add `shared/scripts/lib/review_record_schema.py` to the edit list and ensure the `_OPTIONAL_STRINGS` update is performed.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "The skill prose plans to call `resolve_model_tier.py` once and reuse the resolved tiers across multiple Agent‑tool spawns, but the plan does not specify how the result will be captured and persisted for the remainder of the run. The Claude Code agent may not automatically remember a shell variable across separate steps; if the skill accidentally re‑executes the resolver (or uses stale values) model‑tier consistency could break.",
+          "suggestion": "Design the SKILL.md wording to either store the JSON in a persistent note/memory that is referenced later, or re-run the resolver only once and assign the result to a well‑defined variable that all spawn instructions can access. Confirm this mechanism works during implementation.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The Agent‑tool spawn instructions must conditionally omit the `model` parameter when the resolved tier is `inherit` (i.e., `agent_param` is `null`). If the prose accidentally passes an empty string, `\"None\"`, or an explicit `null` string, the Agent tool may reject the call or misbehave. The drift test only checks that the instruction text exists, not that the conditional is correctly expressed.",
+          "suggestion": "Ensure the skill prose explicitly says: \"If the resolved model tier is `inherit`, do NOT include the `model` parameter; otherwise add `model: <tier>`\". This should be checked manually during code review, and a small integration test if feasible.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "The `resolve_model_tier.py` CLI outputs a JSON blob with `agent_param` that is `null` for `inherit`. The skill must parse this JSON and use the value. While the plan assumes the agent can parse JSON, the probability of a parse error or misinterpretation (especially with `null`) is non‑zero and the fallback would be to inherit the session model, which is safe but could lead to unnoticed incorrect behaviour.",
+          "suggestion": "Document the expected extraction method (e.g., `jq` or inline Python one‑liner) in the skill’s guidance to reduce ambiguity.  Overall assessment: The design is sound and the test ledger is extensive, but the missing `review_record_schema.py` edit and the unresolved UX around reusing the resolver’s output across multiple spawns need attention before implementation proceeds. SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The F11 behavior in the mini-plan contradicts the acceptance criteria. The specification explicitly says an absent `model_tier` on a completed current-run review pass must be flagged, and that `inherit` must be flagged as unconfirmed when a floor is relevant. The plan instead treats absent/`None` as legacy and silent, and the test ledger confirms `test_unrecorded_tier_is_silent_not_flagged`. It also makes the entire predicate a no-op when no floor is configured.",
+          "suggestion": "Align the implementation and tests with the stated current-run semantics. Since `check_review_record` reads the current run’s record, missing `model_tier` should produce a non-blocking advisory note rather than being treated as a historical compatibility case. Clarify whether `inherit`/missing should be advisory even without a configured floor; the acceptance wording strongly suggests they should be reported as unconfirmed independently of a numeric floor comparison.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "The plan identifies that `model_tier` must be added to `review_record_schema.py`’s `_OPTIONAL_STRINGS`, but does not include `shared/scripts/lib/review_record_schema.py` in the edit list or work breakdown. Without that edit, the intended stricter validation and the documented closed-fail behavior for invalid hand-edited values will not occur; depending on the current validator, the field may instead be rejected wholesale or remain effectively unvalidated.",
+          "suggestion": "Add the schema module explicitly to the implementation scope and tests. Verify all read/write paths agree: `record_review_pass.py` accepts only valid literals, `make_entry` conditionally emits the field, and `validate_entry` accepts only string tier literals (ideally the same shared tier set used by the resolver).",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "Build-side resolution/reporting is under-specified in the actual work breakdown. The acceptance criteria require `/shipwright-build` to resolve all three roles at its §G resolution point and report them through `first-actions.md`’s SESSION REPORT template. The plan only says “Same banner line” and lists spawn-note edits; it neither lists `first-actions.md` as an edited file nor explicitly describes the build resolver invocation, persistence of its output for the session, or the required report row.",
+          "suggestion": "Add the concrete build resolution step and `first-actions.md` edit to the plan. Define one canonical command invocation, the parsed values retained for subsequent build skill instructions, and the exact SESSION REPORT output. Extend drift coverage beyond generic marker presence so it asserts build’s three-role resolution/reporting instruction, not merely its flags.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "The “resolved once per campaign run” requirement is easy to violate through skill-prose execution. The plan says the orchestrator resolves once, but does not state how the resolved values are carried into sub-iterate runners and their delegated cascades without those child sessions re-resolving from a potentially changed config or different worktree context. This could yield a campaign whose report and spawned tiers disagree.",
+          "suggestion": "Require campaign-mode instructions to pass the already-resolved literal tiers explicitly as invocation context to `sub-iterate-runner` and delegated review spawns, and instruct children not to re-run resolution for those inherited campaign values. Add a drift assertion for this explicit propagation.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The resolver’s `project_root` contract needs to be consistently applied by both the CLI and F11 checker. The plan has a good real-worktree test for resolver lookup from the main repository root, but `model_tier_note(record, project_root)` is described as directly reading the config and may receive a linked-worktree root. If it does not reuse the same main-root normalization, the run can resolve tiers from one config location while F11 reads another or none at all.",
+          "suggestion": "Centralize repository-root normalization in `model_tier_config.py` and have both the CLI and `model_tier_note()` call the same loader. Add an F11/worktree-specific test proving the floor is read from the main repository root.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "security",
+          "file": null,
+          "line": null,
+          "finding": "The design is generally safe because values are allowlisted and invalid/hostile inputs are dropped before being emitted into JSON or Agent-tool instructions. However, this safety depends on every consumer using the resolver’s validated `resolved`/`agent_param` output rather than interpolating raw CLI or config values in skill prose.",
+          "suggestion": "Make the skill instructions explicitly use only the CLI JSON’s `agent_param` field for Agent calls and only its `resolved` field for reporting/recording. Keep stderr warnings strictly off stdout so malformed config warnings cannot corrupt the CLI’s JSON protocol.  Overall, the role-based resolver and spawn-time override approach are sound and appropriately avoid frontmatter pinning. The plan needs reconciliation of the F11 missing-tier behavior and completion of the omitted schema/build-resolution wiring before implementation. SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-08-07T23:31:17.053303+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[deepseek] - **Category:** dependency  \n  **Severity:** medium  \n  **Finding:** The mini-plan’s \"Files to create/modify\" list omits `shared/scripts/lib/review_record_schema.py`. The spec states `model_tier` must be registered in `_OPTIONAL_STRINGS` so that `validate_entry` accepts the new field; otherwise, any `reviews.json` entry carrying the new key will be rejected as an unknown field, causing the closed-fail path described in the spec.  \n  **Suggestion:** Add `shared/scripts/lib/review_record_schema.py` to the edit list and ensure the `_OPTIONAL_STRINGS` update is performed.\n\n- **Category:** approach  \n  **Severity:** medium  \n  **Finding:** The skill prose plans to call `resolve_model_tier.py` once and reuse the resolved tiers across multiple Agent‑tool spawns, but the plan does not specify how the result will be captured and persisted for the remainder of the run. The Claude Code agent may not automatically remember a shell variable across separate steps; if the skill accidentally re‑executes the resolver (or uses stale values) model‑tier consistency could break.  \n  **Suggestion:** Design the SKILL.md wording to either store the JSON in a persistent note/memory that is referenced later, or re-run the resolver only once and assign the result to a well‑defined variable that all spawn instructions can access. Confirm this mechanism works during implementation.\n\n- **Category:** edge-case  \n  **Severity:** low  \n  **Finding:** The Agent‑tool spawn instructions must conditionally omit the `model` parameter when the resolved tier is `inherit` (i.e., `agent_param` is `null`). If the prose accidentally passes an empty string, `\"None\"`, or an explicit `null` string, the Agent tool may reject the call or misbehave. The drift test only checks that the instruction text exists, not that the conditional is correctly expressed.  \n  **Suggestion:** Ensure the skill prose explicitly says: \"If the resolved model tier is `inherit`, do NOT include the `model` parameter; otherwi […truncated]\n\n[openai] 1. **Category: edge-case**  \n   **Severity: high**  \n   **Finding:** The F11 behavior in the mini-plan contradicts the acceptance criteria. The specification explicitly says an absent `model_tier` on a completed current-run review pass must be flagged, and that `inherit` must be flagged as unconfirmed when a floor is relevant. The plan instead treats absent/`None` as legacy and silent, and the test ledger confirms `test_unrecorded_tier_is_silent_not_flagged`. It also makes the entire predicate a no-op when no floor is configured.  \n   **Suggestion:** Align the implementation and tests with the stated current-run semantics. Since `check_review_record` reads the current run’s record, missing `model_tier` should produce a non-blocking advisory note rather than being treated as a historical compatibility case. Clarify whether `inherit`/missing should be advisory even without a configured floor; the acceptance wording strongly suggests they should be reported as unconfirmed independently of a numeric floor comparison.\n\n2. **Category: dependency**  \n   **Severity: high**  \n   **Finding:** The plan identifies that `model_tier` must be added to `review_record_schema.py`’s `_OPTIONAL_STRINGS`, but does not include `shared/scripts/lib/review_record_schema.py` in the edit list or work breakdown. Without that edit, the intended stricter validation and the documented closed-fail behavior for invalid hand-edited values will not occur; depending on the current validator, the field may instead be rejected wholesale or remain effectively unvalidated.  \n   **Suggestion:** Add the schema module explicitly to the implementation scope and tests. Verify all read/write paths agree: `record_review_pass.py` accepts only valid literals, `make_entry` conditionally emits the field, and `validate_entry` accepts only string tier literals (ideally the same shared tier set used by the resolver).\n\n3. **Category: approach**  \n   **Severity: medium**  \n   **Finding:** Build-side resoluti […truncated]",
+      "verdicts": {
+        "openai": "revise",
+        "deepseek": "revise"
+      }
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-07T23:38:14.399373+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-07T23:38:19.605931+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-07T23:40:11.684707+00:00",
+      "disposition": "This run's review cascade is entirely internal (spec-reviewer/code-reviewer/doubt-reviewer); it has no external-provider code-review leg of its own to record.",
+      "recorded_by": "claude",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-07T23:38:03.415033+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    }
+  }
+}

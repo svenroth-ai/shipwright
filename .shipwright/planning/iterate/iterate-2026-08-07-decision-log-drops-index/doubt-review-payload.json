@@ -1,0 +1,61 @@
+{
+  "stage": "doubt-review",
+  "doubts": [
+    {
+      "severity": "high",
+      "lens": "cross-plugin",
+      "claim_under_doubt": "The decision-log index rides the same, already-accepted post-merge minting mechanism the ADR index uses, so nothing new is introduced for adopted downstream repos.",
+      "disproof_attempt": "Checked whether plan/build/deploy's skills carry an explicit staging step for write_decision_log.py's output. Neither plan nor deploy has one; build uses `git add -A`. Concluded this is a pre-existing contract (identical to how decision_log.md itself was already staged) rather than a new gap introduced by this change — recorded as a reasoned rebuttal in the iterate spec's Doubt Review section, not a code fix.",
+      "file": null,
+      "line": null
+    },
+    {
+      "severity": "medium",
+      "lens": "completeness",
+      "claim_under_doubt": "The index lists every real decision-log entry.",
+      "disproof_attempt": "shipwright-design writes a second, independently-numbered entry class (### DR-NNN) into the same decision_log.md. The pre-fix `_ENTRY_RE` was ADR-only, so DR-NNN entries were silently absent from the index despite the completeness claim. Confirmed by constructing a log with both an ADR and a DR heading and observing the DR row missing from the render. Fixed via a kind-aware refactor keyed on (kind, num).",
+      "file": "shared/scripts/lib/decision_log_index.py",
+      "line": null
+    },
+    {
+      "severity": "medium",
+      "lens": "consistency",
+      "claim_under_doubt": "Refreshing and staging both post-merge indexes is effectively one atomic step.",
+      "disproof_attempt": "Traced `regenerate_after_merge`: the ADR index and the decision-log index are staged via two independent `_refresh_and_stage_index` calls. A failure in the second leaves the first already staged — an inconsistent-looking partial outcome. Considered making this transactional; rejected because rolling back an already-correct ADR-index stage on an unrelated decision-log-index failure would itself be a regression. Each call reports its own step token, so the partial outcome is visible, not silent.",
+      "file": "shared/scripts/tools/integrate_regenerate.py",
+      "line": null
+    },
+    {
+      "severity": "medium",
+      "lens": "concurrency",
+      "claim_under_doubt": "The decision-log collection is now race-safe end to end because its index write is locked.",
+      "disproof_attempt": "`append_decision()`'s `log_path.write_text(...)` on decision_log.md itself carries no lock, unlike the new locked index write. Two concurrent `append_decision()` calls can both read the same prior content and one write clobbers the other. Confirmed this race pre-exists write_decision_log.py and is unrelated to this change (which adds a lock only around the index it introduces, not the source it reads). Recorded as a known pre-existing condition, out of scope for an index-only change.",
+      "file": "shared/scripts/tools/write_decision_log.py",
+      "line": null
+    },
+    {
+      "severity": "low",
+      "lens": "correctness",
+      "claim_under_doubt": "The supersession position map correctly represents every ADR number's file-order position.",
+      "disproof_attempt": "A duplicate ADR number in this repo's own 328-entry history means `position` keeps only the LAST occurrence. Confirmed this is a pre-existing corpus characteristic (also handled the same way by lib/adr_index.py), already documented in `_supersession_map`'s own docstring, and out of scope per the spec's explicit 'no retroactive renumbering' exclusion.",
+      "file": "shared/scripts/lib/decision_log_index.py",
+      "line": null
+    },
+    {
+      "severity": "low",
+      "lens": "documentation",
+      "claim_under_doubt": "A comment near `_ENTRY_RE` might imply it matches the same heading shape `get_next_adr_number`'s regex does, which would misdescribe the parser.",
+      "disproof_attempt": "Read the current comment text directly: it already states the two are 'intentionally not the same regex' and names the concrete difference (anchored + fence-aware + DR-aware vs. unanchored, non-fence-aware, numbering-only). No change needed — the doubt does not describe the comment's current text.",
+      "file": "shared/scripts/lib/decision_log_index.py",
+      "line": null
+    },
+    {
+      "severity": "low",
+      "lens": "correctness",
+      "claim_under_doubt": "A `-refreshed` step token always means the index was actually re-derived from a real source.",
+      "disproof_attempt": "`refresh()` on a missing source (e.g. decision_log.md deleted) returns None — the same shape a successful no-warning refresh returns. Constructed a scenario (source deleted post-merge, stale index still committed) and confirmed `_refresh_and_stage_index` would append `{label}-refreshed` even though nothing was read or written. Fixed with an explicit source-exists guard before calling refresh(); regression test added (real-git merge with the source deleted).",
+      "file": "shared/scripts/tools/integrate_regenerate.py",
+      "line": null
+    }
+  ]
+}
