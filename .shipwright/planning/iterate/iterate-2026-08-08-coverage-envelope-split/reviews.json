@@ -1,0 +1,185 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-08-08-coverage-envelope-split",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-08T09:23:54.454878+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-08T09:24:02.162452+00:00",
+      "disposition": "BUG path, small complexity: no mini-plan and no external plan/iterate review at this tier per the Phase Matrix (Mini-Plan is FEATURE-only at small; External LLM Review is skip below medium)",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 7,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "shared/scripts/lib/event_context_coverage.py",
+          "line": null,
+          "finding": "area_ids in MISSING_ELIGIBLE_FIELDS re-created the false alarm this iterate exists to remove: an empty-diff backfilled commit (changed_files='derived', paths=[]) resolves area_ids='unavailable' even though the trailer join succeeded, and was wrongly flagged missing.",
+          "suggestion": "Removed area_ids from MISSING_ELIGIBLE_FIELDS (it has no independent signal -- fully derived from changed_files). Added test_empty_diff_backfilled_commit_does_not_false_flag_area_ids_as_missing pinning the exact scenario. Verified against real repo data: area_ids.missing is now 0.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "test-coverage",
+          "file": "shared/scripts/tests/test_event_context_coverage_envelope.py",
+          "line": null,
+          "finding": "area_ids bucketing was never asserted explicitly in the split test.",
+          "suggestion": "Added explicit area_ids assertions to test_coverage_unavailable_splits_not_applicable_from_missing.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "duplication",
+          "file": "shared/scripts/tests/test_event_context_backfill.py",
+          "line": null,
+          "finding": "_git/_init_repo/_commit/_write_events byte-identical across 2-3 test modules; _fr_history_fixtures.py is the established precedent for extracting this.",
+          "suggestion": "Extracted to shared/scripts/tests/_event_context_fixtures.py, imported by both touched test modules following the exact `from tests._x_fixtures import y as _y` convention. test_commit_trailers.py (untouched by this diff) left as-is, bounded to the touched unit.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "architecture",
+          "file": "shared/scripts/lib/event_context_coverage.py",
+          "line": null,
+          "finding": "MISSING_ELIGIBLE_FIELDS never cross-checked against PROVENANCE_FIELDS.",
+          "suggestion": "Added test_missing_eligible_fields_is_a_subset_of_provenance_fields.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/scripts/lib/event_context_coverage.py",
+          "line": null,
+          "finding": "Truncation kept the first 50 lexicographically by event_id, burying recent actionable events under an unfixable old backlog.",
+          "suggestion": "Now retains the MOST RECENT 50 by log sequence, sorted for deterministic output afterward. Strengthened test_missing_work_completed_list_is_capped_and_flagged_truncated to assert the retained set is the LAST 50 by sequence, not an arbitrary slice.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "shared/scripts/lib/event_context_coverage.py",
+          "line": null,
+          "finding": "aggregate_field_coverage's docstring didn't name what missing_work_completed contains or how it relates to the repo-wide missing count.",
+          "suggestion": "Expanded the docstring: missing counts the eligible population across all event types; missing_work_completed is the narrower, directly-actionable work_completed-only, most-recent-first, capped subset.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "architecture",
+          "file": null,
+          "line": null,
+          "finding": "No CHANGELOG-unreleased.d drop in the diff yet.",
+          "suggestion": "Not yet due -- F4 (changelog drop) is a finalization-phase step that runs after the review cascade, per this skill's phase ordering. Will be added at F4 before commit.",
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-08-08T09:42:46.176686+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-08T09:43:14.376818+00:00",
+      "disposition": "Stage 3 (doubt-reviewer) is conditional per iteration-reviews.md: fires only when the diff touches migrations, async/concurrency, cross-plugin imports, or irreversible ops. This diff is a pure Python aggregation/reporting change confined to shared/scripts/lib and shared/scripts/tests (single component) -- none of the four conditions apply.",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 4,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "bug",
+          "file": "shared/scripts/lib/event_context_coverage.py` (line where `entry[\"sequence\"]` is accessed)",
+          "line": null,
+          "finding": "aggregate_field_coverage` accesses `entry[\"sequence\"]` to build the `missing_work_completed` list, but the diff does not show that `_event_entry` (in `event_context_index.py`) populates a `\"sequence\"` key on the returned entry dicts. Without that change the code will raise a `KeyError` at runtime, breaking index builds for any event log with `work_completed` entries. The existing tests would also fail if they actually run, so this would be caught – but the missing dependency is a correctness defect in the delivered change.",
+          "suggestion": "Add `\"sequence\": sequence` to the entry dict inside `_event_entry` (or modify `build_index` to inject it before the aggregation call) and ensure the new tests actually run.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "regression",
+          "file": "shared/scripts/lib/event_context_index.py` (removal of `\"unavailable\"` key)",
+          "line": null,
+          "finding": "The coverage envelope previously contained `fields.<key>.unavailable`; after this change only `not_applicable` and `missing` exist. Any consumer (query tool, dashboards, operator scripts) that reads the old `unavailable` key will silently get `None`/`0` or break, because the key no longer appears in the payload. The specification doesn’t list those consumers, and the diff doesn’t update them.",
+          "suggestion": "Audit all consumers of `events-context-index.json` (e.g., `event_context_query.py`, dashboard renderers) and update them to use `not_applicable` and `missing`. Alternatively, consider retaining `unavailable` as the sum of `not_applicable` + `missing` if backwards compatibility is needed, though that would diverge from the spec’s intent.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": "shared/scripts/lib/event_context_coverage.py` (eligibility expression)",
+          "line": null,
+          "finding": "Eligibility is determined by `bool(entry[\"run_id\"]) or bool(entry[\"commit\"])`. A `work_completed` event whose `run_id` is the empty string `\"\"` (truthy-false) would be misclassified as `not_applicable`, hiding genuinely missing keys. The spec says eligibility should rest on “presence of `run_id`/`commit`”, and an empty string is arguably present but meaningless; still, if such an edge exists in the real log, data-quality issues would be suppressed.",
+          "suggestion": "Change the eligibility check to something like `bool(entry.get(\"run_id\")) or bool(entry.get(\"commit\"))` (which already works) or explicitly test for non-empty non‑null using `entry.get(\"run_id\") not in (None, \"\")` to make the intent clear and avoid accidental exclusions.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "test",
+          "file": "shared/scripts/tests/test_event_context_coverage_envelope.py",
+          "line": 62,
+          "finding": "The split regression test uses the already-known `grade_snapshot` observation event. An implementation that reintroduced a hardcoded event-type eligibility list containing `grade_snapshot` would still pass, despite violating the requirement that a newly introduced observation-only event type automatically falls into `not_applicable`.",
+          "suggestion": "Add an event with an otherwise unknown/future `type` and no `run_id` or `commit`, then assert its unavailable fields contribute to `not_applicable`, not `missing`.  The implementation otherwise performs the aggregate-level split, derives eligibility from entry linkage data, preserves per-entry provenance, and exposes capped actionable `work_completed` IDs as required. Ship with the regression-test addition to protect the explicit no-hardcoded-event-types requirement.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-08-08T09:50:51.671480+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[deepseek] - Category: bug\n- Severity: high\n- File: `shared/scripts/lib/event_context_coverage.py` (line where `entry[\"sequence\"]` is accessed)\n- Finding: `aggregate_field_coverage` accesses `entry[\"sequence\"]` to build the `missing_work_completed` list, but the diff does not show that `_event_entry` (in `event_context_index.py`) populates a `\"sequence\"` key on the returned entry dicts. Without that change the code will raise a `KeyError` at runtime, breaking index builds for any event log with `work_completed` entries. The existing tests would also fail if they actually run, so this would be caught – but the missing dependency is a correctness defect in the delivered change.\n- Suggestion: Add `\"sequence\": sequence` to the entry dict inside `_event_entry` (or modify `build_index` to inject it before the aggregation call) and ensure the new tests actually run.\n\n- Category: regression\n- Severity: medium\n- File: `shared/scripts/lib/event_context_index.py` (removal of `\"unavailable\"` key)\n- Finding: The coverage envelope previously contained `fields.<key>.unavailable`; after this change only `not_applicable` and `missing` exist. Any consumer (query tool, dashboards, operator scripts) that reads the old `unavailable` key will silently get `None`/`0` or break, because the key no longer appears in the payload. The specification doesn’t list those consumers, and the diff doesn’t update them.\n- Suggestion: Audit all consumers of `events-context-index.json` (e.g., `event_context_query.py`, dashboard renderers) and update them to use `not_applicable` and `missing`. Alternatively, consider retaining `unavailable` as the sum of `not_applicable` + `missing` if backwards compatibility is needed, though that would diverge from the spec’s intent.\n\n- Category: edge-case\n- Severity: low\n- File: `shared/scripts/lib/event_context_coverage.py` (eligibility expression)\n- Finding: Eligibility is determined by `bool(entry[\"run_id\"]) or bool(entry[\"commit\"])`. A `work_completed` event whos […truncated]\n\n[openai] - Category: test\n- Severity: low\n- File: shared/scripts/tests/test_event_context_coverage_envelope.py:62\n- Finding: The split regression test uses the already-known `grade_snapshot` observation event. An implementation that reintroduced a hardcoded event-type eligibility list containing `grade_snapshot` would still pass, despite violating the requirement that a newly introduced observation-only event type automatically falls into `not_applicable`.\n- Suggestion: Add an event with an otherwise unknown/future `type` and no `run_id` or `commit`, then assert its unavailable fields contribute to `not_applicable`, not `missing`.\n\nThe implementation otherwise performs the aggregate-level split, derives eligibility from entry linkage data, preserves per-entry provenance, and exposes capped actionable `work_completed` IDs as required. Ship with the regression-test addition to protect the explicit no-hardcoded-event-types requirement.\n\nSHIPWRIGHT_VERDICT: revise",
+      "verdicts": {
+        "openai": "revise",
+        "deepseek": "revise"
+      }
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-08T09:27:31.679892+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    }
+  }
+}

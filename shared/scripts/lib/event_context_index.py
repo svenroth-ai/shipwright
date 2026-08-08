@@ -13,8 +13,9 @@ from typing import Any
 from .area_catalog import SCHEMA_VERSION as CATALOG_SCHEMA_VERSION
 from .area_catalog import load_catalog, match_area, normalize_path
 from .commit_trailers import build_run_id_commit_map, resolve_base_ref
+from .event_context_coverage import aggregate_field_coverage
 
-INDEX_SCHEMA_VERSION = 2
+INDEX_SCHEMA_VERSION = 3
 INDEX_RELATIVE_PATH = Path(".shipwright/runtime/events-context-index.json")
 #: The five selection keys this index exists to make rankable — see
 #: iterate-2026-08-07-events-context-backfill-keys.
@@ -213,7 +214,6 @@ def build_index(project_root: Path | str, *, persist: bool = True) -> dict[str, 
     commit_map = commit_scan["map"]
     entries: list[dict[str, Any]] = []
     invalid_lines = 0
-    field_coverage = {field: {"derived": 0, "declared": 0, "unavailable": 0} for field in PROVENANCE_FIELDS}
     if log_path.exists():
         with log_path.open("rb") as handle:
             for sequence, raw in enumerate(handle, start=1):
@@ -228,10 +228,8 @@ def build_index(project_root: Path | str, *, persist: bool = True) -> dict[str, 
                 if not isinstance(decoded, dict):
                     invalid_lines += 1
                     continue
-                entry = _event_entry(decoded, sequence, line_hash, catalog, commit_map)
-                for field in PROVENANCE_FIELDS:
-                    field_coverage[field][entry["provenance"][field]] += 1
-                entries.append(entry)
+                entries.append(_event_entry(decoded, sequence, line_hash, catalog, commit_map))
+    coverage_summary = aggregate_field_coverage(entries, PROVENANCE_FIELDS)
     payload = {
         "catalog_state": catalog_state,
         "catalogue_schema_version": CATALOG_SCHEMA_VERSION,
@@ -243,7 +241,8 @@ def build_index(project_root: Path | str, *, persist: bool = True) -> dict[str, 
                 "resolved_sha": commit_scan["resolved_sha"],
                 "status": commit_scan["status"],
             },
-            "fields": field_coverage,
+            "fields": coverage_summary["fields"],
+            "missing_work_completed": coverage_summary["missing_work_completed"],
         },
         "entries": entries,
         "event_log_bytes": stats["bytes"],
