@@ -23,11 +23,11 @@ from __future__ import annotations
 
 import json
 import sys
-import time
 import uuid
 from datetime import datetime, timezone
+from functools import wraps
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any, Callable, Optional, ParamSpec
 
 # Local lib imports — phase_state_machine lives next to us
 sys.path.insert(0, str(Path(__file__).resolve().parent))
@@ -37,10 +37,23 @@ from phase_state_machine import (  # noqa: E402
     NextPhaseSpec,
     next_phase_task,
 )
-from run_config_store import atomic_write_json, durable_read_text  # noqa: E402
+from run_config_store import (  # noqa: E402
+    DEFAULT_LOCK_TIMEOUT_SECONDS,
+    LockTimeout,
+    atomic_write_json,
+    durable_read_text,
+    lock_path,
+)
+
+# Own insert (mirrors run_config_store.py's), not relied-upon import order —
+# an ordering an autofixer may reshuffle (ADR-045).
+_SHARED_LIB = Path(__file__).resolve().parents[4] / "shared" / "scripts" / "lib"
+if str(_SHARED_LIB) not in sys.path:
+    sys.path.insert(0, str(_SHARED_LIB))
+
+from file_lock import FileLock  # noqa: E402
 
 CONFIG_NAME = "shipwright_run_config.json"
-LOCK_NAME = "shipwright_run_config.json.lock"
 
 TERMINAL_STATUSES = frozenset({"done", "failed", "skipped"})
 
@@ -60,43 +73,52 @@ PLUGIN_PHASE_MAP: dict[str, str] = {
 
 
 # ---------------------------------------------------------------------------
-# Cross-platform file lock (mirrors record_event.py:_FileLock pattern)
+# Cross-platform file lock
 # ---------------------------------------------------------------------------
 
-class _PhaseTasksLock:
-    """Per-project lock for atomic phase_tasks[] mutations."""
+class _PhaseTasksLock(FileLock):
+    """Per-project lock for atomic phase_tasks[] mutations.
+
+    Delegates to ``lib.file_lock.FileLock`` instead of a third literal copy
+    of the wait/lock loop — the old copy blocked unboundedly on POSIX, spun
+    forever on Windows, and would self-deadlock on same-thread nesting with
+    no diagnostic, the same defects ``trg-dc013d82`` #24 fixed in the other
+    two copies (``trg-2e961fee``). Targets
+    ``run_config_store.lock_path()`` directly (not a locally re-declared
+    path string) — the same file ``run_config_store.run_config_lock`` /
+    ``append_phase_history``'s ``file_lock`` target, so all three exclude
+    each other at the OS level regardless of which acquired it, structurally
+    rather than by two literals staying in sync by convention (measured
+    both directions — see ``test_phase_tasks_lock.py``). Uses
+    ``run_config_store.DEFAULT_LOCK_TIMEOUT_SECONDS`` (30s), not the class's
+    600s default sized for the triage sweep — this guards the same fast RMW
+    the 30s bound was chosen for. Every caller below catches
+    :class:`LockTimeout` to keep the module's ``ok: False`` contract.
+
+    Reentrancy is a hang guardrail, not licence to nest: no caller does
+    today (verified by grep), and every critical section here is RMW, so a
+    future nested call would silently clobber the outer write instead of
+    deadlocking loudly. The live trap: ``complete_phase_task`` calls
+    ``mark_phase_failed`` on its ``result.ok is False`` branch, and that
+    call must stay OUTSIDE ``complete_phase_task``'s own ``with`` block —
+    moving it inside would now silently succeed (reentrant) instead of
+    deadlocking, and clobber the outer function's in-memory config.
+
+    Reentrancy is scoped to :class:`FileLock` acquirers on this path, NOT
+    to the sidecar file itself (doubt-reviewer, D2): ``run_config_lock``
+    and ``append_phase_history``'s ``file_lock`` use the ``file_lock``
+    CONTEXT-MANAGER FUNCTION, which never registers with the same-thread
+    registry :class:`FileLock` checks. Nesting either of those inside a
+    held ``_PhaseTasksLock`` (or vice versa) on the same thread still waits
+    out the full bound and then fails — silently, as an ``ok: False`` here,
+    rather than the loud deadlock it used to be. No such nesting exists
+    today (verified by grep); this note exists so a future one is written
+    knowing the exclusion, not assuming it.
+    """
 
     def __init__(self, project_root: Path):
-        self._lock_path = project_root / LOCK_NAME
-        self._fp = None
-
-    def __enter__(self):
-        self._fp = open(self._lock_path, "w", encoding="utf-8")
-        if sys.platform == "win32":
-            import msvcrt
-            while True:
-                try:
-                    msvcrt.locking(self._fp.fileno(), msvcrt.LK_NBLCK, 1)
-                    break
-                except OSError:
-                    time.sleep(0.001)
-        else:
-            import fcntl
-            fcntl.flock(self._fp, fcntl.LOCK_EX)
-        return self
-
-    def __exit__(self, *exc):
-        if self._fp:
-            if sys.platform == "win32":
-                import msvcrt
-                try:
-                    msvcrt.locking(self._fp.fileno(), msvcrt.LK_UNLCK, 1)
-                except OSError:
-                    pass
-            else:
-                import fcntl
-                fcntl.flock(self._fp, fcntl.LOCK_UN)
-            self._fp.close()
+        super().__init__(lock_path(project_root),
+                         timeout_seconds=DEFAULT_LOCK_TIMEOUT_SECONDS)
 
 
 # ---------------------------------------------------------------------------
@@ -140,6 +162,43 @@ def _fail(reason: str, *, message: str, **extras: Any) -> dict[str, Any]:
 
 def _new_phase_task_id() -> str:
     return "ptk-" + uuid.uuid4().hex[:8]
+
+
+_P = ParamSpec("_P")
+
+
+def _guard_lock_timeout(fn: Callable[_P, dict[str, Any]]) -> Callable[_P, dict[str, Any]]:
+    """Convert a bounded ``_PhaseTasksLock`` timeout into ``ok: False``.
+
+    Without this, ``LockTimeout`` — the ONE new exception
+    ``_PhaseTasksLock`` introduced by no longer blocking forever (internal
+    plan review, trg-2e961fee) — would escape past the module docstring's
+    Public API contract (every function returns a result dict). It does
+    NOT make that contract absolute: a missing config still raises
+    ``FileNotFoundError`` (``_read_config``), and the lock sidecar's
+    truncating ``open(..., "w")`` (``file_lock.py``, ahead of acquisition)
+    can still raise a raw ``OSError`` — both pre-existing, both unchanged by
+    this fix. Wraps the whole function rather than just its ``with`` block
+    on purpose: the only lock any of the six decorated functions takes
+    today is this one — a future function that also needs an unrelated
+    lock must not reuse this decorator over that block, or a timeout on the
+    OTHER lock would be mis-reported as ``lock_timeout`` on this one.
+
+    ``retryable=True`` (doubt-reviewer, D1): every OTHER ``ok: False``
+    reason this module produces is a determination about state — retrying
+    ``stale_version`` or `wrong_skill`` cannot help. A lock timeout is the
+    opposite: contention is expected to clear. Without a machine-readable
+    marker a caller (or a human reading ``freeze_splits_failed`` after
+    ``single_session_apply.py`` renames the reason) cannot tell the two
+    classes apart from the dict alone.
+    """
+    @wraps(fn)
+    def _wrapped(*args: _P.args, **kwargs: _P.kwargs) -> dict[str, Any]:
+        try:
+            return fn(*args, **kwargs)
+        except LockTimeout as exc:
+            return _fail("lock_timeout", message=f"phase-tasks lock: {exc}", retryable=True)
+    return _wrapped
 
 
 # ---------------------------------------------------------------------------
@@ -210,6 +269,7 @@ def validate_prerequisites(project_root: Path, phase_task_id: str) -> dict[str, 
 # CAS transitions
 # ---------------------------------------------------------------------------
 
+@_guard_lock_timeout
 def claim_phase_task(
     project_root: Path,
     *,
@@ -283,6 +343,7 @@ def claim_phase_task(
         return _ok(task)
 
 
+@_guard_lock_timeout
 def mark_phase_failed(
     project_root: Path,
     *,
@@ -320,6 +381,7 @@ def mark_phase_failed(
         return _ok(task, run_status="failed")
 
 
+@_guard_lock_timeout
 def complete_phase_task(
     project_root: Path,
     *,
@@ -400,6 +462,7 @@ def complete_phase_task(
         return _ok(task, next_phase_task=next_task)
 
 
+@_guard_lock_timeout
 def recover_phase_task(
     project_root: Path,
     *,
@@ -461,6 +524,7 @@ def recover_phase_task(
 # Splits freeze (design-stop hook)
 # ---------------------------------------------------------------------------
 
+@_guard_lock_timeout
 def freeze_splits(project_root: Path) -> dict[str, Any]:
     """Freeze splits[] into run_config.splits_frozen + runConditions.splitMode.
 
@@ -529,6 +593,7 @@ def _normalise_splits(raw: list[Any]) -> list[str]:
 # Plan-next-phase wrapper around the state machine
 # ---------------------------------------------------------------------------
 
+@_guard_lock_timeout
 def plan_next_phase(
     project_root: Path, *, completed_phase_task_id: str,
 ) -> dict[str, Any]:

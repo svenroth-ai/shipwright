@@ -52,6 +52,7 @@ plugin doing the ``parents[4]`` shared-lib insert).
 from __future__ import annotations
 
 import contextlib
+import errno
 import os
 import tempfile
 import threading
@@ -78,6 +79,8 @@ def sharing_violation_retries() -> int:
 
     One counter, not two: both paths are silent in exactly the same way, and the
     question a caller actually asks is "did this primitive have to retry at all?".
+    Also folds in the read path's ``retry_none_winerror`` retries — a different
+    cause, same tally, name retained rather than split.
     """
     with _retry_count_lock:
         return _retry_count
@@ -182,7 +185,8 @@ def _is_windows() -> bool:
     return os.name == "nt"
 
 
-def _retry_past_sharing_violations(operation, budget_seconds: float):
+def _retry_past_sharing_violations(operation, budget_seconds: float, *,
+                                   retry_none_winerror: bool = False):
     """Run ``operation`` (zero-arg), retrying while Windows says "file in use".
 
     POSIX has no such failure mode, so it runs the operation once and its
@@ -190,6 +194,16 @@ def _retry_past_sharing_violations(operation, budget_seconds: float):
     at once. On Windows only :data:`_SHARING_VIOLATION_WINERRORS` are treated as
     transient; the budget is bounded and exhausting it re-raises the original
     error, so a file that is genuinely locked open fails loudly.
+
+    ``retry_none_winerror`` is read-path-only, OFF by default, and requires
+    ``errno.EACCES`` too — not bare ``winerror is None`` — matching the
+    MEASURED byte-range-lock shape while excluding a POSIX-shaped ``EPERM``.
+    Not an exact match, though: Windows maps several causes (lock/sharing/
+    access-denied) onto ``EACCES``, so a permanently denied read is retried
+    too before raising — bounded, so the cost is capped (same trade-off
+    ``durable_publish`` accepts on the write side; ``trg-dc013d82`` finding
+    10, fixed as ``trg-db1de213``, doubt-reviewer D3). Write path doesn't opt
+    in — no measured ``None``-winerror failure on ``os.replace``.
 
     The sleep is clamped to the time actually left, so the last attempt happens
     at the deadline rather than up to one backoff step past it — the budget a
@@ -203,7 +217,10 @@ def _retry_past_sharing_violations(operation, budget_seconds: float):
         try:
             return operation()
         except PermissionError as exc:
-            if getattr(exc, "winerror", None) not in _SHARING_VIOLATION_WINERRORS:
+            winerror = getattr(exc, "winerror", None)
+            transient = winerror in _SHARING_VIOLATION_WINERRORS or (
+                retry_none_winerror and winerror is None and exc.errno == errno.EACCES)
+            if not transient:
                 raise
             # Capped by the budget as well as by the deadline. `deadline` is
             # `t0 + budget`, and floating point makes `(t0 + budget) - t0` slightly
@@ -254,11 +271,17 @@ def durable_read_text(path: Path | str, *, encoding: str = "utf-8",
     came — ``jsonl_records.read_jsonl_records`` now reads the append-only triage
     store that way, a strict decode of an interrupted write having raised out of
     every reader (iterate-2026-08-06-p2-19c-corruption-absence).
+
+    Also retries a byte-range-locked read for
+    :data:`READ_RETRY_BUDGET_SECONDS` (``trg-db1de213``) — defence in depth
+    against an unmeasured third-party holder (AV, indexer), not a closed
+    in-repo race: every lock target here is a ``*.lock`` sidecar, never a
+    file read through this function (doubt-reviewer D4).
     """
     target = Path(path)
     return _retry_past_sharing_violations(
         lambda: target.read_text(encoding=encoding, errors=errors),
-        READ_RETRY_BUDGET_SECONDS)
+        READ_RETRY_BUDGET_SECONDS, retry_none_winerror=True)
 
 
 def durable_read_bytes(path: Path | str) -> bytes:
@@ -274,9 +297,9 @@ def durable_read_bytes(path: Path | str) -> bytes:
     # every attempt, exactly like the text reader one function up. Indistinguishable in
     # production — but the two are meant to be the same shape, and the sibling test that
     # exists to catch one being hardened without the other cannot see a difference it
-    # is itself blind to.
+    # is itself blind to. Same reasoning for `retry_none_winerror=True`.
     return _retry_past_sharing_violations(
-        lambda: target.read_bytes(), READ_RETRY_BUDGET_SECONDS)
+        lambda: target.read_bytes(), READ_RETRY_BUDGET_SECONDS, retry_none_winerror=True)
 
 
 def _fsync_parent_dir(directory: Path) -> None:
