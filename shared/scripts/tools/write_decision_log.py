@@ -56,8 +56,8 @@ ADR_FIELD_MAX_CHARS = 500
 # in a decision-drop points here, and the aggregator renders + indexes it.
 ADR_SPEC_FOLDER = ".shipwright/planning/adr"
 ADR_SPEC_FOLDER_HINT = (
-    f"{ADR_SPEC_FOLDER}/<NNN>-<slug>.md (flat, one file per ADR, "
-    "ADR-number prefix gives collision protection)"
+    f"{ADR_SPEC_FOLDER}/<run_id_sanitized>-<slug>.md (flat, one file per "
+    "ADR, named by run_id — never a hand-guessed number)"
 )
 
 
@@ -343,7 +343,7 @@ def main() -> None:
         default="",
         help=(
             "Optional path to long-form ADR spec under "
-            f"{ADR_SPEC_FOLDER}/<NNN>-<slug>.md. Rendered as a "
+            f"{ADR_SPEC_FOLDER}/<run_id_sanitized>-<slug>.md. Rendered as a "
             "`**Details:** [...]` bullet in the ADR row. Required when a "
             "field would otherwise exceed the 500-char budget."
         ),

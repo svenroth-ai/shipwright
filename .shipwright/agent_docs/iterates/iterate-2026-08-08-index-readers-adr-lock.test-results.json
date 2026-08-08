@@ -1,0 +1,120 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-08-08-index-readers-adr-lock",
+    "date": "2026-08-08",
+    "unit": {
+      "status": "pass",
+      "passed": 8855,
+      "failed": 0,
+      "note": "F0 canonical suite (run_test_suite.py): 18/18 units GREEN in 4.6 min (every plugin, integration-tests, shared/tests, shared/scripts/tests, shared/scripts/tools/tests). shared/tests precisely: 8855 passed, 32 skipped, 20 deselected, 0 failed. plugins/shipwright-iterate own root re-run separately: 926 passed, 1 skipped (test_runner_doc_within_bloat_ceiling explicitly confirmed passing). plugins/shipwright-compliance audit-group subset: 78 passed. Per-unit pass counts for the other 15 F0 units were not captured in this run console output; all reported PASS with zero exit."
+    },
+    "integration": {
+      "status": "pass",
+      "passed": null,
+      "failed": 0,
+      "note": "integration-tests unit reported PASS (248.0s) under F0; exact count not captured in this run console output."
+    },
+    "e2e": {
+      "status": "n/a",
+      "reason": "no browser surface; this run changes skill/agent prose and adds pure-function guard/CLI tooling"
+    },
+    "smoke": {
+      "status": "n/a",
+      "reason": "no startable server surface for this change"
+    },
+    "pgtap": {
+      "status": "n/a",
+      "reason": "no database"
+    },
+    "design_fidelity": {
+      "status": "n/a",
+      "reason": "no UI surface"
+    },
+    "surface_verification": {
+      "surface": "cli",
+      "tests_run": 26,
+      "exit_code": 0,
+      "evidence_path": ".shipwright/runs/iterate-2026-08-08-index-readers-adr-lock/surface_verification.json",
+      "detail": "uv run pytest shared/tests/test_mandated_reader_index_first.py shared/tests/test_adr_index_no_duplicate_numbers.py shared/tests/test_rebuild_adr_collision_baseline.py shared/tests/test_reviewer_bloat_checklist_parity.py -v \u2014 26 tests, exit 0. Test-hygiene silent-skip re-check (scan_test_hygiene.py --diff): no findings."
+    },
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "AC1: 4 readers reference the index",
+          "disposition": "tested",
+          "evidence": "test_reader_names_the_index_first x4 PASSED"
+        },
+        {
+          "behavior": "AC1: no read-completely promise survives",
+          "disposition": "tested",
+          "evidence": "test_reader_no_longer_promises_a_complete_read x4 PASSED, incl. mutation guard test_the_all_decisions_phrasing_alone_is_still_caught added after external code review"
+        },
+        {
+          "behavior": "AC1: fallback for no-index-match is named",
+          "disposition": "tested",
+          "evidence": "test_reader_names_a_fallback_for_no_index_match x4 PASSED"
+        },
+        {
+          "behavior": "AC2: templates ship none of the 4 instructions",
+          "disposition": "tested",
+          "evidence": "Repo Scout grep evidence; one-time verification, no automated regression guard"
+        },
+        {
+          "behavior": "AC3: section-builder/design/deploy/adopt are writers",
+          "disposition": "tested",
+          "evidence": "Repo Scout direct-read evidence"
+        },
+        {
+          "behavior": "AC4: new ADR files named by run_id, F3.md/docs updated",
+          "disposition": "tested",
+          "evidence": "git grep sweep + spec-reviewer independent re-verification PASS"
+        },
+        {
+          "behavior": "AC5: drift guard fails on new numeric collision, passes on today tree",
+          "disposition": "tested",
+          "evidence": "test_adr_index_no_duplicate_numbers.py (5 tests, incl. 2 synthetic fail-mode probes)"
+        },
+        {
+          "behavior": "AC6: collision report with citation counts + resolution options",
+          "disposition": "tested",
+          "evidence": "iterate-2026-08-08-index-readers-adr-lock-adr-collision-report.md, counts reproduced via git grep -c"
+        },
+        {
+          "behavior": "parse_adr_number() extraction is behavior-preserving",
+          "disposition": "tested",
+          "evidence": "full test_adr_index*.py suite green post-refactor"
+        },
+        {
+          "behavior": "No regression across the rest of the monorepo",
+          "disposition": "tested",
+          "evidence": "F0 canonical suite: 18/18 units GREEN, diff-coverage 84% >= 80%"
+        }
+      ],
+      "counts": {
+        "testable": 10,
+        "tested": 10,
+        "untestable": 0,
+        "untested_testable": 0
+      },
+      "enumeration_basis": {
+        "acs": 6,
+        "covered_acs": 6
+      }
+    },
+    "degraded": []
+  },
+  "coverage": {
+    "total": 80.2,
+    "measured_tier": "repo",
+    "source": "combined coverage.xml (all plugins + shared + integration)",
+    "measured_at": "2026-07-04T00:00:00Z"
+  },
+  "source_state": {
+    "run_id": "iterate-2026-08-08-index-readers-adr-lock",
+    "commit": "92ace6b65a25684449a3de17092d00891a0a348a",
+    "dirty": true,
+    "base": null,
+    "release": null
+  }
+}

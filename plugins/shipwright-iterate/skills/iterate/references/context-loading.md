@@ -8,7 +8,18 @@ context-loading discipline.
 1. `shipwright_run_config.json` — project metadata, profile, completed sections
 2. `CLAUDE.md` — project conventions, stack, commands
 3. `.shipwright/agent_docs/conventions.md` — coding standards, naming, patterns
-4. `.shipwright/agent_docs/decision_log.md` — ALL architectural decisions (read completely)
+4. `.shipwright/agent_docs/decision_log_index.md` — a compact index of every
+   architectural decision (title + one-line summary + heading anchor),
+   ~13x smaller than the log itself. Read this by default, not the full
+   `decision_log.md` — a single `Read` call caps at 2,000 lines and the log
+   already exceeds it. Read a full entry from
+   `.shipwright/agent_docs/decision_log.md` only when the index title or
+   supersession note matches this run's scope, or an `ADR-NNN` is already
+   cited in loaded context — grep the `### ADR-NNN` heading, or an
+   offset/limit `Read`, never the whole file. If the index has no matching
+   entry, grep `decision_log.md` directly for the relevant heading before
+   assuming nothing exists — the index can itself be stale or not yet cover
+   a very recent entry.
 4a. `.shipwright/agent_docs/decision-drops/*.json` — pending decisions not yet
     folded into `decision_log.md` by a `/shipwright-changelog` release
     (tracked since iterate-2026-08-08-track-decision-drops). Bounded via

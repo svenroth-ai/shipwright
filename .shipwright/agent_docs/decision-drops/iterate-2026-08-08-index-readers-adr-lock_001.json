@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-08-08-index-readers-adr-lock",
+  "date": "2026-08-08",
+  "section": "Iterate — bug: index-readers-adr-lock",
+  "title": "ADR spec-folder files named by run_id; decision_log.md readers go index-first",
+  "context": "Numeric spec-folder filenames guessed at branch time collided (15 files/6 numbers across parallel iterates); four skills promised a complete decision_log.md read a single 2000-line-capped Read call cannot deliver.",
+  "decision": "Name new .shipwright/planning/adr/ files <run_id_sanitized>-<slug>.md (collision-proof, no allocator); the four readers go index-first via decision_log_index.md with a named grep/offset fallback.",
+  "consequences": "No new spec file claims a numeric ADR-NNN in filename or heading; decision_log.md's own release-assigned numbering is unaffected. 15 existing colliding files left unrenamed, reported for the operator.",
+  "rationale": "Both external reviewers rejected/revised a claim-time allocator on proportionality grounds; the operator's own question (why number at branch time at all, when decision_log.md already defers this to release) led to the simpler, allocator-free design.",
+  "rejected": "Claim-time allocator (lock+watermark, 11 bugs fixed then rejected on approach); merge-time blocking check (both reviewers' fallback, superseded); leave convention as-is with only a post-hoc guard.",
+  "commit": "",
+  "architecture_impact": "convention",
+  "spec_ref": ".shipwright/planning/adr/iterate-2026-08-08-index-readers-adr-lock-spec-folder-naming.md"
+}

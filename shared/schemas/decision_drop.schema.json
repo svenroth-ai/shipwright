@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://shipwright.local/schemas/decision_drop.schema.json",
   "title": "Shipwright Decision Drop (iterate F3)",
-  "description": "Shape of a single ADR decision-drop JSON file written by shared/scripts/tools/write_decision_drop.py under <project>/.shipwright/agent_docs/decision-drops/<run_id>_<NNN>.json. Aggregated into decision_log.md at /shipwright-changelog release time by aggregate_decisions.py. Iterate A.3 introduces hard-rejection on the ~500-char per-field budget and the optional spec_ref pointer to .shipwright/planning/adr/<NNN>-<slug>.md.",
+  "description": "Shape of a single ADR decision-drop JSON file written by shared/scripts/tools/write_decision_drop.py under <project>/.shipwright/agent_docs/decision-drops/<run_id>_<NNN>.json (NNN here is a 3-digit per-run_id counter, not a spec-folder number). Aggregated into decision_log.md at /shipwright-changelog release time by aggregate_decisions.py. Iterate A.3 introduces hard-rejection on the ~500-char per-field budget and the optional spec_ref pointer to .shipwright/planning/adr/<run_id_sanitized>-<slug>.md.",
   "type": "object",
   "additionalProperties": false,
   "required": [
@@ -72,7 +72,7 @@
     },
     "spec_ref": {
       "type": "string",
-      "description": "Optional path (relative to project root) to a long-form ADR spec under `.shipwright/planning/adr/<NNN>-<slug>.md`. Aggregator renders the link as `**Details:** [filename](../planning/adr/...)` underneath the ADR's body bullets."
+      "description": "Optional path (relative to project root) to a long-form ADR spec under `.shipwright/planning/adr/<run_id_sanitized>-<slug>.md` (named by run_id, never a hand-guessed number). Aggregator renders the link as `**Details:** [filename](../planning/adr/...)` underneath the ADR's body bullets."
     }
   }
 }

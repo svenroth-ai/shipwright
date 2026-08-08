@@ -81,6 +81,16 @@ _FENCE_RE = re.compile(r"^ {0,3}(?P<fence>`{3,}|~{3,})")
 _FREEFORM_SORT_KEY = 10**9
 
 
+def parse_adr_number(filename: str) -> int | None:
+    """Numeric prefix of an ADR spec filename, or ``None``.
+
+    Shared by :func:`_entries` and the collision drift-guard test so the two
+    can never disagree about what counts as a numbered filename.
+    """
+    match = _ADR_FILENAME_RE.match(filename)
+    return int(match.group("num")) if match else None
+
+
 def adr_spec_folder(project_root: Path | str) -> Path:
     """Resolve the ADR spec folder for ``project_root``.
 
@@ -183,11 +193,12 @@ def _entries(folder: Path) -> list[tuple[int, str, str, str]]:
         if md.name == ADR_INDEX_FILENAME or md.name.startswith("_template-"):
             continue
         title = read_adr_title(md)
-        match = _ADR_FILENAME_RE.match(md.name)
-        if match:
-            sort_key = int(match.group("num"))  # regex guarantees digits
+        num = parse_adr_number(md.name)
+        if num is not None:
+            match = _ADR_FILENAME_RE.match(md.name)
+            sort_key = num
             body = title or match.group("slug").replace("-", " ")
-            label = f"ADR-{match.group('num')} \u2014 {_escape_link_text(body)}"
+            label = f"ADR-{match.group('num')} \u2014 {_escape_link_text(body)}"  # zero-padded
         else:
             sort_key = _FREEFORM_SORT_KEY
             label = _escape_link_text(title or md.stem.replace("-", " "))
@@ -217,7 +228,7 @@ def render_adr_index(folder: Path) -> str:
     if not rows:
         lines += [
             "_No ADR specs yet. Add `.md` files under "
-            f"`{ADR_SPEC_FOLDER}/<NNN>-<slug>.md` and regenerate._",
+            f"`{ADR_SPEC_FOLDER}/<run_id_sanitized>-<slug>.md` and regenerate._",
             "",
         ]
     else:

@@ -8,8 +8,10 @@ F4-F7 are detective-only documentation-hygiene checks added by Iterate
 C.2:
 
 - F4 — ADR bloat. ADRs > 60 lines without a ``spec_ref`` link are
-  candidates for refactor into a `.shipwright/planning/adr/<NNN>-…`
-  long-form spec file (mirrors the A.3 / B.0+ pattern).
+  candidates for refactor into a
+  `.shipwright/planning/adr/<run_id_sanitized>-<slug>.md` long-form spec
+  file (mirrors the A.3 / B.0+ pattern; run_id goes through
+  ``sanitize_run_id_for_filename`` first).
 - F5 — Architecture drift (content reconciliation). Every decision-drop
   declaring ``architecture_impact ∈ {component, data-flow, convention}``
   must have its ``run_id`` documented in ``architecture.md``; any that
@@ -25,7 +27,8 @@ C.2:
   Phase 0e refactored it down via ADR-spec-folder extraction).
 - F7 — CLAUDE.md iterate-annotation leak. Regex-counted occurrences
   of ``Iterate <X> (ADR-NN)`` > 5 indicate inline iterate-detail
-  belongs in `.shipwright/planning/adr/<NNN>-…` files instead.
+  belongs in `.shipwright/planning/adr/<run_id_sanitized>-<slug>.md`
+  files instead.
 """
 
 from __future__ import annotations
@@ -113,7 +116,7 @@ def _check_f4(project_root: Path) -> tuple[str, str, str, list[str]]:
         if len(body) <= _ADR_BLOAT_LINE_CAP:
             continue
         # ``spec_ref`` aggregates render as ``- **Details:** [<text>](<url>)``
-        # with the URL pointing at ``.../planning/adr/<NNN>-<slug>.md``.
+        # with the URL pointing at ``.../planning/adr/<run_id_sanitized>-<slug>.md``.
         # Reviewer-flagged OpenAI-M1: a bare "**Details:**" mention
         # without a real link target is not a valid spec_ref. Match
         # the full link shape via `_DETAILS_LINK_RE` instead of
@@ -131,7 +134,7 @@ def _check_f4(project_root: Path) -> tuple[str, str, str, list[str]]:
     detail = (
         f"{len(bloated)} ADR(s) exceed {_ADR_BLOAT_LINE_CAP} lines without a "
         f"spec_ref link — refactor each into "
-        f".shipwright/planning/adr/<NNN>-<slug>.md and link via "
+        f".shipwright/planning/adr/<run_id_sanitized>-<slug>.md and link via "
         f"--spec-ref. Heaviest: {head}."
     )
     evidence = [f"{adr}: {n} lines" for adr, n in bloated]
@@ -286,7 +289,7 @@ def _check_f6(project_root: Path) -> tuple[str, str, str, list[str]]:
         "MEDIUM",
         f"CLAUDE.md is {line_count} lines, exceeds the {_CLAUDE_MD_LINE_CAP}-line "
         f"hygiene cap — consider moving per-iterate detail into "
-        f".shipwright/planning/adr/<NNN>-<slug>.md spec files.",
+        f".shipwright/planning/adr/<run_id_sanitized>-<slug>.md spec files.",
         [f"line_count={line_count}"],
     )
 
@@ -310,7 +313,7 @@ def _check_f7(project_root: Path) -> tuple[str, str, str, list[str]]:
         "MEDIUM",
         f"{n} inline 'Iterate X (ADR-NN)' references in CLAUDE.md exceed the "
         f"{_CLAUDE_MD_ITERATE_REF_CAP}-reference cap — move per-iterate detail "
-        f"into .shipwright/planning/adr/<NNN>-<slug>.md spec files. "
+        f"into .shipwright/planning/adr/<run_id_sanitized>-<slug>.md spec files. "
         f"Sample: {sample}.",
         # Reviewer-flagged code-review-M2: evidence carries the FULL
         # match list (not just the detail's top-3 sample), so the

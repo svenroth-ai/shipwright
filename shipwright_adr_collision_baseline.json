@@ -1,0 +1,32 @@
+{
+  "entries": {
+    "120": [
+      "120-coverage-gates-ask-the-diff.md",
+      "120-the-cache-check-reads-the-index-not-the-disk.md"
+    ],
+    "125": [
+      "125-bloat-exception-risk-recheck-recording-registration.md",
+      "125-iterate-timings-derived-parent-synthesis.md"
+    ],
+    "126": [
+      "126-context-cost-meter.md",
+      "126-test-phase-attribution.md"
+    ],
+    "127": [
+      "127-agent-model-tiers-per-role-tiers.md",
+      "127-bloat-exception-atomic-write-none-winerror-retry.md",
+      "127-decision-log-drops-index.md",
+      "127-events-context-backfill-keys.md",
+      "127-run-id-lifecycle-fixes.md"
+    ],
+    "128": [
+      "128-coverage-envelope-not-applicable-missing-split.md",
+      "128-track-decision-drops.md"
+    ],
+    "97": [
+      "097-bloat-b7-rule-e-test-growth.md",
+      "097-bloat-exception-oss-backend-gitleaks-report-path.md"
+    ]
+  },
+  "version": 1
+}
