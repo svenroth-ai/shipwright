@@ -1,11 +1,42 @@
 {
   "run_id": "iterate-2026-08-08-p2-52-shared-scripts-fixes",
   "date": "2026-08-08T23:38:47.499822Z",
-  "event_at": "2026-08-08T23:38:21.118054+00:00",
+  "event_at": "2026-08-09T01:38:21.118054+02:00",
   "type": "bug",
   "complexity": "small",
   "branch": "iterate/p2-52-shared-scripts-fixes",
   "tests_passed": true,
   "spec": "no changes",
-  "adr": "iterate-2026-08-08-p2-52-shared-scripts-fixes"
+  "adr": "iterate-2026-08-08-p2-52-shared-scripts-fixes",
+  "test_completeness": {
+    "status": "complete",
+    "behaviors": [
+      {
+        "behavior": "Git timeout probes fail closed for refs and Git paths",
+        "disposition": "tested",
+        "evidence": "test_gitignore_selfheal.py + test_gitattributes_union_selfheal.py PASSED"
+      },
+      {
+        "behavior": "Decision-Drop JSON is recursively scanned without opt-out and fails closed at excessive depth",
+        "disposition": "tested",
+        "evidence": "test_prompt_injection_scan.py + test_prompt_injection_decision_drops.py PASSED"
+      },
+      {
+        "behavior": "Claim cleanup composes with shared event coordination and preserves TTL and replacement safety",
+        "disposition": "tested",
+        "category": "integration",
+        "evidence": "shared/tests/test_event_once.py PASSED; F0 integration-tests unit PASSED"
+      }
+    ],
+    "counts": {
+      "testable": 3,
+      "tested": 3,
+      "untestable": 0,
+      "untested_testable": 0
+    },
+    "enumeration_basis": {
+      "acs": 3,
+      "covered_acs": 3
+    }
+  }
 }
