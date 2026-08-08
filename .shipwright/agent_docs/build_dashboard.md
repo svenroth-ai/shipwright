@@ -1,11 +1,123 @@
 # Project Activity Dashboard
-> Updated: 2026-07-28 12:18 UTC | Session: 7c6c7b07-d3a2-4c91-ba4e-fab3535b5067 | Run: iterate-2026-07-28-docs-placement-rule
+> Updated: 2026-08-08 20:34 UTC | Session: 5e606322-4b30-42ed-9e6b-72bfd03df7be
 
-## Recent Changes (400 iterations)
+## Recent Changes (513 iterations)
 
 | Type | Description | Tests | Commit | FRs | Date |
 |------|-------------|-------|--------|-----|------|
+| feature | mandated-load truncation is now declared, not silent (TC3.2) | 9880/9880 |  | tooling | 2026-08-08 |
+| change | iterate: normalize benign __import__ dynamic-import pattern flagged by shipwright-prompt-scan (trg-133f2ca6) | 9/9 |  | tooling | 2026-08-08 |
+| change | iterate: fix shipwright_model_config.json review tier (opus, not sonnet) | 0/0 |  | tooling | 2026-08-08 |
+| bug | Fixed two SDLC-framework defects: decision_log.md readers promised a complete read no single Read call can deliver; ADR spec-folder filenames guessed at branch time collided across parallel iterates. | 8855/8887 |  | tooling | 2026-08-08 |
+| bug | update-marketplace.sh Step 1's happy path never verified the marketplace clone reached origin/main's true tip, so a 'successful' sync could leave recently-landed files missing from the plugin cache | 28/28 |  | tooling | 2026-08-08 |
+| bug | Split events-context coverage.fields.<key>.unavailable into not_applicable (structurally cannot carry the key) and missing (linked but unresolved); eligibility derived per-entry from run_id/commit presence, never a hardcoded event-type list. Adds coverage.missing_work_completed. Per-entry provenance vocabulary unchanged. | 10788/10788 |  | tooling | 2026-08-08 |
+| feature | Track decision-drops in git across this repo, the shared gitignore template, and shipwright-webui; redirect the write path into the calling iterate's own worktree; quarantine pre-cutoff drops. | 16000/16056 |  | tooling | 2026-08-08 |
+| feature | plan-reviewer-configurable | 8804/8804 |  | FR-01.03, FR-01.11 | 2026-08-08 |
+| change | Add a third append-only 'amend' event to the triage store, letting a card's title/detail/severity/kind be corrected in place instead of dismiss-and-refile. | 8901/8901 |  | FR-01.14 | 2026-08-08 |
+| bug | gate_policy.read_run_config_mode now reads via durable_read_text, retrying a Windows delete-pending PermissionError the same way config_io._read_parse_shape does (P2.41a) - closes the remaining read-leg asymmetry that could make the two readers disagree about run mode mid-rewrite. | 9140/9140 |  | infra | 2026-08-07 |
+| change | Merge sweep_outbox duplicate git-state predicates into shared main_tree_guards | 15762/15762 |  | infra | 2026-08-07 |
+| bug | A deeply-nested triage/events JSONL line raised RecursionError uncaught inside the canonical triage file lock, crashing setup_iterate_worktree.py Step 5. Widened the except tuples of triage_dedup._parsed_append and churn_merge.dedup_event_lines to catch RecursionError (and TypeError, non-str decoded ids), matching the total-parse contract sweep_canon.canonical_form already establishes. | 8610/8610 |  | FR-01.14 | 2026-08-07 |
+| change | Per-role model tiers (review/finalization/execution) for spawned subagents, resolved by flag > project config > unset | 15833/15833 |  | tooling | 2026-08-08 |
+| bug | Fix two lock-primitive tail bugs from P2.19d: durable reads did not retry a byte-range-locked file on Windows when only an errno was reported (winerror=None), and the run-orchestrator's phase-tasks lock kept its own unbounded, non-reentrant implementation instead of the shared FileLock. | 15784/15784 |  | infra | 2026-08-07 |
+| change | Retire an iterate's run-id pointer at F11 delivery so a retained post-merge worktree can no longer misattribute later phase-quality audits to the finished run; re-audit a provisional stale-run-id or hook-error finding once the run's own ledger entry appears, redirecting the Stop-hook's audit root to the run's own worktree via a git-verified pointer so the trigger is actually reachable. | 8660/8660 |  | tooling | 2026-08-08 |
+| change | Adoption gate now names a glued drift line distinctly from genuine corruption and points the refusal at triage_repair.py plus the commit step it needs, instead of an unescapable stall. | 15773/15773 |  | tooling | 2026-08-07 |
+| feature | Extend the ADR-index producer pattern (pure render + locked/atomic rebuild) to decision_log.md and the decision-drops staging directory | 8663/8663 |  | tooling | 2026-08-07 |
+| change | plan-reviewer-wiring | 18/18 |  | FR-01.03 | 2026-08-07 |
+| change | windows-tests.yml: single provisioning + shared/tests xdist (24-28min -> predicted 10-14min), plus root-caused fix for two Windows-only F0 test failures (trg-eed74a42): _windows_acl.py's owner check now accepts BUILTIN\\Administrators/LocalSystem alongside the current user. | 535/545 |  | infra | 2026-08-07 |
+| change | Backfill events-context-index selection keys (commit, changed_files, area_ids) from git history via the Run-ID: commit trailer; replace the unused extraction block with provenance+coverage; bump schema 1->2 | 15245/15245 |  | tooling | 2026-08-08 |
+| change | test-phase-attribution | 18/18 |  | tooling | 2026-08-07 |
+| feature | Context-cost meter: measure real per-token session cost from the transcript, phase-tagged, surfaced live | 15200/15200 |  |  | 2026-08-07 |
+| bug | ensure_current absorbs a dirty tracked triage.jsonl before every merge attempt, so a background producer can no longer abort an iterate's pre-merge refresh with exit 6 | 15683/15683 |  | tooling | 2026-08-06 |
+| change | iterate: fix the SessionStart fan-out barrier that abandoned its peers before they could spawn | 0/0 |  | infra | 2026-08-06 |
+| change | iterate: make the gate-mode config reader total at its read boundary | 8187/8215 |  | tooling | 2026-08-06 |
+| bug | resolve_run_id gains a priority-0 source (the per-session iterate run pointer), so the Stop-time audits are keyed by the iterate's own run id instead of the raw session UUID. | 0/0 |  | tooling | 2026-08-06 |
+| change | iterate: decode both sides of the triage-log seam the same way | 8307/8307 |  | FR-01.14 | 2026-08-06 |
+| change | iterate: S9/S10 sentinel run_id guard | 9056/9089 |  | tooling | 2026-08-06 |
+| change | iterate: P2.19c — corruption reads as absence; delivered vs buffered | 9527/9564 |  | tooling | 2026-08-06 |
+| bug | Give every un-deliverable outbox line a proportional disposition (hold / quarantine / block) so no single line can stop triage delivery permanently; add record-boundary recovery to the validator and the protection universe. | 16314/16314 |  | tooling | 2026-08-06 |
+| bug | write-lock-primitives | 13242/13242 |  | infra | 2026-08-06 |
+| change | iterate: the tracked triage store's write path — audit findings 9, 16, 23, 25 | 0/0 |  | tooling | 2026-08-06 |
+| change | iterate: architecture review pass — a second external call asking whether a change should be built at all | 8615/8615 |  | FR-01.03 | 2026-08-06 |
+| bug | Normalize __import__("json")/__import__("os") literals to top-level imports in shared/tests/test_check_test_results_infra.py and shared/tests/test_iterate_timing_cli.py, clearing a benign PY_DYNAMIC_IMPORT prompt-scan finding (CI run 30996996377, 2 medium). | 17/17 |  | tooling | 2026-08-05 |
+| change | iterate: split an oversize test file along its existing logical seam, behavior-preserving | 105/106 |  | tooling | 2026-08-05 |
+| change | iterate: add operator-owned gateway route to external LLM review (issue #547) | 0/0 |  | FR-01.13 | 2026-08-05 |
+| change | iterate: wire verify_local.py into F0 and check_required_checks.py into the SessionStart producer chain | 0/0 |  | tooling | 2026-08-05 |
+| change | iterate: inline-suppression anti-ratchet + declined register target | 100/100 |  | compliance | 2026-08-05 |
+| bug | Reclassify session_handoff.md as run-written so its canon marker survives the integrate merge, with best-effort carry semantics so the change cannot block a branch over a warning-severity artifact. | 36/36 |  | tooling | 2026-08-06 |
+| change | Distinguish an absent run config from an unusable one; fail closed on every path that can advance or change a run, stay tolerant on display-only paths, and never overwrite the unusable file. | 0/0 |  | FR-01.01 | 2026-08-06 |
+| change | iterate: outbox GC compares records not ids; damaged status events skipped whole | 0/0 |  | FR-01.14 | 2026-08-06 |
+| change | Add a windows-latest CI job running shared/ tests so Windows-gated tests execute in CI | 7933/7933 |  | infra | 2026-08-05 |
+| change | iterate: adopted repos get honest, refreshable compliance evidence | 0/0 |  | FR-01.10, FR-01.13 | 2026-08-06 |
+| bug | Guard F0's console reporting path (run_test_suite.py) against a captured test-output tail the console can't encode | 490/497 |  | tooling | 2026-08-05 |
+| change | iterate: fail-closed the iterate-entry tail fallback for corrupt current-run entries (trg-e0a0f569) | 8406/8433 |  | tooling | 2026-08-05 |
+| change | check_plugin_cache_sync.py now gates the cross-plugin mirror cache/plugins/<name>/, the third of the cache's three trees, via new scripts/cache_mirror_compare.py with its own basis (always "cache") and state vocabulary (ok/drift/not_mirrored/no_source), distinct from the plugins/shared trees' git-vs-walk comparison. | 186/186 |  | tooling | 2026-08-05 |
+| bug | Add --launch-payload/--no-launch-payload to triage_add.py so manually filed triage cards can carry a launch payload; previously structurally impossible via the CLI. | 23/23 |  | FR-01.14 | 2026-08-05 |
+| bug | Fix the Tier-3 PR review Stage-2 resolver so fork PRs actually get reviewed instead of a permanent failed status | 2/2 |  | infra | 2026-08-05 |
+| change | F11 gate enforcing that F5c honors Step 3.4 recorded complexity | 8843/8844 |  | tooling | 2026-08-05 |
+| change | Synthesize a missing iterate_timings ancestor from its children's envelope instead of orphaning them, closing the P1.17 gap that left every work_completed event with zero measurement data | 0/0 |  | tooling | 2026-08-05 |
+| change | Bump github/codeql-action from v3 to v4 in codeql.yml and the adopt scaffolding template | 7899/7899 |  | infra | 2026-08-05 |
+| bug | Trim bloat-gate-crossing docstrings and register the vendored hook's pre-existing overage as grandfathered debt | 138/138 |  | tooling | 2026-08-05 |
+| bug | Scope append_event_idempotent's deduplicate_by_commit branch to work_completed events | 58/58 |  | tooling | 2026-08-05 |
+| bug | Fix SemVer prerelease-vs-release ordering in cache_tree_compare.version_key and its vendored hook mirror | 7859/7880 |  | tooling | 2026-08-05 |
+| bug | Fix prompt-injection scanner Unicode-check false positive for codepoints quoted inside fenced/inline code spans | 55/55 |  | tooling | 2026-08-05 |
+| change | Recover post-P1.11 immutable test evidence from two retained worktrees (P2.03 triage-defer-lifecycle, P2.05 grade-snapshot-dedup) before they are removed | 6/6 |  | compliance | 2026-08-05 |
+| bug | Tolerate WebUI's string-shaped iterate_latest test-status layers in build-dashboard regen | +8 new, 9168/9208 |  | tooling | 2026-08-05 |
+| change | Migrate the remaining git_helpers._git_available callers onto the tri-state git_context probe and delete _git_available | 7877/7898 |  | tooling | 2026-08-05 |
+| feature | Hierarchical iterate-timing span instrumentation (producer + agent marks, sidecar, F5b fold, derived throughput report) — measurement only, no gate/verdict change. | 0/0 |  | tooling | 2026-08-05 |
+| change | Replace the default Gemini reviewer with identity-locked DeepSeek V4 Pro on a fail-closed US ZDR route | 18/18 |  | FR-01.03, FR-01.11 | 2026-08-04 |
+| bug | Restore F0 fleet throughput and stabilize suite concurrency, process cleanup, progress, and retained diagnostics | 18/18 |  | infra | 2026-08-04 |
+| bug | Retire the producerless runtime PID verifier | 18/18 |  | tooling | 2026-08-04 |
+| change | share F0 host resources across sibling worktrees | 18/18 |  | tooling | 2026-08-03 |
+| change | Implemented one shared area-catalog producer, deterministic disposable event index, bounded compact/shadow/full query modes, visible fail-soft fallback, hostile-data handling, and temporary context-cost metrics/reporting. | 488/488 | 7ae8e98 | tooling | 2026-08-04 |
+| change | F5c now preserves exact complete current-run test results, F6/F11 enforce shipment, and 15 historical P1 snapshots are source-proven backfilled. | 0/0 |  | FR-01.10, FR-01.11 | 2026-08-03 |
+| change | serialize ensure_shared_cache SessionStart fan-out | 13381/13428 |  | infra | 2026-08-03 |
+| bug | Normalize pytest collection to absolute verbosity -1 so behavior snapshots retain node IDs under repository addopts. | 13572/13572 |  | tooling | 2026-08-02 |
+| change | iterate: f0-race shipwright-run measured and closed | 0/0 |  | compliance | 2026-08-01 |
+| feature | verify_local.py mirrors ci.yml's three bespoke merge guards locally, with a both-directions drift registry | 21/21 |  | FR-01.17 | 2026-08-01 |
+| change | iterate: two F11 readers brought in line with their siblings on fail-safety | 0/0 |  | tooling | 2026-08-01 |
+| change | iterate: the cache check and the sync resolve the same version directory | 7165/7182 (17 skipped) |  | tooling | 2026-08-01 |
+| feature | real-producer integration test for the compliance-evidence refresh | 7150/7163 |  | tooling | 2026-08-01 |
+| change | Migrate phase-quality engagement readers from frozen step fields to phase task lifecycle state | 9630/9630 |  | tooling | 2026-08-02 |
+| bug | Filter unactionable CI triage cards only when GitHub authoritatively reports the workflow state as deleted. | 8511/8524 |  | FR-01.14 | 2026-08-02 |
+| bug | Capture grade-snapshot dirtiness before producer writes | 18/18 |  | tooling | 2026-08-02 |
+| bug | Align touches_build message patterns with diff-driven filename token boundaries. | 1337/1341 (4 skipped) |  | tooling | 2026-08-02 |
+| change | iterate: external review truncation guard + reasoning budget | 8418/8418 |  | tooling | 2026-08-01 |
+| change | iterate: mirror the CI diff-coverage gate at F0 | 0/0 |  | tooling | 2026-08-01 |
+| change | Deduplicate unchanged automatic grade snapshots within each resolved lineage. | 13584/13584 |  | compliance | 2026-08-03 |
+| change | Centralize dev_server path anchors and make Windows PID liveness checks signal-free. | 7515/7558 |  | tooling | 2026-08-02 |
+| feature | Complete the deferred triage lifecycle across store, producers, CLI, Markdown, and JSON contract v2. | 13680/13710 |  | FR-01.14 | 2026-08-03 |
+| change | iterate: the cache comparator learns what the sync refuses to copy | 0/0 |  | tooling | 2026-08-01 |
+| change | iterate: the plugin-cache healer checks completeness, not liveness | 7150/7168 |  | infra | 2026-08-01 |
+| change | iterate: canon lookbehind hyphen guard | 0/0 |  | tooling | 2026-08-01 |
+| bug | iterate: spec-impact gate reads the iterate's work, not the tip commit | 0/0 |  | tooling | 2026-08-01 |
+| bug | cache-sync check verifies the shared tree, from the index | 13788/13788 |  | tooling | 2026-08-01 |
+| change | iterate: the F0 gate runs the interpreter CI judges with | 0/0 |  | tooling | 2026-08-01 |
+| change | Coverage gates ask the diff, not the recorded complexity. check_integration_coverage evaluates the recomputed cross-component path set before the recorded complexity (which becomes message content); layer_coverage infra failures fail closed at every complexity for removal coverage. Supersedes MUST-FIX 1 / SHOULD-FIX 6. Rides along: run-id attribution on the shared-ledger fallback, and a locale-independent tri-state git probe shared by both gates. | 0/0 |  | tooling | 2026-08-01 |
+| change | iterate: campaign runner re-checks diff-driven risk after Build | 0/0 |  | tooling | 2026-08-01 |
+| change | iterate: triage expected_status under the lock (IT-1/S2) | 6890/6890 |  | FR-01.14 | 2026-07-31 |
+| change | Campaign sub-iterates run the delegated review cascade at loop step 3f-bis (before merge, so a REJECT can still stop delivery) and the same finalization phases a standalone iterate runs: F0.5, F2 (architecture.md), F3a and F5 were missing, and the F2 label was reused for Browser Verify, hiding its own absence. | 13149/13178 (29 skipped) |  | FR-01.11 | 2026-07-31 |
+| change | iterate: promote the Stage-1 spec pass into the reviews contract, with a permanent read path for 65 older records | 0/0 |  | tooling | 2026-07-31 |
+| change | adr-index-churn-register | 13108/13108 |  | tooling | 2026-07-31 |
+| change | iterate: the dev-server proxy stops doing path work on a faked platform | 0/0 |  | tooling | 2026-07-31 |
+| change | adr-index-producer | 12681/12681 |  | tooling | 2026-07-31 |
+| change | iterate: close two holes in the accepted-risk drift gate | 10055/10079 |  | compliance | 2026-07-31 |
+| change | The Tier-3 PR reviewer retracts its own superseded change-requests when a later run passes, so a green pull request stops being held by a verdict about code that is gone. | 0/0 |  | FR-01.17 | 2026-07-31 |
+| change | iterate: cap the complexity fall-through at small and teach touches_build to see Python build inputs | 0/0 |  | FR-01.11 | 2026-07-31 |
+| change | iterate: F11 delivers the change, or says plainly that it did not | 8285/8285 |  | FR-01.11 | 2026-07-31 |
+| change | iterate: fail-safe fixes to the triage-store primitives (S1 of IT-1) | 0/0 |  | tooling | 2026-07-31 |
+| change | iterate: the compliance evidence documents ship at release and on demand; the derived-snapshot gate remedy resolves the merge-base | 0/0 |  | tooling | 2026-07-31 |
+| change | iterate: the derived-snapshot gate sees the branch, not the tip | 7621/7637 |  | tooling | 2026-07-31 |
+| change | iterate: the run's own ledger survives finalization | 12622/12651 |  | tooling | 2026-07-30 |
+| change | iterate: pin the quoting contract the PR-review path filter relies on | 812/819 (7 skipped) |  | tooling | 2026-07-29 |
+| change | iterate: the CI supply-chain ack gets a home that is not a derived snapshot | 6839/6851 (12 skipped) |  | tooling | 2026-07-28 |
+| change | iterate: close the six open GitHub code-scanning alerts (3 root causes) | 7858/7881 (23 skipped) |  | tooling | 2026-07-28 |
+| change | F5c stamps event_at from latest_event_dt so Canon C3's same-phase clock check runs for the iterate phase; the known-bound paragraph is removed from all five places it was written down, and the maintainer's name leaves five live files that used it as prose rather than authorship metadata. | 12334/12359 (25 skipped) |  | tooling | 2026-07-28 |
+| change | iterate: the review cascade is a standing request in CLAUDE.md; workflows are not | 7815/7831 (16 skipped) |  | FR-01.02, FR-01.11, FR-01.13 | 2026-07-28 |
+| change | iterate: F11 verifies the run it is checking | 10806/10806 |  | FR-01.11 | 2026-07-28 |
+| change | iterate: main repairs itself — attribution, diagnosis package, repair procedure | 0/0 |  | FR-01.19 | 2026-07-28 |
+| change | Correct grade_snapshot attribution: a named branch is branch by name, ancestry only for detached HEAD; refuse asserted attribution on the amendment channel; restate the consumer contract so branch snapshots are not plotted on the default branch's trend. | 0/0 |  | FR-01.10 | 2026-07-28 |
 | change | iterate: docs/ placement rule + remove one generated artifact and five finished records | 0/0 |  | docs | 2026-07-28 |
+| change | iterate: IT-0 hygiene sweep — reconcile the bloat baseline, trim CLAUDE.md, record test totals at F5b, and point the security-named gate at the security scan | 12237/12262 (25 skipped) |  | compliance | 2026-07-28 |
 | change | Make a conditional session policy gating subagents a question asked before Stage 1 rather than a silent not_run at F11, and define what a real blocker is. | 0/0 |  | FR-01.11 | 2026-07-28 |
 | change | Stamp every grade_snapshot with the tree it measured (lineage / branch / merge-base), so the Control-Grade trend can be filtered to one lineage instead of plotting a mixture of worktrees. | 0/0 |  | FR-01.10 | 2026-07-28 |
 | change | Bump pyasn1 to 0.6.4 (CVE-2026-59885/59886) and record a scoped, expiring acceptance for CVE-2026-14257 (brace-expansion, dev-only perf runner) in both registers, guarded by a new dependency-floor test. | 11282/11282 |  | infra | 2026-07-28 |
@@ -18,6 +130,7 @@
 | change | iterate: a branch may not quietly revert merged work | 0/0 |  | FR-01.11 | 2026-07-27 |
 | change | iterate: post-merge review follow-up for the triage defer surface | 0/0 |  | FR-01.14 | 2026-07-27 |
 | bug | iterate: a PR must not be able to forge a file boundary in its own diff | 0/0 |  | FR-01.17 | 2026-07-28 |
+| change | iterate: Canon C3 asks whether THIS phase left the handover note | 0/0 |  | FR-01.01 | 2026-07-28 |
 | change | iterate: raise the PR-review diff cap, cut at a file boundary, name what went unreviewed | 0/0 |  | FR-01.17 | 2026-07-27 |
 | change | iterate: an audit that checked nothing is not recorded | 0/0 |  | compliance | 2026-07-27 |
 | change | iterate: refuse a multi-root pytest session instead of failing 21 unrelated tests | 0/0 |  | tooling | 2026-07-27 |
@@ -407,7 +520,7 @@
 | change | post-adoption framework cleanup (Sub-1A through 1D) | 225/225 | 3db485b | FR-01.01, FR-01.02, FR-01.03 | 2026-05-02 |
 
 ## Test Status
-Last run: 2026-07-28 | Unit: 6458/6474 | Integration: 422/422 | Smoke: not_run | (iterate)
+Last run: 2026-07-28 | Smoke: n/a | (iterate)
 
 ## Pipeline
 

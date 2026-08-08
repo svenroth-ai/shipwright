@@ -97,6 +97,14 @@
         "date": "2026-06-13",
         "version": "v0.26.0",
         "outcome": "tagged"
+      },
+      {
+        "run_id": "changelog-v0.32.0-20260808-224001",
+        "at": "2026-08-08T20:41:35.668293+00:00",
+        "event_at": "2026-08-08T20:34:51.172844+00:00",
+        "date": "2026-08-08",
+        "version": "v0.32.0",
+        "outcome": "tagged"
       }
     ]
   },
@@ -105,7 +113,7 @@
   "_iterate_migration_ts": "2026-05-02T18:37:57.870696+00:00",
   "_iterate_migration_quarantined_count": 0,
   "created_at": "2026-05-02T18:37:57.870696+00:00",
-  "updated_at": "2026-06-13T13:18:38.216095+00:00",
+  "updated_at": "2026-08-08T20:41:35.674795+00:00",
   "last_compliance_update": {
     "phase": "changelog",
     "reports": [

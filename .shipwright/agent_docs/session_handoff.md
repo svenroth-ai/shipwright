@@ -1,44 +1,31 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-07-28-docs-placement-rule"
-phase: "iterate"
-reason: "iterate: docs/ placement rule + remove one generated artifact and five finished records"
-timestamp: "2026-07-28T12:18:50.089137+00:00"
+run_id: "changelog-v0.32.0-20260808-224001"
+phase: "changelog"
+reason: "release v0.32.0"
+timestamp: "2026-08-08T20:34:51.172844+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-07-28 12:18:50 UTC
+> Auto-generated 2026-08-08 20:34:51 UTC
 
 ## Session Info
 
-- **Session ID**: 7c6c7b07-d3a2-4c91-ba4e-fab3535b5067
-- **Timestamp**: 2026-07-28 12:18:50 UTC
-- **Reason**: iterate: docs/ placement rule + remove one generated artifact and five finished records
+- **Session ID**: 5e606322-4b30-42ed-9e6b-72bfd03df7be
+- **Timestamp**: 2026-08-08 20:34:51 UTC
+- **Reason**: release v0.32.0
 
 ## Last Iterate
 
-- **Run ID**: iterate-2026-07-28-docs-placement-rule
-- **Date**: 2026-07-28T12:18:44.151571Z
+- **Run ID**: iterate-2026-08-08-prompt-scan-dynamic-import-fault-test
+- **Date**: 2026-08-08T19:53:58.428334Z
 - **Type**: change
-- **Complexity**: medium
-- **Branch**: iterate/docs-placement-rule
-- **ADR**: iterate-2026-07-28-docs-placement-rule
+- **Complexity**: small
+- **Branch**: iterate/prompt-scan-dynamic-import-fault-test
+- **ADR**: iterate-2026-08-08-prompt-scan-dynamic-import-fault-test
 - **Tests passed**: True
-- **Spec**: .shipwright/planning/iterate/iterate-2026-07-28-docs-placement-rule.md
-
-## Current Iterate Progress
-
-- **Branch**: iterate/docs-placement-rule
-- **Run ID**: iterate-2026-07-28-docs-placement-rule
-- **Spec**: .shipwright/planning/iterate/iterate-2026-07-28-docs-placement-rule.md
-- **Complexity**: medium · **spec_impact:** none · **affected_frs:** [] ·
-- **External Review Marker**: completed (external_review_state.json @ 2026-07-28T11:58:04)
-
-### Mandatory replay on Resume
-
-Before dispatching to the handoff's Remaining phase, run these if missing:
-- Finalization (F0–F11) after all mandatory phases pass
+- **Spec**: n/a (small complexity, SIMPLIFY sub-mode, spec_impact none)
 
 ## Legacy build state
 
@@ -51,8 +38,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/docs-placement-rule
-- **Last Commit**: 7ec426a2 chore(triage): sweep 54 outbox append(s) into branch
+- **Branch**: main
+- **Last Commit**: 11e32523 chore(release): v0.32.0
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -68,23 +55,24 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 | Event | Type | Source | Date |
 |-------|------|--------|------|
-| evt-003a4ccb | grade_snapshot | — | 2026-07-28 |
-| evt-a25fc820 | work_completed | iterate (iterate: docs/ placement rule + remove one generated artifact and five finished records) | 2026-07-28 |
-| evt-7963d51e | grade_snapshot | — | 2026-07-28 |
-| evt-2df150c5 | work_completed | iterate (Make a conditional session policy gating subagents a question asked before Stage 1 rather than a silent not_run at F11, and define what a real blocker is.) | 2026-07-28 |
-| evt-5f7e67f6 | grade_snapshot | — | 2026-07-28 |
+| evt-5036a5fd | grade_snapshot | — | 2026-08-08 |
+| evt-512679d4 | work_completed | iterate (mandated-load truncation is now declared, not silent (TC3.2)) | 2026-08-08 |
+| evt-f32709d0 | work_completed | iterate (iterate: normalize benign __import__ dynamic-import pattern flagged by shipwright-prompt-scan (trg-133f2ca6)) | 2026-08-08 |
+| evt-272f228a | grade_snapshot | — | 2026-08-08 |
+| evt-390f315f | work_completed | iterate (iterate: fix shipwright_model_config.json review tier (opus, not sonnet)) | 2026-08-08 |
 
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 400
-- **Last iterate**: change — iterate: docs/ placement rule + remove one generated artifact and five finished records (2026-07-28)
+- **Total work events**: 513
+- **Last iterate**: feature — mandated-load truncation is now declared, not silent (TC3.2) (2026-08-08)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
 ## Recent Decisions
 
-### ADR-328: Change history as a query over the event log, measured against what it replaced
-- **Date:** 2026-07-20
-- **Section:** Iterate → campaign S7 derived traceability
-- **Run-ID:** iterate-2026-07-19-traceability-derived-view
-- **Context:** Campaign decision D4 removed the 'Refined by <run_id>' prose from the requirements catalog because that history was said to live already in commits, the changelog and shipwright_events.jsonl. S6 executed the removal and left the catalog pointing at the event l
+### ADR-347: A third append-only event kind for the triage store
+- **Date:** 2026-08-08
+- **Section:** Iterate — feature: triage amend event
+- **Run-ID:** iterate-2026-08-08-triage-amend-event
+- **Context:** triage.jsonl had only append/status; correcting title/detail/severity/kind required dismiss-and-re-file, breaking cross-references. Measured 2026-08-05/07: ~30 cards/week re-filed for content-identical corrections.
+- **Decision:** Add a third append-only event kind, amend, folded into read_all_items
