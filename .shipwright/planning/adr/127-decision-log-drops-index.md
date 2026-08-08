@@ -79,11 +79,61 @@ tokens (`adr-index-refreshed`, `adr-index-stage-failed`, …) that
 `test_adr_index_churn_integration.py` asserts on. Net effect: the file shrank
 despite gaining a second artifact to regenerate.
 
+**Post-push CI catch (ADR-045 `lib` package collision, not the earlier
+bootstrap bug).** The PR's `Python (lint + test)` check failed:
+`plugins/shipwright-build/tests/test_integration.py` and `test_tools.py`
+import `tools.write_decision_log` **in-process**, in the same pytest session
+that has already bound `sys.modules['lib']` to the build plugin's own
+`scripts/lib` package — the exact ADR-045 shadowing trap `shared_lib_loader.py`
+exists to survive, and the sys.path bootstrap added for the earlier bug does
+NOT fix it (inserting a path earlier in `sys.path` cannot change what an
+ALREADY-cached `sys.modules['lib']` resolves to). Fixed by routing
+`write_decision_log.py`'s two `lib.decision_log_index` / `lib.agent_doc_shape`
+call sites through `shared_lib_loader.load_shared_lib()` (the same mechanism
+`triage_promote.py` already uses for `triage_defer`), and by changing
+`decision_log_index.py`'s and `decision_drops_index.py`'s own internal
+`from lib.atomic_write import …` / `from lib.file_lock import …` /
+`from lib.repo_root import …` imports to relative (`from .atomic_write import
+…`) — required because the loader's private-package fallback gives the module
+a working RELATIVE import context, but an absolute `lib.X` inside it would
+still resolve against whichever `lib` collided. `lib/adr_index.py` carries the
+same absolute-import style and is therefore equally exposed in principle, but
+nothing imports it in-process from a colliding plugin test today, so it is
+left as a pre-existing, out-of-scope condition rather than fixed here — noted
+for whoever next touches that file. Verified by reproducing the exact CI
+failure locally (`cd plugins/shipwright-build && uv run pytest tests/
+test_integration.py::test_setup_and_track_section tests/test_tools.py::
+test_write_decision_log tests/test_tools.py::test_write_decision_log_creates_dir`)
+before and after the fix, then running every plugin's own test suite plus the
+full `shared/tests` suite to confirm no other in-process collision exists in
+this diff.
+
 The bootstrap regression test (ledger row 43) was split into its own
 `test_write_decision_log_bootstrap.py` after adding it crossed
 `test_write_decision_log.py`'s 300-line bloat-gate ceiling — a real seam
 (subprocess/CLI-shape test vs. that file's in-process unit tests), not a
 budgetary slice.
+
+**Second post-push CI catch (canon-lint false positive, caught locally via a
+fresh full `shared/tests` run before re-pushing).** The new
+`decision_log_index.md` re-renders each `decision_log.md` entry's own title
+verbatim as a link label, so ADR-259's title ("Re-tag mis-filed
+compliance/security features...") reproduces the literal substring
+`compliance/` in the generated index — tripping
+`test_artifact_path_canon.py`'s `compliance` migration check, which already
+allowlists `decision_log.md` itself for exactly this reason (arbitrary
+historical prose legitimately naming legacy directory tokens). Fixed by adding
+`.shipwright/agent_docs/decision_log_index.md` alongside `decision_log.md` in
+all four `ALLOWLIST` blocks in `shared/scripts/lib/artifact_migrations.py`
+(`planning`/`designs`/`agent_docs`/`compliance`) — the new file is a generated
+sibling of an already-allowlisted source and inherits the same exempt class,
+not a one-off carve-out for the single migration with a current finding. That
+edit grew `artifact_migrations.py` from 632 to 641 lines, inside its existing
+ADR-091 bloat exception (`state: "exception"`, limit 300, prior `current:
+632`); bumped `current` to 641 in `shipwright_bloat_baseline.json` in this
+same commit per ADR-091's own sanctioned remediation ("bump `current`
+deliberately in the same commit"), rather than writing a new exception ADR for
+a single-migration-family edit to an already-excepted file.
 
 `write_decision_log.py`'s unused `status` kwarg (`append_decision`) and
 `--status` CLI flag were removed — confirmed dead via a repo-wide grep (no

@@ -253,7 +253,8 @@ def _append_architecture_update(
         content = content.rstrip() + f"\n\n{section_header}\n"
 
     today = entry_date or date.today().isoformat()
-    from lib.agent_doc_shape import render_canonical_bullet  # lazy import: ADR-045
+    from shared_lib_loader import load_shared_lib  # ADR-045: shadowing-proof
+    render_canonical_bullet = load_shared_lib("agent_doc_shape").render_canonical_bullet
     bullet = render_canonical_bullet(f"ADR-{adr_number:03d}", today, impact_type, summary, f"decision_log (ADR-{adr_number:03d})")
     # rstrip first so a file ending in "\n" doesn't add a blank line per bullet.
     content = content.rstrip("\n") + f"\n{bullet}\n"
@@ -309,8 +310,8 @@ def append_decision(
 
     log_path.write_text(content, encoding="utf-8")
 
-    from lib.decision_log_index import refresh_best_effort  # lazy import: ADR-045
-    warning = refresh_best_effort(project_root)
+    from shared_lib_loader import load_shared_lib  # ADR-045: shadowing-proof
+    warning = load_shared_lib("decision_log_index").refresh_best_effort(project_root)
     if warning: print(f"WARNING: {warning}", file=sys.stderr)
     # Append architecture/convention update if applicable
     if architecture_impact != "none":

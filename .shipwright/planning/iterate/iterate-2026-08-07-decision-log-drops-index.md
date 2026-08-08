@@ -155,12 +155,15 @@ Boundary Probe run below.
   | 48 | Markdown-active characters in a drop's title cannot become a live link/image or break a code span | tested | `test_decision_drops_index.py::test_markdown_syntax_in_a_title_cannot_become_a_live_link_or_image` PASSED |
   | 49 | An uncommitted local edit to `decision_log.md` at merge time is skipped, not staged as an index describing content no commit contains | tested | `test_decision_log_index_churn_integration.py::test_an_uncommitted_decision_log_skips_the_refresh_instead_of_staging_it` PASSED |
   | 50 | A deleted `decision_log.md` post-merge does not falsely report `-refreshed` for an unchanged, stale committed index | tested | `test_decision_log_index_churn_integration.py::test_a_deleted_decision_log_does_not_falsely_report_a_refresh` PASSED |
+  | 51 | `write_decision_log.py` works when imported IN-PROCESS by a test session whose own `lib` package already shadows shared's (ADR-045 collision, distinct from row 43's bare-CLI bootstrap) | tested | `plugins/shipwright-build/tests/test_integration.py::test_setup_and_track_section` + `tests/test_tools.py::test_write_decision_log` + `::test_write_decision_log_creates_dir` — reproduced the CI failure locally before the fix (`load_shared_lib` + relative imports in `decision_log_index.py`/`decision_drops_index.py`), all PASSED after |
 
   0 untested-testable rows. Rows 36-42 were added after the internal Opus
   architecture review and the external plan/architecture review; rows 43-50
-  after the Stage-3 doubt review — see `## Architecture Review` and
-  `## Doubt Review` below, and `## Self-Review` in ADR-127, for the full
-  finding list and disposition of each.
+  after the Stage-3 doubt review; row 51 after a real CI failure on the PR
+  itself (caught by `plugins/shipwright-build`'s own Required Check, not by
+  local `shared/tests`) — see `## Architecture Review` and `## Doubt Review`
+  below, and `## Self-Review` in ADR-127, for the full finding list and
+  disposition of each.
 
 - **Confidence-pattern check:** asymptote (depth) — yes, one "are you
   confident this doesn't touch decision_log.md's own real-content merge

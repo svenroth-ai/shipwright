@@ -40,9 +40,9 @@ import json
 import re
 from pathlib import Path
 
-from lib.atomic_write import durable_atomic_write
-from lib.file_lock import LockTimeout, file_lock
-from lib.repo_root import resolve_main_repo_root
+from .atomic_write import durable_atomic_write
+from .file_lock import LockTimeout, file_lock
+from .repo_root import resolve_main_repo_root
 
 DROP_DIRNAME = "decision-drops"  # under .shipwright/agent_docs/, GITIGNORED
 DROP_INDEX_FILENAME = "INDEX.md"

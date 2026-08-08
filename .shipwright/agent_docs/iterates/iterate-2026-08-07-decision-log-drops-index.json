@@ -1,7 +1,7 @@
 {
   "run_id": "iterate-2026-08-07-decision-log-drops-index",
-  "date": "2026-08-07T23:18:28.833153Z",
-  "event_at": "2026-08-07T11:39:38.141439+00:00",
+  "date": "2026-08-07T23:38:19.994014Z",
+  "event_at": "2026-08-07T23:19:54.435363+00:00",
   "type": "feature",
   "complexity": "large",
   "prior_source": "keyword",
@@ -265,11 +265,16 @@
         "disposition": "tested",
         "evidence": "`test_decision_log_index_churn_integration.py::test_a_deleted_decision_log_does_not_falsely_report_a_refresh` PASSED",
         "category": "integration"
+      },
+      {
+        "behavior": "`write_decision_log.py` works when imported IN-PROCESS by a test session whose own `lib` package already shadows shared's (ADR-045 collision, distinct from row 43's bare-CLI bootstrap)",
+        "disposition": "tested",
+        "evidence": "`plugins/shipwright-build/tests/test_integration.py::test_setup_and_track_section` + `tests/test_tools.py::test_write_decision_log` + `::test_write_decision_log_creates_dir` \u2014 reproduced the CI failure locally before the fix (`load_shared_lib` + relative imports in `decision_log_index.py`/`decision_drops_index.py`), all PASSED after"
       }
     ],
     "counts": {
-      "testable": 50,
-      "tested": 50,
+      "testable": 51,
+      "tested": 51,
       "untestable": 0,
       "untested_testable": 0
     },

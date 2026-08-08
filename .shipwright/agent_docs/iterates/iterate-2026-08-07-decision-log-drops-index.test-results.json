@@ -6,7 +6,7 @@
       "status": "passed",
       "passed": 8663,
       "total": 8663,
-      "note": "Full shared/tests suite (8663 passed, 32 skipped, 20 deselected) run fresh against the current code state after all review-cascade fixes. Targeted new/changed test files also re-run individually throughout: test_decision_log_index*.py, test_decision_drops_index*.py, test_write_decision_log*.py, test_aggregate_decisions.py, test_write_decision_drop.py, test_adr_index_churn_integration.py."
+      "note": "Full shared/tests suite (8663 passed, 32 skipped, 20 deselected) run fresh against the current code state after all review-cascade fixes. Targeted new/changed test files also re-run individually throughout: test_decision_log_index*.py, test_decision_drops_index*.py, test_write_decision_log*.py, test_aggregate_decisions.py, test_write_decision_drop.py, test_adr_index_churn_integration.py. Row 51 added after a real CI failure (ADR-045 in-process lib collision, plugins/shipwright-build's own Required Check) was reproduced locally and fixed."
     },
     "integration": {
       "status": "passed",
@@ -287,11 +287,16 @@
           "disposition": "tested",
           "evidence": "`test_decision_log_index_churn_integration.py::test_a_deleted_decision_log_does_not_falsely_report_a_refresh` PASSED",
           "category": "integration"
+        },
+        {
+          "behavior": "`write_decision_log.py` works when imported IN-PROCESS by a test session whose own `lib` package already shadows shared's (ADR-045 collision, distinct from row 43's bare-CLI bootstrap)",
+          "disposition": "tested",
+          "evidence": "`plugins/shipwright-build/tests/test_integration.py::test_setup_and_track_section` + `tests/test_tools.py::test_write_decision_log` + `::test_write_decision_log_creates_dir` \u2014 reproduced the CI failure locally before the fix (`load_shared_lib` + relative imports in `decision_log_index.py`/`decision_drops_index.py`), all PASSED after"
         }
       ],
       "counts": {
-        "testable": 50,
-        "tested": 50,
+        "testable": 51,
+        "tested": 51,
         "untestable": 0,
         "untested_testable": 0
       },
@@ -312,7 +317,7 @@
   },
   "source_state": {
     "run_id": "iterate-2026-08-07-decision-log-drops-index",
-    "commit": "71a7ef3beab60c8d8d20756d9968fa9c171ac56b",
+    "commit": "f8407006f9d8a6307b5f8d7141ca488ddca467ee",
     "dirty": true,
     "base": null,
     "release": null

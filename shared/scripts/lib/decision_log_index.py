@@ -26,8 +26,8 @@ from __future__ import annotations
 import re
 from pathlib import Path
 
-from lib.atomic_write import durable_atomic_write
-from lib.file_lock import LockTimeout, file_lock
+from .atomic_write import durable_atomic_write
+from .file_lock import LockTimeout, file_lock
 
 DECISION_LOG_PATH = ".shipwright/agent_docs/decision_log.md"
 DECISION_LOG_FILENAME = "decision_log.md"
