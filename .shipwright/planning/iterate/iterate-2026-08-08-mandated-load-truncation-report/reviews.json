@@ -1,0 +1,170 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-08-08-mandated-load-truncation-report",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-08T19:02:11.518575+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-08T19:02:11.636142+00:00",
+      "disposition": "external plan review is medium+ only per iteration-planning.md; this run is small",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 5,
+      "findings": [
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/scripts/lib/mandated_load_coverage.py",
+          "line": 43,
+          "finding": "Unguarded file open could raise OSError instead of reporting, contradicting the module's own docstring promise.",
+          "suggestion": "Guard with try/except OSError, matching behavior_snapshot.py's shape.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "plugins/shipwright-iterate/skills/iterate/references/context-loading.md",
+          "line": 41,
+          "finding": "The exists:false row shape (a mandate-named path not on disk) was not mentioned in either wired instruction.",
+          "suggestion": "Add one sentence covering exists:false in both blocks.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "architecture",
+          "file": "shared/tests/test_check_mandated_load_coverage_cli.py",
+          "line": 16,
+          "finding": "sys.path loop inserted an unused second entry copied from a different test's pattern.",
+          "suggestion": "Single guarded insert is sufficient.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "plugins/shipwright-iterate/skills/iterate/references/context-loading.md",
+          "line": 43,
+          "finding": "Prose hardcoded the 2000-line cap instead of citing the reported cap_lines field.",
+          "suggestion": "Reference cap_lines instead of the literal number.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "plugins/shipwright-design/skills/design/SKILL.md",
+          "line": 126,
+          "finding": "Follow-up, not a spec violation: the same unqualified mandated spec.md read survives in shipwright-design Step 1 and shipwright-project SKILL.md's summary line; the operator explicitly scoped this run to the two files named in the spec brief.",
+          "suggestion": "Raise a follow-up to wire the same check into design Step 1 in a later run; do not widen this run's scope.",
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-08-08T19:13:41.124725+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-08T19:13:41.244870+00:00",
+      "disposition": "docs-only + trivial small-utility diff; no migrations/async/concurrency/cross-plugin-imports/irreversible-ops surface per iteration-reviews.md Stage 3 trigger",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 3,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "bug",
+          "file": "shared/scripts/lib/mandated_load_coverage.py:48–51 (OSError handling)",
+          "line": null,
+          "finding": "When opening a file raises `OSError`, the returned row contains only `path`, `exists: True`, and `error`.  `total_lines`, `cap_lines`, and `exceeds_cap` are missing.  The downstream instructions in `context-loading.md` and `step-1-interview.md` expect every existing-file row to have an `exceeds_cap` key — accessing it on an error row would throw a `KeyError`.  The aggregate flag ignores these files, but the row shape itself is inconsistent and can break callers.",
+          "suggestion": "Keep the schema uniform by including `\"total_lines\": None, \"cap_lines\": cap_lines, \"exceeds_cap\": False` in the error dict (or use `None` for `exceeds_cap`).  Adjust the corresponding test (`test_unreadable_file_is_declared_not_raised`) to expect the extra keys.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": "plugins/shipwright-iterate/skills/iterate/references/context-loading.md and plugins/shipwright-project/skills/project/references/step-1-interview.md (the new instruction blocks)",
+          "line": null,
+          "finding": "The instructions do not mention the `error` row case at all.  If an unreadable file is encountered, the instruction will likely cause a `KeyError` on `exceeds_cap` (as above).  Even after fixing the library’s shape, the instructions lack guidance on what to do with an error row — e.g., treat it as not read.",
+          "suggestion": "Add a sentence covering rows with an `error` key, for example: “A row with an `error` key could not be checked — report that fact and do not assume it was read.”  Overall assessment: The diff implements all acceptance criteria except for an inconsistent response shape on filesystem errors that can break the wired-in instructions. Fix the library’s error-row shape and, optionally, the instruction’s handling of errors.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "security",
+          "file": "shared/scripts/tools/check_mandated_load_coverage.py:43-45",
+          "line": null,
+          "finding": "The CLI documents `--path` and `--glob` as repo-root-relative, but it does not enforce that constraint. An absolute `--path` causes `root / p` to discard `root`, and `../` segments in either option can traverse outside `--project-root`. This permits the tool to inspect and report line-count metadata for arbitrary accessible files rather than only mandated project files.",
+          "suggestion": "Reject absolute paths and patterns and normalize/resolve each candidate against the resolved project root, rejecting any candidate that is not beneath that root (including symlink-resolved targets if the project boundary must be strict). Add CLI tests for absolute and `../` path/pattern rejection.  Overall assessment: ship-with-fixes. The mandated-load reporting, documentation wiring, and required functional test cases are otherwise implemented, but the CLI should enforce its repo-root-relative input contract before shipping.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-08-08T19:19:47.518769+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[deepseek] - Category: bug\n- Severity: medium\n- File: shared/scripts/lib/mandated_load_coverage.py:48–51 (OSError handling)\n- Finding: When opening a file raises `OSError`, the returned row contains only `path`, `exists: True`, and `error`.  `total_lines`, `cap_lines`, and `exceeds_cap` are missing.  The downstream instructions in `context-loading.md` and `step-1-interview.md` expect every existing-file row to have an `exceeds_cap` key — accessing it on an error row would throw a `KeyError`.  The aggregate flag ignores these files, but the row shape itself is inconsistent and can break callers.\n- Suggestion: Keep the schema uniform by including `\"total_lines\": None, \"cap_lines\": cap_lines, \"exceeds_cap\": False` in the error dict (or use `None` for `exceeds_cap`).  Adjust the corresponding test (`test_unreadable_file_is_declared_not_raised`) to expect the extra keys.\n\n- Category: edge-case\n- Severity: low\n- File: plugins/shipwright-iterate/skills/iterate/references/context-loading.md and plugins/shipwright-project/skills/project/references/step-1-interview.md (the new instruction blocks)\n- Finding: The instructions do not mention the `error` row case at all.  If an unreadable file is encountered, the instruction will likely cause a `KeyError` on `exceeds_cap` (as above).  Even after fixing the library’s shape, the instructions lack guidance on what to do with an error row — e.g., treat it as not read.\n- Suggestion: Add a sentence covering rows with an `error` key, for example: “A row with an `error` key could not be checked — report that fact and do **not** assume it was read.”\n\n**Overall assessment:** The diff implements all acceptance criteria except for an inconsistent response shape on filesystem errors that can break the wired-in instructions. Fix the library’s error-row shape and, optionally, the instruction’s handling of errors.\n\nSHIPWRIGHT_VERDICT: revise\n\n[openai] - Category: security\n- Severity: low\n- File: `shared/scripts/tools/check_mandated_load_coverage.py:43-45`\n- Finding: The CLI documents `--path` and `--glob` as repo-root-relative, but it does not enforce that constraint. An absolute `--path` causes `root / p` to discard `root`, and `../` segments in either option can traverse outside `--project-root`. This permits the tool to inspect and report line-count metadata for arbitrary accessible files rather than only mandated project files.\n- Suggestion: Reject absolute paths and patterns and normalize/resolve each candidate against the resolved project root, rejecting any candidate that is not beneath that root (including symlink-resolved targets if the project boundary must be strict). Add CLI tests for absolute and `../` path/pattern rejection.\n\nOverall assessment: ship-with-fixes. The mandated-load reporting, documentation wiring, and required functional test cases are otherwise implemented, but the CLI should enforce its repo-root-relative input contract before shipping.\n\nSHIPWRIGHT_VERDICT: revise",
+      "verdicts": {
+        "openai": "revise",
+        "deepseek": "revise"
+      }
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-08T19:13:41.007633+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-08T19:02:11.753421+00:00",
+      "disposition": "internal plan review is medium+ only, this run is small",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    }
+  }
+}
