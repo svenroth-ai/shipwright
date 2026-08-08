@@ -22,7 +22,7 @@ def ensure_utf8_stdout() -> None:
     (iterate-2026-06-13-verifier-utf8-stdout). UTF-8 encodes all of Unicode, so
     the strict error handler can't raise.
 
-    Mirrors ``triage_cli._ensure_utf8_stdout`` (PR #182). Call once at a CLI
+    Mirrors ``lib.triage_cli_commands.ensure_utf8_stdout`` (PR #182). Call once at a CLI
     ``main()`` entry, BEFORE any stdout write — ``reconfigure`` rejects an
     encoding change after the stream has been written to.
     """

@@ -84,3 +84,14 @@ def test_the_documents_describe_the_revisit_date_and_the_un_park_command() -> No
         assert "`trg-51f8e2a1`" not in text, (
             f"{name}: still points at the card this run closed"
         )
+
+
+def test_the_documents_describe_the_amend_subcommand() -> None:
+    """Stage-3 doubt review, finding 5: `guide.md` and `security-ci-setup.md`
+    must document `amend` — an operator correction facility nobody is told
+    about tends to keep being done the old way (dismiss-and-refile)."""
+    for doc in ("guide.md", "security-ci-setup.md"):
+        text = (_WORKTREE / "docs" / doc).read_text(encoding="utf-8")
+        line = _command_line(text, doc, "amend")
+        assert "--title" in line, line
+        assert not any(n in line for n in _NEGATIONS), line

@@ -30,9 +30,11 @@ if _TESTS not in sys.path:
 
 import triage  # noqa: E402
 from _triage_repair_helpers import (  # noqa: E402
+    AMEND,
     APPEND,
     STATUS,
     corrupt_outbox as _corrupt_outbox,
+    corrupt_outbox_with_amend as _corrupt_outbox_with_amend,
     j as _j,
     project as _project,
 )
@@ -99,6 +101,24 @@ def test_apply_splits_the_line_and_preserves_both_records(tmp_path: Path) -> Non
 
     lines = [ln for ln in p.read_text(encoding="utf-8").splitlines() if ln.strip()]
     assert [json.loads(ln) for ln in lines] == [APPEND, STATUS]
+    assert p.read_bytes().endswith(b"\n")
+
+
+def test_apply_splits_an_append_amend_glued_line_and_preserves_both(tmp_path: Path) -> None:
+    """iterate-2026-08-08-triage-amend-event: `triage_repair` must split and
+    preserve an `amend` record end-to-end the same way it already does for
+    `status` — mirrors `test_apply_splits_the_line_and_preserves_both_records`
+    with `amend` in place of `status`. This concatenation is undamaged (both
+    objects decode cleanly via `split_records`' `raw_decode` fast path), so it
+    does NOT exercise `is_triage_record`'s amend branch — that predicate,
+    consulted only during `_resync` after genuine damage, is covered by
+    `test_triage_record_boundary_recovery.py`."""
+    project = _project(tmp_path)
+    p = _corrupt_outbox_with_amend(project)
+    assert main(["--project-root", str(project), "--apply", "--writers-quiesced"]) == 0
+
+    lines = [ln for ln in p.read_text(encoding="utf-8").splitlines() if ln.strip()]
+    assert [json.loads(ln) for ln in lines] == [APPEND, AMEND]
     assert p.read_bytes().endswith(b"\n")
 
 

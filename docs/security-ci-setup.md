@@ -629,7 +629,7 @@ Security tab for Path B, workflow run URL for Path A).
 
 ### Operator flow
 
-Four verbs on every action-unit (matching the launch-surface model
+Five verbs on every action-unit (matching the launch-surface model
 from iterate-2026-05-20):
 
 - **Fix now** — copy the `launchPayload` fence into a new Claude session.
@@ -647,6 +647,10 @@ from iterate-2026-05-20):
   importer does NOT re-create the finding, and if the finding disappears in the
   meantime the parked entry closes itself like an open one would.
   `triage_cli.py unpark <id> --reason <reason>` reverses a deferral.
+- **Amend** — `triage_cli.py amend <id> [--title T] [--detail D]
+  [--severity S] [--kind K]` corrects a card's title/detail/severity/kind
+  in place, id and disposition unchanged, when the card's content — not the
+  decision about it — was wrong.
 
 ### Freshness window (Path A only)
 

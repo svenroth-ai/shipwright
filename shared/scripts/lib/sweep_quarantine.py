@@ -36,7 +36,6 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 
 from lib.churn_merge import (
-    TriageValidation,
     classify_triage_text,
     dedup_triage_lines,
     validate_triage_text,
@@ -47,6 +46,7 @@ from lib.quarantine_log import (  # noqa: F401  (re-export surface)
     append_quarantine,
     quarantine_path,
 )
+from lib.sweep_quarantine_messages import block_errors as _block_errors
 
 
 @dataclass
@@ -169,15 +169,25 @@ def decide(
     # co-occurring with a legitimately protected dismiss ELSEWHERE emitted the validator's
     # raw "no append anywhere — the merge dropped it" with no correction, sending the
     # operator after corruption that is not there.
-    protected = verdict.orphan_status_ids & frozenset(known_append_ids)
+    # `amend` (iterate-2026-08-08-triage-amend-event, AC12) joins `status` here:
+    # protection is about the ID being a real, known append elsewhere — kind-
+    # independent — so the union covers an id orphaned via either event kind.
+    # Existing status-only logs are unaffected: `orphan_amend_ids` is empty when
+    # the outbox carries no `amend` lines.
+    protected_status = verdict.orphan_status_ids & frozenset(known_append_ids)
+    protected_amend = verdict.orphan_amend_ids & frozenset(known_append_ids)
+    protected = protected_status | protected_amend
     orphan_ids = verdict.orphan_status_ids - frozenset(known_append_ids)
+    orphan_amend_ids = verdict.orphan_amend_ids - frozenset(known_append_ids)
 
     if verdict.has_non_orphan_error:
         # Genuine corruption, decided BEFORE anything is partitioned or written, so no
         # side effect can be half-applied. Nothing was held (the partition never ran), so
         # the note stays on its unconditional wording.
         return QuarantineDecision(
-            "block", errors=_block_errors(verdict, protected, frozenset(), unsplittable), warnings=warnings,
+            "block",
+            errors=_block_errors(verdict, protected_status, protected_amend, frozenset(), frozenset(), unsplittable),
+            warnings=warnings,
         )
 
     # Partition BY INDEX in one pass: order and duplicate count are preserved exactly.
@@ -186,7 +196,14 @@ def decide(
     materialized: list[str] = []
     candidates: list[str] = []
     held: list[str] = []
-    held_ids: set[str] = set()
+    # Kept apart, not one merged `held_ids` (Stage-3 doubt review, finding 6): an id
+    # can be protected via `status` while its only `amend` copy was never a hold
+    # candidate at all (e.g. glued to another record, so it went to `materialized`
+    # via the `obj is None` branch above) — a merged set would tell that amend's
+    # `protected_amend_unplaceable` note "this run withheld its outbox copy" when it
+    # did not, the exact wrong-kind misattribution `protected_note` exists to prevent.
+    held_status_ids: set[str] = set()
+    held_amend_ids: set[str] = set()
     for line in outbox_lines:
         obj = _sole_record(line)
         if obj is None:
@@ -199,26 +216,35 @@ def decide(
             materialized.append(line)
             continue
         iid = obj.get("id")
-        if obj.get("event") == "status":
+        event = obj.get("event")
+        if event in ("status", "amend"):
+            this_orphans = orphan_ids if event == "status" else orphan_amend_ids
             # ``isinstance`` FIRST and the order is load-bearing: an id may be any JSON
             # value, and ``[] in frozenset(...)`` raises TypeError: unhashable. Testing
             # membership first would crash the sweep from inside its own lock — strictly
             # worse than the dead end this function exists to remove.
-            if not isinstance(iid, str) or iid in orphan_ids:
+            if not isinstance(iid, str) or iid in this_orphans:
                 # No usable id at all, or no append anywhere. Un-deliverable forever, and
                 # inert to every reader either way — quarantine destroys nothing.
                 candidates.append(line)
                 continue
             if iid in protected:
                 held.append(line)
-                held_ids.add(iid)
+                (held_status_ids if event == "status" else held_amend_ids).add(iid)
                 continue
         materialized.append(line)
 
     if not candidates and not held:
         # Nothing in the OUTBOX explains the verdict, so every defect lives in the
         # worktree-tracked log — which the sweep cannot rewrite. Fail closed.
-        return QuarantineDecision("block", errors=_block_errors(verdict, protected, frozenset(held_ids), unsplittable), warnings=warnings)
+        return QuarantineDecision(
+            "block",
+            errors=_block_errors(
+                verdict, protected_status, protected_amend,
+                frozenset(held_status_ids), frozenset(held_amend_ids), unsplittable,
+            ),
+            warnings=warnings,
+        )
 
     trimmed_text, _ = _materialize(worktree_lines, materialized, eol)
     if validate_triage_text(trimmed_text):
@@ -226,7 +252,14 @@ def decide(
         # defect in the worktree-tracked log, or a defect inside a glued line. This
         # re-validation, NOT the partition, is what enforces provenance (external plan
         # review, r2 openai #3).
-        return QuarantineDecision("block", errors=_block_errors(verdict, protected, frozenset(held_ids), unsplittable), warnings=warnings)
+        return QuarantineDecision(
+            "block",
+            errors=_block_errors(
+                verdict, protected_status, protected_amend,
+                frozenset(held_status_ids), frozenset(held_amend_ids), unsplittable,
+            ),
+            warnings=warnings,
+        )
     return QuarantineDecision(
         "quarantine" if candidates else "hold",
         deduped_text=trimmed_text,
@@ -235,66 +268,3 @@ def decide(
         held_lines=held, warnings=warnings,
     )
 
-
-def _protected_note(iid: str, was_held: bool) -> str:
-    """Why a protected id still could not be placed — worded for the case at hand.
-
-    A protected status is NOT "an append the merge dropped": its append exists, in
-    main's tracked log, unreachable from this branch. The validator's own line says
-    "has no append anywhere", which would send the operator hunting for corruption
-    that is not there, so one of these ALWAYS accompanies it.
-
-    Three drafts of this got the CASE wrong before the wording settled, so the rule
-    is now: say only what is true on every path. Naming where the status sits was the
-    trap — "it is not in the outbox" is false when it was held (Stage-2 finding 2),
-    and equally false when its only outbox copy is glued to another record and so was
-    never a candidate for holding (Stage-3 objection 2). The head clause holds
-    unconditionally; the held clause is the one extra fact always known when true.
-    """
-    head = (
-        f"protected_status_unplaceable: id {iid!r} has an append in main's tracked log that is "
-        f"not reachable from this branch, so the 'no append anywhere' above is wrong about it. "
-        f"Deliver main to origin, then re-run"
-    )
-    if was_held:
-        # The only extra fact worth stating, and the only one we always know.
-        return (
-            f"{head} — this run withheld its outbox copy; a further copy in the branch's "
-            f"tracked log, which the sweep cannot rewrite, is what blocked"
-        )
-    return head
-
-
-def _block_errors(
-    verdict: TriageValidation,
-    protected: frozenset[str],
-    held_ids: frozenset[str],
-    unsplittable: bool,
-) -> list[str]:
-    """The validator's errors plus whatever remedy this particular block has.
-
-    EVERY ``block`` return comes through here, so the remedies stay in one place.
-
-    Not every block has a tool remedy, and this does not pretend otherwise: a dropped
-    header or an emptied log needs a human looking at the repo, and saying "run the
-    repair tool" would be worse than saying nothing. What must never happen again is a
-    block whose remedy EXISTS and goes unmentioned — the whole defect class this module
-    was rewritten for.
-    """
-    errors = list(verdict.errors)
-    # EVERY protected id gets an explanation, held or not — reaching a block means its
-    # status was not placed either way, and the validator's "no append anywhere" line is
-    # actively wrong about it. Only the WORDING depends on whether the outbox copy was
-    # withheld.
-    errors += [_protected_note(iid, iid in held_ids) for iid in sorted(protected)]
-    if unsplittable:
-        # Deliberately not "holds more than one record": ``_sole_record`` also returns
-        # None for a fragment, and claiming a concatenation the operator cannot find is
-        # the same misdirection this function exists to prevent.
-        errors.append(
-            "unsplittable_outbox_line: an outbox line does not hold exactly one record, so "
-            "the sweep cannot dispose of its records separately — run "
-            "`uv run shared/scripts/tools/triage_repair.py --project-root <root>` to split "
-            "or quarantine it, then re-run"
-        )
-    return errors

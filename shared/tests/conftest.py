@@ -102,7 +102,7 @@ def _sweep_tests_unset_ci(request, monkeypatch):
     # no-ops under `$CI` (`ci_without_optin`) while they assert it COMMITS (44 false
     # skips, PR #172). Triage-routing (2026-07-31): `should_route_to_outbox` is False
     # under `$CI` too. A guard test re-sets CI in its own body (after this fixture).
-    if request.path.name.startswith(("test_sweep", "test_d2v_empirical_gate", "test_triage_outbox", "test_github_triage_prompt_artifact")):
+    if request.path.name.startswith(("test_sweep", "test_d2v_empirical_gate", "test_triage_outbox", "test_github_triage_prompt_artifact", "test_triage_cli_amend")):
         monkeypatch.delenv("CI", raising=False)
 
 

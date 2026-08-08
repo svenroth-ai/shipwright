@@ -79,6 +79,14 @@ def status(iid: str, new_status: str = "dismissed") -> str:
     )
 
 
+def amend(iid: str, title: str = "corrected") -> str:
+    """An amend event line (orphan if no matching append exists in the log)."""
+    return (
+        f'{{"event":"amend","id":"{iid}","ts":"2026-08-08T00:00:01Z",'
+        f'"by":"cli","title":"{title}"}}'
+    )
+
+
 def reserialize(line: str) -> str:
     """The SAME record with a different key order + insignificant whitespace.
 

@@ -162,6 +162,50 @@ def test_triage_integrity_sentinel_mode_works(tmp_path: Path) -> None:
     assert "MODE=triage-integrity-sentinel OK" in result.stdout
 
 
+def test_triage_fields_sentinel_mode_resolves_severities_and_kinds(tmp_path: Path) -> None:
+    """Stage-3 doubt review, finding 9. ``lib.triage_fields`` is a NEW leaf
+    this iterate (extracted from ``triage.py`` for its bloat cap) — before
+    this diff, ``SEVERITIES``/``KINDS`` were plain module-level constants in
+    ``triage.py`` with no indirection; now `triage.__getattr__` resolves them
+    through ``load_shared_lib("triage_fields")`` on every access, including
+    from ``tools/triage_cli.py`` at parser-build time (before any subcommand
+    dispatch, so a loader failure would take down every subcommand, not only
+    ``amend``). This pins that the NEW lazy indirection survives the fallback
+    path the same way the pre-existing leaves already do.
+
+    (Not tested via a shadowed `import triage_cli` directly: that script is
+    never imported as a module elsewhere in this repo — always run standalone
+    via `uv run`, where its own sys.path shim inserts `shared/scripts` at
+    position 0 before any of its own imports run, so full `lib`-shadowing
+    cannot actually occur for it. The genuinely new surface is the loader
+    call itself, which this test exercises directly.)
+    """
+    shadow = tmp_path / "plugin_scripts"
+    (shadow / "lib").mkdir(parents=True)
+    (shadow / "lib" / "__init__.py").write_text("", encoding="utf-8")
+
+    result = _run(
+        f"""
+        import sys
+        sys.path.insert(0, {str(_SCRIPTS)!r})
+        sys.path.insert(0, {str(shadow)!r})   # the shadowing `lib` wins
+        import lib
+        assert "plugin_scripts" in lib.__file__, lib.__file__
+
+        from shared_lib_loader import load_shared_lib
+        mod = load_shared_lib("triage_fields")
+        assert mod.__name__.startswith("_shipwright_shared_lib"), mod.__name__
+        assert "lib.triage_fields" not in sys.modules, "the shadowed package import won"
+        assert mod.SEVERITIES and mod.KINDS
+        assert mod.suggest_priority_from_severity("critical") == "P0"
+        print("MODE=sentinel-fields OK")
+        """,
+        tmp_path,
+    )
+    assert result.returncode == 0, result.stderr
+    assert "MODE=sentinel-fields OK" in result.stdout
+
+
 def test_the_subprocess_probe_can_fail(tmp_path: Path) -> None:
     """Guard: the tests above are only evidence while the probe still bites.
 
