@@ -1,0 +1,1 @@
+Mandated decision_log.md readers (iterate/build/plan/project first-actions) now read decision_log_index.md first, with a named grep/offset fallback, instead of promising a complete read a single 2000-line-capped Read call cannot deliver.

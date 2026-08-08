@@ -28,7 +28,7 @@ Output:
 Requirements:
   - Spec file from /shipwright-project
   - Recommended: OPENROUTER_API_KEY for DeepSeek + OpenAI review;
-    OPENAI_API_KEY can run the GPT arm only. An internal Opus review always
+    OPENAI_API_KEY can run the GPT arm only. An internal review always
     runs first; if keys are missing, the skill will ask whether to skip
     external review and rely on that internal review instead.
 ================================================================================
@@ -100,7 +100,13 @@ Omit `--phase-task-id` if you were not handed one. Set `invocation_mode` from th
 
 1. `CLAUDE.md` — stack, conventions, commands
 2. `.shipwright/agent_docs/conventions.md` — coding standards, naming, patterns
-3. `.shipwright/agent_docs/decision_log.md` — ALL architectural decisions (read the complete file)
+3. `.shipwright/agent_docs/decision_log_index.md` — compact index of past
+   decisions (title + one-line summary). Read a full entry in
+   `.shipwright/agent_docs/decision_log.md` only when the index, or an
+   `ADR-NNN` already in context, points to it — grep the `### ADR-NNN`
+   heading, or an offset/limit `Read`, never the whole file (a single `Read`
+   call caps at 2,000 lines; the log already exceeds it). No index match →
+   grep `decision_log.md` directly rather than assume nothing exists.
 4. `.shipwright/agent_docs/architecture.md` — app structure, component tree, data flow
 5. Run: `git log --oneline -10` — recent commits
 
@@ -194,7 +200,7 @@ Apply the printed `effective_policy`:
 
 - `auto-default` → proceed with the `default_answer`, **no END-TURN**. (The
   interview is answered from loaded project context; a missing external-review
-  key falls back to the internal Opus review already on record, not a
+  key falls back to the internal review already on record, not a
   self-review checklist. Human plan-review is deferred to the orchestrator's
   cross-phase gate.)
 - `orchestrator-approve` / `hard-stop` → **STILL STOP** and hand a gate-pending

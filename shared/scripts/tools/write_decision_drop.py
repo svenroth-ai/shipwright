@@ -46,7 +46,6 @@ if str(_SCRIPTS_ROOT) not in sys.path:
 from lib.adr_index import refresh_best_effort  # noqa: E402
 from lib.decision_drops_index import refresh_best_effort as refresh_drops_index  # noqa: E402
 from lib.iterate_entry import sanitize_run_id_for_filename  # noqa: E402
-from lib.repo_root import resolve_main_repo_root  # noqa: E402
 from tools.write_decision_log import (  # noqa: E402
     ADR_SPEC_FOLDER,
     FieldLengthError,
@@ -63,21 +62,20 @@ class DecisionDropError(RuntimeError):
 
 
 def drop_dir(project_root: Path) -> Path:
-    """Resolve ``.shipwright/agent_docs/decision-drops/``, git-worktree-aware.
+    """Resolve ``.shipwright/agent_docs/decision-drops/`` under ``project_root``.
 
-    Iterate F3 runs inside an ephemeral worktree (unconditional isolation).
-    The worktree's drop dir is destroyed by ``git worktree remove`` before
-    ``/shipwright-changelog``'s ``aggregate_decisions.py`` can fold the drop
-    into ``decision_log.md`` — so the drop MUST be written next to the MAIN
-    repo, the directory the aggregator reads. In a plain checkout (or when
-    git is unavailable) this is identical to
-    ``project_root/.shipwright/agent_docs/decision-drops`` — behavior
-    unchanged. Mirrors ``lib.events_log.resolve_events_path``; kept in lock
-    step with ``aggregate_decisions.drop_dir`` (drift = silently lost ADRs).
+    Since iterate-2026-08-08-track-decision-drops the directory is TRACKED
+    (only its local ``INDEX.md`` render + temp files stay gitignored), so the
+    drop is written into the calling iterate's own worktree: F6 stages it,
+    ships in that iterate's own PR — the per-tree model already used for
+    ``shipwright_events.jsonl``/``reviews.json``. No longer redirected to the
+    MAIN repo (that redirect existed only to survive `git worktree remove`
+    destroying a *gitignored* file; git history is now what survives it).
+    Kept in lock step with ``aggregate_decisions.drop_dir`` and
+    ``decision_drops_index.drop_dir`` (drift = silently lost ADRs); pinned by
+    ``test_decision_drop_ssot.py``'s ``_WORKTREE_LOCAL`` registry.
     """
-    project_root = Path(project_root)
-    root = resolve_main_repo_root(project_root) or project_root
-    return root / ".shipwright" / "agent_docs" / DROP_DIRNAME
+    return Path(project_root) / ".shipwright" / "agent_docs" / DROP_DIRNAME
 
 
 # Semantic fields the idempotency key compares on — excludes the volatile
@@ -154,7 +152,9 @@ def write_decision_drop(
 
     Iterate A.3 hardens this path: each of context / decision / consequences /
     rationale / rejected must be within ``ADR_FIELD_MAX_CHARS``. Long-form
-    prose belongs in ``spec_ref`` → ``.shipwright/planning/adr/<NNN>-<slug>.md``.
+    prose belongs in ``spec_ref`` →
+    ``.shipwright/planning/adr/<run_id_sanitized>-<slug>.md`` (named by
+    run_id, never a hand-guessed number).
     """
     if not run_id.strip():
         raise DecisionDropError("run_id is empty")
@@ -238,9 +238,9 @@ def main(argv: list[str] | None = None) -> int:
         default="",
         help=(
             "Optional path (relative to project root) to long-form ADR spec — "
-            f"convention: {ADR_SPEC_FOLDER}/<NNN>-<slug>.md (flat, one file "
-            "per ADR). Rendered as a `**Details:** [...]` link in the "
-            "aggregated decision_log.md."
+            f"convention: {ADR_SPEC_FOLDER}/<run_id_sanitized>-<slug>.md "
+            "(flat, one file per ADR, named by run_id). Rendered as a "
+            "`**Details:** [...]` link in the aggregated decision_log.md."
         ),
     )
     args = parser.parse_args(argv)
@@ -264,14 +264,7 @@ def main(argv: list[str] | None = None) -> int:
         print(f"ERROR: {exc}", file=sys.stderr)
         return 1
 
-    # The drop is written next to the MAIN repo (worktree-aware drop_dir),
-    # which is ABOVE --project-root when F3 runs inside an iterate worktree —
-    # `relative_to` would then raise ValueError. Show the path relative to
-    # --project-root when it is genuinely below it, else the absolute path.
-    try:
-        display = path.relative_to(Path(args.project_root).resolve())
-    except ValueError:
-        display = path
+    display = path.relative_to(Path(args.project_root).resolve())
     print(str(display))
     print(
         f"decision-drop written for run_id={args.run_id} — ADR-NNN assigned "
@@ -280,15 +273,16 @@ def main(argv: list[str] | None = None) -> int:
     )
 
     # Refresh INDEX.md at F3 so the index row ships in the SAME COMMIT as the ADR
-    # spec file. The drop lives next to the MAIN repo; the index is tracked in
-    # THIS checkout — hence --project-root, and F6 must `git add` it explicitly.
+    # spec file. Both the drop (tracked) and INDEX.md (local-only) resolve
+    # against THIS checkout now — hence --project-root, no main-repo redirect —
+    # and F6 must `git add` the drop explicitly (INDEX.md stays gitignored).
     warning = refresh_best_effort(Path(args.project_root))
     if warning:
         print(f"WARNING: decision-drop written, but {warning}", file=sys.stderr)
 
     # The decision-drops directory just gained a file — refresh its own
-    # (gitignored, local-only) index too. Never staged/committed, unlike the
-    # ADR index: see lib/decision_drops_index.py. Wired here, not in
+    # LOCAL index too (INDEX.md itself stays gitignored; the drop it lists is
+    # tracked). See lib/decision_drops_index.py. Wired here, not in
     # write_decision_drop() itself, same split as the refresh above.
     drops_warning = refresh_drops_index(Path(args.project_root))
     if drops_warning:

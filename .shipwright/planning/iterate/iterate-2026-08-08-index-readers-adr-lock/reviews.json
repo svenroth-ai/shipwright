@@ -1,0 +1,348 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-08-08-index-readers-adr-lock",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-08T14:13:16.451099+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 11,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "allocator idempotency design (Round 1)",
+          "line": null,
+          "finding": "Idempotent replay with a different slug creates a number/path mismatch.",
+          "suggestion": "Same fix as openai finding 4 — (run_id, slug) keying, loud error on mismatch.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "allocator lock/watermark directory (Round 1)",
+          "line": null,
+          "finding": ".shipwright/locks/ may not exist on a fresh clone or after git clean.",
+          "suggestion": "mkdir(parents=True, exist_ok=True) before opening lock/watermark.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "worktree scan (Round 1)",
+          "line": null,
+          "finding": "A pruned-but-listed worktree in `git worktree list --porcelain` could crash the scan with FileNotFoundError.",
+          "suggestion": "Catch per-worktree (FileNotFoundError/OSError), skip with a warning, continue the scan.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "correctness",
+          "file": "Design Notes (Round 1, \"same-machine\" scope)",
+          "line": null,
+          "finding": "\"Same-machine\" scope is imprecise: two independent clones of the same repo on one machine do NOT coordinate (only linked worktrees of ONE main root do).",
+          "suggestion": "Reword scope as \"linked worktrees sharing one main repository root.\"",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "correctness",
+          "file": "F3.md allocator design (Round 1)",
+          "line": null,
+          "finding": "Timing window: state deleted AFTER a claim but BEFORE the agent writes the spec file leaves the number unrecoverable by folder-scan (no file exists yet to find) — a later allocation can reissue it.",
+          "suggestion": "Write the spec file at the returned path IMMEDIATELY, same step, no intervening actions; allocator fails closed rather than silently resetting to the folder-scan floor when state is missing/corrupt while other worktrees are active.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "resolve_main_repo_root() (Round 1)",
+          "line": null,
+          "finding": "Degraded WORKTREE-LOCAL mode still completes an unsafe allocation by default.",
+          "suggestion": "Unresolvable main root is a failure by default, not a silent degrade.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "security",
+          "file": "allocator slug handling (Round 1)",
+          "line": null,
+          "finding": "Slug used raw in path construction (traversal risk); idempotent replay with a changed slug or a pre-existing unrelated target could overwrite.",
+          "suggestion": "Validate slug against a safe-filename allowlist before use; key idempotency on (run_id, slug), error loudly on mismatch.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "anti-ratchet guard design (Round 1)",
+          "line": null,
+          "finding": "Anti-ratchet regeneration ambiguity — if the guard test regenerates-then-compares, a same-run collision becomes \"baseline\" and the guard protects nothing.",
+          "suggestion": "Guard reads only the committed baseline file; regeneration is a separate, explicit, human-invoked command; pin that the guard imports nothing from the regen tool.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "test-coverage",
+          "file": "iterate spec AC2/AC3",
+          "line": null,
+          "finding": "AC2/AC3 have no recorded evidence of the verification work.",
+          "suggestion": "Add a Repo Scout Evidence section citing the actual greps/reads performed.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "test-coverage",
+          "file": "iterate spec Verification section",
+          "line": null,
+          "finding": "Stated verification command misses the new test_mandated_reader_index_first.py.",
+          "suggestion": "Broaden the Verification runner command to name all three new test modules explicitly.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "process",
+          "file": "marketplace-sync timing",
+          "line": null,
+          "finding": "Marketplace-sync timing concern (\"stale PR\" if sync changes tracked content).",
+          "suggestion": "Reviewed, no change needed — update-marketplace.sh only refreshes the local runtime plugin cache outside this repo's git history; it does not modify or generate any committed file.",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-08-08T14:07:01.255248+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[deepseek] 1. **Category: correctness - Severity: medium**\n   **File:** allocator idempotency design (Round 1)\n   **Finding:** Idempotent replay with a different slug creates a number/path mismatch.\n   **Suggestion:** Same fix as openai finding 4 — (run_id, slug) keying, loud error on mismatch.\n\n2. **Category: correctness - Severity: low**\n   **File:** allocator lock/watermark directory (Round 1)\n   **Finding:** .shipwright/locks/ may not exist on a fresh clone or after git clean.\n   **Suggestion:** mkdir(parents=True, exist_ok=True) before opening lock/watermark.\n\n3. **Category: correctness - Severity: low**\n   **File:** worktree scan (Round 1)\n   **Finding:** A pruned-but-listed worktree in `git worktree list --porcelain` could crash the scan with FileNotFoundError.\n   **Suggestion:** Catch per-worktree (FileNotFoundError/OSError), skip with a warning, continue the scan.\n\n[openai] 1. **Category: correctness - Severity: high**\n   **File:** Design Notes (Round 1, \"same-machine\" scope)\n   **Finding:** \"Same-machine\" scope is imprecise: two independent clones of the same repo on one machine do NOT coordinate (only linked worktrees of ONE main root do).\n   **Suggestion:** Reword scope as \"linked worktrees sharing one main repository root.\"\n\n2. **Category: correctness - Severity: high**\n   **File:** F3.md allocator design (Round 1)\n   **Finding:** Timing window: state deleted AFTER a claim but BEFORE the agent writes the spec file leaves the number unrecoverable by folder-scan (no file exists yet to find) — a later allocation can reissue it.\n   **Suggestion:** Write the spec file at the returned path IMMEDIATELY, same step, no intervening actions; allocator fails closed rather than silently resetting to the folder-scan floor when state is missing/corrupt while other worktrees are active.\n\n3. **Category: correctness - Severity: medium**\n   **File:** resolve_main_repo_root() (Round 1)\n   **Finding:** Degraded WORKTREE-LOCAL mode still completes an unsafe allocation by default.\n   **Suggestion:** Unresolvable main root is a failure by default, not a silent degrade.\n\n4. **Category: security - Severity: medium**\n   **File:** allocator slug handling (Round 1)\n   **Finding:** Slug used raw in path construction (traversal risk); idempotent replay with a changed slug or a pre-existing unrelated target could overwrite.\n   **Suggestion:** Validate slug against a safe-filename allowlist before use; key idempotency on (run_id, slug), error loudly on mismatch.\n\n5. **Category: correctness - Severity: medium**\n   **File:** anti-ratchet guard design (Round 1)\n   **Finding:** Anti-ratchet regeneration ambiguity — if the guard test regenerates-then-compares, a same-run collision becomes \"baseline\" and the guard protects nothing.\n   **Suggestion:** Guard reads only the committed baseline file; regeneration is a separate, explicit, human-invoked command; p […truncated]",
+      "verdicts": {
+        "openai": "unavailable",
+        "deepseek": "unavailable"
+      }
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": "shipwright-build:code-reviewer",
+      "completed_at": "2026-08-08T14:05:43.346640+00:00",
+      "disposition": null,
+      "recorded_by": "external-prose",
+      "parse_status": "unstructured",
+      "raw_excerpt": "Both blockers verified resolved.\n\n## Verification\n\n**1. Anti-ratchet cleared.** `sub-iterate-runner.md` is now **497 lines** — exactly the baseline pin (`current: 497`, `state: exception`, `adr: \"ADR-119\"`). `test_runner_doc_within_bloat_ceiling` asserts `lines <= 497`, so it passes at the boundary, and `anti_ratchet` compares against `current` the same way, so the pre-commit hook will not fire.\n\n**2. Parity holds, byte-for-byte.** Diffed the two bullets by eye at `sub-iterate-runner.md:486-489` and `code-reviewer.md:260-263` — identical text, identical indentation, identical line breaks.\n\n`code-reviewer.md` went 316 -> 312 lines, consistent with the same -4 trim; at limit 400 and absent from the baseline, it has ample headroom.\n\nThe trimmed wording still carries the correction that mattered - `adr` is `\"ADR-NNN\"`, explicitly not a spec-folder path - which is the whole point of finding 6. Dropping the longer explanation of why the two numbering identities differ is the right trade at zero headroom; the full rationale lives in the run's ADR and in `docs/hooks-and-pipeline.md:2859`.\n\n## Final verdict: APPROVE\n\nAll six medium findings resolved, all low findings resolved except three deferrals explicitly accepted (`_entries()` double match - spec-compliance wins; `iter_adr_files()` extraction - correct call at 300/300; artifact-write-matrix row - no such row exists for the sibling artifact either). No security, performance, or change-sizing concerns. Net source change well under 100 LOC across three Python files, single coherent concern, no dead-code artifacts, no baseline ratchet.\n\nTwo things to carry into finalization, neither blocking:\n- The background `shared/tests` run is the one remaining unknown - read the `N passed` line from the output file, not the return value.\n- Two nits from the earlier pass are still open, both cosmetic: the miniplan stale path mention (now fixed), and `load()`'s `str(int(...))` normalization is last-wins if a baseline ever carried both \"97\" and \"097\" (accepted, documented).\n\nProcess reminder for after merge: this diff touches plugins/*/agents/, plugins/*/skills/, and shared/scripts/, none of which reach the runtime plugin cache on their own. Run bash scripts/update-marketplace.sh after push, then uv run scripts/check_plugin_cache_sync.py --strict.\n",
+      "model_tier": "opus"
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-08T14:13:24.964722+00:00",
+      "disposition": "shared/constitution.md ALWAYS rule: adversarial doubt-reviewer pass applies only to changes touching risky ground (stored-data migrations, concurrency, anything hard to undo). This diff is skill/agent prose plus a pure filesystem/JSON-read guard module and a regen CLI (durable_atomic_write, no partial-write hazard) — no migration, no concurrency, no irreversible operation. doubt-reviewer's own agent description names the same trigger set (migrations, async/concurrency, cross-plugin imports, irreversible ops); shared/scripts/lib is imported by many plugins already, so this is not a new cross-plugin coupling. Not due, so not_applicable rather than not_run.",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 3,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "spec",
+          "file": ".shipwright/planning/adr/_template-bloat-exception.md",
+          "line": 1,
+          "finding": "The template that is now explicitly copied to a run-id-named ADR spec file still gives that file the heading `# ADR-XXX: ...`. This conflicts with AC4/F3’s requirement that new non-numeric spec files must not claim an `ADR-NNN` heading before release assigns a real number. A user following “fill every field” can turn this into a hand-guessed number, and the generated index will present it as an ADR-numbered entry.",
+          "suggestion": "Change the template heading to a non-numbered title, such as `# Bloat exception — ...`, and clarify that the bloat baseline’s `adr` field is the separately assigned `ADR-NNN` identity.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "spec",
+          "file": "plugins/shipwright-compliance/scripts/audit/group_f.py:11` and `plugins/shipwright-compliance/scripts/audit/group_f.py",
+          "line": 28,
+          "finding": "Two live audit-docstring instructions advertise `.shipwright/planning/adr/<run_id>-…`, whereas AC4 requires the sanitized form `<run_id_sanitized>-<slug>.md` and specifically identifies `sanitize_run_id_for_filename` as the naming mechanism. Raw run IDs need not be valid/safe filename fragments, so this is not merely terminology: audit guidance can direct an agent to create a filename that does not follow the required convention.",
+          "suggestion": "Replace both occurrences with `<run_id_sanitized>-<slug>.md` and state that the run ID must be processed through `sanitize_run_id_for_filename`, consistent with the runtime audit messages later in the file.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "test",
+          "file": "shared/tests/test_mandated_reader_index_first.py:32-41",
+          "line": null,
+          "finding": "The AC1b guard claims to reject both complete-read promises and `ALL ... decisions` wording bound to `decision_log.md`, but `_PROMISES_COMPLETE_READ` only recognizes complete/entire/whole/full-read constructions. A regression such as `decision_log.md — ALL architectural decisions` without “read completely” would pass despite violating the explicitly required AC1b prohibition.",
+          "suggestion": "Add a second alternation matching `decision_log.md` within the required vicinity of `all ... decisions` (in either order), plus a mutation-style test case demonstrating that this historical wording fails.  Overall assessment: The core index-first and collision-baseline implementation is sound, but the shipped template still promotes an invalid pre-release ADR heading and two audit instructions do not use the required sanitized filename convention. Ship with these targeted fixes. SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-08-08T14:12:39.981198+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "partial",
+      "raw_excerpt": "[deepseek] I reviewed the diff against the specification. The implementation correctly addresses all acceptance criteria:\n\n- **AC1** – All four mandated reader instructions now point to `decision_log_index.md` first, specify concrete triggers for reading full entries (grep heading, offset/limit read), and include fallback instructions. The tests in `test_mandated_reader_index_first.py` validate each point.\n- **AC1b** – A permanent drift-guard test (same test module) ensures the four files won’t silently regress.\n- **AC4** – `F3.md` was updated to use `<run_id_sanitized>-<slug>.md` and warns against putting a spurious `ADR-NNN` in the heading. The worked example matches.\n- **AC5** – The new drift-guard test (`test_adr_index_no_duplicate_numbers.py`) uses the shared `parse_adr_number()` helper from `lib.adr_index`, checks the subset rule against a regeneratable baseline, and includes synthetic probes to prove it can fail. The guard cannot silently absorb a same-run collision (it depends on a separately committed baseline).\n- **AC6** – The collision report is placed under `.shipwright/planning/iterate/`, not in the ADR folder, and contains citation counts and resolution options as required.\n- All other prose, tooling, and documentation updates are consistent with the final design (no allocator, no lock, forward-only naming).\n\n**Correctness and robustness:**  \nThe new `adr_collision_baseline` module handles missing folders, skips symlinks, normalizes keys safely, and fails closed if the baseline is missing. `collect_collisions` properly groups by numeric prefix, and `unpinned_collisions` correctly implements the subset rule. The `parse_adr_number` refactoring is backward-compatible and shared between the renderer and the guard. No off‑by‑one errors or race conditions.\n\n**Security:**  \nNo untrusted input is introduced. Filenames are not used for injection; the `durable_atomic_write` call writes to a project-root path derived from a committed location. No secrets or har […truncated]\n\n[openai] - Category: spec\n- Severity: medium\n- File: `.shipwright/planning/adr/_template-bloat-exception.md:1`\n- Finding: The template that is now explicitly copied to a run-id-named ADR spec file still gives that file the heading `# ADR-XXX: ...`. This conflicts with AC4/F3’s requirement that new non-numeric spec files must not claim an `ADR-NNN` heading before release assigns a real number. A user following “fill every field” can turn this into a hand-guessed number, and the generated index will present it as an ADR-numbered entry.\n- Suggestion: Change the template heading to a non-numbered title, such as `# Bloat exception — ...`, and clarify that the bloat baseline’s `adr` field is the separately assigned `ADR-NNN` identity.\n\n- Category: spec\n- Severity: low\n- File: `plugins/shipwright-compliance/scripts/audit/group_f.py:11` and `plugins/shipwright-compliance/scripts/audit/group_f.py:28`\n- Finding: Two live audit-docstring instructions advertise `.shipwright/planning/adr/<run_id>-…`, whereas AC4 requires the sanitized form `<run_id_sanitized>-<slug>.md` and specifically identifies `sanitize_run_id_for_filename` as the naming mechanism. Raw run IDs need not be valid/safe filename fragments, so this is not merely terminology: audit guidance can direct an agent to create a filename that does not follow the required convention.\n- Suggestion: Replace both occurrences with `<run_id_sanitized>-<slug>.md` and state that the run ID must be processed through `sanitize_run_id_for_filename`, consistent with the runtime audit messages later in the file.\n\n- Category: test\n- Severity: low\n- File: `shared/tests/test_mandated_reader_index_first.py:32-41`\n- Finding: The AC1b guard claims to reject both complete-read promises and `ALL ... decisions` wording bound to `decision_log.md`, but `_PROMISES_COMPLETE_READ` only recognizes complete/entire/whole/full-read constructions. A regression such as `decision_log.md — ALL architectural decisions` without “read completely” would p […truncated]",
+      "verdicts": {
+        "openai": "revise",
+        "deepseek": "approve"
+      }
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 2,
+      "findings": [
+        {
+          "severity": null,
+          "category": "missing",
+          "file": "shared/scripts/tools/write_decision_log.py:58-61; write_decision_drop.py:155,239; shared/schemas/decision_drop.schema.json:5,75; plugins/shipwright-iterate/agents/sub-iterate-runner.md:487; plugins/shipwright-build/agents/code-reviewer.md:261",
+          "line": null,
+          "finding": "RESOLVED — Six LIVE (non-historical) agent-facing surfaces still instructed the retired `<NNN>-<slug>.md` convention at first pass. Fixed and independently re-verified: write_decision_log.py, write_decision_drop.py, decision_drop.schema.json, sub-iterate-runner.md:487, code-reviewer.md:261 now all state `<run_id_sanitized>-<slug>.md`. — spec: iterate-2026-08-08-index-readers-adr-lock.md:344-351 (Confidence Calibration: repo-wide sweep, \"All fixed\"; + AC4 L71-80, L182)",
+          "suggestion": "iterate-2026-08-08-index-readers-adr-lock.md:344-351 (Confidence Calibration: repo-wide sweep, \"All fixed\"; + AC4 L71-80, L182)",
+          "source": "spec-reviewer"
+        },
+        {
+          "severity": null,
+          "category": "unfaithful",
+          "file": "shared/scripts/lib/adr_index.py:196 (vs. helper at :84-91)",
+          "line": null,
+          "finding": "RESOLVED — _entries() was never refactored to call parse_adr_number() at first pass; it matched _ADR_FILENAME_RE inline instead. Fixed: _entries() at shared/scripts/lib/adr_index.py:196 now calls parse_adr_number() for the sort key/branch decision while keeping match.group('num') (zero-padded) for the label, avoiding the padding regression caught mid-fix. — spec: iterate-2026-08-08-index-readers-adr-lock.md:88-91 (AC5: \"both sides share one parse_adr_number() helper ... so the guard can't disagree with the real index renderer\"); miniplan L49",
+          "suggestion": "iterate-2026-08-08-index-readers-adr-lock.md:88-91 (AC5: \"both sides share one parse_adr_number() helper ... so the guard can't disagree with the real index renderer\"); miniplan L49",
+          "source": "spec-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-08-08T14:05:37.068959+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "completed",
+      "findings_count": 11,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "correctness",
+          "file": null,
+          "line": null,
+          "finding": "Baseline stale — 15 files/6 numbers on disk at build time, not the 13/5 the brief was drafted against (ADR-128 collided via #604/#605 after the brief was written).",
+          "suggestion": "Regenerate the baseline from the tree at build time, never hand-transcribe; reword AC5/AC6 accordingly.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "correctness",
+          "file": null,
+          "line": null,
+          "finding": "Reusing adr_index.lock for the proposed allocator self-deadlocks (no reentrancy) and creates unrelated contention with release-time index renders.",
+          "suggestion": "A dedicated adr_spec_number.lock, sub-millisecond critical section.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "correctness",
+          "file": null,
+          "line": null,
+          "finding": "Watermark floor invisible to in-flight sibling worktrees; a gitignored dir is cleanable.",
+          "suggestion": "Floor = max(watermark, main-root max, every linked worktree's max via git worktree list).",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": null,
+          "line": null,
+          "finding": "resolve_main_repo_root() degrades to worktree-local silently on several real paths.",
+          "suggestion": "CLI states resolved scope explicitly every call; degraded path loud on stderr.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": null,
+          "line": null,
+          "finding": "No idempotency; number and filename can diverge (recreates the original defect in miniature).",
+          "suggestion": "Idempotent per run_id; CLI prints/returns the exact target path.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": null,
+          "line": null,
+          "finding": "Collision report under .shipwright/planning/adr/ would render as a pseudo-ADR in the committed INDEX.md.",
+          "suggestion": "Move the report to .shipwright/planning/iterate/.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": null,
+          "line": null,
+          "finding": "Anti-ratchet rule ambiguous between count and membership — both readings exploitable.",
+          "suggestion": "actual subset-of pinned per number, shared parse_adr_number() helper.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "test-coverage",
+          "file": null,
+          "line": null,
+          "finding": "AC1 (the primary defect) had no permanent regression guard, unlike AC5.",
+          "suggestion": "Add AC1b: committed drift-guard test.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "process",
+          "file": null,
+          "line": null,
+          "finding": "Missing same-diff obligations — marketplace sync (plugin-side files) + guide.md Appendix B check (new shipped command).",
+          "suggestion": "Add to mini-plan work breakdown.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "process",
+          "file": null,
+          "line": null,
+          "finding": "Allocator formally widens the pre-existing spec-folder-number vs. log-number divergence.",
+          "suggestion": "State explicitly as an accepted consequence.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": null,
+          "line": null,
+          "finding": "Index-first fix inherits the same unbounded-growth curve; no fallback named for \"no matching index entry\".",
+          "suggestion": "Name a fallback in the reader instruction.  All 11 findings were folded into the design before the external review call (deepseek + openai) proceeded. The Round-1 allocator design this review evaluated was itself later superseded (both external reviewers rejected/revised the allocator approach on proportionality grounds; the operator chose a simpler run_id-named-file design with no allocator) — see the iterate spec's Architecture Review section. The internal review's individual bug-fixes (e.g. lock reentrancy, watermark durability) became moot once the allocator itself was retired, but the process-level findings (AC1b regression guard, marketplace sync, report placement, anti-ratchet subset rule) carried forward into the final design and were implemented.",
+          "source": "external-review"
+        }
+      ],
+      "provider": "shipwright-plan:opus-plan-reviewer",
+      "completed_at": "2026-08-08T14:28:32.507619+00:00",
+      "disposition": null,
+      "recorded_by": "external-prose",
+      "parse_status": "structured",
+      "raw_excerpt": "Internal plan review (opus-plan-reviewer, model=opus, mandatory at medium+), run at Step 5 over the Round-1 allocator design brief before external review.\n\nVerdict: high-severity findings, all folded in before external review proceeded. 11 findings total:\n\n- Category: correctness - Severity: high\n  Finding: Baseline stale — 15 files/6 numbers on disk at build time, not the 13/5 the brief was drafted against (ADR-128 collided via #604/#605 after the brief was written).\n  Suggestion: Regenerate the baseline from the tree at build time, never hand-transcribe; reword AC5/AC6 accordingly.\n\n- Category: correctness - Severity: high\n  Finding: Reusing adr_index.lock for the proposed allocator self-deadlocks (no reentrancy) and creates unrelated contention with release-time index renders.\n  Suggestion: A dedicated adr_spec_number.lock, sub-millisecond critical section.\n\n- Category: correctness - Severity: high\n  Finding: Watermark floor invisible to in-flight sibling worktrees; a gitignored dir is cleanable.\n  Suggestion: Floor = max(watermark, main-root max, every linked worktree's max via git worktree list).\n\n- Category: correctness - Severity: medium\n  Finding: resolve_main_repo_root() degrades to worktree-local silently on several real paths.\n  Suggestion: CLI states resolved scope explicitly every call; degraded path loud on stderr.\n\n- Category: correctness - Severity: medium\n  Finding: No idempotency; number and filename can diverge (recreates the original defect in miniature).\n  Suggestion: Idempotent per run_id; CLI prints/returns the exact target path.\n\n- Category: correctness - Severity: medium\n  Finding: Collision report under .shipwright/planning/adr/ would render as a pseudo-ADR in the committed INDEX.md.\n  Suggestion: Move the report to .shipwright/planning/iterate/.\n\n- Category: correctness - Severity: medium\n  Finding: Anti-ratchet rule ambiguous between count and membership — both readings exploitable.\n  Suggestion: actual subset-of pinned per number, shared parse_adr_number() helper.\n\n- Category: test-coverage - Severity: medium\n  Finding: AC1 (the primary defect) had no permanent regression guard, unlike AC5.\n  Suggestion: Add AC1b: committed drift-guard test.\n\n- Category: process - Severity: medium\n  Finding: Missing same-diff obligations — marketplace sync (plugin-side files) + guide.md Appendix B check (new shipped command).\n  Suggestion: Add to mini-plan work breakdown.\n\n- Category: process - Severity: low\n  Finding: Allocator formally widens the pre-existing spec-folder-number vs. log-number divergence.\n  Suggestion: State explicitly as an accepted consequence.\n\n- Category: correctness - Severity: low\n  Finding: Index-first fix inherits the same unbounded-growth curve; no fallback named for \"no matching index entry\".\n  Suggestion: Name a fallback in the reader instruction.\n\nAll 11 findings were folded into the design before the external review call (deepseek + openai) proceeded. The Round-1 allocator design this review evaluated was itself later superseded (both external reviewers rejected/revised the allocator approach on proportionality grounds; the operator chose a simpler run_id-named-file design with no allocator) — see the iterate spec's Architecture Review section. The internal review's individual bug-fixes (e.g. lock reentrancy, watermark durability) became moot once the allocator itself was retired, but the process-level findings (AC1b regression guard, marketplace sync, report placement, anti-ratchet subset rule) carried forward into the final design and were implemented.\n",
+      "model_tier": "opus"
+    }
+  }
+}

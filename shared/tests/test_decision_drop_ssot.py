@@ -3,56 +3,75 @@
 Iterate F3 writes one ADR JSON drop per run under
 ``.shipwright/agent_docs/decision-drops/`` (``write_decision_drop.py``) and
 ``/shipwright-changelog`` later folds them into ``decision_log.md``
-(``aggregate_decisions.py``). The drop dir is **repo-scoped**: an iterate run
-executes inside an ephemeral worktree whose copy ``git worktree remove``
-discards. Any code that may run from inside a worktree MUST resolve the drop
-dir against the MAIN repo via ``lib.repo_root.resolve_main_repo_root`` — a
-raw ``project_root / ... / "decision-drops"`` join from inside a worktree
-reads/writes a throwaway copy.
+(``aggregate_decisions.py``). Since iterate-2026-08-08-track-decision-drops
+the directory is **tracked** (only its local ``INDEX.md`` render stays
+gitignored), and every drop-dir builder resolves it directly against
+``project_root`` — the calling checkout's own tree, whether that's an
+iterate worktree (F3, F11) or the main repo (``/shipwright-changelog``).
 
-This meta-test mirrors ``test_events_log_ssot.py`` — the same registry-driven
-SSoT pattern (shipwright-iterate SKILL.md "Registry-driven SSoT meta-test
-rule"), in both directions:
+This inverts the invariant this meta-test used to guard. Before this run,
+the directory was gitignored and a worktree-local write would be destroyed
+by ``git worktree remove``, so every worktree-reachable site was REQUIRED to
+redirect via ``lib.repo_root.resolve_main_repo_root``. Now the directory is
+committed as part of the writing iterate's own PR, so that redirect would be
+actively wrong: it would land an untracked file directly on the main
+checkout with nothing to ever commit it — the same class of silent loss
+ADR-049 already caused once (iterate-2026-05-19-fix-decision-drop-worktree),
+from the opposite direction.
 
-- Forward: every worktree-reachable decision-drop site uses the resolver.
-- Coverage: every raw decision-drop join in ``shared/scripts`` is either
-  worktree-aware or an allowlisted main-repo-only site (reason documented).
-- Reverse: every allowlist entry still exists and still has a raw join.
+Same registry-driven SSoT pattern as before (shipwright-iterate SKILL.md
+"Registry-driven SSoT meta-test rule"), in both directions:
 
-Origin: every iterate ADR since unconditional worktree isolation was silently
-lost because ``write_decision_drop.py`` used a raw join — the verifier
-``iterate_checks.py`` shared the same latent bug
-(iterate-2026-05-19-fix-decision-drop-worktree).
+- Forward: every known decision-drop site does NOT redirect via
+  ``resolve_main_repo_root``.
+- Coverage: no raw decision-drop join anywhere in the REPO (not just
+  ``shared/scripts``) is paired with a ``resolve_main_repo_root`` import in
+  the same file.
+- Reverse: every registry entry still exists and still builds a raw
+  decision-drop join.
+
+The coverage scan is repo-wide, not ``shared/scripts``-only, because a
+plugin-side consumer (``plugins/shipwright-compliance/scripts/audit/
+group_f.py``) was found still redirecting via ``resolve_main_repo_root``
+during this same run, invisible to a ``shared/scripts``-scoped scan — the
+narrower scope would have let exactly this class of regression back in.
 """
 
 from __future__ import annotations
 
+import os
 import re
 from pathlib import Path
 
-_SHARED_SCRIPTS = Path(__file__).resolve().parents[1] / "scripts"
+_REPO_ROOT = Path(__file__).resolve().parents[2]
 
-# Files that build a decision-drop path AND may run from inside an iterate
-# worktree — MUST resolve the dir worktree-aware via resolve_main_repo_root.
-_WORKTREE_REACHABLE = {
-    "tools/write_decision_drop.py",        # iterate F3 — the drop producer
-    "tools/verifiers/iterate_checks.py",   # iterate F11 finalization verifier
+# Directories never worth scanning: VCS/dep/venv noise and generated worktrees.
+_SCAN_EXCLUDE_DIRNAMES = {
+    ".git", ".venv", "node_modules", ".worktrees", "__pycache__", ".pytest_cache",
 }
 
-# Files that build a decision-drop path but run ONLY in main-repo phases,
-# where project_root is always the main repo so the raw join is correct.
-# If one of these is ever invoked from a worktree, move it to the resolver.
-_MAIN_REPO_ONLY = {
-    "tools/verifiers/common.py":
-        "C1/C4 phase-quality checks for build/adopt phase verifiers + the "
-        "Phase-Quality Stop hook — all run with project_root = main repo",
+# Every known production site that builds a decision-drop path — named so a
+# regression reintroducing resolve_main_repo_root at any of THESE specific
+# sites fails with the file named, not just "somewhere in the repo" (the
+# blanket, unnamed backstop is test_no_unaccounted_decision_drop_site_
+# redirects_to_main_root below, which scans every production .py regardless
+# of registry membership — this list is a documented subset for named
+# coverage, not the sole enforcement; doubt-reviewer MEDIUM #5 flagged an
+# earlier version of this comment for reading as if it were exhaustive).
+# Test files are deliberately out of the coverage scan's scope too (see
+# _prod_py_files) — a stale test asserting behavior this iterate removed
+# fails loudly when run, which is a correctness check on ITS OWN, not a gap
+# this registry needs to also cover. Paths are repo-root-relative.
+_WORKTREE_LOCAL = {
+    "shared/scripts/tools/write_decision_drop.py",        # iterate F3 — the drop producer
+    "shared/scripts/tools/verifiers/iterate_checks.py",   # iterate F11 finalization verifier
+    "shared/scripts/tools/verifiers/decision_log_gate.py",  # F11 ADR-recorded-and-present check
+    "shared/scripts/tools/verifiers/common.py",           # C1/C4 iterate-phase-recorded fallbacks
+    "shared/scripts/tools/aggregate_decisions.py",        # /shipwright-changelog release fold
+    "shared/scripts/lib/decision_drops_index.py",         # local INDEX.md render/rebuild
+    "plugins/shipwright-compliance/scripts/audit/group_f.py",  # F5 arch-drift detective
+    "shared/tests/test_architecture_md_reflects_arch_impact.py",  # arch-impact drift oracle
 }
-
-# NB: aggregate_decisions.py is the drop CONSUMER. /shipwright-changelog runs
-# it on the main repo, so it is not strictly worktree-reachable — but it
-# resolves the dir worktree-aware anyway to stay in lock step with the
-# producer (no producer/consumer drift). It therefore satisfies the coverage
-# check below as a worktree-aware file, and needs no allowlist entry.
 
 # A decision-drop path-join. Two shapes, because ``DROP_DIRNAME`` is an
 # ambiguous constant name — ``write_changelog_drop.py`` also defines a
@@ -68,12 +87,25 @@ _DECISION_DROP_CONST_RE = re.compile(
 
 
 def _prod_py_files():
-    """All production .py under shared/scripts (test files excluded)."""
-    for p in sorted(_SHARED_SCRIPTS.rglob("*.py")):
-        rel = p.relative_to(_SHARED_SCRIPTS).as_posix()
-        if "/tests/" in f"/{rel}" or p.name.startswith("test_"):
-            continue
-        yield p, rel
+    """All production .py in the repo (test files and scan-excluded dirs skipped).
+
+    Repo-wide, not ``shared/scripts``-only — see module docstring for why a
+    narrower scope already let one plugin-side site slip past. Walks via
+    ``os.walk`` with in-place ``dirnames`` pruning rather than
+    ``Path.rglob("*.py")`` — ``rglob`` descends into ``.venv``/``.git``/
+    ``.worktrees`` fully before the exclusion filter ever runs, which is slow
+    enough to matter on a repo carrying other checkouts under ``.worktrees/``.
+    """
+    for dirpath, dirnames, filenames in os.walk(_REPO_ROOT):
+        dirnames[:] = sorted(d for d in dirnames if d not in _SCAN_EXCLUDE_DIRNAMES)
+        for name in sorted(filenames):
+            if not name.endswith(".py"):
+                continue
+            p = Path(dirpath) / name
+            rel = p.relative_to(_REPO_ROOT).as_posix()
+            if "/tests/" in f"/{rel}" or name.startswith("test_"):
+                continue
+            yield p, rel
 
 
 def _has_raw_join(path: Path) -> bool:
@@ -95,51 +127,48 @@ def _has_raw_join(path: Path) -> bool:
     return False
 
 
-def test_worktree_reachable_drop_files_use_the_resolver():
-    """Forward: every worktree-reachable decision-drop site resolves the dir
-    via resolve_main_repo_root — never a raw worktree-local join."""
-    for rel in sorted(_WORKTREE_REACHABLE):
-        path = _SHARED_SCRIPTS / rel
-        assert path.exists(), f"_WORKTREE_REACHABLE entry {rel} no longer exists"
+def test_decision_drop_sites_do_not_redirect_to_main_root():
+    """Forward: every known decision-drop site must NOT import/call
+    resolve_main_repo_root — the directory is tracked and per-checkout now."""
+    for rel in sorted(_WORKTREE_LOCAL):
+        path = _REPO_ROOT / rel
+        assert path.exists(), f"_WORKTREE_LOCAL entry {rel} no longer exists"
         src = path.read_text(encoding="utf-8")
-        assert "resolve_main_repo_root" in src, (
-            f"{rel} builds a decision-drop path and is reached from inside an "
-            "iterate worktree, but does not resolve it via "
-            "repo_root.resolve_main_repo_root — it would read/write a "
-            "throwaway worktree copy that `git worktree remove` discards."
+        assert "resolve_main_repo_root" not in src, (
+            f"{rel} builds a decision-drop path and resolves it via "
+            "resolve_main_repo_root — the directory is TRACKED since "
+            "iterate-2026-08-08-track-decision-drops, so a main-root "
+            "redirect lands an untracked file on the main checkout with "
+            "nothing to ever commit it. Resolve against project_root "
+            "directly instead."
         )
 
 
-def test_no_unaccounted_raw_decision_drop_joins():
-    """Coverage: every raw decision-drop join in shared/scripts is either
-    worktree-aware (resolve_main_repo_root) or allowlisted main-repo-only."""
+def test_no_unaccounted_decision_drop_site_redirects_to_main_root():
+    """Coverage: no raw decision-drop join anywhere in shared/scripts is
+    paired with a resolve_main_repo_root import in the same file."""
     violations = []
     for path, rel in _prod_py_files():
         if not _has_raw_join(path):
             continue
         if "resolve_main_repo_root" in path.read_text(encoding="utf-8"):
-            continue  # worktree-aware — raw join is resolved against main repo
-        if rel in _MAIN_REPO_ONLY:
-            continue  # allowlisted; reason documented in _MAIN_REPO_ONLY
-        violations.append(rel)
+            violations.append(rel)
     assert not violations, (
-        "Raw `project_root / ... / decision-drops` join(s) in files that are "
-        f"neither worktree-aware nor allowlisted main-repo-only: {violations}. "
-        "Resolve the dir via repo_root.resolve_main_repo_root, or — if the "
-        "file only ever runs in a main-repo phase — add it to _MAIN_REPO_ONLY "
-        "with a reason."
+        "File(s) building a decision-drop path AND importing "
+        f"resolve_main_repo_root: {violations}. The directory is tracked "
+        "and per-checkout now — resolve it against project_root directly, "
+        "and add the file to _WORKTREE_LOCAL above."
     )
 
 
-def test_main_repo_only_allowlist_not_stale():
-    """Reverse: every _MAIN_REPO_ONLY entry still exists and still has a raw
-    decision-drop join — a file migrated to the resolver must be dropped."""
-    for rel in sorted(_MAIN_REPO_ONLY):
-        path = _SHARED_SCRIPTS / rel
-        assert path.exists(), (
-            f"_MAIN_REPO_ONLY entry {rel} no longer exists — drop it."
-        )
+def test_registry_not_stale():
+    """Reverse: every _WORKTREE_LOCAL entry still exists and still builds a
+    raw decision-drop join — a file that stopped building one must be
+    dropped from the registry."""
+    for rel in sorted(_WORKTREE_LOCAL):
+        path = _REPO_ROOT / rel
+        assert path.exists(), f"_WORKTREE_LOCAL entry {rel} no longer exists — drop it."
         assert _has_raw_join(path), (
-            f"_MAIN_REPO_ONLY entry {rel} no longer builds a raw "
-            "decision-drop path — it was migrated; drop it from the allowlist."
+            f"_WORKTREE_LOCAL entry {rel} no longer builds a decision-drop "
+            "path — it was migrated or removed; drop it from the registry."
         )

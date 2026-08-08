@@ -8,22 +8,27 @@ F4-F7 are detective-only documentation-hygiene checks added by Iterate
 C.2:
 
 - F4 — ADR bloat. ADRs > 60 lines without a ``spec_ref`` link are
-  candidates for refactor into a `.shipwright/planning/adr/<NNN>-…`
-  long-form spec file (mirrors the A.3 / B.0+ pattern).
+  candidates for refactor into a
+  `.shipwright/planning/adr/<run_id_sanitized>-<slug>.md` long-form spec
+  file (mirrors the A.3 / B.0+ pattern; run_id goes through
+  ``sanitize_run_id_for_filename`` first).
 - F5 — Architecture drift (content reconciliation). Every decision-drop
   declaring ``architecture_impact ∈ {component, data-flow, convention}``
   must have its ``run_id`` documented in ``architecture.md``; any that
   don't are flagged. Shares the oracle with the F11
   ``check_architecture_documented`` finalize gate via
   ``lib.architecture_doc``. (Replaced the prior ``git log``/marker oracle,
-  which never fired on the gitignored decision-drops —
-  iterate-2026-06-06-arch-drift-detector.)
+  which as of iterate-2026-06-06-arch-drift-detector never fired because
+  decision-drops was gitignored then — tracked since
+  iterate-2026-08-08-track-decision-drops, see ``_check_f5``'s own
+  docstring below.)
 - F6 — CLAUDE.md size. CLAUDE.md > 200 lines is a sign that per-
   iterate detail is leaking into the file (webui hit this at 270;
   Phase 0e refactored it down via ADR-spec-folder extraction).
 - F7 — CLAUDE.md iterate-annotation leak. Regex-counted occurrences
   of ``Iterate <X> (ADR-NN)`` > 5 indicate inline iterate-detail
-  belongs in `.shipwright/planning/adr/<NNN>-…` files instead.
+  belongs in `.shipwright/planning/adr/<run_id_sanitized>-<slug>.md`
+  files instead.
 """
 
 from __future__ import annotations
@@ -111,7 +116,7 @@ def _check_f4(project_root: Path) -> tuple[str, str, str, list[str]]:
         if len(body) <= _ADR_BLOAT_LINE_CAP:
             continue
         # ``spec_ref`` aggregates render as ``- **Details:** [<text>](<url>)``
-        # with the URL pointing at ``.../planning/adr/<NNN>-<slug>.md``.
+        # with the URL pointing at ``.../planning/adr/<run_id_sanitized>-<slug>.md``.
         # Reviewer-flagged OpenAI-M1: a bare "**Details:**" mention
         # without a real link target is not a valid spec_ref. Match
         # the full link shape via `_DETAILS_LINK_RE` instead of
@@ -129,7 +134,7 @@ def _check_f4(project_root: Path) -> tuple[str, str, str, list[str]]:
     detail = (
         f"{len(bloated)} ADR(s) exceed {_ADR_BLOAT_LINE_CAP} lines without a "
         f"spec_ref link — refactor each into "
-        f".shipwright/planning/adr/<NNN>-<slug>.md and link via "
+        f".shipwright/planning/adr/<run_id_sanitized>-<slug>.md and link via "
         f"--spec-ref. Heaviest: {head}."
     )
     evidence = [f"{adr}: {n} lines" for adr, n in bloated]
@@ -164,20 +169,19 @@ def _check_f5(project_root: Path) -> tuple[str, str, str, list[str]]:
     ``lib.architecture_doc`` so the detective and the F11 finalize gate
     (``check_architecture_documented``) cannot diverge.
 
-    Worktree-aware: decision-drops are gitignored staging that live in the MAIN
-    repo, so the drops dir is resolved via
-    ``events_log.resolve_main_repo_root``; ``architecture.md`` is tracked, so it
-    is read from ``project_root`` (the same file in a worktree and the main
-    tree). In a clean CI checkout the drops dir is absent → ``skip`` — F5 is a
-    local/worktree detective; the authoritative prevention is the F11
-    ``check_architecture_documented`` gate (decision-drops never reach CI).
+    Worktree-local: decision-drops are TRACKED since
+    iterate-2026-08-08-track-decision-drops, resolved directly against
+    ``project_root`` (no main-root redirect, pinned by
+    ``test_decision_drop_ssot.py``), same as ``architecture.md``. No drops
+    dir at all → ``skip`` — F5 is a local/worktree detective; the F11
+    ``check_architecture_documented`` gate is the authoritative prevention.
 
     Event-ownership scoped: only drops whose ``run_id`` is in this tree's
-    committed ``shipwright_events.jsonl`` (``events_log.finalized_run_ids``) are
-    reconciled. A cross-branch campaign sibling's drop bleeds into the shared
-    main-rooted drops dir but its target-doc entry lands only on the sibling's
-    own unmerged branch — without scoping it false-flags drift on every other
-    branch. Fail-open when no event log exists (ownership unknowable).
+    committed ``shipwright_events.jsonl`` (``events_log.finalized_run_ids``)
+    are reconciled — a campaign's sub-iterates share one worktree and
+    branch-hop inside it, so a prior sub-iterate's uncommitted drop can
+    still be on disk when a later branch is checked out; scoping keeps that
+    from false-flagging drift. Fail-open when no event log exists.
 
     Drift states:
     - drops dir absent → skip
@@ -190,17 +194,15 @@ def _check_f5(project_root: Path) -> tuple[str, str, str, list[str]]:
     - unknown (non-canonical, non-none) impact value → fail (blind-spot guard)
     - else → pass
 
-    Replaces the prior ``git log <marker>..HEAD`` oracle, which could never fire
-    on the gitignored drops (they are never committed, so the diff was always
-    empty) — iterate-2026-06-06-arch-drift-detector. The adopt-side marker
-    producer is untouched; F5 no longer gates on the marker.
+    Replaces the prior ``git log <marker>..HEAD`` oracle, which could never
+    fire on the then-gitignored drops (never committed, diff always empty) —
+    iterate-2026-06-06-arch-drift-detector. Adopt-side marker producer is
+    untouched; F5 no longer gates on the marker.
     """
     archdoc = load_shared_lib("architecture_doc")
     events_log = load_shared_lib("events_log")
 
-    main_root = events_log.resolve_main_repo_root(project_root)
-    base = Path(main_root) if main_root is not None else Path(project_root)
-    drops_dir = base / ".shipwright" / "agent_docs" / "decision-drops"
+    drops_dir = project_root / ".shipwright" / "agent_docs" / "decision-drops"
 
     if not drops_dir.is_dir():
         return "skip", "LOW", "no decision-drops dir", []
@@ -216,12 +218,9 @@ def _check_f5(project_root: Path) -> tuple[str, str, str, list[str]]:
             corrupt,
         )
 
-    # Scope to drops OWNED by this tree's lineage (run_id in this tree's committed
-    # events.jsonl) so cross-branch campaign sibling drops — which bleed through
-    # the shared main-rooted decision-drops dir but whose target-doc entry lives
-    # only on the sibling's own unmerged branch — aren't flagged as drift here.
-    # Fail-open when no event log exists (ownership unknowable): keeps the
-    # clean-checkout / hermetic behavior, and is never weaker than whole-set.
+    # Scope to drops OWNED by this tree's lineage — see docstring's
+    # "Event-ownership scoped" paragraph. Fail-open when no event log
+    # exists: keeps clean-checkout behavior, never weaker than whole-set.
     owned = events_log.finalized_run_ids(project_root)
     if owned is not None:
         records = archdoc.records_in_run_set(records, owned)
@@ -290,7 +289,7 @@ def _check_f6(project_root: Path) -> tuple[str, str, str, list[str]]:
         "MEDIUM",
         f"CLAUDE.md is {line_count} lines, exceeds the {_CLAUDE_MD_LINE_CAP}-line "
         f"hygiene cap — consider moving per-iterate detail into "
-        f".shipwright/planning/adr/<NNN>-<slug>.md spec files.",
+        f".shipwright/planning/adr/<run_id_sanitized>-<slug>.md spec files.",
         [f"line_count={line_count}"],
     )
 
@@ -314,7 +313,7 @@ def _check_f7(project_root: Path) -> tuple[str, str, str, list[str]]:
         "MEDIUM",
         f"{n} inline 'Iterate X (ADR-NN)' references in CLAUDE.md exceed the "
         f"{_CLAUDE_MD_ITERATE_REF_CAP}-reference cap — move per-iterate detail "
-        f"into .shipwright/planning/adr/<NNN>-<slug>.md spec files. "
+        f"into .shipwright/planning/adr/<run_id_sanitized>-<slug>.md spec files. "
         f"Sample: {sample}.",
         # Reviewer-flagged code-review-M2: evidence carries the FULL
         # match list (not just the detail's top-3 sample), so the

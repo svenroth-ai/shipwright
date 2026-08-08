@@ -1,24 +1,26 @@
 #!/usr/bin/env python3
-"""CLI: resolve the model tier for all three spawn roles in one call.
+"""CLI: resolve the model tier for all four spawn roles in one call.
 
 Mirrors ``plugins/shipwright-iterate/scripts/lib/classify_complexity.py``'s
 flat-argparse, single-JSON-object-to-stdout shape. Resolves ``review``,
-``finalization`` and ``execution`` together (one process start, one
-`shipwright_model_config.json` read) — the calling skill prose reads only the
-roles it has a live spawn site for.
+``finalization``, ``execution`` and ``plan_review`` together (one process
+start, one `shipwright_model_config.json` read) — the calling skill prose
+reads only the roles it has a live spawn site for.
 
 Usage::
 
     uv run resolve_model_tier.py --project-root . \
         [--review-model opus|sonnet|haiku|inherit] \
-        [--finalization-model ...] [--execution-model ...]
+        [--finalization-model ...] [--execution-model ...] \
+        [--plan-review-model ...]
 
 Prints, e.g.::
 
     {
       "review": {"resolved": "opus", "source": "flag", "agent_param": "opus"},
       "finalization": {"resolved": "inherit", "source": "unset", "agent_param": null},
-      "execution": {"resolved": "inherit", "source": "unset", "agent_param": null}
+      "execution": {"resolved": "inherit", "source": "unset", "agent_param": null},
+      "plan_review": {"resolved": "opus", "source": "project_config", "agent_param": "opus"}
     }
 """
 
@@ -47,19 +49,26 @@ def main() -> int:
     parser.add_argument("--review-model", default=None, help="Per-run override for the review role")
     parser.add_argument("--finalization-model", default=None, help="Per-run override for the finalization role")
     parser.add_argument("--execution-model", default=None, help="Per-run override for the execution role")
+    parser.add_argument("--plan-review-model", default=None, help="Per-run override for the plan_review role")
     args = parser.parse_args()
 
     flag_values = {
         "review": args.review_model,
         "finalization": args.finalization_model,
         "execution": args.execution_model,
+        "plan_review": args.plan_review_model,
     }
 
     config = load_model_config(args.project_root)
     result = {}
     for role in sorted(ROLES):
+        # .get, not [] — a role ROLES knows about that this CLI's flag map does
+        # not (e.g. added to the library ahead of this script) degrades to "no
+        # CLI override" rather than a hard KeyError, matching every other path
+        # in this module's fail-soft contract (invalid config -> warn + drop,
+        # invalid flag -> warn + ignore).
         resolved, source = resolve_model_tier(
-            role, args.project_root, flag_values[role], _config=config)
+            role, args.project_root, flag_values.get(role), _config=config)
         result[role] = {
             "resolved": resolved,
             "source": source,

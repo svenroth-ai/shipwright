@@ -156,7 +156,7 @@ def test_the_on_disk_shape_matches_the_pinned_consumer_contract(tmp_path):
     # Hard-coded, NOT `list(REVIEW_TYPES)`: pinning a constant against itself
     # cannot catch that constant changing, which is the exact break at issue.
     assert list(record["reviews"]) == [
-        "self", "plan", "code", "doubt", "external_code", "spec",
+        "self", "plan", "code", "doubt", "external_code", "spec", "plan_internal",
     ]
     # The retired `gates` seam is not written at all any more.
     assert set(record) == {"schema_version", "run_id", "reviews"}

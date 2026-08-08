@@ -184,7 +184,10 @@ _Where the work detail lives_ at the end of this document.
   plan's own author re-reading it, unless that independent reviewer itself
   could not be reached either, in which case the route taken (a self-review
   by the plan's own author) is recorded as what happened rather than
-  presented as an independent check.
+  presented as an independent check. Which Claude model that independent
+  reviewer runs on is configurable per project, defaulting to the same
+  model as the rest of the session when left unset — it is never hard-wired
+  to one fixed model.
 - (E) Given that review step has ended by any route — reviewed, declined by the
   operator, or switched off in configuration — when the plan is divided into
   sections, then the route taken is on record, and dividing it refuses to begin
@@ -740,6 +743,11 @@ _Where the work detail lives_ at the end of this document.
   second opinion — then what that pass found is written down for that run and
   can be read back later, instead of surviving only as prose in a decision note.
   (iterate-2026-07-21-review-record)
+- (E) Given a feature or change of the depth that gets a written plan, when
+  that plan's review step runs, then an independent reviewer checks it first,
+  the same way `/shipwright-plan`'s own plan review does — on a Claude model
+  configurable per project, defaulting to the session's own model when unset
+  — before any outside second opinion is asked. (iterate-2026-08-08-plan-reviewer-configurable)
 - (E) Given a review pass did not run, when the change is finished, then the
   record says so explicitly and gives the reason, and finishing is refused while
   any pass is left unanswered — so "nothing shown" always means "genuinely did

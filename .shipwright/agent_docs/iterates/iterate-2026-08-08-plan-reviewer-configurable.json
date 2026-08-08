@@ -1,0 +1,119 @@
+{
+  "run_id": "iterate-2026-08-08-plan-reviewer-configurable",
+  "date": "2026-08-08T11:48:26.072827Z",
+  "event_at": "2026-08-08T08:04:44.586794+00:00",
+  "type": "feature",
+  "complexity": "medium",
+  "prior_source": "keyword",
+  "branch": "iterate/plan-reviewer-configurable",
+  "spec": ".shipwright/planning/iterate/iterate-2026-08-08-plan-reviewer-configurable.md",
+  "tests_passed": true,
+  "adr": "iterate-2026-08-08-plan-reviewer-configurable",
+  "test_completeness": {
+    "status": "complete",
+    "behaviors": [
+      {
+        "behavior": "AC-1: ROLES gains plan_review as a fourth resolvable role, independent of review",
+        "disposition": "tested",
+        "evidence": "test_model_tier_config.py::test_plan_review_role_resolves_independently_of_review PASSED"
+      },
+      {
+        "behavior": "AC-1/AC-2: floors round-trip for plan_review the same as the other three roles",
+        "disposition": "tested",
+        "evidence": "test_model_tier_config.py::test_floors_round_trip_plan_review PASSED"
+      },
+      {
+        "behavior": "AC-2: resolve_model_tier.py CLI gains --plan-review-model and resolves it",
+        "disposition": "tested",
+        "evidence": "test_resolve_model_tier_cli.py (plan_review coverage) PASSED"
+      },
+      {
+        "behavior": "AC-2: an invalid --plan-review-model flag warns with the correct hyphenated flag name (fixed a role-name to flag-name bug)",
+        "disposition": "tested",
+        "evidence": "test_resolve_model_tier_cli.py::test_invalid_plan_review_flag_warns_with_correct_flag_name PASSED; test_model_tier_config.py::test_plan_review_invalid_flag_warns_with_hyphenated_flag_name PASSED (strengthened round 2 to also assert the 'is not a valid tier' substring survives)"
+      },
+      {
+        "behavior": "AC-3: model_config.schema.json accepts plan_review (Tier) and rejects unknown roles/invalid tiers",
+        "disposition": "tested",
+        "evidence": "test_model_tier_config.py::test_schema_accepts_plan_review_key, ::test_schema_rejects_unknown_role_key, ::test_schema_rejects_plan_review_with_invalid_tier PASSED"
+      },
+      {
+        "behavior": "AC-3 / touches_io_boundary: plan_review round-trips through load_model_config -> resolve_model_tier -> agent_model_param (Boundary Probe)",
+        "disposition": "tested",
+        "evidence": "test_model_tier_config.py::test_plan_review_boundary_probe_round_trip PASSED"
+      },
+      {
+        "behavior": "AC-4: /shipwright-plan Step 5-int resolves plan_review and passes Agent tool model= only when a tier is configured (omitted on inherit)",
+        "disposition": "tested",
+        "evidence": "integration-tests/test_model_tier_spawn_instructions_present.py::test_spawn_time_model_instruction_present[step-5-external-review.md] PASSED; opus-plan-reviewer.md frontmatter carries model: inherit, verified live by this run's own cross-plugin dogfood spawn"
+      },
+      {
+        "behavior": "AC-5/AC-6: /shipwright-iterate's own mini-plan review gains the same internal-reviewer arm (medium+ only), resolving plan_review identically to AC-4",
+        "disposition": "tested",
+        "evidence": "integration-tests/test_model_tier_spawn_instructions_present.py::test_spawn_time_model_instruction_present[iteration-planning.md] PASSED"
+      },
+      {
+        "behavior": "AC-7: plan_internal joins REVIEW_TYPES additively; historical records without it still validate",
+        "disposition": "tested",
+        "evidence": "test_review_record_spec_promotion.py::test_every_record_on_disk_still_validates PASSED (65+ pre-existing records); test_review_record_roundtrip.py (plan_internal member) PASSED"
+      },
+      {
+        "behavior": "AC-7: plan_internal's floor is independent of the external plan row's floor",
+        "disposition": "tested",
+        "evidence": "test_review_record_model_tier_floor.py::test_plan_review_floor_is_independent_of_review_floor PASSED; ::test_plan_review_below_floor_is_flagged_but_still_passes PASSED; ::test_plan_review_floor_does_not_read_external_plan_row PASSED"
+      },
+      {
+        "behavior": "AC-7 (campaign-mode regression fix): a campaign sub-iterate now records plan_internal not_run with a documented-gap disposition; F11's live check_review_record no longer STOPs on it",
+        "disposition": "tested",
+        "category": "integration",
+        "evidence": "shared/tests/test_campaign_cascade_record_roundtrip.py (real record_review_pass.py subprocess + check_review_record gate) PASSED; test_campaign_review_contract_prose.py::test_the_campaign_recording_commands_exist_where_the_runner_is_sent PASSED; test_review_record_campaign_shape.py (plan_internal CONTRACT_ROWS entry) PASSED"
+      },
+      {
+        "behavior": "AC-8: this repo's own shipwright_model_config.json carries plan_review: opus at both the worktree and the MAIN repo root, preserving this repo's pre-iterate always-opus behavior",
+        "disposition": "tested",
+        "evidence": "uv run shared/scripts/tools/resolve_model_tier.py --project-root . run from the worktree (reads the MAIN root, never the worktree's own copy) prints {\"plan_review\": {\"resolved\": \"opus\", \"source\": \"project_config\", \"agent_param\": \"opus\"}}. Round-2 correction: code-reviewer's Stage 2 pass caught the main root's copy was initially missing the key entirely (resolution was silently falling through to inherit); fixed by adding it there too, now byte-identical to the worktree's committed copy."
+      },
+      {
+        "behavior": "AC-9: docs/guide.md and docs/hooks-and-pipeline.md no longer claim /shipwright-plan defaults to opus",
+        "disposition": "tested",
+        "evidence": "manual doc read + grep for the removed false claim; no automated prose-drift test exists for this doc pair (untestable-by-design, not a gap in this iterate's scope)"
+      },
+      {
+        "behavior": "AC-10: a declined/disclosed high-severity internal-review finding reuses the existing plan.internal-review-high-severity-declined gate id for both /shipwright-plan and /shipwright-iterate consumers",
+        "disposition": "tested",
+        "evidence": "shared/config/gate_catalog.json + regenerated gate_catalog.md widened default_answer/summary; gate_policy.py COVERED_PHASES validation PASSED"
+      },
+      {
+        "behavior": "AC-11: agent-model-frontmatter drift guard reflects opus-plan-reviewer.md's un-pinning (model: inherit, not opus)",
+        "disposition": "tested",
+        "evidence": "integration-tests/test_agent_model_frontmatter_unchanged.py PASSED"
+      },
+      {
+        "behavior": "step-5-external-review.md stays inside its 400-line no-grandfathering budget after AC-4's wiring",
+        "disposition": "tested",
+        "evidence": "file measured at exactly 400 lines via wc -l"
+      },
+      {
+        "behavior": "un-audited role added to ROLES without a matching flag_values entry degrades to no-CLI-override rather than KeyError (doubt-reviewer fix)",
+        "disposition": "tested",
+        "evidence": "resolve_model_tier.py's flag_values.get(role) change covered by test_resolve_model_tier_cli.py's existing full-role-sweep cases PASSED"
+      }
+    ],
+    "counts": {
+      "total": 17,
+      "tested": 17,
+      "untestable": 0,
+      "untested_testable": 0
+    },
+    "enumeration_basis": {
+      "acs": 11,
+      "covered_acs": 11
+    },
+    "ledger_path": ".shipwright/planning/iterate/iterate-2026-08-08-plan-reviewer-configurable.md"
+  },
+  "surface_verification": {
+    "surface": "none",
+    "justification": "shared-lib + schema + agent-instruction prose; no startable web/cli/api surface (see iterate spec Verification section)"
+  },
+  "declared_removals": []
+}

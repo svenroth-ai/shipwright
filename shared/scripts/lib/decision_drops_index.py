@@ -2,36 +2,40 @@
 """Render and refresh ``.shipwright/agent_docs/decision-drops/INDEX.md``.
 
 Same render/rebuild split as ``lib/adr_index.py`` and ``lib/decision_log_index``,
-with one deliberate divergence: the decision-drops directory is **gitignored**
-(``glossary.md`` — "gitignored, main-repo path"), so this index is a per-checkout
-convenience, never a committed artifact. That changes which pieces of the ADR
-pattern apply:
+with one deliberate divergence: ``INDEX.md`` itself stays **gitignored**
+(since iterate-2026-08-08-track-decision-drops, the *directory* is tracked —
+only this generated render is not), so it is a per-checkout convenience,
+never a committed artifact. That changes which pieces of the ADR pattern
+apply:
 
 - **No ``CHURN_ALLOWLIST`` entry.** That registry exists because ``git merge``
   can report a CONFLICT on a path both branches touched — a gitignored path is
   never part of a commit, so git can never conflict on it in the first place.
   An allowlist entry here would be dead code the resolver's ``classify()`` would
-  never see exercised.
+  never see exercised. (The tracked ``*.json`` drops it lists don't need one
+  either: each is a uniquely-named new file per run, so two branches adding
+  different ones merges cleanly — the same shape ``CHANGELOG-unreleased.d/``
+  already relies on.)
 - **No CI byte-equality drift guard against a committed copy** (mirrors
   ``test_adr_index_producers.test_committed_index_is_not_stale``): there is no
   committed ``decision-drops/INDEX.md`` in this checkout to compare against —
   CI's clean clone never has one. The equivalent guard here runs against a
   ``tmp_path`` fixture instead (``test_decision_drops_index_producers.py``),
   proving the writer stays byte-exact, not that a specific commit is fresh.
-- **Real concurrency, but a local one.** ``drop_dir()`` resolves to the MAIN
-  repo root (git-worktree-aware), so every parallel iterate — each in its own
-  worktree — writes into the SAME shared local directory. That is a real race
-  between concurrent local writers, not a git merge conflict, and it is exactly
-  what ``file_lock`` + ``durable_atomic_write`` already guard against here, the
-  same way they guard the ADR index against two release passes.
+- **``drop_dir()`` resolves against ``project_root`` directly** — the calling
+  iterate's own worktree, not a shared main-repo location. A refresh from
+  inside an active iterate therefore only ever sees that run's own new drop
+  (correct: nothing else is committed to that branch yet); a refresh from
+  ``/shipwright-changelog`` (always run on the real main checkout) sees every
+  merged drop. ``file_lock`` + ``durable_atomic_write`` still guard the
+  write itself, now against a single-writer worktree race rather than a
+  cross-worktree one.
 
 ``drop_dir`` / ``DROP_DIRNAME`` are a THIRD independent copy of the same
 resolution already in ``write_decision_drop.py`` and ``aggregate_decisions.py``
-— not centralized here, deliberately. ``test_decision_drop_ssot.py`` pins
-those two files' own ``resolve_main_repo_root`` usage by name; a real
-centralization would need to update that registry too, which is out of scope
-for adding an index. The SSoT meta-test already tolerates independent copies
-as long as each resolves worktree-aware, which this one does.
+— not centralized here, deliberately. ``test_decision_drop_ssot.py``'s
+``_WORKTREE_LOCAL`` registry pins all three files' shared behavior: NONE of
+them may resolve against the main repo for decision-drops.
 """
 
 from __future__ import annotations
@@ -42,9 +46,8 @@ from pathlib import Path
 
 from .atomic_write import durable_atomic_write
 from .file_lock import LockTimeout, file_lock
-from .repo_root import resolve_main_repo_root
 
-DROP_DIRNAME = "decision-drops"  # under .shipwright/agent_docs/, GITIGNORED
+DROP_DIRNAME = "decision-drops"  # under .shipwright/agent_docs/, TRACKED
 DROP_INDEX_FILENAME = "INDEX.md"
 
 REGEN_TOOL_RELPATH = "scripts/tools/rebuild_decision_drops_index.py"
@@ -58,20 +61,23 @@ def regen_command_resolved() -> str:
 
 
 def drop_dir(project_root: Path | str) -> Path:
-    """Resolve ``.shipwright/agent_docs/decision-drops/``, git-worktree-aware.
+    """Resolve ``.shipwright/agent_docs/decision-drops/`` under ``project_root``.
 
-    Identical resolution to the pre-existing copies in ``write_decision_drop.py``
-    and ``aggregate_decisions.py`` — a drop written from an iterate worktree
-    lives next to the MAIN repo, the directory this index and the aggregator
-    both read.
+    Identical resolution to the sibling copies in ``write_decision_drop.py``
+    and ``aggregate_decisions.py`` — the directory is tracked, so a drop
+    written from an iterate worktree lives IN that worktree until its PR
+    merges. No main-root redirect (see module docstring).
     """
-    project_root = Path(project_root)
-    root = resolve_main_repo_root(project_root) or project_root
-    return root / ".shipwright" / "agent_docs" / DROP_DIRNAME
+    return Path(project_root) / ".shipwright" / "agent_docs" / DROP_DIRNAME
 
 
 def _pending_drops(dd: Path) -> list[tuple[str, dict]]:
-    """``(filename, payload)`` for every pending drop in ``dd``, file order.
+    """``(filename, payload)`` for every pending drop in ``dd``, sorted by the
+    drop's own ``date`` field (filename as tiebreaker) — NOT filename order.
+    Filenames are ``<sanitized_run_id>_<counter>.json``; a non-date-prefixed
+    run_id (e.g. a ``trg-*`` campaign sub-iterate) sorts nowhere near its
+    actual date lexicographically, so callers that want recency (chiefly
+    :func:`render_recent_drops_summary`) need the parsed field, not the name.
 
     Same filter as ``aggregate_decisions._snapshot_drops``: only ``*.json``,
     skip ``_``-prefixed scaffolding and ``.gitkeep``. An unreadable/malformed
@@ -92,6 +98,7 @@ def _pending_drops(dd: Path) -> list[tuple[str, dict]]:
             continue
         if isinstance(data, dict):
             out.append((f.name, data))
+    out.sort(key=lambda item: (str(item[1].get("date", "")), item[0]))
     return out
 
 
@@ -112,9 +119,9 @@ def render_decision_drops_index(dd: Path) -> str:
     lines = [
         "# Decision Drops — INDEX (pending, not yet folded into decision_log.md)",
         "",
-        "_Auto-generated — do not edit by hand. This directory is gitignored",
-        "(local per-checkout staging); this index is local-only and is never",
-        "committed. Regenerate:_",
+        "_Auto-generated — do not edit by hand. This file (only) is gitignored",
+        "(local per-checkout convenience); the directory it lists is tracked.",
+        "Regenerate:_",
         f"`{REGEN_COMMAND}`",
         "",
     ]
@@ -131,22 +138,36 @@ def render_decision_drops_index(dd: Path) -> str:
     return "\n".join(lines)
 
 
+def render_recent_drops_summary(dd: Path, *, limit: int = 20) -> str:
+    """One line per pending drop (title/date/section), most-recent-last capped
+    at ``limit``. For iterate's Layer-1 context loading (context-loading.md
+    item 4a) — bounded so a growing between-release backlog stays a fixed
+    context cost, not a linear one. Pure — no writes. ``""`` when there are
+    no pending drops (caller treats that as "nothing to show", not an error).
+    """
+    drops = _pending_drops(dd)[-limit:]
+    lines = []
+    for name, data in drops:
+        date = _one_line(data.get("date", ""))
+        section = _one_line(data.get("section", ""))
+        title = _one_line(data.get("title") or str(data.get("decision") or "")[:60])
+        lines.append(f"- `{name}` — {date} — {section} — {title}")
+    return "\n".join(lines)
+
+
 def rebuild_decision_drops_index(project_root: Path | str) -> Path | None:
     """Refresh ``INDEX.md`` for ``project_root``'s decision-drops dir.
 
     A missing directory is a strict no-op — never minted before the first
-    drop is ever written. Lock + :func:`durable_atomic_write` guard against
-    two parallel iterate worktrees refreshing the same shared local file at
-    once (see module docstring — a local race, not a git conflict).
+    drop is ever written. Lock + :func:`durable_atomic_write` guard a refresh
+    against a concurrent write within the SAME checkout (e.g. this run's own
+    F3 write racing a manual regen) — no longer a cross-worktree concern
+    now that each worktree has its own drop_dir (see module docstring).
     """
     dd = drop_dir(project_root)
     if not dd.is_dir():
         return None
     index_path = dd / DROP_INDEX_FILENAME
-    # Lock at dd's OWN resolved root (the main repo), not project_root: a caller
-    # in a worktree resolves the same dd via resolve_main_repo_root() but would
-    # otherwise take a lock file in ITS OWN .shipwright/locks/, leaving two
-    # parallel worktrees contending on two different locks for one shared file.
     lock_root = dd.parents[2]
     lock_path = lock_root / ".shipwright" / "locks" / "decision_drops_index.lock"
     with file_lock(str(lock_path), timeout_seconds=10.0):

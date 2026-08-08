@@ -117,10 +117,9 @@ Parse the JSON. Then:
   notice + skip; record `skipped_config_disabled` in the ADR.
 
 Always record the pass — writes the review record AND dual-writes the legacy
-marker. **Every pass here records its row** (`self` 3.6, `plan` here,
-`code`+`doubt` 3.7, `external_code` cascade); F11 STOPs while any is `pending`,
-so a skipped pass needs a `--disposition` naming the rule. `reviews.plan` (Step
-6) stays the campaign view. Contract: `references/iteration-reviews.md`.
+marker. **Every pass here records its row** (`self` 3.6, `plan`+`plan_internal`
+here, `code`+`doubt` 3.7, `external_code` cascade); F11 STOPs while any is
+`pending`, so a skipped pass needs a `--disposition` naming the rule. `reviews.plan` (Step 6) stays the campaign view. `plan_internal`'s command is in `references/iteration-reviews.md` → *Campaign sub-iterate rows*, the Contract.
 
 ```bash
 uv run "{shared_root}/scripts/tools/record_review_pass.py" record \
@@ -207,6 +206,7 @@ review for those.
    | `self` (3.6), `plan` (3.5) | runner | `completed` / `not_run` + rule |
    | `spec` (Stage 1), `code`, `doubt` | orchestrator — NOT the runner | `not_run` ONLY + rule |
    | `external_code` | runner (item 2) | `completed` / `not_run` + rule (marker: `skipped_*`) |
+   | `plan_internal` (3.5) | runner, permanently — never promoted | `not_run` ONLY + rule (documented gap) |
 
    The runner may **never** write `code` or `doubt` as `completed`, nor `spec`
    (Stage 1): it performed none. Commands: `references/iteration-reviews.md` → *Campaign sub-iterate rows*.
@@ -290,7 +290,7 @@ perform; F6-verify checks all three ran.
   then installs exact bytes as `iterates/<run_id>.test-results.json` before the summary. F6 stages
   the iterates directory. `finalize_iterate.py` does not write either; `adr` is the bare `run_id`.
 - **F6:** Commit (Conventional Commits). Explicit `git add` per-path (never `-A`; include
-  `shipwright_events.jsonl` when tracked). Footer: `Run-ID: {run_id}` + `Co-Authored-By: Claude <noreply@anthropic.com>`.
+  `shipwright_events.jsonl` when tracked, and `decision-drops/` when this sub-iterate wrote an F3 drop). Footer: `Run-ID: {run_id}` + `Co-Authored-By: Claude <noreply@anthropic.com>`.
 - **F6-verify (MANDATORY — do NOT skip):** run the SAME F11 verifier the orchestrator runs, against
   your OWN commit — red is a build failure. NEVER push or return `status:"complete"` on red (that is
   how 4 sub-iterates reported "clean F11" with F3 drop + F5c entry silently missing):
@@ -484,7 +484,7 @@ in `plugins/shipwright-compliance`):
   records grandfathered crossings, not a sliding ceiling. Reject the
   diff (audit H3, HIGH).
 - **ADR-gated exceptions** — A baseline entry with `state: exception`
-  MUST link to an ADR (`adr: ".shipwright/planning/adr/NNN-slug.md"`).
+  MUST link to an ADR (`adr: "ADR-NNN"`, not a spec-folder path).
   A `state: deferred-plan` MUST carry a `plan_ref:` pointing to a real
   iterate-spec. Either missing → reject (audit H4 / H5).
 

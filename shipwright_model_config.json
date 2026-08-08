@@ -1,0 +1,9 @@
+{
+  "review": "opus",
+  "finalization": "sonnet",
+  "execution": "sonnet",
+  "plan_review": "opus",
+  "floors": {
+    "review": "sonnet"
+  }
+}

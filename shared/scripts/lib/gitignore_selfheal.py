@@ -50,13 +50,17 @@ class HealResult:
     """Outcome of :func:`self_heal_gitignore`.
 
     ``status`` ∈ {``committed``, ``no_change``, ``skipped``, ``error``}.
-    ``reason`` carries the guard name for ``skipped`` / ``error``; ``added`` lists
-    the canonical rules newly written in a ``committed`` run.
+    ``reason`` carries the guard name for ``skipped`` / ``error``; ``added``
+    lists the canonical rules newly written in a ``committed`` run;
+    ``retracted`` lists any superseded rule stripped in the same run (a
+    project still carrying a stale blanket rule the template has since
+    narrowed or removed — see ``lib.gitignore_canon``'s SUPERSEDED block).
     """
 
     status: str
     reason: str = ""
     added: list[str] = field(default_factory=list)
+    retracted: list[str] = field(default_factory=list)
     commit_subject: str = ""
 
     def to_dict(self) -> dict:
@@ -64,6 +68,7 @@ class HealResult:
             "status": self.status,
             "reason": self.reason,
             "added": self.added,
+            "retracted": self.retracted,
             "commit_subject": self.commit_subject,
         }
 
@@ -163,7 +168,7 @@ def self_heal_gitignore(
         gi_path.read_text(encoding="utf-8", errors="replace")
         if gi_path.exists() else None
     )
-    merged, changed, added = plan_merge(existing or "")
+    merged, changed, added, retracted = plan_merge(existing or "")
     if not changed:
         return HealResult("no_change")
 
@@ -174,6 +179,9 @@ def self_heal_gitignore(
 
     _atomic_write(gi_path, merged)
     subject = (
+        "chore: heal canonical .shipwright/ artifact-ignore block "
+        f"(+{len(added)} rule(s), -{len(retracted)} superseded)"
+        if retracted else
         "chore: scaffold canonical .shipwright/ artifact-ignore block into .gitignore"
     )
 
@@ -196,4 +204,6 @@ def self_heal_gitignore(
     if commit.returncode != 0:
         _restore(gi_path, existing, _git)
         return HealResult("error", f"commit_failed: {commit.stderr.strip()[:300]}")
-    return HealResult("committed", added=added, commit_subject=subject)
+    return HealResult(
+        "committed", added=added, retracted=retracted, commit_subject=subject
+    )

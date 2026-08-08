@@ -65,6 +65,18 @@ _STAGE1_DISPOSITION = (
     "is delegated with the rest of the cascade (ADR-029, campaign mode only)"
 )
 
+#: `plan_internal` is not a delegated-cascade row like spec/code/doubt above —
+#: there is no campaign-level internal-arm spawn site yet to delegate TO
+#: (documented gap: trg-71d7a4fa/trg-d6cc3d3d), so 3f-bis never promotes it.
+#: The runner writes this once and it stays `not_run` for the sub-iterate's
+#: life. Wording matches `_DELEGATED` in `test_campaign_cascade_record_roundtrip.py`
+#: verbatim — both mirror the same Step 3.7 row.
+_PLAN_INTERNAL_DISPOSITION = (
+    "campaign sub-iterates have no internal plan-review arm yet — a "
+    "documented gap (trg-71d7a4fa/trg-d6cc3d3d), not delegated to the "
+    "orchestrator like the other three"
+)
+
 CONTRACT_ROWS: tuple[tuple[str, str, str | None], ...] = (
     ("self", "completed", None),
     ("plan", "completed", None),
@@ -72,6 +84,7 @@ CONTRACT_ROWS: tuple[tuple[str, str, str | None], ...] = (
     ("code", "not_run", _CAPABILITY_DISPOSITION),
     ("doubt", "not_run", _STAGE3_DISPOSITION),
     ("external_code", "completed", None),
+    ("plan_internal", "not_run", _PLAN_INTERNAL_DISPOSITION),
 )
 
 
@@ -128,7 +141,6 @@ def test_contract_shape_written_by_the_cli_passes_the_gate(campaign_root: Path):
     for review_type, status, disposition in CONTRACT_ROWS:
         rc, out = _record_row(campaign_root, review_type, status, disposition)
         assert rc == 0, f"{review_type}={status} was rejected by the CLI: {out}"
-
     result = check_review_record(campaign_root, RUN_ID)
     assert result.ok, result.detail
 
@@ -138,7 +150,6 @@ def test_the_gate_still_reports_what_the_substitution_costs(campaign_root: Path)
     that does NOT buy, because Stage 1 and Stage 3 have no external route."""
     for review_type, status, disposition in CONTRACT_ROWS:
         _record_row(campaign_root, review_type, status, disposition)
-
     result = check_review_record(campaign_root, RUN_ID)
     assert result.ok, result.detail
 
@@ -169,7 +180,6 @@ def test_no_substitution_note_when_the_internal_cascade_actually_ran(
             _record_row(campaign_root, review_type, "completed", None)
             continue
         _record_row(campaign_root, review_type, status, disposition)
-
     result = check_review_record(campaign_root, RUN_ID)
     assert result.ok, result.detail
     assert "NOTE" not in result.detail, result.detail
@@ -232,7 +242,6 @@ def test_substitution_note_does_not_claim_doubt_was_skipped_when_it_ran(
             _record_row(campaign_root, "doubt", "completed", None)
             continue
         _record_row(campaign_root, review_type, status, disposition)
-
     result = check_review_record(campaign_root, RUN_ID)
     assert result.ok, result.detail
     assert "neither ran" not in result.detail, result.detail
@@ -281,7 +290,15 @@ def test_contract_table_lists_every_row_this_test_writes(review_type, status):
     """
     table = _step_37_table()
     assert review_type in table, f"the Step 3.7 table must carry the {review_type} row"
-    if status == "not_run":
+    if review_type == "plan_internal":
+        # Not a delegated-cascade row like spec/code/doubt: it is runner-owned
+        # (not orchestrator-owned) but still capped at `not_run` because there
+        # is no campaign-level internal-arm spawn site to ever promote it.
+        assert "runner, permanently - never promoted | not_run only" in table, (
+            "plan_internal must be owned by the runner, permanently, and "
+            "capped at not_run — never promoted at 3f-bis"
+        )
+    elif status == "not_run":
         assert "| spec (stage 1), code, doubt | orchestrator - not the runner | not_run only" in table, (
             f"{review_type} is an internal stage: the table must own it to the "
             "orchestrator and cap the runner at not_run"

@@ -1,0 +1,1 @@
+decision-drops/ is now tracked in git (this repo, the shared gitignore template, and shipwright-webui) instead of gitignored, so ADR content ships with the branch/PR that produced it instead of depending on which machine happens to run the next release

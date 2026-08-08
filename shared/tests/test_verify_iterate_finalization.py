@@ -780,6 +780,22 @@ def test_architecture_documented_prefix_run_id_not_satisfied(tmp_path):
     assert result.ok is False
 
 
+def test_architecture_documented_reads_the_worktrees_own_drop_not_main(
+    git_origin_repo, make_worktree
+):
+    """Decision-drops are tracked-but-worktree-local since
+    iterate-2026-08-08-track-decision-drops: this run's own pending drop
+    lives in ITS worktree, not main, until the PR merges."""
+    work, _ = git_origin_repo
+    wt = make_worktree(work, "arch-doc-probe")
+    _seed_arch_drop_for(work, "iter-main-only", "component")  # decoy, unrelated run_id
+    _seed_arch_md_for(work, "## Architecture Updates\n- iter-main-only (component): x.\n")
+    _seed_arch_drop_for(wt, "iter-r1", "component")  # this run's own, undocumented
+    assert check_architecture_documented(wt, "iter-r1").ok is False  # main's entry doesn't satisfy it
+    _seed_arch_md_for(wt, "## Architecture Updates\n- iter-r1 (component): x.\n")
+    assert check_architecture_documented(wt, "iter-r1").ok is True  # worktree's own doc does
+
+
 # ──────────────────────────────────────────────────────────────────────
 # check_surface_verification (F0.5 audit)
 # ──────────────────────────────────────────────────────────────────────

@@ -1229,7 +1229,7 @@
     {
       "path": "shared/tests/test_verify_iterate_finalization.py",
       "limit": 300,
-      "current": 1556,
+      "current": 1572,
       "state": "exception",
       "adr": "ADR-093"
     },

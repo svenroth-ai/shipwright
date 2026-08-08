@@ -140,7 +140,7 @@
             "stage1_complexity": { "type": "string", "enum": ["trivial", "small", "medium", "large"] },
             "effective_complexity": { "type": "string", "enum": ["trivial", "small", "medium", "large"] },
             "upgraded": { "type": "boolean" },
-            "plan_review_required": { "type": "boolean" },
+            "plan_review_required": { "type": "boolean", "description": "Whether the EXTERNAL plan/iterate review is required for this sub-iterate — unrelated to the plan_review model-tier ROLE or the plan_internal review-record row (the internal reviewer arm's own row); see shared/scripts/lib/model_tier_config.py and review_record_schema.py." },
             "changed_file_count": { "type": "integer", "minimum": 0 },
             "diff_loc": { "type": "integer", "minimum": 0 }
           }

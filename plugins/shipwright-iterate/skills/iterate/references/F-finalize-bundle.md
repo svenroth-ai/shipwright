@@ -54,7 +54,7 @@ none — no precedence ambiguity). It is the iterate **worktree** root.
     "title": "…", "context": "…", "decision": "…", "consequences": "…",
     "rationale": "…", "rejected": "…",
     "architecture_impact": "component|data-flow|convention|none",
-    "spec_ref": ".shipwright/planning/adr/<NNN>-<slug>.md"
+    "spec_ref": ".shipwright/planning/adr/<run_id_sanitized>-<slug>.md"
   },
   "changelog": [ { "category": "Added|Changed|Deprecated|Removed|Fixed|Security",
                    "bullet": "… (no leading '- ')" } ],
