@@ -21,7 +21,22 @@ See [interview-protocol.md](interview-protocol.md) for detailed guidance.
     call caps at 2,000 lines; the log already exceeds it). No index match →
     grep `decision_log.md` directly rather than assume nothing exists.
   - `shipwright_sync_config.json` — existing file-to-FR mappings (if exists)
-  - ALL `.shipwright/planning/*/spec.md` — existing specs across all splits (read completely)
+  - `.shipwright/planning/*/spec.md` — every existing spec across all splits.
+    Run the coverage check first (small — a check, not an architecture;
+    TC3.2, trg-c0d83dce):
+    ```bash
+    uv run "{shared_root}/scripts/tools/check_mandated_load_coverage.py" \
+      --project-root "{project_root}" --glob ".shipwright/planning/*/spec.md"
+    ```
+    `exceeds_cap: false` means one ordinary `Read` covers the file.
+    `exceeds_cap: true` means it is longer than a single `Read` call returns
+    — the applied limit is the row's own `cap_lines` — read it via
+    `offset`/`limit` across enough calls to cover every line, or declare
+    explicitly "read K of N lines of {path} — not fully read" instead of
+    proceeding as if it were fully seen. A row carrying an `error` key could
+    not be checked at all — report that too, never assume it was read.
+    `exists: false` means the mandate
+    names a path that is not on disk — say so rather than treating it as read.
   - Run: `git log --oneline -20` — recent project history
 
 ## Interview depth by scope and input mode

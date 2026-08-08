@@ -1,0 +1,12 @@
+{
+  "items": [
+    {"name": "Spec Compliance", "verdict": "pass", "note": "Matches TC3.2 (trg-c0d83dce) scope: a small coverage-declaration check wired into the spec.md mandated-load instruction in shipwright-iterate and shipwright-project; decision_log.md wording is untouched (that is TC3.2a / #608, dismissed separately)."},
+    {"name": "Error Handling", "verdict": "pass", "note": "Missing files report exists:false instead of raising; file reads use errors=\"replace\"; no external service calls."},
+    {"name": "Security Basics", "verdict": "pass", "note": "No SQL/HTML output, no secrets; paths are project-root-relative globs supplied by the calling skill, same trust level as resolve_model_tier.py."},
+    {"name": "Test Quality", "verdict": "pass", "note": "13 tests assert on outcomes (dict shapes, exit codes): within-cap, over-cap, exact-cap, missing file, aggregate flag, custom cap, empty input, CLI glob expansion / no-match / explicit path."},
+    {"name": "Performance Basics", "verdict": "pass", "note": "Single-pass line count per file, no N+1, no unbounded output (one row per input path)."},
+    {"name": "Naming & Structure", "verdict": "pass", "note": "lib/tool pair mirrors resolve_model_tier.py's shape; both new files well under 300 LOC."},
+    {"name": "Affected Boundaries", "verdict": "n/a", "note": "CLI output is a printed JSON report consumed inline by the invoking skill step, not a persisted artifact another script parses back -- no producer/consumer round-trip to test."},
+    {"name": "Test Hygiene Probe", "verdict": "pass", "note": "scan_test_hygiene.py --diff: no findings."}
+  ]
+}
