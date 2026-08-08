@@ -1,0 +1,99 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-08-07-shared-op-predicates",
+    "date": "2026-08-08",
+    "unit": {
+      "status": "passed",
+      "passed": 15278,
+      "total": 15278,
+      "note": "F0 canonical suite runner (run_test_suite.py): 18/18 units GREEN, re-run clean after a mid-flight-fingerprint retry (first attempt's diff-coverage bailed on a post-code-review edit, exit 4; second attempt 6.6 min, diff-coverage PASS at 100% on the one measured changed line). Totals cross-checked via --collect-only against each unit (execution counts for 11 plugins re-verified directly; shipwright-run/security/test and shared/tests used collect-only counts, since a standalone ad-hoc re-run of shipwright-run produced 44 environment-artifact errors that collect-only confirmed were NOT real failures -- collected count (542) matched passed+errors exactly, and F0's canonical parallel run had already certified it GREEN). Breakdown: shared/tests 8630; shared/scripts/tests 391; shared/scripts/tools/tests 538; 14 plugin units 5719 (adopt 608, build 113, changelog 81, compliance 1630/5 skipped, deploy 102, design 34, grade 390/1 skipped/12 deselected, iterate 926/1 skipped, plan 81, preview 10, project 59, run 542, security 900, test 243). integration-tests reported separately below."
+    },
+    "integration": {
+      "status": "passed",
+      "passed": 484,
+      "total": 484,
+      "deselected": 2
+    },
+    "e2e": {
+      "status": "n/a",
+      "reason": "no browser surface; this is a shared Python library refactor (git-state predicate deduplication)"
+    },
+    "smoke": {
+      "status": "n/a",
+      "reason": "no startable server surface in this repo"
+    },
+    "pgtap": {
+      "status": "n/a",
+      "reason": "no database"
+    },
+    "design_fidelity": {
+      "status": "n/a",
+      "reason": "no UI surface"
+    },
+    "surface_verification": {
+      "surface": "none",
+      "runner": "",
+      "exit_code": 0,
+      "tests_run": 0,
+      "evidence_path": ".shipwright/runs/iterate-2026-08-07-shared-op-predicates/surface_verification.json",
+      "timestamp": "2026-08-08T00:35:00Z",
+      "justification": "No startable surface: the change is confined to two shared Python library modules (sweep_outbox.py, main_tree_guards.py), their module docstrings, and their unit/contract tests. Both are internal library functions called by setup_iterate_worktree.py step 5, not a standalone CLI/API/web entry point -- Shipwright exposes no surface that exercises them outside the pytest suite, which ran green (18/18 units) at F0."
+    },
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "sweep_outbox's op-in-progress guard (merge/rebase/cherry-pick/revert/bisect detection, fail-closed on timeout) behaves identically after delegating to main_tree_guards.op_in_progress",
+          "disposition": "tested",
+          "evidence": "test_sweep_outbox_guards.py::test_op_in_progress_in_worktree_skips (behavior-level, real git) + shared/tests/test_store_git_timeout_paths.py::test_op_in_progress_says_yes_when_it_cannot_tell + ::test_sweep_skips_when_the_guard_times_out + shared/tests/test_main_tree_git_timeout_paths.py::test_op_in_progress_says_yes_when_only_the_gitpath_probe_times_out[sweep_outbox]"
+        },
+        {
+          "behavior": "sweep_outbox's staged-changes guard behaves identically after delegating to main_tree_guards.has_staged_changes",
+          "disposition": "tested",
+          "evidence": "test_sweep_outbox_guards.py::test_staged_changes_in_worktree_skips"
+        },
+        {
+          "behavior": "The re-export identity (sweep_outbox._op_in_progress is main_tree_guards.op_in_progress, and the has_staged_changes equivalent) is pinned so nobody re-forks a local copy later",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_triage_write_path_contracts.py::test_private_aliases_still_point_at_the_shared_implementation (new _PRIVATE_ALIASES rows for both sweep_outbox predicates)"
+        },
+        {
+          "behavior": "No regression to sweep_outbox_to_branch's broader behavior (quarantine, GC, CRLF handling, commit)",
+          "disposition": "untestable",
+          "reason_code": "covered-by-existing-test",
+          "note": "the full existing test_sweep_*/test_triage_*/test_reconcile_* suite (27 files) is unchanged and re-run as the behavior-snapshot baseline; this diff does not touch any of that logic"
+        },
+        {
+          "behavior": "sweep_outbox's op-in-progress AND staged-changes guards now fail closed (skip) rather than raising when git itself cannot be run, closing a latent contract violation -- proven at both the predicate and the public API",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_store_git_timeout_paths.py::test_op_in_progress_fails_closed_when_git_is_unrunnable + ::test_has_staged_changes_fails_closed_when_git_is_unrunnable + ::test_sweep_skips_when_git_is_unrunnable_end_to_end (public SweepResult(status=\"skipped\", reason=\"op_in_progress\") contract)"
+        }
+      ],
+      "counts": {
+        "testable": 4,
+        "tested": 4,
+        "untestable": 1,
+        "untested_testable": 0
+      },
+      "enumeration_basis": {
+        "acs": 5,
+        "covered_acs": 5
+      },
+      "ledger_path": ".shipwright/planning/iterate/iterate-2026-08-07-shared-op-predicates-miniplan.md"
+    },
+    "degraded": []
+  },
+  "coverage": {
+    "total": 100,
+    "measured_tier": "diff",
+    "source": "diff-cover vs origin/main (F0 gate)",
+    "measured_at": "2026-08-08T00:20:00Z"
+  },
+  "source_state": {
+    "run_id": "iterate-2026-08-07-shared-op-predicates",
+    "commit": "25a112deb532e3e59b1d26bd9f63be8b33231dd4",
+    "dirty": true,
+    "base": null,
+    "release": null
+  }
+}

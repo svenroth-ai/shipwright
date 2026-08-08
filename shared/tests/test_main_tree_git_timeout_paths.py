@@ -180,7 +180,11 @@ def test_two_failed_head_reads_do_not_read_as_unchanged(repo, monkeypatch) -> No
     )
 
 
-def test_op_in_progress_says_yes_when_only_the_gitpath_probe_times_out(repo, monkeypatch) -> None:
+@pytest.mark.parametrize(
+    "predicate", [so._op_in_progress, rt._op_in_progress],
+    ids=["sweep_outbox", "reconcile_triage"],
+)
+def test_op_in_progress_says_yes_when_only_the_gitpath_probe_times_out(repo, monkeypatch, predicate) -> None:
     """The SECOND loop must fail closed too — a rebase sets none of the pseudo-refs.
 
     Doubt review found this: the first loop got the TIMEOUT check, the second kept a
@@ -191,22 +195,12 @@ def test_op_in_progress_says_yes_when_only_the_gitpath_probe_times_out(repo, mon
     The existing test could not see it: it patched EVERY call to 124, so the first
     loop returned on iteration one and the second never ran. This one times out only
     the ``--git-path`` probes and lets the pseudo-ref probes answer honestly.
+
+    Parametrized over both re-export aliases (``sweep_outbox``, ``reconcile_triage``):
+    both now delegate to the SAME ``lib.main_tree_guards.op_in_progress``
+    (iterate-2026-08-07-shared-op-predicates), so this is one behavior pinned twice at
+    its two call sites, not two behaviors.
     """
-    real = so.run_git_soft
-
-    def only_gitpath_times_out(args, **kwargs):
-        if args[:2] == ["rev-parse", "--git-path"]:
-            return subprocess.CompletedProcess(
-                ["git", *args], TIMEOUT_RETURNCODE, "", "timed out")
-        return real(args, **kwargs)
-
-    monkeypatch.setattr(so, "run_git_soft", only_gitpath_times_out)
-    assert so._op_in_progress(repo) is True
-
-
-def test_reconcile_op_in_progress_gitpath_timeout_also_fails_closed(repo, monkeypatch) -> None:
-    """Same gap, same fix, in the module whose commit lands in the MAIN tree. The predicate
-    moved to ``lib.main_tree_guards``, so the patch target moved with it."""
     real = mtg.run_git_soft
 
     def only_gitpath_times_out(args, **kwargs):
@@ -216,8 +210,7 @@ def test_reconcile_op_in_progress_gitpath_timeout_also_fails_closed(repo, monkey
         return real(args, **kwargs)
 
     monkeypatch.setattr(mtg, "run_git_soft", only_gitpath_times_out)
-    assert rt._op_in_progress(repo) is True
-    assert rt._op_in_progress is mtg.op_in_progress   # the re-export is the same object
+    assert predicate(repo) is True
 
 
 def test_has_drift_timeout_is_an_error_not_no_drift(repo, monkeypatch) -> None:

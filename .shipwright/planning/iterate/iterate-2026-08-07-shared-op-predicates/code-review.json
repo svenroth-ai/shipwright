@@ -1,0 +1,30 @@
+{
+  "section": "iterate-2026-08-07-shared-op-predicates",
+  "review": [
+    {
+      "severity": "medium",
+      "category": "architecture",
+      "file": "shared/tests/test_main_tree_git_timeout_paths.py",
+      "line": 310,
+      "finding": "File was 304 lines (already over the 300-line guideline, no baseline entry) before this diff; retargeting the missed third test plus a docstring note and a re-export identity assert grew it to 310, then 308 after an initial trim.",
+      "disposition": "fixed by reducing the file below the limit outright, not by baseline registration. The session's own Stop hook (a separate, stricter session-level bloat gate than the pre-commit anti-ratchet hook) hard-blocked on ANY session-touched file currently over 300 lines, including this one at its pre-existing 304 — reverting my own additions was not sufficient to clear it. Splitting is out of scope for a SIMPLIFY iterate, and a full bloat-exception ADR (Ousterhout argument, YAGNI check, Chesterton-Fence check) was disproportionate for a pre-existing overage this iterate did not create. Instead, the extraction itself had created genuine new duplication the hook's block surfaced: `test_op_in_progress_says_yes_when_only_the_gitpath_probe_times_out` (exercising `so._op_in_progress`) and `test_reconcile_op_in_progress_gitpath_timeout_also_fails_closed` (exercising `rt._op_in_progress`) now drive the exact same `mtg.op_in_progress` through its two re-export aliases, with a byte-identical closure duplicated between them. Merged into one `@pytest.mark.parametrize`d test over both aliases; also dropped the redundant `assert rt._op_in_progress is mtg.op_in_progress` (and the earlier `so` one), since `test_triage_write_path_contracts.py`'s `_PRIVATE_ALIASES` table already asserts both object identities (`assert old is new`, line 123) in a file with headroom. File is now 297 lines — under the limit, coverage preserved (both aliases still separately exercised via parametrize IDs), and the fix is itself a legitimate simplification the extraction motivated, not an unrelated cleanup."
+    },
+    {
+      "severity": "low",
+      "category": "correctness",
+      "file": "shared/tests/test_store_git_timeout_paths.py",
+      "line": 140,
+      "finding": "test_sweep_skips_when_git_is_unrunnable_end_to_end's docstring overclaimed scope: it only proves the guard seam (mtg.run_git_soft) fails closed through the public sweep_outbox_to_branch contract, not that sweep_outbox.py's own bare run_git_soft calls (add/diff --cached/commit) also fail closed on OSError.",
+      "disposition": "fixed. Docstring narrowed to name exactly what is patched (mtg.run_git_soft only) and explicitly disclaim the 3 untouched bare call sites in sweep_outbox.py, cross-referencing trg-fd3fa3c1's fail-open family as the separate surface those sites belong to — no new triage card needed since they were never part of this card's duplicated-predicate scope."
+    },
+    {
+      "severity": "low",
+      "category": "readability",
+      "file": "shared/tests/test_store_git_timeout_paths.py",
+      "line": 111,
+      "finding": "The two-line `_unrunnable` test double was defined as a local closure identically 3 times, when the file already keeps this exact pattern (`_timeout`) at module level (line 40).",
+      "disposition": "fixed. Hoisted `_unrunnable` to module level beside `_timeout`; deleted the 3 local defs. Net -6 lines in this file (211 -> 205)."
+    }
+  ],
+  "verification": "Re-ran the 3 touched files after applying all fixes: `uv run pytest tests/test_store_git_timeout_paths.py tests/test_main_tree_git_timeout_paths.py tests/test_triage_write_path_contracts.py -q` -> 27 passed. `uvx ruff@0.15.15 check` on both edited test files -> All checks passed. No production code touched by these fixes (test-file-only), so behavior_snapshot verify from the build step still holds."
+}
