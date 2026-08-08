@@ -1,0 +1,70 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-08-08-model-tier-review-opus",
+    "date": "2026-08-08",
+    "unit": {
+      "status": "pass",
+      "passed": 41,
+      "failed": 0,
+      "note": "--related scope (small complexity): shared/tests/test_model_tier_config.py (25), test_resolve_model_tier_cli.py (3), test_review_record_model_tier_floor.py (10), test_model_tier_resolver_review_record_integration.py (3)."
+    },
+    "integration": {
+      "status": "n/a",
+      "reason": "not CRUD; no cross_component risk flag on this diff"
+    },
+    "e2e": {
+      "status": "n/a",
+      "reason": "no UI/server surface; config value + unit test only"
+    },
+    "smoke": {
+      "status": "n/a",
+      "reason": "no startable server surface in this repo"
+    },
+    "pgtap": {
+      "status": "n/a",
+      "reason": "no database"
+    },
+    "design_fidelity": {
+      "status": "n/a",
+      "reason": "no UI surface"
+    },
+    "surface_verification": {
+      "surface": "none",
+      "justification": "config value change (review: sonnet -> opus) with unit-test coverage only; no CLI/web/browser surface touched"
+    },
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "shipwright_model_config.json review tier resolves to opus (and finalization/execution/plan_review/floors are unchanged from PR #606)",
+          "disposition": "tested",
+          "evidence": "test_model_tier_config.py::test_shipped_root_config_round_trips_through_resolver PASSED"
+        }
+      ],
+      "counts": {
+        "testable": 1,
+        "tested": 1,
+        "untestable": 0,
+        "untested_testable": 0
+      },
+      "enumeration_basis": {
+        "acs": 1,
+        "covered_acs": 1
+      }
+    },
+    "degraded": []
+  },
+  "coverage": {
+    "total": 80.2,
+    "measured_tier": "repo",
+    "source": "combined coverage.xml (all plugins + shared + integration)",
+    "measured_at": "2026-07-04T00:00:00Z"
+  },
+  "source_state": {
+    "run_id": "iterate-2026-08-08-model-tier-review-opus",
+    "commit": "44a11a7bdbf8c8b09ffdde0fd6cf69111154b743",
+    "dirty": true,
+    "base": null,
+    "release": null
+  }
+}

@@ -1,7 +1,7 @@
 """Smoke tests for the resolve_model_tier.py CLI wrapper.
 
 Logic is unit-tested in test_model_tier_config.py; this only checks the CLI's
-own contract (JSON shape, exit code, single-call-resolves-all-three-roles).
+own contract (JSON shape, exit code, single-call-resolves-all-four-roles).
 """
 
 from __future__ import annotations
@@ -22,18 +22,28 @@ def _run(project_root: Path, *extra_args: str) -> subprocess.CompletedProcess:
     )
 
 
-def test_default_run_resolves_all_three_roles_to_inherit(tmp_path: Path) -> None:
+def test_default_run_resolves_all_four_roles_to_inherit(tmp_path: Path) -> None:
     proc = _run(tmp_path)
     assert proc.returncode == 0
     payload = json.loads(proc.stdout)
-    assert set(payload) == {"review", "finalization", "execution"}
+    assert set(payload) == {"review", "finalization", "execution", "plan_review"}
     for role in payload:
         assert payload[role] == {"resolved": "inherit", "source": "unset", "agent_param": None}
 
 
 def test_flags_resolve_independently_per_role(tmp_path: Path) -> None:
-    proc = _run(tmp_path, "--review-model", "opus", "--execution-model", "sonnet")
+    proc = _run(tmp_path, "--review-model", "opus", "--execution-model", "sonnet",
+                "--plan-review-model", "haiku")
     payload = json.loads(proc.stdout)
     assert payload["review"] == {"resolved": "opus", "source": "flag", "agent_param": "opus"}
     assert payload["execution"] == {"resolved": "sonnet", "source": "flag", "agent_param": "sonnet"}
+    assert payload["plan_review"] == {"resolved": "haiku", "source": "flag", "agent_param": "haiku"}
     assert payload["finalization"]["resolved"] == "inherit"
+
+
+def test_invalid_plan_review_flag_warns_with_correct_flag_name(tmp_path: Path) -> None:
+    """The warning must name the real CLI flag (--plan-review-model, hyphens)
+    not the role's own underscore spelling (--plan_review-model)."""
+    proc = _run(tmp_path, "--plan-review-model", "gpt5")
+    assert "--plan-review-model" in proc.stderr
+    assert "--plan_review-model" not in proc.stderr

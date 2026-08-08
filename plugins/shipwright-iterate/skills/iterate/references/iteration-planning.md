@@ -65,19 +65,21 @@ Run once, before printing the summary:
 ```bash
 uv run "{shared_root}/scripts/tools/resolve_model_tier.py" \
   --project-root "{project_root}" \
-  [--review-model {flag}] [--finalization-model {flag}]
+  [--review-model {flag}] [--finalization-model {flag}] [--plan-review-model {flag}]
 ```
 
-`--review-model`/`--finalization-model` come from this invocation's own
-flags, if present, else omitted. Parse the JSON and keep `review.resolved` /
-`finalization.resolved` — `review` feeds Step 8's cascade spawns and its
-`record_review_pass.py --model-tier` calls; `finalization` feeds
-campaign-mode's step 3c (`sub-iterate-runner`) and step 3f-bis (delegated
-cascade — see `campaign-mode.md`). `execution` is also in the tool's output
-(it always resolves all three roles in one call) but has no live Agent-tool
-spawn inside this skill's own tree — browser-fixer's spawn is build's (see
-`references/F0.5.md`) — so a standalone iterate reads only the two fields
-above. Absent `shipwright_model_config.json` and no flag ⇒ both resolve to
+`--review-model`/`--finalization-model`/`--plan-review-model` come from this
+invocation's own flags, if present, else omitted. Parse the JSON and keep
+`review.resolved` / `finalization.resolved` / `plan_review.resolved` —
+`review` feeds Step 8's cascade spawns and its `record_review_pass.py
+--model-tier` calls; `finalization` feeds campaign-mode's step 3c
+(`sub-iterate-runner`) and step 3f-bis (delegated cascade — see
+`campaign-mode.md`); `plan_review` feeds the Internal Plan Review sub-step
+below (medium+ only). `execution` is also in the tool's output (it always
+resolves all four roles in one call) but has no live Agent-tool spawn inside
+this skill's own tree — browser-fixer's spawn is build's (see
+`references/F0.5.md`) — so a standalone iterate reads only the three fields
+above. Absent `shipwright_model_config.json` and no flag ⇒ all resolve to
 `"inherit"`, bit-identical to today's behavior (the Agent tool's `model`
 parameter is omitted at every spawn). Use only the CLI's own JSON fields —
 `resolved` for the `Model tiers:` summary line and every `--model-tier`
@@ -200,6 +202,113 @@ runs — the self-review outcome lands in the iterate ADR.
 ### Medium / large complexity — default external review with interactive opt-out
 
 Mirrors `/shipwright-plan` Step 5 Branch A / B / C flow.
+
+0. **Internal Plan Review (medium+ only — always before Branch A/B/C at this
+   complexity; never runs for trivial/small, which close `plan_internal` as
+   `not_applicable` per Step 7 instead).** Mirrors
+   `/shipwright-plan` Step 5-int, over the iterate spec + mini-plan instead of
+   `plan.md`. Runs exactly once per run — if `## Internal Plan Review` already
+   exists in the iterate spec **and records `Ran: yes`** (a resumed session),
+   skip straight to step 1; a recorded `Ran: no` is not a completed pass —
+   retry it, **overwriting the existing `## Internal Plan Review` section in
+   place** (never append a second heading — the skip predicate above assumes
+   exactly one).
+
+   **Resume reconciliation.** The spec section and the `plan_internal`
+   review-record row are two separate writes (section first, row second) — a
+   crash between them must not leave a record that contradicts the spec. On
+   resume, if the section already records `Ran: yes` but `plan_internal` is
+   still `pending`: **record the row from the existing section's content,
+   do not re-spawn.**
+
+   Spawn `shipwright-plan:opus-plan-reviewer` (Read/Grep/Glob only) over the
+   iterate spec + mini-plan, passing `plan_review.agent_param` (from §F above)
+   as the Agent tool's `model=` parameter when non-null. **No mini-plan file
+   present** (a forced-large run reaches this section via the Escape Hatch
+   without the Mini-Plan Protocol trigger firing — see
+   [escape-hatch](escape-hatch.md)): spawn over the iterate spec alone and say
+   so in the `## Internal Plan Review` section's Summary line; this is not
+   degraded handling, since the spec is still a complete, reviewable input.
+   **Cross-plugin dependency:** this reuses `/shipwright-plan`'s agent
+   definition rather than a duplicate — a consumer with `shipwright-iterate`
+   installed but not `shipwright-plan` will have the spawn fail; that failure
+   is degraded handling (below), not an error.
+
+   **Degraded handling.** If the subagent cannot be spawned (Agent tool
+   unavailable, or `shipwright-plan` not installed), its reply has no
+   parseable JSON block, or the JSON lacks a recognizable `findings` array or
+   `summary`: the internal pass did NOT run. Record `Ran: no` (reason:
+   `shipwright-plan not installed` / capability / parse failure, as
+   applicable) and **continue to step 1 as normal** — do not fall back yet.
+   Do not record `plan_internal`'s review-record row here: SKILL.md Step 7's
+   mandatory sweep closes every still-`pending` type before F11, including
+   this one, with a `--disposition` naming the same failure reason.
+   This pass is additive, layered alongside the mandatory self-review (line
+   189 above) and the external review below, not a trigger for either —
+   iterate's self-review runs unconditionally at every complexity regardless
+   of this pass's outcome, unlike `/shipwright-plan`'s Self-Review Fallback
+   (which runs only when nothing else reviewed the plan). A missed internal
+   pass here means one fewer independent review, not a gap the run is left
+   unreviewed by.
+
+   **Triage every finding — one of three, always with a reason:**
+   - **fix** — integrate into the mini-plan (and spec, if it names a spec
+     gap) now.
+   - **disclose** — accepted as a known limitation, not acted on now. Record
+     under `**Known limitations:**` below.
+   - **decline** — record why. **Scope-ratchet guard:** a finding that would
+     add scope the iterate spec itself calls out of scope must be declined,
+     not integrated.
+
+   A declined or disclosed `severity: high` finding is not the driving
+   session's call alone: **STOP and ask the user** before Step 6 (build), in
+   the same shape as `/shipwright-plan` Step 5a's `reject` prompt. Under
+   `single_session`, `gate_catalog.json`'s
+   `plan.internal-review-high-severity-declined` entry carries the
+   auto-default — reused as-is; `gate_policy.py`'s `COVERED_PHASES` has no
+   `"iterate"` entry, so this arm does not mint an `iterate.*` id of its own.
+
+   **Write, always**, into the iterate spec (mirroring `## Architecture
+   Review`'s destination — never `plan.md`, which this run does not have):
+
+   ```markdown
+   ## Internal Plan Review (opus-plan-reviewer)
+   - **Ran:** {yes | no (capability failure) | no (parse failure) | no (shipwright-plan not installed)}
+   - **Severity:** {low|medium|high, or n/a if Ran: no}
+   - **Summary:** {reviewer's one-line assessment, or the failure reason if Ran: no}
+   - **Findings:** {one line per finding: category, severity, disposition, one-line reason}
+   - **Known limitations:** {each disclosed finding, one line, or `none`}
+   - **Status:** {clean | N fixed | N fixed, M disclosed, K declined | not_run}
+   ```
+
+   Note the outcome in the iterate ADR too (one line: `Ran: yes|no` +
+   `Status:`), same as the Architecture Review pass.
+
+   When `Ran: yes`, record a review-record row (this run has a `run_id`,
+   unlike `/shipwright-plan`'s standalone Step 5-int). No `--from` adapter
+   applies — `opus-plan-reviewer`'s `{reviewer, severity, findings, summary}`
+   shape isn't one of `lib.review_payloads.ADAPTERS`'s closed set
+   (`code-reviewer`/`spec-reviewer`/`doubt-reviewer`/`self-review`/
+   `external-review-json`/`external-prose`/`none`) — so this is a
+   metadata-only row (status + tier), same as `plan`/`external_code` without
+   `--payload-file`; the findings themselves live in the iterate spec section
+   above, not in this record. Accepted trade-off, not an oversight: a
+   metadata-only row cannot be distinguished from a fabricated one by the
+   record alone — the same bar already accepted for `plan`/Architecture
+   Review, whose provenance is likewise "read the artifact, not the row".
+   **This means the row's `findings_count` is structurally always `0`** —
+   never treat it as "no findings were raised"; check the iterate spec's
+   `## Internal Plan Review` section (or the ADR's `Status:` line) for the
+   actual count:
+   ```bash
+   uv run "{shared_root}/scripts/tools/record_review_pass.py" record \
+     --project-root "{project_root}" --run-id "{run_id}" \
+     --review-type plan_internal --status completed \
+     --recorded-by opus-plan-reviewer \
+     --model-tier "{plan_review.resolved from §F}"
+   ```
+   No marker of its own (same precedent as Architecture Review) — provenance
+   is the iterate spec + the iterate ADR.
 
 1. Compute `external_review_status` via the shared helper (same detector
    used by /shipwright-plan, behavior is identical):

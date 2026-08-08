@@ -117,10 +117,9 @@ Parse the JSON. Then:
   notice + skip; record `skipped_config_disabled` in the ADR.
 
 Always record the pass — writes the review record AND dual-writes the legacy
-marker. **Every pass here records its row** (`self` 3.6, `plan` here,
-`code`+`doubt` 3.7, `external_code` cascade); F11 STOPs while any is `pending`,
-so a skipped pass needs a `--disposition` naming the rule. `reviews.plan` (Step
-6) stays the campaign view. Contract: `references/iteration-reviews.md`.
+marker. **Every pass here records its row** (`self` 3.6, `plan`+`plan_internal`
+here, `code`+`doubt` 3.7, `external_code` cascade); F11 STOPs while any is
+`pending`, so a skipped pass needs a `--disposition` naming the rule. `reviews.plan` (Step 6) stays the campaign view. `plan_internal`'s command is in `references/iteration-reviews.md` → *Campaign sub-iterate rows*, the Contract.
 
 ```bash
 uv run "{shared_root}/scripts/tools/record_review_pass.py" record \
@@ -207,6 +206,7 @@ review for those.
    | `self` (3.6), `plan` (3.5) | runner | `completed` / `not_run` + rule |
    | `spec` (Stage 1), `code`, `doubt` | orchestrator — NOT the runner | `not_run` ONLY + rule |
    | `external_code` | runner (item 2) | `completed` / `not_run` + rule (marker: `skipped_*`) |
+   | `plan_internal` (3.5) | runner, permanently — never promoted | `not_run` ONLY + rule (documented gap) |
 
    The runner may **never** write `code` or `doubt` as `completed`, nor `spec`
    (Stage 1): it performed none. Commands: `references/iteration-reviews.md` → *Campaign sub-iterate rows*.

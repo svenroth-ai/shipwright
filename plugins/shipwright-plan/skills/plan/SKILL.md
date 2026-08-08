@@ -2,7 +2,7 @@
 name: shipwright-plan
 description: "Creates detailed implementation plans from spec files via research, interview, external LLM review, and TDD approach. Generates section-based plans for /shipwright-build.\nTRIGGER when: user wants to plan implementation, create an implementation plan, break down a spec into sections, plan how to build something, create a technical design, generate build sections, or plan test strategy for a spec.\nDO NOT TRIGGER when: user asks to implement or write code (/shipwright-build), run tests (/shipwright-test), fix a bug or make a small change (/shipwright-iterate), deploy (/shipwright-deploy), define requirements (/shipwright-project), or design UI mockups (/shipwright-design)."
 license: MIT
-compatibility: Requires uv (Python 3.11+), git repository recommended. Recommended: OPENROUTER_API_KEY for DeepSeek + OpenAI review; OPENAI_API_KEY can run the GPT arm only. An internal Opus review always runs first; if external keys are missing, the skill asks whether to skip and rely on that internal review.
+compatibility: Requires uv (Python 3.11+), git repository recommended. Recommended: OPENROUTER_API_KEY for DeepSeek + OpenAI review; OPENAI_API_KEY can run the GPT arm only. An internal review (model resolved via the `plan_review` role — inherit unless a project configures it) always runs first; if external keys are missing, the skill asks whether to skip and rely on that internal review.
 ---
 
 # Shipwright Plan Skill
@@ -136,7 +136,7 @@ what it presupposes — in [section-index.md](references/section-index.md).
 Full branch logic: [step-5-external-review.md](references/step-5-external-review.md);
 underlying protocol: [external-review.md](references/external-review.md).
 
-**This step is NOT optional.** An internal Opus review always runs first
+**This step is NOT optional.** An internal review always runs first
 (Step 5-int); then one of three branches must run to completion, and
 `{planning_dir}/external_review_state.json` must be written. Step 6 is
 gated on both.

@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-08-08-model-tier-review-opus",
+  "date": "2026-08-08",
+  "section": "Iterate — bug: model-tier config review value",
+  "title": "Pin the review role to opus (not the sonnet PR #606 shipped)",
+  "context": "shared/scripts/lib/model_tier_config.py (PR #599) added a per-role model-tier resolver, but this repo's own shipwright_model_config.json was still untracked, so every role silently resolved 'inherit'. While committing it, PR #606 (a separate, concurrently in-flight iterate) merged first and committed the file with review: sonnet, on the stated rationale that 'this repo already pins review: sonnet' -- treating that value as an existing given rather than a placeholder.",
+  "decision": "Ship shipwright_model_config.json with review: opus (not sonnet), plus finalization: sonnet, execution: sonnet, plan_review: opus (unchanged from PR #606), floors.review: sonnet. Operator confirmed opus was the intended value after being shown the PR #606 conflict directly.",
+  "consequences": "The review-cascade subagents (spec-reviewer/code-reviewer/doubt-reviewer and any Agent-tool spawn passing model=<resolved review tier>) now run on opus in this repo instead of silently inheriting the session model. plan_review stays independently opus, unaffected by this change.",
+  "rationale": "PR #606's design (plan_review as an independent role rather than reusing review) remains correct regardless of review's value -- this change only corrects which value review itself carries.",
+  "rejected": "",
+  "commit": "",
+  "architecture_impact": "none",
+  "spec_ref": ""
+}

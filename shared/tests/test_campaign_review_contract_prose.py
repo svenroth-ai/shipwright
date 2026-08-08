@@ -84,6 +84,11 @@ def test_the_campaign_recording_commands_exist_where_the_runner_is_sent():
         "disposition naming the capability limit"
     )
     assert "--review-type doubt --status not_run" in norm
+    assert "--review-type plan_internal --status not_run" in norm, (
+        "the internal plan-review arm must be recorded not_run with a "
+        "disposition naming the documented gap — it is never promoted at "
+        "3f-bis, unlike spec/code/doubt above"
+    )
 
 
 def test_runner_carries_a_status_transition_table():

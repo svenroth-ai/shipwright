@@ -57,7 +57,11 @@ SPEC_REVIEWER_PASS = json.dumps({
     "stage": "spec", "verdict": "PASS", "spec_citations": [],
 })
 
-#: What the RUNNER writes: it performs none of the three internal passes.
+#: The four rows the runner writes `not_run` because it cannot perform them
+#: (no `Agent` tool): three ARE delegated to the campaign orchestrator's
+#: 3f-bis, which promotes them once the cascade actually runs; `plan_internal`
+#: is NOT — its own disposition below says so — because no campaign-level
+#: internal-arm spawn site exists yet to delegate to.
 _DELEGATED = (
     ("spec", "the Stage-1 spec-reviewer HARD-GATE is delegated to the campaign "
              "orchestrator (ADR-029, campaign mode only)"),
@@ -65,6 +69,9 @@ _DELEGATED = (
              "delegated to the campaign orchestrator (ADR-029)"),
     ("doubt", "Stage 3 runs only behind a Stage 2 pass; the internal cascade did "
               "not run in this campaign sub-iterate"),
+    ("plan_internal", "campaign sub-iterates have no internal plan-review arm "
+                       "yet — a documented gap (trg-71d7a4fa/trg-d6cc3d3d), not "
+                       "delegated to the orchestrator like the other three"),
 )
 
 
