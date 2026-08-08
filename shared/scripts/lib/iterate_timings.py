@@ -184,7 +184,7 @@ def _tolerant_read_lines(path: Path) -> list[dict]:
             continue
         try:
             obj = json.loads(line)
-        except (ValueError, TypeError):
+        except (RecursionError, ValueError, TypeError):
             continue
         if isinstance(obj, dict):
             out.append(obj)

@@ -87,9 +87,7 @@ def build_marker(
     contradiction_resolution: str | None = None,
     marker_schema: int = MARKER_SCHEMA,
 ) -> dict[str, Any]:
-    """The marker payload. ``self_review_fallback_ran`` is implied by any
-    skipped status — the self-review is mandatory, so a skipped external pass
-    always fell back to it.
+    """The marker payload records whether the fallback actually ran.
 
     ``verdicts`` / ``contradiction`` carry what the finding count cannot: which
     way each reviewer came down, and whether the two contradict each other.
@@ -101,10 +99,7 @@ def build_marker(
         "timestamp": timestamp or datetime.now(timezone.utc).isoformat(),
         "provider": provider,
         "findings_count": findings_count,
-        "self_review_fallback_ran": (
-            self_review_fallback_ran
-            or status in {"skipped_user_opt_out", "skipped_config_disabled"}
-        ),
+        "self_review_fallback_ran": self_review_fallback_ran,
         "reason": reason,
         "review_mode": review_type,
         "marker_schema": marker_schema,

@@ -22,6 +22,7 @@ Two claims, one per producer class:
 from __future__ import annotations
 
 import json
+import re
 import sys
 from datetime import datetime
 from dataclasses import replace
@@ -34,12 +35,13 @@ sys.path.insert(0, str(_SCRIPTS_DIR))
 from lib.churn_merge import CI_SECURITY_SUMMARY  # noqa: E402
 from lib.compliance_refresh import CLASSIFICATION  # noqa: E402
 from source_state import (  # noqa: E402
-    BANNER_STRIP_RE,
     banner_line,
     parse_banner_line,
 )
 
 __all__ = ["ci_security_report", "stamp_fixed_point"]
+
+_STAMP_BANNER_RE = re.compile(r"(?m)^Source-State:[^\r\n]*(?P<ending>\r?\n|$)")
 
 
 def _instant(value: str) -> datetime | None:
@@ -115,8 +117,8 @@ def stamp_fixed_point(
         # guarantee from outside it. An accidental escape (`v1\d`, a Windows path
         # fragment) is worse still: `re.error` raised from inside the producer
         # (Stage-2 code review, medium).
-        out[rel] = BANNER_STRIP_RE.sub(
-            lambda _match: line + "\n", text, count=1).encode("utf-8")
+        out[rel] = _STAMP_BANNER_RE.sub(
+            lambda match: line + match.group("ending"), text, count=1).encode("utf-8")
         stamped.append(rel)
     return out, stamped
 

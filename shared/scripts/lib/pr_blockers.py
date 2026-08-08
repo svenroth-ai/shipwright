@@ -102,7 +102,9 @@ def _gh_json(args: list[str]) -> object | None:
     """Run a ``gh`` command and parse its JSON. ``None`` on any failure — the
     caller turns that into an explicit ``unknown`` source, never a clean answer."""
     try:
-        proc = subprocess.run(args, capture_output=True, text=True, encoding="utf-8", timeout=60)
+        proc = subprocess.run(
+            args, capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=60,
+        )
     except (OSError, subprocess.SubprocessError):
         return None
     if proc.returncode != 0 or not (proc.stdout or "").strip():

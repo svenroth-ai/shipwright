@@ -374,12 +374,7 @@ uv run --project {plugin_root} {shared_root}/scripts/checks/mark-review-state.py
     (opus-plan-reviewer) carried the gate{suffix above}"`.
   - **Checkpoint ran the Self-Review Fallback** (neither review completed) →
     `--findings-count 0 --reason "self-review fallback ran instead (no independent
-    review completed){suffix above}" --self-review-fallback-ran`. **Known
-    limitation** (trg-43ba84df, disclosed, out of scope): the marker schema
-    (`review_marker.py`, unchanged by this iterate) coerces
-    `self_review_fallback_ran: true` for *any* `skipped_*` status, flag or not —
-    so the checkpoint's other outcome above reads the same field as `true` too.
-    The `--reason` string is the only place the two outcomes are distinguishable.
+    review completed){suffix above}" --self-review-fallback-ran`.
 
 Pass `--contradiction-resolution` only when the CLI reported `requires_resolution:
 true`, and only with the decision the **user** made — which side was taken and
