@@ -198,7 +198,12 @@ def main() -> int:
     if not pq.is_shipwright_project(project_root):
         return 0
 
-    # Monorepo auto-descent guard (matches phase_quality).
+    # Monorepo auto-descent guard. NOTE: unlike phase_quality's Stop hook
+    # (trg-b36fd844), project_root here is never pointer-redirected to an
+    # active iterate worktree — this hook keys its idempotency on `head_sha`,
+    # not a run_id-dependent ledger lookup, so it never needed the redirect
+    # and deliberately stays main-rooted. The two Stop audits can therefore
+    # resolve different project roots within the same Stop event.
     if pq.cwd_is_strict_ancestor_of(Path.cwd(), project_root) \
             and not pq.project_root_was_explicitly_selected(project_root):
         return 0
