@@ -204,6 +204,49 @@ def test_apply_design_freezes_splits_and_fans_out(tmp_project):
     assert nxt["dispatch"]["splitId"] == "01-core"
 
 
+def test_apply_design_surfaces_a_freeze_splits_failure_instead_of_completing(
+    tmp_project, monkeypatch,
+):
+    """Spec-reviewer (Stage 1 HARD-GATE): before this fix, `freeze_splits`'s
+    return value was discarded at the design-phase apply call site, so a
+    `_guard_lock_timeout`-converted `ok: False` (e.g. lock_timeout) was
+    silently swallowed and the run proceeded as if splits had been frozen.
+    Must now short-circuit before `complete_phase_task` runs."""
+    monkeypatch.setattr(
+        phase_task_lifecycle, "freeze_splits",
+        lambda project_root: {"ok": False, "reason": "lock_timeout",
+                               "blockMessage": "phase-tasks lock: timed out"},
+    )
+    _ss_config(tmp_project)
+    _drive(tmp_project, "project")
+
+    nxt = loop.next_dispatch(tmp_project)
+    dispatch = nxt["dispatch"]
+    assert dispatch["phase"] == "design"
+    result = _result("design", ok=True, split_id=dispatch["splitId"])
+    _persist_claimed_artifacts(tmp_project, result)
+    applied = loop.apply_phase_result(
+        tmp_project,
+        phase_task_id=dispatch["phaseTaskId"],
+        session_uuid=dispatch["sessionUuid"],
+        expected_version=dispatch["version"],
+        result=result,
+    )
+
+    assert applied["ok"] is False
+    assert applied["reason"] == "freeze_splits_failed"
+
+    # NOT asserting cfg["splits_frozen"] here: freeze_splits is stubbed to a
+    # pure no-write lambda above, so that key would read as its seeded value
+    # regardless of whether the fix works (doubt-reviewer, D6) -- the load-
+    # bearing check is that complete_phase_task never ran.
+    cfg = json.loads((tmp_project / "shipwright_run_config.json").read_text("utf-8"))
+    design_task = next(t for t in cfg["phase_tasks"] if t["phase"] == "design")
+    assert design_task["status"] == "in_progress", (
+        "complete_phase_task must not have run past the failed freeze"
+    )
+
+
 def test_apply_failure_strict_stops_no_successor(tmp_project):
     _ss_config(tmp_project)
     _dispatch, applied = _drive(tmp_project, "project", ok=False)

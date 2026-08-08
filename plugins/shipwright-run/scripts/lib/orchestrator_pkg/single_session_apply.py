@@ -156,9 +156,13 @@ def apply_phase_result(
 
     if phase == "design" and result.get("ok"):
         try:
-            lc.freeze_splits(project_root)
+            freeze_result = lc.freeze_splits(project_root)
         except Exception as exc:  # noqa: BLE001 — never crash the loop on freeze
             return {"ok": False, "reason": "freeze_splits_failed", "error": str(exc)}
+        if not freeze_result.get("ok"):
+            detail = freeze_result.get("blockMessage") or freeze_result.get("reason", "")
+            return {"ok": False, "reason": "freeze_splits_failed", "error": detail,
+                     "freeze_result": freeze_result}
 
     completion = lc.complete_phase_task(
         project_root,
