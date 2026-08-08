@@ -18,7 +18,7 @@
   - Launch payload (copy into a new Claude session):
     ```text
     /shipwright-iterate
-    
+
     Work item: P2.34: Align WebUI and Python triage transition locking
     ```
   - Promote: `triage_promote.py --id trg-8e0b4dd5 --task-ref EXT:<ref>`
@@ -29,7 +29,7 @@
   - Launch payload (copy into a new Claude session):
     ```text
     /shipwright-iterate
-    
+
     Work item: P3.06: Tier must use review evidence, not maintainer authorship
     ```
   - Promote: `triage_promote.py --id trg-9e7b50e8 --task-ref EXT:<ref>`
@@ -42,7 +42,7 @@
   - Launch payload (copy into a new Claude session):
     ```text
     /shipwright-iterate
-    
+
     Work item: P2.54 [AUTO] A dismissed recurring finding comes straight back under a new id, so an operator decision cannot stick
     ```
   - Promote: `triage_promote.py --id trg-c8073edd --task-ref EXT:<ref>`
@@ -53,7 +53,7 @@
   - Launch payload (copy into a new Claude session):
     ```text
     /shipwright-iterate
-    
+
     Work item: P3.07 [AUTO after P3.06][SERIAL] IT-9: five more PR-review hardening items from webui#338
     ```
   - Promote: `triage_promote.py --id trg-36ceef43 --task-ref EXT:<ref>`
@@ -64,7 +64,7 @@
   - Launch payload (copy into a new Claude session):
     ```text
     /shipwright-iterate
-    
+
     Work item: P2.52 [AUTO] Three small shared/scripts fixes: a fail-open probe, an unscanned writer, an unbounded cache
     ```
   - Promote: `triage_promote.py --id trg-8a2f49df --task-ref EXT:<ref>`
@@ -75,7 +75,7 @@
   - Launch payload (copy into a new Claude session):
     ```text
     /shipwright-iterate
-    
+
     Work item: P2.49 [AUTO] Iterate-history retention evicts the F5c entries P1.14 permanently pins
     ```
   - Promote: `triage_promote.py --id trg-be3fb8a6 --task-ref EXT:<ref>`
@@ -86,7 +86,7 @@
   - Launch payload (copy into a new Claude session):
     ```text
     /shipwright-iterate
-    
+
     Work item: P2.17a [GUIDED after P2.17] Campaign sub-iterates do not run the architecture review pass
     ```
   - Promote: `triage_promote.py --id trg-14392ba5 --task-ref EXT:<ref>`
@@ -97,7 +97,7 @@
   - Launch payload (copy into a new Claude session):
     ```text
     /shipwright-iterate
-    
+
     Work item: P2.18a [GUIDED after P2.18] Adopted repos render Source-State: run=(unknown)
     ```
   - Promote: `triage_promote.py --id trg-d76ab0d9 --task-ref EXT:<ref>`
@@ -108,7 +108,7 @@
   - Launch payload (copy into a new Claude session):
     ```text
     /shipwright-iterate
-    
+
     Work item: P2.53 [AUTO] Six small defects in one run: the plan-reviewer wiring tail plus three fragile reader/writer sites
     ```
   - Promote: `triage_promote.py --id trg-e67264d7 --task-ref EXT:<ref>`
@@ -121,7 +121,7 @@
   - Launch payload (copy into a new Claude session):
     ```text
     /shipwright-compliance
-    
+
     Context: 5 open compliance finding(s): D/D1, D/D3, F/F6, H/H1, H/H2.
     Dashboard: .shipwright/compliance/dashboard.md
     Each finding + hint is listed in this item's detail.
@@ -165,7 +165,7 @@
   - Launch payload (copy into a new Claude session):
     ```text
     /shipwright-iterate
-    
+
     Work item: P2.39 [AUTO after the F11 ladder settles] verify_local.py runs at F0, but CI judges a different tree
     ```
   - Promote: `triage_promote.py --id trg-b8537d8f --task-ref EXT:<ref>`
@@ -178,7 +178,7 @@
   - Launch payload (copy into a new Claude session):
     ```text
     /shipwright-iterate
-    
+
     Work item: Retire the write-once current_step / completed_steps fields (campaign, not a P3 unit)
     ```
   - Promote: `triage_promote.py --id trg-61438a67 --task-ref EXT:<ref>`
@@ -191,7 +191,7 @@
   - Launch payload (copy into a new Claude session):
     ```text
     /shipwright-iterate
-    
+
     Work item: P4.02: grade_snapshot dirty: the orchestrator's sibling-process residual
     ```
   - Promote: `triage_promote.py --id trg-9fe7c8b1 --task-ref EXT:<ref>`
@@ -204,7 +204,7 @@
   - Launch payload (copy into a new Claude session):
     ```text
     /shipwright-iterate
-    
+
     Work item: P2.50 [GUIDED] The architecture review has no internal path, so it silently disappears on three separate routes
     ```
   - Promote: `triage_promote.py --id trg-a0d8c2cb --task-ref EXT:<ref>`
@@ -215,7 +215,7 @@
   - Launch payload (copy into a new Claude session):
     ```text
     /shipwright-iterate
-    
+
     Work item: P2.56 [AUTO] An outbox-buffered amend that has not reached origin is invisible in the envelope
     ```
   - Promote: `triage_promote.py --id trg-a7682989 --task-ref EXT:<ref>`
@@ -228,7 +228,7 @@
   - Launch payload (copy into a new Claude session):
     ```text
     /shipwright-compliance
-    
+
     Context: 1 open phase-quality Tier-1 FAIL(s): iterate:W3.
     Dashboard: .shipwright/compliance/skill-compliance/_dashboard.md
     Each FAIL + remediation is listed in this item's detail.
@@ -243,7 +243,7 @@
   - Launch payload (copy into a new Claude session):
     ```text
     /shipwright-iterate
-    
+
     Work item: REQ3.04: Mechanik Monorepo plus der Spec-Reader (supersedes trg-7085d783)
     ```
   - Promote: `triage_promote.py --id trg-a8f4b029 --task-ref EXT:<ref>`
@@ -254,7 +254,7 @@
   - Launch payload (copy into a new Claude session):
     ```text
     /shipwright-iterate
-    
+
     Work item: REQ3.10: Grader Lead-Magnet: change_reconciliation real machen
     ```
   - Promote: `triage_promote.py --id trg-a2a45d38 --task-ref EXT:<ref>`
@@ -265,7 +265,7 @@
   - Launch payload (copy into a new Claude session):
     ```text
     /shipwright-iterate
-    
+
     Work item: REQ3.05: Test-Backfill: fehlende AC-Tests - Monorepo
     ```
   - Promote: `triage_promote.py --id trg-c4f877ab --task-ref EXT:<ref>`
@@ -278,7 +278,7 @@
   - Launch payload (copy into a new Claude session):
     ```text
     /shipwright-iterate
-    
+
     Work item: REQ3.06: Enforcement-Liste abarbeiten: Checks bauen fuer prompt-only (mechanisable) - Monorepo
     ```
   - Promote: `triage_promote.py --id trg-0845a2f5 --task-ref EXT:<ref>`
@@ -289,7 +289,7 @@
   - Launch payload (copy into a new Claude session):
     ```text
     /shipwright-iterate
-    
+
     Work item: REQ3.09: Domaenen-Glossar erzeugen, Grill-Modul in Project, plus die Nachweis-Spur (supersedes trg-d5522f68)
     ```
   - Promote: `triage_promote.py --id trg-9c9c0792 --task-ref EXT:<ref>`
@@ -302,7 +302,7 @@
   - Launch payload (copy into a new Claude session):
     ```text
     /shipwright-iterate
-    
+
     Work item: IT-10: Plugin-Scope-Split: Einstiegs-Plugins global, 11 Pipeline-Plugins projekt-scoped
     ```
   - Promote: `triage_promote.py --id trg-84a84f4e --task-ref EXT:<ref>`
