@@ -1,0 +1,11 @@
+{
+  "run_id": "iterate-2026-08-08-p2-52-shared-scripts-fixes",
+  "date": "2026-08-08T23:38:47.499822Z",
+  "event_at": "2026-08-08T23:38:21.118054+00:00",
+  "type": "bug",
+  "complexity": "small",
+  "branch": "iterate/p2-52-shared-scripts-fixes",
+  "tests_passed": true,
+  "spec": "no changes",
+  "adr": "iterate-2026-08-08-p2-52-shared-scripts-fixes"
+}

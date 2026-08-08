@@ -91,6 +91,20 @@ def test_stale_claim_re_arms_then_fresh_skips(tmp_path):
     assert claim_once(p, ttl_seconds=30) is False  # fresh again → skip
 
 
+
+
+def test_claim_once_purges_expired_sibling_claims(tmp_path):
+    stale = tmp_path / ".cache" / "old-session.claim"
+    stale.parent.mkdir()
+    stale.touch()
+    os.utime(stale, (0, 0))
+
+    assert claim_once(
+        tmp_path / ".cache" / "current-session.claim",
+        ttl_seconds=30,
+        now=100.0,
+    )
+    assert not stale.exists()
 def test_now_param_makes_ttl_deterministic(tmp_path):
     p = tmp_path / ".cache" / "x.claim"
     assert claim_once(p, ttl_seconds=30, now=1000.0) is True
@@ -122,3 +136,83 @@ def test_distinct_keys_are_independent(tmp_path):
     assert claim_once(a) is True
     assert claim_once(b) is True  # different event → independent winner
     assert claim_once(a) is False
+
+
+def test_purge_respects_each_claims_own_ttl(tmp_path):
+    long_lived = tmp_path / ".cache" / "long-lived.claim"
+    assert claim_once(long_lived, ttl_seconds=300, now=0.0)
+    os.utime(long_lived, (0, 0))
+
+    assert claim_once(
+        tmp_path / ".cache" / "short-lived.claim",
+        ttl_seconds=30,
+        now=100.0,
+    )
+    assert long_lived.exists()
+
+
+def test_stale_claim_rearm_executes_second_create(tmp_path, monkeypatch):
+    from lib import event_once
+
+    claim = tmp_path / ".cache" / "stale.claim"
+    assert claim_once(claim, ttl_seconds=30, now=0.0)
+    os.utime(claim, (0, 0))
+    monkeypatch.setattr(event_once, "_purge_expired_claims", lambda *_args, **_kwargs: None)
+    calls = 0
+    original = event_once._create
+
+    def counting_create(path, ttl_seconds=30.0):
+        nonlocal calls
+        calls += 1
+        return original(path, ttl_seconds)
+
+    monkeypatch.setattr(event_once, "_create", counting_create)
+    assert claim_once(claim, ttl_seconds=30, now=100.0)
+    assert calls == 2
+
+
+def test_create_write_error_fails_open_and_removes_claim(tmp_path, monkeypatch):
+    from lib import event_once
+
+    claim = tmp_path / "write-error.claim"
+
+    class FailingClaim:
+        def __init__(self, fd):
+            self.fd = fd
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *_):
+            os.close(self.fd)
+
+        def write(self, _text):
+            raise OSError("simulated write error")
+
+    monkeypatch.setattr(event_once.os, "fdopen", lambda fd, *_args, **_kwargs: FailingClaim(fd))
+    assert event_once._create(claim) is None
+    assert not claim.exists()
+
+
+def test_purge_keeps_claim_replaced_during_cleanup(tmp_path, monkeypatch):
+    from lib import event_once
+
+    claim = tmp_path / "replaced.claim"
+    assert claim_once(claim, ttl_seconds=30, now=0.0)
+    os.utime(claim, (0, 0))
+    identities = iter(((1, 1, 1, 1), (2, 2, 2, 2)))
+    monkeypatch.setattr(event_once, "_claim_identity", lambda _path: next(identities))
+
+    event_once._purge_expired_claims(tmp_path, now=100.0)
+
+    assert claim.exists()
+
+
+def test_purge_ignores_unreadable_cache_directory(tmp_path, monkeypatch):
+    from lib import event_once
+
+    def failing_glob(_self, _pattern):
+        raise OSError("simulated glob error")
+
+    monkeypatch.setattr(event_once.Path, "glob", failing_glob)
+    event_once._purge_expired_claims(tmp_path, now=100.0)
