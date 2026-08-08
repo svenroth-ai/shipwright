@@ -368,7 +368,7 @@
     {
       "path": "plugins/shipwright-run/scripts/lib/phase_task_lifecycle.py",
       "limit": 300,
-      "current": 660,
+      "current": 725,
       "state": "grandfathered",
       "adr": null
     },
@@ -403,7 +403,7 @@
     {
       "path": "plugins/shipwright-run/tests/test_single_session_loop.py",
       "limit": 300,
-      "current": 306,
+      "current": 349,
       "state": "grandfathered",
       "adr": null
     },
@@ -581,6 +581,13 @@
       "current": 641,
       "state": "exception",
       "adr": "ADR-091"
+    },
+    {
+      "path": "shared/scripts/lib/atomic_write.py",
+      "limit": 300,
+      "current": 324,
+      "state": "exception",
+      "adr": "ADR-127"
     },
     {
       "path": "shared/scripts/lib/autonomous_loop.py",

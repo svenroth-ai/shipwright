@@ -20,14 +20,14 @@ non-zero exit code rather than silently dropping the write.
 ``FileLock`` (class) — bounded-wait, same-thread-reentrant variant
 ------------------------------------------------------------------
 Used by the JSONL append-log writers ``tools/record_event.py`` and
-``triage.py`` (and the triage sweep / GC / reconcile helpers that share the
-canonical triage lock). The appends it guards are short and the writers want to
-serialize rather than fail, so it waits — but it no longer waits *forever*. The
-near-identical class was copied between those two modules; it now lives here
-once and both ``import FileLock as _FileLock``
-(iterate-2026-06-13-shc-file-lock). ``__enter__`` creates the lock file's
-parent directory (``parents=True, exist_ok=True``) so a first-ever append into
-a not-yet-created ``.shipwright/`` directory does not raise.
+``triage.py``, and — since ``trg-2e961fee`` — ``phase_task_lifecycle.
+_PhaseTasksLock``, itself a third literal copy of this mechanism until
+delegated. All guard short critical sections and want to serialize rather
+than fail, so this waits — but no longer waits *forever*. The
+near-identical class was copied between the first two; it now lives here
+once (iterate-2026-06-13-shc-file-lock). ``__enter__`` creates the lock
+file's parent directory (``parents=True, exist_ok=True``) so a first-ever
+append into a not-yet-created ``.shipwright/`` directory does not raise.
 
 **It used to have neither a bound nor reentrancy** (``trg-dc013d82``, finding
 24): POSIX ``flock(LOCK_EX)`` blocked indefinitely, Windows spun a 1 ms loop
