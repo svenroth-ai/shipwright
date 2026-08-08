@@ -112,8 +112,8 @@
     "ledger_path": ".shipwright/planning/iterate/iterate-2026-08-08-plan-reviewer-configurable.md"
   },
   "surface_verification": {
-    "status": "n/a",
-    "reason": "surface=none -- shared-lib + schema + agent-instruction prose; no startable web/cli/api surface (see iterate spec Verification section)"
+    "surface": "none",
+    "justification": "shared-lib + schema + agent-instruction prose; no startable web/cli/api surface (see iterate spec Verification section)"
   },
   "declared_removals": []
 }
