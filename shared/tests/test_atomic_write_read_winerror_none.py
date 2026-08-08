@@ -38,9 +38,19 @@ from lib.atomic_write import (  # noqa: E402
 
 
 def _none_winerror_denial() -> PermissionError:
-    """Shaped like the real errno-only denial: no ``winerror`` attribute set."""
+    """Shaped like the real errno-only denial: no ``winerror`` attribute set.
+
+    ``getattr(..., None)``, not ``.winerror`` directly: CPython only defines
+    ``OSError.winerror`` as a real (default-``None``) slot on Windows builds --
+    on POSIX (this file's own CI leg) the attribute does not exist AT ALL, so a
+    direct access raises ``AttributeError`` instead of reading ``None``. The
+    predicate under test already reads it the same defensive way
+    (``atomic_write._retry_past_sharing_violations``); this fixture must match.
+    """
     exc = PermissionError(13, "Access is denied")
-    assert exc.winerror is None, "fixture no longer reproduces the errno-only shape"
+    assert getattr(exc, "winerror", None) is None, (
+        "fixture no longer reproduces the errno-only shape"
+    )
     return exc
 
 
@@ -153,7 +163,7 @@ def test_read_does_not_retry_a_none_winerror_with_a_different_errno(tmp_path, mo
     def denied(self, *a, **k):
         attempts.append(1)
         exc = PermissionError(1, "Operation not permitted")   # errno.EPERM, not EACCES
-        assert exc.winerror is None
+        assert getattr(exc, "winerror", None) is None
         raise exc
 
     monkeypatch.setattr(Path, "read_text", denied)
