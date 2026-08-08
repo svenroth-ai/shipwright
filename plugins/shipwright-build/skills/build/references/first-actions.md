@@ -201,8 +201,31 @@ Branch:         {branch_name}
 Auto-push:      {enabled | disabled}
 Migration safe: {enabled | disabled}
 {Resume from:   Step {N} (if resuming)}
+Model tiers:    review=<resolved> (<source>), finalization=<resolved> (<source>), execution=<resolved> (<source>)
 ================================================================================
 ```
+
+---
+
+## Model tiers
+
+Run once, before printing the SESSION REPORT:
+
+```bash
+uv run "{shared_root}/scripts/tools/resolve_model_tier.py" \
+  --project-root "{project_root}" \
+  [--review-model {flag}] [--finalization-model {flag}] [--execution-model {flag}]
+```
+
+Flags come from this invocation if present, else omitted. Keep
+`review.resolved` for `code-review.md`'s cascade, `finalization.resolved` for
+`autonomous-loop.md`'s `section-builder` spawn, `execution.resolved` for
+`browser-verify.md`'s `browser-fixer` spawn. Absent
+`shipwright_model_config.json` and no flags ⇒ all three resolve to
+`"inherit"`, bit-identical to today's behavior. Use only the CLI's own
+JSON fields — `resolved` for the SESSION REPORT line, `agent_param` for
+each spawn's `model=` parameter (already `null` for `"inherit"`) — never a
+raw value read back out of the config file directly.
 
 ---
 

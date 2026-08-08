@@ -14,6 +14,13 @@ spec-reviewer (Stage 1, HARD-GATE)  ->  code-reviewer (Stage 2, quality)  ->  do
 Each stage is a distinct subagent prompt under `agents/`:
 `agents/spec-reviewer.md`, `agents/code-reviewer.md`, `agents/doubt-reviewer.md`.
 
+**Model tier.** Pass `model=<the review tier resolved at SKILL.md §G>` to the
+Agent tool at every spawn in this cascade — all three stages, whether invoked
+by a standalone build or reused by `/shipwright-iterate` Step 8 (which
+resolves its own `review` tier the same way). Omit the parameter when the
+resolved value is `inherit`. Every `record_review_pass.py record` call for
+`spec`/`code`/`doubt` carries `--model-tier "{resolved_review_tier}"`.
+
 ### Stage 1 — `spec-reviewer` (HARD-GATE)
 
 Spawn the `spec-reviewer` subagent with the section/iterate spec path and the

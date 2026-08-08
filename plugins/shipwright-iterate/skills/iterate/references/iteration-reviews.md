@@ -148,7 +148,9 @@ The code-reviewer subagent from `shipwright-build` is reused. Provide:
 ### Reviewer Cascade — `spec-reviewer` → `code-reviewer` → `doubt-reviewer`
 
 The reused `shipwright-build` reviewers form a three-stage cascade (the same one
-`/shipwright-build` Step 6 runs — see that plugin's `references/code-review.md`).
+`/shipwright-build` Step 6 runs — see that plugin's `references/code-review.md`,
+including its "Model tier" note — the `review` tier resolved at this skill's
+own SKILL.md §F applies at every spawn in the cascade, standalone or delegated).
 
 **Who runs it.** **A standalone iterate spawns the cascade itself**, from
 SKILL.md Step 8, before F6 (commit) — it has the `Agent` tool, so there is no
@@ -464,8 +466,10 @@ uv run "{shared_root}/scripts/tools/record_review_pass.py" record \
   --review-type {self|plan|spec|code|doubt|external_code} --status completed \
   --from {self-review|spec-reviewer|code-reviewer|doubt-reviewer|external-review-json|external-prose} \
   --payload-file "{path to the reply}" \
-  [--provider openrouter] [--marker-status completed]
+  [--model-tier {resolved review tier}] [--provider openrouter] [--marker-status completed]
 ```
+
+`--model-tier` is **required** for the three review-role passes (`spec`/`code`/`doubt`) — the review tier resolved in §F, same value passed at the spawn (see "Model tier" above). Omit it for `self`/`plan`/`external_code`, which are not Agent-tool spawns.
 
 For `external-review-json`, the recorder reads the payload once, then derives
 both findings and each reviewer verdict from that in-memory snapshot. It stores

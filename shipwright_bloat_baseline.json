@@ -618,6 +618,13 @@
       "adr": null
     },
     {
+      "path": "shared/scripts/lib/review_record_schema.py",
+      "limit": 300,
+      "current": 313,
+      "state": "grandfathered",
+      "adr": null
+    },
+    {
       "path": "shared/scripts/lib/spec_parser.py",
       "limit": 300,
       "current": 350,
