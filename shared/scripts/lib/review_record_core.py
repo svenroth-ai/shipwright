@@ -132,11 +132,25 @@ def make_entry(
     raw_excerpt: str | None = None,
     verdicts: dict[str, str] | None = None,
     contradiction_resolution: str | None = None,
+    model_tier: str | None = None,
 ) -> dict[str, Any]:
     """Build one review entry.
 
     ``findings_count`` is DERIVED from ``findings``, never supplied — a count
     that can disagree with the list it counts is a count nobody can trust.
+
+    ``model_tier`` is the tier (``opus``/``sonnet``/``haiku``/``inherit``)
+    the session resolved for this role via
+    ``lib.model_tier_config.resolve_model_tier`` and self-reports at
+    recording time — a claim about the spawn, not independently verified
+    evidence of it, since nothing correlates this value with the Agent-tool
+    ``model=`` parameter actually passed at the spawn call. ``"inherit"`` is a
+    real, meaningful value here (it means "deferred to the session's tier,
+    which this row does not itself capture"), distinct from the key being
+    absent entirely (a caller that predates this field, or omitted the flag).
+    Omitted like ``verdicts``/``contradiction_resolution`` when not supplied,
+    so an old reader's ``.get("model_tier")`` sees absence, not a stray
+    ``null``.
     """
     if review_type not in RECORDABLE_TYPES:
         raise ReviewRecordError(f"unknown review_type: {review_type!r}")
@@ -164,6 +178,8 @@ def make_entry(
         entry["verdicts"] = dict(verdicts)
     if contradiction_resolution is not None:
         entry["contradiction_resolution"] = contradiction_resolution
+    if model_tier is not None:
+        entry["model_tier"] = model_tier
     return entry
 
 

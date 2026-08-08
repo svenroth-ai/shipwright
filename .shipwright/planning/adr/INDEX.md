@@ -56,5 +56,5 @@ _Regenerate:_ `uv run {shared_root}/scripts/tools/rebuild_adr_index.py --project
 - [ADR-125 — Synthesize a missing ancestor for iterate_timings instead of orphaning its children](125-iterate-timings-derived-parent-synthesis.md)
 - [ADR-126 — Measure real per-token cost from the transcript instead of counting tool calls](126-context-cost-meter.md)
 - [ADR-126 — Producer-stamped attempt number + real per-unit timeline for the test phase](126-test-phase-attribution.md)
-- [ADR-127 — Decision-log and decision-drops indexes, ADR-index pattern extended](127-decision-log-drops-index.md)
+- [ADR-127 — Per-role model tiers for spawned subagents, resolved by flag > project config > unset](127-agent-model-tiers-per-role-tiers.md)
 - [Archive — Agent-Doc Update Backlog (verbatim)](_archive-agent-doc-updates.md)

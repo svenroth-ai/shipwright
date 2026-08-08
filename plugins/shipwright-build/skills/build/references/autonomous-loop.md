@@ -40,7 +40,8 @@ Parse stdout JSON: extract `loop_id`. Then: `export SHIPWRIGHT_LOOP_ID="{loop_id
     export SHIPWRIGHT_LOOP_UNIT_ID="{id}"
 
 3c. Spawn section-builder subagent:
-    result = Task(subagent_type="section-builder", prompt=<brief with section_file, project_root, etc.>)
+    result = Task(subagent_type="section-builder", model=<finalization tier resolved at SKILL.md §G, omit if "inherit">,
+                  prompt=<brief with section_file, project_root, etc.>)
 
 3d. Wait for terminal marker (max 30s):
     Wait until .shipwright/runs/{loop_id}/{id}/DONE exists

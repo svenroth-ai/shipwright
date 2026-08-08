@@ -60,6 +60,7 @@ uv run "{shared_root}/scripts/browser_verify.py" --cwd {project_root}
       - Console errors from result JSON
       - DOM snippet from result JSON
       - Recently changed files (from `git diff --name-only`)
+      - `model=<execution tier resolved at SKILL.md §G>` (omit when `inherit`)
    d. Apply the recommended fix
    e. Re-run browser verify
    f. **If same root cause as previous attempt** -> change approach (different fix strategy, not same fix again)
