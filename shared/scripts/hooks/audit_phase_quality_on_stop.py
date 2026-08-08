@@ -2,10 +2,7 @@
 """Stop hook: consolidated phase-quality audit entry point.
 
 Runs all 6 Phase-Quality categories (canon, workflow, infrastructure,
-traceability, quality, spec) across every Shipwright plugin's Stop
-event. PR 1 of 4 — canon (C1-C5) is implemented; the other categories
-are stubbed in :mod:`shared.scripts.lib.phase_quality` and filled in by
-PR 2-4.
+traceability, quality, spec) across every Shipwright plugin's Stop event.
 
 Contract (plan § 5):
 
@@ -36,23 +33,16 @@ if str(_SCRIPTS_ROOT) not in sys.path:
     sys.path.insert(0, str(_SCRIPTS_ROOT))
 
 from lib import phase_quality as pq  # noqa: E402
-from lib.project_root import resolve_project_root  # noqa: E402
 
-
-def _resolve_project_root() -> Path:
-    try:
-        return resolve_project_root()
-    except (ValueError, Exception):
-        return Path.cwd()
+# _resolve_roots moved to lib.phase_quality._resolution.resolve_project_roots
+# (pq.resolve_project_roots) — see its docstring for the audit_root/plain_root
+# split rationale (doubt-review D1/D4).
 
 
 def _emit_hook_output(payload: dict[str, object]) -> None:
     # Stop hookSpecificOutput accepts only `hookEventName`; `additionalContext`
-    # is not permitted (validates rejected by Claude Code with
-    # "Hook JSON output validation failed — (root): Invalid input").
-    # Route the diagnostic message to stderr — Claude Code surfaces hook
-    # stderr to the user, so visibility is preserved without violating the
-    # Stop schema. See iterate-2026-05-10-stop-hook-schema-fix + ADR-042.
+    # is rejected by validation. Route the message to stderr instead — Claude
+    # Code surfaces hook stderr to the user. See ADR-042.
     message = payload.get("additionalContext")
     if message:
         try:
@@ -84,41 +74,46 @@ def main() -> int:
     if pq.phase_from_plugin_root(plugin_root) is None:
         return 0
 
-    project_root = _resolve_project_root()
+    session_id = os.environ.get("SHIPWRIGHT_SESSION_ID", "").strip() or "unknown"
+    cwd = Path.cwd()
+    audit_root, via_pointer, plain_root = pq.resolve_project_roots(cwd, session_id)
 
     # Greenfield guard — matches the contract used by the other Stop hooks.
-    if not pq.is_shipwright_project(project_root):
+    # Gated on plain_root (never redirected): a verified pointer worktree is
+    # inherently a valid Shipwright project too, but plain_root is what the
+    # pre-redirect contract always checked and stays the stable signal.
+    if not pq.is_shipwright_project(plain_root):
         return 0
 
-    # Monorepo auto-descent guard: if the resolver auto-descended into a
-    # managed subfolder while the user was actually working at a parent
-    # level (monorepo root, unrelated subdir), skip the audit to avoid
-    # off-scope pollution. Opt-in for cross-dir audit via
-    # SHIPWRIGHT_PROJECT_ROOT env var pointing exactly at project_root.
-    cwd = Path.cwd()
-    if pq.cwd_is_strict_ancestor_of(cwd, project_root) \
-            and not pq.project_root_was_explicitly_selected(project_root):
+    # Monorepo auto-descent guard: skip when the resolver auto-descended
+    # into a managed subfolder the user wasn't actually working in. Opt-in
+    # via SHIPWRIGHT_PROJECT_ROOT — or, equally, `via_pointer`: a worktree
+    # redirect is a verified selection too, not an unwanted descent, and
+    # without this OR the guard would SKIP exactly the audit this fix needs.
+    if pq.cwd_is_strict_ancestor_of(cwd, audit_root) \
+            and not (pq.project_root_was_explicitly_selected(audit_root) or via_pointer):
         return 0
-
-    session_id = os.environ.get("SHIPWRIGHT_SESSION_ID", "").strip() or "unknown"
 
     # Once-per-(Stop, session) guard: Claude Code fires this hook from every
     # enabled plugin (no filter), so one Stop invokes it ~11×. Exactly ONE wins
     # and audits; the rest skip — replacing the old per-plugin-root fan-out (11
     # phases audited, 10 never ran). Taken AFTER all no-op guards (a foreign/
-    # no-op invocation must not consume the claim). Fail-open + unknown-session
-    # handling live in the shared helper.
+    # no-op invocation must not consume the claim). Anchored at plain_root, not
+    # audit_root: the pointer redirect's git lookup can transiently fail on any
+    # one of the ~11 near-simultaneous invocations, which would otherwise let
+    # two different roots each win their own claim (doubt-review D4). Fail-open
+    # + unknown-session handling live in the shared helper.
     from lib.event_once import claim_once_for_event
-    if not claim_once_for_event(project_root, "stop-phasequality", session_id):
+    if not claim_once_for_event(plain_root, "stop-phasequality", session_id):
         return 0
 
-    run_id = pq.resolve_run_id(project_root, session_id)
+    run_id = pq.resolve_run_id(audit_root, session_id)
 
     # Resolve which phase(s) ran THIS session from SESSION STATE (events.jsonl +
     # run_config), not CLAUDE_PLUGIN_ROOT. Fail-open: unknown/unreadable → ALL
     # canonical phases (audit more, never fewer). One claimed invocation audits
     # each engaged, not-yet-audited phase.
-    phases = pq.resolve_engaged_phases(project_root)
+    phases = pq.resolve_engaged_phases(audit_root)
 
     started = time.monotonic()
     audited: list[tuple[str, dict[str, int]]] = []
@@ -127,23 +122,23 @@ def main() -> int:
         # neither abort the remaining phases nor crash main → block the Stop
         # chain (external-review code, gemini).
         try:
-            if pq.already_audited(project_root, phase, run_id, session_id):
+            if pq.already_audited(audit_root, phase, run_id, session_id):
                 continue
             findings = {
-                "canon": pq.run_canon_checks(phase, project_root),
-                "workflow": pq.run_workflow_checks(phase, project_root, run_id),
-                "infrastructure": pq.run_infrastructure_checks(phase, project_root),
-                "traceability": pq.run_traceability_checks(phase, project_root),
-                "quality": pq.run_quality_checks(phase, project_root),
-                "spec": pq.run_spec_checks(phase, project_root, run_id),
+                "canon": pq.run_canon_checks(phase, audit_root),
+                "workflow": pq.run_workflow_checks(phase, audit_root, run_id),
+                "infrastructure": pq.run_infrastructure_checks(phase, audit_root),
+                "traceability": pq.run_traceability_checks(phase, audit_root),
+                "quality": pq.run_quality_checks(phase, audit_root),
+                "spec": pq.run_spec_checks(phase, audit_root, run_id),
             }
             # Defense-in-depth: in the fail-open all-phases path a non-engaged
             # phase's FAILs are rewritten to SKIP. No-op on the normal path
             # (every audited phase IS engaged). FAIL-OPEN post-pass.
-            findings = _skip_unengaged_fails(findings, phase, project_root)
+            findings = _skip_unengaged_fails(findings, phase, audit_root)
             pq.write_finding_json(
-                project_root, phase, run_id, session_id, findings,
-                source=pq.resolve_source(project_root, phase),
+                audit_root, phase, run_id, session_id, findings,
+                source=pq.resolve_source(audit_root, phase),
             )
             audited.append((phase, _roll_up(findings)))
         except Exception as exc:  # noqa: BLE001 — one bad phase must not abort the rest
@@ -151,16 +146,29 @@ def main() -> int:
                 f"[audit_phase_quality] Error auditing phase={phase}: "
                 f"{type(exc).__name__}: {exc}\n"
             )
-            pq.write_error_finding(project_root, phase, run_id, session_id, exc)
+            pq.write_error_finding(audit_root, phase, run_id, session_id, exc)
 
     # Project-wide tail — runs ONCE for the whole Stop event. Best-effort; never
     # blocks. Refreshes aggregates + the single rolling phaseQuality:backlog
-    # action-unit (iterate-2026-05-31-phasequality-triage-bundle).
+    # action-unit (iterate-2026-05-31-phasequality-triage-bundle). Split, not
+    # uniformly anchored (code-review, D1 + delta-pass follow-up):
+    # `regenerate_all_aggregates` runs at `audit_root` so the worktree's own
+    # findings render into ITS OWN dashboard, and ALSO at `plain_root` when a
+    # pointer redirect makes the two differ — otherwise main's dashboard goes
+    # dark for the whole redirected run instead of refreshing on every Stop.
+    # Both are pure per-tree renders of that tree's own findings, so running
+    # it twice carries no cross-tree hazard. `gc_old_findings` and
+    # `emit_phase_quality_backlog` stay at `plain_root` only: GC bounds the
+    # long-lived main tree's storage, and the backlog write is the one call
+    # with a real cross-tree hazard (D1) — see `resolve_project_roots`'s
+    # docstring.
     try:
-        pq.regenerate_all_aggregates(project_root)
-        _gc_best_effort(project_root)
-        commit = _git_head_sha(project_root)  # "" on failure (spec contract)
-        pq.emit_phase_quality_backlog(project_root, run_id=run_id, commit=commit)
+        pq.regenerate_all_aggregates(audit_root)
+        if audit_root != plain_root:
+            pq.regenerate_all_aggregates(plain_root)
+        _gc_best_effort(plain_root)
+        commit = _git_head_sha(plain_root)  # "" on failure (spec contract)
+        pq.emit_phase_quality_backlog(plain_root, run_id=run_id, commit=commit)
     except Exception as exc:  # noqa: BLE001 — never block Stop chain
         sys.stderr.write(
             f"[audit_phase_quality] Error in aggregate tail: "

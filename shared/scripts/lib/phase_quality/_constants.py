@@ -55,6 +55,16 @@ CATEGORIES: tuple[str, ...] = (
     "canon", "workflow", "infrastructure", "traceability", "quality", "spec",
 )
 
+# Finding.reason_code — a PROVISIONAL verdict tag read back by
+# already_audited() to decide whether a recorded finding is still final.
+# Single shared constant so the tag `unresolvable_run_id_skip` writes and the
+# one `already_audited` reads can never drift apart (trg-b36fd844). Unrelated
+# to the iterate test-completeness ledger's own `reason_code` field (an
+# `untestable`-row justification, closed vocabulary in
+# confidence-anti-patterns.md) — same field name, different artifact,
+# different vocabulary.
+REASON_CODE_UNRESOLVABLE_RUN_ID = "unresolvable_run_id"
+
 MAX_REPORT_RUNS = 10
 MAX_SESSION_SUMMARY_RUNS = 5
 GC_AGE_DAYS = 90
@@ -116,6 +126,7 @@ __all__ = [
     "MAX_REPORT_RUNS",
     "MAX_SESSION_SUMMARY_RUNS",
     "PLUGIN_TO_PHASE",
+    "REASON_CODE_UNRESOLVABLE_RUN_ID",
     "REPORT_PATH",
     "RUN_ID_SENTINELS",
     "STATUS_FAIL",

@@ -31,14 +31,14 @@ from ._constants import PLUGIN_TO_PHASE  # noqa: E402
 # hook (iterate-2026-06-12-canonical-project-predicate). Re-exported here so
 # existing ``phase_quality.is_shipwright_project`` callers stay unchanged while
 # the marker set lives in exactly one place.
-from lib.project_root import is_shipwright_project  # noqa: E402
+from lib.project_root import is_shipwright_project, resolve_project_root  # noqa: E402
 from lib.events_log import resolve_events_path  # noqa: E402
 # Re-export: run-id resolution moved to its own module, callers unchanged.
 # pointer_run_id re-exported alongside it (context-cost-meter, doubt-review
 # finding): it is the one source scoped to "which run IS this session
 # executing" -- the other resolve_run_id fallbacks (run_config, events.jsonl)
 # are project-global and can outlive the run that minted them.
-from ._run_id import pointer_run_id, resolve_run_id  # noqa: E402,F401
+from ._run_id import pointer_run_id, pointer_worktree_root, resolve_run_id  # noqa: E402,F401
 # Engagement predicate lives in _engagement, which imports nothing from this
 # package — so the edge is one-way and acyclic — and keeps resolve_engaged_phases
 # next to the other session-state resolvers.
@@ -240,13 +240,60 @@ def resolve_engaged_phases(project_root: Path) -> list[str]:
     return engaged or all_phases
 
 
+def resolve_project_roots(cwd: Path, session_id: str) -> tuple[Path, bool, Path]:
+    """Return ``(audit_root, via_pointer, plain_root)`` for the Stop hooks.
+
+    ``plain_root`` is the pre-redirect resolution (env, else the plain
+    resolver, else ``cwd``) — callers must anchor any project-wide,
+    cross-run write (aggregates, triage backlog, once-per-Stop claims) here,
+    never at ``audit_root``. Redirecting those to a mid-run worktree would
+    compute dismiss/refresh decisions from that worktree's own findings
+    baseline (usually empty — ``.shipwright/compliance/`` is gitignored,
+    absent in a fresh worktree) while still reading main's real open items,
+    silently corrupting main's tracked backlog once the worktree's own
+    branch routing ships the write straight into that run's own PR
+    (doubt-review D1, iterate-2026-08-07-run-id-lifecycle-fixes). Anchoring
+    a claim at ``plain_root`` also removes a second hazard: per-invocation
+    flakiness in the pointer's git lookup can no longer split a single
+    once-per-Stop winner across two different roots (doubt-review D4).
+
+    ``audit_root`` is what the per-phase checks (and their finding writes)
+    should use: ``plain_root`` normally, or the session's active iterate
+    worktree when a verified pointer resolves one. ``SHIPWRIGHT_PROJECT_
+    ROOT`` wins first, matching ``resolve_project_root``'s own documented
+    priority — an explicit opt-in must not be silently outranked by a
+    pointer (external review, round 3). Absent that, prefer the pointer
+    redirect (:func:`pointer_worktree_root`): a Stop-subprocess's cwd is the
+    MAIN repo even mid-iterate, so ``plain_root`` alone would root the
+    per-phase checks at main, where F5c's ``iterate_history`` entry never
+    lands (trg-b36fd844, external review). ``via_pointer`` lets a caller's
+    auto-descent guard treat that redirect like an explicit selection too,
+    instead of an unwanted descent into the worktree subfolder.
+    """
+    env_val = os.environ.get("SHIPWRIGHT_PROJECT_ROOT", "").strip()
+    if env_val:
+        env_path = Path(env_val).resolve()
+        if env_path.is_dir() and is_shipwright_project(env_path):
+            return env_path, False, env_path
+    try:
+        plain_root = resolve_project_root()
+    except Exception:  # noqa: BLE001 — expected: ValueError (multi-candidate monorepo)
+        plain_root = cwd
+    worktree = pointer_worktree_root(cwd, session_id)
+    if worktree is not None:
+        return worktree, True, plain_root
+    return plain_root, False, plain_root
+
+
 __all__ = [
     "cwd_is_strict_ancestor_of",
     "is_shipwright_project",
     "phase_from_plugin_root",
     "pointer_run_id",
+    "pointer_worktree_root",
     "project_root_was_explicitly_selected",
     "resolve_engaged_phases",
+    "resolve_project_roots",
     "resolve_run_id",
     "resolve_source",
 ]
