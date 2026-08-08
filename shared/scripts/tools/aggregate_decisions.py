@@ -16,7 +16,18 @@ Step 4, is the ONE serialized point that assigns the sequential ``ADR-NNN``:
    survive into the next release).
 
 Because numbering happens here — single-threaded, lock-held — two parallel
-iterates can never claim the same ADR number.
+iterates can never claim the same ADR number, PROVIDED ``/shipwright-changelog``
+itself always runs against ONE shared checkout (doubt-reviewer LOW #6: a
+hypothetical future worktree-isolated changelog run would each hold its own
+lock and its own ``decision-drops/`` copy — not live today, per its SKILL.md).
+
+Decision-drops are TRACKED (iterate-2026-08-08-track-decision-drops): the
+deletions this script makes on disk are not committed by this script — the
+CALLER (``/shipwright-changelog`` Step 6) must stage them (``git add -A`` on
+the decision-drops dir) in the same commit as the ``decision_log.md`` update,
+or the next release re-folds the same drops under new ADR numbers. A
+pre-tracking drop (dated before the flip) is quarantined instead of
+aggregated (doubt-reviewer HIGH #3) — see ``lib/decision_drop_legacy.py``.
 
 CLI:
     uv run shared/scripts/tools/aggregate_decisions.py \\
@@ -40,10 +51,14 @@ from lib.adr_index import (  # noqa: E402,F401  (re-exports)
     ADR_SPEC_FOLDER,
     rebuild_adr_index,
 )
+from lib.decision_drop_legacy import (  # noqa: E402
+    format_quarantine_warning,
+    partition_by_freshness,
+    quarantine_legacy_drops,
+)
 from lib.decision_drops_index import rebuild_decision_drops_index  # noqa: E402
 from lib.decision_log_index import rebuild_decision_log_index  # noqa: E402
 from lib.file_lock import LockTimeout, file_lock  # noqa: E402
-from lib.repo_root import resolve_main_repo_root  # noqa: E402
 from tools.write_decision_log import (  # noqa: E402
     DECISION_LOG_HEADER,
     _append_architecture_update,
@@ -68,18 +83,15 @@ class DecisionAggregatorError(RuntimeError):
 
 
 def drop_dir(project_root: Path) -> Path:
-    """Resolve ``.shipwright/agent_docs/decision-drops/``, git-worktree-aware.
+    """Resolve ``.shipwright/agent_docs/decision-drops/`` under ``project_root``.
 
-    Symmetric with ``write_decision_drop.drop_dir`` — the producer (iterate
-    F3) and the consumer (this aggregator) MUST agree on where the drop
-    files live, or aggregation silently misses them. See that function for
-    the worktree rationale. ``/shipwright-changelog`` runs the aggregator on
-    the main repo, so this resolves to ``project_root`` itself there; the
-    worktree-awareness keeps producer/consumer in lock step regardless.
+    Symmetric with ``write_decision_drop.drop_dir`` — the producer (iterate F3)
+    and the consumer (this aggregator) MUST agree on where the drop files
+    live. ``/shipwright-changelog`` reads `project_root` directly (no
+    main-root redirect), which is where every merged PR's tracked drop
+    actually lives.
     """
-    project_root = Path(project_root)
-    root = resolve_main_repo_root(project_root) or project_root
-    return root / ".shipwright" / "agent_docs" / DROP_DIRNAME
+    return Path(project_root) / ".shipwright" / "agent_docs" / DROP_DIRNAME
 
 
 def _snapshot_drops(dd: Path) -> list[Path]:
@@ -121,15 +133,11 @@ def aggregate(
 ) -> dict:
     """Fold every decision-drop into ``decision_log.md``. Returns a summary."""
     project_root = Path(project_root).resolve()
-    # Deliberate asymmetry: ``dd`` (the gitignored decision-drop STAGING dir)
-    # is repo-scoped and resolved worktree-aware, exactly like the event log
-    # — a drop written from an iterate worktree lives next to the main repo.
-    # ``log_path`` (and architecture.md, via _append_architecture_update) is
-    # a TRACKED, committed artifact and stays ``project_root``-relative: it
-    # belongs to whichever checkout the aggregator is invoked on.
-    # ``/shipwright-changelog`` runs the aggregator on the main repo, so the
-    # two resolve to the same root in practice — but the distinction is
-    # load-bearing if the aggregator is ever invoked elsewhere.
+    # ``dd`` (the decision-drop staging dir) and ``log_path`` are both TRACKED,
+    # committed artifacts now, and both ``project_root``-relative — the
+    # asymmetry this comment used to document (drops resolved worktree-aware
+    # against a separate main repo; the log stayed project_root-relative) no
+    # longer exists since iterate-2026-08-08-track-decision-drops.
     log_path = project_root / ".shipwright" / "agent_docs" / "decision_log.md"
     dd = drop_dir(project_root)
 
@@ -138,19 +146,14 @@ def aggregate(
         "adr_numbers": [],
         "processed": [],
         "errors": [],
+        "legacy_quarantined": [],
         "dry_run": dry_run,
     }
 
     def _refresh_index() -> None:
-        """Refresh every derived index on EVERY non-dry-run pass, drops or not.
-
-        This call used to sit inside the fold branch below, so an index was
-        only ever refreshed as a side-effect of folding decision-drops — an ADR
-        or decision an iterate wrote straight into its source never reached
-        its index. A missing source is a no-op inside each ``rebuild_*``.
-        decision-drops' own index is included here too: folding just deleted
-        some of the drops it lists, which is itself a change to its source.
-        """
+        """Refresh every derived index on EVERY non-dry-run pass, drops or not —
+        an ADR written straight into its source (not via a fold) must still
+        reach its index. A missing source is a no-op inside each ``rebuild_*``."""
         if dry_run:
             return
         for name, rebuild in (
@@ -175,6 +178,14 @@ def aggregate(
         # Snapshot under the lock so the whole read-render-write-cleanup
         # transaction is atomic against a concurrent aggregation.
         drops = _snapshot_drops(dd)
+        drops, legacy = partition_by_freshness(drops)
+        if legacy:
+            if dry_run:
+                result["legacy_quarantined"] = [p.name for p in legacy]
+            else:
+                moved, move_errors = quarantine_legacy_drops(project_root, legacy)
+                result["legacy_quarantined"] = moved
+                result["errors"].extend(move_errors)
         if not drops:
             _refresh_index()
             return result
@@ -238,12 +249,9 @@ def aggregate(
                             f"{drop_path.name}: could not delete after aggregation: {exc}"
                         )
         finally:
-            # `finally`, not a trailing call: decision_log.md above is already
-            # written to disk by the time any of this loop could raise, so a
-            # mid-loop exception (e.g. from _append_architecture_update) must
-            # not skip the refresh and leave the index stale under a source
-            # that already changed — that would surface later as an unrelated
-            # CI drift failure instead of at the actual point of failure.
+            # `finally`: decision_log.md is already written by the time any of
+            # this loop could raise, so a mid-loop exception must not skip the
+            # refresh and leave the index stale under an already-changed source.
             _refresh_index()
         result["aggregated"] = len(valid)
 
@@ -279,6 +287,13 @@ def main(argv: list[str] | None = None) -> int:
         print(f"{prefix}aggregated {summary['aggregated']} decision-drop(s): {nums}")
     else:
         print(f"{prefix}no decision-drops to aggregate")
+    if summary["legacy_quarantined"]:
+        print(
+            format_quarantine_warning(
+                summary["legacy_quarantined"], dry_run=args.dry_run
+            ),
+            file=sys.stderr,
+        )
     for err in summary["errors"]:
         print(f"WARNING: {err}", file=sys.stderr)
     return 0

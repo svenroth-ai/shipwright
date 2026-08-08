@@ -25,7 +25,7 @@ sys.path.insert(0, str(REPO_ROOT / "shared" / "scripts"))  # shared/scripts — 
 import _reconcile_helpers as h  # noqa: E402  (git() + set_identity + head_count)
 from lib import gitignore_selfheal as gs  # noqa: E402
 from lib.churn_merge import EVENTS_LOG  # noqa: E402
-from lib.gitignore_canon import read_canonical_rules  # noqa: E402
+from lib.gitignore_canon import BEGIN_MARKER, END_MARKER, read_canonical_rules  # noqa: E402
 
 _SETUP_SCRIPT = REPO_ROOT / "shared" / "scripts" / "tools" / "setup_iterate_worktree.py"
 _CHORE_SUBJECT = (
@@ -111,6 +111,47 @@ def test_self_heal_backfills_only_missing_outbox_rule(git_origin_repo):
 
     assert res.status == "committed", res
     assert res.added == [outbox_rule], res
+
+
+def test_self_heal_retracts_superseded_decision_drops_rule(git_origin_repo):
+    """Already-adopted-before-2026-08-08 repo: still carries the OLD blanket
+    decision-drops ignore. doubt-reviewer HIGH #1 (iterate-2026-08-08-track-
+    decision-drops): add-only self-heal can never undo this, so the directory
+    stays ignored forever and every future iterate ADR is silently lost. The
+    next iterate must both retract the stale rule AND add its replacements —
+    in one commit, automatically, with no operator action required."""
+    work, _ = git_origin_repo
+    stale_rule = "/.shipwright/agent_docs/decision-drops/"
+    narrow = {
+        "/.shipwright/agent_docs/decision-drops/INDEX.md",
+        "/.shipwright/agent_docs/decision-drops/*.tmp",
+    }
+    canonical = read_canonical_rules()
+    pre_existing = [r for r in canonical if r not in narrow] + [stale_rule]
+    # Real already-adopted projects carry the stale rule INSIDE the managed
+    # block — every prior scaffold/self-heal wraps it via `_insert_missing`.
+    # Retraction is deliberately scoped to inside the managed block (never
+    # touch a hand-written line outside it), so the fixture must match.
+    gitignore = "\n".join([BEGIN_MARKER, *pre_existing, END_MARKER]) + "\n"
+    _seed_managed_repo(work, gitignore=gitignore)
+
+    res = gs.self_heal_gitignore(work, allow_ci=True)
+
+    assert res.status == "committed", res
+    assert res.retracted == [stale_rule], res
+    assert set(res.added) == narrow, res
+    assert "superseded" in h.git(work, "log", "-1", "--format=%s").stdout
+
+    gi = (work / ".gitignore").read_text(encoding="utf-8")
+    assert stale_rule not in gi.splitlines()
+
+    # Empirical: a decision-drop JSON is now trackable; INDEX.md/*.tmp stay local.
+    dd = work / ".shipwright" / "agent_docs" / "decision-drops"
+    dd.mkdir(parents=True)
+    (dd / "iterate-x_001.json").write_text("{}", encoding="utf-8")
+    (dd / "INDEX.md").write_text("x", encoding="utf-8")
+    assert not _check_ignored(work, ".shipwright/agent_docs/decision-drops/iterate-x_001.json")
+    assert _check_ignored(work, ".shipwright/agent_docs/decision-drops/INDEX.md")
 
 
 # --------------------------------------------------------------------------- #

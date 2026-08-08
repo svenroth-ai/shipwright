@@ -2326,7 +2326,7 @@ The `.shipwright/agent_docs/` directory is the project's knowledge base for AI a
 | `triage_inbox.md` | Aggregated Triage Inbox rendered from `.shipwright/triage.jsonl` (see § 4.11) | Iterate finalization via atomic `os.replace` from the runtime mirror; Stop hooks write only to `runtime/triage_inbox.md` |
 | `iterates/<run_id>.json` | Compact per-iterate record (one file per iterate; legacy `iterate_history` array is migration-only) | Iterate finalization (F5c, 50-entry retention) |
 | `iterates/<run_id>.test-results.json` | Exact immutable test-results evidence for that run; validated against the embedded run id | Iterate finalization (F5c; tracked with the run, not pruned by summary retention) |
-| `decision-drops/<run_id>.json` | Per-iterate ADR draft, aggregated at `/shipwright-changelog` release into sequentially-numbered `decision_log.md` entries (gitignored, main-repo path) | Iterate F3 |
+| `decision-drops/<run_id>.json` | Per-iterate ADR draft, aggregated at `/shipwright-changelog` release into sequentially-numbered `decision_log.md` entries (tracked in the writing iterate's own worktree/PR — only the local `INDEX.md` render stays gitignored) | Iterate F3 |
 | `compliance_overrides.log` | Audit log of hook overrides | Hooks (when user says "Continue anyway") |
 
 **Runtime/tracked split.** Stop hooks write live mid-session state to `.shipwright/agent_docs/runtime/` (gitignored via re-exclude in the allowlist block); iterate-finalize is the single producer of the tracked variants above. The split closes the recurring "main is dirty after every session" regression class while preserving mid-session inspection: `cat .shipwright/agent_docs/runtime/triage_inbox.md` for fresh state; the tracked copy reflects the last iterate's snapshot.

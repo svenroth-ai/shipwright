@@ -42,7 +42,22 @@
 # Re-exclude transient / internal / generated content inside the doc homes:
 /.shipwright/adopt/backups/
 /.shipwright/adopt/screenshots/
-/.shipwright/agent_docs/decision-drops/
+# decision-drops/ ITSELF is tracked since iterate-2026-08-08-track-decision-drops
+# (durability: a drop now ships in its writing iterate's own PR instead of
+# waiting up to ~10 weeks for /shipwright-changelog to fold it). Only the
+# local, per-checkout INDEX.md render and its atomic-write temp files stay
+# ignored — committing INDEX.md would recreate merge churn; the JSON payload
+# files do not conflict the same way because each is a uniquely-named new
+# file per run (mirrors CHANGELOG-unreleased.d/'s conflict-free drop pattern).
+/.shipwright/agent_docs/decision-drops/INDEX.md
+/.shipwright/agent_docs/decision-drops/*.tmp
+# Legacy-drop quarantine (doubt-reviewer HIGH #3, iterate-2026-08-08-track-decision-drops):
+# pre-tracking decision-drops moved aside by aggregate_decisions.py's
+# partition_by_freshness/quarantine_legacy_drops (lib/decision_drop_legacy.py)
+# instead of being folded — never gitleaks/prompt-scanned, so this sibling of
+# decision-drops/ must stay OUT of any `git add -A` reach until a scanned,
+# explicit backfill reintroduces each file.
+/.shipwright/agent_docs/decision-drops-legacy-pending-scan/
 /.shipwright/agent_docs/visual/
 # Design feedback rounds (design-feedback-roundN.md) are transient review scratch:
 # the human's per-round critique, consumed by the design Option-B reader and
@@ -123,3 +138,25 @@
 # its temp file committed.
 /.shipwright/agent_docs/*.tmp
 # === END Shipwright canonical .shipwright artifact-ignore (managed) ===
+
+# === BEGIN Shipwright superseded .shipwright artifact-ignore rules (managed) ===
+# Rules a LATER template revision retracted (narrowed or removed outright).
+# gitignore_canon.py strips any of these still present inside a target's
+# managed block above and adds the canonical replacement(s) in the SAME
+# merge pass — so an already-adopted project self-heals on its next iterate
+# (self_heal_gitignore, wired into setup_iterate_worktree.py) instead of
+# carrying a stale rule forever. `canonical`-only rules are add-only by
+# design (a rule already present is never duplicated or reasoned about); a
+# rule can only ever be RETRACTED by being listed here first. Never delete
+# an entry below, even once every known project has healed — a project that
+# skipped several template revisions still needs the full retraction history.
+#
+# /.shipwright/agent_docs/decision-drops/ — retracted
+# iterate-2026-08-08-track-decision-drops: the directory itself is now
+# tracked (only INDEX.md + *.tmp stay ignored, both already canonical
+# above). A project still carrying this blanket rule would silently lose
+# every future iterate ADR (write goes to the worktree, F6's `git add` hits
+# an ignored path, `git worktree remove` destroys it) — this retraction is
+# the fix, not merely tidying.
+/.shipwright/agent_docs/decision-drops/
+# === END Shipwright superseded .shipwright artifact-ignore rules (managed) ===

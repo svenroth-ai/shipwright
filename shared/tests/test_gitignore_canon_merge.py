@@ -190,12 +190,18 @@ def test_empirical_round_trip_fresh_repo(tmp_path: Path) -> None:
     (repo / ".shipwright" / "agent_docs" / "architecture.md").write_text("x")
     (repo / ".shipwright" / "agent_docs" / "decision-drops").mkdir()
     (repo / ".shipwright" / "agent_docs" / "decision-drops" / "d.json").write_text("{}")
+    (repo / ".shipwright" / "agent_docs" / "decision-drops" / "INDEX.md").write_text("x")
+    (repo / ".shipwright" / "agent_docs" / "decision-drops" / "d.json.abc123.tmp").write_text("x")
     (repo / ".shipwright" / "planning" / "iterate").mkdir(parents=True)
     (repo / ".shipwright" / "planning" / "iterate" / "x.md").write_text("x")
 
     # Transient / runtime artifacts ARE ignored.
     assert _check_ignored(repo, ".shipwright/agent_docs/runtime/session_handoff.md")
-    assert _check_ignored(repo, ".shipwright/agent_docs/decision-drops/d.json")
+    # decision-drops/*.json is TRACKED since iterate-2026-08-08-track-decision-drops
+    # — only the local INDEX.md render and its atomic-write temp files stay ignored.
+    assert not _check_ignored(repo, ".shipwright/agent_docs/decision-drops/d.json")
+    assert _check_ignored(repo, ".shipwright/agent_docs/decision-drops/INDEX.md")
+    assert _check_ignored(repo, ".shipwright/agent_docs/decision-drops/d.json.abc123.tmp")
     # Canonical SDLC docs are TRACKED (not ignored).
     assert not _check_ignored(repo, ".shipwright/agent_docs/architecture.md")
     assert not _check_ignored(repo, ".shipwright/planning/iterate/x.md")

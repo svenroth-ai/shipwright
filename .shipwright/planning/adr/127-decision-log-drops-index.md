@@ -1,5 +1,17 @@
 # ADR-127 — Decision-log and decision-drops indexes, ADR-index pattern extended
 
+> **Premise revised by iterate-2026-08-08-track-decision-drops.** This ADR
+> was written on "this directory is permanently gitignored" (Context,
+> Decision's `decision_drops_index.py` bullet, Consequences). That premise
+> no longer holds: the `decision-drops/` directory is now TRACKED (only its
+> local `INDEX.md` render stays gitignored), each worktree resolves its own
+> copy directly against `project_root` (no more "every parallel iterate
+> worktree resolves the SAME shared main-repo directory"), and it now needs
+> no `CHURN_ALLOWLIST` entry for a different reason than stated here
+> (uniquely-named per-run files, not git's inability to see an ignored
+> path). This note supersedes those passages in place; the historical
+> record below is left as written, not rewritten.
+
 ## Self-Review: scope exceeded the iterate threshold; operator's brief chose to continue
 
 Stage-1 complexity classification returned `large` (confidence 0.6) on scope

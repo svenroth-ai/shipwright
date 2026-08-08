@@ -1,0 +1,253 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-08-08-track-decision-drops",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-08T11:07:00.745741+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 7,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "The Layer‑1 context‑loading source is not specified. The plan adds reading `decision‑drops/.json` but does not say whether it should read from the worktree (project root) or the main root. If it reads from the worktree, a feature branch that hasn’t been rebased will miss recent merged drops, and the iterate will lack awareness of critical architectural decisions.",
+          "suggestion": "Explicitly require that context loading reads the drops from the main‑repo root (using `resolve_main_repo_root`), not from the local worktree. This keeps the historical, global view of pending decisions.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The plan’s F6 instruction adds the entire `decision‑drops/` directory (`git add {project_root}/.shipwright/agent_docs/decision-drops/`). In campaign mode, if a previous sub‑iterate left an untracked drop file in the shared worktree (e.g., because a branch was abandoned without cleaning the worktree), the next sub‑iterate’s F6 could stage that leftover file and commit it to an unrelated branch.",
+          "suggestion": "Either add only the specific drop file for the current run (the path is known from the write) or, if the broad add is kept for simplicity, document the pre‑condition that the worktree must be clean of stray drops before each sub‑iterate starts.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "The Layer‑1 bound of “20 most recent” is stated, but the plan does not specify the sorting criterion (e.g., by `ctime`, by run‑id, or by the drop filename’s embedded timestamp). Without a clear, file‑system‑independent order, the chosen set could be non‑deterministic or miss recent decisions.",
+          "suggestion": "Define the sort order in the A/C or specify that `render_decision_drops_index` is reused with a fixed ordering (e.g., filename‑based timestamp derived from the drop schema), so the bound is reproducible and testable.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "The `test_architecture_md_reflects_arch_impact.py` consumer is listed as “verified/dispositioned” but the plan only says its skip/read logic needs re‑reading. No concrete change or test adjustment is described, and the test may still have a skip condition that hides the real assertion after the directory becomes tracked.",
+          "suggestion": "Include a concrete task to remove the skip‑if‑no‑drops condition (or update it to match the new reality) and adjust the assertion so the test can actually pass on a clean checkout that now has the drops directory. Leave the test enabled, not just noted.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "The plan says “`lib/decision_drops_index.py`’s `drop_dir()` … same change” and its docstring rewritten. However, `drop_dir()` currently calls `resolve_main_repo_root`. Changing it to use `project_root` means the local INDEX render will only see the current worktree’s drops, not the full suite. That is intentional, but the “lock‑step with the producer” rationale should also explain that the index now reflects only the pending, per‑branch drops, not the aggregate.",
+          "suggestion": "Add a brief note in the acceptance criteria that the local INDEX.md is now branch‑scoped, not a full repository index, and that its docstring be updated to reflect that scope.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "The plan does not explicitly confirm that the changelog Step‑6 addition (`git add -A .shipwright/agent_docs/decision-drops/`) won’t accidentally stage unwanted files (e.g., INDEX.md if its gitignore rule is temporarily not in effect, or stray `.tmp` files). The test L10 only verifies that zero tracked drop files remain after aggregation; it does not check for stray files.",
+          "suggestion": "Add a pre‑condition assertion or a separate check that the only deletions staged are the expected drop files, and that no `.tmp` or `INDEX.md` appear in the staging area after the aggregate run.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The plan accepts the abandoned‑run regression (drops lost). However, there is no mention of whether the `sweep_drift.py` outbox pattern could later be extended to recover these drops; the plan says “named as a future escape hatch,” but that’s not a concrete task even in the follow‑up.",
+          "suggestion": "While out of scope, file a lightweight issue/task note for the future recovery mechanism so the accepted risk is tracked, rather than being left as an implicit “if it becomes a problem.”  Overall assessment: The plan is thorough and correctly identifies that a simple gitignore flip is insufficient; the write‑path redesign and lifecycle‑coverage are necessary. The missing specification for the Layer‑1 source directory is the most actionable gap, and a few edge‑case handling details could be tightened. The approach is otherwise sound and the risk mitigation is well‑covered.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-08-08T07:32:32.126617+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "partial",
+      "raw_excerpt": "[deepseek] - **Category:** approach  \n  **Severity:** medium  \n  **Finding:** The Layer‑1 context‑loading source is not specified. The plan adds reading `decision‑drops/*.json` but does not say whether it should read from the worktree (project root) or the main root. If it reads from the worktree, a feature branch that hasn’t been rebased will miss recent merged drops, and the iterate will lack awareness of critical architectural decisions.  \n  **Suggestion:** Explicitly require that context loading reads the drops from the main‑repo root (using `resolve_main_repo_root`), not from the local worktree. This keeps the historical, global view of pending decisions.\n\n- **Category:** edge-case  \n  **Severity:** low  \n  **Finding:** The plan’s F6 instruction adds the entire `decision‑drops/` directory (`git add {project_root}/.shipwright/agent_docs/decision-drops/`). In campaign mode, if a previous sub‑iterate left an untracked drop file in the shared worktree (e.g., because a branch was abandoned without cleaning the worktree), the next sub‑iterate’s F6 could stage that leftover file and commit it to an unrelated branch.  \n  **Suggestion:** Either add only the specific drop file for the current run (the path is known from the write) or, if the broad add is kept for simplicity, document the pre‑condition that the worktree must be clean of stray drops before each sub‑iterate starts.\n\n- **Category:** approach  \n  **Severity:** low  \n  **Finding:** The Layer‑1 bound of “20 most recent” is stated, but the plan does not specify the sorting criterion (e.g., by `ctime`, by run‑id, or by the drop filename’s embedded timestamp). Without a clear, file‑system‑independent order, the chosen set could be non‑deterministic or miss recent decisions.  \n  **Suggestion:** Define the sort order in the A/C or specify that `render_decision_drops_index` is reused with a fixed ordering (e.g., filename‑based timestamp derived from the drop schema), so the bound is reproducible and testable.\n\n- ** […truncated]\n\n[openai] <no review returned: provider returned an empty reply>",
+      "verdicts": {
+        "openai": "unavailable",
+        "deepseek": "revise"
+      },
+      "model_tier": "opus"
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 3,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "shared/scripts/lib/decision_drops_index.py",
+          "line": null,
+          "finding": "_pending_drops/render_recent_drops_summary sorted by filename, not the drop's own date field — broke the 20-most-recent claim for non-date-prefixed run_ids (campaign trg-* sub-iterates).",
+          "suggestion": "Sort on (date, filename); fixed, plus test_recent_summary_orders_by_date_not_by_filename.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "documentation",
+          "file": "shared/scripts/tools/write_decision_drop.py",
+          "line": 273,
+          "finding": "Carried an obsolete comment (\"The drop lives next to the MAIN repo...\") contradicting this run's own fix.",
+          "suggestion": "Rewritten to state both the drop and INDEX.md resolve against the calling checkout directly; fixed.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "performance",
+          "file": "shared/tests/test_decision_drop_ssot.py",
+          "line": null,
+          "finding": "_prod_py_files() used sorted(_REPO_ROOT.rglob(\"*.py\")), walking .venv/.git/.worktrees fully before the exclusion filter ran.",
+          "suggestion": "Rewritten as os.walk with in-place dirnames[:] pruning; fixed.",
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-08-08T11:07:00.989799+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 7,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "regression",
+          "file": ".gitignore",
+          "line": null,
+          "finding": "Claim under doubt: Tracking decision-drops/ in git is safe for already-adopted downstream projects. — An already-adopted project that previously took the blanket decision-drops/ ignore rule would keep it forever (add-only merge never removes anything), silently losing every future iterate's ADR.",
+          "suggestion": "A SUPERSEDED retraction block in gitignore_canon.py / the template, wired into the existing self-heal pipeline; fixed, test_gitignore_canon_retraction.py (6 tests).",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "high",
+          "category": "correctness",
+          "file": "shared/scripts/tools/verifiers/decision_log_gate.py",
+          "line": null,
+          "finding": "Claim under doubt: F11's ADR check proves a decision-drop is durably part of the PR. — check_adr_in_iterate_history only looked at the working tree, so a drop F3 wrote but F6 forgot to git add reads exactly like a committed one, then git worktree remove destroys it.",
+          "suggestion": "New check_decision_drop_committed F11 verifier via _iterate_changed_paths; fixed, 6 new tests in test_decision_log_gate.py.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "high",
+          "category": "security",
+          "file": "shared/scripts/tools/aggregate_decisions.py",
+          "line": null,
+          "finding": "Claim under doubt: Tracking decision-drops/ is safe the moment this PR merges. — The 214-file legacy backfill, never gitleaks/prompt-scanned, becomes exposed to /shipwright-changelog's directory-level git add -A the moment the directory is no longer gitignored.",
+          "suggestion": "lib/decision_drop_legacy.py quarantines pre-cutoff drops by mtime into a gitignored sibling; fixed, test_decision_drop_legacy.py (13 tests).",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "plugins/shipwright-iterate/skills/iterate/references/F6.md",
+          "line": null,
+          "finding": "Claim under doubt: A directory-level git add for decision-drops/ is as safe as every other F6 directory-level add. — decision-drops/ is a single FLAT directory shared by every run that has touched a worktree; a campaign sub-iterate's unrelated leftover drop would be swept into this run's own commit.",
+          "suggestion": "Narrowed staging to decision-drops/{run_id}_*.json; fixed, 2 new tests in test_write_decision_drop.py.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "completeness",
+          "file": "shared/tests/test_decision_drop_ssot.py",
+          "line": null,
+          "finding": "Claim under doubt: The _WORKTREE_LOCAL SSoT registry names every file that builds a decision-drop path. — verifiers/common.py's two raw joins (C1/C4 iterate-phase fallbacks) were not in the registry, even though the repo-wide coverage scan already protected them structurally.",
+          "suggestion": "Registered common.py; rewrote the comment to state the registry is a named subset, not sole enforcement; fixed.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "documentation",
+          "file": "shared/scripts/tools/aggregate_decisions.py",
+          "line": null,
+          "finding": "Claim under doubt: The \"two parallel iterates can never claim the same ADR number\" guarantee holds unconditionally. — It assumes /shipwright-changelog always runs against ONE shared checkout; a hypothetical future worktree-isolated changelog run would break cross-run serialization.",
+          "suggestion": "Documented the precondition in the module docstring; fixed. Not a live bug today.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "documentation",
+          "file": "plugins/shipwright-compliance/tests/test_f5_event_scope.py",
+          "line": null,
+          "finding": "Claim under doubt: Existing doc/test comments about decision-drops accurately describe current behavior. — Two stale statements described the pre-fix \"gitignored / shared main-rooted\" state as current.",
+          "suggestion": "Both rewritten to match the current tracked, worktree-local state; fixed.",
+          "source": "doubt-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-08-08T11:07:01.102968+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-08T11:05:26.396456+00:00",
+      "disposition": "medium+ requires code OR external_code to have run; internal code-reviewer (Stage 2, model=opus) ran and closed APPROVE WITH NITS, satisfying the gate without a separate external pass",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 1,
+      "findings": [
+        {
+          "severity": null,
+          "category": "missing-rationale",
+          "file": "plugins/shipwright-iterate/skills/iterate/references/F6.md",
+          "line": null,
+          "finding": "F6.md's new staging bullet for decision-drops did not explain WHY an unstaged drop is now lost (durability moved from file location to `git add`, the inverse of the pre-2026-08-08 model) — fixed by adding the rationale blockquote under F6.md; re-verified PASS. — spec: F6.md decision-drops staging note",
+          "suggestion": "F6.md decision-drops staging note",
+          "source": "spec-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-08-08T11:07:00.877145+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    }
+  }
+}

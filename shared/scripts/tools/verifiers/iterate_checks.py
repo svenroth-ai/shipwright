@@ -37,7 +37,7 @@ from lib.architecture_doc import (  # noqa: E402
     records_for_run,
     scan_drops,
 )
-from lib.events_log import resolve_events_path, resolve_main_repo_root  # noqa: E402
+from lib.events_log import resolve_events_path  # noqa: E402
 from lib.jsonl_records import read_jsonl_records, split_records  # noqa: E402
 from lib.iterate_entry import (  # noqa: E402
     find_entry_by_run_id,
@@ -54,6 +54,7 @@ from .silent_revert import check_silent_revert_for_run  # noqa: E402, F401 — r
 # Re-export extracted decision-log checks for the wrapper and tests.
 from .decision_log_gate import (  # noqa: E402, F401 — re-exported surface
     check_adr_in_iterate_history,
+    check_decision_drop_committed,
     check_iterate_no_direct_decision_log,
 )
 from .review_record_check import check_review_record  # noqa: E402
@@ -981,17 +982,15 @@ def check_architecture_documented(project_root: Path, run_id: str) -> CheckResul
     its ``run_id`` in ``architecture.md`` (the F2 contract). Replaces the dead,
     mtime-only ``check_architecture_reviewed`` and shares the reconciliation
     oracle (``lib.architecture_doc``) with the F5 detective so the two cannot
-    diverge. Worktree-aware: gitignored drops resolved via
-    ``resolve_main_repo_root``, tracked ``architecture.md`` read from
-    ``project_root``. SKIP when no drop yet or impact none; FAIL on a
-    corrupt/unrecognized-impact drop, a missing architecture.md, or a real
-    impact whose run_id is absent. Origin: iterate-2026-06-06-arch-drift-detector.
+    diverge. Decision-drops are tracked (iterate-2026-08-08-track-decision-drops)
+    and read from THIS run's own worktree — same root as ``architecture.md``.
+    SKIP when no drop yet or impact none; FAIL on a corrupt/unrecognized-impact
+    drop, a missing architecture.md, or a real impact whose run_id is absent.
+    Origin: iterate-2026-06-06-arch-drift-detector.
     """
     name = "architecture documented (arch-impact iterate)"
 
-    main_root = resolve_main_repo_root(project_root)
-    base = Path(main_root) if main_root is not None else Path(project_root)
-    drops_dir = base / ".shipwright" / "agent_docs" / "decision-drops"
+    drops_dir = Path(project_root) / ".shipwright" / "agent_docs" / "decision-drops"
 
     records, corrupt = scan_drops(drops_dir)
     run_corrupt = corrupt_for_run(corrupt, run_id)
@@ -1063,6 +1062,7 @@ def run_all_checks(
             "events.jsonl has commit", True, "skipped (no --commit or --run-id supplied)"
         ),
         check_adr_in_iterate_history(project_root, run_id),
+        check_decision_drop_committed(project_root, run_id, commit_hash),
         check_changelog_unreleased(project_root, run_id=run_id),
         check_session_handoff_fresh(project_root, run_id),
         check_build_dashboard_has_run_id(project_root, run_id, commit_hash=commit_hash or None),

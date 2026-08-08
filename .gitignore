@@ -169,7 +169,23 @@ Spec/
 # Re-exclude transient / internal / generated content inside the doc homes:
 /.shipwright/adopt/backups/
 /.shipwright/adopt/screenshots/
-/.shipwright/agent_docs/decision-drops/
+# decision-drops/ ITSELF is tracked since iterate-2026-08-08-track-decision-drops
+# (durability: a drop now ships in its writing iterate's own PR instead of
+# waiting up to ~10 weeks for /shipwright-changelog to fold it). Only the
+# local, per-checkout INDEX.md render and its atomic-write temp files stay
+# ignored — committing INDEX.md would recreate the merge churn ADR-050
+# originally rejected; the JSON payload files do not conflict the same way
+# because each is a uniquely-named new file per run (mirrors
+# CHANGELOG-unreleased.d/'s already-proven conflict-free drop pattern).
+/.shipwright/agent_docs/decision-drops/INDEX.md
+/.shipwright/agent_docs/decision-drops/*.tmp
+# Legacy-drop quarantine (doubt-reviewer HIGH #3, iterate-2026-08-08-track-decision-drops):
+# pre-tracking decision-drops moved aside by aggregate_decisions.py's
+# partition_by_freshness/quarantine_legacy_drops (lib/decision_drop_legacy.py)
+# instead of being folded — never gitleaks/prompt-scanned, so this sibling of
+# decision-drops/ must stay OUT of any `git add -A` reach until a scanned,
+# explicit backfill reintroduces each file.
+/.shipwright/agent_docs/decision-drops-legacy-pending-scan/
 /.shipwright/agent_docs/visual/
 # Design feedback rounds (design-feedback-roundN.md) are transient review scratch:
 # the human's per-round critique, consumed by the design Option-B reader and

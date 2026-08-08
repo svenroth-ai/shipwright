@@ -1,0 +1,81 @@
+{
+  "run_id": "iterate-2026-08-08-coverage-envelope-split",
+  "date": "2026-08-08T10:36:28.499991Z",
+  "event_at": "2026-08-08T10:35:51.373300+00:00",
+  "type": "bug",
+  "complexity": "small",
+  "prior_source": "keyword",
+  "branch": "iterate/coverage-envelope-split",
+  "spec": ".shipwright/planning/iterate/iterate-2026-08-08-coverage-envelope-split/spec.md",
+  "tests_passed": true,
+  "adr": "iterate-2026-08-08-coverage-envelope-split",
+  "test_completeness": {
+    "status": "complete",
+    "behaviors": [
+      {
+        "behavior": "unavailable splits into not_applicable (no run_id/commit linkage) vs missing (linked, unresolved)",
+        "disposition": "tested",
+        "evidence": "test_event_context_coverage_envelope.py::test_coverage_unavailable_splits_not_applicable_from_missing PASSED"
+      },
+      {
+        "behavior": "eligibility is derived from the entry's own data, never a hardcoded event-type list -- a brand-new event type this test has never seen before lands in not_applicable",
+        "disposition": "tested",
+        "evidence": "test_event_context_coverage_envelope.py::test_unknown_event_type_with_no_linkage_lands_in_not_applicable PASSED"
+      },
+      {
+        "behavior": "per-entry provenance vocabulary (declared/derived/unavailable) is unchanged -- the split is envelope-level only",
+        "disposition": "tested",
+        "evidence": "test_event_context_coverage_envelope.py::test_empty_diff_backfilled_commit_does_not_false_flag_area_ids_as_missing PASSED (asserts entry[\"provenance\"][\"area_ids\"] == \"unavailable\" unchanged while the envelope bucket differs)"
+      },
+      {
+        "behavior": "coverage.missing_work_completed surfaces the genuinely actionable subset, most-recent-first, capped and flagged when truncated",
+        "disposition": "tested",
+        "evidence": "test_event_context_coverage_envelope.py::test_missing_work_completed_list_is_capped_and_flagged_truncated PASSED"
+      },
+      {
+        "behavior": "a declared commit without a run_id is still eligible for missing (eligibility is commit-OR-run_id, not run_id-only)",
+        "disposition": "tested",
+        "evidence": "test_event_context_coverage_envelope.py::test_declared_commit_without_run_id_is_still_eligible_for_missing PASSED"
+      },
+      {
+        "behavior": "a field with no independent eligibility signal (supersedes_event_id) never lands in missing -- avoids a 503/831 false alarm",
+        "disposition": "tested",
+        "evidence": "test_event_context_coverage_envelope.py::test_supersedes_event_id_never_lands_in_missing PASSED"
+      },
+      {
+        "behavior": "a field wholly derived from another field (area_ids from changed_files) never lands in missing on its own -- avoids the empty-diff false alarm this iterate exists to fix",
+        "disposition": "tested",
+        "evidence": "test_event_context_coverage_envelope.py::test_empty_diff_backfilled_commit_does_not_false_flag_area_ids_as_missing PASSED"
+      },
+      {
+        "behavior": "MISSING_ELIGIBLE_FIELDS stays a subset of PROVENANCE_FIELDS -- a future field not added to it fails safe (not_applicable-only), not silently invisible",
+        "disposition": "tested",
+        "evidence": "test_event_context_coverage_envelope.py::test_missing_eligible_fields_is_a_subset_of_provenance_fields PASSED"
+      },
+      {
+        "behavior": "the aggregate split is proven live against the real production event log (831+ entries), not only synthetic fixtures",
+        "disposition": "tested",
+        "evidence": "F0.5 surface_verification: event_context.py rebuild --project-root . driven against this repo, exit 0 -- see surface_verification block above for the resulting real coverage numbers"
+      }
+    ],
+    "counts": {
+      "total": 9,
+      "tested": 9,
+      "untestable": 0,
+      "untested_testable": 0
+    },
+    "enumeration_basis": {
+      "acs": 5,
+      "covered_acs": 5
+    },
+    "ledger_path": ".shipwright/planning/adr/128-coverage-envelope-not-applicable-missing-split.md"
+  },
+  "surface_verification": {
+    "surface": "cli",
+    "runner": "uv run shared/scripts/tools/event_context.py rebuild --project-root .",
+    "tests_run": 1,
+    "exit_code": 0,
+    "evidence_path": ".shipwright/runs/iterate-2026-08-08-coverage-envelope-split/surface_verification.log",
+    "detail": "The real CLI driven against the REAL repository's real event log (831+ entries): exit 0, and the rebuilt .shipwright/runtime/events-context-index.json shows the fix live on production data -- commit.missing=3 (was structurally uncountable before this fix), commit.not_applicable=327, area_ids.missing=0 (the false-alarm this iterate exists to prevent, confirmed absent), supersedes_event_id.missing=0 (the 503/831 false-alarm this iterate's design avoids, confirmed absent), missing_work_completed.count=33 (the genuinely actionable subset, capped at 50, not truncated)."
+  }
+}

@@ -25,19 +25,18 @@ _SCRIPTS_ROOT = Path(__file__).resolve().parents[2]
 if str(_SCRIPTS_ROOT) not in sys.path:
     sys.path.insert(0, str(_SCRIPTS_ROOT))
 
-from lib.events_log import resolve_main_repo_root  # noqa: E402
 from lib.iterate_entry import (  # noqa: E402
     find_entry_by_run_id,
     sanitize_run_id_for_filename,
 )
 
 from .common import CheckResult, Severity  # noqa: E402
-from .git_helpers import _iterate_changed_paths  # noqa: E402
+from .git_helpers import _iterate_changed_paths, _run_git  # noqa: E402
 
 
-def _drop_carries_adr(drop_dir: Path, run_id: str) -> bool:
-    """True iff a decision-drop for ``run_id`` exists AND actually carries the
-    ADR: it parses as a JSON object, its ``run_id`` field matches, and its
+def _run_drop_files(drop_dir: Path, run_id: str) -> list[Path]:
+    """Working-tree decision-drops for ``run_id`` that actually carry the ADR:
+    each parses as a JSON object, its ``run_id`` field matches, and its
     ``decision`` field is non-empty.
 
     "The drop actually exists" (F11 contract) must mean "the drop has the ADR".
@@ -48,8 +47,9 @@ def _drop_carries_adr(drop_dir: Path, run_id: str) -> bool:
     real drop always satisfies this; only lost/placeholder content fails.
     """
     if not drop_dir.is_dir():
-        return False
+        return []
     safe = sanitize_run_id_for_filename(run_id)
+    out: list[Path] = []
     for p in drop_dir.glob(f"{safe}_*.json"):
         try:
             data = json.loads(p.read_text(encoding="utf-8"))
@@ -60,8 +60,14 @@ def _drop_carries_adr(drop_dir: Path, run_id: str) -> bool:
             and data.get("run_id") == run_id
             and str(data.get("decision", "")).strip()
         ):
-            return True
-    return False
+            out.append(p)
+    return out
+
+
+def _drop_carries_adr(drop_dir: Path, run_id: str) -> bool:
+    """True iff a decision-drop for ``run_id`` exists AND actually carries the
+    ADR — see :func:`_run_drop_files`."""
+    return bool(_run_drop_files(drop_dir, run_id))
 
 
 def check_adr_in_iterate_history(project_root: Path, run_id: str) -> CheckResult:
@@ -96,20 +102,12 @@ def check_adr_in_iterate_history(project_root: Path, run_id: str) -> CheckResult
     # match) so a run-id that merely starts with "adr-" is not misread as a
     # numbered ADR.
     if not re.fullmatch(r"(?i)ADR-\d+", adr_id.strip()):
-        # Worktree-aware: iterate F3 writes the decision-drop next to the
-        # MAIN repo (write_decision_drop.drop_dir), but this verifier runs
-        # at F11 with project_root = the iterate worktree. Resolve the drop
-        # dir against the main repo, or the pending-drop branch never
-        # matches and a freshly-written ADR is reported missing.
-        drop_root = resolve_main_repo_root(project_root) or project_root
+        # Decision-drops are tracked (iterate-2026-08-08-track-decision-drops)
+        # and iterate F3 writes into THIS run's own worktree, same root as
+        # everything else this verifier reads — no main-repo redirect needed.
         drop_dirs = [
-            drop_root / ".shipwright" / "agent_docs" / "decision-drops"
-        ]
-        local_drop_dir = (
             project_root / ".shipwright" / "agent_docs" / "decision-drops"
-        )
-        if local_drop_dir != drop_dirs[0]:
-            drop_dirs.append(local_drop_dir)
+        ]
         # Accept run-id ADR identity ONLY when the drop actually CARRIES the ADR
         # (parses + run_id match + non-empty decision) OR a matching Run-ID line
         # is present in decision_log.md. An empty/placeholder drop no longer
@@ -195,3 +193,77 @@ def check_iterate_no_direct_decision_log(
             "release time. Revert the decision_log.md edit and write the drop.",
         )
     return CheckResult(name, True, "decision_log.md not modified by this iterate")
+
+
+def check_decision_drop_committed(
+    project_root: Path,
+    run_id: str,
+    commit_hash: str,
+) -> CheckResult:
+    """F11 check — a decision-drop written for this run actually reached a
+    commit, not merely the working copy.
+
+    Closes a gap doubt-reviewer found in iterate-2026-08-08-track-decision-drops:
+    ``check_adr_in_iterate_history`` / ``_run_drop_files`` only look at the
+    WORKING TREE, so a drop F3 wrote but F6 forgot to ``git add`` reads
+    exactly like a committed one — this run's own F11 pass would go green,
+    then ``git worktree remove`` destroys the drop with nothing left to
+    reconstruct it. Mirrors ``check_events_has_commit``'s AC4 layer, using
+    :func:`_iterate_changed_paths` (the full-BRANCH view, not one commit) so
+    a multi-commit iterate, or a merge commit ``ensure_current`` left on top,
+    is not misread as "nothing changed" the way a single ``git show`` would be.
+
+    SKIP (not fail) when: no drop exists for ``run_id`` (nothing to verify —
+    ``check_adr_in_iterate_history`` covers ADR presence itself, this check
+    is only about the commit boundary); no ``--commit`` supplied; git is
+    unavailable; or the directory is still gitignored in this project (a
+    legitimate opt-out, or self-heal hasn't landed here yet — the
+    committed-assertion does not apply, same as an untracked events.jsonl).
+    """
+    name = "decision-drop committed"
+    dd = project_root / ".shipwright" / "agent_docs" / "decision-drops"
+    drops = _run_drop_files(dd, run_id)
+    if not drops:
+        return CheckResult(
+            name, True, f"no decision-drop for run_id={run_id} in the working "
+            "tree — nothing to verify", severity=Severity.SKIPPED.value,
+        )
+    if not commit_hash:
+        return CheckResult(
+            name, True, "skipped (no --commit supplied)",
+            severity=Severity.SKIPPED.value,
+        )
+
+    rel_paths = [p.relative_to(project_root).as_posix() for p in drops]
+    rc, _, _ = _run_git(project_root, "check-ignore", "--", rel_paths[0])
+    if rc == 0:
+        return CheckResult(
+            name, True,
+            "decision-drops/ is gitignored in this project — committed-"
+            "assertion does not apply (working-copy presence is sufficient)",
+            severity=Severity.SKIPPED.value,
+        )
+    if rc not in (0, 1):
+        return CheckResult(
+            name, True, "skipped (git check-ignore unavailable)",
+            severity=Severity.SKIPPED.value,
+        )
+
+    changed = _iterate_changed_paths(project_root, commit_hash)
+    if changed is None:
+        return CheckResult(
+            name, True, "skipped (git unavailable / no diff)",
+            severity=Severity.SKIPPED.value,
+        )
+    changed_norm = {p.replace("\\", "/") for p in changed}
+    missing = [rel for rel in rel_paths if rel not in changed_norm]
+    if missing:
+        return CheckResult(
+            name, False,
+            f"decision-drop(s) present in the working tree but NOT in this "
+            f"iterate's commit(s): {', '.join(missing)} — F6 must `git add "
+            "` the decision-drops directory so the drop ships in the PR (it "
+            "currently lives only in the working copy and will be lost when "
+            "the worktree is removed)",
+        )
+    return CheckResult(name, True, f"{len(drops)} decision-drop(s) committed")

@@ -1,14 +1,16 @@
-"""Git-history backfill + provenance/coverage tests for event_context_index.
+"""Git-history backfill + per-entry provenance tests for event_context_index.
 
 Split out of test_event_context.py (iterate-2026-08-07-events-context-backfill-keys)
 once that file crossed the 300-line guideline — see
 .shipwright/planning/iterate/2026-08-07-events-context-backfill-keys.md.
+Coverage-envelope aggregate tests (coverage.fields.*, missing_work_completed)
+moved out again into test_event_context_coverage_envelope.py
+(iterate-2026-08-08-coverage-envelope-split) for the same reason.
 """
 
 from __future__ import annotations
 
 import json
-import subprocess
 import sys
 from pathlib import Path
 
@@ -17,34 +19,10 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from lib.area_catalog import seed_brownfield  # noqa: E402
 from lib.event_context_index import build_index, index_path, load_or_rebuild_index  # noqa: E402
 from lib.event_context_query import query_events  # noqa: E402
-
-
-def _git(repo: Path, *args: str) -> None:
-    subprocess.run(["git", "-C", str(repo), *args], check=True,
-                    capture_output=True, text=True)
-
-
-def _init_repo(repo: Path) -> None:
-    repo.mkdir(parents=True, exist_ok=True)
-    _git(repo, "init", "-q")
-    _git(repo, "config", "user.email", "test@example.com")
-    _git(repo, "config", "user.name", "Test")
-    _git(repo, "checkout", "-q", "-b", "main")
-
-
-def _commit(repo: Path, filename: str, content: str, message: str) -> str:
-    (repo / filename).parent.mkdir(parents=True, exist_ok=True)
-    (repo / filename).write_text(content, encoding="utf-8")
-    _git(repo, "add", filename)
-    _git(repo, "commit", "-q", "-m", message)
-    return subprocess.run(["git", "-C", str(repo), "rev-parse", "HEAD"],
-                          capture_output=True, text=True, check=True).stdout.strip()
-
-
-def _write_events(root: Path, events: list[dict]) -> None:
-    (root / "shipwright_events.jsonl").write_text(
-        "".join(json.dumps(event) + "\n" for event in events), encoding="utf-8"
-    )
+from tests._event_context_fixtures import commit as _commit  # noqa: E402
+from tests._event_context_fixtures import git as _git  # noqa: E402
+from tests._event_context_fixtures import init_repo as _init_repo  # noqa: E402
+from tests._event_context_fixtures import write_events as _write_events  # noqa: E402
 
 
 def test_git_backfill_populates_commit_and_changed_files_with_derived_provenance(tmp_path: Path) -> None:
@@ -181,37 +159,6 @@ def test_backfilled_paths_flow_through_the_same_normalize_path_pipeline(tmp_path
     # hostile-declared-path case in test_event_context.py) rather than a
     # second, unguarded inlet.
     assert entry["changed_files"] == ["src/ok.py"]
-
-
-def test_coverage_envelope_present_with_per_field_counts(tmp_path: Path) -> None:
-    seed_brownfield(tmp_path)
-    _init_repo(tmp_path)
-    _commit(tmp_path, "x.py", "1", "chore: no run id trailer")
-    _write_events(tmp_path, [
-        {"event_id": "e1", "type": "work_completed", "commit": "declared-sha",
-         "changed_files": ["src/x.py"], "affected_frs": ["FR-01.01"],
-         "supersedes": "evt-earlier"},
-        {"event_id": "e2", "type": "work_completed", "change_type": "internal-tooling"},
-        {"event_id": "e3", "type": "grade_snapshot"},
-    ])
-    payload = build_index(tmp_path)
-    coverage = payload["coverage"]
-    assert coverage["commit_map"]["status"] == "ok"
-    assert set(coverage["fields"]) == {
-        "commit", "changed_files", "area_ids", "affected_frs", "supersedes_event_id",
-    }
-    for field_counts in coverage["fields"].values():
-        assert set(field_counts) == {"derived", "declared", "unavailable"}
-        assert sum(field_counts.values()) == 3  # three events written above
-    assert coverage["fields"]["affected_frs"]["declared"] == 2  # e1 (list) + e2 (change_type)
-    assert coverage["fields"]["affected_frs"]["unavailable"] == 1  # e3
-    assert coverage["fields"]["supersedes_event_id"]["declared"] == 1  # e1 only
-    assert coverage["fields"]["supersedes_event_id"]["unavailable"] == 2  # e2, e3
-    assert coverage["fields"]["commit"]["declared"] == 1  # e1 only
-    assert coverage["fields"]["commit"]["unavailable"] == 2  # e2, e3 (no run_id match)
-    e1 = next(e for e in payload["entries"] if e["event_id"] == "e1")
-    assert e1["supersedes_event_id"] == "evt-earlier"
-    assert e1["provenance"]["supersedes_event_id"] == "declared"
 
 
 def test_boundary_probe_provenance_and_coverage_survive_the_json_round_trip(tmp_path: Path) -> None:
