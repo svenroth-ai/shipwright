@@ -74,6 +74,35 @@ def test_explicit_inherit_flag_is_source_flag_not_unset(repo: Path) -> None:
     assert source == "flag"
 
 
+def test_plan_review_role_resolves_independently_of_review(repo: Path) -> None:
+    """plan_review is its own role — a project pinning `review` to a cheaper
+    tier must not silently drag the plan reviewer down with it."""
+    (repo / "shipwright_model_config.json").write_text(
+        json.dumps({"review": "sonnet", "plan_review": "opus"}), encoding="utf-8",
+    )
+    review_resolved, _ = resolve_model_tier("review", repo)
+    plan_review_resolved, plan_review_source = resolve_model_tier("plan_review", repo)
+    assert review_resolved == "sonnet"
+    assert plan_review_resolved == "opus"
+    assert plan_review_source == "project_config"
+
+
+def test_plan_review_invalid_flag_warns_with_hyphenated_flag_name(repo: Path, capsys) -> None:
+    resolve_model_tier("plan_review", repo, flag_value="gpt5")
+    err = capsys.readouterr().err
+    assert "--plan-review-model" in err
+    assert "--plan_review-model" not in err
+    assert "is not a valid tier" in err
+
+
+def test_floors_round_trip_plan_review(repo: Path) -> None:
+    (repo / "shipwright_model_config.json").write_text(
+        json.dumps({"floors": {"plan_review": "opus"}}), encoding="utf-8",
+    )
+    config = load_model_config(repo)
+    assert config["floors"] == {"plan_review": "opus"}
+
+
 def test_agent_model_param_omits_for_inherit() -> None:
     assert agent_model_param("inherit") is None
 
@@ -171,6 +200,20 @@ def test_undecodable_config_bytes_fail_soft_to_empty(repo: Path, capsys) -> None
     assert "unreadable" in capsys.readouterr().err
 
 
+def test_plan_review_boundary_probe_round_trip(repo: Path) -> None:
+    """Boundary Probe (touches_io_boundary): the new `plan_review` key
+    round-trips whole through load_model_config -> resolve_model_tier ->
+    agent_model_param, exactly like the pre-existing three roles."""
+    (repo / "shipwright_model_config.json").write_text(
+        json.dumps({"plan_review": "opus"}), encoding="utf-8",
+    )
+    config = load_model_config(repo)
+    assert config["plan_review"] == "opus"
+    resolved, source = resolve_model_tier("plan_review", repo, _config=config)
+    assert (resolved, source) == ("opus", "project_config")
+    assert agent_model_param(resolved) == "opus"
+
+
 def test_resolves_from_main_repo_root_not_worktree_cwd(repo: Path) -> None:
     """A linked worktree must read the config the operator set at the MAIN
     repo root, not silently see an empty/different one from its own tree —
@@ -186,3 +229,27 @@ def test_resolves_from_main_repo_root_not_worktree_cwd(repo: Path) -> None:
     resolved, source = resolve_model_tier("review", worktree_root)
     assert resolved == "opus"
     assert source == "project_config"
+
+
+def _schema_errors(instance: dict) -> list[str]:
+    import jsonschema
+
+    schema_path = Path(__file__).resolve().parents[1] / "schemas" / "model_config.schema.json"
+    schema = json.loads(schema_path.read_text(encoding="utf-8"))
+    validator = jsonschema.Draft202012Validator(schema)
+    return [e.message for e in validator.iter_errors(instance)]
+
+
+def test_schema_accepts_plan_review_key() -> None:
+    assert _schema_errors({"plan_review": "opus"}) == []
+    assert _schema_errors({"review": "sonnet", "plan_review": "inherit"}) == []
+
+
+def test_schema_rejects_unknown_role_key() -> None:
+    errors = _schema_errors({"plan_review": "opus", "not_a_role": "opus"})
+    assert errors, "an unrecognized top-level role key must be rejected"
+
+
+def test_schema_rejects_plan_review_with_invalid_tier() -> None:
+    errors = _schema_errors({"plan_review": "gpt-5"})
+    assert errors, "plan_review must be constrained to the same Tier enum as the other roles"

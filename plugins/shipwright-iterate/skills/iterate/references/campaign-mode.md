@@ -138,6 +138,10 @@ If campaign directory doesn't exist yet:
    uv run "{shared_root}/scripts/tools/resolve_model_tier.py" \
      --project-root "$(pwd)" [--review-model {flag}] [--finalization-model {flag}]
    ```
+   (The CLI also resolves `plan_review` — unconsumed here, since campaign
+   sub-iterates' mini-plan review has no internal-arm spawn site of its own
+   yet; `sub-iterate-runner` carries no `Agent` tool. Documented gap, not
+   this call's to close.)
    Keep `review.resolved` for step 3f-bis's delegated cascade and
    `finalization.resolved` for step 3c's `sub-iterate-runner` spawn. Both
    values are substituted as literal `model=` Agent-tool parameters at each

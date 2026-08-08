@@ -73,6 +73,8 @@ def test_recording_every_type_makes_the_gate_pass(project, tmp_path):
         ["record", "--review-type", "spec", "--status", "completed",
          "--from", "code-reviewer",
          "--payload-file", payload(tmp_path, "spec.md", CODE_REVIEWER_REPLY)],
+        ["record", "--review-type", "plan_internal", "--status", "not_applicable",
+         "--disposition", REASON],
     ):
         code, output = run_tool(project, *args)
         assert code == 0, output
@@ -183,7 +185,7 @@ def test_close_missing_closes_every_outstanding_type(project):
                             "--disposition", "predates the per-run review record")
     assert code == 0, output
     assert set(json.loads(output)["closed"]) == {
-        "self", "plan", "code", "doubt", "external_code", "spec"}
+        "self", "plan", "code", "doubt", "external_code", "spec", "plan_internal"}
     assert check_review_record(project, RUN_ID).detail.count("unanswered") == 0
 
 

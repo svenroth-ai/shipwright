@@ -41,7 +41,7 @@ Complexity-adaptive change lifecycle for completed Shipwright projects. Detects 
 ================================================================================
 SHIPWRIGHT-ITERATE: Adaptive Change Lifecycle
 ================================================================================
-Usage: /shipwright-iterate --type feature|change|bug [--review-model opus|sonnet|haiku|inherit] [--finalization-model ...] "description"
+Usage: /shipwright-iterate --type feature|change|bug [--review-model opus|sonnet|haiku|inherit] [--finalization-model ...] [--plan-review-model ...] "description"
    or: Auto-detected from your prompt (via hook context)
 Paths: FEATURE / CHANGE → [interview]→[spec]→[plan]→[approval]→[review]→[design]→build→test→commit
        BUG              → [spec]→reproduce→[plan]→fix→test→commit
@@ -97,7 +97,7 @@ Parse: `estimate`, `confidence`, `risk_flags`, `enforcements`, `signals` (incl. 
 
 ### F. Print Planned Run Summary
 
-Resolve model tiers first (`references/iteration-planning.md` → "Model Tier Resolution"; keep the result for Step 8 and campaign-mode). Print `Run ID / Intent / Complexity (+ reasoning) / Prior source (keyword | history | default) / Risk flags / Phases / Skipping / Safety floor / Model tiers (review=<resolved> (<source>), finalization=<resolved> (<source>))`. User can adjust per Override Classes (below).
+Resolve model tiers first (`references/iteration-planning.md` → "Model Tier Resolution"; keep the result for Step 8 and campaign-mode). Print `Run ID / Intent / Complexity (+ reasoning) / Prior source (keyword | history | default) / Risk flags / Phases / Skipping / Safety floor / Model tiers (review=<resolved> (<source>), finalization=<resolved> (<source>), plan_review=<resolved> (<source>))`. User can adjust per Override Classes (below).
 
 ### G. Interview (complexity-gated)
 
@@ -169,7 +169,7 @@ Tests first (outcomes, not internal state; one happy + one error path per AC). I
 
 ### Step 7: Self-Review (always)
 
-See `references/iteration-reviews.md` for the 7-point checklist (item 7: Affected Boundaries). → **Phase Timing:** emit `mark review` at entry. → **Iterate Timing:** `end implementation` / `start review --parent none` + `start self_review --parent review`; bracket Step 8's cascade with `spec_review`/`code_review`/`doubt_review` (see [iterate-timings](references/iterate-timings.md)). **Record every review pass:** all six types — `self` · `plan` · `code` · `doubt` · `external_code` · `spec` (Stage 1), all under `reviews` — close their own row in `.shipwright/planning/iterate/{run_id}/reviews.json` via `shared/scripts/tools/record_review_pass.py` (contract + per-pass table: `references/iteration-reviews.md` → "Recording each review pass"). The F11 verifier `check_review_record` STOPs the run while any type is still `pending` (small+; skipped at trivial), so a pass that did not run is closed EXPLICITLY with a `--disposition` naming the rule. An empty Review row must always mean "genuinely not run", never "nobody wrote it down".
+See `references/iteration-reviews.md` for the 7-point checklist (item 7: Affected Boundaries). → **Phase Timing:** emit `mark review` at entry. → **Iterate Timing:** `end implementation` / `start review --parent none` + `start self_review --parent review`; bracket Step 8's cascade with `spec_review`/`code_review`/`doubt_review` (see [iterate-timings](references/iterate-timings.md)). **Record every review pass:** all seven types — `self` · `plan` · `plan_internal` · `code` · `doubt` · `external_code` · `spec` (Stage 1), all under `reviews` — close their own row in `.shipwright/planning/iterate/{run_id}/reviews.json` via `shared/scripts/tools/record_review_pass.py` (contract + per-pass table: `references/iteration-reviews.md` → "Recording each review pass"). The F11 verifier `check_review_record` STOPs the run while any type is still `pending` (small+; skipped at trivial), so a pass that did not run is closed EXPLICITLY with a `--disposition` naming the rule — `plan_internal` at trivial/small closes `not_applicable` naming the medium+ gate (`--disposition "internal plan review is medium+ only, this run is {complexity}"`). An empty Review row must always mean "genuinely not run", never "nobody wrote it down".
 
 ### Step 7.5: Confidence Calibration (mandatory at medium+, also when `touches_io_boundary`)
 

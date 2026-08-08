@@ -382,8 +382,12 @@ Every review pass writes its result to the run's review record:
 .shipwright/planning/iterate/{run_id}/reviews.json
 ```
 
-Six types under `reviews`, all materialized up front, each closed by the pass
-that owns it: `self` · `plan` · `code` · `doubt` · `external_code` · `spec`.
+Seven types under `reviews`, all materialized up front, each closed by the
+pass that owns it: `self` · `plan` · `plan_internal` · `code` · `doubt` ·
+`external_code` · `spec`. `plan_internal` is the newest — added alongside the
+medium+ Internal Plan Review sub-step (`iteration-planning.md`); below
+medium+ it closes `not_applicable` (the arm doesn't run there), same pattern
+every complexity-gated type already follows.
 
 **`spec` used to live in a sibling `gates` object, and no longer does.** The
 `reviews` object is a CROSS-REPO contract, and the webui consumer
@@ -463,13 +467,13 @@ or the whole message with its ```json block; both are accepted) and hand it over
 ```bash
 uv run "{shared_root}/scripts/tools/record_review_pass.py" record \
   --project-root "{project_root}" --run-id "{run_id}" \
-  --review-type {self|plan|spec|code|doubt|external_code} --status completed \
+  --review-type {self|plan|spec|code|doubt|external_code|plan_internal} --status completed \
   --from {self-review|spec-reviewer|code-reviewer|doubt-reviewer|external-review-json|external-prose} \
   --payload-file "{path to the reply}" \
   [--model-tier {resolved review tier}] [--provider openrouter] [--marker-status completed]
 ```
 
-`--model-tier` is **required** for the three review-role passes (`spec`/`code`/`doubt`) — the review tier resolved in §F, same value passed at the spawn (see "Model tier" above). Omit it for `self`/`plan`/`external_code`, which are not Agent-tool spawns.
+`--model-tier` is **required** for the three review-role passes (`spec`/`code`/`doubt`, the `review` tier) and for `plan_internal` (the `plan_review` tier) — the value resolved in §F, same one passed at the spawn (see "Model tier" above; `plan_internal`'s own invocation shape is the table row below, not this template). Omit it for `self`/`plan`/`external_code`, which are not Agent-tool spawns.
 
 For `external-review-json`, the recorder reads the payload once, then derives
 both findings and each reviewer verdict from that in-memory snapshot. It stores
@@ -489,6 +493,7 @@ a completed marker, while a skipped marker cannot carry reviewer evidence.
 | Internal `code-reviewer` (Stage 2) | `code` | `code-reviewer` | the subagent's reply |
 | `doubt-reviewer` (Stage 3) | `doubt` | `doubt-reviewer` | the subagent's reply |
 | External code cascade | `external_code` | `external-review-json` | `external_review.py` stdout. Add `--marker-status` |
+| Internal Plan Review (medium+, before Branch A/B/C) | `plan_internal` | `none` (no adapter matches `opus-plan-reviewer`'s shape) | metadata-only — `--recorded-by opus-plan-reviewer --model-tier {resolved}`, no `--payload-file`. Findings live in the iterate spec's `## Internal Plan Review` section, not this row |
 
 **A pass that did NOT run** must say so and name the rule — a bare "skipped" is
 rejected:
@@ -507,7 +512,8 @@ missing keys, degraded provider).
 ### Campaign sub-iterate rows
 
 The sub-iterate-runner subagent has no `Agent` tool, so it performs `self`,
-`plan` and `external_code` and performs neither internal stage. It records
+`plan` and `external_code` and performs neither internal stage — nor the
+internal plan-review arm (`plan_internal`), for the same reason. It records
 exactly this — **who did the work decides the name** (`agents/sub-iterate-runner.md`
 Step 3.7 carries the actor table). Each `…` below stands for the invocation
 prefix, i.e. `uv run "{shared_root}/scripts/tools/record_review_pass.py" record
@@ -541,6 +547,13 @@ prefix, i.e. `uv run "{shared_root}/scripts/tools/record_review_pass.py" record
 # Stage 3 cannot precede Stage 2
 … --review-type doubt --status not_run \
   --disposition "blocker 1 (no Agent tool): Stage 3 runs only behind a Stage 2 pass, and the internal cascade did not run in this campaign sub-iterate"
+
+# the internal plan-review arm — recorded as NOT having run, and NEVER
+# promoted at 3f-bis: unlike spec/code/doubt there is no campaign-level
+# internal-arm spawn site yet (documented gap), so this row stays `not_run`
+# for the life of the sub-iterate.
+… --review-type plan_internal --status not_run \
+  --disposition "campaign sub-iterates have no internal plan-review arm yet — a documented gap (trg-71d7a4fa/trg-d6cc3d3d), not delegated to the orchestrator like the other three"
 ```
 
 A bare `--disposition "delegated"` is **rejected** (a disposition must name a

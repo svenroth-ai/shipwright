@@ -152,6 +152,83 @@ def test_malformed_model_tier_never_raises_and_is_unflagged(tmp_path: Path) -> N
     assert note == ""
 
 
+def _record_plan_internal(root: Path, model_tier: str | None) -> None:
+    """Mirrors `_record`'s pattern: `spec`+`code` completed (satisfies the
+    medium-iterate code-review gate `check_review_record` also enforces),
+    everything else not_run, `plan_internal` completed with the tier under
+    test — so failures isolate the model-tier note, not an unrelated gate."""
+    record = new_record(RUN)
+    for review_type in REVIEW_TYPES:
+        if review_type not in ("code", "spec", "plan_internal"):
+            record = upsert_review(record, make_entry(
+                review_type, STATUS_NOT_RUN, disposition=WHY), force=True)
+    record = upsert_review(record, make_entry(
+        "spec", STATUS_COMPLETED, recorded_by="spec-reviewer", model_tier="opus"))
+    record = upsert_review(record, make_entry(
+        "code", STATUS_COMPLETED, recorded_by="code-reviewer", model_tier="opus"))
+    kwargs = {"recorded_by": "opus-plan-reviewer"}
+    if model_tier is not None:
+        kwargs["model_tier"] = model_tier
+    record = upsert_review(record, make_entry("plan_internal", STATUS_COMPLETED, **kwargs))
+    write_record(root, RUN, record)
+
+
+def test_plan_review_floor_is_independent_of_review_floor(tmp_path: Path) -> None:
+    """A `review: opus` floor must not apply to `plan_internal` — only a
+    configured `plan_review` floor does, and vice versa."""
+    _entry(tmp_path)
+    (tmp_path / "shipwright_model_config.json").write_text(
+        json.dumps({"floors": {"review": "opus"}}), encoding="utf-8",
+    )
+    _record_plan_internal(tmp_path, model_tier="haiku")
+
+    result = check_review_record(tmp_path, RUN)
+
+    assert result.ok is True
+    assert "plan_internal" not in result.detail, (
+        "a `review`-role floor must not judge the plan_internal row")
+
+
+def test_plan_review_below_floor_is_flagged_but_still_passes(tmp_path: Path) -> None:
+    _entry(tmp_path)
+    (tmp_path / "shipwright_model_config.json").write_text(
+        json.dumps({"floors": {"plan_review": "opus"}}), encoding="utf-8",
+    )
+    _record_plan_internal(tmp_path, model_tier="sonnet")
+
+    result = check_review_record(tmp_path, RUN)
+
+    assert result.ok is True
+    assert "plan_internal" in result.detail
+    assert "sonnet" in result.detail and "opus" in result.detail
+
+
+def test_plan_review_floor_does_not_read_external_plan_row(tmp_path: Path) -> None:
+    """The floor must judge `plan_internal`, never the external `plan` row —
+    `plan` never carries a Claude model_tier (it's a non-Claude LLM call)."""
+    _entry(tmp_path)
+    (tmp_path / "shipwright_model_config.json").write_text(
+        json.dumps({"floors": {"plan_review": "opus"}}), encoding="utf-8",
+    )
+    record = new_record(RUN)
+    for review_type in REVIEW_TYPES:
+        if review_type not in ("plan", "code", "spec"):
+            record = upsert_review(record, make_entry(
+                review_type, STATUS_NOT_RUN, disposition=WHY), force=True)
+    record = upsert_review(record, make_entry(
+        "spec", STATUS_COMPLETED, recorded_by="spec-reviewer", model_tier="opus"))
+    record = upsert_review(record, make_entry(
+        "code", STATUS_COMPLETED, recorded_by="code-reviewer", model_tier="opus"))
+    record = upsert_review(record, make_entry(
+        "plan", STATUS_COMPLETED, recorded_by="external-review"))
+    write_record(tmp_path, RUN, record)
+
+    result = check_review_record(tmp_path, RUN)
+
+    assert result.ok is True
+    assert "floor" not in result.detail.lower()
+
+
 def test_floor_read_from_main_repo_root_not_worktree(tmp_path: Path) -> None:
     """F11 runs from a linked worktree (every iterate does — B1a). The floor
     config lives at the MAIN repo root, resolved via the same

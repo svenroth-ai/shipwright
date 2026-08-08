@@ -21,20 +21,26 @@ from pathlib import Path
 from lib.model_tier_config import RANK, load_model_config  # noqa: E402
 from lib.review_record_core import entry_for  # noqa: E402
 
-#: The internal-cascade types a `review`-role floor can meaningfully judge.
-#: `external_code` is excluded — it is a non-Claude LLM call, not an
-#: Agent-tool spawn, so it carries no `model_tier` in the same sense.
-_REVIEW_ROLE_TYPES = ("spec", "code", "doubt")
+#: Per role, the review-record types a floor can meaningfully judge.
+#: `external_code` is excluded from `review` — it is a non-Claude LLM call,
+#: not an Agent-tool spawn, so it carries no `model_tier` in the same sense.
+#: `plan_review` maps to `plan_internal` only, never `plan` — `plan` is the
+#: EXTERNAL plan/iterate review's own row (`MARKER_TYPES` in
+#: `review_companion.py`), which never carries a Claude `model_tier`.
+_ROLE_REVIEW_TYPES = {
+    "review": ("spec", "code", "doubt"),
+    "plan_review": ("plan_internal",),
+}
 
 
 def model_tier_note(record: dict, project_root: Path) -> str:
-    """ADVISORY note for a review-role pass below a configured floor.
+    """ADVISORY note for a review-role pass below its role's configured floor.
 
     Converts the BRIEF's "silent downgrade" into a loud one, opt-in: with no
-    ``floors.review`` configured in ``shipwright_model_config.json`` this is a
-    silent no-op.
+    ``floors`` configured for a role in ``shipwright_model_config.json`` that
+    role is a silent no-op.
 
-    Four outcomes per completed internal-cascade row (`spec`/`code`/`doubt`):
+    Four outcomes per completed row of a floored role's review types:
 
     * ``model_tier`` absent (key never written) — FLAGGED, distinctly, as
       "no recorded tier". `check_review_record` reads exactly one record —
@@ -54,29 +60,36 @@ def model_tier_note(record: dict, project_root: Path) -> str:
       what should be loud once an operator has said they care.
     * a ranked tier below the floor — flagged with both values named.
     """
-    floor = (load_model_config(project_root).get("floors") or {}).get("review")
-    if not floor:
-        return ""
-    floor_rank = RANK[floor]
+    floors = load_model_config(project_root).get("floors") or {}
 
-    flagged: list[str] = []
-    for review_type in _REVIEW_ROLE_TYPES:
-        entry = entry_for(record, review_type)
-        if str(entry.get("status", "")) != "completed":
+    sections: list[str] = []
+    for role, review_types in _ROLE_REVIEW_TYPES.items():
+        floor = floors.get(role)
+        if not floor:
             continue
-        tier = entry.get("model_tier")
-        if tier is None:
-            flagged.append(f"{review_type} has no recorded tier (floor {floor} not confirmed)")
-            continue
-        if not isinstance(tier, str):
-            continue  # malformed (pre-fix/hand-edited record) — never trusted into a comparison
-        if tier == "inherit":
-            flagged.append(f"{review_type} ran under session-inherit (tier not confirmed)")
-        elif tier not in RANK:
-            flagged.append(f"{review_type} ran on an unrecognized tier (floor {floor} not confirmed)")
-        elif RANK[tier] < floor_rank:
-            flagged.append(f"{review_type} ran on {tier} (below configured floor {floor})")
+        floor_rank = RANK[floor]
 
-    if not flagged:
+        flagged: list[str] = []
+        for review_type in review_types:
+            entry = entry_for(record, review_type)
+            if str(entry.get("status", "")) != "completed":
+                continue
+            tier = entry.get("model_tier")
+            if tier is None:
+                flagged.append(f"{review_type} has no recorded tier (floor {floor} not confirmed)")
+                continue
+            if not isinstance(tier, str):
+                continue  # malformed (pre-fix/hand-edited record) — never trusted into a comparison
+            if tier == "inherit":
+                flagged.append(f"{review_type} ran under session-inherit (tier not confirmed)")
+            elif tier not in RANK:
+                flagged.append(f"{review_type} ran on an unrecognized tier (floor {floor} not confirmed)")
+            elif RANK[tier] < floor_rank:
+                flagged.append(f"{review_type} ran on {tier} (below configured floor {floor})")
+
+        if flagged:
+            sections.append(f"model-tier floor '{role}: {floor}' not confirmed for: " + "; ".join(flagged))
+
+    if not sections:
         return ""
-    return f" — NOTE: model-tier floor 'review: {floor}' not confirmed for: " + "; ".join(flagged)
+    return " — NOTE: " + " | ".join(sections)

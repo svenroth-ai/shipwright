@@ -36,8 +36,16 @@ PLUGINS_DIR = REPO_ROOT / "plugins"
 #: it requires deliberately editing this differently-named constant too,
 #: which is the point: adding an entry here IS the decision this feature's
 #: "no frontmatter pins" constraint says must be recorded, not incidental.
+#:
+#: `opus-plan-reviewer.md` PREVIOUSLY lived here at `"opus"`. That pin is the
+#: exact thing `iterate-2026-08-08-plan-reviewer-configurable` (AC-4) removes:
+#: the model is now a resolved-tier Agent-tool call PARAMETER, passed by both
+#: `/shipwright-plan` Step 5-int and `/shipwright-iterate`'s internal plan
+#: review sub-step (`resolve_model_tier.py` resolving the `plan_review` role;
+#: this repo's own `shipwright_model_config.json` sets it to `opus`), never
+#: frontmatter. Removed here deliberately, not as a side effect — see that
+#: iterate's spec, AC-4.
 _PINNED_BY_DECISION: dict[str, str] = {
-    "plugins/shipwright-plan/agents/opus-plan-reviewer.md": "opus",
     "plugins/shipwright-test/agents/browser-fixer.md": "sonnet",
 }
 
@@ -54,6 +62,7 @@ EXPECTED_MODEL: dict[str, str] = {
     "plugins/shipwright-test/agents/test-runner.md": "inherit",
     "plugins/shipwright-security/agents/security-fixer.md": "inherit",
     "plugins/shipwright-plan/agents/section-writer.md": "inherit",
+    "plugins/shipwright-plan/agents/opus-plan-reviewer.md": "inherit",
     "plugins/shipwright-run/agents/phase-runner.md": "inherit",
     **_PINNED_BY_DECISION,
 }

@@ -28,10 +28,18 @@ ITERATE_SKILL_MD = (
 BUILD_SKILL_MD = (
     REPO_ROOT / "plugins" / "shipwright-build" / "skills" / "build" / "SKILL.md"
 )
+ITERATION_PLANNING_MD = (
+    REPO_ROOT / "plugins" / "shipwright-iterate" / "skills" / "iterate" / "references"
+    / "iteration-planning.md"
+)
+STEP_5_EXTERNAL_REVIEW_MD = (
+    REPO_ROOT / "plugins" / "shipwright-plan" / "skills" / "plan" / "references"
+    / "step-5-external-review.md"
+)
 
 # (skill file, flag anchors expected in the banner usage line)
 FLAG_ANCHORS = (
-    (ITERATE_SKILL_MD, ("--review-model", "--finalization-model")),
+    (ITERATE_SKILL_MD, ("--review-model", "--finalization-model", "--plan-review-model")),
     (BUILD_SKILL_MD, ("--review-model", "--finalization-model", "--execution-model")),
 )
 
@@ -43,6 +51,13 @@ FLAG_ANCHORS = (
 # heading) by test_build_reference_files_carry_the_model_tier_note below.
 SPAWN_ANCHORS = (
     (ITERATE_SKILL_MD, "Pass `model=<the review tier resolved in §F>`"),
+    # The two `plan_review`-role spawn sites this diff adds (AC-4/AC-6):
+    # /shipwright-plan Step 5-int and /shipwright-iterate's own internal
+    # Plan Review sub-step. Both spawn `opus-plan-reviewer` with the same
+    # phrase; without this anchor, deleting either `model=` instruction
+    # leaves the full suite green (a silent no-op regression).
+    (ITERATION_PLANNING_MD, "Agent tool's `model=`"),
+    (STEP_5_EXTERNAL_REVIEW_MD, "Agent tool's `model=`"),
 )
 
 

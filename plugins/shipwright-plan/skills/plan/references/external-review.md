@@ -6,7 +6,7 @@ Get the plan reviewed by external LLMs (DeepSeek + OpenAI) to catch blind spots.
 Claude reviewing its own plan misses systematic biases — external models help.
 
 External review is the **default** for /shipwright-plan, layered on top of an
-internal Opus review (`opus-plan-reviewer`, SKILL.md Step 5-int) that always
+internal review (`opus-plan-reviewer`, SKILL.md Step 5-int) that always
 runs first. If keys are missing, the skill interactively asks the user
 whether to add one or skip and rely on the internal review, which already
 carries the gate. Silent-skip is not an option.
@@ -19,7 +19,7 @@ carries the gate. Silent-skip is not an option.
   direct-provider fallback and remains unavailable without OpenRouter.
 - `external_review.feedback_iterations > 0` in
   `shared/config/external_review.json` (default: `1`). Set to `0` only for
-  explicit opt-out — the internal Opus review (Step 5-int) still runs and
+  explicit opt-out — the internal review (Step 5-int) still runs and
   carries the gate. Each reviewer identity is locked to its shipped model; a
   differing config value or environment override fails before client creation.
 
