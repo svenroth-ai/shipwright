@@ -106,7 +106,10 @@ iterate history (e.g. the WebUI Mission Requirement artifact) reads
 `shipwright_events.jsonl`, NOT this directory — `iterates/<run_id>.json` is a
 50-run recency cache, not the historical record.
 
-The 50-entry retention applies only to compact `<run_id>.json` summaries.
+The 50-entry retention applies only to compact `<run_id>.json` summaries. A
+project may set `iterate_retention_pins` in `shipwright_run_config.json` for
+named summaries that must remain reachable; retention evicts unpinned entries
+first and retains 50 unpinned summaries in addition to those explicit pins.
 `<run_id>.test-results.json` is immutable per-run evidence and is never deleted
 by F5c retention; pruning it would recreate the evidence loss this artifact
 exists to close.

@@ -15,10 +15,8 @@ Behavior:
 * The append itself is atomic per file; migration + append + retention all
   happen inside a single ``file_lock`` held on the run-config lock file so
   concurrent same-worktree finalize calls are serialized.
-* Retention drops the oldest entries beyond ``ITERATE_RETENTION`` (50) — a
-  BOUNDED window; a consumer needing FULL history reads ``shipwright_events.jsonl``
-  (never evicted), NOT this dir (see F5c.md). Applied only **after** migration
-  so first contact with a historic 60-entry array does not drop 10 rows on upgrade.
+* Retention drops the oldest unpinned entries beyond ``ITERATE_RETENTION`` (50).
+  Full history lives in ``shipwright_events.jsonl``; retention follows migration.
 
 Canonical keys the caller may NOT set: ``run_id``, ``date`` (a full instant
 here, unlike ``phase_history``'s day-precision one) and ``event_at`` — Canon
@@ -263,19 +261,17 @@ def _recover_migration(
     return _migrate_legacy_array_to_dir(project_root, config)
 
 
-def _apply_retention(project_root: Path, *, keep_last: int) -> int:
+def _apply_retention(project_root: Path, *, keep_last: int, pinned_run_ids: set[str] | None = None) -> int:
     """Delete the oldest entry files beyond ``keep_last`` (sorted by
     normalized UTC date, run_id tiebreaker).
 
-    Race-safe: ``FileNotFoundError`` on ``unlink`` is suppressed so parallel
-    callers computing the same "oldest" file don't crash each other.
-    Returns the count of files actually deleted.
+    Pinned run IDs are skipped; returns the count of files actually deleted.
     """
     entries = read_iterate_entries(project_root)
-    if len(entries) <= keep_last:
-        return 0
-
-    victims = sorted(entries, key=sort_key)[: len(entries) - keep_last]
+    pins = pinned_run_ids or set()
+    unpinned = [entry for entry in sorted(entries, key=sort_key)
+                if entry.get("run_id") not in pins]
+    victims = unpinned[:max(0, len(unpinned) - keep_last)]
     deleted = 0
     for entry in victims:
         run_id = entry.get("run_id")
@@ -286,10 +282,8 @@ def _apply_retention(project_root: Path, *, keep_last: int) -> int:
             victim_path.unlink()
             deleted += 1
         except FileNotFoundError:
-            # Parallel append already removed it; that's fine.
             continue
         except OSError:
-            # Filesystem said no; skip without failing the append.
             continue
     return deleted
 
@@ -335,11 +329,17 @@ def append_iterate_entry(
             # refactor. Both paths go through the migration routine.
             config = _migrate_legacy_array_to_dir(project_root, config)
             migrated = True
-
         quarantined_count = int(config.get(MIGRATION_QUARANTINED_COUNT_KEY, 0))
-
+        raw_pins = config.get("iterate_retention_pins", [])
+        if not isinstance(raw_pins, list) or not all(isinstance(pin, str) and pin for pin in raw_pins):
+            raise IterateAppendError("iterate_retention_pins must be an array of non-empty strings")
+        if len(set(raw_pins)) != len(raw_pins):
+            raise IterateAppendError("iterate_retention_pins must not contain duplicates")
+        pins = set(raw_pins)
         entry_path = _write_entry_file(project_root, entry, overwrite=True)
-        retention_deleted = _apply_retention(project_root, keep_last=retention)
+        retention_deleted = _apply_retention(
+            project_root, keep_last=retention, pinned_run_ids=pins
+        )
 
     return {
         "entry_path": str(entry_path.relative_to(project_root)),
