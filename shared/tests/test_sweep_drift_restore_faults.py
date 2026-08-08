@@ -224,12 +224,12 @@ def test_rename_failure_aborts_instead_of_overwriting(repo, monkeypatch) -> None
 
 
 def test_checkout_failure_puts_the_log_back(repo, monkeypatch) -> None:
+    import subprocess as _sp
     _add_drift(repo, h.item("trg-drift"))
     plan = plan_main_tracked_drift(repo, _outbox(repo))
     before = _log(repo).read_text(encoding="utf-8")
     monkeypatch.setattr(sdr, "run_git_soft",
-                        lambda *a, **k: __import__("subprocess").CompletedProcess(
-                            ["git"], 1, "", "checkout exploded"))
+                        lambda *a, **k: _sp.CompletedProcess(["git"], 1, "", "checkout exploded"))
 
     result = commit_main_tracked_drift(plan, repo, _outbox(repo))
 

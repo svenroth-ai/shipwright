@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-08-08-prompt-scan-dynamic-import-fault-test",
+  "date": "2026-08-08",
+  "section": "Iterate — Simplify: normalize a benign dynamic-import in a test mock",
+  "title": "Replace literal __import__(\"subprocess\") with a normal import in a test file",
+  "context": "shipwright-prompt-scan's PY_DYNAMIC_IMPORT rule fires on ANY literal __import__( token, including a hardcoded, no-attacker-input call. shared/tests/test_sweep_drift_restore_faults.py:231 used `__import__(\"subprocess\").CompletedProcess(...)` inside a monkeypatch lambda, tripping the scanner (medium, triage trg-133f2ca6) even though the same file already uses the clean `import subprocess as _sp` idiom twice elsewhere (lines 137, 247) for the identical purpose.",
+  "decision": "Normalize the import: add `import subprocess as _sp` as a local import inside test_checkout_failure_puts_the_log_back and use `_sp.CompletedProcess(...)`, matching the file's own existing convention. No suppression, no allowlist entry.",
+  "consequences": "Zero observable behavior change (verified via behavior_snapshot.py: 9/9 tests green before and after, source LOC unchanged). The scanner finding clears (re-scan: 1 -> 0). This is the third recurrence of this exact benign-PY_DYNAMIC_IMPORT class in this repo (#321, #426), each resolved the same way.",
+  "rationale": "Fix-not-suppress at the source, per the established repo pattern for this scanner-rule class: the fix is a style normalization, not a scanner exemption, so it stays correct even if the scanner's own logic changes later.",
+  "rejected": "",
+  "commit": "",
+  "architecture_impact": "none",
+  "spec_ref": "trg-133f2ca6"
+}
