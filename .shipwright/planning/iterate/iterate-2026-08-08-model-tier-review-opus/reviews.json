@@ -1,0 +1,91 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-08-08-model-tier-review-opus",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-08T12:39:48.876286+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-08T12:39:48.999111+00:00",
+      "disposition": "BUG path skips mini-plan at every complexity per Phase Matrix; mini-plan applies only to FEATURE at small",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "code": {
+      "review_type": "code",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-08T12:44:18.320692+00:00",
+      "disposition": "operator explicitly stopped the review cascade mid-run and directed trivial handling (2026-08-08); self-review + Stage-1 spec-reviewer PASS already recorded",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-08T12:39:49.343686+00:00",
+      "disposition": "config value edit + test only; no migration, async/concurrency, cross-plugin import, or irreversible op touched — Stage 3 trigger not met per iteration-reviews.md",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-08T12:39:49.230828+00:00",
+      "disposition": "trigger rule not met: diff is a single value edit plus one test, no security-sensitive file, complexity=small (not medium+); iteration-reviews.md External Code-Review Cascade Trigger Rule",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-08T12:42:55.657274+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-08T12:39:49.114039+00:00",
+      "disposition": "Internal Plan Review (PR #606) applies at medium+ only; this run is small with no mini-plan",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    }
+  }
+}

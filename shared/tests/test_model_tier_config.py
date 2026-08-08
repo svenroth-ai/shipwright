@@ -214,6 +214,32 @@ def test_plan_review_boundary_probe_round_trip(repo: Path) -> None:
     assert agent_model_param(resolved) == "opus"
 
 
+def test_shipped_root_config_round_trips_through_resolver(repo: Path) -> None:
+    """Round-trip the actual bytes of the repo's own `shipwright_model_config.json`
+    (not a re-typed fixture) through the resolver in an isolated repo — so this
+    proves the committed artifact itself, independent of `load_model_config`'s
+    main-repo-root resolution (which would otherwise read whatever a
+    developer's main checkout locally holds instead of this branch's file).
+    Pins `review: opus` — the value this repo intends, distinct from the
+    `plan_review` role, which stays independently configurable per
+    iterate-2026-08-08-plan-reviewer-configurable."""
+    source_path = Path(__file__).resolve().parents[2] / "shipwright_model_config.json"
+    raw = source_path.read_text(encoding="utf-8")
+    config_dict = json.loads(raw)
+    assert config_dict["review"] == "opus"
+    assert config_dict["finalization"] == "sonnet"
+    assert config_dict["execution"] == "sonnet"
+    assert config_dict["plan_review"] == "opus"
+    assert config_dict["floors"] == {"review": "sonnet"}
+
+    (repo / "shipwright_model_config.json").write_text(raw, encoding="utf-8")
+
+    assert resolve_model_tier("review", repo) == ("opus", "project_config")
+    assert resolve_model_tier("finalization", repo) == ("sonnet", "project_config")
+    assert resolve_model_tier("execution", repo) == ("sonnet", "project_config")
+    assert resolve_model_tier("plan_review", repo) == ("opus", "project_config")
+
+
 def test_resolves_from_main_repo_root_not_worktree_cwd(repo: Path) -> None:
     """A linked worktree must read the config the operator set at the MAIN
     repo root, not silently see an empty/different one from its own tree —
