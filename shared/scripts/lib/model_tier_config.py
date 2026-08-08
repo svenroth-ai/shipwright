@@ -5,8 +5,8 @@ so a subagent runs on whatever the spawning session runs on. When the operator
 drops the session to a cheaper tier for cost, every ``inherit`` agent follows —
 including the review cascade and the unattended finalization drivers, silently.
 
-This module resolves, per role (``review`` / ``finalization`` / ``execution``),
-which tier a spawn should use. Precedence: an explicit per-run flag beats the
+This module resolves, per role (``review`` / ``finalization`` / ``execution`` /
+``plan_review``), which tier a spawn should use. Precedence: an explicit per-run flag beats the
 project config, which beats "unset". Unset and the explicit literal
 ``"inherit"`` are the SAME value — both mean "omit the Agent tool's ``model``
 parameter", which is bit-identical to today's behavior. There is no
@@ -22,7 +22,7 @@ silently diverge from what the operator configured once
 (``lib.repo_root.resolve_main_repo_root``), the same rule durable artifacts
 already follow.
 
-Deliberately NOT built: a role registry (roles are the three names below,
+Deliberately NOT built: a role registry (roles are the names below,
 enumerated directly) and frontmatter pins (``model: opus``/``model: sonnet``
 hardcoded into agent ``.md`` files). Both were designed and dropped in a prior
 attempt at this feature — see
@@ -47,15 +47,17 @@ from typing import Any
 # already established by the time this line runs.
 from .repo_root import resolve_main_repo_root
 
-#: The three spawn roles this feature distinguishes. Not every role has a
+#: The spawn roles this feature distinguishes. Not every role has a
 #: live consuming spawn site in every skill (e.g. iterate has no
 #: execution-role Agent-tool spawn of its own — browser-fixer is build's) —
 #: that is a wiring fact about the skills, not a constraint this resolver
-#: enforces.
-ROLES: frozenset[str] = frozenset({"review", "finalization", "execution"})
+#: enforces. ``plan_review`` is its own role, not folded into ``review``:
+#: a project pinning ``review`` to a cheaper tier for the spec/code/doubt
+#: cascade must not silently drag the plan reviewer down with it.
+ROLES: frozenset[str] = frozenset({"review", "finalization", "execution", "plan_review"})
 
-#: Valid tier literals for a role value (``review``/``finalization``/``execution``
-#: keys, and the per-run flag value). ``inherit`` is explicit-deferral.
+#: Valid tier literals for a role value (``review``/``finalization``/``execution``/
+#: ``plan_review`` keys, and the per-run flag value). ``inherit`` is explicit-deferral.
 TIERS: frozenset[str] = frozenset({"opus", "sonnet", "haiku", "inherit"})
 
 #: Valid tier literals for a ``floors`` entry. ``inherit`` is not orderable,
@@ -209,7 +211,8 @@ def resolve_model_tier(
     if flag_value is not None:
         if flag_value in TIERS:
             return flag_value, "flag"
-        _warn(f"--{role}-model={flag_value!r} is not a valid tier {sorted(TIERS)}; ignoring")
+        flag_name = role.replace("_", "-")
+        _warn(f"--{flag_name}-model={flag_value!r} is not a valid tier {sorted(TIERS)}; ignoring")
 
     config = _config if _config is not None else load_model_config(project_root)
     config_value = config.get(role)

@@ -124,7 +124,7 @@ def _seed(
         "schema_version": 1,
         "run_id": run_id,
         "reviews": {t: _row(t) for t in
-                    ("self", "plan", "code", "doubt", "external_code")},
+                    ("self", "plan", "code", "doubt", "external_code", "plan_internal")},
         "gates": {"spec": _row("spec")},
     }, indent=2), encoding="utf-8")
 

@@ -1,0 +1,303 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-08-08-plan-reviewer-configurable",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-08T10:56:17.989785+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 11,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "Changing `opus-plan-reviewer.md` frontmatter to `model: inherit` and not providing a code-level default for the `plan_review` role changes the effective default from `opus` to the session model for any project that does not explicitly configure `plan_review`. Existing consumers who relied on the hardcoded Opus for plan review will silently switch to a potentially weaker model, breaking their expected quality.",
+          "suggestion": "Ensure release notes and documentation highlight that `plan_review` must be set in project config to retain Opus quality; consider a one-time migration check or a prominent upgrade note. (The spec’s decision to avoid a shipped default is explicit, but the downstream risk still exists.)",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "The mini‑plan’s step 6 (`review_record_model_tier.py`) does not mention the required exemption in `review_record_schema.py` that AC-7 mandates to prevent old records from being marked corrupt because they lack `plan_internal`. Without that exemption, adding `plan_internal` to `REVIEW_TYPES` will cause validation failures on existing immutable records.",
+          "suggestion": "Explicitly add a mini‑plan step (or note in step 6) to update the validation logic in `review_record_schema.py` so that records without `plan_internal` are accepted, as described in the AC-7 rationale.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The iterate internal arm will invoke `opus-plan-reviewer` with “the iterate spec + mini‑plan”, but the exact invocation (file mounts or arguments) is not specified in the implementation approach. The agent’s built‑in prompt may expect a full `plan.md` and could behave unexpectedly if the input format differs.",
+          "suggestion": "The iteration‑planning prose should clearly define how to pass the spec and mini‑plan to the reviewer agent (e.g., mount both files as context) and verify the resulting output parses correctly for the triage step.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "The `shipwright_model_config.json` file is currently untracked; adding it now will change the repo’s config for all developers. This is intentional, but it may collide with any local git‑ignored versions or environments that expect a missing config.",
+          "suggestion": "Communicate the addition clearly in the PR and ensure the file’s contents are minimal and correct; the git‑add is explicitly covered by AC‑8, so the risk is low.  Overall, the approach is well‑reasoned and leverages existing infrastructure cleanly. The main oversight is a missing mention of the schema‑exemption change required by AC‑7, but that is already described in the spec and will be caught during implementation.  SHIPWRIGHT_VERDICT: approve",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "The mini-plan omits the required `review_record_schema.py` validation change described in AC-7’s boundary analysis: `validate_record` must exempt `plan_internal` from the “every `REVIEW_TYPES` member must be present” requirement. Adding the enum member alone would make the existing immutable on-disk review-record corpus invalid, and the proposed Step 6 only mentions adding the type.",
+          "suggestion": "Explicitly include the minimal presence-check exemption in Step 6, and add/retain the corpus round-trip test (`test_every_record_on_disk_still_validates`) plus a focused test demonstrating that `plan_internal` is valid when present but is not required in historical records.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "The approach contradicts the specification on `/shipwright-plan` flags. AC-9 correctly says `/shipwright-plan` has no invocation-level model flags and should resolve `plan_review` from project configuration only. However, Step 4 says it will invoke the resolver with `--plan-review-model {flag|omitted}`, and Step 8 says the `/shipwright-plan` guide row gains `--plan-review-model`. This risks documenting and implementing a flag users cannot actually supply.",
+          "suggestion": "Split the two call sites clearly: `/shipwright-plan` should invoke resolution without a plan-review override and document project-config-only behavior; `/shipwright-iterate` should parse/forward `--plan-review-model` and document that real invocation flag.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "Adding `--plan-review-model` to `resolve_model_tier.py` is not by itself enough to make `/shipwright-iterate --plan-review-model ...` work. The approach does not explicitly identify where `/shipwright-iterate` parses its invocation flags, preserves them through campaign mode, and exposes the supplied value to the `iteration-planning.md` resolver command.",
+          "suggestion": "Identify the command/skill argument-handling path and add the new flag there, including its propagation into standard and campaign-mode iteration execution. Add a smoke or instruction-level regression test/check for an explicit flag overriding project configuration.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "Changing `opus-plan-reviewer` from `model: opus` to `model: inherit` intentionally changes behavior for every unconfigured consumer: the old behavior was always Opus, while the new behavior uses the session/default model when no project setting or iterate flag is supplied. The plan currently characterizes omission of `model=` as “today’s behavior, unchanged,” which is no longer true after the frontmatter change. The repository’s checked-in `plan_review: opus` protects this repository only.",
+          "suggestion": "State this migration explicitly in user-facing docs/changelog and test both paths: configured `plan_review: opus` yields an explicit Opus Agent parameter, while an absent setting yields no Agent parameter and inherits the session model. This makes the deliberate consumer-facing semantic change reviewable rather than accidental.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The proposed iterate arm labels a failed spawn as `Ran: no (shipwright-plan not installed)`, but a spawn can also fail because of a stale agent registry, malformed Agent invocation, unavailable model, timeout, or reviewer execution failure. Misclassifying all failures as a missing plugin hides operational failures and weakens ADR provenance.",
+          "suggestion": "Distinguish confirmed agent-unavailability from other failures. Record `Ran: no` with the actual sanitized failure class/reason, and define whether a reviewer that starts but returns invalid/unparseable output counts as `Ran: yes` with failed/blocked triage or as a failed review. Only write the `plan_internal` review record after a successfully completed, parseable review pass.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The new reviewer is placed before Branch A/B/C and depends on the iterate spec and mini-plan being available. The plan states medium+ runs have those artifacts, but does not explicitly require them to be finalized/flushed before the cross-plugin agent is spawned. An agent can otherwise review stale or partially written content.",
+          "suggestion": "Make the precondition explicit in the instruction: create and persist the current iterate spec/mini-plan and ADR context first, then spawn the reviewer with exact paths. If either expected artifact is absent, record the reason and preserve the existing mandatory self-review flow.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "The new `plan_internal` type changes the versioned `reviews.json` vocabulary consumed by `shipwright-webui`. The spec notes that unknown review keys already render, but the implementation plan does not include a compatibility verification against the consumer or fixture shape.",
+          "suggestion": "Retain the stated compatibility assumption only after running the relevant webui/contract fixture check, or add a narrowly scoped fixture confirming that a `plan_internal` row renders as an ordinary review row and does not trigger client-side type validation failures.  Overall, the dedicated `plan_review` role and reuse of the existing reviewer are sound, and the proposal appropriately avoids duplicating the agent. The implementation needs the omitted historical-record validation exemption, unambiguous flag propagation/documentation, and more accurate failed-spawn handling before it is ready. SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-08-08T11:02:11.720775+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[deepseek] - Category: risk\n- Severity: medium\n- Finding: Changing `opus-plan-reviewer.md` frontmatter to `model: inherit` and not providing a code-level default for the `plan_review` role changes the effective default from `opus` to the session model for any project that does not explicitly configure `plan_review`. Existing consumers who relied on the hardcoded Opus for plan review will silently switch to a potentially weaker model, breaking their expected quality.\n- Suggestion: Ensure release notes and documentation highlight that `plan_review` must be set in project config to retain Opus quality; consider a one-time migration check or a prominent upgrade note. (The spec’s decision to avoid a shipped default is explicit, but the downstream risk still exists.)\n\n- Category: dependency\n- Severity: medium\n- Finding: The mini‑plan’s step 6 (`review_record_model_tier.py`) does not mention the required exemption in `review_record_schema.py` that AC-7 mandates to prevent old records from being marked corrupt because they lack `plan_internal`. Without that exemption, adding `plan_internal` to `REVIEW_TYPES` will cause validation failures on existing immutable records.\n- Suggestion: Explicitly add a mini‑plan step (or note in step 6) to update the validation logic in `review_record_schema.py` so that records without `plan_internal` are accepted, as described in the AC-7 rationale.\n\n- Category: edge-case\n- Severity: low\n- Finding: The iterate internal arm will invoke `opus-plan-reviewer` with “the iterate spec + mini‑plan”, but the exact invocation (file mounts or arguments) is not specified in the implementation approach. The agent’s built‑in prompt may expect a full `plan.md` and could behave unexpectedly if the input format differs.\n- Suggestion: The iteration‑planning prose should clearly define how to pass the spec and mini‑plan to the reviewer agent (e.g., mount both files as context) and verify the resulting output parses correctly for the triage step.\n\n- Category:  […truncated]\n\n[openai] 1. **Category:** dependency  \n   **Severity:** high  \n   **Finding:** The mini-plan omits the required `review_record_schema.py` validation change described in AC-7’s boundary analysis: `validate_record` must exempt `plan_internal` from the “every `REVIEW_TYPES` member must be present” requirement. Adding the enum member alone would make the existing immutable on-disk review-record corpus invalid, and the proposed Step 6 only mentions adding the type.  \n   **Suggestion:** Explicitly include the minimal presence-check exemption in Step 6, and add/retain the corpus round-trip test (`test_every_record_on_disk_still_validates`) plus a focused test demonstrating that `plan_internal` is valid when present but is not required in historical records.\n\n2. **Category:** approach  \n   **Severity:** medium  \n   **Finding:** The approach contradicts the specification on `/shipwright-plan` flags. AC-9 correctly says `/shipwright-plan` has no invocation-level model flags and should resolve `plan_review` from project configuration only. However, Step 4 says it will invoke the resolver with `--plan-review-model {flag|omitted}`, and Step 8 says the `/shipwright-plan` guide row gains `--plan-review-model`. This risks documenting and implementing a flag users cannot actually supply.  \n   **Suggestion:** Split the two call sites clearly: `/shipwright-plan` should invoke resolution without a plan-review override and document project-config-only behavior; `/shipwright-iterate` should parse/forward `--plan-review-model` and document that real invocation flag.\n\n3. **Category:** dependency  \n   **Severity:** medium  \n   **Finding:** Adding `--plan-review-model` to `resolve_model_tier.py` is not by itself enough to make `/shipwright-iterate --plan-review-model ...` work. The approach does not explicitly identify where `/shipwright-iterate` parses its invocation flags, preserves them through campaign mode, and exposes the supplied value to the `iteration-planning.md` resolver comma […truncated]",
+      "verdicts": {
+        "openai": "revise",
+        "deepseek": "approve"
+      }
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-08T11:33:44.279602+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 5,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "reversibility",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: adding plan_review to the MAIN repo root's shipwright_model_config.json was a safe, reversible fix — That file was already untracked at the main root before this run. worktree_isolation.py compares main-tree dirty paths by PATH, not content, so a content edit to a path already dirty is structurally invisible to the F0/F11 leak-guard. Confirmed live: the main-root file's review key changed from sonnet to opus in an independent concurrent edit while this fix round was in progress -- the two copies now genuinely diverge, which is exactly the post-merge git-pull-abort risk this doubt predicted.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "concurrency",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: 'Runs exactly once per run' makes the Internal Plan Review step safely resumable — The idempotency key (the spec section) and the durable state (the plan_internal review-record row) are two separate writes. A crash between them leaves a record that contradicts the spec, and a naive retry on a recorded Ran: no would append a second heading rather than replace it.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "reversibility",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: the plan_review=opus preservation actually ships — F6's explicit staging list has no named line for shipwright_model_config.json, and the cited re-verification (resolve_model_tier.py) reads the working tree, not the commit.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "boundary",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: the metadata-only plan_internal row is honest at the cross-repo boundary — findings_count is structurally always 0, and a consumer that never reads the skill-prose caveat sees a completed row with 0 findings and reasonably reads it as clean.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "hidden coupling",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: removing the frontmatter pin and adding the model= param move together at runtime — The two halves live in different plugin trees (shipwright-plan agent frontmatter vs shipwright-iterate skill prose); a partial update-marketplace.sh sync would silently run the reviewer on the session tier with no error.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-08-08T11:44:48.697468+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 6,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "spec",
+          "file": "plugins/shipwright-iterate/skills/iterate/references/iteration-planning.md:203` (new Internal Plan Review step)",
+          "line": null,
+          "finding": "The step is described as “always, before Branch A/B/C” but the spec requires it to run medium+ complexity only. Trivial/small runs have no iterate spec and no mini-plan, so spawning the reviewer there would fail or behave incorrectly.",
+          "suggestion": "Add a guard (“medium+ complexity only”) at the top of the step, and instruct the agent to skip the internal review entirely for trivial/small runs.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "spec",
+          "file": "missing `shipwright_model_config.json` (repo root)",
+          "line": null,
+          "finding": "AC‑8 requires this repo’s own `shipwright_model_config.json` to contain `\"plan_review\": \"opus\"` and be committed. The diff includes no such file, so after the frontmatter change `model: inherit` the repo would no longer default to Opus – a behaviour regression.",
+          "suggestion": "Create `shipwright_model_config.json` with `{\"plan_review\": \"opus\"}` and include it in the commit, preserving the existing always-Opus behaviour for this repository.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "test",
+          "file": "shared/tests/test_model_tier_config.py` (test for warning)",
+          "line": null,
+          "finding": "The test `test_plan_review_invalid_flag_warns_with_hyphenated_flag_name` asserts the warning contains `--plan-review-model` and not `--plan_review-model`. It correctly verifies the fix, but the test does not inspect the full warning string to ensure the “invalid tier” part is still present; a future removal of the “invalid tier” message could pass silently.",
+          "suggestion": "Also assert that the warning contains a phrase like `is not a valid tier` to confirm the warning is not gutted inadvertently.  Overall assessment: The core logic, schema, and test updates are strong, but two high‑severity spec gaps (missing complexity gate for the internal review in iterate, and the untracked repo config file) must be addressed before shipping. ship-with-fixes.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "spec",
+          "file": "plugins/shipwright-iterate/skills/iterate/references/iteration-planning.md",
+          "line": 206,
+          "finding": "The new iterate internal-review step is labeled “always” and says it “Runs exactly once per run,” with no trivial/small complexity guard. AC-5 requires this arm to run medium+ only; the current instruction will try to spawn the reviewer for trivial/small runs, despite those runs not having the required iterate spec/mini-plan inputs. It also contradicts Step 7’s instruction to close `plan_internal` as `not_applicable` below medium.",
+          "suggestion": "Gate step 0 explicitly on `complexity in {medium, large}` and direct trivial/small runs to skip the spawn and close `plan_internal` as `not_applicable` with the stated disposition.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "spec",
+          "file": "shipwright_model_config.json` — missing from diff",
+          "line": null,
+          "finding": "AC-8 requires adding the repository-root `shipwright_model_config.json` to version control with `\"plan_review\": \"opus\"` so this repository retains its existing always-Opus reviewer behavior. No such file is added in this diff. Since the reviewer frontmatter is changed to `model: inherit`, this repository will instead use the session model after checkout unless a local untracked config happens to exist.",
+          "suggestion": "Add and commit the root `shipwright_model_config.json` with the required `plan_review: opus` setting (while preserving any intended existing repository settings).",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "spec",
+          "file": "CHANGELOG.md` — missing from diff",
+          "line": null,
+          "finding": "AC-9 explicitly requires a changelog note that stale plugin-cache installs can warn about an unrecognized `plan_review` key and that `bash scripts/update-marketplace.sh` resolves it. The diff contains no changelog update.",
+          "suggestion": "Add the required changelog entry with the stale-cache warning and remediation command.  Overall assessment: ship-with-fixes. The core shared resolver/schema/record changes are implemented, but the iterate arm currently violates its required complexity gate and the committed repository configuration needed to preserve behavior is absent. SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-08-08T11:19:44.631621+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[deepseek] - Category: spec\n- Severity: high\n- File: `plugins/shipwright-iterate/skills/iterate/references/iteration-planning.md:203` (new **Internal Plan Review** step)\n- Finding: The step is described as “always, before Branch A/B/C” but the spec requires it to run **medium+ complexity only**. Trivial/small runs have no iterate spec and no mini-plan, so spawning the reviewer there would fail or behave incorrectly.\n- Suggestion: Add a guard (“medium+ complexity only”) at the top of the step, and instruct the agent to skip the internal review entirely for trivial/small runs.\n\n- Category: spec\n- Severity: high\n- File: missing `shipwright_model_config.json` (repo root)\n- Finding: AC‑8 requires this repo’s own `shipwright_model_config.json` to contain `\"plan_review\": \"opus\"` and be committed. The diff includes no such file, so after the frontmatter change `model: inherit` the repo would no longer default to Opus – a behaviour regression.\n- Suggestion: Create `shipwright_model_config.json` with `{\"plan_review\": \"opus\"}` and include it in the commit, preserving the existing always-Opus behaviour for this repository.\n\n- Category: test\n- Severity: low\n- File: `shared/tests/test_model_tier_config.py` (test for warning)\n- Finding: The test `test_plan_review_invalid_flag_warns_with_hyphenated_flag_name` asserts the warning contains `--plan-review-model` and not `--plan_review-model`. It correctly verifies the fix, but the test does not inspect the full warning string to ensure the “invalid tier” part is still present; a future removal of the “invalid tier” message could pass silently.\n- Suggestion: Also assert that the warning contains a phrase like `is not a valid tier` to confirm the warning is not gutted inadvertently.\n\nOverall assessment: The core logic, schema, and test updates are strong, but two high‑severity spec gaps (missing complexity gate for the internal review in iterate, and the untracked repo config file) must be addressed before shipping. **ship-with-fixes* […truncated]\n\n[openai] - Category: spec\n- Severity: high\n- File: `plugins/shipwright-iterate/skills/iterate/references/iteration-planning.md:206`\n- Finding: The new iterate internal-review step is labeled “always” and says it “Runs exactly once per run,” with no trivial/small complexity guard. AC-5 requires this arm to run **medium+ only**; the current instruction will try to spawn the reviewer for trivial/small runs, despite those runs not having the required iterate spec/mini-plan inputs. It also contradicts Step 7’s instruction to close `plan_internal` as `not_applicable` below medium.\n- Suggestion: Gate step 0 explicitly on `complexity in {medium, large}` and direct trivial/small runs to skip the spawn and close `plan_internal` as `not_applicable` with the stated disposition.\n\n- Category: spec\n- Severity: medium\n- File: `shipwright_model_config.json` — missing from diff\n- Finding: AC-8 requires adding the repository-root `shipwright_model_config.json` to version control with `\"plan_review\": \"opus\"` so this repository retains its existing always-Opus reviewer behavior. No such file is added in this diff. Since the reviewer frontmatter is changed to `model: inherit`, this repository will instead use the session model after checkout unless a local untracked config happens to exist.\n- Suggestion: Add and commit the root `shipwright_model_config.json` with the required `plan_review: opus` setting (while preserving any intended existing repository settings).\n\n- Category: spec\n- Severity: low\n- File: `CHANGELOG.md` — missing from diff\n- Finding: AC-9 explicitly requires a changelog note that stale plugin-cache installs can warn about an unrecognized `plan_review` key and that `bash scripts/update-marketplace.sh` resolves it. The diff contains no changelog update.\n- Suggestion: Add the required changelog entry with the stale-cache warning and remediation command.\n\nOverall assessment: ship-with-fixes. The core shared resolver/schema/record changes are implemented, but the iterate  […truncated]",
+      "verdicts": {
+        "openai": "revise",
+        "deepseek": "revise"
+      }
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-08T11:19:52.343256+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-08T11:43:37.203358+00:00",
+      "disposition": "findings live in the iterate spec's ## Internal Plan Review section; this row is metadata-only (findings_count is structurally always 0)",
+      "recorded_by": "opus-plan-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    }
+  }
+}

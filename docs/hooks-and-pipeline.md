@@ -2755,8 +2755,11 @@ orchestrator
 
 ```
 Step 5, before any of Branch A/B/C — no dispatch token, no hook:
-  the skill spawns opus-plan-reviewer directly via the Agent tool
-opus-plan-reviewer subagent (Read/Grep/Glob only, model: opus)
+  the skill resolves `plan_review` via resolve_model_tier.py, then
+  spawns opus-plan-reviewer directly via the Agent tool
+opus-plan-reviewer subagent (Read/Grep/Glob only, model: inherit in its own
+  frontmatter — the Agent tool's model= parameter carries the resolved tier,
+  omitted when "inherit" so the subagent runs on the session's own model)
   → reads {planning_dir}/plan.md + {spec_file}
   → returns findings (JSON) to the skill, does not write files itself
 plan SKILL
@@ -2766,8 +2769,32 @@ plan SKILL
   → on spawn/parse failure: records `Ran: no`, continues to Branch A/B/C —
     the Pre-5b Checkpoint (not this pass) decides whether the Self-Review
     Fallback runs before Step 5b's marker write
-  → writes NO marker of its own (findings-count/reason on the existing
+  → writes NO review-record row and NO marker of its own — this phase has no
+    run_id to record against (findings-count/reason on the existing
     Step 5b `mark-review-state.py` call carry its outcome where relevant)
+```
+
+### opus-plan-reviewer (Iterate Phase, Internal Plan Review sub-step)
+
+```
+Medium+ complexity, before Branch A/B/C — the iterate's own arm (mirrors
+Step 5-int above, over the iterate spec + mini-plan instead of plan.md):
+  the skill resolves `plan_review` via resolve_model_tier.py (§F), then
+  spawns shipwright-plan:opus-plan-reviewer (cross-plugin Agent spawn)
+opus-plan-reviewer subagent
+  → reads the iterate spec + mini-plan
+  → returns findings (JSON) to the iterate skill
+iterate SKILL
+  → triages each finding fix/disclose/decline, appends
+    `## Internal Plan Review` to the iterate spec (never plan.md — this run
+    has none), notes `Ran:`/`Status:` in the iterate ADR
+  → on spawn/parse failure (incl. shipwright-plan not installed): records
+    `Ran: no`, continues to Branch A/B/C — iterate's self-review already runs
+    unconditionally at every complexity, so this pass is additive, not a
+    fallback trigger
+  → when `Ran: yes`: records a `plan_internal` review-record row via
+    record_review_pass.py (this phase DOES have a run_id) — the row an
+    operator-configured `floors.plan_review` judges
 ```
 
 ### section-writer (Plan Phase)
@@ -2796,7 +2823,7 @@ plan SKILL completes
 | `.shipwright/agent_docs/iterates/<run_id>.test-results.json` | iterate F5c (`append_iterate_entry.py`): validates `iterate_latest.run_id`, then atomically installs the exact root-snapshot bytes once | F11 immutable-evidence gate; future per-run evidence consumers. Tracked and never summary-retention-pruned; root `shipwright_test_results.json` remains excluded from iterate commits. |
 | `shipwright_compliance_config.json` | update_compliance.py, run_audit.py (`last_audit` / `last_full_audit`) | Compliance (phases_covered; the audit record → the `Consistency-audit:` provenance line in every evidence document) |
 | `shipwright_plan_config.json` | /shipwright-plan | Build (section references) |
-| `shipwright_model_config.json` (optional; schema `shared/schemas/model_config.schema.json`) | Operator, hand-authored at the MAIN repo root | `/shipwright-iterate` and `/shipwright-build` at their Planned Run Summary / Session Report step, via `resolve_model_tier.py` (`lib.model_tier_config`) — resolves the per-role (`review`/`finalization`/`execution`) Claude model tier for that run's Agent-tool spawns. Absent file = today's behavior (`inherit` for every role, bit-identical). An optional `floors` block is read at F11 by `review_record_model_tier`'s advisory (never blocking) `model_tier_note()`. |
+| `shipwright_model_config.json` (optional; schema `shared/schemas/model_config.schema.json`) | Operator, hand-authored at the MAIN repo root | `/shipwright-iterate` and `/shipwright-build` at their Planned Run Summary / Session Report step, via `resolve_model_tier.py` (`lib.model_tier_config`) — resolves the per-role (`review`/`finalization`/`execution`/`plan_review`) Claude model tier for that run's Agent-tool spawns. `/shipwright-plan` Step 5-int and `/shipwright-iterate`'s own Internal Plan Review sub-step (medium+, before Branch A/B/C) both resolve `plan_review` before spawning `shipwright-plan:opus-plan-reviewer` — a cross-plugin `Agent` spawn, so a consumer with only `shipwright-iterate` installed degrades to `Ran: no (shipwright-plan not installed)` there. Absent file = today's behavior (`inherit` for every role, bit-identical). An optional `floors` block is read at F11 by `review_record_model_tier`'s advisory (never blocking) `model_tier_note()`, keyed per role (`review` judges `spec`/`code`/`doubt`; `plan_review` judges `plan_internal` only — never the external `plan` row). |
 | `shipwright_iterate_config.json` | /shipwright-project or /shipwright-adopt; operator overrides | /shipwright-iterate (`events_context.mode`, external plan/code-review gates). `events_context.mode` defaults to `compact`; `shadow` keeps the compact prompt bundle while measuring full cost; `full` is explicit rollback/forensics only. |
 | `shipwright_project_session.json` | /shipwright-project | /shipwright-project (session resume state) |
 | `shipwright_plan_session.json` | /shipwright-plan | /shipwright-plan (session resume state) |

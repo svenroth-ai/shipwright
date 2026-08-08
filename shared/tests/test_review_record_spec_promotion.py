@@ -95,9 +95,9 @@ def test_the_new_shape_satisfies_the_new_consumer_contract(tmp_path):
     # the pinned five must all still be PRESENT — tolerance is additive only
     for review_type in PINNED_CONSUMER_TYPES:
         assert review_type in on_disk["reviews"]
-    # `spec` rides along as a stranger key: rendered, not rejected
+    # `spec` and `plan_internal` ride along as stranger keys: rendered, not rejected
     strangers = [k for k in on_disk["reviews"] if k not in PINNED_CONSUMER_TYPES]
-    assert strangers == ["spec"]
+    assert strangers == ["spec", "plan_internal"]
     for key in strangers:
         assert re.match(CONSUMER_KEY_RE, key), f"{key!r} is corruption, not evolution"
     assert len(on_disk["reviews"]) <= CONSUMER_MAX_REVIEW_TYPES
@@ -146,9 +146,10 @@ def test_a_gates_era_spec_row_is_still_found():
 
 def test_a_pre_gates_record_reports_spec_unanswered():
     """Back-compat is about READING history. A record that never answered for
-    `spec` still reports it unanswered, so a live run cannot inherit the
-    tolerance and dodge the row."""
-    assert pending_types(_legacy_pre_gates()) == ["spec"]
+    `spec` (or, now, `plan_internal` — the fixture predates both) still
+    reports them unanswered, so a live run cannot inherit the tolerance and
+    dodge the row."""
+    assert pending_types(_legacy_pre_gates()) == ["spec", "plan_internal"]
 
 
 def test_every_record_on_disk_still_validates():
