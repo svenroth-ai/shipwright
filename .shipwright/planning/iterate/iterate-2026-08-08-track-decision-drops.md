@@ -144,8 +144,9 @@ addable at all. Filed as a triage follow-up at F12.
       `decision-drops.ts` reader (behavior unchanged) recording the
       resulting visibility-timing consequence for its "Decisions" panel.
       Left uncommitted (separate repo/remote — operator's call).
-- [ ] This run's own ADR explicitly supersedes ADR-050 by number —
-      **not yet written**; happens at F3.
+- [x] This run's own ADR explicitly supersedes ADR-050 by number —
+      `.shipwright/planning/adr/128-track-decision-drops.md`, decision-drop
+      `iterate-2026-08-08-track-decision-drops_001.json` (F3).
 - [x] Abandoned-run regression (a drop on an unmerged, later-deleted branch
       is now lost, vs. today's harmless main-disk clutter that still gets
       folded) recorded as an accepted consequence: mini-plan addendum item

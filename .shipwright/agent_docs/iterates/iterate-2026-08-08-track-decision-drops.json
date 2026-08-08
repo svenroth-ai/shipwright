@@ -1,0 +1,157 @@
+{
+  "run_id": "iterate-2026-08-08-track-decision-drops",
+  "date": "2026-08-08T11:01:18.994778Z",
+  "event_at": "2026-08-08T11:00:29.478631+00:00",
+  "type": "feature",
+  "complexity": "medium",
+  "prior_source": "keyword",
+  "branch": "iterate/track-decision-drops",
+  "spec": ".shipwright/planning/iterate/iterate-2026-08-08-track-decision-drops.md",
+  "tests_passed": true,
+  "adr": "iterate-2026-08-08-track-decision-drops",
+  "test_completeness": {
+    "status": "complete",
+    "behaviors": [
+      {
+        "behavior": ".gitignore ignores decision-drops/INDEX.md and *.tmp, not the dir",
+        "disposition": "tested",
+        "evidence": "test_gitignore_canon_merge.py::test_empirical_round_trip_fresh_repo"
+      },
+      {
+        "behavior": "write_decision_drop.drop_dir() resolves to project_root (no main-root jump) from inside a real worktree",
+        "disposition": "tested",
+        "evidence": "test_write_decision_drop.py::test_drop_dir_plain_repo_is_repo_local, ::test_drop_written_from_worktree_lands_in_the_worktree"
+      },
+      {
+        "behavior": "decision_drops_index.drop_dir() \u2014 same",
+        "disposition": "tested",
+        "evidence": "test_decision_drops_index_producers.py (CLI + rebuild against drop_dir(tmp_path)); resolution pinned by SSoT row 6"
+      },
+      {
+        "behavior": "aggregate_decisions.drop_dir() \u2014 same",
+        "disposition": "tested",
+        "evidence": "test_aggregate_decisions.py::test_drop_dir_resolves_the_calling_checkout_not_main"
+      },
+      {
+        "behavior": "F11 verifier (check_architecture_documented) finds the current run's own drop in ITS worktree, not main's",
+        "disposition": "tested",
+        "evidence": "test_verify_iterate_finalization.py::test_architecture_documented_reads_the_worktrees_own_drop_not_main"
+      },
+      {
+        "behavior": "_WORKTREE_LOCAL SSoT registry: forward \u2014 no registered file calls resolve_main_repo_root for decision-drops",
+        "disposition": "tested",
+        "evidence": "test_decision_drop_ssot.py::test_decision_drop_sites_do_not_redirect_to_main_root"
+      },
+      {
+        "behavior": "_WORKTREE_LOCAL SSoT registry: coverage \u2014 no unaccounted raw join anywhere in the repo",
+        "disposition": "tested",
+        "evidence": "test_decision_drop_ssot.py::test_no_unaccounted_decision_drop_site_redirects_to_main_root"
+      },
+      {
+        "behavior": "_WORKTREE_LOCAL SSoT registry: reverse \u2014 every entry still builds a raw join",
+        "disposition": "tested",
+        "evidence": "test_decision_drop_ssot.py::test_registry_not_stale"
+      },
+      {
+        "behavior": "/shipwright-changelog Step 6 stages the release-time drop-file deletions",
+        "disposition": "tested",
+        "evidence": "test_decision_drops_index_producers.py::test_aggregate_folding_a_drop_refreshes_the_drops_index_to_empty (proves deletion; SKILL.md staging line verified by reading the diff, no Python surface)"
+      },
+      {
+        "behavior": "Layer-1 context-loading read is bounded (20 most recent, one line each)",
+        "disposition": "tested",
+        "evidence": "test_decision_drops_index.py::test_recent_summary_bounds_to_the_limit_most_recent, ::test_recent_summary_empty_when_no_drops"
+      },
+      {
+        "behavior": "A decision-drop written in one worktree does not appear in a sibling worktree",
+        "disposition": "tested",
+        "evidence": "test_write_decision_drop.py::test_sibling_worktrees_do_not_share_pending_drops"
+      },
+      {
+        "behavior": "An uncommitted drop is lost when its worktree is removed (accepted tradeoff)",
+        "disposition": "tested",
+        "evidence": "test_write_decision_drop.py::test_uncommitted_drop_is_lost_with_the_worktree"
+      },
+      {
+        "behavior": "A committed-then-merged drop survives worktree removal and is aggregated (producer -> worktree file -> commit -> merge -> consumer)",
+        "disposition": "tested",
+        "evidence": "test_write_decision_drop.py::test_committed_drop_survives_worktree_removal_and_is_aggregated",
+        "category": "integration"
+      },
+      {
+        "behavior": "Group-F F5 arch-drift detective resolves decision-drops against project_root, not main",
+        "disposition": "tested",
+        "evidence": "test_audit_groups_c_f.py::TestF5ArchDrift"
+      },
+      {
+        "behavior": "test_architecture_md_reflects_arch_impact.py's own drift-oracle resolves against project_root",
+        "disposition": "tested",
+        "evidence": "test_discovery_sanity_skips_when_dir_absent, ::skips_when_present_but_empty, ::ok_when_present_with_nonarch_drop"
+      },
+      {
+        "behavior": "An already-adopted project's stale blanket decision-drops/ ignore rule is RETRACTED on next self-heal, replacement rules added in the same pass",
+        "disposition": "tested",
+        "evidence": "test_gitignore_canon_retraction.py (6 tests); test_gitignore_selfheal.py::test_self_heal_retracts_superseded_decision_drops_rule"
+      },
+      {
+        "behavior": "Retraction never touches a hand-written line outside the target's own managed marker block",
+        "disposition": "tested",
+        "evidence": "test_gitignore_canon_retraction.py::test_merge_does_not_retract_a_rule_outside_the_managed_block"
+      },
+      {
+        "behavior": "F11 fails when a decision-drop is present in the working tree but absent from this iterate's own commit(s)",
+        "disposition": "tested",
+        "evidence": "test_decision_log_gate.py::test_decision_drop_committed_fails_when_drop_is_unstaged, ::test_decision_drop_committed_passes_when_drop_landed_in_an_earlier_commit"
+      },
+      {
+        "behavior": "F11 SKIPs (not fails) when the directory is still gitignored in a project that hasn't self-healed yet",
+        "disposition": "tested",
+        "evidence": "test_decision_log_gate.py::test_decision_drop_committed_skips_when_directory_gitignored"
+      },
+      {
+        "behavior": "A drop whose file mtime predates the tracking cutoff is quarantined, not aggregated; freshness reads mtime, not the JSON date field",
+        "disposition": "tested",
+        "evidence": "test_decision_drop_legacy.py (13 tests, incl. test_is_legacy_drop_ignores_narrative_date_field); test_aggregate_decisions.py::test_legacy_drop_quarantined_not_aggregated, ::test_mixed_fresh_and_legacy_batch"
+      },
+      {
+        "behavior": "Quarantine is report-only under --dry-run",
+        "disposition": "tested",
+        "evidence": "test_aggregate_decisions.py::test_legacy_drop_dry_run_reports_without_moving"
+      },
+      {
+        "behavior": "F6's decision-drop staging is glob-scoped to {run_id}_*.json, not the whole directory",
+        "disposition": "tested",
+        "evidence": "test_write_decision_drop.py::test_f6_decision_drop_add_is_glob_scoped_to_run_id, ::test_unrelated_sibling_drop_survives_run_id_scoped_staging"
+      },
+      {
+        "behavior": "verifiers/common.py's two raw decision-drop joins are registered in the SSoT registry and pass all three registry tests",
+        "disposition": "tested",
+        "evidence": "test_decision_drop_ssot.py (all 3 tests re-run with common.py added)"
+      },
+      {
+        "behavior": "The .gitignore/template congruence test still passes with the new quarantine-dir rule added to both",
+        "disposition": "tested",
+        "evidence": "test_gitignore_template_congruent.py::test_template_and_framework_block_are_congruent"
+      }
+    ],
+    "counts": {
+      "testable": 24,
+      "tested": 24,
+      "untestable": 0,
+      "untested_testable": 0
+    },
+    "enumeration_basis": {
+      "acs": 19,
+      "covered_acs": 19
+    },
+    "ledger_path": ".shipwright/planning/iterate/iterate-2026-08-08-track-decision-drops.md"
+  },
+  "surface_verification": {
+    "surface": "none",
+    "tests_run": 0,
+    "exit_code": 0,
+    "evidence_path": ".shipwright/runs/iterate-2026-08-08-track-decision-drops/surface_verification.json",
+    "justification": "Pure backend/CLI Python tooling change (decision-drop aggregation, gitignore canon, worktree-local path resolution) \u2014 no web UI, no API route, no store consumed by a frontend. No startable web/api surface exists to drive."
+  },
+  "declared_removals": []
+}
