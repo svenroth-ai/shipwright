@@ -1,0 +1,252 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-08-08-triage-amend-event",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-08T18:32:14.514872+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-08T18:36:56.254290+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "unstructured",
+      "raw_excerpt": "[deepseek] External plan review (--mode iterate, 2026-08-08). 4 findings, verification-only, no design change. No contradiction with the openai leg.\nSHIPWRIGHT_VERDICT: approve\n\n[openai] External plan review (--mode iterate, 2026-08-08). 6 findings: (1) a real forged-record gap at the corruption boundary -- a key-complete but contentless amend would pass is_triage_record; (2) a module-naming/cohesion issue from bundling amend-agnostic and amend-specific helpers together; plus lower-severity test-coverage and stale-text findings. All folded into the mini-plan before build.\nSHIPWRIGHT_VERDICT: revise",
+      "verdicts": {
+        "openai": "revise",
+        "deepseek": "approve"
+      }
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 9,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "correctness",
+          "file": "shared/scripts/lib/triage_amend.py",
+          "line": null,
+          "finding": "amend_triage_item accepted a non-string detail, which would write past the schema and be silently skipped WHOLE on read, discarding a co-submitted valid title too.",
+          "suggestion": "Add check_amend_detail(detail) mirroring check_amend_title's isinstance(str) guard.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "shared/scripts/triage.py",
+          "line": null,
+          "finding": "amend_triage_item validated arguments AFTER the FileNotFoundError existence check, unlike mark_status which validates before any I/O.",
+          "suggestion": "Move check_amend_fields(...) before the store-existence check.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "shared/scripts/lib/triage_gc_core.py",
+          "line": null,
+          "finding": "_resolve_tracked_only only initialized amendedBy/amendedAt for items that were actually amended, breaking shape parity with read_all_items which initializes both fields for every item.",
+          "suggestion": "Initialize amendedBy/amendedAt to None for every item up front.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "maintainability",
+          "file": "shared/scripts/lib/triage_amend.py",
+          "line": null,
+          "finding": "resolve_amend_residence and mark_status's inline residence expression duplicate the same routing logic with no shared helper and no docstring cross-reference.",
+          "suggestion": "Document the known duplication in resolve_amend_residence's docstring; deferred as a code fix given triage.py's zero bloat headroom.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "shared/schemas/triage_item.schema.json",
+          "line": null,
+          "finding": "The wire schema's amend branch title field had no non-whitespace pattern constraint, so a non-Python writer could submit a whitespace-only title that passes schema validation.",
+          "suggestion": "Add pattern: \\\\S to both the append and amend branches' title field.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "style",
+          "file": "shared/scripts/lib/sweep_quarantine.py",
+          "line": null,
+          "finding": "sweep_quarantine.py had two trailing blank lines at EOF.",
+          "suggestion": "Remove the trailing blank lines.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "shared/scripts/lib/sweep_drift_events.py",
+          "line": null,
+          "finding": "sweep_drift_events's amend handling carried a redundant duplicate assertion instead of a distinct reason code for a glued append+amend line.",
+          "suggestion": "Give the glued-amend-line case its own reason code instead of reusing the append one.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "maintainability",
+          "file": "shared/scripts/lib/triage_dedup.py",
+          "line": null,
+          "finding": "triage_dedup.py's module docstring referenced other functions by hardcoded line numbers (:408, :530), which go stale on the next edit.",
+          "suggestion": "Reference the function names instead of line numbers.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "shared/scripts/lib/triage_validate.py",
+          "line": null,
+          "finding": "validate_triage_text's second pass reported orphan status and orphan amend errors in kind-major order (all statuses, then all amends) instead of the file order they actually occur in.",
+          "suggestion": "Build one file-ordered ref_ids list and branch by kind inline while iterating it once.",
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-08-08T18:32:14.149661+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 8,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "correctness",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: Delivery-visibility parity for amend is safely deferred scope (AC15). — D1: on idle main every write routes to the outbox, so the CLI's success message was the operator's ONLY signal a correction hadn't reached any branch yet -- and it said nothing. Fixed: amend_triage_item now returns whether the write landed in the outbox; cmd_amend prints a one-line note when it did.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "high",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: This iterate's plugin-side changes are safe to ship without a special note. — D2: a stale cached copy of sweep_drift_events.py (one still missing 'amend' from _EVENTS) would jam the ENTIRE outbox delivery pipeline for every event kind, not only amend. Rebutted, not code-fixed: CLAUDE.md's standing update-marketplace.sh + check_plugin_cache_sync.py --strict requirement already covers this for every shared/scripts/ change; this diff relies on that existing gate rather than weakening it. The WebUI reader's actual behavior on an unrecognized amend line is unverified from this repo and is recorded as an open question on trg-d5ef8039.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: sweep_quarantine.decide() classifies an orphan amend the same way it classifies an orphan status. — D3: orphan amend lines were quarantined under the SAME hardcoded 'status' reason text as orphan status lines. Fixed: sweep_quarantine.py now tags each quarantined line with its actual event kind via quarantine_reason(event).",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "high",
+          "category": "correctness",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: _resolve_tracked_only (the GC path) resolves status+amend events the same way read_all_items does. — D4: _resolve_tracked_only applied status+amend events in a single interleaved file-order pass instead of read_all_items's two-pass (ts, file-order) resolution -- a real behavioral divergence between the two readers. Fixed: rewritten to mirror read_all_items exactly.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: sweep_quarantine's block messages correctly report which lines were withheld. — D6: a held status line's id could make an unrelated, never-a-hold-candidate amend line look 'withheld' in a block message, because both kinds shared one held_ids set. Fixed: split into held_status_ids / held_amend_ids.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: apply_amend safely handles a forged or hand-edited amend line. — D7: a forged/hand-edited amend line with a non-string by/ts raised AttributeError deep in a consumer instead of degrading like mark_status's existing non-str-status guard. Fixed: apply_amend now collapses a non-str by/ts to None.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "documentation",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: The five verbs / four verbs claim in docs/guide.md and docs/security-ci-setup.md is accurate, and the bloat-cap headroom claim in the spec is current. — D5/D8: docs still said 'four verbs' after amend made it five (fixed in both docs, regressed by test_the_documents_describe_the_amend_subcommand); the spec's bloat-cap-probe bullet needed re-measurement after the D1 fix pushed triage.py back to exactly 882/882 -- not a defect, a stale claim caught and corrected.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: lib.triage_fields (the new lazy-loaded leaf this iterate introduced) survives ADR-045's sentinel-mode fallback the same way the pre-existing leaves do. — D9: no test exercised load_shared_lib('triage_fields') under sentinel mode, unlike jsonl_records/triage_integrity which are pinned. Fixed: test_triage_fields_sentinel_mode_resolves_severities_and_kinds pins the fallback path directly.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-08-08T18:32:14.273894+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-08T18:32:14.389325+00:00",
+      "disposition": "internal code-reviewer + doubt-reviewer cascade ran instead (CLAUDE.md standing review-cascade grant); external_review.py --mode code was not separately invoked for this run",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-08T18:32:13.817155+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": "opus",
+      "completed_at": "2026-08-08T18:32:13.930734+00:00",
+      "disposition": null,
+      "recorded_by": "opus-plan-reviewer",
+      "parse_status": "unstructured",
+      "raw_excerpt": "Internal Opus plan review (2026-08-08): approve-with-changes.\n\n4 HIGH findings:\n1. A false kind->suggestedDomain derivation was assumed in the mini-plan; no such relationship exists anywhere in the codebase (suggestedDomain derives from source, which is not amendable).\n2. triage.py sits at its exact bloat cap with zero headroom, so any addition needs an equal-or-greater removal.\n3. The amend writer was under-specified relative to mark_status's routing/lock/error parity (residence probe outside the lock, lock acquired exactly once, FileNotFoundError/KeyError contract).\n4. The validator and GC fixes (orphan-amend classification, GC compaction) were wrongly treated as independently deferrable -- an orphan-amend validation error without the matching GC fix self-inflicts a permanent GC block, so they must ship together.\n\nPlus 5 MEDIUM and 3 LOW findings, all folded into the mini-plan before external review.\n\nFull findings recorded in the mini-plan's \"Internal Opus plan review\" section: .shipwright/planning/iterate/2026-08-08-triage-amend-event-miniplan.md\n",
+      "model_tier": "opus"
+    }
+  }
+}

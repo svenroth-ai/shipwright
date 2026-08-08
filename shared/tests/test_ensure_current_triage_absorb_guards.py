@@ -119,6 +119,20 @@ def test_absorb_refuses_to_commit_torn_content(git_origin_repo) -> None:
     assert _TRIAGE not in _staged(work), "torn content must never reach the index"
 
 
+def test_absorb_skips_an_orphan_amend_same_as_an_orphan_status(git_origin_repo) -> None:
+    """iterate-2026-08-08-triage-amend-event, AC11: an `amend` whose id has no
+    `append` anywhere surfaces through `_absorb_dirty_triage_log` the same way
+    an orphan `status` already does — both are non-empty
+    `validate_triage_text` errors, so the guard declines to stage either."""
+    work, _origin = git_origin_repo
+    _seed_tracked_log(work)
+    orphan_amend = '{"event":"amend","id":"trg-ghost","by":"cli","title":"x"}'
+    _write(work, _TRIAGE, f"{_HEADER}\n{orphan_amend}\n")
+
+    assert ec._absorb_dirty_triage_log(work) == "triage-absorb-skipped-invalid"
+    assert _TRIAGE not in _staged(work), "an orphan amend must never reach the index"
+
+
 def test_absorb_reports_a_failed_stage_and_leaves_the_index_alone(
     git_origin_repo, monkeypatch, capsys,
 ) -> None:

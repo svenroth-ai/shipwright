@@ -1027,6 +1027,12 @@ _Where the work detail lives_ at the end of this document.
   request is turned down because the entry had already moved on, then the
   caller is told so plainly and cannot mistake it for success — a decision that
   was not recorded is never reported as one that was.
+- (E) Given an entry's title, detail, severity or kind was recorded wrong, when
+  the operator corrects it from the command line, then the entry is updated in
+  place under the same reference, its correction is attributed and timestamped,
+  and a correction that changes nothing recognized is refused rather than
+  silently accepted — so fixing a mistake no longer requires dismissing the
+  entry and losing its history to a new one.
 
 <a id="fr-0115"></a>
 ### FR-01.15 — Cross-repo output contract

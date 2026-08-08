@@ -111,6 +111,24 @@ def test_invalid_log_is_not_committed(git_origin_repo) -> None:
     assert "NOT json" in (work / TRIAGE).read_text(encoding="utf-8")
 
 
+def test_orphan_amend_is_invalid_same_as_orphan_status(git_origin_repo) -> None:
+    """iterate-2026-08-08-triage-amend-event, AC11: an orphan `amend` surfaces
+    through `reconcile_main_triage` the same way an orphan `status` already
+    does — both are non-empty `validate_triage_text` errors, so both fail
+    closed rather than being silently committed."""
+    work, _ = git_origin_repo
+    h.set_identity(work)
+    h.seed_tracked_triage(work, h.item("trg-aaaa"))
+    before = h.head_count(work)
+    h.append(work, '{"event":"amend","id":"trg-ghost","by":"cli","title":"x"}')
+
+    res = reconcile_triage.reconcile_main_triage(work, allow_ci=True)
+
+    assert res.status == "invalid", res
+    assert any("amend" in e and "no append anywhere" in e for e in res.errors)
+    assert h.head_count(work) == before
+
+
 def test_dedup_folds_exact_duplicate_lines(git_origin_repo) -> None:
     work, _ = git_origin_repo
     h.set_identity(work)

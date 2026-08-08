@@ -64,15 +64,22 @@ class TriageValidation:
     header, duplicate append, unrecoverable fragment, empty log); genuine
     corruption a caller must treat as fatal.
 
-    ``unidentified_status`` — True when at least one ``status`` event has no
-    ``append`` anywhere AND its id is missing or not a ``str``. Its own class,
-    because it fits neither of the others and the gap between them was a dead
-    end: the error was recorded but the id could not enter ``orphan_status_ids``,
-    so ``decide`` blocked on a line the quarantine could not select (no id) and
-    the repair could not fix (the JSON is valid) — trg-b854805c, finding 18.
-    Such a record is inert to every reader: ``triage.read_all_items`` pass 2
-    skips a status whose id is not a ``str``, which is what licenses the sweep to
-    quarantine it rather than hold it — nothing observable is destroyed.
+    ``unidentified_status`` — True when at least one ``status`` OR ``amend``
+    event has no ``append`` anywhere AND its id is missing or not a ``str``. Its
+    own class, because it fits neither of the others and the gap between them
+    was a dead end: the error was recorded but the id could not enter
+    ``orphan_status_ids``, so ``decide`` blocked on a line the quarantine could
+    not select (no id) and the repair could not fix (the JSON is valid) —
+    trg-b854805c, finding 18. Such a record is inert to every reader:
+    ``triage.read_all_items`` pass 2 skips a status/amend whose id is not a
+    ``str``, which is what licenses the sweep to quarantine it rather than
+    hold it — nothing observable is destroyed.
+
+    ``orphan_amend_ids`` (iterate-2026-08-08-triage-amend-event) — the same
+    recoverable class as ``orphan_status_ids``, for ``amend``: an id with no
+    ``append`` anywhere. AC11: this field and ``triage_gc_core``'s matching
+    compaction fix ship together — an orphan-amend classification without the
+    matching GC fix would self-inflict a permanent GC block on the next run.
 
     New fields are TRAILING and defaulted so the historical positional
     construction of this re-exported dataclass keeps working (external plan
@@ -83,6 +90,7 @@ class TriageValidation:
     orphan_status_ids: frozenset[str]
     has_non_orphan_error: bool
     unidentified_status: bool = False
+    orphan_amend_ids: frozenset[str] = frozenset()
 
 
 def classify_triage_text(text: str) -> TriageValidation:
@@ -92,7 +100,9 @@ def classify_triage_text(text: str) -> TriageValidation:
     (b) every non-blank line decodes as a sequence of one or more JSON OBJECTS —
     a recoverable concatenation is NOT an error, only an unrecoverable remainder
     is; (c) no duplicate ``append`` for one id; (d) no ``status`` event whose id
-    has no ``append`` anywhere.
+    has no ``append`` anywhere; (e) no ``amend`` event whose id has no ``append``
+    anywhere (iterate-2026-08-08-triage-amend-event) — same recoverable class as
+    (d), reported in ``orphan_amend_ids`` rather than ``orphan_status_ids``.
 
     Check (a) reads the first *record*, not the first *line*: a glued
     ``header + append`` line has a perfectly good header on it, and the pre-fix
@@ -100,11 +110,12 @@ def classify_triage_text(text: str) -> TriageValidation:
     """
     errors: list[str] = []
     orphan_ids: set[str] = set()
+    orphan_amend_ids: set[str] = set()
     header_seen = False
     has_other = False
     unidentified = False
     append_ids: set[str] = set()
-    status_ids: list[tuple[int, object]] = []
+    ref_ids: list[tuple[int, object, str]] = []  # (line, id, "status"|"amend"), file order
     for n, line in enumerate(text.splitlines(), start=1):
         stripped = line.strip()
         if not stripped:
@@ -146,7 +157,9 @@ def classify_triage_text(text: str) -> TriageValidation:
                         has_other = True
                     append_ids.add(iid)
             elif event == "status":
-                status_ids.append((n, iid))
+                ref_ids.append((n, iid, "status"))
+            elif event == "amend":
+                ref_ids.append((n, iid, "amend"))
         if remainder:
             # Unchanged in kind — genuine corruption still fails closed — but never
             # again without a remedy. A bare scalar reaches here too: valid JSON,
@@ -156,28 +169,28 @@ def classify_triage_text(text: str) -> TriageValidation:
                 f"corrupted a historic line; {_REPAIR_HINT}"
             )
             has_other = True
-    # Second pass: status ids are checked against the FULL append set, NOT only
-    # appends seen earlier in file order — ``merge=union`` may legitimately
-    # interleave lines so a status precedes its append while both are present
-    # (order-sensitive validation would false-fail `triage_invalid`). Only a
-    # status whose append is absent ANYWHERE is a real merge drop.
-    for n, iid in status_ids:
-        # ``isinstance`` first: a non-str id can never be in the (str-only)
-        # append set, and testing membership with an unhashable id would raise.
-        if not isinstance(iid, str) or iid not in append_ids:
-            if isinstance(iid, str):
-                errors.append(
-                    f"line {n}: status for id {iid!r} has no append anywhere — the merge dropped it"
-                )
-                orphan_ids.add(iid)
-            else:
-                # NOT "the merge dropped it" — nothing was dropped. The record
-                # names no item, so no reader can apply it and no id-keyed
-                # remedy can select it. Its own class, its own sentence.
-                errors.append(
-                    f"line {n}: status event has no usable id ({iid!r}) — no reader can apply it"
-                )
-                unidentified = True
+    # Second pass, over BOTH referencing kinds in one file-order sweep (not
+    # kind-major — a kind-major sweep reported status/amend defects out of
+    # line order, which the docstring below promises never happens): ids are
+    # checked against the FULL append set, NOT only appends seen earlier in
+    # file order — ``merge=union`` may legitimately interleave lines so a
+    # status/amend precedes its append while both are present (order-sensitive
+    # validation would false-fail `triage_invalid`). Only a reference whose
+    # append is absent ANYWHERE is a real merge drop. ``isinstance`` first:
+    # a non-str id can never be in the (str-only) append set, and testing
+    # membership with an unhashable id would raise.
+    for n, iid, kind in ref_ids:
+        if isinstance(iid, str) and iid in append_ids:
+            continue
+        if isinstance(iid, str):
+            errors.append(f"line {n}: {kind} for id {iid!r} has no append anywhere — the merge dropped it")
+            (orphan_ids if kind == "status" else orphan_amend_ids).add(iid)
+        else:
+            # NOT "the merge dropped it" — nothing was dropped. The record
+            # names no item, so no reader can apply it and no id-keyed
+            # remedy can select it. Its own class, its own sentence.
+            errors.append(f"line {n}: {kind} event has no usable id ({iid!r}) — no reader can apply it")
+            unidentified = True
     if not header_seen:
         errors.append("triage log is empty after merge — the header was dropped")
         has_other = True
@@ -186,6 +199,7 @@ def classify_triage_text(text: str) -> TriageValidation:
         orphan_status_ids=frozenset(orphan_ids),
         has_non_orphan_error=has_other,
         unidentified_status=unidentified,
+        orphan_amend_ids=frozenset(orphan_amend_ids),
     )
 
 

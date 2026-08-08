@@ -7,12 +7,12 @@ via the explicit `promote` action.
 
 On-disk format (JSONL, camelCase wire keys to match webui ExternalTask)
 is authoritatively codified at ``shared/schemas/triage_item.schema.json``
-(iterate-2026-05-21-triage-producer-contract / ADR-054). Three event
-kinds share the file: a one-time header (line 1), ``append`` events
-(one per new triage item), and ``status`` events (one per
-Promote / Dismiss / Park / Un-park). See the schema for the full field list
-including optional `dedupKey`, `launchPayload`, `frId`, `suiteId`,
-`eventId`.
+(iterate-2026-05-21-triage-producer-contract / ADR-054). Four event kinds
+share the file: a one-time header (line 1), ``append`` (one per new item),
+``status`` (one per Promote/Dismiss/Park/Un-park), and ``amend`` (one per
+in-place title/detail/severity/kind correction — see `lib.triage_amend`,
+iterate-2026-08-08-triage-amend-event). See the schema for the full field
+list including optional `dedupKey`, `launchPayload`, `frId`, `suiteId`, `eventId`.
 
 Status resolution is by **file order** (later valid line wins). The reader
 is tolerant: a line holding several concatenated records (an unterminated
@@ -67,6 +67,20 @@ def _load_triage_defer():
     return load_shared_lib("triage_defer")
 
 
+def _load_triage_fields():
+    """Lazy `lib.triage_fields` (severity/kind derivation) — ADR-045 constraint."""
+    return load_shared_lib("triage_fields")
+
+
+def _load_triage_amend():
+    """Lazy `lib.triage_amend` (amend vocab/validation/overlay) — ADR-045 constraint."""
+    return load_shared_lib("triage_amend")
+
+
+#: Re-exported from `lib.triage_fields` via `__getattr__` below.
+_FIELDS_NAMES = frozenset(("SEVERITIES", "KINDS", "SEVERITY_RANK", "PRIORITY_FROM_SEVERITY", "DEFAULT_DOMAIN", "DOMAIN_FROM_SOURCE", "suggest_priority_from_severity", "suggest_domain_from_source", "check_optional_str"))
+
+
 def __getattr__(name):  # PEP 562 — lazy `triage._FileLock`, no eager lib import
     if name == "_FileLock":
         return _load_file_lock_cls()
@@ -74,6 +88,8 @@ def __getattr__(name):  # PEP 562 — lazy `triage._FileLock`, no eager lib impo
         # Re-exported so the seven auto-resolving producers read the one
         # declared answer out of the module they already import.
         return _load_triage_defer().AUTO_RESOLVABLE_STATUSES
+    if name in _FIELDS_NAMES:
+        return getattr(_load_triage_fields(), name)
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
 
 # ---------------------------------------------------------------------------
@@ -92,8 +108,7 @@ OUTBOX_FILE = "triage.outbox.jsonl"
 _SHIPWRIGHT_DIR = ".shipwright"
 
 STATUSES = ("triage", "promoted", "dismissed", "snoozed")
-SEVERITIES = ("critical", "high", "medium", "low", "info")
-KINDS = ("bug", "feature", "improvement", "compliance", "maintenance")
+#: SEVERITIES/KINDS/etc. moved to `lib.triage_fields` (bloat-budget room) — re-exported via `__getattr__` above.
 KNOWN_SOURCES = (
     "phaseQuality",
     "compliance",
@@ -113,60 +128,6 @@ KNOWN_SOURCES = (
     "test-warning",
     "journey-coverage",
 )
-
-SEVERITY_RANK = {"critical": 0, "high": 1, "medium": 2, "low": 3, "info": 4}
-
-PRIORITY_FROM_SEVERITY = {
-    "critical": "P0",
-    "high": "P1",
-    "medium": "P2",
-    "low": "P3",
-    "info": "P3",
-}
-
-DEFAULT_DOMAIN = "engineering"
-DOMAIN_FROM_SOURCE = {"compliance": "compliance"}
-
-
-# ---------------------------------------------------------------------------
-# Pure mapping helpers
-# ---------------------------------------------------------------------------
-
-def _check_optional_str(name: str, value: object) -> None:
-    """Reject non-string, non-None values for camelCase optional fields.
-
-    Iterate B0 (2026-05-21) — caught by external review (H1): producers
-    that pass `fr_id=42` (or any non-string) silently wrote an integer to
-    disk, breaking the JSON schema at validation time. This guard turns
-    that into a producer-side ValueError so misuse fails fast.
-    """
-    if value is None or isinstance(value, str):
-        return
-    raise ValueError(
-        f"{name!r} must be str or None, got {type(value).__name__}"
-    )
-
-
-def suggest_priority_from_severity(severity: str) -> str:
-    """Pure: severity → P0..P3.
-
-    Raises ValueError on unknown severity (forces producers to pick from
-    the canonical SEVERITIES enum).
-    """
-    try:
-        return PRIORITY_FROM_SEVERITY[severity]
-    except KeyError as exc:
-        raise ValueError(
-            f"unknown severity {severity!r}; expected one of {SEVERITIES}"
-        ) from exc
-
-
-def suggest_domain_from_source(source: str) -> str:
-    """Pure: source → domain. Falls back to DEFAULT_DOMAIN for any
-    source not in DOMAIN_FROM_SOURCE.
-    """
-    return DOMAIN_FROM_SOURCE.get(source, DEFAULT_DOMAIN)
-
 
 # ---------------------------------------------------------------------------
 # Path helpers
@@ -302,7 +263,8 @@ def _append_line(project_root: Path | str, line: str, *, to_outbox: bool) -> Non
 
     Tracked target → ensure the schema header first. Outbox target → no
     header (it is a transient buffer; :func:`read_all_items` ignores
-    non-append/status events anyway), just ensure the directory exists.
+    any event kind it does not recognize anyway), just ensure the directory
+    exists.
     """
     if to_outbox:
         path = _outbox_path(project_root)
@@ -379,17 +341,18 @@ def append_triage_item(
     / `eventId`; null is the wire default. Schema:
     `shared/schemas/triage_item.schema.json`.
     """
-    if severity not in SEVERITIES:
+    _flds = _load_triage_fields()
+    if severity not in _flds.SEVERITIES:
         raise ValueError(
-            f"unknown severity {severity!r}; expected one of {SEVERITIES}"
+            f"unknown severity {severity!r}; expected one of {_flds.SEVERITIES}"
         )
-    if kind not in KINDS:
-        raise ValueError(f"unknown kind {kind!r}; expected one of {KINDS}")
+    if kind not in _flds.KINDS:
+        raise ValueError(f"unknown kind {kind!r}; expected one of {_flds.KINDS}")
     if not isinstance(title, str) or not title.strip():
         raise ValueError("title must be a non-empty string")
-    _check_optional_str("fr_id", fr_id)
-    _check_optional_str("suite_id", suite_id)
-    _check_optional_str("event_id", event_id)
+    _flds.check_optional_str("fr_id", fr_id)
+    _flds.check_optional_str("suite_id", suite_id)
+    _flds.check_optional_str("event_id", event_id)
 
     item_id = _generate_id()
     ts = _now_z()
@@ -412,8 +375,8 @@ def append_triage_item(
         "suiteId": suite_id,
         "eventId": event_id,
         "status": "triage",
-        "suggestedPriority": suggest_priority_from_severity(severity),
-        "suggestedDomain": suggest_domain_from_source(source),
+        "suggestedPriority": _flds.suggest_priority_from_severity(severity),
+        "suggestedDomain": _flds.suggest_domain_from_source(source),
     }
     line = json.dumps(event, ensure_ascii=False, separators=(",", ":")) + "\n"
 
@@ -476,18 +439,19 @@ def append_triage_item_idempotent(
     if not dedup_key:
         raise ValueError("dedup_key is required for idempotent append")
 
-    if severity not in SEVERITIES:
+    _flds = _load_triage_fields()
+    if severity not in _flds.SEVERITIES:
         raise ValueError(
-            f"unknown severity {severity!r}; expected one of {SEVERITIES}"
+            f"unknown severity {severity!r}; expected one of {_flds.SEVERITIES}"
         )
-    if kind not in KINDS:
-        raise ValueError(f"unknown kind {kind!r}; expected one of {KINDS}")
+    if kind not in _flds.KINDS:
+        raise ValueError(f"unknown kind {kind!r}; expected one of {_flds.KINDS}")
     if not isinstance(title, str) or not title.strip():
         raise ValueError("title must be a non-empty string")
 
-    _check_optional_str("fr_id", fr_id)
-    _check_optional_str("suite_id", suite_id)
-    _check_optional_str("event_id", event_id)
+    _flds.check_optional_str("fr_id", fr_id)
+    _flds.check_optional_str("suite_id", suite_id)
+    _flds.check_optional_str("event_id", event_id)
 
     new_id = _generate_id()
     with _load_file_lock_cls()(_lock_path(project_root)):
@@ -525,8 +489,8 @@ def append_triage_item_idempotent(
             "runId": run_id, "commit": commit, "dedupKey": dedup_key,
             "launchPayload": launch_payload, "frId": fr_id,
             "suiteId": suite_id, "eventId": event_id, "status": "triage",
-            "suggestedPriority": suggest_priority_from_severity(severity),
-            "suggestedDomain": suggest_domain_from_source(source),
+            "suggestedPriority": _flds.suggest_priority_from_severity(severity),
+            "suggestedDomain": _flds.suggest_domain_from_source(source),
         }
         new_line = json.dumps(
             new_event, ensure_ascii=False, separators=(",", ":"),
@@ -771,41 +735,74 @@ def mark_status(
 
 
 # ---------------------------------------------------------------------------
+# Public API: amend
+# ---------------------------------------------------------------------------
+
+def amend_triage_item(
+    project_root: Path | str,
+    item_id: str,
+    *,
+    by: str = "cli",
+    title: str | None = None,
+    detail: str | None = None,
+    severity: str | None = None,
+    kind: str | None = None,
+) -> bool:
+    """Append an `amend` event (never mutates prior lines; only title/detail/
+    severity/kind amendable); returns True iff it landed in the gitignored
+    outbox, not tracked (AC15 defers delivery-visibility parity — doubt #1).
+    Raises `ValueError` on a contentless call or an unknown severity/kind.
+    Mirrors `mark_status`'s existence/residence/locking contract — see that
+    docstring; validation/event-building delegate to `lib.triage_amend`.
+    """
+    _flds, _amend = _load_triage_fields(), _load_triage_amend()
+    _amend.check_amend_fields(title=title, detail=detail, severity=severity, kind=kind, severities=_flds.SEVERITIES, kinds=_flds.KINDS)
+    if not _triage_path(project_root).exists() and not _outbox_path(project_root).exists():
+        raise FileNotFoundError(f"triage store not initialized at {_triage_path(project_root)} (nor outbox at {_outbox_path(project_root)}); run /shipwright-adopt or append an item first")
+    idle_main_routes_to_outbox = should_route_to_outbox(project_root)  # git-only, OUTSIDE the lock (mirrors mark_status)
+    with _load_file_lock_cls()(_lock_path(project_root)):
+        to_outbox = _amend.resolve_amend_residence(item_id, tracked_ids=_append_ids_at(_triage_path(project_root)), outbox_ids=_append_ids_at(_outbox_path(project_root)), idle_main_routes_to_outbox=idle_main_routes_to_outbox)
+        event = _amend.build_amend_event(item_id, _now_z(), by, title=title, detail=detail, severity=severity, kind=kind)
+        _append_line(project_root, json.dumps(event, ensure_ascii=False, separators=(",", ":")) + "\n", to_outbox=to_outbox)
+    return to_outbox
+
+
+# ---------------------------------------------------------------------------
 # Public API: read (with status resolution)
 # ---------------------------------------------------------------------------
 
 def read_all_items(
     project_root: Path | str, *, now: datetime | None = None,
 ) -> list[dict]:
-    """Return the resolved view: one dict per item, last-status-wins by
-    file order. Items with status `triage` retain their original append
-    fields; status flips overlay `status`, `ts`, plus optional
-    `reason`/`promotedTaskId`/`by`/`revisitAt` from the most recent status event.
+    """Return the resolved view: one dict per item, last-status-wins by file
+    order. `status` flips overlay `status`/`ts`/`reason`/`promotedTaskId`/`by`
+    /`revisitAt`. `amend` events overlay `title`/`detail`/`severity`/`kind`
+    from the most recent VALID amend carrying each field (never `item["ts"]`,
+    which stays "time of the last status decision"); an amend with any
+    invalid PRESENT field is skipped WHOLE (mirrors `status`), an absent
+    field is simply not applied.
 
     **Expired parks resolve as open (iterate-2026-08-01-triage-defer-lifecycle).**
     A `snoozed` item whose `revisitAt` day has arrived reads `triage` here and
-    nothing is written to do it, so every consumer becomes correct at once.
-    Reading stays pure — the stored last event is still `snoozed`. Rules and
-    rationale: :mod:`lib.triage_defer`.
+    nothing is written to do it. Reading stays pure — the stored last event is
+    still `snoozed`. Rules and rationale: :mod:`lib.triage_defer`.
 
     ``now`` is the aware instant every expiry question in THIS read is decided
     by, normalized to UTC once. Callers holding the lock pass their own so
     their read, suppression decision and precondition all agree.
 
-    Returns `[]` when the file is missing or contains only the header
-    (so consumers don't need a separate existence check).
+    Returns `[]` when the file is missing or contains only the header.
 
-    **Two-pass union resolution (D1):** sources tracked ∪ outbox lines. Pass 1
-    applies ALL `append` events (base records); Pass 2 applies ALL `status`
-    events ordered by ``(ts, file-order)``. Load-bearing across the split: (1)
-    the append-first split stops an OUTBOX `append` (status:triage) from
-    clobbering a TRACKED `status` flip back to `triage`; (2) ``ts``-primary
-    ordering makes the chronologically-later flip win regardless of source file
-    (file order is only a STABLE tiebreaker for equal ts), preserving the
-    single-file "later valid line wins by file order" contract. Both bugs were
-    flagged by external review (OpenAI #5 / Gemini #1) and reproduced by probes.
+    **Two-pass union resolution (D1):** tracked ∪ outbox lines. Pass 1 applies
+    ALL `append` events (base records); Pass 2 applies ALL `status` AND
+    `amend` events TOGETHER, ordered by ``(ts, file-order)`` — timestamp
+    primary (a later event in EITHER file wins regardless of kind), file
+    order a stable tiebreaker for equal ts. Load-bearing: (1) append-first
+    stops an OUTBOX `append` (status:triage) clobbering a TRACKED status
+    flip; (2) ts-primary ordering preserves the single-file "later line
+    wins" contract across files (external review, OpenAI #5 / Gemini #1).
     """
-    _defer = _load_triage_defer()
+    _defer, _amend, _flds = _load_triage_defer(), _load_triage_amend(), _load_triage_fields()
     raw_lines = [r for r in _iter_raw_lines(project_root) if isinstance(r, dict)]
 
     # Pass 1 — every append establishes a base record (union of both files).
@@ -826,18 +823,16 @@ def read_all_items(
         # Revisit semantics belong only to a valid snoozed status event. The
         # tolerant reader must not let a hand-edited append acquire them.
         item[_defer.REVISIT_FIELD] = None
+        item[_amend.AMENDED_BY_FIELD], item[_amend.AMENDED_AT_FIELD] = None, None
         resolved[item_id] = item
 
-    # Pass 2 — overlay status flips. Order by (ts, file-order): timestamp is
-    # primary so a chronologically-later status in EITHER file wins; file order
-    # is a STABLE tiebreaker for equal ts (clock-resolution collisions) so the
-    # single-file contract "later valid line wins by file order" is preserved
-    # exactly (within one file, appends are written in ascending ts; ties keep
-    # file order). This resolves the cross-file status-vs-status ambiguity the
-    # external plan review (OpenAI #5 / Gemini #1) flagged without breaking
-    # same-ts determinism. ``enumerate`` index is the file-order tiebreaker;
-    # ``_ts_key`` returns the ISO-8601-Z ``ts`` string, which sorts
-    # lexicographically == chronologically (malformed ts → "" → earliest).
+    # Pass 2 — overlay status flips AND amends together, by (ts, file-order):
+    # timestamp is primary so a chronologically-later event in EITHER file
+    # wins; file order is a STABLE tiebreaker for equal ts (clock-resolution
+    # collisions), preserving the single-file "later valid line wins" contract
+    # (external review, OpenAI #5 / Gemini #1). ``_ts_key`` sorts the
+    # ISO-8601-Z ``ts`` string lexicographically == chronologically
+    # (malformed ts → "" → earliest).
     def _ts_key(raw: dict) -> str:
         # Only a real ISO-8601-Z string participates in chronological ordering;
         # a malformed/missing ts (non-str, null, int) coerces to "" so it sorts
@@ -847,17 +842,22 @@ def read_all_items(
         ts = raw.get("ts")
         return ts if isinstance(ts, str) else ""
 
-    status_events = [
+    status_and_amend_events = [
         (idx, raw) for idx, raw in enumerate(raw_lines)
-        if raw.get("event") == "status"
+        if raw.get("event") in ("status", "amend")
     ]
-    status_events.sort(key=lambda t: (_ts_key(t[1]), t[0]))
-    for _idx, raw in status_events:
+    status_and_amend_events.sort(key=lambda t: (_ts_key(t[1]), t[0]))
+    for _idx, raw in status_and_amend_events:
         item_id = raw.get("id")
         if not isinstance(item_id, str) or item_id not in resolved:
-            # status for unknown id (corrupt or out-of-order) — skip
+            # status/amend for unknown id (corrupt or out-of-order) — skip
             continue
         item = resolved[item_id]
+
+        if raw.get("event") == "amend":
+            _amend.try_apply_amend(item, raw, severities=_flds.SEVERITIES, kinds=_flds.KINDS, priority_from_severity=_flds.suggest_priority_from_severity)
+            continue
+
         new_status = raw.get("newStatus")
         if new_status not in STATUSES:
             # Tolerant means skip a damaged event, not apply half of it. An

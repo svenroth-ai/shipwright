@@ -64,13 +64,21 @@ __all__ = [
     "undelivered_status_ids",
 ]
 
-#: Keys `triage.py`'s two writers ALWAYS emit, per event kind. Read off the
-#: writers (`append_triage_item`, `mark_status`), not off a sample of the store —
-#: see :func:`is_triage_record` for why that distinction is load-bearing.
+#: Keys `triage.py`'s three writers ALWAYS emit, per event kind. Read off the
+#: writers (`append_triage_item`, `mark_status`, `amend_triage_item`), not off a
+#: sample of the store — see :func:`is_triage_record` for why that distinction is
+#: load-bearing.
 _REQUIRED_KEYS = {
     "append": ("id", "ts", "source", "severity", "kind", "title", "status"),
     "status": ("id", "ts", "newStatus", "by"),
+    "amend": ("id", "ts", "by"),
 }
+
+#: Mirrors `lib.triage_amend.AMENDABLE_FIELDS` — inlined, not imported, to keep
+#: this module's no-intra-lib-imports-beyond-jsonl_records/triage_delivery design.
+#: An `amend` record naming none of these is key-complete but CONTENT-empty; see
+#: :func:`is_triage_record`'s amend paragraph for why that must also be refused.
+_AMEND_CONTENT_KEYS = ("title", "detail", "severity", "kind")
 
 #: Detail lines the stderr notice prints before summarising the rest.
 _NOTICE_SPAN_CAP = 20
@@ -108,23 +116,33 @@ def is_triage_record(obj: dict) -> bool:
       ``{"meta":{"event":"append","id":"forged"}`` — a nested object satisfying
       BOTH keys — and the resync surfaced ``forged`` as a record (reproduced).
     * v3, this one, requires every key the corresponding writer always emits
-      (:data:`_REQUIRED_KEYS`, read off ``append_triage_item`` and ``mark_status``).
-      A nested object now has to be a COMPLETE triage record to qualify, which the
-      store never writes — the two writers emit records only at top level.
+      (:data:`_REQUIRED_KEYS`, read off ``append_triage_item``, ``mark_status``
+      and ``amend_triage_item``). A nested object now has to be a COMPLETE triage
+      record to qualify, which the store never writes — the three writers emit
+      records only at top level.
 
     The residual risk is honest and bounded: this is a shape test, not a proof of a
     record boundary, so wreckage that happens to contain a whole valid record would
     still be recovered. That is the conservative direction anyway — such an object
     IS a record by every check the reader itself applies.
 
+    ``amend`` (iterate-2026-08-08-triage-amend-event) adds one more refusal beyond
+    key-completeness: a record naming none of ``title``/``detail``/``severity``/
+    ``kind`` is key-complete but content-EMPTY, which the wire schema's ``anyOf``
+    already refuses — and would otherwise be indistinguishable from a valid,
+    minimal amend during boundary resync (external plan review, HIGH).
+
     The schema header ``{"v": 1, …}`` carries no ``event`` and stays excluded.
     """
     if not isinstance(obj, dict):
         return False
-    required = _REQUIRED_KEYS.get(obj.get("event"))
+    event = obj.get("event")
+    required = _REQUIRED_KEYS.get(event)
     if required is None:
         return False
-    return isinstance(obj.get("id"), str) and all(k in obj for k in required)
+    if not (isinstance(obj.get("id"), str) and all(k in obj for k in required)):
+        return False
+    return event != "amend" or any(k in obj for k in _AMEND_CONTENT_KEYS)
 
 
 def basename(path: str) -> str:

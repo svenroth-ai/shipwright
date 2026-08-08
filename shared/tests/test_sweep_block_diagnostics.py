@@ -145,6 +145,25 @@ def test_corruption_elsewhere_does_not_swallow_the_protected_correction() -> Non
     assert any("triage_repair.py" in e for e in d.errors), d.errors
 
 
+def test_a_held_status_does_not_make_a_glued_amend_look_held_too() -> None:
+    """Stage-3 doubt review, finding 6. `MAIN_ONLY`'s `status` is a clean, sole-record
+    outbox line, so it IS held; its `amend` copy is glued to another record, so it was
+    NEVER a hold candidate (it goes straight to `materialized` via the ``obj is None``
+    branch). Before the fix, one merged ``held_ids`` set made the amend note claim
+    "this run withheld its outbox copy" too — false, and the exact wrong-kind
+    misattribution `protected_note` exists to prevent."""
+    dismiss = h.status(MAIN_ONLY, "dismissed")
+    glued_amend = h.amend(MAIN_ONLY, "corrected") + h.item(PENDING)
+
+    d = decide(_tracked(), [dismiss, glued_amend], "\n", known_append_ids=KNOWN)
+
+    assert d.action == "block", d
+    status_note = next((e for e in d.errors if "protected_status_unplaceable" in e), None)
+    amend_note = next((e for e in d.errors if "protected_amend_unplaceable" in e), None)
+    assert status_note is not None and "withheld its outbox copy" in status_note, d.errors
+    assert amend_note is not None and "withheld its outbox copy" not in amend_note, d.errors
+
+
 def test_duplicate_append_in_a_glued_line_names_the_repair_tool() -> None:
     """Stage-2 code review, finding 3. This takes the EARLY corruption return, where
     the concatenation scan used to be unreachable. The operator was told "the merge

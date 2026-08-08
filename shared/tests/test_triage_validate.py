@@ -24,6 +24,7 @@ HEADER = '{"v":1,"schema":"triage","created":"2026-06-08T00:00:00Z"}'
 APPEND = '{"event":"append","id":"trg-a","status":"triage"}'
 APPEND_B = '{"event":"append","id":"trg-b","status":"triage"}'
 ORPHAN = '{"event":"status","id":"trg-ghost","newStatus":"dismissed"}'
+ORPHAN_AMEND = '{"event":"amend","id":"trg-ghost","by":"cli","title":"x"}'
 #: The remedy every un-recoverable-fragment message must name, so an operator is
 #: never told the log is corrupt without being told what fixes it.
 REPAIR_TOOL = "triage_repair.py"
@@ -201,6 +202,66 @@ def test_status_without_usable_id_is_its_own_class() -> None:
 
 def test_unidentified_status_is_absent_from_a_clean_log() -> None:
     assert classify_triage_text(_log(APPEND)).unidentified_status is False
+
+
+# --- orphan amend (AC11, iterate-2026-08-08-triage-amend-event) -------------
+# Mirrors the orphan-status tests above: `orphan_amend_ids` is the SAME
+# recoverable class, for the `amend` event kind.
+
+
+def test_orphan_amend_only_is_recoverable() -> None:
+    v = classify_triage_text(_log(APPEND, ORPHAN_AMEND))
+    assert v.errors  # the orphan IS reported as an error...
+    assert v.orphan_amend_ids == frozenset({"trg-ghost"})  # ...but classified recoverable
+    assert v.has_non_orphan_error is False
+
+
+def test_amend_with_matching_append_is_clean() -> None:
+    paired = '{"event":"amend","id":"trg-a","by":"cli","title":"x"}'
+    v = classify_triage_text(_log(APPEND, paired))
+    assert v.errors == [] and v.orphan_amend_ids == frozenset()
+
+
+def test_mixed_status_and_amend_orphans_both_classify() -> None:
+    """A status orphan and an amend orphan for DIFFERENT ids must both be
+    classified into their own set — the two loops must not cross-contaminate."""
+    other_amend_orphan = '{"event":"amend","id":"trg-other-ghost","by":"cli","title":"x"}'
+    v = classify_triage_text(_log(APPEND, ORPHAN, other_amend_orphan))
+    assert v.orphan_status_ids == frozenset({"trg-ghost"})
+    assert v.orphan_amend_ids == frozenset({"trg-other-ghost"})
+    assert v.has_non_orphan_error is False
+
+
+def test_orphan_amend_and_status_errors_report_in_file_order() -> None:
+    """Stage-2 code review finding 11: the classifier's second pass sweeps
+    both referencing kinds in ONE file-order pass, not kind-major — so an
+    amend orphan on an earlier line must be reported before a status orphan
+    on a later line, matching `validate_triage_text`'s "same order [as] the
+    classifier found" promise."""
+    other_status_orphan = '{"event":"status","id":"trg-other-ghost","newStatus":"dismissed"}'
+    v = classify_triage_text(_log(APPEND, ORPHAN_AMEND, other_status_orphan))
+    amend_idx = next(i for i, e in enumerate(v.errors) if "amend for id" in e)
+    status_idx = next(i for i, e in enumerate(v.errors) if "status for id" in e)
+    assert amend_idx < status_idx, v.errors
+
+
+def test_amend_without_usable_id_is_its_own_class() -> None:
+    for bad in (
+        '{"event":"amend","by":"cli","title":"x"}',           # id missing
+        '{"event":"amend","id":123,"by":"cli","title":"x"}',  # id not a str
+    ):
+        v = classify_triage_text(_log(APPEND, bad))
+
+        assert v.unidentified_status is True, bad
+        assert v.orphan_amend_ids == frozenset(), bad
+        assert v.has_non_orphan_error is False, bad
+        assert any("usable id" in e for e in v.errors), (bad, v.errors)
+
+
+def test_orphan_amend_inside_a_glued_line() -> None:
+    v = classify_triage_text(_log(APPEND, APPEND_B + ORPHAN_AMEND))
+    assert v.orphan_amend_ids == frozenset({"trg-ghost"})
+    assert v.has_non_orphan_error is False
 
 
 def test_churn_resolver_triage_validation_shift() -> None:

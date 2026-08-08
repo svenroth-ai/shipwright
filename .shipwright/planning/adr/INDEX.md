@@ -65,3 +65,4 @@ _Regenerate:_ `uv run {shared_root}/scripts/tools/rebuild_adr_index.py --project
 - [ADR-128 — Track decision-drops in git; redirect the write path into the calling worktree](128-track-decision-drops.md)
 - [Archive — Agent-Doc Update Backlog (verbatim)](_archive-agent-doc-updates.md)
 - [ADR spec-folder files are named by run_id, never a guessed number](iterate-2026-08-08-index-readers-adr-lock-spec-folder-naming.md)
+- [A third append-only event kind for the triage store](iterate-2026-08-08-triage-amend-event-third-event-kind.md)

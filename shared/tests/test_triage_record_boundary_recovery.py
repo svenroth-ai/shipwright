@@ -214,3 +214,33 @@ def test_a_record_beyond_the_resync_budget_is_not_recovered() -> None:
     records, remainder = _split(line)
     assert records == []
     assert remainder == line
+
+
+# --- amend records (iterate-2026-08-08-triage-amend-event, AC7) -----------
+
+def test_a_complete_amend_record_is_a_record() -> None:
+    assert is_triage_record({
+        "event": "amend", "id": "trg-1", "ts": "t", "by": "cli", "title": "x",
+    })
+
+
+def test_an_amend_missing_a_required_key_is_not_a_record() -> None:
+    assert not is_triage_record({"event": "amend", "ts": "t", "by": "cli", "title": "x"})
+
+
+def test_a_key_complete_but_content_empty_amend_is_not_a_record() -> None:
+    """The forged-record gap external plan review flagged HIGH: an amend naming
+    none of title/detail/severity/kind is key-complete but empty, and would
+    otherwise be indistinguishable from a valid minimal amend during resync."""
+    assert not is_triage_record({"event": "amend", "id": "trg-1", "ts": "t", "by": "cli"})
+
+
+def test_resync_rejects_a_content_empty_amend_nested_in_the_prefix() -> None:
+    """The forged-record gap, in the SAME wreckage shape the other event kinds
+    are already pinned against: key-complete is not enough, content must be too."""
+    damaged = '{"meta":{"event":"amend","id":"forged","ts":"t","by":"cli"}'
+    good = _rec("trg-real")
+    records, remainder = _split(damaged + _j(good))
+    assert [r.get("id") for r in records] == ["trg-real"]
+    assert all(r.get("id") != "forged" for r in records)
+    assert remainder == damaged
