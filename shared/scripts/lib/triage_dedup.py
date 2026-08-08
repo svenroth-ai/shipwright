@@ -86,10 +86,22 @@ IDENTITY_ANCHOR = "originalTs"
 
 
 def _parsed_append(line: str) -> dict | None:
-    """The decoded object iff ``line`` is an ``append`` event with a ``str`` id."""
+    """The decoded object iff ``line`` is an ``append`` event with a ``str`` id.
+
+    Total: never raises. A deeply-nested value makes ``json.loads`` raise
+    ``RecursionError`` (not a ``ValueError``) from its scanner — the same
+    failure mode ``lib/jsonl_records.py`` already documents and catches at its
+    own two call sites. Treated identically to a ``JSONDecodeError``: the line
+    is unparseable as an append, so it is invisible to the same-id grouping
+    below and falls through unmodified (card trg-57d0d6d3 / P2.19g, TEIL 2).
+    ``TypeError`` is guarded too, for the reason ``sweep_canon.canonical_form``
+    gives for the identical symmetry: the signature above only ever receives
+    ``str`` today, but the "Total" claim is absolute, so it does not lean on
+    caller discipline (doubt-reviewer finding 4, Stage 3, this run).
+    """
     try:
         obj = json.loads(line)
-    except (json.JSONDecodeError, ValueError):
+    except (json.JSONDecodeError, TypeError, ValueError, RecursionError):
         return None
     if not isinstance(obj, dict) or obj.get("event") != "append":
         return None
