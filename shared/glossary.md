@@ -229,11 +229,11 @@
   `shared/scripts/tools/setup_iterate_worktree.py`. Prevents two
   parallel iterates from ever sharing a working tree.
 - **Decision-Drop** — A per-iterate ADR sketch written to
-  `.shipwright/agent_docs/decision-drops/<run_id>.json` (gitignored,
-  main-repo path). Aggregated into the canonical `decision_log.md`
-  with a sequential `ADR-NNN` only at `/shipwright-changelog` release
-  time — that's the single serialised point where ADR numbering is
-  safe to assign.
+  `.shipwright/agent_docs/decision-drops/<run_id>.json`. Tracked (git,
+  since iterate-2026-08-08-track-decision-drops) in the writing
+  iterate's own worktree, durable at PR-merge; only the local
+  `INDEX.md` render stays gitignored. Aggregated into `decision_log.md`
+  with a sequential `ADR-NNN` only at `/shipwright-changelog` release time.
 - **F7b-Seal** — A follow-up commit that re-attaches the F7
   `work_completed` event to the branch tip in repos that track
   `shipwright_events.jsonl` (shipwright dev repo + downstreams that

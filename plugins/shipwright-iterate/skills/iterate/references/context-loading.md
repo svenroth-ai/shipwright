@@ -9,6 +9,15 @@ context-loading discipline.
 2. `CLAUDE.md` — project conventions, stack, commands
 3. `.shipwright/agent_docs/conventions.md` — coding standards, naming, patterns
 4. `.shipwright/agent_docs/decision_log.md` — ALL architectural decisions (read completely)
+4a. `.shipwright/agent_docs/decision-drops/*.json` — pending decisions not yet
+    folded into `decision_log.md` by a `/shipwright-changelog` release
+    (tracked since iterate-2026-08-08-track-decision-drops). Bounded via
+    `lib.decision_drops_index.render_recent_drops_summary(dd, limit=20)` —
+    the 20 most recent, one line each (title/date/section), not the whole
+    directory: the steady-state backlog between releases is not a one-time
+    bulge, and an unbounded read is exactly the context-cost class this repo
+    already measures. Missing directory / no pending drops = skip, not an
+    error.
 5. `.shipwright/agent_docs/architecture.md` — app structure, component tree, data flow
 6. `shipwright_sync_config.json` — file-to-FR mappings (if exists)
 7. `.shipwright/planning/*/spec.md` — ALL spec files across all splits (read completely)

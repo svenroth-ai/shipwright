@@ -9,11 +9,12 @@ but never actually adds a corresponding entry to
 update architecture.md AND flag the drop — and the drop alone with no
 markdown trace is silent drift.
 
-Worktree-aware: decision-drops live in the main repo (gitignored), so the
-test resolves the main-repo root via ``repo_root.resolve_main_repo_root``
-to enumerate the drops, then reads ``architecture.md`` from the test's
-own project root (which is the same in both worktree and main-repo runs
-because architecture.md is tracked).
+Worktree-local since iterate-2026-08-08-track-decision-drops: decision-drops
+are TRACKED, so the test resolves them directly against its own repo root —
+the same root ``architecture.md`` was already read from. Whichever checkout
+this test runs in (a live iterate's own worktree mid-run, or the main repo)
+is the one whose drops and architecture.md it reconciles; there is no
+separate main-repo redirect to resolve.
 
 Test pinned via simple substring match on the run-id (or the eventual
 ADR-NNN, when the drop has been aggregated). This is intentionally lax —
@@ -40,23 +41,14 @@ from lib.architecture_doc import (  # noqa: E402
     scan_drops,
 )
 from lib.events_log import finalized_run_ids  # noqa: E402
-from lib.repo_root import resolve_main_repo_root  # noqa: E402
 
 
 def _project_root() -> Path:
-    """The shipwright dev repo root. From CI / worktree / main-repo runs,
-    architecture.md and decision-drops both live under the main repo —
-    architecture.md is tracked (visible in worktree), decision-drops are
-    gitignored (only in main)."""
+    """This checkout's own repo root — architecture.md and decision-drops
+    both live here now (both tracked; no main-repo redirect)."""
     here = Path(__file__).resolve()
     # shared/tests/test_X.py → walk up to repo root (= 2 levels above shared/)
     return here.parents[2]
-
-
-def _main_repo_root() -> Path:
-    pr = _project_root()
-    resolved = resolve_main_repo_root(pr)
-    return resolved if resolved is not None else pr
 
 
 def _arch_md_text() -> str:
@@ -82,7 +74,7 @@ def _arch_impact_drops() -> list[dict]:
     Only ``component`` / ``data-flow`` / ``convention`` represent an actual
     architectural change requiring an architecture.md entry; ``none`` is
     the no-op default and is filtered out here."""
-    drops_dir = _main_repo_root() / ".shipwright" / "agent_docs" / "decision-drops"
+    drops_dir = _project_root() / ".shipwright" / "agent_docs" / "decision-drops"
     if not drops_dir.is_dir():
         return []
     out: list[dict] = []
@@ -108,18 +100,19 @@ def _discovery_sanity(drops_dir: Path) -> tuple[str, str]:
 
     Returns ``(disposition, reason)`` where ``disposition`` is:
 
-    - ``"skip"`` — the dir is ABSENT (clean checkout / CI runner — drops are
-      gitignored) OR present but holds ZERO drop files (all aggregated into
-      ADRs + cleared at the last ``/shipwright-changelog`` release — a
-      legitimate post-release dev state, NOT a resolution misfire).
+    - ``"skip"`` — the dir is ABSENT (a fresh checkout that has never had a
+      drop written into it, or a clean CI clone of a branch with none pending)
+      OR present but holds ZERO drop files (all aggregated into ADRs +
+      cleared at the last ``/shipwright-changelog`` release — a legitimate
+      post-release dev state, NOT a resolution misfire).
     - ``"ok"`` — the dir holds ≥1 drop file, so the resolver found real content
       and discovery works. The arch-impact SUBSET may legitimately be empty and
       is deliberately NOT required (that was the old, born-fragile assertion
       that false-FAILed every post-release dev tree).
     """
     if not drops_dir.is_dir():
-        return ("skip", f"decision-drops/ absent under {drops_dir} — clean "
-                        "checkout (drops are gitignored); nothing to sanity-check")
+        return ("skip", f"decision-drops/ absent under {drops_dir} — nothing "
+                        "pending in this checkout; nothing to sanity-check")
     all_drops = sorted(drops_dir.glob("*.json"))
     if not all_drops:
         return ("skip", f"decision-drops/ present but empty under {drops_dir} — "
@@ -143,12 +136,12 @@ def test_every_arch_impact_drop_has_architecture_md_entry():
 
     Event-ownership scoped: only drops whose ``run_id`` is in this tree's
     committed ``shipwright_events.jsonl`` are checked (``finalized_run_ids``).
-    A cross-branch campaign sibling's drop accumulates in the shared main-rooted
-    ``decision-drops`` dir, but its target-doc entry lives only on the sibling's
-    own unmerged branch — without scoping it reads as drift on every other
+    A campaign's sub-iterates share one worktree and branch-hop inside it, so
+    a prior sub-iterate's drop can still be sitting on disk when a later
+    branch is checked out — without scoping it reads as drift on every other
     branch. Fail-open: with no event log (ownership unknowable, e.g. a CI runner)
     the whole set is checked, never weaker than before."""
-    drops_dir = _main_repo_root() / ".shipwright" / "agent_docs" / "decision-drops"
+    drops_dir = _project_root() / ".shipwright" / "agent_docs" / "decision-drops"
     records, _corrupt = scan_drops(drops_dir)
 
     owned = finalized_run_ids(_project_root())
@@ -176,18 +169,18 @@ def test_every_arch_impact_drop_has_architecture_md_entry():
 def test_arch_impact_drops_found_at_all():
     """Sanity check — the discovery path resolves the REAL decision-drops dir.
 
-    Guards the main assertion from silently no-opping when ``_main_repo_root()``
+    Guards the main assertion from silently no-opping when discovery
     misfires and the dir comes back empty. Two non-misfire states are SKIPPED
-    (not failed): the dir absent (clean checkout / CI — drops are gitignored)
-    and the dir present-but-empty (all drops aggregated into ADRs + cleared at
-    the last ``/shipwright-changelog`` release). Classification lives in
+    (not failed): the dir absent (a checkout with nothing pending) and the
+    dir present-but-empty (all drops aggregated into ADRs + cleared at the
+    last ``/shipwright-changelog`` release). Classification lives in
     ``_discovery_sanity`` so it's unit-tested hermetically below.
 
     Earlier this asserted the arch-impact SUBSET was non-empty, which false-
     FAILed every post-release dev tree (dir present, only non-arch drops left):
     iterate-2026-05-31-ci-shared-tests skip + iterate-2026-06-07-finalization-
     tooling-hardening robustness fix."""
-    drops_dir = _main_repo_root() / ".shipwright" / "agent_docs" / "decision-drops"
+    drops_dir = _project_root() / ".shipwright" / "agent_docs" / "decision-drops"
     disposition, _reason = _discovery_sanity(drops_dir)
     if disposition == "skip":
         pytest.skip(_reason)  # test-hygiene: allow-silent-skip: conditional on repo migration/drop state; correctly inert otherwise

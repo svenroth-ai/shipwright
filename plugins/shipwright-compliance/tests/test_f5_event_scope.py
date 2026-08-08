@@ -2,9 +2,14 @@
 
 Pins that ``_check_f5`` reconciles only decision-drops OWNED by this tree's
 lineage — run_id present in this tree's committed ``shipwright_events.jsonl`` —
-so cross-branch campaign sibling drops bleeding through the shared main-rooted
-``decision-drops`` dir don't false-flag drift. Fail-open when no event log
-exists (ownership unknowable) so a clean checkout keeps whole-set behavior.
+so cross-branch campaign sibling drops bleeding through the ``decision-drops``
+dir don't false-flag drift. decision-drops is worktree-local since
+iterate-2026-08-08-track-decision-drops (resolved directly against
+``project_root``, no main-root redirect); the scoping this test pins matters
+because a campaign's sub-iterates share ONE worktree and branch-hop inside
+it, so a prior sub-iterate's uncommitted drop can still be on disk when a
+later branch is checked out. Fail-open when no event log exists (ownership
+unknowable) so a clean checkout keeps whole-set behavior.
 
 Companion to ``TestF5ArchDrift`` in ``test_audit_groups_c_f.py`` (matching
 oracle) and ``shared/tests/test_arch_drift_event_scope.py`` (shared helpers).

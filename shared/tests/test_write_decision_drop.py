@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import json
+import os
+import subprocess
 
 import pytest
 
@@ -136,10 +138,12 @@ def test_drop_overflow_error_mentions_spec_folder(tmp_path):
 
 
 # ---------------------------------------------------------------------------
-# Worktree-awareness — iterate F3 runs inside an ephemeral worktree whose
-# .shipwright/agent_docs/decision-drops/ is destroyed by `git worktree
-# remove` before /shipwright-changelog can aggregate it. The drop MUST land
-# next to the MAIN repo. Mirrors lib.events_log.resolve_events_path.
+# Worktree-local writes (iterate-2026-08-08-track-decision-drops) — the
+# directory is now TRACKED, so the drop is written INTO the calling
+# iterate's own worktree; F6 stages it and it ships in that iterate's own
+# commit/PR. Durability comes from git history now, not from redirecting the
+# write to the main repo's disk (the pre-2026-08-08 behavior, when the
+# directory was gitignored and disk survival was the only safety net).
 # ---------------------------------------------------------------------------
 
 
@@ -153,48 +157,90 @@ def test_drop_dir_plain_repo_is_repo_local(git_origin_repo):
     assert drop_dir(work).resolve() == _main_drops(work)
 
 
-def test_drop_written_from_worktree_lands_in_main_repo(git_origin_repo, make_worktree):
-    """Core bug: F3 runs inside an iterate worktree; the drop must be written
-    to the MAIN repo, not the worktree copy."""
+def test_drop_written_from_worktree_lands_in_the_worktree(git_origin_repo, make_worktree):
+    """The drop is written into the CALLING worktree, not redirected to the
+    main repo — the directory is tracked, so this run's own commit is what
+    carries it into git history."""
     work, _ = git_origin_repo
     wt = make_worktree(work, "drop-loc")
     path = write_decision_drop(wt, **_fields())
-    assert path.resolve().parent == _main_drops(work)
-    # NOT inside the worktree — that copy dies with `git worktree remove`.
-    assert wt.resolve() not in path.resolve().parents
+    assert path.resolve().parent == (wt / ".shipwright" / "agent_docs" / "decision-drops").resolve()
+    assert path.resolve().parent != _main_drops(work)
 
 
-def test_drop_survives_worktree_removal(git_origin_repo, make_worktree, remove_worktree):
-    """The round-trip the bug broke: a drop written from inside the worktree
-    must still exist after `git worktree remove` tears the worktree down."""
+def test_uncommitted_drop_is_lost_with_the_worktree(
+    git_origin_repo, make_worktree, remove_worktree
+):
+    """Accepted tradeoff (internal Opus review, mini-plan addendum item 9):
+    an uncommitted drop does NOT survive `git worktree remove` — unlike the
+    pre-2026-08-08 main-root redirect, which existed precisely to survive
+    this. Durability now comes from committing (F6) before the worktree is
+    torn down, not from disk placement; an abandoned run's drop was never
+    delivered under the PR+CI model either."""
     work, _ = git_origin_repo
-    wt = make_worktree(work, "drop-survive")
+    wt = make_worktree(work, "drop-abandon")
     path = write_decision_drop(wt, **_fields())
     assert path.exists()
     remove_worktree(work, wt)
-    assert path.exists(), (
-        "decision-drop destroyed with the worktree — aggregate_decisions "
-        "would never fold it into decision_log.md"
-    )
+    assert not path.exists()
 
 
-def test_drop_from_worktree_is_aggregated_from_main_repo(
+def test_committed_drop_survives_worktree_removal_and_is_aggregated(
     git_origin_repo, make_worktree, remove_worktree
 ):
-    """End-to-end producer->file->consumer round-trip across the worktree
-    boundary: F3 writes the drop from the worktree, the worktree is removed
-    (F11 cleanup), then /shipwright-changelog's aggregate runs on the MAIN
-    repo and must still see and fold the drop into decision_log.md."""
+    """The real round-trip: F3 writes the drop into the worktree, F6 commits
+    it (simulated here with a plain git add+commit), the branch merges into
+    main (simulated with a merge), THEN the worktree is removed (F11
+    cleanup) — the drop must survive via git history and
+    /shipwright-changelog's aggregate must still fold it from the main repo."""
     work, _ = git_origin_repo
-    wt = make_worktree(work, "drop-agg")
+    env = os.environ.copy()
+    env.update(
+        {
+            "GIT_AUTHOR_NAME": "Iso Test",
+            "GIT_AUTHOR_EMAIL": "iso@test.invalid",
+            "GIT_COMMITTER_NAME": "Iso Test",
+            "GIT_COMMITTER_EMAIL": "iso@test.invalid",
+        }
+    )
+    wt = make_worktree(work, "drop-commit")
     write_decision_drop(wt, **_fields(run_id="iterate-20260519-probe"))
+    subprocess.run(
+        ["git", "add", ".shipwright/agent_docs/decision-drops/"],
+        cwd=wt, env=env, check=True, capture_output=True,
+    )
+    subprocess.run(
+        ["git", "commit", "-m", "feat: probe decision-drop"],
+        cwd=wt, env=env, check=True, capture_output=True,
+    )
+    branch = subprocess.run(
+        ["git", "branch", "--show-current"], cwd=wt, env=env, check=True,
+        capture_output=True, text=True,
+    ).stdout.strip()
+    subprocess.run(
+        ["git", "merge", "--no-ff", branch], cwd=work, env=env,
+        check=True, capture_output=True,
+    )
     remove_worktree(work, wt)
+
     result = aggregate(work)
     assert result["aggregated"] == 1
     log = (
         work / ".shipwright" / "agent_docs" / "decision_log.md"
     ).read_text(encoding="utf-8")
     assert "iterate-20260519-probe" in log
+
+
+def test_sibling_worktrees_do_not_share_pending_drops(git_origin_repo, make_worktree):
+    """No more shared-disk cross-contamination: a drop written in one
+    worktree does not appear in a sibling worktree's own local view — each
+    worktree only sees its own tracked-but-uncommitted content, unlike the
+    pre-2026-08-08 shared main-repo directory every worktree wrote into."""
+    work, _ = git_origin_repo
+    wt_a = make_worktree(work, "sibling-a")
+    wt_b = make_worktree(work, "sibling-b")
+    write_decision_drop(wt_a, **_fields(run_id="iterate-sibling-a"))
+    assert list(drop_dir(wt_b).glob("*.json")) == []
 
 
 @pytest.mark.parametrize("root_kind", ["plain", "worktree", "non-git"])
@@ -206,10 +252,14 @@ def test_drop_dir_producer_consumer_parity(
     SAME directory for the same input — divergence = silently lost ADRs.
     That the resolved directory is *correct* is covered separately by
     test_drop_dir_plain_repo_is_repo_local and
-    test_drop_written_from_worktree_lands_in_main_repo."""
+    test_drop_written_from_worktree_lands_in_the_worktree."""
     if root_kind == "non-git":
         root = tmp_path
     else:
         work, _ = git_origin_repo
         root = work if root_kind == "plain" else make_worktree(work, "parity")
     assert drop_dir(root).resolve() == aggregate_drop_dir(root).resolve()
+
+
+# F6 glob-scoped staging tests (doubt-reviewer MEDIUM #4) live in
+# test_f6_decision_drop_staging.py — split out to stay under the bloat gate.

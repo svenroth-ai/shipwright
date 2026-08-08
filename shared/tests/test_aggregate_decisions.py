@@ -113,13 +113,19 @@ def test_architecture_impact_updates_architecture_md(tmp_path):
     assert "ADR-001" in arch.read_text(encoding="utf-8")
 
 
-def test_drop_dir_resolves_main_repo_from_worktree(git_origin_repo, make_worktree):
-    """aggregate_decisions.drop_dir is worktree-aware — symmetric with
-    write_decision_drop.drop_dir, so the producer and the consumer never
-    disagree on where the drop files live."""
+def test_drop_dir_resolves_the_calling_checkout_not_main(git_origin_repo, make_worktree):
+    """aggregate_decisions.drop_dir resolves against its OWN project_root —
+    symmetric with write_decision_drop.drop_dir, so the producer and the
+    consumer never disagree on where the drop files live. Since
+    iterate-2026-08-08-track-decision-drops neither redirects to the main
+    repo: the directory is tracked, so a worktree's own drops are exactly
+    the ones not yet merged into main."""
     work, _ = git_origin_repo
     wt = make_worktree(work, "agg-wt")
     assert drop_dir(wt).resolve() == (
+        wt / ".shipwright" / "agent_docs" / "decision-drops"
+    ).resolve()
+    assert drop_dir(wt).resolve() != (
         work / ".shipwright" / "agent_docs" / "decision-drops"
     ).resolve()
 
@@ -225,6 +231,10 @@ def test_rebuild_adr_index_handles_empty_folder(tmp_path):
 def test_rebuild_adr_index_returns_none_when_folder_missing(tmp_path):
     """No-op when the folder doesn't exist — keeps the aggregator fail-soft."""
     assert rebuild_adr_index(tmp_path) is None
+
+
+# Legacy-drop quarantine integration tests (doubt-reviewer HIGH #3) live in
+# test_aggregate_decisions_legacy.py — split out to stay under the bloat gate.
 
 
 def test_rebuild_adr_index_sorts_freeform_after_numbered(tmp_path):

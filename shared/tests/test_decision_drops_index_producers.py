@@ -4,9 +4,10 @@ deliberate absence of churn/CI-drift machinery.
 Mirrors ``test_adr_index_producers.py`` and ``test_adr_index_writing.py``
 where the pattern applies. It deliberately does NOT have a
 ``test_committed_index_is_not_stale``-style CI guard against a real checkout:
-the decision-drops directory is gitignored (``glossary.md``), so there is
-never a committed copy in a clean CI clone to compare against — see
-``lib/decision_drops_index.py``'s module docstring for the full rationale.
+``INDEX.md`` itself (not the directory it lists — that's tracked) is
+gitignored, so there is never a committed copy in a clean CI clone to
+compare against — see ``lib/decision_drops_index.py``'s module docstring for
+the full rationale.
 """
 
 from __future__ import annotations
@@ -189,8 +190,10 @@ def test_aggregate_folding_a_drop_refreshes_the_drops_index_to_empty(tmp_path):
 
 
 def test_the_drops_index_carries_no_churn_allowlist_entry():
-    """The directory is gitignored — git can never see a conflict on it, so an
-    allowlist entry would be exercised by nothing. See module docstring."""
+    """Neither INDEX.md (gitignored — git can never conflict on it) nor the
+    tracked *.json payloads (each a uniquely-named new file per run, so two
+    branches adding different ones merges cleanly) need one. See module
+    docstring."""
     from lib.churn_merge import CHURN_ALLOWLIST
 
     assert not any("decision-drops" in entry for entry in CHURN_ALLOWLIST)
