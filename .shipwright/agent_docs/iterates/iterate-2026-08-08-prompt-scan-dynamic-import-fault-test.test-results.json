@@ -1,0 +1,58 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-08-08-prompt-scan-dynamic-import-fault-test",
+    "date": "2026-08-08",
+    "unit": {
+      "status": "pass",
+      "passed": 8975,
+      "failed": 0,
+      "note": "shared/tests (the only root containing the changed file): 8975 passed, 32 skipped, 20 deselected, 0 failed, 1098.52s. Other test roots (plugins/*, integration-tests) are unaffected by this single-file, test-only import normalization and were not re-run."
+    },
+    "integration": {
+      "status": "not_run",
+      "reason": "no integration-tests root behavior touched by this edit; the change is confined to one test's internal mocking mechanism"
+    },
+    "e2e": {
+      "status": "passed",
+      "passed": 9,
+      "total": 9
+    },
+    "smoke": {
+      "status": "n/a",
+      "reason": "no startable server surface relevant to this edit"
+    },
+    "pgtap": {
+      "status": "n/a",
+      "reason": "no database"
+    },
+    "design_fidelity": {
+      "status": "n/a",
+      "reason": "no UI surface"
+    },
+    "surface_verification": {
+      "surface": "cli",
+      "tests_run": 9,
+      "exit_code": 0,
+      "evidence_path": ".shipwright/runs/iterate-2026-08-08-prompt-scan-dynamic-import-fault-test/surface_verification.json",
+      "detail": "uv run pytest shared/tests/test_sweep_drift_restore_faults.py -q \u2014 the file containing the fixed test, driven directly. 9/9 passed, exit 0."
+    },
+    "test_completeness": {
+      "status": "n/a",
+      "justification": "Behavior-preserving import normalization (SIMPLIFY): __import__(\"subprocess\").CompletedProcess(...) -> import subprocess as _sp; _sp.CompletedProcess(...), matching the identical convention already used twice elsewhere in the same file. Zero new or changed observable behavior \u2014 verified empirically via behavior_snapshot.py verify (9/9 tests green, 165604 -> 165604 source LOC, no test flipped or removed) rather than enumerated as new ACs."
+    },
+    "degraded": []
+  },
+  "coverage": {
+    "total": 80.2,
+    "measured_tier": "repo",
+    "source": "combined coverage.xml (all plugins + shared + integration)",
+    "measured_at": "2026-07-04T00:00:00Z"
+  },
+  "source_state": {
+    "run_id": "iterate-2026-08-08-prompt-scan-dynamic-import-fault-test",
+    "commit": "27fa8452faf97a3e9e97fae7575af5996e730ef3",
+    "dirty": true,
+    "base": null,
+    "release": null
+  }
+}

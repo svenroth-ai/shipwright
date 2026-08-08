@@ -1,0 +1,90 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-08-08-prompt-scan-dynamic-import-fault-test",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-08T19:32:00.909839+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-08T19:32:17.012335+00:00",
+      "disposition": "mini-plan is FEATURE-only at small complexity; this is a small CHANGE/SIMPLIFY iterate, no mini-plan required",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "code": {
+      "review_type": "code",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-08T19:32:17.270975+00:00",
+      "disposition": "Full Code Review Trigger not met: small complexity, no risk flags, 2-line diff under 100 lines, no security-sensitive files, so self-review alone is sufficient per iteration-reviews.md",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-08T19:32:17.481041+00:00",
+      "disposition": "Stage 3 runs only behind a Stage 2 pass; the internal cascade did not fire for this small, no-risk-flag, sub-100-line diff",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-08T19:32:17.605116+00:00",
+      "disposition": "External cascade trigger mirrors the internal one and is not met: small complexity, no risk flags, 2-line diff, no security-sensitive files",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-08T19:32:17.142635+00:00",
+      "disposition": "Full Code Review Trigger not met: small complexity, no risk flags, 2-line diff under 100 lines, no security-sensitive files, so self-review alone is sufficient per iteration-reviews.md",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-08T19:32:17.823940+00:00",
+      "disposition": "Internal plan review is medium+ only per iteration-planning.md; this run is small complexity",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    }
+  }
+}

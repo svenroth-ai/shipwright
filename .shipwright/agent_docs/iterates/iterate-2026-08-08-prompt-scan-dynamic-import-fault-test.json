@@ -1,0 +1,11 @@
+{
+  "run_id": "iterate-2026-08-08-prompt-scan-dynamic-import-fault-test",
+  "date": "2026-08-08T19:53:58.428334Z",
+  "event_at": "2026-08-08T16:01:38.625424+00:00",
+  "type": "change",
+  "complexity": "small",
+  "branch": "iterate/prompt-scan-dynamic-import-fault-test",
+  "spec": "n/a (small complexity, SIMPLIFY sub-mode, spec_impact none)",
+  "tests_passed": true,
+  "adr": "iterate-2026-08-08-prompt-scan-dynamic-import-fault-test"
+}
