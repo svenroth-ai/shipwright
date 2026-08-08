@@ -1774,12 +1774,35 @@ at all, so it has no Stop hook.)
 
 **Contract:**
 - Non-blocking. Always exits 0 even on internal errors.
+- **`project_root` resolution — split into `audit_root` / `plain_root`
+  (trg-b36fd844, external review round 2+3; the split itself is
+  doubt-review D1):** `lib.phase_quality.resolve_project_roots(cwd,
+  session_id)` returns `(audit_root, via_pointer, plain_root)`.
+  `SHIPWRIGHT_PROJECT_ROOT` wins first if set and valid (unchanged priority;
+  sets both to the same value). Otherwise `audit_root` prefers
+  `pointer_worktree_root(cwd, session_id)` — this session's active iterate
+  worktree, resolved via the per-session run pointer — over the plain
+  `resolve_project_root()` cwd/env/subdir chain, because a Stop-subprocess's
+  cwd is the MAIN repo even mid-iterate; `plain_root` is always the
+  un-redirected resolution. Per-phase checks, finding writes, AND the
+  aggregate report (`regenerate_all_aggregates` — a pure render of one
+  tree's own findings, no cross-tree hazard) use `audit_root`, so a
+  redirected run's findings are actually rendered somewhere instead of
+  vanishing unread when the worktree is pruned. `gc_old_findings` and the
+  triage-backlog write (`emit_phase_quality_backlog` — the one call with a
+  real cross-tree hazard) and the once-per-Stop claim (below) stay on
+  `plain_root` — see "Stage-3 doubt-review … D1" for why. See "Reachability,
+  closed rather than filed as a follow-up" below for why the redirect exists
+  at all.
 - **Once-per-(Stop, session) + session-state phase resolution**
   (iterate-2026-06-14-hook-fanout-dedup): Claude Code fires this hook from all
   11 plugins per Stop (no active-plugin filter). Exactly ONE invocation wins an
   `event_once.claim_once` guard (`.shipwright/.cache/stop-phasequality-<sid>.claim`,
   taken AFTER all no-op guards so a foreign/no-op invocation never consumes it);
-  the rest skip. The winner resolves which phase(s) to audit from SESSION STATE
+  the rest skip. The claim is taken at `plain_root`, never `audit_root` — a
+  transient failure in the pointer's git lookup on any one of the ~11
+  near-simultaneous invocations must not be able to split the claim across two
+  different roots (doubt-review D4). The winner resolves which phase(s) to audit from SESSION STATE
   via `phase_quality.resolve_engaged_phases()` (run config `phase_tasks[]` —
   the v2 authority — OR-ed with the v1 `current_step` / `completed_steps`, plus
   `status` + `events.jsonl`), **not** from
@@ -1810,6 +1833,10 @@ not pollute the audit trail of a managed subproject.
   audit fires normally.
 - `SHIPWRIGHT_PROJECT_ROOT=<path>` **and** the resolved path matches
   exactly the detected `project_root` — explicit user opt-in.
+- A pointer-verified worktree redirect (`via_pointer`, above) — treated as
+  an equally explicit selection, not an unwanted auto-descent, since the
+  redirect is what makes `project_root` a genuine subdirectory of `cwd` in
+  the first place.
 
 *No bypass on ambient env:* when `SHIPWRIGHT_PROJECT_ROOT` is set for
 unrelated reasons (CI, parent shell) AND does not resolve to the
@@ -1945,7 +1972,7 @@ evidence (plan § 4.5).
 | S6 | project | FAIL | 1 | `CLAUDE.md` exists at project root, non-empty. |
 | S7 | project | WARN (never FAIL) | 2 | `CLAUDE.md` has a `## Structure` fenced code block (via `lib/drift_parsers.extract_structure_block`). |
 | S8 | project | FAIL | 1 | `README.md` exists, non-empty. |
-| S9 | iterate (type=feature + UI-facing diff) | WARN (never FAIL — R17) | 2 | `README.md` touched within last 10 commits AND recent diff includes `webui/client/`, `frontend/`, `client/`, `web/`, `src/components/`, or `mobile/` path. SKIPs otherwise. Like S2/S3/W2, SKIPs unless the audited `run_id` has an exact `iterate_history` entry — otherwise the `type` it gates on would be inherited from an unrelated run. `iterate-2026-08-06-resolve-run-id-seam` gave `resolve_run_id` a priority-0 source (the per-session iterate run pointer), so the audit is now keyed by the canonical run id instead of a session UUID — but **that alone does not make this check evaluate**, and measured against a live run it still SKIPs. The remaining condition is the ledger: `has_exact_iterate_entry` needs the run's own `iterates/<run_id>.json`, which F5c writes into the run's WORKTREE, while the Stop hook resolves `project_root` from the session's cwd — usually the main repo, where an in-flight run's entry does not exist yet. It evaluates when the audited tree does hold the entry (an audit rooted in the worktree, or the main root after the PR merges). Non-iterate sessions and campaign / autonomous-loop runs (which fall through to `SHIPWRIGHT_LOOP_ID`) SKIP as before. |
+| S9 | iterate (type=feature + UI-facing diff) | WARN (never FAIL — R17) | 2 | `README.md` touched within last 10 commits AND recent diff includes `webui/client/`, `frontend/`, `client/`, `web/`, `src/components/`, or `mobile/` path. SKIPs otherwise. Like S2/S3/W2, SKIPs unless the audited `run_id` has an exact `iterate_history` entry — otherwise the `type` it gates on would be inherited from an unrelated run. `iterate-2026-08-06-resolve-run-id-seam` gave `resolve_run_id` a priority-0 source (the per-session iterate run pointer), so the audit is now keyed by the canonical run id instead of a session UUID. The remaining condition was the ledger: `has_exact_iterate_entry` needs the run's own `iterates/<run_id>.json`, which F5c writes into the run's WORKTREE, while the Stop hook used to resolve `project_root` from the session's cwd — usually the main repo, where an in-flight run's entry does not exist yet, so this check permanently SKIPped for the dominant shape. Fixed (trg-b36fd844, external review round 2): `audit_phase_quality_on_stop.py` now prefers `lib.phase_quality.pointer_worktree_root(cwd, session_id)`, which redirects `project_root` to the run's own worktree via the per-session pointer before falling back to the plain cwd resolver — so this check evaluates for a live, main-rooted run too, not only when an audit already happens to be rooted in the worktree or the PR has merged. See "Reachability, closed rather than filed as a follow-up" below. Non-iterate sessions and campaign / autonomous-loop runs (which fall through to `SHIPWRIGHT_LOOP_ID`) SKIP as before. |
 | S10 | iterate (type ∈ {feature, bug, bugfix}) | WARN (never FAIL — R17) | 2 | `CLAUDE.md` touched recently when new top-level directories appear in last 10 commits that aren't listed in the CLAUDE.md Structure block. SKIPs otherwise. Same `run_id` precondition as S9. |
 
 Tier-2 checks (W1, I4, T2, Q1, S3-S5, S7, S9, S10, Cmp1, D2) are
@@ -1953,7 +1980,11 @@ permanently excluded from enforcement rollout — they land in the
 dashboard as heuristic signal only (plan § 3, § 9.2).
 
 **Artifacts written (deterministically regenerated).** All four live UNDER the
-gitignored `FINDING_DIR` (`.shipwright/compliance/skill-compliance/`). The 3 `.md`
+gitignored `FINDING_DIR` (`.shipwright/compliance/skill-compliance/`), rooted at
+`project_root` — which, since the reachability fix above, is the run's own
+worktree whenever a valid per-session pointer resolves one (not just the plain
+cwd/env/subdir chain), so a live iterate's finding JSON and its three `.md`
+roll-ups now land in the worktree tree by default rather than main's. The 3 `.md`
 roll-ups are TRANSIENT derived caches of the per-run JSONs — never tracked, not in
 `audit_staleness.DOC_REGISTRY` — so a Stop on idle main leaves `git status` clean
 (iterate-2026-06-09 completes ADR-089's runtime/snapshot split for this producer;
@@ -2006,10 +2037,66 @@ evaluate — that additionally needs the audited tree to hold the run's own
 `iterates/<run_id>.json`, which F5c writes into the run's worktree. Verified
 against a live run: `run_id` resolved correctly and S2/S3/W2/S9/S10 still
 SKIPped, because the audit was rooted at the main repo. Fail-safe in that state
-(a SKIP, never a false FAIL). The follow-ups are tracked as trg-276994a4 (a
-retained post-merge worktree keeps a pointer looking live) and trg-b36fd844
-(`already_audited` keys on `(phase, run_id, session_id)`, so the first Stop of a
-run can record SKIPs that later Stops never revisit).
+(a SKIP, never a false FAIL).
+
+**Two lifecycle follow-ups that seam surfaced, both fixed.** Full review
+provenance (3 rounds of external cascade, an internal Opus plan review, and
+2 internal Stage-1/2/3 cascades) lives in the ADR spec-ref,
+`.shipwright/planning/adr/127-run-id-lifecycle-fixes.md` — this section
+carries only the durable behavioral contract.
+
+- **trg-276994a4 — a retained post-merge worktree kept the pointer looking
+  live.** `pointer_run_id`'s liveness check only asked whether
+  `worktree_path` was still a directory — but this repo routinely RETAINS a
+  worktree after its PR merges, so a finished run's pointer kept resolving
+  for the rest of the session, misattributing later Stop-hook audits to the
+  merged run's id. F11 now gives the pointer an explicit end-of-run signal:
+  the moment `deliver_pr.py` reaches DELIVERED or CLOSED, it calls
+  `lib.run_pointer_retirement.retire_run_pointer(main_root, run_id)`, which
+  unlinks every pointer file whose OWN recorded `run_id` matches — keyed on
+  `run_id` (a required CLI arg), not a session-derived filename, since
+  `$SHIPWRIGHT_SESSION_ID` is not guaranteed to reach the delivery
+  subprocess's environment. Best-effort: never raises, never changes
+  delivery's exit code, prints a stderr diagnostic on any non-retirement
+  outcome. Does not trigger on `EXIT_NO_MERGER`/`EXIT_PENDING` — the run
+  is not over — a documented, accepted-with-reason scope boundary (see the
+  ADR spec-ref).
+- **trg-b36fd844 — `already_audited` could freeze a provisional verdict at
+  its least-informed moment.** The first Stop after B1a — before F5c ever
+  writes the run's own `iterate_history` entry — could record S2/S3/W2/S9/S10
+  as `unresolvable_run_id_skip` SKIPs, and every later Stop treated that
+  finding as final even after the entry appeared (the same freeze class also
+  strands a phase whose audit crashed once). Fix:
+  `lib.phase_quality._staleness.is_stale_finding` treats a recorded finding
+  as NOT final when it is an error finding, or tagged
+  `reason_code="unresolvable_run_id"` once `has_exact_iterate_entry` turns
+  True — the phase re-runs and gets its real verdict. A SKIP recorded while
+  the entry is still absent stays final (no re-audit loop); only the
+  absent→present transition forces exactly one re-run.
+- **Reachability.** The absent→present transition needs an audit whose
+  `project_root` resolves to the run's own WORKTREE (where F5c writes the
+  entry) — but a Stop-subprocess's cwd is the MAIN repo even mid-iterate, so
+  a plain `resolve_project_root()` rooted the audit at main, where the
+  trigger could never fire. `lib.phase_quality.resolve_project_roots(cwd,
+  session_id)` (called from `audit_phase_quality_on_stop.py`'s `main()`)
+  returns `(audit_root, via_pointer, plain_root)`: it tries
+  `pointer_worktree_root(cwd, session_id)` first — a live, genuine linked
+  worktree (verified via `lib.phase_quality._worktree_identity.is_worktree_of`'s
+  gitdir-chain identity check, hardened against a spoofed `worktree_path`)
+  redirects `audit_root` there; anything else falls back to `plain_root`
+  unchanged. Per-phase checks and their finding writes, plus the aggregate
+  dashboard render, follow `audit_root` (and ALSO render at `plain_root`
+  when the two differ, so main's own dashboard keeps refreshing during a
+  redirected run); the once-per-Stop claim, GC, and the triage backlog write
+  stay anchored at `plain_root` only — the one call with a real cross-tree
+  hazard (a redirected run's own findings are structurally invisible to
+  `collect_in_scope_fails(plain_root)`, so main's backlog can neither
+  wrongly dismiss nor wrongly gain an item from them). Proven at the seam it
+  broke: `test_second_stop_reaudits_s2_via_pointer_when_cwd_is_main`
+  (`shared/tests/test_phase_quality_stop_hook_reachability_e2e.py`) drives
+  the real Stop-hook subprocess with cwd at a plain MAIN directory and only
+  a run pointer naming the worktree, and asserts S2 still transitions from
+  provisional SKIP to a real FAIL once the ledger entry appears.
 
 **Sentinel-run exclusion at the rollup layer
 (iterate-2026-06-14-phasequality-sentinel-rollup-filter).** A per-run Finding

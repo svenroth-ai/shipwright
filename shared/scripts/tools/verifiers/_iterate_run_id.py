@@ -42,6 +42,15 @@ Caveat worth knowing when triaging one of these SKIPs: ``has_exact_iterate_entry
 swallows any read error and returns ``False``, so an UNREADABLE iterate store is
 reported identically to a foreign audit context.
 
+**The SKIP this guard writes is provisional, not final.** Since the run-id seam
+above made ``(phase, run_id, session_id)`` stable across a whole run,
+``already_audited`` used to treat the FIRST Stop's SKIP — recorded before F5c
+ever wrote the run's own entry — as the answer for every later Stop too, even
+after the entry appeared (trg-b36fd844). ``unresolvable_run_id_skip`` tags its
+finding with ``reason_code=REASON_CODE_UNRESOLVABLE_RUN_ID``, and
+``lib.phase_quality._staleness.is_stale_unresolvable_run_id_finding`` reads that
+tag back to re-audit once ``has_exact_iterate_entry`` turns True.
+
 Extracted into its own module (rather than inlined in ``spec_checks.py``) to
 keep that already-grandfathered file under its bloat baseline.
 
@@ -64,7 +73,11 @@ _SCRIPTS_ROOT = Path(__file__).resolve().parents[2]
 if str(_SCRIPTS_ROOT) not in sys.path:
     sys.path.insert(0, str(_SCRIPTS_ROOT))
 
-from lib.phase_quality import STATUS_SKIP, make_finding  # noqa: E402
+from lib.phase_quality import (  # noqa: E402
+    REASON_CODE_UNRESOLVABLE_RUN_ID,
+    STATUS_SKIP,
+    make_finding,
+)
 
 _RUN_ID_SENTINELS = frozenset({"", "unknown"})
 
@@ -203,5 +216,6 @@ def unresolvable_run_id_skip(
         f"run_id={run_id} is not a resolvable iterate run "
         "(no exact iterate_history entry, no matching file) — "
         "spec check not applicable in this audit context",
+        reason_code=REASON_CODE_UNRESOLVABLE_RUN_ID,
         **kw,
     )

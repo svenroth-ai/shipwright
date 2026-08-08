@@ -93,3 +93,31 @@ data-integrity bug (duplicated, mislabeled spans), not a size issue, but
 the fix (move the `instrument_watch` wrap to the exact rung-2 call site
 instead of the top of `deliver()`) added 5 net lines. `current` raised to
 322 in the same commit.
+
+## Addendum 2026-08-08 (F11 pointer retirement, trg-276994a4)
+
+322 → 325 (+3): F11 was made to retire this run's `.shipwright/iterate_active/`
+pointer once `deliver()` confirms a DELIVERED exit, closing trg-276994a4 (a
+retained post-merge worktree kept the pointer resolving a finished run's id
+for the rest of the session). The three lines are the import of
+`lib.run_pointer_retirement.retire_run_pointer_best_effort` (a new,
+unconstrained module — see its own docstring for why it isn't folded into
+`worktree_isolation.py` or here) and the two-line `if exit_code ==
+EXIT_DELIVERED: retire_run_pointer_best_effort(...)` guard in `main()`. An
+earlier version of this call also carried a `--session-id` CLI argument
+(+1 more line); Stage-2 code review found it made the whole fix a silent
+no-op whenever `$SHIPWRIGHT_SESSION_ID` did not reach the delivery
+subprocess's environment, so retirement was redesigned to key on `--run-id`
+(already a required argument) instead, which removed the flag entirely.
+`current` raised to 325 in the same commit.
+
+## Addendum 2026-08-08 (deliver_pr.py double-resolve, code review)
+
+325 → 326 (+1): Stage-2 code review found `Path(args.project_root).resolve()`
+computed twice in `main()` — once for `deliver()`, once for the pointer
+retirement call above — with an unrelated blank line dropped in the prior
+addendum to buy back a line against this same ceiling (the "cap at current =
+zero headroom forces design" pathology, previously observed elsewhere in this
+file). Fixed by binding `project_root` once and passing it to both call
+sites; net effect is +1 line because the new binding line costs more than the
+one deleted duplicate call saves. `current` raised to 326 in the same commit.
