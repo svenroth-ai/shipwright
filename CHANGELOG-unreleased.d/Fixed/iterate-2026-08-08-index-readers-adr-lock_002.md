@@ -1,0 +1,1 @@
+New .shipwright/planning/adr/ spec-folder files are now named by run_id (collision-proof) instead of a hand-guessed number, which had collided 15 files across 6 numbers under parallel iterates; a regenerable anti-ratchet baseline guards against new collisions.

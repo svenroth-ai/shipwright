@@ -13,7 +13,13 @@ See [interview-protocol.md](interview-protocol.md) for detailed guidance.
   - `CLAUDE.md` — stack, conventions, commands
   - `.shipwright/agent_docs/architecture.md` — app structure, component tree
   - `.shipwright/agent_docs/conventions.md` — coding standards, naming, patterns
-  - `.shipwright/agent_docs/decision_log.md` — ALL past architectural decisions (read completely)
+  - `.shipwright/agent_docs/decision_log_index.md` — compact index of past
+    architectural decisions (title + one-line summary). Read a full entry in
+    `.shipwright/agent_docs/decision_log.md` only when the index, or an
+    `ADR-NNN` already in context, points to it — grep the `### ADR-NNN`
+    heading, or an offset/limit read, never the whole file (a single `Read`
+    call caps at 2,000 lines; the log already exceeds it). No index match →
+    grep `decision_log.md` directly rather than assume nothing exists.
   - `shipwright_sync_config.json` — existing file-to-FR mappings (if exists)
   - ALL `.shipwright/planning/*/spec.md` — existing specs across all splits (read completely)
   - Run: `git log --oneline -20` — recent project history

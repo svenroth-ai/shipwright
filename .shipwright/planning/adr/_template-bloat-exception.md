@@ -1,8 +1,11 @@
-# ADR-XXX: Bloat exception — `<path/to/file>` raised to <new>-LOC
+# Bloat exception — `<path/to/file>` raised to <new>-LOC
 
 <!-- Template for granting a bloat-baseline exception. Copy to
-     `.shipwright/planning/adr/<NNN>-<slug>.md`, fill every field, and
-     reference the new ADR-ID in `shipwright_bloat_baseline.json` (set
+     `.shipwright/planning/adr/<run_id_sanitized>-<slug>.md` (named by
+     run_id, never a hand-guessed number — this heading must NOT claim
+     a numeric ADR-NNN; that identity is assigned later, at release,
+     by decision_log.md). Fill every field, and reference the
+     release-assigned ADR-ID in `shipwright_bloat_baseline.json` (set
      the entry's `state` to `"exception"` and `adr` to `"ADR-NNN"`). -->
 
 - **Status:** proposed | accepted | superseded

@@ -258,7 +258,7 @@ in `plugins/shipwright-compliance`):
   records grandfathered crossings, not a sliding ceiling. Reject the
   diff (audit H3, HIGH).
 - **ADR-gated exceptions** — A baseline entry with `state: exception`
-  MUST link to an ADR (`adr: ".shipwright/planning/adr/NNN-slug.md"`).
+  MUST link to an ADR (`adr: "ADR-NNN"`, not a spec-folder path).
   A `state: deferred-plan` MUST carry a `plan_ref:` pointing to a real
   iterate-spec. Either missing → reject (audit H4 / H5).
 

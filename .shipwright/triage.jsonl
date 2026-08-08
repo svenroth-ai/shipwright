@@ -1752,3 +1752,4 @@
 {"event":"status","id":"trg-8927eb21","ts":"2026-08-08T11:27:41Z","newStatus":"dismissed","by":"webui","reason":"Implemented PR #603","promotedTaskId":null}
 {"event":"status","id":"trg-9351ffb2","ts":"2026-08-08T11:28:29Z","newStatus":"dismissed","by":"webui","reason":null,"promotedTaskId":null}
 {"event":"status","id":"trg-77811f9b","ts":"2026-08-08T11:28:48Z","newStatus":"dismissed","by":"webui","reason":"Implemented PR #605","promotedTaskId":null}
+{"event":"status","id":"trg-5ab3ae63","ts":"2026-08-08T13:51:44.799684Z","newStatus":"dismissed","by":"phaseQualityBacklog","reason":"phaseQualityResolved","promotedTaskId":null}

@@ -152,7 +152,9 @@ def write_decision_drop(
 
     Iterate A.3 hardens this path: each of context / decision / consequences /
     rationale / rejected must be within ``ADR_FIELD_MAX_CHARS``. Long-form
-    prose belongs in ``spec_ref`` → ``.shipwright/planning/adr/<NNN>-<slug>.md``.
+    prose belongs in ``spec_ref`` →
+    ``.shipwright/planning/adr/<run_id_sanitized>-<slug>.md`` (named by
+    run_id, never a hand-guessed number).
     """
     if not run_id.strip():
         raise DecisionDropError("run_id is empty")
@@ -236,9 +238,9 @@ def main(argv: list[str] | None = None) -> int:
         default="",
         help=(
             "Optional path (relative to project root) to long-form ADR spec — "
-            f"convention: {ADR_SPEC_FOLDER}/<NNN>-<slug>.md (flat, one file "
-            "per ADR). Rendered as a `**Details:** [...]` link in the "
-            "aggregated decision_log.md."
+            f"convention: {ADR_SPEC_FOLDER}/<run_id_sanitized>-<slug>.md "
+            "(flat, one file per ADR, named by run_id). Rendered as a "
+            "`**Details:** [...]` link in the aggregated decision_log.md."
         ),
     )
     args = parser.parse_args(argv)
