@@ -4,15 +4,16 @@
   "reviews": {
     "self": {
       "review_type": "self",
-      "status": "pending",
+      "status": "completed",
       "findings_count": 0,
       "findings": [],
       "provider": null,
-      "completed_at": null,
+      "completed_at": "2026-08-08T11:07:00.745741+00:00",
       "disposition": null,
-      "recorded_by": null,
+      "recorded_by": "self-review",
       "parse_status": null,
-      "raw_excerpt": null
+      "raw_excerpt": null,
+      "model_tier": "opus"
     },
     "plan": {
       "review_type": "plan",
@@ -97,51 +98,156 @@
     },
     "code": {
       "review_type": "code",
-      "status": "pending",
-      "findings_count": 0,
-      "findings": [],
+      "status": "completed",
+      "findings_count": 3,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "shared/scripts/lib/decision_drops_index.py",
+          "line": null,
+          "finding": "_pending_drops/render_recent_drops_summary sorted by filename, not the drop's own date field — broke the 20-most-recent claim for non-date-prefixed run_ids (campaign trg-* sub-iterates).",
+          "suggestion": "Sort on (date, filename); fixed, plus test_recent_summary_orders_by_date_not_by_filename.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "documentation",
+          "file": "shared/scripts/tools/write_decision_drop.py",
+          "line": 273,
+          "finding": "Carried an obsolete comment (\"The drop lives next to the MAIN repo...\") contradicting this run's own fix.",
+          "suggestion": "Rewritten to state both the drop and INDEX.md resolve against the calling checkout directly; fixed.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "performance",
+          "file": "shared/tests/test_decision_drop_ssot.py",
+          "line": null,
+          "finding": "_prod_py_files() used sorted(_REPO_ROOT.rglob(\"*.py\")), walking .venv/.git/.worktrees fully before the exclusion filter ran.",
+          "suggestion": "Rewritten as os.walk with in-place dirnames[:] pruning; fixed.",
+          "source": "code-reviewer"
+        }
+      ],
       "provider": null,
-      "completed_at": null,
+      "completed_at": "2026-08-08T11:07:00.989799+00:00",
       "disposition": null,
-      "recorded_by": null,
+      "recorded_by": "code-reviewer",
       "parse_status": null,
-      "raw_excerpt": null
+      "raw_excerpt": null,
+      "model_tier": "opus"
     },
     "doubt": {
       "review_type": "doubt",
-      "status": "pending",
-      "findings_count": 0,
-      "findings": [],
+      "status": "completed",
+      "findings_count": 7,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "regression",
+          "file": ".gitignore",
+          "line": null,
+          "finding": "Claim under doubt: Tracking decision-drops/ in git is safe for already-adopted downstream projects. — An already-adopted project that previously took the blanket decision-drops/ ignore rule would keep it forever (add-only merge never removes anything), silently losing every future iterate's ADR.",
+          "suggestion": "A SUPERSEDED retraction block in gitignore_canon.py / the template, wired into the existing self-heal pipeline; fixed, test_gitignore_canon_retraction.py (6 tests).",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "high",
+          "category": "correctness",
+          "file": "shared/scripts/tools/verifiers/decision_log_gate.py",
+          "line": null,
+          "finding": "Claim under doubt: F11's ADR check proves a decision-drop is durably part of the PR. — check_adr_in_iterate_history only looked at the working tree, so a drop F3 wrote but F6 forgot to git add reads exactly like a committed one, then git worktree remove destroys it.",
+          "suggestion": "New check_decision_drop_committed F11 verifier via _iterate_changed_paths; fixed, 6 new tests in test_decision_log_gate.py.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "high",
+          "category": "security",
+          "file": "shared/scripts/tools/aggregate_decisions.py",
+          "line": null,
+          "finding": "Claim under doubt: Tracking decision-drops/ is safe the moment this PR merges. — The 214-file legacy backfill, never gitleaks/prompt-scanned, becomes exposed to /shipwright-changelog's directory-level git add -A the moment the directory is no longer gitignored.",
+          "suggestion": "lib/decision_drop_legacy.py quarantines pre-cutoff drops by mtime into a gitignored sibling; fixed, test_decision_drop_legacy.py (13 tests).",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "plugins/shipwright-iterate/skills/iterate/references/F6.md",
+          "line": null,
+          "finding": "Claim under doubt: A directory-level git add for decision-drops/ is as safe as every other F6 directory-level add. — decision-drops/ is a single FLAT directory shared by every run that has touched a worktree; a campaign sub-iterate's unrelated leftover drop would be swept into this run's own commit.",
+          "suggestion": "Narrowed staging to decision-drops/{run_id}_*.json; fixed, 2 new tests in test_write_decision_drop.py.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "completeness",
+          "file": "shared/tests/test_decision_drop_ssot.py",
+          "line": null,
+          "finding": "Claim under doubt: The _WORKTREE_LOCAL SSoT registry names every file that builds a decision-drop path. — verifiers/common.py's two raw joins (C1/C4 iterate-phase fallbacks) were not in the registry, even though the repo-wide coverage scan already protected them structurally.",
+          "suggestion": "Registered common.py; rewrote the comment to state the registry is a named subset, not sole enforcement; fixed.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "documentation",
+          "file": "shared/scripts/tools/aggregate_decisions.py",
+          "line": null,
+          "finding": "Claim under doubt: The \"two parallel iterates can never claim the same ADR number\" guarantee holds unconditionally. — It assumes /shipwright-changelog always runs against ONE shared checkout; a hypothetical future worktree-isolated changelog run would break cross-run serialization.",
+          "suggestion": "Documented the precondition in the module docstring; fixed. Not a live bug today.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "documentation",
+          "file": "plugins/shipwright-compliance/tests/test_f5_event_scope.py",
+          "line": null,
+          "finding": "Claim under doubt: Existing doc/test comments about decision-drops accurately describe current behavior. — Two stale statements described the pre-fix \"gitignored / shared main-rooted\" state as current.",
+          "suggestion": "Both rewritten to match the current tracked, worktree-local state; fixed.",
+          "source": "doubt-reviewer"
+        }
+      ],
       "provider": null,
-      "completed_at": null,
+      "completed_at": "2026-08-08T11:07:01.102968+00:00",
       "disposition": null,
-      "recorded_by": null,
+      "recorded_by": "doubt-reviewer",
       "parse_status": null,
-      "raw_excerpt": null
+      "raw_excerpt": null,
+      "model_tier": "opus"
     },
     "external_code": {
       "review_type": "external_code",
-      "status": "pending",
+      "status": "not_run",
       "findings_count": 0,
       "findings": [],
       "provider": null,
-      "completed_at": null,
-      "disposition": null,
-      "recorded_by": null,
+      "completed_at": "2026-08-08T11:05:26.396456+00:00",
+      "disposition": "medium+ requires code OR external_code to have run; internal code-reviewer (Stage 2, model=opus) ran and closed APPROVE WITH NITS, satisfying the gate without a separate external pass",
+      "recorded_by": "none",
       "parse_status": null,
       "raw_excerpt": null
     },
     "spec": {
       "review_type": "spec",
-      "status": "pending",
-      "findings_count": 0,
-      "findings": [],
+      "status": "completed",
+      "findings_count": 1,
+      "findings": [
+        {
+          "severity": null,
+          "category": "missing-rationale",
+          "file": "plugins/shipwright-iterate/skills/iterate/references/F6.md",
+          "line": null,
+          "finding": "F6.md's new staging bullet for decision-drops did not explain WHY an unstaged drop is now lost (durability moved from file location to `git add`, the inverse of the pre-2026-08-08 model) — fixed by adding the rationale blockquote under F6.md; re-verified PASS. — spec: F6.md decision-drops staging note",
+          "suggestion": "F6.md decision-drops staging note",
+          "source": "spec-reviewer"
+        }
+      ],
       "provider": null,
-      "completed_at": null,
+      "completed_at": "2026-08-08T11:07:00.877145+00:00",
       "disposition": null,
-      "recorded_by": null,
+      "recorded_by": "spec-reviewer",
       "parse_status": null,
-      "raw_excerpt": null
+      "raw_excerpt": null,
+      "model_tier": "opus"
     }
   }
 }
