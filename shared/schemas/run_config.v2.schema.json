@@ -85,6 +85,12 @@
       "type": "array",
       "description": "Legacy field; new entries live under .shipwright/agent_docs/iterates/."
     },
+    "iterate_retention_pins": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": { "type": "string", "minLength": 1 },
+      "description": "F5c summary run IDs retained beyond the ordinary recency cache."
+    },
     "created_at": {
       "type": "string",
       "format": "date-time"

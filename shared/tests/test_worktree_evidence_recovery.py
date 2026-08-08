@@ -70,18 +70,8 @@ def test_recovered_evidence_matches_declared_bytes_and_validates():
 
 
 def test_recovered_runs_have_a_durable_f5c_summary_reachable_from_main():
-    # Checks git-history reachability at the pinned commit only -- NOT that the
-    # compact <run_id>.json summary still exists in the current checkout. F5c's
-    # 50-entry retention window is an intentional, documented recency cache over
-    # those summaries (references/F5c.md: "a 50-run recency cache, not the
-    # historical record"), so any later iterate's ordinary retention sweep can
-    # evict these two once enough newer runs land -- that is not data loss, it
-    # is the designed behavior. What must stay permanent is reachability of the
-    # committed blob at this pinned commit, which retention (a working-tree
-    # delete) can never touch (iterate-2026-08-08-cache-sync-add-detection-gap:
-    # the 61st entry's retention sweep evicted both from the checkout and broke
-    # the stronger, undocumented "must still exist locally" version of this
-    # assertion this test carried before).
+    # Pinning keeps these recovered F5c summaries locally reachable while this
+    # history check proves their validated origin remains durable as well.
     reader = committed_bytes_reader(_REPO_ROOT, _VALIDATED_MAIN_TIP)
     for run_id in _RECOVERED:
         rel = f".shipwright/agent_docs/iterates/{run_id}.json"
@@ -91,6 +81,16 @@ def test_recovered_runs_have_a_durable_f5c_summary_reachable_from_main():
             raise AssertionError(f"cannot read {rel} at {_VALIDATED_MAIN_TIP[:8]}: {exc}")
         assert committed is not None, f"{rel} is absent from origin/main tip"
         doc = json.loads(committed.decode("utf-8"))
+        assert doc["run_id"] == run_id
+
+
+def test_recovered_summaries_are_pinned_and_present_in_the_current_checkout():
+    config = json.loads((_REPO_ROOT / "shipwright_run_config.json").read_text())
+    assert set(_RECOVERED) <= set(config.get("iterate_retention_pins", []))
+    for run_id in _RECOVERED:
+        artifact = _ITERATES / f"{run_id}.json"
+        assert artifact.is_file()
+        doc = json.loads(artifact.read_text(encoding="utf-8"))
         assert doc["run_id"] == run_id
 
 
