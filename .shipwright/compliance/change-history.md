@@ -1,9 +1,9 @@
 # Commit Change Log
 
-Generated: 2026-08-08T19:53:58.646645+00:00
-Source-State: run=iterate-2026-08-08-prompt-scan-dynamic-import-fault-test base=7a01ee66b247 release=v0.32.0
+Generated: 2026-08-08T22:25:50.551611+00:00
+Source-State: run=iterate-2026-08-08-retention-pins
 Consistency-audit: last run 2026-07-28 (11 days earlier) — FAIL
-Total commits: 1390
+Total commits: 1394
 
 ## Commit Distribution
 
@@ -11,8 +11,8 @@ Total commits: 1390
 pie title Commit Types
     "fix" : 452
     "feat" : 379
-    "chore" : 259
-    "docs" : 153
+    "chore" : 262
+    "docs" : 154
     "refactor" : 84
     "test" : 34
     "ci" : 18
@@ -864,10 +864,13 @@ pie title Commit Types
 | 2026-03-20 | — | Task 02 — project templates (CLAUDE.md, agent_docs, CI) | c3a6d2f53bd3 |
 | 2026-03-20 | — | Task 01 — monorepo scaffolding + supabase-nextjs stack profile | 990a138a4690 |
 
-### Chores (chore) — 259 commits
+### Chores (chore) — 262 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-08-08 | triage | sweep 9 outbox append(s) into branch | c976c2639559 |
+| 2026-08-08 | release | v0.32.0 canon handoff — dashboard, session handoff, phase history | 5f12a9ff7abf |
+| 2026-08-08 | release | v0.32.0 | 11e325232765 |
 | 2026-08-08 | triage | dismiss trg-6d8fbc10, delivered via PR #598 | b67e536d9bef |
 | 2026-08-07 | triage | fold 4 main-tree background append(s) | 419aa3c5e2b8 |
 | 2026-08-02 | events | seal post-delivery grade snapshot (#531) | 027eeb9c0ee6 |
@@ -1128,10 +1131,11 @@ pie title Commit Types
 | 2026-03-28 | — | add shipwright-run uv.lock | ef1cc1ad180c |
 | 2026-03-20 | — | initial commit with spec and task list | 07ca9c1de51c |
 
-### Documentation (docs) — 153 commits
+### Documentation (docs) — 154 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-08-08 | — | track Codex operating policy (#612) | fd457249d575 |
 | 2026-08-01 | readme | flag active refactoring window through Aug 10, 2026 | b0c3caf35946 |
 | 2026-07-28 | planning | the quoted directive stops tripping the prompt scanner | 07cd445538db |
 | 2026-07-28 | — | docs/ holds what someone wrote for someone to read (#493) | bebdc9a37e7e |
@@ -1467,7 +1471,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 1390 |
+| Total commits | 1394 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 1390 |
+| Human-authored commits | 1394 |
 

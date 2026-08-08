@@ -1,0 +1,78 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-08-08-retention-pins",
+    "date": "2026-08-08",
+    "unit": {
+      "status": "passed",
+      "passed": 18,
+      "total": 18,
+      "note": "F0 canonical suite: all 18 discovered suite units passed."
+    },
+    "integration": {
+      "status": "passed",
+      "passed": 1,
+      "total": 1,
+      "note": "integration-tests suite unit passed in F0."
+    },
+    "e2e": {
+      "status": "not_run",
+      "reason": "No browser surface: retention tooling only."
+    },
+    "smoke": {
+      "status": "not_run",
+      "reason": "No startable server surface in this framework monorepo."
+    },
+    "pgtap": {
+      "status": "not_run",
+      "reason": "No database change."
+    },
+    "design_fidelity": {
+      "status": "not_run",
+      "reason": "No UI change."
+    },
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "Explicit F5c retention pins keep recovered summaries while 50 unpinned summaries remain cached.",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_iterate_retention_pins.py::test_retention_keeps_configured_pins_beyond_the_unpinned_window PASSED (F0)"
+        },
+        {
+          "behavior": "Malformed pin configuration stops before any retention deletion.",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_iterate_retention_pins.py::test_malformed_retention_pins_fail_before_retention PASSED (F0)"
+        },
+        {
+          "behavior": "P1.14 recovered summaries are configured as pins and present in the checkout.",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_worktree_evidence_recovery.py::test_recovered_summaries_are_pinned_and_present_in_the_current_checkout PASSED (F0)"
+        }
+      ],
+      "counts": {
+        "testable": 3,
+        "tested": 3,
+        "untestable": 0,
+        "untested_testable": 0
+      },
+      "enumeration_basis": {
+        "acs": 3,
+        "covered_acs": 3
+      }
+    },
+    "degraded": []
+  },
+  "coverage": {
+    "total": 80.2,
+    "measured_tier": "repo",
+    "source": "combined coverage.xml (all plugins + shared + integration)",
+    "measured_at": "2026-07-04T00:00:00Z"
+  },
+  "source_state": {
+    "run_id": "iterate-2026-08-08-retention-pins",
+    "commit": "c976c2639559770f8183682decfe02e6103a4125",
+    "dirty": true,
+    "base": null,
+    "release": null
+  }
+}

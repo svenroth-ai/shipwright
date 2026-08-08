@@ -1,31 +1,40 @@
 ---
 canon_generated: true
-run_id: "changelog-v0.32.0-20260808-224001"
-phase: "changelog"
-reason: "release v0.32.0"
-timestamp: "2026-08-08T20:34:51.172844+00:00"
+run_id: "iterate-2026-08-08-retention-pins"
+phase: "iterate"
+reason: "iterate: retain permanently pinned F5c summaries"
+timestamp: "2026-08-08T22:25:58.209294+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-08-08 20:34:51 UTC
+> Auto-generated 2026-08-08 22:25:58 UTC
 
 ## Session Info
 
-- **Session ID**: 5e606322-4b30-42ed-9e6b-72bfd03df7be
-- **Timestamp**: 2026-08-08 20:34:51 UTC
-- **Reason**: release v0.32.0
+- **Session ID**: unknown
+- **Timestamp**: 2026-08-08 22:25:58 UTC
+- **Reason**: iterate: retain permanently pinned F5c summaries
 
 ## Last Iterate
 
-- **Run ID**: iterate-2026-08-08-prompt-scan-dynamic-import-fault-test
-- **Date**: 2026-08-08T19:53:58.428334Z
-- **Type**: change
+- **Run ID**: iterate-2026-08-08-retention-pins
+- **Date**: 2026-08-08T22:25:50.009107Z
+- **Type**: bug
 - **Complexity**: small
-- **Branch**: iterate/prompt-scan-dynamic-import-fault-test
-- **ADR**: iterate-2026-08-08-prompt-scan-dynamic-import-fault-test
+- **Branch**: iterate/p2-49-retention-pins
+- **ADR**: iterate-2026-08-08-retention-pins
 - **Tests passed**: True
-- **Spec**: n/a (small complexity, SIMPLIFY sub-mode, spec_impact none)
+
+## Current Iterate Progress
+
+- **Branch**: iterate/p2-49-retention-pins
+- **External Review Marker**: missing
+
+### Mandatory replay on Resume
+
+Before dispatching to the handoff's Remaining phase, run these if missing:
+- Finalization (F0–F11) after all mandatory phases pass
 
 ## Legacy build state
 
@@ -38,8 +47,8 @@ timestamp: "2026-08-08T20:34:51.172844+00:00"
 
 ## Git State
 
-- **Branch**: main
-- **Last Commit**: 11e32523 chore(release): v0.32.0
+- **Branch**: iterate/p2-49-retention-pins
+- **Last Commit**: c976c263 chore(triage): sweep 9 outbox append(s) into branch
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -55,17 +64,17 @@ timestamp: "2026-08-08T20:34:51.172844+00:00"
 
 | Event | Type | Source | Date |
 |-------|------|--------|------|
+| evt-039adb70 | grade_snapshot | — | 2026-08-08 |
+| evt-84fda7e2 | work_completed | iterate (Protect permanent F5c retention pins.) | 2026-08-08 |
 | evt-5036a5fd | grade_snapshot | — | 2026-08-08 |
 | evt-512679d4 | work_completed | iterate (mandated-load truncation is now declared, not silent (TC3.2)) | 2026-08-08 |
 | evt-f32709d0 | work_completed | iterate (iterate: normalize benign __import__ dynamic-import pattern flagged by shipwright-prompt-scan (trg-133f2ca6)) | 2026-08-08 |
-| evt-272f228a | grade_snapshot | — | 2026-08-08 |
-| evt-390f315f | work_completed | iterate (iterate: fix shipwright_model_config.json review tier (opus, not sonnet)) | 2026-08-08 |
 
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 513
-- **Last iterate**: feature — mandated-load truncation is now declared, not silent (TC3.2) (2026-08-08)
+- **Total work events**: 515
+- **Last iterate**: bug — Protect permanent F5c retention pins. (2026-08-08)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
 ## Recent Decisions

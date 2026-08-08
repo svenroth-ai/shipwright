@@ -1,0 +1,94 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-08-08-retention-pins",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-08T22:25:03.413881+00:00",
+      "disposition": null,
+      "recorded_by": "codex-self-review",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-08T22:24:36.738106+00:00",
+      "disposition": "external plan review is medium+ only, this run is small",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-08T22:24:36.409330+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-08T22:24:36.632840+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-08T22:24:37.056887+00:00",
+      "disposition": "external code review is medium+ only; the internal Sol High cascade completed",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-08T22:24:36.298003+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-08T22:24:36.843946+00:00",
+      "disposition": "internal plan review is medium+ only, this run is small",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    }
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-08-08-retention-pins",
+  "date": "2026-08-09",
+  "section": "Iterate - bug: retention pins",
+  "title": "Protect permanently pinned F5c summaries",
+  "context": "P1.14 recovery records require two F5c summaries to remain locally reachable, but age-only retention evicted them.",
+  "decision": "Declare permanent run IDs in the run config and retain them outside the 50-entry unpinned cache.",
+  "consequences": "Recovered summaries remain available and malformed pin configuration stops finalization before retention can delete entries.",
+  "rationale": "This keeps the ordinary recency cache bounded while making deliberate recovery exceptions explicit and testable.",
+  "rejected": "Only restoring evicted files, or moving all history out of F5c, because neither prevents the next retention sweep.",
+  "commit": "",
+  "architecture_impact": "none",
+  "spec_ref": ""
+}
