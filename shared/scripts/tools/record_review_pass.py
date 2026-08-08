@@ -32,6 +32,7 @@ if str(_SCRIPTS_ROOT) not in sys.path:
     sys.path.insert(0, str(_SCRIPTS_ROOT))
 
 from lib.file_lock import LockTimeout  # noqa: E402
+from lib.model_tier_config import TIERS  # noqa: E402
 from lib.review_companion import MARKER_TYPES, repair_markers, write_markers  # noqa: E402
 from lib.review_findings import (  # noqa: E402
     PARSE_PARTIAL,
@@ -190,7 +191,7 @@ def _cmd_record(args: argparse.Namespace) -> int:
             recorded_by=args.recorded_by or args.review_from,
             parse_status=parse_status, raw_excerpt=raw,
             verdicts=verdicts,
-            contradiction_resolution=args.contradiction_resolution,
+            contradiction_resolution=args.contradiction_resolution, model_tier=args.model_tier,
         )
     except ReviewRecordError as exc:
         return _fail("invalid_entry", str(exc), EXIT_USAGE)
@@ -355,9 +356,9 @@ def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     rec.add_argument("--recorded-by", default=None)
     rec.add_argument("--force", action="store_true",
                      help="overwrite an already-terminal record (corrections only)")
-    rec.add_argument("--marker-status", default=None,
-                     help="also write the legacy external_*review_state.json marker")
+    rec.add_argument("--marker-status", default=None, help="also write the legacy external_*review_state.json marker")
     rec.add_argument("--contradiction-resolution", default=None)
+    rec.add_argument("--model-tier", default=None, choices=sorted(TIERS), help="resolved model tier this spawn used")
 
     close = sub.add_parser("close-missing", help="close every still-pending type")
     common(close)
