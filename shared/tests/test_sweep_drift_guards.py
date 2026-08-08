@@ -25,6 +25,7 @@ if str(_SHARED_SCRIPTS) not in sys.path:
 sys.path.insert(0, str(Path(__file__).resolve().parent))  # for _sweep_helpers
 
 import _sweep_helpers as h  # noqa: E402
+from _sweep_helpers import outbox, seeded, write_tracked  # noqa: E402,F401 (fixture + helpers)
 from lib.sweep_drift import append_ids_of, commit_main_tracked_drift, plan_main_tracked_drift  # noqa: E402
 from lib.sweep_outbox import sweep_outbox_to_branch  # noqa: E402
 from lib.sweep_text import read_text_verbatim  # noqa: E402
@@ -48,26 +49,7 @@ class DriftView(NamedTuple):
     known_append_ids: frozenset
 
 
-@pytest.fixture
-def seeded(git_origin_repo):
-    """A main tree whose tracked triage log holds one committed item."""
-    work, _origin = git_origin_repo
-    h.set_identity(work)
-    h.seed_tracked(work, h.item("trg-seed"))
-    return work
-
-
-def outbox(work: Path) -> Path:
-    return work / h.OUTBOX
-
-
-def write_tracked(work: Path, *lines: str) -> str:
-    body = "\n".join(lines) + "\n"
-    (work / h.TRIAGE).write_text(body, encoding="utf-8", newline="")
-    return body
-
-
-def test_a_staged_triage_delta_refuses_the_repair(seeded) -> None:
+def test_a_staged_triage_delta_refuses_the_repair(seeded) -> None:  # noqa: F811
     """GPT O1. Restoring the WORKING file while the drift sits in the INDEX would
     leave it staged — and the operator's next commit on main would resurrect it,
     double-delivering an append the iterate PR already carries."""
@@ -83,7 +65,7 @@ def test_a_staged_triage_delta_refuses_the_repair(seeded) -> None:
     assert not outbox(work).exists()
 
 
-def test_a_reordered_log_is_not_append_only(seeded) -> None:
+def test_a_reordered_log_is_not_append_only(seeded) -> None:  # noqa: F811
     """GPT O3. A set-difference test would call this append-only — the HEAD lines are
     all still present. They are not in HEAD's ORDER, so the file is not an extension
     of HEAD and we cannot say which lines are new. Refuse."""
@@ -98,7 +80,7 @@ def test_a_reordered_log_is_not_append_only(seeded) -> None:
     assert read_text_verbatim(work / h.TRIAGE) == body
 
 
-def test_a_deleted_head_line_refuses_the_repair(seeded) -> None:
+def test_a_deleted_head_line_refuses_the_repair(seeded) -> None:  # noqa: F811
     """The plain divergence case: a line HEAD has is gone from the working log. We do
     not understand this file's state, so we do not rewrite it (the operator's call)."""
     work = seeded
@@ -112,7 +94,7 @@ def test_a_deleted_head_line_refuses_the_repair(seeded) -> None:
     assert not outbox(work).exists()
 
 
-def test_malformed_drift_is_never_copied_into_the_outbox(seeded) -> None:
+def test_malformed_drift_is_never_copied_into_the_outbox(seeded) -> None:  # noqa: F811
     """GPT O4. Adopting corruption would poison the outbox AND hide its source by
     rewriting the tracked file it came from. Validate before any destructive write."""
     work = seeded
@@ -122,6 +104,8 @@ def test_malformed_drift_is_never_copied_into_the_outbox(seeded) -> None:
 
     assert result.status == "refused"
     assert result.reason.startswith("main_tracked_unparseable"), result.reason
+    assert "triage_repair.py" in result.reason, "the escape hatch is unnamed: " + result.reason
+    assert "--project-root <root>" in result.reason, "wrong tree named: " + result.reason
     assert read_text_verbatim(work / h.TRIAGE) == body
     assert not outbox(work).exists(), "a corrupt line reached the delivery buffer"
 
@@ -145,7 +129,7 @@ def test_an_uncommitted_log_is_unrepairable_but_never_blocks_delivery(git_origin
     assert not outbox(work).exists()
 
 
-def test_an_uncommitted_log_still_lets_the_sweep_deliver_the_outbox(seeded) -> None:
+def test_an_uncommitted_log_still_lets_the_sweep_deliver_the_outbox(seeded) -> None:  # noqa: F811
     """The regression the ``unrepairable`` split exists to prevent, in its realistic
     shape: LOCAL main is behind origin (nobody pulled), so main's HEAD has no triage blob
     — while ``origin/main``, and therefore the iterate worktree cut from it, does. The
@@ -167,7 +151,7 @@ def test_an_uncommitted_log_still_lets_the_sweep_deliver_the_outbox(seeded) -> N
 
 
 @pytest.mark.parametrize("emptied", [True, False], ids=["emptied", "deleted"])
-def test_an_emptied_or_deleted_log_is_the_severest_divergence(seeded, emptied: bool) -> None:
+def test_an_emptied_or_deleted_log_is_the_severest_divergence(seeded, emptied: bool) -> None:  # noqa: F811
     """External review, GPT (high). A missing/emptied working log whose HEAD blob has
     content is not "no drift" — EVERY HEAD line is gone. Shortcutting to ``no_drift``
     before the HEAD comparison would let the sweep proceed over a state it never read."""
@@ -184,7 +168,7 @@ def test_an_emptied_or_deleted_log_is_the_severest_divergence(seeded, emptied: b
     assert not outbox(work).exists()
 
 
-def test_a_whitespace_only_edit_to_a_head_line_is_not_append_only(seeded) -> None:
+def test_a_whitespace_only_edit_to_a_head_line_is_not_append_only(seeded) -> None:  # noqa: F811
     """External review, GPT (medium). Comparing stripped lines would accept this as
     append-only and then RESTORE the stripped form — silently normalizing away an edit
     nobody asked us to touch. The comparison is verbatim, so it refuses."""
@@ -198,7 +182,7 @@ def test_a_whitespace_only_edit_to_a_head_line_is_not_append_only(seeded) -> Non
     assert read_text_verbatim(work / h.TRIAGE) == body, "the edited line was rewritten"
 
 
-def test_a_stray_blank_line_does_not_refuse_the_repair(seeded) -> None:
+def test_a_stray_blank_line_does_not_refuse_the_repair(seeded) -> None:  # noqa: F811
     """The other side of verbatim comparison: blank lines carry no event, so a stray one
     must NOT block a legitimate repair. Comparison ignores blanks; the lines it does
     compare are exact."""
@@ -210,7 +194,7 @@ def test_a_stray_blank_line_does_not_refuse_the_repair(seeded) -> None:
     assert result.status == "adopted" and result.adopted == 1
 
 
-def test_an_unplaceable_known_append_holds_instead_of_eating_the_dismiss(seeded) -> None:
+def test_an_unplaceable_known_append_holds_instead_of_eating_the_dismiss(seeded) -> None:  # noqa: F811
     """AC2, on the path that actually reaches ``decide()``. The append is KNOWN (it is in
     main's log) but unadoptable (main is behind origin — no HEAD blob to restore to), so
     it cannot be materialized. The dismiss must survive in the outbox — never quarantined.
