@@ -30,6 +30,7 @@ if str(_SHARED_SCRIPTS) not in sys.path:
 sys.path.insert(0, str(Path(__file__).resolve().parent))  # for _sweep_helpers
 
 import _sweep_helpers as h  # noqa: E402
+from lib import main_tree_guards as mtg  # noqa: E402
 from lib import sweep_gc as sgc  # noqa: E402
 from lib import sweep_outbox as so  # noqa: E402
 from lib import git_base as gb  # noqa: E402
@@ -38,6 +39,10 @@ from lib.git_base import TIMEOUT_RETURNCODE, run_git_soft  # noqa: E402
 
 def _timeout(*_a, **_k):
     raise subprocess.TimeoutExpired(cmd=["git", "x"], timeout=15.0)
+
+
+def _unrunnable(*_a, **_k):
+    raise FileNotFoundError("git not found")
 
 
 @pytest.fixture
@@ -78,9 +83,12 @@ def test_op_in_progress_says_yes_when_it_cannot_tell(repo, monkeypatch) -> None:
     """An ordinary non-zero means "no such ref"; a timeout must NOT mean that.
 
     Reading "no operation in progress" from a question that was never answered would
-    let the sweep commit into a half-finished merge.
+    let the sweep commit into a half-finished merge. The probe now runs inside
+    ``lib.main_tree_guards`` (iterate-2026-08-07-shared-op-predicates), so the patch
+    target moved with it — mirroring the reconcile sibling in
+    test_main_tree_git_timeout_paths.py.
     """
-    monkeypatch.setattr(so, "run_git_soft",
+    monkeypatch.setattr(mtg, "run_git_soft",
                         lambda *a, **k: subprocess.CompletedProcess(
                             ["git"], TIMEOUT_RETURNCODE, "", "timed out"))
     assert so._op_in_progress(repo) is True
@@ -92,9 +100,50 @@ def test_sweep_skips_when_the_guard_times_out(repo, monkeypatch) -> None:
     wt = h.make_worktree(repo, "timeout-guard")
     h.write_outbox(repo, h.item("trg-new"))
 
-    monkeypatch.setattr(so, "run_git_soft",
+    monkeypatch.setattr(mtg, "run_git_soft",
                         lambda *a, **k: subprocess.CompletedProcess(
                             ["git"], TIMEOUT_RETURNCODE, "", "timed out"))
+    result = so.sweep_outbox_to_branch(repo, wt, default_branch="main")
+    assert result.status == "skipped", result.to_dict()
+    assert result.reason == "op_in_progress", result.to_dict()
+
+
+def test_op_in_progress_fails_closed_when_git_is_unrunnable(repo, monkeypatch) -> None:
+    """A missing git binary must fail closed too, not raise past the sweep's "never
+    raises for an expected condition" contract.
+
+    Before the extraction this called ``run_git_soft`` bare, and ``run_git_soft``
+    (``lib.git_base``) only maps ``subprocess.TimeoutExpired`` — an ``OSError`` from
+    ``Popen`` propagated uncaught. ``lib.main_tree_guards._probe`` additionally catches
+    ``OSError``, so this is a behavior WIDENING the extraction picks up for free
+    (opus-plan-review + external review, both flagged the "byte-identical" framing as
+    incomplete without this pin).
+    """
+    monkeypatch.setattr(mtg, "run_git_soft", _unrunnable)
+    assert so._op_in_progress(repo) is True
+
+
+def test_has_staged_changes_fails_closed_when_git_is_unrunnable(repo, monkeypatch) -> None:
+    """Same fail-closed widening as above, for the OTHER predicate the extraction
+    changes — external review (OpenAI + DeepSeek) both asked for this: the new
+    OSError coverage must not stop at ``_op_in_progress``."""
+    monkeypatch.setattr(mtg, "run_git_soft", _unrunnable)
+    assert so._has_staged_changes(repo) is True
+
+
+def test_sweep_skips_when_git_is_unrunnable_end_to_end(repo, monkeypatch) -> None:
+    """External review (OpenAI): prove the PUBLIC ``sweep_outbox_to_branch`` contract
+    for the extracted guard seam specifically, not only the private predicate — an
+    unrunnable git at the op-in-progress probe must surface as a structured skip,
+    never an escaping exception. Patches only ``mtg.run_git_soft`` (what the guards
+    call); ``sweep_outbox.py``'s own bare ``run_git_soft`` calls at the later add/diff/
+    commit steps are untouched by this extraction and remain a separate, pre-existing
+    surface (code review) — not pinned here."""
+    h.seed_tracked(repo, h.item("trg-seed"))
+    wt = h.make_worktree(repo, "unrunnable-guard")
+    h.write_outbox(repo, h.item("trg-new"))
+
+    monkeypatch.setattr(mtg, "run_git_soft", _unrunnable)
     result = so.sweep_outbox_to_branch(repo, wt, default_branch="main")
     assert result.status == "skipped", result.to_dict()
     assert result.reason == "op_in_progress", result.to_dict()

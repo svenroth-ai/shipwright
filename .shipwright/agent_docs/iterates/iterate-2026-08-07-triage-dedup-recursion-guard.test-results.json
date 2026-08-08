@@ -1,0 +1,120 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-08-07-triage-dedup-recursion-guard",
+    "date": "2026-08-07",
+    "unit": {
+      "status": "pass",
+      "passed": 8610,
+      "failed": 0,
+      "skipped": 32,
+      "note": "shared/tests full run (the only unit this iterate's code touches), fresh JUnit evidence staged for F5. The F0 canonical suite runner separately confirmed all 18 units GREEN (shipwright-* plugins + shared/scripts/tests + shared/scripts/tools/tests + integration-tests), diff coverage 100% on the 3 changed lines."
+    },
+    "integration": {
+      "status": "pass",
+      "passed": 5,
+      "failed": 0,
+      "note": "AC-3 (real git/worktree/canonical lock) + AC-5 (real git repo, _reconcile_events x2 + _reconcile_triage x2) \u2014 the cross_component-mandated integration coverage."
+    },
+    "e2e": {
+      "status": "n/a",
+      "reason": "no browser surface; pure Python library fix (triage/churn JSONL parse boundaries)"
+    },
+    "smoke": {
+      "status": "n/a",
+      "reason": "no startable server surface for this change"
+    },
+    "pgtap": {
+      "status": "n/a",
+      "reason": "no database"
+    },
+    "design_fidelity": {
+      "status": "n/a",
+      "reason": "no UI surface"
+    },
+    "surface_verification": {
+      "surface": "cli",
+      "tests_run": 5,
+      "exit_code": 0,
+      "evidence_path": ".shipwright/runs/iterate-2026-08-07-triage-dedup-recursion-guard/surface_verification.json",
+      "detail": "AC-3's real-git/real-lock E2E regression test plus the four _reconcile_events/_reconcile_triage integration tests, run directly against the real call chain via pytest."
+    },
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "AC-1: deep line does not raise out of dedup_triage_lines",
+          "disposition": "tested",
+          "evidence": "test_triage_dedup.py::test_deeply_nested_append_does_not_raise_and_passes_through PASSED"
+        },
+        {
+          "behavior": "AC-1 sibling: deep line does not raise out of dedup_event_lines",
+          "disposition": "tested",
+          "evidence": "test_churn_merge_recursion_guard.py::test_deeply_nested_event_line_does_not_raise_and_survives PASSED"
+        },
+        {
+          "behavior": "AC-2 matrix (same-id twin, placement, malformed sibling) \u2014 dedup_triage_lines",
+          "disposition": "tested",
+          "evidence": "test_triage_dedup.py::test_deeply_nested_line_beside_a_valid_same_id_twin_is_a_collision, ::test_deeply_nested_line_matrix_placement_first_and_last, ::test_deeply_nested_line_beside_a_malformed_line PASSED"
+        },
+        {
+          "behavior": "AC-2 matrix, identical shape \u2014 dedup_event_lines",
+          "disposition": "tested",
+          "evidence": "test_churn_merge_recursion_guard.py::test_deeply_nested_event_line_beside_a_valid_same_id_twin, ::test_deeply_nested_event_line_matrix_placement_first_and_last, ::test_deeply_nested_event_line_beside_a_malformed_line PASSED"
+        },
+        {
+          "behavior": "AC-3: sweep_outbox_to_branch end-to-end, real git/lock, status=invalid, lock genuinely released",
+          "disposition": "tested",
+          "evidence": "test_sweep_outbox_dispositions_integration.py::test_deeply_nested_line_blocks_cleanly_instead_of_crashing_the_lock PASSED (pre-fix failure confirmed via git stash)",
+          "category": "integration"
+        },
+        {
+          "behavior": "AC-4: classify_triage_text's pre-existing RecursionError handling stays pinned",
+          "disposition": "tested",
+          "evidence": "test_triage_validate.py::test_deeply_nested_line_is_reported_not_raised PASSED (confirmed already-green pre-fix)"
+        },
+        {
+          "behavior": "AC-5: _reconcile_events survives a deep line + reports it via validate_events_text",
+          "disposition": "tested",
+          "evidence": "test_resolve_churn_conflicts_recursion_guard.py::test_reconcile_events_survives_a_deeply_nested_line, ::test_reconcile_events_deep_line_reported_as_unrecoverable_fragment PASSED (real git repo; pre-fix failure confirmed via git stash)",
+          "category": "integration"
+        },
+        {
+          "behavior": "Doubt-reviewer finding 1: dedup_event_lines does not raise TypeError on a non-str decoded id",
+          "disposition": "tested",
+          "evidence": "test_churn_merge_recursion_guard.py::test_non_str_id_does_not_raise_typeerror PASSED (reproduced pre-fix directly)"
+        },
+        {
+          "behavior": "Doubt-reviewer finding 3: _reconcile_triage (third real caller) survives a deep line, dedups, stages, reports the fragment",
+          "disposition": "tested",
+          "evidence": "test_resolve_churn_conflicts_recursion_guard.py::test_reconcile_triage_survives_a_deeply_nested_line, ::test_reconcile_triage_deep_line_reported_as_unrecoverable_fragment PASSED",
+          "category": "integration"
+        }
+      ],
+      "counts": {
+        "total": 9,
+        "tested": 9,
+        "untestable": 0,
+        "untested_testable": 0
+      },
+      "enumeration_basis": {
+        "acs": 5,
+        "covered_acs": 5
+      },
+      "ledger_path": ".shipwright/planning/iterate/2026-08-07-triage-dedup-recursion-guard.md"
+    },
+    "degraded": []
+  },
+  "coverage": {
+    "total": 80.2,
+    "measured_tier": "repo",
+    "source": "combined coverage.xml (all plugins + shared + integration)",
+    "measured_at": "2026-07-04T00:00:00Z"
+  },
+  "source_state": {
+    "run_id": "iterate-2026-08-07-triage-dedup-recursion-guard",
+    "commit": "f35b6e54d22d6266a5b7c3b9210876cbbc67e6ef",
+    "dirty": true,
+    "base": null,
+    "release": null
+  }
+}

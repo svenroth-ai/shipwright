@@ -1,0 +1,262 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-08-07-triage-dedup-recursion-guard",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-07T21:51:43.185885+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 10,
+      "findings": [
+        {
+          "severity": "low",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "The fix adds `ValueError` to the except tuple in `churn_merge.dedup_event_lines`, which is broader than the defect (only `RecursionError` is missing). The justification is that `json.loads` can raise other `ValueError` subclasses beyond `JSONDecodeError` (e.g. malformed surrogate escapes), and the function's contract is “best-effort id extraction”. This is consistent with the sibling function `_parsed_append`.",
+          "suggestion": "Explicitly comment in the code why `ValueError` is now caught (matching `triage_dedup._parsed_append`’s existing tuple) so a future maintainer doesn’t assume it’s overly broad. No code change required.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "dedup_event_lines` returns `ev_id = None` for a line whose JSON is deeply nested, causing that line to be treated as having no id and thus never deduplicated against other lines with the same id that parse correctly. This is intentional (the line survives byte-identical) but could lead to duplicate entries in the deduplicated output if the same id appears in both a valid and a pathological line.",
+          "suggestion": "This is a harmless data-quality edge case in a degraded scenario and is documented as “never drops a distinct line”. No action needed, but the property test (AC-2) for `dedup_event_lines` should confirm that a pathological line with the same id as a valid line still appears in the output (duplicate id in the result set), which is what the acceptance criteria prescribes.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "The plan relies on the assumption that `validate_events_text` will report an `ev_id=None` line as “not valid JSON (unrecoverable fragment)” – a claim that must be verified at build time before writing the integration-test assertion (AC-5c).",
+          "suggestion": "Include an explicit probe step during Build (as noted in the spec’s Confidence Calibration) to confirm that `validate_events_text` indeed produces that report for a line with a deeply nested value. If it does not, the assertion in the integration test must be adjusted to whatever the real downstream reporting path is.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The property test (AC-2) explicitly specifies a bounded nesting depth (`'{\"a\":'  20000`) to avoid `sys.setrecursionlimit`. This ensures the test runs safely, but it does not exercise the case where a line is just at the interpreter’s default recursion limit and thus still parses successfully – that scenario would not trigger the new except clause.",
+          "suggestion": "This is acceptable because the fix is for lines that exceed the limit and raise `RecursionError`. No additional test is required; the “degenerate gracefully” property is already covered. The plan’s explicit build constraint against `sys.setrecursionlimit` remains correct.  Overall assessment: The approach is minimal, correct, and thoroughly vetted through multiple review rounds. The fix extends an established pattern, the test strategy covers all acceptance criteria and cross-component integration, and the edge cases are well understood and safely handled. SHIPWRIGHT_VERDICT: approve",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The AC-3 sweep test can pass without exercising the originally failing `_parsed_append` path if earlier normalization, record splitting, or quarantine classification handles the deeply nested line before `dedup_triage_lines` sees it. A final `status == \"quarantine\"` alone establishes a desirable outcome, but not that the canonical-lock regression was traversed.",
+          "suggestion": "Construct the E2E fixture so the pathological line reaches `dedup_triage_lines` alongside at least one valid same-id append record, and confirm the test fails pre-fix with `RecursionError` at the intended call chain. Retain the direct unit regression as the focused proof, while using the E2E test to prove real caller composition and outcome.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "AC-3 describes a successful return as proving that “the lock is released,” but return alone does not directly verify lock availability. The `with` implementation makes release highly likely and the specification correctly acknowledges it, but this particular regression’s operational consequence is lock-scoped worktree setup.",
+          "suggestion": "After each E2E invocation (both quarantine and invalid cases), reacquire the same canonical lock or run a minimal second lock-dependent operation. This provides an explicit regression assertion that the lock is usable after the formerly crashing input, without needing to test private lock internals.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "AC-2 is called a property test and initially says “for arbitrary” groups, but the proposed implementation is a bounded set of hand-written examples. That is a sound and proportionate test strategy without adding Hypothesis, but it is not a property test in the usual generated-input sense.",
+          "suggestion": "Rename it to a bounded invariant/matrix test, or define the exact generated combinatorial matrix (valid append variants × malformed line × deep line × placement) so “property” accurately describes what is covered. Keep the no-new-dependency decision.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "AC-5 depends on `validate_events_text` safely processing a deeply nested JSON line and emitting the specified unrecoverable-fragment diagnostic. The plan says this was probed, but the stated implementation sequence only writes the integration test after the code changes; if that expectation is wrong, the test may expose a third unguarded parser rather than validate the intended second fix.",
+          "suggestion": "Make verification of `validate_events_text` an explicit precondition before finalizing the expected AC-5 assertion. If it propagates `RecursionError` or produces a materially different diagnostic, either fix that independently with its own scoped rationale or revise AC-5 to assert only behavior the current validator contract guarantees.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "Both new exception tuples retain `json.JSONDecodeError` after adding `ValueError`, although `JSONDecodeError` is a `ValueError`. This is harmless, and the readability rationale is reasonable, but it is redundant code in a deliberately minimal fix.",
+          "suggestion": "Prefer `except (ValueError, RecursionError)` in both locations unless local project convention specifically favors listing the JSON-specific subclass for documentation. If retaining it, add no additional abstraction or helper solely to normalize these tuples.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "The confidence section still states “NOT `cross_component`,” contradicting the re-measurement table and the rest of the plan, which correctly says that changing `churn_merge.py` makes `cross_component` true. This could lead to an incorrect risk record or skipped required review/ledger classification.",
+          "suggestion": "Correct the stale confidence-calibration bullet before implementation and ensure the Test Completeness Ledger records AC-5 as the required `integration` behavior for the cross-component change.  Overall, the source-level fix is sound, narrowly scoped, and appropriately applies at the best-effort parse boundaries rather than at higher callers. The main revisions are to make the integration tests demonstrably traverse the relevant paths and to remove the remaining test-contract and risk-classification ambiguities. SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-08-07T21:31:33.480470+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[deepseek] - **Category:** approach  \n  **Severity:** low  \n  **Finding:** The fix adds `ValueError` to the except tuple in `churn_merge.dedup_event_lines`, which is broader than the defect (only `RecursionError` is missing). The justification is that `json.loads` can raise other `ValueError` subclasses beyond `JSONDecodeError` (e.g. malformed surrogate escapes), and the function's contract is “best-effort id extraction”. This is consistent with the sibling function `_parsed_append`.  \n  **Suggestion:** Explicitly comment in the code why `ValueError` is now caught (matching `triage_dedup._parsed_append`’s existing tuple) so a future maintainer doesn’t assume it’s overly broad. No code change required.\n\n- **Category:** edge-case  \n  **Severity:** low  \n  **Finding:** `dedup_event_lines` returns `ev_id = None` for a line whose JSON is deeply nested, causing that line to be treated as having no id and thus never deduplicated against other lines with the same id that parse correctly. This is intentional (the line survives byte-identical) but could lead to duplicate entries in the deduplicated output if the same id appears in both a valid and a pathological line.  \n  **Suggestion:** This is a harmless data-quality edge case in a degraded scenario and is documented as “never drops a distinct line”. No action needed, but the property test (AC-2) for `dedup_event_lines` should confirm that a pathological line with the same id as a valid line still appears in the output (duplicate id in the result set), which is what the acceptance criteria prescribes.\n\n- **Category:** risk  \n  **Severity:** low  \n  **Finding:** The plan relies on the assumption that `validate_events_text` will report an `ev_id=None` line as “not valid JSON (unrecoverable fragment)” – a claim that must be verified at build time before writing the integration-test assertion (AC-5c).  \n  **Suggestion:** Include an explicit probe step during Build (as noted in the spec’s Confidence Calibration) to confirm tha […truncated]\n\n[openai] 1. **Category: edge-case**  \n   **Severity: medium**  \n   **Finding:** The AC-3 sweep test can pass without exercising the originally failing `_parsed_append` path if earlier normalization, record splitting, or quarantine classification handles the deeply nested line before `dedup_triage_lines` sees it. A final `status == \"quarantine\"` alone establishes a desirable outcome, but not that the canonical-lock regression was traversed.  \n   **Suggestion:** Construct the E2E fixture so the pathological line reaches `dedup_triage_lines` alongside at least one valid same-id append record, and confirm the test fails pre-fix with `RecursionError` at the intended call chain. Retain the direct unit regression as the focused proof, while using the E2E test to prove real caller composition and outcome.\n\n2. **Category: edge-case**  \n   **Severity: medium**  \n   **Finding:** AC-3 describes a successful return as proving that “the lock is released,” but return alone does not directly verify lock availability. The `with` implementation makes release highly likely and the specification correctly acknowledges it, but this particular regression’s operational consequence is lock-scoped worktree setup.  \n   **Suggestion:** After each E2E invocation (both quarantine and invalid cases), reacquire the same canonical lock or run a minimal second lock-dependent operation. This provides an explicit regression assertion that the lock is usable after the formerly crashing input, without needing to test private lock internals.\n\n3. **Category: approach**  \n   **Severity: low**  \n   **Finding:** AC-2 is called a property test and initially says “for arbitrary” groups, but the proposed implementation is a bounded set of hand-written examples. That is a sound and proportionate test strategy without adding Hypothesis, but it is not a property test in the usual generated-input sense.  \n   **Suggestion:** Rename it to a bounded invariant/matrix test, or define the exact generated combinatori […truncated]",
+      "verdicts": {
+        "openai": "revise",
+        "deepseek": "approve"
+      },
+      "contradiction_resolution": "openai=revise / deepseek=approve, within one step, not a contradiction; all revise-findings folded into the spec (Round 2 + Round 2b tables)"
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 4,
+      "findings": [
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/tests/test_resolve_churn_conflicts_recursion_guard.py",
+          "line": 58,
+          "finding": "AC-5(b) test binds errors and resolved without asserting either, and the deep-in-survived assertion would pass even if _reconcile_events no-oped. Dead disjunct on warnings.",
+          "suggestion": "Fixed post-review: added EVENTS_LOG in resolved, survived.count(normal) == 1, and an unrecoverable-fragment assertion on errors; dropped the dead disjunct.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "shared/tests/test_sweep_gc_canonical.py",
+          "line": 185,
+          "finding": "15-line provenance paragraph in a test docstring narrating what it used to say.",
+          "suggestion": "Fixed post-review: trimmed to the two load-bearing facts (scope, and where the E2E proof now lives).",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/scripts/lib/campaign_status.py",
+          "line": 156,
+          "finding": "Four sibling best-effort json.loads readers of the same events log still miss RecursionError.",
+          "suggestion": "Explicitly out of scope for this diff (scope creep). Filed as triage card trg-acc195bf per the reviewer's own instruction.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "shared/tests/test_churn_merge_recursion_guard.py",
+          "line": 25,
+          "finding": "The deep-nesting idiom is now spelled out in six test modules; roughly a wash to extract now.",
+          "suggestion": "Left as-is per the reviewer's own recommendation (extract only if a seventh site appears).",
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-08-07T22:08:03.992724+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer (opus, agent a5733abba0e2a6a1d)",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 5,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "boundary-and-contract",
+          "file": "shared/scripts/lib/churn_merge.py",
+          "line": null,
+          "finding": "Claim under doubt: dedup_event_lines' id extraction is total against adversarial input — {\"id\":[\"x\"],...} decodes cleanly, is truthy, and `ev_id in id_to_line` raises TypeError: unhashable type: 'list', uncaught, out of dedup_event_lines. Reproduced directly pre-fix.",
+          "suggestion": "FIXED: isinstance(ev_id, str) and ev_id, matching sweep_quarantine.py's established idiom. Regression test test_non_str_id_does_not_raise_typeerror added.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "concurrency-and-ordering",
+          "file": "shared/tests/test_sweep_outbox_dispositions_integration.py",
+          "line": null,
+          "finding": "Claim under doubt: AC-3(d) proves the canonical lock is released, not merely re-enterable — FileLock.__enter__ short-circuits via enter_reentrant for the SAME thread without touching the OS lock, so a same-thread reacquire succeeds even if the release itself leaked.",
+          "suggestion": "FIXED: test now asserts the process-wide file_lock_registry holds no entry for the key, checked directly instead of via a same-thread reacquire.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "hidden-coupling-and-blast-radius",
+          "file": "shared/scripts/tools/resolve_churn_conflicts.py",
+          "line": null,
+          "finding": "Claim under doubt: the fix protects all three real callers uniformly; AC-5 discharges the cross_component integration debt — _reconcile_triage writes and git-adds its rewrite BEFORE validating, and has no test coverage for the deep-line case; a real regression there would leave a modified+staged log inside a half-resolved merge, not just fail an assertion.",
+          "suggestion": "FIXED: added test_reconcile_triage_survives_a_deeply_nested_line and test_reconcile_triage_deep_line_reported_as_unrecoverable_fragment, mirroring the AC-5 events-side pair.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "boundary-and-contract",
+          "file": "shared/scripts/lib/triage_dedup.py",
+          "line": null,
+          "finding": "Claim under doubt: _parsed_append's 'Total: never raises' docstring claim — sweep_canon.canonical_form makes the same absolute claim and deliberately includes TypeError for caller-discipline independence; this diff's docstring writes the same absolute claim without that guard.",
+          "suggestion": "FIXED: added TypeError to the except tuple, matching the established symmetry precedent.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "boundary-and-contract",
+          "file": ".shipwright/planning/iterate/2026-08-07-triage-dedup-recursion-guard.md",
+          "line": null,
+          "finding": "Claim under doubt: spec rationale for the bare ValueError addition (surrogate-escape claim) — json.loads on a str with lone surrogates raises nothing beyond JSONDecodeError; the UnicodeDecodeError path needs bytes input, which no caller passes. The stated concrete trigger is checked-wrong.",
+          "suggestion": "FIXED: the unverified/incorrect claim removed from the spec, restated honestly as defense-in-depth.",
+          "source": "doubt-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-08-07T22:23:10.776581+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer (opus, agent a2b008fe01ddcc199)",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": "openrouter",
+      "completed_at": "2026-08-07T22:13:16.455228+00:00",
+      "disposition": null,
+      "recorded_by": "external_review.py --mode code",
+      "parse_status": "unstructured",
+      "raw_excerpt": "[deepseek] approve, no findings\n\n[openai] 3 findings: (1) medium - triage.jsonl scope, investigated and REJECTED with reason (background producer noise, not this session's diff); (2) medium - AC-3 no-side-effects assertion insufficient, ACCEPTED and fixed (git HEAD + porcelain status now asserted); (3) low - matrix cells assert membership not order, ACCEPTED and fixed (full ordered-output equality now asserted in all 4 cells).",
+      "verdicts": {
+        "openai": "unknown",
+        "deepseek": "unknown"
+      },
+      "contradiction_resolution": "openai=revise / deepseek=approve, within one step, not a contradiction; 1 finding rejected with reason (triage.jsonl background noise), 2 fixed"
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-07T22:52:55.618196+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    }
+  }
+}

@@ -179,13 +179,11 @@ def test_unparseably_deep_object_degrades_instead_of_raising() -> None:
     (``RecursionError`` out of ``json.loads``), so this genuinely exercises the
     handler rather than short-circuiting on the non-dict guard.
 
-    **Scope, deliberately narrow (Stage-3 review).** This pins ``sweep_canon`` ONLY.
-    It is NOT end-to-end survivability of that input: ``churn_merge._append_id``
-    catches only ``(JSONDecodeError, ValueError)``, so the same line still raises
-    ``RecursionError`` out of ``dedup_triage_lines`` — inside the lock, on the
-    ``setup_iterate_worktree`` step-5 path — before the GC is ever reached. That gap
-    is pre-existing and is carried by card ``trg-ed774f03`` (P2.19g). Reading this
-    green test as "the sweep survives deep nesting" would be exactly wrong.
+    **Scope, deliberately narrow.** This pins ``sweep_canon`` ONLY — it does not
+    exercise ``dedup_triage_lines`` or the rest of the sweep. The end-to-end
+    survivability of the same input through the full sweep is pinned in
+    ``test_sweep_outbox_dispositions_integration.py::test_deeply_nested_line_blocks_cleanly_instead_of_crashing_the_lock``,
+    with the unit-level matrix in ``test_triage_dedup.py``.
     """
     deep = '{"a":' * 20000 + "1" + "}" * 20000
     with pytest.raises(RecursionError):  # precondition: the parser really does fail

@@ -182,6 +182,21 @@ def dedup_event_lines(lines: list[str]) -> tuple[list[str], list[str]]:
     line). Returns ``(deduped, warnings)``; a warning is emitted — never a drop —
     when two *distinct* lines share an ``evt`` ``id`` (32-bit ids can collide;
     folds external-review G2/O6).
+
+    The ``id`` extraction below is total: never raises. A deeply-nested value
+    makes ``json.loads`` raise ``RecursionError`` — the sibling of the defect
+    fixed in ``lib.triage_dedup._parsed_append`` for the same reason (card
+    trg-57d0d6d3 / P2.19g, TEIL 2; found here by the internal Opus plan
+    review, not by the originating card, which named only the triage-log call
+    site). A line whose id cannot be extracted degrades to ``ev_id = None``
+    and is neither dropped nor mutated — it is simply invisible to the
+    id-collision warning below, exactly as an unparseable line already was.
+
+    ``isinstance`` FIRST, same load-bearing order as ``sweep_quarantine.py``'s
+    orphan-id check: an id may be any JSON value, and ``[] in {}`` raises
+    ``TypeError: unhashable type`` — testing membership first would crash this
+    function from inside the same canonical-lock caller the RecursionError
+    guard exists to protect (doubt-reviewer finding, Stage 3, this run).
     """
     seen_lines: set[str] = set()
     id_to_line: dict[str, str] = {}
@@ -196,9 +211,9 @@ def dedup_event_lines(lines: list[str]) -> tuple[list[str], list[str]]:
         out.append(line)
         try:
             ev_id = json.loads(line).get("id")
-        except (json.JSONDecodeError, AttributeError):
+        except (AttributeError, ValueError, RecursionError):
             ev_id = None
-        if ev_id:
+        if isinstance(ev_id, str) and ev_id:
             if ev_id in id_to_line and id_to_line[ev_id] != line:
                 warnings.append(
                     f"evt id {ev_id!r} shared by two DISTINCT event lines "
