@@ -1779,8 +1779,8 @@ SHIPWRIGHT-ITERATE: Session Plan
   Run ID:      iterate-2026-04-05-course-search
   Intent:      FEATURE
   Complexity:  Small (1 FR, ~4 files, risk: touches_migrations)
-  Phases:      spec → design text → build (TDD) → self-review → scoped test → finalize
-  Skipping:    iterate spec (small), mini-plan (small), full review (no risk flags)
+  Phases:      spec → design text → mini-plan → build (TDD) → self-review → scoped test → finalize
+  Skipping:    iterate spec (small), full review (no risk flags)
   Safety floor: DB migration → mandatory down.sql
 ```
 
@@ -2029,7 +2029,12 @@ the derived views out of the branch first; enable the queue second.
 
 If a previous run's worktree still exists, B1 detects it and offers
 **Resume** / **Abandon** / **Complete**. Resume `cd`s back into that
-worktree and continues; Abandon removes the worktree + branch.
+worktree and continues; Abandon removes the worktree + branch. B1 also reads
+the run's `reviews.json` directly (not the auto-generated handoff snapshot,
+which a run killed mid-phase never gets written) to tell whether the review
+cascade — Self-Review, spec/code/doubt-reviewer, external code review —
+started and was interrupted, so a resumed run picks it back up instead of
+silently skipping it.
 
 ### Cleanup
 

@@ -1,0 +1,44 @@
+{
+  "items": [
+    {
+      "name": "Spec Compliance",
+      "verdict": "pass",
+      "note": "All three iterate-spec ACs (mini-plan persistence, review-findings durability + SubagentStop backstop, B1 resume via reviews.json) implemented; two explicitly out-of-scope items (widening the Mini-Plan trigger table, giving reviewers Write access) were declined per the spec, not silently added."
+    },
+    {
+      "name": "Error Handling",
+      "verdict": "pass",
+      "note": "render_iterate_progress() distinguishes ReviewRecordError (unreadable/malformed) from a missing record instead of conflating them; write-review-payload-on-stop.py never blocks (bad stdin, missing transcript, no run_id, non-JSON reply all no-op, always exit 0)."
+    },
+    {
+      "name": "Security Basics",
+      "verdict": "n/a",
+      "note": "No user-input surfaces, SQL, HTML, or secrets touched — this change reads/renders internal iterate-lifecycle JSON/markdown artifacts only."
+    },
+    {
+      "name": "Test Quality",
+      "verdict": "pass",
+      "note": "Tests assert on rendered output/CLI stdout, not internals; each new behavior has both a happy-path (interrupted/complete) and an error-path (unreadable/missing/not-due-yet) case."
+    },
+    {
+      "name": "Performance Basics",
+      "verdict": "pass",
+      "note": "reviews.json is a small, fixed-shape file read once per render call; the SubagentStop hook reads one bounded transcript file with retry/backoff, matching the existing write-section-on-stop.py pattern."
+    },
+    {
+      "name": "Naming & Structure",
+      "verdict": "pass",
+      "note": "All new files live in the existing tests/scripts-hooks conventions; none exceeds 300 lines (largest new file is 237). Two pre-existing grandfathered files (test_generate_session_handoff.py, test_spec_checks.py) were kept at their exact anti-ratchet baseline by splitting new coverage into sibling files instead of extending them."
+    },
+    {
+      "name": "Affected Boundaries",
+      "verdict": "pass",
+      "note": "reviews.json's producer/consumer pair is unchanged (read-only here) and documented in the iterate spec's Affected Boundaries table. Round-trip evidence: test_compaction_state_audit_acceptance.py drives a real fixture write followed by two independent real subprocess reads (record_review_pass.py show; the Stop hook); test_review_payload_on_stop.py covers fenced/raw JSON and legacy gates.spec parsing. Not a hand-typed text format like .env, so the full BOM/CRLF probe checklist is lower-relevance; the applicable round-trip is what's tested."
+    },
+    {
+      "name": "Test Hygiene Probe",
+      "verdict": "pass",
+      "note": "uv run shared/scripts/tools/scan_test_hygiene.py --diff -> 'test_hygiene: no findings' (exit 0)."
+    }
+  ]
+}

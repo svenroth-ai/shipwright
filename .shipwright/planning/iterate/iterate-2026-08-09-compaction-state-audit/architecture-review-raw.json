@@ -1,0 +1,33 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "openrouter",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviews": {
+    "openai": {
+      "feedback": "Yes\u2014the durability fix should exist, but the reviewer-return gap needs a code-level fallback rather than a prose-only instruction.\n\nThe smallest thing that would do \u2014 extend the existing mini-plan and `reviews.json` mechanisms as proposed, and add a narrowly scoped `SubagentStop` salvage hook that writes an unrecorded reviewer reply to the existing payload/record path.\n\nWhat it costs to keep \u2014 ownership of hook lifecycle, run-id resolution, transcript-format compatibility, and ensuring the fallback remains subordinate to the normal orchestrator record path.\n\nWhat it forecloses \u2014 changing reviewer transcript/output conventions without updating the salvage hook.\n\nCategory: ownership\nSeverity: medium\nFinding: The immediate-write rule depends on an orchestrator remembering to act before compaction; it is an ongoing human-discipline obligation and does not make reviewer findings durable in the failure mode this change is meant to address.\nSuggestion: Build the named, narrowly scoped `SubagentStop` salvage fallback now, reusing the repository\u2019s existing run-id-resolution approach and writing only when the normal review payload has not already been recorded.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "openrouter",
+      "status": "success"
+    },
+    "deepseek": {
+      "feedback": "1. No new standing mechanism is created; the change proportionally extends existing machinery (mini-plan persistence, review-record reads, skill-document ordering mandates) to fix verified state-loss gaps.\n2. The smallest thing that would do: persist the mini-plan file at `small` complexity for `feature`-type runs, have `SKILL.md` \u00a7B1 read `reviews.json` directly via the existing `read_record`/`pending_types` helpers instead of the two coarse markers, and add a prose instruction at both spawn sites to write the review payload immediately after the subagent returns.\n3. Cost to keep: B1\u2019s resume check becomes permanently coupled to the `reviews.json` schema (any future schema change must consider its use in B1), and the immediate-write ordering mandate is a prose-based agent discipline that will periodically need reinforcement.\n4. What it forecloses: none identified.\n5. No findings.\n\nSHIPWRIGHT_VERDICT: approve",
+      "via": "openrouter",
+      "status": "success"
+    }
+  },
+  "verdicts": {
+    "openai": "revise",
+    "deepseek": "approve"
+  },
+  "statuses": {
+    "openai": "success",
+    "deepseek": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: deepseek=approve, openai=revise"
+  }
+}

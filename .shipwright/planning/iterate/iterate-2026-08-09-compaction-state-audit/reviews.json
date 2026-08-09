@@ -1,0 +1,239 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-08-09-compaction-state-audit",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-09T08:59:37.523174+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 9,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "edge-case / dependency",
+          "file": null,
+          "line": null,
+          "finding": "The B1 replay-check will directly read `reviews.json` to detect pending review types, but if a review is in-flight (subagent spawned but its result not yet recorded), `reviews.json` may have no entry for that review type. The current plan relies on the orchestrator writing the payload file immediately (AC-2), but does not guarantee that `reviews.json` will reflect the in-progress state at the moment of compaction. This means a mid-review compaction could still leave B1 unaware that a review was underway, and the resume agent might skip it.",
+          "suggestion": "Add a step to the orchestrator flow to write a pending-status row into `reviews.json` (e.g., via a new `record_review_pass.py --mark-pending` flag or a lightweight schema write) before spawning the reviewer. This ensures that even under the worst-case compaction timing, B1 sees the type as pending and resumes that cascade, closing the window completely.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "The immediate-write ordering mandate for review payloads (AC-2) is prose-only and not enforceable by code; agents could still defer the write. This is a known structural limit, but it increases the chance that the fix will be insufficient in real autonomous runs.",
+          "suggestion": "Monitor adoption after roll-out. If agents routinely ignore the mandate, revisit the alternative of giving review subagents restricted Write capability (e.g., to a designated payloads directory only) as a follow-up. No change needed now.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The `run_id` fallback from a mini-plan header (for small+feature runs without a spec file) assumes the header line matches exactly `- Run ID:`. A formatting deviation would cause `run_id` to remain `None`, silently skipping the `reviews.json` read. This is a graceful degradation, but it means the handoff enrichment won't surface pending reviews for some runs.",
+          "suggestion": "Accept as-is; the primary B1 path reads the file by `run_id` directly from the session context anyway. No action required unless observed in practice.  Overall assessment: The plan is well-structured, addresses the verified gaps, and includes solid test coverage. The only material gap is the missing pre-spawn pending marker in `reviews.json`, which would make the B1 read path fully robust against mid-review compaction. Adding that small step would make the fix complete. SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The proposed B1 rule treats any `pending` review type as proof that the review cascade was interrupted and instructs the agent to resume Step 8. This conflates “not yet due” with “interrupted.” The plan itself recognizes that some types may later become `not_applicable` at a given complexity, and a newly created record can legitimately contain pending types before the cascade is reached. On a resume during planning/build, this could incorrectly force a review cascade early.",
+          "suggestion": "Gate the B1 replay action on the recorded lifecycle/phase marker for an in-progress review cascade, or use an existing helper that determines required-and-due review types rather than raw `pending_types()`. If the record has no such phase information, phrase B1 as state inspection plus “resume the appropriate current phase,” not an unconditional Step-8 restart. Add a fixture for a pre-cascade record with pending review rows and verify B1 does not direct an early cascade.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "The review-reply durability gap is not actually enforceable by the proposed implementation. The plan accurately notes that the ordering rule is prose-only and that no mechanism observes a subagent return and forces persistence. Repeating the instruction at spawn sites improves agent behavior, but it does not guarantee that a compaction immediately after the return cannot still lose the reply—the stated root failure.",
+          "suggestion": "Keep the prose mandate, but explicitly classify it as a mitigation rather than a closure of the durability guarantee in the spec and Self-Review. Before shipping, check whether the host/plugin framework has a post-subagent-result callback, transcript-export mechanism, or orchestration wrapper that can persist the raw response without expanding reviewer write privileges. If none exists, record a concrete follow-up trigger/issue for an enforceable mechanism rather than representing AC-2 as fully closing the gap.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The mini-plan fallback chooses the newest `-miniplan.md` whose filename contains `short`. This can associate a handoff with the wrong run when descriptions are reused, prefixes overlap, stale mini-plans remain, or multiple runs share a working tree. The resulting pending-review state could be misleading and, because the handoff is a resume aid, could send a resumed run toward another run’s review state.",
+          "suggestion": "Prefer an exact, deterministic run-artifact mapping. Include both `Run ID` and complexity in the persisted mini-plan header and locate a mini-plan by parsing headers for the exact expected run ID, rather than using substring-plus-mtime selection. If no exact match exists, omit the enrichment and emit only the existing degraded-state behavior. Add a test with two same-description mini-plans to prove the correct one is selected.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "Persistence is being changed in `iteration-planning.md` and `path-a-feature.md`, but the acceptance criterion covers every FEATURE/CHANGE/BUG flow that reaches the protocol. The approach does not demonstrate that these are the only invocation/creation instructions, templates, or category-specific paths. In a skill-driven system, updating the governing protocol without updating every operational prompt that tells the agent where/how to write the file can leave a documented rule that is not followed in one path.",
+          "suggestion": "Search for all Mini-Plan Protocol references, `-miniplan.md` creation instructions, and category-specific planning paths before implementation. Update all operational entry points that can invoke the protocol, and add the relevant files to the meta-test’s covered set. Also verify that the template/header used by each path supplies the fields needed by the new handoff fallback.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "The plan says `ReviewRecordError` should be “treated as absent,” but a malformed, incompatible, or unreadable existing `reviews.json` is materially different from a record that has not yet been created. Silently degrading this case can hide corruption and make an interrupted review look like a harmless early-run state.",
+          "suggestion": "Preserve the non-fatal Stop-hook behavior, but emit a distinct informational diagnostic for an unreadable/invalid review record when a run ID is resolved. Do not expose raw exception content in the generated handoff; a concise “review record could not be read; inspect reviews.json” is sufficient. Add a malformed-record test.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "The AC-4 “B1 direct-read” verification is necessarily only indirect: `SKILL.md` is procedural text, so running `record_review_pass.py show` and `pending_types()` proves the underlying data path but not that a future agent follows B1’s instruction. The proposed doc-presence test has the same limitation.",
+          "suggestion": "State this distinction explicitly in the test name/ledger: the behavioral test validates the canonical record-reading primitives and generated handoff; the B1 test validates the required operational instruction. Ensure the B1 wording specifies one canonical safe command/path rather than “`show`, or library,” so agents have an unambiguous procedure and do not invent a hand-rolled JSON read.  Overall, the direct `reviews.json` read and reuse of the record-core helpers are sound corrections to the prior handoff-based design, and the test coverage is thoughtfully targeted. The change needs tighter lifecycle semantics for pending reviews and a deterministic mini-plan-to-run mapping before it can safely guide resumed runs. SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-08-09T07:50:36.446475+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[deepseek] - **Category:** edge-case / dependency\n- **Severity:** medium\n- **Finding:** The B1 replay-check will directly read `reviews.json` to detect pending review types, but if a review is in-flight (subagent spawned but its result not yet recorded), `reviews.json` may have no entry for that review type. The current plan relies on the orchestrator writing the payload file immediately (AC-2), but does not guarantee that `reviews.json` will reflect the in-progress state at the moment of compaction. This means a mid-review compaction could still leave B1 unaware that a review was underway, and the resume agent might skip it.\n- **Suggestion:** Add a step to the orchestrator flow to write a pending-status row into `reviews.json` (e.g., via a new `record_review_pass.py --mark-pending` flag or a lightweight schema write) before spawning the reviewer. This ensures that even under the worst-case compaction timing, B1 sees the type as pending and resumes that cascade, closing the window completely.\n\n- **Category:** risk\n- **Severity:** low\n- **Finding:** The immediate-write ordering mandate for review payloads (AC-2) is prose-only and not enforceable by code; agents could still defer the write. This is a known structural limit, but it increases the chance that the fix will be insufficient in real autonomous runs.\n- **Suggestion:** Monitor adoption after roll-out. If agents routinely ignore the mandate, revisit the alternative of giving review subagents restricted Write capability (e.g., to a designated payloads directory only) as a follow-up. No change needed now.\n\n- **Category:** edge-case\n- **Severity:** low\n- **Finding:** The `run_id` fallback from a mini-plan header (for small+feature runs without a spec file) assumes the header line matches exactly `- **Run ID:**`. A formatting deviation would cause `run_id` to remain `None`, silently skipping the `reviews.json` read. This is a graceful degradation, but it means the handoff enrichment won't surface pending reviews  […truncated]\n\n[openai] 1. **Category:** edge-case  \n   **Severity:** high  \n   **Finding:** The proposed B1 rule treats *any* `pending` review type as proof that the review cascade was interrupted and instructs the agent to resume Step 8. This conflates “not yet due” with “interrupted.” The plan itself recognizes that some types may later become `not_applicable` at a given complexity, and a newly created record can legitimately contain pending types before the cascade is reached. On a resume during planning/build, this could incorrectly force a review cascade early.  \n   **Suggestion:** Gate the B1 replay action on the recorded lifecycle/phase marker for an in-progress review cascade, or use an existing helper that determines *required-and-due* review types rather than raw `pending_types()`. If the record has no such phase information, phrase B1 as state inspection plus “resume the appropriate current phase,” not an unconditional Step-8 restart. Add a fixture for a pre-cascade record with pending review rows and verify B1 does not direct an early cascade.\n\n2. **Category:** approach  \n   **Severity:** medium  \n   **Finding:** The review-reply durability gap is not actually enforceable by the proposed implementation. The plan accurately notes that the ordering rule is prose-only and that no mechanism observes a subagent return and forces persistence. Repeating the instruction at spawn sites improves agent behavior, but it does not guarantee that a compaction immediately after the return cannot still lose the reply—the stated root failure.  \n   **Suggestion:** Keep the prose mandate, but explicitly classify it as a mitigation rather than a closure of the durability guarantee in the spec and Self-Review. Before shipping, check whether the host/plugin framework has a post-subagent-result callback, transcript-export mechanism, or orchestration wrapper that can persist the raw response without expanding reviewer write privileges. If none exists, record a concrete follow-up trigger/i […truncated]",
+      "verdicts": {
+        "openai": "revise",
+        "deepseek": "revise"
+      }
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 3,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "plugins/shipwright-build/scripts/hooks/write-review-payload-on-stop.py",
+          "line": 166,
+          "finding": "already_recorded() only catches (OSError, json.JSONDecodeError) around json.loads(); a syntactically-valid but structurally-wrong reviews.json (e.g. 'reviews'/'gates' holding a non-dict value, or the document not being an object) raises an uncaught AttributeError from record.get(section)/.get(review_type), propagating unhandled through main() and violating the module's own documented 'never blocks the subagent' guarantee that every other failure path is defensively guarded and tested for.",
+          "suggestion": "Wrap the section-lookup loop (or the whole function body) in a broad try/except that treats any TypeError/AttributeError the same as a parse failure — 'not recorded', salvage still runs — matching the docstring's own promise and the handling already given to this exact class of corruption in handoff_iterate.py's ReviewRecordError path.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "architecture",
+          "file": "plugins/shipwright-build/scripts/hooks/write-review-payload-on-stop.py",
+          "line": 170,
+          "finding": "already_recorded() checks the legacy 'gates' section for every review_type (spec/code/doubt), but the SSoT it deliberately can't import (lib.review_record_legacy.read_sections) restricts 'gates' lookups to review_type in LEGACY_GATE_TYPES ('spec' only). Harmless today, but it's a hand-rolled reimplementation that has already silently drifted from the precedence rule it was modeled on.",
+          "suggestion": "Guard the gates-section check with `if review_type == \"spec\"` to keep the duplicated logic honestly mirroring read_sections().",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "shared/scripts/lib/handoff_iterate.py",
+          "line": 19,
+          "finding": "render_iterate_progress() has grown to ~155 lines of body covering several largely-independent computations (spec/run_id/complexity resolution, mini-plan fallback, external-review-marker lookup, review-cascade status, output assembly). Coherent and well-commented, not blocking, but a future touch would benefit from extracting the review-cascade block into its own helper for independent testability.",
+          "suggestion": "Non-blocking: factor the review-cascade status computation (lines ~126-150) into a small `_resolve_review_cascade_status(project_root, run_id)` helper on a future touch.",
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-08-09T09:17:59.013860+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "inherit"
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-09T09:20:22.155029+00:00",
+      "disposition": "Stage 3's conditional trigger (migrations, async/concurrency, cross-plugin imports, irreversible ops) does not apply: this diff is a new SubagentStop hook + reviews.json read enrichment + a gate-narrowing helper, all synchronous file reads/writes with no schema migrations, no concurrency, no new cross-plugin import statements, and no irreversible operations.",
+      "recorded_by": "orchestrator",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 3,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "bug",
+          "file": "plugins/shipwright-build/scripts/hooks/write-review-payload-on-stop.py:231-233",
+          "line": null,
+          "finding": "The hook promises to “NEVER block,” but `out_path.parent.mkdir(...)` and `out_path.write_text(...)` are outside the fail-open error handling. A read-only worktree, a conflicting directory at the salvage-file path, or an I/O failure raises `OSError`, exits the hook nonzero, and can block/fail the reviewer lifecycle instead of safely degrading.",
+          "suggestion": "Wrap directory creation and file writing in `try/except OSError`, emit `_diag(...)`, and return `0`. Add a test that forces `mkdir` or `write_text` to raise and verifies `main()` remains fail-open.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "spec",
+          "file": "shared/scripts/lib/handoff_iterate.py:131-135,164-168",
+          "line": null,
+          "finding": "The renderer reports `Review Cascade: not started` whenever a resolved `run_id` has no `reviews.json`, regardless of whether complexity is known. The planned behavior specifically limits the missing-record notice to resolvable `small`/`medium`/`large` complexity and requires silence for unresolvable complexity; the implementation does not perform that gate. The stated ledger also claims this unresolvable-complexity behavior is tested, but no such test exists in `test_review_cascade_handoff.py`.",
+          "suggestion": "Only render the absent-record status when `complexity in (\"small\", \"medium\", \"large\")`; otherwise retain the prior silent degraded behavior. Add a test with a resolvable run ID but no parsed complexity and assert no review-cascade missing-record line is emitted.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "regression",
+          "file": "shared/scripts/lib/handoff_iterate.py:15-16",
+          "line": null,
+          "finding": "The new imports use only top-level `lib.` imports, despite the required relative-then-absolute import pattern for both package imports and hook-path imports. This can fail or resolve the wrong `lib` package when `handoff_iterate` is imported as part of a package or from a plugin process that has another `lib` package on `sys.path`; the change adds this dependency to a shared helper used across plugins.",
+          "suggestion": "Use a relative import fallback pattern (for example, `from .review_record_core ...` with an `ImportError` fallback to `from lib.review_record_core ...`) matching the repository’s established schema-module approach. Add a test that imports the module through both supported import routes.  Overall assessment: ship-with-fixes. The core persistence and review-state approach is largely implemented, but the hook is not actually fail-open under filesystem errors and the handoff behavior/import contract do not fully match the stated requirements. SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-08-09T09:27:57.057409+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "partial",
+      "raw_excerpt": "[deepseek] <no review returned: Expecting value: line 313 column 1 (char 1716)>\n\n[openai] - Category: bug\n- Severity: medium\n- File: `plugins/shipwright-build/scripts/hooks/write-review-payload-on-stop.py:231-233`\n- Finding: The hook promises to “NEVER block,” but `out_path.parent.mkdir(...)` and `out_path.write_text(...)` are outside the fail-open error handling. A read-only worktree, a conflicting directory at the salvage-file path, or an I/O failure raises `OSError`, exits the hook nonzero, and can block/fail the reviewer lifecycle instead of safely degrading.\n- Suggestion: Wrap directory creation and file writing in `try/except OSError`, emit `_diag(...)`, and return `0`. Add a test that forces `mkdir` or `write_text` to raise and verifies `main()` remains fail-open.\n\n- Category: spec\n- Severity: medium\n- File: `shared/scripts/lib/handoff_iterate.py:131-135,164-168`\n- Finding: The renderer reports `Review Cascade: not started` whenever a resolved `run_id` has no `reviews.json`, regardless of whether complexity is known. The planned behavior specifically limits the missing-record notice to resolvable `small`/`medium`/`large` complexity and requires silence for unresolvable complexity; the implementation does not perform that gate. The stated ledger also claims this unresolvable-complexity behavior is tested, but no such test exists in `test_review_cascade_handoff.py`.\n- Suggestion: Only render the absent-record status when `complexity in (\"small\", \"medium\", \"large\")`; otherwise retain the prior silent degraded behavior. Add a test with a resolvable run ID but no parsed complexity and assert no review-cascade missing-record line is emitted.\n\n- Category: regression\n- Severity: medium\n- File: `shared/scripts/lib/handoff_iterate.py:15-16`\n- Finding: The new imports use only top-level `lib.*` imports, despite the required relative-then-absolute import pattern for both package imports and hook-path imports. This can fail or resolve the wrong `lib` package when `handoff_iterate` is imported as part of a package or from a plugin process that has  […truncated]",
+      "verdicts": {
+        "openai": "revise",
+        "deepseek": "unavailable"
+      }
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-09T09:17:38.582149+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "inherit"
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-09T07:42:23.407314+00:00",
+      "disposition": null,
+      "recorded_by": "opus-plan-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    }
+  }
+}
