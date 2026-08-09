@@ -76,6 +76,11 @@ def test_evidence_cannot_waive_without_a_trusted_label_or_on_sensitive_paths():
     assert tier.decide([PATH, "shared/scripts/lib/atomic_write.py"], ["skip-pr-review"], record, True)[0] is True
 
 
+def test_helper_path_is_anchored_against_a_prefixed_bypass():
+    assert tier.SENSITIVE_PATH_RE.match("safe/plugins/shipwright-security/scripts/tools/review_record_tier.py") is None
+    assert tier.SENSITIVE_PATH_RE.match("plugins/shipwright-security/scripts/tools/review_record_tier.py")
+
+
 def test_a_persistent_label_cannot_waive_a_new_unapproved_head():
     needs_review, reason = tier.decide([PATH], ["skip-pr-review"], completed_record())
     assert needs_review is True

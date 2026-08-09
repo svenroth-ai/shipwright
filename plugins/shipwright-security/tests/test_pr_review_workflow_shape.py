@@ -210,6 +210,8 @@ class TestStage2:
 
         assert 'gh api --method DELETE "repos/$REPO/issues/$PR_NUMBER/labels/skip-pr-review"' in stage2
         assert "issues: write" in stage2
+        assert 'if ! gh api --method DELETE "repos/$REPO/issues/$PR_NUMBER/labels/skip-pr-review" >/dev/null; then' in stage2
+        assert "could not consume the one-shot review waiver" in stage2
 
     def test_does_not_review_the_artifact(self, stage2):
         """A contributor controls stage 1, so its artifact cannot be the input."""

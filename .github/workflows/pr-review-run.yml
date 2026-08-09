@@ -192,7 +192,12 @@ jobs:
           PR_NUMBER: ${{ steps.pr.outputs.number }}
         run: |
           set -euo pipefail
-          gh api --method DELETE "repos/$REPO/issues/$PR_NUMBER/labels/skip-pr-review"
+          if ! gh api --method DELETE "repos/$REPO/issues/$PR_NUMBER/labels/skip-pr-review" >/dev/null; then
+            # A missing label or API error is not idempotent here: it could mean
+            # another actor consumed the waiver. Leave the gate fail-closed.
+            echo "::error::could not consume the one-shot review waiver"
+            exit 1
+          fi
 
 
       - name: Run Tier-3 PR review

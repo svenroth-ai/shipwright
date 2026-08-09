@@ -3,9 +3,9 @@
   "run_id": "iterate-2026-08-09-review-evidence-tier",
   "ci_supplychain_ack": {
     "run_id": "iterate-2026-08-09-review-evidence-tier",
-    "paths_fingerprint": "e21ace95b35031576bfae08fbfce26be64b603763cc93f46d7e23986f6a21ede",
+    "paths_fingerprint": "59a44874fe26e266c4d650ea5ebf62493054a86698fc63cd3fe72aa3cf01725f",
     "consistent_with": "iterate-2026-08-09-review-evidence-tier",
-    "statement": "The default-branch workflow reads trusted GitHub API metadata and exact-head review evidence; it does not execute PR-head code.",
+    "statement": "The default-branch workflow reads trusted GitHub API metadata and exact-head review evidence; it never executes PR-head code, and waiver consumption fails closed on API errors.",
     "ci_paths": [
       ".github/workflows/pr-review-run.yml"
     ]

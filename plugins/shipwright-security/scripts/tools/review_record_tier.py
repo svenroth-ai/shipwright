@@ -28,7 +28,14 @@ from _shipwright_shared_review_lib.review_record_schema import validate_record  
 INTERNAL_REVIEW_TYPES = ("self", "spec", "code", "doubt")
 REVIEW_RECORD_RE = re.compile(r"^\.shipwright/planning/iterate/([A-Za-z0-9._-]+)/reviews\.json$")
 SENSITIVE_PATH_RE = re.compile(
-    r"^(plugins/.+/(hooks|skills|agents)/|plugins/shipwright-security/scripts/tools/review_record_tier\.py$|shared/scripts/lib/|\.github/workflows/|\.github/actions/|shared/templates/github-actions/)"
+    r"^(?:"
+    r"plugins/.+/(?:hooks|skills|agents)/"
+    r"|plugins/shipwright-security/scripts/tools/review_record_tier\.py"
+    r"|shared/scripts/lib/"
+    r"|\.github/workflows/"
+    r"|\.github/actions/"
+    r"|shared/templates/github-actions/"
+    r")"
 )
 
 
