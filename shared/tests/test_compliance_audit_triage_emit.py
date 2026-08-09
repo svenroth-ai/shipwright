@@ -9,7 +9,9 @@ synthetic AuditReports.
 
 from __future__ import annotations
 
+import concurrent.futures
 import importlib.util
+import importlib
 import sys
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -146,9 +148,68 @@ def test_empty_report_no_op(project: Path) -> None:
     assert read_all_items(project) == []
 
 
-# --- Terminal statuses preserved ----------------------------------------
+def test_auto_resolved_backlog_reopens_under_its_original_id(project: Path) -> None:
+    report = _report(_Finding("A", "A2", "n", "HIGH"))
+    mirror_findings_to_triage(project, report)
+    [original] = read_all_items(project)
+    mirror_findings_to_triage(project, _report())
 
-def test_promoted_backlog_stays_terminal(project: Path) -> None:
+    out = mirror_findings_to_triage(project, report)
+
+    assert out["appended"] == 0
+    [reopened] = read_all_items(project)
+    assert (reopened["id"], reopened["status"], reopened["statusReason"]) == (
+        original["id"], "triage", "complianceRegressed",
+    )
+
+
+def test_concurrent_regression_reopens_one_original_backlog(project: Path) -> None:
+    report = _report(_Finding("A", "A2", "n", "HIGH"))
+    mirror_findings_to_triage(project, report)
+    [original] = read_all_items(project)
+    mirror_findings_to_triage(project, _report())
+
+    with concurrent.futures.ThreadPoolExecutor(max_workers=8) as pool:
+        outputs = list(pool.map(
+            lambda _i: mirror_findings_to_triage(project, report), range(8),
+        ))
+
+    assert all(output["appended"] == 0 for output in outputs)
+    matching = [item for item in read_all_items(project)
+                if item.get("dedupKey") == original["dedupKey"]]
+    assert [(item["id"], item["status"]) for item in matching] == [
+        (original["id"], "triage"),
+    ]
+
+
+def test_auto_reopen_swallows_writer_refusals_and_errors(
+    project: Path, monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    report = _report(_Finding("A", "A2", "n", "HIGH"))
+    mirror_findings_to_triage(project, report)
+    mirror_findings_to_triage(project, _report())
+    bundle = importlib.import_module("triage_bundle")
+    api = bundle._triage_api()
+
+    def broken_mark(*_args: object, **_kwargs: object) -> None:
+        raise RuntimeError("writer unavailable")
+
+    monkeypatch.setattr(bundle, "_triage_api", lambda: (
+        api[0], broken_mark, api[2], api[3], api[4], api[5],
+    ))
+    assert mirror_findings_to_triage(project, report)["appended"] == 0
+
+    def refused_mark(*_args: object, **_kwargs: object) -> None:
+        raise api[5]("trg-test", ("dismissed",), "dismissed")
+
+    monkeypatch.setattr(bundle, "_triage_api", lambda: (
+        api[0], refused_mark, api[2], api[3], api[4], api[5],
+    ))
+    assert mirror_findings_to_triage(project, report)["appended"] == 0
+    assert read_all_items(project)[0]["status"] == "dismissed"
+
+
+# --- Terminal statuses preserved ----------------------------------------def test_promoted_backlog_stays_terminal(project: Path) -> None:
     mirror_findings_to_triage(project, _report(_Finding("A", "A2", "n", "HIGH")))
     [item] = read_all_items(project)
     mark_status(project, item["id"], new_status="promoted", by="op",
@@ -157,6 +218,20 @@ def test_promoted_backlog_stays_terminal(project: Path) -> None:
     assert out["dismissed"] == 0                          # promoted not touched
     [item2] = read_all_items(project)
     assert item2["status"] == "promoted"
+
+
+def test_promoted_backlog_is_not_reopened_by_an_unchanged_failure(project: Path) -> None:
+    report = _report(_Finding("A", "A2", "n", "HIGH"))
+    mirror_findings_to_triage(project, report)
+    [original] = read_all_items(project)
+    mark_status(project, original["id"], new_status="promoted", by="op",
+                promoted_task_id="EXT:linear-ENG-1", reason="manualPromote")
+
+    out = mirror_findings_to_triage(project, report)
+
+    assert out["appended"] == 0
+    [preserved] = read_all_items(project)
+    assert (preserved["id"], preserved["status"]) == (original["id"], "promoted")
 
 
 def test_other_source_items_not_touched(project: Path) -> None:

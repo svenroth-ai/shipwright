@@ -1,0 +1,40 @@
+{
+  "run_id": "iterate-2026-08-09-dismissed-recurring",
+  "date": "2026-08-09T10:01:00.977138Z",
+  "event_at": "2026-08-08T23:38:21.118054+00:00",
+  "type": "bug",
+  "complexity": "medium",
+  "prior_source": "keyword",
+  "branch": "iterate/trg-c8073edd",
+  "spec": ".shipwright/planning/iterate/2026-08-09-recurring-producer-identity.md",
+  "tests_passed": true,
+  "adr": "iterate-2026-08-09-dismissed-recurring",
+  "test_completeness": {
+    "status": "complete",
+    "behaviors": [
+      {
+        "behavior": "all six authoritative acceptance criteria",
+        "disposition": "tested",
+        "evidence": "F0 18/18 PASS; F0.5 90 PASS",
+        "category": "integration"
+      }
+    ],
+    "counts": {
+      "testable": 6,
+      "tested": 6,
+      "untestable": 0,
+      "untested_testable": 0
+    },
+    "enumeration_basis": {
+      "acs": 6,
+      "covered_acs": 6
+    }
+  },
+  "surface_verification": {
+    "run_id": "iterate-2026-08-09-dismissed-recurring",
+    "surface": "cli",
+    "tests_run": 90,
+    "exit_code": 0
+  },
+  "declared_removals": []
+}

@@ -449,8 +449,8 @@ def test_idempotent_append_different_source_creates_new(project: Path) -> None:
     assert a != b
 
 
-def test_idempotent_skips_only_when_status_triage(project: Path) -> None:
-    """If a duplicate exists but status is dismissed/promoted, append goes through."""
+def test_idempotent_keeps_a_dismissed_operator_decision(project: Path) -> None:
+    """A matching dismissal is a durable decision, not a fresh finding."""
     from triage import append_triage_item_idempotent
 
     first = append_triage_item_idempotent(
@@ -461,14 +461,12 @@ def test_idempotent_skips_only_when_status_triage(project: Path) -> None:
     mark_status(project, first, new_status="dismissed", by="user",
                 reason="not-actionable")
 
-    # The dismissed-item should NOT count as a duplicate that suppresses
-    # future reports.
     second = append_triage_item_idempotent(
         project, source="phaseQuality", severity="high", kind="bug",
         title="t", detail="d", dedup_key="C1", commit="abc",
     )
-    assert second is not None
-    assert second != first
+    assert second is None
+    assert [item["id"] for item in read_all_items(project)] == [first]
 
 
 def test_idempotent_requires_dedup_key(project: Path) -> None:

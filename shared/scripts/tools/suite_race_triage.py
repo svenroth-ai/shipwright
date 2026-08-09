@@ -94,11 +94,7 @@ def _load_triage():
 
 
 def _open_ids(triage, project_root, keys: set[str]) -> dict[str, str]:
-    """dedupKey -> id, for OPEN entries of THIS producer only.
-
-    Exception-guarded on purpose: the append already proved the record exists, so a
-    damaged or unreadable store must not turn a green gate red (external review R1).
-    """
+    """Return a durable ID for each matching race-finding key."""
     try:
         items = triage.read_all_items(project_root)
     except Exception:  # noqa: BLE001 - display-only lookup, never a verdict
@@ -106,7 +102,6 @@ def _open_ids(triage, project_root, keys: set[str]) -> dict[str, str]:
     return {
         item["dedupKey"]: item["id"] for item in items
         if item.get("source") == TRIAGE_SOURCE
-        and item.get("status") == "triage"
         and item.get("dedupKey") in keys
         and isinstance(item.get("id"), str)
     }
@@ -145,7 +140,7 @@ def emit_race_followups(project_root, races, xdist_ids, *,
                 dedup_key=key,
                 run_id=run_id, commit=commit,
                 match_commit=False,      # the unit races, not the commit
-                window_seconds=None,     # one open entry until an operator closes it
+                window_seconds=None,     # one durable entry, including terminal decisions
                 launch_payload=launch_payload(f, suite_cmd),
                 suite_id=f.unit_key,
                 evidence_path=getattr(res, "evidence_path", None),

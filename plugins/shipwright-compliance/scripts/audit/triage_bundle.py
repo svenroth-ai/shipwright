@@ -139,8 +139,9 @@ def emit_compliance_backlog(
 
     * No failing findings → dismiss every open/parked ``compliance:backlog:*``
       (``complianceResolved``) and append nothing.
-    * Else → dismiss stale-signature backlog items (``complianceRefreshed``) +
-      append the current one (idempotent).
+    * Else → dismiss stale-signature backlog items (``complianceRefreshed``), +
+      reopen its own auto-dismissed matching item on regression, and append +
+      only when no durable item represents the current condition.
     * One-shot: any open/parked legacy per-check ``compliance`` item (dedupKey not in
       the backlog shape) is dismissed (``supersededByBacklog``) — AC-4.
       Promoted/dismissed decisions remain terminal.
@@ -221,6 +222,28 @@ def emit_compliance_backlog(
     )
 
     new_id: str | None = None
+    try:
+        prior = next(
+            (
+                item for item in read_all_items(project_root)
+                if item.get("source") == "compliance"
+                and item.get("dedupKey") == cur_key
+                and item.get("status") == "dismissed"
+                and item.get("statusBy") == "complianceBacklog"
+            ),
+            None,
+        )
+        if prior is not None:
+            mark_status_fn(
+                project_root, prior["id"], new_status="triage",
+                by="complianceBacklog", reason="complianceRegressed",
+                expected_status="dismissed", expected_by="complianceBacklog",
+                block_matching_terminal=("compliance", cur_key),
+            )
+    except precondition_error:
+        pass
+    except Exception:  # noqa: BLE001
+        pass
     try:
         new_id = append_idempotent(
             project_root,

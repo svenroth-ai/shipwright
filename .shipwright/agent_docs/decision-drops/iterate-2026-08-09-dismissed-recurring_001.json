@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-08-09-dismissed-recurring",
+  "date": "2026-08-09",
+  "section": "Iterate",
+  "title": "Preserve recurring triage decisions",
+  "context": "Recurring producers minted new cards after terminal operator decisions.",
+  "decision": "Treat matching dismissed and promoted cards as durable; only producer-owned automatic resolutions reopen their original ID.",
+  "consequences": "Unchanged conditions retain their decision trail; material conditions remain distinct.",
+  "rationale": "source plus dedup key already identifies the logical condition.",
+  "rejected": "Separate condition fingerprint; W3 changes; PR pending-check changes",
+  "commit": "",
+  "architecture_impact": "none",
+  "spec_ref": ""
+}
