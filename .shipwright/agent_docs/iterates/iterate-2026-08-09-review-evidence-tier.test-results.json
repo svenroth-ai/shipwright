@@ -1,0 +1,85 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-08-09-review-evidence-tier",
+    "date": "2026-08-09",
+    "unit": {
+      "status": "passed",
+      "passed": 911,
+      "total": 918,
+      "skipped": 7,
+      "note": "Full plugins/shipwright-security suite; canonical F0 suite completed separately."
+    },
+    "integration": {
+      "status": "not_run",
+      "reason": "No product integration surface changed."
+    },
+    "e2e": {
+      "status": "not_run",
+      "reason": "No UI or browser surface changed."
+    },
+    "smoke": {
+      "status": "not_run",
+      "reason": "No startable server surface."
+    },
+    "pgtap": {
+      "status": "not_run",
+      "reason": "No database or RLS change."
+    },
+    "design_fidelity": {
+      "status": "not_run",
+      "reason": "No UI change."
+    },
+    "degraded": [],
+    "surface_verification": {
+      "run_id": "iterate-2026-08-09-review-evidence-tier",
+      "surface": "none",
+      "justification": "Workflow and CLI trust-boundary change; no browser or server surface.",
+      "tests_run": 0,
+      "exit_code": 0
+    },
+    "test_completeness": {
+      "run_id": "iterate-2026-08-09-review-evidence-tier",
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "A waiver requires completed internal review evidence rather than PR authorship.",
+          "disposition": "tested",
+          "evidence": "test_review_record_tier.py::test_trusted_waiver_requires_a_valid_completed_record PASSED"
+        },
+        {
+          "behavior": "Missing, invalid, stale, legacy, or sensitive-path evidence fails toward Tier-3 review.",
+          "disposition": "tested",
+          "evidence": "test_review_record_tier.py and test_pr_review_fail_closed.py PASSED"
+        },
+        {
+          "behavior": "Only exact-head trusted approval and successful waiver consumption may green the required status.",
+          "disposition": "tested",
+          "evidence": "test_pr_review_workflow_shape.py::test_failed_waiver_consumption_cannot_post_a_green_gate PASSED"
+        }
+      ],
+      "counts": {
+        "testable": 3,
+        "tested": 3,
+        "untestable": 0,
+        "untested_testable": 0
+      },
+      "enumeration_basis": {
+        "acs": 3,
+        "covered_acs": 3
+      }
+    }
+  },
+  "coverage": {
+    "total": 80.2,
+    "measured_tier": "repo",
+    "source": "combined coverage.xml (all plugins + shared + integration)",
+    "measured_at": "2026-07-04T00:00:00Z"
+  },
+  "source_state": {
+    "run_id": "iterate-2026-08-09-review-evidence-tier",
+    "commit": "0000fb2aab8a04d686ed01dfe5f708063aebabb2",
+    "dirty": true,
+    "base": null,
+    "release": null
+  }
+}

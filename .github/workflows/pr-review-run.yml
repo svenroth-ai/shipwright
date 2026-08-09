@@ -20,7 +20,7 @@ name: PR Review Run
 #   1. Identity — PR number resolved from `github.event.workflow_run.head_sha`
 #      (trusted event field) via the API. `workflow_run.pull_requests` is empty
 #      for fork PRs, so it is not used.
-#   2. Authorisation — labels, author and changed paths read from the API, and
+#   2. Authorisation — labels and changed paths read from the API, and
 #      the tier rules applied HERE, in default-branch code the contributor
 #      cannot edit.
 #   3. Content — the diff fetched from the API at the trusted head SHA, never
@@ -51,10 +51,11 @@ jobs:
     runs-on: ubuntu-latest
     # Only this job widens, and only to what posting the verdict needs:
     # statuses:write for the required context, pull-requests:write for the
-    # comment carrying the reasons (FR-01.17 (E)4).
+    # comment carrying the reasons and issues:write consumes a one-shot waiver (FR-01.17 (E)4).
     permissions:
       contents: read
       statuses: write
+      issues: write
       pull-requests: write
     steps:
       # Base repo only. No `ref:`, so this is the default branch of the base
@@ -117,51 +118,82 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           REPO: ${{ github.repository }}
           PR_NUMBER: ${{ steps.pr.outputs.number }}
+          HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
         run: |
           set -euo pipefail
           pr_json=$(gh api "repos/$REPO/pulls/$PR_NUMBER")
-          author=$(printf '%s' "$pr_json" | jq -r '.user.login')
           labels=$(printf '%s' "$pr_json" | jq -c '[.labels[].name]')
           changed=$(gh api --paginate "repos/$REPO/pulls/$PR_NUMBER/files" \
             --jq '.[].filename')
 
-          # Tier 3a: sensitive paths — plugin hooks/skills/agents, CI workflows,
-          # composite actions, and the workflow templates shipped to adopted
-          # repos. A change to any of these alters the checks themselves.
-          sensitive=false
-          if printf '%s\n' "$changed" | grep -qE '^(plugins/.+/(hooks|skills|agents)/|\.github/workflows/|\.github/actions/|shared/templates/github-actions/)'; then
-            sensitive=true
+          # The label is authorization to consider a waiver, not authorization
+          # for any later push. Require an approval whose GitHub API commit_id
+          # is this exact event SHA, from a non-author collaborator with write,
+          # maintain, or admin permission. PR-head content cannot forge either.
+          pr_author=$(printf '%s' "$pr_json" | jq -r '.user.login')
+          approved_reviewers=$(gh api --paginate --slurp "repos/$REPO/pulls/$PR_NUMBER/reviews" \
+            | jq -r --arg sha "$HEAD_SHA" --arg author "$pr_author" \
+              '[.[][] | select(.commit_id == $sha and .user.login != $author)] | sort_by(.submitted_at) | group_by(.user.login) | map(last | select(.state == "APPROVED") | .user.login) | .[]')
+          trusted_head_approval=false
+          while IFS= read -r reviewer; do
+            [ -n "$reviewer" ] || continue
+            if permission=$(gh api "repos/$REPO/collaborators/$reviewer/permission" --jq '.permission'); then
+              case "$permission" in
+                admin|maintain|write) trusted_head_approval=true; break ;;
+              esac
+            fi
+          done <<< "$approved_reviewers"
+
+          head_repo=$(printf '%s' "$pr_json" | jq -r '.head.repo.full_name // empty')
+          if [ -z "$head_repo" ]; then
+            echo "::error::PR head repository is unavailable — refusing to trust review evidence"
+            exit 1
           fi
 
-          decide() {
-            echo "needs_review=$1" >> "$GITHUB_OUTPUT"
-            echo "reason=$2" >> "$GITHUB_OUTPUT"
-            echo "tier: $1 ($2)"
-          }
 
-          # FR-01.17 (E)7 — a change that alters the checks themselves cannot
-          # exempt itself: "whoever unlocks a door is not the one who decides it
-          # may be unlocked." Only users with triage/write+ can apply a label, so
-          # a contributor cannot self-waive; this additionally stops a
-          # maintainer's waiver from covering a change to the gate itself.
-          if printf '%s' "$labels" | jq -e 'index("skip-pr-review")' >/dev/null; then
-            if [ "$sensitive" = "true" ]; then
-              echo "::notice::skip-pr-review ignored — this change edits the checks themselves (FR-01.17 (E)7)."
+          changed_paths_file=$(mktemp)
+          review_record_file=$(mktemp)
+          trap 'rm -f "$changed_paths_file" "$review_record_file"' EXIT
+          printf '%s\n' "$changed" > "$changed_paths_file"
+          review_record_path=$(printf '%s\n' "$changed" \
+            | { grep -E '^\.shipwright/planning/iterate/[A-Za-z0-9._-]+/reviews\.json$' || [ $? -eq 1 ]; })
+          if [ "$(printf '%s\n' "$review_record_path" | sed '/^$/d' | wc -l | tr -d ' ')" -eq 1 ]; then
+            if gh api "repos/$head_repo/contents/$review_record_path?ref=$HEAD_SHA" \
+              --jq '.content' | tr -d '\n' | base64 --decode > "$review_record_file"; then
+              :
             else
-              decide false "skip-pr-review label set"; exit 0
+              : > "$review_record_file"
+              echo "::notice::review evidence unavailable at the PR head; Tier-3 review is required"
             fi
           fi
-          if printf '%s' "$labels" | jq -e 'index("needs-review")' >/dev/null; then
-            decide true "needs-review label set"; exit 0
+          if [ "$trusted_head_approval" = true ]; then
+            trusted_head_approval_arg=--trusted-head-approval
+          else
+            trusted_head_approval_arg=
           fi
-          if [ "$sensitive" = "true" ]; then
-            decide true "sensitive path touched"; exit 0
-          fi
-          # Tier 3b: external contributor (anyone except the maintainer + dependabot)
-          if [ "$author" != "svroch" ] && [ "$author" != "dependabot[bot]" ]; then
-            decide true "external contributor"; exit 0
-          fi
-          decide false "internal PR — Step 8 already reviewed"
+          uv run plugins/shipwright-security/scripts/tools/review_record_tier.py \
+            --changed-paths-file "$changed_paths_file" \
+            --labels-json "$labels" \
+            --review-record-file "$review_record_file" \
+            $trusted_head_approval_arg >> "$GITHUB_OUTPUT"
+
+      # The helper treats .github/workflows/ and shared/scripts/lib/ as
+      # sensitive surfaces, so a waiver never covers the checks or executable
+      # review-record dependencies it relies on.
+      # Labels persist across pushes. Consume an evidence-backed waiver before
+      # any later push can inherit it; a new head must receive a fresh, trusted
+      # maintainer authorization rather than borrowing this one.
+      - name: Consume the one-shot review waiver
+        id: consume_waiver
+        if: steps.tier.outputs.needs_review == 'false'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          PR_NUMBER: ${{ steps.pr.outputs.number }}
+        run: |
+          set -euo pipefail
+          gh api --method DELETE "repos/$REPO/issues/$PR_NUMBER/labels/skip-pr-review"
+
 
       - name: Run Tier-3 PR review
         id: review
@@ -198,6 +230,7 @@ jobs:
           PR_NUMBER: ${{ steps.pr.outputs.number }}
           NEEDS_REVIEW: ${{ steps.tier.outputs.needs_review }}
           TIER_REASON: ${{ steps.tier.outputs.reason }}
+          CONSUME_WAIVER_OUTCOME: ${{ steps.consume_waiver.outcome }}
           TIER_OUTCOME: ${{ steps.tier.outcome }}
           REVIEW_OUTCOME: ${{ steps.review.outcome }}
         run: |
@@ -222,10 +255,12 @@ jobs:
             state=failure; desc="preparation stage failed — nothing was reviewed"
           elif [ "$TIER_OUTCOME" != "success" ]; then
             state=failure; desc="could not determine whether a review was required"
-          elif [ "$NEEDS_REVIEW" != "true" ]; then
-            state=success; desc="$TIER_REASON"
+          elif [ "$NEEDS_REVIEW" = "false" ] && [ "$CONSUME_WAIVER_OUTCOME" != "success" ]; then
+            state=failure; desc="review waiver consumption failed — review required"
           elif [ "$REVIEW_OUTCOME" = "success" ]; then
             state=success; desc="reviewed — no blocking findings"
+          elif [ "$NEEDS_REVIEW" = "false" ] && [ "$CONSUME_WAIVER_OUTCOME" = "success" ]; then
+            state=success; desc="$TIER_REASON"
           else
             state=failure; desc="review blocked or did not complete"
           fi

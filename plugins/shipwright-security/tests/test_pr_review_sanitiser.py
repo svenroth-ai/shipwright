@@ -8,9 +8,10 @@ than re-declared so the newest sink cannot grow its own, weaker class; both are
 built from the same `_CONTROL_AND_INVISIBLE` constant, which the enumeration
 test in `test_pr_review_render.py` pins.
 
-**The waiver notice.** The truncation comment tells a maintainer to apply
-`skip-pr-review`, and that instruction must not promise more than the pipeline
-delivers.
+**The waiver notice.** The truncation comment explains that `skip-pr-review`
+needs a schema-valid PR-head review record with completed internal passes; the
+label alone cannot waive the gate, so the instruction must not promise more than
+the pipeline delivers.
 
 Its own module because `test_pr_review_render.py` already sits exactly at the
 300-line guideline; adding here rather than there is the difference between
@@ -29,21 +30,18 @@ import pr_review_render as R  # noqa: E402
 
 
 class TestTheWaiverIsNotOversold:
-    """The truncation notice tells a maintainer to apply `skip-pr-review`. That
-    label greens the required check, but the run that fired it also posted a
-    `CHANGES_REQUESTED`, and the labelled re-run takes the `needs_review=false`
-    branch — so `pr_review.py` never runs and never clears it. Following the
-    printed instruction lands in the exact defect this iterate removes. Until
-    the workflow half lands (IT-9's tree), the notice must say so."""
+    """The truncation notice must describe the evidence-backed waiver contract."""
 
     def test_the_truncation_notice_does_not_promise_an_unblock(self):
         rendered = R.render_comment(
             {"decision": "approve", "summary": "s"}, model="m", truncated=True,
             omitted=("a.py",))
         assert "skip-pr-review" in rendered
-        assert "dismissed by hand" in rendered
-        assert "does **not** retract" in rendered
+        assert "schema-valid review record" in rendered
+        assert "completed internal passes" in rendered
+        assert "label alone does **not** waive" in rendered
 
+        assert "trusted exact-head GitHub approval" in rendered
 
 class TestStripDisplayUnsafe:
 

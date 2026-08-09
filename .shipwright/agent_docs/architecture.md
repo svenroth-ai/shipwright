@@ -1,3 +1,7 @@
+# Architecture Updates
+
+- `iterate-2026-08-09-review-evidence-tier`: PR-review waiver data flow now combines exact-head GitHub approval, delivered review-record evidence, and one-shot label consumption before it can bypass Tier-3.
+
 # Architecture — shipwright
 <!-- shipwright:architecture v=2 last-sync=932e0d221ea1 -->
 

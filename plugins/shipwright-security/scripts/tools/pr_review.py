@@ -2,12 +2,11 @@
 """Tier-3 PR reviewer — OpenRouter-backed code review for a single PR.
 
 Invoked by `.github/workflows/pr-review-run.yml` (stage 2 of the two-stage
-review, FR-01.17) for Tier-3 PRs only (external contributors, sensitive paths,
-or the `needs-review` label). Tier 1/2 PRs (iterate branches + the maintainer's
-own hand-opened PRs) are NEVER reviewed here — the tier filter lives in stage
-2's `tier` step, which reads labels/author/changed-paths from the API in
-default-branch code, and `/shipwright-iterate` Step 8 already covers them in the
-local subscription.
+review, FR-01.17) whenever the trusted tier decision requires it. A
+`skip-pr-review` waiver works only with a trusted GitHub approval for the exact
+PR head and a schema-valid review record whose internal passes are complete;
+labels, authorship, and a manual look alone do not waive this gate. The tier filter lives in stage 2's default-branch
+code and reads the PR API data plus the review record at the trusted head SHA.
 Stage 1 runs from the PR head and is never trusted. See B4.5 in
 `Spec/early-access-readiness-plan.md`.
 
@@ -254,7 +253,8 @@ def main(argv: list[str] | None = None) -> int:
     # nor trusting the partial verdict is safe: a large diff must not be able to
     # BYPASS review by exceeding the size cap. Fail CLOSED — force a
     # request-changes state + non-zero exit (below) so a human must review; a
-    # maintainer can apply the `skip-pr-review` label after a manual look. The red
+    # waiver requires `skip-pr-review`, a trusted exact-head GitHub approval, and a schema-valid record
+    # with completed internal passes; a manual look or label alone cannot waive it. The red
     # required check is also what lets the gh-pr-ci triage producer surface the PR
     # as a tracked follow-up. (Until iterate-2026-06-17-pr-review-truncation-
     # failclosed this returned EXIT_OK — a silent size-bypass of the gate.)
@@ -273,7 +273,8 @@ def main(argv: list[str] | None = None) -> int:
         print(
             "[pr_review] diff exceeded the review limit — failing closed (needs human "
             f"review). Not reviewed in full: {unseen or 'unidentifiable'}{extra}. Apply "
-            "the `skip-pr-review` label after a manual review to override.",
+            "a trusted exact-head GitHub approval, a schema-valid review record with completed passes, and "
+            "the `skip-pr-review` label; the label alone cannot override.",
             file=sys.stderr)
         return EXIT_BLOCK
 

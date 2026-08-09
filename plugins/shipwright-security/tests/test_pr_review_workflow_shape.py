@@ -161,21 +161,55 @@ class TestStage2:
 
     def test_tier_is_decided_here_from_api_data(self, stage2):
         """The tier rules must run in default-branch code, on trusted input."""
-        assert "skip-pr-review" in stage2, "waiver rule must be evaluated here"
-        assert "needs-review" in stage2, "needs-review override must be here"
-        assert "svroch" in stage2, "external-author rule must be here"
-        assert ".github/workflows/" in stage2, "sensitive-path rule must be here"
         assert re.search(r'gh api "repos/\$REPO/pulls/\$PR_NUMBER"', stage2), \
-            "labels/author must be read from the API, not from stage 1"
+            "labels must be read from the API, not from stage 1"
         assert "/files" in stage2, \
             "changed paths must be read from the API, not from stage 1"
 
+        assert "review_record_tier.py" in stage2, \
+            "the default-branch helper must make the tier decision"
+    def test_internal_exemption_requires_review_evidence(self, stage2):
+        """A maintainer name never proves that this branch was reviewed."""
+        assert "svroch" not in stage2
+        assert "dependabot[bot]" not in stage2
+        assert "reviews\\.json" in stage2
+        assert ".head.repo.full_name" in stage2
+        assert 'repos/$head_repo/contents/$review_record_path?ref=$HEAD_SHA' in stage2
+        assert 'repos/$REPO/contents/$review_record_path?ref=$HEAD_SHA' not in stage2
+    def test_unavailable_pr_head_evidence_falls_back_to_review(self, stage2):
+        """Deleted or unreadable evidence must select Tier-3, not break tiering."""
+        assert 'if gh api "repos/$head_repo/contents/$review_record_path?ref=$HEAD_SHA" \\' in stage2
+        assert ': > "$review_record_file"' in stage2
+        assert "review evidence unavailable at the PR head; Tier-3 review is required" in stage2
+
     def test_waiver_cannot_cover_a_change_to_the_checks(self, stage2):
         """FR-01.17 (E)7 — whoever unlocks a door does not decide it may be."""
-        assert "sensitive" in stage2, (
-            "the skip-pr-review waiver must be qualified by the sensitive-path "
-            "classification, so a PR editing the checks cannot waive its review"
-        )
+        assert "review_record_tier.py" in stage2
+
+    def test_waiver_is_consumed_before_a_later_push_can_reuse_it(self, stage2):
+        """A label authorizes one evidence-backed head, never a later synchronize."""
+        assert "Consume the one-shot review waiver" in stage2
+        assert "if: steps.tier.outputs.needs_review == 'false'" in stage2
+    def test_waiver_authorization_is_an_exact_head_approval(self, stage2):
+        """A mutable label only starts the waiver; GitHub binds it to this SHA."""
+        assert 'pulls/$PR_NUMBER/reviews' in stage2
+        assert '.commit_id == $sha' in stage2
+        assert 'collaborators/$reviewer/permission' in stage2
+        assert '--trusted-head-approval' in stage2
+
+    def test_failed_waiver_consumption_cannot_post_a_green_gate(self, stage2):
+        """The sole required status must treat DELETE failure as review-required."""
+        assert 'id: consume_waiver' in stage2
+        assert 'CONSUME_WAIVER_OUTCOME: ${{ steps.consume_waiver.outcome }}' in stage2
+        failure = 'elif [ "$NEEDS_REVIEW" = "false" ] && [ "$CONSUME_WAIVER_OUTCOME" != "success" ]; then'
+        green = 'elif [ "$NEEDS_REVIEW" = "false" ] && [ "$CONSUME_WAIVER_OUTCOME" = "success" ]; then'
+        assert failure in stage2 and green in stage2
+        assert stage2.index(failure) < stage2.index(green)
+        assert '"$NEEDS_REVIEW" != "true"' not in stage2
+
+
+        assert 'gh api --method DELETE "repos/$REPO/issues/$PR_NUMBER/labels/skip-pr-review"' in stage2
+        assert "issues: write" in stage2
 
     def test_does_not_review_the_artifact(self, stage2):
         """A contributor controls stage 1, so its artifact cannot be the input."""
