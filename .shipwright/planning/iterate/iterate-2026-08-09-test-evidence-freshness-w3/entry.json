@@ -1,0 +1,1 @@
+{"type":"bug","complexity":"medium","branch":"iterate/test-evidence-freshness-w3","tests_passed":true,"spec":".shipwright/planning/iterate/iterate-2026-08-09-test-evidence-freshness-w3.md","tests":{"passed":81,"total":81},"test_completeness_ledger":[{"criterion":"W3 source-state freshness","category":"unit","test":"shared/tests/test_workflow_checks.py","status":"passed"}]}

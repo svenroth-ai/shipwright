@@ -1,31 +1,44 @@
 ---
 canon_generated: true
-run_id: "changelog-v0.32.0-20260808-224001"
-phase: "changelog"
-reason: "release v0.32.0"
-timestamp: "2026-08-08T20:34:51.172844+00:00"
+run_id: "iterate-2026-08-09-test-evidence-freshness-w3"
+phase: "iterate"
+reason: "iterate: test evidence freshness"
+timestamp: "2026-08-09T08:08:04.655612+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-08-08 20:34:51 UTC
+> Auto-generated 2026-08-09 08:08:04 UTC
 
 ## Session Info
 
-- **Session ID**: 5e606322-4b30-42ed-9e6b-72bfd03df7be
-- **Timestamp**: 2026-08-08 20:34:51 UTC
-- **Reason**: release v0.32.0
+- **Session ID**: unknown
+- **Timestamp**: 2026-08-09 08:08:04 UTC
+- **Reason**: iterate: test evidence freshness
 
 ## Last Iterate
 
-- **Run ID**: iterate-2026-08-08-prompt-scan-dynamic-import-fault-test
-- **Date**: 2026-08-08T19:53:58.428334Z
-- **Type**: change
+- **Run ID**: iterate-2026-08-08-p2-52-shared-scripts-fixes
+- **Date**: 2026-08-08T23:38:47.499822Z
+- **Type**: bug
 - **Complexity**: small
-- **Branch**: iterate/prompt-scan-dynamic-import-fault-test
-- **ADR**: iterate-2026-08-08-prompt-scan-dynamic-import-fault-test
+- **Branch**: iterate/p2-52-shared-scripts-fixes
+- **ADR**: iterate-2026-08-08-p2-52-shared-scripts-fixes
 - **Tests passed**: True
-- **Spec**: n/a (small complexity, SIMPLIFY sub-mode, spec_impact none)
+- **Spec**: no changes
+
+## Current Iterate Progress
+
+- **Branch**: iterate/test-evidence-freshness-w3
+- **Run ID**: `iterate-2026-08-09-test-evidence-freshness-w3`
+- **Spec**: .shipwright/planning/iterate/iterate-2026-08-09-test-evidence-freshness-w3.md
+- **Complexity**: medium (shared verifier plus compliance evidence contract)
+- **External Review Marker**: missing
+
+### Mandatory replay on Resume
+
+Before dispatching to the handoff's Remaining phase, run these if missing:
+- Finalization (F0–F11) after all mandatory phases pass
 
 ## Legacy build state
 
@@ -38,8 +51,8 @@ timestamp: "2026-08-08T20:34:51.172844+00:00"
 
 ## Git State
 
-- **Branch**: main
-- **Last Commit**: 11e32523 chore(release): v0.32.0
+- **Branch**: iterate/test-evidence-freshness-w3
+- **Last Commit**: 4461bff8 chore(triage): sweep 17 outbox append(s) into branch
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -55,17 +68,17 @@ timestamp: "2026-08-08T20:34:51.172844+00:00"
 
 | Event | Type | Source | Date |
 |-------|------|--------|------|
-| evt-5036a5fd | grade_snapshot | — | 2026-08-08 |
-| evt-512679d4 | work_completed | iterate (mandated-load truncation is now declared, not silent (TC3.2)) | 2026-08-08 |
-| evt-f32709d0 | work_completed | iterate (iterate: normalize benign __import__ dynamic-import pattern flagged by shipwright-prompt-scan (trg-133f2ca6)) | 2026-08-08 |
-| evt-272f228a | grade_snapshot | — | 2026-08-08 |
-| evt-390f315f | work_completed | iterate (iterate: fix shipwright_model_config.json review tier (opus, not sonnet)) | 2026-08-08 |
+| evt-1b7a6196 | work_completed | iterate (Replace W3 wall-clock freshness with Source-State run identity.) | 2026-08-09 |
+| evt-039adb70 | grade_snapshot | — | 2026-08-08 |
+| evt-84fda7e2 | work_completed | iterate (Protect permanent F5c retention pins.) | 2026-08-08 |
+| evt-07e4239c | grade_snapshot | — | 2026-08-08 |
+| evt-c45dcc3c | work_completed | iterate (Six small defects: plan-reviewer wiring tail and fragile reader/writer sites) | 2026-08-08 |
 
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 513
-- **Last iterate**: feature — mandated-load truncation is now declared, not silent (TC3.2) (2026-08-08)
+- **Total work events**: 518
+- **Last iterate**: bug — Replace W3 wall-clock freshness with Source-State run identity. (2026-08-09)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
 ## Recent Decisions

@@ -1,18 +1,18 @@
 # Commit Change Log
 
-Generated: 2026-08-08T19:53:58.646645+00:00
-Source-State: run=iterate-2026-08-08-prompt-scan-dynamic-import-fault-test base=7a01ee66b247 release=v0.32.0
-Consistency-audit: last run 2026-07-28 (11 days earlier) — FAIL
-Total commits: 1390
+Generated: 2026-08-09T08:08:04.655612+00:00
+Source-State: run=iterate-2026-08-09-test-evidence-freshness-w3
+Consistency-audit: last run 2026-07-28 (12 days earlier) — FAIL
+Total commits: 1397
 
 ## Commit Distribution
 
 ```mermaid
 pie title Commit Types
-    "fix" : 452
+    "fix" : 455
     "feat" : 379
-    "chore" : 259
-    "docs" : 153
+    "chore" : 262
+    "docs" : 154
     "refactor" : 84
     "test" : 34
     "ci" : 18
@@ -23,10 +23,13 @@ pie title Commit Types
 
 ## Changes by Type
 
-### Fixes (fix) — 452 commits
+### Fixes (fix) — 455 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-08-09 | shared | harden probe, decision-drop and claim handling (#615) | 52d0d1fd5292 |
+| 2026-08-09 | iterate | harden fragile review and reader sites (#614) | ce65a88f435e |
+| 2026-08-09 | iterate | retain pinned F5c summaries (#613) | d9ad6acc2aa9 |
 | 2026-08-08 | tests | normalize a benign dynamic-import in a test mock (#611) | 7a01ee66b247 |
 | 2026-08-08 | iterate,project | declare mandated-load truncation instead of silently proceeding (TC3.2) (#610) | c222d46dc940 |
 | 2026-08-08 | iterate | index-first decision_log.md reads; ADR spec files named by run_id (#608) | bf2efc95ccaa |
@@ -864,10 +867,13 @@ pie title Commit Types
 | 2026-03-20 | — | Task 02 — project templates (CLAUDE.md, agent_docs, CI) | c3a6d2f53bd3 |
 | 2026-03-20 | — | Task 01 — monorepo scaffolding + supabase-nextjs stack profile | 990a138a4690 |
 
-### Chores (chore) — 259 commits
+### Chores (chore) — 262 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-08-09 | triage | sweep 17 outbox append(s) into branch | 4461bff829b8 |
+| 2026-08-08 | release | v0.32.0 canon handoff — dashboard, session handoff, phase history | 5f12a9ff7abf |
+| 2026-08-08 | release | v0.32.0 | 11e325232765 |
 | 2026-08-08 | triage | dismiss trg-6d8fbc10, delivered via PR #598 | b67e536d9bef |
 | 2026-08-07 | triage | fold 4 main-tree background append(s) | 419aa3c5e2b8 |
 | 2026-08-02 | events | seal post-delivery grade snapshot (#531) | 027eeb9c0ee6 |
@@ -1128,10 +1134,11 @@ pie title Commit Types
 | 2026-03-28 | — | add shipwright-run uv.lock | ef1cc1ad180c |
 | 2026-03-20 | — | initial commit with spec and task list | 07ca9c1de51c |
 
-### Documentation (docs) — 153 commits
+### Documentation (docs) — 154 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-08-08 | — | track Codex operating policy (#612) | fd457249d575 |
 | 2026-08-01 | readme | flag active refactoring window through Aug 10, 2026 | b0c3caf35946 |
 | 2026-07-28 | planning | the quoted directive stops tripping the prompt scanner | 07cd445538db |
 | 2026-07-28 | — | docs/ holds what someone wrote for someone to read (#493) | bebdc9a37e7e |
@@ -1467,7 +1474,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 1390 |
+| Total commits | 1397 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 1390 |
+| Human-authored commits | 1397 |
 
