@@ -1,0 +1,86 @@
+{
+  "run_id": "iterate-2026-08-09-token-cost-controllable",
+  "date": "2026-08-09T13:20:57.925251Z",
+  "event_at": "2026-08-09T13:20:21.521109+00:00",
+  "type": "feature",
+  "complexity": "small",
+  "prior_source": "history",
+  "branch": "iterate/token-cost-controllable",
+  "spec": null,
+  "tests_passed": true,
+  "adr": "iterate-2026-08-09-token-cost-controllable",
+  "test_completeness": {
+    "status": "complete",
+    "behaviors": [
+      {
+        "behavior": "New docs/token-cost-controllable.md follows the requested SHAPE: each of the 5 bands names an observable trigger, symptom, and action",
+        "disposition": "tested",
+        "evidence": "spec-reviewer (Stage 1, opus) PASS, citing line ranges for each band's Trigger/Symptom/Action triple; independently re-read and confirmed"
+      },
+      {
+        "behavior": "Page reads as a lookup, not a report of measured spend \u2014 no attribution tables, no % of this repo's own bill, no methodology section",
+        "disposition": "tested",
+        "evidence": "spec-reviewer PASS, explicit check against operator rule 2; confirmed by direct re-read"
+      },
+      {
+        "behavior": "Numbers used only where they define a threshold or trade-off; repo-specific vs. transferable numbers are distinguished",
+        "disposition": "tested",
+        "evidence": "spec-reviewer PASS citing the dedicated 'What's specific to this repo, what transfers' section"
+      },
+      {
+        "behavior": "Page recommends settings (autoCompactWindow, effort level, model tier) without setting them on the reader's behalf",
+        "disposition": "tested",
+        "evidence": "spec-reviewer PASS, explicit check against operator rule 1 (no shipped defaults)"
+      },
+      {
+        "behavior": "Every command/path/config-key cited in the new page resolves to a real file/flag in this repo",
+        "disposition": "tested",
+        "evidence": "code-reviewer (round 1+2) verified context_cost_summary.py/context_cost_readiness.py/estimate_context_pressure.py flags, rebuild_decision_log_index.py, shipwright_model_config.json roles, decision_log_index.md, context-loading.md against actual source; independently re-verified with test -f / grep"
+      },
+      {
+        "behavior": "The ~1.7KB/~13-line-per-entry ratio and the 20/60/150-iterate band pairings are internally self-consistent",
+        "disposition": "tested",
+        "evidence": "code-reviewer round 2 recomputed 35/1.7=~20, 100/1.7=~59->60, 2000/13.4=~149->150 against the real decision_log.md (347 entries, 4634 lines, 600148 bytes); confirmed PASS"
+      },
+      {
+        "behavior": "The iterate-count measurement command returns an accurate count given this repo's mixed JSON formatting in shipwright_events.jsonl",
+        "disposition": "tested",
+        "evidence": "grep -c '\"type\": *\"work_completed\"' shipwright_events.jsonl run directly, returns 522 (vs 103 for the strict-spacing form that undercounts); code-reviewer round 2 confirmed PASS"
+      },
+      {
+        "behavior": "guide.md's new Appendix B table entries match each script's actual argparse flags",
+        "disposition": "tested",
+        "evidence": "code-reviewer verified context_cost_summary.py show --project-root/--session-id, context_cost_readiness.py --model/--effort, estimate_context_pressure.py --source against source; confirmed PASS"
+      },
+      {
+        "behavior": "New cross-reference links (guide.md#9-quality-and-safety, guide.md#appendix-b-command-reference, README->docs/token-cost-controllable.md) resolve to real anchors/files",
+        "disposition": "tested",
+        "evidence": "code-reviewer round 2 confirmed both anchors match the live headings' GitHub-slug; README/guide.md file paths verified with test -f"
+      },
+      {
+        "behavior": "Command examples in the new page are copy-paste runnable (no broken bracket-notation inside code fences)",
+        "disposition": "tested",
+        "evidence": "external LLM review (OpenAI, low severity) caught the readiness-command bracket-notation issue; fixed and independently re-read to confirm the corrected block"
+      }
+    ],
+    "counts": {
+      "total": 10,
+      "tested": 10,
+      "untestable": 0,
+      "untested_testable": 0
+    },
+    "enumeration_basis": {
+      "acs": 9,
+      "covered_acs": 9
+    },
+    "ledger_path": ".shipwright/planning/iterate/iterate-2026-08-09-token-cost-controllable/request-spec.md"
+  },
+  "surface_verification": {
+    "surface": "none",
+    "tests_run": 0,
+    "exit_code": 0,
+    "justification": "Docs-only change (3 markdown files, no code/UI/API/CLI surface). Verified via direct inspection instead: every cited file path, script flag, and config key checked to exist and match source; every internal cross-reference anchor validated against the real generated GitHub-slug of its target heading; all measured numbers independently recomputed. Two rounds of code-reviewer + one spec-reviewer + one external LLM cascade (DeepSeek+OpenAI) all ran against the actual diff.",
+    "evidence_path": ".shipwright/runs/iterate-2026-08-09-token-cost-controllable/surface_verification.json"
+  },
+  "declared_removals": []
+}

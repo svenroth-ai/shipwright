@@ -2154,6 +2154,15 @@ Hooks use **exit code 2 (soft-block)**: you can say "Continue anyway," but the o
 - `uv run shared/scripts/tools/estimate_context_pressure.py --source context-cost` -- the same checkpoint-recommendation `/shipwright-build` and `/shipwright-run` already compute from tool-call count, against measured cost instead (opt-in; tool-call count stays the default source).
 - `uv run shared/scripts/tools/context_cost_readiness.py [--model <id>] [--effort <level>]` -- a `verify_local.py`-shaped check for whether `autoCompactWindow` is set and sized for the model, plus an honest report of the effort level you passed (never fabricated when you don't pass one).
 
+**Cost as a quality dimension.** Measuring context cost is one thing; keeping
+it controllable as a project ages is another. **[docs/token-cost-controllable.md](token-cost-controllable.md)**
+is a threshold-based how-to for that: look up your project's own decision-log
+size, and it names the two or three things worth doing for that band -- when
+to set an auto-compact window, when an index for always-loaded files starts
+paying for itself, when a single file read has silently stopped covering the
+whole file regardless of instructions, and how to spend reasoning effort and
+model tier deliberately in long sessions.
+
 ### TDD Workflow
 
 Shipwright follows a strict test-first approach:
@@ -2666,3 +2675,16 @@ These are invoked automatically by the pipeline but can also run standalone for 
 | `mark-review-state.py` | Writes the marker file that downstream phases and compliance read to confirm a review-step branch (A/B/C) ran to completion. Two filenames: `external_review_state.json` for plan/iterate, `external_code_review_state.json` for the code-review cascade. New markers use schema 3 with `deepseek` and `openai`; readers retain compatibility with historical schema-2 `gemini`/`openai` markers and older unversioned markers. The external-review JSON envelope separately emits `review_schema: 2`; its historical schema 1 was implicit. | `--planning-dir <path>` · `--status completed\|skipped_user_opt_out\|skipped_config_disabled` · `--review-type plan\|iterate\|code` (omitted = plan/iterate marker) · `--provider openrouter\|openai` · `--findings-count N` · `--reason "..."` · `--self-review-fallback-ran` · `--verdict reviewer=approve\|revise\|reject\|unknown\|unavailable` (repeatable, `deepseek`/`openai` only; the contradiction between the two is derived, never asserted) · `--contradiction-resolution "..."` (required before a disagreement stops blocking) |
 
 The per-phase verifier modules under `shared/scripts/tools/verifiers/` (`project_checks.py`, `design_checks.py`, `plan_checks.py`, `plan_gate_checks.py`, `build_checks.py`, `test_checks.py`, `changelog_checks.py`, `deploy_checks.py`, `iterate_checks.py`) share generic C1–C5 helpers and F1/F2/F3 ADR integrity checks from `common.py`. The full Canon Coverage matrix is in [docs/hooks-and-pipeline.md](hooks-and-pipeline.md#canon-coverage--iterate-12-final-state).
+
+### Context-Cost Meter and Readiness Commands
+
+Opt-in, operator-run -- never invoked automatically by the pipeline. See
+[docs/token-cost-controllable.md](token-cost-controllable.md) for when each of
+these is worth reaching for.
+
+| Command | Flags | Purpose |
+|---------|-------|---------|
+| `context_cost_summary.py show` | `--project-root <path>` · `--session-id <id>` | Print the current session's measured cost totals and per-phase breakdown, from the file `track_context_cost.py`'s Stop hook already wrote. |
+| `context_cost_statusline.py` | -- | Point `statusLine.command` at this (in `~/.claude/settings.json` or the project's `.claude/settings.json`) for a running `$cost (N calls)` in the prompt line. |
+| `estimate_context_pressure.py` | `--source toolcall\|context-cost` (default `toolcall`) · `--mode builder\|orchestrator` · `--threshold <n>` · `--counter-file <path>` | The same checkpoint-recommendation `/shipwright-build` and `/shipwright-run` compute from tool-call count, optionally run against measured cost instead. |
+| `context_cost_readiness.py` | `--model <id>` · `--effort <level>` | `verify_local.py`-shaped readiness check: is `autoCompactWindow` set and sized for the model, and what effort level is in force. Never guesses a default for either -- omit a flag and it reports "unknown" for that check rather than fabricate one. |

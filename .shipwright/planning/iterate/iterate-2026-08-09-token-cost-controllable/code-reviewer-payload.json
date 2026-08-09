@@ -1,0 +1,31 @@
+{
+  "section": "iterate-2026-08-09-token-cost-controllable",
+  "review": [
+    {
+      "severity": "high",
+      "category": "correctness",
+      "file": "docs/token-cost-controllable.md",
+      "line": 29,
+      "finding": "The replacement iterate-count command `grep -c '\"type\": \"work_completed\"' shipwright_events.jsonl` undercounts ~5x. The events writer switched to compact JSON separators partway through the file: this repo has 103 lines with `\"type\": \"work_completed\"` and 419 with `\"type\":\"work_completed\"` (522 total, all source=iterate). The prescribed command returns 103 and the gap widens with every new event, since all new rows use the compact form.",
+      "suggestion": "Use `grep -c '\"type\": *\"work_completed\"' shipwright_events.jsonl` (matches both spacings) or `grep -c '\"work_completed\"'`; add a PowerShell equivalent alongside it, matching the new wc -c/wc -l PS block.",
+      "resolution": "fixed: grep pattern changed to `'\"type\": *\"work_completed\"'` (verified: returns 522, matching both JSON formatting styles present in this repo's own event log)."
+    },
+    {
+      "severity": "high",
+      "category": "correctness",
+      "file": "docs/token-cost-controllable.md",
+      "line": 141,
+      "finding": "\"this repo's own actual average is higher (several entries per iterate on a busy one), so in practice this repo crossed each line sooner\" is derived from the undercounted iterate figure. Measured: 347 `### ADR-` entries in decision_log.md against 522 work_completed events = 0.66 entries per iterate, i.e. below one-per-iterate, so this repo crossed each threshold LATER than the iterate-count column suggests, not sooner.",
+      "suggestion": "Reword to the measured direction (fewer than one decision entry per iterate on average, so the iterate-count column runs ahead of reality here) once the grep in line 29 is corrected; keep the 'trust the byte/line count' conclusion, which holds either way.",
+      "resolution": "fixed: reworded to 'roughly two decision entries logged for every three finished iterates... needed more iterates than the iterate-count column implies to reach each line' (347/522 ~= 0.665, matches 2/3)."
+    }
+  ],
+  "external_llm_followup": {
+    "provider": "openai",
+    "severity": "low",
+    "finding": "context_cost_readiness.py example used bracket-notation optional args inside an executable ```bash block, which fails argument parsing if copy-pasted verbatim.",
+    "resolution": "fixed: bracket notation moved out of the code fence into a comment; the runnable line now shows the bare command."
+  },
+  "verified_by": "independent grep/measurement re-check after the fix, not a third agent round",
+  "outstanding_findings": 0
+}

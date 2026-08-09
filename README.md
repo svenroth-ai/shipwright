@@ -367,6 +367,7 @@ Inheriting a Shipwright-generated repository or reviewing one without going thro
 Other references:
 
 - [docs/hooks-and-pipeline.md](docs/hooks-and-pipeline.md): hooks registry, context loading matrix, between-phase actions
+- [docs/token-cost-controllable.md](docs/token-cost-controllable.md): threshold-based guide to keeping session/token cost controllable as a project's iterate history grows
 - [shared/glossary.md](shared/glossary.md): shared vocabulary across agents, hooks, subagents, and compliance audits (Allowlist / Ratchet / Producer / Canon-Gate / Action-Unit / Worktree-Isolation / F7b-Seal / …)
 - [shared/constitution.md](shared/constitution.md): ALWAYS / ASK FIRST / NEVER behavioral boundaries for all agents
 - [.shipwright/planning/adr/](.shipwright/planning/adr/): long-form ADR specs (auto-indexed in `INDEX.md`, labelled from each file's own `#` heading)

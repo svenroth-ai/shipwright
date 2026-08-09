@@ -1,0 +1,125 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-08-09-token-cost-controllable",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-09T13:01:40.583014+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-09T13:06:30.862708+00:00",
+      "disposition": "small complexity, docs-only feature; external plan/iterate review is medium+ only per the phase matrix",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 2,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "correctness",
+          "file": "docs/token-cost-controllable.md",
+          "line": 29,
+          "finding": "The replacement iterate-count command `grep -c '\"type\": \"work_completed\"' shipwright_events.jsonl` undercounts ~5x. The events writer switched to compact JSON separators partway through the file: this repo has 103 lines with `\"type\": \"work_completed\"` and 419 with `\"type\":\"work_completed\"` (522 total, all source=iterate). The prescribed command returns 103 and the gap widens with every new event, since all new rows use the compact form.",
+          "suggestion": "Use `grep -c '\"type\": *\"work_completed\"' shipwright_events.jsonl` (matches both spacings) or `grep -c '\"work_completed\"'`; add a PowerShell equivalent alongside it, matching the new wc -c/wc -l PS block.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "high",
+          "category": "correctness",
+          "file": "docs/token-cost-controllable.md",
+          "line": 141,
+          "finding": "\"this repo's own actual average is higher (several entries per iterate on a busy one), so in practice this repo crossed each line sooner\" is derived from the undercounted iterate figure. Measured: 347 `### ADR-` entries in decision_log.md against 522 work_completed events = 0.66 entries per iterate, i.e. below one-per-iterate, so this repo crossed each threshold LATER than the iterate-count column suggests, not sooner.",
+          "suggestion": "Reword to the measured direction (fewer than one decision entry per iterate on average, so the iterate-count column runs ahead of reality here) once the grep in line 29 is corrected; keep the 'trust the byte/line count' conclusion, which holds either way.",
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-08-09T13:07:06.308802+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-09T13:06:30.627128+00:00",
+      "disposition": "docs-only diff; doubt-reviewer is conditional on non-trivial surfaces (migrations/async/cross-plugin imports/irreversible ops) per iteration-reviews.md, none of which apply",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 1,
+      "findings": [
+        {
+          "severity": "low",
+          "category": "bug",
+          "file": "docs/token-cost-controllable.md",
+          "line": 158,
+          "finding": "The readiness command example presents optional arguments in square brackets inside a shell code block. Copying it verbatim passes literal `[`/`]` arguments to `context_cost_readiness.py`, which will fail argument parsing rather than perform the readiness check.",
+          "suggestion": "Show a valid command without optional arguments, then provide a separate valid example with concrete values (for example, `--model <model-id> --effort <level>`), or place the bracket notation outside the executable code block.  Overall assessment: ship-with-fixes. The threshold-based document, guide additions, README link, transferability caveats, and opt-in framing satisfy the requested deliverables; the executable command example should be corrected before shipping. SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-08-09T13:06:30.743055+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "partial",
+      "raw_excerpt": "[deepseek] No defects found. The diff implements all spec deliverables: a new `docs/token-cost-controllable.md`, guide updates with cost dimension and appendix commands, and README link. Content matches the corrected thresholds, follows the required SHAPE (trigger, symptom, action) for each band, complies with all writing rules (recommendations only, numbers used for thresholds, repo-specific vs. transfer clarified, meter/commands pointed to). No security issues, no regressions, no broken references, and no missing acceptance criteria.\n\nSHIPWRIGHT_VERDICT: approve\n\n[openai] - Category: bug\n- Severity: low\n- File: docs/token-cost-controllable.md:158\n- Finding: The readiness command example presents optional arguments in square brackets inside a shell code block. Copying it verbatim passes literal `[`/`]` arguments to `context_cost_readiness.py`, which will fail argument parsing rather than perform the readiness check.\n- Suggestion: Show a valid command without optional arguments, then provide a separate valid example with concrete values (for example, `--model <model-id> --effort <level>`), or place the bracket notation outside the executable code block.\n\nOverall assessment: ship-with-fixes. The threshold-based document, guide additions, README link, transferability caveats, and opt-in framing satisfy the requested deliverables; the executable command example should be corrected before shipping.  \nSHIPWRIGHT_VERDICT: revise",
+      "verdicts": {
+        "openai": "revise",
+        "deepseek": "approve"
+      }
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-09T13:06:30.406779+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-09T13:06:30.976940+00:00",
+      "disposition": "internal plan review is medium+ only, this run is small",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    }
+  }
+}
