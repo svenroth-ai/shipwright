@@ -245,3 +245,53 @@ def test_extra_field_pipe_character_does_not_break_the_table(tmp_path):
     assert "reviewer=a \\| b c" in report  # '|' escaped, newline collapsed to a space
     row_line = next(ln for ln in report.splitlines() if "reviewer=" in ln)
     assert row_line.count("|") == 7  # 6 table-cell delimiters (5 cols) + 1 escaped pipe
+
+
+def test_report_renders_wall_clock_and_instrumented_ratio():
+    event = {"type": "work_completed", "source": "iterate", "adr_id": "iterate-2026-08-04-wall",
+             "ts": "2026-08-04T10:00:00+00:00",
+             "phase_timings": [{"phase": "scope", "started": "2026-08-04T09:00:00+00:00"}],
+             "iterate_timings": [
+                 {"name": "planning", "parent": None, "source": "agent", "outcome": "completed",
+                  "start_utc": "2026-08-04T09:30:00+00:00", "end_utc": "2026-08-04T10:00:00+00:00",
+                  "duration_ms": 1_800_000, "exclusive_ms": 1_800_000, "attempt": 1, "extra": {}},
+             ]}
+    from lib.iterate_throughput_render import render_report
+    report = render_report([run_stat(event)])
+    assert "**Wall clock (scope through F5b):** 60.0 min (measured)" in report
+    assert "**Instrumented:** 30.0 min of wall clock (50.0%)" in report
+
+def test_report_labels_implausible_duration_as_excluded_evidence():
+    event = {"type": "work_completed", "source": "iterate", "adr_id": "iterate-2026-08-04-outlier",
+             "ts": "2026-08-04T10:00:00+00:00",
+             "phase_timings": [{"phase": "scope", "started": "2026-08-04T09:00:00+00:00"}],
+             "iterate_timings": [
+                 {"name": "planning", "parent": None, "source": "agent", "outcome": "unavailable",
+                  "start_utc": "2026-08-04T09:00:00+00:00", "end_utc": "2026-08-04T10:00:00+00:00",
+                  "duration_ms": 3_600_000, "exclusive_ms": 3_600_000, "attempt": 1,
+                  "extra": {"unavailable_reason": "implausible_duration"}},
+             ]}
+    from lib.iterate_throughput_render import render_report
+    report = render_report([run_stat(event)])
+    assert "*unavailable — implausible_duration* (60.0 min excluded from work)" in report
+
+def test_report_labels_the_absent_alternative_entry_path_not_applicable():
+    event = {"type": "work_completed", "source": "iterate", "adr_id": "planning-only",
+             "ts": "2026-08-04T10:00:00+00:00", "iterate_timings": [
+                 {"name": "planning", "parent": None, "source": "agent", "outcome": "completed",
+                  "start_utc": "2026-08-04T09:00:00+00:00", "end_utc": "2026-08-04T10:00:00+00:00",
+                  "duration_ms": 3_600_000, "exclusive_ms": 3_600_000, "attempt": 1, "extra": {}},
+                 {"name": "implementation", "parent": None, "source": "agent", "outcome": "completed",
+                  "start_utc": "2026-08-04T09:00:00+00:00", "end_utc": "2026-08-04T10:00:00+00:00",
+                  "duration_ms": 3_600_000, "exclusive_ms": 3_600_000, "attempt": 1, "extra": {}},
+                 {"name": "verification", "parent": None, "source": "agent", "outcome": "completed",
+                  "start_utc": "2026-08-04T09:00:00+00:00", "end_utc": "2026-08-04T10:00:00+00:00",
+                  "duration_ms": 3_600_000, "exclusive_ms": 3_600_000, "attempt": 1, "extra": {}},
+                 {"name": "review", "parent": None, "source": "agent", "outcome": "completed",
+                  "start_utc": "2026-08-04T09:00:00+00:00", "end_utc": "2026-08-04T10:00:00+00:00",
+                  "duration_ms": 3_600_000, "exclusive_ms": 3_600_000, "attempt": 1, "extra": {}},
+             ]}
+    from lib.iterate_throughput_render import render_report
+    report = render_report([run_stat(event)])
+    assert "4/4 applicable fold-time groups" in report
+    assert "*not applicable — planning is the recorded entry path*" in report

@@ -232,3 +232,18 @@ def test_clock_regression_between_marks_never_fabricates_a_zero(tmp_path):
     assert planning["duration_ms"] is None
     assert planning["exclusive_ms"] is None
     assert planning["end_utc"] is None  # untrustworthy end dropped, not kept
+
+
+@pytest.mark.parametrize("outcome", ["completed", "cancelled"])
+def test_overlong_agent_planning_span_is_preserved_as_unavailable(tmp_path, outcome):
+    """An implausible interval remains evidence without claiming its cause."""
+    it.record_start(tmp_path, RUN, name="planning", parent=None,
+                    ts="2026-08-04T10:00:00+00:00")
+    it.record_end(tmp_path, RUN, name="planning", parent=None, outcome=outcome,
+                  ts="2026-08-04T13:00:01+00:00")
+    valid, rejected = itn.normalize_iterate_timings(itn.read_raw_events(tmp_path, RUN))
+    assert not rejected
+    assert len(valid) == 1
+    assert valid[0]["outcome"] == "unavailable"
+    assert valid[0]["extra"] == {"unavailable_reason": "implausible_duration"}
+    assert valid[0]["duration_ms"] == 10_801_000

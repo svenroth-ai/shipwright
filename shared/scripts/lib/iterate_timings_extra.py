@@ -32,6 +32,7 @@ EXTRA_FIELD_TYPES: dict[str, tuple[type, ...]] = {
     "blocker_owner": (str,),
     "blocker_run_id": (str,),
     "restart_reason": (str,),
+    "unavailable_reason": (str,),
     "retry_shape": (str,),
     "conclusion": (str,),
     "reviewer": (str,),
