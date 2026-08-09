@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-08-09-token-cost-controllable",
+  "date": "2026-08-09",
+  "section": "Iterate — feature: token cost controllability guide",
+  "title": "Threshold-based token-cost guide, organized by trigger not narrative",
+  "context": "Operators need a lookup for when growing decision history and long sessions start costing tokens, without reading a report of measured spend.",
+  "decision": "Add docs/token-cost-controllable.md: 5 bands (decision-log KB/lines, long sessions) each stating trigger/symptom/action; link from guide.md Ch.9 + Appendix B and README.",
+  "consequences": "New page recommends settings (autoCompactWindow, effort, model tier) without setting them; guide.md/README gain pointers; numbers were measured and corrected against this repo's real decision_log.md during drafting.",
+  "rationale": "Rule: recommendations not shipped defaults, since a plugin cannot set a user's Claude Code settings or a project's model-tier bill without consent.",
+  "rejected": "A narrative report of this repo's own measured cost was rejected per operator direction; a report format buries the lookup a reader actually needs.",
+  "commit": "",
+  "architecture_impact": "none",
+  "spec_ref": ".shipwright/planning/iterate/iterate-2026-08-09-token-cost-controllable/request-spec.md"
+}

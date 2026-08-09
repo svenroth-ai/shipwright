@@ -1,0 +1,33 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "openrouter",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviews": {
+    "openai": {
+      "feedback": "- Category: bug\n- Severity: low\n- File: docs/token-cost-controllable.md:158\n- Finding: The readiness command example presents optional arguments in square brackets inside a shell code block. Copying it verbatim passes literal `[`/`]` arguments to `context_cost_readiness.py`, which will fail argument parsing rather than perform the readiness check.\n- Suggestion: Show a valid command without optional arguments, then provide a separate valid example with concrete values (for example, `--model <model-id> --effort <level>`), or place the bracket notation outside the executable code block.\n\nOverall assessment: ship-with-fixes. The threshold-based document, guide additions, README link, transferability caveats, and opt-in framing satisfy the requested deliverables; the executable command example should be corrected before shipping.  \nSHIPWRIGHT_VERDICT: revise",
+      "via": "openrouter",
+      "status": "success"
+    },
+    "deepseek": {
+      "feedback": "No defects found. The diff implements all spec deliverables: a new `docs/token-cost-controllable.md`, guide updates with cost dimension and appendix commands, and README link. Content matches the corrected thresholds, follows the required SHAPE (trigger, symptom, action) for each band, complies with all writing rules (recommendations only, numbers used for thresholds, repo-specific vs. transfer clarified, meter/commands pointed to). No security issues, no regressions, no broken references, and no missing acceptance criteria.\n\nSHIPWRIGHT_VERDICT: approve",
+      "via": "openrouter",
+      "status": "success"
+    }
+  },
+  "verdicts": {
+    "openai": "revise",
+    "deepseek": "approve"
+  },
+  "statuses": {
+    "openai": "success",
+    "deepseek": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: deepseek=approve, openai=revise"
+  }
+}

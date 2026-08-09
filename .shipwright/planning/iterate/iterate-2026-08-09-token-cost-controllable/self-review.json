@@ -1,0 +1,12 @@
+{
+  "items": [
+    {"name": "Spec Compliance", "verdict": "pass", "note": "New page follows the requested trigger/symptom/action shape per threshold; guide.md gains a cost-dimension pointer + Appendix B commands; README gets one summary-plus-link line. Verified against the operator's literal request by the spec-reviewer subagent (PASS)."},
+    {"name": "Error Handling", "verdict": "n/a", "note": "Docs-only change; no code paths, no error handling to add."},
+    {"name": "Security Basics", "verdict": "pass", "note": "No secrets, no user input, no auth surfaces touched — three markdown files only."},
+    {"name": "Test Quality", "verdict": "n/a", "note": "No automated tests apply to prose content; covered by the Test Completeness Ledger instead (accuracy verified by direct inspection of every cited file/command/number)."},
+    {"name": "Performance Basics", "verdict": "n/a", "note": "Docs-only change; no runtime code paths."},
+    {"name": "Naming & Structure", "verdict": "pass", "note": "docs/token-cost-controllable.md follows the kebab-case convention of docs/hooks-and-pipeline.md; 198 lines, well under the 300-line guideline; README/guide.md edits match existing bullet/table conventions."},
+    {"name": "Affected Boundaries", "verdict": "n/a", "note": "No serialized format produced or consumed; no producer/consumer pair to identify."},
+    {"name": "Test Hygiene Probe", "verdict": "n/a", "note": "No test files touched; scan_test_hygiene.py --diff run anyway, no findings."}
+  ]
+}
