@@ -835,6 +835,19 @@ _Where the work detail lives_ at the end of this document.
   they count as the same name — so the check can never report a mismatch while
   showing the same name on both sides of it.
   (iterate-2026-07-31-f11-delivery-truth)
+- (E) Given a small-sized change reaches the point of writing its short
+  implementation plan, when that plan is agreed, then it is saved to a file
+  like every larger change's plan is, instead of existing only for the
+  length of the conversation. (iterate-2026-08-09-compaction-state-audit)
+- (E) Given a reviewer has just finished checking a change, when its reply
+  comes back, then that reply is written down before anything else happens —
+  before the next reviewer is asked, before any other step — so a session
+  interruption right after a reviewer answers can never lose what it found.
+  (iterate-2026-08-09-compaction-state-audit)
+- (E) Given a change was interrupted partway through its review passes, when
+  it is picked back up, then what is reported names every review pass still
+  open, read from the same record each pass writes to — not only whether an
+  outside second opinion ran. (iterate-2026-08-09-compaction-state-audit)
 
 <a id="fr-0112"></a>
 ### FR-01.12 — /shipwright-preview

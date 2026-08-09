@@ -66,3 +66,4 @@ _Regenerate:_ `uv run {shared_root}/scripts/tools/rebuild_adr_index.py --project
 - [Archive — Agent-Doc Update Backlog (verbatim)](_archive-agent-doc-updates.md)
 - [ADR spec-folder files are named by run_id, never a guessed number](iterate-2026-08-08-index-readers-adr-lock-spec-folder-naming.md)
 - [A third append-only event kind for the triage store](iterate-2026-08-08-triage-amend-event-third-event-kind.md)
+- [Making an interrupted iterate resumable from disk alone](iterate-2026-08-09-compaction-state-audit-review-cascade-durability.md)

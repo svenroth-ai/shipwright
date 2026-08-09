@@ -454,12 +454,39 @@ declining to write it. The reviewers
 already return structured JSON; before this record existed it survived only as
 ADR prose and was thrown away.
 
-Materialize once, early in the run:
+Materialize at Step 7 entry (immediately before the first reviewer spawn), not
+merely "early" — a vague timing is what let this drift; `init` is idempotent,
+so calling it again elsewhere is harmless, but Step 7 is where it must always
+have run by:
 
 ```bash
 uv run "{shared_root}/scripts/tools/record_review_pass.py" init \
   --project-root "{project_root}" --run-id "{run_id}"
 ```
+
+**Immediate-write ordering mandate (MANDATORY).** The instant a reviewer or
+`external_review.py` call returns, write its reply to a file verbatim and call
+`record_review_pass.py record` — before any other reasoning, before spawning
+the next reviewer, before anything else. A `Bash` call to `external_review.py`
+should redirect its own stdout straight to the durable payload path in the
+same command (e.g. `... > .shipwright/planning/iterate/{run_id}/plan-review-raw.json`)
+so the write lands before the agent ever reasons about the result. **This is a
+mitigation, not a guarantee** — it is agent-followed prose, not code-enforced,
+and a compaction landing in the instant between a subagent returning and this
+write happening can still lose the finding. For the Step 8 cascade specifically
+(`spec-reviewer`/`code-reviewer`/`doubt-reviewer`), the `SubagentStop` hook
+`write-review-payload-on-stop.py` (`plugins/shipwright-build/hooks/hooks.json`)
+is the code-level backstop for exactly that window: it fires synchronously as
+part of the subagent's own lifecycle, independent of the orchestrator's
+remaining context, and salvages the raw reply to
+`.shipwright/planning/iterate/{run_id}/{type}_salvaged_raw.json` if
+`reviews.json` doesn't already show the type terminal by the time the subagent
+stops. It requires the spawn prompt to state the run_id in plain text (SKILL.md
+Step 8) — the hook can only read it from the subagent's own transcript, never
+from an env var (`SHIPWRIGHT_RUN_ID` is documented, in this same repo, as
+unreliable for a Claude-Code-launched hook subprocess). No equivalent hook
+exists for `external_review.py` (a plain CLI call, not a Task-tool subagent) —
+the stdout-redirect instruction above is what closes that window instead.
 
 **A pass that RAN** — write the reviewer's reply to a file verbatim (raw JSON,
 or the whole message with its ```json block; both are accepted) and hand it over:

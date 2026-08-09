@@ -1,0 +1,2341 @@
+diff --git a/.shipwright/planning/01-adopted/spec.md b/.shipwright/planning/01-adopted/spec.md
+index b69e3b08..9666c84d 100644
+--- a/.shipwright/planning/01-adopted/spec.md
++++ b/.shipwright/planning/01-adopted/spec.md
+@@ -835,6 +835,19 @@ _Where the work detail lives_ at the end of this document.
+   they count as the same name — so the check can never report a mismatch while
+   showing the same name on both sides of it.
+   (iterate-2026-07-31-f11-delivery-truth)
++- (E) Given a small-sized change reaches the point of writing its short
++  implementation plan, when that plan is agreed, then it is saved to a file
++  like every larger change's plan is, instead of existing only for the
++  length of the conversation. (iterate-2026-08-09-compaction-state-audit)
++- (E) Given a reviewer has just finished checking a change, when its reply
++  comes back, then that reply is written down before anything else happens —
++  before the next reviewer is asked, before any other step — so a session
++  interruption right after a reviewer answers can never lose what it found.
++  (iterate-2026-08-09-compaction-state-audit)
++- (E) Given a change was interrupted partway through its review passes, when
++  it is picked back up, then what is reported names every review pass still
++  open, read from the same record each pass writes to — not only whether an
++  outside second opinion ran. (iterate-2026-08-09-compaction-state-audit)
+ 
+ <a id="fr-0112"></a>
+ ### FR-01.12 — /shipwright-preview
+diff --git a/.shipwright/planning/iterate/2026-08-09-compaction-state-audit-miniplan.md b/.shipwright/planning/iterate/2026-08-09-compaction-state-audit-miniplan.md
+new file mode 100644
+index 00000000..e8cf2592
+--- /dev/null
++++ b/.shipwright/planning/iterate/2026-08-09-compaction-state-audit-miniplan.md
+@@ -0,0 +1,79 @@
++# Mini-Plan: compaction-state-audit
++
++- **Run ID:** iterate-2026-08-09-compaction-state-audit
++
++Revised after Internal Plan Review (opus-plan-reviewer, severity: high,
++11 findings), then again after Branch A external review + Architecture
++Review (both converged on the same ask a second time) — see the iterate
++spec's `## Internal Plan Review`, `## External Plan Review` and
++`## Architecture Review` sections for the full disposition tables. Two
++changes since the first draft: (1) B1's replay-check now reads
++`reviews.json` **directly**, not via `session_handoff.md` — that handoff
++copy is gitignored/runtime-only and a killed-mid-phase run never gets it
++regenerated, so it cannot be the authoritative signal; (2) a `SubagentStop`
++salvage hook now backs the immediate-write prose mandate with a code-level
++fallback for the three internally-spawned reviewers.
++
++## 1. Files to create/modify
++
++- `plugins/shipwright-iterate/skills/iterate/references/iteration-planning.md` — Mini-Plan Protocol → Persistence: remove the `small`-tier "no file" exemption (applies to every tier that runs the protocol).
++- `plugins/shipwright-iterate/skills/iterate/references/path-a-feature.md` — Step 3 header/body to match.
++- `plugins/shipwright-iterate/skills/iterate/references/iteration-reviews.md` — "Recording each review pass": add the immediate-write ordering mandate paragraph.
++- `plugins/shipwright-iterate/skills/iterate/SKILL.md` — §B1: add the direct `reviews.json`-read replay clause (primary fix, AC-3a); Step 8: add the one-clause immediate-write imperative + run_id-in-prompt requirement at the cascade spawn point.
++- `plugins/shipwright-iterate/skills/iterate/references/campaign-mode.md` — **3f-bis** (the actual autonomous-cascade spawn site — NOT `sub-iterate-runner.md` Step 3.7, which only delegates to the orchestrator and never calls the `Agent` tool itself): same one-clause imperative + run_id-in-prompt requirement, since both observed compactions were autonomous runs.
++- New: `plugins/shipwright-build/scripts/hooks/write-review-payload-on-stop.py` — `SubagentStop` salvage hook for `spec-reviewer`/`code-reviewer`/`doubt-reviewer`; self-contained (no `shared/scripts/lib` import — would collide with `plugins/shipwright-build/scripts/lib`'s own `lib` package name in that plugin's pytest process, ADR-044).
++- `plugins/shipwright-build/hooks/hooks.json` — wire the new hook under `SubagentStop`, one matcher per review agent.
++- New: `plugins/shipwright-build/tests/test_review_payload_on_stop.py`.
++- `shared/scripts/lib/handoff_iterate.py` — `render_iterate_progress()`: read `reviews.json` via `lib.review_record_core.read_record`/`pending_types` (not a hand-rolled reader); reword as descriptive state; explicit line on a missing record at small+ resolvable complexity; `run_id` fallback from a `*-miniplan.md` header when no spec file exists.
++- `shared/scripts/tools/verifiers/spec_checks.py` — `check_s3_iterate_miniplan`: WARN at `small` when `_iterate_category(...) == "feature"` (reuses the existing helper), keep SKIP at `small` for change/bug.
++- `docs/hooks-and-pipeline.md` — context-loading matrix: Stop hook now also reads `reviews.json`.
++- `docs/guide.md` — check Chapter 4/8 for the small-tier "inline only" mini-plan wording being changed.
++- New: `shared/tests/test_review_cascade_handoff.py` — the checked-first "near its size cap" case actually hit: `test_generate_session_handoff.py` carries a grandfathered bloat-baseline entry (`current: 511`, limit 300); appending the 6 new review-cascade cases there measured 668 lines, ratcheting the anti-ratchet gate (`shared/scripts/hooks/anti_ratchet_check.py`, confirmed by running it against staged content). Split into this new sibling file instead — the intended remedy per its own printed remediation list ("split the file"), not a baseline bump.
++- New: `plugins/shipwright-iterate/tests/test_mini_plan_persistence_doc.py`.
++- New: `plugins/shipwright-iterate/tests/test_review_record_immediate_write_rule.py` (asserts the mandate at all three prose sites: iteration-reviews.md, SKILL.md Step 8, campaign-mode.md 3f-bis).
++- New: `plugins/shipwright-iterate/tests/test_skill_b1_reviews_json_check.py` (doc-presence: B1's prose names the direct `reviews.json` read).
++- New: `shared/tests/test_spec_checks_s3_miniplan_gate.py` — same reason: `test_spec_checks.py` is also grandfathered (`current: 665`); the two new S3 cases went here instead of extending it. `spec_checks.py` itself (`current: 783`) stayed in-place — its net addition (`_miniplan_required` + the S3 body edit) fit under the ceiling once condensed to avoid a second split for a ~10-line change.
++
++## 2. Work breakdown
++
++1. Read `shared/tests/test_generate_session_handoff.py` in full first — note its existing assertion `'Mandatory replay on Resume' not in text` (line ~283 per Internal Plan Review finding #10) and its fixture shape (git_info dict, tmp project_root layout); the new tests must not break that assertion by accident, and must match its exact fixture conventions.
++2. Patch `render_iterate_progress()` in `shared/scripts/lib/handoff_iterate.py`:
++   a. Import `read_record`, `pending_types`, `ReviewRecordError` from `lib.review_record_core` using the same relative-then-absolute dual-import pattern as `review_record_schema.py` (so it works both as a package import and via the Stop hook's `sys.path` route).
++   b. `run_id` fallback: when `spec_path` is `None` (no spec below medium), glob `iterate_dir.glob("*-miniplan.md")` filtered by `short in name`, take the newest by mtime, and parse the same `- **Run ID:**` header line the spec-path branch already parses (`complexity` stays unavailable from a mini-plan header if it doesn't carry one — check the actual mini-plan template; if it doesn't, leave `complexity` empty as today).
++   c. After the existing external-review-marker block: if `run_id` is set, call `read_record(project_root, run_id)` inside a `try`/`except ReviewRecordError` (treat as absent on error — matches the existing degraded philosophy elsewhere in this function); if a record exists, compute `pending = pending_types(record)`; if non-empty, append ONE descriptive (not imperative) line, e.g. `"Review types still unanswered in reviews.json: {', '.join(pending)} (each needs a status or disposition before F11 — some may be not_applicable at this complexity)."` — placed as its own bullet near the External Review Marker line, NOT inside the "Mandatory replay on Resume" block (that block stays reserved for the two existing, genuinely-due-now instructions).
++   d. If `run_id` is set, complexity is resolvable and in `("small","medium","large")`, and `read_record` returns `None` (no file): append an explicit line stating no review record exists yet for this run — informational, not alarming, and never raised for an unresolvable-complexity case (stay silent there, matching today's degraded behavior).
++3. Write the new/extended tests per work item 1: pending-type-surfaced (descriptive wording), mixed-realistic-record-no-false-command, missing-record-explicit-at-small-plus, missing-record-silent-when-complexity-unresolvable, run_id-fallback-from-miniplan-header, and one importing `lib.handoff_iterate` via the hook's actual `sys.path` route (import-safety regression guard per finding #10c).
++4. Edit `iteration-planning.md` Mini-Plan Protocol → Persistence: single rule — "Save as `.shipwright/planning/iterate/{date}-{desc}-miniplan.md` at every complexity tier that runs this protocol" — keep Content items 2 (work breakdown) and 6 (alternative approach) gated `(medium only)`; only persistence changes for `small`, not content depth.
++5. Edit `path-a-feature.md` Step 3 heading/body to match.
++6. Write `test_mini_plan_persistence_doc.py`: extract `## Mini-Plan Protocol` → `## Escape Hatch Protocol` body (same anchor-and-assert pattern as `test_skill_step_6_rules_present.py`); assert no `small`-only "no file"/"inline in session only" carve-out remains, and the persistence sentence applies unconditionally.
++7. Edit `iteration-reviews.md` "Recording each review pass": add the ordering-mandate paragraph (rationale lives here).
++8. Edit `SKILL.md` Step 8: add the one-clause imperative at the cascade-spawn instruction ("write the reviewer's raw reply to its payload file as your very next action after it returns, before any other reasoning or the next spawn").
++9. Edit `SKILL.md` §B1: add the third replay clause — read `reviews.json` directly via `record_review_pass.py show`, gated on `self` being terminal before treating any other pending type as a real interrupted-cascade signal (not merely "not yet due"). Keep the existing two-marker sentence — it covers a different, still-real check (`plan_internal`/`self` via the ADR block).
++10. Edit `campaign-mode.md`'s 3f-bis: same one-clause imperative + run_id-in-prompt requirement as SKILL.md Step 8 (the actual autonomous spawn site — corrected from the original `sub-iterate-runner.md` Step 3.7 target after re-reading it: that step *delegates* the cascade, it has no `Agent` tool and never spawns it itself).
++10b. Write `plugins/shipwright-build/scripts/hooks/write-review-payload-on-stop.py` (self-contained — no `lib.xxx` import, see file-list note) + wire it into `plugins/shipwright-build/hooks/hooks.json` under `SubagentStop`, one matcher per review agent. Write `plugins/shipwright-build/tests/test_review_payload_on_stop.py`; run the FULL `plugins/shipwright-build` test root afterward (not just the new file) to confirm no `lib` name collision with `test_config.py`/`test_sections.py`.
++11. Write `test_review_record_immediate_write_rule.py` asserting the mandate text at all three sites (iteration-reviews.md body, SKILL.md Step 8 body, campaign-mode.md 3f-bis body) using each file's own anchor-and-assert pattern.
++12. Write `test_skill_b1_reviews_json_check.py` asserting the B1 section body names the direct `reviews.json` read.
++13. Edit `spec_checks.py`'s `check_s3_iterate_miniplan`: change the gate from `_is_medium_or_larger(complexity)` to `_is_medium_or_larger(complexity) or (complexity == "small" and _iterate_category(project_root, run_id) == "feature")`; keep the SKIP message accurate for the change/bug+small case (still correctly "not required").
++14. Extend `test_spec_checks.py` with the two new cases (WARN at small+feature, SKIP at small+change and small+bug).
++15. Update `docs/hooks-and-pipeline.md`'s context-loading matrix for the Stop hook (now also reads `reviews.json`); check `docs/guide.md` Chapter 4/8 for the small-tier mini-plan wording.
++16. Run, per this repo's one-test-root rule: `shared/tests`, `plugins/shipwright-iterate/tests`, and any other root touched (check `record_review_pass.py`'s own test location if the S3/handoff changes have neighbors there).
++17. Acceptance test (AC-4): build a fixture `reviews.json` (`self`, `spec` completed; `code` pending; rest pending) under a temp run dir; (a) drive `generate_handoff_on_stop.py`'s real entrypoint end-to-end against it and confirm `code` is named in the file it actually writes; (b) separately confirm the B1 direct-read path (simulate via `record_review_pass.py show` + `pending_types`) also names it. State explicitly in Self-Review that a literal same-session kill-and-restart could not be performed from inside the session doing the fix, and that (a)+(b) are the closest deterministic substitute — driving the actual production code paths rather than an isolated unit-level fixture.
++18. Run `uv run scripts/verify_local.py` before considering the change ready for F0.
++
++## 3. Component hierarchy
++
++n/a (no UI).
++
++## 4. Data model changes
++
++None — `reviews.json`'s schema (`review_record_schema.py`) is read-only here, not altered.
++
++## 5. Test strategy
++
++Unit tests (`shared/tests/`, alongside existing handoff/spec-check tests — not a new root) for the `render_iterate_progress` and `spec_checks.py` changes; meta-tests (`plugins/shipwright-iterate/tests/`) for the four prose changes (mini-plan persistence, immediate-write mandate ×3 sites, B1 direct-read), following the repo's existing anchor-and-assert convention exactly. No E2E — no web/cli/api surface (Verification section: `surface: none`).
++
++## 6. Alternative approach (considered and rejected)
++
++**Alternative:** give review subagents Write access so they self-persist findings the instant they finish, closing the review-findings gap at the source instead of via an orchestrator ordering mandate.
++
++**Rejected because:** it changes the security/capability surface of four subagent definitions that are deliberately restricted to `Read, Grep, Glob` (a review agent should not be able to write to the codebase it's reviewing — that boundary is intentional, not an oversight). It is also a larger blast radius than this bug fix needs: an ordering mandate at each spawn site (the orchestrator already has Write/Bash) closes the same window without touching subagent capability grants. Internal Plan Review (finding #8) confirmed the mandate needs repeating at every spawn site to be reliable, but did not challenge the underlying "orchestrator writes, not subagent" design — if the ordering-mandate approach proves insufficient in practice (agents keep deferring the write despite explicit instruction), that would be grounds for revisiting this alternative in a follow-up iterate, not folded in here.
+diff --git a/.shipwright/planning/iterate/2026-08-09-compaction-state-audit.md b/.shipwright/planning/iterate/2026-08-09-compaction-state-audit.md
+new file mode 100644
+index 00000000..73410d9c
+--- /dev/null
++++ b/.shipwright/planning/iterate/2026-08-09-compaction-state-audit.md
+@@ -0,0 +1,281 @@
++# Iterate Spec: compaction-state-audit
++
++- **Run ID:** iterate-2026-08-09-compaction-state-audit
++- **Type:** bug
++- **Complexity:** medium (overridden from Stage-1 `small`)
++- **Status:** draft
++
++## Complexity override
++
++Stage 1 (`classify_complexity.py`) returned `small` with a `touches_auth`
++risk flag from the message keyword `session`. Repo Scout correction: this
++is a message-keyword false positive — the change touches conversation/run
++*session* files (`session_handoff.md`, `reviews.json`), not user-facing
++authentication, and no file under `src/lib/supabase/`, `**/auth/**`, or
++`middleware.ts` is touched. `touches_auth` is dropped.
++
++Overridden to `medium` on positive evidence (`SKILL.md` §E requires
++positive evidence, never absence of it, to buy medium): the fix spans
++multiple governing reference docs of the `/shipwright-iterate` skill itself
++(`iteration-planning.md`, `iteration-reviews.md`, `path-a-feature.md`,
++`SKILL.md` §B1) plus a shared library consumed by every plugin that calls
++`generate_session_handoff.py` (`shared/scripts/lib/handoff_iterate.py`),
++and the task explicitly mandates a mid-phase-kill acceptance test as its
++own verification step. That is genuine cross-file framework scope, not a
++one-file small fix.
++
++## Goal
++
++Close three specific gaps where an iterate run's in-flight state has no
++disk representation and can be destroyed by mid-run context-window
++auto-compaction (observed 2026-08-07, 2 of 2 autonomous runs compacted,
++one during external review).
++
++## Step 1 self-verification (mandatory per task instructions)
++
++The originating task listed six suspected gaps and required each be
++re-derived against current code before planning. Full findings (with
++file:line citations) are in the session transcript; summary disposition:
++
++| # | Claim | Verdict | Disposition |
++|---|---|---|---|
++| 1 | Interview answers never on disk | CORRECTED | True only at `small` (no spec file exists below `medium`); at `medium+` already captured into the iterate spec's Goal/AC/Out-of-Scope (`path-a-feature.md:32,35,48`). **Out of scope, deferred (not superseded)** — the mini-plan fix (item 2) only reaches `small` when the Mini-Plan Protocol actually triggers, which per `iteration-planning.md:145` is **FEATURE + small/medium** only; CHANGE + small and BUG + small never reach a Mini-Plan step at all (this run is BUG + medium, so it never exercises that case). Those two combinations still have zero on-disk planning artifact after this fix. Widening the trigger table is a separate Mini-Plan Protocol design decision, declined here on the scope-ratchet guard (flagged by Internal Plan Review, finding #6). |
++| 2 | Mini-plan at `small` is session-only | VERIFIED TRUE | **In scope.** `iteration-planning.md:158-163` explicitly: "Small: Inline in session only (no file)". No compensating artifact anywhere. |
++| 3 | Architecture-review reconciliation is conversational | FALSE — already solved | **Dropped from scope.** `SKILL.md:13` and `iteration-planning.md:394-411` already write verdicts/findings/reconciliation into the iterate spec's `## Architecture Review` section + the ADR, before Build. |
++| 4 | Review findings lost between reviewer-return and `record_review_pass.py` | VERIFIED TRUE | **In scope.** `record_review_pass.py` only ever reads a payload file the agent must already have written (`record_review_pass.py:351-352`); nothing mandates that write happen immediately. Review subagents have `Read, Grep, Glob` only (no Write, no Bash) so they structurally cannot self-persist — the fix has to be an explicit, testable ordering mandate on the orchestrator. |
++| 5 | Handoff decision is unrecorded heuristic | CORRECTED | The *trigger* is a heuristic (`iteration-reviews.md:579-584`, no code computes it), but a written schema and an automatic per-turn Stop-hook regeneration already exist (`generate_handoff_on_stop.py`, `handoff_iterate.py::render_iterate_progress`) independent of the heuristic firing. **Narrowed, folded into item 6** — the real gap is that the auto-snapshot only surfaces two markers, not the fuller `reviews.json` state; fixing item 6 fixes this too, since both read from the same function. |
++| 6 | B1 resume checks only two markers | VERIFIED TRUE | **In scope.** `SKILL.md:61` literally checks only the external-review marker and an ADR `Self-Review:` block. `reviews.json` (`shared/scripts/lib/review_record_schema.py`) already carries per-type status for all 7 review types on disk but neither B1's prose nor `render_iterate_progress()` reads it. |
++
++Net scope: items 2, 4, 6 (5 folds into 6's fix). Items 1 and 3 are
++explicitly out of scope — already solved or not worth a dedicated artifact.
++
++## Acceptance Criteria
++
++- [x] AC-1: A FEATURE/CHANGE/BUG iterate at `small` complexity that reaches
++      the Mini-Plan step writes `.shipwright/planning/iterate/{date}-{desc}-miniplan.md`
++      (not "inline in session only"); a meta-test asserts `iteration-planning.md`'s
++      Mini-Plan Protocol persistence rule no longer contains a no-file
++      carve-out for `small`. Closed: `iteration-planning.md` + `path-a-feature.md`
++      edited; `test_mini_plan_persistence_doc.py` (4/4 passing).
++- [x] AC-2: `iteration-reviews.md`'s "Recording each review pass" section
++      contains an explicit, testable ordering mandate: the raw reviewer
++      reply is written to its payload file as the orchestrator's very next
++      action after the subagent/external-review call returns, before any
++      other reasoning or the next spawn. A meta-test asserts the mandate
++      text is present inside that section's body. Closed: same mandate also
++      placed at both actual spawn sites (`SKILL.md` Step 8, `campaign-mode.md`
++      3f-bis, per Internal Plan Review finding #8); `test_review_record_immediate_write_rule.py`
++      (8/8 passing, parametrized across all three sites) plus a code-level
++      `SubagentStop` backstop (see AC-2b below).
++- [x] AC-2b (built after Branch A + Architecture Review independently
++      converged on the same ask): `write-review-payload-on-stop.py`, a
++      `SubagentStop` salvage hook for `spec-reviewer`/`code-reviewer`/`doubt-reviewer`,
++      backstops AC-2's prose mandate with a code-level fallback. Closed:
++      `plugins/shipwright-build/tests/test_review_payload_on_stop.py`
++      (129/129 for the full `plugins/shipwright-build` suite, confirming no
++      ADR-044 `lib` collision).
++- [x] AC-3a (primary, authoritative): `SKILL.md` §B1's replay-check reads
++      `.shipwright/planning/iterate/{run_id}/reviews.json` directly (via
++      `lib.review_record_core.read_record` + `pending_types`), independent
++      of whether `session_handoff.md` was ever regenerated for this run —
++      closing the actual killed-mid-phase gap (Internal Plan Review finding
++      #1: the tracked handoff a killed run never wrote is not a reliable
++      signal). Gated on `self` reaching a terminal status first (External
++      Plan Review, openai finding #1) so a freshly-`init`'d all-pending
++      record never false-triggers. Closed: `test_skill_b1_reviews_json_check.py`
++      (4/4, doc-presence) + `test_compaction_state_audit_acceptance.py::test_ac3a_record_review_pass_show_reports_interrupted_cascade`
++      (behavioral, drives the real `record_review_pass.py show` CLI B1
++      actually runs).
++- [x] AC-3b (secondary, best-effort): `render_iterate_progress()`
++      (`shared/scripts/lib/handoff_iterate.py`) also surfaces still-pending
++      review types (worded as state, not a command) for the live, per-turn
++      Stop-hook snapshot, using the same SSoT helpers — not a hand-rolled
++      reader. Distinguishes "not started" / "not due yet" / "interrupted" /
++      "complete" / "unreadable" (Internal Plan Review finding #5). Closed:
++      6 new tests in `shared/tests/test_review_cascade_handoff.py`
++      (`test_review_cascade_*`) — split into its own file rather than
++      appended to the already-grandfathered `test_generate_session_handoff.py`
++      (see mini-plan's file-list note on the bloat-baseline ratchet hit).
++- [x] AC-4 (acceptance test, mandated by the originating task): drove the
++      real `generate_handoff_on_stop.py` entrypoint end-to-end against a
++      fixture `reviews.json` (self+spec completed, code/doubt/external_code
++      pending) and confirmed the pending types are named in the file it
++      actually writes; separately confirmed B1's `reviews.json`-direct-read
++      path (AC-3a) names the same set from the same fixture, via the real
++      `record_review_pass.py show` CLI subprocess. A literal same-session
++      kill-and-restart is not possible from within the session performing
++      the fix — see Self-Review below for what this substitute does and
++      does not prove. Closed: `shared/tests/test_compaction_state_audit_acceptance.py`
++      (3/3 passing) — two independent cold subprocesses per test, no shared
++      in-memory state, reading only fixture files.
++
++## Spec Impact
++
++- **Classification:** modify
++- **MODIFY:** FR-01.11 (`/shipwright-iterate`) — append ACs covering: (a)
++  the mini-plan is persisted at every complexity tier that runs the
++  protocol, not only medium+; (b) a review pass's findings are durable the
++  instant the reviewer returns, before any other action; (c) resuming an
++  interrupted run is judged against the full per-review-type record, not
++  two markers.
++- **ADD:** none
++- **REMOVE:** none
++
++## Out of Scope
++
++- Giving review subagents (`spec-reviewer`, `code-reviewer`, `doubt-reviewer`,
++  `opus-plan-reviewer`) Write/Bash tool access so they could self-persist
++  findings directly. That changes their security/capability surface
++  (currently deliberately Read/Grep/Glob-only) and is a separate,
++  larger architectural decision, not a bug fix.
++- Item 1 (small-complexity interview capture) and item 3 (architecture-review
++  reconciliation) — verified out of scope above.
++- Detecting/enforcing the ADR `Self-Review:` block via code (still prose-only
++  in B1) — not part of this run's verified gaps; B1's existing prose already
++  covers it and nothing in the self-verification found it broken.
++- Any change to `PreCompact` hook behavior — the task explicitly rules this
++  out ("PreCompact can only block or observe — it cannot shape the summary").
++
++## Design Notes
++
++n/a — no UI surface.
++
++## Affected Boundaries
++
++| Producer (writes) | Consumer (reads) | Format |
++|---|---|---|
++| Agent (Write tool, mini-plan step, all complexity tiers now) | `spec_checks.py` S3 (WARN-tier presence check, `small`+`feature` now included); `iteration-planning.md`'s `review.py --plan-file` | Markdown |
++| `record_review_pass.py record --payload-file` | `reviews.json` — read by B1's replay-check (direct read, primary), `render_iterate_progress` (best-effort live-session convenience), F11 `check_review_record` | JSON |
++| `handoff_iterate.render_iterate_progress` | `session_handoff.md` runtime copy (Stop hook only — informational, not authoritative for a cold resume) | Markdown |
++
++Correction from the original draft: `finalize_iterate.py` (F5b) does not
++glob mini-plan files at all (verified — no reference exists); the earlier
++hedge on this row was wrong, not merely uncertain.
++
++## Confidence Calibration
++
++- **Boundaries touched:** see table above — `reviews.json` read path in
++  `handoff_iterate.py`, and the mini-plan file's persistence path.
++- **Empirical probes run:**
++  - Unit test on `render_iterate_progress()` with a fixture `reviews.json`
++    containing a `pending` `code` row → asserts `code` appears in the
++    "Mandatory replay on Resume" list.
++  - Unit test with all 7 types `completed`/`not_run`/`not_applicable` →
++    asserts no review-cascade line is added (no false positive).
++  - Meta-test reading `iteration-planning.md`'s Mini-Plan Protocol section →
++    asserts no `small`-tier "no file" exemption remains.
++  - Meta-test reading `iteration-reviews.md`'s "Recording each review pass"
++    section → asserts the immediate-write-ordering mandate text is present.
++- **Test Completeness Ledger:**
++
++  | # | Testable behavior | Disposition | Evidence / reason_code |
++  |---|---|---|---|
++  | 1 | `render_iterate_progress` reports `interrupted` + names the pending types when `self` is terminal and others are not | tested | `test_review_cascade_handoff.py::test_review_cascade_interrupted_when_self_terminal_and_others_pending` |
++  | 2 | `render_iterate_progress` reports `not due yet` (no false "interrupted") when `self` itself is still pending — even though every other type is also pending on a fresh record | tested | `test_review_cascade_handoff.py::test_review_cascade_not_due_yet_when_self_pending` |
++  | 3 | `render_iterate_progress` distinguishes "no record yet" from "record present but unreadable" (malformed JSON) — both add no false interruption but the latter still forces a replay entry | tested | `test_review_cascade_handoff.py::test_review_cascade_not_started_when_reviews_json_absent`, `::test_review_cascade_unreadable_reviews_json_flags_replay` |
++  | 4 | `render_iterate_progress` reports `complete` (no replay) when every type is terminal | tested | `test_review_cascade_handoff.py::test_review_cascade_complete_when_self_terminal_and_nothing_pending` |
++  | 5 | `render_iterate_progress` resolves `run_id` from a `*-miniplan.md` header when no spec file exists (FEATURE+small) | tested | `test_review_cascade_handoff.py::test_review_cascade_resolves_run_id_from_miniplan_when_no_spec` |
++  | 6 | Mini-Plan Protocol persistence rule requires a file at every complexity tier that runs the protocol, with no `small`-tier no-file carve-out | tested | `test_mini_plan_persistence_doc.py` (4/4) |
++  | 7 | `check_s3_iterate_miniplan` WARNs at `small` for `feature`-type runs, still SKIPs at `small` for change/bug | tested | `test_spec_checks_s3_miniplan_gate.py::test_s3_small_feature_warns_then_passes_with_miniplan`, `::test_s3_still_skips_small_change_and_small_bug` |
++  | 8 | "Recording each review pass" + both actual spawn sites (SKILL.md Step 8, campaign-mode.md's 3f-bis) carry the immediate-write ordering mandate and the run_id-in-prompt requirement | tested | `test_review_record_immediate_write_rule.py` (8/8, parametrized across all three sites) |
++  | 9 | `write-review-payload-on-stop.py` salvages a reviewer's reply only when not already recorded, across fenced/raw JSON and legacy `gates.spec`, and never blocks | tested | `plugins/shipwright-build/tests/test_review_payload_on_stop.py` (full `plugins/shipwright-build` suite: 129/129) |
++  | 10 | B1's replay-check names the direct `reviews.json` read and gates on `self`'s terminal status before treating other pending types as an interruption | tested | `test_skill_b1_reviews_json_check.py` (4/4, doc-presence) |
++  | 11 | End-to-end: a fixture `reviews.json` (self+spec completed, rest pending) drives BOTH the real `record_review_pass.py show` CLI and the real `generate_handoff_on_stop.py` Stop-hook subprocess, and both name the same pending set | tested | `test_compaction_state_audit_acceptance.py` (3/3) — the mandated AC-4 acceptance test |
++
++- **Confidence-pattern check:** asymptote — no prior "are you confident?"
++  question in this run to re-probe (BUG path skips Interview). Coverage —
++  all 11 ledger rows `tested`, 0 untested-testable.
++
++## Architecture Review
++
++- **Brief:** `.shipwright/planning/iterate/iterate-2026-08-09-compaction-state-audit/architecture_brief.md`
++- **Verdicts:** deepseek=approve · openai=revise
++- **Smallest thing that would do (per reviewers):** deepseek: as proposed (extend existing mini-plan/reviews.json/prose machinery). openai: as proposed, plus a narrowly-scoped `SubagentStop` salvage hook for the reviewer-return gap.
++- **Findings:** openai — the immediate-write rule is an ongoing human-discipline obligation, not durability; build the named salvage hook now, reusing this repo's own run-id-resolution approach, writing only when the normal payload hasn't already been recorded. **accepted-and-fixed** — this is the same ask Branch A's openai review made (finding #2 above); converging twice, independently, on the same request is why it was built rather than deferred (see "Code-level backstop" note above). deepseek raised no findings (approve).
++- **Reconciliation:** the mini-plan had already logged this exact option as a considered-but-deferred follow-up after Branch A (§ finding #2). A second, independent reviewer pass asking for the same thing — on a brief that withheld the mini-plan's own reasoning, so it isn't an echo — is the strong signal this repo's own external-review protocol treats as decisive. Built it: `write-review-payload-on-stop.py`, using the transcript-inference run-id resolution `write-section-on-stop.py` already proves works in production for this exact hook type (not the heavier `resolve_run_id`/`pointer_run_id` machinery, which solves a different problem — a *Stop* hook needing a *session's* run_id from ambient state, not a *SubagentStop* hook reading a run_id the orchestrator's own prompt already states in plain text).
++
++## Internal Plan Review (opus-plan-reviewer)
++
++- **Ran:** yes
++- **Severity:** high
++- **Summary:** Root-cause diagnosis and Step-1 verification are sound, but
++  the headline fix (B1/handoff surfacing pending reviews) targeted the
++  wrong file — the enriched handoff is written to the gitignored runtime
++  copy, while B1's documented source is the tracked copy a killed run
++  never writes. Fix that plus a section-blind `reviews.json` reader before
++  building.
++- **Findings:** 11 total (1 high, 8 medium, 2 low) — see disposition table
++  below.
++- **Known limitations:**
++  - `render_iterate_progress()`'s `reviews.json` enrichment cannot resolve
++    a `run_id` for CHANGE/BUG at `small` complexity (no spec file, no
++    mini-plan — the protocol doesn't trigger there at all). Disclosed, not
++    fixed — widening the Mini-Plan Protocol trigger table is a separate,
++    larger design decision (declined, scope-ratchet guard).
++  - The item-2 ordering mandate (write-immediately-on-return) is enforced
++    by agent-followed prose repeated at each spawn site, not by code —
++    there is no hook that can observe a subagent's return and force a
++    write. This is a structural limit of the review-subagent tool grants
++    (Read/Grep/Glob only), not something this iterate can close.
++  - The mid-phase-kill acceptance test (AC-4) cannot literally kill and
++    restart a Claude Code session from within the session performing the
++    fix; it instead drives the real entrypoint (`generate_handoff_on_stop.py`
++    and the B1 `reviews.json` read) against a fixture end-to-end, and
++    Self-Review states explicitly which half remains unproven.
++- **Status:** 9 fixed, 2 declined (both scope-ratchet: widening the
++  Mini-Plan trigger table; extending review-subagent tool grants)
++
++| # | Finding | Severity | Disposition |
++|---|---|---|---|
++| 1 | Enriched handoff lands in the gitignored runtime copy; B1 reads the tracked copy, which a killed-mid-phase run never wrote | high | **fix** — B1's own replay-check now reads `.shipwright/planning/iterate/{run_id}/reviews.json` directly (via `read_record`/`pending_types`), independent of which handoff copy exists. This is the primary/authoritative mechanism; the renderer enrichment becomes a secondary, best-effort live-session convenience. |
++| 2 | Hand-rolled `reviews.json` reader is section-blind (misses legacy `gates`-parked `spec` rows) and bypasses `is_safe_run_id` | medium | **fix** — reuse `lib.review_record_core.read_record()` + `pending_types()` (the SSoT), not a hand-rolled dict read. |
++| 3 | At `small`, `render_iterate_progress()` cannot resolve `run_id` (no spec file) | medium | **fix (partial) + disclose** — add a fallback: parse `Run ID:` from a `*-miniplan.md` header when no spec exists (closes it for FEATURE+small, which gets a mini-plan after fix #1). CHANGE/BUG+small still has no artifact to parse — disclosed above, not fixed. |
++| 4 | "Pending" wording reads as a command even when a type is legitimately not-yet-due (`not_applicable` at this complexity) | medium | **fix** — reworded as descriptive state ("still unanswered in reviews.json"), not an imperative "run this now"; added a mixed-case unit test (self+spec completed, rest pending) asserting no false command. |
++| 5 | Missing `reviews.json` treated as a silent no-op — the earliest-kill case looks identical to a healthy run | medium | **fix** — when complexity is resolvable and small+ and no record exists, emit an explicit informational line rather than staying silent. |
++| 6 | Item 1 (small interview capture) claimed "superseded" but CHANGE/BUG+small never reach the Mini-Plan step at all — they still have zero planning artifact after this fix | medium | **fix (documentation)** — Step 1 table corrected below: deferred, not superseded, for CHANGE/BUG+small. **decline (widen the trigger)** — scope-ratchet guard: that is a Mini-Plan Protocol redesign, not this bug fix. |
++| 7 | `check_s3_iterate_miniplan()` hard-skips below `medium` regardless of type, now stale once FEATURE+small persists | medium | **fix** — extended (cheaply, via the already-existing `_iterate_category` helper) to also WARN at `small` when the run's recorded type is `feature`. |
++| 8 | Ordering mandate placed only in `iteration-reviews.md` prose; an agent compacted right after spawning from Step 8 never reaches that section. Ledger row mislabeled "tested" for a doc-presence assertion | medium | **fix, upgraded to code** — one-clause imperative added at both actual spawn sites: `SKILL.md` Step 8 (standalone) and `campaign-mode.md`'s **3f-bis** — not `sub-iterate-runner.md` Step 3.7 as first planned, which only *delegates* the cascade to the orchestrator and never itself calls the `Agent` tool; the orchestrator's own spawn is at 3f-bis (`campaign-mode.md:190-231`). Directly relevant since the originating task's title is "shipwright iterate autonomous" and both observed compactions were autonomous runs. Additionally (per both external review passes converging on the same ask): a `SubagentStop` salvage hook (`write-review-payload-on-stop.py`) now backs this prose with a code-level fallback for the three internally-spawned reviewers — see the "Code-level backstop" note below. Ledger row relabeled "documentation-presence for an agent-discipline rule, not code-enforced" for the prose half; a new behavioral test row covers the hook. |
++
++**Code-level backstop (added after Branch A + Architecture Review, both independently asked for it — see External Plan Review below):** `plugins/shipwright-build/scripts/hooks/write-review-payload-on-stop.py`, wired via `SubagentStop` in `plugins/shipwright-build/hooks/hooks.json` for `spec-reviewer`/`code-reviewer`/`doubt-reviewer`. Fires synchronously when a reviewer subagent stops, independent of the orchestrator's remaining context. No-ops if `reviews.json` already shows the type terminal; otherwise salvages the raw reply from the subagent's own transcript to `{run_id}/{type}_salvaged_raw.json` for a resuming session to feed into `record_review_pass.py record`. Resolves `run_id` from the transcript text (never an env var — `SHIPWRIGHT_RUN_ID` is documented, in this same repo, as unreliable for a Claude-Code-launched hook subprocess); the spawn-prompt mandate above ensures it's always present. Deliberately self-contained, no `shared/scripts/lib` import — `plugins/shipwright-build/scripts/lib` already occupies the `lib` name in that plugin's own pytest process (ADR-044), and importing the shared package under the same name would silently resolve to the wrong one depending on test collection order. 16 tests in `plugins/shipwright-build/tests/test_review_payload_on_stop.py`, full `plugins/shipwright-build` suite (129 tests) re-run green to confirm no collision.
++| 9 | AC-4 as planned only calls the inner function against a fixture — proves nothing about the real hook→file→B1 chain | medium | **fix** — drives `generate_handoff_on_stop.py`'s real entrypoint end-to-end against a fixture `reviews.json`, asserting the pending type lands in the file it actually writes. |
++| 10 | New tests planned for the wrong root (`shared/scripts/tests/` — existing handoff tests live in `shared/tests/`); import-safety risk in the Stop-hook's swallowed-ImportError path | low | **fix** — tests relocated to `shared/tests/`, added to the run list; new import uses the same relative-then-absolute dual-import pattern as `review_record_schema.py`; one test imports via the hook's actual `sys.path` route. |
++| 11 | `docs/hooks-and-pipeline.md` (context-loading matrix) and `docs/guide.md` not in the file list; Affected Boundaries hedge on F5b globbing mini-plans is factually wrong (verified: it doesn't) | low | **fix** — both docs added to the mini-plan's file list; Affected Boundaries table corrected to state fact, not a hedge. |
++
++## External Plan Review (Branch A — deepseek + openai)
++
++- **Verdicts:** deepseek=revise · openai=revise
++- **Findings triage:**
++
++| # | Reviewer | Finding | Severity | Disposition |
++|---|---|---|---|---|
++| 1 | openai | B1's rule as drafted treats *any* pending type as "cascade interrupted," but a freshly-`init`'d record has every type pending before anything is due — this would send a resume into an early, unnecessary Step 8 restart. | high | **fix** — gate the report on `self`'s status being terminal (not pending) before treating any other pending type as meaningful. Self-Review (Step 7) always chronologically precedes the Step 8 cascade, so "self done, something after it still pending" is the correct interrupted-cascade signal; "self itself still pending" means nothing downstream is due yet — stay silent, let the normal linear resume continue. |
++| 2 | openai | The immediate-write ordering mandate is prose-only and does not actually guarantee durability against a compaction landing exactly between subagent-return and the write — repeating the instruction improves odds, it doesn't close the gap. Check whether the host has a post-subagent-result callback before treating AC-2 as fully closing it. | medium → **built** | Claude Code's `SubagentStop` hook *does* exist and this exact repo already uses it for an identical durability problem (`plugins/shipwright-plan/hooks/hooks.json` → `write-section-on-stop.py`). Initially deferred here over the `SHIPWRIGHT_RUN_ID`-never-reaches-a-hook-subprocess precedent (`iterate-2026-07-27-c3-phase-history-join*`) — but the Architecture Review pass (below) independently raised the same ask a second time, and the actual precedent's own workaround (infer from the subagent's transcript text, never an env var — confirmed by reading `write-section-on-stop.py` itself, whose `SHIPWRIGHT_PLANNING_DIR` is "normally unset" when it fires) sidesteps that exact failure mode without needing the heavier `resolve_run_id`/`pointer_run_id` machinery. Built as `write-review-payload-on-stop.py` — see "Code-level backstop" note above. AC-2 is still labeled a mitigation for the prose half (an agent can still ignore the write-immediately instruction), but the durability gap itself now has a code-level fallback, not just a repeated instruction. |
++| 3 | openai | The mini-plan `run_id` fallback (glob `*-miniplan.md`, substring+mtime match) could pick the wrong run if descriptions overlap or a stale mini-plan lingers. | medium | **disclosed, not fixed** — this is the *identical* heuristic already used, unmodified, for the existing `spec_path` candidate resolution three lines above it in the same function (`handoff_iterate.py:41-46`) — same risk, pre-existing, not introduced by this change. Hardening one call site and not its sibling would be inconsistent single-purpose gold-plating; if this proves a real problem in practice, both call sites should be fixed together in their own iterate. |
++| 4 | openai | Verify every Mini-Plan Protocol invocation/creation site is updated, not just the two files named in the mini-plan. | medium | **fix (verification)** — grepped the whole `plugins/shipwright-iterate/` tree for `"Inline in session"` / `"Mini-Plan Protocol"` / `"miniplan"`: only `iteration-planning.md` and `path-a-feature.md` restate the small/medium split; `path-c-bug.md`, `path-b-change.md`, `campaign-mode.md` and `sub-iterate-runner.md` only point at `iteration-planning.md`'s protocol without restating it. The two-file edit is complete; no third site exists. |
++| 5 | openai | A malformed/unreadable existing `reviews.json` is materially different from "no record yet" — don't silently conflate them. | medium | **fix** — `render_iterate_progress()` catches `ReviewRecordError` (schema-invalid / unreadable) separately from "file absent," and emits a distinct, concise diagnostic line ("review record could not be read — inspect reviews.json") rather than treating it the same as a healthy not-yet-started run. |
++| 6 | openai | AC-4's "B1 direct-read" check only proves the underlying data primitives work, not that a future agent actually follows B1's prose; the doc-presence test has the same ceiling. Keep B1's wording to one canonical command, not "X or Y". | low | **fix** — B1's added clause names exactly one canonical read path (`record_review_pass.py show` piped through `pending_types()`, not "or read the file yourself"), and AC-4/the ledger row names explicitly which half is proven behaviorally vs. which remains a documentation-presence check. |
++| 7 | deepseek | If a review is spawned but not yet recorded, `reviews.json` might show no entry at all for that type, understating what's in flight. Suggested a new `--mark-pending` write before each spawn. | medium | **already covered, tightened** — `record_review_pass.py init` (`iteration-reviews.md:457-462`, pre-existing) already materializes **all seven types as `pending` up front**, before any spawn — there is no "no entry at all" state once `init` has run. The actual gap was that the doc only said "early in the run" without pinning a step; tightened to bind it explicitly to Step 7 entry (immediately before the first reviewer spawn), removing the ambiguity rather than adding a new, duplicate mechanism. |
++| 8 | deepseek | The immediate-write mandate is prose-only and agents could ignore it; monitor and revisit subagent Write access if it proves insufficient. | low | **disclosed** — same finding as openai #2; folded into the same disclosure + follow-up. No action beyond what #2 already covers. |
++| 9 | deepseek | The `run_id` fallback assumes an exact header line match (`- **Run ID:**`); a formatting deviation silently degrades to no enrichment. | low | **accepted as-is** — matches the reviewer's own assessment: graceful degradation, and the primary B1 path (direct `reviews.json` read, not the renderer) doesn't depend on this parse at all. |
++
++- **Built, not deferred:** the `SubagentStop` salvage hook proposed here was
++  initially scoped as a follow-up iterate (see finding #2's original
++  disposition), but the Architecture Review pass below independently asked
++  for the same thing a second time — see the "Code-level backstop" note
++  earlier in this section for what shipped. **Remaining follow-up:** the same
++  pattern could extend to `shipwright-plan:opus-plan-reviewer` (the Internal
++  Plan Review pass) — not built here, since that pass is metadata-only
++  (no `--payload-file`, per `iteration-planning.md`) and its findings already
++  live in the iterate spec section itself, written directly by the
++  orchestrator, not carried in a Task-tool return value the same way.
++
++## Verification (medium+)
++
++- **Surface:** none
++- **Runner command:** n/a
++- **Justification:** this change modifies the shipwright-iterate skill's own
++  reference documentation and a shared Python helper library with no
++  startable web/cli/api surface of its own; verification is via the unit
++  tests and meta-tests in the Confidence Calibration table plus the
++  mandated mid-phase-kill acceptance test (AC-4), which is a process
++  exercise (kill + resume a real iterate session), not a runnable server.
+diff --git a/.shipwright/planning/iterate/iterate-2026-08-09-compaction-state-audit/architecture-review-raw.json b/.shipwright/planning/iterate/iterate-2026-08-09-compaction-state-audit/architecture-review-raw.json
+new file mode 100644
+index 00000000..70c8dc62
+--- /dev/null
++++ b/.shipwright/planning/iterate/iterate-2026-08-09-compaction-state-audit/architecture-review-raw.json
+@@ -0,0 +1,33 @@
++{
++  "review_schema": 2,
++  "success": true,
++  "provider": "openrouter",
++  "degraded": false,
++  "reviews_succeeded": 2,
++  "reviews": {
++    "openai": {
++      "feedback": "Yes\u2014the durability fix should exist, but the reviewer-return gap needs a code-level fallback rather than a prose-only instruction.\n\nThe smallest thing that would do \u2014 extend the existing mini-plan and `reviews.json` mechanisms as proposed, and add a narrowly scoped `SubagentStop` salvage hook that writes an unrecorded reviewer reply to the existing payload/record path.\n\nWhat it costs to keep \u2014 ownership of hook lifecycle, run-id resolution, transcript-format compatibility, and ensuring the fallback remains subordinate to the normal orchestrator record path.\n\nWhat it forecloses \u2014 changing reviewer transcript/output conventions without updating the salvage hook.\n\nCategory: ownership\nSeverity: medium\nFinding: The immediate-write rule depends on an orchestrator remembering to act before compaction; it is an ongoing human-discipline obligation and does not make reviewer findings durable in the failure mode this change is meant to address.\nSuggestion: Build the named, narrowly scoped `SubagentStop` salvage fallback now, reusing the repository\u2019s existing run-id-resolution approach and writing only when the normal review payload has not already been recorded.\n\nSHIPWRIGHT_VERDICT: revise",
++      "via": "openrouter",
++      "status": "success"
++    },
++    "deepseek": {
++      "feedback": "1. No new standing mechanism is created; the change proportionally extends existing machinery (mini-plan persistence, review-record reads, skill-document ordering mandates) to fix verified state-loss gaps.\n2. The smallest thing that would do: persist the mini-plan file at `small` complexity for `feature`-type runs, have `SKILL.md` \u00a7B1 read `reviews.json` directly via the existing `read_record`/`pending_types` helpers instead of the two coarse markers, and add a prose instruction at both spawn sites to write the review payload immediately after the subagent returns.\n3. Cost to keep: B1\u2019s resume check becomes permanently coupled to the `reviews.json` schema (any future schema change must consider its use in B1), and the immediate-write ordering mandate is a prose-based agent discipline that will periodically need reinforcement.\n4. What it forecloses: none identified.\n5. No findings.\n\nSHIPWRIGHT_VERDICT: approve",
++      "via": "openrouter",
++      "status": "success"
++    }
++  },
++  "verdicts": {
++    "openai": "revise",
++    "deepseek": "approve"
++  },
++  "statuses": {
++    "openai": "success",
++    "deepseek": "success"
++  },
++  "contradiction": {
++    "detected": false,
++    "comparable": true,
++    "requires_resolution": false,
++    "reason": "verdicts agree within one step: deepseek=approve, openai=revise"
++  }
++}
+diff --git a/.shipwright/planning/iterate/iterate-2026-08-09-compaction-state-audit/architecture_brief.md b/.shipwright/planning/iterate/iterate-2026-08-09-compaction-state-audit/architecture_brief.md
+new file mode 100644
+index 00000000..54da4e65
+--- /dev/null
++++ b/.shipwright/planning/iterate/iterate-2026-08-09-compaction-state-audit/architecture_brief.md
+@@ -0,0 +1,18 @@
++# Architecture Brief: compaction-state-audit
++
++## The problem
++An autonomous iterate run's in-flight state can be silently lost to
++context-window auto-compaction: a small-complexity plan exists only in
++conversation, a reviewer's findings can sit unwritten between the reviewer
++returning and the record being made, and resuming an interrupted run only
++checks two coarse signals instead of the fuller review record already on
++disk.
++
++## What would newly, permanently exist
++Nothing. This changes when and how existing machinery is used: the
++already-existing mini-plan file convention now applies at one more
++complexity tier, the already-existing `reviews.json` review record (and its
++existing `record_review_pass.py` reader/writer) is read by two more
++existing consumers (B1's resume check, the handoff renderer) that
++previously did not look at it, and existing skill prose is tightened with
++an explicit ordering instruction.
+diff --git a/.shipwright/planning/iterate/iterate-2026-08-09-compaction-state-audit/external-plan-review-raw.json b/.shipwright/planning/iterate/iterate-2026-08-09-compaction-state-audit/external-plan-review-raw.json
+new file mode 100644
+index 00000000..5cec97e0
+--- /dev/null
++++ b/.shipwright/planning/iterate/iterate-2026-08-09-compaction-state-audit/external-plan-review-raw.json
+@@ -0,0 +1,33 @@
++{
++  "review_schema": 2,
++  "success": true,
++  "provider": "openrouter",
++  "degraded": false,
++  "reviews_succeeded": 2,
++  "reviews": {
++    "openai": {
++      "feedback": "1. **Category:** edge-case  \n   **Severity:** high  \n   **Finding:** The proposed B1 rule treats *any* `pending` review type as proof that the review cascade was interrupted and instructs the agent to resume Step 8. This conflates \u201cnot yet due\u201d with \u201cinterrupted.\u201d The plan itself recognizes that some types may later become `not_applicable` at a given complexity, and a newly created record can legitimately contain pending types before the cascade is reached. On a resume during planning/build, this could incorrectly force a review cascade early.  \n   **Suggestion:** Gate the B1 replay action on the recorded lifecycle/phase marker for an in-progress review cascade, or use an existing helper that determines *required-and-due* review types rather than raw `pending_types()`. If the record has no such phase information, phrase B1 as state inspection plus \u201cresume the appropriate current phase,\u201d not an unconditional Step-8 restart. Add a fixture for a pre-cascade record with pending review rows and verify B1 does not direct an early cascade.\n\n2. **Category:** approach  \n   **Severity:** medium  \n   **Finding:** The review-reply durability gap is not actually enforceable by the proposed implementation. The plan accurately notes that the ordering rule is prose-only and that no mechanism observes a subagent return and forces persistence. Repeating the instruction at spawn sites improves agent behavior, but it does not guarantee that a compaction immediately after the return cannot still lose the reply\u2014the stated root failure.  \n   **Suggestion:** Keep the prose mandate, but explicitly classify it as a mitigation rather than a closure of the durability guarantee in the spec and Self-Review. Before shipping, check whether the host/plugin framework has a post-subagent-result callback, transcript-export mechanism, or orchestration wrapper that can persist the raw response without expanding reviewer write privileges. If none exists, record a concrete follow-up trigger/issue for an enforceable mechanism rather than representing AC-2 as fully closing the gap.\n\n3. **Category:** edge-case  \n   **Severity:** medium  \n   **Finding:** The mini-plan fallback chooses the newest `*-miniplan.md` whose filename contains `short`. This can associate a handoff with the wrong run when descriptions are reused, prefixes overlap, stale mini-plans remain, or multiple runs share a working tree. The resulting pending-review state could be misleading and, because the handoff is a resume aid, could send a resumed run toward another run\u2019s review state.  \n   **Suggestion:** Prefer an exact, deterministic run-artifact mapping. Include both `Run ID` and complexity in the persisted mini-plan header and locate a mini-plan by parsing headers for the exact expected run ID, rather than using substring-plus-mtime selection. If no exact match exists, omit the enrichment and emit only the existing degraded-state behavior. Add a test with two same-description mini-plans to prove the correct one is selected.\n\n4. **Category:** dependency  \n   **Severity:** medium  \n   **Finding:** Persistence is being changed in `iteration-planning.md` and `path-a-feature.md`, but the acceptance criterion covers every FEATURE/CHANGE/BUG flow that reaches the protocol. The approach does not demonstrate that these are the only invocation/creation instructions, templates, or category-specific paths. In a skill-driven system, updating the governing protocol without updating every operational prompt that tells the agent where/how to write the file can leave a documented rule that is not followed in one path.  \n   **Suggestion:** Search for all Mini-Plan Protocol references, `-miniplan.md` creation instructions, and category-specific planning paths before implementation. Update all operational entry points that can invoke the protocol, and add the relevant files to the meta-test\u2019s covered set. Also verify that the template/header used by each path supplies the fields needed by the new handoff fallback.\n\n5. **Category:** risk  \n   **Severity:** medium  \n   **Finding:** The plan says `ReviewRecordError` should be \u201ctreated as absent,\u201d but a malformed, incompatible, or unreadable existing `reviews.json` is materially different from a record that has not yet been created. Silently degrading this case can hide corruption and make an interrupted review look like a harmless early-run state.  \n   **Suggestion:** Preserve the non-fatal Stop-hook behavior, but emit a distinct informational diagnostic for an unreadable/invalid review record when a run ID is resolved. Do not expose raw exception content in the generated handoff; a concise \u201creview record could not be read; inspect reviews.json\u201d is sufficient. Add a malformed-record test.\n\n6. **Category:** approach  \n   **Severity:** low  \n   **Finding:** The AC-4 \u201cB1 direct-read\u201d verification is necessarily only indirect: `SKILL.md` is procedural text, so running `record_review_pass.py show` and `pending_types()` proves the underlying data path but not that a future agent follows B1\u2019s instruction. The proposed doc-presence test has the same limitation.  \n   **Suggestion:** State this distinction explicitly in the test name/ledger: the behavioral test validates the canonical record-reading primitives and generated handoff; the B1 test validates the required operational instruction. Ensure the B1 wording specifies one canonical safe command/path rather than \u201c`show`, or library,\u201d so agents have an unambiguous procedure and do not invent a hand-rolled JSON read.\n\nOverall, the direct `reviews.json` read and reuse of the record-core helpers are sound corrections to the prior handoff-based design, and the test coverage is thoughtfully targeted. The change needs tighter lifecycle semantics for pending reviews and a deterministic mini-plan-to-run mapping before it can safely guide resumed runs.  \nSHIPWRIGHT_VERDICT: revise",
++      "via": "openrouter",
++      "status": "success"
++    },
++    "deepseek": {
++      "feedback": "- **Category:** edge-case / dependency\n- **Severity:** medium\n- **Finding:** The B1 replay-check will directly read `reviews.json` to detect pending review types, but if a review is in-flight (subagent spawned but its result not yet recorded), `reviews.json` may have no entry for that review type. The current plan relies on the orchestrator writing the payload file immediately (AC-2), but does not guarantee that `reviews.json` will reflect the in-progress state at the moment of compaction. This means a mid-review compaction could still leave B1 unaware that a review was underway, and the resume agent might skip it.\n- **Suggestion:** Add a step to the orchestrator flow to write a pending-status row into `reviews.json` (e.g., via a new `record_review_pass.py --mark-pending` flag or a lightweight schema write) before spawning the reviewer. This ensures that even under the worst-case compaction timing, B1 sees the type as pending and resumes that cascade, closing the window completely.\n\n- **Category:** risk\n- **Severity:** low\n- **Finding:** The immediate-write ordering mandate for review payloads (AC-2) is prose-only and not enforceable by code; agents could still defer the write. This is a known structural limit, but it increases the chance that the fix will be insufficient in real autonomous runs.\n- **Suggestion:** Monitor adoption after roll-out. If agents routinely ignore the mandate, revisit the alternative of giving review subagents restricted Write capability (e.g., to a designated payloads directory only) as a follow-up. No change needed now.\n\n- **Category:** edge-case\n- **Severity:** low\n- **Finding:** The `run_id` fallback from a mini-plan header (for small+feature runs without a spec file) assumes the header line matches exactly `- **Run ID:**`. A formatting deviation would cause `run_id` to remain `None`, silently skipping the `reviews.json` read. This is a graceful degradation, but it means the handoff enrichment won't surface pending reviews for some runs.\n- **Suggestion:** Accept as-is; the primary B1 path reads the file by `run_id` directly from the session context anyway. No action required unless observed in practice.\n\n**Overall assessment:** The plan is well-structured, addresses the verified gaps, and includes solid test coverage. The only material gap is the missing pre-spawn pending marker in `reviews.json`, which would make the B1 read path fully robust against mid-review compaction. Adding that small step would make the fix complete.  \nSHIPWRIGHT_VERDICT: revise",
++      "via": "openrouter",
++      "status": "success"
++    }
++  },
++  "verdicts": {
++    "openai": "revise",
++    "deepseek": "revise"
++  },
++  "statuses": {
++    "openai": "success",
++    "deepseek": "success"
++  },
++  "contradiction": {
++    "detected": false,
++    "comparable": true,
++    "requires_resolution": false,
++    "reason": "verdicts agree within one step: deepseek=revise, openai=revise"
++  }
++}
+diff --git a/.shipwright/planning/iterate/iterate-2026-08-09-compaction-state-audit/reviews.json b/.shipwright/planning/iterate/iterate-2026-08-09-compaction-state-audit/reviews.json
+new file mode 100644
+index 00000000..38454d49
+--- /dev/null
++++ b/.shipwright/planning/iterate/iterate-2026-08-09-compaction-state-audit/reviews.json
+@@ -0,0 +1,177 @@
++{
++  "schema_version": 1,
++  "run_id": "iterate-2026-08-09-compaction-state-audit",
++  "reviews": {
++    "self": {
++      "review_type": "self",
++      "status": "completed",
++      "findings_count": 0,
++      "findings": [],
++      "provider": null,
++      "completed_at": "2026-08-09T08:59:37.523174+00:00",
++      "disposition": null,
++      "recorded_by": "self-review",
++      "parse_status": null,
++      "raw_excerpt": null
++    },
++    "plan": {
++      "review_type": "plan",
++      "status": "completed",
++      "findings_count": 9,
++      "findings": [
++        {
++          "severity": "medium",
++          "category": "edge-case / dependency",
++          "file": null,
++          "line": null,
++          "finding": "The B1 replay-check will directly read `reviews.json` to detect pending review types, but if a review is in-flight (subagent spawned but its result not yet recorded), `reviews.json` may have no entry for that review type. The current plan relies on the orchestrator writing the payload file immediately (AC-2), but does not guarantee that `reviews.json` will reflect the in-progress state at the moment of compaction. This means a mid-review compaction could still leave B1 unaware that a review was underway, and the resume agent might skip it.",
++          "suggestion": "Add a step to the orchestrator flow to write a pending-status row into `reviews.json` (e.g., via a new `record_review_pass.py --mark-pending` flag or a lightweight schema write) before spawning the reviewer. This ensures that even under the worst-case compaction timing, B1 sees the type as pending and resumes that cascade, closing the window completely.",
++          "source": "external-review"
++        },
++        {
++          "severity": "low",
++          "category": "risk",
++          "file": null,
++          "line": null,
++          "finding": "The immediate-write ordering mandate for review payloads (AC-2) is prose-only and not enforceable by code; agents could still defer the write. This is a known structural limit, but it increases the chance that the fix will be insufficient in real autonomous runs.",
++          "suggestion": "Monitor adoption after roll-out. If agents routinely ignore the mandate, revisit the alternative of giving review subagents restricted Write capability (e.g., to a designated payloads directory only) as a follow-up. No change needed now.",
++          "source": "external-review"
++        },
++        {
++          "severity": "low",
++          "category": "edge-case",
++          "file": null,
++          "line": null,
++          "finding": "The `run_id` fallback from a mini-plan header (for small+feature runs without a spec file) assumes the header line matches exactly `- Run ID:`. A formatting deviation would cause `run_id` to remain `None`, silently skipping the `reviews.json` read. This is a graceful degradation, but it means the handoff enrichment won't surface pending reviews for some runs.",
++          "suggestion": "Accept as-is; the primary B1 path reads the file by `run_id` directly from the session context anyway. No action required unless observed in practice.  Overall assessment: The plan is well-structured, addresses the verified gaps, and includes solid test coverage. The only material gap is the missing pre-spawn pending marker in `reviews.json`, which would make the B1 read path fully robust against mid-review compaction. Adding that small step would make the fix complete. SHIPWRIGHT_VERDICT: revise",
++          "source": "external-review"
++        },
++        {
++          "severity": "high",
++          "category": "edge-case",
++          "file": null,
++          "line": null,
++          "finding": "The proposed B1 rule treats any `pending` review type as proof that the review cascade was interrupted and instructs the agent to resume Step 8. This conflates “not yet due” with “interrupted.” The plan itself recognizes that some types may later become `not_applicable` at a given complexity, and a newly created record can legitimately contain pending types before the cascade is reached. On a resume during planning/build, this could incorrectly force a review cascade early.",
++          "suggestion": "Gate the B1 replay action on the recorded lifecycle/phase marker for an in-progress review cascade, or use an existing helper that determines required-and-due review types rather than raw `pending_types()`. If the record has no such phase information, phrase B1 as state inspection plus “resume the appropriate current phase,” not an unconditional Step-8 restart. Add a fixture for a pre-cascade record with pending review rows and verify B1 does not direct an early cascade.",
++          "source": "external-review"
++        },
++        {
++          "severity": "medium",
++          "category": "approach",
++          "file": null,
++          "line": null,
++          "finding": "The review-reply durability gap is not actually enforceable by the proposed implementation. The plan accurately notes that the ordering rule is prose-only and that no mechanism observes a subagent return and forces persistence. Repeating the instruction at spawn sites improves agent behavior, but it does not guarantee that a compaction immediately after the return cannot still lose the reply—the stated root failure.",
++          "suggestion": "Keep the prose mandate, but explicitly classify it as a mitigation rather than a closure of the durability guarantee in the spec and Self-Review. Before shipping, check whether the host/plugin framework has a post-subagent-result callback, transcript-export mechanism, or orchestration wrapper that can persist the raw response without expanding reviewer write privileges. If none exists, record a concrete follow-up trigger/issue for an enforceable mechanism rather than representing AC-2 as fully closing the gap.",
++          "source": "external-review"
++        },
++        {
++          "severity": "medium",
++          "category": "edge-case",
++          "file": null,
++          "line": null,
++          "finding": "The mini-plan fallback chooses the newest `-miniplan.md` whose filename contains `short`. This can associate a handoff with the wrong run when descriptions are reused, prefixes overlap, stale mini-plans remain, or multiple runs share a working tree. The resulting pending-review state could be misleading and, because the handoff is a resume aid, could send a resumed run toward another run’s review state.",
++          "suggestion": "Prefer an exact, deterministic run-artifact mapping. Include both `Run ID` and complexity in the persisted mini-plan header and locate a mini-plan by parsing headers for the exact expected run ID, rather than using substring-plus-mtime selection. If no exact match exists, omit the enrichment and emit only the existing degraded-state behavior. Add a test with two same-description mini-plans to prove the correct one is selected.",
++          "source": "external-review"
++        },
++        {
++          "severity": "medium",
++          "category": "dependency",
++          "file": null,
++          "line": null,
++          "finding": "Persistence is being changed in `iteration-planning.md` and `path-a-feature.md`, but the acceptance criterion covers every FEATURE/CHANGE/BUG flow that reaches the protocol. The approach does not demonstrate that these are the only invocation/creation instructions, templates, or category-specific paths. In a skill-driven system, updating the governing protocol without updating every operational prompt that tells the agent where/how to write the file can leave a documented rule that is not followed in one path.",
++          "suggestion": "Search for all Mini-Plan Protocol references, `-miniplan.md` creation instructions, and category-specific planning paths before implementation. Update all operational entry points that can invoke the protocol, and add the relevant files to the meta-test’s covered set. Also verify that the template/header used by each path supplies the fields needed by the new handoff fallback.",
++          "source": "external-review"
++        },
++        {
++          "severity": "medium",
++          "category": "risk",
++          "file": null,
++          "line": null,
++          "finding": "The plan says `ReviewRecordError` should be “treated as absent,” but a malformed, incompatible, or unreadable existing `reviews.json` is materially different from a record that has not yet been created. Silently degrading this case can hide corruption and make an interrupted review look like a harmless early-run state.",
++          "suggestion": "Preserve the non-fatal Stop-hook behavior, but emit a distinct informational diagnostic for an unreadable/invalid review record when a run ID is resolved. Do not expose raw exception content in the generated handoff; a concise “review record could not be read; inspect reviews.json” is sufficient. Add a malformed-record test.",
++          "source": "external-review"
++        },
++        {
++          "severity": "low",
++          "category": "approach",
++          "file": null,
++          "line": null,
++          "finding": "The AC-4 “B1 direct-read” verification is necessarily only indirect: `SKILL.md` is procedural text, so running `record_review_pass.py show` and `pending_types()` proves the underlying data path but not that a future agent follows B1’s instruction. The proposed doc-presence test has the same limitation.",
++          "suggestion": "State this distinction explicitly in the test name/ledger: the behavioral test validates the canonical record-reading primitives and generated handoff; the B1 test validates the required operational instruction. Ensure the B1 wording specifies one canonical safe command/path rather than “`show`, or library,” so agents have an unambiguous procedure and do not invent a hand-rolled JSON read.  Overall, the direct `reviews.json` read and reuse of the record-core helpers are sound corrections to the prior handoff-based design, and the test coverage is thoughtfully targeted. The change needs tighter lifecycle semantics for pending reviews and a deterministic mini-plan-to-run mapping before it can safely guide resumed runs. SHIPWRIGHT_VERDICT: revise",
++          "source": "external-review"
++        }
++      ],
++      "provider": "openrouter",
++      "completed_at": "2026-08-09T07:50:36.446475+00:00",
++      "disposition": null,
++      "recorded_by": "external-review-json",
++      "parse_status": "structured",
++      "raw_excerpt": "[deepseek] - **Category:** edge-case / dependency\n- **Severity:** medium\n- **Finding:** The B1 replay-check will directly read `reviews.json` to detect pending review types, but if a review is in-flight (subagent spawned but its result not yet recorded), `reviews.json` may have no entry for that review type. The current plan relies on the orchestrator writing the payload file immediately (AC-2), but does not guarantee that `reviews.json` will reflect the in-progress state at the moment of compaction. This means a mid-review compaction could still leave B1 unaware that a review was underway, and the resume agent might skip it.\n- **Suggestion:** Add a step to the orchestrator flow to write a pending-status row into `reviews.json` (e.g., via a new `record_review_pass.py --mark-pending` flag or a lightweight schema write) before spawning the reviewer. This ensures that even under the worst-case compaction timing, B1 sees the type as pending and resumes that cascade, closing the window completely.\n\n- **Category:** risk\n- **Severity:** low\n- **Finding:** The immediate-write ordering mandate for review payloads (AC-2) is prose-only and not enforceable by code; agents could still defer the write. This is a known structural limit, but it increases the chance that the fix will be insufficient in real autonomous runs.\n- **Suggestion:** Monitor adoption after roll-out. If agents routinely ignore the mandate, revisit the alternative of giving review subagents restricted Write capability (e.g., to a designated payloads directory only) as a follow-up. No change needed now.\n\n- **Category:** edge-case\n- **Severity:** low\n- **Finding:** The `run_id` fallback from a mini-plan header (for small+feature runs without a spec file) assumes the header line matches exactly `- **Run ID:**`. A formatting deviation would cause `run_id` to remain `None`, silently skipping the `reviews.json` read. This is a graceful degradation, but it means the handoff enrichment won't surface pending reviews  […truncated]\n\n[openai] 1. **Category:** edge-case  \n   **Severity:** high  \n   **Finding:** The proposed B1 rule treats *any* `pending` review type as proof that the review cascade was interrupted and instructs the agent to resume Step 8. This conflates “not yet due” with “interrupted.” The plan itself recognizes that some types may later become `not_applicable` at a given complexity, and a newly created record can legitimately contain pending types before the cascade is reached. On a resume during planning/build, this could incorrectly force a review cascade early.  \n   **Suggestion:** Gate the B1 replay action on the recorded lifecycle/phase marker for an in-progress review cascade, or use an existing helper that determines *required-and-due* review types rather than raw `pending_types()`. If the record has no such phase information, phrase B1 as state inspection plus “resume the appropriate current phase,” not an unconditional Step-8 restart. Add a fixture for a pre-cascade record with pending review rows and verify B1 does not direct an early cascade.\n\n2. **Category:** approach  \n   **Severity:** medium  \n   **Finding:** The review-reply durability gap is not actually enforceable by the proposed implementation. The plan accurately notes that the ordering rule is prose-only and that no mechanism observes a subagent return and forces persistence. Repeating the instruction at spawn sites improves agent behavior, but it does not guarantee that a compaction immediately after the return cannot still lose the reply—the stated root failure.  \n   **Suggestion:** Keep the prose mandate, but explicitly classify it as a mitigation rather than a closure of the durability guarantee in the spec and Self-Review. Before shipping, check whether the host/plugin framework has a post-subagent-result callback, transcript-export mechanism, or orchestration wrapper that can persist the raw response without expanding reviewer write privileges. If none exists, record a concrete follow-up trigger/i […truncated]",
++      "verdicts": {
++        "openai": "revise",
++        "deepseek": "revise"
++      }
++    },
++    "code": {
++      "review_type": "code",
++      "status": "pending",
++      "findings_count": 0,
++      "findings": [],
++      "provider": null,
++      "completed_at": null,
++      "disposition": null,
++      "recorded_by": null,
++      "parse_status": null,
++      "raw_excerpt": null
++    },
++    "doubt": {
++      "review_type": "doubt",
++      "status": "pending",
++      "findings_count": 0,
++      "findings": [],
++      "provider": null,
++      "completed_at": null,
++      "disposition": null,
++      "recorded_by": null,
++      "parse_status": null,
++      "raw_excerpt": null
++    },
++    "external_code": {
++      "review_type": "external_code",
++      "status": "pending",
++      "findings_count": 0,
++      "findings": [],
++      "provider": null,
++      "completed_at": null,
++      "disposition": null,
++      "recorded_by": null,
++      "parse_status": null,
++      "raw_excerpt": null
++    },
++    "spec": {
++      "review_type": "spec",
++      "status": "pending",
++      "findings_count": 0,
++      "findings": [],
++      "provider": null,
++      "completed_at": null,
++      "disposition": null,
++      "recorded_by": null,
++      "parse_status": null,
++      "raw_excerpt": null
++    },
++    "plan_internal": {
++      "review_type": "plan_internal",
++      "status": "completed",
++      "findings_count": 0,
++      "findings": [],
++      "provider": null,
++      "completed_at": "2026-08-09T07:42:23.407314+00:00",
++      "disposition": null,
++      "recorded_by": "opus-plan-reviewer",
++      "parse_status": null,
++      "raw_excerpt": null,
++      "model_tier": "opus"
++    }
++  }
++}
+diff --git a/.shipwright/planning/iterate/iterate-2026-08-09-compaction-state-audit/self-review-payload.json b/.shipwright/planning/iterate/iterate-2026-08-09-compaction-state-audit/self-review-payload.json
+new file mode 100644
+index 00000000..54e36ced
+--- /dev/null
++++ b/.shipwright/planning/iterate/iterate-2026-08-09-compaction-state-audit/self-review-payload.json
+@@ -0,0 +1,44 @@
++{
++  "items": [
++    {
++      "name": "Spec Compliance",
++      "verdict": "pass",
++      "note": "All three iterate-spec ACs (mini-plan persistence, review-findings durability + SubagentStop backstop, B1 resume via reviews.json) implemented; two explicitly out-of-scope items (widening the Mini-Plan trigger table, giving reviewers Write access) were declined per the spec, not silently added."
++    },
++    {
++      "name": "Error Handling",
++      "verdict": "pass",
++      "note": "render_iterate_progress() distinguishes ReviewRecordError (unreadable/malformed) from a missing record instead of conflating them; write-review-payload-on-stop.py never blocks (bad stdin, missing transcript, no run_id, non-JSON reply all no-op, always exit 0)."
++    },
++    {
++      "name": "Security Basics",
++      "verdict": "n/a",
++      "note": "No user-input surfaces, SQL, HTML, or secrets touched — this change reads/renders internal iterate-lifecycle JSON/markdown artifacts only."
++    },
++    {
++      "name": "Test Quality",
++      "verdict": "pass",
++      "note": "Tests assert on rendered output/CLI stdout, not internals; each new behavior has both a happy-path (interrupted/complete) and an error-path (unreadable/missing/not-due-yet) case."
++    },
++    {
++      "name": "Performance Basics",
++      "verdict": "pass",
++      "note": "reviews.json is a small, fixed-shape file read once per render call; the SubagentStop hook reads one bounded transcript file with retry/backoff, matching the existing write-section-on-stop.py pattern."
++    },
++    {
++      "name": "Naming & Structure",
++      "verdict": "pass",
++      "note": "All new files live in the existing tests/scripts-hooks conventions; none exceeds 300 lines (largest new file is 237). Two pre-existing grandfathered files (test_generate_session_handoff.py, test_spec_checks.py) were kept at their exact anti-ratchet baseline by splitting new coverage into sibling files instead of extending them."
++    },
++    {
++      "name": "Affected Boundaries",
++      "verdict": "pass",
++      "note": "reviews.json's producer/consumer pair is unchanged (read-only here) and documented in the iterate spec's Affected Boundaries table. Round-trip evidence: test_compaction_state_audit_acceptance.py drives a real fixture write followed by two independent real subprocess reads (record_review_pass.py show; the Stop hook); test_review_payload_on_stop.py covers fenced/raw JSON and legacy gates.spec parsing. Not a hand-typed text format like .env, so the full BOM/CRLF probe checklist is lower-relevance; the applicable round-trip is what's tested."
++    },
++    {
++      "name": "Test Hygiene Probe",
++      "verdict": "pass",
++      "note": "uv run shared/scripts/tools/scan_test_hygiene.py --diff -> 'test_hygiene: no findings' (exit 0)."
++    }
++  ]
++}
+diff --git a/docs/guide.md b/docs/guide.md
+index 81bf1160..419c1467 100644
+--- a/docs/guide.md
++++ b/docs/guide.md
+@@ -1779,8 +1779,8 @@ SHIPWRIGHT-ITERATE: Session Plan
+   Run ID:      iterate-2026-04-05-course-search
+   Intent:      FEATURE
+   Complexity:  Small (1 FR, ~4 files, risk: touches_migrations)
+-  Phases:      spec → design text → build (TDD) → self-review → scoped test → finalize
+-  Skipping:    iterate spec (small), mini-plan (small), full review (no risk flags)
++  Phases:      spec → design text → mini-plan → build (TDD) → self-review → scoped test → finalize
++  Skipping:    iterate spec (small), full review (no risk flags)
+   Safety floor: DB migration → mandatory down.sql
+ ```
+ 
+@@ -2029,7 +2029,12 @@ the derived views out of the branch first; enable the queue second.
+ 
+ If a previous run's worktree still exists, B1 detects it and offers
+ **Resume** / **Abandon** / **Complete**. Resume `cd`s back into that
+-worktree and continues; Abandon removes the worktree + branch.
++worktree and continues; Abandon removes the worktree + branch. B1 also reads
++the run's `reviews.json` directly (not the auto-generated handoff snapshot,
++which a run killed mid-phase never gets written) to tell whether the review
++cascade — Self-Review, spec/code/doubt-reviewer, external code review —
++started and was interrupted, so a resumed run picks it back up instead of
++silently skipping it.
+ 
+ ### Cleanup
+ 
+diff --git a/docs/hooks-and-pipeline.md b/docs/hooks-and-pipeline.md
+index 6bdf8c98..a8554fa0 100644
+--- a/docs/hooks-and-pipeline.md
++++ b/docs/hooks-and-pipeline.md
+@@ -2326,6 +2326,9 @@ security phase_task) and detects its mode from the presence of
+ | SessionStart | — | `capture_session_id.py` (shared) | See Shared Hook section above |
+ | SessionStart | — | `check_drift.py` | CLAUDE.md content drift (Structure block vs filesystem, Development `npm run` vs package.json) |
+ | PreToolUse | `Bash` | `validate_command.sh` | Blocks dangerous shell commands (rm -rf, force push, etc.) |
++| SubagentStop | `shipwright-build:spec-reviewer` | `write-review-payload-on-stop.py --review-type spec` | **Review-findings durability backstop** (iterate-2026-08-09-compaction-state-audit). Step 8's own mandate is "write the reviewer's reply to `reviews.json` before any other reasoning" — a compaction landing in that window loses the finding outright since the orchestrator only holds it in a Task-tool result, never a file. Same salvage pattern as `write-section-on-stop.py` (self-contained, no `lib.*` import — a second `lib` package exists at `plugins/shipwright-build/scripts/lib`, so an import would hit the ADR-044 same-name collision): reads the subagent's own transcript, extracts a `iterate-YYYY-MM-DD-...` run_id and the last assistant reply, and — only if `reviews.json` doesn't already have a terminal record for this review type — calls `record_review_pass.py` to salvage it. NEVER blocks (bad stdin, missing transcript, no run_id, non-JSON reply all no-op). |
++| SubagentStop | `shipwright-build:code-reviewer` | `write-review-payload-on-stop.py --review-type code` | Same backstop, for the code-reviewer pass. |
++| SubagentStop | `shipwright-build:doubt-reviewer` | `write-review-payload-on-stop.py --review-type doubt` | Same backstop, for the doubt-reviewer pass. |
+ | PostToolUse | `Write\|Edit` | `check_destructive_migration.sh` | Warns on DROP/DELETE in .sql files without down.sql |
+ | PostToolUse | `Write\|Edit` | `check_secrets.sh` | Scans written files for API keys, tokens, passwords |
+ | PostToolUse | `Write\|Edit` | `check_file_size.py` | Non-blocking nudge + per-session marker writer. Crossings of the 300/400 line guideline (300 source/test, 400 runtime-prompt SKILL.md/CLAUDE.md/agents) emit a stdout nudge AND write `<repo-root>/.shipwright/locks/bloat_pending.<session_id>.json` (atomic tmp+rename). The marker/baseline/re-measure root is resolved via `repo_root.main_repo_root_or(Path.cwd())` (fail-soft adapter over `worktree_isolation.main_repo_root`), **never `Path.cwd()`** — a PostToolUse firing with cwd≠repo-root (sub-package test run, monorepo auto-descent) would otherwise leak the marker to a nested `shared/.shipwright/locks/` the root-anchored gitignore misses (fixed `iterate-2026-06-09-idle-main-artifact-hygiene`; a non-anchored `**/.shipwright/locks/` canon ignore is belt-and-suspenders). The Stop-Gate (`bloat_gate_on_stop.py`) resolves the SAME root + reads that marker. Registered in every plugin's `hooks.json` since Campaign A.foundation. `<session_id>` comes from the hook **stdin payload** (`session_id`), falling back to the `SHIPWRIGHT_SESSION_ID` env var then `"unknown"` — both writer and gate must agree (fixed `iterate-2026-05-29-bloat-gate-session-id`; env-only keying pooled every session into one `unknown` bucket so one session's oversize file blocked another's Stop). The Stop-Gate clears an **anti-ratchet** entry when the file is trimmed back to `<=` its baseline `current` (the grandfathered ceiling) — it blocks only when the live size grew PAST `current`, matching the canonical anti-ratchet rule in `anti_ratchet.py` (same iterate; previously it compared only against the 300 limit, so a correctly-trimmed grandfathered file kept blocking). |
+@@ -2810,6 +2813,27 @@ plan SKILL completes
+   → validate_plan() fires (checks sections exist in config + files on disk)
+ ```
+ 
++### spec-reviewer / code-reviewer / doubt-reviewer (Build Step 6, Iterate Step 8)
++
++```
++orchestrator spawns a review subagent with the run_id stated in plain text
++  in the prompt (write-review-payload-on-stop.py can only find it in the
++  subagent's own transcript, not via SHIPWRIGHT_RUN_ID — that env var does
++  not reliably reach a SubagentStop hook)
++review subagent (Read/Grep/Glob only — no Write tool, unlike section-writer)
++  → returns findings (JSON) as its final message — this is the ONLY copy
++    until the orchestrator acts on it
++orchestrator (mandate, not a guarantee): writes the reply to its payload
++  file and calls record_review_pass.py BEFORE any other reasoning or
++  spawning the next reviewer (iterate-2026-08-09-compaction-state-audit) —
++  a compaction landing between subagent-return and this write still loses
++  the finding, which is exactly what the hook below exists to catch
++  → SubagentStop write-review-payload-on-stop.py fires regardless = salvage
++       backstop (no-op if reviews.json already has a terminal record for
++       this review_type; otherwise extracts run_id + reply from the
++       subagent's transcript and records it itself)
++```
++
+ ---
+ 
+ ## Config File Data Flow
+@@ -2891,7 +2915,7 @@ directly. `full` mode is an explicit operator fallback and is counted.
+ | `architecture.md` | project | write_decision_log.py (architecture impact) |
+ | `.shipwright/agent_docs/area_catalog.json` | shared `area_catalog.py` producer, triggered by project (greenfield) or adopt (brownfield) | the same producer, triggered by plan (planned paths), build (realised paths), and iterate (unmapped provisional paths). One schema/writer; `.shipwright/adopt/derived-catalogue.json` remains a separate requirements-honesty artifact. |
+ | `build_dashboard.md` | update_build_dashboard.py | build, test, changelog, deploy, iterate, **Stop hook** (all plugins) |
+-| `session_handoff.md` | generate_handoff_on_stop.py | all plugins (Stop hook), **finalize_iterate.py** (iterate). Section renderers live in `shared/scripts/lib/`: `handoff_iterate.render_iterate_progress` (in-flight ITERATE state) and `handoff_pipeline.render_pipeline_phases` (**`## Pipeline Phases`** — FR-01.01: which phases are finished, which one was interrupted, which failed, and the loop's dispatch pointer). The finished tally denominates against `run_config.pipeline` (falling back to the task count, and taking whichever is larger so splits are not undercounted) — NOT against `len(phase_tasks)`, which is materialised one task at a time and made a run one phase into seven read as "1 of 2". The pointer is only called *dispatched* when the attempt counter is >= 1 or the pointed task is `in_progress`; `advance_pointer` parks the pointer on an undispatched successor with attempt 0 after every completed phase, so pointer-set alone is the normal between-phases state and is rendered as **Next up**. The pipeline block is rendered from state the run already holds — `run_config.phase_tasks[]` (authoritative, mutated only via `phase_task_lifecycle`) plus `.shipwright/run_loop_state.json` — and is **absent entirely** for any config without `phase_tasks[]`, so legacy / standalone / adopted handoffs are unchanged. It sits ABOVE the event-derived `## Recovery` tally (which counts distinct `phase_completed` events) and the legacy checkpoint block, because it is the authoritative view of the two. `shared/` must not import from a plugin, so the loop-state path literal is duplicated; `integration-tests/test_handoff_reads_real_loop_state.py` reads the owner's constant in a subprocess and fails if the two drift. |
++| `session_handoff.md` | generate_handoff_on_stop.py | all plugins (Stop hook), **finalize_iterate.py** (iterate). Section renderers live in `shared/scripts/lib/`: `handoff_iterate.render_iterate_progress` (in-flight ITERATE state — reads `.shipwright/planning/iterate/{run_id}/reviews.json` via `lib.review_record_core`, iterate-2026-08-09-compaction-state-audit, and reports `not started`/`not due yet`/`interrupted`/`complete`/`unreadable`; this is a secondary, best-effort convenience — B1's own resume check reads `reviews.json` directly, not via this file) and `handoff_pipeline.render_pipeline_phases` (**`## Pipeline Phases`** — FR-01.01: which phases are finished, which one was interrupted, which failed, and the loop's dispatch pointer). The finished tally denominates against `run_config.pipeline` (falling back to the task count, and taking whichever is larger so splits are not undercounted) — NOT against `len(phase_tasks)`, which is materialised one task at a time and made a run one phase into seven read as "1 of 2". The pointer is only called *dispatched* when the attempt counter is >= 1 or the pointed task is `in_progress`; `advance_pointer` parks the pointer on an undispatched successor with attempt 0 after every completed phase, so pointer-set alone is the normal between-phases state and is rendered as **Next up**. The pipeline block is rendered from state the run already holds — `run_config.phase_tasks[]` (authoritative, mutated only via `phase_task_lifecycle`) plus `.shipwright/run_loop_state.json` — and is **absent entirely** for any config without `phase_tasks[]`, so legacy / standalone / adopted handoffs are unchanged. It sits ABOVE the event-derived `## Recovery` tally (which counts distinct `phase_completed` events) and the legacy checkpoint block, because it is the authoritative view of the two. `shared/` must not import from a plugin, so the loop-state path literal is duplicated; `integration-tests/test_handoff_reads_real_loop_state.py` reads the owner's constant in a subprocess and fails if the two drift. |
+ | `events.jsonl` | record_event.py | build, iterate, test, deploy, changelog, orchestrator (append-only). Campaign sub-iterates (autonomous runner Step 4 + manual `--campaign`/`--sub-iterate-id`) stamp `campaign` + `sub_iterate_id` into the `work_completed` event via F5b `--event-extras-json` (S1, 2026-06-10) |
+ | `.shipwright/runtime/events-context-index.json` | `shared/scripts/tools/event_context.py` | the same tool; disposable, gitignored, fully rebuildable from the raw event log + area catalog + git history (`shared/scripts/lib/commit_trailers.py` backfills `commit`/`changed_files` from each commit's `Run-ID:` trailer when the event itself declares neither — see `## Architecture Review` on `iterate-2026-08-07-events-context-backfill-keys`). Cache validity checks the event-log fingerprint AND a re-resolved git base-ref sha against `coverage.commit_map.resolved_sha` — a new commit landing with no event appended (F5b writes `work_completed` before F6 commits) invalidates the cache on its own. `coverage.fields.<key>` splits its `unavailable` population into `not_applicable` (the entry has no run_id/commit linkage at all — an observation-type event, e.g. `grade_snapshot`, structurally cannot carry the key) and `missing` (the entry IS a linked change record but the key is still empty — actionable). `supersedes_event_id` is deliberately excluded from that split and stays `not_applicable`-only: not superseding a prior event is the normal state for nearly every entry, so there is no data-derivable "should have had this" signal for it (iterate-2026-08-08-coverage-envelope-split). `coverage.missing_work_completed` lists the (capped, `truncated`-flagged) `work_completed` event ids with at least one genuinely-missing field, for direct follow-up. Never an audit source. |
+ | `.shipwright/compliance/context-cost/events-context-{metrics.jsonl,report.md}` | `event_context.py query` (temporary P1.15 observation) | query replaces the current run's one metrics line and regenerates the latest/rolling operator report. Neither artifact is loaded into agent context; removal waits for a separate operator-decided cleanup after 5–10 normal compact iterates. |
+diff --git a/plugins/shipwright-build/hooks/hooks.json b/plugins/shipwright-build/hooks/hooks.json
+index 2d186df1..f4c9bcb5 100644
+--- a/plugins/shipwright-build/hooks/hooks.json
++++ b/plugins/shipwright-build/hooks/hooks.json
+@@ -21,6 +21,35 @@
+         ]
+       }
+     ],
++    "SubagentStop": [
++      {
++        "matcher": "shipwright-build:spec-reviewer",
++        "hooks": [
++          {
++            "type": "command",
++            "command": "uv run \"${CLAUDE_PLUGIN_ROOT}/scripts/hooks/write-review-payload-on-stop.py\" --review-type spec"
++          }
++        ]
++      },
++      {
++        "matcher": "shipwright-build:code-reviewer",
++        "hooks": [
++          {
++            "type": "command",
++            "command": "uv run \"${CLAUDE_PLUGIN_ROOT}/scripts/hooks/write-review-payload-on-stop.py\" --review-type code"
++          }
++        ]
++      },
++      {
++        "matcher": "shipwright-build:doubt-reviewer",
++        "hooks": [
++          {
++            "type": "command",
++            "command": "uv run \"${CLAUDE_PLUGIN_ROOT}/scripts/hooks/write-review-payload-on-stop.py\" --review-type doubt"
++          }
++        ]
++      }
++    ],
+     "PostToolUse": [
+       {
+         "matcher": "Write|Edit",
+diff --git a/plugins/shipwright-build/scripts/hooks/write-review-payload-on-stop.py b/plugins/shipwright-build/scripts/hooks/write-review-payload-on-stop.py
+new file mode 100644
+index 00000000..e3b25870
+--- /dev/null
++++ b/plugins/shipwright-build/scripts/hooks/write-review-payload-on-stop.py
+@@ -0,0 +1,237 @@
++#!/usr/bin/env python3
++"""Best-effort FALLBACK: salvage a review subagent's raw reply if the
++orchestrator has not recorded it yet.
++
++Fires on SubagentStop for spec-reviewer / code-reviewer / doubt-reviewer
++(shipwright-build). The orchestrator OWNS recording — it writes the payload
++file and calls ``record_review_pass.py record`` as its very next action after
++the subagent returns (SKILL.md Step 8). This hook is a DEFENSIVE FALLBACK for
++the case a compaction lands between the subagent returning and that write
++happening — it fires synchronously as part of the subagent's own lifecycle,
++independent of the orchestrator's remaining context budget. It NEVER blocks:
++
++  * if the run's ``reviews.json`` already shows a terminal status for this
++    review type, the orchestrator already recorded it — no-op;
++  * otherwise, salvage the subagent's raw JSON reply from its own transcript
++    and write it to a well-known fallback path
++    (``.shipwright/planning/iterate/{run_id}/{review_type}_salvaged_raw.json``)
++    so a resuming session can feed it straight into
++    ``record_review_pass.py record --payload-file`` instead of losing the
++    findings to ``close-missing``'s ``not_run`` default;
++  * if a ``run_id`` or a parseable reply cannot be resolved, it logs to
++    stderr and exits 0 — it never blocks the subagent.
++
++Deliberately self-contained (no ``shared/scripts/lib`` import): this plugin
++carries its own ``scripts/lib`` package, and a bare ``lib.xxx`` import here
++would collide with whichever ``lib`` package another test in this plugin's
++own pytest process happened to import first (ADR-044 — the two cannot be
++told apart by import order once one is cached). Mirrors
++``write-section-on-stop.py``'s own choice for the same reason: checking
++``reviews.json``'s status field and extracting a JSON reply from prose are
++both a few lines, not worth a cross-plugin import that this dependency graph
++cannot make safe.
++
++``run_id`` is resolved from the transcript text, never from an env var:
++``SHIPWRIGHT_RUN_ID``/``SHIPWRIGHT_PLANNING_DIR`` are documented
++(iterate-2026-07-27-c3-phase-history-join; and this repo's own
++write-section-on-stop.py precedent, whose ``SHIPWRIGHT_PLANNING_DIR`` is
++"normally unset" when that hook fires) as unreliable for a Claude-Code-launched
++hook subprocess. SKILL.md Step 8 / sub-iterate-runner.md Step 3.7 require the
++orchestrator's spawn prompt to state the run_id in plain text, so it is always
++present in the subagent's own transcript.
++"""
++
++from __future__ import annotations
++
++import argparse
++import json
++import os
++import re
++import sys
++import time
++from pathlib import Path
++from typing import Any, Optional
++
++RUN_ID_RE = re.compile(r"iterate-\d{4}-\d{2}-\d{2}-[a-z0-9][a-z0-9-]*")
++TERMINAL_STATUSES = {"completed", "not_run", "not_applicable"}
++_FENCE_RE = re.compile(r"```(?:json)?\s*\n(.*?)```", re.DOTALL)
++
++
++def _diag(message: str, **detail: Any) -> None:
++    sys.stderr.write(f"[shipwright:review-payload] {message}\n")
++    if detail:
++        sys.stderr.write(
++            f"[shipwright:review-payload] detail={json.dumps(detail, ensure_ascii=False)}\n"
++        )
++
++
++def read_transcript_with_retry(transcript_path: str, max_retries: int = 4) -> list[dict]:
++    """Read JSONL transcript with retry for the flush race (50ms -> 400ms)."""
++    delays = [0.05, 0.1, 0.2, 0.4]
++    for attempt in range(max_retries):
++        try:
++            if not os.path.exists(transcript_path):
++                if attempt < max_retries - 1:
++                    time.sleep(delays[attempt])
++                    continue
++                return []
++            with open(transcript_path, encoding="utf-8") as f:
++                content = f.read().strip()
++            if not content:
++                if attempt < max_retries - 1:
++                    time.sleep(delays[attempt])
++                    continue
++                return []
++            entries = []
++            for line in content.splitlines():
++                line = line.strip()
++                if line:
++                    try:
++                        entries.append(json.loads(line))
++                    except json.JSONDecodeError:
++                        continue
++            if entries:
++                return entries
++            if attempt < max_retries - 1:
++                time.sleep(delays[attempt])
++        except OSError:
++            if attempt < max_retries - 1:
++                time.sleep(delays[attempt])
++    return []
++
++
++def _entry_text(entry: dict) -> str:
++    content = entry.get("content", "")
++    if isinstance(content, list):
++        parts = []
++        for block in content:
++            if isinstance(block, dict) and block.get("type") == "text":
++                parts.append(block.get("text", ""))
++        return "\n".join(parts)
++    return content if isinstance(content, str) else ""
++
++
++def extract_run_id(entries: list[dict]) -> Optional[str]:
++    """The run_id named in the orchestrator's spawn prompt (any role, any
++    turn) — required to be present in plain text by SKILL.md Step 8 /
++    sub-iterate-runner.md Step 3.7."""
++    for entry in entries:
++        match = RUN_ID_RE.search(_entry_text(entry))
++        if match:
++            return match.group(0)
++    return None
++
++
++def last_assistant_reply(entries: list[dict]) -> Optional[str]:
++    for entry in reversed(entries):
++        if entry.get("role") == "assistant":
++            text = _entry_text(entry)
++            if text.strip():
++                return text
++    return None
++
++
++def looks_like_review_payload(text: str) -> bool:
++    """A cheap plausibility check, not a full parse — this hook only needs to
++    avoid salvaging pure prose/failure chatter. The real parse (matching the
++    exact adapter for this review type) happens later, when a resuming
++    session feeds the salvaged file into
++    ``record_review_pass.py record --payload-file``."""
++    for match in _FENCE_RE.finditer(text):
++        try:
++            json.loads(match.group(1))
++            return True
++        except json.JSONDecodeError:
++            continue
++    try:
++        json.loads(text)
++        return True
++    except json.JSONDecodeError:
++        return False
++
++
++def already_recorded(project_root: Path, run_id: str, review_type: str) -> bool:
++    """True iff the orchestrator already closed this review type. Reads
++    ``reviews.json`` directly rather than importing the schema module (see
++    module docstring) — checks both the current ``reviews`` section and the
++    legacy ``gates`` section ``spec`` may still live under. A read/parse
++    failure is treated as "not recorded" so the salvage still runs; a
++    redundant salvage file is harmless, a lost one is not."""
++    path = (
++        Path(project_root) / ".shipwright" / "planning" / "iterate" / run_id
++        / "reviews.json"
++    )
++    if not path.exists():
++        return False
++    try:
++        record = json.loads(path.read_text(encoding="utf-8"))
++    except (OSError, json.JSONDecodeError):
++        return False
++    for section in ("reviews", "gates"):
++        entry = (record.get(section) or {}).get(review_type)
++        if entry:
++            return entry.get("status", "pending") in TERMINAL_STATUSES
++    return False
++
++
++def salvage_path(project_root: Path, run_id: str, review_type: str) -> Path:
++    return (
++        Path(project_root) / ".shipwright" / "planning" / "iterate" / run_id
++        / f"{review_type}_salvaged_raw.json"
++    )
++
++
++def resolve_project_root() -> Path:
++    env = os.environ.get("SHIPWRIGHT_PROJECT_ROOT", "").strip()
++    return Path(env) if env else Path.cwd()
++
++
++def main(argv: Optional[list[str]] = None) -> int:
++    parser = argparse.ArgumentParser()
++    parser.add_argument("--review-type", required=True,
++                        choices=("spec", "code", "doubt"))
++    args = parser.parse_args(argv)
++
++    try:
++        payload = json.load(sys.stdin)
++    except Exception as exc:  # noqa: BLE001 — a bad payload must not block
++        _diag("could not parse SubagentStop stdin payload", exception=str(exc))
++        return 0
++
++    transcript_path = payload.get("transcript_path")
++    if not transcript_path:
++        _diag("no transcript_path in payload", payload_keys=list(payload.keys()))
++        return 0
++
++    entries = read_transcript_with_retry(transcript_path)
++    if not entries:
++        _diag("transcript empty — nothing to salvage", transcript_path=transcript_path)
++        return 0
++
++    run_id = extract_run_id(entries)
++    if not run_id:
++        _diag("no run_id found in transcript — orchestrator prompt must state it",
++              review_type=args.review_type)
++        return 0
++
++    project_root = resolve_project_root()
++
++    if already_recorded(project_root, run_id, args.review_type):
++        _diag(f"{args.review_type} already recorded in reviews.json — hook is a no-op",
++              run_id=run_id)
++        return 0
++
++    reply = last_assistant_reply(entries)
++    if not reply or not looks_like_review_payload(reply):
++        _diag("no salvageable review payload found in transcript", run_id=run_id)
++        return 0
++
++    out_path = salvage_path(project_root, run_id, args.review_type)
++    out_path.parent.mkdir(parents=True, exist_ok=True)
++    out_path.write_text(reply, encoding="utf-8")
++    _diag(f"salvaged {args.review_type} reviewer reply: {out_path}", run_id=run_id)
++    return 0
++
++
++if __name__ == "__main__":
++    sys.exit(main())
+diff --git a/plugins/shipwright-build/tests/test_review_payload_on_stop.py b/plugins/shipwright-build/tests/test_review_payload_on_stop.py
+new file mode 100644
+index 00000000..78a4f684
+--- /dev/null
++++ b/plugins/shipwright-build/tests/test_review_payload_on_stop.py
+@@ -0,0 +1,222 @@
++"""Tests for the review-payload-on-stop SubagentStop salvage hook.
++
++Root cause (iterate-2026-08-09-compaction-state-audit): a review subagent's
++raw reply exists only in the Task tool's result until the orchestrator's next
++action writes it to a payload file for record_review_pass.py. This hook is a
++synchronous, code-level fallback that salvages the reply straight from the
++subagent's own transcript if the orchestrator has not recorded it by the time
++the subagent stops — independent of the orchestrator's remaining context
++budget, so a compaction landing in that exact window can no longer lose the
++finding outright.
++"""
++from __future__ import annotations
++
++import importlib.util
++import io
++import json
++from pathlib import Path
++
++PLUGIN_ROOT = Path(__file__).resolve().parent.parent
++HOOK_PATH = PLUGIN_ROOT / "scripts" / "hooks" / "write-review-payload-on-stop.py"
++
++
++def _load_hook():
++    spec = importlib.util.spec_from_file_location("write_review_payload_on_stop", HOOK_PATH)
++    mod = importlib.util.module_from_spec(spec)
++    spec.loader.exec_module(mod)
++    return mod
++
++
++hook = _load_hook()
++
++RUN_ID = "iterate-2026-08-09-compaction-state-audit"
++
++
++def _transcript(tmp_path: Path, lines: list[dict]) -> str:
++    p = tmp_path / "transcript.jsonl"
++    p.write_text("\n".join(json.dumps(x) for x in lines), encoding="utf-8")
++    return str(p)
++
++
++def _run_hook(monkeypatch, argv, payload, project_root):
++    monkeypatch.setattr("sys.stdin", io.StringIO(json.dumps(payload)))
++    err = io.StringIO()
++    monkeypatch.setattr("sys.stderr", err)
++    monkeypatch.setenv("SHIPWRIGHT_PROJECT_ROOT", str(project_root))
++    rc = hook.main(argv)
++    return rc, err.getvalue()
++
++
++def _write_reviews_json(project_root: Path, run_id: str, reviews: dict) -> None:
++    run_dir = project_root / ".shipwright" / "planning" / "iterate" / run_id
++    run_dir.mkdir(parents=True, exist_ok=True)
++    (run_dir / "reviews.json").write_text(
++        json.dumps({"schema_version": 1, "run_id": run_id, "reviews": reviews}, indent=2),
++        encoding="utf-8",
++    )
++
++
++# --- salvage path ------------------------------------------------------- #
++
++def test_salvages_reply_when_not_yet_recorded(tmp_path, monkeypatch):
++    transcript = _transcript(tmp_path, [
++        {"role": "user", "content": f"Review this diff for run {RUN_ID}."},
++        {"role": "assistant", "content": '```json\n{"section": "auth", "review": []}\n```'},
++    ])
++    rc, err = _run_hook(monkeypatch, ["--review-type", "code"],
++                        {"transcript_path": transcript}, tmp_path)
++    assert rc == 0
++    out = hook.salvage_path(tmp_path, RUN_ID, "code")
++    assert out.exists()
++    assert hook.looks_like_review_payload(out.read_text(encoding="utf-8"))
++    assert "salvaged" in err
++
++
++def test_salvages_raw_json_reply_without_fence(tmp_path, monkeypatch):
++    transcript = _transcript(tmp_path, [
++        {"role": "user", "content": f"Review this for {RUN_ID}."},
++        {"role": "assistant", "content": '{"stage": "spec", "verdict": "pass", "spec_citations": []}'},
++    ])
++    rc, _err = _run_hook(monkeypatch, ["--review-type", "spec"],
++                         {"transcript_path": transcript}, tmp_path)
++    assert rc == 0
++    out = hook.salvage_path(tmp_path, RUN_ID, "spec")
++    assert out.exists()
++    assert json.loads(out.read_text(encoding="utf-8"))["verdict"] == "pass"
++
++
++def test_content_as_block_list_is_handled(tmp_path, monkeypatch):
++    transcript = _transcript(tmp_path, [
++        {"role": "user", "content": [{"type": "text", "text": f"run {RUN_ID}"}]},
++        {"role": "assistant", "content": [{"type": "text", "text": '{"verdict": "block", "findings": []}'}]},
++    ])
++    rc, _err = _run_hook(monkeypatch, ["--review-type", "doubt"],
++                         {"transcript_path": transcript}, tmp_path)
++    assert rc == 0
++    assert hook.salvage_path(tmp_path, RUN_ID, "doubt").exists()
++
++
++# --- no-op conditions ----------------------------------------------------- #
++
++def test_noop_when_already_recorded(tmp_path, monkeypatch):
++    _write_reviews_json(tmp_path, RUN_ID, {"code": {"status": "completed"}})
++    transcript = _transcript(tmp_path, [
++        {"role": "user", "content": f"Review for {RUN_ID}"},
++        {"role": "assistant", "content": '{"section": "x", "review": []}'},
++    ])
++    rc, err = _run_hook(monkeypatch, ["--review-type", "code"],
++                        {"transcript_path": transcript}, tmp_path)
++    assert rc == 0
++    assert not hook.salvage_path(tmp_path, RUN_ID, "code").exists()
++    assert "no-op" in err
++
++
++def test_noop_when_recorded_not_run_or_not_applicable(tmp_path, monkeypatch):
++    _write_reviews_json(tmp_path, RUN_ID, {"doubt": {"status": "not_applicable"}})
++    transcript = _transcript(tmp_path, [
++        {"role": "user", "content": f"{RUN_ID}"},
++        {"role": "assistant", "content": '{"verdict": "n/a"}'},
++    ])
++    rc, _err = _run_hook(monkeypatch, ["--review-type", "doubt"],
++                        {"transcript_path": transcript}, tmp_path)
++    assert rc == 0
++    assert not hook.salvage_path(tmp_path, RUN_ID, "doubt").exists()
++
++
++def test_salvages_when_pending_despite_record_existing(tmp_path, monkeypatch):
++    # init already ran (all types materialized pending) — code is still pending.
++    _write_reviews_json(tmp_path, RUN_ID, {"self": {"status": "completed"}, "code": {"status": "pending"}})
++    transcript = _transcript(tmp_path, [
++        {"role": "user", "content": f"{RUN_ID}"},
++        {"role": "assistant", "content": '{"section": "x", "review": [{"severity": "high"}]}'},
++    ])
++    rc, _err = _run_hook(monkeypatch, ["--review-type", "code"],
++                        {"transcript_path": transcript}, tmp_path)
++    assert rc == 0
++    assert hook.salvage_path(tmp_path, RUN_ID, "code").exists()
++
++
++def test_legacy_gates_section_spec_is_recognized(tmp_path, monkeypatch):
++    # Records written before the `spec` promotion keep it under `gates`.
++    run_dir = tmp_path / ".shipwright" / "planning" / "iterate" / RUN_ID
++    run_dir.mkdir(parents=True)
++    (run_dir / "reviews.json").write_text(json.dumps({
++        "schema_version": 1, "run_id": RUN_ID,
++        "gates": {"spec": {"status": "completed"}}, "reviews": {},
++    }), encoding="utf-8")
++    transcript = _transcript(tmp_path, [
++        {"role": "user", "content": f"{RUN_ID}"},
++        {"role": "assistant", "content": '{"stage": "spec", "verdict": "pass"}'},
++    ])
++    rc, err = _run_hook(monkeypatch, ["--review-type", "spec"],
++                        {"transcript_path": transcript}, tmp_path)
++    assert rc == 0
++    assert not hook.salvage_path(tmp_path, RUN_ID, "spec").exists()
++    assert "no-op" in err
++
++
++def test_noop_when_no_run_id_in_transcript(tmp_path, monkeypatch):
++    transcript = _transcript(tmp_path, [
++        {"role": "user", "content": "review this diff"},
++        {"role": "assistant", "content": '{"section": "x", "review": []}'},
++    ])
++    rc, err = _run_hook(monkeypatch, ["--review-type", "code"],
++                        {"transcript_path": transcript}, tmp_path)
++    assert rc == 0
++    assert "no run_id found" in err
++
++
++def test_noop_when_reply_not_a_review_payload(tmp_path, monkeypatch):
++    transcript = _transcript(tmp_path, [
++        {"role": "user", "content": f"{RUN_ID}"},
++        {"role": "assistant", "content": "I could not complete the review."},
++    ])
++    rc, err = _run_hook(monkeypatch, ["--review-type", "code"],
++                        {"transcript_path": transcript}, tmp_path)
++    assert rc == 0
++    assert "no salvageable review payload" in err
++    assert not hook.salvage_path(tmp_path, RUN_ID, "code").exists()
++
++
++def test_never_blocks_on_bad_stdin_payload(monkeypatch):
++    monkeypatch.setattr("sys.stdin", io.StringIO("{not valid json"))
++    monkeypatch.setattr("sys.stderr", io.StringIO())
++    assert hook.main(["--review-type", "code"]) == 0
++
++
++def test_never_blocks_on_missing_transcript_path(monkeypatch):
++    monkeypatch.setattr("sys.stdin", io.StringIO(json.dumps({"foo": "bar"})))
++    monkeypatch.setattr("sys.stderr", io.StringIO())
++    assert hook.main(["--review-type", "code"]) == 0
++
++
++def test_never_blocks_on_empty_transcript(tmp_path, monkeypatch):
++    transcript = str(tmp_path / "missing.jsonl")
++    monkeypatch.setattr(hook, "read_transcript_with_retry", lambda *a, **k: [])
++    rc, err = _run_hook(monkeypatch, ["--review-type", "code"],
++                        {"transcript_path": transcript}, tmp_path)
++    assert rc == 0
++    assert "nothing to salvage" in err
++
++
++# --- helpers directly ------------------------------------------------------ #
++
++def test_looks_like_review_payload_rejects_prose():
++    assert hook.looks_like_review_payload("just some assistant prose") is False
++
++
++def test_looks_like_review_payload_accepts_fenced_and_raw():
++    assert hook.looks_like_review_payload('```json\n{"a": 1}\n```') is True
++    assert hook.looks_like_review_payload('{"a": 1}') is True
++
++
++def test_extract_run_id_finds_first_match():
++    entries = [
++        {"role": "user", "content": "no id here"},
++        {"role": "assistant", "content": f"working on {RUN_ID} now"},
++    ]
++    assert hook.extract_run_id(entries) == RUN_ID
++
++
++def test_extract_run_id_none_when_absent():
++    assert hook.extract_run_id([{"role": "user", "content": "nothing"}]) is None
+diff --git a/plugins/shipwright-iterate/skills/iterate/SKILL.md b/plugins/shipwright-iterate/skills/iterate/SKILL.md
+index 1df3a28e..dffbaa35 100644
+--- a/plugins/shipwright-iterate/skills/iterate/SKILL.md
++++ b/plugins/shipwright-iterate/skills/iterate/SKILL.md
+@@ -58,7 +58,7 @@ Verify `shipwright_run_config.json` exists with `status: "complete"` (or `iterat
+ 
+ ### B1. Resumable Iterate Run
+ 
+-Every iterate runs in a worktree under `.worktrees/<slug>/`. If inside a worktree (`git rev-parse --git-common-dir` resolves above cwd), resume in place. Otherwise enumerate branches with `uv run "{shared_root}/scripts/tools/list_iterate_branches.py" --project-root .` (surfaces `locked` = resumable, `stale` = housekeeping). Check `.shipwright/agent_docs/session_handoff.md` for `run_id`. Offer Resume / Abandon / Complete. **Resume/Complete replay-check:** if medium+ has no external-review marker AND `feedback_iterations > 0`, run Step 4 first. If the iterate ADR has no `Self-Review:` block, run Step 7 before commit.
++Every iterate runs in a worktree under `.worktrees/<slug>/`. If inside a worktree (`git rev-parse --git-common-dir` resolves above cwd), resume in place. Otherwise enumerate branches with `uv run "{shared_root}/scripts/tools/list_iterate_branches.py" --project-root .` (surfaces `locked` = resumable, `stale` = housekeeping). Check `.shipwright/agent_docs/session_handoff.md` for `run_id`. Offer Resume / Abandon / Complete. **Resume/Complete replay-check:** if medium+ has no external-review marker AND `feedback_iterations > 0`, run Step 4 first. If the iterate ADR has no `Self-Review:` block, run Step 7 before commit. **Review-cascade replay-check (the canonical check — do not hand-read `session_handoff.md` for this):** run `uv run "{shared_root}/scripts/tools/record_review_pass.py" show --project-root "{project_root}" --run-id "{run_id}"` and read its `reviews` object. This is the durable, git-eventually-tracked source — `session_handoff.md`'s own auto-generated snapshot is a *secondary, best-effort* convenience refreshed only on a live session's Stop event, so a run killed mid-phase never gets it written and it cannot be trusted for this check. If `self` is still `pending`, nothing past Step 7 is due yet — resume the normal linear flow, no special action. If `self` is terminal (`completed`/`not_run`/`not_applicable`) and any of `spec`/`code`/`doubt`/`external_code` is still `pending`, the cascade started and was interrupted — resume Step 8 from there before commit.
+ 
+ ### B1a. Worktree Isolation (unconditional)
+ 
+@@ -179,7 +179,7 @@ See `references/iteration-reviews.md` for the 7-point checklist (item 7: Affecte
+ 
+ ### Step 8: Full Code Review (conditional)
+ 
+-See `references/iteration-reviews.md` for trigger rules. **A standing grant in `CLAUDE.md` outranks this — if the project states that review subagents are requested by default, spawn them and do NOT ask.** Only when no such grant exists and a session policy gates spawning: ask for the go-ahead as your FIRST action here — before Stage 1. Such a policy (e.g. a standing *"do not call the Agent tool unless the user requested it"*) is **conditional**: one sentence from the operator lifts it for the rest of the session. It is not a capability limit. Ask only when all three hold — the cascade is required for this diff; the `Agent` tool is in **this agent's capabilities** (asking without it wins a "yes" and fails anyway); and permission was not **already given earlier in this session** (it holds for the whole session — do not re-ask). A question asked at finalization buys nothing, because the work is already built. **If the answer is no**, that is blocker #4 — follow the escalation ladder in `references/iteration-reviews.md` (external review mandatory; `code` and `doubt` recorded `not_run` with a disposition naming *operator-declined*). **Under `--autonomous`** you cannot block to ask — but that prevents *acquiring* permission, **not using permission already held**; only when it is absent and unobtainable do you record `code = not_run` naming the mode, run the external review, and surface the ungated pass in the **closing run summary (F12)** so the operator can lift it next time. **This session spawns the cascade itself** — a standalone iterate has the `Agent` tool, so there is no delegate and nothing to wait for: `spec-reviewer` (Stage 1, **HARD-GATE** — a REJECT blocks Stage 2 until the diff is fixed and re-reviewed) → `code-reviewer` (Stage 2) → `doubt-reviewer` (Stage 3, conditional, advisory-must-address). **Pass `model=<the review tier resolved in §F>` to the Agent tool at each of the three spawns** (omit the parameter when the resolved value is `inherit` — the Agent tool has no `inherit` literal of its own). It runs **before F6 (commit)**, because a review that lands after the commit reviews something already shipped. It reviews the **code diff**; artifacts written afterwards by Steps 11a/11b and finalization ship in the same commit unreviewed, so "before F6" buys *not after*, not *reviews everything that ships*. **Every stage closes its own row**: `spec` from Stage 1, `code` from Stage 2 (`--from code-reviewer`), `doubt` from Stage 3 — every `record_review_pass.py record` call for these three carries `--model-tier "{resolved_review_tier}"` (the same value passed at the spawn above). Stage 1's row is an ordinary `reviews` key. It was parked in a sibling `gates` object while the webui refused to read a record carrying a sixth key; that reader now renders review types it does not recognise, so `spec` was promoted (`references/iteration-reviews.md`). Records written before the promotion keep `spec` under `gates` and are still read from there — permanently, since they are immutable. The gate enforces the cascade's own ordering: a `code` row recorded `completed` while `spec` is not `completed` FAILS, because Stage 2 cannot legitimately have run without its HARD-GATE passing first. A completed `code`/`external_code` row must also carry evidence a review happened — findings, a provider, a raw excerpt, or a `recorded_by` naming an adapter other than `none`. The runner contract's "delegated" wording (§5b) is **campaign-only** and does not apply here.
++See `references/iteration-reviews.md` for trigger rules. **A standing grant in `CLAUDE.md` outranks this — if the project states that review subagents are requested by default, spawn them and do NOT ask.** Only when no such grant exists and a session policy gates spawning: ask for the go-ahead as your FIRST action here — before Stage 1. Such a policy (e.g. a standing *"do not call the Agent tool unless the user requested it"*) is **conditional**: one sentence from the operator lifts it for the rest of the session. It is not a capability limit. Ask only when all three hold — the cascade is required for this diff; the `Agent` tool is in **this agent's capabilities** (asking without it wins a "yes" and fails anyway); and permission was not **already given earlier in this session** (it holds for the whole session — do not re-ask). A question asked at finalization buys nothing, because the work is already built. **If the answer is no**, that is blocker #4 — follow the escalation ladder in `references/iteration-reviews.md` (external review mandatory; `code` and `doubt` recorded `not_run` with a disposition naming *operator-declined*). **Under `--autonomous`** you cannot block to ask — but that prevents *acquiring* permission, **not using permission already held**; only when it is absent and unobtainable do you record `code = not_run` naming the mode, run the external review, and surface the ungated pass in the **closing run summary (F12)** so the operator can lift it next time. **This session spawns the cascade itself** — a standalone iterate has the `Agent` tool, so there is no delegate and nothing to wait for: `spec-reviewer` (Stage 1, **HARD-GATE** — a REJECT blocks Stage 2 until the diff is fixed and re-reviewed) → `code-reviewer` (Stage 2) → `doubt-reviewer` (Stage 3, conditional, advisory-must-address). **Pass `model=<the review tier resolved in §F>` to the Agent tool at each of the three spawns** (omit the parameter when the resolved value is `inherit` — the Agent tool has no `inherit` literal of its own). **State the run_id in plain text in every spawn prompt** (e.g. "This review is part of iterate run `{run_id}`.") — the `SubagentStop` salvage hook (`write-review-payload-on-stop.py`) can only find it in the subagent's own transcript, never from an env var. **The instant each subagent returns, write its reply to its payload file and call `record_review_pass.py record` before any other reasoning or spawning the next reviewer** — this is a mitigation, not a guarantee (it is agent-followed prose, not code-enforced; the salvage hook above is the code-level backstop for exactly the window this instruction cannot close by itself). It runs **before F6 (commit)**, because a review that lands after the commit reviews something already shipped. It reviews the **code diff**; artifacts written afterwards by Steps 11a/11b and finalization ship in the same commit unreviewed, so "before F6" buys *not after*, not *reviews everything that ships*. **Every stage closes its own row**: `spec` from Stage 1, `code` from Stage 2 (`--from code-reviewer`), `doubt` from Stage 3 — every `record_review_pass.py record` call for these three carries `--model-tier "{resolved_review_tier}"` (the same value passed at the spawn above). Stage 1's row is an ordinary `reviews` key. It was parked in a sibling `gates` object while the webui refused to read a record carrying a sixth key; that reader now renders review types it does not recognise, so `spec` was promoted (`references/iteration-reviews.md`). Records written before the promotion keep `spec` under `gates` and are still read from there — permanently, since they are immutable. The gate enforces the cascade's own ordering: a `code` row recorded `completed` while `spec` is not `completed` FAILS, because Stage 2 cannot legitimately have run without its HARD-GATE passing first. A completed `code`/`external_code` row must also carry evidence a review happened — findings, a provider, a raw excerpt, or a `recorded_by` naming an adapter other than `none`. The runner contract's "delegated" wording (§5b) is **campaign-only** and does not apply here.
+ 
+ ### Step 11a: Author E2E Spec (always at medium+; if feature+UI at trivial/small)
+ 
+diff --git a/plugins/shipwright-iterate/skills/iterate/references/campaign-mode.md b/plugins/shipwright-iterate/skills/iterate/references/campaign-mode.md
+index 06ceeec8..9537b576 100644
+--- a/plugins/shipwright-iterate/skills/iterate/references/campaign-mode.md
++++ b/plugins/shipwright-iterate/skills/iterate/references/campaign-mode.md
+@@ -218,7 +218,13 @@ If campaign directory doesn't exist yet:
+        c) `doubt-reviewer` — Stage 3, conditional, advisory-must-address.
+ 
+        Pass `model=<review tier resolved at loop step 2>` to each of the three
+-       spawns above (omit when `inherit`).
++       spawns above (omit when `inherit`). **State the run_id in plain text in
++       every spawn prompt** — the `SubagentStop` salvage hook
++       (`write-review-payload-on-stop.py`) reads it only from the transcript,
++       never an env var. **Write each subagent's reply to its payload file
++       before any other reasoning or spawning the next reviewer** — a
++       mitigation, not a guarantee; the salvage hook backstops the window this
++       alone cannot close (see `iteration-reviews.md`).
+ 
+        Promote the rows IN THAT ORDER. The runner already closed them and a
+        closed row is immutable, so `--force` is REQUIRED (without it the CLI
+diff --git a/plugins/shipwright-iterate/skills/iterate/references/iteration-planning.md b/plugins/shipwright-iterate/skills/iterate/references/iteration-planning.md
+index 996ef421..1007c91c 100644
+--- a/plugins/shipwright-iterate/skills/iterate/references/iteration-planning.md
++++ b/plugins/shipwright-iterate/skills/iterate/references/iteration-planning.md
+@@ -156,10 +156,20 @@ For each user-visible behavior, write two ACs:
+ 6. **Alternative approach** (medium only) — one alternative + why rejected
+ 
+ ### Persistence
+-- **Small:** Inline in session only (no file)
+-- **Medium+:** Save as `.shipwright/planning/iterate/{date}-{desc}-miniplan.md`
+-  - Include `run_id` in header
+-  - This file is passed to `review.py --plan-file`
++
++Save as `.shipwright/planning/iterate/{date}-{desc}-miniplan.md` at **every**
++complexity tier that runs this protocol — including `small`. A `small`-tier
++mini-plan is session-only in conversation until this fix, which is exactly
++the state-loss risk this document exists to close: it has no disk
++representation and a mid-session compaction destroys it outright. Only the
++*persistence*, not the *content depth*, changes for `small` — Content items
++2 (work breakdown) and 6 (alternative approach) above stay gated
++`(medium only)`.
++
++- Include `run_id` in header
++- This file is passed to `review.py --plan-file` (medium+ only — `small`
++  never reaches External LLM Review, so this file has no such consumer there,
++  but it is still a resumable, on-disk record of what was agreed)
+ 
+ ---
+ 
+diff --git a/plugins/shipwright-iterate/skills/iterate/references/iteration-reviews.md b/plugins/shipwright-iterate/skills/iterate/references/iteration-reviews.md
+index 86ca124f..c85e35b6 100644
+--- a/plugins/shipwright-iterate/skills/iterate/references/iteration-reviews.md
++++ b/plugins/shipwright-iterate/skills/iterate/references/iteration-reviews.md
+@@ -454,13 +454,40 @@ declining to write it. The reviewers
+ already return structured JSON; before this record existed it survived only as
+ ADR prose and was thrown away.
+ 
+-Materialize once, early in the run:
++Materialize at Step 7 entry (immediately before the first reviewer spawn), not
++merely "early" — a vague timing is what let this drift; `init` is idempotent,
++so calling it again elsewhere is harmless, but Step 7 is where it must always
++have run by:
+ 
+ ```bash
+ uv run "{shared_root}/scripts/tools/record_review_pass.py" init \
+   --project-root "{project_root}" --run-id "{run_id}"
+ ```
+ 
++**Immediate-write ordering mandate (MANDATORY).** The instant a reviewer or
++`external_review.py` call returns, write its reply to a file verbatim and call
++`record_review_pass.py record` — before any other reasoning, before spawning
++the next reviewer, before anything else. A `Bash` call to `external_review.py`
++should redirect its own stdout straight to the durable payload path in the
++same command (e.g. `... > .shipwright/planning/iterate/{run_id}/plan-review-raw.json`)
++so the write lands before the agent ever reasons about the result. **This is a
++mitigation, not a guarantee** — it is agent-followed prose, not code-enforced,
++and a compaction landing in the instant between a subagent returning and this
++write happening can still lose the finding. For the Step 8 cascade specifically
++(`spec-reviewer`/`code-reviewer`/`doubt-reviewer`), the `SubagentStop` hook
++`write-review-payload-on-stop.py` (`plugins/shipwright-build/hooks/hooks.json`)
++is the code-level backstop for exactly that window: it fires synchronously as
++part of the subagent's own lifecycle, independent of the orchestrator's
++remaining context, and salvages the raw reply to
++`.shipwright/planning/iterate/{run_id}/{type}_salvaged_raw.json` if
++`reviews.json` doesn't already show the type terminal by the time the subagent
++stops. It requires the spawn prompt to state the run_id in plain text (SKILL.md
++Step 8) — the hook can only read it from the subagent's own transcript, never
++from an env var (`SHIPWRIGHT_RUN_ID` is documented, in this same repo, as
++unreliable for a Claude-Code-launched hook subprocess). No equivalent hook
++exists for `external_review.py` (a plain CLI call, not a Task-tool subagent) —
++the stdout-redirect instruction above is what closes that window instead.
++
+ **A pass that RAN** — write the reviewer's reply to a file verbatim (raw JSON,
+ or the whole message with its ```json block; both are accepted) and hand it over:
+ 
+diff --git a/plugins/shipwright-iterate/skills/iterate/references/path-a-feature.md b/plugins/shipwright-iterate/skills/iterate/references/path-a-feature.md
+index b8dd6965..153fc5ef 100644
+--- a/plugins/shipwright-iterate/skills/iterate/references/path-a-feature.md
++++ b/plugins/shipwright-iterate/skills/iterate/references/path-a-feature.md
+@@ -198,11 +198,12 @@ If no boundaries touched: write `n/a` with one-line justification.}
+ > cannot be empirically driven and silently degrade F0.5 to spec-only
+ > authorship.
+ 
+-## Step 3: Mini-Plan (small: inline, medium: persisted)
++## Step 3: Mini-Plan (persisted at every tier that runs it)
+ 
+-See `references/iteration-planning.md` for protocol.
+-- Small: inline in session
+-- Medium+: save as `.shipwright/planning/iterate/{date}-{desc}-miniplan.md`
++See `references/iteration-planning.md` for protocol. Save as
++`.shipwright/planning/iterate/{date}-{desc}-miniplan.md` at `small` and at
++`medium+` alike — only the content depth (work breakdown, alternative
++approach) is medium-only, not the file itself.
+ 
+ ## Step 3b: User Approval Gate (medium+)
+ 
+diff --git a/plugins/shipwright-iterate/tests/test_mini_plan_persistence_doc.py b/plugins/shipwright-iterate/tests/test_mini_plan_persistence_doc.py
+new file mode 100644
+index 00000000..592ee9f3
+--- /dev/null
++++ b/plugins/shipwright-iterate/tests/test_mini_plan_persistence_doc.py
+@@ -0,0 +1,85 @@
++"""Drift-protection for the Mini-Plan Protocol persistence rule
++(iterate-2026-08-09-compaction-state-audit).
++
++Root cause: a `small`-complexity mini-plan existed only in conversation
++("Inline in session only (no file)") — a mid-session compaction destroyed it
++outright, with no disk artifact to resume from. The fix makes persistence
++unconditional across every complexity tier that runs the protocol; only the
++content *depth* (work breakdown, alternative approach) stays medium-only.
++
++Anchored on the `## Mini-Plan Protocol` heading first, per the same
++anchor-then-search pattern as `test_skill_step_6_rules_present.py` — survives
++wording tweaks, fails when the rule disappears or a `small`-only exemption
++reappears.
++"""
++
++from __future__ import annotations
++
++import re
++from pathlib import Path
++
++REPO_ROOT = Path(__file__).resolve().parents[3]
++ITERATION_PLANNING_MD = (
++    REPO_ROOT / "plugins" / "shipwright-iterate" / "skills" / "iterate"
++    / "references" / "iteration-planning.md"
++)
++
++
++def _extract_mini_plan_protocol_body(text: str) -> str:
++    pattern = re.compile(
++        r"^## Mini-Plan Protocol.*?(?=\n## )",
++        flags=re.MULTILINE | re.DOTALL,
++    )
++    match = pattern.search(text)
++    return match.group(0) if match else ""
++
++
++def test_mini_plan_protocol_heading_present() -> None:
++    text = ITERATION_PLANNING_MD.read_text(encoding="utf-8")
++    body = _extract_mini_plan_protocol_body(text)
++    assert body, (
++        "Could not extract '## Mini-Plan Protocol' body from iteration-planning.md. "
++        "If the heading was renamed, update this test's probe regex."
++    )
++
++
++def test_no_small_tier_no_file_exemption_remains() -> None:
++    """The regression this test exists to catch: reintroducing a
++    small-complexity carve-out that skips persisting the file."""
++    text = ITERATION_PLANNING_MD.read_text(encoding="utf-8")
++    body = _extract_mini_plan_protocol_body(text)
++    lowered = body.lower()
++    assert "inline in session only" not in lowered, (
++        "Mini-Plan Protocol still carries a 'inline in session only' "
++        "exemption — this reintroduces the small-complexity state-loss gap "
++        "closed by iterate-2026-08-09-compaction-state-audit."
++    )
++    assert not re.search(r"small.{0,40}\(no file\)", lowered), (
++        "Mini-Plan Protocol still gates persistence on complexity=small — "
++        "persistence must be unconditional across every tier that runs "
++        "the protocol."
++    )
++
++
++def test_persistence_applies_at_every_tier() -> None:
++    text = ITERATION_PLANNING_MD.read_text(encoding="utf-8")
++    body = _extract_mini_plan_protocol_body(text)
++    assert "every" in body.lower() and "complexity tier" in body.lower(), (
++        "Mini-Plan Protocol's Persistence sub-section must state the file "
++        "is saved at every complexity tier that runs the protocol."
++    )
++    assert "-miniplan.md" in body, (
++        "Mini-Plan Protocol must still name the persisted filename pattern."
++    )
++
++
++def test_content_depth_gating_is_preserved() -> None:
++    """Only the file's existence became unconditional — the deeper content
++    items (work breakdown, alternative approach) stay medium-only."""
++    text = ITERATION_PLANNING_MD.read_text(encoding="utf-8")
++    body = _extract_mini_plan_protocol_body(text)
++    assert body.count("(medium only)") >= 2, (
++        "Mini-Plan Protocol's Content section should still gate 'Work "
++        "breakdown' and 'Alternative approach' as (medium only) — only "
++        "persistence changed for small, not content depth."
++    )
+diff --git a/plugins/shipwright-iterate/tests/test_review_record_immediate_write_rule.py b/plugins/shipwright-iterate/tests/test_review_record_immediate_write_rule.py
+new file mode 100644
+index 00000000..81c7c98f
+--- /dev/null
++++ b/plugins/shipwright-iterate/tests/test_review_record_immediate_write_rule.py
+@@ -0,0 +1,108 @@
++"""Drift-protection for the immediate-write ordering mandate
++(iterate-2026-08-09-compaction-state-audit).
++
++Root cause: a reviewer's raw reply exists only in the Task tool's result
++until the orchestrator's next action writes it to a payload file for
++record_review_pass.py. Nothing mandated that write happen before any other
++action — a compaction landing in that window could lose the finding outright.
++The mandate is repeated at every site that actually spawns a review subagent:
++SKILL.md Step 8 (standalone iterate), `iteration-reviews.md`'s "Recording
++each review pass" (the shared rationale + the run_id-in-prompt requirement
++the SubagentStop salvage hook depends on), and campaign-mode.md's 3f-bis
++(the autonomous/campaign spawn site — NOT sub-iterate-runner.md's Step 3.7,
++which only delegates the cascade and never calls the Agent tool itself).
++
++Each site is anchored on its own heading/marker first, then searched for the
++same marker phrase — survives wording tweaks, fails when a site's mandate is
++silently dropped.
++"""
++
++from __future__ import annotations
++
++import re
++from pathlib import Path
++
++import pytest
++
++REPO_ROOT = Path(__file__).resolve().parents[3]
++SKILL_MD = REPO_ROOT / "plugins" / "shipwright-iterate" / "skills" / "iterate" / "SKILL.md"
++ITERATION_REVIEWS_MD = (
++    REPO_ROOT / "plugins" / "shipwright-iterate" / "skills" / "iterate"
++    / "references" / "iteration-reviews.md"
++)
++CAMPAIGN_MODE_MD = (
++    REPO_ROOT / "plugins" / "shipwright-iterate" / "skills" / "iterate"
++    / "references" / "campaign-mode.md"
++)
++
++MANDATE_MARKER = "before any other reasoning"
++
++
++def _extract_step_8_body(text: str) -> str:
++    pattern = re.compile(r"^### Step 8: Full Code Review.*?(?=\n### )",
++                         flags=re.MULTILINE | re.DOTALL)
++    match = pattern.search(text)
++    return match.group(0) if match else ""
++
++
++def _extract_recording_each_pass_body(text: str) -> str:
++    pattern = re.compile(r"^## Recording each review pass.*?(?=\n## )",
++                         flags=re.MULTILINE | re.DOTALL)
++    match = pattern.search(text)
++    return match.group(0) if match else ""
++
++
++def _extract_3f_bis_body(text: str) -> str:
++    pattern = re.compile(r"^   3f-bis\..*?(?=\n   3g\.)",
++                         flags=re.MULTILINE | re.DOTALL)
++    match = pattern.search(text)
++    return match.group(0) if match else ""
++
++
++def _normalize_ws(text: str) -> str:
++    """Collapse runs of whitespace (incl. newlines) to a single space, so a
++    marker phrase survives hard-wrapped prose (campaign-mode.md wraps at
++    ~80 chars; SKILL.md/iteration-reviews.md write dense single-line
++    paragraphs) — both are legitimate markdown styles."""
++    return re.sub(r"\s+", " ", text)
++
++
++SITES = [
++    ("SKILL.md Step 8", SKILL_MD, _extract_step_8_body),
++    ("iteration-reviews.md Recording each review pass", ITERATION_REVIEWS_MD,
++     _extract_recording_each_pass_body),
++    ("campaign-mode.md 3f-bis", CAMPAIGN_MODE_MD, _extract_3f_bis_body),
++]
++
++
++@pytest.mark.parametrize("label,path,extractor", SITES, ids=[s[0] for s in SITES])
++def test_site_extracts(label, path, extractor) -> None:
++    text = path.read_text(encoding="utf-8")
++    body = extractor(text)
++    assert body, f"Could not extract the {label} section — probe regex may need updating."
++
++
++@pytest.mark.parametrize("label,path,extractor", SITES, ids=[s[0] for s in SITES])
++def test_site_carries_immediate_write_mandate(label, path, extractor) -> None:
++    text = path.read_text(encoding="utf-8")
++    body = _normalize_ws(extractor(text))
++    assert MANDATE_MARKER in body, (
++        f"{label} is missing the immediate-write ordering mandate "
++        f"({MANDATE_MARKER!r}) — a reviewer's reply must be written to disk "
++        f"before any other reasoning or the next spawn."
++    )
++
++
++@pytest.mark.parametrize("label,path,extractor", [SITES[0], SITES[2]],
++                        ids=[SITES[0][0], SITES[2][0]])
++def test_spawn_sites_require_run_id_in_prompt(label, path, extractor) -> None:
++    """Only the actual spawn sites (not the rationale doc) need the
++    run_id-in-prompt requirement — the SubagentStop salvage hook can only
++    find the run_id in the subagent's own transcript."""
++    text = path.read_text(encoding="utf-8")
++    body = _normalize_ws(extractor(text))
++    assert "run_id in plain text" in body, (
++        f"{label} must require the spawn prompt to state the run_id in "
++        f"plain text — write-review-payload-on-stop.py cannot resolve it "
++        f"any other way."
++    )
+diff --git a/plugins/shipwright-iterate/tests/test_skill_b1_reviews_json_check.py b/plugins/shipwright-iterate/tests/test_skill_b1_reviews_json_check.py
+new file mode 100644
+index 00000000..df806014
+--- /dev/null
++++ b/plugins/shipwright-iterate/tests/test_skill_b1_reviews_json_check.py
+@@ -0,0 +1,79 @@
++"""Drift-protection for B1's direct reviews.json read
++(iterate-2026-08-09-compaction-state-audit).
++
++Root cause: B1's replay-check consulted only two markers (the external-review
++marker and an ADR `Self-Review:` block) even though the fuller per-review-type
++record (`reviews.json`) already existed on disk — a mid-cascade interruption
++(e.g. stopped after `spec-reviewer` passed but before `code-reviewer` ran) was
++invisible to a resume. The fix adds a third, canonical replay-check that reads
++`reviews.json` directly via `record_review_pass.py show`.
++
++This is a documentation-presence test only — it proves the instruction exists
++in B1's body, not that a future agent follows it (that half is behavioral,
++covered by `write-review-payload-on-stop.py`'s salvage-path tests and the
++handoff renderer tests, which drive the actual reviews.json read).
++"""
++
++from __future__ import annotations
++
++import re
++from pathlib import Path
++
++REPO_ROOT = Path(__file__).resolve().parents[3]
++SKILL_MD = REPO_ROOT / "plugins" / "shipwright-iterate" / "skills" / "iterate" / "SKILL.md"
++
++
++def _extract_b1_body(text: str) -> str:
++    pattern = re.compile(r"^### B1\. Resumable Iterate Run.*?(?=\n### )",
++                         flags=re.MULTILINE | re.DOTALL)
++    match = pattern.search(text)
++    return match.group(0) if match else ""
++
++
++def test_b1_heading_present() -> None:
++    text = SKILL_MD.read_text(encoding="utf-8")
++    assert _extract_b1_body(text), (
++        "Could not extract '### B1. Resumable Iterate Run' body from SKILL.md."
++    )
++
++
++def test_b1_names_the_direct_reviews_json_read() -> None:
++    text = SKILL_MD.read_text(encoding="utf-8")
++    body = _extract_b1_body(text)
++    assert "record_review_pass.py" in body and "show" in body, (
++        "B1 must name the canonical reviews.json read path "
++        "(`record_review_pass.py show`) — do not leave resume to a "
++        "hand-rolled file read."
++    )
++    assert "reviews" in body and "object" in body, (
++        "B1 must describe reading the record's `reviews` object, not just "
++        "invoking the CLI without saying what to look at."
++    )
++
++
++def test_b1_gates_on_self_before_treating_pending_as_interrupted() -> None:
++    """Pins the false-positive fix from external review (Branch A, openai
++    finding #1): a freshly-init'd record has every type pending, which must
++    NOT be read as "the cascade was interrupted"."""
++    text = SKILL_MD.read_text(encoding="utf-8")
++    body = _extract_b1_body(text)
++    assert "self" in body.lower() and "terminal" in body.lower(), (
++        "B1's reviews.json replay-check must gate on `self` being terminal "
++        "before treating any other pending type as an interrupted cascade — "
++        "otherwise a freshly-init'd (all-pending) record false-triggers an "
++        "unnecessary Step 8 restart."
++    )
++
++
++def test_b1_does_not_rely_on_session_handoff_for_this_check() -> None:
++    """Pins the Internal Plan Review HIGH finding: the auto-generated
++    session_handoff.md is gitignored/runtime-only and a killed-mid-phase run
++    never gets it regenerated — it cannot be the authoritative signal for
++    this specific check."""
++    text = SKILL_MD.read_text(encoding="utf-8")
++    body = _extract_b1_body(text)
++    assert "do not hand-read" in body.lower() or "not the" in body.lower(), (
++        "B1 must call out reviews.json as the canonical source for the "
++        "review-cascade replay-check, not session_handoff.md's best-effort "
++        "snapshot."
++    )
+diff --git a/shared/scripts/lib/handoff_iterate.py b/shared/scripts/lib/handoff_iterate.py
+index 1f78bfea..c98c953b 100644
+--- a/shared/scripts/lib/handoff_iterate.py
++++ b/shared/scripts/lib/handoff_iterate.py
+@@ -12,6 +12,9 @@ import json
+ from datetime import datetime, timezone
+ from pathlib import Path
+ 
++from lib.review_record_core import ReviewRecordError, entry_for, pending_types, read_record
++from lib.review_record_schema import STATUS_PENDING, TERMINAL_STATUSES
++
+ 
+ def render_iterate_progress(project_root: Path, git_info: dict) -> list[str]:
+     """Return lines describing in-progress iterate state.
+@@ -55,6 +58,27 @@ def render_iterate_progress(project_root: Path, git_info: dict) -> list[str]:
+             except OSError:
+                 pass
+ 
++        # A killed-mid-phase run may not have an iterate spec yet (medium+
++        # only, per Step 1) but the mini-plan is written earlier and at every
++        # tier (iterate-2026-08-09-compaction-state-audit) — fall back to its
++        # header so the review-cascade check below still gets a run_id.
++        if not run_id:
++            miniplan_candidates = [
++                p for p in iterate_dir.glob("*-miniplan.md")
++                if short and short in p.name.lower()
++            ]
++            if miniplan_candidates:
++                miniplan_path = max(miniplan_candidates, key=lambda p: p.stat().st_mtime)
++                try:
++                    header = miniplan_path.read_text(encoding="utf-8", errors="ignore")[:1200]
++                    for line in header.splitlines():
++                        low = line.strip().lower()
++                        if low.startswith("- **run id:**") or low.startswith("- **run-id:**"):
++                            run_id = line.split(":**", 1)[1].strip()
++                            break
++                except OSError:
++                    pass
++
+     # Look for the external review marker. Two filename conventions are
+     # acceptable (see iteration-planning.md Step 5): a run-scoped file or
+     # the shared state file. Prefer run-scoped if both exist.
+@@ -89,6 +113,41 @@ def render_iterate_progress(project_root: Path, git_info: dict) -> list[str]:
+         marker_detail = f"{candidate.name} @ {ts_raw[:19]}" if ts_raw else candidate.name
+         break
+ 
++    # Review-cascade status: this is the same reviews.json B1 itself reads
++    # directly and trusts over this rendered snapshot (SKILL.md's "the
++    # canonical check"). Rendering it here is a secondary, best-effort
++    # convenience for a human skimming the handoff; it is not a resume
++    # decision an agent should make from this file alone.
++    #
++    # Gated on `self` reaching a terminal status before any other pending
++    # type counts as "interrupted" — a freshly-init'd record has every type
++    # pending before anything is due, which is not evidence of an
++    # interruption (external plan review, openai HIGH finding).
++    review_status = "unknown"
++    review_detail = ""
++    if not run_id:
++        review_status = "no run_id resolved"
++    else:
++        try:
++            record = read_record(project_root, run_id)
++        except ReviewRecordError as exc:
++            review_status = "unreadable"
++            review_detail = str(exc)
++        else:
++            if record is None:
++                review_status = "not started"
++            else:
++                self_status = entry_for(record, "self").get("status", STATUS_PENDING)
++                if self_status not in TERMINAL_STATUSES:
++                    review_status = "not due yet"
++                else:
++                    pending = [t for t in pending_types(record) if t != "self"]
++                    if pending:
++                        review_status = "interrupted"
++                        review_detail = ", ".join(pending)
++                    else:
++                        review_status = "complete"
++
+     lines: list[str] = ["## Current Iterate Progress", ""]
+     lines.append(f"- **Branch**: {branch}")
+     if run_id:
+@@ -105,10 +164,18 @@ def render_iterate_progress(project_root: Path, git_info: dict) -> list[str]:
+     if marker_detail:
+         review_line += f" ({marker_detail})"
+     lines.append(review_line)
++    cascade_line = f"- **Review Cascade**: {review_status}"
++    if review_detail:
++        cascade_line += f" ({review_detail})"
++    lines.append(cascade_line)
+ 
+     replay: list[str] = []
+     if complexity in ("medium", "large") and marker_status in ("missing", "stale"):
+         replay.append("Step 4 — External LLM Review (marker missing/stale)")
++    if review_status == "interrupted":
++        replay.append(f"Step 8 — Review cascade interrupted (pending: {review_detail})")
++    elif review_status == "unreadable":
++        replay.append(f"reviews.json is unreadable — investigate before resuming ({review_detail})")
+     if git_info.get("uncommitted_changes"):
+         replay.append("Finalization (F0–F11) after all mandatory phases pass")
+ 
+diff --git a/shared/scripts/tools/verifiers/spec_checks.py b/shared/scripts/tools/verifiers/spec_checks.py
+index be7a6b07..9a8c5373 100644
+--- a/shared/scripts/tools/verifiers/spec_checks.py
++++ b/shared/scripts/tools/verifiers/spec_checks.py
+@@ -176,6 +176,11 @@ def _is_medium_or_larger(complexity: str | None) -> bool:
+     return (complexity or "").lower() in {"medium", "large"}
+ 
+ 
++def _miniplan_required(complexity: str | None, category: str | None) -> bool:
++    return _is_medium_or_larger(complexity) or (
++        (complexity or "").lower() == "small" and (category or "").lower() == "feature")
++
++
+ # ---------------------------------------------------------------------------
+ # S1 — top-level spec exists + has FR headings
+ # ---------------------------------------------------------------------------
+@@ -298,12 +303,10 @@ def check_s3_iterate_miniplan(project_root: Path, run_id: str) -> dict[str, Any]
+             f"no iterate entry for run_id={run_id}",
+             name=S3_NAME, provenance="unverified_marker",
+         )
+-    if not _is_medium_or_larger(complexity):
+-        return make_finding(
+-            "S3", STATUS_SKIP,
+-            f"complexity={complexity} — mini-plan not required below medium",
+-            name=S3_NAME,
+-        )
++    category = _iterate_category(project_root, run_id)
++    if not _miniplan_required(complexity, category):
++        msg = f"complexity={complexity}, type={category or 'unknown'} — mini-plan not required"
++        return make_finding("S3", STATUS_SKIP, msg, name=S3_NAME)
+ 
+     hits = _iter_miniplan_candidates(project_root, run_id)
+     if not hits:
+diff --git a/shared/tests/test_compaction_state_audit_acceptance.py b/shared/tests/test_compaction_state_audit_acceptance.py
+new file mode 100644
+index 00000000..5d141cb1
+--- /dev/null
++++ b/shared/tests/test_compaction_state_audit_acceptance.py
+@@ -0,0 +1,193 @@
++"""Acceptance test for iterate-2026-08-09-compaction-state-audit.
++
++The bug report's scenario is "kill a run mid-phase and prove it resumes from
++artifacts alone, with no conversational memory." A literal same-session kill
++of the Claude Code process cannot be scripted from inside the very session
++doing the fix — there is no test harness that can suspend and restart the
++agent loop itself. This is the closest deterministic substitute: fresh
++**subprocesses**, each cold-reading only files a fixture setup step wrote to
++disk beforehand, exercising the two real mechanisms a resumed run depends on:
++
++1. **AC-3a (primary, canonical):** `record_review_pass.py show` — the exact
++   command SKILL.md's B1 instructs an agent to run on resume — must report
++   the interrupted-cascade signal from `reviews.json` alone. This is what B1
++   actually reads; nothing here depends on any handoff file being fresh.
++2. **AC-3b (secondary, best-effort):** the real `generate_handoff_on_stop.py`
++   Stop-hook subprocess (the one Claude Code invokes at session end) must
++   render the same signal into `session_handoff.md`, for a human or a
++   differently-triggered resume path skimming that file.
++
++Neither process is seeded with anything beyond what a fixture would leave on
++disk after a mid-phase kill: no environment carries the run's history, no
++in-memory state is shared between the fixture-setup step and the two
++assertion subprocesses.
++"""
++
++from __future__ import annotations
++
++import json
++import os
++import subprocess
++import sys
++from pathlib import Path
++
++REPO_ROOT = Path(__file__).resolve().parents[2]
++STOP_HOOK = REPO_ROOT / "shared" / "scripts" / "hooks" / "generate_handoff_on_stop.py"
++RECORD_REVIEW_PASS = REPO_ROOT / "shared" / "scripts" / "tools" / "record_review_pass.py"
++
++RUN_ID = "iterate-2026-08-09-killmidphase"
++SLUG = "killmidphase"
++
++
++def _init_git_repo_on_iterate_branch(project_root: Path) -> None:
++    """Mimic what `setup_iterate_worktree.py` leaves behind: a repo whose
++    current branch is `iterate/<slug>` — the signal `render_iterate_progress`
++    keys off to even look for iterate state."""
++    run = lambda *args: subprocess.run(  # noqa: E731
++        ["git", *args], cwd=project_root, check=True,
++        capture_output=True, text=True,
++    )
++    run("init", "-q")
++    run("config", "user.email", "test@example.com")
++    run("config", "user.name", "Test")
++    (project_root / "README.md").write_text("placeholder\n", encoding="utf-8")
++    run("add", "-A")
++    run("commit", "-q", "-m", "initial")
++    run("checkout", "-q", "-b", f"iterate/{SLUG}")
++
++
++def _seed_mid_phase_fixture(project_root: Path) -> None:
++    """Lay down exactly what a run killed right after Stage-1 review (spec
++    passed) but before Stage 2 (code) would have on disk — nothing more.
++    No process below this point is told any of this directly; each rediscovers
++    it from these files alone."""
++    (project_root / ".shipwright" / "agent_docs").mkdir(parents=True, exist_ok=True)
++    (project_root / "shipwright_run_config.json").write_text(
++        json.dumps({"scope": "full_app", "iterate_history": [
++            {"run_id": RUN_ID, "complexity": "medium"},
++        ]}),
++        encoding="utf-8",
++    )
++
++    iterate_dir = project_root / ".shipwright" / "planning" / "iterate"
++    iterate_dir.mkdir(parents=True, exist_ok=True)
++    (iterate_dir / f"2026-08-09-{SLUG}.md").write_text(
++        "\n".join([
++            f"# Iterate Spec: {SLUG}",
++            "",
++            f"- **Run ID:** {RUN_ID}",
++            "- **Type:** feature",
++            "- **Complexity:** medium",
++            "- **Status:** in-progress",
++        ]),
++        encoding="utf-8",
++    )
++
++    from lib.review_record_schema import REVIEW_TYPES  # noqa: E402
++
++    record_dir = iterate_dir / RUN_ID
++    record_dir.mkdir(parents=True, exist_ok=True)
++    terminal = {"self", "plan", "plan_internal", "spec"}
++    reviews = {
++        t: {
++            "review_type": t,
++            "status": "completed" if t in terminal else "pending",
++            "findings_count": 0,
++            "findings": [],
++            "provider": None,
++            "completed_at": None,
++            "disposition": None,
++            "recorded_by": None,
++            "parse_status": None,
++            "raw_excerpt": None,
++        }
++        for t in REVIEW_TYPES
++    }
++    (record_dir / "reviews.json").write_text(
++        json.dumps({"schema_version": 1, "run_id": RUN_ID, "reviews": reviews}),
++        encoding="utf-8",
++    )
++
++
++def test_ac3a_record_review_pass_show_reports_interrupted_cascade(tmp_path):
++    """AC-3a — the canonical resume signal (B1's own instruction) must come
++    back correct from a cold subprocess reading only reviews.json."""
++    project_root = tmp_path
++    _init_git_repo_on_iterate_branch(project_root)
++    _seed_mid_phase_fixture(project_root)
++
++    result = subprocess.run(
++        [sys.executable, str(RECORD_REVIEW_PASS), "show",
++         "--project-root", str(project_root), "--run-id", RUN_ID],
++        capture_output=True, text=True, check=True,
++    )
++    record = json.loads(result.stdout)
++    reviews = record["reviews"]
++
++    assert reviews["self"]["status"] == "completed"
++    assert reviews["spec"]["status"] == "completed"
++    assert reviews["code"]["status"] == "pending"
++    assert reviews["doubt"]["status"] == "pending"
++
++
++def test_ac3b_stop_hook_handoff_surfaces_interrupted_cascade(tmp_path):
++    """AC-3b — the same signal, rendered into the handoff a human or a
++    differently-triggered resume reads, produced by the real Stop-hook
++    subprocess (not by calling render_iterate_progress() in-process)."""
++    project_root = tmp_path
++    _init_git_repo_on_iterate_branch(project_root)
++    _seed_mid_phase_fixture(project_root)
++
++    env = os.environ.copy()
++    env["SHIPWRIGHT_SESSION_ID"] = "acceptance-test-session"
++    result = subprocess.run(
++        [sys.executable, str(STOP_HOOK)],
++        input="{}", capture_output=True, text=True, cwd=project_root, env=env,
++    )
++    assert result.returncode == 0, result.stderr
++
++    handoff = project_root / ".shipwright" / "agent_docs" / "runtime" / "session_handoff.md"
++    assert handoff.exists(), f"no runtime handoff written; stderr={result.stderr!r}"
++    content = handoff.read_text(encoding="utf-8")
++
++    assert "Current Iterate Progress" in content
++    assert RUN_ID in content
++    assert "Review Cascade" in content and "interrupted" in content
++    assert "code" in content and "doubt" in content
++    assert "Mandatory replay on Resume" in content
++    assert "Review cascade interrupted" in content
++
++
++def test_ac3a_and_ac3b_agree_on_which_types_are_pending(tmp_path):
++    """Both paths must name the SAME pending set from the SAME fixture —
++    the renderer is a convenience view over the same reviews.json B1 reads
++    directly, not an independent (and possibly divergent) source of truth."""
++    project_root = tmp_path
++    _init_git_repo_on_iterate_branch(project_root)
++    _seed_mid_phase_fixture(project_root)
++
++    show_result = subprocess.run(
++        [sys.executable, str(RECORD_REVIEW_PASS), "show",
++         "--project-root", str(project_root), "--run-id", RUN_ID],
++        capture_output=True, text=True, check=True,
++    )
++    record = json.loads(show_result.stdout)
++    pending_from_record = {
++        t for t, entry in record["reviews"].items() if entry["status"] == "pending"
++    }
++
++    env = os.environ.copy()
++    env["SHIPWRIGHT_SESSION_ID"] = "acceptance-test-session"
++    subprocess.run(
++        [sys.executable, str(STOP_HOOK)],
++        input="{}", capture_output=True, text=True, cwd=project_root, env=env,
++        check=True,
++    )
++    handoff = project_root / ".shipwright" / "agent_docs" / "runtime" / "session_handoff.md"
++    content = handoff.read_text(encoding="utf-8")
++
++    for pending_type in pending_from_record:
++        assert pending_type in content, (
++            f"reviews.json names {pending_type!r} pending but the rendered "
++            "handoff's Review Cascade line omits it"
++        )
+diff --git a/shared/tests/test_review_cascade_handoff.py b/shared/tests/test_review_cascade_handoff.py
+new file mode 100644
+index 00000000..396f6192
+--- /dev/null
++++ b/shared/tests/test_review_cascade_handoff.py
+@@ -0,0 +1,186 @@
++"""Review-cascade section of the in-flight iterate handoff
++(iterate-2026-08-09-compaction-state-audit).
++
++Split out of ``test_generate_session_handoff.py`` rather than appended there:
++that file already carries a grandfathered bloat-baseline entry, so growing it
++further would ratchet past its `current` ceiling. See that file for the
++sibling `render_iterate_progress()` tests (external-review marker, run_id/
++complexity parsing) this file assumes as background.
++"""
++
++from __future__ import annotations
++
++import json
++
++from lib.handoff_iterate import render_iterate_progress
++
++
++def _write_iterate_spec(project_root, *, run_id: str, complexity: str, branch_tail: str) -> None:
++    """Minimal iterate spec file matching a branch tail (mirrors the helper
++    of the same name in test_generate_session_handoff.py)."""
++    iterate_dir = project_root / ".shipwright" / "planning" / "iterate"
++    iterate_dir.mkdir(parents=True, exist_ok=True)
++    spec = iterate_dir / f"2026-04-17-{branch_tail}.md"
++    spec.write_text(
++        "\n".join([
++            f"# Iterate Spec: {branch_tail}",
++            "",
++            f"- **Run ID:** {run_id}",
++            "- **Type:** feature",
++            f"- **Complexity:** {complexity}",
++            "- **Status:** draft",
++        ]),
++        encoding="utf-8",
++    )
++
++
++def _write_reviews_json(project_root, *, run_id: str, statuses: dict) -> None:
++    """Write a minimal reviews.json. ``statuses`` maps review_type -> status;
++    any type from REVIEW_TYPES not given defaults to 'pending'."""
++    from lib.review_record_schema import REVIEW_TYPES
++
++    record_dir = project_root / ".shipwright" / "planning" / "iterate" / run_id
++    record_dir.mkdir(parents=True, exist_ok=True)
++    reviews = {
++        t: {
++            "review_type": t,
++            "status": statuses.get(t, "pending"),
++            "findings_count": 0,
++            "findings": [],
++            "provider": None,
++            "completed_at": None,
++            "disposition": None,
++            "recorded_by": None,
++            "parse_status": None,
++            "raw_excerpt": None,
++        }
++        for t in REVIEW_TYPES
++    }
++    (record_dir / "reviews.json").write_text(
++        json.dumps({"schema_version": 1, "run_id": run_id, "reviews": reviews}),
++        encoding="utf-8",
++    )
++
++
++def test_review_cascade_not_started_when_reviews_json_absent(tmp_project):
++    """No reviews.json yet (before Step 7/self-review) — must not crash and
++    must not falsely claim an interruption."""
++    _write_iterate_spec(
++        tmp_project, run_id="iterate-2026-08-09-notstarted",
++        complexity="medium", branch_tail="notstarted",
++    )
++
++    lines = render_iterate_progress(tmp_project, {"branch": "iterate/notstarted"})
++    text = "\n".join(lines)
++
++    assert "Review Cascade" in text and "not started" in text
++    assert "Review cascade interrupted" not in text
++
++
++def test_review_cascade_not_due_yet_when_self_pending(tmp_project):
++    """A freshly-init'd record has every type pending — must read as 'not
++    due yet', never as an interrupted cascade (external plan review, openai
++    HIGH finding this fix exists to close)."""
++    _write_iterate_spec(
++        tmp_project, run_id="iterate-2026-08-09-allpending",
++        complexity="medium", branch_tail="allpending",
++    )
++    _write_reviews_json(tmp_project, run_id="iterate-2026-08-09-allpending", statuses={})
++
++    lines = render_iterate_progress(tmp_project, {"branch": "iterate/allpending"})
++    text = "\n".join(lines)
++
++    assert "Review Cascade" in text and "not due yet" in text
++    # The cascade itself must not add a replay entry — any replay present
++    # here would come from the (unrelated) missing external-review marker.
++    assert "Review cascade interrupted" not in text
++    assert "reviews.json is unreadable" not in text
++
++
++def test_review_cascade_interrupted_when_self_terminal_and_others_pending(tmp_project):
++    """self completed but code/doubt still pending — the cascade started and
++    was interrupted; B1 must be able to see this from the rendered handoff."""
++    _write_iterate_spec(
++        tmp_project, run_id="iterate-2026-08-09-interrupted",
++        complexity="medium", branch_tail="interrupted",
++    )
++    _write_reviews_json(
++        tmp_project, run_id="iterate-2026-08-09-interrupted",
++        statuses={"self": "completed", "spec": "completed"},
++    )
++
++    lines = render_iterate_progress(tmp_project, {"branch": "iterate/interrupted"})
++    text = "\n".join(lines)
++
++    assert "Review Cascade" in text and "interrupted" in text
++    assert "code" in text and "doubt" in text
++    assert "Mandatory replay on Resume" in text
++    assert "Review cascade interrupted" in text
++
++
++def test_review_cascade_complete_when_self_terminal_and_nothing_pending(tmp_project):
++    """Every type terminal — no replay needed for the cascade."""
++    _write_iterate_spec(
++        tmp_project, run_id="iterate-2026-08-09-done",
++        complexity="medium", branch_tail="done",
++    )
++    _write_reviews_json(
++        tmp_project, run_id="iterate-2026-08-09-done",
++        statuses={t: "completed" for t in
++                  ("self", "plan", "plan_internal", "code", "doubt", "external_code", "spec")},
++    )
++
++    lines = render_iterate_progress(tmp_project, {"branch": "iterate/done"})
++    text = "\n".join(lines)
++
++    assert "Review Cascade" in text and "complete" in text
++    assert "Review cascade interrupted" not in text
++
++
++def test_review_cascade_unreadable_reviews_json_flags_replay(tmp_project):
++    """A malformed reviews.json is a data-integrity fault, not an absence —
++    it must surface as 'unreadable' and force a replay entry, never be
++    silently treated as 'not started'."""
++    _write_iterate_spec(
++        tmp_project, run_id="iterate-2026-08-09-broken",
++        complexity="medium", branch_tail="broken",
++    )
++    record_dir = (
++        tmp_project / ".shipwright" / "planning" / "iterate" / "iterate-2026-08-09-broken"
++    )
++    record_dir.mkdir(parents=True, exist_ok=True)
++    (record_dir / "reviews.json").write_text("{not valid json", encoding="utf-8")
++
++    lines = render_iterate_progress(tmp_project, {"branch": "iterate/broken"})
++    text = "\n".join(lines)
++
++    assert "Review Cascade" in text and "unreadable" in text
++    assert "Mandatory replay on Resume" in text
++    assert "reviews.json is unreadable" in text
++
++
++def test_review_cascade_resolves_run_id_from_miniplan_when_no_spec(tmp_project):
++    """A small-tier run with no iterate spec (medium+ only) still has a
++    mini-plan at every tier (iterate-2026-08-09-compaction-state-audit) — the
++    run_id fallback must find it so the cascade check still works."""
++    iterate_dir = tmp_project / ".shipwright" / "planning" / "iterate"
++    iterate_dir.mkdir(parents=True, exist_ok=True)
++    (iterate_dir / "2026-08-09-nospec-miniplan.md").write_text(
++        "\n".join([
++            "# Mini-Plan: nospec",
++            "",
++            "- **Run ID:** iterate-2026-08-09-nospec",
++            "- **Complexity:** small",
++        ]),
++        encoding="utf-8",
++    )
++    _write_reviews_json(
++        tmp_project, run_id="iterate-2026-08-09-nospec",
++        statuses={"self": "completed"},
++    )
++
++    lines = render_iterate_progress(tmp_project, {"branch": "iterate/nospec"})
++    text = "\n".join(lines)
++
++    assert "iterate-2026-08-09-nospec" in text
++    assert "Review Cascade" in text and "interrupted" in text
+diff --git a/shared/tests/test_spec_checks_s3_miniplan_gate.py b/shared/tests/test_spec_checks_s3_miniplan_gate.py
+new file mode 100644
+index 00000000..ca768e02
+--- /dev/null
++++ b/shared/tests/test_spec_checks_s3_miniplan_gate.py
+@@ -0,0 +1,59 @@
++"""S3's small+feature Mini-Plan gate (iterate-2026-08-09-compaction-state-audit).
++
++Split out of test_spec_checks.py rather than appended there: that file
++already carries a grandfathered bloat-baseline entry, so growing it further
++would ratchet past its `current` ceiling.
++
++iteration-planning.md's Mini-Plan Protocol triggers at FEATURE + small/medium
++but CHANGE/BUG + medium only — so S3 (which gated purely on
++`complexity >= medium`) silently skipped the one case where a `small`
++iterate is now required to persist a mini-plan to disk (AC-1 of the same
++iterate). See spec_checks.py's `_miniplan_required`.
++"""
++
++from __future__ import annotations
++
++import json
++import sys
++from pathlib import Path
++
++import pytest
++
++_SCRIPTS = Path(__file__).resolve().parent.parent / "scripts"
++if str(_SCRIPTS) not in sys.path:
++    sys.path.insert(0, str(_SCRIPTS))
++
++from lib import phase_quality as pq  # noqa: E402
++from tools.verifiers import spec_checks as sc  # noqa: E402
++
++
++@pytest.fixture
++def proj(tmp_path: Path) -> Path:
++    (tmp_path / ".shipwright" / "agent_docs").mkdir(parents=True, exist_ok=True)
++    return tmp_path
++
++
++def _write_iterate_history(proj: Path, entries: list[dict]) -> None:
++    (proj / "shipwright_run_config.json").write_text(
++        json.dumps({"iterate_history": entries}), encoding="utf-8",
++    )
++
++
++def test_s3_small_feature_warns_then_passes_with_miniplan(proj: Path):
++    """FEATURE+small triggers the Mini-Plan Protocol; S3 must gate it too —
++    WARN without a mini-plan on disk, PASS once one is written."""
++    _write_iterate_history(proj, [{"run_id": "r1", "complexity": "small", "type": "feature"}])
++    f = sc.check_s3_iterate_miniplan(proj, "r1")
++    assert f["status"] == pq.STATUS_WARN and f.get("tier") == 2
++
++    iter_dir = proj / ".shipwright" / "planning" / "iterate"
++    iter_dir.mkdir(parents=True)
++    (iter_dir / "2026-04-18-r1-miniplan.md").write_text("plan", encoding="utf-8")
++    assert sc.check_s3_iterate_miniplan(proj, "r1")["status"] == pq.STATUS_PASS
++
++
++def test_s3_still_skips_small_change_and_small_bug(proj: Path):
++    """Only FEATURE runs the protocol at small; CHANGE/BUG stay medium-only."""
++    for category in ("change", "bug"):
++        _write_iterate_history(proj, [{"run_id": "r1", "complexity": "small", "type": category}])
++        assert sc.check_s3_iterate_miniplan(proj, "r1")["status"] == pq.STATUS_SKIP

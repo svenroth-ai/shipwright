@@ -198,11 +198,12 @@ If no boundaries touched: write `n/a` with one-line justification.}
 > cannot be empirically driven and silently degrade F0.5 to spec-only
 > authorship.
 
-## Step 3: Mini-Plan (small: inline, medium: persisted)
+## Step 3: Mini-Plan (persisted at every tier that runs it)
 
-See `references/iteration-planning.md` for protocol.
-- Small: inline in session
-- Medium+: save as `.shipwright/planning/iterate/{date}-{desc}-miniplan.md`
+See `references/iteration-planning.md` for protocol. Save as
+`.shipwright/planning/iterate/{date}-{desc}-miniplan.md` at `small` and at
+`medium+` alike — only the content depth (work breakdown, alternative
+approach) is medium-only, not the file itself.
 
 ## Step 3b: User Approval Gate (medium+)
 

@@ -156,10 +156,20 @@ For each user-visible behavior, write two ACs:
 6. **Alternative approach** (medium only) — one alternative + why rejected
 
 ### Persistence
-- **Small:** Inline in session only (no file)
-- **Medium+:** Save as `.shipwright/planning/iterate/{date}-{desc}-miniplan.md`
-  - Include `run_id` in header
-  - This file is passed to `review.py --plan-file`
+
+Save as `.shipwright/planning/iterate/{date}-{desc}-miniplan.md` at **every**
+complexity tier that runs this protocol — including `small`. A `small`-tier
+mini-plan is session-only in conversation until this fix, which is exactly
+the state-loss risk this document exists to close: it has no disk
+representation and a mid-session compaction destroys it outright. Only the
+*persistence*, not the *content depth*, changes for `small` — Content items
+2 (work breakdown) and 6 (alternative approach) above stay gated
+`(medium only)`.
+
+- Include `run_id` in header
+- This file is passed to `review.py --plan-file` (medium+ only — `small`
+  never reaches External LLM Review, so this file has no such consumer there,
+  but it is still a resumable, on-disk record of what was agreed)
 
 ---
 

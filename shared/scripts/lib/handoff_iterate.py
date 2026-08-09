@@ -12,6 +12,9 @@ import json
 from datetime import datetime, timezone
 from pathlib import Path
 
+from lib.review_record_core import ReviewRecordError, entry_for, pending_types, read_record
+from lib.review_record_schema import STATUS_PENDING, TERMINAL_STATUSES
+
 
 def render_iterate_progress(project_root: Path, git_info: dict) -> list[str]:
     """Return lines describing in-progress iterate state.
@@ -55,6 +58,28 @@ def render_iterate_progress(project_root: Path, git_info: dict) -> list[str]:
             except OSError:
                 pass
 
+        # A killed-mid-phase run may not have an iterate spec yet (medium+
+        # only, per Step 1) but the mini-plan is written earlier and at every
+        # tier (iterate-2026-08-09-compaction-state-audit) — fall back to its
+        # header so the review-cascade check below still gets a run_id.
+        if not run_id:
+            miniplan_candidates = [
+                p for p in iterate_dir.glob("*-miniplan.md")
+                if short and short in p.name.lower()
+            ]
+            if miniplan_candidates:
+                miniplan_path = max(miniplan_candidates, key=lambda p: p.stat().st_mtime)
+                try:
+                    header = miniplan_path.read_text(encoding="utf-8", errors="ignore")[:1200]
+                    for line in header.splitlines():
+                        low = line.strip().lower()
+                        if low.startswith("- **run id:**") or low.startswith("- **run-id:**"):
+                            run_id = line.split(":**", 1)[1].strip()
+                        elif low.startswith("- **complexity:**"):
+                            complexity = line.split(":**", 1)[1].strip().lower()
+                except OSError:
+                    pass
+
     # Look for the external review marker. Two filename conventions are
     # acceptable (see iteration-planning.md Step 5): a run-scoped file or
     # the shared state file. Prefer run-scoped if both exist.
@@ -89,6 +114,46 @@ def render_iterate_progress(project_root: Path, git_info: dict) -> list[str]:
         marker_detail = f"{candidate.name} @ {ts_raw[:19]}" if ts_raw else candidate.name
         break
 
+    # Review-cascade status: this is the same reviews.json B1 itself reads
+    # directly and trusts over this rendered snapshot (SKILL.md's "the
+    # canonical check"). Rendering it here is a secondary, best-effort
+    # convenience for a human skimming the handoff; it is not a resume
+    # decision an agent should make from this file alone.
+    #
+    # Gated on `self` reaching a terminal status before any other pending
+    # type counts as "interrupted" — a freshly-init'd record has every type
+    # pending before anything is due, which is not evidence of an
+    # interruption (external plan review, openai HIGH finding).
+    review_status = "unknown"
+    review_detail = ""
+    if not run_id:
+        review_status = "no run_id resolved"
+    else:
+        try:
+            record = read_record(project_root, run_id)
+        except ReviewRecordError as exc:
+            review_status = "unreadable"
+            review_detail = str(exc)
+        else:
+            if record is None:
+                # A missing record is only worth flagging once complexity is
+                # resolvable — for an unresolvable complexity (no spec, no
+                # miniplan header match) this stays silent, matching the
+                # prior degraded behavior rather than reporting noise on
+                # every run this section can't fully identify.
+                review_status = "not started" if complexity in ("small", "medium", "large") else ""
+            else:
+                self_status = entry_for(record, "self").get("status", STATUS_PENDING)
+                if self_status not in TERMINAL_STATUSES:
+                    review_status = "not due yet"
+                else:
+                    pending = [t for t in pending_types(record) if t != "self"]
+                    if pending:
+                        review_status = "interrupted"
+                        review_detail = ", ".join(pending)
+                    else:
+                        review_status = "complete"
+
     lines: list[str] = ["## Current Iterate Progress", ""]
     lines.append(f"- **Branch**: {branch}")
     if run_id:
@@ -105,10 +170,19 @@ def render_iterate_progress(project_root: Path, git_info: dict) -> list[str]:
     if marker_detail:
         review_line += f" ({marker_detail})"
     lines.append(review_line)
+    if review_status:
+        cascade_line = f"- **Review Cascade**: {review_status}"
+        if review_detail:
+            cascade_line += f" ({review_detail})"
+        lines.append(cascade_line)
 
     replay: list[str] = []
     if complexity in ("medium", "large") and marker_status in ("missing", "stale"):
         replay.append("Step 4 — External LLM Review (marker missing/stale)")
+    if review_status == "interrupted":
+        replay.append(f"Step 8 — Review cascade interrupted (pending: {review_detail})")
+    elif review_status == "unreadable":
+        replay.append(f"reviews.json is unreadable — investigate before resuming ({review_detail})")
     if git_info.get("uncommitted_changes"):
         replay.append("Finalization (F0–F11) after all mandatory phases pass")
 
