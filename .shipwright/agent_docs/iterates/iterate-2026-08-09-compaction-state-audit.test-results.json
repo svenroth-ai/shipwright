@@ -1,0 +1,126 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-08-09-compaction-state-audit",
+    "date": "2026-08-09",
+    "unit": {
+      "status": "pass",
+      "passed": 16288,
+      "total": 16288,
+      "note": "F0 canonical suite runner (run_test_suite.py): 18/18 units GREEN in 5.7 min. Per-unit counts (re-verified locally with `--extra dev`): shared/tests 9042p/32s, shared/scripts/tests 422p, shared/scripts/tools/tests 537p/8s, integration-tests 520p, shipwright-iterate 942p/1s, shipwright-build 131p, shipwright-adopt 608p, shipwright-changelog 81p, shipwright-compliance 1630p/5s, shipwright-deploy 102p, shipwright-design 34p, shipwright-grade 390p/1s, shipwright-plan 82p, shipwright-preview 10p, shipwright-project 59p, shipwright-run 555p, shipwright-security 900p/7s, shipwright-test 243p. 54 skipped total (pre-existing, unrelated to this diff), 0 failed."
+    },
+    "integration": {
+      "status": "pass",
+      "passed": 520,
+      "failed": 0
+    },
+    "e2e": {
+      "status": "n/a",
+      "reason": "no browser surface; this iterate changes skill reference docs and a shared Python helper library only"
+    },
+    "smoke": {
+      "status": "n/a",
+      "reason": "no startable server surface for this change"
+    },
+    "pgtap": {
+      "status": "n/a",
+      "reason": "no database"
+    },
+    "design_fidelity": {
+      "status": "n/a",
+      "reason": "no UI surface"
+    },
+    "surface_verification": {
+      "surface": "none",
+      "tests_run": 0,
+      "exit_code": 0,
+      "justification": "Modifies the shipwright-iterate skill's own reference docs and a shared Python helper library with no startable web/cli/api surface of its own; verification is via unit/meta-tests plus the mandated mid-phase-kill acceptance test (AC-4).",
+      "evidence_path": ".shipwright/runs/iterate-2026-08-09-compaction-state-audit/surface_verification.json"
+    },
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "render_iterate_progress reports interrupted + names the pending types when self is terminal and others are not",
+          "disposition": "tested",
+          "evidence": "test_review_cascade_handoff.py::test_review_cascade_interrupted_when_self_terminal_and_others_pending PASSED"
+        },
+        {
+          "behavior": "render_iterate_progress reports not due yet (no false interrupted) when self itself is still pending",
+          "disposition": "tested",
+          "evidence": "test_review_cascade_handoff.py::test_review_cascade_not_due_yet_when_self_pending PASSED"
+        },
+        {
+          "behavior": "render_iterate_progress distinguishes no record yet from record present but unreadable",
+          "disposition": "tested",
+          "evidence": "test_review_cascade_handoff.py::test_review_cascade_not_started_when_reviews_json_absent, ::test_review_cascade_unreadable_reviews_json_flags_replay PASSED"
+        },
+        {
+          "behavior": "render_iterate_progress reports complete (no replay) when every review type is terminal",
+          "disposition": "tested",
+          "evidence": "test_review_cascade_handoff.py::test_review_cascade_complete_when_self_terminal_and_nothing_pending PASSED"
+        },
+        {
+          "behavior": "render_iterate_progress resolves run_id from a *-miniplan.md header when no spec file exists (FEATURE+small)",
+          "disposition": "tested",
+          "evidence": "test_review_cascade_handoff.py::test_review_cascade_resolves_run_id_from_miniplan_when_no_spec PASSED"
+        },
+        {
+          "behavior": "render_iterate_progress stays silent when a missing record's complexity is unresolvable (external code-review finding)",
+          "disposition": "tested",
+          "evidence": "test_review_cascade_handoff.py::test_review_cascade_silent_when_complexity_unresolvable PASSED"
+        },
+        {
+          "behavior": "Mini-Plan Protocol persistence rule requires a file at every complexity tier that runs the protocol",
+          "disposition": "tested",
+          "evidence": "test_mini_plan_persistence_doc.py (4/4) PASSED"
+        },
+        {
+          "behavior": "check_s3_iterate_miniplan WARNs at small for feature-type runs, still SKIPs at small for change/bug",
+          "disposition": "tested",
+          "evidence": "test_spec_checks_s3_miniplan_gate.py::test_s3_small_feature_warns_then_passes_with_miniplan, ::test_s3_still_skips_small_change_and_small_bug PASSED"
+        },
+        {
+          "behavior": "The immediate-write ordering mandate is present at all three prose spawn sites",
+          "disposition": "tested",
+          "evidence": "test_review_record_immediate_write_rule.py (8/8, parametrized) PASSED"
+        },
+        {
+          "behavior": "write-review-payload-on-stop.py salvages a reviewer's reply only when not already recorded, never blocks (bad stdin, missing transcript, malformed reviews.json, or a failing salvage write)",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-build/tests/test_review_payload_on_stop.py (18/18); full plugins/shipwright-build suite 131/131 PASSED"
+        },
+        {
+          "behavior": "B1's replay-check names the direct reviews.json read and gates on self's terminal status before treating other pending types as an interruption",
+          "disposition": "tested",
+          "evidence": "test_skill_b1_reviews_json_check.py (4/4, doc-presence) PASSED"
+        },
+        {
+          "behavior": "End-to-end: a fixture reviews.json drives both record_review_pass.py show and the real generate_handoff_on_stop.py Stop-hook subprocess, and both name the same pending set (AC-4, the mandated acceptance test)",
+          "disposition": "tested",
+          "evidence": "test_compaction_state_audit_acceptance.py (3/3) PASSED"
+        }
+      ],
+      "counts": {
+        "total": 12,
+        "tested": 12,
+        "untestable": 0,
+        "untested_testable": 0
+      },
+      "ledger_path": ".shipwright/planning/iterate/2026-08-09-compaction-state-audit.md"
+    },
+    "degraded": []
+  },
+  "coverage": {
+    "total": 80.2,
+    "measured_tier": "repo",
+    "source": "combined coverage.xml (all plugins + shared + integration)",
+    "measured_at": "2026-07-04T00:00:00Z"
+  },
+  "source_state": {
+    "run_id": "iterate-2026-08-09-compaction-state-audit",
+    "commit": "56644c14f0c00383603f3b8e1dbdedb64b5c709a",
+    "dirty": true,
+    "base": null,
+    "release": null
+  }
+}

@@ -21,6 +21,35 @@
         ]
       }
     ],
+    "SubagentStop": [
+      {
+        "matcher": "shipwright-build:spec-reviewer",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "uv run \"${CLAUDE_PLUGIN_ROOT}/scripts/hooks/write-review-payload-on-stop.py\" --review-type spec"
+          }
+        ]
+      },
+      {
+        "matcher": "shipwright-build:code-reviewer",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "uv run \"${CLAUDE_PLUGIN_ROOT}/scripts/hooks/write-review-payload-on-stop.py\" --review-type code"
+          }
+        ]
+      },
+      {
+        "matcher": "shipwright-build:doubt-reviewer",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "uv run \"${CLAUDE_PLUGIN_ROOT}/scripts/hooks/write-review-payload-on-stop.py\" --review-type doubt"
+          }
+        ]
+      }
+    ],
     "PostToolUse": [
       {
         "matcher": "Write|Edit",

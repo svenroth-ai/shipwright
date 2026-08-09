@@ -218,7 +218,13 @@ If campaign directory doesn't exist yet:
        c) `doubt-reviewer` — Stage 3, conditional, advisory-must-address.
 
        Pass `model=<review tier resolved at loop step 2>` to each of the three
-       spawns above (omit when `inherit`).
+       spawns above (omit when `inherit`). **State the run_id in plain text in
+       every spawn prompt** — the `SubagentStop` salvage hook
+       (`write-review-payload-on-stop.py`) reads it only from the transcript,
+       never an env var. **Write each subagent's reply to its payload file
+       before any other reasoning or spawning the next reviewer** — a
+       mitigation, not a guarantee; the salvage hook backstops the window this
+       alone cannot close (see `iteration-reviews.md`).
 
        Promote the rows IN THAT ORDER. The runner already closed them and a
        closed row is immutable, so `--force` is REQUIRED (without it the CLI

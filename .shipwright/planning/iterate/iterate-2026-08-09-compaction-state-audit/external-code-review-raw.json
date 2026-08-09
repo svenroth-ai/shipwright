@@ -1,0 +1,32 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "openrouter",
+  "degraded": false,
+  "reviews_succeeded": 1,
+  "reviews": {
+    "openai": {
+      "feedback": "- Category: bug\n- Severity: medium\n- File: `plugins/shipwright-build/scripts/hooks/write-review-payload-on-stop.py:231-233`\n- Finding: The hook promises to \u201cNEVER block,\u201d but `out_path.parent.mkdir(...)` and `out_path.write_text(...)` are outside the fail-open error handling. A read-only worktree, a conflicting directory at the salvage-file path, or an I/O failure raises `OSError`, exits the hook nonzero, and can block/fail the reviewer lifecycle instead of safely degrading.\n- Suggestion: Wrap directory creation and file writing in `try/except OSError`, emit `_diag(...)`, and return `0`. Add a test that forces `mkdir` or `write_text` to raise and verifies `main()` remains fail-open.\n\n- Category: spec\n- Severity: medium\n- File: `shared/scripts/lib/handoff_iterate.py:131-135,164-168`\n- Finding: The renderer reports `Review Cascade: not started` whenever a resolved `run_id` has no `reviews.json`, regardless of whether complexity is known. The planned behavior specifically limits the missing-record notice to resolvable `small`/`medium`/`large` complexity and requires silence for unresolvable complexity; the implementation does not perform that gate. The stated ledger also claims this unresolvable-complexity behavior is tested, but no such test exists in `test_review_cascade_handoff.py`.\n- Suggestion: Only render the absent-record status when `complexity in (\"small\", \"medium\", \"large\")`; otherwise retain the prior silent degraded behavior. Add a test with a resolvable run ID but no parsed complexity and assert no review-cascade missing-record line is emitted.\n\n- Category: regression\n- Severity: medium\n- File: `shared/scripts/lib/handoff_iterate.py:15-16`\n- Finding: The new imports use only top-level `lib.*` imports, despite the required relative-then-absolute import pattern for both package imports and hook-path imports. This can fail or resolve the wrong `lib` package when `handoff_iterate` is imported as part of a package or from a plugin process that has another `lib` package on `sys.path`; the change adds this dependency to a shared helper used across plugins.\n- Suggestion: Use a relative import fallback pattern (for example, `from .review_record_core ...` with an `ImportError` fallback to `from lib.review_record_core ...`) matching the repository\u2019s established schema-module approach. Add a test that imports the module through both supported import routes.\n\nOverall assessment: ship-with-fixes. The core persistence and review-state approach is largely implemented, but the hook is not actually fail-open under filesystem errors and the handoff behavior/import contract do not fully match the stated requirements.  \nSHIPWRIGHT_VERDICT: revise",
+      "via": "openrouter",
+      "status": "success"
+    },
+    "deepseek": {
+      "status": "error",
+      "reason": "Expecting value: line 313 column 1 (char 1716)"
+    }
+  },
+  "verdicts": {
+    "openai": "revise",
+    "deepseek": "unavailable"
+  },
+  "statuses": {
+    "openai": "success",
+    "deepseek": "error"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": false,
+    "requires_resolution": true,
+    "reason": "only one reviewer answered \u2014 deepseek did not (deepseek=unavailable, openai=revise)"
+  }
+}

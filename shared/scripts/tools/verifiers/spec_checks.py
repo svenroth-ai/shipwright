@@ -176,6 +176,11 @@ def _is_medium_or_larger(complexity: str | None) -> bool:
     return (complexity or "").lower() in {"medium", "large"}
 
 
+def _miniplan_required(complexity: str | None, category: str | None) -> bool:
+    return _is_medium_or_larger(complexity) or (
+        (complexity or "").lower() == "small" and (category or "").lower() == "feature")
+
+
 # ---------------------------------------------------------------------------
 # S1 — top-level spec exists + has FR headings
 # ---------------------------------------------------------------------------
@@ -298,12 +303,10 @@ def check_s3_iterate_miniplan(project_root: Path, run_id: str) -> dict[str, Any]
             f"no iterate entry for run_id={run_id}",
             name=S3_NAME, provenance="unverified_marker",
         )
-    if not _is_medium_or_larger(complexity):
-        return make_finding(
-            "S3", STATUS_SKIP,
-            f"complexity={complexity} — mini-plan not required below medium",
-            name=S3_NAME,
-        )
+    category = _iterate_category(project_root, run_id)
+    if not _miniplan_required(complexity, category):
+        msg = f"complexity={complexity}, type={category or 'unknown'} — mini-plan not required"
+        return make_finding("S3", STATUS_SKIP, msg, name=S3_NAME)
 
     hits = _iter_miniplan_candidates(project_root, run_id)
     if not hits:
