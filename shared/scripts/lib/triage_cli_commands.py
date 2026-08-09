@@ -20,6 +20,8 @@ if str(_SCRIPTS_DIR) not in sys.path:
     sys.path.insert(0, str(_SCRIPTS_DIR))
 
 from triage import (  # noqa: E402
+    KINDS,
+    SEVERITIES,
     SEVERITY_RANK,
     STATUSES,
     _append_ids_at,
@@ -28,6 +30,7 @@ from triage import (  # noqa: E402
     amend_triage_item,
     read_all_items,
 )
+from lib.triage_amend import has_amend_content, validate_amend_event  # noqa: E402
 from lib.triage_contract import build_listing  # noqa: E402
 from lib.triage_delivery import format_pending_delivery_notice  # noqa: E402
 from lib.triage_integrity import store_facts  # noqa: E402
@@ -63,31 +66,33 @@ def cmd_list(args: argparse.Namespace) -> int:
     resolved = read_all_items(project_root)
     items = [it for it in resolved if it.get("status") == "triage"]
     # A park whose revisit date has arrived already resolved back to `triage`
-    # above, so it lands in the open list without anything here noticing —
-    # which is the whole point of deriving expiry in the reader.
+    # above, so it lands in the open list without anything here noticing.
     deferred = [it for it in resolved if it.get("status") == "snoozed"]
-    corruption, undelivered = store_facts(_triage_path(project_root), _outbox_path(project_root), applied_statuses=STATUSES)
+    corruption, undelivered, undelivered_amends = store_facts(
+        _triage_path(project_root), _outbox_path(project_root),
+        applied_statuses=STATUSES,
+        is_valid_amend=lambda event: has_amend_content(event) and validate_amend_event(
+            event, severities=SEVERITIES, kinds=KINDS),
+    )
     if getattr(args, "json", False):
-        return _emit_json(project_root, items, deferred, undelivered, corruption)
+        return _emit_json(project_root, items, deferred, undelivered,
+                          undelivered_amends, corruption)
     if not items:
         sys.stdout.write("No open triage items.\n\n")
     for item in items:
         sys.stdout.write(format_item(item) + "\n\n")
-    # The third decision is not a disappearance: a deferred entry is still
-    # here, still undone, and told apart from an open one by its row's own
-    # marker, not only by the section header. Capped like the rendered
-    # document's open list, because a parked section that prints without limit
-    # crowds out the work that is actually open.
+    # A deferred entry remains actionable and is therefore rendered separately.
     for block in render_deferred_section(deferred, SEVERITY_RANK):
         sys.stdout.write(block + "\n\n")
-    # A dismissed-but-buffered item is in NEITHER section above (it resolved to a
-    # terminal status), so this summary is the only place it can appear (finding 28).
+    # A dismissed-but-buffered item is in neither section, so this is its only
+    # human-visible delivery signal; amend delivery is exposed in the JSON contract.
     if undelivered:
         sys.stdout.write(format_pending_delivery_notice(undelivered) + "\n\n")
     return 0
 
 
-def _emit_json(project_root: Path, items: list[dict], deferred: list[dict], undelivered: set, corruption: list) -> int:
+def _emit_json(project_root: Path, items: list[dict], deferred: list[dict],
+               undelivered: set, undelivered_amends: set, corruption: list) -> int:
     """Serialise the machine contract. Its shape lives in `lib.triage_contract`."""
     payload = build_listing(
         items, deferred,
@@ -95,11 +100,11 @@ def _emit_json(project_root: Path, items: list[dict], deferred: list[dict], unde
         outbox_ids=_append_ids_at(_outbox_path(project_root)),
         severity_rank=SEVERITY_RANK,
         undelivered_status_ids=undelivered,
+        undelivered_amend_ids=undelivered_amends,
         corruption=corruption,
     )
     sys.stdout.write(json.dumps(payload, indent=2, ensure_ascii=False) + "\n")
     return 0
-
 
 def cmd_promote(args: argparse.Namespace) -> int:
     project_root = Path(args.project_root)

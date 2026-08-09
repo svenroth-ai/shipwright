@@ -11,7 +11,7 @@ from __future__ import annotations
 import statistics
 from datetime import datetime, timezone
 
-from lib.iterate_timings import FOLD_TIME_CAPTURABLE_SPANS, TOP_LEVEL_SPANS
+from lib.iterate_timings import FOLD_TIME_CAPTURABLE_SPANS, TOP_LEVEL_SPANS, agent_span_max_ms
 from lib.iterate_timings_normalize import union_duration_ms
 
 ROLLING_WINDOW = 10
@@ -35,6 +35,49 @@ def iterate_work_completed_events(events: list[dict]) -> list[dict]:
 
 
 _SOURCE_RANK = {"producer": 0, "agent": 1, "derived": 2}
+
+
+def _is_implausible_agent_span(span: dict) -> bool:
+    """Whether a durable agent span exceeds its name-specific credible duration."""
+    duration_ms = span.get("duration_ms")
+    return (
+        span.get("source") == "agent"
+        and span.get("outcome") in ("completed", "cancelled")
+        and isinstance(duration_ms, (int, float))
+        and not isinstance(duration_ms, bool)
+        and duration_ms > agent_span_max_ms(span.get("name", ""))
+    )
+
+
+def _is_usable_work_span(span: dict) -> bool:
+    """True for a bounded outcome that may represent credible work."""
+    return (
+        span.get("outcome") in ("completed", "cancelled")
+        and not _is_implausible_agent_span(span)
+    )
+
+
+def _selection_rank(span: dict) -> int:
+    """Prefer a successful credible attempt over a cancelled one."""
+    if not _is_usable_work_span(span):
+        return 2
+    return 0 if span.get("outcome") == "completed" else 1
+
+
+def _open_finalization_duration_ms(span: dict, completed_at):
+    """Return the inferable F5b-bounded finalization duration, if any."""
+    if (
+        span.get("source") != "agent"
+        or span.get("name") != "finalization"
+        or span.get("parent") is not None
+        or span.get("outcome") != "incomplete"
+        or span.get("end_utc")
+    ):
+        return None
+    started_at = _parse_dt(span.get("start_utc"))
+    if started_at is None or completed_at is None or completed_at < started_at:
+        return None
+    return int((completed_at - started_at).total_seconds() * 1000)
 
 
 def _select_top_level(spans: list[dict]) -> dict[str, dict]:
@@ -67,12 +110,24 @@ def _select_top_level(spans: list[dict]) -> dict[str, dict]:
             entries,
             key=lambda e: (
                 _SOURCE_RANK.get(e.get("source"), 3),
+                _selection_rank(e),
                 0 if e.get("end_utc") else 1,
                 -(e.get("duration_ms") or 0),
             ),
         )
         for name, entries in candidates.items()
     }
+
+
+def _scope_started_at(event: dict):
+    """Return the durable scope boundary, or ``None`` when it was never marked."""
+    phase_timings = event.get("phase_timings")
+    if not isinstance(phase_timings, list):
+        return None
+    for phase in phase_timings:
+        if isinstance(phase, dict) and phase.get("phase") == "scope":
+            return _parse_dt(phase.get("started"))
+    return None
 
 
 def run_stat(event: dict) -> dict:
@@ -84,10 +139,15 @@ def run_stat(event: dict) -> dict:
     does not re-validate, only aggregates.
     """
     run_id = event.get("adr_id") or "unknown"
+    scope_start = _scope_started_at(event)
     spans = event.get("iterate_timings")
+    if spans is None and scope_start is not None:
+        # A current scope mark with no folded spans is a measured zero-
+        # emission run, not a pre-instrumentation historical record.
+        spans = []
     base = {"run_id": run_id, "ts": event.get("ts"), "has_timings": False,
            "pre_instrumentation": spans is None}
-    if not isinstance(spans, list) or not spans:
+    if not isinstance(spans, list):
         return base
 
     top_level = _select_top_level(spans)
@@ -98,17 +158,37 @@ def run_stat(event: dict) -> dict:
     if starts and ends:
         total_ms = max(0, int((max(ends) - min(starts)).total_seconds() * 1000))
 
+    completed_at = _parse_dt(event.get("ts"))
     phases = {}
     for name in TOP_LEVEL_SPANS:
         entry = top_level.get(name)
         if entry is None:
             phases[name] = {"present": False}
             continue
-        excl = entry.get("exclusive_ms")
+        inferred_finalization_ms = _open_finalization_duration_ms(entry, completed_at)
+        implausible = (
+            _is_implausible_agent_span(entry)
+            or (
+                inferred_finalization_ms is not None
+                and inferred_finalization_ms > agent_span_max_ms("finalization")
+            )
+        )
+        unavailable = entry.get("outcome") == "unavailable" or implausible
+        recorded_duration_ms = entry.get("duration_ms") if unavailable else None
+        if unavailable and recorded_duration_ms is None:
+            recorded_duration_ms = inferred_finalization_ms
+        excl = None if unavailable else entry.get("exclusive_ms")
+        duration_ms = None if unavailable else entry.get("duration_ms")
         pct = round(100.0 * excl / total_ms, 1) if (total_ms and excl is not None) else None
+        unavailable_reason = (entry.get("extra") or {}).get("unavailable_reason")
+        if implausible:
+            unavailable_reason = "implausible_duration"
         phases[name] = {
-            "present": True, "outcome": entry.get("outcome"), "source": entry.get("source"),
-            "duration_ms": entry.get("duration_ms"), "exclusive_ms": excl, "pct": pct,
+            "present": True, "outcome": "unavailable" if unavailable else entry.get("outcome"),
+            "source": entry.get("source"), "duration_ms": duration_ms,
+            "exclusive_ms": excl, "pct": pct,
+            "recorded_duration_ms": recorded_duration_ms,
+            "unavailable_reason": unavailable_reason,
         }
 
     # Union, not sum: exclusive_ms is disjoint WITHIN one parent's own
@@ -129,22 +209,48 @@ def run_stat(event: dict) -> dict:
     # independent selection). Without clipping, such a span can fall outside
     # the envelope and push covered_ms above total_ms, silently clamping
     # unattributed_ms to 0 even when a real gap exists (external code review).
-    envelope_start = min(starts) if starts else None
-    envelope_end = max(ends) if ends else None
+    # The durable scope mark is the run's real start boundary; the
+    # work_completed event timestamp is its F5b end. Historic runs that have
+    # no scope mark cannot prove wall time, so they report it as unavailable.
+    wall_ms = None
+    coverage_reason = None
+    if scope_start is None:
+        coverage_reason = "missing_scope_mark"
+    elif completed_at is None or completed_at < scope_start:
+        coverage_reason = "invalid_scope_wall"
+    else:
+        wall_ms = int((completed_at - scope_start).total_seconds() * 1000)
+
+    # Union, not sum: nested and top-level spans can overlap. Only bounded
+    # work intervals count; an unavailable agent span remains visible as
+    # implausible-duration evidence but cannot inflate coverage.
+    envelope_start = scope_start if wall_ms is not None else (min(starts) if starts else None)
+    envelope_end = completed_at if wall_ms is not None else (max(ends) if ends else None)
     covered_intervals = []
     for s in spans:
+        bounded_work = _is_usable_work_span(s)
+        finalization_duration_ms = _open_finalization_duration_ms(s, envelope_end)
+        bounded_finalization = (
+            wall_ms is not None
+            and finalization_duration_ms is not None
+            and finalization_duration_ms <= agent_span_max_ms("finalization")
+        )
+        if not bounded_work and not bounded_finalization:
+            continue
         s_start = _parse_dt(s.get("start_utc"))
-        s_end = _parse_dt(s.get("end_utc"))
+        s_end = _parse_dt(s.get("end_utc")) if bounded_work else envelope_end
         if s_start is None or s_end is None or envelope_start is None or envelope_end is None:
             continue
         clipped_start = max(s_start, envelope_start)
         clipped_end = min(s_end, envelope_end)
         if clipped_end > clipped_start:
             covered_intervals.append((clipped_start, clipped_end))
-    covered_ms = union_duration_ms(covered_intervals)
-    unattributed_ms = max(0, total_ms - covered_ms) if total_ms is not None else None
-    unattributed_pct = (round(100.0 * unattributed_ms / total_ms, 1)
-                        if (total_ms and unattributed_ms is not None) else None)
+    instrumented_ms = union_duration_ms(covered_intervals)
+    denominator_ms = wall_ms if wall_ms is not None else total_ms
+    unattributed_ms = max(0, denominator_ms - instrumented_ms) if denominator_ms is not None else None
+    unattributed_pct = (round(100.0 * unattributed_ms / denominator_ms, 1)
+                         if (denominator_ms and unattributed_ms is not None) else None)
+    instrumented_ratio = (round(instrumented_ms / wall_ms, 4) if wall_ms else None)
 
     nested_by_name: dict[str, list[dict]] = {}
     for s in spans:
@@ -171,23 +277,35 @@ def run_stat(event: dict) -> dict:
     # — that metric means "the agent/producer actually marked this," and a
     # fully-derived run should still read as degraded (the agent boundary is
     # genuinely still missing), just no longer as ZERO data.
+    # Discovery and planning are alternative entry paths. A run that recorded
+    # exactly one should not be penalized for the other never starting.
+    capturable_spans = set(FOLD_TIME_CAPTURABLE_SPANS)
+    has_discovery = phases["discovery_diagnosis"]["present"]
+    has_planning = phases["planning"]["present"]  # artifact-path-canon: legacy
+    entry_path = None
+    if has_discovery != has_planning:
+        entry_path = "discovery_diagnosis" if has_discovery else "planning"  # artifact-path-canon: legacy
+        capturable_spans.discard("planning" if has_discovery else "discovery_diagnosis")  # artifact-path-canon: legacy
     coverage_n = sum(
-        1 for name in FOLD_TIME_CAPTURABLE_SPANS
+        1 for name in capturable_spans
         if phases[name]["present"] and phases[name].get("duration_ms") is not None
         and phases[name].get("outcome") not in ("incomplete", "unavailable")
         and phases[name].get("source") != "derived"
     )
     derived_n = sum(
-        1 for name in FOLD_TIME_CAPTURABLE_SPANS if phases[name].get("source") == "derived"
+        1 for name in capturable_spans if phases[name].get("source") == "derived"
     )
 
     return {
         **base, "has_timings": True, "pre_instrumentation": False,
         "total_ms": total_ms, "coverage_top_level": coverage_n,
-        "coverage_top_level_total": len(FOLD_TIME_CAPTURABLE_SPANS), "span_count": len(spans),
-        "degraded": coverage_n < len(FOLD_TIME_CAPTURABLE_SPANS),
+        "coverage_top_level_total": len(capturable_spans), "span_count": len(spans),
+        "entry_path": entry_path,
+        "degraded": coverage_n < len(capturable_spans),
         "derived_top_level": derived_n,
         "phases": phases, "nested": nested_by_name,
+        "wall_ms": wall_ms, "instrumented_ms": instrumented_ms,
+        "instrumented_ratio": instrumented_ratio, "coverage_reason": coverage_reason,
         "unattributed_ms": unattributed_ms, "unattributed_pct": unattributed_pct,
         "restarts": restarts,
     }

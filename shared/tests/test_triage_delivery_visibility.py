@@ -190,9 +190,11 @@ def test_listing_always_carries_a_boolean_pending_status_delivery() -> None:
         outbox_ids=set(),
         severity_rank={"low": 3},
         undelivered_status_ids={"trg-good0001"},
+        undelivered_amend_ids=set(),
         corruption=[],
     )
     assert payload["open"][0]["pendingStatusDelivery"] is True
+    assert payload["open"][0]["pendingAmendDelivery"] is False
     assert payload["deferred"][0]["pendingStatusDelivery"] is False
     assert payload["contractVersion"] == 2
     # The envelope carries the same fact for rows that are NOT rendered.
@@ -209,10 +211,12 @@ def test_pending_delivery_field_is_unchanged() -> None:
         outbox_ids={"trg-good0001"},
         severity_rank={"low": 3},
         undelivered_status_ids=set(),
+        undelivered_amend_ids=set(),
         corruption=[],
     )
     assert payload["open"][0]["pendingDelivery"] is True
     assert payload["open"][0]["pendingStatusDelivery"] is False
+    assert payload["open"][0]["pendingAmendDelivery"] is False
 
 
 # ---------------------------------------------------------------------------
@@ -223,6 +227,7 @@ def _listing(corruption: list) -> dict:
     return build_listing(
         [], [], tracked_ids=set(), outbox_ids=set(),
         severity_rank={"low": 3}, undelivered_status_ids=set(),
+        undelivered_amend_ids=set(),
         corruption=corruption,
     )
 

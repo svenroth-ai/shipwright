@@ -1,0 +1,98 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-08-09-p2-56-amend-delivery-signal",
+    "date": "2026-08-09",
+    "unit": {
+      "status": "passed",
+      "passed": 18,
+      "total": 18,
+      "note": "F0 canonical suite: all 18 units green."
+    },
+    "integration": {
+      "status": "passed",
+      "passed": 1,
+      "total": 1
+    },
+    "e2e": {
+      "status": "passed",
+      "passed": 16,
+      "total": 16,
+      "reason": "CLI surface verified through real triage_cli subprocess tests."
+    },
+    "pgtap": {
+      "status": "not_run",
+      "reason": "no database surface"
+    },
+    "design_fidelity": {
+      "status": "not_run",
+      "reason": "no visual UI change"
+    },
+    "smoke": {
+      "status": "not_run",
+      "reason": "CLI surface is covered by F0.5"
+    },
+    "surface_verification": {
+      "surface": "cli",
+      "runner": "uv run pytest shared/tests/test_triage_amend_delivery.py shared/tests/test_triage_delivery_roundtrip.py -q",
+      "exit_code": 0,
+      "tests_run": 16,
+      "evidence_path": "C:\\01_Development\\shipwright\\.worktrees\\p2-56-amend-delivery-signal\\.shipwright\\runs\\iterate-2026-08-09-p2-56-amend-delivery-signal\\surface_verification.log",
+      "timestamp": "2026-08-09T08:48:21.645Z",
+      "attempts": 1
+    },
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "Tracked append with outbox-only amend",
+          "disposition": "tested",
+          "evidence": "test_buffered_amend_round_trips_as_its_own_delivery_signal"
+        },
+        {
+          "behavior": "Status and amend delivery remain independent",
+          "disposition": "tested",
+          "evidence": "test_buffered_status_and_amend_remain_independent"
+        },
+        {
+          "behavior": "Invalid, orphan, and outbox-only amend targets do not signal",
+          "disposition": "tested",
+          "evidence": "test_invalid_or_orphan_amend_never_creates_a_delivery_signal"
+        },
+        {
+          "behavior": "Tracked equivalent amend clears after sweep",
+          "disposition": "tested",
+          "evidence": "test_swept_equivalent_amend_is_no_longer_pending"
+        },
+        {
+          "behavior": "v2 row and envelope contract stays additive",
+          "disposition": "tested",
+          "evidence": "test_list_json_empty_is_two_empty_sections"
+        }
+      ],
+      "counts": {
+        "testable": 5,
+        "tested": 5,
+        "untestable": 0,
+        "untested_testable": 0
+      },
+      "enumeration_basis": {
+        "acs": 5,
+        "covered_acs": 5
+      }
+    },
+    "declared_removals": []
+  },
+  "coverage": {
+    "total": 80.2,
+    "measured_tier": "repo",
+    "source": "combined coverage.xml (all plugins + shared + integration)",
+    "measured_at": "2026-07-04T00:00:00Z"
+  },
+  "source_state": {
+    "run_id": "iterate-2026-08-09-p2-56-amend-delivery-signal",
+    "commit": "9d20b91a32c3f13ba726cb9ff689dcf9d9c371db",
+    "dirty": true,
+    "base": null,
+    "release": null
+  }
+}
