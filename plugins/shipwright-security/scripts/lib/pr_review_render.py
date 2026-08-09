@@ -258,9 +258,10 @@ def render_comment(
         lines += [
             f"> ⚠️ **This PR exceeded the {MAX_DIFF_CHARS:,}-character review limit**, so the "
             "review is **partial** and the check **fails closed**: a human must review "
-            "this PR before merge. A maintainer can apply the `skip-pr-review` label "
-            "after a manual look — note that this greens the check but does **not** "
-            "retract the change-request above, which has to be dismissed by hand.",
+            "this PR before merge. A waiver needs a trusted exact-head GitHub approval, "
+            "a schema-valid review record with completed internal passes, **and** the `skip-pr-review` label; the label "
+            "alone does **not** waive this check or retract the change request, which has "
+            "to be dismissed by hand.",
             ">",
             *(f"> {d}" for d in detail),
             "",

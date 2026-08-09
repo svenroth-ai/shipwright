@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-08-09-review-evidence-tier",
+  "date": "2026-08-09",
+  "section": "Iterate — change: evidence-backed PR review waiver",
+  "title": "Bind PR-review waivers to reviewed evidence",
+  "context": "Maintainer authorship could exempt a PR even when its delivered review record showed required review types were not run.",
+  "decision": "Require a valid current-head review record, a trusted exact-head collaborator approval, and successful waiver consumption before Tier-3 may be skipped.",
+  "consequences": "Later pushes, unknown tier outputs, unavailable evidence, and gate changes all fall back to Tier-3 review.",
+  "rationale": "The GitHub API binds authorization to the immutable event SHA while reviews.json proves the internal review cascade completed.",
+  "rejected": "Maintainer authorship and a persistent label alone were rejected because neither proves review evidence for the current head.",
+  "commit": "",
+  "architecture_impact": "data-flow",
+  "spec_ref": ""
+}
