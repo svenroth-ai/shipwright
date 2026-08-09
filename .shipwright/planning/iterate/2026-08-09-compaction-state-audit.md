@@ -76,7 +76,16 @@ explicitly out of scope — already solved or not worth a dedicated artifact.
       confirming no ADR-044 `lib` collision). Hardened post-Stage-2 per the
       internal `code-reviewer` (malformed-`reviews.json` fail-open) and the
       external code-review cascade (salvage-write fail-open) — see "External
-      Code Review" below.
+      Code Review" below. F11's `check_integration_coverage` then correctly
+      flagged this exact hook + `hooks.json` change as `cross_component`
+      (touches `hooks.json` + a script under `hooks/`) and required a
+      real-scenario composition test, which no prior test in this diff was —
+      `test_review_payload_on_stop.py` imports the script's functions
+      directly, it never exercises `hooks.json`'s own `command` strings.
+      Closed: `test_review_payload_hook_wiring_integration.py` (2/2) — parses
+      `hooks.json`, resolves `${CLAUDE_PLUGIN_ROOT}`, and drives each of the
+      three wired commands as a real subprocess against a fixture transcript,
+      confirming the JSON config and the script actually compose end-to-end.
 - [x] AC-3a (primary, authoritative): `SKILL.md` §B1's replay-check reads
       `.shipwright/planning/iterate/{run_id}/reviews.json` directly (via
       `lib.review_record_core.read_record` + `pending_types`), independent
@@ -188,10 +197,11 @@ hedge on this row was wrong, not merely uncertain.
   | 9 | `write-review-payload-on-stop.py` salvages a reviewer's reply only when not already recorded, across fenced/raw JSON and legacy `gates.spec`, never blocks on a malformed `reviews.json` (`AttributeError`/`TypeError`), and never blocks when the salvage write itself raises `OSError` (external code-review cascade, openai medium finding) | tested | `plugins/shipwright-build/tests/test_review_payload_on_stop.py` (18/18; full `plugins/shipwright-build` suite: 131/131) |
   | 10 | B1's replay-check names the direct `reviews.json` read and gates on `self`'s terminal status before treating other pending types as an interruption | tested | `test_skill_b1_reviews_json_check.py` (4/4, doc-presence) |
   | 11 | End-to-end: a fixture `reviews.json` (self+spec completed, rest pending) drives BOTH the real `record_review_pass.py show` CLI and the real `generate_handoff_on_stop.py` Stop-hook subprocess, and both name the same pending set | tested | `test_compaction_state_audit_acceptance.py` (3/3) — the mandated AC-4 acceptance test |
+  | 12 | (`category: integration`) `hooks.json`'s three SubagentStop `command` strings, with `${CLAUDE_PLUGIN_ROOT}` resolved and driven as a real subprocess against a fixture transcript, actually launch `write-review-payload-on-stop.py` and salvage into the matching review type — proves the JSON wiring and the script compose, not just that each works in isolation (F11 `check_integration_coverage`: this diff touches `hooks.json` + a script under `hooks/`, the `cross_component` risk flag) | tested | `test_review_payload_hook_wiring_integration.py` (2/2) |
 
 - **Confidence-pattern check:** asymptote — no prior "are you confident?"
   question in this run to re-probe (BUG path skips Interview). Coverage —
-  all 12 ledger rows `tested`, 0 untested-testable.
+  all 13 ledger rows `tested`, 0 untested-testable.
 
 ## Architecture Review
 

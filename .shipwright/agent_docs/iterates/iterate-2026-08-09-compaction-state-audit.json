@@ -1,6 +1,6 @@
 {
   "run_id": "iterate-2026-08-09-compaction-state-audit",
-  "date": "2026-08-09T10:11:19.184523Z",
+  "date": "2026-08-09T10:20:55.669563Z",
   "event_at": "2026-08-09T10:10:33.526604+00:00",
   "type": "bug",
   "complexity": "medium",
@@ -71,11 +71,17 @@
         "behavior": "End-to-end: a fixture reviews.json drives both record_review_pass.py show and the real generate_handoff_on_stop.py Stop-hook subprocess, and both name the same pending set (AC-4, the mandated acceptance test)",
         "disposition": "tested",
         "evidence": "test_compaction_state_audit_acceptance.py (3/3) PASSED"
+      },
+      {
+        "behavior": "hooks.json's three SubagentStop command strings, with ${CLAUDE_PLUGIN_ROOT} resolved and driven as a real subprocess against a fixture transcript, actually launch write-review-payload-on-stop.py and salvage into the matching review type (F11 check_integration_coverage: this diff touches hooks.json + a script under hooks/, the cross_component risk flag)",
+        "disposition": "tested",
+        "evidence": "test_review_payload_hook_wiring_integration.py (2/2) PASSED",
+        "category": "integration"
       }
     ],
     "counts": {
-      "total": 12,
-      "tested": 12,
+      "total": 13,
+      "tested": 13,
       "untestable": 0,
       "untested_testable": 0
     },
