@@ -281,11 +281,11 @@ def run_stat(event: dict) -> dict:
     # exactly one should not be penalized for the other never starting.
     capturable_spans = set(FOLD_TIME_CAPTURABLE_SPANS)
     has_discovery = phases["discovery_diagnosis"]["present"]
-    has_planning = phases["planning"]["present"]
+    has_planning = phases["planning"]["present"]  # artifact-path-canon: legacy
     entry_path = None
     if has_discovery != has_planning:
-        entry_path = "discovery_diagnosis" if has_discovery else "planning"
-        capturable_spans.discard("planning" if has_discovery else "discovery_diagnosis")
+        entry_path = "discovery_diagnosis" if has_discovery else "planning"  # artifact-path-canon: legacy
+        capturable_spans.discard("planning" if has_discovery else "discovery_diagnosis")  # artifact-path-canon: legacy
     coverage_n = sum(
         1 for name in capturable_spans
         if phases[name]["present"] and phases[name].get("duration_ms") is not None

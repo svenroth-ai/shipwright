@@ -86,7 +86,7 @@ def render_run_section(stat: dict) -> list[str]:
         p = stat["phases"].get(name, {"present": False})
         if not p.get("present"):
             if (
-                name in ("discovery_diagnosis", "planning")
+                name in ("discovery_diagnosis", "planning")  # artifact-path-canon: legacy
                 and stat.get("entry_path")
                 and name != stat["entry_path"]
             ):
