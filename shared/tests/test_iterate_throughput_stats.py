@@ -15,7 +15,7 @@ from pathlib import Path
 _SCRIPTS = Path(__file__).resolve().parents[1] / "scripts"
 sys.path.insert(0, str(_SCRIPTS))
 
-from lib.iterate_throughput_stats import run_stat  # noqa: E402
+from lib.iterate_throughput_stats import rolling_percentiles, run_stat  # noqa: E402
 
 
 def test_unattributed_never_goes_negative_when_top_level_branches_overlap():
@@ -188,3 +188,177 @@ def test_present_but_incomplete_top_level_span_does_not_count_toward_coverage():
     assert stat["phases"]["planning"]["present"] is True
     assert stat["coverage_top_level"] == 0
     assert stat["degraded"] is True
+
+
+def test_wall_coverage_uses_scope_mark_and_work_completed_timestamp():
+    event = {"type": "work_completed", "source": "iterate", "adr_id": "r",
+             "ts": "2026-08-04T10:00:00+00:00",
+             "phase_timings": [{"phase": "scope", "started": "2026-08-04T09:00:00+00:00"}],
+             "iterate_timings": [
+                 {"name": "planning", "parent": None, "source": "agent", "outcome": "completed",
+                  "start_utc": "2026-08-04T09:10:00+00:00", "end_utc": "2026-08-04T09:40:00+00:00",
+                  "duration_ms": 1_800_000, "exclusive_ms": 1_800_000, "attempt": 1, "extra": {}},
+             ]}
+    stat = run_stat(event)
+    assert stat["wall_ms"] == 3_600_000
+    assert stat["instrumented_ms"] == 1_800_000
+    assert stat["instrumented_ratio"] == 0.5
+    assert stat["unattributed_ms"] == 1_800_000
+    assert stat["coverage_reason"] is None
+
+
+def test_implausible_span_remains_evidence_but_is_not_instrumented_work_or_rollups():
+    event = {"type": "work_completed", "source": "iterate", "adr_id": "r",
+             "ts": "2026-08-04T10:00:00+00:00",
+             "phase_timings": [{"phase": "scope", "started": "2026-08-04T09:00:00+00:00"}],
+             "iterate_timings": [
+                 {"name": "planning", "parent": None, "source": "agent", "outcome": "unavailable",
+                  "start_utc": "2026-08-04T09:00:00+00:00", "end_utc": "2026-08-04T10:00:00+00:00",
+                  "duration_ms": 3_600_000, "exclusive_ms": 3_600_000, "attempt": 1,
+                  "extra": {"unavailable_reason": "implausible_duration"}},
+             ]}
+    stat = run_stat(event)
+    assert stat["instrumented_ms"] == 0
+    assert stat["instrumented_ratio"] == 0.0
+    assert stat["unattributed_ms"] == stat["wall_ms"]
+    assert stat["coverage_top_level"] == 0
+    assert stat["phases"]["planning"]["recorded_duration_ms"] == 3_600_000
+    assert stat["phases"]["planning"]["exclusive_ms"] is None
+    assert rolling_percentiles([stat], field_path=("phases", "planning", "exclusive_ms")) == {"n": 0}
+
+def test_missing_scope_mark_reports_wall_coverage_as_unavailable():
+    event = {"type": "work_completed", "source": "iterate", "adr_id": "r",
+             "ts": "2026-08-04T10:00:00+00:00", "iterate_timings": [
+                 {"name": "planning", "parent": None, "source": "agent", "outcome": "completed",
+                  "start_utc": "2026-08-04T09:00:00+00:00", "end_utc": "2026-08-04T10:00:00+00:00",
+                  "duration_ms": 3_600_000, "exclusive_ms": 3_600_000, "attempt": 1, "extra": {}},
+             ]}
+    stat = run_stat(event)
+    assert stat["wall_ms"] is None
+    assert stat["instrumented_ratio"] is None
+    assert stat["coverage_reason"] == "missing_scope_mark"
+
+def test_single_planning_entry_does_not_require_the_bug_diagnosis_span():
+    event = {"type": "work_completed", "source": "iterate", "adr_id": "r",
+             "ts": "2026-08-04T10:00:00+00:00", "iterate_timings": [
+                 {"name": "planning", "parent": None, "source": "agent", "outcome": "completed",
+                  "start_utc": "2026-08-04T09:00:00+00:00", "end_utc": "2026-08-04T10:00:00+00:00",
+                  "duration_ms": 3_600_000, "exclusive_ms": 3_600_000, "attempt": 1, "extra": {}},
+                 {"name": "implementation", "parent": None, "source": "agent", "outcome": "completed",
+                  "start_utc": "2026-08-04T09:00:00+00:00", "end_utc": "2026-08-04T10:00:00+00:00",
+                  "duration_ms": 3_600_000, "exclusive_ms": 3_600_000, "attempt": 1, "extra": {}},
+                 {"name": "verification", "parent": None, "source": "agent", "outcome": "completed",
+                  "start_utc": "2026-08-04T09:00:00+00:00", "end_utc": "2026-08-04T10:00:00+00:00",
+                  "duration_ms": 3_600_000, "exclusive_ms": 3_600_000, "attempt": 1, "extra": {}},
+                 {"name": "review", "parent": None, "source": "agent", "outcome": "completed",
+                  "start_utc": "2026-08-04T09:00:00+00:00", "end_utc": "2026-08-04T10:00:00+00:00",
+                  "duration_ms": 3_600_000, "exclusive_ms": 3_600_000, "attempt": 1, "extra": {}},
+             ]}
+    stat = run_stat(event)
+    assert (stat["coverage_top_level"], stat["coverage_top_level_total"]) == (4, 4)
+    assert stat["degraded"] is False
+
+def test_scope_mark_with_zero_emitted_spans_reports_zero_coverage():
+    event = {"type": "work_completed", "source": "iterate", "adr_id": "r",
+             "ts": "2026-08-04T10:00:00+00:00",
+             "phase_timings": [{"phase": "scope", "started": "2026-08-04T09:00:00+00:00"}],
+             }
+    stat = run_stat(event)
+    assert stat["has_timings"] is True
+    assert stat["pre_instrumentation"] is False
+    assert stat["wall_ms"] == 3_600_000
+    assert stat["instrumented_ms"] == 0
+    assert stat["instrumented_ratio"] == 0.0
+    assert stat["unattributed_ms"] == 3_600_000
+    assert stat["coverage_top_level"] == 0
+    assert stat["degraded"] is True
+
+def test_historical_completed_outlier_is_excluded_without_repairing_the_event():
+    """Read-time reporting must remediate the original durable outlier shape."""
+    event = {"type": "work_completed", "source": "iterate", "adr_id": "historic",
+             "ts": "2026-08-04T10:00:00+00:00",
+             "phase_timings": [{"phase": "scope", "started": "2026-08-04T00:00:00+00:00"}],
+             "iterate_timings": [
+                 {"name": "planning", "parent": None, "source": "agent", "outcome": "completed",
+                  "start_utc": "2026-08-04T00:00:00+00:00", "end_utc": "2026-08-04T09:14:00+00:00",
+                  "duration_ms": 33_240_000, "exclusive_ms": 33_240_000, "attempt": 1, "extra": {}},
+             ]}
+    stat = run_stat(event)
+    phase = stat["phases"]["planning"]
+    assert phase["outcome"] == "unavailable"
+    assert phase["unavailable_reason"] == "implausible_duration"
+    assert phase["recorded_duration_ms"] == 33_240_000
+    assert stat["instrumented_ms"] == 0
+    assert rolling_percentiles([stat], field_path=("phases", "planning", "exclusive_ms")) == {"n": 0}
+
+
+def test_open_finalization_covers_its_bounded_scope_to_f5b_tail():
+    event = {"type": "work_completed", "source": "iterate", "adr_id": "r",
+             "ts": "2026-08-04T11:00:00+00:00",
+             "phase_timings": [{"phase": "scope", "started": "2026-08-04T09:00:00+00:00"}],
+             "iterate_timings": [
+                 {"name": name, "parent": None, "source": "agent", "outcome": "completed",
+                  "start_utc": start, "end_utc": end, "duration_ms": duration,
+                  "exclusive_ms": duration, "attempt": 1, "extra": {}}
+                 for name, start, end, duration in [
+                     ("planning", "2026-08-04T09:00:00+00:00", "2026-08-04T10:00:00+00:00", 3_600_000),
+                     ("implementation", "2026-08-04T10:00:00+00:00", "2026-08-04T10:30:00+00:00", 1_800_000),
+                     ("verification", "2026-08-04T10:30:00+00:00", "2026-08-04T10:45:00+00:00", 900_000),
+                     ("review", "2026-08-04T10:45:00+00:00", "2026-08-04T10:50:00+00:00", 300_000),
+                 ]
+             ] + [
+                 {"name": "finalization", "parent": None, "source": "agent", "outcome": "incomplete",
+                  "start_utc": "2026-08-04T10:50:00+00:00", "end_utc": None,
+                  "duration_ms": None, "exclusive_ms": None, "attempt": 1, "extra": {}},
+             ]}
+    stat = run_stat(event)
+    assert stat["instrumented_ms"] == stat["wall_ms"] == 7_200_000
+    assert stat["instrumented_ratio"] == 1.0
+    assert stat["phases"]["finalization"]["duration_ms"] is None
+
+
+def test_credible_agent_attempt_outranks_an_unavailable_longer_attempt():
+    event = {"type": "work_completed", "source": "iterate", "adr_id": "r", "ts": "2026-08-04T12:00:00+00:00",
+             "iterate_timings": [
+                 {"name": "planning", "parent": None, "source": "agent", "outcome": "unavailable",
+                  "start_utc": "2026-08-04T00:00:00+00:00", "end_utc": "2026-08-04T09:14:00+00:00",
+                  "duration_ms": 33_240_000, "exclusive_ms": 33_240_000, "attempt": 1,
+                  "extra": {"unavailable_reason": "implausible_duration"}},
+                 {"name": "planning", "parent": None, "source": "agent", "outcome": "completed",
+                  "start_utc": "2026-08-04T10:00:00+00:00", "end_utc": "2026-08-04T11:00:00+00:00",
+                  "duration_ms": 3_600_000, "exclusive_ms": 3_600_000, "attempt": 2, "extra": {}},
+             ]}
+    stat = run_stat(event)
+    assert stat["phases"]["planning"]["duration_ms"] == 3_600_000
+    assert stat["phases"]["planning"]["outcome"] == "completed"
+
+def test_completed_retry_outranks_a_longer_cancelled_attempt():
+    event = {"type": "work_completed", "source": "iterate", "adr_id": "r", "ts": "2026-08-04T12:00:00+00:00",
+             "iterate_timings": [
+                 {"name": "planning", "parent": None, "source": "agent", "outcome": "cancelled",
+                  "start_utc": "2026-08-04T09:00:00+00:00", "end_utc": "2026-08-04T10:30:00+00:00",
+                  "duration_ms": 5_400_000, "exclusive_ms": 5_400_000, "attempt": 1, "extra": {}},
+                 {"name": "planning", "parent": None, "source": "agent", "outcome": "completed",
+                  "start_utc": "2026-08-04T10:30:00+00:00", "end_utc": "2026-08-04T11:00:00+00:00",
+                  "duration_ms": 1_800_000, "exclusive_ms": 1_800_000, "attempt": 2, "extra": {}},
+             ]}
+    stat = run_stat(event)
+    assert stat["phases"]["planning"]["outcome"] == "completed"
+    assert stat["phases"]["planning"]["duration_ms"] == 1_800_000
+
+
+def test_overlong_open_finalization_remains_unavailable_evidence():
+    event = {"type": "work_completed", "source": "iterate", "adr_id": "r",
+             "ts": "2026-08-05T12:00:00+00:00",
+             "phase_timings": [{"phase": "scope", "started": "2026-08-04T09:00:00+00:00"}],
+             "iterate_timings": [
+                 {"name": "finalization", "parent": None, "source": "agent", "outcome": "incomplete",
+                  "start_utc": "2026-08-04T10:00:00+00:00", "end_utc": None,
+                  "duration_ms": None, "exclusive_ms": None, "attempt": 1, "extra": {}},
+             ]}
+    stat = run_stat(event)
+    phase = stat["phases"]["finalization"]
+    assert phase["outcome"] == "unavailable"
+    assert phase["unavailable_reason"] == "implausible_duration"
+    assert phase["recorded_duration_ms"] == 93_600_000
+    assert stat["instrumented_ms"] == 0

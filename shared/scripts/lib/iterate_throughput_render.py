@@ -37,6 +37,10 @@ def _pct(value) -> str:
     return "—" if value is None else f"{value:.1f}%"
 
 
+def _ratio(value) -> str:
+    return "unavailable" if value is None else f"{100.0 * value:.1f}%"
+
+
 def _md_cell(value) -> str:
     """Escape a value for a markdown table cell — ``extra`` strings are
     closed-vocabulary but CLI-supplied (``--extra-json``), so a `|` or
@@ -62,35 +66,44 @@ def render_run_section(stat: dict) -> list[str]:
     degraded = " — **DEGRADED** (a fold-time-capturable phase is missing)" if stat["degraded"] else ""
     derived_n = stat.get("derived_top_level", 0)
     derived_note = f" (+{derived_n} derived)" if derived_n else ""
+    wall_note = stat.get("coverage_reason") or "measured"
     lines += [
         f"- **Timing source:** producer + agent spans (mixed) · "
-        f"**coverage:** {coverage} fold-time-capturable groups{derived_note}, "
+        f"**coverage:** {coverage} applicable fold-time groups{derived_note}, "
         f"{stat['span_count']} spans total{degraded}",
-        f"- **Total wall-clock (discovery through review):** {_ms(stat['total_ms'])}",
+        f"- **Wall clock (scope through F5b):** {_ms(stat.get('wall_ms'))} ({wall_note})",
+        f"- **Instrumented:** {_ms(stat.get('instrumented_ms'))} of wall clock "
+        f"({_ratio(stat.get('instrumented_ratio'))})",
         f"- **Unattributed:** {_ms(stat['unattributed_ms'])} ({_pct(stat['unattributed_pct'])})",
         f"- **Invalidation-driven restarts:** {stat['restarts']}",
         "",
-        "### Top-level phases (inclusive / exclusive / % of total)",
+        "### Top-level phases (inclusive / exclusive / % of timing envelope)",
         "",
-        "| Phase | Inclusive | Exclusive | % of total |",
+        "| Phase | Inclusive | Exclusive | % of timing envelope |",
         "|---|---:|---:|---:|",
     ]
     for name in TOP_LEVEL_SPANS:
         p = stat["phases"].get(name, {"present": False})
         if not p.get("present"):
-            if name in FOLD_TIME_CAPTURABLE_SPANS:
-                # No process owns a top-level group boundary — an absent one
-                # means the agent never emitted its start/end mark. The card's
-                # own acceptance criterion is "unattributed WITH REASON, never
-                # silently omitted" — a bare "not captured" doesn't say why
-                # (external code review).
+            if (
+                name in ("discovery_diagnosis", "planning")  # artifact-path-canon: legacy
+                and stat.get("entry_path")
+                and name != stat["entry_path"]
+            ):
+                lines.append(
+                    f"| {name} | *not applicable — {stat['entry_path']} is the recorded entry path* | — | — |"
+                )
+            elif name in FOLD_TIME_CAPTURABLE_SPANS:
+                # A required applicable group has no recorded boundary.
                 lines.append(f"| {name} | *unattributed — no agent start/end marks recorded* | — | — |")
             else:
-                # finalization/delivery structurally cannot close (or, for
-                # delivery, cannot even exist) by F5b fold time in ANY run —
-                # see the Coverage boundary callout. This is the expected
-                # shape, not a missed mark.
+                # Finalization and delivery are structurally incomplete at F5b.
                 lines.append(f"| {name} | *not reached before F5b fold (structural)* | — | — |")
+        elif p.get("outcome") == "unavailable" and p.get("unavailable_reason"):
+            lines.append(
+                f"| {name} | *unavailable — {p['unavailable_reason']}* "
+                f"({_ms(p.get('recorded_duration_ms'))} excluded from work) | — | — |"
+            )
         elif p.get("duration_ms") is None or p.get("outcome") in ("incomplete", "unavailable"):
             # Present but unclosed/untrustworthy — a bare start mark or a
             # clock-regression span. Showing "—" here alone would be
@@ -150,29 +163,33 @@ def render_rolling_section(run_stats: list[dict]) -> list[str]:
 
 
 def render_history_section(run_stats: list[dict]) -> list[str]:
-    lines = ["## Run history", "", "| Run | Total | Coverage | Restarts | Status |",
-            "|---|---:|---:|---:|---|"]
+    lines = [
+        "## Run history", "",
+        "| Run | Wall | Instrumented | Group coverage | Restarts | Status |",
+        "|---|---:|---:|---:|---:|---|",
+    ]
     for stat in run_stats[-ROLLING_WINDOW:]:
         if stat.get("pre_instrumentation"):
-            lines.append(f"| `{stat['run_id']}` | — | — | — | pre-instrumentation |")
+            lines.append(f"| `{stat['run_id']}` | — | — | — | — | pre-instrumentation |")
             continue
         if not stat.get("has_timings"):
-            lines.append(f"| `{stat['run_id']}` | — | — | — | no marks captured |")
+            lines.append(f"| `{stat['run_id']}` | — | — | — | — | no marks captured |")
             continue
         status = "degraded" if stat["degraded"] else "complete"
         cov = f"{stat['coverage_top_level']}/{stat['coverage_top_level_total']}"
-        lines.append(f"| `{stat['run_id']}` | {_ms(stat['total_ms'])} | {cov} | "
-                     f"{stat['restarts']} | {status} |")
+        lines.append(
+            f"| `{stat['run_id']}` | {_ms(stat.get('wall_ms'))} | "
+            f"{_ratio(stat.get('instrumented_ratio'))} | {cov} | "
+            f"{stat['restarts']} | {status} |"
+        )
     lines.append("")
     return lines
-
-
 def render_report(run_stats: list[dict]) -> str:
     """``run_stats`` chronological (oldest first); the last entry is "latest"."""
     lines = [
         "# Iterate throughput", "",
         ("> Derived report — reproducible entirely from `shipwright_events.jsonl`. "
-         "Not an agent startup input; regenerated at F5b. A missing agent mark is "
+         "Not an agent startup input; regenerated at F5b. A missing applicable agent mark is "
          "shown as *unattributed* with a reason, never as zero duration; the two "
          "structurally-limited groups (`finalization`, `delivery`) are labeled "
          "separately — see the Coverage boundary note below."),
@@ -188,7 +205,7 @@ def render_report(run_stats: list[dict]) -> str:
          "close by then, but `finalization`'s own duration and the entire "
          "`delivery` group (incl. `ci_wait`/`delivery_wait`/`post_ci_remediation`) "
          "structurally cannot, in every run. Coverage below is measured against "
-         "the 5 groups that can — see `iterate-timings.md` for why."),
+          "the four applicable groups when one entry path is recorded; a run that explicitly records both `discovery_diagnosis` and `planning` is measured against all five — see `iterate-timings.md` for why."),
         "",
     ]
     if not run_stats:

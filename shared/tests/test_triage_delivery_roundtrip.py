@@ -82,6 +82,7 @@ def test_buffered_decision_round_trips_to_the_json_contract(tmp_path: Path, monk
     assert payload["undeliveredDecisions"]["count"] == 1
     assert payload["undeliveredDecisions"]["ids"] == [item_id]
     assert payload["undeliveredDecisions"]["truncated"] is False
+    assert payload["undeliveredAmends"] == {"count": 0, "truncated": False, "ids": []}
 
 
 def test_open_item_with_a_buffered_flip_carries_the_field(tmp_path: Path, monkeypatch) -> None:
@@ -97,9 +98,78 @@ def test_open_item_with_a_buffered_flip_carries_the_field(tmp_path: Path, monkey
     rows = {r["id"]: r for r in payload["open"] + payload["deferred"]}
 
     assert rows[parked]["pendingStatusDelivery"] is True
+    assert rows[parked]["pendingAmendDelivery"] is False
     assert rows[clean]["pendingStatusDelivery"] is False
+    assert rows[clean]["pendingAmendDelivery"] is False
+    assert payload["undeliveredAmends"] == {"count": 0, "truncated": False, "ids": []}
     # The pre-existing field keeps its own, different meaning.
     assert rows[clean]["pendingDelivery"] is False
+
+
+def test_buffered_amend_round_trips_as_its_own_delivery_signal(tmp_path: Path, monkeypatch) -> None:
+    project = _project(tmp_path)
+    item_id = _add(project, title="before correction", to_outbox=False)
+    monkeypatch.setattr(triage, "should_route_to_outbox", lambda root: True)
+    triage.amend_triage_item(project, item_id, by="cli", title="after correction")
+
+    payload = json.loads(_run_cli(project, "--json").stdout)
+    row = next(row for row in payload["open"] if row["id"] == item_id)
+    assert payload["contractVersion"] == 2
+    assert row["pendingDelivery"] is False
+    assert row["pendingStatusDelivery"] is False
+    assert row["pendingAmendDelivery"] is True
+    assert payload["undeliveredAmends"] == {"count": 1, "truncated": False, "ids": [item_id]}
+    assert payload["undeliveredDecisions"] == {"count": 0, "truncated": False, "ids": []}
+
+
+def test_contentless_amend_and_corrupt_fragment_do_not_signal_delivery(tmp_path: Path) -> None:
+    project = _project(tmp_path)
+    item_id = _add(project, title="tracked", to_outbox=False)
+    outbox = triage._outbox_path(project)
+    contentless = json.dumps({
+        "event": "amend", "id": item_id, "ts": "2026-01-02T00:00:00Z", "by": "manual",
+    })
+    # The malformed prefix exercises the existing corruption side channel; the
+    # contentless amend behind it cannot be resynchronised as a valid record.
+    outbox.write_text('{"damaged":\n' + contentless + "\n", encoding="utf-8")
+
+    result = _run_cli(project, "--json")
+    assert result.returncode == 0, result.stderr
+    payload = json.loads(result.stdout)
+    row = next(row for row in payload["open"] if row["id"] == item_id)
+    assert payload["corruption"]["count"] == 1
+    assert row["pendingAmendDelivery"] is False
+    assert payload["undeliveredAmends"] == {"count": 0, "truncated": False, "ids": []}
+
+
+def test_buffered_status_and_amend_remain_independent(tmp_path: Path, monkeypatch) -> None:
+    project = _project(tmp_path)
+    item_id = _add(project, title="tracked", to_outbox=False)
+    monkeypatch.setattr(triage, "should_route_to_outbox", lambda root: True)
+    triage.mark_status(project, item_id, new_status="snoozed", by="cli", reason="later", revisit_at="2099-01-01")
+    triage.amend_triage_item(project, item_id, by="cli", title="corrected")
+
+    payload = json.loads(_run_cli(project, "--json").stdout)
+    row = next(row for row in payload["deferred"] if row["id"] == item_id)
+    assert row["pendingStatusDelivery"] is True
+    assert row["pendingAmendDelivery"] is True
+    assert payload["undeliveredDecisions"]["ids"] == [item_id]
+    assert payload["undeliveredAmends"]["ids"] == [item_id]
+
+
+def test_swept_equivalent_amend_is_no_longer_pending(tmp_path: Path, monkeypatch) -> None:
+    project = _project(tmp_path)
+    item_id = _add(project, title="tracked", to_outbox=False)
+    monkeypatch.setattr(triage, "should_route_to_outbox", lambda root: True)
+    triage.amend_triage_item(project, item_id, by="cli", title="corrected")
+    tracked, outbox = triage._triage_path(project), triage._outbox_path(project)
+    with tracked.open("a", encoding="utf-8") as handle:
+        handle.write(outbox.read_text(encoding="utf-8"))
+
+    payload = json.loads(_run_cli(project, "--json").stdout)
+    row = next(row for row in payload["open"] if row["id"] == item_id)
+    assert row["pendingAmendDelivery"] is False
+    assert payload["undeliveredAmends"] == {"count": 0, "truncated": False, "ids": []}
 
 
 def test_human_listing_names_the_uncommitted_decisions(tmp_path: Path, monkeypatch) -> None:

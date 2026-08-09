@@ -1,0 +1,1 @@
+PASS: durable dismissed/promoted/parked identity; material change distinct; phase-quality and compliance regressions reopen original IDs; concurrent execution converges.

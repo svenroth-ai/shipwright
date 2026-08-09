@@ -21,7 +21,9 @@ if str(_SHARED_SCRIPTS) not in sys.path:
     sys.path.insert(0, str(_SHARED_SCRIPTS))
 
 import lib.phase_quality as pq  # noqa: E402
+import triage as triage_module  # noqa: E402
 from triage import (  # noqa: E402
+    append_triage_item,
     append_triage_item_idempotent,
     mark_status,
     read_all_items,
@@ -185,6 +187,124 @@ def test_dismissed_backlog_can_refire(project: Path) -> None:
     pq.emit_phase_quality_backlog(project, run_id="r1", commit="abc")
     [it] = _open_backlog(project)
     mark_status(project, it["id"], new_status="dismissed", by="user", reason="snooze")
-    # Same set re-emits a fresh backlog item (dedup only suppresses open items).
+    # A human dismissal is a decision, not an invitation to mint a fresh card.
     pq.emit_phase_quality_backlog(project, run_id="r2", commit="abc")
-    assert len(_open_backlog(project)) == 1
+    items = read_all_items(project)
+    assert [item["id"] for item in items] == [it["id"]]
+    assert items[0]["status"] == "dismissed"
+
+
+def test_auto_resolved_backlog_reopens_under_its_original_id(project: Path) -> None:
+    _engage(project, ["iterate"])
+    _set_finding(project, "iterate", {"canon": [_finding("C1")]})
+    pq.emit_phase_quality_backlog(project, run_id="r1", commit="abc")
+    [initial] = _open_backlog(project)
+
+    _set_finding(project, "iterate", {"canon": []})
+    pq.emit_phase_quality_backlog(project, run_id="r2", commit="abc")
+    assert read_all_items(project)[0]["status"] == "dismissed"
+
+    _set_finding(project, "iterate", {"canon": [_finding("C1")]})
+    pq.emit_phase_quality_backlog(project, run_id="r3", commit="abc")
+    [reopened] = _open_backlog(project)
+    assert reopened["id"] == initial["id"]
+
+
+def test_auto_reopen_swallows_an_unexpected_writer_error(project: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    _engage(project, ["iterate"])
+    _set_finding(project, "iterate", {"canon": [_finding("C1")]})
+    pq.emit_phase_quality_backlog(project, run_id="r1", commit="abc")
+    _set_finding(project, "iterate", {"canon": []})
+    pq.emit_phase_quality_backlog(project, run_id="r2", commit="abc")
+
+    def broken_reopen(*_args: object, **_kwargs: object) -> None:
+        raise RuntimeError("writer unavailable")
+
+    monkeypatch.setattr(triage_module, "mark_status", broken_reopen)
+    _set_finding(project, "iterate", {"canon": [_finding("C1")]})
+    out = pq.emit_phase_quality_backlog(project, run_id="r3", commit="abc")
+
+    assert out["appended"] == 0
+    assert read_all_items(project)[0]["status"] == "dismissed"
+
+def test_operator_terminal_duplicate_blocks_auto_reopen(project: Path) -> None:
+    _engage(project, ["iterate"])
+    _set_finding(project, "iterate", {"canon": [_finding("C1")]})
+    pq.emit_phase_quality_backlog(project, run_id="r1", commit="abc")
+    [automatic] = _open_backlog(project)
+    _set_finding(project, "iterate", {"canon": []})
+    pq.emit_phase_quality_backlog(project, run_id="r2", commit="abc")
+    operator = append_triage_item(
+        project, source="phaseQuality", severity="high", kind="bug", title="legacy",
+        detail="d", dedup_key=automatic["dedupKey"],
+    )
+    _set_finding(project, "iterate", {"canon": [_finding("C1")]})
+    pq.emit_phase_quality_backlog(project, run_id="r2b", commit="abc")
+    assert {item["id"]: item["status"] for item in read_all_items(project)} == {
+        automatic["id"]: "dismissed", operator: "triage"
+    }
+    mark_status(project, operator, new_status="promoted", by="user", promoted_task_id="task-1")
+    _set_finding(project, "iterate", {"canon": [_finding("C1")]})
+    pq.emit_phase_quality_backlog(project, run_id="r3", commit="abc")
+    states = {item["id"]: item["status"] for item in read_all_items(project)}
+    assert states == {automatic["id"]: "dismissed", operator: "promoted"}
+
+
+def test_dismissed_standing_producer_item_is_not_refiled(project: Path) -> None:
+    item_id = append_triage_item_idempotent(
+        project, source="required-checks", severity="medium", kind="improvement",
+        title="must-pass check set does not match the checks the project has",
+        detail="two advisory checks", dedup_key="required-checks:repo@main:two",
+        match_commit=False, window_seconds=None,
+    )
+    assert item_id is not None
+    mark_status(project, item_id, new_status="dismissed", by="user", reason="advisory")
+    duplicate = append_triage_item_idempotent(
+        project, source="required-checks", severity="medium", kind="improvement",
+        title="must-pass check set does not match the checks the project has",
+        detail="two advisory checks", dedup_key="required-checks:repo@main:two",
+        match_commit=False, window_seconds=None,
+    )
+    assert duplicate is None
+    assert [item["id"] for item in read_all_items(project)] == [item_id]
+
+
+def test_materially_changed_standing_condition_is_a_new_item(project: Path) -> None:
+    original = append_triage_item_idempotent(
+        project, source="required-checks", severity="medium", kind="improvement",
+        title="must-pass check set does not match the checks the project has",
+        detail="two advisory checks", dedup_key="required-checks:repo@main:two",
+        match_commit=False, window_seconds=None,
+    )
+    assert original is not None
+    mark_status(project, original, new_status="dismissed", by="user", reason="advisory")
+    changed = append_triage_item_idempotent(
+        project, source="required-checks", severity="medium", kind="improvement",
+        title="must-pass check set does not match the checks the project has",
+        detail="three advisory checks", dedup_key="required-checks:repo@main:three",
+        match_commit=False, window_seconds=None,
+    )
+    assert changed is not None and changed != original
+
+
+def test_promoted_item_stays_durable_for_its_matching_commit(project: Path) -> None:
+    item_id = append_triage_item_idempotent(
+        project, source="required-checks", severity="medium", kind="improvement",
+        title="must-pass check set does not match the checks the project has",
+        detail="two advisory checks", dedup_key="required-checks:repo@main:two",
+        commit="one", match_commit=True, window_seconds=None,
+    )
+    assert item_id is not None
+    mark_status(project, item_id, new_status="promoted", by="user", promoted_task_id="task-1")
+    assert append_triage_item_idempotent(
+        project, source="required-checks", severity="medium", kind="improvement",
+        title="must-pass check set does not match the checks the project has",
+        detail="two advisory checks", dedup_key="required-checks:repo@main:two",
+        commit="one", match_commit=True, window_seconds=None,
+    ) is None
+    assert append_triage_item_idempotent(
+        project, source="required-checks", severity="medium", kind="improvement",
+        title="must-pass check set does not match the checks the project has",
+        detail="two advisory checks", dedup_key="required-checks:repo@main:two",
+        commit="two", match_commit=True, window_seconds=None,
+    ) is not None

@@ -30,7 +30,6 @@ their execution records were removed by
 fifth migration ever needs the long-form playbook.
 """
 from __future__ import annotations
-
 ARTIFACT_MIGRATIONS: list[dict] = [
     {
         "name": "planning",
@@ -555,6 +554,7 @@ ALLOWLIST: dict[str, list[str]] = {
         "shared/scripts/triage.py",
         "shared/scripts/lib/triage_fields.py",  # same literal, split out iterate-2026-08-08
         "plugins/shipwright-compliance/scripts/audit/audit_detector.py",
+        "plugins/shipwright-compliance/scripts/audit/triage_bundle.py",
         # record_event.py — argparse choices=["docs", "tooling",
         # "compliance", "infra"] enumerates change-type values; the
         # quoted "compliance" is an enum element, not a path reference.

@@ -14,6 +14,7 @@ from datetime import datetime, timezone
 
 from lib.iterate_timings import (
     IterateTimingError,
+    agent_span_max_ms,
     OUTCOMES,
     SOURCES,
     validate_extra,
@@ -88,6 +89,7 @@ def pair_agent_events(raw_events: list[dict]) -> tuple[list[dict], list[dict]]:
                 duration_ms = None
                 outcome = ev.get("outcome", "completed")
                 end_ts = ev.get("ts")
+                end_extra = ev.get("extra") or {}
                 if start_dt is not None and end_dt is not None:
                     if end_dt < start_dt:
                         # Cross-process wall-clock marks have no shared monotonic
@@ -100,12 +102,19 @@ def pair_agent_events(raw_events: list[dict]) -> tuple[list[dict], list[dict]]:
                         outcome = "unavailable"
                     else:
                         duration_ms = int((end_dt - start_dt).total_seconds() * 1000)
+                        if outcome in ("completed", "cancelled") and duration_ms > agent_span_max_ms(name):
+                            # This implausibly long agent interval proves a
+                            # missed boundary, not its cause. Preserve its raw
+                            # duration as evidence while excluding it from work.
+                            outcome = "unavailable"
+                            end_extra = dict(end_extra)
+                            end_extra["unavailable_reason"] = "implausible_duration"
                 paired.append({
                     "name": name, "parent": parent,
                     "attempt": pending_start.get("attempt", 1),
                     "source": "agent", "outcome": outcome,
                     "start_utc": pending_start.get("ts"), "end_utc": end_ts,
-                    "duration_ms": duration_ms, "extra": ev.get("extra") or {},
+                    "duration_ms": duration_ms, "extra": end_extra,
                 })
                 pending_start = None
         if pending_start is not None:

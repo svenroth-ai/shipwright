@@ -59,12 +59,14 @@ from iterate_timings_extra import (  # noqa: E402, F401
 # ~300-line guideline (test-phase-attribution) — re-exported below for
 # existing callers exactly like the iterate_timings_extra import above.
 from iterate_timings_catalog import (  # noqa: E402, F401
+    AGENT_SPAN_MAX_MS,
     FOLD_TIME_CAPTURABLE_SPANS,
     OUTCOMES,
     SOURCES,
     SPAN_NAMES,
     SPAN_PARENTS,
     TOP_LEVEL_SPANS,
+    agent_span_max_ms,
     validate_name_parent,
 )
 
