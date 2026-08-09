@@ -128,8 +128,9 @@ def emit_phase_quality_backlog(
     * No in-scope FAILs → dismiss every open/parked ``phaseQuality:backlog:*`` item
       (``reason="phaseQualityResolved"``); append nothing.
     * Else → dismiss open/parked backlog items whose signature differs from the
-      current set (``reason="phaseQualityRefreshed"``) and append the current
-      one (idempotent; promoted/dismissed decisions remain terminal).
+      current set (``reason="phaseQualityRefreshed"``), reopen its own
+      auto-dismissed matching item on regression, and append only when no
+      durable item represents the current condition (operator decisions remain terminal).
 
     Best-effort: returns ``{"appended", "dismissed", "open_fails"}``; all
     errors are swallowed so the Stop hook stays non-blocking.
@@ -205,6 +206,27 @@ def emit_phase_quality_backlog(
     )
 
     new_id: str | None = None
+    try:
+        prior = next(
+            (
+                item for item in read_all_items(project_root)
+                if item.get("source") == "phaseQuality"
+                and item.get("dedupKey") == cur_key
+                and item.get("status") == "dismissed"
+                and item.get("statusBy") == "phaseQualityBacklog"
+            ),
+            None,
+        )
+        if prior is not None:
+            mark_status(project_root, prior["id"], new_status="triage",
+                        by="phaseQualityBacklog", reason="phaseQualityRegressed",
+                        expected_status="dismissed",
+                        expected_by="phaseQualityBacklog",
+                        block_matching_terminal=("phaseQuality", cur_key))
+    except StatusPreconditionError:
+        pass
+    except Exception:  # noqa: BLE001
+        pass
     try:
         new_id = append_triage_item_idempotent(
             project_root,

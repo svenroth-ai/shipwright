@@ -142,15 +142,15 @@ def test_revisit_bytes_on_an_append_cannot_masquerade_as_an_expired_park(
     assert second is not None and second != first
 
 
-def test_a_dismissed_finding_still_re_fires_under_a_new_id(
+def test_a_dismissed_finding_does_not_reimport_under_a_new_id(
     tmp_path: Path,
 ) -> None:
-    """Unchanged behaviour, pinned so widening the predicate cannot swallow it:
-    a dismissal is not a suppression window."""
+    """A matching dismissal remains durable across a compliance re-import."""
     first = _reimport(tmp_path)
     mark_status(tmp_path, first, new_status="dismissed", by="cli", reason="no")
     second = _reimport(tmp_path)
-    assert second is not None and second != first
+    assert second is None
+    assert [item["id"] for item in read_all_items(tmp_path)] == [first]
 
 
 def test_a_park_does_not_suppress_a_different_finding(tmp_path: Path) -> None:
@@ -161,6 +161,17 @@ def test_a_park_does_not_suppress_a_different_finding(tmp_path: Path) -> None:
                 reason="later", revisit_at=FUTURE)
     assert _reimport(tmp_path, dedup_key="gh-security:acme/other") is not None
 
+
+def test_a_dismissal_living_only_in_the_outbox_suppresses_too(tmp_path: Path) -> None:
+    outbox = tmp_path / ".shipwright" / "triage.outbox.jsonl"
+    outbox.parent.mkdir(parents=True, exist_ok=True)
+    outbox.write_text(json.dumps({
+        "event": "append", "id": "trg-outbox-dismissed", "ts": "2026-06-10T00:00:00Z",
+        "originalTs": "2026-06-10T00:00:00Z", "source": "github", "severity": "high",
+        "kind": "bug", "title": "outbox finding", "detail": "d",
+        "dedupKey": "gh-security:acme/foo", "status": "dismissed",
+    }) + "\n", encoding="utf-8")
+    assert _reimport(tmp_path) is None
 
 def test_a_park_living_only_in_the_outbox_suppresses_too(
     tmp_path: Path,

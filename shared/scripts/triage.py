@@ -51,35 +51,28 @@ from shared_lib_loader import load_shared_lib
 def _load_file_lock_cls():
     return load_shared_lib("file_lock").FileLock
 
-
 def _load_jsonl_records():
     """Lazy `lib.jsonl_records` (record-boundary SSoT) — ADR-045 constraint above."""
     return load_shared_lib("jsonl_records")
-
 
 def _load_triage_header():
     """Lazy `lib.triage_header` — same ADR-045 constraint as above."""
     return load_shared_lib("triage_header")
 
-
 def _load_triage_defer():
     """Lazy `lib.triage_defer` (park lifecycle) — same ADR-045 constraint."""
     return load_shared_lib("triage_defer")
-
 
 def _load_triage_fields():
     """Lazy `lib.triage_fields` (severity/kind derivation) — ADR-045 constraint."""
     return load_shared_lib("triage_fields")
 
-
 def _load_triage_amend():
     """Lazy `lib.triage_amend` (amend vocab/validation/overlay) — ADR-045 constraint."""
     return load_shared_lib("triage_amend")
 
-
 #: Re-exported from `lib.triage_fields` via `__getattr__` below.
 _FIELDS_NAMES = frozenset(("SEVERITIES", "KINDS", "SEVERITY_RANK", "PRIORITY_FROM_SEVERITY", "DEFAULT_DOMAIN", "DOMAIN_FROM_SOURCE", "suggest_priority_from_severity", "suggest_domain_from_source", "check_optional_str"))
-
 
 def __getattr__(name):  # PEP 562 — lazy `triage._FileLock`, no eager lib import
     if name == "_FileLock":
@@ -136,17 +129,14 @@ KNOWN_SOURCES = (
 def _triage_path(project_root: Path | str) -> Path:
     return Path(project_root) / _SHIPWRIGHT_DIR / TRIAGE_FILE
 
-
 def _outbox_path(project_root: Path | str) -> Path:
     return Path(project_root) / _SHIPWRIGHT_DIR / OUTBOX_FILE
-
 
 def _lock_path(project_root: Path | str) -> Path:
     # The outbox shares this ONE canonical lock so producer-append and the D2
     # sweep (which holds it across read->commit) serialize — do NOT add a
     # separate outbox lock (Codex Q4 data-loss invariant).
     return Path(project_root) / _SHIPWRIGHT_DIR / (TRIAGE_FILE + ".lock")
-
 
 def should_route_to_outbox(project_root: Path | str) -> bool:
     """True iff a real delivery path exists AND HEAD is the default branch.
@@ -183,16 +173,13 @@ def should_route_to_outbox(project_root: Path | str) -> bool:
     except Exception:  # noqa: BLE001
         return False
 
-
 def _now_z() -> str:
     """ISO-8601 UTC timestamp with `Z` suffix (matches wire format)."""
     return datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
 
-
 def _generate_id() -> str:
     """Generate a unique triage item ID: `trg-` + 8 hex chars from UUID4."""
     return f"trg-{uuid4().hex[:8]}"
-
 
 # ---------------------------------------------------------------------------
 # Header bootstrap
@@ -200,7 +187,6 @@ def _generate_id() -> str:
 
 def _has_header(path: Path) -> bool:
     return _load_triage_header().has_header(path)
-
 
 def _ensure_header(project_root: Path | str) -> None:
     """Create `.shipwright/triage.jsonl` with the schema header if missing.
@@ -210,7 +196,6 @@ def _ensure_header(project_root: Path | str) -> None:
     _load_triage_header().ensure_header(
         _triage_path(project_root), schema_version=SCHEMA_VERSION, now=_now_z()
     )
-
 
 # ---------------------------------------------------------------------------
 # Low-level read
@@ -230,14 +215,12 @@ def _iter_raw_lines_at(path: Path) -> list[dict]:
     integrity.report_corruption(result.corrupt)
     return result.records
 
-
 def _append_ids_at(path: Path) -> set[str]:
     """Set of `append`-event ids in ONE file (residence probe for mark_status)."""
     return {
         ln["id"] for ln in _iter_raw_lines_at(path)
         if isinstance(ln, dict) and ln.get("event") == "append"
     }
-
 
 def _iter_raw_lines(project_root: Path | str) -> list[dict]:
     """Tolerant union reader — tracked lines THEN outbox lines, file order.
@@ -252,7 +235,6 @@ def _iter_raw_lines(project_root: Path | str) -> list[dict]:
     for path in (_triage_path(project_root), _outbox_path(project_root)):
         out.extend(_iter_raw_lines_at(path))
     return out
-
 
 # ---------------------------------------------------------------------------
 # Low-level write (caller holds the lock)
@@ -283,7 +265,6 @@ def _append_line(project_root: Path | str, line: str, *, to_outbox: bool) -> Non
         fp.write(line)
         fp.flush()
         os.fsync(fp.fileno())
-
 
 # ---------------------------------------------------------------------------
 # Public API: append
@@ -385,7 +366,6 @@ def append_triage_item(
 
     return item_id
 
-
 def append_triage_item_idempotent(
     project_root: Path | str,
     *,
@@ -406,25 +386,25 @@ def append_triage_item_idempotent(
     event_id: str | None = None,
     to_outbox: bool = False,
 ) -> str | None:
-    """Append a triage item only if no matching item is currently open.
+    """Append a triage item only if no matching item already represents it.
 
     `to_outbox` (D1): write the gitignored outbox buffer instead of the tracked
     store (idle-main background producers). The dedup scan runs against the
     UNION (`read_all_items`), so an open match in EITHER file suppresses the
     append regardless of where the new line lands.
 
-    Match = same `source` + `dedup_key` + (optionally) `commit` AND effective
-    status is open or parked. A not-yet-due park suppresses regardless of the
-    recency window; dismissed/promoted items do not suppress a new finding.
+    Match = same `source` + `dedup_key` + (optionally) `commit`. Open and
+    parked entries suppress by the configured recency policy; dismissed and
+    promoted entries always suppress so an operator decision is durable.
 
     `window_seconds` controls the recency horizon:
 
-    - ``int``  — only items appended within that many seconds count as
-      duplicates. Re-firing after the window appends a new item.
+    - ``int``  — only open/parked items appended within that many seconds count
+      as duplicates. Re-firing after the window appends a new item.
       Phase-Quality producer uses 24h to deliberately re-flag stale
       issues daily.
-    - ``None`` — no window check; any open or parked item with the same
-      key suppresses the append, regardless of age. Compliance
+    - ``None`` — no window check; any matching open or parked item suppresses
+      regardless of age. Compliance
       producer uses this because the same finding code is the same
       issue indefinitely until the operator resolves it.
 
@@ -464,23 +444,23 @@ def append_triage_item_idempotent(
             None if window_seconds is None
             else stamp.timestamp() - window_seconds
         )
-        # Dedup-scan under the same lock — readers see the merged (union) view.
-        # One instant for the whole scan, so two candidates cannot be judged
-        # against different UTC days.
         for existing in read_all_items(
             project_root, now=stamp,
         ):
-            if defer_policy.suppresses_reimport(
-                existing,
-                source=source,
-                dedup_key=dedup_key,
-                commit=commit,
-                match_commit=match_commit,
-                cutoff=cutoff,
+            matches = (
+                existing.get("source") == source
+                and existing.get("dedupKey") == dedup_key
+                and (not match_commit or existing.get("commit") == commit)
+            )
+            if matches and (
+                existing.get("status") in ("dismissed", "promoted")
+                or defer_policy.suppresses_reimport(
+                    existing, source=source, dedup_key=dedup_key, commit=commit,
+                    match_commit=match_commit, cutoff=cutoff,
+                )
             ):
                 return None
 
-        # No duplicate — build and append using that SAME lock-bound instant.
         ts = stamp.isoformat().replace("+00:00", "Z")
         new_event = {
             "event": "append", "id": new_id, "ts": ts, "originalTs": ts,
@@ -499,20 +479,20 @@ def append_triage_item_idempotent(
 
     return new_id
 
-
 # ---------------------------------------------------------------------------
 # Public API: mark status
 # ---------------------------------------------------------------------------
 
 class StatusPreconditionError(ValueError):
-    """``expected_status`` did not hold at write time — NOTHING was written.
+    """A conditional status transition did not hold at write time — NOTHING was written.
 
     Subclasses ``ValueError`` deliberately: the background producers already
     catch broad exceptions, and ``triage_promote``'s CLI already maps
     ``ValueError`` to exit 2, so neither contract moves.
 
-    ``expected`` is the NORMALIZED tuple and ``actual`` is the status the store
-    resolved to (``None`` when the item carries no resolvable status). Callers
+    ``expected`` is the NORMALIZED status tuple and ``actual`` is the status the
+    store resolved to (``None`` when the item carries no resolvable status).
+    It also reports a matching-condition block. Callers
     report the skip from these attributes rather than re-reading the store,
     which would simply race a second time.
     """
@@ -556,7 +536,6 @@ class StatusPreconditionError(ValueError):
             f"expected {self._expected_phrase()}"
         )
 
-
 def _normalize_expected(expected_status: object) -> tuple[str, ...]:
     """One status or several → a validated tuple.
 
@@ -592,7 +571,6 @@ def _normalize_expected(expected_status: object) -> tuple[str, ...]:
             )
     return expected
 
-
 def mark_status(
     project_root: Path | str,
     item_id: str,
@@ -602,6 +580,8 @@ def mark_status(
     reason: str | None = None,
     promoted_task_id: str | None = None,
     expected_status: str | tuple[str, ...] | list[str] | None = None,
+    expected_by: str | None = None,
+    block_matching_terminal: tuple[str, str] | None = None,
     revisit_at: str | None = None,
 ) -> str | None:
     """Append a status event for an existing item (never mutates prior lines).
@@ -611,15 +591,12 @@ def mark_status(
     iterate-2026-07-31-it1-s2-expected-status, which left a caller unable to
     tell a real transition from a re-flip of an already-decided item.
 
-    ``expected_status`` makes the flip conditional: the item's currently
-    resolved status is compared against it INSIDE the lock this function
+    ``expected_status`` / ``expected_by`` make the flip conditional: the item's currently
+    resolved status/provenance are compared inside the lock this function
     already holds for the write, and a mismatch raises
     :class:`StatusPreconditionError` having written nothing. Omitted, the flip
-    is unconditional exactly as before. This is what stops a background
-    producer — which reads unlocked, filters through
-    ``AUTO_RESOLVABLE_STATUSES``, then flips under a separate lock — from
-    overwriting a terminal dismiss/promote decision recorded in between
-    (``trg-93ceb2b0``). Park/re-park remain auto-resolvable by design.
+    is unconditional exactly as before. `block_matching_terminal` atomically blocks a
+    reopen when another matching card is active or terminally decided by another actor.
 
     **The guarantee covers writers that cooperate with this lock.** The Command
     Center uses ``proper-lockfile``, which does NOT compose with the Python
@@ -654,7 +631,8 @@ def mark_status(
         KeyError: if `item_id` is not an `append` id in (tracked ∪ outbox).
         ValueError: if `new_status` or `expected_status` is not a known status,
             or `revisit_at` is malformed or given for a non-`snoozed` flip.
-        StatusPreconditionError: if `expected_status` did not hold (nothing written).
+        StatusPreconditionError: if a conditional status/provenance/condition
+            precondition did not hold (nothing written).
     """
     if new_status not in STATUSES:
         raise ValueError(
@@ -671,9 +649,16 @@ def mark_status(
                 f"revisit_at must be an exact YYYY-MM-DD calendar date, "
                 f"got {revisit_at!r}"
             )
-    # Argument validation before any I/O, so a bad precondition fails the same
-    # way whether or not the store happens to exist.
     expected = None if expected_status is None else _normalize_expected(expected_status)
+    if expected is None and (expected_by is not None or block_matching_terminal is not None):
+        raise ValueError("expected_status is required for extended preconditions")
+    if expected_by is not None and not isinstance(expected_by, str):
+        raise ValueError("expected_by must be a string when provided")
+    if block_matching_terminal is not None and (
+        not isinstance(block_matching_terminal, tuple) or len(block_matching_terminal) != 2
+        or not all(isinstance(part, str) and part for part in block_matching_terminal)
+    ):
+        raise ValueError("block_matching_terminal must be a (source, dedup_key) pair")
 
     if not _triage_path(project_root).exists() and not _outbox_path(project_root).exists():
         raise FileNotFoundError(
@@ -682,37 +667,30 @@ def mark_status(
             f"run /shipwright-adopt or append an item first"
         )
 
-    # Git-only half of the routing decision — OUTSIDE the lock (see docstring).
     idle_main_routes_to_outbox = should_route_to_outbox(project_root)
 
-    # Derive residence + write the status to the SAME store, under the lock.
     with _load_file_lock_cls()(_lock_path(project_root)):
         tracked_ids = _append_ids_at(_triage_path(project_root))
         outbox_ids = _append_ids_at(_outbox_path(project_root))
         if item_id not in tracked_ids and item_id not in outbox_ids:
             raise KeyError(item_id)
-        # PREREQUISITE: `read_all_items` must stay LOCK-FREE. `FileLock` is not
-        # reentrant — a read side that acquired it would not raise here, it
-        # would HANG (msvcrt spin on Windows, blocking flock on POSIX). The
-        # test `test_mark_status_acquires_the_canonical_lock_exactly_once` is
-        # what turns that hang into a red test. Same in-lock read the dedup
-        # scan in `append_triage_item_idempotent` already does.
-        # `now` captured INSIDE the lock, so this precondition compares the same
-        # effective status the caller sees — an expired park included.
-        raw_previous = next(
-            (
-                it.get("status")
-                for it in read_all_items(project_root, now=_load_triage_defer().now_utc())
-                if it.get("id") == item_id
-            ),
-            None,
+        items = read_all_items(project_root, now=_load_triage_defer().now_utc())
+        previous_item = next((it for it in items if it.get("id") == item_id), {})
+        raw_previous = previous_item.get("status")
+        matching_terminal = block_matching_terminal and any(
+            it.get("id") != item_id
+            and it.get("source") == block_matching_terminal[0]
+            and it.get("dedupKey") == block_matching_terminal[1]
+            and (
+                it.get("status") in _load_triage_defer().AUTO_RESOLVABLE_STATUSES
+                or (it.get("status") in ("dismissed", "promoted") and it.get("statusBy") != by)
+            )
+            for it in items
         )
-        # A legacy or hand-written append line can carry a non-str `status`
-        # (Pass 1 copies it verbatim). Collapsing that to None keeps the
-        # documented `str | None` return TRUE, and makes such an item refuse
-        # under ANY expected_status rather than be compared as some other type.
         previous = raw_previous if isinstance(raw_previous, str) else None
-        if expected is not None and previous not in expected:
+        if (expected is not None and previous not in expected) or (
+            expected_by is not None and previous_item.get("statusBy") != expected_by
+        ) or matching_terminal:
             raise StatusPreconditionError(item_id, expected, previous)
         # Idle main → outbox (like append); else residence-derived. See docstring.
         to_outbox = idle_main_routes_to_outbox or (item_id in outbox_ids and item_id not in tracked_ids)
@@ -732,7 +710,6 @@ def mark_status(
         _append_line(project_root, line, to_outbox=to_outbox)
 
     return previous
-
 
 # ---------------------------------------------------------------------------
 # Public API: amend
@@ -765,7 +742,6 @@ def amend_triage_item(
         event = _amend.build_amend_event(item_id, _now_z(), by, title=title, detail=detail, severity=severity, kind=kind)
         _append_line(project_root, json.dumps(event, ensure_ascii=False, separators=(",", ":")) + "\n", to_outbox=to_outbox)
     return to_outbox
-
 
 # ---------------------------------------------------------------------------
 # Public API: read (with status resolution)

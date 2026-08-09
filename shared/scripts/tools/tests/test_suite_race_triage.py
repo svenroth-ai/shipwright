@@ -100,7 +100,7 @@ def test_the_store_is_resolved_from_the_passed_root_not_the_cwd(tmp_path, monkey
     assert not (elsewhere / ".shipwright").exists()
 
 
-# --- AC3: one open entry per unit; closed does not suppress; never auto-closed ---
+# --- AC3: one durable entry per unit; an operator decision persists ---
 
 def test_a_second_sighting_reuses_the_open_entry_instead_of_spamming(tmp_path):
     first = _emit(tmp_path, _raced())
@@ -113,16 +113,15 @@ def test_a_second_sighting_reuses_the_open_entry_instead_of_spamming(tmp_path):
     assert not second.failed
 
 
-def test_a_race_after_the_operator_closed_the_card_opens_a_fresh_one(tmp_path):
+def test_a_race_after_the_operator_closed_the_card_keeps_that_decision(tmp_path):
     first = _emit(tmp_path, _raced())
     mark_status(tmp_path, first.recorded["shared/tests"],
                 new_status="dismissed", by="cli", reason="notRelevant")
 
     again = _emit(tmp_path, _raced())
 
-    assert again.recorded["shared/tests"] != first.recorded["shared/tests"], \
-        "a dismissed card must not suppress a regression months later"
-    assert len([i for i in _items(tmp_path) if i["status"] == "triage"]) == 1
+    assert again.recorded == first.recorded, "the original decision remains the handle"
+    assert [item["status"] for item in _items(tmp_path)] == ["dismissed"]
 
 
 def test_two_units_racing_get_one_entry_each(tmp_path):
