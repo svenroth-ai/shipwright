@@ -240,8 +240,6 @@ def emit_compliance_backlog(
                 expected_status="dismissed", expected_by="complianceBacklog",
                 block_matching_terminal=("compliance", cur_key),
             )
-    except precondition_error:
-        pass
     except Exception:  # noqa: BLE001
         pass
     try:
