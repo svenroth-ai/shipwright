@@ -196,6 +196,26 @@ def test_invalid_expected_status_is_rejected(tmp_path: Path, bad: object) -> Non
                     expected_status=bad)  # type: ignore[arg-type]
 
 
+def test_expected_by_requires_a_string(tmp_path: Path) -> None:
+    item_id = _seed(tmp_path)
+    with pytest.raises(ValueError, match="expected_by must be a string"):
+        mark_status(tmp_path, item_id, new_status="dismissed", by="auto",
+                    expected_status="triage", expected_by=1)  # type: ignore[arg-type]
+
+def test_extended_preconditions_require_expected_status(tmp_path: Path) -> None:
+    item_id = _seed(tmp_path)
+    with pytest.raises(ValueError, match="expected_status is required"):
+        mark_status(tmp_path, item_id, new_status="dismissed", by="auto", expected_by="auto")
+
+
+@pytest.mark.parametrize("bad", [("source",), "source"])
+def test_block_matching_terminal_requires_a_pair(tmp_path: Path, bad: object) -> None:
+    item_id = _seed(tmp_path)
+    with pytest.raises(ValueError, match="source, dedup_key"):
+        mark_status(tmp_path, item_id, new_status="dismissed", by="auto",
+                    expected_status="triage", block_matching_terminal=bad)  # type: ignore[arg-type]
+
+
 # --------------------------------------------------------------------------
 # External finding #5 — an item that resolves to NO status
 # --------------------------------------------------------------------------

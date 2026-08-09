@@ -1,0 +1,88 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-08-09-dismissed-recurring",
+    "date": "2026-08-09",
+    "unit": {
+      "status": "passed",
+      "passed": 18,
+      "total": 18
+    },
+    "integration": {
+      "status": "passed",
+      "passed": 1,
+      "total": 1
+    },
+    "pgtap": {
+      "status": "skipped",
+      "passed": 0,
+      "total": 0
+    },
+    "e2e": {
+      "status": "passed",
+      "passed": 90,
+      "total": 90
+    },
+    "design_fidelity": {
+      "status": "skipped",
+      "passed": 0,
+      "total": 0
+    },
+    "smoke": {
+      "status": "skipped"
+    },
+    "degraded": [],
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "tracked/outbox all-status identity",
+          "disposition": "tested",
+          "evidence": "test_a_dismissal_living_only_in_the_outbox_suppresses_too PASSED",
+          "category": "integration"
+        },
+        {
+          "behavior": "dismissed and promoted decisions stay durable",
+          "disposition": "tested",
+          "evidence": "durable decision regression tests PASSED"
+        },
+        {
+          "behavior": "material changes create a separate condition",
+          "disposition": "tested",
+          "evidence": "test_materially_changed_standing_condition_is_a_new_item PASSED"
+        },
+        {
+          "behavior": "producer-owned resolution reopens original identity",
+          "disposition": "tested",
+          "evidence": "phase/compliance auto-resolved backlog tests PASSED"
+        },
+        {
+          "behavior": "required-check and rolling producer behavior",
+          "disposition": "tested",
+          "evidence": "suite race and rolling producer tests PASSED"
+        },
+        {
+          "behavior": "concurrent producer execution converges",
+          "disposition": "tested",
+          "evidence": "test_concurrent_regression_reopens_one_original_backlog PASSED"
+        }
+      ],
+      "counts": {
+        "testable": 6,
+        "tested": 6,
+        "untestable": 0,
+        "untested_testable": 0
+      },
+      "enumeration_basis": {
+        "acs": 6,
+        "covered_acs": 6
+      }
+    }
+  },
+  "source_state": {
+    "run_id": "iterate-2026-08-09-dismissed-recurring",
+    "commit": "52d0d1fd52923671fc39e4c784837b4e00cbb574",
+    "dirty": true,
+    "base": null,
+    "release": null
+  }
+}
