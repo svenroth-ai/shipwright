@@ -1,8 +1,8 @@
 # Requirements Traceability Matrix
 
-Generated: 2026-08-09T08:08:04.655612+00:00
-Source-State: run=iterate-2026-08-09-test-evidence-freshness-w3
-Consistency-audit: last run 2026-07-28 (12 days earlier) — FAIL
+Generated: 2026-08-08T19:53:58.646645+00:00
+Source-State: run=iterate-2026-08-08-prompt-scan-dynamic-import-fault-test base=7a01ee66b247 release=v0.32.0
+Consistency-audit: last run 2026-07-28 (11 days earlier) — FAIL
 
 ## Requirements Coverage
 
@@ -35,11 +35,6 @@ Consistency-audit: last run 2026-07-28 (12 days earlier) — FAIL
 
 | Event | Source | Type | FRs | Tests | Commit | Date |
 |-------|--------|------|-----|-------|--------|------|
-| <a id="evt-1b7a6196"></a>Test evidence now stays valid when it still describes the latest completed iterate, regardless of checkout time. | iterate | bug |  | 81/81 | — | 2026-08-09 |
-| <a id="evt-64d6ef74"></a>Fail closed on Git probe timeouts, scan Decision-Drop JSON recursively, and bound expired event claims. | iterate | bug_fix |  | 49/49 | — | 2026-08-08 |
-| <a id="evt-c45dcc3c"></a>Fixed six small reliability issues in plan review guidance and internal file readers. | iterate | bug |  | 18/18 | — | 2026-08-08 |
-| <a id="evt-84fda7e2"></a>Important recovered test records stay available when routine history cleanup runs. | iterate | bug |  | 18/18 | — | 2026-08-08 |
-| <a id="evt-14d9c396"></a>Track and align the concise Codex operating contract with current repository runtime facts. | iterate | change |  | 18/18 | — | 2026-08-08 |
 | <a id="evt-f32709d0"></a>normalize benign __import__ dynamic-import pattern flagged by shipwright-prompt-scan (trg-133f2ca6) | iterate | change |  | 9/9 | — | 2026-08-08 |
 | <a id="evt-512679d4"></a>When a project's spec.md files get too long to read in one pass, Shipwright's iterate and project skills now say so instead of silently reading only part of it. | iterate | feature |  | 9880/9880 | — | 2026-08-08 |
 | <a id="evt-d093b4ec"></a>You can now fix a mistake on a triage card from the command line instead of closing it and filing a new one. | iterate | change | [FR-01.14](#rtm-fr-0114) | 8901/8901 | — | 2026-08-08 |
@@ -560,7 +555,7 @@ Consistency-audit: last run 2026-07-28 (12 days earlier) — FAIL
 |--------|-------|
 | Total splits built | 0 |
 | Build sections | 0 |
-| Iterate changes | 518 |
+| Iterate changes | 513 |
 | Requirements total | 20 |
 | Requirements verified | 18/20 |
 | Must-have verified | 14/14 |
