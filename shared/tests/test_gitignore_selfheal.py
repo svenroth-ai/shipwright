@@ -288,3 +288,35 @@ def test_setup_iterate_worktree_self_heals_gitignore(git_origin_repo):
     (wt / ".shipwright").mkdir(exist_ok=True)
     (wt / _OUTBOX_REL).write_text("{}\n", encoding="utf-8")
     assert _check_ignored(wt, _OUTBOX_REL)
+def test_timeout_during_op_probe_fails_closed(git_origin_repo, monkeypatch):
+    work, _ = git_origin_repo
+    _seed_managed_repo(work)
+    from lib import worktree_isolation
+
+    original = worktree_isolation.run_git
+
+    def timed(git_args, *args, **kwargs):
+        if git_args == ["rev-parse", "--verify", "--quiet", "MERGE_HEAD"]:
+            raise subprocess.TimeoutExpired(git_args, 15)
+        return original(git_args, *args, **kwargs)
+
+    monkeypatch.setattr(worktree_isolation, "run_git", timed)
+    result = gs.self_heal_gitignore(work, allow_ci=True)
+    assert (result.status, result.reason) == ("skipped", "op_in_progress")
+
+
+def test_timeout_during_git_path_probe_fails_closed(git_origin_repo, monkeypatch):
+    work, _ = git_origin_repo
+    _seed_managed_repo(work)
+    from lib import worktree_isolation
+
+    original = worktree_isolation.run_git
+
+    def timed(git_args, *args, **kwargs):
+        if git_args == ["rev-parse", "--git-path", "rebase-merge"]:
+            raise subprocess.TimeoutExpired(git_args, 15)
+        return original(git_args, *args, **kwargs)
+
+    monkeypatch.setattr(worktree_isolation, "run_git", timed)
+    result = gs.self_heal_gitignore(work, allow_ci=True)
+    assert (result.status, result.reason) == ("skipped", "op_in_progress")

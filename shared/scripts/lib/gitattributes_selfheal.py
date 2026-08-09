@@ -122,10 +122,15 @@ def self_heal_gitattributes(
     # op-in-progress before detached-HEAD (a rebase detaches HEAD, so the
     # in-progress reason is the more actionable one).
     for ref in ("MERGE_HEAD", "CHERRY_PICK_HEAD", "REVERT_HEAD"):
-        if _git("rev-parse", "--verify", "--quiet", ref).returncode == 0:
+        probe = _git("rev-parse", "--verify", "--quiet", ref)
+        if probe.returncode == 124:
+            return HealResult("skipped", "op_in_progress")
+        if probe.returncode == 0:
             return HealResult("skipped", "op_in_progress")
     for rel in ("rebase-merge", "rebase-apply", "BISECT_LOG"):
         probe = _git("rev-parse", "--git-path", rel)
+        if probe.returncode == 124:
+            return HealResult("skipped", "op_in_progress")
         if probe.returncode != 0:
             continue
         p = Path(probe.stdout.strip())

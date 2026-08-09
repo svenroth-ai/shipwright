@@ -1,0 +1,94 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-08-08-p2-52-shared-scripts-fixes",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": "gpt-5.6-sol",
+      "completed_at": "2026-08-08T23:36:39.652679+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "inherit"
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-08T23:36:49.655225+00:00",
+      "disposition": "small complexity: no plan or separate external-code review required",
+      "recorded_by": "close-missing",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": "gpt-5.6-sol",
+      "completed_at": "2026-08-08T23:36:22.279804+00:00",
+      "disposition": null,
+      "recorded_by": "review-cascade",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "inherit"
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": "gpt-5.6-sol",
+      "completed_at": "2026-08-08T23:36:29.339656+00:00",
+      "disposition": null,
+      "recorded_by": "review-cascade",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "inherit"
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-08T23:36:49.655225+00:00",
+      "disposition": "small complexity: no plan or separate external-code review required",
+      "recorded_by": "close-missing",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": "gpt-5.6-sol",
+      "completed_at": "2026-08-08T23:36:12.304891+00:00",
+      "disposition": null,
+      "recorded_by": "review-cascade",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "inherit"
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-08T23:36:49.655225+00:00",
+      "disposition": "small complexity: no plan or separate external-code review required",
+      "recorded_by": "close-missing",
+      "parse_status": null,
+      "raw_excerpt": null
+    }
+  }
+}

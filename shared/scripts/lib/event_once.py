@@ -31,6 +31,7 @@ from __future__ import annotations
 
 import os
 import re
+import contextlib
 import time
 from pathlib import Path
 
@@ -117,8 +118,10 @@ def claim_once(
     except OSError:
         return True  # fail-open: cannot coordinate → let the caller emit
 
+    _purge_expired_claims(path.parent, now=ts)
+
     # Fast path: atomic first-wins create.
-    created = _create(path)
+    created = _create(path, ttl_seconds)
     if created is None:
         return True  # unexpected create error → fail-open
     if created:
@@ -136,13 +139,13 @@ def claim_once(
         pass
     except OSError:
         return True  # fail-open
-    created = _create(path)
+    created = _create(path, ttl_seconds)
     if created is None or created:
         return True  # re-armed (winner) or fail-open
     return False  # lost the re-arm race to a concurrent invocation
 
 
-def _create(path: Path) -> bool | None:
+def _create(path: Path, ttl_seconds: float = 30.0) -> bool | None:
     """Atomic exclusive create. True=created(winner), False=exists, None=error."""
     try:
         # 0o600 (owner-only): a single-user, non-secret event-once marker —
@@ -152,7 +155,13 @@ def _create(path: Path) -> bool | None:
         return False
     except OSError:
         return None
-    os.close(fd)
+    try:
+        with os.fdopen(fd, "w", encoding="ascii") as claim:
+            claim.write(f"{ttl_seconds}\n")
+    except OSError:
+        with contextlib.suppress(OSError):
+            path.unlink()
+        return None
     return True
 
 
@@ -167,3 +176,51 @@ def _age(path: Path, ts: float) -> float | None:
         return ts - os.path.getmtime(path)
     except OSError:
         return None
+
+
+
+def _claim_identity(path: Path) -> tuple[int, int, int, int] | None:
+    """Return an identity stable for one claim-file incarnation, if readable."""
+    try:
+        stat = path.stat()
+    except OSError:
+        return None
+    return (stat.st_dev, stat.st_ino, stat.st_mtime_ns, stat.st_size)
+
+
+def _claim_ttl(path: Path) -> float:
+    """Read a claim's own TTL, retaining compatibility with old empty claims."""
+    try:
+        ttl = float(path.read_text(encoding="ascii").strip())
+    except (OSError, UnicodeDecodeError, ValueError):
+        return 30.0
+    return ttl if ttl > 0 else 30.0
+
+
+def _purge_expired_claims(
+    directory: Path,
+    *,
+    now: float,
+) -> None:
+    """Best-effort TTL backstop for claim files in one cache directory.
+
+    Claims normally disappear when their next same-key event re-arms. Session
+    IDs are unique, though, so that path alone leaves one stale file per old
+    session. Every claim attempt therefore also reaps expired sibling claims.
+    Failure is intentionally ignored: claim coordination remains fail-open.
+    """
+    try:
+        candidates = tuple(directory.glob("*.claim"))
+    except OSError:
+        return
+    for candidate in candidates:
+        identity = _claim_identity(candidate)
+        if identity is None:
+            continue
+        age = _age(candidate, now)
+        if age is None or age < _claim_ttl(candidate):
+            continue
+        if _claim_identity(candidate) != identity:
+            continue
+        with contextlib.suppress(FileNotFoundError, OSError):
+            candidate.unlink()

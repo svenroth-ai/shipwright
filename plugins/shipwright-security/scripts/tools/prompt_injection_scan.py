@@ -32,11 +32,12 @@ import json
 import re
 import subprocess
 import sys
+
+from prompt_injection_decision_drops import scan_decision_drop
 from collections import Counter
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
-
 
 def _fix_windows_encoding() -> None:
     if sys.platform == "win32":
@@ -45,7 +46,6 @@ def _fix_windows_encoding() -> None:
             sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding="utf-8", errors="replace")
         except (AttributeError, ValueError):
             pass
-
 
 SCRIPT_DIR = Path(__file__).resolve().parent
 PLUGIN_ROOT = SCRIPT_DIR.parent.parent
@@ -79,9 +79,7 @@ except (ImportError, ModuleNotFoundError):
             result.update(data)
         return result
 
-
 SEVERITY_ORDER = ["critical", "high", "medium", "low", "info"]
-
 
 # ---------------------------------------------------------------------------
 # Detection rules
@@ -161,13 +159,11 @@ INLINE_CODE_SPAN_PATTERN = re.compile(r"`[^`]*`")
 # Hidden HTML comment detection.
 HTML_COMMENT_PATTERN = re.compile(r"<!--(.*?)-->", re.DOTALL)
 
-
 # ---------------------------------------------------------------------------
 # Finding builder
 # ---------------------------------------------------------------------------
 
 _finding_counter = 0
-
 
 def make_finding(
     severity: str,
@@ -219,13 +215,14 @@ def _has_allowlist_marker(text: str) -> bool:
     return ALLOWLIST_MARKER in head
 
 
-def scan_markdown(path: Path, rel_path: str) -> list[dict[str, Any]]:
-    try:
-        text = path.read_text(encoding="utf-8")
-    except (OSError, UnicodeDecodeError):
-        return []
+def scan_markdown(path: Path, rel_path: str, allow_allowlist: bool = True, text: str | None = None) -> list[dict[str, Any]]:
+    if text is None:
+        try:
+            text = path.read_text(encoding="utf-8")
+        except (OSError, UnicodeDecodeError):
+            return []
 
-    if _has_allowlist_marker(text):
+    if allow_allowlist and _has_allowlist_marker(text):
         return []
 
     findings: list[dict[str, Any]] = []
@@ -520,6 +517,7 @@ def iter_scannable_files(root: Path) -> list[Path]:
     return [p for p in root.rglob("*") if p.is_file() and not _is_excluded(p, root)]
 
 
+
 def scan_file(
     path: Path,
     root: Path,
@@ -536,6 +534,8 @@ def scan_file(
 
     if suffix == ".md":
         return scan_markdown(path, rel_path)
+    if suffix == ".json" and rel_path.startswith(".shipwright/agent_docs/decision-drops/"):
+        return scan_decision_drop(path, rel_path, scan_markdown, make_finding)
     if name == "hooks.json":
         return scan_hooks_json(path, rel_path)
     if suffix == ".py":

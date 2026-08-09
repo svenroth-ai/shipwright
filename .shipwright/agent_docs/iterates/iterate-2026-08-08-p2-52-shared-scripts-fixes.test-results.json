@@ -1,0 +1,78 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-08-08-p2-52-shared-scripts-fixes",
+    "date": "2026-08-09",
+    "unit": {
+      "status": "pass",
+      "passed": 48,
+      "total": 48,
+      "note": "F0 canonical suite: all 18 units passed; focused shared regressions: 48 passed."
+    },
+    "integration": {
+      "status": "pass",
+      "passed": 1,
+      "total": 1,
+      "note": "F0 integration-tests unit passed."
+    },
+    "e2e": {
+      "status": "n/a",
+      "reason": "no browser surface changed"
+    },
+    "smoke": {
+      "status": "n/a",
+      "reason": "no startable server surface"
+    },
+    "pgtap": {
+      "status": "n/a",
+      "reason": "no database"
+    },
+    "design_fidelity": {
+      "status": "n/a",
+      "reason": "no UI surface"
+    },
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "Git timeout probes fail closed for refs and Git paths",
+          "disposition": "tested",
+          "evidence": "test_gitignore_selfheal.py + test_gitattributes_union_selfheal.py PASSED"
+        },
+        {
+          "behavior": "Decision-Drop JSON is scanned recursively without opt-out and fails closed at excessive depth",
+          "disposition": "tested",
+          "evidence": "test_prompt_injection_scan.py PASSED"
+        },
+        {
+          "behavior": "Expired sibling claims are bounded by their own TTL and replacement-safe",
+          "disposition": "tested",
+          "evidence": "test_event_once.py PASSED"
+        }
+      ],
+      "counts": {
+        "testable": 3,
+        "tested": 3,
+        "untestable": 0,
+        "untested_testable": 0
+      },
+      "enumeration_basis": {
+        "acs": 3,
+        "covered_acs": 3
+      }
+    },
+    "degraded": []
+  },
+  "coverage": {
+    "total": 80.2,
+    "measured_tier": "repo",
+    "source": "combined coverage.xml (all plugins + shared + integration)",
+    "measured_at": "2026-07-04T00:00:00Z"
+  },
+  "source_state": {
+    "run_id": "iterate-2026-08-08-p2-52-shared-scripts-fixes",
+    "commit": "73978115f5617fd12ea62ec3e4234bf6bc54f942",
+    "dirty": true,
+    "base": null,
+    "release": null
+  }
+}
