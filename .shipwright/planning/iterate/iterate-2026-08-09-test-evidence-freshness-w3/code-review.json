@@ -1,0 +1,1 @@
+{"review":[{"severity":"medium","finding":"Non-UTF-8 evidence now fails closed by catching UnicodeError; regression test added."},{"severity":"low","finding":"run_id, iterate_run_id, and adr_id selection are covered by focused tests."}]}

@@ -12,7 +12,6 @@ from __future__ import annotations
 
 import json
 import sys
-import time
 from pathlib import Path
 from typing import Any
 
@@ -32,6 +31,7 @@ from lib.phase_quality import (  # noqa: E402
     make_finding,
 )
 from lib.review_marker import STATE_LEGACY, STATE_OK, evaluate_review_state  # noqa: E402
+from source_state import parse_banner_line  # noqa: E402
 from tools.verifiers.common import read_events_jsonl  # noqa: E402
 from tools.verifiers._iterate_run_id import (  # noqa: E402
     resolve_iterate_entry,
@@ -48,8 +48,8 @@ W2_REMEDIATION = (
     ".shipwright/planning/iterate/external_review_state.json."
 )
 W3_REMEDIATION = (
-    "Call record_event --type work_completed --source iterate and "
-    "regenerate .shipwright/compliance/test-evidence.md via update_compliance.py."
+    "Complete the iterate F5b finalization so it records work_completed and "
+    "regenerates .shipwright/compliance/test-evidence.md for that run."
 )
 
 
@@ -95,6 +95,15 @@ def _w2_status_finding(marker: Path, spec_mtime: float, *, allow_legacy: bool = 
 
 
 _SMALL_COMPLEXITIES: frozenset[str] = frozenset({"small", "tiny", "trivial"})
+
+
+def _event_run_id(event: dict[str, Any]) -> str | None:
+    """Return the run identity a completed iterate event declares."""
+    for key in ("run_id", "iterate_run_id", "adr_id"):
+        value = event.get(key)
+        if isinstance(value, str) and value.strip():
+            return value.strip()
+    return None
 
 
 def _latest_iterate_entry(project_root: Path, run_id: str) -> dict[str, Any] | None:
@@ -214,18 +223,11 @@ def check_w3_work_completed_and_evidence(
     """W3 — work_completed event recorded + .shipwright/compliance/test-evidence.md fresh."""
     events = read_events_jsonl(project_root)
     matched = [
-        e for e in events
-        if e.get("type") == "work_completed"
-        and e.get("source") == "iterate"
-        and (not run_id or run_id in (e.get("run_id", ""), e.get("iterate_run_id", ""))
-             or run_id in str(e.get("description", "")))
+        event for event in events
+        if event.get("type") == "work_completed"
+        and event.get("source") == "iterate"
+        and (not run_id or _event_run_id(event) == run_id)
     ]
-    if not matched and run_id:
-        # Fall back to any iterate work_completed — run_id isn't always stamped
-        matched = [
-            e for e in events
-            if e.get("type") == "work_completed" and e.get("source") == "iterate"
-        ]
 
     if not matched:
         return make_finding(
@@ -244,19 +246,32 @@ def check_w3_work_completed_and_evidence(
             remediation=W3_REMEDIATION,
         )
 
-    age = time.time() - evidence_file.stat().st_mtime
-    latest_ts = max((e.get("ts", "") for e in matched), default="")
-    # 24h freshness window — iterate runs can span a workday
-    if age > 86400:
+    latest_event = max(matched, key=lambda event: str(event.get("ts", "")))
+    latest_ts = str(latest_event.get("ts", ""))
+    expected_run = _event_run_id(latest_event)
+    try:
+        source_state = parse_banner_line(evidence_file.read_text(encoding="utf-8"))
+    except (OSError, UnicodeError):
+        source_state = None
+    actual_run = source_state.run_id if source_state is not None else None
+    if not expected_run or not actual_run:
         return make_finding(
             "W3", STATUS_FAIL,
-            f"test-evidence.md mtime stale ({int(age)}s > 86400s)",
+            "test-evidence.md lacks a resolvable Source-State run identity",
+            name=W3_NAME,
+            remediation=W3_REMEDIATION,
+        )
+    if actual_run != expected_run:
+        return make_finding(
+            "W3", STATUS_FAIL,
+            f"test-evidence.md Source-State run={actual_run} does not match "
+            f"latest work_completed run={expected_run}",
             name=W3_NAME,
             remediation=W3_REMEDIATION,
         )
     return make_finding(
         "W3", STATUS_PASS,
-        f"work_completed@{latest_ts}, test-evidence.md age {int(age)}s",
+        f"work_completed@{latest_ts}, test-evidence.md Source-State run={actual_run}",
         name=W3_NAME,
     )
 

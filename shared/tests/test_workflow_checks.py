@@ -173,28 +173,22 @@ def test_w3_fails_without_work_event(proj: Path):
 
 
 def test_w3_fails_without_evidence_file(proj: Path):
-    _write_events(proj, [
-        {"type": "work_completed", "source": "iterate", "ts": "2026-04-18T12:00:00Z"},
-    ])
+    _write_events(proj, [{"type": "work_completed", "source": "iterate", "adr_id": "run-1", "ts": "2026-04-18T12:00:00Z"}])
     f = iterate_compliance.check_w3_work_completed_and_evidence(proj, "run-1")
     assert f["status"] == pq.STATUS_FAIL
     assert "test-evidence" in f["evidence"]
 
 
-def test_w3_passes_with_event_and_fresh_evidence(proj: Path):
-    _write_events(proj, [
-        {"type": "work_completed", "source": "iterate", "ts": "2026-04-18T12:00:00Z"},
-    ])
+def test_w3_passes_with_event_and_current_evidence(proj: Path):
+    _write_events(proj, [{"type": "work_completed", "source": "iterate", "adr_id": "run-1", "ts": "2026-04-18T12:00:00Z"}])
     (proj / ".shipwright" / "compliance").mkdir()
     ev = proj / ".shipwright" / "compliance" / "test-evidence.md"
-    ev.write_text("# Evidence\n", encoding="utf-8")
-    ev.touch()
+    ev.write_text("# Evidence\n\nSource-State: run=run-1\n", encoding="utf-8")
     f = iterate_compliance.check_w3_work_completed_and_evidence(proj, "run-1")
     assert f["status"] == pq.STATUS_PASS
 
 
-# ---------------------------------------------------------------------------
-# W4 — test coverage threshold
+# ---------------------------------------------------------------------------# W4 — test coverage threshold
 # ---------------------------------------------------------------------------
 
 
