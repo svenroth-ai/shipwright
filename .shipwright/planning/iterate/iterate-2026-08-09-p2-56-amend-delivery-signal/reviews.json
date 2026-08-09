@@ -32,11 +32,11 @@
       "findings_count": 0,
       "findings": [],
       "provider": null,
-      "completed_at": "2026-08-09T08:48:44.365681+00:00",
+      "completed_at": "2026-08-09T08:55:39.098893+00:00",
       "disposition": null,
-      "recorded_by": "gpt-5.6-sol-high",
-      "parse_status": null,
-      "raw_excerpt": null
+      "recorded_by": "code-reviewer",
+      "parse_status": "unstructured",
+      "raw_excerpt": "# Review evidence\n\n## Spec review\nPASS — scope, v2 compatibility, and acceptance coverage verified after corrections.\n\n## Code review\nPASS — amend derivation, independent signals, validation, canonical sweep handling, docs, and tests verified.\n\n## Doubt review\nPASS — no remaining correctness or safety blockers; additive v2 rule and all amend delivery cases verified.\n"
     },
     "doubt": {
       "review_type": "doubt",
@@ -44,11 +44,11 @@
       "findings_count": 0,
       "findings": [],
       "provider": null,
-      "completed_at": "2026-08-09T08:48:44.490609+00:00",
+      "completed_at": "2026-08-09T08:55:39.231972+00:00",
       "disposition": null,
-      "recorded_by": "gpt-5.6-sol-high",
-      "parse_status": null,
-      "raw_excerpt": null
+      "recorded_by": "doubt-reviewer",
+      "parse_status": "unstructured",
+      "raw_excerpt": "# Review evidence\n\n## Spec review\nPASS — scope, v2 compatibility, and acceptance coverage verified after corrections.\n\n## Code review\nPASS — amend derivation, independent signals, validation, canonical sweep handling, docs, and tests verified.\n\n## Doubt review\nPASS — no remaining correctness or safety blockers; additive v2 rule and all amend delivery cases verified.\n"
     },
     "external_code": {
       "review_type": "external_code",
@@ -68,11 +68,11 @@
       "findings_count": 0,
       "findings": [],
       "provider": null,
-      "completed_at": "2026-08-09T08:48:44.241087+00:00",
+      "completed_at": "2026-08-09T08:55:38.979437+00:00",
       "disposition": null,
-      "recorded_by": "gpt-5.6-sol-high",
-      "parse_status": null,
-      "raw_excerpt": null
+      "recorded_by": "spec-reviewer",
+      "parse_status": "unstructured",
+      "raw_excerpt": "# Review evidence\n\n## Spec review\nPASS — scope, v2 compatibility, and acceptance coverage verified after corrections.\n\n## Code review\nPASS — amend derivation, independent signals, validation, canonical sweep handling, docs, and tests verified.\n\n## Doubt review\nPASS — no remaining correctness or safety blockers; additive v2 rule and all amend delivery cases verified.\n"
     },
     "plan_internal": {
       "review_type": "plan_internal",
