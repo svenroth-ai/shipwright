@@ -1,6 +1,7 @@
 """Behavioral coverage for the trusted PR-review waiver decision."""
 
 import importlib.util
+import json
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
@@ -85,3 +86,97 @@ def test_a_persistent_label_cannot_waive_a_new_unapproved_head():
     needs_review, reason = tier.decide([PATH], ["skip-pr-review"], completed_record())
     assert needs_review is True
     assert "approval" in reason
+
+
+def test_needs_review_label_forces_review_even_with_a_waiver():
+    needs_review, reason = tier.decide(
+        [PATH], ["needs-review", "skip-pr-review"], completed_record(), trusted_head_approval=True,
+    )
+    assert needs_review is True
+    assert reason == "needs-review label set"
+
+
+def test_cli_reports_no_waiver_when_labels_are_empty(tmp_path, capsys):
+    changed = tmp_path / "changed.txt"
+    changed.write_text(f"{PATH}\n", encoding="utf-8")
+    exit_code = tier.main([
+        "--changed-paths-file", str(changed),
+        "--labels-json", "[]",
+        "--review-record-file", str(tmp_path / "reviews.json"),
+    ])
+    assert exit_code == 0
+    out = capsys.readouterr().out
+    assert "needs_review=true" in out
+    assert "no trusted review waiver" in out
+
+
+def test_cli_full_waiver_flow_reports_no_review_needed(tmp_path, capsys):
+    changed = tmp_path / "changed.txt"
+    changed.write_text(f"{PATH}\n", encoding="utf-8")
+    record_file = tmp_path / "reviews.json"
+    record_file.write_text(json.dumps(completed_record()), encoding="utf-8")
+    exit_code = tier.main([
+        "--changed-paths-file", str(changed),
+        "--labels-json", json.dumps(["skip-pr-review"]),
+        "--review-record-file", str(record_file),
+        "--trusted-head-approval",
+    ])
+    assert exit_code == 0
+    out = capsys.readouterr().out
+    assert "needs_review=false" in out
+    assert "corroborated" in out
+
+
+def test_cli_reports_unreadable_inputs_when_labels_json_is_malformed(tmp_path, capsys):
+    changed = tmp_path / "changed.txt"
+    changed.write_text(f"{PATH}\n", encoding="utf-8")
+    exit_code = tier.main([
+        "--changed-paths-file", str(changed),
+        "--labels-json", "not-json",
+        "--review-record-file", str(tmp_path / "reviews.json"),
+    ])
+    assert exit_code == 0
+    out = capsys.readouterr().out
+    assert "needs_review=true" in out
+    assert "tier inputs unreadable" in out
+
+
+def test_cli_reports_unreadable_inputs_when_labels_is_not_a_string_array(tmp_path, capsys):
+    changed = tmp_path / "changed.txt"
+    changed.write_text(f"{PATH}\n", encoding="utf-8")
+    exit_code = tier.main([
+        "--changed-paths-file", str(changed),
+        "--labels-json", json.dumps({"not": "a list"}),
+        "--review-record-file", str(tmp_path / "reviews.json"),
+    ])
+    assert exit_code == 0
+    out = capsys.readouterr().out
+    assert "tier inputs unreadable" in out
+
+
+def test_cli_reports_unreadable_inputs_when_changed_paths_file_is_missing(tmp_path, capsys):
+    exit_code = tier.main([
+        "--changed-paths-file", str(tmp_path / "does-not-exist.txt"),
+        "--labels-json", "[]",
+        "--review-record-file", str(tmp_path / "reviews.json"),
+    ])
+    assert exit_code == 0
+    out = capsys.readouterr().out
+    assert "tier inputs unreadable" in out
+
+
+def test_cli_treats_a_malformed_review_record_file_as_missing(tmp_path, capsys):
+    changed = tmp_path / "changed.txt"
+    changed.write_text(f"{PATH}\n", encoding="utf-8")
+    record_file = tmp_path / "reviews.json"
+    record_file.write_text("{not valid json", encoding="utf-8")
+    exit_code = tier.main([
+        "--changed-paths-file", str(changed),
+        "--labels-json", json.dumps(["skip-pr-review"]),
+        "--review-record-file", str(record_file),
+        "--trusted-head-approval",
+    ])
+    assert exit_code == 0
+    out = capsys.readouterr().out
+    assert "needs_review=true" in out
+    assert "review evidence unavailable" in out
