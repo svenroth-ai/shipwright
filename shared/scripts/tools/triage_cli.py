@@ -13,9 +13,11 @@ Subcommands (positional ``<id>`` for every decision):
   list [--json]                         open items, then any deferred ones in their
                                         own capped section. ``--json`` is the machine
                                         contract for the WebUI: an envelope with
-                                        `contractVersion`, `open`, `deferred` and
-                                        `corruption`; rows carry pendingDelivery +
-                                        pendingStatusDelivery. `lib.triage_contract`
+                                        `contractVersion`, `open`, `deferred`,
+                                        `corruption`, and both undelivered blocks;
+                                        rows carry pendingDelivery + independent
+                                        pendingStatusDelivery/pendingAmendDelivery.
+                                        `lib.triage_contract`
   promote <id> --task-ref EXT:<ref>     promote → backlog task
   dismiss <id> --reason <reason>        dismiss (false-positive / won't-fix)
   defer   <id> --reason <r> --revisit D defer until day D (YYYY-MM-DD), after
@@ -79,9 +81,10 @@ def _build_parser() -> argparse.ArgumentParser:
         "--json", action="store_true",
         help="emit the machine contract for the WebUI: an envelope with "
              "contractVersion, plus complete `open` and `deferred` arrays "
-             "(never capped). Each item gains a pendingDelivery bool for "
-             "outbox-only items, and a deferred one carries revisitAt + "
-             "revisitDue. Shape and version: lib/triage_contract.py",
+             "(never capped). Each item carries pendingDelivery and independent "
+             "pendingStatusDelivery/pendingAmendDelivery booleans; the envelope "
+             "also reports capped undelivered decisions and amends. Shape and "
+             "version: lib/triage_contract.py",
     )
     p_list.set_defaults(func=cmd_list)
 

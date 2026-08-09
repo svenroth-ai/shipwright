@@ -10,6 +10,10 @@ array of open items became an envelope — `contractVersion`, `open`, `deferred`
 — because a parked entry had to become visible here and a flat array has no
 sections. `_open()` below reads the `open` section, so the pre-existing cases
 still say what they always said; the envelope itself is pinned separately.
+
+**Contract version 2** gains the independent amend-delivery fact additively:
+`pendingAmendDelivery` is always present on each row, while
+`undeliveredAmends` is the capped `{count, truncated, ids}` envelope block.
 """
 
 from __future__ import annotations
@@ -76,15 +80,18 @@ def test_list_json_emits_the_open_section(tmp_path: Path, tracked_item: str) -> 
     assert item["status"] == "triage"
     assert item["launchPayload"].startswith("/shipwright-security")
     assert item["pendingDelivery"] is False  # lives in the tracked log
+    assert item["pendingAmendDelivery"] is False
+    assert payload["undeliveredAmends"] == {"count": 0, "truncated": False, "ids": []}
 
 
 def test_list_json_empty_is_two_empty_sections(tmp_path: Path) -> None:
     """An empty store: both sections empty, and the store itself reported clean.
 
     Pinned key-SET plus key-by-key, rather than by whole-dict equality. The
-    envelope gained ``corruption`` in iterate-2026-08-06-p2-19c-corruption-absence
-    — additively, with `contractVersion` deliberately held at 2 because a consumer
-    reading `open`/`deferred` is unaffected.
+    envelope gained ``corruption`` in iterate-2026-08-06-p2-19c-corruption-absence.
+    The separately meaningful `undeliveredAmends` envelope block is additive at
+    v2, alongside its always-present row boolean, so the pinned consumer remains
+    compatible while a later consumer can opt into the new fact.
 
     The split matters: a whole-payload `==` couples "which keys exist" to "what
     each key contains", so every additive field fails the test for the wrong
@@ -97,12 +104,13 @@ def test_list_json_empty_is_two_empty_sections(tmp_path: Path) -> None:
     # Exhaustive on the top level, which the old whole-dict `==` also gave us: an
     # unnoticed FIFTH key is exactly the drift a cross-repo contract must not have.
     assert set(payload) == {"contractVersion", "open", "deferred", "corruption",
-                            "undeliveredDecisions"}
+                            "undeliveredDecisions", "undeliveredAmends"}
     assert payload["contractVersion"] == 2
     assert payload["open"] == []
     assert payload["deferred"] == []
     assert payload["corruption"] == {"count": 0, "truncated": False, "spans": []}
     assert payload["undeliveredDecisions"] == {"count": 0, "truncated": False, "ids": []}
+    assert payload["undeliveredAmends"] == {"count": 0, "truncated": False, "ids": []}
 
 
 def test_list_json_excludes_dismissed(tmp_path: Path, tracked_item: str) -> None:

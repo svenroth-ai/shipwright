@@ -26,7 +26,7 @@ from pathlib import Path, PurePosixPath
 
 try:  # imported as ``lib.triage_integrity`` (shared/scripts on sys.path)
     from .jsonl_records import CorruptFragment, read_jsonl_records
-    from .triage_delivery import undelivered_from_records
+    from .triage_delivery import undelivered_amends_from_records, undelivered_from_records
 except ImportError:  # pragma: no cover - exercised in a subprocess test
     # Same two-spelling requirement as ``lib/jsonl_records.py`` itself: a plugin's
     # own ``scripts/lib`` can shadow shared's, and ``shared_lib_loader`` then execs
@@ -51,7 +51,7 @@ except ImportError:  # pragma: no cover - exercised in a subprocess test
     if _here not in sys.path:
         sys.path.append(_here)
     from jsonl_records import CorruptFragment, read_jsonl_records  # type: ignore[no-redef]
-    from triage_delivery import undelivered_from_records  # type: ignore[no-redef]
+    from triage_delivery import undelivered_amends_from_records, undelivered_from_records  # type: ignore[no-redef]
 
 __all__ = [
     "basename",
@@ -250,36 +250,28 @@ def report_corruption(fragments: list[CorruptFragment]) -> None:
 
 
 def store_facts(tracked_path: Path | str, outbox_path: Path | str,
-                *, applied_statuses) -> tuple[list[CorruptFragment], set[str]]:
-    """``(corruption, undelivered_status_ids)`` from **one** read of each store.
+                *, applied_statuses, is_valid_amend) -> tuple[list[CorruptFragment], set[str], set[str]]:
+    """Return corruption plus independent status- and amend-delivery facts.
 
-    ``triage_cli list --json`` was reading each file four times over — the resolved
-    rows, the append-id sets, the delivery derivation and the corruption scan — on a
-    command the Command Center live-view polls. This collapses the last two into one
-    pass (Stage-2 code review). It does not close the wider skew: these are still a
-    re-read relative to ``read_all_items``, recorded in ``triage_contract``.
+    The caller supplies the same amend validator used by its resolved view so a
+    damaged amend cannot manufacture a reassuring or alarming delivery signal.
     """
     reads = [
         read_jsonl_records(p, is_record=is_triage_record)
         for p in (tracked_path, outbox_path)
     ]
     corruption = [frag for r in reads for frag in r.corrupt]
-    undelivered = undelivered_from_records(
+    undelivered_statuses = undelivered_from_records(
         reads[0].records, reads[1].records, applied_statuses=applied_statuses)
-    return corruption, undelivered
+    undelivered_amends = undelivered_amends_from_records(
+        reads[0].records, reads[1].records, is_valid_amend=is_valid_amend)
+    return corruption, undelivered_statuses, undelivered_amends
 
 
 def undelivered_status_ids(tracked_path: Path | str, outbox_path: Path | str,
                            *, applied_statuses) -> set[str]:
-    """:func:`store_facts`' delivery half, when the caller wants only that.
-
-    Kept as the readable single-fact query even though the CLI takes the composite
-    (Stage-2 review noted it has no production caller): ``store_facts`` exists for
-    the read-count, not because the two questions became one.
-
-    ``applied_statuses`` is REQUIRED and must be ``triage.STATUSES``; the rules it
-    gates, and why they are load-bearing, are in
-    :func:`lib.triage_delivery.undelivered_from_records`.
-    """
-    return store_facts(tracked_path, outbox_path,
-                       applied_statuses=applied_statuses)[1]
+    """Return the existing status-delivery fact without considering amends."""
+    return store_facts(
+        tracked_path, outbox_path, applied_statuses=applied_statuses,
+        is_valid_amend=lambda _event: False,
+    )[1]

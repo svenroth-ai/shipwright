@@ -961,6 +961,11 @@ _Where the work detail lives_ at the end of this document.
 - (E) Given a finding was deferred by mistake, when the operator reverses it,
   then it returns among the open ones with the reason recorded, without anyone
   editing the stored record by hand.
+- (E) Given an operator correction is held only in the local outbox, when a
+  triage view is produced, then it says separately that the correction has not
+  reached a branch, without changing the existing signal for an undelivered
+  decision. A card with both facts reports both, so neither is hidden by the
+  other. (iterate-2026-08-09-p2-56-amend-delivery-signal)
 - (E) Given findings have been deferred, when the operator looks at any of the
   places this project shows its findings, then the deferred ones are present
   there in their own section with the day they return — never silently absent
