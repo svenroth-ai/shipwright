@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-08-09-p2-56-amend-delivery-signal",
+  "date": "2026-08-09",
+  "section": "Iterate — change: amend delivery signal",
+  "title": "Keep amend delivery independent and additive",
+  "context": "A tracked card can have a valid correction only in the outbox while its append is already delivered.",
+  "decision": "Expose pendingAmendDelivery and undeliveredAmends beside the existing append and status facts; retain contract version 2.",
+  "consequences": "Consumers can distinguish pending corrections without changing existing status semantics or breaking the pinned v2 consumer.",
+  "rationale": "Amends accumulate and require tracked-target plus canonical-equivalence checks; the established additive-field rule keeps v2 compatible.",
+  "rejected": "Do not merge amend ids into undeliveredDecisions or bump the unchanged WebUI consumer to v3.",
+  "commit": "",
+  "architecture_impact": "data-flow",
+  "spec_ref": ".shipwright/planning/iterate/iterate-2026-08-09-p2-56-amend-delivery-signal/spec.md"
+}
