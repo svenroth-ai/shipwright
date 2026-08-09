@@ -26,6 +26,7 @@ import json
 
 __all__ = [
     "format_pending_delivery_notice",
+    "undelivered_amends_from_records",
     "undelivered_from_records",
 ]
 
@@ -120,6 +121,37 @@ def undelivered_from_records(
         if _canonical(event) not in delivered
     }
 
+
+def undelivered_amends_from_records(
+    tracked: list[dict], outbox: list[dict], *, is_valid_amend,
+) -> set[str]:
+    """Ids with a valid amend that is present only in the outbox.
+
+    Amend overlays accumulate: unlike a status flip, each valid correction can
+    affect the resolved card. A tracked copy of the same canonical event marks
+    that correction delivered; a later amendment does not erase an earlier
+    undelivered field change. Invalid and orphan amends are ignored exactly as
+    ``triage.read_all_items`` ignores them.
+    """
+    tracked_append_ids = {
+        r["id"] for r in tracked
+        if r.get("event") == "append" and isinstance(r.get("id"), str)
+    }
+
+    def _amends(rows: list[dict]) -> list[dict]:
+        return [
+            r for r in rows
+            if r.get("event") == "amend"
+            and isinstance(r.get("id"), str)
+            and r["id"] in tracked_append_ids
+            and is_valid_amend(r)
+        ]
+
+    delivered = {_canonical(r) for r in _amends(tracked)}
+    return {
+        event["id"] for event in _amends(outbox)
+        if _canonical(event) not in delivered
+    }
 
 def format_pending_delivery_notice(item_ids: set[str]) -> str | None:
     """The human listing's one line about decisions not yet committed to a branch.

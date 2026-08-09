@@ -1,8 +1,8 @@
 # Requirements Traceability Matrix
 
-Generated: 2026-08-08T19:53:58.646645+00:00
-Source-State: run=iterate-2026-08-08-prompt-scan-dynamic-import-fault-test base=7a01ee66b247 release=v0.32.0
-Consistency-audit: last run 2026-07-28 (11 days earlier) — FAIL
+Generated: 2026-08-09T08:52:18.524935+00:00
+Source-State: run=iterate-2026-08-09-p2-56-amend-delivery-signal
+Consistency-audit: last run 2026-07-28 (12 days earlier) — FAIL
 
 ## Requirements Coverage
 
@@ -21,7 +21,7 @@ Consistency-audit: last run 2026-07-28 (11 days earlier) — FAIL
 | [FR-01.11](../../.shipwright/planning/01-adopted/spec.md#fr-0111)<a id="rtm-fr-0111"></a> | Handle an ongoing change at the depth it deserves: detect what kind of change it is and how big, then scale from a quick fix to a fully specified feature with plans, reviews and tests. Every feature or change records whether it adds, modifies, removes or leaves the requirements untouched, and that record is enforced before the change can be finished. | Must | [evt-e3d2949e](#evt-e3d2949e), [evt-6c637864](#evt-6c637864), [evt-baaf4b0e](#evt-baaf4b0e), [evt-ca7b7d64](#evt-ca7b7d64) +35 | 225/225 → 8804/8804 | 2026-08-08 ([iter](#evt-cc678519)) | ✅ | COVERED | MISSING | MISSING | — |
 | [FR-01.12](../../.shipwright/planning/01-adopted/spec.md#fr-0112)<a id="rtm-fr-0112"></a> | Start the project locally and hand back the address to open in a browser. | May | [evt-e3d2949e](#evt-e3d2949e), [evt-ca7b7d64](#evt-ca7b7d64), [evt-ddb23fe7](#evt-ddb23fe7), [evt-ea7203ec](#evt-ea7203ec) | 225/225 → 13/13 | 2026-05-03 ([iter](#evt-ca7b7d64)) | ⚠️ needs re-verification | COVERED | — | — | MISSING |
 | [FR-01.13](../../.shipwright/planning/01-adopted/spec.md#fr-0113)<a id="rtm-fr-0113"></a> | Bring an existing codebase under Shipwright: read what is already there, write the starting guidance, derive an initial requirements catalog and compliance evidence, and lay down a baseline end-to-end test. | Must | [evt-e3d2949e](#evt-e3d2949e), [evt-273bbb54](#evt-273bbb54), [evt-b0b9c422](#evt-b0b9c422), [evt-aab7ddbd](#evt-aab7ddbd) +15 | 225/225 → 7815/7831 | 2026-07-28 ([iter](#evt-4e540ccf)) | ⚠️ needs re-verification | COVERED | MISSING | — | — |
-| [FR-01.14](../../.shipwright/planning/01-adopted/spec.md#fr-0114)<a id="rtm-fr-0114"></a> | Collect findings from local checks and from the code host's automated scans into one per-project Triage Inbox the operator works through — each finding recorded once, and each one taken into work, deferred or dismissed — so the actual task list stays curated instead of flooded. | Must | [evt-3f488ddc](#evt-3f488ddc), [evt-32f2f1f4](#evt-32f2f1f4), [evt-84dbdf5e](#evt-84dbdf5e), [evt-e14e5f26](#evt-e14e5f26) +18 | 1642/1649 → 8901/8901 | 2026-08-08 ([iter](#evt-d093b4ec)) | ✅ | COVERED | MISSING | — | — |
+| [FR-01.14](../../.shipwright/planning/01-adopted/spec.md#fr-0114)<a id="rtm-fr-0114"></a> | Collect findings from local checks and from the code host's automated scans into one per-project Triage Inbox the operator works through — each finding recorded once, and each one taken into work, deferred or dismissed — so the actual task list stays curated instead of flooded. | Must | [evt-3f488ddc](#evt-3f488ddc), [evt-32f2f1f4](#evt-32f2f1f4), [evt-84dbdf5e](#evt-84dbdf5e), [evt-e14e5f26](#evt-e14e5f26) +19 | 1642/1649 → 18/18 | 2026-08-09 ([iter](#evt-0bbcf4b6)) | ✅ | COVERED | MISSING | — | — |
 | [FR-01.15](../../.shipwright/planning/01-adopted/spec.md#fr-0115)<a id="rtm-fr-0115"></a> | Every payload this repository hands to a different repository is a versioned output contract: its shape is published alongside it, the capability producing it states that it has an outside consumer, and a gate compares what is emitted against the shape last published — read from a state the proposed change cannot rewrite — and fails until the version has been raised to match the kind of change. So a shape change can never reach a consumer silently. | Must | [evt-6a61ac10](#evt-6a61ac10), [evt-ea7203ec](#evt-ea7203ec) | 6452/6452 | 2026-07-21 ([iter](#evt-6a61ac10)) | ⚠️ needs re-verification | COVERED | — | — | MISSING |
 | [FR-01.16](../../.shipwright/planning/01-adopted/spec.md#fr-0116)<a id="rtm-fr-0116"></a> | Elicit requirements through one shared, rigorous method wherever they are gathered — a new project, an adopted codebase, or an ongoing change: ask one question at a time, each with a recommended answer, look facts up in the code instead of asking, challenge wording against the project's own glossary, and stress-test with concrete edge cases. Capture the project's domain vocabulary and the reason behind each hard-to-reverse choice as they surface. No requirement is treated as settled until every dimension of its context is either answered or explicitly marked as an unconfirmed assumption. | Must | [evt-ea7203ec](#evt-ea7203ec) | — | — | ⚠️ needs re-verification | FAIL → [trg-9c9c0792](../agent_docs/triage_inbox.md#trg-9c9c0792) | MISSING | — | — |
 | [FR-01.17](../../.shipwright/planning/01-adopted/spec.md#fr-0117)<a id="rtm-fr-0117"></a> | Re-check every proposed change on the code host before it can merge — the project's tests, its lint, its security scans and the host's own code analysis — independently of whatever already ran on the author's machine, and have the change reviewed there automatically rather than on request. A local pass is never accepted in place of the host's. | Must | [evt-bccbd6ce](#evt-bccbd6ce), [evt-36d0f887](#evt-36d0f887), [evt-88a675ea](#evt-88a675ea), [evt-e2c1d453](#evt-e2c1d453) +1 | 21/21 | 2026-08-01 ([iter](#evt-0471d634)) | ✅ | COVERED | MISSING | — | — |
@@ -35,6 +35,11 @@ Consistency-audit: last run 2026-07-28 (11 days earlier) — FAIL
 
 | Event | Source | Type | FRs | Tests | Commit | Date |
 |-------|--------|------|-----|-------|--------|------|
+| <a id="evt-0bbcf4b6"></a>Shows when a card correction has not yet reached the shared branch. | iterate | change | [FR-01.14](#rtm-fr-0114) | 18/18 | — | 2026-08-09 |
+| <a id="evt-64d6ef74"></a>Fail closed on Git probe timeouts, scan Decision-Drop JSON recursively, and bound expired event claims. | iterate | bug_fix |  | 49/49 | — | 2026-08-08 |
+| <a id="evt-c45dcc3c"></a>Fixed six small reliability issues in plan review guidance and internal file readers. | iterate | bug |  | 18/18 | — | 2026-08-08 |
+| <a id="evt-84fda7e2"></a>Important recovered test records stay available when routine history cleanup runs. | iterate | bug |  | 18/18 | — | 2026-08-08 |
+| <a id="evt-14d9c396"></a>Track and align the concise Codex operating contract with current repository runtime facts. | iterate | change |  | 18/18 | — | 2026-08-08 |
 | <a id="evt-f32709d0"></a>normalize benign __import__ dynamic-import pattern flagged by shipwright-prompt-scan (trg-133f2ca6) | iterate | change |  | 9/9 | — | 2026-08-08 |
 | <a id="evt-512679d4"></a>When a project's spec.md files get too long to read in one pass, Shipwright's iterate and project skills now say so instead of silently reading only part of it. | iterate | feature |  | 9880/9880 | — | 2026-08-08 |
 | <a id="evt-d093b4ec"></a>You can now fix a mistake on a triage card from the command line instead of closing it and filing a new one. | iterate | change | [FR-01.14](#rtm-fr-0114) | 8901/8901 | — | 2026-08-08 |
@@ -555,7 +560,7 @@ Consistency-audit: last run 2026-07-28 (11 days earlier) — FAIL
 |--------|-------|
 | Total splits built | 0 |
 | Build sections | 0 |
-| Iterate changes | 513 |
+| Iterate changes | 518 |
 | Requirements total | 20 |
 | Requirements verified | 18/20 |
 | Must-have verified | 14/14 |

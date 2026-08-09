@@ -153,7 +153,7 @@ def test_triage_integrity_sentinel_mode_works(tmp_path: Path) -> None:
         assert not mod.is_triage_record({{"event": "append"}})
         # The delivery leaf it composes must resolve through the same fallback.
         assert mod.store_facts({str(store)!r}, {str(store)!r},
-                               applied_statuses=("triage",))[1] == set()
+                               applied_statuses=("triage",), is_valid_amend=lambda _event: False)[1] == set()
         print("MODE=triage-integrity-sentinel OK")
         """,
         tmp_path,

@@ -1,31 +1,41 @@
 ---
 canon_generated: true
-run_id: "changelog-v0.32.0-20260808-224001"
-phase: "changelog"
-reason: "release v0.32.0"
-timestamp: "2026-08-08T20:34:51.172844+00:00"
+run_id: "iterate-2026-08-09-p2-56-amend-delivery-signal"
+phase: "iterate"
+reason: "iterate: expose outbox-only amend delivery"
+timestamp: "2026-08-09T08:52:18.524935+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-08-08 20:34:51 UTC
+> Auto-generated 2026-08-09 08:52:18 UTC
 
 ## Session Info
 
-- **Session ID**: 5e606322-4b30-42ed-9e6b-72bfd03df7be
-- **Timestamp**: 2026-08-08 20:34:51 UTC
-- **Reason**: release v0.32.0
+- **Session ID**: unknown
+- **Timestamp**: 2026-08-09 08:52:18 UTC
+- **Reason**: iterate: expose outbox-only amend delivery
 
 ## Last Iterate
 
-- **Run ID**: iterate-2026-08-08-prompt-scan-dynamic-import-fault-test
-- **Date**: 2026-08-08T19:53:58.428334Z
-- **Type**: change
+- **Run ID**: iterate-2026-08-08-p2-52-shared-scripts-fixes
+- **Date**: 2026-08-08T23:38:47.499822Z
+- **Type**: bug
 - **Complexity**: small
-- **Branch**: iterate/prompt-scan-dynamic-import-fault-test
-- **ADR**: iterate-2026-08-08-prompt-scan-dynamic-import-fault-test
+- **Branch**: iterate/p2-52-shared-scripts-fixes
+- **ADR**: iterate-2026-08-08-p2-52-shared-scripts-fixes
 - **Tests passed**: True
-- **Spec**: n/a (small complexity, SIMPLIFY sub-mode, spec_impact none)
+- **Spec**: no changes
+
+## Current Iterate Progress
+
+- **Branch**: iterate/p2-56-amend-delivery-signal
+- **External Review Marker**: missing
+
+### Mandatory replay on Resume
+
+Before dispatching to the handoff's Remaining phase, run these if missing:
+- Finalization (F0–F11) after all mandatory phases pass
 
 ## Legacy build state
 
@@ -38,8 +48,8 @@ timestamp: "2026-08-08T20:34:51.172844+00:00"
 
 ## Git State
 
-- **Branch**: main
-- **Last Commit**: 11e32523 chore(release): v0.32.0
+- **Branch**: iterate/p2-56-amend-delivery-signal
+- **Last Commit**: 9d20b91a chore(triage): sweep 17 outbox append(s) into branch
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -55,17 +65,17 @@ timestamp: "2026-08-08T20:34:51.172844+00:00"
 
 | Event | Type | Source | Date |
 |-------|------|--------|------|
-| evt-5036a5fd | grade_snapshot | — | 2026-08-08 |
-| evt-512679d4 | work_completed | iterate (mandated-load truncation is now declared, not silent (TC3.2)) | 2026-08-08 |
-| evt-f32709d0 | work_completed | iterate (iterate: normalize benign __import__ dynamic-import pattern flagged by shipwright-prompt-scan (trg-133f2ca6)) | 2026-08-08 |
-| evt-272f228a | grade_snapshot | — | 2026-08-08 |
-| evt-390f315f | work_completed | iterate (iterate: fix shipwright_model_config.json review tier (opus, not sonnet)) | 2026-08-08 |
+| evt-0bbcf4b6 | work_completed | iterate (Expose outbox-only amend delivery independently from append and status delivery.) | 2026-08-09 |
+| evt-039adb70 | grade_snapshot | — | 2026-08-08 |
+| evt-84fda7e2 | work_completed | iterate (Protect permanent F5c retention pins.) | 2026-08-08 |
+| evt-07e4239c | grade_snapshot | — | 2026-08-08 |
+| evt-c45dcc3c | work_completed | iterate (Six small defects: plan-reviewer wiring tail and fragile reader/writer sites) | 2026-08-08 |
 
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 513
-- **Last iterate**: feature — mandated-load truncation is now declared, not silent (TC3.2) (2026-08-08)
+- **Total work events**: 518
+- **Last iterate**: change — Expose outbox-only amend delivery independently from append and status delivery. (2026-08-09)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
 ## Recent Decisions
