@@ -1,0 +1,58 @@
+{
+  "run_id": "iterate-2026-08-09-timing-coverage",
+  "date": "2026-08-09T09:31:44.071119Z",
+  "event_at": "2026-08-08T23:38:21.118054+00:00",
+  "type": "bug",
+  "complexity": "small",
+  "prior_source": "history",
+  "branch": "iterate/timing-coverage",
+  "spec": null,
+  "tests_passed": true,
+  "adr": "iterate-2026-08-09-timing-coverage",
+  "test_completeness": {
+    "status": "complete",
+    "behaviors": [
+      {
+        "behavior": "scope-to-F5b wall time and instrumented ratio are reported",
+        "disposition": "tested",
+        "evidence": "test_wall_coverage_uses_scope_mark_and_work_completed_timestamp PASSED"
+      },
+      {
+        "behavior": "a scope-marked run with zero folded spans reports zero coverage",
+        "disposition": "tested",
+        "evidence": "test_scope_mark_with_zero_emitted_spans_reports_zero_coverage PASSED"
+      },
+      {
+        "behavior": "implausible agent intervals remain evidence but do not enter work statistics",
+        "disposition": "tested",
+        "evidence": "test_historical_completed_outlier_is_excluded_without_repairing_the_event PASSED"
+      },
+      {
+        "behavior": "bounded open finalization covers its F5b tail while an overlong one is excluded",
+        "disposition": "tested",
+        "evidence": "test_open_finalization_covers_its_bounded_scope_to_f5b_tail PASSED"
+      },
+      {
+        "behavior": "credible successful attempts outrank cancelled or unavailable retries",
+        "disposition": "tested",
+        "evidence": "test_completed_retry_outranks_a_longer_cancelled_attempt PASSED"
+      },
+      {
+        "behavior": "planning and discovery are rendered as alternative entry paths",
+        "disposition": "tested",
+        "evidence": "test_report_labels_the_absent_alternative_entry_path_not_applicable PASSED"
+      }
+    ],
+    "counts": {
+      "testable": 6,
+      "tested": 6,
+      "untestable": 0,
+      "untested_testable": 0
+    },
+    "enumeration_basis": {
+      "acs": 6,
+      "covered_acs": 6
+    }
+  },
+  "declared_removals": []
+}

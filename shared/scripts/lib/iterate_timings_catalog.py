@@ -70,6 +70,25 @@ SPAN_NAMES: frozenset = frozenset(SPAN_PARENTS)
 SOURCES: frozenset = frozenset({"producer", "agent", "derived"})
 OUTCOMES: frozenset = frozenset({"completed", "incomplete", "cancelled", "unavailable"})
 
+# Agent marks have no monotonic clock and can remain open while the operator is
+# away. These name-specific limits identify a mark that cannot credibly be
+# work for that phase. Producer spans deliberately do not use this policy.
+AGENT_SPAN_MAX_MS: dict[str, int] = {
+    "discovery_diagnosis": 4 * 60 * 60 * 1000,
+    "planning": 2 * 60 * 60 * 1000,
+    "implementation": 8 * 60 * 60 * 1000,
+    "verification": 4 * 60 * 60 * 1000,
+    "review": 4 * 60 * 60 * 1000,
+    "finalization": 2 * 60 * 60 * 1000,
+    "delivery": 4 * 60 * 60 * 1000,
+}
+_DEFAULT_AGENT_SPAN_MAX_MS = 4 * 60 * 60 * 1000
+
+
+def agent_span_max_ms(name: str) -> int:
+    """Return the largest credible agent-owned duration for ``name``."""
+    return AGENT_SPAN_MAX_MS.get(name, _DEFAULT_AGENT_SPAN_MAX_MS)
+
 
 def validate_name_parent(name: str, parent: str | None) -> None:
     if name not in SPAN_NAMES:
