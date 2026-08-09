@@ -1,0 +1,108 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-08-09-test-evidence-freshness-w3",
+    "date": "2026-08-09",
+    "unit": {
+      "status": "passed",
+      "passed": 18,
+      "total": 18,
+      "note": "Canonical F0 suite completed: 18 of 18 discovered suite units passed."
+    },
+    "integration": {
+      "status": "passed",
+      "passed": 1,
+      "total": 1,
+      "note": "Canonical integration-tests suite unit passed."
+    },
+    "pgtap": {
+      "status": "skipped",
+      "reason": "No database surface in this framework repository."
+    },
+    "e2e": {
+      "status": "skipped",
+      "reason": "No browser surface; the changed behavior is a verifier CLI contract."
+    },
+    "design_fidelity": {
+      "status": "skipped",
+      "reason": "No UI surface changed."
+    },
+    "smoke": {
+      "status": "skipped",
+      "reason": "No startable service surface."
+    },
+    "degraded": [],
+    "surface_verification": {
+      "surface": "cli",
+      "runner": "uv run pytest shared/tests/test_workflow_checks.py shared/tests/test_w3_source_state.py -q",
+      "exit_code": 0,
+      "tests_run": 55,
+      "evidence_path": "C:\\01_Development\\shipwright\\.worktrees\\test-evidence-freshness-w3\\.shipwright\\runs\\iterate-2026-08-09-test-evidence-freshness-w3\\surface_verification.log",
+      "timestamp": "2026-08-09T10:51:45.17Z",
+      "attempts": 1
+    },
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "W3 accepts evidence only when Source-State names the latest requested iterate completion.",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_workflow_checks.py and shared/tests/test_w3_source_state.py: 55 passed",
+          "category": "unit"
+        },
+        {
+          "behavior": "W3 recognizes run_id, iterate_run_id, and legacy adr_id event identities.",
+          "disposition": "tested",
+          "evidence": "test_w3_source_state.py::test_w3_accepts_each_event_run_identity_key PASSED",
+          "category": "unit"
+        },
+        {
+          "behavior": "An old file mtime does not make current source-state evidence stale.",
+          "disposition": "tested",
+          "evidence": "test_w3_source_state.py::test_w3_current_source_state_ignores_old_mtime PASSED",
+          "category": "unit"
+        },
+        {
+          "behavior": "A newer completed iterate makes prior Source-State evidence fail.",
+          "disposition": "tested",
+          "evidence": "test_w3_source_state.py::test_w3_newer_event_or_missing_requested_run_fails PASSED",
+          "category": "unit"
+        },
+        {
+          "behavior": "Missing or non-UTF-8 Source-State evidence fails with the F5b remediation.",
+          "disposition": "tested",
+          "evidence": "test_w3_source_state.py::test_w3_missing_or_unreadable_source_state_fails PASSED",
+          "category": "unit"
+        },
+        {
+          "behavior": "I2 remains independently phase-start based and retains its existing verifier contract.",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_infrastructure_checks.py passed in focused suite; follow-up trg-3b72ef37 filed",
+          "category": "unit"
+        }
+      ],
+      "counts": {
+        "testable": 6,
+        "tested": 6,
+        "untestable": 0,
+        "untested_testable": 0
+      },
+      "enumeration_basis": {
+        "acs": 6,
+        "covered_acs": 6
+      }
+    }
+  },
+  "coverage": {
+    "total": 80.2,
+    "measured_tier": "repo",
+    "source": "combined coverage.xml (all plugins + shared + integration)",
+    "measured_at": "2026-07-04T00:00:00Z"
+  },
+  "source_state": {
+    "run_id": "iterate-2026-08-09-test-evidence-freshness-w3",
+    "commit": "58889b8e1d479f145927523fc50434c97dfef77a",
+    "dirty": true,
+    "base": null,
+    "release": null
+  }
+}
