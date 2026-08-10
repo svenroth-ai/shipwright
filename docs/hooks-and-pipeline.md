@@ -504,7 +504,13 @@ or merges stale (Group-E staleness noise). The contract:
   `shared/scripts/tools/ensure_current.py` (a thin refresh-if-behind guard over
   `integrate_main`) BEFORE arming auto-merge: if the branch is behind
   `origin/<default>` it merges + regenerates first (clean no-op if current), so the
-  PR always arms from a current, already-regenerated tree.
+  PR always arms from a current, already-regenerated tree. **Immediately after that
+  refresh and before push, F11 re-runs the guarded `scripts/verify_local.py` mirror**
+  against this regenerated tree. F0 remains the cheap early pre-flight; it cannot see
+  finalization writes or the integration. A failing F11 re-check is an accepted
+  **late STOP** after F6 committed: it blocks push rather than making CI discover a
+  gate/workflow change that arrived in the merge. The delivery ladder repeats the same
+  re-check after any later refresh integration and before that refresh's push.
   **Before that merge, `ensure_current` also absorbs a dirty tracked
   `.shipwright/triage.jsonl`** into its own small `chore(triage): absorb
   background triage writes` commit, scoped to that one path
@@ -3172,8 +3178,10 @@ the tree becomes the commit: eight phases write tracked artifacts after it
 `origin/<default>` before the push — which matters here specifically, because
 `check_ci_gate_coverage.py` reads `.github/workflows` and the gate allowlist, and
 a concurrent PR landing a gate step arrives in exactly that merge. F0 is the
-cheap early catch, not a proof; a second invocation after `ensure_current` is the
-remedy for the window and is tracked, not done. A blocking pre-push hook was the
+cheap early catch, not a proof; F11 now performs the second invocation after every
+`ensure_current` integration and before the associated push. That is an accepted
+**late STOP** after F6 committed, which blocks delivery rather than leaving CI to
+discover the changed tree. A blocking pre-push hook was the
 rejected alternative — it would refuse legitimate and repair pushes while the
 constitution forbids `--no-verify`.
 

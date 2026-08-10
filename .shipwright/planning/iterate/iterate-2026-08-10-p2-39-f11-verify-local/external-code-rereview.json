@@ -1,0 +1,33 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "openrouter",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviews": {
+    "openai": {
+      "feedback": "- Category: bug\n- Severity: medium\n- File: `plugins/shipwright-iterate/skills/iterate/references/F11.md:46` \u2014 The initial F11 shell guard treats a marker-inspection failure as an absent/non-Shipwright script no-op. If `scripts/verify_local.py` exists but cannot be read (for example, permission denied or an I/O error), `grep -q` returns an error status, the `if` body is skipped, and F11 proceeds to push without running or rejecting the required gate. This contradicts the stated failure contract that only a missing or non-marker/undecodable candidate may no-op; the delivery-refresh Python implementation handles `OSError` fail-closed, but the initial F11 path does not.\n- Suggestion: Separate existence, readability/marker inspection, and marker-absent cases. For example, capture `grep`\u2019s result and explicitly STOP on statuses other than `0` (marker found) and `1` (marker absent), while retaining no-op behavior for a missing script.\n\n- Category: test\n- Severity: medium\n- File: `shared/tests/test_verify_local_f11_wiring.py:76` \u2014 The focused F11 wiring tests validate only the happy marker-present path and structural placement. They do not test the initial F11 guard\u2019s read-error behavior, so the documented fail-closed inspection contract can regress while all new tests pass. The delivery-refresh tests cover `recheck_local_gates()`\u2019s Python behavior, not the distinct shell implementation used for the initial push.\n- Suggestion: Add a focused shell-level or source-contract test requiring the F11 guard to distinguish `grep` inspection errors from a marker-absent result and to exit non-zero on the former.\n\nOverall assessment: ship-with-fixes. The core ordering and delivery-refresh recheck are implemented, but the initial F11 guard still permits a read failure to bypass the pre-push verification contract.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "openrouter",
+      "status": "success"
+    },
+    "deepseek": {
+      "feedback": "The diff implements the spec correctly and thoroughly. The marker\u2011guarded re\u2011check is added to F11 documentation (with a late\u2011STOP exit), the delivery\u2011refresh path now calls the same gate before push, and the focused tests verify ordering and fail\u2011closed behaviour. No correctness, security, or regression issues are present.\n\nSHIPWRIGHT_VERDICT: approve",
+      "via": "openrouter",
+      "status": "success"
+    }
+  },
+  "verdicts": {
+    "openai": "revise",
+    "deepseek": "approve"
+  },
+  "statuses": {
+    "openai": "success",
+    "deepseek": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: deepseek=approve, openai=revise"
+  }
+}

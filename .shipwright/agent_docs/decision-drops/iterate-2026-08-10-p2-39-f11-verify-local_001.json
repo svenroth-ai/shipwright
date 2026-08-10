@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-08-10-p2-39-f11-verify-local",
+  "date": "2026-08-10",
+  "section": "Iterate — change: F11 pre-push verification",
+  "title": "Verify the integrated F11 tree before every push",
+  "context": "F0 checks an earlier working tree, while F11 integration and delivery refresh can change the commit CI judges.",
+  "decision": "Keep F0 and rerun the marked local CI-gate mirror after integration/regeneration before each F11 push.",
+  "consequences": "A red late check stops delivery after the work commit; the accepted cost is one extra local run on each integrated push.",
+  "rationale": "Only the post-integration tree contains workflow and allowlist changes merged from main, so it is the local tree CI will judge.",
+  "rejected": "Replacing F0 alone delays ordinary feedback; checking only the initial F11 push misses delivery refreshes.",
+  "commit": "",
+  "architecture_impact": "convention",
+  "spec_ref": ".shipwright/planning/adr/iterate-2026-08-10-p2-39-f11-verify-local-f11-prepush-verification.md"
+}

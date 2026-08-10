@@ -1,0 +1,12 @@
+{
+  "stage": "doubt",
+  "verdict": "REJECT",
+  "doubts": [
+    {
+      "severity": "high",
+      "claim_under_doubt": "The initial and delivery-refresh F11 paths share the same marker-guard semantics.",
+      "disproof_attempt": "recheck_local_gates catches UnicodeError and returns true, while the initial F11 path can grep an undecodable marked script and execute it. A marked script with invalid UTF-8 bytes could therefore be skipped and pushed only by delivery refresh.",
+      "what_would_resolve_it": "Inspect the marker as bytes so unmarked undecodable consumers no-op but marked ones execute and fail closed."
+    }
+  ]
+}

@@ -1,0 +1,17 @@
+{
+  "stage": "spec-compliance",
+  "verdict": "REJECT",
+  "summary": "REVISE: AC-1 is implemented and no P2.52 scope drift was found, but AC-2's regression coverage is structurally too weak and AC-3 leaves contradictory pipeline documentation.",
+  "spec_citations": [
+    {
+      "spec_ref": "AC-2",
+      "kind": "unfaithful",
+      "divergence": "Prove an executable guarded invocation, coupled failure propagation, and successful ensure_current-to-verify-to-push ordering with structural or mutation-resistant assertions."
+    },
+    {
+      "spec_ref": "AC-3",
+      "kind": "unfaithful",
+      "divergence": "Replace the remaining hooks-and-pipeline statement that describes the F11 invocation as tracked rather than performed."
+    }
+  ]
+}

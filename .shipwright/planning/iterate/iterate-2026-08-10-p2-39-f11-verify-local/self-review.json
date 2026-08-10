@@ -1,0 +1,12 @@
+{
+  "items": [
+    {"name": "Spec Compliance", "verdict": "pass", "note": "Both initial and delivery-refresh pre-push trees are covered without extending scope beyond P2.39."},
+    {"name": "Error Handling", "verdict": "pass", "note": "Missing, unmarked, and undecodable consumer scripts no-op; a marked gate failure blocks the refresh push."},
+    {"name": "Security Basics", "verdict": "pass", "note": "The identity marker prevents executing an unrelated common-path script under STOP semantics; no secrets or input boundary changed."},
+    {"name": "Test Quality", "verdict": "pass", "note": "Mutation tests reject prose and fall-through handlers; runtime tests cover ordering, red paths, and no-op cases."},
+    {"name": "Performance Basics", "verdict": "pass", "note": "The accepted one extra local gate runs only after an integration that would otherwise push a changed tree."},
+    {"name": "Naming & Structure", "verdict": "pass", "note": "The helper follows delivery-host conventions and stays below the repository file-size ratchet."},
+    {"name": "Affected Boundaries", "verdict": "n/a", "note": "No serialized producer/consumer format changed; the boundary is a local process invocation covered by focused integration-style tests."},
+    {"name": "Test Hygiene Probe", "verdict": "pass", "note": "shared/scripts/tools/scan_test_hygiene.py --diff returned no findings."}
+  ]
+}

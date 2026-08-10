@@ -1,0 +1,33 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "openrouter",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviews": {
+    "openai": {
+      "feedback": "- Category: test\n- Severity: medium\n- File: `plugins/shipwright-iterate/skills/iterate/references/F11.md:37-60`\n- Finding: AC-2 requires focused automated tests that prove the second invocation is executable, ordered after `ensure_current.py` and before both push paths, and that a failing invocation cannot fall through. The diff adds no test files or test cases for either the F11 reference wiring or `pr_delivery_host.refresh_branch`; the claimed test coverage in the ledger is therefore not represented by this change. A prose-only replacement, an ordering regression, or a refresh-path failure fall-through would not be caught by tests introduced here because none were introduced.\n- Suggestion: Add focused tests that inspect/execute the F11 workflow contract and unit-test `refresh_branch` with mocked commands. Cover absent marker no-op, marked success, marked non-zero failure with no push, and ordering relative to `ensure_current.py` and each push.\n\n- Category: bug\n- Severity: medium\n- File: `shared/scripts/lib/pr_delivery_host.py:195-215`\n- Finding: The delivery-refresh recheck does not execute from `project_root` and does not use the same `uv run` invocation documented for F0 and the initial F11 check. It invokes `sys.executable` on an absolute script path while retaining the delivery process's current directory. If `verify_local.py` or commands it launches use repository-relative paths\u2014as the explicit `cd \"{project_root}\" && uv run ...` F11 contract anticipates\u2014a delivery process started outside the checkout can fail incorrectly or inspect the wrong tree. It may also use a different Python environment from the one used for the initial check.\n- Suggestion: Run the refresh check with the same project-root working directory and runtime as the F11/F0 command (for example, add `cwd=project_root` support to the runner and invoke `uv run scripts/verify_local.py`). Add a test that calls `refresh_branch` while the process CWD differs from `project_root`.\n\nOverall assessment: ship-with-fixes. The intended two checks and late-STOP documentation are present, but the required test coverage is absent and the delivery-refresh invocation does not reliably run the same gate against the project tree.  \nSHIPWRIGHT_VERDICT: revise",
+      "via": "openrouter",
+      "status": "success"
+    },
+    "deepseek": {
+      "feedback": "- Category: bug\n- Severity: high\n- File: shared/scripts/lib/pr_delivery_host.py:195-209 (recheck_local_gates)\n- Finding: The function invokes `run([sys.executable, str(script)], timeout=...)` without setting `cwd=str(project_root)`. The script `scripts/verify_local.py` expects to be executed from the project root (as documented), so relative\u2011path accesses inside the script will fail. This causes the mirror check to mis\u2011evaluate the tree or crash entirely, leading to false\u2011positive STOPs or silent bypass of the gate.\n- Suggestion: Add `cwd=str(project_root)` to the subprocess call to replicate the documented behavior of the bash snippet (`cd \"{project_root}\" && uv run \u2026`).\n\n- Category: bug\n- Severity: high\n- File: shared/scripts/lib/pr_delivery_host.py:195-209 (recheck_local_gates)\n- Finding: The function runs the verification script with `sys.executable`, which is the current Python interpreter, not the project\u2019s virtual environment. The script is designed to be run via `uv run` (as shown in the F11 reference). Running without the project\u2019s uv\u2011managed environment will likely fail with `ModuleNotFoundError` when the script imports project\u2011local dependencies, again causing false late STOPs even when the tree is healthy.\n- Suggestion: Use `run([\"uv\", \"run\", str(script)], cwd=str(project_root), ...)` or otherwise activate the project\u2019s virtual environment before executing the script, matching the documented invocation exactly.\n\n- Category: bug\n- Severity: low\n- File: shared/scripts/lib/pr_delivery_host.py:191-194 (recheck_local_gates, exception handling)\n- Finding: The blanket catch of `(OSError, UnicodeError)` and return `True` treats *any* read failure as \u201cmarker absent / no\u2011op\u201d. If the script exists but is unreadable due to permissions, the gate check is silently skipped. While the spec allows an absent or non\u2011Shipwright script to be a no\u2011op, an inaccessible file is a distinct case that should likely fail closed.\n- Suggestion: Differentiate between \u201cfile not found\u201d (no\u2011op) and other OSErrors (permission, disk error); raise or treat the latter as a failure to avoid silently bypassing the gate when the marker cannot be verified.\n\n- Category: edge-case\n- Severity: low\n- File: shared/scripts/lib/pr_delivery_host.py:197-199 (recheck_local_gates, output printing)\n- Finding: The function prints `proc.stdout` and `proc.stderr` only when the script fails, but because `_run` (default `subprocess.run`) is used without `capture_output=True`, those attributes are `None`. The `or \"\"` fallback prints empty strings, so the script\u2019s actual failure output is not recorded or displayed by this logic. (Output from the child process may still be visible because it inherits the parent\u2019s file descriptors, but this code path provides no additional diagnostics.)\n- Suggestion: Either capture the output (`capture_output=True`, `text=True`) and log it, or remove the ineffective print statements to avoid confusion.\n\n**Overall:** The intent is correct, but the implementation of `recheck_local_gates` diverges from the documented invocation in two critical ways (directory and environment), which will break the late\u2011gate functionality in production. Fix those invocation details and consider the minor hardening; then ship.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "openrouter",
+      "status": "success"
+    }
+  },
+  "verdicts": {
+    "openai": "revise",
+    "deepseek": "revise"
+  },
+  "statuses": {
+    "openai": "success",
+    "deepseek": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: deepseek=revise, openai=revise"
+  }
+}

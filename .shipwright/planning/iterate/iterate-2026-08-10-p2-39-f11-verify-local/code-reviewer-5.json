@@ -1,0 +1,6 @@
+{
+  "stage": "code",
+  "verdict": "PASS",
+  "summary": "Byte-level marker inspection now matches grep semantics: undecodable unmarked consumer scripts no-op while every byte stream containing the Shipwright marker executes the canonical gate.",
+  "review": []
+}

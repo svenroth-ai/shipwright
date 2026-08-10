@@ -1,0 +1,52 @@
+{
+  "run_id": "iterate-2026-08-10-p2-39-f11-verify-local",
+  "date": "2026-08-10T10:29:32.713968Z",
+  "event_at": "2026-08-10T02:13:25.889922+00:00",
+  "type": "change",
+  "complexity": "medium",
+  "branch": "iterate/p2-39-f11-verify-local",
+  "spec": ".shipwright/planning/iterate/iterate-2026-08-10-p2-39-f11-verify-local/spec.md",
+  "tests_passed": true,
+  "adr": "iterate-2026-08-10-p2-39-f11-verify-local",
+  "test_completeness": {
+    "status": "complete",
+    "behaviors": [
+      {
+        "behavior": "AC-1 \u2014 F11 runs the marked local gate after integration and before every push, including delivery refresh.",
+        "disposition": "tested",
+        "category": "integration",
+        "evidence": "shared/tests/test_pr_delivery_host_verify_local.py (4 passed); shared/tests/test_verify_local_f11_wiring.py (16 passed)"
+      },
+      {
+        "behavior": "AC-2 \u2014 missing, prose-only, misordered, and fall-through F11 wiring is rejected.",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_verify_local_f11_wiring.py (16 passed)"
+      },
+      {
+        "behavior": "AC-3 \u2014 F0/F11 roles and the accepted late STOP remain truthful across the user-facing documentation.",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_verify_local_f11_wiring.py::test_documentation_states_late_stop (passed)"
+      }
+    ],
+    "counts": {
+      "testable": 3,
+      "tested": 3,
+      "untestable": 0,
+      "untested_testable": 0
+    },
+    "enumeration_basis": {
+      "acs": 3,
+      "covered_acs": 3
+    }
+  },
+  "surface_verification": {
+    "run_id": "iterate-2026-08-10-p2-39-f11-verify-local",
+    "surface": "cli",
+    "runner": "uv run shared/scripts/tools/suite_host_resources.py --probe --project-root . --run-id iterate-2026-08-10-p2-39-f11-verify-local",
+    "exit_code": 0,
+    "tests_run": 1,
+    "evidence_path": ".shipwright/runs/iterate-2026-08-10-p2-39-f11-verify-local/surface_verification.log",
+    "timestamp": "2026-08-10T10:25:26.098Z"
+  },
+  "declared_removals": []
+}

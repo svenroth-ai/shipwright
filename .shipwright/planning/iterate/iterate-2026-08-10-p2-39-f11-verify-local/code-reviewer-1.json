@@ -1,0 +1,21 @@
+{
+  "stage": "code",
+  "verdict": "REJECT",
+  "summary": "The post-integration ordering and red-path push block are correct, and focused tests pass. Two findings remain.",
+  "review": [
+    {
+      "severity": "medium",
+      "file": "shared/scripts/lib/pr_delivery_host.py",
+      "line": 208,
+      "title": "Non-UTF-8 consumer script violates the promised no-op guard",
+      "finding": "recheck_local_gates catches only OSError around read_text(encoding=utf-8). An unrelated scripts/verify_local.py with non-UTF-8 bytes raises UnicodeDecodeError instead of remaining a no-op, contradicting AC-1 and the F11 documentation. Catch UnicodeError alongside OSError and add a focused test for both an unmarked script and an undecodable script."
+    },
+    {
+      "severity": "low",
+      "file": ".shipwright/planning/iterate/iterate-2026-08-10-p2-39-f11-verify-local/miniplan.md",
+      "line": 5,
+      "title": "Mini-plan contradicts the implemented delivery-refresh change",
+      "finding": "The plan says do not alter the delivery ladder and describes only the static F11 wiring test, but the accepted implementation correctly changes pr_delivery_host.refresh_branch and adds runtime tests. Update the mini-plan so the committed planning evidence describes the actual implementation."
+    }
+  ]
+}

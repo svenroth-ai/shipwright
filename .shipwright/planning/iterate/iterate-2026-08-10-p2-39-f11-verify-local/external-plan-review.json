@@ -1,0 +1,31 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "none",
+  "degraded": false,
+  "reviews_succeeded": 0,
+  "reviews": {
+    "deepseek": {
+      "status": "skipped",
+      "reason": "No OPENROUTER_API_KEY set"
+    },
+    "openai": {
+      "status": "skipped",
+      "reason": "No OPENAI_API_KEY or OPENROUTER_API_KEY set"
+    }
+  },
+  "verdicts": {
+    "deepseek": "unavailable",
+    "openai": "unavailable"
+  },
+  "statuses": {
+    "deepseek": "skipped",
+    "openai": "skipped"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": false,
+    "requires_resolution": false,
+    "reason": "neither reviewer answered: deepseek=unavailable, openai=unavailable"
+  }
+}
