@@ -263,7 +263,7 @@ uv run "{shared_root}/scripts/tools/refresh_compliance_docs.py" \
   --project-root "$(pwd)" --stage --release "v{version}"
 ```
 
-`status: "ok"` → proceed. **Anything else → stop, do not tag.**
+`status: "ok"` → proceed. **Anything else → stop, do not tag.** Step 6's later `--verify-commit --release-audit` performs the release-authoritative full A-I compliance convergence (Group E included — not assessed by iterate delivery). `--release-audit` is what gates this; plain `--verify-commit` (adopt Step H's usage) stays a pure verifier and never touches the global backlog.
 
 ## Step 6: Commit and Tag
 
@@ -279,15 +279,14 @@ git add -A .shipwright/agent_docs/decision-drops/ .shipwright/planning/adr/  # s
 git commit -m "chore(release): v{version}" -- \
   CHANGELOG.md .shipwright/agent_docs/decision_log.md .shipwright/agent_docs/decision_log_index.md \
   .shipwright/agent_docs/decision-drops/ .shipwright/planning/adr/ <every path from evidence_pathspec>
-git tag -a v{version} -m "Release v{version}"
-
 # `git commit -- <paths>` records the WORKTREE, not the index: a writer between
-# Step 5.5 and here substitutes unstamped bytes silently. Non-zero → do not tag.
+# Step 5.5 and here substitutes unstamped bytes silently. `&&` enforces "non-zero → no tag".
 uv run "{shared_root}/scripts/tools/refresh_compliance_docs.py" \
-  --project-root "$(pwd)" --verify-commit "$(git rev-parse HEAD)"
+  --project-root "$(pwd)" --verify-commit "$(git rev-parse HEAD)" --release-audit \
+  && git tag -a v{version} -m "Release v{version}"
 ```
 
-> `.shipwright/planning/adr/` is a DIRECTORY pathspec deliberately, and leaving it unstaged breaks CI — both in [compliance-evidence.md](references/compliance-evidence.md). `decision_log_index.md` needs the same treatment (Step 4 refreshes it every non-dry-run pass, drops or not) — leaving it unstaged reds `test_decision_log_index_producers.py::test_committed_index_is_not_stale` on main. `decision-drops/` is TRACKED (iterate-2026-08-08-track-decision-drops): Step 4 already deleted the drops it folded, and `-A` is what stages that deletion — skip it and the next release re-folds the same drops under new ADR numbers.
+> `.shipwright/planning/adr/` is a DIRECTORY pathspec deliberately, and leaving it unstaged breaks CI — both in [compliance-evidence.md](references/compliance-evidence.md). `decision_log_index.md` needs the same treatment (Step 4 refreshes it every non-dry-run pass, drops or not) — leaving it unstaged reds `test_decision_log_index_producers.py::test_committed_index_is_not_stale` on main. `decision-drops/` is TRACKED (iterate-2026-08-08-track-decision-drops): Step 4 already deleted the drops it folded, and `-A` is what stages that deletion — skip it and the next release re-folds the same drops under new ADR numbers. `&&` withholds the tag on ANY nonzero exit here, including the audit subprocess failing to even start (e.g. `uv`/PyYAML unavailable) — a genuinely verified evidence commit with `status: "verified_release_audit_incomplete"` reads as environmental, not a real block; re-run once the dependency resolves.
 
 ---
 

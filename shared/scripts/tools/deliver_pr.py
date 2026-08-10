@@ -41,6 +41,7 @@ _SCRIPTS_ROOT = Path(__file__).resolve().parent.parent
 if str(_SCRIPTS_ROOT) not in sys.path:
     sys.path.insert(0, str(_SCRIPTS_ROOT))
 
+from lib.deliver_pr_compliance_audit import run_merge_compliance_audit  # noqa: E402
 from lib.deliver_pr_timing import (  # noqa: E402
     delivery_root_span,
     delivery_wait_span,
@@ -314,6 +315,10 @@ def main(argv: list[str] | None = None) -> int:
         timeout_seconds=args.timeout_seconds, poll_seconds=args.poll_seconds,
         arm=not args.no_arm, verified_commit=args.verified_commit, record_timing=True,
     )
+    if result.get("exit_code") == EXIT_DELIVERED:
+        result["merge_compliance_audit"] = run_merge_compliance_audit(
+            _SCRIPTS_ROOT, project_root, args.run_id, args.pr, args.repo)
+
     print(json.dumps(result, indent=2))
     print(summary(result), file=sys.stderr)
     exit_code = int(result["exit_code"])

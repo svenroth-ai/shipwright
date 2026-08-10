@@ -34,6 +34,7 @@ from tools.deliver_pr import (  # noqa: E402
     EXIT_REFUSED,
     deliver,
 )
+import tools.deliver_pr as deliver_pr_module
 
 from _pr_delivery_fakes import (  # noqa: E402
     BASE,
@@ -215,3 +216,21 @@ def test_an_arm_failure_is_classified_never_raised():
     result = _deliver(host, _watcher({"status": "pending"}))   # must not raise
     assert result["exit_code"] == EXIT_PENDING
     assert any(step.startswith("arm: ") for step in result["steps"])
+
+
+def test_main_keeps_delivered_when_post_merge_audit_cannot_start(monkeypatch, tmp_path, capsys):
+    monkeypatch.setattr(deliver_pr_module, "deliver", lambda *args, **kwargs: {
+        "status": "merged", "exit_code": EXIT_DELIVERED, "steps": [], "merged_by": "host",
+    })
+    monkeypatch.setattr(deliver_pr_module, "run_merge_compliance_audit",
+                        lambda *a, **kw: {"ran": False, "detail": "OSError"})
+    retired = []
+    monkeypatch.setattr(deliver_pr_module, "retire_run_pointer_best_effort", lambda root, run_id: retired.append(run_id))
+    assert deliver_pr_module.main([
+        "--pr", PR, "--repo", REPO, "--project-root", str(tmp_path), "--run-id", "r",
+        "--head-branch", HEAD, "--base-branch", BASE,
+    ]) == EXIT_DELIVERED
+    out = capsys.readouterr()
+    assert '"ran": false' in out.out.lower()
+    assert "DELIVERED" in out.err
+    assert retired == ["r"]

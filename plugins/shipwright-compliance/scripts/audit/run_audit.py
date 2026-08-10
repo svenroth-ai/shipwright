@@ -57,7 +57,7 @@ def main(argv: list[str] | None = None) -> int:
     only = [g.strip() for g in args.only.split(",") if g.strip()] or None
 
     register_all()
-    report = run_all(project_root, only=only, fix=args.fix)
+    report = run_all(project_root, only=only, fix=args.fix)  # detection only; lifecycle owns backlog writes
 
     if report.import_gate_error:
         print(report.import_gate_error, file=sys.stderr)

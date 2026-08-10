@@ -61,7 +61,7 @@ def triage_module():
 
 
 def test_audit_bundle_loader_yields_the_stores_own_exception(triage_module) -> None:
-    """`_triage_api()` element 5 must be the very class `mark_status` raises."""
+    """`_triage_api()`'s last element must be the very class `mark_status` raises."""
     *_, precondition_error = audit_bundle._triage_api()
     assert precondition_error is triage_module.StatusPreconditionError
 

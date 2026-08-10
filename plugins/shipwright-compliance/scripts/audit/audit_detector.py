@@ -230,9 +230,6 @@ def run_all(
     data: Any = None,
     run_gate: bool = True,
     fix: bool = False,
-    emit_to_triage: bool = True,
-    run_id: str | None = None,
-    commit: str | None = None,
 ) -> AuditReport:
     """Run every registered group against ``project_root``.
 
@@ -246,15 +243,6 @@ def run_all(
         fix: If True, enable Group E auto-regeneration of stale docs.
             Each rewritten doc is appended to ``report.fixes_applied``.
             Other groups ignore the flag.
-        emit_to_triage: If True (default), mirror this run's findings
-            into ``.shipwright/triage.jsonl`` and auto-dismiss compliance
-            items whose check_id is no longer in this run. See
-            :func:`mirror_findings_to_triage`. Disable for unit tests
-            that only exercise detection.
-        run_id: Optional run identifier recorded on emitted triage items.
-        commit: Optional commit hash recorded on emitted triage items.
-            Compliance dedup uses ``match_commit=False``, so this is
-            informational only.
     """
     report = AuditReport()
 
@@ -316,21 +304,6 @@ def run_all(
                 f.severity = "LOW"
                 f.detail = "disabled via audit_config.disabled_checks"
 
-    if emit_to_triage:
-        # Best-effort — never block the audit on triage failure, but
-        # surface the error on stderr so silent breakage is visible
-        # (MED-5 from external code review).
-        try:
-            mirror_findings_to_triage(
-                project_root, report, run_id=run_id, commit=commit,
-            )
-        except Exception as exc:  # noqa: BLE001
-            import sys
-            sys.stderr.write(
-                f"[audit_detector] triage emission failed: "
-                f"{type(exc).__name__}: {exc}\n"
-            )
-
     return report
 
 
@@ -338,36 +311,13 @@ def run_all(
 # AC-5 of iterate-2026-05-11-triage-inbox-1a: triage emission
 # ---------------------------------------------------------------------------
 
-def _import_triage_api():
-    """Lazy import of the triage helpers (avoids perturbing existing module
-    import order — the audit_detector skeleton must keep importing cleanly
-    in environments where ``shared/scripts/`` isn't on sys.path).
-
-    Returns ``(append_idempotent, mark_status, read_all_items)`` on success
-    or ``(None, None, None)`` on import failure.
-    """
-    import sys
-
-    shared_scripts = Path(__file__).resolve().parents[4] / "shared" / "scripts"
-    if str(shared_scripts) not in sys.path:
-        sys.path.insert(0, str(shared_scripts))
-    try:
-        from triage import (  # noqa: PLC0415
-            append_triage_item_idempotent,
-            mark_status,
-            read_all_items,
-        )
-        return append_triage_item_idempotent, mark_status, read_all_items
-    except ImportError:
-        return None, None, None
-
-
 def mirror_findings_to_triage(
     project_root: Path,
     report: AuditReport,
     *,
     run_id: str | None = None,
     commit: str | None = None,
+    preserve_groups: frozenset[str] = frozenset(),
 ) -> dict[str, int]:
     """Mirror audit findings to ``.shipwright/triage.jsonl`` as ONE action-unit.
 
@@ -380,7 +330,8 @@ def mirror_findings_to_triage(
     per-check items (``supersededByBacklog``). Producers emit action-units, not
     finding-mirrors (``project_triage_launch_surface_redesign`` / ADR-057).
 
-    Best-effort. Returns ``{"appended", "dismissed"}`` (back-compat telemetry).
+    Best-effort. Returns ``{"appended", "dismissed", "amended"}`` (back-compat
+    telemetry plus the merge-authority amend count).
     """
     try:
         from .triage_bundle import emit_compliance_backlog  # noqa: PLC0415
@@ -393,8 +344,10 @@ def mirror_findings_to_triage(
 
     stats = emit_compliance_backlog(
         project_root, report, run_id=run_id, commit=commit,
+        preserve_groups=preserve_groups,
     )
     return {
         "appended": stats.get("appended", 0),
         "dismissed": stats.get("dismissed", 0),
+        "amended": stats.get("amended", 0),
     }

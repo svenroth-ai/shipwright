@@ -1840,3 +1840,5 @@
 {"event":"status","id":"trg-8857f496","ts":"2026-08-09T11:16:39.400275Z","newStatus":"dismissed","by":"complianceBacklog","reason":"complianceRefreshed","promotedTaskId":null}
 {"event":"status","id":"trg-4eb94769","ts":"2026-08-09T11:30:27Z","newStatus":"dismissed","by":"webui","reason":"Implemented PR #620","promotedTaskId":null}
 {"event":"status","id":"trg-b364baa6","ts":"2026-08-09T11:36:37Z","newStatus":"dismissed","by":"webui","reason":"Implemened PR #619","promotedTaskId":null}
+{"event":"status","id":"trg-a3880058","ts":"2026-08-09T17:54:02Z","newStatus":"dismissed","by":"webui","reason":"Implemented PR #621","promotedTaskId":null}
+{"event":"status","id":"trg-9e7b50e8","ts":"2026-08-09T19:38:58Z","newStatus":"dismissed","by":"webui","reason":"Implemented #622 and #624","promotedTaskId":null}

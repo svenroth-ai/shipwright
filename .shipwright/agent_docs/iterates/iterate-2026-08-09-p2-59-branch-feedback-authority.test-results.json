@@ -1,0 +1,110 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-08-09-p2-59-branch-feedback-authority",
+    "date": "2026-08-09",
+    "unit": {
+      "status": "pass",
+      "passed": 9118,
+      "failed": 0,
+      "note": "F0 canonical suite (run_test_suite.py): 18/18 units GREEN in 4.4 min. shared/tests (the dominant unit by volume) reported 9118 passed, 28 skipped, 26 deselected after the Windows-MAX_PATH test-fixture fix (see degraded[] history below); the other 17 units (plugin test suites + shared/scripts/{tests,tools/tests} + integration-tests) all reported pass with no failures. diff-coverage vs origin/main: 88% (>=80% gate)."
+    },
+    "integration": {
+      "status": "pass",
+      "note": "integration-tests unit reported pass under the F0 canonical suite (232.3s); per-test count not captured separately from the aggregate unit block above."
+    },
+    "e2e": {
+      "status": "n/a",
+      "reason": "no browser surface; framework/CLI machinery only (compliance-audit lifecycle scripts, hooks, tests)"
+    },
+    "smoke": {
+      "status": "n/a",
+      "reason": "no startable server surface in this repo"
+    },
+    "pgtap": {
+      "status": "n/a",
+      "reason": "no database"
+    },
+    "design_fidelity": {
+      "status": "n/a",
+      "reason": "no UI surface"
+    },
+    "surface_verification": {
+      "surface": "none",
+      "tests_run": 0,
+      "exit_code": 0,
+      "evidence_path": ".shipwright/runs/iterate-2026-08-09-p2-59-branch-feedback-authority/surface_verification.json",
+      "justification": "Backend-only Python change (compliance-audit lifecycle/hooks/CLI); no client/**, API routes, store mutations, or SSE/WS handlers touched. Verified by the F0 canonical suite (18/18 units green) plus a fresh spec/code/doubt review cascade."
+    },
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "AC1 \u2014 branch/Stop audit presents Group-E pending-release drift locally and never mutates the global backlog",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_compliance_lifecycle.py::test_branch_feedback_keeps_expected_e_drift_local PASSED"
+        },
+        {
+          "behavior": "AC2 \u2014 branch/Stop audit with a real non-E failure also stays local, backlog unmutated",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_compliance_lifecycle.py::test_branch_feedback_keeps_real_non_e_finding_local PASSED"
+        },
+        {
+          "behavior": "AC3 \u2014 merge authority reads the delivered PR's exact mergeCommit and audits it in a detached worktree, converging A-D/F-I only on complete coverage",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_compliance_lifecycle.py::test_merge_cli_audits_the_exact_delivered_commit_in_a_detached_worktree, ::test_exact_delivered_merge_sha_is_selected PASSED"
+        },
+        {
+          "behavior": "AC4 \u2014 merge coverage records E as not_applicable+complete; a genuinely missing/crashed/wrong-commit group is missing and leaves the backlog untouched",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_compliance_lifecycle.py::test_merge_e_is_not_applicable_but_not_missing, ::test_merge_absent_expected_group_is_missing_and_cannot_mirror PASSED"
+        },
+        {
+          "behavior": "AC5 \u2014 a verified release commit runs full A-I authority and may refresh/dismiss Group E and every other group",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_compliance_lifecycle.py::test_release_is_full_authority_including_group_e, ::test_release_full_a_to_i_refresh_can_dismiss PASSED"
+        },
+        {
+          "behavior": "AC6 \u2014 the 5-to-13-to-5 Group-E branch-noise regression cannot mutate the global backlog; branch diagnostics stay visible",
+          "disposition": "tested",
+          "category": "integration",
+          "evidence": "shared/tests/test_compliance_lifecycle.py::test_5_to_13_to_5_regression_never_mutates_on_branch, ::test_real_linked_worktree_stop_keeps_main_backlog_bytes_unchanged PASSED (real git worktree + run pointer, drives audit_compliance_on_stop.py end-to-end against aggregate_triage_on_stop.py's cross-component wiring)"
+        },
+        {
+          "behavior": "AC7 \u2014 docs/hooks-and-pipeline.md accurately maps Stop/branch feedback, delivery/merge authority, and release authority; derived snapshots remain release-owned",
+          "disposition": "tested",
+          "evidence": "Manual diff review of docs/hooks-and-pipeline.md against the shipped code at F5 time: the new 'Compliance backlog lifecycle authority' section and the two Stop-hook table rows were cross-checked line-by-line against audit_compliance_on_stop.py (no mirror_findings_to_triage call \u2014 branch feedback only) and refresh_compliance_docs.py (--release-audit flag confirmed present, requires --verify-commit)."
+        }
+      ],
+      "counts": {
+        "total": 7,
+        "tested": 7,
+        "untestable": 0,
+        "untested_testable": 0
+      },
+      "enumeration_basis": {
+        "acs": 7,
+        "covered_acs": 7
+      },
+      "ledger_path": ".shipwright/planning/iterate/2026-08-09-p2-59-branch-feedback-authority.md"
+    },
+    "degraded": [
+      {
+        "condition": "local_f0_test_fixture_bug_fixed_mid_run",
+        "detail": "The F0 canonical suite's first parallel pass reported shared/tests as test_failure; the authoritative serial retry confirmed it as a genuine (not race) failure in test_real_linked_worktree_stop_keeps_main_backlog_bytes_unchanged \u2014 a FileNotFoundError from a test fixture combining a full 40-char mock sha with a long worktree slug and session id, overflowing Windows MAX_PATH inside F0's own swf0- clean tmp dir. Fixed by shortening the fixture's slug/session identifiers (test-only change, no production code touched); the full F0 suite was then re-run clean: 18/18 units GREEN, diff-coverage 88%."
+      }
+    ]
+  },
+  "coverage": {
+    "total": 80.2,
+    "measured_tier": "repo",
+    "source": "combined coverage.xml (all plugins + shared + integration)",
+    "measured_at": "2026-07-04T00:00:00Z"
+  },
+  "source_state": {
+    "run_id": "iterate-2026-08-09-p2-59-branch-feedback-authority",
+    "commit": "fae9c70936f765239f9d3a239e98393c345a90a2",
+    "dirty": true,
+    "base": null,
+    "release": null
+  }
+}

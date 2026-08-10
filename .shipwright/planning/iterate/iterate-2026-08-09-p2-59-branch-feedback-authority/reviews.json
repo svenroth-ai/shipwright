@@ -1,0 +1,231 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-08-09-p2-59-branch-feedback-authority",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-10T00:34:05.173404+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-10T00:33:32.671526+00:00",
+      "disposition": "missing_keys: no OPENROUTER_API_KEY or OPENAI_API_KEY in .env.local in this environment; Internal Plan Review (opus-plan-reviewer) already carried an independent pass over the iterate spec and mini-plan, and mandatory self-review runs regardless per iteration-reviews.md",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 7,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "shared/scripts/hooks/audit_compliance_on_stop.py",
+          "line": 157,
+          "finding": "The pointer redirect is re-implemented inline instead of using the shared `pq.resolve_project_roots(cwd, session_id)` helper, and diverges from that helper's documented contract in two ways. (1) `project_root = _resolve_project_root()` honours `SHIPWRIGHT_PROJECT_ROOT`, then line 162 unconditionally overwrites it with `active_worktree` whenever a pointer resolves. (2) The greenfield guard was applied to the REDIRECTED root instead of `plain_root`. Net effect: the two compliance/phase-quality Stop hooks in the same chain resolved the audited tree by different rules, and an operator's explicit root selection could be silently ignored.",
+          "suggestion": "Replace the inline logic with `pq.resolve_project_roots(cwd, session_id)`; gate `is_shipwright_project` on `plain_root`; OR `via_pointer` into the auto-descent guard exactly as `audit_phase_quality_on_stop.py` does.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "security",
+          "file": "shared/scripts/tools/audit_compliance_lifecycle.py",
+          "line": 92,
+          "finding": "`_reclaim_orphaned_merge_worktrees` force-deletes any registered worktree whose directory name starts with `shipwright-compliance-` and whose mtime is older than 30 minutes. Name prefix was the only substantive guard; a branch-checked-out `.worktrees/<slug>` whose slug happens to share that prefix would be force-removed, destroying another session's uncommitted work.",
+          "suggestion": "Require both a temp-dir location and a `detached` porcelain line before reclaiming — this tool only ever creates its own worktrees via `tempfile.mkdtemp` + `--detach`.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "plugins/shipwright-compliance/scripts/audit/triage_bundle.py",
+          "line": 139,
+          "finding": "The preserve-groups fold-back is 5 levels deep and re-parses rendered markdown back into structured findings inline inside emit_compliance_backlog, the function whose orchestration is hardest to follow.",
+          "suggestion": "Move the fold into triage_bundle_render.py as a pure, directly-unit-testable helper.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "security",
+          "file": "shared/scripts/tools/audit_compliance_lifecycle.py",
+          "line": 125,
+          "finding": "`_merge_sha` validated only length==40, then the value flows into `git fetch`/`worktree add` argv as a bare token — a 40-char value beginning with `-` would be parsed as a git option.",
+          "suggestion": "Replace the length check with a full hex regex match.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "performance",
+          "file": "plugins/shipwright-compliance/scripts/audit/triage_bundle.py",
+          "line": 154,
+          "finding": "The protected-card path called amend_item unconditionally on every delivered merge, even when title/detail/severity were byte-identical to the survivor's current values, accumulating N identical amend events across N deliveries.",
+          "suggestion": "Skip the amend when nothing changed.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "shared/scripts/hooks/aggregate_triage_on_stop.py",
+          "line": 14,
+          "finding": "Stale documentation: the module contract and an inline comment still named audit_compliance_on_stop as the triage producer the aggregate hook orders after, but that hook is now branch-feedback-only and writes no triage.",
+          "suggestion": "Repoint both to audit_phase_quality_on_stop as the actual producer.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "plugins/shipwright-compliance/scripts/audit/triage_bundle.py",
+          "line": 68,
+          "finding": "emit_compliance_backlog's docstring declared a 3-key return contract (appended/dismissed/open_fails) but two exits also returned \"amended\" while others omitted it, forcing callers to use .get('amended', 0) to paper over the inconsistency.",
+          "suggestion": "Return \"amended\" from every exit and update the docstring to the 4-key contract.",
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-08-10T01:03:55.233841+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 8,
+      "findings": [
+        {
+          "severity": "high",
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: AC1/AC2 (the Stop hook is branch-feedback-only) and the new pointer-redirect behavior are covered by passing tests — shared/tests/test_audit_compliance_on_stop.py's _run_main still called monkeypatch.setattr(hook, '_resolve_project_root', ...) — this diff had deleted _resolve_project_root from the hook when it switched to pq.resolve_project_roots. Every main()-level test in that file errored at setup with AttributeError.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "high",
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: test_main_resolves_the_active_worktree_before_running_detection proves the hook redirects detection into the active iterate worktree — It patched hook.pq.pointer_worktree_root (the package attribute), but resolve_project_roots calls the name bound in lib.phase_quality._resolution's OWN globals (from ._run_id import ... pointer_worktree_root) — patching the package attribute cannot reach it. Also main_root had no Shipwright marker, so the new plain_root greenfield guard would fire before detection ran.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: spawn_compliance_audit's return value truthfully reports that the process tree was killed — The kill was never verified: taskkill's exit code was discarded, the follow-up proc.wait(timeout=30) swallowed TimeoutExpired with `pass`, and an unwrapped _kill_tree raising would escape into the outer except entirely, skipping the wait. In all three cases the caller could be told 'process tree killed' or receive a generic error detail while a merge-authority audit might still be running.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: release scope audits the verified release commit — main()'s non-merge branch only asserted _head(root) == sha, then audited the WORKING TREE with no clean-tree check — uncommitted/untracked content at the right HEAD sha would feed the widest-authority scope (full A-I, may dismiss Group E) straight into global-backlog convergence, unlike merge scope which builds a detached exact-SHA worktree specifically to avoid this.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: merge authority converges the backlog from the delivered merge commit, so the backlog reflects the current default branch — Nothing checks that `sha` is still the tip of (or an ancestor of the tip of) the default branch, or serializes concurrent merge audits — two deliveries landing inside the 180s audit window could each write to the same backlog, whichever finishes last wins, potentially re-appending an already-fixed finding.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: the fold-back's fabricated 'sev: medium' placeholder is harmless because the escalate-only rule never lowers severity — Never lowering is not the same as never wrongly raising. A rolling card whose real fails are all low-severity gets its 'medium' placeholder folded in on the first merge audit and permanently escalated on fabricated data, since escalate-only guarantees it never comes back down.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: the reclaim sweep never leaves a directory deleted while its worktree registration survives — _reclaim_orphaned_merge_worktrees called `git worktree remove --force` then `shutil.rmtree` unconditionally, without checking remove's returncode — the exact pattern main()'s own finally block was hardened against in an earlier round.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: the tempdir-location guard cannot produce a false negative that permanently leaks an orphaned worktree registration — path.resolve().is_relative_to(tempfile.gettempdir()) binds reclaim to the SWEEPING process's own TMPDIR/TMP — if the orphaning run and a later sweeping run see different temp roots, the orphan's registration would never be reclaimed by this guard.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-08-10T01:24:32.241994+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-10T00:34:12.377931+00:00",
+      "disposition": "missing_keys: no OPENROUTER_API_KEY or OPENAI_API_KEY in .env.local in this environment; internal spec/code/doubt cascade (Claude subagents, no external key needed) carries the review pass per iteration-reviews.md's independent-routes rule",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-10T00:44:27.072286+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-10T00:33:25.912779+00:00",
+      "disposition": null,
+      "recorded_by": "opus-plan-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    }
+  }
+}

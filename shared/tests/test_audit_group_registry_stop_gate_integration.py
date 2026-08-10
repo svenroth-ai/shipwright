@@ -1,17 +1,20 @@
 """INTEGRATION — the audit group registry, the detector's default set, and the
-Stop-hook coverage gate must compose (iterate-2026-07-18-fr-authoring-rules).
+lifecycle-authority coverage contract must compose (iterate-2026-07-18-fr-
+authoring-rules; re-scoped by iterate-2026-08-09-p2-59-branch-feedback-authority
+when merge/release coverage moved from the Stop hook's own frozenset into
+``lib.compliance_lifecycle``).
 
 Three components each carry their own list of audit group letters:
 
   1. ``scripts/audit/_registry.register_all`` — what is actually registered
   2. ``audit_detector.run_all``'s default ``wanted`` set — what actually runs
-  3. ``audit_compliance_on_stop._EXPECTED_GROUPS`` — what the Stop hook demands
-     before it will mirror findings and DISMISS the rolling compliance backlog item
+  3. ``lib.compliance_lifecycle.ALL_GROUPS`` — what merge/release authority
+     demands before coverage counts as complete and may converge the backlog
 
 Each is unit-tested in isolation, and each was individually green while the three
 disagreed. Adding Group I proved why that is not enough: the registry and the
-detector were updated, the hook's frozenset was not, and the result was a silent
-false dismiss — ``coverage_ok`` reported "full coverage" over a set that no longer
+detector were updated, the coverage set was not, and the result was a silent
+false dismiss — coverage was reported complete over a set that no longer
 contained every group that ran, so a failing Group I would have been mirrored away
 rather than surfaced. That is the same defect class the F20 comment documents for
 Group H, one letter later, and no unit test could see it because the bug lives in
@@ -45,6 +48,7 @@ sys.modules["audit_stop_hook_integration_uut"] = hook
 _spec.loader.exec_module(hook)
 
 from scripts.audit import _registry, audit_detector  # noqa: E402
+from lib.compliance_lifecycle import ALL_GROUPS, coverage_for  # noqa: E402
 
 
 def _register() -> set[str]:
@@ -53,19 +57,9 @@ def _register() -> set[str]:
     return set(audit_detector._GROUPS)
 
 
-def test_registry_and_stop_hook_gate_agree_on_the_group_set():
-    """The hook must demand exactly the groups the registry provides.
-
-    If the hook expects FEWER, a failing group is silently dismissed (false
-    dismiss). If it expects MORE, every run reports incomplete coverage and the
-    mirror never happens (false block). Both are silent.
-    """
-    registered = _register()
-    assert registered == set(hook._EXPECTED_GROUPS), (
-        "registry and Stop-hook coverage gate disagree — "
-        f"registered={sorted(registered)} expected={sorted(hook._EXPECTED_GROUPS)}"
-    )
-
+def test_registry_and_lifecycle_contract_agree_on_the_group_set():
+    """Release expects exactly what the registry makes runnable."""
+    assert _register() == set(ALL_GROUPS)
 
 def test_a_real_audit_run_satisfies_the_coverage_gate(tmp_path):
     """End-to-end: register → run the real audit → the gate accepts it.
@@ -84,8 +78,8 @@ def test_a_real_audit_run_satisfies_the_coverage_gate(tmp_path):
     ran = set(report.groups_run)
     assert "I" in ran, f"Group I did not run — groups_run={sorted(ran)}"
 
-    ok, reason = hook.coverage_ok(report)
-    assert ok is True, f"coverage gate rejected a full real run: {reason}"
+    coverage = coverage_for(report, "release")
+    assert coverage.complete, f"release coverage rejected a full real run: {coverage.to_dict()}"
 
 
 def test_every_registered_group_actually_runs_by_default(tmp_path):

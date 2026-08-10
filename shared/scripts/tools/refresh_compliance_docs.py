@@ -38,6 +38,7 @@ from pathlib import Path
 _SCRIPTS_DIR = Path(__file__).resolve().parent.parent  # shared/scripts
 sys.path.insert(0, str(_SCRIPTS_DIR))
 
+from lib.compliance_audit_spawn import spawn_compliance_audit  # noqa: E402
 from lib.compliance_refresh import REFRESH_SET, release_commit_note  # noqa: E402
 from source_state import parse_banner_line, safe_commit, safe_run_id  # noqa: E402
 from tools.compliance_delivery import deliver_pr, preflight_pr  # noqa: E402
@@ -136,6 +137,12 @@ def main(argv: list[str] | None = None) -> int:
                       help="assert the named commit really carries the stamp — "
                            "`git commit -- <paths>` reads the WORKTREE, so the index "
                            "checks everything else does prove nothing about it")
+    parser.add_argument("--release-audit", action="store_true",
+                        help="on a verified commit, also run the release-authority "
+                             "lifecycle compliance audit (full A-I, may converge the "
+                             "global backlog). Release-only: --verify-commit is also "
+                             "called from adopt Step H, which must stay a pure "
+                             "verifier — never pass this flag there")
     mode.add_argument("--stamp-adopted", action="store_true",
                       help="stamp the seeded evidence at onboarding with the commit "
                            "the repository was read at (--base). Does NOT recompute "
@@ -152,6 +159,9 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--allow-shrink", action="store_true",
                         help="waive the ratio content floor for a legitimate large removal")
     args = parser.parse_args(argv)
+    if args.release_audit and not args.verify_commit:
+        parser.error("--release-audit requires --verify-commit (it gates the release "
+                     "audit on a verified evidence commit)")
     root = Path(args.project_root).resolve()
 
     if args.verify_commit:
@@ -159,6 +169,24 @@ def main(argv: list[str] | None = None) -> int:
         if not sha:
             parser.error(f"--verify-commit {args.verify_commit!r} is not a commit")
         report = verify_commit(root, sha)
+        if report["status"] == "verified" and args.release_audit:
+            lifecycle = Path(__file__).resolve().parent / "audit_compliance_lifecycle.py"
+            audit = spawn_compliance_audit(
+                ["uv", "run", "--with", "pyyaml", str(lifecycle), "--scope", "release",
+                 "--project-root", str(root), "--commit", sha],
+            )
+            report["release_compliance_audit"] = audit
+            if not audit["ran"]:
+                sys.stderr.write(
+                    f"[compliance] release audit did not complete: "
+                    f"{report['release_compliance_audit']['detail']}\n"
+                )
+                # The commit's stamp is still genuinely verified (that fact stays
+                # in release_compliance_audit / the exit code below is what blocks
+                # tagging) — this token must not be exactly "verified" so a reader
+                # can't mistake an audit hiccup for a bad stamp, but it must also
+                # not claim the stamp itself failed.
+                report["status"] = "verified_release_audit_incomplete"
         print(json.dumps(report, indent=2))
         return 0 if report["status"] == "verified" else 1
 
