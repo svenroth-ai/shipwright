@@ -293,11 +293,14 @@ jobs:
           # not post when another check run already claims the context. Its own
           # check run is expected and identifies this run in details_url.
           if [ -z "$stale" ]; then
-            impostors=$(gh api --paginate --slurp "repos/$REPO/commits/$HEAD_SHA/check-runs" \
+            if ! impostors=$(gh api --paginate --slurp "repos/$REPO/commits/$HEAD_SHA/check-runs" \
               | jq --arg run "$RUN_URL" \
                   '[.[].check_runs[] | select(.name == "PR Review")
-                                    | select((.details_url // "") | startswith($run) | not)] | length')
-            if [ "$impostors" -ne 0 ]; then
+                                    | select((.details_url // "") | startswith($run) | not)] | length'); then
+              stale="could not verify check runs — re-run required"
+            elif ! [[ "$impostors" =~ ^[0-9]+$ ]]; then
+              stale="could not verify check runs — re-run required"
+            elif [ "$impostors" -ne 0 ]; then
               echo "::error::$impostors check run(s) named 'PR Review' exist on $HEAD_SHA; this workflow is the only permitted producer of that context"
               stale="a second producer is claiming this context — re-run required"
             fi

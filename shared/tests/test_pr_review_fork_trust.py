@@ -219,6 +219,9 @@ def test_stage2_refuses_a_second_check_run_claiming_its_context(path: Path) -> N
     assert "commits/$HEAD_SHA/check-runs" in code
     assert f'.name == "{expected}"' in code
     assert 'details_url // "") | startswith($run) | not' in code
+    assert 'if ! impostors=$(gh api --paginate --slurp' in code
+    assert '[[ "$impostors" =~ ^[0-9]+$ ]]' in code
+    assert 'stale="could not verify check runs — re-run required"' in code
     assert "second producer is claiming this context" in code
 
 
