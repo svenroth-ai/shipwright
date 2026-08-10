@@ -44,7 +44,7 @@ AUTOMATIC_PRODUCERS = (
 #: is a read-then-write with no lock spanning the two. It CONVERTS the refusal
 #: to its own wording rather than reporting a kept item, so it is excluded from
 #: the `kept_note` pin below.
-OPERATOR_PRODUCERS = ("shared/scripts/tools/triage_promote.py",)
+OPERATOR_PRODUCERS = ("shared/scripts/tools/triage_promote.py", "shared/scripts/lib/triage_cli_commands.py")
 
 _CALL_NAMES = {"mark_status", "mark_status_fn"}
 

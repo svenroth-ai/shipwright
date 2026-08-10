@@ -229,7 +229,7 @@ def test_cli_leaves_the_store_untouched_when_it_refuses(
     before = _store(project)
     extra = ["--revisit", FUTURE] if verb == "defer" else []
     result = _cli(project, verb, "trg-deadbeef", "--reason", "later", *extra)
-    assert result.returncode == 2
+    assert result.returncode == 4
     assert "not found" in result.stderr.lower()
     assert _store(project) == before
 
@@ -241,7 +241,7 @@ def test_cli_defer_refuses_an_already_decided_item(
     before = _store(project)
     result = _cli(project, "defer", item, "--reason", "later",
                      "--revisit", FUTURE)
-    assert result.returncode == 2
+    assert result.returncode == 3
     assert _store(project) == before
 
 
