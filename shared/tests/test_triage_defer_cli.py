@@ -89,7 +89,7 @@ def test_unpark_refuses_anything_that_is_not_parked(
     if already != "triage":
         mark_status(tmp_path, item, new_status=already, by="x", reason="r")
     result = _cli(tmp_path, "unpark", item, "--reason", "oops")
-    assert result.returncode == 2
+    assert result.returncode == 3
     assert already in result.stderr
 
 
@@ -100,7 +100,7 @@ def test_unpark_refuses_an_expired_park_as_already_open(tmp_path: Path) -> None:
     item = _seed(tmp_path)
     _park(tmp_path, item, revisit=PAST)
     result = _cli(tmp_path, "unpark", item, "--reason", "oops")
-    assert result.returncode == 2
+    assert result.returncode == 3
     assert "triage" in result.stderr
 
 

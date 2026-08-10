@@ -28,16 +28,35 @@ from triage import (  # noqa: E402
     _outbox_path,
     _triage_path,
     amend_triage_item,
+    mark_status,
     read_all_items,
+    StatusPreconditionError,
 )
+from shared_lib_loader import load_shared_lib  # noqa: E402
 from lib.triage_amend import has_amend_content, validate_amend_event  # noqa: E402
 from lib.triage_contract import build_listing  # noqa: E402
 from lib.triage_delivery import format_pending_delivery_notice  # noqa: E402
 from lib.triage_integrity import store_facts  # noqa: E402
 from lib.triage_render import format_item, render_deferred_section  # noqa: E402
-from tools.triage_promote import defer, dismiss, promote, unpark  # noqa: E402
+from tools.triage_promote import (  # noqa: E402
+    TransitionPreconditionError,
+    defer,
+    dismiss,
+    promote,
+    sanitize_reason,
+    unpark,
+)
 
 _BY_LABEL = "cli"
+LockTimeout = load_shared_lib("file_lock").LockTimeout
+
+# Stable machine contract.  Keep these values append-only: callers may branch
+# on them without parsing human stderr text.
+EXIT_USAGE = 2
+EXIT_PRECONDITION = 3
+EXIT_NOT_FOUND = 4
+EXIT_STORE_UNINITIALISED = 5
+EXIT_LOCK_TIMEOUT = 6
 
 
 def ensure_utf8_stdout() -> None:
@@ -106,6 +125,50 @@ def _emit_json(project_root: Path, items: list[dict], deferred: list[dict],
     sys.stdout.write(json.dumps(payload, indent=2, ensure_ascii=False) + "\n")
     return 0
 
+
+def _resolved_item(project_root: Path, item_id: str) -> dict:
+    """Fetch one union-resolved item, preserving the store's own overlay rules."""
+    if not _triage_path(project_root).exists() and not _outbox_path(project_root).exists():
+        raise FileNotFoundError("triage store not initialised")
+    for item in read_all_items(project_root):
+        if item.get("id") == item_id:
+            return item
+    raise KeyError(item_id)
+
+
+def _emit_result(args: argparse.Namespace, operation: str, item: dict) -> None:
+    if getattr(args, "json", False):
+        ensure_utf8_stdout()
+        sys.stdout.write(json.dumps({"operation": operation, "item": item}, ensure_ascii=False) + "\n")
+
+
+def _command_error(exc: Exception) -> int:
+    if isinstance(exc, (StatusPreconditionError, TransitionPreconditionError)):
+        code, label = EXIT_PRECONDITION, "status precondition failed"
+    elif isinstance(exc, KeyError):
+        code, label = EXIT_NOT_FOUND, "triage item not found"
+    elif isinstance(exc, FileNotFoundError):
+        code, label = EXIT_STORE_UNINITIALISED, "triage store not initialised"
+    elif isinstance(exc, LockTimeout):
+        code, label = EXIT_LOCK_TIMEOUT, "triage lock timeout"
+    else:
+        code, label = EXIT_USAGE, "invalid command"
+    sys.stderr.write(f"error: {label}: {exc}\n")
+    return code
+
+
+def _optional_reason(raw: str | None) -> str | None:
+    """Keep absent WebUI reasons absent, but validate every supplied value."""
+    if raw is None:
+        return None
+    if not raw.strip():
+        for ch in raw:
+            if ord(ch) < 0x20 or ord(ch) == 0x7F:
+                raise ValueError(f"--reason contains control character (0x{ord(ch):02X})")
+        return None
+    return sanitize_reason(raw)
+
+
 def cmd_promote(args: argparse.Namespace) -> int:
     project_root = Path(args.project_root)
     try:
@@ -115,25 +178,21 @@ def cmd_promote(args: argparse.Namespace) -> int:
             task_ref=args.task_ref,
             reason=args.reason,
             by=_BY_LABEL,
+            include_item=True,
         )
-    except ValueError as exc:
-        sys.stderr.write(f"error: {exc}\n")
-        return 2
-    except KeyError as exc:
-        sys.stderr.write(f"error: triage item not found: {exc}\n")
-        return 2
-    except FileNotFoundError as exc:
-        sys.stderr.write(f"error: triage store not initialised: {exc}\n")
-        return 2
+        item = result["item"]
+    except (ValueError, KeyError, FileNotFoundError, LockTimeout) as exc:
+        return _command_error(exc)
 
-    sys.stderr.write(
-        f"promoted {result['id']} → {result['promotedTaskId']}\n"
-    )
+    if getattr(args, "json", False):
+        _emit_result(args, "promote", item)
+    else:
+        sys.stderr.write(f"promoted {result['id']} → {result['promotedTaskId']}\n")
     return 0
 
 
 def _status_flip(
-    decide: Callable[..., dict], args: argparse.Namespace, verb: str,
+    decide: Callable[..., dict], args: argparse.Namespace, verb: str, operation: str,
     **extra,
 ) -> int:
     """Shared dispatch for the decisions that need only a reason (plus, for a
@@ -148,32 +207,42 @@ def _status_flip(
             item_id=args.item_id,
             reason=args.reason,
             by=_BY_LABEL,
+            include_item=True,
             **extra,
         )
-    except ValueError as exc:
-        sys.stderr.write(f"error: {exc}\n")
-        return 2
-    except KeyError as exc:
-        sys.stderr.write(f"error: triage item not found: {exc}\n")
-        return 2
-    except FileNotFoundError as exc:
-        sys.stderr.write(f"error: triage store not initialised: {exc}\n")
-        return 2
+        item = result["item"]
+    except (ValueError, KeyError, FileNotFoundError, LockTimeout) as exc:
+        return _command_error(exc)
 
-    sys.stderr.write(f"{verb} {result['id']} (reason: {result['reason']})\n")
+    if getattr(args, "json", False):
+        _emit_result(args, operation, item)
+    else:
+        sys.stderr.write(f"{verb} {result['id']} (reason: {result['reason']})\n")
     return 0
 
 
 def cmd_dismiss(args: argparse.Namespace) -> int:
-    return _status_flip(dismiss, args, "dismissed")
+    """Dismiss through the WebUI-compatible JSON path when reason is absent."""
+    if getattr(args, "json", False):
+        try:
+            reason = _optional_reason(args.reason)
+            _, item = mark_status(
+                Path(args.project_root), args.item_id, new_status="dismissed",
+                by=_BY_LABEL, reason=reason, expected_status="triage", return_item=True,
+            )
+        except (ValueError, KeyError, FileNotFoundError, LockTimeout) as exc:
+            return _command_error(exc)
+        _emit_result(args, "dismiss", item)
+        return 0
+    return _status_flip(dismiss, args, "dismissed", "dismiss")
 
 
 def cmd_defer(args: argparse.Namespace) -> int:
-    return _status_flip(defer, args, "deferred", revisit_at=args.revisit)
+    return _status_flip(defer, args, "deferred", "defer", revisit_at=args.revisit)
 
 
 def cmd_unpark(args: argparse.Namespace) -> int:
-    return _status_flip(unpark, args, "un-parked")
+    return _status_flip(unpark, args, "un-parked", "unpark")
 
 
 def cmd_amend(args: argparse.Namespace) -> int:
@@ -182,25 +251,24 @@ def cmd_amend(args: argparse.Namespace) -> int:
     scoping decision (human, via command line)."""
     project_root = Path(args.project_root)
     try:
-        to_outbox = amend_triage_item(
+        amend_result = amend_triage_item(
             project_root, args.item_id, by=_BY_LABEL,
             title=args.title, detail=args.detail,
             severity=args.severity, kind=args.kind,
+            expected_status="triage",
+            return_item=True,
         )
-    except ValueError as exc:
-        sys.stderr.write(f"error: {exc}\n")
-        return 2
-    except KeyError as exc:
-        sys.stderr.write(f"error: triage item not found: {exc}\n")
-        return 2
-    except FileNotFoundError as exc:
-        sys.stderr.write(f"error: triage store not initialised: {exc}\n")
-        return 2
+        to_outbox, item = amend_result
+    except (ValueError, KeyError, FileNotFoundError, LockTimeout) as exc:
+        return _command_error(exc)
 
     changed = [f for f, v in (
         ("title", args.title), ("detail", args.detail),
         ("severity", args.severity), ("kind", args.kind),
     ) if v is not None]
+    if getattr(args, "json", False):
+        _emit_result(args, "amend", item)
+        return 0
     sys.stderr.write(f"amended {args.item_id} ({', '.join(changed)})\n")
     if to_outbox:
         # Delivery-visibility parity for `amend` is deferred scope (AC15) — this
@@ -210,4 +278,36 @@ def cmd_amend(args: argparse.Namespace) -> int:
             "note: buffered in the local outbox, not yet on any branch — "
             "delivered on the next iterate's sweep\n"
         )
+    return 0
+
+
+def cmd_show(args: argparse.Namespace) -> int:
+    """Read one card through the same union resolver used by the write result."""
+    try:
+        item = _resolved_item(Path(args.project_root), args.item_id)
+    except (KeyError, FileNotFoundError) as exc:
+        return _command_error(exc)
+    if getattr(args, "json", False):
+        _emit_result(args, "show", item)
+    else:
+        ensure_utf8_stdout()
+        sys.stdout.write(format_item(item) + "\n")
+    return 0
+
+
+def cmd_snooze(args: argparse.Namespace) -> int:
+    """WebUI-compatible park: unlike human ``defer``, reason/date are optional."""
+    try:
+        reason = _optional_reason(args.reason)
+        _, item = mark_status(
+            Path(args.project_root), args.item_id, new_status="snoozed", by=_BY_LABEL,
+            reason=reason, revisit_at=args.revisit, expected_status="triage",
+            require_future_revisit=True, return_item=True,
+        )
+    except (ValueError, KeyError, FileNotFoundError, LockTimeout) as exc:
+        return _command_error(exc)
+    if getattr(args, "json", False):
+        _emit_result(args, "snooze", item)
+    else:
+        sys.stderr.write(f"snoozed {args.item_id}\n")
     return 0

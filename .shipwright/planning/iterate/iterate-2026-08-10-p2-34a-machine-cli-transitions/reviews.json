@@ -1,0 +1,151 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-08-10-p2-34a-machine-cli-transitions",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": "codex",
+      "completed_at": "2026-08-10T10:50:17.200745+00:00",
+      "disposition": "All eight self-review checks passed.",
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": "openrouter",
+      "completed_at": "2026-08-10T09:32:33.934935+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "unstructured",
+      "raw_excerpt": "[deepseek] Atomic post-write result required; integrated before code review. SHIPWRIGHT_VERDICT: revise\n\n[openai] Atomic post-write result, typed exit failures, and JSON-only stdout required; integrated before code review. SHIPWRIGHT_VERDICT: revise",
+      "verdicts": {
+        "deepseek": "unknown",
+        "openai": "unknown"
+      },
+      "contradiction_resolution": "Both reviewers revised; the atomic-result finding was integrated before code review.",
+      "model_tier": "opus"
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": "codex",
+      "completed_at": "2026-08-10T10:48:41.511297+00:00",
+      "disposition": "Targeted final code re-review accepted control-only reason handling.",
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": "codex",
+      "completed_at": "2026-08-10T10:49:19.297610+00:00",
+      "disposition": "Targeted final doubt review found no remaining control-only reason issue.",
+      "recorded_by": "doubt-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 5,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "bug",
+          "file": "shared/scripts/triage.py:738-743 (the `amend_triage_item` block that checks `expected_status`)",
+          "line": null,
+          "finding": "When the item is unknown, the precondition guard falls through to an empty dict, sees `status=None` not in `expected`, and raises `StatusPreconditionError`. That maps to exit 3 (status precondition) instead of exit 4 (unknown id), violating the stable exit-code contract.",
+          "suggestion": "Before the status check, test whether the item was actually found; if not, raise `KeyError(item_id)` so the CLI maps the error to exit 4.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "test",
+          "file": "shared/tests/test_triage_cli_machine_transitions.py:100 (the `test_amend_exits_4_on_unknown_id` expectation)",
+          "line": null,
+          "finding": "The test expects exit code 4 on unknown id for `amend`, but the implementation currently would produce exit 3; this test will fail and the defect will be masked until fixed.",
+          "suggestion": "Fix the implementation (see previous finding) and then verify the test passes.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "bug",
+          "file": "shared/scripts/lib/triage_cli_commands.py:225-233 (`cmd_amend` except clause) and :275-281 (`cmd_snooze` except clause)",
+          "line": null,
+          "finding": "The `except` tuples do not include `StatusPreconditionError`. If that exception is not a subclass of `ValueError`, it escapes, causing an unhandled traceback instead of a clean exit 3.",
+          "suggestion": "Add `StatusPreconditionError` to the caught tuple, or ensure it inherits from `ValueError` — either way, confirm the behavior is covered.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "test",
+          "file": "shared/tests/test_triage_cli_machine_transitions.py:139-149",
+          "line": null,
+          "finding": "The concurrent-writer test starts two processes but does not synchronize them at a point where both have read the open state or are contending for the write lock. On a lightly loaded machine either subprocess can complete before the other begins its transition, so this test can pass for an implementation lacking the intended atomic CAS protection. It therefore does not reliably verify acceptance criterion 4’s race behavior.",
+          "suggestion": "Add a deterministic test-only synchronization point before the transition’s locked CAS check (for example via an injected lock/test hook), wait until both subprocesses reach it, then release both and assert one success, one exit-3 refusal, and exactly one status event.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "test",
+          "file": "shared/tests/test_triage_cli_machine_transitions.py:50-64, 92-105",
+          "line": null,
+          "finding": "The JSON-result tests only inspect one or two fields (`id`, `status`, amended `title`) and the `show` test reads an untouched seed card. They do not compare the CLI response with `read_all_items()` after transitions/amends or exercise an overlay-resolved state. A broken implementation returning a partial event, a stale pre-write card, or a base-record-only card would still pass despite the requirement that successful writes and `show` return the fully resolved resulting card state.",
+          "suggestion": "For each operation, compare `payload[\"item\"]` to the resolver result after the command, including preserved fields and transition-specific fields such as reason, revisit date, and promoted task ID. Make `show` follow a status/amend write so it verifies resolved rather than raw-card behavior.  The implementation appears to cover the requested commands, JSON surface, in-lock amend precondition, and documented exit-code mappings. However, the required machine-contract and concurrent-CAS behavior are not tested robustly enough to establish the acceptance criteria; ship with those test fixes. SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-08-10T10:34:45.830291+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[deepseek] - Category: bug\n- Severity: high\n- File: shared/scripts/triage.py:738-743 (the `amend_triage_item` block that checks `expected_status`)\n- Finding: When the item is unknown, the precondition guard falls through to an empty dict, sees `status=None` not in `expected`, and raises `StatusPreconditionError`. That maps to exit 3 (status precondition) instead of exit 4 (unknown id), violating the stable exit-code contract.\n- Suggestion: Before the status check, test whether the item was actually found; if not, raise `KeyError(item_id)` so the CLI maps the error to exit 4.\n\n- Category: test\n- Severity: low\n- File: shared/tests/test_triage_cli_machine_transitions.py:100 (the `test_amend_exits_4_on_unknown_id` expectation)\n- Finding: The test expects exit code 4 on unknown id for `amend`, but the implementation currently would produce exit 3; this test will fail and the defect will be masked until fixed.\n- Suggestion: Fix the implementation (see previous finding) and then verify the test passes.\n\n- Category: bug\n- Severity: low\n- File: shared/scripts/lib/triage_cli_commands.py:225-233 (`cmd_amend` except clause) and :275-281 (`cmd_snooze` except clause)\n- Finding: The `except` tuples do not include `StatusPreconditionError`. If that exception is not a subclass of `ValueError`, it escapes, causing an unhandled traceback instead of a clean exit 3.\n- Suggestion: Add `StatusPreconditionError` to the caught tuple, or ensure it inherits from `ValueError` — either way, confirm the behavior is covered.\n\n---\n\nThe diff implements most of the spec correctly, but the `amend` command misclassifies unknown IDs as precondition failures, breaking its documented exit code. Fix that before shipping.\n\nSHIPWRIGHT_VERDICT: revise\n\n[openai] - Category: test\n- Severity: medium\n- File: `shared/tests/test_triage_cli_machine_transitions.py:139-149`\n- Finding: The concurrent-writer test starts two processes but does not synchronize them at a point where both have read the open state or are contending for the write lock. On a lightly loaded machine either subprocess can complete before the other begins its transition, so this test can pass for an implementation lacking the intended atomic CAS protection. It therefore does not reliably verify acceptance criterion 4’s race behavior.\n- Suggestion: Add a deterministic test-only synchronization point before the transition’s locked CAS check (for example via an injected lock/test hook), wait until both subprocesses reach it, then release both and assert one success, one exit-3 refusal, and exactly one status event.\n\n- Category: test\n- Severity: medium\n- File: `shared/tests/test_triage_cli_machine_transitions.py:50-64, 92-105`\n- Finding: The JSON-result tests only inspect one or two fields (`id`, `status`, amended `title`) and the `show` test reads an untouched seed card. They do not compare the CLI response with `read_all_items()` after transitions/amends or exercise an overlay-resolved state. A broken implementation returning a partial event, a stale pre-write card, or a base-record-only card would still pass despite the requirement that successful writes and `show` return the fully resolved resulting card state.\n- Suggestion: For each operation, compare `payload[\"item\"]` to the resolver result after the command, including preserved fields and transition-specific fields such as reason, revisit date, and promoted task ID. Make `show` follow a status/amend write so it verifies resolved rather than raw-card behavior.\n\nThe implementation appears to cover the requested commands, JSON surface, in-lock amend precondition, and documented exit-code mappings. However, the required machine-contract and concurrent-CAS behavior are not tested robustly enough to e […truncated]",
+      "verdicts": {
+        "openai": "revise",
+        "deepseek": "revise"
+      },
+      "contradiction_resolution": "Both OpenRouter reviewers revised; their machine-contract findings are being remediated before commit."
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": "codex",
+      "completed_at": "2026-08-10T10:46:20.285490+00:00",
+      "disposition": "Final spec re-review accepted optional-reason validation parity.",
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-10T10:39:49.284532+00:00",
+      "disposition": "Internal plan review ran clean; details are in the iterate specification.",
+      "recorded_by": "opus-plan-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    }
+  }
+}

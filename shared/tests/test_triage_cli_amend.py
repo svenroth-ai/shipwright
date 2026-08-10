@@ -75,12 +75,12 @@ def test_amend_exits_2_on_contentless_call(project: Path, item_id: str) -> None:
     assert "amend must set at least one of" in result.stderr
 
 
-def test_amend_exits_2_on_unknown_id(project: Path) -> None:
+def test_amend_exits_4_on_unknown_id(project: Path) -> None:
     append_triage_item(
         project, source="manual", severity="low", kind="bug", title="t", detail="d",
     )
     result = _run(["--project-root", str(project), "amend", "trg-deadbeef", "--title", "x"])
-    assert result.returncode == 2
+    assert result.returncode == 4
     assert "not found" in result.stderr.lower()
 
 

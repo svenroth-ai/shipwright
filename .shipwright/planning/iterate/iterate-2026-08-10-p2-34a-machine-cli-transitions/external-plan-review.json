@@ -1,0 +1,18 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "openrouter",
+  "reviews_succeeded": 2,
+  "reviews": {
+    "deepseek": {
+      "status": "success",
+      "feedback": "Atomic post-write result required; integrated before code review. SHIPWRIGHT_VERDICT: revise"
+    },
+    "openai": {
+      "status": "success",
+      "feedback": "Atomic post-write result, typed exit failures, and JSON-only stdout required; integrated before code review. SHIPWRIGHT_VERDICT: revise"
+    }
+  },
+  "verdicts": {"deepseek": "revise", "openai": "revise"},
+  "contradiction": {"detected": false, "requires_resolution": false}
+}

@@ -50,13 +50,9 @@ from shared_lib_loader import load_shared_lib  # noqa: E402
 _defer = load_shared_lib("triage_defer")
 DEFERRABLE_STATUSES = _defer.DEFERRABLE_STATUSES
 UNPARKABLE_STATUSES = _defer.UNPARKABLE_STATUSES
-
+TransitionPreconditionError = load_shared_lib("triage_transition").TransitionPreconditionError
 _TASK_REF_MAX_LEN = 200
 _REASON_MAX_LEN = 500
-
-# Adjective per decided state. Read with .get: a KeyError HERE comes from the
-# VALIDATION path, which the CLI maps to "triage item not found" — a wrong,
-# quiet answer. The default stops a soft failure from lying.
 _DECIDABLE = {
     "dismissed": "dismissable",
     "snoozed": "deferrable",
@@ -67,7 +63,7 @@ _DECIDABLE = {
 
 def _wrong_status_error(
     item_id: str, current: object, new_status: str, allowed: tuple[str, ...],
-) -> ValueError:
+) -> TransitionPreconditionError:
     """The ONE wording for "this item is not in a state you can do that from".
 
     Both ways it is found raise from here: the pre-check below reads the store
@@ -83,7 +79,7 @@ def _wrong_status_error(
     entry whose park expired reads `triage` here and is reported as open.
     """
     allowed_phrase = " or ".join(f"`{s}`" for s in allowed)
-    return ValueError(
+    return TransitionPreconditionError(
         f"item {item_id} has status={current!r}; only {allowed_phrase} is "
         f"{_DECIDABLE.get(new_status, 'decidable')} from this CLI "
         f"(use mark_status for other transitions)"
@@ -166,6 +162,7 @@ def promote(
     task_ref: str,
     reason: str | None = None,
     by: str = "manualPromote",
+    include_item: bool = False,
 ) -> dict:
     """Promote a triage item to a backlog task.
 
@@ -195,7 +192,7 @@ def promote(
         raise _not_triage_error(item_id, current, "promoted")
 
     try:
-        mark_status(
+        mark_result = mark_status(
             project_root,
             item_id,
             new_status="promoted",
@@ -203,16 +200,20 @@ def promote(
             reason=reason_clean,
             promoted_task_id=task_ref_clean,
             expected_status="triage",
+            return_item=include_item,
         )
     except StatusPreconditionError as exc:
         raise _not_triage_error(item_id, exc.actual, "promoted") from exc
 
-    return {
+    result = {
         "id": item_id,
         "previousStatus": "triage",
         "newStatus": "promoted",
         "promotedTaskId": task_ref_clean,
     }
+    if include_item:
+        result["item"] = mark_result[1]
+    return result
 
 
 def _transition(
@@ -224,6 +225,7 @@ def _transition(
     reason: str,
     by: str,
     revisit_at: str | None = None,
+    include_item: bool = False,
 ) -> dict:
     """The one body ``dismiss``, ``defer`` and ``unpark`` share.
 
@@ -238,12 +240,6 @@ def _transition(
     `dismiss` starts only from open, `defer` also from already-parked (a re-park
     replaces the date), and `unpark` only from parked.
 
-    Deliberately NOT used by ``promote``: that one also writes
-    ``promotedTaskId`` and returns a different shape, and widening this helper
-    with a parameter one caller never sets is how a shared helper starts lying
-    about what it does. ``revisit_at`` is not that case — it is the payload of
-    one of the three transitions this helper exists to serve, and it is passed
-    straight through to the store, which refuses it on any non-park flip.
     """
     reason_clean = sanitize_reason(reason)
     _require_store(project_root)
@@ -256,16 +252,18 @@ def _transition(
         raise _wrong_status_error(item_id, current, new_status, allowed)
 
     try:
-        previous = mark_status(
+        mark_result = mark_status(
             project_root, item_id, new_status=new_status, by=by,
             reason=reason_clean, expected_status=allowed,
             revisit_at=revisit_at,
+            return_item=include_item,
         )
     except StatusPreconditionError as exc:
         raise _wrong_status_error(
             item_id, exc.actual, new_status, allowed,
         ) from exc
 
+    previous = mark_result[0] if include_item else mark_result
     result = {
         "id": item_id,
         "previousStatus": previous,
@@ -274,6 +272,8 @@ def _transition(
     }
     if revisit_at is not None:
         result["revisitAt"] = revisit_at
+    if include_item:
+        result["item"] = mark_result[1]
     return result
 
 
@@ -283,6 +283,7 @@ def dismiss(
     item_id: str,
     reason: str,
     by: str = "manualDismiss",
+    include_item: bool = False,
 ) -> dict:
     """Dismiss a triage item (false-positive / won't-fix).
 
@@ -296,7 +297,7 @@ def dismiss(
     """
     return _transition(
         project_root, item_id=item_id, new_status="dismissed",
-        allowed=("triage",), reason=reason, by=by,
+        allowed=("triage",), reason=reason, by=by, include_item=include_item,
     )
 
 
@@ -307,6 +308,7 @@ def defer(
     reason: str,
     revisit_at: str,
     by: str = "manualDefer",
+    include_item: bool = False,
 ) -> dict:
     """Park a triage item — decided, but deliberately not now, until a date.
 
@@ -330,7 +332,7 @@ def defer(
     return _transition(
         project_root, item_id=item_id, new_status="snoozed",
         allowed=DEFERRABLE_STATUSES, reason=reason, by=by,
-        revisit_at=revisit_at,
+        revisit_at=revisit_at, include_item=include_item,
     )
 
 
@@ -340,6 +342,7 @@ def unpark(
     item_id: str,
     reason: str,
     by: str = "manualUnpark",
+    include_item: bool = False,
 ) -> dict:
     """Reverse a park — the entry returns to the open list, date cleared.
 
@@ -354,12 +357,9 @@ def unpark(
 
     Returns ``{"id", "previousStatus", "newStatus", "reason"}``.
     """
-    # No `revisit_at`: the absent key is what CLEARS the date in the resolved
-    # view, which is how an un-parked entry stays distinguishable from one that
-    # merely expired.
     return _transition(
         project_root, item_id=item_id, new_status="triage",
-        allowed=UNPARKABLE_STATUSES, reason=reason, by=by,
+        allowed=UNPARKABLE_STATUSES, reason=reason, by=by, include_item=include_item,
     )
 
 
