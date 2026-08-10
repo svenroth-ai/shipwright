@@ -12,35 +12,25 @@ helper waits for a third producer.
 
 from __future__ import annotations
 
-import hashlib
 import sys
 from pathlib import Path
 from typing import Any
 
-BACKLOG_PREFIX = "compliance:backlog:"
-DASHBOARD_REL = ".shipwright/compliance/dashboard.md"
-
-_SEVERITY_RANK = {"info": 0, "low": 1, "medium": 2, "high": 3, "critical": 4}
-# Self-contained (no back-import of audit_detector) so this module loads
-# whether audit_detector is imported as a package or via spec_from_file_location.
-_SEVERITY_MAP = {
-    "CRITICAL": "critical", "HIGH": "high", "MEDIUM": "medium",
-    "LOW": "low", "INFO": "info",
-}
+from scripts.audit.triage_bundle_render import (
+    BACKLOG_PREFIX, SEVERITY_RANK, build_detail, build_launch_payload,
+    max_severity, mentions_group, normalize_fails, protected_by, signature,
+)
 
 
 def _triage_api():
-    """(append_idempotent, mark_status, read_all_items, should_route_to_outbox,
+    """(append_idempotent, mark_status, amend, read_all_items, should_route_to_outbox,
     AUTO_RESOLVABLE_STATUSES, StatusPreconditionError).
 
-    Returns a 6-tuple of ``None`` when the shared triage module can't be
-    imported (best-effort producer — never blocks the audit).
-
-    The exception class is carried out of the SAME import as ``mark_status``
-    rather than imported separately: under this repo's plugin sys.path layout a
-    second import could bind a different ``triage`` module object, and an
-    ``except`` against that other class object would silently miss every
-    precondition refusal (external plan review, finding #3).
+    Returns a 7-tuple of ``None`` when the shared triage module can't be
+    imported (best-effort producer — never blocks the audit). All names come
+    off the SAME import so an ``except`` can never bind a mismatched
+    ``StatusPreconditionError`` from a different ``triage`` module object
+    under this repo's plugin sys.path layout (external plan review, finding #3).
     """
     shared_scripts = Path(__file__).resolve().parents[4] / "shared" / "scripts"
     if str(shared_scripts) not in sys.path:
@@ -50,82 +40,18 @@ def _triage_api():
         return (
             triage.append_triage_item_idempotent,
             triage.mark_status,
+            triage.amend_triage_item,
             triage.read_all_items,
             triage.should_route_to_outbox,
             triage.AUTO_RESOLVABLE_STATUSES,
-            # Every name off the SAME module object, INSIDE the same try, so
-            # the `except` arm cannot bind a different `triage` and miss every
-            # refusal (external plan review, finding #3).
             triage.StatusPreconditionError,
         )
     except (ImportError, AttributeError):
-        # AttributeError too: a `triage` predating `expected_status` (a
-        # partially-synced plugin cache already bound in `sys.modules`) must
-        # disable this producer CLEANLY. A fallback exception class was tried
-        # and removed - it did not defend the skew it named, because the call
-        # site still passes `expected_status=`, so an old `mark_status` raises
-        # TypeError on EVERY flip, the refusal arm never matches, and the
-        # dismiss path dies silently. One visible failure mode beats two
-        # invisible ones (doubt review, doubt 2).
-        return None, None, None, None, None, None
-
-
-def _normalize_fails(report: Any) -> list[dict[str, str]]:
-    """Map failing findings → sorted normalized dicts (stable signature input)."""
-    out: list[dict[str, str]] = []
-    for f in report.findings:
-        if f.status != "fail":
-            continue
-        parts: list[str] = []
-        if f.detail:
-            parts.append(str(f.detail))
-        if f.suggested_iterate_cmd:
-            parts.append(f"hint: {f.suggested_iterate_cmd}")
-        out.append({
-            "key": f"{f.group}/{f.check_id}",
-            "name": str(f.name),
-            "sev": _SEVERITY_MAP.get((f.severity or "").upper(), "medium"),
-            "detail": " | ".join(parts),
-        })
-    out.sort(key=lambda d: d["key"])
-    return out
-
-
-def _signature(fails: list[dict[str, str]]) -> str:
-    return hashlib.sha256(
-        "\n".join(d["key"] for d in fails).encode("utf-8")
-    ).hexdigest()[:12]
-
-
-def _max_severity(fails: list[dict[str, str]]) -> str:
-    best = "low"
-    for d in fails:
-        if _SEVERITY_RANK.get(d["sev"], 1) > _SEVERITY_RANK.get(best, 1):
-            best = d["sev"]
-    return best
-
-
-def _build_detail(fails: list[dict[str, str]]) -> str:
-    lines = [
-        f"{len(fails)} open compliance finding(s): "
-        + ", ".join(d["key"] for d in fails),
-        "",
-    ]
-    for d in fails:
-        extra = f" — {d['detail']}" if d["detail"] else ""
-        lines.append(f"- {d['key']}: {d['name']}{extra}")
-    lines += ["", f"Live view: {DASHBOARD_REL}"]
-    return "\n".join(lines)
-
-
-def _build_launch_payload(fails: list[dict[str, str]]) -> str:
-    keys = ", ".join(d["key"] for d in fails)
-    return (
-        "/shipwright-compliance\n\n"  # artifact-path-canon: legacy (slash command, not a path)
-        f"Context: {len(fails)} open compliance finding(s): {keys}.\n"
-        f"Dashboard: {DASHBOARD_REL}\n"
-        "Each finding + hint is listed in this item's detail."
-    )
+        # AttributeError: a stale `triage` (partially-synced plugin cache
+        # already bound in sys.modules) predating `expected_status` must
+        # disable this producer cleanly rather than raise TypeError on every
+        # flip with the refusal arm never matching (doubt review, doubt 2).
+        return None, None, None, None, None, None, None
 
 
 def emit_compliance_backlog(
@@ -134,34 +60,55 @@ def emit_compliance_backlog(
     *,
     run_id: str | None,
     commit: str | None,
+    preserve_groups: frozenset[str] = frozenset(),
 ) -> dict[str, int]:
     """Emit/refresh ONE ``compliance:backlog:<sig>`` item + retire legacy items.
 
     * No failing findings → dismiss every open/parked ``compliance:backlog:*``
       (``complianceResolved``) and append nothing.
-    * Else → dismiss stale-signature backlog items (``complianceRefreshed``), +
-      reopen its own auto-dismissed matching item on regression, and append +
-      only when no durable item represents the current condition.
-    * One-shot: any open/parked legacy per-check ``compliance`` item (dedupKey not in
-      the backlog shape) is dismissed (``supersededByBacklog``) — AC-4.
-      Promoted/dismissed decisions remain terminal.
+    * Else → dismiss stale-signature items (``complianceRefreshed``), reopen
+      an auto-dismissed matching item on regression, and append only when no
+      durable item represents the current condition.
+    * One-shot, unconditional: any legacy per-check ``compliance`` item
+      (dedupKey outside the backlog shape) is dismissed
+      (``supersededByBacklog``) — AC-4. Terminal decisions are untouched.
+    * ``preserve_groups`` (merge scope only): a rolling card naming a
+      release-owned group is amended in place instead of dismissed as stale.
 
-    Best-effort: returns ``{"appended","dismissed","open_fails"}``.
+    Best-effort: returns ``{"appended","dismissed","open_fails","amended"}`` —
+    all four keys, every exit (``amended`` is 0 outside the preserve-groups path).
     """
-    (append_idempotent, mark_status_fn, read_all_items, route,
+    (append_idempotent, mark_status_fn, amend_item, read_all_items, route,
      AUTO_RESOLVABLE_STATUSES, precondition_error) = _triage_api()
     if append_idempotent is None:
-        return {"appended": 0, "dismissed": 0, "open_fails": 0}
+        return {"appended": 0, "dismissed": 0, "open_fails": 0, "amended": 0}
 
-    # D1 (campaign 2026-06-08-triage-outbox-delivery): on the idle main tree
-    # the compliance backlog producer fires as background — route its append +
-    # dismiss to the gitignored outbox so the tracked log stays clean (no main
-    # drift). Inside an iterate/* branch (worktree or runner) it writes the
-    # tracked log directly (those ship in the PR). read_all_items is union-aware,
-    # so the rolling item + its dismiss resolve consistently across the split.
+    # D1 (campaign 2026-06-08-triage-outbox-delivery): idle main routes to the
+    # gitignored outbox (no tracked-log drift); an iterate/* branch writes the
+    # tracked log directly (ships in the PR). read_all_items is union-aware.
     to_outbox = bool(route(project_root)) if route is not None else False
 
-    fails = _normalize_fails(report)
+    fails = normalize_fails(report)
+
+    def _dismiss(item_id: str, reason: str) -> int:
+        try:
+            # Residence-derived (writes to the same store the item lives in);
+            # expected_status re-checks under the store's lock since this list
+            # came from an unlocked read (trg-93ceb2b0).
+            mark_status_fn(
+                project_root, item_id, new_status="dismissed",
+                by="complianceBacklog", reason=reason,
+                expected_status=AUTO_RESOLVABLE_STATUSES,
+            )
+            return 1
+        except precondition_error as exc:  # item was decided — KEPT, not failed
+            try:
+                sys.stderr.write(f"[compliance] {exc.kept_note}\n")
+            except Exception:  # noqa: BLE001 - reporting must never break the sweep
+                pass
+            return 0
+        except Exception:  # noqa: BLE001
+            return 0
 
     try:
         open_compliance = [
@@ -178,44 +125,62 @@ def emit_compliance_backlog(
     legacy = [
         it for it in open_compliance
         if not str(it.get("dedupKey") or "").startswith(BACKLOG_PREFIX)
+        and not mentions_group(it, preserve_groups)
     ]
-
-    def _dismiss(item_id: str, reason: str) -> int:
-        try:
-            # mark_status is residence-derived (D1 review cascade): it writes
-            # the dismiss to the SAME store the item's append lives in (outbox
-            # or tracked), so a no-longer-passed ``to_outbox`` flag can't split
-            # the status from its append. The append below still routes by
-            # ``to_outbox`` (idle-main background → outbox).
-            # expected_status re-checks `open_compliance`'s status filter under
-            # the store's lock — that list came from an UNLOCKED read, so an
-            # operator decision can have landed since (trg-93ceb2b0).
-            mark_status_fn(
-                project_root, item_id, new_status="dismissed",
-                by="complianceBacklog", reason=reason,
-                expected_status=AUTO_RESOLVABLE_STATUSES,
-            )
-            return 1
-        except precondition_error as exc:  # the item was decided — KEPT, not failed
-            # Called from inside a `sum(...)`, and this producer is documented
-            # best-effort. An exception escaping the DIAGNOSTIC write would
-            # abort the remaining dismisses and the append after them.
-            try:
-                sys.stderr.write(f"[compliance] {exc.kept_note}\n")
-            except Exception:  # noqa: BLE001 - reporting must never break the sweep
-                pass
-            return 0
-        except Exception:  # noqa: BLE001
-            return 0
-
-    # AC-4 — one-shot retirement of the legacy per-check shape.
+    # AC-4 — one-shot legacy retirement; unconditional, a protected card below cannot gate it.
     dismissed = sum(_dismiss(it["id"], "supersededByBacklog") for it in legacy)
+
+    # Sorted by id: >1 protected card always amends the SAME survivor.
+    protected = sorted((item for item in open_backlog if protected_by(item, preserve_groups)),
+                       key=lambda item: str(item.get("id") or ""))
+    if protected:
+        survivor = protected[0]
+        # Severity for the escalate-only decision below is computed from the
+        # REAL, newly-observed fails only — the fold-back below can only add
+        # entries with a fabricated placeholder severity, and mixing that into
+        # max_severity() would let fabricated data permanently escalate a
+        # genuinely low-severity card (an escalate-only rule never lowers it
+        # back down; doubt review round 5, LOW).
+        current = max_severity(fails)
+        # Amend the survivor in place; fold in preserved lines from every
+        # protected card — for DISPLAY only — the rest are retired below as
+        # duplicates.
+        for source in protected:
+            for line in str(source.get("detail") or "").splitlines():
+                if line.startswith("- ") and ":" in line:
+                    key, body = line[2:].split(":", 1)
+                    if key.split("/", 1)[0] in preserve_groups and not any(f["key"] == key for f in fails):
+                        name, _, detail = body.strip().partition(" — ")
+                        fails.append({"key": key, "name": name, "sev": "medium", "detail": detail})
+        fails.sort(key=lambda item: item["key"])
+        existing = str(survivor.get("severity") or "low").lower()
+        amendment = {"title": f"Compliance: {len(fails)} open finding(s)"[:160], "detail": build_detail(fails)}
+        if SEVERITY_RANK.get(current, 1) > SEVERITY_RANK.get(existing, 1):
+            amendment["severity"] = current
+        # A no-op amend still appends a timestamped event to the append-only
+        # backlog — an unchanging Group-E card open across N deliveries would
+        # otherwise accumulate N identical events (code review LOW).
+        unchanged = (amendment.get("title") == survivor.get("title")
+                    and amendment.get("detail") == survivor.get("detail")
+                    and "severity" not in amendment)
+        amended = 0
+        if not unchanged:
+            try:
+                amend_item(project_root, survivor["id"], by="complianceBacklog", **amendment)
+                amended = 1
+            except Exception as exc:  # noqa: BLE001 — best-effort, but surface it
+                sys.stderr.write(f"[compliance] protected-card amend failed: {type(exc).__name__}: {exc}\n")
+                return {"appended": 0, "dismissed": dismissed, "open_fails": len(fails), "amended": 0}
+        # Stale-signature and duplicate-protected cards alike are superseded.
+        dismissed += sum(_dismiss(stale["id"], "complianceRefreshed")
+                         for stale in open_backlog if stale["id"] != survivor["id"])
+        return {"appended": 0, "dismissed": dismissed, "open_fails": len(fails), "amended": amended}
 
     if not fails:
         dismissed += sum(_dismiss(it["id"], "complianceResolved") for it in open_backlog)
-        return {"appended": 0, "dismissed": dismissed, "open_fails": 0}
+        return {"appended": 0, "dismissed": dismissed, "open_fails": 0, "amended": 0}
 
-    cur_key = BACKLOG_PREFIX + _signature(fails)
+    cur_key = BACKLOG_PREFIX + signature(fails)
     dismissed += sum(
         _dismiss(it["id"], "complianceRefreshed")
         for it in open_backlog if it.get("dedupKey") != cur_key
@@ -240,31 +205,40 @@ def emit_compliance_backlog(
                 expected_status="dismissed", expected_by="complianceBacklog",
                 block_matching_terminal=("compliance", cur_key),
             )
+            # `prior` may have been amended in place (merge scope) before it
+            # was dismissed — amend cannot touch dedupKey, so its rendered
+            # content can lag what dedupKey==cur_key means now. Re-render on
+            # reopen rather than excluding amended items from this match:
+            # exclusion left NO path to reopen OR re-append them (append_idempotent
+            # no-ops on any matching dedupKey regardless of status), silently
+            # dropping a real regression (doubt review round 4, HIGH).
+            amend_item(project_root, prior["id"], by="complianceBacklog",
+                      title=f"Compliance: {len(fails)} open finding(s)"[:160],
+                      detail=build_detail(fails), severity=max_severity(fails))
     except Exception:  # noqa: BLE001
         pass
     try:
         new_id = append_idempotent(
             project_root,
             source="compliance",  # artifact-path-canon: legacy (triage source enum, not a path)
-            severity=_max_severity(fails),
+            severity=max_severity(fails),
             kind="compliance",  # artifact-path-canon: legacy (triage kind enum, not a path)
             title=f"Compliance: {len(fails)} open finding(s)"[:160],
-            detail=_build_detail(fails),
+            detail=build_detail(fails),
             dedup_key=cur_key,
             run_id=run_id,
             commit=commit,
             match_commit=False,
             window_seconds=None,
-            launch_payload=_build_launch_payload(fails),
+            launch_payload=build_launch_payload(fails),
             to_outbox=to_outbox,
         )
     except Exception as exc:  # noqa: BLE001
-        sys.stderr.write(
-            f"[audit_detector] backlog emit failed: {type(exc).__name__}: {exc}\n"
-        )
+        sys.stderr.write(f"[audit_detector] backlog emit failed: {type(exc).__name__}: {exc}\n")
 
     return {
         "appended": 1 if new_id else 0,
         "dismissed": dismissed,
+        "amended": 0,
         "open_fails": len(fails),
     }

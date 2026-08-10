@@ -80,6 +80,8 @@ uv run "{plugin_root}/scripts/audit/run_audit.py" \
   [--fix] [--only {groups}] [--format {format}]
 ```
 
+The direct audit is **detection-only**: it writes its transient report and local audit record, but never appends, refreshes, or dismisses the global compliance backlog. Backlog convergence occurs only after delivered merge authority or verified release authority.
+
 Exit codes:
 - `0` — all groups passed (or only skipped/WARN-level findings).
 - `1` — at least one check failed. Report still written.

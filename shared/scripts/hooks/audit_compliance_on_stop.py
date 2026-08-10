@@ -1,37 +1,31 @@
 #!/usr/bin/env python3
-"""Stop hook: compliance detective-audit triage emit/dismiss.
+"""Stop hook: branch-local compliance detective-audit diagnostics.
 
-Closes the gap where ``source=compliance`` triage items (F2/F4/F5/F6/F7,
-B-group, etc.) stayed in ``status=triage`` until someone manually ran
-``/shipwright-compliance`` — ``audit_detector.mirror_findings_to_triage``
-(the auto-dismiss-when-finding-cleared path) had no automatic trigger
-while every other triage producer did (Option A1, 2026-05-23 design).
+The hook runs the full A-I audit on the resolved active worktree and reports findings
+to that run, but never calls the triage mirror. Delivery and release invoke the
+lifecycle tool with their separate authority and coverage contracts.
 
-Stop contract (mirrors ``audit_phase_quality_on_stop.py``):
+Stop contract:
 
 - **Never blocks** — always exits 0, even on internal error.
 - **Idempotent per (HEAD-sha, session_id)** — re-running on the same
   commit in the same session is a no-op (marker under the gitignored
-  ``.shipwright/agent_docs/runtime/`` tree).
+  `.shipwright/agent_docs/runtime/` tree).
 - **Greenfield-safe** — silent no-op off a Shipwright-managed project.
-- **Disabled when** ``SHIPWRIGHT_COMPLIANCE_AUDIT_ON_STOP=0``.
+- **Disabled when** `SHIPWRIGHT_COMPLIANCE_AUDIT_ON_STOP=0`.
 
-CRITICAL SAFETY GATE — full-coverage-before-dismiss: the rolling compliance
-backlog closes or refreshes open-or-parked auto-resolvable action-units absent
-from THIS run's failures; promoted/dismissed decisions stay terminal. The
-dismiss is *groupless*: a crashed/skipped group's findings vanish and its item
-would be wrongly dismissed. So we run the FULL audit (groups A-I) with
-``emit_to_triage=False``, verify every group ran (no ``import_gate_error``), and
-ONLY THEN emit. Partial coverage → skip mirroring (never a false dismiss) +
-stderr diagnostic. Strictly safer than ``run_audit.py``'s unconditional emit.
+The full A-I report remains visible as local diagnostics even when Group E contains
+expected pending-release drift. Its marker carries coverage data for operator inspection;
+it is never a backlog write.
 
-Wire AFTER finalize + phase_quality and BEFORE ``aggregate_triage_on_stop``:
+Wire AFTER finalize + phase_quality and BEFORE `aggregate_triage_on_stop`:
 
     uv run "${CLAUDE_PLUGIN_ROOT}/../../shared/scripts/hooks/audit_compliance_on_stop.py"
 """
 
 from __future__ import annotations
 
+import inspect
 import json
 import os
 import subprocess
@@ -48,13 +42,9 @@ if str(_SCRIPTS_ROOT) not in sys.path:
 from lib import phase_quality as pq  # noqa: E402
 from lib.artifact_paths import runtime_dir  # noqa: E402
 from lib.atomic_write import durable_atomic_write  # noqa: E402
-from lib.project_root import resolve_project_root  # noqa: E402
+from lib.compliance_lifecycle import coverage_for  # noqa: E402
 
 _DISABLE_ENV = "SHIPWRIGHT_COMPLIANCE_AUDIT_ON_STOP"
-# F20 (deep-audit 2026-06-10): the full-coverage-before-dismiss gate must
-# expect Group H too, now that run_all runs it by default — otherwise the
-# gate would silently accept a report that omitted H's findings.
-_EXPECTED_GROUPS = frozenset({"A", "B", "C", "D", "E", "F", "G", "H", "I"})
 _MARKER_SUBDIR = "compliance_audit"
 _ROOT_FROM_SHARED = _SCRIPTS_ROOT.parent.parent  # repo root OR cache/shipwright
 
@@ -106,63 +96,32 @@ def _git_head_sha(project_root: Path) -> str:
     return ""
 
 
-def _load_audit_api() -> tuple[Callable | None, Callable | None, Callable | None]:
-    """Import (register_all, run_all, mirror_findings_to_triage).
+def _load_audit_api() -> tuple[Callable | None, Callable | None]:
+    """Import (register_all, run_all). Branch feedback never mirrors, so the
+    hook has no need of ``mirror_findings_to_triage`` at all.
 
-    Returns ``(None, None, None)`` on any import failure — the audit chain
-    is first-party + stdlib, so this only trips on a broken install, in
-    which case the hook no-ops (never blocks).
+    Returns ``(None, None)`` on any import failure — the audit chain is
+    first-party + stdlib, so this only trips on a broken install, in which
+    case the hook no-ops (never blocks). Also returns ``(None, None)`` if the
+    imported ``run_all`` still carries the pre-P2.59 ``emit_to_triage``
+    parameter: this hook and the compliance plugin sync independently
+    (CLAUDE.md's plugin-cache-skew problem class), so a partial sync could
+    otherwise pair this hook's bare ``run_all(project_root, run_gate=True)``
+    call with a stale detector whose ``emit_to_triage`` default is ``True`` —
+    mirroring into the branch's tracked backlog from branch feedback, exactly
+    the authority split this file exists to prevent.
     """
     plugin_root = _ROOT_FROM_SHARED / "plugins" / "shipwright-compliance"
     if str(plugin_root) not in sys.path:
         sys.path.insert(0, str(plugin_root))
     try:
         from scripts.audit._registry import register_all  # noqa: PLC0415
-        from scripts.audit.audit_detector import (  # noqa: PLC0415
-            mirror_findings_to_triage,
-            run_all,
-        )
-        return register_all, run_all, mirror_findings_to_triage
+        from scripts.audit.audit_detector import run_all  # noqa: PLC0415
+        if "emit_to_triage" in inspect.signature(run_all).parameters:
+            return None, None
+        return register_all, run_all
     except Exception:  # noqa: BLE001
-        return None, None, None
-
-
-def coverage_ok(report: Any) -> tuple[bool, str]:
-    """Whether ``report`` is safe to mirror: import gate passed AND all A-I ran.
-
-    Anything less means findings are missing and mirroring would wrongly
-    auto-dismiss the missing groups' triage items.
-    """
-    gate_err = getattr(report, "import_gate_error", None)
-    if gate_err:
-        return False, f"import_gate_error: {gate_err}"
-    ran = {str(g).upper() for g in getattr(report, "groups_run", [])}
-    missing = sorted(_EXPECTED_GROUPS - ran)
-    if missing:
-        return False, (
-            f"incomplete coverage; missing={missing} "
-            f"skipped={getattr(report, 'groups_skipped', [])}"
-        )
-    return True, "full coverage A-I"
-
-
-def emit_if_full_coverage(
-    project_root: Path, report: Any, *,
-    run_id: str | None, commit: str | None,
-    mirror_fn: Callable[..., dict[str, int]],
-) -> dict[str, Any]:
-    """Apply the safety gate, then mirror only on full coverage.
-
-    ``mirror_fn`` is injected for testability. Returns a telemetry dict.
-    """
-    ok, reason = coverage_ok(report)
-    if not ok:
-        return {"mirrored": False, "reason": reason}
-    try:
-        stats = mirror_fn(project_root, report, run_id=run_id, commit=commit)
-    except Exception as exc:  # noqa: BLE001 — never block on triage failure
-        return {"mirrored": False, "reason": f"mirror error: {type(exc).__name__}: {exc}"}
-    return {"mirrored": True, "reason": reason, **(stats or {})}
+        return None, None
 
 
 def _consume_stdin() -> None:
@@ -179,13 +138,6 @@ def _diag(message: str) -> None:
         pass
 
 
-def _resolve_project_root() -> Path:
-    try:
-        return resolve_project_root()
-    except Exception:  # noqa: BLE001
-        return Path.cwd()
-
-
 def main() -> int:
     _consume_stdin()
 
@@ -194,21 +146,24 @@ def main() -> int:
     if pq.phase_from_plugin_root(os.environ.get("CLAUDE_PLUGIN_ROOT", "")) is None:
         return 0  # non-Shipwright plugin — silent no-op
 
-    project_root = _resolve_project_root()
-    if not pq.is_shipwright_project(project_root):
-        return 0
-
-    # Monorepo auto-descent guard. NOTE: unlike phase_quality's Stop hook
-    # (trg-b36fd844), project_root here is never pointer-redirected to an
-    # active iterate worktree — this hook keys its idempotency on `head_sha`,
-    # not a run_id-dependent ledger lookup, so it never needed the redirect
-    # and deliberately stays main-rooted. The two Stop audits can therefore
-    # resolve different project roots within the same Stop event.
-    if pq.cwd_is_strict_ancestor_of(Path.cwd(), project_root) \
-            and not pq.project_root_was_explicitly_selected(project_root):
-        return 0
-
     session_id = os.environ.get("SHIPWRIGHT_SESSION_ID", "").strip() or "unknown"
+    cwd = Path.cwd()
+    # `resolve_project_roots` is the shared contract the sibling
+    # `audit_phase_quality_on_stop.py` uses: SHIPWRIGHT_PROJECT_ROOT wins
+    # first (an explicit opt-in must not be silently outranked by a pointer
+    # redirect), and `plain_root` — never `project_root` — is what the
+    # greenfield/auto-descent guards below check, since a fresh linked
+    # worktree can lack the markers `plain_root` was built to detect.
+    project_root, pointer_redirected, plain_root = pq.resolve_project_roots(cwd, session_id)
+    if not pq.is_shipwright_project(plain_root):
+        return 0
+
+    # A verified pointer deliberately redirects from main into a linked
+    # worktree. It is not unsafe auto-descent, so it must bypass this guard.
+    if pq.cwd_is_strict_ancestor_of(cwd, project_root) \
+            and not (pq.project_root_was_explicitly_selected(project_root) or pointer_redirected):
+        return 0
+
     head_sha = _git_head_sha(project_root)
 
     if already_audited(project_root, head_sha, session_id):
@@ -216,8 +171,8 @@ def main() -> int:
               f"session={session_id} — skipped")
         return 0
 
-    register_all, run_all, mirror = _load_audit_api()
-    if not (register_all and run_all and mirror):
+    register_all, run_all = _load_audit_api()
+    if not (register_all and run_all):
         _diag("[compliance-audit] audit API unavailable — skipped (no-op)")
         return 0
 
@@ -225,12 +180,15 @@ def main() -> int:
     started = time.monotonic()
     try:
         register_all()
-        # emit_to_triage=False: interpose the full-coverage gate between
-        # detection and the triage mirror (see module docstring).
-        report = run_all(project_root, emit_to_triage=False, run_gate=True,
-                         run_id=run_id, commit=head_sha)
-        result = emit_if_full_coverage(
-            project_root, report, run_id=run_id, commit=head_sha, mirror_fn=mirror)
+        # Detection has no triage write path; this hook records only local diagnostics.
+        report = run_all(project_root, run_gate=True)
+        coverage = coverage_for(report, "branch_feedback")
+        result = {
+            "mirrored": False,
+            "reason": "branch_feedback: local diagnostics only",
+            "coverage": coverage.to_dict(),
+            "local_failures": [f"{f.group}/{f.check_id}" for f in getattr(report, "findings", ()) if f.status == "fail"],
+        }
         _write_marker(project_root, head_sha, session_id, {
             "head_sha": head_sha, "session_id": session_id, "run_id": run_id,
             "audited_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
@@ -238,13 +196,9 @@ def main() -> int:
             "result": result,
         })
         ms = int((time.monotonic() - started) * 1000)
-        if result.get("mirrored"):
-            _diag(f"[compliance-audit] sha={head_sha[:8] or 'nogit'} "
-                  f"appended={result.get('appended', 0)} "
-                  f"dismissed={result.get('dismissed', 0)} ({ms}ms)")
-        else:
-            _diag(f"[compliance-audit] NOT mirrored ({result.get('reason')}) "
-                  f"({ms}ms) — triage left untouched")
+        local = ", ".join(result["local_failures"]) or "none"
+        _diag(f"[compliance-audit] local findings={local}; "
+              f"NOT mirrored ({result['reason']}) ({ms}ms) — global triage left untouched")
     except Exception as exc:  # noqa: BLE001 — never block the Stop chain
         _diag(f"[compliance-audit] error: {type(exc).__name__}: {exc}")
 

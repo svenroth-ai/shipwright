@@ -589,10 +589,10 @@ def run(
         # interpreter without the compliance plugin's deps — e.g. a non-Python
         # adopt project where bare `uv run` resolves an env with no pyyaml),
         # NOT a compliance violation. Degrade to SKIP so it never lands in the
-        # triage backlog as a phantom A5.0 FAIL. The invocation side (the
-        # iterate/changelog Stop hooks) passes `uv run --with pyyaml` so A5
-        # actually runs where a workflow exists. (C2,
-        # 2026-06-02-compliance-detective-realign.)
+        # triage backlog as a phantom A5.0 FAIL. All three invocation sites (the
+        # Stop hooks, and the merge/release lifecycle audits via their own `uv
+        # run --with pyyaml` grandchild spawn — P2.59) carry that dependency so
+        # A5 actually runs where a workflow exists. (C2, 2026-06-02-realign.)
         return [_make_finding(
             "A5.0", "skip",
             f"PyYAML unavailable — A5 workflow checks skipped "

@@ -4,9 +4,11 @@ The triage emit/dismiss machinery (`mirror_findings_to_triage`) is covered
 by `test_compliance_audit_triage_emit.py`. THIS file covers the HOOK's
 novel surface:
 
-  * the full-coverage SAFETY GATE (`coverage_ok` / `emit_if_full_coverage`)
-    — the load-bearing defence against false auto-dismiss when a group
-    crashed / was skipped;
+  * branch-feedback authority — the hook runs full A-I detection on the
+    resolved worktree and reports local failures only; it never calls the
+    triage mirror or touches the global backlog (that authority moved to
+    `audit_compliance_lifecycle.py`, gated on delivered merge or verified
+    release — see `test_compliance_lifecycle.py`);
   * idempotency per (HEAD-sha, session_id);
   * opt-out env var;
   * greenfield + non-Shipwright-plugin no-ops;
@@ -19,6 +21,7 @@ from __future__ import annotations
 import importlib.util
 import json
 import sys
+import types
 from pathlib import Path
 
 import pytest
@@ -44,7 +47,7 @@ class _FakeReport:
 
 
 def _full_report():
-    # Full coverage is A-I (run_all runs H+I by default; gate expects them).
+    # Full coverage is A-I (lib.compliance_lifecycle.ALL_GROUPS).
     return _FakeReport(["A", "B", "C", "D", "E", "F", "G", "H", "I"])
 
 
@@ -54,72 +57,6 @@ def project(tmp_path: Path) -> Path:
     (tmp_path / "shipwright_run_config.json").write_text(
         json.dumps({"status": "complete", "run_id": "iterate-x"}), encoding="utf-8")
     return tmp_path
-
-
-def test_coverage_ok_full_set():
-    ok, reason = hook.coverage_ok(_full_report())  # canonical A-I set
-    assert ok is True
-    assert "full coverage" in reason.lower()
-
-
-def test_coverage_blocked_on_missing_group():
-    # No G, H or I — all three surface as missing; the gate blocks.
-    ok, reason = hook.coverage_ok(_FakeReport(["A", "B", "C", "D", "E", "F"]))
-    assert ok is False
-    assert "missing=['G', 'H', 'I']" in reason
-
-
-def test_coverage_blocked_on_import_gate_error():
-    ok, reason = hook.coverage_ok(_FakeReport([], import_gate_error="drift!"))
-    assert ok is False
-    assert "import_gate_error" in reason
-
-
-def test_coverage_blocked_when_only_group_F():
-    # GAP hazard: only-F would dismiss B7/B2/etc. F20: H is now expected too.
-    ok, reason = hook.coverage_ok(_FakeReport(["F"]))
-    assert ok is False
-    assert set("ABCDEGH").issubset(set(reason.replace("'", "")))
-
-
-def test_emit_mirrors_only_on_full_coverage(project: Path):
-    calls = []
-
-    def spy(pr, rep, *, run_id, commit):
-        calls.append((pr, run_id, commit))
-        return {"appended": 3, "dismissed": 1}
-
-    out = hook.emit_if_full_coverage(
-        project, _full_report(), run_id="r1", commit="sha", mirror_fn=spy)
-    assert out["mirrored"] is True
-    assert out["appended"] == 3 and out["dismissed"] == 1
-    assert calls == [(project, "r1", "sha")]
-
-
-def test_emit_does_NOT_mirror_on_partial_coverage(project: Path):
-    """The whole point: a partial audit must never call the mirror (which
-    would auto-dismiss the missing groups' triage items)."""
-    calls = []
-
-    def spy(*a, **k):
-        calls.append((a, k))
-        return {"appended": 0, "dismissed": 99}
-
-    out = hook.emit_if_full_coverage(
-        project, _FakeReport(["A", "B"]), run_id="r1", commit="s", mirror_fn=spy)
-    assert out["mirrored"] is False
-    assert "missing=" in out["reason"]
-    assert calls == []  # mirror NEVER invoked
-
-
-def test_emit_swallows_mirror_exception(project: Path):
-    def boom(*a, **k):
-        raise RuntimeError("triage write failed")
-
-    out = hook.emit_if_full_coverage(
-        project, _full_report(), run_id="r", commit="s", mirror_fn=boom)
-    assert out["mirrored"] is False
-    assert "mirror error" in out["reason"]
 
 
 def test_already_audited_lifecycle(project: Path):
@@ -158,8 +95,11 @@ def _run_main(monkeypatch, *, plugin="shipwright-iterate", session="s",
     monkeypatch.setenv("CLAUDE_PLUGIN_ROOT", f"/x/plugins/{plugin}")
     monkeypatch.setenv("SHIPWRIGHT_SESSION_ID", session)
     monkeypatch.delenv("SHIPWRIGHT_COMPLIANCE_AUDIT_ON_STOP", raising=False)
-    if project_root is not None:
-        monkeypatch.setattr(hook, "_resolve_project_root", lambda: project_root)
+    # The hook resolves via `pq.resolve_project_roots(cwd, session_id)` now —
+    # `cwd` (below) IS the plain-root input to that resolver; `project_root`
+    # is accepted only for callers that want a marker placed there (it is
+    # `cwd` at every call site in this file, so the real resolver's own
+    # "cwd, if it is itself a Shipwright project" step already finds it).
     if cwd is not None:
         monkeypatch.setattr(hook.Path, "cwd", staticmethod(lambda: cwd))
     monkeypatch.setattr(hook, "_git_head_sha", lambda pr: "deadbeef")
@@ -185,7 +125,7 @@ def test_main_non_shipwright_plugin_noop(monkeypatch, project):
     called = []
     rc = _run_main(monkeypatch, plugin="some-other-plugin",
                    project_root=project, cwd=project,
-                   audit_api=(lambda: called.append("reg"), None, None))
+                   audit_api=(lambda: called.append("reg"), None))
     assert rc == 0
     assert called == []  # never reached the audit
 
@@ -194,27 +134,23 @@ def test_main_greenfield_noop(monkeypatch, tmp_path):
     # tmp_path has no Shipwright markers.
     called = []
     rc = _run_main(monkeypatch, project_root=tmp_path, cwd=tmp_path,
-                   audit_api=(lambda: called.append("reg"), None, None))
+                   audit_api=(lambda: called.append("reg"), None))
     assert rc == 0
     assert called == []
 
 
-def test_main_full_run_emits_then_idempotent(monkeypatch, project):
-    reg_calls, mirror_calls = [], []
+def test_main_full_run_is_local_then_idempotent(monkeypatch, project):
+    reg_calls = []
 
     def fake_run_all(pr, **kw):
         return _full_report()
 
-    def fake_mirror(pr, rep, *, run_id, commit):
-        mirror_calls.append(run_id)
-        return {"appended": 2, "dismissed": 1}
-
-    api = (lambda: reg_calls.append(1), fake_run_all, fake_mirror)
+    api = (lambda: reg_calls.append(1), fake_run_all)
 
     rc1 = _run_main(monkeypatch, session="s1", project_root=project, cwd=project,
                     audit_api=api)
     assert rc1 == 0
-    assert reg_calls == [1] and mirror_calls == ["iterate-x"]
+    assert reg_calls == [1]
     assert hook.already_audited(project, "deadbeef", "s1") is True
 
     # Second invocation, same (sha, session): idempotent skip — audit not re-run.
@@ -222,29 +158,68 @@ def test_main_full_run_emits_then_idempotent(monkeypatch, project):
                     audit_api=api)
     assert rc2 == 0
     assert reg_calls == [1]  # NOT re-run
-    assert mirror_calls == ["iterate-x"]
 
 
-def test_main_partial_coverage_does_not_mirror(monkeypatch, project):
-    mirror_calls = []
-
+def test_main_partial_coverage_still_reports_local_diagnostics(monkeypatch, project):
+    """Branch feedback never mirrors, coverage complete or not — this proves
+    the local-diagnostics path still runs (and records incomplete coverage
+    honestly) on a crashed/partial audit, with no mirror to gate."""
     def fake_run_all(pr, **kw):
         return _FakeReport(["A", "B"])  # crashed/partial
 
-    def fake_mirror(pr, rep, *, run_id, commit):
-        mirror_calls.append(1)
-        return {"appended": 0, "dismissed": 5}
-
     rc = _run_main(monkeypatch, session="sP", project_root=project, cwd=project,
-                   audit_api=(lambda: None, fake_run_all, fake_mirror))
+                   audit_api=(lambda: None, fake_run_all))
     assert rc == 0
-    assert mirror_calls == []  # gate blocked the mirror — no false dismiss
+    marker = json.loads(hook._marker_path(project, "deadbeef", "sP").read_text(encoding="utf-8"))
+    assert marker["result"]["coverage"]["complete"] is False
+    assert marker["result"]["mirrored"] is False
 
 
 def test_main_audit_api_unavailable_noop(monkeypatch, project):
     rc = _run_main(monkeypatch, session="sU", project_root=project, cwd=project,
-                   audit_api=(None, None, None))
+                   audit_api=(None, None))
     assert rc == 0
+
+
+def test_load_audit_api_refuses_a_stale_run_all_with_emit_to_triage(monkeypatch):
+    """Plugin-cache skew guard: a `run_all` still carrying the pre-P2.59
+    `emit_to_triage` parameter must never be handed back — a partial cache
+    sync could pair this hook's bare call with a detector that still
+    mirrors by default."""
+    def stale_run_all(project_root, *, run_gate=True, emit_to_triage=True):
+        raise AssertionError("must never be called")
+
+    fake_registry = types.ModuleType("scripts.audit._registry")
+    fake_registry.register_all = lambda: None
+    fake_detector = types.ModuleType("scripts.audit.audit_detector")
+    fake_detector.run_all = stale_run_all
+
+    monkeypatch.setitem(sys.modules, "scripts", types.ModuleType("scripts"))
+    monkeypatch.setitem(sys.modules, "scripts.audit", types.ModuleType("scripts.audit"))
+    monkeypatch.setitem(sys.modules, "scripts.audit._registry", fake_registry)
+    monkeypatch.setitem(sys.modules, "scripts.audit.audit_detector", fake_detector)
+
+    assert hook._load_audit_api() == (None, None)
+
+
+def test_load_audit_api_accepts_a_modern_run_all(monkeypatch):
+    """Mirror case: the guard above must not over-match every `run_all` —
+    a modern signature (no `emit_to_triage`) has to come back usable."""
+    def modern_run_all(project_root, *, run_gate=True):
+        return "unused"
+
+    fake_registry = types.ModuleType("scripts.audit._registry")
+    fake_registry.register_all = lambda: None
+    fake_detector = types.ModuleType("scripts.audit.audit_detector")
+    fake_detector.run_all = modern_run_all
+
+    monkeypatch.setitem(sys.modules, "scripts", types.ModuleType("scripts"))
+    monkeypatch.setitem(sys.modules, "scripts.audit", types.ModuleType("scripts.audit"))
+    monkeypatch.setitem(sys.modules, "scripts.audit._registry", fake_registry)
+    monkeypatch.setitem(sys.modules, "scripts.audit.audit_detector", fake_detector)
+
+    register, run_all = hook._load_audit_api()
+    assert run_all is modern_run_all
 
 
 def test_main_never_blocks_on_internal_error(monkeypatch, project):
@@ -252,7 +227,7 @@ def test_main_never_blocks_on_internal_error(monkeypatch, project):
         raise RuntimeError("audit exploded")
 
     rc = _run_main(monkeypatch, session="sE", project_root=project, cwd=project,
-                   audit_api=(lambda: None, boom, lambda *a, **k: {}))
+                   audit_api=(lambda: None, boom))
     assert rc == 0  # exception swallowed, Stop chain never blocked
 
 
@@ -292,3 +267,30 @@ def test_wired_into_changelog_stop_chain_after_phase_quality():
     i_pq = _idx(cmds, "audit_phase_quality_on_stop.py")
     assert i_self != -1, "compliance audit hook not wired into changelog Stop chain"
     assert i_pq < i_self, "must run AFTER phase_quality"
+
+
+def test_main_resolves_the_active_worktree_before_running_detection(monkeypatch, tmp_path):
+    """`resolve_project_roots` binds `pointer_worktree_root` in ITS OWN module
+    globals (`lib.phase_quality._resolution`, via `from ._run_id import ...`) —
+    patching the `lib.phase_quality` package attribute cannot reach that
+    binding (ADR-045: patch the module object, never a rebound name). And
+    `main_root` needs a real marker: it is the `plain_root` the greenfield
+    guard now checks (never the redirected root)."""
+    main_root = tmp_path / "main"
+    active = tmp_path / "active"
+    main_root.mkdir()
+    active.mkdir()
+    (main_root / "shipwright_run_config.json").write_text(json.dumps({"status": "complete"}), encoding="utf-8")
+    (active / "shipwright_run_config.json").write_text(json.dumps({"status": "complete"}), encoding="utf-8")
+    roots = []
+
+    def fake_run_all(root, **kwargs):
+        roots.append(root)
+        return _full_report()
+
+    import lib.phase_quality._resolution as _resolution
+    monkeypatch.setattr(_resolution, "pointer_worktree_root", lambda cwd, session: active)
+    rc = _run_main(monkeypatch, session="active-run", project_root=main_root, cwd=main_root,
+                   audit_api=(lambda: None, fake_run_all))
+    assert rc == 0
+    assert roots == [active]

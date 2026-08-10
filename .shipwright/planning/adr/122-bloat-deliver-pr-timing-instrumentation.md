@@ -121,3 +121,18 @@ zero headroom forces design" pathology, previously observed elsewhere in this
 file). Fixed by binding `project_root` once and passing it to both call
 sites; net effect is +1 line because the new binding line costs more than the
 one deleted duplicate call saves. `current` raised to 326 in the same commit.
+
+## Addendum 2026-08-10 (P2.59, branch-feedback authority)
+
+326 → 331 (+5): `main()` now spawns the merge-authority lifecycle compliance
+audit (`audit_compliance_lifecycle.py --scope merge`) once `deliver()`
+confirms a DELIVERED exit — the point at which merge authority may first
+converge the global compliance backlog (see `docs/hooks-and-pipeline.md`'s
+"Compliance backlog lifecycle authority"). Following this file's own
+established pattern (Addendum 2026-08-08), the subprocess call itself was
+extracted whole into a new, unconstrained `lib/deliver_pr_compliance_audit.py`
+(`run_merge_compliance_audit`, mirroring `lib.run_pointer_retirement`'s
+shape) rather than inlined — what remains here is one import line and the
+three-line `if exit_code == EXIT_DELIVERED: result["merge_compliance_audit"]
+= run_merge_compliance_audit(...)` call site. `current` raised to 331 in the
+same commit.

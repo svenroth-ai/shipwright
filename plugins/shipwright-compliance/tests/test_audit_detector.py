@@ -83,7 +83,7 @@ def test_run_all_default_set_includes_group_h(tmp_path):
     for letter in ("A", "B", "C", "D", "E", "F", "G", "H", "I"):
         register_group(letter, lambda *a, _g=letter: [_make_finding(group=_g)])
 
-    report = run_all(tmp_path, run_gate=False, emit_to_triage=False)
+    report = run_all(tmp_path, run_gate=False)
     assert "H" in report.groups_run
     assert set(report.groups_run) == {"A", "B", "C", "D", "E", "F", "G", "H", "I"}
 
@@ -107,6 +107,14 @@ def test_run_all_only_filter(tmp_path):
     assert [f.group for f in report.findings] == ["B"]
     assert report.groups_run == ["B"]
 
+
+def test_run_all_never_writes_the_global_backlog(tmp_path, monkeypatch):
+    register_group("A", lambda *a: [_make_finding(group="A", status="fail")])
+    writes = []
+    monkeypatch.setattr(audit_detector, "mirror_findings_to_triage", lambda *a, **kw: writes.append((a, kw)))
+    report = run_all(tmp_path, only=["A"], run_gate=False)
+    assert report.any_fail
+    assert writes == []
 
 def test_run_all_isolates_group_crashes(tmp_path):
     (tmp_path / "shipwright_run_config.json").write_text("{}\n", encoding="utf-8")
@@ -203,7 +211,7 @@ def test_run_all_reports_import_gate_error(tmp_path, monkeypatch):
 def test_disabled_check_rewritten_to_skip(tmp_path):
     register_group("A", lambda *a: [_make_finding(check_id="B7", status="fail")])
     report = run_all(
-        tmp_path, only=["A"], run_gate=False, emit_to_triage=False,
+        tmp_path, only=["A"], run_gate=False,
         config={"disabled_checks": ["B7"]},
     )
     [f] = report.findings
@@ -215,7 +223,7 @@ def test_disabled_check_rewritten_to_skip(tmp_path):
 
 def test_disabled_checks_default_is_noop(tmp_path):
     register_group("A", lambda *a: [_make_finding(check_id="B7", status="fail")])
-    report = run_all(tmp_path, only=["A"], run_gate=False, emit_to_triage=False)
+    report = run_all(tmp_path, only=["A"], run_gate=False)
     [f] = report.findings
     assert f.status == "fail"  # unchanged when disabled_checks absent
 
@@ -226,7 +234,7 @@ def test_disabled_checks_only_affects_listed_ids(tmp_path):
         _make_finding(check_id="D1", status="fail"),
     ])
     report = run_all(
-        tmp_path, only=["A"], run_gate=False, emit_to_triage=False,
+        tmp_path, only=["A"], run_gate=False,
         config={"disabled_checks": ["B7"]},
     )
     by_id = {f.check_id: f.status for f in report.findings}
@@ -237,7 +245,7 @@ def test_disabled_check_pass_is_not_rewritten(tmp_path):
     # A disabled check that PASSES keeps its pass signal — only FAILs suppressed.
     register_group("A", lambda *a: [_make_finding(check_id="B7", status="pass")])
     report = run_all(
-        tmp_path, only=["A"], run_gate=False, emit_to_triage=False,
+        tmp_path, only=["A"], run_gate=False,
         config={"disabled_checks": ["B7"]},
     )
     [f] = report.findings

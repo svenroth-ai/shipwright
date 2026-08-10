@@ -11,10 +11,13 @@ Contract:
   Shipwright-managed project (no `shipwright_run_config.json`).
 - **Schema-compliant Stop output** (ADR-042). NO `additionalContext`;
   diagnostics → stderr.
-- **Order:** registered after the triage producer `audit_compliance_on_stop`
+- **Order:** registered after the triage producer `audit_phase_quality_on_stop`
   in every plugin's Stop array, so the aggregate observes the settled triage.
   (It is no longer literally last — `bloat_gate_on_stop` +
   `plugin_sync_reminder_on_stop` follow it — but neither writes triage.)
+  `audit_compliance_on_stop` is branch-feedback-only (P2.59) and no longer a
+  triage producer at all — see "Compliance backlog lifecycle authority" in
+  `docs/hooks-and-pipeline.md`.
 - **Fan-out dedup** (iterate-2026-06-20-aggregate-triage-stop-fanout-dedup):
   registered in all 12 plugins → fires ~12× per Stop. A once-per-(Stop, session)
   `event_once.claim_once_for_event` claim makes exactly one invocation
@@ -86,9 +89,11 @@ def main() -> int:
     # is_shipwright_project no-op guard so a greenfield invocation never consumes
     # the claim. Serializing to one writer also closes the non-atomic-write
     # parallel-corruption window. Winner still observes the settled triage:
-    # aggregate_triage runs after the producer audit_compliance_on_stop in every
-    # plugin's Stop array, and audit_compliance's marker makes the first plugin's
-    # invocation the audit. sid=="unknown" → helper regenerates N× (fail-open).
+    # aggregate_triage runs after the producer audit_phase_quality_on_stop in
+    # every plugin's Stop array, and phase_quality's marker makes the first
+    # plugin's invocation the audit (audit_compliance_on_stop is
+    # branch-feedback-only, P2.59, and writes no triage). sid=="unknown" →
+    # helper regenerates N× (fail-open).
     sid = _session_id(payload)
     if not claim_once_for_event(project_root, "stop-triage-inbox", sid):
         sys.stderr.write(

@@ -144,7 +144,7 @@ def test_auto_dismiss_when_all_resolved(project: Path) -> None:
 
 def test_empty_report_no_op(project: Path) -> None:
     out = mirror_findings_to_triage(project, _report())
-    assert out == {"appended": 0, "dismissed": 0}
+    assert out == {"appended": 0, "dismissed": 0, "amended": 0}
     assert read_all_items(project) == []
 
 
@@ -195,15 +195,15 @@ def test_auto_reopen_swallows_writer_refusals_and_errors(
         raise RuntimeError("writer unavailable")
 
     monkeypatch.setattr(bundle, "_triage_api", lambda: (
-        api[0], broken_mark, api[2], api[3], api[4], api[5],
+        api[0], broken_mark, api[2], api[3], api[4], api[5], api[6],
     ))
     assert mirror_findings_to_triage(project, report)["appended"] == 0
 
     def refused_mark(*_args: object, **_kwargs: object) -> None:
-        raise api[5]("trg-test", ("dismissed",), "dismissed")
+        raise api[6]("trg-test", ("dismissed",), "dismissed")
 
     monkeypatch.setattr(bundle, "_triage_api", lambda: (
-        api[0], refused_mark, api[2], api[3], api[4], api[5],
+        api[0], refused_mark, api[2], api[3], api[4], api[5], api[6],
     ))
     assert mirror_findings_to_triage(project, report)["appended"] == 0
     assert read_all_items(project)[0]["status"] == "dismissed"
