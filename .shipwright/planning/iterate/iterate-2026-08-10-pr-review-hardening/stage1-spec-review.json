@@ -1,0 +1,11 @@
+{
+  "stage": "spec-compliance",
+  "verdict": "REJECT",
+  "spec_citations": [
+    {
+      "kind": "security",
+      "spec_ref": "Acceptance criterion 5 requires a waiver to cover every scanner-suppression and hook-control change.",
+      "divergence": "Path renames and an incomplete changed-file list can still evade trusted sensitive-path classification."
+    }
+  ]
+}

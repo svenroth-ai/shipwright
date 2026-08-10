@@ -186,6 +186,12 @@ class TestStage2:
         """FR-01.17 (E)7 — whoever unlocks a door does not decide it may be."""
         assert "review_record_tier.py" in stage2
 
+    def test_waiver_reads_both_sides_of_a_rename_and_fails_closed_at_api_cap(self, stage2):
+        """A suppression moved out of its path is still a suppression change."""
+        assert ".previous_filename // empty" in stage2
+        assert "sensitive_path_list_truncated" in stage2
+        assert "changed-file list is at the API cap" in stage2
+
     def test_waiver_is_consumed_before_a_later_push_can_reuse_it(self, stage2):
         """A label authorizes one evidence-backed head, never a later synchronize."""
         assert "Consume the one-shot review waiver" in stage2

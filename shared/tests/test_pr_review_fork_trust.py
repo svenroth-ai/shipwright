@@ -37,7 +37,7 @@ from pathlib import Path
 import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from _pr_review_workflows import ALL_STAGE2, jobs, load, shell_code, text  # noqa: E402
+from _pr_review_workflows import ALL_STAGE2, job_conditions, jobs, load, shell_code, text  # noqa: E402
 
 # --------------------------------------------------------------------------
 # 1. Chained to stage 1, and never running the contributor's code
@@ -66,6 +66,10 @@ def test_stage2_never_checks_out_contributor_code(path: Path) -> None:
             assert "workflow_run" not in ref and "head" not in ref.lower(), (
                 f"{path.name}: checkout pins {ref!r} — stage 2 holds secrets "
                 f"and must check out the base repo only, never the PR head."
+            )
+            assert (step.get("with") or {}).get("persist-credentials") is False, (
+                f"{path.name}: checkout must set `persist-credentials: false` "
+                "because this credentialed job never uses git authentication"
             )
 
 
@@ -193,6 +197,35 @@ def test_stage2_rechecks_the_head_before_blessing_it(path: Path) -> None:
     assert "head moved during the run" in shell_code(path), (
         f"{path.name}: must re-verify the head SHA before posting success"
     )
+
+
+@pytest.mark.parametrize("path", ALL_STAGE2)
+def test_stage2_rejects_any_force_push_since_stage1_started(path: Path) -> None:
+    """An A -> B -> A force-push defeats a current-head-only comparison."""
+    code = shell_code(path)
+    assert "RUN_STARTED_AT" in code
+    assert "head_ref_force_pushed" in code
+    assert "issues/$PR_NUMBER/timeline" in code
+    assert ".created_at >= $t" in code
+
+
+@pytest.mark.parametrize("path", ALL_STAGE2)
+def test_stage2_refuses_a_second_check_run_claiming_its_context(path: Path) -> None:
+    """Stage 1 is contributor-controlled and cannot mint the required name."""
+    code = shell_code(path)
+    expected = "Claude Code Review" if "claude-review-run" in path.name else "PR Review"
+    assert "checks: read" in text(path)
+    assert "commits/$HEAD_SHA/check-runs" in code
+    assert f'.name == "{expected}"' in code
+    assert "second producer is claiming this context" in code
+
+
+@pytest.mark.parametrize("path", ALL_STAGE2)
+def test_stage2_silences_cancelled_superseded_runs(path: Path) -> None:
+    """A cancelled workflow must not overwrite the newer run's verdict."""
+    conditions = job_conditions(path)
+    assert "${{ !cancelled() }}" in conditions
+    assert "always()" not in conditions
 
 
 # --------------------------------------------------------------------------

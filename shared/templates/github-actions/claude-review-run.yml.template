@@ -45,10 +45,17 @@ jobs:
       contents: read
       statuses: write
       pull-requests: write
+      # Read-only, and only to police the required context against a stage-1
+      # job renamed by a contributor to manufacture a passing check run.
+      checks: read
 
     steps:
       # RULE 1 — base repo only. No `ref:`, so the PR head is never checked out.
+      # Nothing here uses git credentials: `gh` uses GH_TOKEN. Do not leave a
+      # writable token in .git/config alongside the LLM key.
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
 
       - name: Install Claude Code
         run: npm install -g @anthropic-ai/claude-code
@@ -187,36 +194,56 @@ jobs:
               body: body
             });
 
-      # The verdict is the gate. `always()` so a failed review posts `failure`
-      # rather than leaving the context absent for an ambiguous reason — though
-      # an absent context still blocks, so a crash before this step is safe too.
+      # Post after ordinary failures but never from a cancelled, superseded job:
+      # `always()` is true after cancellation and can overwrite the live run.
       - name: Post the Claude Code Review verdict
-        if: always()
+        if: ${{ !cancelled() }}
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
           REPO: ${{ github.repository }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          RUN_STARTED_AT: ${{ github.event.workflow_run.run_started_at }}
           STAGE1_OK: ${{ steps.stage1.outputs.ok }}
           PR_NUMBER: ${{ steps.pr.outputs.number }}
           REVIEW_OUTCOME: ${{ steps.review.outcome }}
           COMMENT_OUTCOME: ${{ steps.comment.outcome }}
         run: |
           set -euo pipefail
+          : "${RUN_STARTED_AT:?workflow_run.run_started_at is required}"
           # The diff was fetched by PR NUMBER, which tracks the moving head; the
           # verdict lands on the immutable event SHA. If the branch was
           # force-pushed mid-run we reviewed different content than we are about
-          # to bless. Re-check, and fail closed if it moved.
+          # to bless. An A -> B -> A force-push passes a current-head check even
+          # though the reviewer saw B, so reject any force-push since stage 1.
+          stale=""
           if [ -n "${PR_NUMBER:-}" ]; then
-            now=$(gh api "repos/$REPO/pulls/$PR_NUMBER" --jq '.head.sha' || echo "")
-            if [ "$now" != "$HEAD_SHA" ]; then
-              echo "::error::head moved during the run ($HEAD_SHA -> ${now:-unknown}); the review does not describe this commit"
-              gh api "repos/$REPO/statuses/$HEAD_SHA" -f state=failure \
-                -f context="Claude Code Review" \
-                -f description="head moved during review — re-run required" \
-                -f target_url="$RUN_URL" >/dev/null
-              exit 1
+            if ! now=$(gh api "repos/$REPO/pulls/$PR_NUMBER" --jq '.head.sha'); then
+              stale="could not verify head — re-run required"
+            elif ! forced=$(gh api --paginate --slurp "repos/$REPO/issues/$PR_NUMBER/timeline" \
+              | jq --arg t "$RUN_STARTED_AT" \
+                  '[.[][] | select(.event == "head_ref_force_pushed")
+                          | select(.created_at >= $t)] | length'); then
+              stale="could not verify branch history — re-run required"
+            elif [ "$now" != "$HEAD_SHA" ] || [ "$forced" != "0" ]; then
+              stale="head moved during review — re-run required"
+              echo "::error::head moved during the run ($HEAD_SHA -> ${now:-unknown}, $forced force-push(es) since stage 1 began); the review does not describe this commit"
             fi
+          fi
+          if [ -z "$stale" ]; then
+            impostors=$(gh api --paginate --slurp "repos/$REPO/commits/$HEAD_SHA/check-runs" \
+              | jq '[.[].check_runs[] | select(.name == "Claude Code Review")] | length')
+            if [ "$impostors" -ne 0 ]; then
+              echo "::error::$impostors check run(s) named 'Claude Code Review' exist on $HEAD_SHA; this workflow is the only permitted producer of that context"
+              stale="a second producer is claiming this context — re-run required"
+            fi
+          fi
+          if [ -n "$stale" ]; then
+            gh api "repos/$REPO/statuses/$HEAD_SHA" -f state=failure \
+              -f context="Claude Code Review" \
+              -f description="$stale" \
+              -f target_url="$RUN_URL" >/dev/null
+            exit 1
           fi
           if [ "$STAGE1_OK" != "true" ]; then
             state=failure; desc="preparation stage failed — nothing was reviewed"

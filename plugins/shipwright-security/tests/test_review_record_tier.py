@@ -77,6 +77,37 @@ def test_evidence_cannot_waive_without_a_trusted_label_or_on_sensitive_paths():
     assert tier.decide([PATH, "shared/scripts/lib/atomic_write.py"], ["skip-pr-review"], record, True)[0] is True
 
 
+def test_waiver_cannot_cover_a_change_to_a_suppression_or_hook_channel():
+    """A waiver cannot change what CI is allowed to ignore or how hooks run."""
+    record = completed_record()
+    sensitive = (
+        ".trivyignore",
+        ".trivyignore.yml",
+        ".trivyignore.yaml",
+        "shipwright_accepted_risks.yaml",
+        ".semgrepignore",
+        ".claude/settings.json",
+        "shipwright_bloat_baseline.json",
+        "scripts/hooks/pre-commit",
+        "scripts/install-hooks.sh",
+        "scripts/install-hooks.ps1",
+    )
+    for path in sensitive:
+        assert tier.decide([PATH, path], ["skip-pr-review"], record, True)[0] is True, path
+
+
+def test_waiver_fails_closed_when_github_truncates_the_changed_path_list():
+    record = completed_record()
+    needs_review, reason = tier.decide(
+        [PATH, "sensitive_path_list_truncated"],
+        ["skip-pr-review"],
+        record,
+        True,
+    )
+    assert needs_review is True
+    assert reason == "changed-file list truncated"
+
+
 def test_helper_path_is_anchored_against_a_prefixed_bypass():
     assert tier.SENSITIVE_PATH_RE.match("safe/plugins/shipwright-security/scripts/tools/review_record_tier.py") is None
     assert tier.SENSITIVE_PATH_RE.match("plugins/shipwright-security/scripts/tools/review_record_tier.py")

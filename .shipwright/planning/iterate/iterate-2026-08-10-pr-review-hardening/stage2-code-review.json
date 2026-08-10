@@ -1,0 +1,11 @@
+{
+  "section": "review",
+  "review": [
+    {
+      "severity": "medium",
+      "category": "security",
+      "finding": "The sensitive-path policy does not yet cover every supported Trivy suppression filename.",
+      "suggestion": "Protect all supported root-level Trivy ignore forms and add direct waiver tests for each form."
+    }
+  ]
+}

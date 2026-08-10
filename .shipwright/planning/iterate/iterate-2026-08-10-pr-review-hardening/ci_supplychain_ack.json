@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-08-10-pr-review-hardening",
+  "ci_supplychain_ack": {
+    "run_id": "iterate-2026-08-10-pr-review-hardening",
+    "paths_fingerprint": "74a80a40f0f444822205f6cdfbebf011688e1494788b74761fcc7a5c18639f78",
+    "consistent_with": "iterate-2026-07-27-review-gate-failclosed-fork",
+    "statement": "Hardens the existing trusted stage-two PR-review boundary without adding a trust source or write permission: it rejects force-push history and duplicate context producers, avoids persisted checkout credentials, and prevents a waiver from covering scanner or hook-control suppression paths.",
+    "ci_paths": [
+      ".github/workflows/pr-review-run.yml",
+      "shared/templates/github-actions/claude-review-run.yml.template"
+    ]
+  }
+}

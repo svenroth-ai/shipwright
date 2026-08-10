@@ -1,0 +1,8 @@
+{
+  "items": [
+    {"name": "spec compliance", "verdict": "pass", "note": "All five P3.07 criteria and review-found rename/cap paths are covered."},
+    {"name": "security", "verdict": "pass", "note": "The change narrows credential persistence and fails closed on uncertain inputs."},
+    {"name": "test quality", "verdict": "pass", "note": "Both workflow carriers and the waiver decision paths have direct regression coverage."},
+    {"name": "scope", "verdict": "pass", "note": "Only the IT-9 PR-review workflow boundary, template, helper, and direct tests changed."}
+  ]
+}
