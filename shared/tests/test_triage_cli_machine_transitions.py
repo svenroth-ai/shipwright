@@ -21,7 +21,14 @@ if str(_SCRIPTS) not in sys.path:
     sys.path.insert(0, str(_SCRIPTS))
 
 import triage as triage_module  # noqa: E402
-from triage import append_triage_item, mark_status, read_all_items  # noqa: E402
+from triage import (  # noqa: E402
+    StatusPreconditionError,
+    amend_triage_item,
+    append_triage_item,
+    mark_status,
+    read_all_items,
+)
+from tools.triage_promote import dismiss, promote  # noqa: E402
 
 CLI = _SCRIPTS / "tools" / "triage_cli.py"
 
@@ -131,6 +138,8 @@ def test_future_snooze_check_uses_the_clock_inside_the_store_lock(
             revisit_at="2030-01-01", expected_status="triage",
             require_future_revisit=True,
         )
+    with pytest.raises(ValueError, match="accepted only"):
+        mark_status(tmp_path, item_id, new_status="dismissed", by="test", require_future_revisit=True)
     assert read_all_items(tmp_path)[0]["status"] == "triage"
 
 
@@ -140,6 +149,19 @@ def test_amend_refuses_a_card_decided_by_another_transition(tmp_path: Path) -> N
 
     result = _run(tmp_path, "amend", item_id, "--title", "Too late", "--json")
     assert result.returncode == 3
+
+
+def test_library_transition_results_and_amend_cas_are_resolved(tmp_path: Path) -> None:
+    item_id = _seed(tmp_path)
+    promoted = promote(tmp_path, item_id=item_id, task_ref="EXT:42", include_item=True)
+    assert promoted["item"] == next(item for item in read_all_items(tmp_path) if item["id"] == item_id)
+    other_id = _seed(tmp_path)
+    dismissed = dismiss(tmp_path, item_id=other_id, reason="done", include_item=True)
+    assert dismissed["item"] == next(item for item in read_all_items(tmp_path) if item["id"] == other_id)
+    _to_outbox, amended = amend_triage_item(tmp_path, other_id, title="resolved", return_item=True)
+    assert amended == next(item for item in read_all_items(tmp_path) if item["id"] == other_id)
+    with pytest.raises(StatusPreconditionError):
+        amend_triage_item(tmp_path, item_id, title="too late", expected_status="triage")
 
 
 def test_show_reads_one_resolved_item_and_human_default_is_preserved(tmp_path: Path) -> None:
