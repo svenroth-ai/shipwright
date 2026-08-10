@@ -31,6 +31,7 @@ def _bash() -> str:
     if resolved:
         return resolved
     pytest.skip("bash is required to exercise shell hook behavior")
+    raise AssertionError("pytest.skip() must not return")
 
 
 def test_validate_command_allows_normal():

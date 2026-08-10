@@ -21,3 +21,4 @@ def bash() -> str:
     if resolved := shutil.which("bash"):
         return resolved
     pytest.skip("bash is required to exercise shell hook behavior")
+    raise AssertionError("pytest.skip() must not return")
