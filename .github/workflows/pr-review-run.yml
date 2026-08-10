@@ -57,10 +57,19 @@ jobs:
       statuses: write
       issues: write
       pull-requests: write
+      # Read-only, and only to police the context: stage 1 runs from the PR
+      # head, so a contributor can rename a job to `PR Review` and manufacture
+      # a passing check run under the required name. We must be able to see it.
+      checks: read
     steps:
       # Base repo only. No `ref:`, so this is the default branch of the base
       # repository — the PR head is never checked out.
+      # Nothing in this job uses the git credential helper: `gh` authenticates
+      # from GH_TOKEN. The job holds an LLM key and writable token, so checkout
+      # must not leave another credential in .git/config for later steps.
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
 
       - name: Install uv
         # Third-party action pinned to a full commit SHA (supply-chain
@@ -124,7 +133,17 @@ jobs:
           pr_json=$(gh api "repos/$REPO/pulls/$PR_NUMBER")
           labels=$(printf '%s' "$pr_json" | jq -c '[.labels[].name]')
           changed=$(gh api --paginate "repos/$REPO/pulls/$PR_NUMBER/files" \
-            --jq '.[].filename')
+            --jq '.[] | .filename, (.previous_filename // empty)')
+
+          # Both sides of a rename are policy-relevant: otherwise moving a
+          # suppression or hook-control file to an innocuous path makes the
+          # waiver decision see only the destination. GitHub caps this endpoint
+          # at 3,000 files even when paginated, so an incomplete list is also
+          # sensitive rather than evidence that no protected path changed.
+          if [ "$(wc -l <<<"$changed")" -ge 3000 ]; then
+            echo "::notice::changed-file list is at the API cap — review required"
+            changed="${changed}"$'\n'sensitive_path_list_truncated
+          fi
 
           # The label is authorization to consider a waiver, not authorization
           # for any later push. Require an approval whose GitHub API commit_id
@@ -221,16 +240,18 @@ jobs:
             --repo "$REPO" \
             --prompt-dir shared/prompts/pr_reviewer
 
-      # The verdict is the gate. `always()` so a failed review posts `failure`
-      # rather than leaving the context absent for an ambiguous reason — but an
-      # absent context still blocks, so a crash before this step is safe too.
+      # The verdict is the gate. It runs after ordinary failures so it can post
+      # `failure`, but never after this job was cancelled. `always()` is true
+      # for a cancelled job; a superseded run could otherwise overwrite the
+      # live verdict from its newer concurrency-group peer.
       - name: Post the PR Review verdict
-        if: always()
+        if: ${{ !cancelled() }}
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
           REPO: ${{ github.repository }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          RUN_STARTED_AT: ${{ github.event.workflow_run.run_started_at }}
           STAGE1_CONCLUSION: ${{ github.event.workflow_run.conclusion }}
           PR_NUMBER: ${{ steps.pr.outputs.number }}
           NEEDS_REVIEW: ${{ steps.tier.outputs.needs_review }}
@@ -240,21 +261,56 @@ jobs:
           REVIEW_OUTCOME: ${{ steps.review.outcome }}
         run: |
           set -euo pipefail
+          : "${RUN_STARTED_AT:?workflow_run.run_started_at is required}"
           # The reviewer fetched the diff by PR NUMBER, which tracks the moving
           # head; the verdict lands on the immutable event SHA. If the branch was
           # force-pushed mid-run we reviewed different content than we are about
           # to bless — and a later restore of this SHA would inherit the green.
-          # Re-check before blessing anything, and fail closed if it moved.
+          # Comparing the current head alone is insufficient: an A -> B -> A
+          # force-push sequence passes that comparison although the reviewer saw
+          # B. Reject any force-push since stage 1 began.
+          stale=""
           if [ -n "${PR_NUMBER:-}" ]; then
-            now=$(gh api "repos/$REPO/pulls/$PR_NUMBER" --jq '.head.sha' || echo "")
-            if [ "$now" != "$HEAD_SHA" ]; then
-              echo "::error::head moved during the run ($HEAD_SHA -> ${now:-unknown}); the review does not describe this commit"
-              gh api "repos/$REPO/statuses/$HEAD_SHA" -f state=failure \
-                -f context="PR Review" \
-                -f description="head moved during review — re-run required" \
-                -f target_url="$RUN_URL" >/dev/null
-              exit 1
+            if ! now=$(gh api "repos/$REPO/pulls/$PR_NUMBER" --jq '.head.sha'); then
+              stale="could not verify head — re-run required"
+            elif ! forced=$(gh api --paginate --slurp "repos/$REPO/issues/$PR_NUMBER/timeline" \
+              | jq --arg t "$RUN_STARTED_AT" \
+                  '[.[][] | select(.event == "head_ref_force_pushed")
+                          | select(.created_at >= $t)] | length'); then
+              stale="could not verify branch history — re-run required"
+            elif ! [[ "$forced" =~ ^[0-9]+$ ]]; then
+              # A malformed or empty pagination result must never be treated as
+              # proof that no force-push occurred during the review window.
+              stale="could not verify branch history — re-run required"
+            elif [ "$now" != "$HEAD_SHA" ] || [ "$forced" != "0" ]; then
+              stale="head moved during review — re-run required"
+              echo "::error::head moved during the run ($HEAD_SHA -> ${now:-unknown}, $forced force-push(es) since stage 1 began); the review does not describe this commit"
             fi
+          fi
+          # Stage 1 executes the PR's workflow file. A contributor can rename a
+          # stage-1 job to `PR Review`, creating a passing check run under the
+          # required name. This workflow is the sole permitted producer, so do
+          # not post when another check run already claims the context. Its own
+          # check run is expected and identifies this run in details_url.
+          if [ -z "$stale" ]; then
+            if ! impostors=$(gh api --paginate --slurp "repos/$REPO/commits/$HEAD_SHA/check-runs" \
+              | jq --arg run "$RUN_URL" \
+                  '[.[].check_runs[] | select(.name == "PR Review")
+                                    | select((.details_url // "") | startswith($run) | not)] | length'); then
+              stale="could not verify check runs — re-run required"
+            elif ! [[ "$impostors" =~ ^[0-9]+$ ]]; then
+              stale="could not verify check runs — re-run required"
+            elif [ "$impostors" -ne 0 ]; then
+              echo "::error::$impostors check run(s) named 'PR Review' exist on $HEAD_SHA; this workflow is the only permitted producer of that context"
+              stale="a second producer is claiming this context — re-run required"
+            fi
+          fi
+          if [ -n "$stale" ]; then
+            gh api "repos/$REPO/statuses/$HEAD_SHA" -f state=failure \
+              -f context="PR Review" \
+              -f description="$stale" \
+              -f target_url="$RUN_URL" >/dev/null
+            exit 1
           fi
           if [ "$STAGE1_CONCLUSION" != "success" ]; then
             state=failure; desc="preparation stage failed — nothing was reviewed"

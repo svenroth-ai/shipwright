@@ -1,0 +1,98 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-08-10-pr-review-hardening",
+    "date": "2026-08-10",
+    "unit": {
+      "status": "pass",
+      "passed": 44,
+      "failed": 0,
+      "note": "Canonical F0 completed after all plugin, shared, and integration units; focused security CLI evidence ran 44 tests."
+    },
+    "integration": {
+      "status": "pass",
+      "passed": 0,
+      "failed": 0,
+      "note": "Canonical F0 integration-tests unit completed."
+    },
+    "e2e": {
+      "status": "pass",
+      "passed": 44,
+      "failed": 0
+    },
+    "smoke": {
+      "status": "n/a",
+      "reason": "No startable application server; this change hardens GitHub Actions workflow and policy tooling."
+    },
+    "pgtap": {
+      "status": "n/a",
+      "reason": "No database surface."
+    },
+    "design_fidelity": {
+      "status": "n/a",
+      "reason": "No visual UI surface."
+    },
+    "surface_verification": {
+      "surface": "cli",
+      "runner": "C:\\Users\\SvenRoth\\.cache\\codex-runtimes\\codex-primary-runtime\\dependencies\\python\\python.exe -m pytest plugins/shipwright-security/tests/test_review_record_tier.py plugins/shipwright-security/tests/test_pr_review_workflow_shape.py -q",
+      "exit_code": 0,
+      "tests_run": 44,
+      "evidence_path": ".shipwright/runs/iterate-2026-08-10-pr-review-hardening/surface_verification.log",
+      "timestamp": "2026-08-10T06:36:14.314Z",
+      "attempts": 1
+    },
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "Force-push history since stage one started blocks a stale PR Review verdict.",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_pr_review_fork_trust.py PASSED"
+        },
+        {
+          "behavior": "A pre-existing PR Review check run prevents stage two from posting the sole trusted status.",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_pr_review_fork_trust.py PASSED"
+        },
+        {
+          "behavior": "A cancelled superseded run cannot post a stale verdict, and checkout leaves no credential helper.",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_pr_review_fork_trust.py PASSED"
+        },
+        {
+          "behavior": "Every configured suppression and hook-control path requires review despite skip-pr-review.",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-security/tests/test_review_record_tier.py PASSED"
+        },
+        {
+          "behavior": "Both sides of a sensitive rename and a truncated changed-file list require review.",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-security/tests/test_review_record_tier.py and test_pr_review_workflow_shape.py PASSED"
+        }
+      ],
+      "counts": {
+        "testable": 5,
+        "tested": 5,
+        "untestable": 0,
+        "untested_testable": 0
+      },
+      "enumeration_basis": {
+        "acs": 5,
+        "covered_acs": 5
+      }
+    },
+    "degraded": []
+  },
+  "coverage": {
+    "total": 80.2,
+    "measured_tier": "repo",
+    "source": "combined coverage.xml (all plugins + shared + integration)",
+    "measured_at": "2026-07-04T00:00:00Z"
+  },
+  "source_state": {
+    "run_id": "iterate-2026-08-10-pr-review-hardening",
+    "commit": "16952546290c8de10cd513b9a0af5079e7396c89",
+    "dirty": true,
+    "base": null,
+    "release": null
+  }
+}

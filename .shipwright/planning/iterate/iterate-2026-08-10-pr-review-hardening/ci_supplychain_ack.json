@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-08-10-pr-review-hardening",
+  "ci_supplychain_ack": {
+    "run_id": "iterate-2026-08-10-pr-review-hardening",
+    "paths_fingerprint": "bb5d2d8fac0994982fb1baddfb56be935a7e28abf1a7ba45023c6b35ac33621f",
+    "consistent_with": "iterate-2026-07-27-review-gate-failclosed-fork",
+    "statement": "Hardens stage-two review verification by failing closed on malformed or empty force-push and duplicate-check counts; no trust source or permission is widened.",
+    "ci_paths": [
+      ".github/workflows/pr-review-run.yml",
+      "shared/templates/github-actions/claude-review-run.yml.template"
+    ]
+  }
+}

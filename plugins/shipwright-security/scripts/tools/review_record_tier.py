@@ -35,6 +35,13 @@ SENSITIVE_PATH_RE = re.compile(
     r"|\.github/workflows/"
     r"|\.github/actions/"
     r"|shared/templates/github-actions/"
+    r"|\.trivyignore(?:\.ya?ml)?$"
+    r"|shipwright_accepted_risks\.yaml"
+    r"|\.semgrepignore"
+    r"|\.claude/settings\.json"
+    r"|shipwright_bloat_baseline\.json"
+    r"|scripts/hooks/"
+    r"|scripts/install-hooks\."
     r")"
 )
 
@@ -43,6 +50,8 @@ def decide(changed_paths: list[str], labels: list[str], review_record: object | 
     """Return ``(needs_review, reason)`` using only trusted waiver + evidence."""
     if "needs-review" in labels:
         return True, "needs-review label set"
+    if "sensitive_path_list_truncated" in changed_paths:
+        return True, "changed-file list truncated"
     if any(SENSITIVE_PATH_RE.match(path) for path in changed_paths):
         return True, "sensitive path touched"
     if "skip-pr-review" not in labels:
