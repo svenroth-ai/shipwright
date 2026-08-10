@@ -5,9 +5,6 @@
 ![Status](https://img.shields.io/badge/status-beta-blue)
 ![License](https://img.shields.io/badge/license-MIT-blue)
 
-> [!WARNING]
-> **Heavy refactoring in progress.** Expect more churn than usual across plugins right now — update carefully and pin versions if you're mid-project. Expected to settle down by **Aug 10, 2026**.
-
 **AI can build your software now. The hard part is keeping it true to what you already decided, on every change, not just the first.**
 
 Shipwright is **the harness your AI follows**. On every change it checks the work back against your baseline (requirements, architecture, past decisions) and won't let through a change that silently drops a requirement or reverses a call you already made. That is enforced in code, not left to the model to remember; the traceability and audit trail just fall out of it.
