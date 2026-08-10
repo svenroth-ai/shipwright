@@ -583,7 +583,9 @@ def mark_status(
     expected_by: str | None = None,
     block_matching_terminal: tuple[str, str] | None = None,
     revisit_at: str | None = None,
-) -> str | None:
+    require_future_revisit: bool = False,
+    return_item: bool = False,
+) -> str | None | tuple[str | None, dict]:
     """Append a status event for an existing item (never mutates prior lines).
 
     Returns the status this event REPLACED — ``None`` when the item carries no
@@ -602,8 +604,8 @@ def mark_status(
     Center uses ``proper-lockfile``, which does NOT compose with the Python
     byte lock, so a WebUI write can still interleave with this critical
     section. The precondition closes the Python producer/operator race — not
-    every race.
-
+    every race. ``return_item`` also reads the fully resolved post-write card
+    under this same lock, without reopening the race window.
     **Write target is DERIVED (never a caller flag):** idle main with a delivery
     path (`should_route_to_outbox` — origin + HEAD==default) → outbox, symmetric
     with `append_triage_item` (2026-06-12); else a tracked-item flip on idle main is
@@ -625,6 +627,8 @@ def mark_status(
     the Command Center writes a date-less park and every pre-existing park has
     none; those resolve parked-but-not-due. Unlike ``reason`` the key is OMITTED
     when unset, so status lines carrying no park stay byte-identical.
+    ``require_future_revisit`` is an opt-in Command Center guard: a supplied
+    revisit day must still be after the UTC day observed inside this lock.
 
     Raises:
         FileNotFoundError: if NEITHER the tracked store NOR the outbox exists.
@@ -649,6 +653,8 @@ def mark_status(
                 f"revisit_at must be an exact YYYY-MM-DD calendar date, "
                 f"got {revisit_at!r}"
             )
+    if require_future_revisit and new_status != "snoozed":
+        raise ValueError("require_future_revisit is accepted only for a 'snoozed' flip")
     expected = None if expected_status is None else _normalize_expected(expected_status)
     if expected is None and (expected_by is not None or block_matching_terminal is not None):
         raise ValueError("expected_status is required for extended preconditions")
@@ -674,7 +680,12 @@ def mark_status(
         outbox_ids = _append_ids_at(_outbox_path(project_root))
         if item_id not in tracked_ids and item_id not in outbox_ids:
             raise KeyError(item_id)
-        items = read_all_items(project_root, now=_load_triage_defer().now_utc())
+        now = _load_triage_defer().now_utc()
+        if require_future_revisit and revisit_at is not None:
+            revisit = _load_triage_defer().parse_revisit_date(revisit_at)
+            if revisit is None or revisit <= _load_triage_defer().utc_date(now):
+                raise ValueError("revisit_at must be a future UTC calendar date")
+        items = read_all_items(project_root, now=now)
         previous_item = next((it for it in items if it.get("id") == item_id), {})
         raw_previous = previous_item.get("status")
         matching_terminal = block_matching_terminal and any(
@@ -708,8 +719,9 @@ def mark_status(
             event["revisitAt"] = revisit_at
         line = json.dumps(event, ensure_ascii=False, separators=(",", ":")) + "\n"
         _append_line(project_root, line, to_outbox=to_outbox)
+        resulting_item = next((it for it in read_all_items(project_root) if it.get("id") == item_id), {}) if return_item else None
 
-    return previous
+    return (previous, resulting_item) if return_item else previous
 
 # ---------------------------------------------------------------------------
 # Public API: amend
@@ -724,24 +736,36 @@ def amend_triage_item(
     detail: str | None = None,
     severity: str | None = None,
     kind: str | None = None,
-) -> bool:
+    expected_status: str | tuple[str, ...] | list[str] | None = None,
+    return_item: bool = False,
+) -> bool | tuple[bool, dict]:
     """Append an `amend` event (never mutates prior lines; only title/detail/
     severity/kind amendable); returns True iff it landed in the gitignored
     outbox, not tracked (AC15 defers delivery-visibility parity — doubt #1).
     Raises `ValueError` on a contentless call or an unknown severity/kind.
+    ``expected_status`` is an optional in-lock CAS guard; ``return_item`` adds
+    the fully resolved post-write card to the return pair before releasing the
+    lock.  Both keep the prior default API unchanged.
     Mirrors `mark_status`'s existence/residence/locking contract — see that
     docstring; validation/event-building delegate to `lib.triage_amend`.
     """
     _flds, _amend = _load_triage_fields(), _load_triage_amend()
     _amend.check_amend_fields(title=title, detail=detail, severity=severity, kind=kind, severities=_flds.SEVERITIES, kinds=_flds.KINDS)
+    expected = None if expected_status is None else _normalize_expected(expected_status)
     if not _triage_path(project_root).exists() and not _outbox_path(project_root).exists():
         raise FileNotFoundError(f"triage store not initialized at {_triage_path(project_root)} (nor outbox at {_outbox_path(project_root)}); run /shipwright-adopt or append an item first")
     idle_main_routes_to_outbox = should_route_to_outbox(project_root)  # git-only, OUTSIDE the lock (mirrors mark_status)
     with _load_file_lock_cls()(_lock_path(project_root)):
         to_outbox = _amend.resolve_amend_residence(item_id, tracked_ids=_append_ids_at(_triage_path(project_root)), outbox_ids=_append_ids_at(_outbox_path(project_root)), idle_main_routes_to_outbox=idle_main_routes_to_outbox)
+        if expected is not None:
+            item = next((it for it in read_all_items(project_root) if it.get("id") == item_id), {})
+            actual = item.get("status") if isinstance(item.get("status"), str) else None
+            if actual not in expected:
+                raise StatusPreconditionError(item_id, expected, actual)
         event = _amend.build_amend_event(item_id, _now_z(), by, title=title, detail=detail, severity=severity, kind=kind)
         _append_line(project_root, json.dumps(event, ensure_ascii=False, separators=(",", ":")) + "\n", to_outbox=to_outbox)
-    return to_outbox
+        resulting_item = next((it for it in read_all_items(project_root) if it.get("id") == item_id), {}) if return_item else None
+    return (to_outbox, resulting_item) if return_item else to_outbox
 
 # ---------------------------------------------------------------------------
 # Public API: read (with status resolution)

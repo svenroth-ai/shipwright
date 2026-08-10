@@ -18,14 +18,22 @@ Subcommands (positional ``<id>`` for every decision):
                                         rows carry pendingDelivery + independent
                                         pendingStatusDelivery/pendingAmendDelivery.
                                         `lib.triage_contract`
-  promote <id> --task-ref EXT:<ref>     promote → backlog task
-  dismiss <id> --reason <reason>        dismiss (false-positive / won't-fix)
-  defer   <id> --reason <r> --revisit D defer until day D (YYYY-MM-DD), after
+  show <id> [--json]                    fetch one resolved card
+  promote <id> --task-ref EXT:<ref> [--json]
+                                        promote → backlog task
+  dismiss <id> [--reason <reason>] [--json]
+                                        dismiss (false-positive / won't-fix)
+  defer   <id> --reason <r> --revisit D [--json]
+                                        defer until day D (YYYY-MM-DD), after
                                         which it returns to the open list by
                                         itself; until then the same finding is
                                         not recorded a second time
-  unpark  <id> --reason <reason>        reverse a defer, back onto the open list
-  amend   <id> [--title T] [--detail D] [--severity S] [--kind K]
+  snooze  <id> [--reason R] [--revisit D] [--json]
+                                        WebUI-compatible deferral; reason and
+                                        revisit date are intentionally optional
+  unpark  <id> --reason <reason> [--json]
+                                        reverse a defer, back onto the open list
+  amend   <id> [--title T] [--detail D] [--severity S] [--kind K] [--json]
                                         correct title/detail/severity/kind in
                                         place (id stable, prior lines never
                                         mutated) — at least one required
@@ -54,6 +62,8 @@ from lib.triage_cli_commands import (  # noqa: E402
     cmd_dismiss,
     cmd_list,
     cmd_promote,
+    cmd_show,
+    cmd_snooze,
     cmd_unpark,
 )
 
@@ -88,12 +98,18 @@ def _build_parser() -> argparse.ArgumentParser:
     )
     p_list.set_defaults(func=cmd_list)
 
+    p_show = sub.add_parser("show", help="show one resolved triage item")
+    p_show.add_argument("item_id", help="triage item id (e.g. trg-abc12345)")
+    p_show.add_argument("--json", action="store_true", help="emit the resolved item as JSON")
+    p_show.set_defaults(func=cmd_show)
+
     p_promote = sub.add_parser(
         "promote", help="promote a triage item to a backlog task",
     )
     p_promote.add_argument(
         "item_id", help="triage item id (e.g. trg-abc12345)",
     )
+    p_promote.add_argument("--json", action="store_true", help="emit the resulting resolved item as JSON")
     p_promote.add_argument(
         "--task-ref", dest="task_ref", required=True,
         help='external task reference, e.g. "EXT:linear-ENG-123"',
@@ -110,9 +126,10 @@ def _build_parser() -> argparse.ArgumentParser:
     p_dismiss.add_argument(
         "item_id", help="triage item id (e.g. trg-abc12345)",
     )
+    p_dismiss.add_argument("--json", action="store_true", help="emit the resulting resolved item as JSON")
     p_dismiss.add_argument(
-        "--reason", required=True,
-        help="rationale for dismissal (required)",
+        "--reason", default=None,
+        help="rationale for dismissal (required for human output; optional with --json)",
     )
     p_dismiss.set_defaults(func=cmd_dismiss)
 
@@ -122,6 +139,7 @@ def _build_parser() -> argparse.ArgumentParser:
     p_defer.add_argument(
         "item_id", help="triage item id (e.g. trg-abc12345)",
     )
+    p_defer.add_argument("--json", action="store_true", help="emit the resulting resolved item as JSON")
     p_defer.add_argument(
         "--reason", required=True,
         help="rationale for deferring (required)",
@@ -141,11 +159,19 @@ def _build_parser() -> argparse.ArgumentParser:
     p_unpark.add_argument(
         "item_id", help="triage item id (e.g. trg-abc12345)",
     )
+    p_unpark.add_argument("--json", action="store_true", help="emit the resulting resolved item as JSON")
     p_unpark.add_argument(
         "--reason", required=True,
         help="rationale for un-parking (required)",
     )
     p_unpark.set_defaults(func=cmd_unpark)
+
+    p_snooze = sub.add_parser("snooze", help="WebUI-compatible optional-date deferral")
+    p_snooze.add_argument("item_id", help="triage item id (e.g. trg-abc12345)")
+    p_snooze.add_argument("--reason", default=None, help="optional rationale")
+    p_snooze.add_argument("--revisit", default=None, metavar="YYYY-MM-DD", help="optional revisit date")
+    p_snooze.add_argument("--json", action="store_true", help="emit the resulting resolved item as JSON")
+    p_snooze.set_defaults(func=cmd_snooze)
 
     p_amend = sub.add_parser(
         "amend", help="correct a triage item's title/detail/severity/kind in place",
@@ -155,6 +181,7 @@ def _build_parser() -> argparse.ArgumentParser:
     p_amend.add_argument("--detail", default=None, help="corrected detail")
     p_amend.add_argument("--severity", default=None, choices=SEVERITIES, help="corrected severity")
     p_amend.add_argument("--kind", default=None, choices=KINDS, help="corrected category")
+    p_amend.add_argument("--json", action="store_true", help="emit the resulting resolved item as JSON")
     p_amend.set_defaults(func=cmd_amend)
 
     return parser

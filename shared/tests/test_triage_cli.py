@@ -174,8 +174,8 @@ def test_promote_exits_2_on_missing_task_ref(
     assert "task-ref" in result.stderr or "task_ref" in result.stderr
 
 
-def test_promote_exits_2_on_unknown_id(project: Path) -> None:
-    """Unknown id → exit 2 with helpful error per AC-5d."""
+def test_promote_exits_4_on_unknown_id(project: Path) -> None:
+    """Unknown id has its own stable machine-contract exit code."""
     append_triage_item(
         project, source="phaseQuality", severity="low", kind="bug",
         title="t", detail="d",
@@ -184,7 +184,7 @@ def test_promote_exits_2_on_unknown_id(project: Path) -> None:
         "--project-root", str(project),
         "promote", "trg-deadbeef", "--task-ref", "EXT:x",
     ])
-    assert result.returncode == 2
+    assert result.returncode == 4
     assert "not found" in result.stderr.lower()
 
 
@@ -216,7 +216,7 @@ def test_dismiss_exits_2_on_missing_reason(
     assert result.returncode == 2
 
 
-def test_dismiss_exits_2_on_unknown_id(project: Path) -> None:
+def test_dismiss_exits_4_on_unknown_id(project: Path) -> None:
     append_triage_item(
         project, source="phaseQuality", severity="low", kind="bug",
         title="t", detail="d",
@@ -225,7 +225,7 @@ def test_dismiss_exits_2_on_unknown_id(project: Path) -> None:
         "--project-root", str(project),
         "dismiss", "trg-deadbeef", "--reason", "notRelevant",
     ])
-    assert result.returncode == 2
+    assert result.returncode == 4
 
 
 # ---------------------------------------------------------------------------

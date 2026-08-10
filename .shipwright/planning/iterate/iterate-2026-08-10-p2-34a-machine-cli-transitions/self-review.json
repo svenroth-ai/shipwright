@@ -1,0 +1,12 @@
+{
+  "items": [
+    {"name":"Spec Compliance","verdict":"pass","note":"The CLI covers every WebUI transition, show, JSON state, and stable exits without changing the WebUI."},
+    {"name":"Error Handling","verdict":"pass","note":"Usage, CAS, missing id/store, and lock timeout are typed and mapped to documented exits."},
+    {"name":"Security Basics","verdict":"pass","note":"Optional input remains sanitized; no credentials or privilege boundaries were added."},
+    {"name":"Test Quality","verdict":"pass","note":"Subprocess tests cover success, failures, an injected timeout, deterministic CAS race, and no-write validation failures."},
+    {"name":"Performance Basics","verdict":"pass","note":"The change reuses the existing lock and resolver without a service, polling loop, or new unbounded scan."},
+    {"name":"Naming & Structure","verdict":"pass","note":"The argparse module stays thin and the handler split follows the existing repository convention."},
+    {"name":"Affected Boundaries","verdict":"pass","note":"CLI JSON stdout is compared against the on-disk resolver result after each write and after an amend overlay."},
+    {"name":"Test Hygiene Probe","verdict":"pass","note":"scan_test_hygiene.py --diff reported no findings."}
+  ]
+}
