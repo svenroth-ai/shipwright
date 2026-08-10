@@ -23,11 +23,11 @@ import pytest
 
 PLUGIN_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(PLUGIN_ROOT))
-sys.path.insert(0, str(PLUGIN_ROOT.parents[1] / "shared" / "scripts"))
+sys.path.insert(0, str(PLUGIN_ROOT.parents[1]))
 
 from scripts.tools.update_compliance import PHASE_REPORTS  # noqa: E402
 from scripts.tools import update_compliance  # noqa: E402
-from lib import phase_quality as pq  # noqa: E402
+from shared.scripts.lib import phase_quality as pq  # noqa: E402
 from tools.verifiers import infrastructure_checks as infrastructure_checks  # noqa: E402
 
 
