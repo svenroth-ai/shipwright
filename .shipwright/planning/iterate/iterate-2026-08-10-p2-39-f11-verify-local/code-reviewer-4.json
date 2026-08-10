@@ -1,0 +1,6 @@
+{
+  "stage": "code",
+  "verdict": "PASS",
+  "summary": "The initial F11 shell guard is now fail-closed for marker-inspection errors while preserving the intended marker-absent no-op. Status 0 executes verify_local, status 1 no-ops, and other statuses STOP before verify or push.",
+  "review": []
+}

@@ -1,0 +1,94 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-08-10-p2-39-f11-verify-local",
+    "date": "2026-08-10",
+    "unit": {
+      "status": "passed",
+      "passed": 38,
+      "total": 38,
+      "note": "The complete F0 suite passed; 38 focused F11 and delivery-host assertions were rerun after the final review fixes."
+    },
+    "integration": {
+      "status": "passed",
+      "passed": 1,
+      "total": 1,
+      "note": "The delivery-refresh test drives ensure_current, the marked gate, and push through the shared host runner."
+    },
+    "pgtap": {
+      "status": "skipped",
+      "passed": 0,
+      "total": 0,
+      "reason": "no database surface"
+    },
+    "e2e": {
+      "status": "passed",
+      "passed": 1,
+      "total": 1,
+      "note": "F0.5 exercised the real host-resource CLI probe."
+    },
+    "design_fidelity": {
+      "status": "skipped",
+      "passed": 0,
+      "total": 0,
+      "reason": "no UI surface"
+    },
+    "smoke": {
+      "status": "skipped",
+      "reason": "no startable server surface"
+    },
+    "surface_verification": {
+      "run_id": "iterate-2026-08-10-p2-39-f11-verify-local",
+      "surface": "cli",
+      "runner": "uv run shared/scripts/tools/suite_host_resources.py --probe --project-root . --run-id iterate-2026-08-10-p2-39-f11-verify-local",
+      "exit_code": 0,
+      "tests_run": 1,
+      "evidence_path": ".shipwright/runs/iterate-2026-08-10-p2-39-f11-verify-local/surface_verification.log",
+      "timestamp": "2026-08-10T10:25:26.098Z"
+    },
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "AC-1 \u2014 F11 runs the marked local gate after integration and before every push, including delivery refresh.",
+          "disposition": "tested",
+          "category": "integration",
+          "evidence": "shared/tests/test_pr_delivery_host_verify_local.py (4 passed); shared/tests/test_verify_local_f11_wiring.py (16 passed)"
+        },
+        {
+          "behavior": "AC-2 \u2014 missing, prose-only, misordered, and fall-through F11 wiring is rejected.",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_verify_local_f11_wiring.py (16 passed)"
+        },
+        {
+          "behavior": "AC-3 \u2014 F0/F11 roles and the accepted late STOP remain truthful across the user-facing documentation.",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_verify_local_f11_wiring.py::test_documentation_states_late_stop (passed)"
+        }
+      ],
+      "counts": {
+        "testable": 3,
+        "tested": 3,
+        "untestable": 0,
+        "untested_testable": 0
+      },
+      "enumeration_basis": {
+        "acs": 3,
+        "covered_acs": 3
+      }
+    },
+    "degraded": []
+  },
+  "coverage": {
+    "total": 80.2,
+    "measured_tier": "repo",
+    "source": "combined coverage.xml (all plugins + shared + integration)",
+    "measured_at": "2026-07-04T00:00:00Z"
+  },
+  "source_state": {
+    "run_id": "iterate-2026-08-10-p2-39-f11-verify-local",
+    "commit": "92fca1bbc5a1467f9f5698a695d7e531afcb1937",
+    "dirty": true,
+    "base": null,
+    "release": null
+  }
+}

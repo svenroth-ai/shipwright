@@ -1,0 +1,6 @@
+{
+  "stage": "spec-compliance",
+  "verdict": "PASS",
+  "spec_citations": [],
+  "summary": "AC-1 through AC-3 are faithfully implemented. The static F11 test now requires the exact executable command, binds exit 1 to its failure handler, and proves rejection of prose-only and fall-through mutations. Delivery-refresh tests independently prove ensure_current to local gate to push ordering and that a red gate prevents push. Documentation consistently states the accepted late STOP."
+}

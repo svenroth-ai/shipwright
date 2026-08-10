@@ -1,0 +1,6 @@
+{
+  "stage": "doubt",
+  "verdict": "PASS",
+  "doubts": [],
+  "summary": "Byte-based marker detection now matches grep semantics, filesystem inspection errors fail closed, and ordering and red-path tests remain intact."
+}

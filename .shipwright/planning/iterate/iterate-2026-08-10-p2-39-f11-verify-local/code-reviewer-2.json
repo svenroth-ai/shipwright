@@ -1,0 +1,6 @@
+{
+  "stage": "code",
+  "verdict": "PASS",
+  "summary": "Both prior findings are resolved. The delivery-refresh guard now safely no-ops for unmarked and undecodable consumer scripts, with direct test coverage, and the mini-plan accurately reflects the runtime delivery-ladder change.",
+  "review": []
+}

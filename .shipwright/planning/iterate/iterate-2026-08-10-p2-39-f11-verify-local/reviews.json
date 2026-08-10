@@ -1,0 +1,121 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-08-10-p2-39-f11-verify-local",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-10T06:23:42.989889+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": "openrouter",
+      "completed_at": "2026-08-10T06:12:48.285969+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "unstructured",
+      "raw_excerpt": "[deepseek] <no review returned: No OPENROUTER_API_KEY set>\n\n[openai] <no review returned: No OPENAI_API_KEY or OPENROUTER_API_KEY set>",
+      "verdicts": {
+        "deepseek": "unavailable",
+        "openai": "unavailable"
+      }
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-10T06:55:11.378250+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-10T06:55:47.386819+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 2,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "bug",
+          "file": "plugins/shipwright-iterate/skills/iterate/references/F11.md:46` — The initial F11 shell guard treats a marker-inspection failure as an absent/non-Shipwright script no-op. If `scripts/verify_local.py` exists but cannot be read (for example, permission denied or an I/O error), `grep -q` returns an error status, the `if` body is skipped, and F11 proceeds to push without running or reject […truncated]",
+          "line": null,
+          "finding": "Separate existence, readability/marker inspection, and marker-absent cases. For example, capture `grep`’s result and explicitly STOP on statuses other than `0` (marker found) and `1` (marker absent), while retaining no-op behavior for a missing script.",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "test",
+          "file": "shared/tests/test_verify_local_f11_wiring.py:76` — The focused F11 wiring tests validate only the happy marker-present path and structural placement. They do not test the initial F11 guard’s read-error behavior, so the documented fail-closed inspection contract can regress while all new tests pass. The delivery-refresh tests cover `recheck_local_gates()`’s Python behavior, not the dis […truncated]",
+          "line": null,
+          "finding": "Add a focused shell-level or source-contract test requiring the F11 guard to distinguish `grep` inspection errors from a marker-absent result and to exit non-zero on the former.  Overall assessment: ship-with-fixes. The core ordering and delivery-refresh recheck are implemented, but the initial F11 guard still permits a read failure to bypass the pre-push verification contract.  SHIPWRIGHT_VERDICT: revise",
+          "suggestion": null,
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-08-10T06:50:32.532371+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "partial",
+      "raw_excerpt": "[deepseek] The diff implements the spec correctly and thoroughly. The marker‑guarded re‑check is added to F11 documentation (with a late‑STOP exit), the delivery‑refresh path now calls the same gate before push, and the focused tests verify ordering and fail‑closed behaviour. No correctness, security, or regression issues are present.\n\nSHIPWRIGHT_VERDICT: approve\n\n[openai] - Category: bug\n- Severity: medium\n- File: `plugins/shipwright-iterate/skills/iterate/references/F11.md:46` — The initial F11 shell guard treats a marker-inspection failure as an absent/non-Shipwright script no-op. If `scripts/verify_local.py` exists but cannot be read (for example, permission denied or an I/O error), `grep -q` returns an error status, the `if` body is skipped, and F11 proceeds to push without running or rejecting the required gate. This contradicts the stated failure contract that only a missing or non-marker/undecodable candidate may no-op; the delivery-refresh Python implementation handles `OSError` fail-closed, but the initial F11 path does not.\n- Suggestion: Separate existence, readability/marker inspection, and marker-absent cases. For example, capture `grep`’s result and explicitly STOP on statuses other than `0` (marker found) and `1` (marker absent), while retaining no-op behavior for a missing script.\n\n- Category: test\n- Severity: medium\n- File: `shared/tests/test_verify_local_f11_wiring.py:76` — The focused F11 wiring tests validate only the happy marker-present path and structural placement. They do not test the initial F11 guard’s read-error behavior, so the documented fail-closed inspection contract can regress while all new tests pass. The delivery-refresh tests cover `recheck_local_gates()`’s Python behavior, not the distinct shell implementation used for the initial push.\n- Suggestion: Add a focused shell-level or source-contract test requiring the F11 guard to distinguish `grep` inspection errors from a marker-absent result and to exit non-zero on the former.\n\nOverall assessment: ship-with-fixes. The core ordering and delivery-refresh recheck are implemented, but the initial F11 guard still permits a read failure to bypass the pre-push verification contract.\n\nSHIPWRIGHT_VERDICT: revise",
+      "verdicts": {
+        "openai": "revise",
+        "deepseek": "approve"
+      }
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-10T06:16:08.805725+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-10T06:05:28.552636+00:00",
+      "disposition": null,
+      "recorded_by": "opus-plan-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    }
+  }
+}

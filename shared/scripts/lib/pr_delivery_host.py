@@ -47,6 +47,12 @@ GH_TIMEOUT_SECONDS = 60.0
 #: so they get their own, much larger, but still finite budget.
 CHILD_TIMEOUT_SECONDS = 1800.0
 
+#: The local mirror belongs to a project checkout, not to this shared framework tree.
+#: Its marker prevents a consumer's unrelated ``scripts/verify_local.py`` from becoming
+#: a delivery-blocking command merely because it has the same common filename.
+VERIFY_LOCAL_RELATIVE_PATH = Path("scripts") / "verify_local.py"
+VERIFY_LOCAL_MARKER = "SHIPWRIGHT_MIRRORED_MERGE_GATES"
+
 #: Everything an ordinary host failure can raise. ``RuntimeError`` is ours;
 #: ``OSError`` covers a missing binary; ``subprocess.SubprocessError`` covers
 #: ``TimeoutExpired``; ``ValueError`` covers a JSON parse.
@@ -189,6 +195,31 @@ def reverify(project_root: Path, run_id: str, commit: str, *, run=_run,
     return proc.returncode == 0
 
 
+def recheck_local_gates(project_root: Path, *, run=_run,
+                        timeout: float = CHILD_TIMEOUT_SECONDS) -> bool:
+    """Run the marked local CI-gate mirror, or no-op outside this monorepo.
+
+    A delivery refresh can integrate and regenerate a new commit after F11's initial
+    local check. It must run this same pre-push gate before its own push, otherwise CI
+    would again judge a tree the local workflow never inspected.
+    """
+    script = project_root / VERIFY_LOCAL_RELATIVE_PATH
+    try:
+        if VERIFY_LOCAL_MARKER.encode("ascii") not in script.read_bytes():
+            return True
+    except FileNotFoundError:
+        return True
+    except OSError as exc:
+        print(f"could not inspect local CI-gate mirror: {exc}", file=sys.stderr)
+        return False
+    proc = run(["uv", "run", VERIFY_LOCAL_RELATIVE_PATH.as_posix()],
+               cwd=project_root, timeout=timeout)
+    if proc.returncode != 0:
+        print(proc.stdout or "", file=sys.stderr)
+        print(proc.stderr or "", file=sys.stderr)
+    return proc.returncode == 0
+
+
 def refresh_branch(project_root: Path, run_id: str, branch: str, *, run=_run,
                    timeout: float = CHILD_TIMEOUT_SECONDS) -> dict:
     """``ensure_current`` then push. Returns ``{ok, pushed, guard?, error?}``.
@@ -223,6 +254,9 @@ def refresh_branch(project_root: Path, run_id: str, branch: str, *, run=_run,
                              "an integrate commit may exist locally and was never pushed; "
                              "inspect the branch by hand"}
         return {"ok": True, "pushed": False, "guard": guard}
+    if not recheck_local_gates(project_root, run=run, timeout=timeout):
+        return {"ok": False, "pushed": False, "guard": guard,
+                "error": "local CI-gate mirror failed after delivery refresh; push blocked"}
     pushed = run(["git", "-C", str(project_root), "push", "origin", branch],
                  timeout=timeout)
     if pushed.returncode != 0:

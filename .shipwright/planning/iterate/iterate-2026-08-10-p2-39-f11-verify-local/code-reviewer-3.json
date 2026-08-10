@@ -1,0 +1,6 @@
+{
+  "stage": "code",
+  "verdict": "PASS",
+  "summary": "The OpenRouter findings are correctly resolved. Delivery refresh now uses the canonical uv run scripts/verify_local.py invocation in the target worktree, preserves safe consumer no-op cases, fails closed on other inspection errors, and blocks push on a red verdict.",
+  "review": []
+}
