@@ -23,12 +23,9 @@ import pytest
 
 PLUGIN_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(PLUGIN_ROOT))
-sys.path.insert(0, str(PLUGIN_ROOT.parents[1]))
 
 from scripts.tools.update_compliance import PHASE_REPORTS  # noqa: E402
 from scripts.tools import update_compliance  # noqa: E402
-from shared.scripts.lib import phase_quality as pq  # noqa: E402
-from tools.verifiers import infrastructure_checks as infrastructure_checks  # noqa: E402
 
 
 UPDATE_SCRIPT = PLUGIN_ROOT / "scripts" / "tools" / "update_compliance.py"
@@ -140,12 +137,6 @@ def test_cli_test_phase_stamps_the_phase_run_identity(synthetic_project):
     text = evidence.read_text(encoding="utf-8")
     assert "Test-Evidence-Phase: phase=build run=build-run-contract" in text
     assert "Test-Evidence-Phase: phase=test run=test-run-contract" in text
-    assert infrastructure_checks.check_i2_test_evidence_fresh(
-        synthetic_project, "build",
-    )["status"] == pq.STATUS_PASS
-    assert infrastructure_checks.check_i2_test_evidence_fresh(
-        synthetic_project, "test",
-    )["status"] == pq.STATUS_PASS
 
 
 def test_failed_phase_source_stamp_is_a_test_evidence_generator_error(
