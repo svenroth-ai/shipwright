@@ -232,7 +232,9 @@ jobs:
           fi
           if [ -z "$stale" ]; then
             impostors=$(gh api --paginate --slurp "repos/$REPO/commits/$HEAD_SHA/check-runs" \
-              | jq '[.[].check_runs[] | select(.name == "Claude Code Review")] | length')
+              | jq --arg run "$RUN_URL" \
+                  '[.[].check_runs[] | select(.name == "Claude Code Review")
+                                    | select((.details_url // "") | startswith($run) | not)] | length')
             if [ "$impostors" -ne 0 ]; then
               echo "::error::$impostors check run(s) named 'Claude Code Review' exist on $HEAD_SHA; this workflow is the only permitted producer of that context"
               stale="a second producer is claiming this context — re-run required"

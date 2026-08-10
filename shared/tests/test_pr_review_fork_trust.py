@@ -217,6 +217,7 @@ def test_stage2_refuses_a_second_check_run_claiming_its_context(path: Path) -> N
     assert "checks: read" in text(path)
     assert "commits/$HEAD_SHA/check-runs" in code
     assert f'.name == "{expected}"' in code
+    assert 'details_url // "") | startswith($run) | not' in code
     assert "second producer is claiming this context" in code
 
 

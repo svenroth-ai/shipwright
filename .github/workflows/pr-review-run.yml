@@ -286,10 +286,13 @@ jobs:
           # Stage 1 executes the PR's workflow file. A contributor can rename a
           # stage-1 job to `PR Review`, creating a passing check run under the
           # required name. This workflow is the sole permitted producer, so do
-          # not post when another check run already claims the context.
+          # not post when another check run already claims the context. Its own
+          # check run is expected and identifies this run in details_url.
           if [ -z "$stale" ]; then
             impostors=$(gh api --paginate --slurp "repos/$REPO/commits/$HEAD_SHA/check-runs" \
-              | jq '[.[].check_runs[] | select(.name == "PR Review")] | length')
+              | jq --arg run "$RUN_URL" \
+                  '[.[].check_runs[] | select(.name == "PR Review")
+                                    | select((.details_url // "") | startswith($run) | not)] | length')
             if [ "$impostors" -ne 0 ]; then
               echo "::error::$impostors check run(s) named 'PR Review' exist on $HEAD_SHA; this workflow is the only permitted producer of that context"
               stale="a second producer is claiming this context — re-run required"
