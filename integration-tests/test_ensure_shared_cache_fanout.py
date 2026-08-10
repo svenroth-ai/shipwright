@@ -23,6 +23,7 @@ _PLUGINS = (
     "project", "design", "plan", "build", "test", "security", "deploy",
     "changelog", "compliance", "iterate", "adopt", "run",
 )
+_TARGET_START_TIMEOUT_SECONDS = 12.0
 
 _HEALER_WRAPPER = r"""
 import os, runpy, shutil, sys, time
@@ -541,10 +542,16 @@ def test_ready_guard_holds_reader_lease_through_target(tmp_path: Path):
     guard.stdin.write(payload)
     guard.stdin.close()
     guard.stdin = None
-    deadline = time.monotonic() + 2
+    # A ready guard may still wait for the bounded SessionStart coordination
+    # barrier before it acquires its reader lease.  The guard itself permits
+    # ten seconds, so this retains a small process-start margin beyond it.
+    deadline = time.monotonic() + _TARGET_START_TIMEOUT_SECONDS
     while not started.exists() and time.monotonic() < deadline:
         time.sleep(0.01)
-    assert started.is_file()
+    assert started.is_file(), (
+        "dependent target did not start before the ready-guard timeout; "
+        f"guard return code: {guard.poll()}"
+    )
 
     cache = scripts[0].parents[4]
     lock_path = cache / ".sessionstart-cache-repair.lock"

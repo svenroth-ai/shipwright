@@ -2,11 +2,11 @@
 
 Implements I1-I4 — freshness gates for the generated
 ``.shipwright/compliance/*`` docs that downstream auditors rely on
-(RTM, test evidence, change history, SBOM). All four checks compare a
-doc's mtime against the latest ``phase_started`` / ``phase_completed``
-event for the current phase; when no event is recorded yet, we SKIP
-instead of FAIL to avoid false positives on mid-flow audits (plan
-§ 7 R11).
+(RTM, test evidence, change history, SBOM). I1, I3, and I4 use their
+document mtime as a freshness signal. I2 instead compares test evidence's
+phase-run marker against the latest ``phase_started`` identity; when no
+verifiable phase identity is recorded yet, it SKIPs instead of FAILing to
+avoid false positives on mid-flow audits (plan § 7 R11).
 
 Tier classification (plan § 3):
 - **I1-I3** — Tier-1, FAIL on missing or stale doc.
@@ -16,7 +16,8 @@ Tier classification (plan § 3):
 
 Plan mapping:
 - I1 → ``.shipwright/compliance/traceability-matrix.md`` > latest ``phase_completed`` ts
-- I2 → ``.shipwright/compliance/test-evidence.md`` > latest ``phase_started`` ts
+- I2 → ``.shipwright/compliance/test-evidence.md`` names the latest
+  ``phase_started`` run identity for its phase
 - I3 → ``.shipwright/compliance/change-history.md`` > latest ``phase_started`` ts
 - I4 → ``.shipwright/compliance/sbom.md`` > latest ``phase_started`` ts, **only if**
   a dependency manifest has changed since the last SBOM write
@@ -41,24 +42,19 @@ from lib.phase_quality import (  # noqa: E402
     make_finding,
 )
 from tools.verifiers.common import read_events_jsonl  # noqa: E402
+from tools.verifiers.test_evidence_phase import check_i2_test_evidence_fresh  # noqa: E402
 
 
 COMPLIANCE_DIR = ".shipwright/compliance"
 LEGACY_COMPLIANCE_DIRNAME = "compliance"
 
 I1_NAME = "I1 traceability-matrix.md fresh after phase_completed"
-I2_NAME = "I2 test-evidence.md fresh after phase_started"
 I3_NAME = "I3 change-history.md fresh after phase_started"
 I4_NAME = "I4 sbom.md fresh when dependencies changed"
 
 I1_REMEDIATION = (
     f"Regenerate {COMPLIANCE_DIR}/traceability-matrix.md via "
     "`uv run update_compliance.py --phase <phase>`."
-)
-I2_REMEDIATION = (
-    f"Regenerate {COMPLIANCE_DIR}/test-evidence.md via "
-    "`uv run update_compliance.py --phase test` (or the build/iterate "
-    "equivalent); test results feed this doc."
 )
 I3_REMEDIATION = (
     f"Regenerate {COMPLIANCE_DIR}/change-history.md via "
@@ -172,18 +168,6 @@ def check_i1_rtm_fresh(project_root: Path, phase: str) -> dict[str, Any]:
         name=I1_NAME,
         remediation=I1_REMEDIATION,
         event_type="phase_completed",
-    )
-
-
-def check_i2_test_evidence_fresh(project_root: Path, phase: str) -> dict[str, Any]:
-    return _check_doc_fresh(
-        project_root,
-        f"{COMPLIANCE_DIR}/test-evidence.md",
-        phase,
-        check_id="I2",
-        name=I2_NAME,
-        remediation=I2_REMEDIATION,
-        event_type="phase_started",
     )
 
 

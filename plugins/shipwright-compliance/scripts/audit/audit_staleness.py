@@ -31,7 +31,6 @@ import sys
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Any, Iterable
-
 # The banner's shape is owned by shared/scripts/source_state.py. Reached by an
 # absolute path bootstrap, NOT `from scripts.lib._provenance import …`: this module is
 # also loaded BY FILE PATH from other plugins' pytest sessions (security's
@@ -43,6 +42,7 @@ _SHARED_SCRIPTS = Path(__file__).resolve().parents[4] / "shared" / "scripts"
 if str(_SHARED_SCRIPTS) not in sys.path:
     sys.path.insert(0, str(_SHARED_SCRIPTS))
 from source_state import strip_banner  # noqa: E402
+from test_evidence_phase_source import strip_phase_source  # noqa: E402
 
 # Strip every ``Generated: ...`` line so the byte-compare ignores the volatile
 # timestamp banner. Same regex as the legacy fresh-render audit.
@@ -54,14 +54,14 @@ _GIT_TIMEOUT_SECONDS = 10
 def normalize(text: str) -> str:
     """Strip timestamp/provenance header noise so byte-compare ignores churn.
 
-    ``Source-State:`` (card trg-4d5b6a56) is stripped for the same reason as
-    ``Generated:``: an on-demand regen is UNCOMMITTED, so keeping a per-run line in
+    ``Source-State:`` and ``Test-Evidence-Phase:`` are stripped like ``Generated:``; an
+    on-demand regen is UNCOMMITTED, so keeping a per-run line in
     the compare would report every document as hand-edited — the false-positive
     stream the 2026-05-23 redesign removed. It is DISCLOSURE; refusing a document
     that names the wrong state belongs to trg-a1fd8125. ``strip_banner`` is imported,
     never re-declared, so it cannot drift from the renderers.
     """
-    return strip_banner(HEADER_STRIP_RE.sub("", text))
+    return strip_phase_source(strip_banner(HEADER_STRIP_RE.sub("", text)))
 
 
 @dataclass

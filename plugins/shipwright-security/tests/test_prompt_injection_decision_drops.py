@@ -25,7 +25,8 @@ def test_scans_prompt_like_content_in_tracked_decision_drop(tmp_path):
     )
 
     findings = scanner.scan_file(drop, tmp_path)
-    assert any(finding["rule"] == "PROMPT_OVERRIDE_IGNORE" for finding in findings)
+    finding = next(f for f in findings if f["rule"] == "PROMPT_OVERRIDE_IGNORE")
+    assert finding["severity"] == "critical"
 
 def test_decision_drop_cannot_disable_prompt_scan_with_allowlist_marker(tmp_path):
     drop = (

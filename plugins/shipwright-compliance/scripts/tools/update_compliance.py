@@ -31,6 +31,34 @@ from scripts.lib.sbom_generator import (
     generate_file as generate_sbom,
 )
 
+
+def _stamp_test_evidence_phase_source(project_root: Path, path: Path) -> None:
+    """Bind each I2-covered phase's evidence identity after a fresh render.
+
+    The renderer overwrites the document, so retaining a marker from its prior
+    contents is not enough: a test-phase refresh must preserve the current build
+    and iterate identities too. Missing legacy identity deliberately leaves that
+    phase unmarked, letting I2 SKIP rather than manufacture a claim. A write error
+    propagates to the generator loop, so ``updated_reports`` never claims an
+    unstamped render.
+    """
+    shared = str(Path(__file__).resolve().parents[4] / "shared" / "scripts")
+    inserted = shared not in sys.path
+    if inserted:
+        sys.path.insert(0, shared)
+    try:
+        from test_evidence_phase_source import I2_PHASES, latest_phase_source, stamp_phase_source
+        from tools.verifiers.common import read_events_jsonl
+
+        events = read_events_jsonl(project_root)
+        for evidence_phase in I2_PHASES:
+            source = latest_phase_source(events, evidence_phase)
+            if source is not None:
+                stamp_phase_source(path, source)
+    finally:
+        if inserted:
+            sys.path.remove(shared)
+
 # Phase -> which reports to regenerate.
 # ``test_links`` (the requirement->test traceability manifest, campaign TT1) rides
 # with the FR/test-affecting phases: FRs change on project/plan, the tag↔test join
@@ -198,6 +226,8 @@ def main() -> int:
             # so it is loud without being fatal to everything downstream.
             try:
                 path = gen_fn(project_root, data)
+                if report_name == "test_evidence":
+                    _stamp_test_evidence_phase_source(project_root, path)
             except Exception as exc:  # noqa: BLE001 — one report's failure is not all reports'
                 generator_errors.append({
                     "report": report_name,

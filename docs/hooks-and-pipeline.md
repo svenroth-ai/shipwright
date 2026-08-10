@@ -1942,7 +1942,7 @@ evidence (plan § 4.5).
 | ID | Phase(s) | Default on Missing | Tier | Evidence Source |
 |---|---|---|---|---|
 | I1 | build, iterate | FAIL | 1 | `.shipwright/compliance/traceability-matrix.md` mtime ≥ latest `phase_completed[phase]` (10s tolerance). SKIP if no event (R11). |
-| I2 | build, test, iterate | FAIL | 1 | `.shipwright/compliance/test-evidence.md` mtime ≥ latest `phase_started[phase]`. SKIP if no event. |
+| I2 | build, test, iterate | FAIL | 1 | `.shipwright/compliance/test-evidence.md`'s per-phase `Test-Evidence-Phase:` marker matches latest `phase_started[phase]` `detail.runId`. SKIP when that latest event has no usable identity. |
 | I3 | build, iterate, changelog | FAIL | 1 | `.shipwright/compliance/change-history.md` mtime ≥ latest `phase_started[phase]`. SKIP if no event. |
 | I4 | build, iterate | WARN (never FAIL — Tier-2) | 2 | `.shipwright/compliance/sbom.md` freshness — only surfaces when `pyproject.toml` / `package.json` / `requirements.txt` mtime > SBOM mtime. SKIP on clean runs. |
 

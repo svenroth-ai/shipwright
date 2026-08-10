@@ -1,0 +1,9 @@
+{
+  "items": [
+    {
+      "name": "author self-review",
+      "verdict": "pass",
+      "note": "All three acceptance criteria have direct regression coverage; no unrelated card was absorbed."
+    }
+  ]
+}

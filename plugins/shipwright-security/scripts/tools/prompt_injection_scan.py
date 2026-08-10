@@ -33,7 +33,6 @@ import re
 import subprocess
 import sys
 
-from prompt_injection_decision_drops import scan_decision_drop
 from collections import Counter
 from datetime import datetime, timezone
 from pathlib import Path
@@ -54,6 +53,7 @@ SHARED_ROOT = PLUGIN_ROOT.parent.parent / "shared"
 sys.path.insert(0, str(SHARED_ROOT / "scripts"))
 sys.path.insert(0, str(SCRIPT_DIR))
 from py_token_filter import blank_noncode_spans  # noqa: E402  (SCRIPT_DIR on path)
+from prompt_injection_decision_drops import scan_decision_drop  # noqa: E402
 
 try:
     from lib.errors import structured_error, structured_success  # type: ignore
