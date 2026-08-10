@@ -1,0 +1,68 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-08-10-i2-test-evidence-phase-source-contract",
+    "date": "2026-08-10",
+    "unit": {
+      "status": "pass",
+      "passed": 70,
+      "failed": 0
+    },
+    "integration": {
+      "status": "pass",
+      "passed": 1,
+      "failed": 0
+    },
+    "e2e": {
+      "status": "n/a",
+      "reason": "no browser surface"
+    },
+    "smoke": {
+      "status": "n/a",
+      "reason": "no service surface"
+    },
+    "pgtap": {
+      "status": "n/a",
+      "reason": "no database"
+    },
+    "surface_verification": {
+      "surface": "none",
+      "tests_run": 0,
+      "exit_code": 0,
+      "justification": "Framework verifier and evidence-generation change without a user-facing surface."
+    },
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "AC1 phase-run identity stamps and validates test evidence",
+          "disposition": "tested",
+          "evidence": "test_test_evidence_phase_source and test_update_compliance_phases"
+        },
+        {
+          "behavior": "AC2 I2 ignores mtime and rejects missing, mismatched, or unreadable provenance",
+          "disposition": "tested",
+          "evidence": "test_infrastructure_checks"
+        },
+        {
+          "behavior": "AC3 Decision-Drop prompt overrides are CI-critical",
+          "disposition": "tested",
+          "evidence": "test_prompt_injection_decision_drops"
+        }
+      ],
+      "counts": {
+        "total": 3,
+        "tested": 3,
+        "untestable": 0,
+        "untested_testable": 0
+      }
+    },
+    "degraded": []
+  },
+  "source_state": {
+    "run_id": "iterate-2026-08-10-i2-test-evidence-phase-source-contract",
+    "commit": "450d4fee58c1118c832e8c9250abc1e76e0dc3a2",
+    "dirty": true,
+    "base": null,
+    "release": null
+  }
+}

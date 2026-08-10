@@ -1,12 +1,25 @@
 # Project Activity Dashboard
-> Updated: 2026-08-08 20:34 UTC | Session: 5e606322-4b30-42ed-9e6b-72bfd03df7be
+> Updated: 2026-08-10 10:44 UTC | Session: unknown | Run: iterate-2026-08-10-i2-test-evidence-phase-source-contract
 
-## Recent Changes (513 iterations)
+## Recent Changes (526 iterations)
 
 | Type | Description | Tests | Commit | FRs | Date |
 |------|-------------|-------|--------|-----|------|
+| bug | Replace I2 mtime freshness with phase-run provenance and enforce Decision-Drop scanner findings. | 0/0 |  | infra | 2026-08-10 |
+| change | Introduce a lifecycle-aware compliance-audit runner with three explicit authority scopes (branch_feedback/merge/release), separating the Stop hook local diagnostics from the global compliance backlog write authority reserved for delivered merge and verified release commits. | 9118/9118 |  | compliance | 2026-08-10 |
+| change | Replaced authorship exemption with exact-head approval and review-record evidence. | 911/918 (7 skipped) |  | infra | 2026-08-09 |
+| feature | Add docs/token-cost-controllable.md: threshold-based guide (trigger/symptom/action per band) for keeping session/token cost controllable as decision history and session length grow; link from guide.md Ch.9 + Appendix B and README | 18/18 |  | docs | 2026-08-09 |
+| change | Expose outbox-only amend delivery independently from append and status delivery. | 18/18 |  | FR-01.14 | 2026-08-09 |
+| bug | Make iterate timing coverage report trustworthy wall and instrumented durations. | 49/49 |  | tooling | 2026-08-09 |
+| bug | Preserve durable recurring producer identity and operator decisions. | 109/109 |  | tooling | 2026-08-09 |
+| bug | Close three gaps where an autonomous iterate loses in-flight state to mid-phase context-window compaction: mini-plan not persisted at small complexity, review findings not durable between subagent-return and being recorded, and resume (B1) checking only two weak markers instead of the full per-review-type record. | 16288/16288 |  | FR-01.11 | 2026-08-09 |
+| bug | Replace W3 wall-clock freshness with Source-State run identity. | 81/81 |  | tooling | 2026-08-09 |
+| bug | Protect permanent F5c retention pins. | 18/18 |  | tooling | 2026-08-08 |
+| bug | Six small defects: plan-reviewer wiring tail and fragile reader/writer sites | 18/18 |  | tooling | 2026-08-08 |
+| bug_fix | Fail closed on Git probe timeouts, scan Decision-Drop JSON recursively, and bound expired event claims. | 49/49 |  | tooling | 2026-08-08 |
 | feature | mandated-load truncation is now declared, not silent (TC3.2) | 9880/9880 |  | tooling | 2026-08-08 |
 | change | iterate: normalize benign __import__ dynamic-import pattern flagged by shipwright-prompt-scan (trg-133f2ca6) | 9/9 |  | tooling | 2026-08-08 |
+| change | Track AGENTS.md as the durable Codex operating contract. | 18/18 |  | docs | 2026-08-08 |
 | change | iterate: fix shipwright_model_config.json review tier (opus, not sonnet) | 0/0 |  | tooling | 2026-08-08 |
 | bug | Fixed two SDLC-framework defects: decision_log.md readers promised a complete read no single Read call can deliver; ADR spec-folder filenames guessed at branch time collided across parallel iterates. | 8855/8887 |  | tooling | 2026-08-08 |
 | bug | update-marketplace.sh Step 1's happy path never verified the marketplace clone reached origin/main's true tip, so a 'successful' sync could leave recently-landed files missing from the plugin cache | 28/28 |  | tooling | 2026-08-08 |
@@ -520,7 +533,7 @@
 | change | post-adoption framework cleanup (Sub-1A through 1D) | 225/225 | 3db485b | FR-01.01, FR-01.02, FR-01.03 | 2026-05-02 |
 
 ## Test Status
-Last run: 2026-07-28 | Smoke: n/a | (iterate)
+Last run: 2026-08-10 | Smoke: n/a | (iterate)
 
 ## Pipeline
 
