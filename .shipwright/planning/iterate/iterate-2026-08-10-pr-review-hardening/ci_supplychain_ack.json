@@ -3,9 +3,9 @@
   "run_id": "iterate-2026-08-10-pr-review-hardening",
   "ci_supplychain_ack": {
     "run_id": "iterate-2026-08-10-pr-review-hardening",
-    "paths_fingerprint": "bbfe6e78ac63e64f4796be3e20b490f6ca9d30d6661a4e17907c05068714faec",
+    "paths_fingerprint": "0360b6d159f9d5f6a8d94aa1c41fba934ce5a816908763bd14d21ec11a0a899b",
     "consistent_with": "iterate-2026-07-27-review-gate-failclosed-fork",
-    "statement": "Hardens the existing stage-two review boundary by excluding only this run own check from duplicate-context detection; no trust source or permission is widened.",
+    "statement": "Hardens stage-two review history verification by failing closed on malformed or empty force-push timeline counts; no trust source or permission is widened.",
     "ci_paths": [
       ".github/workflows/pr-review-run.yml",
       "shared/templates/github-actions/claude-review-run.yml.template"

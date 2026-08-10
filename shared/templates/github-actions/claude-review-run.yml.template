@@ -225,6 +225,10 @@ jobs:
                   '[.[][] | select(.event == "head_ref_force_pushed")
                           | select(.created_at >= $t)] | length'); then
               stale="could not verify branch history — re-run required"
+            elif ! [[ "$forced" =~ ^[0-9]+$ ]]; then
+              # A malformed or empty pagination result must never be treated as
+              # proof that no force-push occurred during the review window.
+              stale="could not verify branch history — re-run required"
             elif [ "$now" != "$HEAD_SHA" ] || [ "$forced" != "0" ]; then
               stale="head moved during review — re-run required"
               echo "::error::head moved during the run ($HEAD_SHA -> ${now:-unknown}, $forced force-push(es) since stage 1 began); the review does not describe this commit"

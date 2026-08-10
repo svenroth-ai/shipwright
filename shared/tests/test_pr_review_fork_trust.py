@@ -207,6 +207,7 @@ def test_stage2_rejects_any_force_push_since_stage1_started(path: Path) -> None:
     assert "head_ref_force_pushed" in code
     assert "issues/$PR_NUMBER/timeline" in code
     assert ".created_at >= $t" in code
+    assert '[[ "$forced" =~ ^[0-9]+$ ]]' in code
 
 
 @pytest.mark.parametrize("path", ALL_STAGE2)
