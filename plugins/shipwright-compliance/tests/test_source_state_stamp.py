@@ -41,6 +41,7 @@ from scripts.lib.rtm_generator import generate as generate_rtm  # noqa: E402
 from scripts.lib.sbom_generator import generate as generate_sbom  # noqa: E402
 from scripts.lib.test_evidence import generate as generate_test_evidence  # noqa: E402
 from source_state import BANNER_PREFIX, UNKNOWN_RUN, parse_banner_line  # noqa: E402
+from test_evidence_phase_source import PHASE_SOURCE_PREFIX  # noqa: E402
 
 RUN = "iterate-2026-07-27-artifact-state-stamping"
 OLDER = "iterate-2026-07-20-earlier"
@@ -180,6 +181,13 @@ class TestGroupEStalenessUnaffected:
         # regen would start reporting every document as hand-edited.
         a = f"# RTM\nGenerated: t1\n{BANNER_PREFIX} run={RUN}\n\nsame body\n"
         b = f"# RTM\nGenerated: t2\n{BANNER_PREFIX} run={OLDER}\n\nsame body\n"
+        assert audit_staleness.normalize(a) == audit_staleness.normalize(b)
+
+    def test_two_documents_differing_only_by_phase_source_are_not_stale(self):
+        a = ("# Evidence\nGenerated: t1\n" + BANNER_PREFIX + " run=" + RUN + "\n"
+             + PHASE_SOURCE_PREFIX + " phase=test run=" + RUN + "\n\nsame body\n")
+        b = ("# Evidence\nGenerated: t2\n" + BANNER_PREFIX + " run=" + OLDER + "\n"
+             + PHASE_SOURCE_PREFIX + " phase=test run=" + OLDER + "\n\nsame body\n")
         assert audit_staleness.normalize(a) == audit_staleness.normalize(b)
 
     def test_a_real_body_change_is_still_detected(self):

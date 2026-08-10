@@ -6,10 +6,8 @@ import subprocess
 import sys
 from pathlib import Path
 
-
+from shared.tests.bash import bash
 HOOKS_DIR = Path(__file__).resolve().parent.parent / "scripts" / "hooks"
-
-
 def run_hook(script_name: str, stdin_data: str = "", env_extra: dict = None) -> subprocess.CompletedProcess:
     """Run a hook script and return the result."""
     script = HOOKS_DIR / script_name
@@ -17,7 +15,7 @@ def run_hook(script_name: str, stdin_data: str = "", env_extra: dict = None) -> 
     if env_extra:
         env.update(env_extra)
     return subprocess.run(
-        ["bash", str(script)],
+        [bash(), str(script)],
         input=stdin_data,
         capture_output=True,
         text=True,

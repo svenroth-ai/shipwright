@@ -25,6 +25,7 @@ PLUGIN_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(PLUGIN_ROOT))
 
 from scripts.tools.update_compliance import PHASE_REPORTS  # noqa: E402
+from scripts.tools import update_compliance  # noqa: E402
 
 
 UPDATE_SCRIPT = PLUGIN_ROOT / "scripts" / "tools" / "update_compliance.py"
@@ -104,6 +105,63 @@ def test_cli_phase_security_excludes_rtm(synthetic_project):
     assert expected.issubset(names), f"missing security docs. Got: {names}"
     # Should NOT regen RTM.
     assert "traceability-matrix.md" not in names
+
+
+def test_cli_test_phase_stamps_the_phase_run_identity(synthetic_project):
+    (synthetic_project / "shipwright_events.jsonl").write_text(
+        "\n".join(json.dumps(event) for event in [
+            {
+                "type": "phase_started", "phase": "build", "ts": "2026-08-10T09:00:00Z",
+                "detail": json.dumps({"runId": "build-run-contract"}),
+            },
+            {
+                "type": "phase_started", "phase": "test", "ts": "2026-08-10T10:00:00Z",
+                "detail": json.dumps({"runId": "test-run-contract"}),
+            },
+        ]) + "\n",
+        encoding="utf-8",
+    )
+    build = subprocess.run(
+        [sys.executable, str(UPDATE_SCRIPT), "--project-root", str(synthetic_project),
+         "--phase", "build"],
+        capture_output=True, text=True, encoding="utf-8",
+    )
+    assert build.returncode == 0, build.stdout + build.stderr
+    test = subprocess.run(
+        [sys.executable, str(UPDATE_SCRIPT), "--project-root", str(synthetic_project),
+         "--phase", "test"],
+        capture_output=True, text=True, encoding="utf-8",
+    )
+    assert test.returncode == 0, test.stdout + test.stderr
+    evidence = (synthetic_project / ".shipwright" / "compliance" / "test-evidence.md")
+    text = evidence.read_text(encoding="utf-8")
+    assert "Test-Evidence-Phase: phase=build run=build-run-contract" in text
+    assert "Test-Evidence-Phase: phase=test run=test-run-contract" in text
+
+
+def test_failed_phase_source_stamp_is_a_test_evidence_generator_error(
+    synthetic_project, monkeypatch, capsys,
+):
+    """A written-but-unstamped file must never be reported as a successful update."""
+    evidence = synthetic_project / ".shipwright" / "compliance" / "test-evidence.md"
+
+    def fake_generator(_root, _data):
+        evidence.write_text("# Evidence\n", encoding="utf-8")
+        return evidence
+
+    monkeypatch.setattr(update_compliance, "_capture_source_dirty", lambda *_: None)
+    monkeypatch.setattr(update_compliance, "_stamp_test_evidence_phase_source",
+                        lambda *_: (_ for _ in ()).throw(OSError("marker write failed")))
+    monkeypatch.setitem(update_compliance.PHASE_REPORTS, "test", ["test_evidence"])
+    monkeypatch.setitem(update_compliance.GENERATORS, "test_evidence", fake_generator)
+    monkeypatch.setattr(sys, "argv", ["update_compliance.py", "--project-root",
+                                       str(synthetic_project), "--phase", "test"])
+
+    assert update_compliance.main() == 1
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["success"] is False
+    assert payload["updated_reports"] == []
+    assert payload["generator_errors"][0]["report"] == "test_evidence"
 
 
 _MARKER = "<!-- shipwright:audit-staleness:start -->"

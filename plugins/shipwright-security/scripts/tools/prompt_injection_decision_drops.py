@@ -42,4 +42,12 @@ def scan_decision_drop(path: Path, rel_path: str, scan_markdown, make_finding):
             affected_line=None,
             remediation_hint="Replace the deeply nested JSON with a flat decision record.",
         )]
-    return scan_markdown(path, rel_path, False, decision_text)
+    findings = scan_markdown(path, rel_path, False, decision_text)
+    # Decision drops are runtime-consumed instructions.  CI already scans them
+    # but gates only critical findings, so promote their high-confidence prompt
+    # risks into that existing enforcement path instead of weakening the gate.
+    for finding in findings:
+        if finding.get("severity") == "high":
+            finding["severity"] = "critical"
+            finding["severity_score"] = 9.5
+    return findings

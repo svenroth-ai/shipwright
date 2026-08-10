@@ -39,10 +39,16 @@ def _write_events(proj: Path, events: list[dict[str, Any]]) -> None:
     )
 
 
-def _write_doc(proj: Path, relpath: str, *, mtime_offset_seconds: float = 0.0) -> Path:
+def _write_doc(
+    proj: Path,
+    relpath: str,
+    *,
+    mtime_offset_seconds: float = 0.0,
+    text: str = "# doc\n",
+) -> Path:
     path = proj / relpath
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text("# doc\n", encoding="utf-8")
+    path.write_text(text, encoding="utf-8")
     if mtime_offset_seconds:
         future = time.time() + mtime_offset_seconds
         os.utime(path, (future, future))
@@ -128,7 +134,7 @@ def test_i1_passes_when_rtm_newer_than_event(proj: Path):
 
 
 # ---------------------------------------------------------------------------
-# I2 — test-evidence freshness vs phase_started
+# I2 — test-evidence phase-run provenance
 # ---------------------------------------------------------------------------
 
 
@@ -143,13 +149,102 @@ def test_i2_skips_without_phase_started_event(proj: Path):
     assert f["status"] == pq.STATUS_SKIP
 
 
-def test_i2_passes_with_fresh_doc(proj: Path):
+def test_i2_passes_when_marker_matches_latest_phase_run(proj: Path):
     _write_events(proj, [
-        {"type": "phase_started", "phase": "test", "ts": _past_iso(600)},
+        {
+            "type": "phase_started", "phase": "test", "ts": _past_iso(600),
+            "detail": json.dumps({"runId": "test-run-current"}),
+        },
     ])
-    _write_doc(proj, ".shipwright/compliance/test-evidence.md")
+    _write_doc(
+        proj, ".shipwright/compliance/test-evidence.md",
+        text="# doc\nTest-Evidence-Phase: phase=test run=test-run-current\n",
+    )
     f = ic.check_i2_test_evidence_fresh(proj, "test")
     assert f["status"] == pq.STATUS_PASS
+
+
+def test_i2_ignores_an_old_mtime_when_marker_matches_current_phase_run(proj: Path):
+    _write_events(proj, [{
+        "type": "phase_started", "phase": "test", "ts": _past_iso(-3600),
+        "detail": json.dumps({"runId": "test-run-current"}),
+    }])
+    _write_doc(
+        proj, ".shipwright/compliance/test-evidence.md",
+        mtime_offset_seconds=-7200,
+        text="# doc\nTest-Evidence-Phase: phase=test run=test-run-current\n",
+    )
+    assert ic.check_i2_test_evidence_fresh(proj, "test")["status"] == pq.STATUS_PASS
+
+
+def test_i2_fails_when_marker_is_missing_for_identified_phase(proj: Path):
+    _write_events(proj, [{
+        "type": "phase_started", "phase": "test", "ts": _past_iso(600),
+        "detail": json.dumps({"runId": "test-run-current"}),
+    }])
+    _write_doc(proj, ".shipwright/compliance/test-evidence.md")
+    assert ic.check_i2_test_evidence_fresh(proj, "test")["status"] == pq.STATUS_FAIL
+
+
+def test_i2_fails_when_marker_names_a_different_run(proj: Path):
+    _write_events(proj, [{
+        "type": "phase_started", "phase": "test", "ts": _past_iso(600),
+        "detail": json.dumps({"runId": "test-run-current"}),
+    }])
+    _write_doc(
+        proj, ".shipwright/compliance/test-evidence.md",
+        text="# doc\nTest-Evidence-Phase: phase=test run=test-run-old\n",
+    )
+    assert ic.check_i2_test_evidence_fresh(proj, "test")["status"] == pq.STATUS_FAIL
+
+
+def test_i2_skips_for_latest_legacy_event_without_falling_back(proj: Path):
+    _write_events(proj, [
+        {
+            "type": "phase_started", "phase": "test", "ts": _past_iso(700),
+            "detail": json.dumps({"runId": "test-run-old"}),
+        },
+        {"type": "phase_started", "phase": "test", "ts": _past_iso(600)},
+    ])
+    _write_doc(
+        proj, ".shipwright/compliance/test-evidence.md",
+        text="# doc\nTest-Evidence-Phase: phase=test run=test-run-old\n",
+    )
+    finding = ic.check_i2_test_evidence_fresh(proj, "test")
+    assert finding["status"] == pq.STATUS_SKIP
+    assert finding["provenance"] == "unverified_marker"
+
+
+def test_i2_passes_for_each_phase_after_multi_phase_regeneration(proj: Path):
+    _write_events(proj, [
+        {
+            "type": "phase_started", "phase": "build", "ts": _past_iso(700),
+            "detail": json.dumps({"runId": "build-run-current"}),
+        },
+        {
+            "type": "phase_started", "phase": "test", "ts": _past_iso(600),
+            "detail": json.dumps({"runId": "test-run-current"}),
+        },
+    ])
+    _write_doc(
+        proj, ".shipwright/compliance/test-evidence.md",
+        text=("# doc\nTest-Evidence-Phase: phase=build run=build-run-current\n"
+              "Test-Evidence-Phase: phase=test run=test-run-current\n"),
+    )
+    assert ic.check_i2_test_evidence_fresh(proj, "build")["status"] == pq.STATUS_PASS
+    assert ic.check_i2_test_evidence_fresh(proj, "test")["status"] == pq.STATUS_PASS
+
+
+def test_i2_fails_cleanly_when_evidence_cannot_be_decoded(proj: Path):
+    _write_events(proj, [{
+        "type": "phase_started", "phase": "test", "ts": _past_iso(600),
+        "detail": json.dumps({"runId": "test-run-current"}),
+    }])
+    path = _write_doc(proj, ".shipwright/compliance/test-evidence.md")
+    path.write_bytes(b"\xff\xfe")
+    finding = ic.check_i2_test_evidence_fresh(proj, "test")
+    assert finding["status"] == pq.STATUS_FAIL
+    assert "could not be read" in finding["evidence"]
 
 
 # ---------------------------------------------------------------------------

@@ -5,16 +5,39 @@ plugins and tested in shared/tests/test_capture_session_id.py.
 """
 
 import json
+import os
+import shutil
 import subprocess
 from pathlib import Path
 
+import pytest
+
 HOOKS_DIR = Path(__file__).resolve().parent.parent / "scripts" / "hooks"
+
+
+def _bash() -> str:
+    """Find the Bash paired with Git when Windows exposes only git.exe."""
+    if os.name == "nt":
+        git = shutil.which("git")
+        if git:
+            candidate = Path(git).resolve().parent.parent / "bin" / "bash.exe"
+            if candidate.is_file():
+                return str(candidate)
+        for variable in ("ProgramFiles", "ProgramW6432", "ProgramFiles(x86)"):
+            candidate = Path(os.environ.get(variable, "")) / "Git" / "bin" / "bash.exe"
+            if candidate.is_file():
+                return str(candidate)
+    resolved = shutil.which("bash")
+    if resolved:
+        return resolved
+    pytest.skip("bash is required to exercise shell hook behavior")
+    raise AssertionError("pytest.skip() must not return")
 
 
 def test_validate_command_allows_normal():
     """Normal commands should pass."""
     result = subprocess.run(
-        ["bash", str(HOOKS_DIR / "validate_command.sh")],
+        [_bash(), str(HOOKS_DIR / "validate_command.sh")],
         input=json.dumps({"tool_input": {"command": "npm test"}}),
         capture_output=True, text=True, encoding="utf-8",
     )
@@ -24,7 +47,7 @@ def test_validate_command_allows_normal():
 def test_validate_command_blocks_force_push():
     """git push --force should be blocked."""
     result = subprocess.run(
-        ["bash", str(HOOKS_DIR / "validate_command.sh")],
+        [_bash(), str(HOOKS_DIR / "validate_command.sh")],
         input=json.dumps({"tool_input": {"command": "git push --force origin main"}}),
         capture_output=True, text=True, encoding="utf-8",
     )
@@ -35,7 +58,7 @@ def test_validate_command_blocks_force_push():
 def test_validate_command_allows_force_push_to_feature():
     """git push --force to feature branch should be allowed."""
     result = subprocess.run(
-        ["bash", str(HOOKS_DIR / "validate_command.sh")],
+        [_bash(), str(HOOKS_DIR / "validate_command.sh")],
         input=json.dumps({"tool_input": {"command": "git push --force origin my-app/01-auth"}}),
         capture_output=True, text=True, encoding="utf-8",
     )
@@ -44,7 +67,7 @@ def test_validate_command_allows_force_push_to_feature():
 
 def test_validate_command_blocks_rm_rf_root():
     result = subprocess.run(
-        ["bash", str(HOOKS_DIR / "validate_command.sh")],
+        [_bash(), str(HOOKS_DIR / "validate_command.sh")],
         input=json.dumps({"tool_input": {"command": "rm -rf /"}}),
         capture_output=True, text=True, encoding="utf-8",
     )
@@ -58,7 +81,7 @@ def test_check_destructive_migration_clean(tmp_path):
     sql.write_text("CREATE TABLE users (id UUID PRIMARY KEY);\n")
 
     result = subprocess.run(
-        ["bash", str(HOOKS_DIR / "check_destructive_migration.sh")],
+        [_bash(), str(HOOKS_DIR / "check_destructive_migration.sh")],
         input=json.dumps({"tool_input": {"file_path": str(sql)}}),
         capture_output=True, text=True, encoding="utf-8",
     )
@@ -72,7 +95,7 @@ def test_check_destructive_migration_drop_table(tmp_path):
     sql.write_text("DROP TABLE users;\n")
 
     result = subprocess.run(
-        ["bash", str(HOOKS_DIR / "check_destructive_migration.sh")],
+        [_bash(), str(HOOKS_DIR / "check_destructive_migration.sh")],
         input=json.dumps({"tool_input": {"file_path": str(sql)}}),
         capture_output=True, text=True, encoding="utf-8",
     )
@@ -89,7 +112,7 @@ def test_check_destructive_non_sql(tmp_path):
     ts.write_text("console.log('hello');\n")
 
     result = subprocess.run(
-        ["bash", str(HOOKS_DIR / "check_destructive_migration.sh")],
+        [_bash(), str(HOOKS_DIR / "check_destructive_migration.sh")],
         input=json.dumps({"tool_input": {"file_path": str(ts)}}),
         capture_output=True, text=True, encoding="utf-8",
     )

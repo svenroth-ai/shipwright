@@ -1,0 +1,5 @@
+{
+  "stage": "code",
+  "review": [],
+  "notes": "The final review verified per-phase marker preservation across real sequential producer updates, unreadable-evidence handling, Group E normalization, generator failure semantics, and Decision-Drop CI enforcement."
+}

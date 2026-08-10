@@ -1,31 +1,46 @@
 ---
 canon_generated: true
-run_id: "changelog-v0.32.0-20260808-224001"
-phase: "changelog"
-reason: "release v0.32.0"
-timestamp: "2026-08-08T20:34:51.172844+00:00"
+run_id: "iterate-2026-08-10-i2-test-evidence-phase-source-contract"
+phase: "iterate"
+reason: "iterate: I2 phase source contract"
+timestamp: "2026-08-10T10:44:43.260693+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-08-08 20:34:51 UTC
+> Auto-generated 2026-08-10 10:44:43 UTC
 
 ## Session Info
 
-- **Session ID**: 5e606322-4b30-42ed-9e6b-72bfd03df7be
-- **Timestamp**: 2026-08-08 20:34:51 UTC
-- **Reason**: release v0.32.0
+- **Session ID**: unknown
+- **Timestamp**: 2026-08-10 10:44:43 UTC
+- **Reason**: iterate: I2 phase source contract
 
 ## Last Iterate
 
-- **Run ID**: iterate-2026-08-08-prompt-scan-dynamic-import-fault-test
-- **Date**: 2026-08-08T19:53:58.428334Z
-- **Type**: change
-- **Complexity**: small
-- **Branch**: iterate/prompt-scan-dynamic-import-fault-test
-- **ADR**: iterate-2026-08-08-prompt-scan-dynamic-import-fault-test
+- **Run ID**: iterate-2026-08-10-i2-test-evidence-phase-source-contract
+- **Date**: 2026-08-10T10:44:43.052372Z
+- **Type**: bug
+- **Complexity**: medium
+- **Branch**: iterate/i2-test-evidence-phase-source-contract
+- **ADR**: iterate-2026-08-10-i2-test-evidence-phase-source-contract
 - **Tests passed**: True
-- **Spec**: n/a (small complexity, SIMPLIFY sub-mode, spec_impact none)
+- **Spec**: .shipwright/planning/iterate/iterate-2026-08-10-i2-test-evidence-phase-source-contract.md
+
+## Current Iterate Progress
+
+- **Branch**: iterate/i2-test-evidence-phase-source-contract
+- **Run ID**: `iterate-2026-08-10-i2-test-evidence-phase-source-contract`
+- **Spec**: .shipwright/planning/iterate/iterate-2026-08-10-i2-test-evidence-phase-source-contract.md
+- **Complexity**: medium — a shared verifier and a compliance producer must share one serialized phase-source contract.
+- **External Review Marker**: missing
+- **Review Cascade**: unreadable (unsafe run_id '`iterate-2026-08-10-i2-test-evidence-phase-source-contract`' — must be a single path component (letters, digits, dot, dash, underscore))
+
+### Mandatory replay on Resume
+
+Before dispatching to the handoff's Remaining phase, run these if missing:
+- reviews.json is unreadable — investigate before resuming (unsafe run_id '`iterate-2026-08-10-i2-test-evidence-phase-source-contract`' — must be a single path component (letters, digits, dot, dash, underscore))
+- Finalization (F0–F11) after all mandatory phases pass
 
 ## Legacy build state
 
@@ -38,8 +53,8 @@ timestamp: "2026-08-08T20:34:51.172844+00:00"
 
 ## Git State
 
-- **Branch**: main
-- **Last Commit**: 11e32523 chore(release): v0.32.0
+- **Branch**: iterate/i2-test-evidence-phase-source-contract
+- **Last Commit**: 450d4fee fix(compliance): verify test evidence by phase source
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -55,17 +70,17 @@ timestamp: "2026-08-08T20:34:51.172844+00:00"
 
 | Event | Type | Source | Date |
 |-------|------|--------|------|
-| evt-5036a5fd | grade_snapshot | — | 2026-08-08 |
-| evt-512679d4 | work_completed | iterate (mandated-load truncation is now declared, not silent (TC3.2)) | 2026-08-08 |
-| evt-f32709d0 | work_completed | iterate (iterate: normalize benign __import__ dynamic-import pattern flagged by shipwright-prompt-scan (trg-133f2ca6)) | 2026-08-08 |
-| evt-272f228a | grade_snapshot | — | 2026-08-08 |
-| evt-390f315f | work_completed | iterate (iterate: fix shipwright_model_config.json review tier (opus, not sonnet)) | 2026-08-08 |
+| evt-d17b628b | work_completed | iterate (Replace I2 mtime freshness with phase-run provenance and enforce Decision-Drop scanner findings.) | 2026-08-10 |
+| evt-36c592ee | work_completed | iterate (Introduce a lifecycle-aware compliance-audit runner with three explicit authority scopes (branch_feedback/merge/release), separating the Stop hook local diagnostics from the global compliance backlog write authority reserved for delivered merge and verified release commits.) | 2026-08-10 |
+| evt-de30181b | work_completed | iterate (Replaced authorship exemption with exact-head approval and review-record evidence.) | 2026-08-09 |
+| evt-d77ccdd2 | work_completed | iterate (Add docs/token-cost-controllable.md: threshold-based guide (trigger/symptom/action per band) for keeping session/token cost controllable as decision history and session length grow; link from guide.md Ch.9 + Appendix B and README) | 2026-08-09 |
+| evt-0bbcf4b6 | work_completed | iterate (Expose outbox-only amend delivery independently from append and status delivery.) | 2026-08-09 |
 
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 513
-- **Last iterate**: feature — mandated-load truncation is now declared, not silent (TC3.2) (2026-08-08)
+- **Total work events**: 526
+- **Last iterate**: bug — Replace I2 mtime freshness with phase-run provenance and enforce Decision-Drop scanner findings. (2026-08-10)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
 ## Recent Decisions

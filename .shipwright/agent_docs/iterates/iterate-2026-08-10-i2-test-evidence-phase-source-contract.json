@@ -1,0 +1,11 @@
+{
+  "run_id": "iterate-2026-08-10-i2-test-evidence-phase-source-contract",
+  "date": "2026-08-10T10:44:43.052372Z",
+  "event_at": "2026-08-10T02:13:25.889922+00:00",
+  "type": "bug",
+  "complexity": "medium",
+  "branch": "iterate/i2-test-evidence-phase-source-contract",
+  "spec": ".shipwright/planning/iterate/iterate-2026-08-10-i2-test-evidence-phase-source-contract.md",
+  "tests_passed": true,
+  "adr": "iterate-2026-08-10-i2-test-evidence-phase-source-contract"
+}

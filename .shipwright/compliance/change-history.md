@@ -1,20 +1,20 @@
 # Commit Change Log
 
-Generated: 2026-08-08T19:53:58.646645+00:00
-Source-State: run=iterate-2026-08-08-prompt-scan-dynamic-import-fault-test base=7a01ee66b247 release=v0.32.0
-Consistency-audit: last run 2026-07-28 (11 days earlier) — FAIL
-Total commits: 1390
+Generated: 2026-08-10T10:44:43.260693+00:00
+Source-State: run=iterate-2026-08-10-i2-test-evidence-phase-source-contract
+Consistency-audit: last run 2026-07-28 (13 days earlier) — FAIL
+Total commits: 1407
 
 ## Commit Distribution
 
 ```mermaid
 pie title Commit Types
-    "fix" : 452
-    "feat" : 379
-    "chore" : 259
-    "docs" : 153
+    "fix" : 462
+    "feat" : 380
+    "chore" : 262
+    "docs" : 155
     "refactor" : 84
-    "test" : 34
+    "test" : 35
     "ci" : 18
     "other" : 9
     "perf" : 1
@@ -23,10 +23,20 @@ pie title Commit Types
 
 ## Changes by Type
 
-### Fixes (fix) — 452 commits
+### Fixes (fix) — 462 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-08-10 | compliance | verify test evidence by phase source | 450d4fee58c1 |
+| 2026-08-10 | compliance | separate branch feedback from merge and release authority (#625) | 45207eeeba0b |
+| 2026-08-09 | security | require review evidence for PR waiver (#622) | 9679b820dc83 |
+| 2026-08-09 | compliance | make test-evidence freshness source-state based (#620) | acd82c9f74e7 |
+| 2026-08-09 | iterate | make an interrupted iterate resumable from disk alone (#619) | dd3d39a2580d |
+| 2026-08-09 | triage | preserve recurring operator decisions (#618) | 70b22cdf0ef8 |
+| 2026-08-09 | iterate | make timing coverage trustworthy (#617) | c09ac6af7600 |
+| 2026-08-09 | shared | harden probe, decision-drop and claim handling (#615) | 52d0d1fd5292 |
+| 2026-08-09 | iterate | harden fragile review and reader sites (#614) | ce65a88f435e |
+| 2026-08-09 | iterate | retain pinned F5c summaries (#613) | d9ad6acc2aa9 |
 | 2026-08-08 | tests | normalize a benign dynamic-import in a test mock (#611) | 7a01ee66b247 |
 | 2026-08-08 | iterate,project | declare mandated-load truncation instead of silently proceeding (TC3.2) (#610) | c222d46dc940 |
 | 2026-08-08 | iterate | index-first decision_log.md reads; ADR spec files named by run_id (#608) | bf2efc95ccaa |
@@ -480,10 +490,11 @@ pie title Commit Types
 | 2026-03-21 | — | rename skill folders for clean slash commands | 5a8d77658fab |
 | 2026-03-20 | — | update README attribution to svenroth.ai | dd5de7f7d6ab |
 
-### Features (feat) — 379 commits
+### Features (feat) — 380 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-08-09 | triage | expose pending amend delivery (#616) | 083d4c56f296 |
 | 2026-08-08 | triage | add an amend event to correct a card in place (#609) | 569005eb6b02 |
 | 2026-08-08 | shipwright-plan,shipwright-iterate | make the plan-reviewer's model configurable via a plan_review role (#606) | 74c97dbf5897 |
 | 2026-08-08 | compliance | track decision-drops across worktree, template, and webui (#605) | b7615e640fef |
@@ -864,10 +875,13 @@ pie title Commit Types
 | 2026-03-20 | — | Task 02 — project templates (CLAUDE.md, agent_docs, CI) | c3a6d2f53bd3 |
 | 2026-03-20 | — | Task 01 — monorepo scaffolding + supabase-nextjs stack profile | 990a138a4690 |
 
-### Chores (chore) — 259 commits
+### Chores (chore) — 262 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-08-10 | triage | sweep 1 outbox append(s) into branch | 1771ffff76e9 |
+| 2026-08-08 | release | v0.32.0 canon handoff — dashboard, session handoff, phase history | 5f12a9ff7abf |
+| 2026-08-08 | release | v0.32.0 | 11e325232765 |
 | 2026-08-08 | triage | dismiss trg-6d8fbc10, delivered via PR #598 | b67e536d9bef |
 | 2026-08-07 | triage | fold 4 main-tree background append(s) | 419aa3c5e2b8 |
 | 2026-08-02 | events | seal post-delivery grade snapshot (#531) | 027eeb9c0ee6 |
@@ -1128,10 +1142,12 @@ pie title Commit Types
 | 2026-03-28 | — | add shipwright-run uv.lock | ef1cc1ad180c |
 | 2026-03-20 | — | initial commit with spec and task list | 07ca9c1de51c |
 
-### Documentation (docs) — 153 commits
+### Documentation (docs) — 155 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-08-09 | — | add threshold-based guide to keeping token cost controllable (#621) | 58cda771438f |
+| 2026-08-08 | — | track Codex operating policy (#612) | fd457249d575 |
 | 2026-08-01 | readme | flag active refactoring window through Aug 10, 2026 | b0c3caf35946 |
 | 2026-07-28 | planning | the quoted directive stops tripping the prompt scanner | 07cd445538db |
 | 2026-07-28 | — | docs/ holds what someone wrote for someone to read (#493) | bebdc9a37e7e |
@@ -1375,10 +1391,11 @@ pie title Commit Types
 | 2026-03-30 | env | consolidate plugin env vars into single .env.local | 4a9267b522fb |
 | 2026-03-28 | — | unify decision log to shared ADR format across all phases | 2851babbbcfa |
 
-### Tests (test) — 34 commits
+### Tests (test) — 35 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-08-09 | security | cover review_record_tier CLI path and needs-review label (#624) | e425fb14795f |
 | 2026-08-03 | hooks | stabilize concurrent rearm timing (#542) | b811ef6988c2 |
 | 2026-08-02 | compliance | the evidence refresh is driven through its real producer (#528) | 0797067b1494 |
 | 2026-07-29 | security | the path filter's reliance on git quoting is written down, not assumed (#500) | bbfdb5b91990 |
@@ -1467,7 +1484,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 1390 |
+| Total commits | 1407 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 1390 |
+| Human-authored commits | 1407 |
 
