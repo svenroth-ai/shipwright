@@ -1,0 +1,11 @@
+{
+  "run_id": "iterate-2026-08-10-pr-review-hardening",
+  "head_commit": "16952546290c8de10cd513b9a0af5079e7396c89",
+  "staged_at": "2026-08-10T06:53:20Z",
+  "reports": {
+    "junit": {
+      "name": "junit.xml",
+      "mtime": "2026-08-10T06:53:20Z"
+    }
+  }
+}

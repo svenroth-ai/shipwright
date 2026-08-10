@@ -1,0 +1,62 @@
+{
+  "run_id": "iterate-2026-08-10-pr-review-hardening",
+  "date": "2026-08-10T06:53:43.664311Z",
+  "event_at": "2026-08-10T02:13:25.889922+00:00",
+  "type": "change",
+  "complexity": "medium",
+  "prior_source": "keyword",
+  "branch": "iterate/pr-review-hardening",
+  "spec": ".shipwright/planning/iterate/iterate-2026-08-10-pr-review-hardening.md",
+  "tests_passed": true,
+  "adr": "iterate-2026-08-10-pr-review-hardening",
+  "test_completeness": {
+    "status": "complete",
+    "behaviors": [
+      {
+        "behavior": "Force-push history blocks stale verdicts.",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_pr_review_fork_trust.py PASSED"
+      },
+      {
+        "behavior": "Duplicate PR Review check runs block status posting.",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_pr_review_fork_trust.py PASSED"
+      },
+      {
+        "behavior": "Cancelled runs do not post and checkout credentials are disabled.",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_pr_review_fork_trust.py PASSED"
+      },
+      {
+        "behavior": "Suppression and hook-control paths require review.",
+        "disposition": "tested",
+        "evidence": "plugins/shipwright-security/tests/test_review_record_tier.py PASSED"
+      },
+      {
+        "behavior": "Sensitive renames and capped lists require review.",
+        "disposition": "tested",
+        "evidence": "plugins/shipwright-security/tests/test_review_record_tier.py PASSED"
+      }
+    ],
+    "counts": {
+      "testable": 5,
+      "tested": 5,
+      "untestable": 0,
+      "untested_testable": 0
+    },
+    "enumeration_basis": {
+      "acs": 5,
+      "covered_acs": 5
+    }
+  },
+  "surface_verification": {
+    "surface": "cli",
+    "runner": "security review-record tier and workflow-shape pytest",
+    "exit_code": 0,
+    "tests_run": 44,
+    "evidence_path": ".shipwright/runs/iterate-2026-08-10-pr-review-hardening/surface_verification.log",
+    "timestamp": "2026-08-10T06:36:14.314Z",
+    "attempts": 1
+  },
+  "declared_removals": []
+}

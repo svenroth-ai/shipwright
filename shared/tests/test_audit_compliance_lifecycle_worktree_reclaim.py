@@ -96,7 +96,11 @@ def test_leaves_a_fresh_same_prefix_worktree_alone(git_origin_repo):
     lifecycle_tool._reclaim_orphaned_merge_worktrees(work)
 
     paths = _worktree_paths(work)
-    assert live in paths
+    # Windows' ``tempfile`` can return an 8.3 path (``RUNNER~1``), while
+    # ``git worktree list`` expands it to the long user-profile path.  They
+    # identify the same directory, so compare filesystem identity rather than
+    # the two spellings.
+    assert any(live.samefile(path) for path in paths)
     assert live.exists()
 
 
