@@ -66,7 +66,8 @@
         {
           "behavior": "AC6 \u2014 the 5-to-13-to-5 Group-E branch-noise regression cannot mutate the global backlog; branch diagnostics stay visible",
           "disposition": "tested",
-          "evidence": "shared/tests/test_compliance_lifecycle.py::test_5_to_13_to_5_regression_never_mutates_on_branch, ::test_real_linked_worktree_stop_keeps_main_backlog_bytes_unchanged PASSED"
+          "category": "integration",
+          "evidence": "shared/tests/test_compliance_lifecycle.py::test_5_to_13_to_5_regression_never_mutates_on_branch, ::test_real_linked_worktree_stop_keeps_main_backlog_bytes_unchanged PASSED (real git worktree + run pointer, drives audit_compliance_on_stop.py end-to-end against aggregate_triage_on_stop.py's cross-component wiring)"
         },
         {
           "behavior": "AC7 \u2014 docs/hooks-and-pipeline.md accurately maps Stop/branch feedback, delivery/merge authority, and release authority; derived snapshots remain release-owned",
@@ -101,7 +102,7 @@
   },
   "source_state": {
     "run_id": "iterate-2026-08-09-p2-59-branch-feedback-authority",
-    "commit": "ddb423806efce771737ec5dbd74ac3d97ce1355e",
+    "commit": "fae9c70936f765239f9d3a239e98393c345a90a2",
     "dirty": true,
     "base": null,
     "release": null
