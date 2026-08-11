@@ -2360,6 +2360,7 @@ security phase_task) and detects its mode from the presence of
 | Stop | — | `audit_compliance_on_stop.py` (shared) | **Compliance branch feedback.** Resolves the active iterate worktree, runs A-I detection and reports local failures only; never appends, refreshes or dismisses the global compliance backlog. Delivered merge authority converges A-D/F-I (E is `not_applicable`); verified release authority converges A-I. Ordered after phase_quality, before `aggregate_triage_on_stop`. |
 | Stop | — | `write_terminal_marker.py` | Writes `.shipwright/runs/<loop_id>/<unit_id>/DONE` (no-op without loop env vars) |
 | Stop | — | `aggregate_triage_on_stop.py` (shared) | **Iterate 1a:** Regenerates `.shipwright/agent_docs/triage_inbox.md` from `.shipwright/triage.jsonl`. Schema-compliant Stop output (ADR-042: NO `additionalContext`; aggregator status goes to stderr). Registered **last** in the Stop chain so it observes all producer writes from the same chain. As of iterate-2026-05-20 (`triage-launch-surface`), open items with a non-empty `launchPayload` render the payload inside a fenced markdown code block under the item header — operators copy the fence into a new Claude session as the "Fix now" flow (legacy producers without payload render today's bullet layout unchanged). A source=github item missing `launchPayload` is surfaced as a visible loud-failure placeholder. Greenfield-safe (no-op on non-Shipwright projects). |
+| PostToolUse | `Write\|Edit\|Bash` | `mark_implementation_span.py` (shared) | **Iterate-timing backstop (trg-e6d1cc5e, follow-up to TC5.1 / PR #617).** `iterate_timing.py start/end` calls at the Step 6/Step 7 boundary are agent-prose only (a SKILL.md arrow-note, no code-enforced writer) and were measured absent in 31 of 32 runs since 2026-08-07 — the `implementation` top-level span reported `unattributed` in every run but the one whose developer was manually exercising this exact instrumentation. There is no single deterministic process boundary at "Step 6 begins" to relocate the call into (unlike `scope`, see B1a below), so this hook backstops both edges from signals that ARE deterministic: the first `Write`/`Edit` outside `.shipwright/` this run (`start implementation` — pre-Build artifacts all live under `.shipwright/`), and the first Bash call invoking `record_review_pass.py record --review-type self --status completed` (`end implementation` + `start review`/`start self_review` — self-review is unconditionally mandatory, so it is the one Step-7-entry signal every run reliably makes). Resolves the active run via the same per-session pointer B1a writes (`lib.phase_quality._run_id.pointer_run_id`/`pointer_worktree_root`); a no-op outside an active iterate. First-wins (reads the sidecar before writing) so a compliant agent's own explicit calls are never duplicated. Registered here and **only** here — it does not oblige the other 11 plugins. Best-effort: never raises, never blocks the tool call. Registered separately from the `Write\|Edit`-only group above because it also matches `Bash`. |
 
 **B1a Worktree Isolation (unconditional, 2026-05):** every `/shipwright-iterate`
 run executes in its own git worktree + branch + PR — structurally, not by
@@ -2368,7 +2369,15 @@ detection. At skill startup, before any artifact write,
 worktree; from the main repo it runs `git fetch origin` then
 `git worktree add .worktrees/<slug> -b iterate/<slug> origin/<default>`,
 snapshots the main tree, and writes a per-session run pointer
-(`.shipwright/iterate_active/<session-id>.json`). The F0/F11 leak-guard
+(`.shipwright/iterate_active/<session-id>.json`). **Since trg-e6d1cc5e**
+(follow-up to TC5.1 / PR #617) it also stamps the durable `scope`
+phase-timing mark (`lib.iterate_phase_groups.append_mark`) here — the one
+call site every run unconditionally makes with `run_id` already in hand, on
+both the create and the already-in-worktree/no-op path (first-wins, so a
+resumed run's repeat call is inert). `iterate_throughput_stats._scope_
+started_at` reads this mark as the run's wall-clock denominator; previously
+it depended on the agent separately remembering `iterate_phase_timing.py
+mark scope` and was measured absent in 9 of the last 10 runs. The F0/F11 leak-guard
 `shared/scripts/checks/check_iterate_isolation.py` fails closed if the run
 is not in a worktree or leaked changes into the main tree (snapshot-diff).
 No hook is registered — setup + leak-guard run inline in the skill. The

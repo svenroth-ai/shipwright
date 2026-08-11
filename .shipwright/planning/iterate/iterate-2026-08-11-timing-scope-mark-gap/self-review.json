@@ -1,0 +1,12 @@
+{
+  "items": [
+    {"name": "Spec Compliance", "verdict": "pass", "note": "Both defects root-caused and fixed; scope mark relocated to setup_iterate_worktree.py, implementation span backstopped by a new hook. No extra features beyond the spec (reporting logic untouched as required)."},
+    {"name": "Error Handling", "verdict": "pass", "note": "_mark_scope_started catches (OSError, ValueError) and logs to stderr rather than failing the run; mark_implementation_span.py wraps main() in a broad except and always exits 0, matching iterate_timing.py's existing best-effort/never-block contract."},
+    {"name": "Security Basics", "verdict": "pass", "note": "No user input, no SQL/HTML, no secrets. The Bash-command string match is a substring check on the local session's own tool_input, not externally-controlled input, and only triggers additive JSONL appends."},
+    {"name": "Test Quality", "verdict": "pass", "note": "21 new tests across two files assert on sidecar contents (outcomes), not internals; each covers a happy path and at least one negative/edge case (ignored write, no-prior-start, unrelated command, outside-active-iterate, malformed stdin)."},
+    {"name": "Performance Basics", "verdict": "pass", "note": "No DB/N+1 concerns; the new hook does one sidecar read (read_raw_events) and at most one lock-guarded append per Write/Edit/Bash call, matching the existing mark_plugin_edit.py/check_file_size.py hooks' per-call cost."},
+    {"name": "Naming & Structure", "verdict": "pass", "note": "New files follow existing shared/scripts/hooks and shared/tests conventions. setup_iterate_worktree.py was trimmed from 314 back to 299 lines after crossing 300 (bloat gate crossing), staying under the 300-line source cap."},
+    {"name": "Affected Boundaries", "verdict": "pass", "note": "Both changed serialized formats (phase_timings.jsonl, iterate_timings.jsonl) have producer+consumer identified in the spec's Affected Boundaries table, each with a real round-trip test (write via the real writer, read back via the real reader) against real git worktree state, not mocks. touches_io_boundary fired on hooks.json; the mandatory round-trip is covered by test_phase_plugin_hooks_consistency.py + test_hook_output_schema_compliance.py."},
+    {"name": "Test Hygiene Probe", "verdict": "pass", "note": "uv run shared/scripts/tools/scan_test_hygiene.py --diff reported 'no findings' against the full changed-file diff."}
+  ]
+}

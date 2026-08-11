@@ -1,0 +1,178 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-08-11-timing-scope-mark-gap",
+    "date": "2026-08-11",
+    "unit": {
+      "status": "pass",
+      "passed": 16522,
+      "total": 16522,
+      "failed": 0,
+      "note": "F0 canonical parallel suite runner (run_test_suite.py): 18/18 units GREEN in 4.9 min. Collect-only counts per root: shared/tests 9220, plugins/shipwright-compliance 1645, plugins/shipwright-iterate 943, plugins/shipwright-security 929, integration-tests 520, plugins/shipwright-adopt 608, plugins/shipwright-run 555, shared/scripts/tools/tests 545, shared/scripts/tests 422, plugins/shipwright-test 243, plugins/shipwright-grade 391, plugins/shipwright-build 133, plugins/shipwright-plan 82, plugins/shipwright-changelog 81, plugins/shipwright-deploy 102, plugins/shipwright-project 59, plugins/shipwright-design 34, plugins/shipwright-preview 10. Zero failures; diff-coverage gate (origin/main..HEAD) PASSED at 82% (>=80% threshold)."
+    },
+    "integration": {
+      "status": "pass",
+      "passed": 520,
+      "total": 520
+    },
+    "e2e": {
+      "status": "n/a",
+      "reason": "no browser surface; this is framework machinery (a PostToolUse hook + CLI scripts + skill prose)"
+    },
+    "smoke": {
+      "status": "n/a",
+      "reason": "no startable server surface in this repo"
+    },
+    "pgtap": {
+      "status": "n/a",
+      "reason": "no database"
+    },
+    "design_fidelity": {
+      "status": "n/a",
+      "reason": "no UI surface"
+    },
+    "surface_verification": {
+      "surface": "cli",
+      "runner": "uv run pytest shared/tests/test_mark_implementation_span.py shared/tests/test_setup_iterate_worktree.py -v",
+      "tests_run": 28,
+      "exit_code": 0,
+      "evidence_path": ".shipwright/runs/iterate-2026-08-11-timing-scope-mark-gap/surface_verification.json",
+      "detail": "Both new/changed writers driven against a REAL git worktree fixture (git_origin_repo), not mocks: mark_implementation_span.py (15 tests, incl. the code-review-round-3 and doubt-review-round-3 remediations) and setup_iterate_worktree.py's scope-mark relocation (13 tests, 2 new)."
+    },
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "setup_iterate_worktree.py create path stamps scope",
+          "disposition": "tested",
+          "evidence": "test_setup_iterate_worktree.py::test_scope_mark_written_on_create PASSED"
+        },
+        {
+          "behavior": "setup_iterate_worktree.py noop/resume path stamps scope",
+          "disposition": "tested",
+          "evidence": "test_setup_iterate_worktree.py::test_scope_mark_written_on_noop_resume PASSED"
+        },
+        {
+          "behavior": "existing setup_iterate_worktree.py behavior unbroken by the trim/edit",
+          "disposition": "tested",
+          "evidence": "test_setup_iterate_worktree.py full suite (13/13) PASSED"
+        },
+        {
+          "behavior": "first Write/Edit outside .shipwright/ starts implementation",
+          "disposition": "tested",
+          "evidence": "test_mark_implementation_span.py::test_write_outside_shipwright_starts_implementation PASSED"
+        },
+        {
+          "behavior": "Write/Edit inside .shipwright/ is ignored",
+          "disposition": "tested",
+          "evidence": "test_mark_implementation_span.py::test_write_inside_shipwright_is_ignored PASSED"
+        },
+        {
+          "behavior": "a second Write/Edit does not duplicate the start",
+          "disposition": "tested",
+          "evidence": "test_mark_implementation_span.py::test_second_write_does_not_duplicate_start PASSED"
+        },
+        {
+          "behavior": "self-review completion Bash call ends implementation, starts review/self_review",
+          "disposition": "tested",
+          "evidence": "test_mark_implementation_span.py::test_self_review_bash_call_ends_implementation_and_starts_review PASSED"
+        },
+        {
+          "behavior": "same Bash call without a prior start does not fabricate an end",
+          "disposition": "tested",
+          "evidence": "test_mark_implementation_span.py::test_self_review_bash_call_without_prior_start_does_not_emit_end PASSED"
+        },
+        {
+          "behavior": "an unrelated Bash command is a no-op",
+          "disposition": "tested",
+          "evidence": "test_mark_implementation_span.py::test_unrelated_bash_command_is_ignored PASSED"
+        },
+        {
+          "behavior": "outside an active iterate, the hook is a no-op (never raises)",
+          "disposition": "tested",
+          "evidence": "test_mark_implementation_span.py::test_outside_active_iterate_is_a_noop PASSED"
+        },
+        {
+          "behavior": "malformed stdin never raises (best-effort contract)",
+          "disposition": "tested",
+          "evidence": "test_mark_implementation_span.py::test_malformed_stdin_never_raises PASSED"
+        },
+        {
+          "behavior": "the new hook is correctly registered + schema-compliant",
+          "disposition": "tested",
+          "evidence": "test_hook_output_schema_compliance.py PASSED"
+        },
+        {
+          "behavior": "worktree setup -> run pointer -> hook resolution -> sidecar write compose end-to-end across real git state",
+          "disposition": "tested",
+          "category": "integration",
+          "evidence": "test_mark_implementation_span.py (real git_origin_repo fixture, not mocks) + test_phase_plugin_hooks_consistency.py (hooks.json wiring integrity)"
+        },
+        {
+          "behavior": "a repeated self-review Bash call does not duplicate start review/start self_review",
+          "disposition": "tested",
+          "evidence": "test_mark_implementation_span.py::test_repeated_self_review_bash_call_does_not_duplicate_review_start PASSED"
+        },
+        {
+          "behavior": "a command value merely containing self/completed is not matched (substring false-positive)",
+          "disposition": "tested",
+          "evidence": "test_mark_implementation_span.py::test_bash_command_with_self_and_completed_as_substrings_is_not_matched PASSED"
+        },
+        {
+          "behavior": "--flag=value form is matched, not only --flag value",
+          "disposition": "tested",
+          "evidence": "test_mark_implementation_span.py::test_equals_form_flag_value_is_matched PASSED"
+        },
+        {
+          "behavior": "a LockTimeout on the guard-critical write leaves the done sentinel unset, so a retry stays possible",
+          "disposition": "tested",
+          "evidence": "test_mark_implementation_span.py::test_lock_timeout_on_review_write_leaves_done_marker_unset PASSED"
+        },
+        {
+          "behavior": "a second call in the same worktree/session reuses the cached pointer resolution",
+          "disposition": "tested",
+          "evidence": "test_mark_implementation_span.py::test_resolved_pointer_is_cached_across_calls PASSED"
+        },
+        {
+          "behavior": "an asymmetric LockTimeout (review succeeds, self_review alone fails) is retried on the next call",
+          "disposition": "tested",
+          "evidence": "test_mark_implementation_span.py::test_self_review_only_lock_timeout_is_retried_on_next_call PASSED"
+        },
+        {
+          "behavior": "an ordinary checkout with no active-iterate pointer for any session skips git-backed resolution",
+          "disposition": "tested",
+          "evidence": "test_mark_implementation_span.py::test_no_active_iterate_skips_pointer_resolution PASSED"
+        },
+        {
+          "behavior": "mark_implementation_span.py stayed under the 300-line bloat cap after splitting state helpers",
+          "disposition": "tested",
+          "evidence": "wc -l = 248 (hook) + 144 (state module); full suite re-run green post-split"
+        }
+      ],
+      "counts": {
+        "testable": 20,
+        "tested": 20,
+        "untestable": 0,
+        "untested_testable": 0
+      },
+      "enumeration_basis": {
+        "acs": 6,
+        "covered_acs": 6
+      },
+      "ledger_path": ".shipwright/planning/iterate/iterate-2026-08-11-timing-scope-mark-gap.md"
+    },
+    "degraded": []
+  },
+  "coverage": {
+    "total": 86.9,
+    "measured_tier": "repo",
+    "source": "combined coverage.xml (all plugins + shared + integration)",
+    "measured_at": "2026-08-12T00:00:00Z"
+  },
+  "source_state": {
+    "run_id": "iterate-2026-08-11-timing-scope-mark-gap",
+    "commit": "f7864d3d9c3bfc6b03e3e2d3cb17169b10ae8b9e",
+    "dirty": true,
+    "base": null,
+    "release": null
+  }
+}
