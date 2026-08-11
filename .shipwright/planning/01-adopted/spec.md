@@ -616,6 +616,14 @@ _Where the work detail lives_ at the end of this document.
   when someone asks whether the release is out, then it is not — preparing a
   release publishes nothing by itself; that happens only once the request is
   merged and the release is put onto its target.
+- (E) Given a project has declared which published package manifests carry
+  its version (e.g. a package.json a registry would receive), when a release
+  is prepared, then the version is written into every declared manifest as
+  part of the same release commit, and the commit is checked afterward to
+  confirm the write actually landed in it — not merely on disk — before the
+  version is marked with its tag. A manifest still found at its previous
+  version stops the release rather than letting the tag claim a version the
+  manifest does not carry. A project that has declared none is unaffected.
 
 <a id="fr-0110"></a>
 ### FR-01.10 — /shipwright-compliance

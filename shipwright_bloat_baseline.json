@@ -107,6 +107,13 @@
       "adr": null
     },
     {
+      "path": "plugins/shipwright-changelog/skills/changelog/SKILL.md",
+      "limit": 400,
+      "current": 425,
+      "state": "exception",
+      "adr": "ADR-348"
+    },
+    {
       "path": "plugins/shipwright-compliance/scripts/audit/audit_adapters.py",
       "limit": 300,
       "current": 349,

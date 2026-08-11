@@ -1,0 +1,309 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-08-11-changelog-manifest-version-sync",
+    "date": "2026-08-12",
+    "unit": {
+      "status": "pass",
+      "passed": 10199,
+      "total": 10199,
+      "note": "This iterate's three affected pytest roots, full-root counts: shared/scripts/tests 464 passed/2 skipped; shared/scripts/tools/tests 559 passed/16 skipped/2 deselected; shared/tests 9176 passed/32 skipped/20 deselected. Independently, the F0 canonical suite runner (all 18 discovered units: every plugins/*/tests + the three shared/ roots + integration-tests) reported 18/18 GREEN in 4.8 min with diff-coverage 93% (>= 80% threshold) against origin/main."
+    },
+    "integration": {
+      "status": "pass",
+      "note": "integration-tests unit: PASS in the F0 suite run (254.5s); no changes in this diff touch integration-tests directly."
+    },
+    "e2e": {
+      "status": "n/a",
+      "reason": "no browser surface; this is a release-time CLI tool invoked from a skill's markdown steps"
+    },
+    "smoke": {
+      "status": "n/a",
+      "reason": "no startable server surface for a release-time CLI tool"
+    },
+    "pgtap": {
+      "status": "n/a",
+      "reason": "no database"
+    },
+    "design_fidelity": {
+      "status": "n/a",
+      "reason": "no UI surface"
+    },
+    "surface_verification": {
+      "surface": "cli",
+      "runner": "uv run pytest shared/scripts/tools/tests/test_sync_release_manifests.py shared/scripts/tools/tests/test_sync_release_manifests_git.py -q",
+      "exit_code": 0,
+      "tests_run": 30,
+      "evidence_path": ".shipwright/runs/iterate-2026-08-11-changelog-manifest-version-sync/surface_verification.json",
+      "timestamp": "2026-08-12T00:00:00Z"
+    },
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "No config / empty published_manifests / absent key \u2192 clean no-op",
+          "disposition": "tested",
+          "evidence": "test_no_config_file_is_no_op, test_empty_published_manifests_is_no_op, test_absent_published_manifests_key_is_no_op, test_sync_no_config_is_ok_noop, test_no_config_passes_as_noop"
+        },
+        {
+          "behavior": "Single declared manifest is written + reported changed: true",
+          "disposition": "tested",
+          "evidence": "test_sync_one_manifest_write"
+        },
+        {
+          "behavior": "Several manifests, mixed already-current/needs-write",
+          "disposition": "tested",
+          "evidence": "test_sync_several_manifests_mixed_initial_versions"
+        },
+        {
+          "behavior": "Step 5.4 stages exactly its own written paths (git add, manifest_pathspec)",
+          "disposition": "tested",
+          "evidence": "test_stage_returns_pathspec"
+        },
+        {
+          "behavior": "--verify-commit reads the committed blob, passes when write landed in the commit",
+          "disposition": "tested",
+          "evidence": "test_verify_commit_passes_when_write_landed_in_commit"
+        },
+        {
+          "behavior": "The regression itself: manifest bumped in the worktree but omitted from the release commit \u2192 verify-commit fails, tag never cut",
+          "disposition": "tested",
+          "evidence": "test_verify_commit_catches_omitted_manifest_regression \u2014 the card's exact failure mode, proven closed"
+        },
+        {
+          "behavior": "--verify-commit never re-reads the (mutable) config, even if edited or deleted after sync()",
+          "disposition": "tested",
+          "evidence": "test_verify_commit_ignores_config_mutated_after_sync (calibration-phase probe)"
+        },
+        {
+          "behavior": "--verify-commit resolves the git-relative path when --project-root is a subdirectory of the git repo",
+          "disposition": "tested",
+          "evidence": "test_verify_commit_resolves_subdirectory_project_root"
+        },
+        {
+          "behavior": "Process exit code is 0 on ok, non-zero on any failure status (the &&-chain contract)",
+          "disposition": "tested",
+          "evidence": "test_main_exits_zero_on_ok_and_writes_result_file, test_main_exits_nonzero_on_failure (calibration-phase probe)"
+        },
+        {
+          "behavior": "--verify-commit without --result-file is a hard CLI usage error",
+          "disposition": "tested",
+          "evidence": "test_main_verify_commit_requires_result_file (calibration-phase probe)"
+        },
+        {
+          "behavior": "Standing check: no config \u2192 no-op; no releases yet \u2192 pass; matching manifest \u2192 pass",
+          "disposition": "tested",
+          "evidence": "test_no_config_passes_as_noop, test_no_releases_yet_passes, test_matching_manifest_passes"
+        },
+        {
+          "behavior": "Standing check: drifted manifest \u2192 WARNING, never ERROR",
+          "disposition": "tested",
+          "evidence": "test_drifted_manifest_warns_not_errors"
+        },
+        {
+          "behavior": "Standing check: declared manifest missing at HEAD \u2192 WARNING",
+          "disposition": "tested",
+          "evidence": "test_declared_manifest_missing_at_head_warns"
+        },
+        {
+          "behavior": "Standing check: malformed config \u2192 WARNING, never a crash",
+          "disposition": "tested",
+          "evidence": "test_malformed_config_warns_not_errors"
+        },
+        {
+          "behavior": "Declared file missing on disk \u2192 manifest_missing, distinct from no-manifests-declared",
+          "disposition": "tested",
+          "evidence": "test_sync_missing_file_fails_closed"
+        },
+        {
+          "behavior": "Path containment: absolute path, Windows drive path, .. escape all rejected",
+          "disposition": "tested",
+          "evidence": "test_absolute_path_rejected, test_windows_drive_path_rejected, test_dotdot_escape_rejected"
+        },
+        {
+          "behavior": "Path containment: symlink escaping project root rejected",
+          "disposition": "tested",
+          "evidence": "test_symlink_in_path_rejected"
+        },
+        {
+          "behavior": "Path containment: in-root symlink also rejected (not just escapes)",
+          "disposition": "tested",
+          "evidence": "test_in_root_symlink_also_rejected \u2014 closes Branch A openai finding #1"
+        },
+        {
+          "behavior": "Malformed config shape (bad JSON, non-array, non-object entry, missing/non-string path) \u2192 invalid_config",
+          "disposition": "tested",
+          "evidence": "test_malformed_json_is_invalid_config, test_malformed_shape_is_invalid_config (parametrized)"
+        },
+        {
+          "behavior": "Two declared entries that canonicalize to the same file \u2192 duplicate_manifest_path",
+          "disposition": "tested",
+          "evidence": "test_duplicate_canonical_path_rejected, test_duplicate_canonical_path_with_dotdot_segment_rejected (Branch A openai finding #2)"
+        },
+        {
+          "behavior": "No manifests declared but --stage passed \u2192 manifest_pathspec: [], not omitted",
+          "disposition": "tested",
+          "evidence": "test_sync_no_config_with_stage_reports_empty_pathspec (Branch A openai finding #3)"
+        },
+        {
+          "behavior": "--version rejects non-SemVer leading-zero forms (01.2.3, 1.2.3-01), not just malformed shape",
+          "disposition": "tested",
+          "evidence": "test_validate_version_rejects (extended, Branch A openai finding #4)"
+        },
+        {
+          "behavior": "A git status failure other than \"not a git repository\" fails closed (index lock, damaged repo)",
+          "disposition": "tested",
+          "evidence": "test_dirty_check_failure_fails_closed (Branch A openai finding #5)"
+        },
+        {
+          "behavior": "Pre-existing dirty manifest before sync starts \u2192 manifest_dirty_before_sync, never folded into the release commit",
+          "disposition": "tested",
+          "evidence": "test_manifest_dirty_before_sync_fails_closed"
+        },
+        {
+          "behavior": "Duplicate top-level \"version\" key \u2192 ambiguous_manifest_structure, never a guessed rewrite",
+          "disposition": "tested",
+          "evidence": "test_read_version_duplicate_top_level_key_rejected"
+        },
+        {
+          "behavior": "A nested object's own \"version\" key is not mistaken for a root-level duplicate",
+          "disposition": "tested",
+          "evidence": "test_read_version_nested_version_key_is_not_a_false_positive \u2014 closes a false-positive risk found during design, not by an external reviewer"
+        },
+        {
+          "behavior": "git add staging failure after writes succeeded restores already-written bytes (stage_failed)",
+          "disposition": "tested",
+          "evidence": "test_stage_failure_restores_written_bytes"
+        },
+        {
+          "behavior": "--version validated before any write (rejects leading v, whitespace, non-semver)",
+          "disposition": "tested",
+          "evidence": "test_validate_version_rejects / test_validate_version_accepts (parametrized), test_sync_invalid_version_argument_touches_nothing"
+        },
+        {
+          "behavior": "Unrecognized format value \u2192 unsupported_format, not a silent skip",
+          "disposition": "tested",
+          "evidence": "test_sync_unsupported_format_fails_closed, test_read_version_unsupported_format"
+        },
+        {
+          "behavior": "package_json edge cases: missing version key, non-string version, unparseable JSON",
+          "disposition": "tested",
+          "evidence": "test_sync_missing_version_field_fails_closed_disk_untouched, test_read_version_missing_key, test_read_version_non_string, test_read_version_parse_error"
+        },
+        {
+          "behavior": "Two-phase write: all entries validated before any is touched; a later-failing entry leaves an earlier-validated one untouched",
+          "disposition": "tested",
+          "evidence": "test_sync_missing_version_field_fails_closed_disk_untouched (entry a untouched when entry b fails preflight)"
+        },
+        {
+          "behavior": "Mid-sequence write failure restores already-written manifests' bytes",
+          "disposition": "tested",
+          "evidence": "test_sync_mid_sequence_write_failure_restores_earlier_manifests"
+        },
+        {
+          "behavior": "Re-running an already-released version is a success with changed: false, no write",
+          "disposition": "tested",
+          "evidence": "test_sync_idempotent_rerun_no_write"
+        },
+        {
+          "behavior": "Surgical single-value substitution produces a minimal diff",
+          "disposition": "tested",
+          "evidence": "test_surgical_substitution_minimal_diff"
+        },
+        {
+          "behavior": "Surgical substitution escapes regex metacharacters in the current version (semver ./-/+)",
+          "disposition": "tested",
+          "evidence": "test_surgical_substitution_escapes_regex_metacharacters \u2014 closes Branch A deepseek finding #9"
+        },
+        {
+          "behavior": "Ambiguous surgical match falls back to full re-render, flagged reformatted: true",
+          "disposition": "tested",
+          "evidence": "test_surgical_substitution_ambiguous_falls_back_to_full_render"
+        },
+        {
+          "behavior": "--dry-run reports without writing to disk",
+          "disposition": "tested",
+          "evidence": "test_sync_dry_run_reports_without_writing"
+        },
+        {
+          "behavior": "--dry-run --stage together still reports manifest_pathspec (as []), never a missing key",
+          "disposition": "tested",
+          "evidence": "test_sync_dry_run_with_stage_reports_empty_pathspec (Stage 2 code-review finding #6)"
+        },
+        {
+          "behavior": "--verify-commit rejects a --result-file recording a FAILED sync's own output (status != \"ok\")",
+          "disposition": "tested",
+          "evidence": "test_verify_commit_rejects_a_failed_syncs_own_result_file (Stage 2 code-review finding #1, high)"
+        },
+        {
+          "behavior": "--verify-commit rejects a --result-file left over from a DIFFERENT prior release (version mismatch)",
+          "disposition": "tested",
+          "evidence": "test_verify_commit_rejects_a_stale_prior_releases_result_file (Stage 2 code-review finding #1, high)"
+        },
+        {
+          "behavior": "stage_failed unstages the declared paths (git reset) as well as restoring worktree bytes",
+          "disposition": "tested",
+          "evidence": "test_stage_failure_restores_written_bytes (Stage 3 doubt-review D2)"
+        },
+        {
+          "behavior": "--verify-commit fails closed with result_file_invalid, not a traceback, on a non-object/non-list-shaped --result-file",
+          "disposition": "tested",
+          "evidence": "test_verify_commit_rejects_non_dict_result_file, test_verify_commit_rejects_non_list_manifests_field (Stage 3 doubt-review D3)"
+        },
+        {
+          "behavior": "--verify-commit fails closed on a malformed manifests entry (missing path/format)",
+          "disposition": "tested",
+          "evidence": "test_verify_commit_rejects_malformed_manifest_entry (Stage 3 doubt-review D3)"
+        },
+        {
+          "behavior": "Path containment: a Windows NTFS junction (mklink /J, not just a real symlink) is rejected",
+          "disposition": "tested",
+          "evidence": "test_windows_junction_in_path_rejected \u2014 closes Stage 3 doubt-review D4; passes (not skipped) on the primary Windows dev machine, unlike the two symlink tests beside it"
+        },
+        {
+          "behavior": "A relative --result-file resolves against --project-root, not the process CWD",
+          "disposition": "tested",
+          "evidence": "test_main_relative_result_file_resolves_against_project_root (Stage 3 doubt-review D6)"
+        },
+        {
+          "behavior": "--verify-commit rejects a --result-file recording a --dry-run sync (nothing was actually staged)",
+          "disposition": "tested",
+          "evidence": "test_verify_commit_rejects_dry_run_result_file (Stage 3 doubt-review D6)"
+        },
+        {
+          "behavior": "A project declaring a lockfile (package-lock.json, out of scope per manifest-sync.md) is rejected, not silently accepted",
+          "disposition": "tested",
+          "evidence": "test_sync_unsupported_format_fails_closed \u2014 format validation rejects any value other than package_json, which is the actual mechanism guarding the out-of-scope boundary"
+        },
+        {
+          "behavior": "No regression across the three affected pytest roots",
+          "disposition": "tested",
+          "evidence": "shared/scripts/tools/tests: 559 passed, 16 skipped, 2 deselected (full root); shared/scripts/tests: 464 passed, 2 skipped (full root); shared/tests: **9176 passed, 32 skipped, 20 deselected, 0 failed** (full root, 12m22s)"
+        }
+      ],
+      "counts": {
+        "testable": 48,
+        "tested": 48,
+        "untestable": 0,
+        "untested_testable": 0
+      },
+      "enumeration_basis": {
+        "acs": 24,
+        "covered_acs": 24
+      }
+    },
+    "degraded": []
+  },
+  "coverage": {
+    "total": 80.2,
+    "measured_tier": "repo",
+    "source": "combined coverage.xml (all plugins + shared + integration)",
+    "measured_at": "2026-07-04T00:00:00Z"
+  },
+  "source_state": {
+    "run_id": "iterate-2026-08-11-changelog-manifest-version-sync",
+    "commit": "89d9bc35199c8f0bf24b1672b7194268abbeefb0",
+    "dirty": true,
+    "base": null,
+    "release": null
+  }
+}

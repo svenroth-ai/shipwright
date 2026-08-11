@@ -19,13 +19,38 @@ Sonder-Checks:
   ``## [vX.Y.Z]`` heading in CHANGELOG.md must match the most recent
   ``vX.Y.Z`` git tag (by string, not recency). Catches "tag pushed but
   CHANGELOG not regenerated" drift. ERROR.
+- ``check_manifest_version_matches_tag`` — every manifest a project
+  declares in ``shipwright_changelog_config.json`` should carry the
+  latest git tag's version, read from the committed ``HEAD`` blob (never
+  the worktree). WARNING, not ERROR: the release-time gate in
+  ``sync_release_manifests.py --verify-commit`` is what actually blocks a
+  release from tagging over a mismatch; this check's job is only
+  surfacing drift the gate never saw (a release cut before this iterate
+  shipped, or a later commit editing a manifest by hand) — deliberately
+  descoped from a hard release-blocking invariant in Architecture Review
+  reconciliation (iterate-2026-08-11-changelog-manifest-version-sync), so
+  it does not foreclose an intentional post-release manifest edit. No-op
+  when no manifests are declared.
 """
 
 from __future__ import annotations
 
 import re
 import subprocess
+import sys
 from pathlib import Path
+
+_SCRIPTS_ROOT = Path(__file__).resolve().parents[2]
+if str(_SCRIPTS_ROOT) not in sys.path:
+    sys.path.insert(0, str(_SCRIPTS_ROOT))
+
+from lib.manifest_sync_core import (  # noqa: E402
+    ManifestSyncError,
+    git as manifest_git,
+    git_relative_path,
+    load_declared_manifests,
+    read_manifest_version,
+)
 
 from .common import (
     CheckResult,
@@ -88,6 +113,8 @@ def _git_tag_exists(project_root: Path, tag: str) -> tuple[bool, str]:
             cwd=str(project_root),
             capture_output=True,
             text=True,
+            encoding="utf-8",
+            errors="replace",
             timeout=10,
         )
     except (OSError, subprocess.TimeoutExpired) as exc:
@@ -108,6 +135,8 @@ def _latest_git_version_tag(project_root: Path) -> str | None:
             cwd=str(project_root),
             capture_output=True,
             text=True,
+            encoding="utf-8",
+            errors="replace",
             timeout=10,
         )
     except (OSError, subprocess.TimeoutExpired):
@@ -170,6 +199,49 @@ def check_changelog_version_matches_tag(project_root: Path) -> CheckResult:
     return CheckResult(name, True, f"{cl_version} matches latest git tag")
 
 
+def check_manifest_version_matches_tag(project_root: Path) -> CheckResult:
+    """Every declared published manifest's committed (``HEAD``) version
+    should equal the latest git tag. WARNING — see module docstring for why
+    this is not release-blocking.
+    """
+    name = "published manifests match latest git tag"
+    try:
+        declared = load_declared_manifests(project_root)
+    except ManifestSyncError as exc:
+        return CheckResult(
+            name, False, f"shipwright_changelog_config.json: {exc.detail}",
+            severity=Severity.WARNING.value,
+        )
+    if not declared:
+        return CheckResult(name, True, "no published manifests declared")
+
+    git_version = _latest_git_version_tag(project_root)
+    if git_version is None:
+        return CheckResult(name, True, "no releases yet — nothing to verify")
+    target = git_version[1:] if git_version.lower().startswith("v") else git_version
+
+    mismatches: list[str] = []
+    for entry in declared:
+        git_rel = git_relative_path(project_root, entry["path"])
+        blob = manifest_git(project_root, "show", f"HEAD:{git_rel}")
+        if blob.returncode != 0:
+            mismatches.append(f"{entry['path']}: not found at HEAD")
+            continue
+        try:
+            committed_version = read_manifest_version(blob.stdout, entry["format"])
+        except ManifestSyncError as exc:
+            mismatches.append(f"{entry['path']}: {exc.detail}")
+            continue
+        if committed_version != target:
+            mismatches.append(
+                f"{entry['path']}: committed={committed_version!r} != tag={target!r}"
+            )
+
+    if mismatches:
+        return CheckResult(name, False, "; ".join(mismatches), severity=Severity.WARNING.value)
+    return CheckResult(name, True, f"all declared manifests match {git_version}")
+
+
 # ---------------------------------------------------------------------------
 # Canon dispatcher
 # ---------------------------------------------------------------------------
@@ -185,6 +257,7 @@ def run_changelog_checks(
     # Sonder-Checks
     results.append(check_git_tag_exists(project_root))
     results.append(check_changelog_version_matches_tag(project_root))
+    results.append(check_manifest_version_matches_tag(project_root))
 
     # Canon (C4 skipped, C5 n/a)
     results.append(check_c1_phase_event_recorded(project_root, "changelog"))
@@ -210,6 +283,7 @@ __all__ = [
     "Severity",
     "check_changelog_version_matches_tag",
     "check_git_tag_exists",
+    "check_manifest_version_matches_tag",
     "run_all_checks",
     "run_changelog_checks",
 ]
