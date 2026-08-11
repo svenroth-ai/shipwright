@@ -3,16 +3,13 @@
 Isolation").
 
 Every iterate run executes in its own git worktree + branch — structurally, not
-by opt-in detection. This script is the mechanism:
-
-- Invoked from the MAIN repo  → ``git fetch origin`` → create
-  ``.worktrees/<slug>`` on a new ``iterate/<slug>`` branch cut from freshly
-  fetched ``origin/<default>`` → snapshot the main tree → write the run
-  pointer → print the worktree path as the skill's new ``{project_root}``.
-- Invoked from inside a worktree → no-op; ``{project_root}`` is the cwd.
-
-Output: a single JSON object on stdout (the machine contract — the skill reads
-``.project_root`` from it). Human-readable notes go to stderr.
+by opt-in detection. This script is the mechanism: from the MAIN repo it
+fetches origin, creates ``.worktrees/<slug>`` on a new ``iterate/<slug>``
+branch cut from freshly fetched ``origin/<default>``, snapshots the main tree,
+and writes the run pointer + scope-timing mark; from inside a worktree it is a
+no-op (``{project_root}`` is the cwd). Output: a single JSON object on stdout
+(the machine contract — the skill reads ``.project_root`` from it);
+human-readable notes go to stderr.
 
 Exit codes:
 - 0 — worktree created, or no-op (already inside a worktree)
@@ -21,14 +18,11 @@ Exit codes:
 - 3 — ``git fetch origin`` failed and ``SHIPWRIGHT_ITERATE_NO_FETCH`` is not set
 
 Offline override: set ``SHIPWRIGHT_ITERATE_NO_FETCH=1`` to skip the fetch and
-branch from the local ``origin/<default>`` ref (the run may then start from a
-stale base — that is the deliberate trade-off the operator accepts).
+branch from the local ``origin/<default>`` ref (deliberate stale-base trade-off).
 
 CLI:
-    uv run shared/scripts/tools/setup_iterate_worktree.py \\
-        --project-root . \\
-        --slug my-change \\
-        --run-id iterate-20260515-my-change \\
+    uv run shared/scripts/tools/setup_iterate_worktree.py --project-root . \\
+        --slug my-change --run-id iterate-20260515-my-change \\
         [--main main] [--session-id <id>]
 """
 
@@ -48,6 +42,7 @@ if str(_SCRIPTS_ROOT) not in sys.path:
 from lib.gitattributes_selfheal import self_heal_gitattributes  # noqa: E402
 from lib.gitignore_selfheal import self_heal_gitignore  # noqa: E402
 from lib.file_lock import LockTimeout  # noqa: E402
+from lib.iterate_phase_groups import append_mark as _mark_phase  # noqa: E402
 from lib.sweep_outbox import sweep_outbox_to_branch, sweep_warnings  # noqa: E402
 from lib.worktree_isolation import (  # noqa: E402
     GitError,
@@ -65,6 +60,15 @@ from lib.worktree_isolation import (  # noqa: E402
 )
 
 _NO_FETCH_ENV = "SHIPWRIGHT_ITERATE_NO_FETCH"
+
+
+def _mark_scope_started(project_root: Path, run_id: str) -> None:
+    """Stamp 'scope' here (first-wins) — every run reaches this with ``run_id``
+    already in hand, so the mark no longer needs a separate agent call."""
+    try:
+        _mark_phase(project_root, run_id, "scope")
+    except (OSError, ValueError) as exc:
+        print(f"setup_iterate_worktree: scope mark skipped: {exc}", file=sys.stderr)
 
 
 def _do_fetch(main_root: Path) -> tuple[bool, str]:
@@ -110,10 +114,8 @@ def setup(
     root = Path(project_root).resolve()
 
     # 1. Already inside a worktree → no new worktree, but still ensure the
-    #    per-session run pointer + the main-tree snapshot exist so the F0/F11
-    #    leak-guard has a baseline to diff against (otherwise it fail-closes
-    #    with reason=no_snapshot). The snapshot is written only if missing —
-    #    a re-invocation must never clobber the original Step-1 baseline.
+    #    per-session run pointer + main-tree snapshot exist (F0/F11 leak-guard
+    #    baseline; snapshot written only if missing — never clobber Step-1's).
     if is_worktree(root):
         main_root = main_repo_root(root)
         pointer_path = write_run_pointer(
@@ -130,6 +132,7 @@ def setup(
             write_snapshot(main_root, run_id)
             snapshot_written = True
         prune_stale_run_pointers(main_root)
+        _mark_scope_started(root, run_id)
         return 0, {
             "action": "noop",
             "in_worktree": True,
@@ -152,20 +155,16 @@ def setup(
             "action": "collision",
             "reason": "worktree_exists",
             "project_root": str(main_root),
-            "detail": (
-                f"{worktree_path} already exists — pick a different slug or "
-                f"run: git worktree remove {worktree_path}"
-            ),
+            "detail": (f"{worktree_path} already exists — pick a different slug "
+                      f"or run: git worktree remove {worktree_path}"),
         }
     if branch_exists(main_root, branch):
         return 2, {
             "action": "collision",
             "reason": "branch_exists",
             "project_root": str(main_root),
-            "detail": (
-                f"branch {branch!r} already exists — pick a different slug or "
-                f"run: git branch -D {branch}"
-            ),
+            "detail": (f"branch {branch!r} already exists — pick a different "
+                      f"slug or run: git branch -D {branch}"),
         }
 
     # 3. Fresh fetch so the branch base is never stale.
@@ -200,11 +199,10 @@ def setup(
             "detail": str(exc),
         }
 
-    # 4.5/4.6. Self-heal the canon scaffolds into the new worktree as chore commits
-    #      (→ ship in PR; guarded fail-soft no-op in the monorepo). Explicit + ordered:
-    #      gitattributes (4.5) MUST precede gitignore (4.6 — D3 outbox-ignore block);
-    #      both MUST leave a CLEAN index or the step-5 sweep staged-changes guard
-    #      false-skips. Each non-no_change status → warnings (observability parity).
+    # 4.5/4.6. Self-heal canon scaffolds into the worktree as chore commits (ship
+    #      in PR; fail-soft no-op outside the monorepo). Ordered: gitattributes
+    #      (4.5) before gitignore (4.6 — D3 outbox-ignore block); both must leave
+    #      a CLEAN index or the step-5 sweep's staged-changes guard false-skips.
     ga = self_heal_gitattributes(worktree_path)
     gi = self_heal_gitignore(worktree_path)
     heal_warnings: list[str] = []
@@ -217,9 +215,9 @@ def setup(
                                  + (f": {_heal.reason}" if _heal.reason else ""))
 
     # 5. SWEEP the gitignored main-tree triage outbox into THIS worktree's tracked
-    #    triage.jsonl + commit on iterate/<slug> BEFORE snapshotting (D2): appends ride the
-    #    PR to origin, not local main. Step-3 refreshed origin/<default> for the GC. Surface
-    #    any non-clean sweep — `skipped`/QUARANTINE both used to look like clean runs.
+    #    triage.jsonl + commit on iterate/<slug> BEFORE snapshotting (D2): appends
+    #    ride the PR, not local main. Surface any non-clean sweep — `skipped`/
+    #    QUARANTINE both used to look like clean runs.
     sweep = sweep_outbox_to_branch(main_root, worktree_path, default_branch=db)
     sweep_notes = sweep_warnings(sweep)
     for note in sweep_notes:
@@ -236,6 +234,7 @@ def setup(
         session_id=session_id,
     )
     prune_stale_run_pointers(main_root)
+    _mark_scope_started(worktree_path, run_id)
 
     warnings = [w for w in (fetch_detail, base_warning, *heal_warnings, *sweep_notes) if w]
     return 0, {

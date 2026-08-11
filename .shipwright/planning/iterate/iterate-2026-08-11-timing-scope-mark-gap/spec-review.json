@@ -1,0 +1,6 @@
+{
+  "stage": "spec-compliance",
+  "verdict": "PASS",
+  "spec_citations": [],
+  "summary": "All 6 acceptance criteria verified against the implementation: scope mark relocated into setup_iterate_worktree.py on both create/noop paths (tested), implementation span backstopped via a new mark_implementation_span.py PostToolUse hook (9 tests, all read and matching), reporting logic (iterate_throughput_stats.py/render.py) and finalization/delivery capture confirmed untouched, hooks.json change is mirrored into docs/hooks-and-pipeline.md per repo convention, Spec Impact=none is correctly justified (restores existing design intent, no FR needs correction). No scope creep detected. Note: reviewed via full-file reads + trigger-id sweep rather than a literal git diff, as no Bash tool was available to this instance."
+}

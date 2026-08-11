@@ -1,0 +1,167 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-08-11-timing-scope-mark-gap",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-11T21:59:05.271691+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-11T21:59:14.665642+00:00",
+      "disposition": "no OPENROUTER_API_KEY/OPENAI_API_KEY in this environment and --autonomous mode cannot interactively prompt for one (Branch B, no user available to choose Option 1/2); internal self-review + the code-review cascade below stand in its place",
+      "recorded_by": "autonomous-session",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 4,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "shared/scripts/hooks/mark_implementation_span.py",
+          "line": 150,
+          "finding": "_mark_done() fired unconditionally even when the writes it certifies (record_start for review/self_review) had themselves failed with LockTimeout, permanently suppressing the retry the event-based guard in _handle_bash would otherwise allow on a later matching Bash call.",
+          "suggestion": "FIXED: _start/_end now return bool success; _mark_done is called only when both review_ok and self_review_ok are True. Covered by test_lock_timeout_on_review_write_leaves_done_marker_unset.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "performance",
+          "file": "shared/scripts/hooks/mark_implementation_span.py",
+          "line": 174,
+          "finding": "pointer_run_id/pointer_worktree_root cost two git rev-parse shellouts on every Write/Edit/Bash call for the whole Build/Review span before the done sentinel exists (fast_main_root never short-circuits from a worktree cwd since .git is a file there, not a directory).",
+          "suggestion": "FIXED: added a session-keyed resolved-pointer cache (_read_resolved_cache/_write_resolved_cache), re-validated on every read via session_id equality and worktree liveness rather than trusted blindly. Covered by test_resolved_pointer_is_cached_across_calls.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/scripts/hooks/mark_implementation_span.py",
+          "line": 97,
+          "finding": "_value_after only recognized space-separated --flag value, not --flag=value, so a plausible agent invocation shape would silently fail to match.",
+          "suggestion": "FIXED: _value_after now also checks the --flag=value form. Covered by test_equals_form_flag_value_is_matched.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "test-coverage",
+          "file": "shared/tests/test_mark_implementation_span.py",
+          "line": null,
+          "finding": "No test exercised the LockTimeout path, which would have surfaced the unconditional _mark_done bug directly.",
+          "suggestion": "FIXED: added test_lock_timeout_on_review_write_leaves_done_marker_unset, monkeypatching record_start to raise LockTimeout.",
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-08-11T22:31:57.718077+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "inherit"
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 4,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "concurrency",
+          "file": "shared/scripts/hooks/mark_implementation_span.py",
+          "line": 168,
+          "finding": "Claim under doubt: The round-3 code-review fix (only mark done once both review_ok and self_review_ok succeed) makes a retry always possible after a LockTimeout. — The retry guard checked only whether `review` was already started, not `self_review`. An asymmetric failure (review succeeds, self_review alone hits LockTimeout) left self_review permanently unwritten because the guard saw review present and returned before ever retrying it.",
+          "suggestion": "FIXED: the guard now tracks review_started/self_review_started independently and retries whichever edge is still missing. Covered by test_self_review_only_lock_timeout_is_retried_on_next_call.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "high",
+          "category": "performance",
+          "file": "shared/scripts/hooks/mark_implementation_span.py",
+          "line": 277,
+          "finding": "Claim under doubt: The resolved-pointer cache makes calls before the done sentinel cheap. — The cache only covers the case where an iterate IS active. A failed resolution (no active iterate at all) is never memoized, so every Write/Edit/Bash call in every non-iterate session pays pointer_run_id's unconditional git rev-parse cost, forever, since the hook's Write|Edit|Bash matcher fires for the plugin's whole session lifetime.",
+          "suggestion": "FIXED: added a git-free negative fast path (no_active_iterate_fast_check) that skips the resolvers entirely when cwd is an ordinary checkout with no active-iterate pointer for any session. Covered by test_no_active_iterate_skips_pointer_resolution.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "boundary-contract",
+          "file": "shared/scripts/hooks/mark_implementation_span.py",
+          "line": 260,
+          "finding": "Claim under doubt: The done-sentinel and resolved-cache correctly key off the run's worktree. — Both were keyed on raw Path.cwd(), not a normalized repo root. A cwd drift within the same checkout (e.g. `cd plugins/shipwright-build` mid-session, per this repo's own documented test convention) would miss the cache and write a stray duplicate elsewhere. Confirmed non-data-corrupting (writes always use the git-resolved worktree_root) but wasteful.",
+          "suggestion": "FIXED: added a git-free repo_root_hint walk-up (looks for a directory owning both .git and .shipwright) to normalize the cache key.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "reversibility",
+          "file": "shared/scripts/hooks/_mark_implementation_span_state.py",
+          "line": 68,
+          "finding": "Claim under doubt: One worktree hosts one run at a time, so the pre-resolution done-marker glob (matching any run_id) is always safe. — Could not find a reachable code path in this diff that re-purposes an existing worktree directory under a different run_id (setup_iterate_worktree.py's create path refuses a slug/branch collision; its noop/resume path keeps the same run_id). Flagged at reduced confidence since the invariant is asserted in a comment, not enforced in code.",
+          "suggestion": "REASONED REBUTTAL (not code-changed): the one check that costs nothing extra to make precise (the post-resolution check, where run_id is already known) is now run_id-scoped (has_done_marker) instead of reusing the broad glob. The pre-resolution glob (has_any_done_marker) stays broad by design -- that breadth is what lets it skip resolution before run_id is known -- and its docstring now documents the residual assumption explicitly.",
+          "source": "doubt-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-08-11T22:48:51.163029+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "inherit"
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-11T21:59:26.748619+00:00",
+      "disposition": "no OPENROUTER_API_KEY/OPENAI_API_KEY in this environment and --autonomous mode cannot interactively prompt for one (Branch B); the internal spec/code/doubt cascade below runs in its place",
+      "recorded_by": "autonomous-session",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-11T22:03:56.533152+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "inherit"
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-11T21:59:14.784247+00:00",
+      "disposition": "opus-plan-reviewer has no working delivery path for iterate (project memory: not wired into anything) — no functioning internal fallback exists to run",
+      "recorded_by": "autonomous-session",
+      "parse_status": null,
+      "raw_excerpt": null
+    }
+  }
+}
