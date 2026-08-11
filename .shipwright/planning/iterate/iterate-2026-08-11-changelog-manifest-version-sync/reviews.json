@@ -1,0 +1,422 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-08-11-changelog-manifest-version-sync",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-11T22:15:13.088524+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 13,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The surgical substitution uses a regex pattern with the raw `current_value` (e.g., `\"version\"\\\\s:\\\\s\"<current_value>\"`). If the version string contains regex meta-characters (dots, hyphens, plus signs — common in semver), the unescaped pattern could match unintended text (e.g., a dot matches any character). This could lead to an incorrect single-match replacement that bypasses the ambiguity fallback.",
+          "suggestion": "Escape the current version string with `re.escape(current_value)` before building the pattern. This ensures a literal match and prevents false positives. If the escape changes the character count, the replacement length still matches.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "The `--verify-commit` mode runs `git show <sha>:<path>` using the declared path, which is assumed to be relative to the git root. If the project root is a subdirectory within the repo (e.g., a monorepo layout), and the tool is not run with the git root as its working directory or explicitly converts paths, the command will fail with a \"path not in the tree\" error, causing a false verification failure.",
+          "suggestion": "Either run the tool with `cwd=<project_root>` (which is typically the repo root in these setups) and accept that the path is repo-relative, or resolve the path to a git-relative path using `git rev-parse --show-prefix` / prepend the project-root-relative path if needed. The current plan does not address this, but the repo convention may make it a non-issue; still worth a note in the reference doc or a test with a non-root project dir.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "The two-phase write restores original bytes if a mid-sequence write fails, but the restoration code itself might encounter an error (e.g., permission change). This is an unlikely but possible edge; the plan could be strengthened with a note that the tool will still report the failure and exit non-zero, leaving the worktree in an inconsistent state.",
+          "suggestion": "Document in the reference doc that if restoration itself fails, the worktree may be left partially modified and must be recovered manually (`git checkout`). This is a natural extension of the crash-window recovery note.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "The new tool and standing check rely on `shipwright_changelog_config.json` in the project root. If the file is missing, the tool is a no-op; however, the standing detective check is designed to be a no‑op as well (pass when no config). The plan confirms this, but the integration test for the standing check must verify that absence of the config file does not cause a false-positive failure in `run_changelog_checks`.",
+          "suggestion": "Explicitly include a test case for the standing check: repo with no config file → check passes (no-op). This is implied but should be enumerated in the test strategy to avoid accidental errors.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "The SKILL.md step 5.4 writes and stages manifests before Step 5.5 (compliance docs). If Step 5.5 fails (e.g., compliance doc generation error), the release aborts. The worktree will contain the bumped manifest(s) but the commit will not be made. The recovery note covers this, but operators may unknowingly leave the bumped version on disk and accidentally commit it later. The standing detective check catches it then, but the immediate risk after an aborted release is mild.",
+          "suggestion": "In the recovery documentation, advise running `git checkout -- <paths>` after such an abort or re-run the release to re-use the bumped state. This is already mentioned; ensure it’s prominent.  Overall assessment: The implementation plan is thorough, directly addresses the regression case with commit-blob verification, and properly scopes the change. The remaining concerns are refinements around regex safety and corner-case documentation.  SHIPWRIGHT_VERDICT: approve",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "security",
+          "file": null,
+          "line": null,
+          "finding": "The allowed internal-symlink behavior is incompatible with staging the configured path as written. If `published_manifests` names `link/package.json` and `link` is a symlink to an in-root target, the tool will write the resolved target, but `git add -- link/package.json` generally stages the symlink entry rather than the target file’s changed blob. The release commit can therefore omit the version update while the worktree appears correct.",
+          "suggestion": "Either reject symlinked manifest paths entirely (the simplest and safest release-tooling contract), or normalize every accepted entry to the canonical, project-root-relative target path and use that canonical path consistently for write, `git add`, commit pathspec output, and `git show` verification. Add an integration test for an in-root symlink, not only a symlink escape.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "The verify-commit mode appears to re-read `shipwright_changelog_config.json` from the worktree after the release commit is made. That makes the gate dependent on mutable state rather than the exact manifest set validated and staged in Step 5.4. A removed, edited, or uncommitted config can turn verification into a no-op or change the list after the write pass.",
+          "suggestion": "Freeze the canonical declared manifest list produced by Step 5.4 and pass it to verify mode via a machine-readable, validated input/result file, or have verify mode read the config from the release commit blob and ensure that config is part of the intended committed release state. Do not let verification discover its scope from mutable worktree configuration.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "stage` stages declared paths even when `changed: false`. This can silently stage unrelated pre-existing edits in a declared manifest, including edits made before the release command began. The subsequent restricted `git commit` can then publish those edits as part of the release.",
+          "suggestion": "Establish and enforce a clean-index/worktree prerequisite for declared manifest paths before synchronization, or explicitly detect pre-existing unstaged/index changes and fail before mutation. If release workflow conventions already require a clean tree, make that check explicit in the tool or Step 5.4 rather than relying on operator discipline.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "Configuration parsing and structural validation are not defined. Malformed `shipwright_changelog_config.json`, a non-array `published_manifests`, non-object entries, missing/non-string `path`, or duplicate/aliasing paths can otherwise cause uncaught exceptions, ambiguous behavior, or duplicate writes/staging. This matters especially because the configuration is treated as untrusted brownfield-repository input.",
+          "suggestion": "Add named config-validation failures with well-formed JSON output for invalid JSON and invalid shape/types. Canonicalize validated paths and reject duplicate canonical targets, including aliases such as `a/package.json` and `./a/package.json`; reject non-regular files/directories as manifests.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The JSON approach does not address duplicate top-level `version` keys. Python’s normal JSON decoder accepts duplicate keys and retains only one, while the surgical regex may update one occurrence and leave another. A fallback `json.dump` can also silently collapse duplicate keys, producing a materially different manifest.",
+          "suggestion": "Parse with duplicate-key detection (at least for the top-level `version` key) and fail closed with a named malformed/ambiguous-manifest status. Do not attempt a surgical rewrite or re-render when top-level version semantics are ambiguous.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "Rollback coverage stops at write failures. A `git add` failure after successful writes—for example an index lock, filesystem failure, or interrupted Git operation—still leaves bumped, uncommitted manifests and potentially a partially updated index. The documented crash-window recovery should cover this ordinary failure path too.",
+          "suggestion": "Treat staging as part of the transaction: on staging failure, restore changed manifest bytes and reset only the affected index paths where safe, or at minimum return a distinct failure that clearly states the worktree/index may require recovery. Expand `manifest-sync.md` recovery guidance and add a staged-failure test.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "The standing check’s source-of-truth semantics are underspecified. “Current committed version” should not mean the worktree, because dirty files can create false positives or mask committed drift. It must also use the same config/path/format validation rules as the release tool rather than implementing a second, weaker config reader.",
+          "suggestion": "Define the check as comparing manifest blobs at `HEAD` to the latest applicable tag, with configuration scope likewise resolved consistently from committed state or a clearly documented repository configuration source. Reuse shared validation helpers from the sync tool where practical, without introducing a broad new framework.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "security",
+          "file": null,
+          "line": null,
+          "finding": "Git commands need explicit argument-safe handling for project-authored paths. Paths beginning with `-`, and the distinction between filesystem paths and Git revision/path syntax in `git show <sha>:<path>`, can otherwise produce surprising behavior.",
+          "suggestion": "Invoke subprocesses without a shell; use `git add -- <canonical-paths>` and `git commit ... -- <canonical-paths>`. Construct commit-blob lookup only from a verified commit SHA and normalized relative paths, and add coverage for unusual but valid filenames where feasible.  Overall, the dedicated tool, preflight/write rollback, staged-path ownership, and committed-blob tag gate are the right architecture and materially close the original regression. Resolve the symlink staging gap and freeze the verification scope before implementation; the remaining items are important hardening for a release gate operating on untrusted repository configuration.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-08-11T21:51:57.179075+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[deepseek] - **Category:** edge-case  \n  **Severity:** medium  \n  **Finding:** The surgical substitution uses a regex pattern with the raw `current_value` (e.g., `\"version\"\\\\s*:\\\\s*\"<current_value>\"`). If the version string contains regex meta-characters (dots, hyphens, plus signs — common in semver), the unescaped pattern could match unintended text (e.g., a dot matches any character). This could lead to an incorrect single-match replacement that bypasses the ambiguity fallback.  \n  **Suggestion:** Escape the current version string with `re.escape(current_value)` before building the pattern. This ensures a literal match and prevents false positives. If the escape changes the character count, the replacement length still matches.\n\n- **Category:** risk  \n  **Severity:** low  \n  **Finding:** The `--verify-commit` mode runs `git show <sha>:<path>` using the declared path, which is assumed to be relative to the git root. If the project root is a subdirectory within the repo (e.g., a monorepo layout), and the tool is not run with the git root as its working directory or explicitly converts paths, the command will fail with a \"path not in the tree\" error, causing a false verification failure.  \n  **Suggestion:** Either run the tool with `cwd=<project_root>` (which is typically the repo root in these setups) and accept that the path is repo-relative, or resolve the path to a git-relative path using `git rev-parse --show-prefix` / prepend the project-root-relative path if needed. The current plan does not address this, but the repo convention may make it a non-issue; still worth a note in the reference doc or a test with a non-root project dir.\n\n- **Category:** approach  \n  **Severity:** low  \n  **Finding:** The two-phase write restores original bytes if a mid-sequence write fails, but the restoration code itself might encounter an error (e.g., permission change). This is an unlikely but possible edge; the plan could be strengthened with a note that the tool will still re […truncated]\n\n[openai] 1. **Category: security**  \n   **Severity: high**  \n   **Finding:** The allowed internal-symlink behavior is incompatible with staging the configured path as written. If `published_manifests` names `link/package.json` and `link` is a symlink to an in-root target, the tool will write the resolved target, but `git add -- link/package.json` generally stages the symlink entry rather than the target file’s changed blob. The release commit can therefore omit the version update while the worktree appears correct.  \n   **Suggestion:** Either reject symlinked manifest paths entirely (the simplest and safest release-tooling contract), or normalize every accepted entry to the canonical, project-root-relative target path and use that canonical path consistently for write, `git add`, commit pathspec output, and `git show` verification. Add an integration test for an in-root symlink, not only a symlink escape.\n\n2. **Category: approach**  \n   **Severity: high**  \n   **Finding:** The verify-commit mode appears to re-read `shipwright_changelog_config.json` from the worktree after the release commit is made. That makes the gate dependent on mutable state rather than the exact manifest set validated and staged in Step 5.4. A removed, edited, or uncommitted config can turn verification into a no-op or change the list after the write pass.  \n   **Suggestion:** Freeze the canonical declared manifest list produced by Step 5.4 and pass it to verify mode via a machine-readable, validated input/result file, or have verify mode read the config from the release commit blob and ensure that config is part of the intended committed release state. Do not let verification discover its scope from mutable worktree configuration.\n\n3. **Category: risk**  \n   **Severity: medium**  \n   **Finding:** `--stage` stages declared paths even when `changed: false`. This can silently stage unrelated pre-existing edits in a declared manifest, including edits made before the release command began. The  […truncated]",
+      "verdicts": {
+        "openai": "revise",
+        "deepseek": "approve"
+      },
+      "model_tier": "opus"
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 9,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "correctness",
+          "file": "shared/scripts/tools/sync_release_manifests.py",
+          "line": null,
+          "finding": "verify_commit() trusted any --result-file, reading only recorded['manifests'] and ignoring the recorded 'status'/'version' it wrote itself. main() writes the file unconditionally including on a FAILED sync, at a fixed non-run-scoped path persisting across releases -- a failed-then-resumed release or a stale prior-release file made the pre-tag gate report ok.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "shared/scripts/tools/sync_release_manifests.py",
+          "line": null,
+          "finding": "_is_dirty's fail-closed carve-out matched the English substring 'not a git repository' in git stderr -- localizable, would break on a localized git.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "shared/scripts/tests/test_manifest_sync_core.py",
+          "line": null,
+          "finding": "test_surgical_substitution_escapes_regex_metacharacters was vacuous -- its decoy field could never match the prefix-anchored pattern with or without re.escape.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/scripts/tools/sync_release_manifests.py",
+          "line": null,
+          "finding": "Surgical write not byte-preserving for CRLF manifests (read_text applies universal-newline translation).",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "shared/scripts/tools/sync_release_manifests.py",
+          "line": null,
+          "finding": "Dead/backwards is_file() filter on manifest_pathspec.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/scripts/tools/sync_release_manifests.py",
+          "line": null,
+          "finding": "manifest_pathspec key presence inconsistent under --dry-run --stage.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "performance",
+          "file": "shared/scripts/lib/manifest_sync_core.py",
+          "line": null,
+          "finding": "git_relative_path() recomputes an invariant per manifest in two loops.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "shared/scripts/tools/tests/test_sync_release_manifests.py",
+          "line": null,
+          "finding": "Test comment stated the opposite of the code's actual ordering.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "architecture",
+          "file": "shared/scripts/lib/manifest_sync_core.py",
+          "line": null,
+          "finding": "Module sits at its 300-line source cap with zero headroom.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-08-11T22:44:25.013848+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 8,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "correctness",
+          "file": "plugins/shipwright-changelog/skills/changelog/references/manifest-sync.md",
+          "line": null,
+          "finding": "Claim under doubt: A no-manifests-declared run reporting status ok is a legitimate, verified no-op. — Every no-config path (sync, verify-commit, and the standing check) reports green with no independent cross-check. This is indistinguishable from 'the operator's shipwright_changelog_config.json is silently gitignored in this checkout' versus 'genuinely nothing to declare' -- the tool cannot tell the difference and neither can the operator from its output alone. Checked whether existing framework tooling already covers this (gitignore_check.py's check_paths_against_gitignore): it only checks paths a plugin's own outputs generate (generate_adoption_artifacts.py's rel_outputs), never an arbitrary hand-authored config file like this one.",
+          "suggestion": "Either full verification that the config is tracked (out of this card's stated scope), or a documented operator precondition advising a git ls-files / git check-ignore check before trusting a clean no-op run.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "shared/scripts/tools/sync_release_manifests.py",
+          "line": 164,
+          "finding": "Claim under doubt: On stage_failed, _restore(written) fully reverts the sync attempt. — _restore only reverts worktree bytes -- it never unstages the index (git reset / git restore --staged) on a partial git add. The one test covering this (test_stage_failure_restores_written_bytes) fully mocks git, so it can't detect a genuine partial-staging scenario either way. Empirically confirmed via a throwaway repo that git add -- <existing> <nonexistent> fails atomically (nothing staged) for the one failure mode preflight can't already rule out (paths are confirmed to exist first), but other failure modes (disk, permissions) were not ruled out.",
+          "suggestion": "Either git reset -q -- <paths> alongside _restore on the stage_failed branch, or narrow the doc/AC claim to 'worktree bytes only' and add the unstage step to manifest-sync.md's Recovery section.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "shared/scripts/tools/sync_release_manifests.py",
+          "line": 226,
+          "finding": "Claim under doubt: verify_commit's stdout is always well-formed JSON, per the tool's own stated contract. — verify_commit hardened the CONTENT check (recorded status/version) but not the SHAPE. recorded.get('status') on a non-dict recorded (json.loads successfully parsing '[]', 'null', a bare string, or a number) raises AttributeError, producing a traceback instead of well-formed JSON on stdout. Similarly m['path']/m['format'] in the per-manifest loop would KeyError/TypeError on a malformed entry.",
+          "suggestion": "isinstance(recorded, dict) and isinstance(manifests, list) checks before any attribute access, plus per-entry shape validation, all returning result_file_invalid rather than raising.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "security",
+          "file": "shared/scripts/lib/manifest_sync_core.py",
+          "line": 205,
+          "finding": "Claim under doubt: resolve_contained_path's symlink guard (Path.is_symlink()) refuses every in-root or escaping link component, on every platform this tool runs on. — CPython's Path.is_symlink() only sets S_IFLNK for IO_REPARSE_TAG_SYMLINK, not IO_REPARSE_TAG_MOUNT_POINT -- so an NTFS junction (mklink /J) is invisible to this check. A junction needs no admin/Developer Mode, unlike a real symlink, making it the EASIER escape to construct on Windows. Both existing symlink tests (test_symlink_in_path_rejected, test_in_root_symlink_also_rejected) self-skip via pytest.skip() on the primary Windows dev machine (PermissionError creating a real symlink), so this guard has had zero real test coverage there.",
+          "suggestion": "A Windows-specific reparse-point check (os.lstat().st_file_attributes & stat.FILE_ATTRIBUTE_REPARSE_POINT) OR'd into the existing is_symlink() check, plus a test that creates a real junction (mklink /J, no admin needed) instead of relying on the self-skipping symlink tests.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "plugins/shipwright-changelog/skills/changelog/SKILL.md",
+          "line": 297,
+          "finding": "Claim under doubt: The && chain in Step 6 enforces 'non-zero exit anywhere in the release commit + verify + tag sequence blocks the tag'. — git commit -- <paths> is a SEPARATE bash statement whose exit code is discarded -- the && chain begins only at the SUBSEQUENT refresh_compliance_docs.py line. If git commit itself fails (the bloat pre-commit hook, an empty/no-op pathspec, or 'nothing to commit'), the script continues, and $(git rev-parse HEAD) in the subsequent commands silently re-resolves to the PREVIOUS commit. If that previous commit happens to already have matching manifests (e.g. from an earlier successful release), the verify-commit gate passes and git tag fires over a commit that never actually received this release's CHANGELOG.md or manifest bump.",
+          "suggestion": "Extend the && chain to start at git commit itself, so a failed/no-op commit halts before any verify/tag step runs.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/scripts/tools/sync_release_manifests.py",
+          "line": 267,
+          "finding": "Claim under doubt: --result-file behaves identically regardless of caller working directory, and a --dry-run result can never be mistaken for a real one. — --result-file in main() is resolved as a bare Path(args.result_file) -- relative to the process CWD, not --project-root. SKILL.md's own usage makes the two coincide, but nothing in the tool enforces that for another caller. Separately, a --dry-run sync still writes a full status: 'ok' result file with dry_run: true, and verify_commit didn't check that flag before trusting the file.",
+          "suggestion": "Resolve a relative --result-file against --project-root in main(), and reject recorded.get('dry_run') truthy in verify_commit as sync_incomplete.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "robustness",
+          "file": "shared/scripts/lib/manifest_sync_core.py",
+          "line": 96,
+          "finding": "Claim under doubt: The git() helper used throughout this module is hardened against subprocess edge cases to the same standard as similar helpers elsewhere in the codebase. — git() used text=True, encoding='utf-8' with strict decode errors and no timeout=, unlike a sibling pattern elsewhere in the codebase that pins timeout=10. A non-UTF-8 byte in git's output (e.g. a non-ASCII path or commit message under a different locale) would raise UnicodeDecodeError instead of failing closed with a named status; an unresponsive git process (network-mounted repo, lock contention) could hang indefinitely. changelog_checks._latest_git_version_tag, pre-existing but newly load-bearing for this card's new standing check, had no encoding= at all.",
+          "suggestion": "Add errors='replace' and timeout=10 to git(), and encoding='utf-8' to the subprocess.run calls in changelog_checks.py that this card's new check now depends on.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "documentation",
+          "file": "shared/scripts/tools/sync_release_manifests.py",
+          "line": 60,
+          "finding": "Claim under doubt: The manifest_dirty_before_sync guard's scope is fully documented for a reader of manifest-sync.md, not just a reader of the source docstring. — _is_dirty returns False (not dirty) immediately for a --project-root that isn't a git repo at all -- a deliberate, correct carve-out (this tool's own unit-test fixtures use plain directories), but it was previously stated only in a Python docstring, not in the user-facing contract doc a project operator would actually read.",
+          "suggestion": "Name the carve-out explicitly in manifest-sync.md's 'What's out of scope' section, not just in the source.",
+          "source": "doubt-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-08-11T23:09:54.956603+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 5,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "spec",
+          "file": "plugins/shipwright-changelog/skills/changelog/SKILL.md:304-307",
+          "line": null,
+          "finding": "Step 6 still requires the agent to manually expand `<every path from manifest_pathspec>` into `git commit -- <paths>`. `git add` in Step 5.4 does not solve this because the explicit `git commit -- <paths>` records only the selected worktree paths, not necessarily all staged paths. Omitting a manifest here recreates the exact silent-omission mechanism the spec explicitly prohibits; the later verification prevents tagging but leaves an incorrect “release” commit and makes the intended same-commit guarantee depend on markdown substitution.",
+          "suggestion": "Make the commit path selection machine-owned rather than a prose placeholder—for example, have the tool produce and invoke a safe commit-path mechanism, or change the workflow so the release commit consumes a controlled index containing only the intended paths. Do not require an agent to manually transcribe manifest paths.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "bug",
+          "file": "shared/scripts/lib/manifest_sync_core.py:144-170",
+          "line": null,
+          "finding": "Duplicate detection is lexical only and does not canonicalize filesystem paths. Entries such as `a/../package.json` and `package.json` resolve to the same file but are accepted as separate manifests, contrary to the required `duplicate_manifest_path` failure for entries that canonicalize to the same file.",
+          "suggestion": "Resolve and contain each declared path before duplicate detection, then deduplicate on a stable project-root-relative resolved path. Add a test covering `a/../package.json` versus `package.json`.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": "shared/scripts/tools/sync_release_manifests.py:105-106",
+          "line": null,
+          "finding": "The no-manifests early return omits `manifest_pathspec`, even when invoked with `--stage`. Step 5.4 instructs the caller to retain that field for Step 6, while the mini-plan specifically requires an empty list when nothing is declared. A no-config project can therefore fail in an implementation that reads the documented output field instead of remaining a clean no-op.",
+          "suggestion": "When `stage=True`, return `\"manifest_pathspec\": []` on the no-manifests path (or return it unconditionally). Add a CLI-level no-config/`--stage` test asserting the field is present and empty.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "bug",
+          "file": "shared/scripts/lib/manifest_sync_core.py:41-43",
+          "line": null,
+          "finding": "The version validator accepts strings that are not valid SemVer 2.0, including `01.2.3`, `1.02.3`, and numeric prerelease identifiers such as `1.2.3-01`. The specification requires bare semver validation before any write; these values may be rejected or interpreted inconsistently by package tooling.",
+          "suggestion": "Use a SemVer-compliant parser/regex that rejects leading zeroes in numeric major/minor/patch and numeric prerelease identifiers. Add these invalid examples to `test_validate_version_rejects`.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "bug",
+          "file": "shared/scripts/tools/sync_release_manifests.py:57-64",
+          "line": null,
+          "finding": "A failed `git status --porcelain` is treated as “not dirty,” so the tool proceeds to modify and potentially stage a manifest without having established the required clean pre-sync state. This fails open for Git/index failures rather than failing closed as required for the dirty-state guard.",
+          "suggestion": "Treat a non-zero `git status` result as a named failure and stop before writing; only an explicit empty successful status result should mean clean. Add a test that mocks a failing status call.  Overall assessment: ship-with-fixes. The core write, staging, committed-blob verification, and warning check are largely present, but the manual commit-pathspec dependency still violates a central release-safety requirement and several validation/no-op edge cases need correction.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-08-11T22:29:25.477209+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "partial",
+      "raw_excerpt": "[deepseek] <no review returned: provider returned an empty reply>\n\n[openai] - Category: spec\n- Severity: high\n- File: plugins/shipwright-changelog/skills/changelog/SKILL.md:304-307\n- Finding: Step 6 still requires the agent to manually expand `<every path from manifest_pathspec>` into `git commit -- <paths>`. `git add` in Step 5.4 does not solve this because the explicit `git commit -- <paths>` records only the selected worktree paths, not necessarily all staged paths. Omitting a manifest here recreates the exact silent-omission mechanism the spec explicitly prohibits; the later verification prevents tagging but leaves an incorrect “release” commit and makes the intended same-commit guarantee depend on markdown substitution.\n- Suggestion: Make the commit path selection machine-owned rather than a prose placeholder—for example, have the tool produce and invoke a safe commit-path mechanism, or change the workflow so the release commit consumes a controlled index containing only the intended paths. Do not require an agent to manually transcribe manifest paths.\n\n- Category: bug\n- Severity: medium\n- File: shared/scripts/lib/manifest_sync_core.py:144-170\n- Finding: Duplicate detection is lexical only and does not canonicalize filesystem paths. Entries such as `a/../package.json` and `package.json` resolve to the same file but are accepted as separate manifests, contrary to the required `duplicate_manifest_path` failure for entries that canonicalize to the same file.\n- Suggestion: Resolve and contain each declared path before duplicate detection, then deduplicate on a stable project-root-relative resolved path. Add a test covering `a/../package.json` versus `package.json`.\n\n- Category: edge-case\n- Severity: medium\n- File: shared/scripts/tools/sync_release_manifests.py:105-106\n- Finding: The no-manifests early return omits `manifest_pathspec`, even when invoked with `--stage`. Step 5.4 instructs the caller to retain that field for Step 6, while the mini-plan specifically requires an empty list when nothing is declared. A no-config proj […truncated]",
+      "verdicts": {
+        "openai": "revise",
+        "deepseek": "unavailable"
+      }
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-11T22:22:14.239892+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-11T21:44:29.308750+00:00",
+      "disposition": "internal opus-plan-reviewer pass completed; 16 findings triaged (fix all 5 high, fix 6/8 medium, disclose 2 medium, fix 1 low, disclose 1 low)",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    }
+  }
+}

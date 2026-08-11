@@ -253,6 +253,23 @@ If edit: apply changes and re-preview.
 
 ---
 
+## Step 5.4: Sync Published Package Manifests
+
+**Goal:** keep every declared published-package manifest's version in
+lock-step with this release, tag and manifest by construction. Runs
+BEFORE Step 5.5 — a worktree write must not land in the staging→commit
+gap Step 6 warns about. Full contract: [manifest-sync.md](references/manifest-sync.md).
+
+```bash
+uv run "{shared_root}/scripts/tools/sync_release_manifests.py" \
+  --project-root . --version "{version}" --stage \
+  --result-file ".shipwright/runtime/manifest_sync_result.json"
+```
+
+`status: "ok"` → proceed, keeping `manifest_pathspec` for Step 6's commit
+pathspec. **Anything else — stop, do not tag.** No config / no declared
+manifests → no-op.
+
 ## Step 5.5: Refresh the Compliance Evidence Documents
 
 The seven documents under `.shipwright/compliance/` ship *with* the release
@@ -269,8 +286,9 @@ uv run "{shared_root}/scripts/tools/refresh_compliance_docs.py" \
 
 Commit **by explicit pathspec** — never `.shipwright/compliance/`, which commits
 every tracked file under it and widens the pinned seven. Use Step 5.5's
-`evidence_pathspec`: it omits any path this project lacks, and a pathspec matching
-no file aborts the whole commit.
+`evidence_pathspec` and Step 5.4's `manifest_pathspec`: both omit any path
+this project lacks / didn't declare, and a pathspec matching no file aborts
+the whole commit.
 
 ```bash
 git add CHANGELOG.md
@@ -278,15 +296,22 @@ git add .shipwright/agent_docs/decision_log.md .shipwright/agent_docs/decision_l
 git add -A .shipwright/agent_docs/decision-drops/ .shipwright/planning/adr/  # stages Step 4's deletions + ADR-dir dirt — see below
 git commit -m "chore(release): v{version}" -- \
   CHANGELOG.md .shipwright/agent_docs/decision_log.md .shipwright/agent_docs/decision_log_index.md \
-  .shipwright/agent_docs/decision-drops/ .shipwright/planning/adr/ <every path from evidence_pathspec>
-# `git commit -- <paths>` records the WORKTREE, not the index: a writer between
-# Step 5.5 and here substitutes unstamped bytes silently. `&&` enforces "non-zero → no tag".
-uv run "{shared_root}/scripts/tools/refresh_compliance_docs.py" \
-  --project-root "$(pwd)" --verify-commit "$(git rev-parse HEAD)" --release-audit \
+  .shipwright/agent_docs/decision-drops/ .shipwright/planning/adr/ <every path from evidence_pathspec> \
+  <every path from manifest_pathspec> \
+  && uv run "{shared_root}/scripts/tools/refresh_compliance_docs.py" \
+       --project-root "$(pwd)" --verify-commit "$(git rev-parse HEAD)" --release-audit \
+  && uv run "{shared_root}/scripts/tools/sync_release_manifests.py" \
+       --project-root "$(pwd)" --version "{version}" \
+       --verify-commit "$(git rev-parse HEAD)" \
+       --result-file ".shipwright/runtime/manifest_sync_result.json" \
   && git tag -a v{version} -m "Release v{version}"
+# The chain starts at `git commit`: a failed/no-op commit must not leave
+# `$(git rev-parse HEAD)` re-resolving to the PREVIOUS commit and tagging
+# the wrong one. `git commit -- <paths>` reads the WORKTREE, not the index —
+# see manifest-sync.md's "the pair that actually closes the card's regression".
 ```
 
-> `.shipwright/planning/adr/` is a DIRECTORY pathspec deliberately, and leaving it unstaged breaks CI — both in [compliance-evidence.md](references/compliance-evidence.md). `decision_log_index.md` needs the same treatment (Step 4 refreshes it every non-dry-run pass, drops or not) — leaving it unstaged reds `test_decision_log_index_producers.py::test_committed_index_is_not_stale` on main. `decision-drops/` is TRACKED (iterate-2026-08-08-track-decision-drops): Step 4 already deleted the drops it folded, and `-A` is what stages that deletion — skip it and the next release re-folds the same drops under new ADR numbers. `&&` withholds the tag on ANY nonzero exit here, including the audit subprocess failing to even start (e.g. `uv`/PyYAML unavailable) — a genuinely verified evidence commit with `status: "verified_release_audit_incomplete"` reads as environmental, not a real block; re-run once the dependency resolves.
+> `.shipwright/planning/adr/` is a DIRECTORY pathspec deliberately, and leaving it unstaged breaks CI — both in [compliance-evidence.md](references/compliance-evidence.md). `decision_log_index.md` needs the same treatment (Step 4 refreshes it every non-dry-run pass, drops or not) — leaving it unstaged reds `test_decision_log_index_producers.py::test_committed_index_is_not_stale` on main. `decision-drops/` is TRACKED (iterate-2026-08-08-track-decision-drops): Step 4 already deleted the drops it folded, and `-A` is what stages that deletion — skip it and the next release re-folds the same drops under new ADR numbers. `&&` withholds the tag on ANY nonzero exit here, including the audit subprocess failing to even start (e.g. `uv`/PyYAML unavailable) — a genuinely verified evidence commit with `status: "verified_release_audit_incomplete"` reads as environmental, not a real block; re-run once the dependency resolves. The manifest `--verify-commit` reads the COMMITTED blob, never the worktree — full contract in [manifest-sync.md](references/manifest-sync.md); a project with no declared manifests sees it report `status: "ok"` immediately, at negligible cost.
 
 ---
 
@@ -396,4 +421,5 @@ Tags + main pushed to origin
 - [conventional-commits.md](references/conventional-commits.md) — Parsing rules
 - [changelog-format.md](references/changelog-format.md) — Keep-a-Changelog format
 - [compliance-evidence.md](references/compliance-evidence.md) — The seven evidence documents at release
+- [manifest-sync.md](references/manifest-sync.md) — Published package manifest version sync + verify
 - [release-workflow.md](references/release-workflow.md) — Parallel iterates; why the canon stops at C3
