@@ -192,8 +192,8 @@ uv run "{shared_root}/scripts/tools/iterate_timing.py" end <name> \
 |---|---|
 | `start discovery_diagnosis --parent none` | BUG intent, entering F-debug's Read-Error phase |
 | `end discovery_diagnosis` / `start planning --parent none` | Intent classified non-BUG, or F-debug root-cause found |
-| `end planning` / `start implementation --parent none` | Step 6 entry (Build) — same anchor as the existing `mark build` |
-| `end implementation` / `start review --parent none` + `start self_review --parent review` | Step 7 entry (Self-Review) — same anchor as `mark review` |
+| `end planning` / `start implementation --parent none` | Step 6 entry (Build) — same anchor as the existing `mark build`. **Backstopped:** a `mark_implementation_span.py` PostToolUse hook auto-emits `start implementation` from the first `Write`/`Edit` outside `.shipwright/` this run, if the agent call was skipped (trg-e6d1cc5e, measured absent in 31 of 32 runs). |
+| `end implementation` / `start review --parent none` + `start self_review --parent review` | Step 7 entry (Self-Review) — same anchor as `mark review`. **Backstopped:** the same hook auto-emits this triple from the first Bash call matching `record_review_pass.py record --review-type self --status completed` (self-review is unconditionally mandatory, so this call always happens). Either backstop is first-wins against the sidecar, so an agent that does call `iterate_timing.py` itself is never double-recorded. |
 | `end self_review` / `start spec_review --parent review` … `end spec_review` / `start code_review …` / `start doubt_review …` | Step 8's cascade, bracketing each stage's Agent-tool call |
 | `end review` / `start verification --parent none` | F0 entry — same anchor as `mark test`. The three F0 sub-spans self-instrument; do not mark them by hand. |
 | `end verification` / `start finalization --parent none` | F1 entry — same anchor as `mark finalize` |

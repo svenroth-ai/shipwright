@@ -27,6 +27,7 @@ sys.path.insert(0, str(_REPO_ROOT / "shared" / "scripts" / "tools"))
 import _sweep_helpers as sh  # noqa: E402  (real-git seed/outbox plumbing)
 import setup_iterate_worktree as siw  # noqa: E402  (the real in-process setup)
 from lib.gitignore_canon import read_canonical_rules  # noqa: E402
+from lib.iterate_phase_groups import read_marks  # noqa: E402
 
 _GI_CHORE = (
     "chore: scaffold canonical .shipwright/ artifact-ignore block into .gitignore"
@@ -171,6 +172,30 @@ def test_noop_inside_worktree_ensures_pointer_and_snapshot(git_origin_repo):
     assert Path(payload["pointer_path"]).is_file()
     assert Path(payload["snapshot_path"]).is_file()
     assert payload["snapshot_written"] is True
+
+
+def test_scope_mark_written_on_create(git_origin_repo):
+    """trg-e6d1cc5e follow-up to TC5.1 (PR #617): the durable 'scope' boundary
+    mark that iterate_throughput_stats._scope_started_at reads must exist the
+    moment the worktree is created — not depend on the agent separately
+    remembering `iterate_phase_timing.py mark scope`."""
+    work, _ = git_origin_repo
+    result = _run_setup(work, "sc1", "iterate-sc1")
+    payload = json.loads(result.stdout)
+    marks = read_marks(payload["project_root"], "iterate-sc1")
+    assert [m["phase"] for m in marks] == ["scope"]
+
+
+def test_scope_mark_written_on_noop_resume(git_origin_repo):
+    """The no-op (already-inside-a-worktree) path is a real call site too —
+    a run resumed from within its own worktree must still get the mark."""
+    work, _ = git_origin_repo
+    first = json.loads(_run_setup(work, "sc2", "iterate-sc2").stdout)
+    wt = first["project_root"]
+    result = _run_setup(wt, "sc2-again", "iterate-sc2")
+    assert result.returncode == 0, result.stderr
+    marks = read_marks(wt, "iterate-sc2")
+    assert [m["phase"] for m in marks] == ["scope"]
 
 
 def test_writes_snapshot_and_pointer(git_origin_repo):

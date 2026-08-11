@@ -98,15 +98,22 @@ def _write_line_unlocked(path: Path, obj: dict) -> None:
         fh.write(json.dumps(obj, ensure_ascii=False, sort_keys=True) + "\n")
 
 
-def _append_line(project_root, run_id: str, obj: dict) -> Path:
+def _append_line(project_root, run_id: str, obj: dict, *,
+                  timeout_seconds: float | None = None) -> Path:
     """Append one line under the run's lock — the same serialization
     ``record_event.py``/``triage.py`` use for their own JSONL append-logs.
     Multiple producers CAN legitimately write within one run (F0, external
     review, delivery), so an unlocked append risks interleaved writes,
-    especially on Windows where append-mode alone isn't atomic."""
+    especially on Windows where append-mode alone isn't atomic.
+
+    ``timeout_seconds=None`` keeps ``FileLock``'s own default (600s, sized for
+    the rare long-running ``sweep_outbox`` critical section). A caller reached
+    from a PostToolUse hook — on the critical path of every Write/Edit/Bash —
+    must override this to a short, fail-fast value instead."""
     path = sidecar_path(project_root, run_id)
     path.parent.mkdir(parents=True, exist_ok=True)
-    with FileLock(path.with_name(path.name + ".lock")):
+    lock_kwargs = {} if timeout_seconds is None else {"timeout_seconds": timeout_seconds}
+    with FileLock(path.with_name(path.name + ".lock"), **lock_kwargs):
         _write_line_unlocked(path, obj)
     return path
 
@@ -129,19 +136,23 @@ def _span_obj(*, name: str, parent: str | None, attempt: int, source: str, outco
 # ---------------------------------------------------------------------------
 
 def record_start(project_root, run_id: str, *, name: str, parent: str | None,
-                  attempt: int = 1, ts: str | None = None) -> Path:
-    """Agent-emitted: mark entering ``name`` right now (no process owns the boundary)."""
+                  attempt: int = 1, ts: str | None = None,
+                  timeout_seconds: float | None = None) -> Path:
+    """Agent-emitted: mark entering ``name`` right now (no process owns the
+    boundary). ``timeout_seconds`` — see :func:`_append_line`."""
     validate_name_parent(name, parent)
     return _append_line(project_root, run_id, {
         "event": "start", "name": name, "parent": parent, "attempt": int(attempt),
         "ts": ts or _now_iso(),
-    })
+    }, timeout_seconds=timeout_seconds)
 
 
 def record_end(project_root, run_id: str, *, name: str, parent: str | None,
                 attempt: int = 1, outcome: str = "completed",
-                extra: dict | None = None, ts: str | None = None) -> Path:
-    """Agent-emitted: mark leaving ``name`` right now."""
+                extra: dict | None = None, ts: str | None = None,
+                timeout_seconds: float | None = None) -> Path:
+    """Agent-emitted: mark leaving ``name`` right now. ``timeout_seconds`` —
+    see :func:`_append_line`."""
     validate_name_parent(name, parent)
     if outcome not in OUTCOMES:
         raise IterateTimingError(f"unknown outcome {outcome!r}")
@@ -149,7 +160,7 @@ def record_end(project_root, run_id: str, *, name: str, parent: str | None,
     return _append_line(project_root, run_id, {
         "event": "end", "name": name, "parent": parent, "attempt": int(attempt),
         "outcome": outcome, "extra": clean_extra, "ts": ts or _now_iso(),
-    })
+    }, timeout_seconds=timeout_seconds)
 
 
 def record_producer_span(project_root, run_id: str, *, name: str, parent: str | None,
