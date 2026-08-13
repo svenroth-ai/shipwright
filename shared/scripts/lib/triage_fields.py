@@ -37,6 +37,28 @@ PRIORITY_FROM_SEVERITY = {
 DEFAULT_DOMAIN = "engineering"
 DOMAIN_FROM_SOURCE = {"compliance": "compliance"}
 
+#: Cap on `detail`'s length in characters (both `append` and `amend` events —
+#: see `shared/schemas/triage_item.schema.json`). Keeps a promoted item's
+#: description under shipwright-webui's promoted-task cap
+#: (`DESCRIPTION_MAX_LENGTH`), itself sized to keep a generated launch
+#: command under the ~8,191-char Windows interactive console line limit —
+#: iterate-2026-08-13-triage-detail-maxlength. Enforced by both writers:
+#: `triage.append_triage_item` (via `check_detail_length` below) and
+#: `lib.triage_amend.check_amend_detail`.
+DETAIL_MAX_LEN = 6000
+
+
+def check_detail_length(detail: str, max_len: int) -> None:
+    """Raise ValueError if `detail` is not a string, or exceeds `max_len`
+    characters. Mirrors `lib.triage_amend.check_amend_detail`'s own type +
+    length guard, so the append and amend write paths reject a malformed
+    `detail` the same way.
+    """
+    if not isinstance(detail, str):
+        raise ValueError(f"detail must be a string, got {type(detail).__name__}")
+    if len(detail) > max_len:
+        raise ValueError(f"detail exceeds {max_len} characters ({len(detail)})")
+
 
 def check_optional_str(name: str, value: object) -> None:
     """Reject non-string, non-None values for camelCase optional fields.

@@ -17,6 +17,7 @@ import triage_amend  # noqa: E402
 
 SEVERITIES = ("critical", "high", "medium", "low", "info")
 KINDS = ("bug", "feature", "improvement", "compliance", "maintenance")
+DETAIL_MAX_LEN = 6000
 PRIORITY_FROM_SEVERITY = {
     "critical": "P0", "high": "P1", "medium": "P2", "low": "P3", "info": "P3",
 }
@@ -75,25 +76,44 @@ def test_check_amend_title_rejects_a_non_string():
 
 
 def test_check_amend_detail_allows_absent():
-    triage_amend.check_amend_detail(None)
+    triage_amend.check_amend_detail(None, DETAIL_MAX_LEN)
 
 
 def test_check_amend_detail_rejects_a_non_string():
     with pytest.raises(ValueError, match="detail must be a string"):
-        triage_amend.check_amend_detail(42)
+        triage_amend.check_amend_detail(42, DETAIL_MAX_LEN)
+
+
+def test_check_amend_detail_allows_exactly_the_cap():
+    triage_amend.check_amend_detail("x" * DETAIL_MAX_LEN, DETAIL_MAX_LEN)
+
+
+def test_check_amend_detail_rejects_one_over_the_cap():
+    with pytest.raises(ValueError, match=f"detail exceeds {DETAIL_MAX_LEN} characters"):
+        triage_amend.check_amend_detail("x" * (DETAIL_MAX_LEN + 1), DETAIL_MAX_LEN)
 
 
 def test_check_amend_fields_rejects_a_contentless_call():
     with pytest.raises(ValueError, match="amend must set at least one of"):
         triage_amend.check_amend_fields(
             title=None, detail=None, severity=None, kind=None, severities=SEVERITIES, kinds=KINDS,
+            detail_max_len=DETAIL_MAX_LEN,
         )
 
 
 def test_check_amend_fields_passes_for_one_present_field():
     triage_amend.check_amend_fields(
         title="ok", detail=None, severity=None, kind=None, severities=SEVERITIES, kinds=KINDS,
+        detail_max_len=DETAIL_MAX_LEN,
     )
+
+
+def test_check_amend_fields_rejects_an_oversized_detail():
+    with pytest.raises(ValueError, match=f"detail exceeds {DETAIL_MAX_LEN} characters"):
+        triage_amend.check_amend_fields(
+            title=None, detail="x" * (DETAIL_MAX_LEN + 1), severity=None, kind=None,
+            severities=SEVERITIES, kinds=KINDS, detail_max_len=DETAIL_MAX_LEN,
+        )
 
 
 # --- resolve_amend_residence ------------------------------------------------

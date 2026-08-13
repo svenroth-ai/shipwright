@@ -1,0 +1,143 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-08-13-triage-detail-maxlength",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-13T09:17:13.725869+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-13T09:17:21.136738+00:00",
+      "disposition": "mini-plan / external plan review is medium+ only per the phase matrix; this run is small",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 5,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "shared/scripts/artifact_sync.py",
+          "line": null,
+          "finding": "artifact_sync.py and phase_quality/_triage_bundle.py build an unbounded detail; an over-cap append now raises inside their existing best-effort except-Exception wrapper, silently dropping the item instead of truncating it.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "architecture",
+          "file": "shared/schemas/triage_item.schema.json",
+          "line": null,
+          "finding": "6000 declared independently in 3 places (schema append/amend, DETAIL_MAX_LEN) with no test binding them; new schema tests hardcoded 6001.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/scripts/lib/triage_fields.py",
+          "line": null,
+          "finding": "check_detail_length silently no-ops for a non-str detail; append_triage_item/append_triage_item_idempotent never type-check detail, asymmetric with the amend side's check_amend_detail.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "shared/tests/test_triage_amend_schema.py",
+          "line": null,
+          "finding": "DETAIL_MAX_LEN and append_triage_item_idempotent re-imported inside 4 separate test functions instead of hoisted to the module-level import.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "shared/scripts/triage.py",
+          "line": null,
+          "finding": "Loop variables _name/_value carry a leading underscore that in this codebase signals module-private, not loop-local, and the net-zero swap's rationale (funding check_detail_length under the ADR-121 882-line pin) is undocumented outside this review.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-08-13T09:30:08.615749+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-13T09:30:18.127406+00:00",
+      "disposition": "diff touches no migrations/async-concurrency/cross-plugin-imports/irreversible-ops (schema field cap + validation guards only); Stage 3 is conditional on those per iteration-reviews.md and does not apply",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": "openrouter",
+      "completed_at": "2026-08-13T09:37:51.470351+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "unstructured",
+      "raw_excerpt": "[deepseek] <no review returned: provider returned an empty reply>\n\n[openai] No concrete defects found. The schema caps both event branches at 6000, all three writer paths reject over-cap details before writing, and the tests cover schema enforcement, exact-cap acceptance, append, idempotent append, and amend rejection. The pinned `triage.py` and `test_triage_schema.py` files are not expanded.\n\nOverall assessment: ship-as-is.\n\nSHIPWRIGHT_VERDICT: approve",
+      "verdicts": {
+        "openai": "approve",
+        "deepseek": "unavailable"
+      },
+      "contradiction_resolution": "not a real contradiction — deepseek returned an empty reply (provider-side transient failure, degraded status) rather than a disagreeing verdict; openai's single independent pass approved with no findings, consistent with the internal spec-reviewer/code-reviewer passes"
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-13T09:20:28.075633+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-13T09:17:21.247906+00:00",
+      "disposition": "internal plan review is medium+ only per the phase matrix; this run is small",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    }
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "items": [
+    {"name": "Spec Compliance", "verdict": "pass", "note": "Implements the ticket exactly (shared 6000-char maxLength on `detail` in triage_item.schema.json + enforced in append_triage_item); also closed the append_triage_item_idempotent and amend paths, which write the same field and would otherwise bypass the cap."},
+    {"name": "Error Handling", "verdict": "pass", "note": "New ValueError guard mirrors the existing check_optional_str/check_amend_title pattern; verified all 4 producers with unbounded detail construction already wrap the append call in broad except Exception (best-effort, non-blocking), so no crash risk introduced."},
+    {"name": "Security Basics", "verdict": "pass", "note": "No user input reaches SQL/HTML; this is a data-length boundary guard only."},
+    {"name": "Test Quality", "verdict": "pass", "note": "Boundary tests (at-cap accepted / one-over rejected) added for append, append_idempotent, amend, and schema-level negative validation; all assert on outcomes, not internals."},
+    {"name": "Performance Basics", "verdict": "pass", "note": "No loops beyond a fixed 3-item tuple; no N+1, no unbounded work introduced."},
+    {"name": "Naming & Structure", "verdict": "pass", "note": "check_detail_length mirrors check_optional_str; DETAIL_MAX_LEN mirrors SEVERITIES/KINDS. triage.py stayed at its exact pinned 882-line bloat-baseline ceiling via net-zero swaps; test_triage_schema.py stayed at its pinned 558 lines, new tests homed in test_triage_amend_schema.py per that file's documented convention."},
+    {"name": "Affected Boundaries", "verdict": "pass", "note": "Producer: triage.append_triage_item / append_triage_item_idempotent / triage.amend_triage_item. Consumer: triage.read_all_items, triage_cli.py, WebUI Triage tab. Round-trip probe: test_append_accepts_detail_at_cap writes a full at-cap event to disk and re-validates it against the schema."},
+    {"name": "Test Hygiene Probe", "verdict": "pass", "note": "scan_test_hygiene.py --diff — no findings."}
+  ]
+}

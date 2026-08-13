@@ -1,0 +1,125 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-08-13-triage-detail-maxlength",
+    "date": "2026-08-13",
+    "unit": {
+      "status": "pass",
+      "passed": 16613,
+      "total": 16613,
+      "failed": 0,
+      "note": "F0 canonical parallel suite runner (run_test_suite.py): 18/18 units GREEN in 11.8 min. Collect-only counts per root: shared/tests 9237, plugins/shipwright-compliance 1645, plugins/shipwright-iterate 943, plugins/shipwright-security 929, integration-tests 520, plugins/shipwright-adopt 608, plugins/shipwright-run 555, shared/scripts/tools/tests 575, shared/scripts/tests 466, plugins/shipwright-test 243, plugins/shipwright-grade 391, plugins/shipwright-build 133, plugins/shipwright-plan 82, plugins/shipwright-changelog 81, plugins/shipwright-deploy 102, plugins/shipwright-project 59, plugins/shipwright-design 34, plugins/shipwright-preview 10. Zero failures; diff-coverage gate (origin/main..HEAD) PASSED at 100% (>=80% threshold) on the three changed files."
+    },
+    "integration": {
+      "status": "pass",
+      "passed": 520,
+      "total": 520
+    },
+    "e2e": {
+      "status": "n/a",
+      "reason": "no browser surface; pure schema/validation change (no route, UI, or process boundary)"
+    },
+    "smoke": {
+      "status": "n/a",
+      "reason": "no startable server surface touched by this change"
+    },
+    "pgtap": {
+      "status": "n/a",
+      "reason": "no database"
+    },
+    "design_fidelity": {
+      "status": "n/a",
+      "reason": "no UI surface"
+    },
+    "surface_verification": {
+      "surface": "none",
+      "tests_run": 0,
+      "exit_code": 0,
+      "evidence_path": ".shipwright/runs/iterate-2026-08-13-triage-detail-maxlength/surface_verification.json",
+      "justification": "Pure schema+validation change (triage_item.schema.json maxLength + triage.py/triage_fields.py/triage_amend.py guard); no route, UI, SSE/WS handler, or process boundary touched. No touches_io_boundary risk flag from diff-risk-recheck. Covered by 100% diff-coverage unit tests validated against a running jsonschema Draft202012Validator, not a startable web/cli/api surface."
+    },
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "schema append branch rejects a detail over 6000 chars",
+          "disposition": "tested",
+          "evidence": "test_triage_amend_schema.py::test_schema_rejects_oversized_append_detail PASSED"
+        },
+        {
+          "behavior": "schema amend branch rejects a detail over 6000 chars",
+          "disposition": "tested",
+          "evidence": "test_triage_amend_schema.py::test_schema_rejects_oversized_amend_detail PASSED"
+        },
+        {
+          "behavior": "schema maxLength (both branches) stays in sync with the Python DETAIL_MAX_LEN constant",
+          "disposition": "tested",
+          "evidence": "test_triage_amend_schema.py::test_schema_detail_cap_matches_python_constant PASSED"
+        },
+        {
+          "behavior": "append_triage_item raises ValueError on an over-cap detail",
+          "disposition": "tested",
+          "evidence": "test_triage_amend_schema.py::test_append_rejects_oversized_detail PASSED"
+        },
+        {
+          "behavior": "append_triage_item raises ValueError on a non-string detail",
+          "disposition": "tested",
+          "evidence": "test_triage_amend_schema.py::test_append_rejects_non_string_detail PASSED"
+        },
+        {
+          "behavior": "append_triage_item accepts a detail at exactly the cap",
+          "disposition": "tested",
+          "evidence": "test_triage_amend_schema.py::test_append_accepts_detail_at_cap PASSED"
+        },
+        {
+          "behavior": "append_triage_item_idempotent raises ValueError on an over-cap detail (second writer of the same wire event)",
+          "disposition": "tested",
+          "evidence": "test_triage_amend_schema.py::test_append_idempotent_rejects_oversized_detail PASSED"
+        },
+        {
+          "behavior": "amend_triage_item raises ValueError when an amend would push detail over the cap",
+          "disposition": "tested",
+          "evidence": "test_triage_amend_schema.py::test_amend_rejects_oversized_detail PASSED"
+        },
+        {
+          "behavior": "check_amend_detail accepts a detail at exactly the cap",
+          "disposition": "tested",
+          "evidence": "test_triage_amend.py::test_check_amend_detail_allows_exactly_the_cap PASSED"
+        },
+        {
+          "behavior": "check_amend_detail rejects a detail one character over the cap",
+          "disposition": "tested",
+          "evidence": "test_triage_amend.py::test_check_amend_detail_rejects_one_over_the_cap PASSED"
+        },
+        {
+          "behavior": "check_amend_fields rejects an oversized detail (single-field amend call)",
+          "disposition": "tested",
+          "evidence": "test_triage_amend.py::test_check_amend_fields_rejects_an_oversized_detail PASSED"
+        }
+      ],
+      "counts": {
+        "testable": 11,
+        "tested": 11,
+        "untestable": 0,
+        "untested_testable": 0
+      },
+      "enumeration_basis": {
+        "acs": 3,
+        "covered_acs": 3
+      }
+    },
+    "degraded": []
+  },
+  "coverage": {
+    "total": 80.2,
+    "measured_tier": "repo",
+    "source": "combined coverage.xml (all plugins + shared + integration)",
+    "measured_at": "2026-07-04T00:00:00Z"
+  },
+  "source_state": {
+    "run_id": "iterate-2026-08-13-triage-detail-maxlength",
+    "commit": "c72caa31ca0ee4f47d461390946c9f6323492414",
+    "dirty": true,
+    "base": null,
+    "release": null
+  }
+}

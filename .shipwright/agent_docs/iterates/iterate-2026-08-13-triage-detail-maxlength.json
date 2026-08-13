@@ -1,0 +1,90 @@
+{
+  "run_id": "iterate-2026-08-13-triage-detail-maxlength",
+  "date": "2026-08-13T09:58:01.353199Z",
+  "event_at": "2026-08-11T23:35:08.436839+00:00",
+  "type": "change",
+  "complexity": "small",
+  "prior_source": "keyword",
+  "branch": "iterate/triage-detail-maxlength",
+  "spec": null,
+  "tests_passed": true,
+  "adr": "iterate-2026-08-13-triage-detail-maxlength",
+  "test_completeness": {
+    "status": "complete",
+    "behaviors": [
+      {
+        "behavior": "schema append branch rejects a detail over 6000 chars",
+        "disposition": "tested",
+        "evidence": "test_triage_amend_schema.py::test_schema_rejects_oversized_append_detail PASSED"
+      },
+      {
+        "behavior": "schema amend branch rejects a detail over 6000 chars",
+        "disposition": "tested",
+        "evidence": "test_triage_amend_schema.py::test_schema_rejects_oversized_amend_detail PASSED"
+      },
+      {
+        "behavior": "schema maxLength (both branches) stays in sync with the Python DETAIL_MAX_LEN constant",
+        "disposition": "tested",
+        "evidence": "test_triage_amend_schema.py::test_schema_detail_cap_matches_python_constant PASSED"
+      },
+      {
+        "behavior": "append_triage_item raises ValueError on an over-cap detail",
+        "disposition": "tested",
+        "evidence": "test_triage_amend_schema.py::test_append_rejects_oversized_detail PASSED"
+      },
+      {
+        "behavior": "append_triage_item raises ValueError on a non-string detail",
+        "disposition": "tested",
+        "evidence": "test_triage_amend_schema.py::test_append_rejects_non_string_detail PASSED"
+      },
+      {
+        "behavior": "append_triage_item accepts a detail at exactly the cap",
+        "disposition": "tested",
+        "evidence": "test_triage_amend_schema.py::test_append_accepts_detail_at_cap PASSED"
+      },
+      {
+        "behavior": "append_triage_item_idempotent raises ValueError on an over-cap detail (second writer of the same wire event)",
+        "disposition": "tested",
+        "evidence": "test_triage_amend_schema.py::test_append_idempotent_rejects_oversized_detail PASSED"
+      },
+      {
+        "behavior": "amend_triage_item raises ValueError when an amend would push detail over the cap",
+        "disposition": "tested",
+        "evidence": "test_triage_amend_schema.py::test_amend_rejects_oversized_detail PASSED"
+      },
+      {
+        "behavior": "check_amend_detail accepts a detail at exactly the cap",
+        "disposition": "tested",
+        "evidence": "test_triage_amend.py::test_check_amend_detail_allows_exactly_the_cap PASSED"
+      },
+      {
+        "behavior": "check_amend_detail rejects a detail one character over the cap",
+        "disposition": "tested",
+        "evidence": "test_triage_amend.py::test_check_amend_detail_rejects_one_over_the_cap PASSED"
+      },
+      {
+        "behavior": "check_amend_fields rejects an oversized detail (single-field amend call)",
+        "disposition": "tested",
+        "evidence": "test_triage_amend.py::test_check_amend_fields_rejects_an_oversized_detail PASSED"
+      }
+    ],
+    "counts": {
+      "testable": 11,
+      "tested": 11,
+      "untestable": 0,
+      "untested_testable": 0
+    },
+    "enumeration_basis": {
+      "acs": 3,
+      "covered_acs": 3
+    }
+  },
+  "surface_verification": {
+    "surface": "none",
+    "tests_run": 0,
+    "exit_code": 0,
+    "evidence_path": ".shipwright/runs/iterate-2026-08-13-triage-detail-maxlength/surface_verification.json",
+    "justification": "Pure schema+validation change (triage_item.schema.json maxLength + triage.py/triage_fields.py/triage_amend.py guard); no route, UI, SSE/WS handler, or process boundary touched. No touches_io_boundary risk flag from diff-risk-recheck. Covered by 100% diff-coverage unit tests validated against a running jsonschema Draft202012Validator, not a startable web/cli/api surface."
+  },
+  "declared_removals": []
+}
