@@ -1,0 +1,40 @@
+{
+  "review": [
+    {
+      "severity": "medium",
+      "category": "correctness",
+      "file": "shared/scripts/artifact_sync.py",
+      "finding": "artifact_sync.py and phase_quality/_triage_bundle.py build an unbounded detail; an over-cap append now raises inside their existing best-effort except-Exception wrapper, silently dropping the item instead of truncating it.",
+      "disposition": "acknowledged-deferred — filed as trg-b298264a before this review ran, listing all 4 producers with unbounded detail construction (including these two) and recommending the same truncate+ellipsis self-cap security_card.py/github_triage/mappers.py already use. Verified non-blocking (broad except Exception, best-effort by design) so no regression ships; fixing 4 producer files is a separate, larger diff better scoped as its own follow-up."
+    },
+    {
+      "severity": "medium",
+      "category": "architecture",
+      "file": "shared/schemas/triage_item.schema.json",
+      "finding": "6000 declared independently in 3 places (schema append/amend, DETAIL_MAX_LEN) with no test binding them; new schema tests hardcoded 6001.",
+      "disposition": "fixed — added test_schema_detail_cap_matches_python_constant asserting both schema branches equal DETAIL_MAX_LEN; all fixtures now derive from DETAIL_MAX_LEN+1, not a literal. Added a description on the amend branch's detail pointing at the append branch's rationale."
+    },
+    {
+      "severity": "low",
+      "category": "correctness",
+      "file": "shared/scripts/lib/triage_fields.py",
+      "finding": "check_detail_length silently no-ops for a non-str detail; append_triage_item/append_triage_item_idempotent never type-check detail, asymmetric with the amend side's check_amend_detail.",
+      "disposition": "fixed — check_detail_length now also raises ValueError('detail must be a string, ...') for a non-str value, at zero cost to triage.py's pinned line count (same single call site). Added test_append_rejects_non_string_detail."
+    },
+    {
+      "severity": "low",
+      "category": "readability",
+      "file": "shared/tests/test_triage_amend_schema.py",
+      "finding": "DETAIL_MAX_LEN and append_triage_item_idempotent re-imported inside 4 separate test functions instead of hoisted to the module-level import.",
+      "disposition": "fixed — both hoisted into the existing module-level `from triage import (...)` block."
+    },
+    {
+      "severity": "low",
+      "category": "readability",
+      "file": "shared/scripts/triage.py",
+      "finding": "Loop variables _name/_value carry a leading underscore that in this codebase signals module-private, not loop-local, and the net-zero swap's rationale (funding check_detail_length under the ADR-121 882-line pin) is undocumented outside this review.",
+      "disposition": "fixed the naming (renamed to name/value in both loops). The rationale will be recorded in the F3 decision drop at finalization, per this run's normal ADR flow — this run has no iterate-spec.md (small complexity), so the decision drop is the correct durable home rather than a spec file that doesn't exist."
+    }
+  ],
+  "verdict": "PASS — all findings addressed (4 fixed inline, 1 medium acknowledged and deferred to a filed triage item, trg-b298264a, with reasoning for why it is out of scope for this diff)."
+}

@@ -70,7 +70,11 @@
           "minLength": 1,
           "pattern": "\\S"
         },
-        "detail": { "type": "string" },
+        "detail": {
+          "type": "string",
+          "maxLength": 6000,
+          "description": "Capped so a promoted item's description stays under the Command Center's promoted-task cap (`DESCRIPTION_MAX_LENGTH`, shipwright-webui) — itself sized to keep a generated launch command under the ~8,191-char Windows interactive console line limit. Enforced in-process by `triage.append_triage_item` / `lib.triage_amend.check_amend_detail`; only the github_triage producer self-capped before this (1024 chars, a separate crowding guard well under this ceiling)."
+        },
         "evidencePath": {
           "type": ["string", "null"],
           "description": "Optional path (relative to project root) to scanner output, log file, or report backing this item."
@@ -178,7 +182,11 @@
           "description": "What surface emitted the correction: `cli` (only writer this iterate ships)."
         },
         "title": { "type": "string", "minLength": 1, "pattern": "\\S" },
-        "detail": { "type": "string" },
+        "detail": {
+          "type": "string",
+          "maxLength": 6000,
+          "description": "Same cap as the `append` branch's `detail` — see that field's description."
+        },
         "severity": {
           "type": "string",
           "enum": ["critical", "high", "medium", "low", "info"]

@@ -75,20 +75,28 @@ def check_amend_title(title: str | None) -> None:
         raise ValueError("title must be a non-empty string")
 
 
-def check_amend_detail(detail: str | None) -> None:
-    """Raise ValueError if a PRESENT `detail` is not a string. `None` (absent)
-    never raises. Without this, a non-str `detail` writes past the wire
+def check_amend_detail(detail: str | None, max_len: int) -> None:
+    """Raise ValueError if a PRESENT `detail` is not a string, or exceeds
+    `max_len` characters — mirrors `triage.append_triage_item`'s own cap
+    (`lib.triage_fields.DETAIL_MAX_LEN`), so an amend cannot re-introduce the
+    oversized-`detail` failure the append-side cap exists to prevent
+    (iterate-2026-08-13-triage-detail-maxlength). `None` (absent) never
+    raises. Without the type check, a non-str `detail` writes past the wire
     schema and is then rejected WHOLE by :func:`validate_amend_event` on
     every future read — silently discarding any co-submitted, otherwise-valid
     `title`/`severity`/`kind` too. Same hazard `check_amend_title` closes for
     `title`.
     """
-    if detail is not None and not isinstance(detail, str):
+    if detail is None:
+        return
+    if not isinstance(detail, str):
         raise ValueError("detail must be a string")
+    if len(detail) > max_len:
+        raise ValueError(f"detail exceeds {max_len} characters ({len(detail)})")
 
 
 def check_amend_fields(*, title: str | None, detail: str | None, severity: str | None,
-                        kind: str | None, severities, kinds) -> None:
+                        kind: str | None, severities, kinds, detail_max_len: int) -> None:
     """Single writer-side precondition check for all four amendable fields —
     vocab, type, and contentless-call — run BEFORE any I/O (mirrors
     `mark_status`'s "argument validation before any I/O" rule, so a bad
@@ -96,7 +104,7 @@ def check_amend_fields(*, title: str | None, detail: str | None, severity: str |
     """
     check_amend_vocab(severity=severity, kind=kind, severities=severities, kinds=kinds)
     check_amend_title(title)
-    check_amend_detail(detail)
+    check_amend_detail(detail, detail_max_len)
     if title is None and detail is None and severity is None and kind is None:
         raise ValueError(
             "amend must set at least one of: "

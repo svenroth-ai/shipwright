@@ -72,7 +72,7 @@ def _load_triage_amend():
     return load_shared_lib("triage_amend")
 
 #: Re-exported from `lib.triage_fields` via `__getattr__` below.
-_FIELDS_NAMES = frozenset(("SEVERITIES", "KINDS", "SEVERITY_RANK", "PRIORITY_FROM_SEVERITY", "DEFAULT_DOMAIN", "DOMAIN_FROM_SOURCE", "suggest_priority_from_severity", "suggest_domain_from_source", "check_optional_str"))
+_FIELDS_NAMES = frozenset(("SEVERITIES", "KINDS", "SEVERITY_RANK", "PRIORITY_FROM_SEVERITY", "DEFAULT_DOMAIN", "DOMAIN_FROM_SOURCE", "DETAIL_MAX_LEN", "suggest_priority_from_severity", "suggest_domain_from_source", "check_optional_str", "check_detail_length"))
 
 def __getattr__(name):  # PEP 562 — lazy `triage._FileLock`, no eager lib import
     if name == "_FileLock":
@@ -331,9 +331,9 @@ def append_triage_item(
         raise ValueError(f"unknown kind {kind!r}; expected one of {_flds.KINDS}")
     if not isinstance(title, str) or not title.strip():
         raise ValueError("title must be a non-empty string")
-    _flds.check_optional_str("fr_id", fr_id)
-    _flds.check_optional_str("suite_id", suite_id)
-    _flds.check_optional_str("event_id", event_id)
+    _flds.check_detail_length(detail, _flds.DETAIL_MAX_LEN)
+    for name, value in (("fr_id", fr_id), ("suite_id", suite_id), ("event_id", event_id)):
+        _flds.check_optional_str(name, value)
 
     item_id = _generate_id()
     ts = _now_z()
@@ -429,9 +429,9 @@ def append_triage_item_idempotent(
     if not isinstance(title, str) or not title.strip():
         raise ValueError("title must be a non-empty string")
 
-    _flds.check_optional_str("fr_id", fr_id)
-    _flds.check_optional_str("suite_id", suite_id)
-    _flds.check_optional_str("event_id", event_id)
+    _flds.check_detail_length(detail, _flds.DETAIL_MAX_LEN)
+    for name, value in (("fr_id", fr_id), ("suite_id", suite_id), ("event_id", event_id)):
+        _flds.check_optional_str(name, value)
 
     new_id = _generate_id()
     with _load_file_lock_cls()(_lock_path(project_root)):
@@ -750,7 +750,7 @@ def amend_triage_item(
     docstring; validation/event-building delegate to `lib.triage_amend`.
     """
     _flds, _amend = _load_triage_fields(), _load_triage_amend()
-    _amend.check_amend_fields(title=title, detail=detail, severity=severity, kind=kind, severities=_flds.SEVERITIES, kinds=_flds.KINDS)
+    _amend.check_amend_fields(title=title, detail=detail, severity=severity, kind=kind, severities=_flds.SEVERITIES, kinds=_flds.KINDS, detail_max_len=_flds.DETAIL_MAX_LEN)
     expected = None if expected_status is None else _normalize_expected(expected_status)
     if not _triage_path(project_root).exists() and not _outbox_path(project_root).exists():
         raise FileNotFoundError(f"triage store not initialized at {_triage_path(project_root)} (nor outbox at {_outbox_path(project_root)}); run /shipwright-adopt or append an item first")

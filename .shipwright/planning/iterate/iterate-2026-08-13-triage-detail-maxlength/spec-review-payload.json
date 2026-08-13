@@ -1,0 +1,6 @@
+{
+  "stage": "spec",
+  "verdict": "PASS",
+  "spec_citations": [],
+  "summary": "All 6 spec checks verified against the worktree. Cap = 6000 declared consistently in schema (append + amend), lib/triage_fields.py, and tests; enforced on all three write paths (append, idempotent append, amend); both pinned files still at their exact bloat-baseline sizes (882 / 558). No scope creep found."
+}
