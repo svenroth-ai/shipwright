@@ -33,6 +33,10 @@ BACKLOG_PREFIX = "phaseQuality:backlog:"
 # constant so it tracks the FINDING_DIR relocation (iterate-2026-06-09).
 DASHBOARD_REL = DASHBOARD_PATH
 
+# Matches security_card.py's cap so a large Tier-1 FAIL set can't blow past
+# append_triage_item's shared DETAIL_MAX_LEN (6000) and get silently dropped.
+_DETAIL_MAX_LEN = 1024
+
 
 # --- Collect in-scope Tier-1 FAILs (latest finding per phase, filtered) ---
 
@@ -104,7 +108,10 @@ def _build_detail(fails: list[dict[str, str]]) -> str:
         rem = f" — {d['remediation']}" if d["remediation"] else ""
         lines.append(f"- {d['phase']}:{d['code']} ({d['name']}){rem}")
     lines += ["", f"Live view: {DASHBOARD_REL}"]
-    return "\n".join(lines)
+    detail = "\n".join(lines)
+    if len(detail) > _DETAIL_MAX_LEN:
+        detail = detail[: _DETAIL_MAX_LEN - 1] + "…"
+    return detail
 
 
 def _build_launch_payload(fails: list[dict[str, str]]) -> str:

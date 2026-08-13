@@ -1,0 +1,34 @@
+{
+  "section": "iterate-2026-08-13-triage-detail-selfcap",
+  "verdict": "approve",
+  "review": [
+    {
+      "severity": "low",
+      "category": "correctness",
+      "file": "plugins/shipwright-compliance/tests/test_triage_bundle_detail_cap.py",
+      "finding": "No exact-boundary test (_DETAIL_MAX_LEN-1 / _DETAIL_MAX_LEN / _DETAIL_MAX_LEN+1) -- only a 500-finding 'way over cap' case and a 1-finding 'well under' case. A regression changing `if len(detail) > _DETAIL_MAX_LEN` to `>=` would pass all added tests undetected. Precedented at shared/tests/test_github_triage_detail_cap.py:93-118 and a prior review (iterate-2026-07-27-triage-defer-ci-cap/reviews.json) at the same severity.",
+      "suggestion": "Add a parametrized boundary test per site."
+    },
+    {
+      "severity": "low",
+      "category": "correctness",
+      "file": "plugins/shipwright-security/tests/test_security_triage_emit_detail_cap.py",
+      "finding": "Same boundary-test gap as the compliance site.",
+      "suggestion": "Same fix."
+    },
+    {
+      "severity": "low",
+      "category": "correctness",
+      "file": "shared/tests/test_triage_detail_selfcap.py",
+      "finding": "Same boundary-test gap for both shared-scope sites covered by this file.",
+      "suggestion": "Same fix, applied to both functions."
+    },
+    {
+      "severity": "low",
+      "category": "architecture",
+      "file": "plugins/shipwright-compliance/scripts/audit/triage_bundle_render.py",
+      "finding": "This diff brings a byte-identical inline truncate+ellipsis snippet to 6 files total (joining security_card.py and github_triage/mappers.py). This is the 'third producer' the codebase's own documented policy said would justify extraction.",
+      "suggestion": "Non-blocking: consider a small shared truncate_detail() helper the next time one of these six sites is touched, not as a stop-the-line requirement now."
+    }
+  ]
+}

@@ -1,0 +1,12 @@
+{
+  "items": [
+    {"name": "Spec Compliance", "verdict": "pass", "note": "All 4 named call sites (_triage_bundle.py:_build_detail, triage_bundle_render.py:build_detail, artifact_sync.py:_emit_drift_to_triage, security_triage_emit.py:emit_findings_to_triage) now self-cap detail before append_triage_item_idempotent; no other behavior changed."},
+    {"name": "Error Handling", "verdict": "pass", "note": "Existing best-effort try/except Exception wrappers at each site are untouched; the fix removes the ValueError trigger rather than changing how errors are caught."},
+    {"name": "Security Basics", "verdict": "pass", "note": "No user input reaches SQL/HTML; detail text is diagnostic (filenames, finding names, scanner descriptions) written to a local triage.jsonl file, matching the existing pattern at all 4 sites. No secrets introduced."},
+    {"name": "Test Quality", "verdict": "pass", "note": "10 new tests across 3 files assert on outcomes (item appended, detail length <= cap, no exception raised, ordinary input untouched) not internals; each site has an over-cap case and an under-cap case."},
+    {"name": "Performance Basics", "verdict": "pass", "note": "No new loops; the fix bounds output size, if anything reducing memory/IO for pathological inputs."},
+    {"name": "Naming & Structure", "verdict": "pass", "note": "_DETAIL_MAX_LEN naming matches security_card.py's established convention. artifact_sync.py was already at the 300-line cap; the fix was written net-zero-LOC (removed a decorative divider comment, folded truncation into the existing slice) so it stays at exactly 300."},
+    {"name": "Affected Boundaries", "verdict": "n/a", "note": "No new serialized format or producer/consumer pair introduced -- this bounds an existing string field (detail) before handoff to the already-covered append_triage_item_idempotent boundary. The write-then-read round trip through triage.jsonl is exercised directly by the new tests via read_all_items."},
+    {"name": "Test Hygiene Probe", "verdict": "pass", "note": "uv run shared/scripts/tools/scan_test_hygiene.py --diff reported no findings."}
+  ]
+}
