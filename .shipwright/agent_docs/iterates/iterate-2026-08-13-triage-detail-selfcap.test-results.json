@@ -1,0 +1,133 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-08-13-triage-detail-selfcap",
+    "date": "2026-08-13",
+    "unit": {
+      "status": "pass",
+      "passed": 11777,
+      "failed": 0,
+      "skipped": 44,
+      "note": "Full local runs of the three pytest roots this diff touches: shared/tests (9210 passed, 32 skipped), plugins/shipwright-compliance/tests (1643 passed, 5 skipped), plugins/shipwright-security/tests (924 passed, 7 skipped, incl. the 22 new/boundary tests this iterate adds). No other plugin roots touched."
+    },
+    "integration": {
+      "status": "n/a",
+      "reason": "no cross-plugin integration surface changed -- each of the 4 fixed call sites is a self-contained, file-local string cap"
+    },
+    "e2e": {
+      "status": "n/a",
+      "reason": "no browser/UI surface; this is backend triage-producer machinery"
+    },
+    "smoke": {
+      "status": "n/a",
+      "reason": "no startable server surface touched"
+    },
+    "pgtap": {
+      "status": "n/a",
+      "reason": "no database"
+    },
+    "design_fidelity": {
+      "status": "n/a",
+      "reason": "no UI surface"
+    },
+    "surface_verification": {
+      "surface": "none",
+      "justification": "Non-UI, non-CLI library fix (4 internal Python functions capping a string before it reaches an already-covered triage-append boundary); no dev server or CLI entry point to drive. Verified instead via the unit-test suites above, all of which exercise the real write path through append_triage_item_idempotent and read_all_items against a real triage.jsonl."
+    },
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "_triage_bundle._build_detail truncates with ellipsis when the rendered detail exceeds _DETAIL_MAX_LEN",
+          "disposition": "tested",
+          "evidence": "test_triage_detail_selfcap.py::test_phase_quality_build_detail_truncates_when_over_cap PASSED"
+        },
+        {
+          "behavior": "_triage_bundle._build_detail leaves detail untouched under the cap",
+          "disposition": "tested",
+          "evidence": "test_triage_detail_selfcap.py::test_phase_quality_build_detail_untouched_under_cap PASSED"
+        },
+        {
+          "behavior": "_triage_bundle._build_detail boundary: cap-1 untouched, cap untouched, cap+1 truncated",
+          "disposition": "tested",
+          "evidence": "test_triage_detail_selfcap.py::test_phase_quality_build_detail_boundary[1023-False,1024-False,1025-True] PASSED"
+        },
+        {
+          "behavior": "a phase-quality fail set large enough to blow past append_triage_item's 6000-char cap no longer raises ValueError and is appended (the regression itself)",
+          "disposition": "tested",
+          "evidence": "test_triage_detail_selfcap.py::test_phase_quality_build_detail_feeds_a_write_that_no_longer_raises PASSED"
+        },
+        {
+          "behavior": "artifact_sync._emit_drift_to_triage caps detail via plain slice when changed_files/artifacts/frs lists are huge",
+          "disposition": "tested",
+          "evidence": "test_triage_detail_selfcap.py::test_artifact_sync_detail_is_capped_when_lists_are_huge PASSED"
+        },
+        {
+          "behavior": "artifact_sync._emit_drift_to_triage boundary: cap-1 untouched, cap untouched, cap+1 truncated",
+          "disposition": "tested",
+          "evidence": "test_triage_detail_selfcap.py::test_artifact_sync_detail_boundary[1023-False,1024-False,1025-True] PASSED"
+        },
+        {
+          "behavior": "artifact_sync._emit_drift_to_triage leaves detail untouched for an ordinary mapping",
+          "disposition": "tested",
+          "evidence": "test_triage_detail_selfcap.py::test_artifact_sync_detail_untouched_for_an_ordinary_mapping PASSED"
+        },
+        {
+          "behavior": "triage_bundle_render.build_detail truncates with ellipsis when over cap",
+          "disposition": "tested",
+          "evidence": "test_triage_bundle_detail_cap.py::test_build_detail_truncates_when_over_cap PASSED"
+        },
+        {
+          "behavior": "triage_bundle_render.build_detail leaves detail untouched under cap",
+          "disposition": "tested",
+          "evidence": "test_triage_bundle_detail_cap.py::test_build_detail_untouched_under_cap PASSED"
+        },
+        {
+          "behavior": "triage_bundle_render.build_detail boundary: cap-1 untouched, cap untouched, cap+1 truncated",
+          "disposition": "tested",
+          "evidence": "test_triage_bundle_detail_cap.py::test_build_detail_boundary[1023-False,1024-False,1025-True] PASSED"
+        },
+        {
+          "behavior": "a compliance finding set large enough to blow past append_triage_item's 6000-char cap no longer raises ValueError and is appended (the regression itself)",
+          "disposition": "tested",
+          "evidence": "test_triage_bundle_detail_cap.py::test_build_detail_feeds_a_write_that_no_longer_raises PASSED"
+        },
+        {
+          "behavior": "security_triage_emit.emit_findings_to_triage caps detail with ellipsis for a huge verbatim scanner description",
+          "disposition": "tested",
+          "evidence": "test_security_triage_emit_detail_cap.py::test_detail_is_capped_for_a_huge_description PASSED"
+        },
+        {
+          "behavior": "security_triage_emit.emit_findings_to_triage leaves detail untouched for an ordinary finding",
+          "disposition": "tested",
+          "evidence": "test_security_triage_emit_detail_cap.py::test_detail_untouched_for_an_ordinary_finding PASSED"
+        },
+        {
+          "behavior": "security_triage_emit.emit_findings_to_triage boundary: cap-1 untouched, cap untouched, cap+1 truncated",
+          "disposition": "tested",
+          "evidence": "test_security_triage_emit_detail_cap.py::test_detail_boundary[1023-False,1024-False,1025-True] PASSED"
+        }
+      ],
+      "counts": {
+        "total": 14,
+        "tested": 14,
+        "untestable": 0,
+        "untested_testable": 0
+      },
+      "ledger_path": "n/a -- small complexity, no iterate spec file; ledger recorded directly here per SKILL.md Step 7.5"
+    },
+    "degraded": []
+  },
+  "coverage": {
+    "total": 80.2,
+    "measured_tier": "repo",
+    "source": "combined coverage.xml (all plugins + shared + integration)",
+    "measured_at": "2026-07-04T00:00:00Z"
+  },
+  "source_state": {
+    "run_id": "iterate-2026-08-13-triage-detail-selfcap",
+    "commit": "d97790f05f67649f6432af0ae7d908cf0302e4d8",
+    "dirty": true,
+    "base": null,
+    "release": null
+  }
+}

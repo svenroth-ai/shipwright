@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-08-13-triage-detail-selfcap",
+  "date": "2026-08-13",
+  "section": "Iterate — change: triage detail self-cap",
+  "title": "Self-cap detail at the 4 remaining unbounded triage-producer call sites",
+  "context": "append_triage_item now enforces a shared 6000-char detail cap (iterate-2026-08-13-triage-detail-maxlength). Four producers still built detail via an unbounded loop/join with no self-cap, unlike sbom_generator.py/test_evidence.py/journey_coverage.py/warning_followups.py/security_card.py. A large finding set at any of the four raised ValueError inside the best-effort except-Exception wrapper, silently dropping the finding.",
+  "decision": "Add a local _DETAIL_MAX_LEN=1024 self-cap (truncate+ellipsis, matching security_card.py) at _triage_bundle.py:_build_detail, triage_bundle_render.py:build_detail, and security_triage_emit.py:emit_findings_to_triage. artifact_sync.py:_emit_drift_to_triage uses a plain [:_DETAIL_MAX_LEN] slice (no ellipsis, matching journey_coverage.py/warning_followups.py) since that file was already at the repo's 300-line cap and the fix had to land net-zero LOC.",
+  "consequences": "A large finding set at any of the four sites is now recorded truncated instead of vanishing. artifact_sync.py stays at exactly 300 lines (a decorative divider comment was removed to fund the fix). 22 new/updated unit tests across 3 pytest roots cover over-cap, under-cap, and the exact cap boundary at every site.",
+  "rationale": "Matches the codebase's own established file-local self-cap convention rather than inventing a new pattern; the artifact_sync.py deviation (no ellipsis) is itself an existing precedent, not a new one.",
+  "rejected": "A shared truncate_detail() helper -- non-blocking code-review suggestion, deferred: this diff crosses the codebase's own 'shared helper waits for a third producer' bar, but cross-plugin wiring cost outweighs the ~10-15 LOC saved here; left as a follow-up. Raising the artifact_sync.py bloat baseline instead of a net-zero-LOC fix -- rejected, matches this repo's find-redundancy-not-the-cap philosophy.",
+  "commit": "",
+  "architecture_impact": "none",
+  "spec_ref": ""
+}

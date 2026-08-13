@@ -1,0 +1,6 @@
+{
+  "stage": "spec-compliance",
+  "verdict": "PASS",
+  "spec_citations": [],
+  "summary": "All 4 call sites named in the operator request now self-cap `detail` before it reaches append_triage_item: shared/scripts/lib/phase_quality/_triage_bundle.py:_build_detail (L101-114), plugins/shipwright-compliance/scripts/audit/triage_bundle_render.py:build_detail (L67-80, the actual definition site imported into triage_bundle.py as the request named), shared/scripts/artifact_sync.py:_emit_drift_to_triage (L136-140), and plugins/shipwright-security/scripts/lib/security_triage_emit.py:emit_findings_to_triage (L131-139, the actual per-finding-loop function the request's 'emit_finding_triage' aliased). Each new self-cap (1024 chars) sits well under the shared append_triage_item DETAIL_MAX_LEN (6000). Each site ships a regression test that builds an oversized finding set and asserts the item is appended truncated rather than dropped. No out-of-scope changes. On the flagged deviation: artifact_sync.py's plain [:_DETAIL_MAX_LEN] slice (no ellipsis) still satisfies the request's stated goal and matches an already-established repo pattern (journey_coverage.py/warning_followups.py both use bare [:_DETAIL_CAP] with no ellipsis). Confirmed the file was genuinely at the 300-line cap with the diff netting to zero added lines. Reasonable trade-off, not a spec violation."
+}

@@ -1,0 +1,134 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-08-13-triage-detail-selfcap",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-13T12:11:59.697173+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-13T12:12:14.071267+00:00",
+      "disposition": "plan review is medium+ only; this run is small complexity with no iterate spec/mini-plan phase",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 4,
+      "findings": [
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "plugins/shipwright-compliance/tests/test_triage_bundle_detail_cap.py",
+          "line": null,
+          "finding": "No exact-boundary test (_DETAIL_MAX_LEN-1 / _DETAIL_MAX_LEN / _DETAIL_MAX_LEN+1) -- only a 500-finding 'way over cap' case and a 1-finding 'well under' case. A regression changing `if len(detail) > _DETAIL_MAX_LEN` to `>=` would pass all added tests undetected. Precedented at shared/tests/test_github_triage_detail_cap.py:93-118 and a prior review (iterate-2026-07-27-triage-defer-ci-cap/reviews.json) at the same severity.",
+          "suggestion": "Add a parametrized boundary test per site.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "plugins/shipwright-security/tests/test_security_triage_emit_detail_cap.py",
+          "line": null,
+          "finding": "Same boundary-test gap as the compliance site.",
+          "suggestion": "Same fix.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/tests/test_triage_detail_selfcap.py",
+          "line": null,
+          "finding": "Same boundary-test gap for both shared-scope sites covered by this file.",
+          "suggestion": "Same fix, applied to both functions.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "architecture",
+          "file": "plugins/shipwright-compliance/scripts/audit/triage_bundle_render.py",
+          "line": null,
+          "finding": "This diff brings a byte-identical inline truncate+ellipsis snippet to 6 files total (joining security_card.py and github_triage/mappers.py). This is the 'third producer' the codebase's own documented policy said would justify extraction.",
+          "suggestion": "Non-blocking: consider a small shared truncate_detail() helper the next time one of these six sites is touched, not as a stop-the-line requirement now.",
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-08-13T12:18:58.010415+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "inherit"
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-13T12:19:06.535642+00:00",
+      "disposition": "doubt-reviewer is conditional on non-trivial surface (migrations, async/concurrency, cross-plugin imports, irreversible ops) per iteration-reviews.md; this diff is 4 independent local string-cap fixes with no such surface",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": "openrouter",
+      "completed_at": "2026-08-13T12:25:56.922090+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "unstructured",
+      "raw_excerpt": "[deepseek] <no review returned: provider returned an empty reply>\n\n[openai] No concrete defects found. The four specified detail-producing paths now self-cap at 1024 characters, keeping all generated detail safely below the shared 6000-character enforcement limit; truncation behavior matches the permitted slice-only exception for `artifact_sync.py`.\n\nThe tests cover over-cap, under-cap, and boundary behavior, and exercise successful triage persistence for pathological inputs. No security, caller-compatibility, or concrete edge-case regressions are evident in the diff. Ship-as-is.\n\nSHIPWRIGHT_VERDICT: approve",
+      "verdicts": {
+        "openai": "approve",
+        "deepseek": "unavailable"
+      },
+      "contradiction_resolution": "Only one reviewer leg answered (openai=approve, no findings); deepseek returned an empty reply from the provider (transient, not a disagreement in substance). Proceeding on the single successful verdict — it corroborates the internal spec-reviewer PASS and code-reviewer approve (2 low-severity non-blocking findings already addressed: boundary tests added; shared-helper extraction deferred as a documented follow-up)."
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-13T12:14:31.748125+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "inherit"
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-13T12:12:14.326654+00:00",
+      "disposition": "internal plan review is medium+ only, this run is small",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    }
+  }
+}

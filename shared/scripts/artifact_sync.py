@@ -92,9 +92,9 @@ def _nothing_to_compare_against(root: Path, ref: str) -> str:
     return "shallow" if shallow else "history"
 
 
-# ---------------------------------------------------------------------------
 # AC-5 of iterate-2026-05-14-triage-producers-2: triage emission
-# ---------------------------------------------------------------------------
+
+_DETAIL_MAX_LEN = 1024  # mirrors security_card.py's cap
 
 
 def _emit_drift_to_triage(project_root, affected: list[dict]) -> int:
@@ -137,7 +137,7 @@ def _emit_drift_to_triage(project_root, affected: list[dict]) -> int:
                 f"changed_files: {', '.join(str(c) for c in changed)} | "
                 f"affected_artifacts: {', '.join(str(a) for a in artifacts) or 'n/a'} | "
                 f"affected_FRs: {', '.join(str(f) for f in frs) or 'n/a'}"
-            )
+            )[:_DETAIL_MAX_LEN]
             new_id = append_triage_item_idempotent(
                 project_root,
                 source="drift",

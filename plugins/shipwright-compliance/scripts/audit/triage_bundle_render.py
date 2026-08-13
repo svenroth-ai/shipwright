@@ -58,6 +58,12 @@ def max_severity(fails: list[dict[str, str]]) -> str:
     return best
 
 
+# Matches security_card.py's cap so a large compliance finding set can't blow
+# past append_triage_item's shared DETAIL_MAX_LEN (6000) and get silently
+# dropped.
+_DETAIL_MAX_LEN = 1024
+
+
 def build_detail(fails: list[dict[str, str]]) -> str:
     lines = [
         f"{len(fails)} open compliance finding(s): "
@@ -68,7 +74,10 @@ def build_detail(fails: list[dict[str, str]]) -> str:
         extra = f" — {d['detail']}" if d["detail"] else ""
         lines.append(f"- {d['key']}: {d['name']}{extra}")
     lines += ["", f"Live view: {DASHBOARD_REL}"]
-    return "\n".join(lines)
+    detail = "\n".join(lines)
+    if len(detail) > _DETAIL_MAX_LEN:
+        detail = detail[: _DETAIL_MAX_LEN - 1] + "…"
+    return detail
 
 
 def protected_by(item: dict[str, Any], groups: frozenset[str]) -> bool:

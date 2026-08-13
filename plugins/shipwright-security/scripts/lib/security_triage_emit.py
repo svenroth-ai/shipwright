@@ -43,6 +43,11 @@ _KNOWN_SEVERITIES = ("critical", "high", "medium", "low", "info")
 # Findings re-fire daily until promoted or dismissed.
 _DEDUP_WINDOW_SECONDS = 24 * 3600
 
+# Matches security_card.py's cap so a large/verbatim scanner description can't
+# blow past append_triage_item's shared DETAIL_MAX_LEN (6000) and get
+# silently dropped.
+_DETAIL_MAX_LEN = 1024
+
 
 def _import_triage_appender():
     """Lazily import the shared idempotent triage appender.
@@ -130,6 +135,8 @@ def emit_findings_to_triage(
             if suggested_fix:
                 detail_parts.append(f"fix: {suggested_fix}")
             detail = " | ".join(detail_parts)
+            if len(detail) > _DETAIL_MAX_LEN:
+                detail = detail[: _DETAIL_MAX_LEN - 1] + "…"
 
             evidence_path = f.get("_evidence_path") or f.get("evidence_path")
 
