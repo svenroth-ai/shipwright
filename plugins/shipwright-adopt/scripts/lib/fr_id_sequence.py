@@ -13,11 +13,18 @@ stays canonical regardless of how many features a repo exposes.
 
 from __future__ import annotations
 
+import re
+
 # Each side of a canonical id is two digits, so both group and minor span 1..99.
 _PER_GROUP = 99
 _MAX_GROUP = 99
 # The last representable sequence position (FR-99.99).
 MAX_SEQUENCE = _MAX_GROUP * _PER_GROUP
+
+#: Mirror of ``requirement_model.CANONICAL_FR_RE``, captured so ``sequence_of``
+#: can read the group/minor digits it needs without importing across the
+#: shared/plugin boundary for a two-group regex.
+_CANONICAL_RE = re.compile(r"^FR-(\d{2})\.(\d{2})$")
 
 
 def canonical_fr_id(sequence: int) -> str:
@@ -43,3 +50,22 @@ def canonical_fr_id(sequence: int) -> str:
     group = zero_based // _PER_GROUP + 1
     minor = zero_based % _PER_GROUP + 1
     return f"FR-{group:02d}.{minor:02d}"
+
+
+def sequence_of(fr_id: str) -> int | None:
+    """The inverse of :func:`canonical_fr_id`: the 1-based sequence position
+    a canonical ``FR-GG.MM`` id occupies, or ``None`` if ``fr_id`` is not one.
+
+    Exists so a later id (a quality-requirement row folded onto the end of
+    the FR table, trg-8db840a6) can be minted *past* whatever positions are
+    already spoken for — by parsing what those ids already mean rather than
+    re-deriving them from a count that a re-run's fresh feature detection
+    could disagree with. Returns ``None`` rather than raising on a non-
+    canonical id: callers scanning ids of uncertain origin (an existing
+    ``spec.md`` on disk) filter rather than abort on one stray heading id.
+    """
+    match = _CANONICAL_RE.match(fr_id.strip())
+    if not match:
+        return None
+    group, minor = int(match.group(1)), int(match.group(2))
+    return (group - 1) * _PER_GROUP + minor
