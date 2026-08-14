@@ -18,7 +18,13 @@ fi
 repo_root="$(git rev-parse --show-toplevel)"
 cd "$repo_root"
 
-current="$(git config --local --default '' core.hooksPath || true)"
+# --get rather than --default '': --default was added in Git 2.18, and on an
+# older git the unknown option makes the command fail. `|| true` swallows that
+# failure either way, but --get exits 1 with no output for a genuinely unset
+# key on every git version, where --default on an unsupported git fails the
+# same way regardless of whether the key is actually set — which would read a
+# real foreign value as unset and let it be silently overwritten below.
+current="$(git config --local --get core.hooksPath || true)"
 
 if [ "$current" = "$target_path" ]; then
     echo "install-hooks: core.hooksPath already set to '$target_path' — ok"
