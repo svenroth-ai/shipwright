@@ -132,7 +132,7 @@ def test_rendered_spec_carries_a_layers_column():
         project_name="Demo", split_name="01-adopted", product_description="x",
         features=features, qr_items=[], constraints=[],
     )
-    fr_section = md.split("## Functional Requirements", 1)[1].split("## Quality", 1)[0]
+    fr_section = md.split("## Functional Requirements", 1)[1].split("## Constraints", 1)[0]
     # header carries the new column. Found by SHAPE, not by line index: the
     # section also carries the derived/unconfirmed provenance block above the
     # table (trg-1aa5a8ab), and a positional assertion would break on any prose
@@ -165,7 +165,7 @@ def test_brownfield_fixture_route_frs_declare_e2e_end_to_end(nextjs_repo):
         project_name="Fixture", split_name="01-adopted", product_description="x",
         features=features, qr_items=[], constraints=[],
     )
-    fr_section = md.split("## Functional Requirements", 1)[1].split("## Quality", 1)[0]
+    fr_section = md.split("## Functional Requirements", 1)[1].split("## Constraints", 1)[0]
     fr_rows = [l for l in fr_section.splitlines() if l.strip().startswith("| FR-")]
     assert fr_rows, "rendered spec should carry FR rows"
     assert all("e2e" in row and "(inferred)" in row for row in fr_rows)

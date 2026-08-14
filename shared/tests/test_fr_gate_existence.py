@@ -49,6 +49,23 @@ def _make_project(tmp_path, *, spec: str | None = _SPEC):
     return tmp_path
 
 
+# trg-8db840a6: a quality requirement adopt detects (CI/lint enforcement, in
+# this shape) folds into an ordinary FR row (`spec_document.fold_features`),
+# in the 7-column shape `fr_table_shape`/`spec_table` actually emit — not the
+# simplified 5-column fixture above. FR-01.03 is the folded QR row: no
+# source/url (`Basis: assumed`), no surface signal (`Layers: unit (inferred)`).
+_QR_FOLDED_SPEC = """# Specification — demo / 01-adopted
+
+## Functional Requirements
+
+| ID | Area | Name | Priority | Description | Basis | Layers |
+|---|---|---|---|---|---|---|
+| FR-01.01 | Adopted | Dashboard | Must | User views active projects | code | unit, e2e (inferred) |
+| FR-01.02 | Adopted | Login | Must | User logs in | code | unit, e2e (inferred) |
+| FR-01.03 | Adopted | CI pipeline (github-actions) must pass on pull requests. | Must | CI pipeline (github-actions) must pass on pull requests. | assumed | unit (inferred) |
+"""
+
+
 class TestUnknownFrIdsPredicate:
     """Pure, stdlib-only. Takes the known set as a parameter — it must never
     reach for the filesystem (fr_classification.py:17-19 keeps that module
@@ -203,6 +220,19 @@ class TestWiringActuallyEnforces:
         known, found = collect_known_fr_ids(root)
         assert _fr_existence_gate_error(
             self._iterate_event(affected_frs=["FR-01.02"]), known, specs_found=found) is None
+
+    def test_a_folded_quality_requirement_row_passes_the_existence_gate(self, tmp_path):
+        """trg-8db840a6: before the fold, a quality requirement rendered as a
+        prose `QR-02` bullet naming nothing this collector could ever find, so
+        `--affected-frs QR-02` was rejected by this exact gate on every
+        iterate that implemented one. Folded into an ordinary FR row
+        (`spec_document.fold_features`), its id is a real requirement id."""
+        root = _make_project(tmp_path, spec=_QR_FOLDED_SPEC)
+        known, found = collect_known_fr_ids(root)
+        assert found is True
+        assert "FR-01.03" in known
+        assert _fr_existence_gate_error(
+            self._iterate_event(affected_frs=["FR-01.03"]), known, specs_found=found) is None
 
     def test_finalize_path_runs_both_gates(self):
         # AC4: the finalize write path must actually invoke the gates, or it
