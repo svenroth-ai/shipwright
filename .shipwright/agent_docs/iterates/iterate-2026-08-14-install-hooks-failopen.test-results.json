@@ -1,0 +1,97 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-08-14-install-hooks-failopen",
+    "date": "2026-08-14",
+    "unit": {
+      "status": "pass",
+      "passed": 9230,
+      "failed": 0,
+      "note": "Full shared/tests suite (this iterate's owning root): 9230 passed, 32 skipped, 20 deselected (-m 'not slow'), 0 failed, 934.20s. Includes the 15 new tests in shared/tests/test_installer_hooks_scripts.py and shared/tests/test_installer_hooks_ps1_defects.py."
+    },
+    "integration": {
+      "status": "n/a",
+      "reason": "no changes under integration-tests/; this is a shared/scripts-level tooling fix"
+    },
+    "e2e": {
+      "status": "n/a",
+      "reason": "no browser surface; install-hooks.{sh,ps1} are local git-config CLIs with no UI"
+    },
+    "smoke": {
+      "status": "n/a",
+      "reason": "no startable server surface for this change"
+    },
+    "pgtap": {
+      "status": "n/a",
+      "reason": "no database"
+    },
+    "design_fidelity": {
+      "status": "n/a",
+      "reason": "no UI surface"
+    },
+    "surface_verification": {
+      "surface": "cli",
+      "tests_run": 14,
+      "exit_code": 0,
+      "evidence_path": ".shipwright/runs/iterate-2026-08-14-install-hooks-failopen/surface_verification.json",
+      "detail": "uv run pytest shared/tests/test_installer_hooks_scripts.py shared/tests/test_installer_hooks_ps1_defects.py -v \u2014 14/14 passed, exercising both scripts against real git (install/idempotent/refuse/force lifecycle) and, via a PowerShell git-function stub, the 3 hard-to-trigger defect regressions (unchecked write, --default flag on an old git, Write-Error terminating-error trap)."
+    },
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "[1] a failed git config write (ps1) must exit non-zero, not print success",
+          "disposition": "tested",
+          "evidence": "test_installer_hooks_ps1_defects.py::test_ps1_write_failure_exits_nonzero_not_false_success PASSED (+ premise test proving the old unchecked shape really does fall through to success)"
+        },
+        {
+          "behavior": "[1] a failed git config write (sh) must exit non-zero, not print success",
+          "disposition": "tested",
+          "evidence": "test_installer_hooks_scripts.py::test_sh_write_failure_exits_nonzero_not_false_success PASSED (added after external review flagged the sh-side gap)"
+        },
+        {
+          "behavior": "[2] --get survives a git that rejects --default and still refuses to clobber a real foreign core.hooksPath (ps1)",
+          "disposition": "tested",
+          "evidence": "test_installer_hooks_ps1_defects.py::test_ps1_get_flag_survives_old_git_and_refuses_to_clobber PASSED (+ premise test proving --default loses the foreign value on an old git)"
+        },
+        {
+          "behavior": "[2] install-hooks.sh no longer uses --default '' ",
+          "disposition": "tested",
+          "evidence": "test_installer_hooks_scripts.py::test_sh_uses_get_not_default_flag PASSED"
+        },
+        {
+          "behavior": "[3] Console.Error.WriteLine+exit is not swallowed by a caller's try/catch (unlike Write-Error)",
+          "disposition": "tested",
+          "evidence": "test_installer_hooks_ps1_defects.py::test_console_error_writeline_exit_is_not_swallowed_by_caller_catch PASSED (+ premise test proving Write-Error leaves a stale $LASTEXITCODE)"
+        },
+        {
+          "behavior": "[4] Set-Location uses -LiteralPath",
+          "disposition": "tested",
+          "evidence": "test_installer_hooks_scripts.py::test_ps1_uses_literal_path_for_set_location PASSED"
+        },
+        {
+          "behavior": "full install/idempotent/refuse/force lifecycle, both scripts, against real git",
+          "disposition": "tested",
+          "evidence": "test_installer_hooks_scripts.py::test_sh_lifecycle_install_idempotent_refuse_force, ::test_ps1_lifecycle_install_idempotent_refuse_force PASSED"
+        }
+      ],
+      "counts": {
+        "testable": 7,
+        "tested": 7,
+        "untestable": 0,
+        "untested_testable": 0
+      },
+      "enumeration_basis": {
+        "acs": 5,
+        "covered_acs": 5
+      }
+    },
+    "degraded": []
+  },
+  "source_state": {
+    "run_id": "iterate-2026-08-14-install-hooks-failopen",
+    "commit": "1aad70f39e2ad989d10e173493a7aa75bd41ea00",
+    "dirty": true,
+    "base": null,
+    "release": null
+  }
+}
