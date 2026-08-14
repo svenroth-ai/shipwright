@@ -108,12 +108,11 @@
       "findings_count": 0,
       "findings": [],
       "provider": null,
-      "completed_at": "2026-08-14T13:33:08.873821+00:00",
+      "completed_at": "2026-08-14T14:09:37.636343+00:00",
       "disposition": null,
-      "recorded_by": "claude",
+      "recorded_by": "spec-reviewer",
       "parse_status": null,
-      "raw_excerpt": null,
-      "model_tier": "inherit"
+      "raw_excerpt": null
     },
     "plan_internal": {
       "review_type": "plan_internal",
