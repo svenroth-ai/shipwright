@@ -1,0 +1,1 @@
+shipwright-adopt now seeds .shipwright/planning/adr/ with its own minted ADRs (adoption ADR + retroactive ADRs) instead of writing only to decision_log.md; harvested third-party ADRs are left untouched

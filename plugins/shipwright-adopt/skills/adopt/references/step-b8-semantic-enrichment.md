@@ -38,6 +38,11 @@ Write a **strict JSON object** to `.shipwright/adopt/enrichment.json`:
 }
 ```
 
+`commit_sha` must be a **real** sha from `git.major_refactor_commits[].sha` —
+Step E derives that ADR's title (`subject`) from it via `git log`, and a
+hallucinated sha resolves to nothing. `subject` itself is optional here (Step
+E derives it); omit it rather than guessing.
+
 **Quality leitplanken** (respect these in the inline enrichment):
 
 - **`label` + `description` follow `shared/fr-authoring.md`** — they become the
@@ -68,6 +73,14 @@ exists but is malformed (missing required keys, wrong types, missing
 `route` on a feature, missing `decision`/`consequences` on an ADR), Step E
 fails loud with a clear error — adopt does NOT silently fall back to
 "snapshot+routes only" when Layer-2 was attempted.
+
+A second, separate check runs after schema validation, before any artifact
+is written: each `adrs[]` entry must resolve to a non-empty `subject` (from
+its own `subject` field, or derived from a resolvable `commit_sha`) plus
+non-empty `context`/`decision`. A schema-valid entry can still fail this —
+e.g. a `commit_sha` that doesn't resolve to a real commit, with no `subject`
+given as a fallback — and Step E aborts closed rather than render an
+ADR heading over an empty body.
 
 If `enrichment.json` does not exist at all, a deterministic minimal
 fallback is generated from the snapshot + routes. Every text field is

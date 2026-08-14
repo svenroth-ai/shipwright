@@ -1,4 +1,4 @@
-"""Unit tests for artifact_writer."""
+"""Unit tests for artifact_writer. ADR-seeding tests live in test_adr_seeding.py."""
 
 import re
 from pathlib import Path

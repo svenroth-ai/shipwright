@@ -216,7 +216,7 @@ def generate(
 ) -> dict[str, Any]:
     _load_lib()
     from config_writer import write_all  # type: ignore
-    from artifact_writer import write_agent_docs, write_claude_md, write_spec  # type: ignore
+    from artifact_writer import _resolve_retroactive_adrs, write_agent_docs, write_claude_md, write_spec  # type: ignore
     from event_seeder import seed_adopted_event, seed_backfill_events  # type: ignore
     from fr_id_sequence import canonical_fr_id  # type: ignore
     # suggest_iterate hook is plugin-owned (registered in
@@ -424,7 +424,7 @@ def generate(
     )
 
     results: dict[str, Any] = {"written": []}
-
+    retroactive_adrs = _resolve_retroactive_adrs(project_root, enrichment.get("adrs", []))  # fail closed before write_claude_md (trg-6b59524b)
     # Artifacts
     p = write_claude_md(
         project_root, project_name=project_name, profile=profile, stack=stack,
@@ -444,7 +444,7 @@ def generate(
         contributors_total=git.get("contributors_total", 0),
         nested_excluded=nested_excluded,
         commit_sha=commit_sha,
-        retroactive_adrs=enrichment.get("adrs", []),
+        retroactive_adrs=retroactive_adrs,
         harvested_decisions=harvested_decisions,
         harvested_conventions=harvested_conventions_t,
         user_facing_docs=user_facing_docs or None,
