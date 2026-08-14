@@ -1,0 +1,6 @@
+{
+  "stage": "spec-compliance",
+  "verdict": "PASS",
+  "spec_citations": [],
+  "summary": "All directive items met. QR- id space retired from spec-generation.md (remaining mentions are retirement prose only, no live mint); no Category column added and FR_TABLE_HEADER/fr_table_shape.py untouched; Constraints keep their section as prose with no C- ids; ID-schema mint guidance rewritten to FR-only; quality-target rows carry Must priority and acceptance criteria. docs/guide.md verified (grep) to contain no QR reference and correctly unchanged; .shipwright/planning/01-adopted/spec.md still carries its historical QR-01, unmigrated as instructed; adopt-side producer untouched. The new test exercises the real read_active_fr_rows consumer and pins the canonical header, covering all three TESTS claims. Stage 2 (code-reviewer) may run."
+}

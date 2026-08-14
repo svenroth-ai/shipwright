@@ -1,0 +1,130 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-08-14-fr-qr-fold-adopt",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-14T13:28:19.358346+00:00",
+      "disposition": null,
+      "recorded_by": "claude",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-14T13:28:28.580279+00:00",
+      "disposition": "BUG intent never gets a mini-plan per the Phase Matrix (Mini-Plan row: FEATURE only at small); this run is a small BUG fix",
+      "recorded_by": "claude",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 1,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "correctness",
+          "file": "plugins/shipwright-adopt/scripts/lib/spec_document.py",
+          "line": 102,
+          "finding": "_existing_fr_ids used fr_table_reader.read_active_fr_rows, which filters out rows under a '## Removed Requirements' heading. fr_table_reader's own docstring states a retired FR number must never be reused because removed rows still mean something to events.jsonl/the RTM/test tags/closed PRs. On regeneration of an adopted split whose spec.md has a retired FR row, the next QR id could silently collide with that retired id.",
+          "suggestion": "Use fr_table_reader.read_fr_rows (unfiltered, active+removed) in _existing_fr_ids instead of read_active_fr_rows, and add a regression test with a '## Removed Requirements' section holding a retired id in the range a naive scan would reuse.",
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-08-14T13:39:17.436022+00:00",
+      "disposition": null,
+      "recorded_by": "claude",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "inherit"
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 3,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "boundary/contract",
+          "file": "plugins/shipwright-adopt/scripts/lib/spec_document.py",
+          "line": null,
+          "finding": "Claim under doubt: a QR row's FR id can never collide with one something else still means, across any regeneration — generate_adoption_artifacts.py:363-365 assigns base-feature ids purely positionally (canonical_fr_id(i) for i=1..N over this run's freshly detected features), with no reference to existing_fr_ids. fold_features only guards the QR rows' OWN start position -- base's ids pass through untouched. If run 2 detects MORE features than run 1 (the growth direction, untested), a base feature's freshly assigned id can land on a number run 1's QR row occupied, silently repointing that id's meaning with no error.",
+          "suggestion": "either scope the guarantee down explicitly (this run's disposition: reasoned rebuttal), or thread existing_fr_ids into generate_adoption_artifacts.py's base-id assignment too (full fix, out of scope here).",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "boundary/contract",
+          "file": "plugins/shipwright-adopt/scripts/lib/fr_id_sequence.py",
+          "line": null,
+          "finding": "Claim under doubt: canonical_fr_id's overflow ValueError at position 9802 is safely unreachable — Confirmed uncaught -- would surface as a raw traceback mid-write rather than a clean message. Requires 9801+ detected features/QR rows in one split to reach.",
+          "suggestion": "not worth defensive handling for a condition this far from any real adopt run",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": null,
+          "category": "concurrency",
+          "file": "plugins/shipwright-adopt/scripts/lib/spec_document.py",
+          "line": null,
+          "finding": "Claim under doubt: write_spec's read-then-write of _existing_fr_ids has no TOCTOU risk — A real race exists in principle (read existing ids, then write, no lock) -- but adopt runs as a single orchestrated Claude Code session per split; nothing in this repo spawns two concurrent generate_adoption_artifacts.py processes against the same spec.md.",
+          "suggestion": "a lock only if adopt's invocation model ever becomes concurrent",
+          "source": "doubt-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-08-14T13:45:41.826986+00:00",
+      "disposition": null,
+      "recorded_by": "claude",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "inherit"
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-14T13:28:28.823531+00:00",
+      "disposition": "External LLM Review is Advisory/skip at small complexity per the Phase Matrix (only auto at medium+); this run is small with no risk flags",
+      "recorded_by": "claude",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-14T14:09:37.636343+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-14T13:28:28.700216+00:00",
+      "disposition": "internal plan review is medium+ only, this run is small",
+      "recorded_by": "claude",
+      "parse_status": null,
+      "raw_excerpt": null
+    }
+  }
+}

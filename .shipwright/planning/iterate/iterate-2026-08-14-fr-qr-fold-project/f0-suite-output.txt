@@ -1,0 +1,91 @@
+F0 suite unit: run_id=iterate-2026-08-14-fr-qr-fold-project event=queued unit=shipwright-adopt weight=1 outcome=- elapsed=0.0s phase=initial retry_kind=-
+F0 suite unit: run_id=iterate-2026-08-14-fr-qr-fold-project event=queued unit=shipwright-build weight=1 outcome=- elapsed=0.0s phase=initial retry_kind=-
+F0 suite unit: run_id=iterate-2026-08-14-fr-qr-fold-project event=queued unit=shipwright-changelog weight=1 outcome=- elapsed=0.0s phase=initial retry_kind=-
+F0 suite unit: run_id=iterate-2026-08-14-fr-qr-fold-project event=queued unit=shipwright-compliance weight=1 outcome=- elapsed=0.0s phase=initial retry_kind=-
+F0 suite unit: run_id=iterate-2026-08-14-fr-qr-fold-project event=queued unit=shipwright-deploy weight=1 outcome=- elapsed=0.0s phase=initial retry_kind=-
+F0 suite unit: run_id=iterate-2026-08-14-fr-qr-fold-project event=queued unit=shipwright-design weight=1 outcome=- elapsed=0.0s phase=initial retry_kind=-
+F0 suite unit: run_id=iterate-2026-08-14-fr-qr-fold-project event=queued unit=shipwright-grade weight=1 outcome=- elapsed=0.0s phase=initial retry_kind=-
+F0 suite unit: run_id=iterate-2026-08-14-fr-qr-fold-project event=queued unit=shipwright-iterate weight=1 outcome=- elapsed=0.0s phase=initial retry_kind=-
+F0 suite unit: run_id=iterate-2026-08-14-fr-qr-fold-project event=queued unit=shipwright-plan weight=1 outcome=- elapsed=0.0s phase=initial retry_kind=-
+F0 suite unit: run_id=iterate-2026-08-14-fr-qr-fold-project event=queued unit=shipwright-preview weight=1 outcome=- elapsed=0.0s phase=initial retry_kind=-
+F0 suite unit: run_id=iterate-2026-08-14-fr-qr-fold-project event=queued unit=shipwright-project weight=1 outcome=- elapsed=0.0s phase=initial retry_kind=-
+F0 suite unit: run_id=iterate-2026-08-14-fr-qr-fold-project event=queued unit=shipwright-run weight=1 outcome=- elapsed=0.0s phase=initial retry_kind=-
+F0 suite unit: run_id=iterate-2026-08-14-fr-qr-fold-project event=queued unit=shipwright-security weight=1 outcome=- elapsed=0.0s phase=initial retry_kind=-
+F0 suite unit: run_id=iterate-2026-08-14-fr-qr-fold-project event=queued unit=shipwright-test weight=1 outcome=- elapsed=0.0s phase=initial retry_kind=-
+F0 suite unit: run_id=iterate-2026-08-14-fr-qr-fold-project event=queued unit=shared/tests weight=8 outcome=- elapsed=0.0s phase=initial retry_kind=-
+F0 suite unit: run_id=iterate-2026-08-14-fr-qr-fold-project event=queued unit=shared/scripts/tests weight=1 outcome=- elapsed=0.0s phase=initial retry_kind=-
+F0 suite unit: run_id=iterate-2026-08-14-fr-qr-fold-project event=queued unit=shared/scripts/tools/tests weight=1 outcome=- elapsed=0.0s phase=initial retry_kind=-
+F0 suite unit: run_id=iterate-2026-08-14-fr-qr-fold-project event=queued unit=integration-tests weight=1 outcome=- elapsed=0.0s phase=initial retry_kind=-
+F0 suite unit: run_id=iterate-2026-08-14-fr-qr-fold-project event=start unit=shipwright-adopt weight=1 outcome=- elapsed=0.0s phase=initial retry_kind=-
+F0 suite unit: run_id=iterate-2026-08-14-fr-qr-fold-project event=start unit=shipwright-build weight=1 outcome=- elapsed=0.0s phase=initial retry_kind=-
+F0 suite unit: run_id=iterate-2026-08-14-fr-qr-fold-project event=start unit=shipwright-changelog weight=1 outcome=- elapsed=0.0s phase=initial retry_kind=-
+F0 suite unit: run_id=iterate-2026-08-14-fr-qr-fold-project event=start unit=shipwright-compliance weight=1 outcome=- elapsed=0.0s phase=initial retry_kind=-
+F0 suite unit: run_id=iterate-2026-08-14-fr-qr-fold-project event=start unit=shipwright-deploy weight=1 outcome=- elapsed=0.0s phase=initial retry_kind=-
+F0 suite unit: run_id=iterate-2026-08-14-fr-qr-fold-project event=start unit=shipwright-design weight=1 outcome=- elapsed=0.0s phase=initial retry_kind=-
+F0 suite unit: run_id=iterate-2026-08-14-fr-qr-fold-project event=start unit=shipwright-grade weight=1 outcome=- elapsed=0.0s phase=initial retry_kind=-
+F0 suite unit: run_id=iterate-2026-08-14-fr-qr-fold-project event=start unit=shipwright-iterate weight=1 outcome=- elapsed=0.0s phase=initial retry_kind=-
+F0 suite unit: run_id=iterate-2026-08-14-fr-qr-fold-project event=start unit=shipwright-plan weight=1 outcome=- elapsed=0.0s phase=initial retry_kind=-
+F0 suite unit: run_id=iterate-2026-08-14-fr-qr-fold-project event=start unit=shipwright-preview weight=1 outcome=- elapsed=0.0s phase=initial retry_kind=-
+F0 suite unit: run_id=iterate-2026-08-14-fr-qr-fold-project event=start unit=shipwright-project weight=1 outcome=- elapsed=0.0s phase=initial retry_kind=-
+F0 suite unit: run_id=iterate-2026-08-14-fr-qr-fold-project event=complete unit=shipwright-preview weight=1 outcome=pass elapsed=1.2s phase=initial retry_kind=-
+F0 suite unit: run_id=iterate-2026-08-14-fr-qr-fold-project event=start unit=shipwright-run weight=1 outcome=- elapsed=0.0s phase=initial retry_kind=-
+F0 suite unit: run_id=iterate-2026-08-14-fr-qr-fold-project event=complete unit=shipwright-design weight=1 outcome=pass elapsed=2.8s phase=initial retry_kind=-
+F0 suite unit: run_id=iterate-2026-08-14-fr-qr-fold-project event=start unit=integration-tests weight=1 outcome=- elapsed=0.0s phase=initial retry_kind=-
+F0 suite unit: run_id=iterate-2026-08-14-fr-qr-fold-project event=complete unit=shipwright-project weight=1 outcome=pass elapsed=4.2s phase=initial retry_kind=-
+F0 suite unit: run_id=iterate-2026-08-14-fr-qr-fold-project event=start unit=shipwright-security weight=1 outcome=- elapsed=0.0s phase=initial retry_kind=-
+F0 suite unit: run_id=iterate-2026-08-14-fr-qr-fold-project event=complete unit=shipwright-changelog weight=1 outcome=pass elapsed=6.9s phase=initial retry_kind=-
+F0 suite unit: run_id=iterate-2026-08-14-fr-qr-fold-project event=start unit=shared/scripts/tests weight=1 outcome=- elapsed=0.0s phase=initial retry_kind=-
+F0 suite unit: run_id=iterate-2026-08-14-fr-qr-fold-project event=complete unit=shipwright-build weight=1 outcome=pass elapsed=9.7s phase=initial retry_kind=-
+F0 suite unit: run_id=iterate-2026-08-14-fr-qr-fold-project event=start unit=shipwright-test weight=1 outcome=- elapsed=0.0s phase=initial retry_kind=-
+F0 suite unit: run_id=iterate-2026-08-14-fr-qr-fold-project event=complete unit=shipwright-iterate weight=1 outcome=pass elapsed=12.2s phase=initial retry_kind=-
+F0 suite unit: run_id=iterate-2026-08-14-fr-qr-fold-project event=start unit=shared/scripts/tools/tests weight=1 outcome=- elapsed=0.0s phase=initial retry_kind=-
+F0 suite unit: run_id=iterate-2026-08-14-fr-qr-fold-project event=complete unit=shipwright-plan weight=1 outcome=pass elapsed=14.1s phase=initial retry_kind=-
+F0 suite unit: run_id=iterate-2026-08-14-fr-qr-fold-project event=complete unit=shipwright-grade weight=1 outcome=pass elapsed=21.0s phase=initial retry_kind=-
+F0 suite unit: run_id=iterate-2026-08-14-fr-qr-fold-project event=complete unit=shipwright-deploy weight=1 outcome=pass elapsed=22.6s phase=initial retry_kind=-
+F0 suite unit: run_id=iterate-2026-08-14-fr-qr-fold-project event=complete unit=shipwright-security weight=1 outcome=pass elapsed=19.1s phase=initial retry_kind=-
+F0 suite heartbeat: run_id=iterate-2026-08-14-fr-qr-fold-project completed=10/18 elapsed=30.0s
+F0 suite unit: run_id=iterate-2026-08-14-fr-qr-fold-project event=complete unit=shared/scripts/tests weight=1 outcome=pass elapsed=32.7s phase=initial retry_kind=-
+F0 suite unit: run_id=iterate-2026-08-14-fr-qr-fold-project event=complete unit=shipwright-run weight=1 outcome=pass elapsed=41.6s phase=initial retry_kind=-
+F0 suite unit: run_id=iterate-2026-08-14-fr-qr-fold-project event=complete unit=shipwright-test weight=1 outcome=pass elapsed=36.9s phase=initial retry_kind=-
+F0 suite unit: run_id=iterate-2026-08-14-fr-qr-fold-project event=complete unit=shipwright-adopt weight=1 outcome=pass elapsed=56.9s phase=initial retry_kind=-
+F0 suite unit: run_id=iterate-2026-08-14-fr-qr-fold-project event=start unit=shared/tests weight=8 outcome=- elapsed=0.0s phase=initial retry_kind=-
+F0 suite heartbeat: run_id=iterate-2026-08-14-fr-qr-fold-project completed=14/18 elapsed=60.0s
+F0 suite unit: run_id=iterate-2026-08-14-fr-qr-fold-project event=complete unit=shared/scripts/tools/tests weight=1 outcome=pass elapsed=77.3s phase=initial retry_kind=-
+F0 suite heartbeat: run_id=iterate-2026-08-14-fr-qr-fold-project completed=15/18 elapsed=90.0s
+F0 suite heartbeat: run_id=iterate-2026-08-14-fr-qr-fold-project completed=15/18 elapsed=120.0s
+F0 suite heartbeat: run_id=iterate-2026-08-14-fr-qr-fold-project completed=15/18 elapsed=150.0s
+F0 suite heartbeat: run_id=iterate-2026-08-14-fr-qr-fold-project completed=15/18 elapsed=180.0s
+F0 suite unit: run_id=iterate-2026-08-14-fr-qr-fold-project event=complete unit=shipwright-compliance weight=1 outcome=pass elapsed=180.4s phase=initial retry_kind=-
+F0 suite heartbeat: run_id=iterate-2026-08-14-fr-qr-fold-project completed=16/18 elapsed=210.0s
+F0 suite heartbeat: run_id=iterate-2026-08-14-fr-qr-fold-project completed=16/18 elapsed=240.0s
+F0 suite heartbeat: run_id=iterate-2026-08-14-fr-qr-fold-project completed=16/18 elapsed=270.0s
+F0 suite unit: run_id=iterate-2026-08-14-fr-qr-fold-project event=complete unit=integration-tests weight=1 outcome=pass elapsed=271.5s phase=initial retry_kind=-
+F0 suite heartbeat: run_id=iterate-2026-08-14-fr-qr-fold-project completed=17/18 elapsed=300.1s
+F0 suite unit: run_id=iterate-2026-08-14-fr-qr-fold-project event=complete unit=shared/tests weight=8 outcome=pass elapsed=249.1s phase=initial retry_kind=-
+  PASS    271.5s  integration-tests
+  PASS    249.1s  shared/tests
+  PASS    180.4s  shipwright-compliance
+  PASS     77.3s  shared/scripts/tools/tests
+  PASS     56.9s  shipwright-adopt
+  PASS     41.6s  shipwright-run
+  PASS     36.9s  shipwright-test
+  PASS     32.7s  shared/scripts/tests
+  PASS     22.6s  shipwright-deploy
+  PASS     21.0s  shipwright-grade
+  PASS     19.1s  shipwright-security
+  PASS     14.1s  shipwright-plan
+  PASS     12.2s  shipwright-iterate
+  PASS      9.7s  shipwright-build
+  PASS      6.9s  shipwright-changelog
+  PASS      4.2s  shipwright-project
+  PASS      2.8s  shipwright-design
+  PASS      1.2s  shipwright-preview
+
+F0 suite: 18 units in 5.6 min -> GREEN
+-------------
+Diff Coverage
+Diff: origin/main...HEAD, staged and unstaged changes
+-------------
+No lines with coverage information in this diff.
+-------------
+diff-coverage: PASS - changed lines >= 80% covered (vs origin/main).

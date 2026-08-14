@@ -1,0 +1,79 @@
+{
+  "section": "fr-qr-fold-project",
+  "verdict": "APPROVE_WITH_COMMENTS",
+  "summary": "No blockers. Scope discipline clean (exactly two files, adopt-side producer correctly untouched). 2 medium findings on the regression test's detection power (unanchored id-reintroduction regex; section-number-keyed retirement patterns) and 8 low findings (dead assertion, docstring cross-reference, Layers-cell inconsistency in the new worked-example rows, truncated cross-reference titles, redundant Optional Sections subsection, redundant test assertions, undocumented intentional test-coverage duplication with the integration-tests root). All 2 medium and 6 of 8 low findings applied before commit; verified by re-running plugins/shipwright-project/tests (64 passed), integration-tests/test_fr_table_shape_convergence.py (13 passed), and the shared/tests spec-generation.md subset (58 passed). The one pre-existing low finding (Required Sections list omitting the optional UI Requirements section from its numbering) was explicitly flagged by the reviewer as pre-existing, not a regression, and left alone per scope discipline.",
+  "review": [
+    {
+      "severity": "medium",
+      "category": "correctness",
+      "file": "plugins/shipwright-project/tests/test_spec_generation_qr_fold.py",
+      "finding": "Anti-reintroduction regex required backtick/pipe immediately adjacent to the id, missing a reintroduced `| QR-01.01 |` table row.",
+      "disposition": "fixed",
+      "fix": "Unanchored to `QR-\\d|\\bC-\\d`; verified it now catches both `| QR-01.01 |` and `| C-01.01 |`."
+    },
+    {
+      "severity": "medium",
+      "category": "correctness",
+      "file": "plugins/shipwright-project/tests/test_spec_generation_qr_fold.py",
+      "finding": "retired_patterns keyed to section NUMBERS, under-detecting a QR section reintroduced under a different number and over-coupling to the Constraints heading number.",
+      "disposition": "fixed",
+      "fix": "Replaced the numbered-heading literal with a number-agnostic regex on heading text; dropped the redundant '## 4. Constraints' literal (already covered by the id-column-absence test)."
+    },
+    {
+      "severity": "low",
+      "category": "correctness",
+      "file": "plugins/shipwright-project/tests/test_spec_generation_qr_fold.py",
+      "finding": "Dead assertion `not any(rid.startswith('QR-') ...)` can never fail by construction of the reader.",
+      "disposition": "fixed",
+      "fix": "Replaced with a falsifiable full-set-equality assertion over the active FR ids."
+    },
+    {
+      "severity": "low",
+      "category": "readability",
+      "file": "plugins/shipwright-project/tests/test_spec_generation_qr_fold.py",
+      "finding": "Docstring mis-attributed which test pins the single surviving C-{NN} occurrence; two test names/docstrings overlapped in what they claimed to prove.",
+      "disposition": "fixed",
+      "fix": "Renamed to test_no_line_mints_a_live_qr_or_c_id with an accurate docstring; renamed the Constraints test to test_constraints_render_as_prose_bullets and dropped its redundant first assertion."
+    },
+    {
+      "severity": "low",
+      "category": "correctness",
+      "file": "plugins/shipwright-project/skills/project/references/spec-generation.md",
+      "finding": "Worked-example FR-01.08/.09 Layers cells disagreed with the doc's own stated defaults (a performance target should carry integration+unit; the password-storage FR touches persistence).",
+      "disposition": "fixed",
+      "fix": "Both cells now read `unit, integration`; updated the enumeration paragraph to include them among the bare rows."
+    },
+    {
+      "severity": "low",
+      "category": "readability",
+      "file": "plugins/shipwright-project/skills/project/references/spec-generation.md",
+      "finding": "Three cross-references quoted truncated heading titles.",
+      "disposition": "fixed",
+      "fix": "Quoted the full heading text ('...Not a Separate Section' / '...Not a Requirement Table') at all three sites."
+    },
+    {
+      "severity": "low",
+      "category": "readability",
+      "file": "plugins/shipwright-project/skills/project/references/spec-generation.md",
+      "finding": "The 'Optional Sections' subsection now held a single bullet restating item 3's own '(if applicable)' qualifier.",
+      "disposition": "fixed",
+      "fix": "Removed the subsection; folded its one rule into a plain sentence after the Required Sections list."
+    },
+    {
+      "severity": "low",
+      "category": "architecture",
+      "file": "plugins/shipwright-project/tests/test_spec_generation_qr_fold.py",
+      "finding": "test_worked_example_still_carries_the_canonical_fr_header duplicates part of integration-tests/test_fr_table_shape_convergence.py with no note on whether that's intentional.",
+      "disposition": "fixed",
+      "fix": "Added a docstring note: the plugin's own tests/ root and integration-tests/ never run in the same pytest process (ADR-044), so this plugin keeps its own copy of the invariant deliberately."
+    },
+    {
+      "severity": "low",
+      "category": "readability",
+      "file": "plugins/shipwright-project/skills/project/references/spec-generation.md",
+      "finding": "Required Sections list ends at item 6 (References) while the Template Structure body ends at '## 7. References' (list omits the optional UI Requirements section).",
+      "disposition": "skipped",
+      "fix": "Pre-existing off-by-one (was 7 vs 8 before this diff too), preserved exactly by the renumbering. Out of scope for this change per the operator's directive; left as-is."
+    }
+  ]
+}

@@ -12,7 +12,7 @@ import re
 
 import pytest
 
-from lib.fr_id_sequence import canonical_fr_id
+from lib.fr_id_sequence import canonical_fr_id, sequence_of
 
 # Mirror of shared/scripts/lib/requirement_model.CANONICAL_FR_RE — the gate the
 # generated ids must satisfy downstream (is_canonical_fr / namespace_for_id).
@@ -72,3 +72,22 @@ def test_e2e_baseline_spec_ids_canonical_past_99() -> None:
     non_canonical = [i for i in ids if not CANONICAL_FR_RE.match(i)]
     assert not non_canonical, non_canonical
     assert "FR-02.01" in ids  # rolled over past FR-01.99
+
+
+# ---------------------------------------------------------------------------
+# sequence_of — the inverse (trg-8db840a6: QR rows continue past known ids)
+# ---------------------------------------------------------------------------
+
+
+def test_sequence_of_is_the_inverse_of_canonical_fr_id() -> None:
+    for n in (1, 9, 10, 99, 100, 101, 198, 199, 9801):
+        assert sequence_of(canonical_fr_id(n)) == n
+
+
+def test_sequence_of_rejects_non_canonical_ids() -> None:
+    for bad in ("QR-01", "FR-1.1", "FR-7", "FR-01.100", "not-an-id", ""):
+        assert sequence_of(bad) is None
+
+
+def test_sequence_of_strips_surrounding_whitespace() -> None:
+    assert sequence_of("  FR-01.01  ") == 1

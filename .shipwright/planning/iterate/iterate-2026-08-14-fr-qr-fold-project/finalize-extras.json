@@ -1,0 +1,10 @@
+{
+  "intent": "change",
+  "description": "Retire the QR-/C- requirement id spaces from shipwright-project's spec-generation reference; quality targets fold into the FR table, Constraints render as unnumbered prose.",
+  "summary": "Fixed the greenfield project spec template so it stops handing out id numbers (QR-.../C-...) that nothing in Shipwright ever reads.",
+  "spec_impact": "none",
+  "spec_impact_justification": "Changes an internal agent-instruction reference file (how /shipwright-project writes a FUTURE spec.md for a target project); no row in this repo's own tracked FR catalog describes spec-generation.md's internal id-space format, so no FR of this repo's own product is added, modified, or removed.",
+  "change_type": "tooling",
+  "none_reason": "Plugin skill reference doc + a pytest regression test; no application behavior of this repo's own product changed.",
+  "tests": {"passed": 64, "total": 64, "e2e_run": false}
+}

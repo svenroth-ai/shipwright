@@ -1,0 +1,134 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-08-14-install-hooks-failopen",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-14T13:04:25.774747+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-14T13:04:35.833268+00:00",
+      "disposition": "mini-plan is FEATURE-only per the phase matrix; this run is intent BUG at small complexity",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 2,
+      "findings": [
+        {
+          "severity": "low",
+          "category": "duplication",
+          "file": "shared/tests/test_installer_hooks_scripts.py",
+          "line": null,
+          "finding": "_require_pwsh() was defined verbatim in both test files instead of imported from the sibling module. FIXED: now imported alongside _pwsh from test_installer_hooks_ps1_defects; duplicate definition removed; 14/14 tests still pass, ruff clean.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/tests/test_installer_hooks_scripts.py",
+          "line": null,
+          "finding": "No bash-side regression test for a failing git config write. ALREADY FIXED before this pass completed (in response to the matching external-review medium finding): test_sh_write_failure_exits_nonzero_not_false_success was added, using a PATH-shadowing git shim mirroring test_f39's pattern in test_installer_shell_scripts.py.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-08-14T13:14:17.483022+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "inherit"
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-14T13:14:23.671304+00:00",
+      "disposition": "Stage 3 is conditional on a non-trivial surface (migrations, async/concurrency, cross-plugin imports, irreversible ops) per iteration-reviews.md; this diff is local install scripts + tests with none of those",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 2,
+      "findings": [
+        {
+          "severity": "low",
+          "category": "spec",
+          "file": "scripts/install-hooks.ps1",
+          "line": 65,
+          "finding": "The implementation uses the specified consistent `[Console]::Error.WriteLine(...)` plus `exit 1` handling for the failed write, but the required ADR recording this consistency decision is not included in the diff. The rationale exists only as script comments, whereas the specification explicitly requires the decision to be recorded in an ADR.",
+          "suggestion": "Add or update the project ADR documenting why both the refusal and failed-write paths use direct stderr output plus explicit `exit 1`, rather than `throw`.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "test",
+          "file": "shared/tests/test_installer_hooks_scripts.py",
+          "line": 93,
+          "finding": "The shell lifecycle test verifies ordinary install/refusal/force behavior, but it never makes the shell script's `git config --local core.hooksPath ...` write fail. The acceptance criteria explicitly require runner-check coverage that a failed config write exits non-zero for both scripts; currently only the PowerShell stub test covers that condition.",
+          "suggestion": "Add a bash test using a `git` stand-in earlier in `PATH` that succeeds for `rev-parse`/`--get` but fails for the config write, then assert non-zero exit and absence of the success message. The same stand-in can exercise a foreign value under the old-Git/unsupported-flag scenario for the shell twin.  Overall assessment: ship-with-fixes. The runtime changes implement the key fail-closed behavior correctly, but the required ADR and shell failure-path coverage are missing. SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-08-14T13:11:27.168450+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "partial",
+      "raw_excerpt": "[deepseek] <no review returned: provider returned an empty reply>\n\n[openai] - Category: spec\n- Severity: low\n- File: scripts/install-hooks.ps1:65\n- Finding: The implementation uses the specified consistent `[Console]::Error.WriteLine(...)` plus `exit 1` handling for the failed write, but the required ADR recording this consistency decision is not included in the diff. The rationale exists only as script comments, whereas the specification explicitly requires the decision to be recorded in an ADR.\n- Suggestion: Add or update the project ADR documenting why both the refusal and failed-write paths use direct stderr output plus explicit `exit 1`, rather than `throw`.\n\n- Category: test\n- Severity: medium\n- File: shared/tests/test_installer_hooks_scripts.py:93\n- Finding: The shell lifecycle test verifies ordinary install/refusal/force behavior, but it never makes the shell script's `git config --local core.hooksPath ...` write fail. The acceptance criteria explicitly require runner-check coverage that a failed config write exits non-zero for both scripts; currently only the PowerShell stub test covers that condition.\n- Suggestion: Add a bash test using a `git` stand-in earlier in `PATH` that succeeds for `rev-parse`/`--get` but fails for the config write, then assert non-zero exit and absence of the success message. The same stand-in can exercise a foreign value under the old-Git/unsupported-flag scenario for the shell twin.\n\nOverall assessment: ship-with-fixes. The runtime changes implement the key fail-closed behavior correctly, but the required ADR and shell failure-path coverage are missing.  \nSHIPWRIGHT_VERDICT: revise",
+      "verdicts": {
+        "openai": "revise",
+        "deepseek": "unavailable"
+      }
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-14T13:08:40.224762+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "inherit"
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-14T13:04:35.955745+00:00",
+      "disposition": "internal plan review is medium+ only per the phase matrix, this run is small",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    }
+  }
+}

@@ -18,17 +18,19 @@ Each `spec.md` MUST follow this structure (IREB-aligned):
 ### Required Sections
 
 1. **Purpose & Scope** — What this split builds, explicit in/out of scope
-2. **Functional Requirements** — Table with ID, requirement text, priority
-3. **Quality Requirements** — Performance, security, scalability targets (if applicable)
-4. **Constraints** — Technical, regulatory, integration constraints (if applicable)
-5. **Dependencies** — What this split needs from / provides to other splits
-6. **Key Decisions** — Interview decisions that shaped this split
-7. **References** — Paths to source files
+2. **Functional Requirements** — Table with ID, requirement text, priority.
+   Performance, security, and scalability targets are FR rows in this same
+   table, not a separate section — see "Quality Targets Are FR Rows, Not a
+   Separate Section" below
+3. **Constraints** — Technical, regulatory, integration constraints, written
+   as prose (if applicable) — see "Constraints Are Prose, Not a Requirement
+   Table" below
+4. **Dependencies** — What this split needs from / provides to other splits
+5. **Key Decisions** — Interview decisions that shaped this split
+6. **References** — Paths to source files
 
-### Optional Sections (include when relevant)
-
-- Quality Requirements: Skip for splits with no measurable quality targets
-- Constraints: Skip if no specific constraints beyond the stack profile
+Constraints is skipped when there are no specific constraints beyond the
+stack profile — item 3 above already says "(if applicable)".
 
 ### Requirement Format (Rupp's Template)
 
@@ -56,17 +58,40 @@ a sentence plainer — plain wording, full meaning.
 
 ### ID Schema
 
-    {Type}-{Split-Number}.{Sequential-Number}
+    FR-{Split-Number}.{Sequential-Number}
+
+`FR` is the only requirement id space. A quality target (performance,
+security, scalability) gets an FR id like any other requirement — there is no
+separate `QR-` space. Constraints are prose, with no id at all.
 
 Examples for Split 01:
 - `FR-01.01` — First functional requirement
-- `QR-01.01` — First quality requirement
-- `C-01.01` — First constraint
+- `FR-01.02` — Second functional requirement (a quality target reads the
+  same way, e.g. "The system SHALL respond to X within 500ms")
+
+### Quality Targets Are FR Rows, Not a Separate Section
+
+A quality target is written as an ordinary row in the Functional Requirements
+table, with an FR id and a Priority, exactly like any other capability. There
+is no `QR-` id space: nothing in the framework reads a `QR-` id — not the
+FR-table reader, not compliance, not the RTM — so a row minted under that
+space was never addressable. It looked like a tracked requirement and was not
+one.
+
+Word it the same way any FR is worded — SHALL/SHOULD/MAY, testable, in
+business language:
+
+    The system SHALL complete login requests within 500ms (p95).
+
+That sentence is self-evidently a performance requirement; it needs no
+`Category` column to say so. File it under the Area of the capability it
+constrains (a login-latency target belongs under "Authentication", not a
+generic "Quality" bucket).
 
 ### Acceptance Criteria Rules
 
 - Every FR with Priority "Must" MUST have acceptance criteria
-- QRs with measurable targets (e.g., "within 500ms", "10 concurrent users") SHOULD also have acceptance criteria — these drive performance/load tests in shipwright-build
+- A quality-target FR with a measurable target (e.g., "within 500ms", "10 concurrent users") follows the same rule — its criteria drive performance/load tests in shipwright-build
 - Criteria must be testable (shipwright-build uses them for TDD)
 - Use checkbox format: `- [ ] {criterion}`
 - 2-5 criteria per requirement (not more)
@@ -103,6 +128,15 @@ Rules:
   the compliance `data_collector.collect_requirements`) skip this whole
   subsection — removed FRs do not count as live requirements.
 - Omit the subsection entirely while no FR has been removed.
+
+### Constraints Are Prose, Not a Requirement Table
+
+A constraint ("must use Supabase Auth", "must run on Windows") states a limit
+the implementation operates under — it is not itself a requirement with a
+test, so giving it an id (`C-{NN}.{YY}`) would claim an addressability the
+framework does not provide: nothing reads a `C-` id either. Write constraints
+as plain bullets, grouped by type when that helps a reader (Technical /
+Regulatory / Integration), with no numbering.
 
 ### Writing Guidelines
 
@@ -287,29 +321,18 @@ Omit this subsection entirely while empty.}
 |----|-------------|----------|------------|--------|
 | FR-{NN}.{YY} | {original requirement text} | {Must/Should/May} | {run_id} | status: deprecated |
 
-## 3. Quality Requirements
+## 3. Constraints
 
-| ID | Requirement | Category |
-|----|-------------|----------|
-| QR-{NN}.01 | The system SHALL respond to ... within {X}ms | Performance |
-| QR-{NN}.02 | The system SHALL handle {X} concurrent users | Scalability |
-| QR-{NN}.03 | The system SHALL ... | Security |
+**Technical:**
+- Must use {technology}
 
-**Acceptance Criteria** (for QRs with measurable targets):
+**Regulatory:**
+- Must comply with {regulation}
 
-**QR-{NN}.01: Response Time**
-- [ ] API responds within {X}ms at p95 under normal load
-- [ ] No endpoint exceeds {Y}ms at p99
+**Integration:**
+- Must integrate with {system}
 
-## 4. Constraints
-
-| ID | Constraint | Type |
-|----|-----------|------|
-| C-{NN}.01 | Must use {technology} | Technical |
-| C-{NN}.02 | Must comply with {regulation} | Regulatory |
-| C-{NN}.03 | Must integrate with {system} | Integration |
-
-## 5. Dependencies
+## 4. Dependencies
 
 **Depends on:**
 - Split {XX}: {what this split needs — e.g., "database schema from 01-backend"}
@@ -319,7 +342,7 @@ Omit this subsection entirely while empty.}
 
 **Dependency type:** {models | APIs | schemas | patterns}
 
-## 6. Key Decisions
+## 5. Key Decisions
 
 {Decisions from the interview that shaped this split.
 Only decisions that shipwright-plan needs to plan correctly.}
@@ -327,7 +350,7 @@ Only decisions that shipwright-plan needs to plan correctly.}
 - **Decision:** {What was decided}
   **Rationale:** {Why}
 
-## 7. UI Requirements (optional)
+## 6. UI Requirements (optional)
 
 {Include only if this split has user-facing screens.
 Used by shipwright-design to generate mockups.}
@@ -339,7 +362,7 @@ Used by shipwright-design to generate mockups.}
 **Layout preference:** {Sidebar | Top-nav | Centered | Full-width}
 **Design references:** {Link to existing mockups in .shipwright/designs/uploads/ if any}
 
-## 8. References
+## 7. References
 
 - Requirements: `{path to requirements file}`
 - Interview: `{path to interview transcript}`
@@ -383,15 +406,23 @@ application. Users can sign up, log in, and access features based on their role.
 | FR-01.04 | Authentication | Role-based access | Must | The system SHALL enforce role-based access control (admin, member) | interview | unit, e2e |
 | FR-01.05 | Authentication | Login rate limiting | Should | The system SHOULD rate-limit login attempts to 5 per minute per IP | assumed | unit |
 | FR-01.06 | Authentication | Remember me | May | The system MAY support "remember me" for extended sessions | interview | unit, e2e (inferred) |
+| FR-01.08 | Authentication | Login response time | Must | The system SHALL complete login requests within 500ms (p95) | interview | unit, integration |
+| FR-01.09 | Authentication | Password storage | Must | The system SHALL store passwords using bcrypt with cost factor >= 10 | interview | unit, integration |
 
 Both `Layers` forms appear above on purpose — copying either should be a choice,
 not an accident:
 
-- **FR-01.01–.05 are bare** — binding declarations. This is the recommended form:
-  you are building these, so the tests land with them. Until they do, the missing
-  layer hard-aborts finalization.
+- **FR-01.01–.05, .08 and .09 are bare** — binding declarations. This is the
+  recommended form: you are building these, so the tests land with them. Until
+  they do, the missing layer hard-aborts finalization.
 - **FR-01.06 carries `(inferred)`** — advisory, for a `May` capability whose
   layers nobody has verified yet. Reported, never blocking.
+
+**FR-01.08 and FR-01.09 are quality targets** (response time, password
+storage) folded into this same table like any other requirement — there is
+no separate `QR-` id space; see "Quality Targets Are FR Rows, Not a Separate
+Section" above. Their ids skip past `.07`, which the Removed Requirements
+table below retires permanently.
 
 ### Acceptance Criteria
 
@@ -425,6 +456,14 @@ not an accident:
 - [ ] A returning user with the box ticked is still signed in after 30 days
 - [ ] Leaving it unticked ends the session when the browser closes
 
+**FR-01.08: Login response time**
+- [ ] API responds within 500ms at p95 under normal load
+- [ ] No endpoint exceeds 1000ms at p99
+
+**FR-01.09: Password storage**
+- [ ] A newly created password hash uses bcrypt with cost factor >= 10
+- [ ] An attempt to store a password with a lower cost factor is rejected
+
 The FR-01.05 block is the shape `Basis: assumed` obliges: the cell stays the
 bare vocabulary word, and the **second criterion names what would settle it**.
 Every requirement here carries criteria, including the `Should` and `May` ones
@@ -436,21 +475,13 @@ Every requirement here carries criteria, including the `Should` and `May` ones
 |----|-------------|----------|------------|--------|
 | FR-01.07 | The system SHALL support social login via Google OAuth | Should | iterate-20260120-drop-oauth | status: deprecated |
 
-## 3. Quality Requirements
+## 3. Constraints
 
-| ID | Requirement | Category |
-|----|-------------|----------|
-| QR-01.01 | The system SHALL complete login requests within 500ms (p95) | Performance |
-| QR-01.02 | The system SHALL store passwords using bcrypt with cost factor >= 10 | Security |
+**Technical:**
+- Must use Supabase Auth (GoTrue) as authentication backend
+- Must use Row Level Security (RLS) for authorization
 
-## 4. Constraints
-
-| ID | Constraint | Type |
-|----|-----------|------|
-| C-01.01 | Must use Supabase Auth (GoTrue) as authentication backend | Technical |
-| C-01.02 | Must use Row Level Security (RLS) for authorization | Technical |
-
-## 5. Dependencies
+## 4. Dependencies
 
 **Depends on:**
 - None (this is the foundation split)
@@ -461,7 +492,7 @@ Every requirement here carries criteria, including the `Should` and `May` ones
 
 **Dependency type:** APIs, schemas
 
-## 6. Key Decisions
+## 5. Key Decisions
 
 - **Decision:** Use Supabase Auth instead of custom auth
   **Rationale:** Reduces implementation effort, built-in email verification, PKCE flow
@@ -469,7 +500,7 @@ Every requirement here carries criteria, including the `Should` and `May` ones
 - **Decision:** Roles stored in user metadata, not separate table
   **Rationale:** Simpler RLS policies, sufficient for 2-role model
 
-## 7. References
+## 6. References
 
 - Requirements: `.shipwright/planning/requirements.md`
 - Interview: `.shipwright/planning/shipwright_project_interview.md`
