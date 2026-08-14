@@ -1,0 +1,44 @@
+{
+  "items": [
+    {
+      "name": "Spec Compliance",
+      "verdict": "pass",
+      "note": "spec-generation.md folds Quality Requirements into the FR table with FR ids, drops the QR- id space, keeps Constraints as a prose-only section with no C- ids, and adds no Category column (per operator decision 2026-08-14). Existing spec.md (with its historical QR-01) is left untouched, as instructed."
+    },
+    {
+      "name": "Error Handling",
+      "verdict": "n/a",
+      "note": "Docs + test-only change; no runtime error-handling paths touched."
+    },
+    {
+      "name": "Security Basics",
+      "verdict": "n/a",
+      "note": "No user input, secrets, or auth surfaces touched."
+    },
+    {
+      "name": "Test Quality",
+      "verdict": "pass",
+      "note": "test_spec_generation_qr_fold.py asserts on outcomes (parsed FrTableRow objects from the shared fr_table_reader, and literal absence of retired id patterns), not internal state. Covers both a happy path (quality-target rows parse as ordinary FR rows) and a regression guard (the retired QR-/C- id shapes no longer appear as live examples)."
+    },
+    {
+      "name": "Performance Basics",
+      "verdict": "n/a",
+      "note": "No runtime code touched."
+    },
+    {
+      "name": "Naming & Structure",
+      "verdict": "pass",
+      "note": "New test file follows existing plugins/shipwright-project/tests/ conventions (module-level docstring, plain functions, no new abstractions). 114 LOC, well under the 300-line budget."
+    },
+    {
+      "name": "Affected Boundaries",
+      "verdict": "n/a",
+      "note": "No serialized-format producer or consumer changed. The FR table SHAPE (FR_TABLE_HEADER, shared/scripts/lib/fr_table_shape.py) is unchanged -- confirmed by re-running integration-tests/test_fr_table_shape_convergence.py (13 passed) after the edit. This change only retires an id space that nothing ever consumed."
+    },
+    {
+      "name": "Test Hygiene Probe",
+      "verdict": "pass",
+      "note": "uv run shared/scripts/tools/scan_test_hygiene.py --diff: no findings."
+    }
+  ]
+}

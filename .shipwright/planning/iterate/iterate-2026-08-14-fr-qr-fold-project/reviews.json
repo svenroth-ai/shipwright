@@ -1,0 +1,178 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-08-14-fr-qr-fold-project",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-14T13:02:21.550778+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-14T13:02:30.372626+00:00",
+      "disposition": "small-complexity CHANGE: Mini-Plan and External LLM plan review are medium+ only per the Phase Matrix",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 9,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "plugins/shipwright-project/tests/test_spec_generation_qr_fold.py",
+          "line": null,
+          "finding": "Anti-reintroduction regex required backtick/pipe immediately adjacent to the id, missing a reintroduced `| QR-01.01 |` table row.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "plugins/shipwright-project/tests/test_spec_generation_qr_fold.py",
+          "line": null,
+          "finding": "retired_patterns keyed to section NUMBERS, under-detecting a QR section reintroduced under a different number and over-coupling to the Constraints heading number.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "plugins/shipwright-project/tests/test_spec_generation_qr_fold.py",
+          "line": null,
+          "finding": "Dead assertion `not any(rid.startswith('QR-') ...)` can never fail by construction of the reader.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "plugins/shipwright-project/tests/test_spec_generation_qr_fold.py",
+          "line": null,
+          "finding": "Docstring mis-attributed which test pins the single surviving C-{NN} occurrence; two test names/docstrings overlapped in what they claimed to prove.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "plugins/shipwright-project/skills/project/references/spec-generation.md",
+          "line": null,
+          "finding": "Worked-example FR-01.08/.09 Layers cells disagreed with the doc's own stated defaults (a performance target should carry integration+unit; the password-storage FR touches persistence).",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "plugins/shipwright-project/skills/project/references/spec-generation.md",
+          "line": null,
+          "finding": "Three cross-references quoted truncated heading titles.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "plugins/shipwright-project/skills/project/references/spec-generation.md",
+          "line": null,
+          "finding": "The 'Optional Sections' subsection now held a single bullet restating item 3's own '(if applicable)' qualifier.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "architecture",
+          "file": "plugins/shipwright-project/tests/test_spec_generation_qr_fold.py",
+          "line": null,
+          "finding": "test_worked_example_still_carries_the_canonical_fr_header duplicates part of integration-tests/test_fr_table_shape_convergence.py with no note on whether that's intentional.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "plugins/shipwright-project/skills/project/references/spec-generation.md",
+          "line": null,
+          "finding": "Required Sections list ends at item 6 (References) while the Template Structure body ends at '## 7. References' (list omits the optional UI Requirements section).",
+          "suggestion": null,
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-08-14T13:13:08.532640+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-14T13:20:44.575433+00:00",
+      "disposition": "docs+test-only diff (reference markdown + a pytest file); no migrations, async/concurrency, cross-plugin imports, or irreversible ops — Stage 3 is conditional per iteration-reviews.md and does not apply here",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": "openrouter",
+      "completed_at": "2026-08-14T13:20:39.298489+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "unstructured",
+      "raw_excerpt": "[deepseek] <no review returned: provider returned an empty reply>\n\n[openai] No concrete defects found. The reference now consistently retires QR/C identifier spaces, folds quality targets into the existing FR table with priority and acceptance criteria guidance, and renders constraints as unnumbered prose. The worked example and tests verify FR-table parsing of quality rows and preserve the canonical table header.\n\nOverall assessment: ship-as-is.  \nSHIPWRIGHT_VERDICT: approve",
+      "verdicts": {
+        "openai": "approve",
+        "deepseek": "unavailable"
+      }
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-14T13:05:42.611876+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-14T13:02:30.495919+00:00",
+      "disposition": "internal plan review is medium+ only, this run is small",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    }
+  }
+}
