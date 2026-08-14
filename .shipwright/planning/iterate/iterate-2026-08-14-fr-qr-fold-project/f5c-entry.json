@@ -1,0 +1,62 @@
+{
+  "type": "change",
+  "complexity": "small",
+  "prior_source": "keyword",
+  "branch": "iterate/fr-qr-fold-project",
+  "spec": null,
+  "tests_passed": true,
+  "adr": "iterate-2026-08-14-fr-qr-fold-project",
+  "test_completeness": {
+    "status": "complete",
+    "behaviors": [
+      {
+        "behavior": "spec-generation.md no longer instructs a QR-/C- id space anywhere (incl. table-row reintroduction, not just backtick examples)",
+        "disposition": "tested",
+        "evidence": "test_spec_generation_qr_fold.py::test_reference_no_longer_mints_qr_or_c_ids PASSED; test_spec_generation_qr_fold.py::test_no_line_mints_a_live_qr_or_c_id PASSED"
+      },
+      {
+        "behavior": "Constraints render as prose bullets with no id column",
+        "disposition": "tested",
+        "evidence": "test_spec_generation_qr_fold.py::test_constraints_render_as_prose_bullets PASSED"
+      },
+      {
+        "behavior": "A quality-target FR row (folded from the retired QR- space) parses via the real shared FR-table reader with correct id set, Priority, and text",
+        "disposition": "tested",
+        "evidence": "test_spec_generation_qr_fold.py::test_worked_example_folds_quality_targets_into_the_fr_table PASSED"
+      },
+      {
+        "behavior": "No new Category column: FR_TABLE_HEADER (shared/scripts/lib/fr_table_shape.py) is unchanged and still present in the worked example",
+        "disposition": "tested",
+        "evidence": "test_spec_generation_qr_fold.py::test_worked_example_still_carries_the_canonical_fr_header PASSED; integration-tests/test_fr_table_shape_convergence.py (13 tests, unmodified) PASSED"
+      },
+      {
+        "behavior": "docs/guide.md is unaffected (verified, not assumed)",
+        "disposition": "tested",
+        "evidence": "grep -rn 'QR-|Quality Requirement' docs/guide.md: no matches; independently re-verified by the spec-reviewer subagent"
+      },
+      {
+        "behavior": "The existing historical spec (.shipwright/planning/01-adopted/spec.md, which still carries QR-01) is not migrated by this producer-only change",
+        "disposition": "tested",
+        "evidence": "git diff --cached does not include .shipwright/planning/01-adopted/spec.md; confirmed by spec-reviewer subagent reading the file directly"
+      }
+    ],
+    "counts": {
+      "testable": 6,
+      "tested": 6,
+      "untestable": 0,
+      "untested_testable": 0
+    },
+    "enumeration_basis": {
+      "acs": 3,
+      "covered_acs": 3
+    }
+  },
+  "surface_verification": {
+    "surface": "none",
+    "tests_run": 0,
+    "exit_code": 0,
+    "evidence_path": ".shipwright/runs/iterate-2026-08-14-fr-qr-fold-project/surface_verification.json",
+    "justification": "Advisory at small complexity with no touches_io_boundary/UI risk flag. No startable user-facing surface (no client/**, no API route, no store mutation). The actual behavior claim is verified by plugins/shipwright-project/tests/test_spec_generation_qr_fold.py."
+  },
+  "declared_removals": []
+}
