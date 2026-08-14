@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-08-14-install-hooks-failopen",
+  "date": "2026-08-14",
+  "section": "scripts/install-hooks",
+  "title": "Fix 4 fail-open defects in install-hooks.ps1, ported from leadwright",
+  "context": "leadwright forked scripts/install-hooks.ps1 and fixed two fail-open bugs (unchecked git config write, --default flag unsafe on git<2.18) the canonical version still carried; reading the port also surfaced two more (Write-Error skips the following exit 1 under Stop; Set-Location without -LiteralPath).",
+  "decision": "Ported all 4 fixes into scripts/install-hooks.ps1 and the shell-independent --get fix into install-hooks.sh. Unlike leadwright's own port, which fixed the write-check with throw (terminating) while fixing the Write-Error bug with Console.Error.WriteLine+exit (non-terminating), both fixes here use Console.Error.WriteLine+explicit exit for consistency.",
+  "consequences": "A caller that dot-sources install-hooks.ps1 wrapped in try/catch now gets a reliable, non-stale $LASTEXITCODE on any failure path. install-hooks.sh only needed the --get fix (set -e already covers native failures).",
+  "rationale": "throw and Write-Error share the same terminating-error trap that Write-Error's own fix exists to avoid; using it for the write-check would reintroduce the identical hazard one line away.",
+  "rejected": "leadwright's throw for the write-check — rejected because it carries the same stale-$LASTEXITCODE risk under dot-sourcing that motivated fixing Write-Error in the first place.",
+  "commit": "",
+  "architecture_impact": "none",
+  "spec_ref": ""
+}
