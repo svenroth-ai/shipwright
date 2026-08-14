@@ -8,11 +8,14 @@ artifact-presence check otherwise misses.
 
 from __future__ import annotations
 
+import importlib.util
 import json
+import sys
 from pathlib import Path
 
 import pytest
 
+import checks.validate_adoption as validate_adoption_module
 from checks.validate_adoption import validate
 from lib.derived_catalogue import summarize
 from lib.derived_catalogue_doc import to_document, write_summary
@@ -102,6 +105,117 @@ def test_many_adrs_for_large_repo_no_warning(tmp_path: Path) -> None:
     _write_snapshot(tmp_path, commits_total=200)
     result = validate(tmp_path)
     assert not any("historical" in w for w in result["warnings"])
+
+
+def test_hollow_adr_entry_warns_regardless_of_commit_count(tmp_path: Path) -> None:
+    """trg-6b59524b: a hollow entry is a correctness defect, not a density
+    signal — it must warn even under the 50-commit density-check floor,
+    and the message must name the specific missing field(s)."""
+    hollow_log = (
+        "# Decision Log\n\n"
+        "### ADR-001: (no subject)\n\n"
+        "- **Status**: accepted (retroactive, llm-inferred)\n"
+        "- **Commit**: ``\n\n"
+        "#### Context\nA full multi-paragraph body the LLM did produce.\n\n"
+        "#### Decision\nAlso real.\n\n"
+        "#### Consequences\n—\n\n---\n"
+    )
+    _make_minimum_valid(tmp_path, decision_log_body=hollow_log)
+    result = validate(tmp_path)
+    assert result["errors"] == []
+    assert any(
+        "hollow entry" in w and "ADR-001" in w and "subject" in w and "commit" in w
+        for w in result["warnings"]
+    ), result
+
+
+def test_healthy_adr_entry_does_not_warn(tmp_path: Path) -> None:
+    healthy_log = (
+        "# Decision Log\n\n"
+        "### ADR-001: Adopt this repository into the Shipwright SDLC\n\n"
+        "- **Commit**: `abc1234`\n\n"
+        "#### Context\nReal context.\n\n"
+        "#### Decision\nReal decision.\n\n---\n"
+    )
+    _make_minimum_valid(tmp_path, decision_log_body=healthy_log)
+    result = validate(tmp_path)
+    assert not any("hollow entry" in w for w in result["warnings"])
+
+
+def test_hollow_adrs_excluded_from_density_count(tmp_path: Path) -> None:
+    """trg-6b59524b: the density check must not be MISLED by a hollow entry
+    counting the same as a real one — 1 substantive ADR of 3 total on a
+    200-commit repo must still trip the historical-data warning."""
+    log = (
+        "# Decision Log\n\n"
+        "### ADR-001: Real one\n\n- **Commit**: `abc1234`\n\n"
+        "#### Context\nctx\n\n#### Decision\ndec\n\n---\n\n"
+        "### ADR-002: (no subject)\n\n- **Commit**: ``\n\n"
+        "#### Context\nctx\n\n#### Decision\ndec\n\n---\n\n"
+        "### ADR-003: (no subject)\n\n- **Commit**: ``\n\n"
+        "#### Context\nctx\n\n#### Decision\ndec\n\n---\n"
+    )
+    _make_minimum_valid(tmp_path, decision_log_body=log)
+    _write_snapshot(tmp_path, commits_total=200)
+    result = validate(tmp_path)
+    assert any("historical" in w and "1 substantive" in w for w in result["warnings"]), result
+
+
+def test_hollow_adr_detection_loader_does_not_poison_cache_on_failure(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Doubt-reviewer (round 4): `_hollow_adr_detection()`'s loader can't
+    reuse `lib/shared_loader.py` (it targets plugin-local `lib/`, not
+    `shared/`) — this pins that its own copy of the same two guards holds:
+    a failing exec must not memoise a half-initialised module under the
+    sentinel, so a later retry re-raises rather than returning it broken."""
+    sentinel = "_shipwright_adopt_hollow_adr_detection"
+    sys.modules.pop(sentinel, None)
+    real_spec_from_file_location = importlib.util.spec_from_file_location
+
+    def bad_spec(*args, **kwargs):
+        spec = real_spec_from_file_location(*args, **kwargs)
+        spec.loader.exec_module = lambda module: (_ for _ in ()).throw(RuntimeError("boom"))
+        return spec
+
+    with monkeypatch.context() as m:
+        m.setattr(importlib.util, "spec_from_file_location", bad_spec)
+        with pytest.raises(RuntimeError, match="boom"):
+            validate_adoption_module._hollow_adr_detection()
+    assert sentinel not in sys.modules
+
+    mod = validate_adoption_module._hollow_adr_detection()
+    assert hasattr(mod, "find_hollow_adrs")
+
+
+def test_missing_adr_seed_folder_warns(tmp_path: Path) -> None:
+    """Doubt-reviewer (round 4): the ADR-folder seed is best-effort by
+    design, so nothing else notices if it silently degraded. Surface it."""
+    _make_minimum_valid(tmp_path)
+    result = validate(tmp_path)
+    assert result["errors"] == []
+    assert any("no seeded ADR files" in w for w in result["warnings"]), result
+
+
+def test_missing_adr_index_warns(tmp_path: Path) -> None:
+    """The folder can exist with real ADRs while INDEX.md's own refresh
+    still failed (best-effort subprocess) — that must warn too."""
+    _make_minimum_valid(tmp_path)
+    adr_dir = tmp_path / ".shipwright" / "planning" / "adr"
+    adr_dir.mkdir(parents=True)
+    (adr_dir / "001-adopt-this-repository.md").write_text("# ADR-001 — x\n", encoding="utf-8")
+    result = validate(tmp_path)
+    assert any("INDEX.md is missing" in w for w in result["warnings"]), result
+
+
+def test_seeded_adr_folder_with_index_does_not_warn(tmp_path: Path) -> None:
+    _make_minimum_valid(tmp_path)
+    adr_dir = tmp_path / ".shipwright" / "planning" / "adr"
+    adr_dir.mkdir(parents=True)
+    (adr_dir / "001-adopt-this-repository.md").write_text("# ADR-001 — x\n", encoding="utf-8")
+    (adr_dir / "INDEX.md").write_text("# ADR Index\n", encoding="utf-8")
+    result = validate(tmp_path)
+    assert not any("seeded ADR" in w or "INDEX.md is missing" in w for w in result["warnings"])
 
 
 def test_no_snapshot_does_not_crash(tmp_path: Path) -> None:

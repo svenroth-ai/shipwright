@@ -1,0 +1,158 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-08-14-adopt-adr-canonical-seed",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-14T14:26:38.937301+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-14T14:26:43.815327+00:00",
+      "disposition": "BUG intent at small complexity has no formal plan phase (Path C, no mini-plan/external plan review gate applies)",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 2,
+      "findings": [
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "plugins/shipwright-adopt/scripts/lib/adr_seeding.py",
+          "line": null,
+          "finding": "consequences defaulted differently between decision_log.md (missing-key default) and the seeded ADR spec file (falsy-value default) for a schema-valid empty-string consequences value.",
+          "suggestion": "Applied after PASS (cheap, matches established sha-normalization pattern): normalized once in _resolve_retroactive_adrs; both renderers now read the already-normalized value. Regression test: test_resolve_retroactive_adrs_normalizes_consequences_fallback.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "plugins/shipwright-adopt/tests/test_adr_seeding.py",
+          "line": null,
+          "finding": "test_generate_fails_closed_before_writing_claude_md duplicates ~20 LOC of git-init/snapshot fixture already in test_cross_links.py.",
+          "suggestion": "Deferred, explicitly non-blocking per reviewer: test_cross_links.py is not otherwise in this diff (never refactor an untouched file).",
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-08-14T14:25:39.273547+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 5,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "reversibility",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: Step E's fail-closed ordering fix means nothing can abort after artifacts are already overwritten — _max_seeded_adr_number's _SEED_FILENAME_NUMBER_RE accepted 4-digit filename prefixes, matching shared/adr_index.py's own tolerance. A foreign year-prefixed file (e.g. 2019-choose-postgres.md) in the seed folder could inflate the computed max past ADR_OUTPUT_MAX_NUMBER, and that raise fires deep inside write_agent_docs, AFTER architecture.md/conventions.md are already overwritten.",
+          "suggestion": "FIXED: narrowed _SEED_FILENAME_NUMBER_RE from \\d{3,4} to \\d{3} — adopt only ever writes 3-digit names, so a 4-digit file can never collide with what adopt would pick, and counting it toward the max served no purpose beyond manufacturing a false overflow. The overflow check's own late-firing position is pre-existing (confirmed against the main tree, not introduced by this diff) and left as-is.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "hidden coupling",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: INDEX.md is covered by adopt's existing output-safety machinery the same way every other artifact is — A successful _refresh_adr_index never entered results[\"written\"] (only _seed_adr_spec_folder's paths did), so check_paths_against_gitignore never looked at it. A repo with INDEX.md gitignored would silently ship a seeded ADR folder with no index.",
+          "suggestion": "FIXED: write_agent_docs now appends the index path to `paths` (which feeds results[\"written\"] and the gitignore check) on a successful refresh.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "boundary and contract",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: AC1's 'INDEX.md must be regenerated' actually holds in the installs adopt ships to — _refresh_adr_index's best-effort failure (missing shared/ tree) surfaces as one stderr line nobody is instructed to read, and validate_adoption.py checked nothing about the ADR folder or its index.",
+          "suggestion": "FIXED: new soft_check_adr_seed_folder (in hollow_adr_detection.py) warns when the seed folder has no .md files, or has files but no INDEX.md.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "boundary and contract",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: duplicating ADR_SPEC_FOLDER in adopt is the same safe pattern shared already uses — shared/tests/test_adr_index_producers.py pins the shared-side copies together; adopt's copy (forced to duplicate the string since importing adr_index.py trips ADR-045) was outside that test's reach entirely.",
+          "suggestion": "FIXED: new test_adr_spec_folder_agrees_with_shared_adr_index, a regex-based cross-check against shared/scripts/lib/adr_index.py's source (no import, no lib collision).",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "hidden coupling",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: the hollow_adr_detection extraction's file-location loader is as safe as the fixed shared_loader.py idiom — _hollow_adr_detection()'s loader lacked the missing-file-to-named-ImportError guard and the pop-sentinel-on-failing-exec guard that shared_loader.py documents for the shared/-tree case.",
+          "suggestion": "FIXED: added both guards, mirroring shared_loader.py's idiom. Regression test: test_hollow_adr_detection_loader_does_not_poison_cache_on_failure.",
+          "source": "doubt-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-08-14T14:48:45.879381+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-14T14:27:41.045619+00:00",
+      "disposition": "missing_keys: no OPENROUTER_API_KEY or OPENAI_API_KEY in .env.local in this environment; internal spec/code cascade (Claude subagents, no external key needed, 4 code-review rounds) carries the review pass per iteration-reviews.md's independent-routes rule",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-14T13:30:03.811050+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-14T14:26:47.558487+00:00",
+      "disposition": "Internal Plan Review arm is medium+-only (iteration-planning.md); this run is small complexity",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    }
+  }
+}

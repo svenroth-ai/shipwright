@@ -39,6 +39,18 @@ from lib.claude_md_renderer import (  # noqa: E402,F401
 # its bloat ceiling, the same reason `spec_table` was split out). Re-exported so
 # existing callers keep importing `write_spec` / `_render_spec_md` from here.
 from lib.spec_document import _render_spec_md, write_spec  # noqa: E402,F401
+# ADR-spec-folder seeding lives in `adr_seeding` — same bloat-ceiling reason as
+# the two splits above (this module hit its own ceiling adding it). Re-exported
+# so existing importers/tests keep using these names from `artifact_writer`.
+from lib.adr_seeding import (  # noqa: E402,F401
+    ADR_SPEC_FOLDER,
+    _adoption_adr_fields,
+    _derive_commit_subject,
+    _max_seeded_adr_number,
+    _refresh_adr_index,
+    _resolve_retroactive_adrs,
+    _seed_adr_spec_folder,
+)
 
 
 # Adopt's output canon: ADR ids are 3-digit zero-padded. We refuse to
@@ -93,24 +105,20 @@ def parse_architecture_marker(content: str) -> dict[str, str] | None:
 
 
 def _next_adr_start_number(project_root: Path) -> int:
-    """Pick the next free ADR id for adopt's adoption + retroactive entries.
-
-    Reads `<project_root>/.shipwright/agent_docs/decision_log.md` if it
-    exists and parses the highest 3+ digit numeric ADR id. The first
-    adopt-written ADR (the adoption decision) takes ``max + 1``; any
-    retroactive ADRs continue from there.
-
-    Returns 1 (so adoption ADR is ADR-001) when no existing log exists
-    or no canonical ids are detected.
+    """Pick the next free ADR id for adopt's adoption + retroactive entries:
+    ``max(decision_log.md's highest id, ADR_SPEC_FOLDER's highest seeded
+    number) + 1`` — the folder side keeps a Step E re-run from reissuing (and
+    duplicating) a number it already seeded, even if decision_log.md is
+    behind. Returns 1 (ADR-001) when nothing existing is found.
     """
+    log_max = 0
     log_path = project_root / AGENT_DOCS_DIR / "decision_log.md"
-    if not log_path.is_file():
-        return 1
-    try:
-        body = log_path.read_text(encoding="utf-8", errors="ignore")
-    except OSError:
-        return 1
-    max_id = parse_max_adr_id(body)
+    if log_path.is_file():
+        try:
+            log_max = parse_max_adr_id(log_path.read_text(encoding="utf-8", errors="ignore"))
+        except OSError:
+            log_max = 0
+    max_id = max(log_max, _max_seeded_adr_number(project_root))
     return max_id + 1 if max_id > 0 else 1
 
 
@@ -243,6 +251,7 @@ def _render_decision_log(
     retroactive_adrs: list[dict[str, Any]],
     harvested_decisions: tuple[str, str] | None = None,
     start_adr_number: int = 1,
+    today: str | None = None,
 ) -> str:
     """Render decision_log.md.
 
@@ -253,10 +262,9 @@ def _render_decision_log(
     written user ADRs.
 
     Output canon is 3-digit zero-padded — adopt refuses to serialise a
-    4-digit id, even if the counter exceeds 999 (see
-    ``ADR_OUTPUT_MAX_NUMBER``). If the computed range would overflow,
-    a ``ValueError`` is raised so the operator audits their existing
-    log instead of silently inheriting non-canonical ids.
+    4-digit id even if the counter exceeds 999 (``ADR_OUTPUT_MAX_NUMBER``);
+    an overflow raises ``ValueError`` so the operator audits the existing
+    log rather than silently inherit non-canonical ids.
 
     `harvested_decisions` is an optional `(content, source_path)` tuple
     produced by `prior_art_harvester.harvest_decision_log`. When present,
@@ -275,12 +283,12 @@ def _render_decision_log(
         raise ValueError(
             f"adopt would render an ADR id beyond {ADR_OUTPUT_MAX_NUMBER:03d} "
             f"(start={start_adr_number}, retroactive={len(retroactive_adrs)}, "
-            f"last={last_id}). Audit the existing decision_log.md for "
-            f"non-canonical or anomalous ADR ids — Shipwright's output "
-            f"canon is 3-digit zero-padded.",
+            f"last={last_id}). Audit BOTH decision_log.md AND {ADR_SPEC_FOLDER}/ "
+            f"for non-canonical ADR ids — canon is 3-digit zero-padded.",
         )
-    today = _utc_today()
+    today = today or _utc_today()
     commit = commit_sha or "HEAD"
+    fields = _adoption_adr_fields(features_count=features_count, profile=profile, scope=scope)
     harvest_note = (
         f"\n_This log was bootstrapped from existing prior art at "
         f"`{harvested_decisions[1]}` — see the **Imported decisions** "
@@ -302,28 +310,28 @@ def _render_decision_log(
 
 #### Context
 
-This repository existed with {features_count} detected feature(s) and substantive git history before /shipwright-adopt ran. The goal is to bring it under the Shipwright SDLC (CLAUDE.md + .shipwright/agent_docs + .shipwright/planning/ + .shipwright/compliance/ + configs) without disrupting the existing codebase.
+{fields["context"]}
 
 #### Decision
 
-Adopted into Shipwright using profile `{profile}` and scope `{scope}`. Retroactively marked `completed_steps = ["project", "plan", "build", "test"]` so that `/shipwright-iterate` and downstream skills (`/shipwright-compliance`, `/shipwright-test`) work as on a natively-built project.
+{fields["decision"]}
 
 #### Consequences
 
-- Future changes MUST go through `/shipwright-iterate` (not `/shipwright-project`/`/shipwright-plan`/`/shipwright-build`).
-- Compliance reports (RTM, SBOM, change-history) are seeded; test-evidence starts collecting from the first `/shipwright-test` run.
-- Any existing E2E baseline auto-generated by Adopt (under `e2e/flows/adopted-baseline.spec.ts`) is a regression guard, not a substitute for real acceptance tests.
+{fields["consequences"]}
 
 #### Rejected alternatives
 
-- Manual `/shipwright-project` init: would lose git history and force re-description of existing code.
-- No adoption (ad-hoc `/shipwright-iterate`): would mean missing configs, no compliance reports, and the audit pipeline would silently no-op.
+{fields["rejected"]}
 
 ---
 """
     body = header
     for idx, adr in enumerate(retroactive_adrs, start=start_adr_number + 1):
-        sha = adr.get("sha", "")
+        # "unknown" matches _seed_adr_spec_folder's fallback for the same
+        # legal case (subject present, sha absent) so the two copies of
+        # this ADR never disagree about what they know.
+        sha = adr.get("sha") or "unknown"
         subject = adr.get("subject", "(no subject)")
         context = adr.get("context", "—")
         decision = adr.get("decision", "—")
@@ -350,8 +358,9 @@ Adopted into Shipwright using profile `{profile}` and scope `{scope}`. Retroacti
         body += (
             f"\n## Imported decisions (verbatim from `{source}`)\n\n"
             f"_Copied during /shipwright-adopt onboarding. Original ADR numbering "
-            f"and ordering preserved. Future decisions land above this section, "
-            f"not within it._\n\n"
+            f"and ordering preserved. Future decisions land above this section — "
+            f"their canonical spec home is `{ADR_SPEC_FOLDER}/` (see "
+            f"`{ADR_SPEC_FOLDER}/INDEX.md`) — never within it._\n\n"
             f"{content.strip()}\n"
         )
     return body
@@ -438,15 +447,24 @@ def write_agent_docs(
     user_facing_docs: list[str] | None = None,
     changelog_link: str | None = None,
 ) -> list[Path]:
-    """Write the four agent_docs artifacts with preservation guardrails.
+    """Write the four agent_docs artifacts, plus adopt's own seed of the
+    canonical ADR-spec folder, with preservation guardrails.
 
     architecture.md / conventions.md / build_dashboard.md are backed up to
     `.preserved` before being overwritten. decision_log.md uses
     `merge_decision_log` so any existing user ADRs survive verbatim.
-    """
+    `.shipwright/planning/adr/` is seeded with the same adoption ADR (and
+    any retroactive ADRs) decision_log.md carries inline — see
+    `_seed_adr_spec_folder` for why both copies exist."""
+    # Fail closed BEFORE any write (trg-6b59524b) — a retry after a raise must
+    # not overwrite architecture.md/conventions.md's OWN backups with adopt's
+    # already-written output (preserve_if_exists replaces the prior backup).
+    retroactive_adrs = _resolve_retroactive_adrs(project_root, retroactive_adrs)
+
     agent_docs = project_root / AGENT_DOCS_DIR
     agent_docs.mkdir(parents=True, exist_ok=True)
     paths: list[Path] = []
+    today = _utc_today()
 
     # architecture.md — backup + overwrite
     arch_rel = f"{AGENT_DOCS_DIR}/architecture.md"
@@ -500,6 +518,7 @@ def write_agent_docs(
         retroactive_adrs=retroactive_adrs,
         harvested_decisions=harvested_decisions,
         start_adr_number=start_adr,
+        today=today,
     )
     dec_backup = preserve_if_exists(project_root, dec_rel)
     if dec.exists():
@@ -523,6 +542,29 @@ def write_agent_docs(
             backup_path=None,
         )
     paths.append(dec)
+
+    # .shipwright/planning/adr/ — seed with adopt's own minted ADRs (the
+    # adoption ADR + retroactive ADRs), using the SAME start_adr /
+    # retroactive_adrs the decision_log.md entry above just rendered, so
+    # numbering never disagrees between the two copies (trg-50efc4c8).
+    seeded = _seed_adr_spec_folder(
+        project_root,
+        start_adr_number=start_adr,
+        today=today,
+        commit_sha=commit_sha,
+        adoption_fields=_adoption_adr_fields(
+            features_count=features_count, profile=profile, scope=scope,
+        ),
+        retroactive_adrs=retroactive_adrs,
+    )
+    paths.extend(seeded)
+    index_warning = _refresh_adr_index(project_root)
+    if index_warning:
+        print(f"WARNING: {index_warning}", file=sys.stderr)
+    else:
+        # A success writes a real file — feed it into `paths` so the
+        # gitignore check (reads results["written"]) sees it too (doubt-reviewer, round 4).
+        paths.append(project_root / ADR_SPEC_FOLDER / "INDEX.md")
 
     # build_dashboard.md — backup + overwrite (transient state, regenerated each run)
     dash_rel = f"{AGENT_DOCS_DIR}/build_dashboard.md"

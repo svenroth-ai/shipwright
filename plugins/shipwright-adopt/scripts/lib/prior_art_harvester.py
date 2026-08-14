@@ -8,12 +8,12 @@ a perfectly good `docs/adr/` next door.
 This module is deterministic, regex-based, and best-effort:
 
 - File paths and section headings only — no NLP, no LLM extraction.
-- First hit wins. Higher-signal sources outrank lower-signal ones.
-- Absence is silent: callers fall back to today's behavior when None
-  is returned.
+- First hit wins; higher-signal sources outrank lower-signal ones. Absence
+  is silent — callers fall back to today's behavior when None is returned.
 
-Two public entry points: `harvest_decision_log()` and
-`harvest_conventions()`. Both return a `HarvestResult` or `None`.
+Two public entry points: `harvest_decision_log()`, `harvest_conventions()`
+(each returns a `HarvestResult` or `None`). Harvested content never moves
+(trg-50efc4c8): `.shipwright/planning/adr/` is seeded separately, in `adr_seeding.py`.
 """
 
 from __future__ import annotations

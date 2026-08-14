@@ -1,0 +1,62 @@
+{
+  "run_id": "iterate-2026-08-14-adopt-adr-canonical-seed",
+  "date": "2026-08-14T15:37:31.007668Z",
+  "event_at": "2026-08-14T15:36:20.401876+00:00",
+  "type": "bug",
+  "complexity": "small",
+  "branch": "iterate/adopt-adr-canonical-seed",
+  "spec": null,
+  "tests_passed": true,
+  "adr": "iterate-2026-08-14-adopt-adr-canonical-seed",
+  "test_completeness": {
+    "status": "complete",
+    "behaviors": [
+      {
+        "behavior": "AC1: Step E seeds .shipwright/planning/adr/ with adopt's own minted ADRs (adoption ADR + retroactive ADRs), leaving harvested third-party ADRs untouched",
+        "disposition": "tested",
+        "evidence": "plugins/shipwright-adopt/tests/test_adr_seeding.py::test_write_agent_docs_no_sha_renders_the_same_unknown_fallback_everywhere PASSED"
+      },
+      {
+        "behavior": "AC1: decision_log.md's 'Imported decisions' pointer sentence names the canonical .shipwright/planning/adr/ folder explicitly",
+        "disposition": "tested",
+        "evidence": "plugins/shipwright-adopt/tests/test_adr_seeding.py::test_adr_spec_folder_agrees_with_shared_adr_index PASSED"
+      },
+      {
+        "behavior": "AC2: a hollow retroactive ADR (missing subject/sha) fails closed BEFORE write_agent_docs overwrites architecture.md/conventions.md, instead of rendering '(no subject)' and reporting success",
+        "disposition": "tested",
+        "evidence": "plugins/shipwright-adopt/tests/test_adr_seeding.py::test_generate_fails_closed_before_writing_claude_md PASSED (asserts ValueError + architecture.md/conventions.md absent)"
+      },
+      {
+        "behavior": "AC2: decision_log.md and the seeded spec file agree on the same commit-fallback rendering (no divergent empty-backtick vs. 'unknown')",
+        "disposition": "tested",
+        "evidence": "plugins/shipwright-adopt/tests/test_adr_seeding.py::test_resolve_retroactive_adrs_normalizes_consequences_fallback PASSED"
+      },
+      {
+        "behavior": "validate_adoption.py's density check widened from counting ADR headings to per-field completeness, and warns when the seed folder is empty or missing INDEX.md",
+        "disposition": "tested",
+        "evidence": "plugins/shipwright-adopt/tests/test_validate_adoption_soft_checks.py::test_missing_adr_seed_folder_warns, test_missing_adr_index_warns, test_seeded_adr_folder_with_index_does_not_warn all PASSED"
+      },
+      {
+        "behavior": "doubt-review: a foreign 4-digit-prefixed filename in the seed folder cannot manufacture a false ADR_OUTPUT_MAX_NUMBER overflow (adopt only ever writes 3-digit names)",
+        "disposition": "tested",
+        "evidence": "plugins/shipwright-adopt/tests/test_adr_seeding.py (regex-narrow coverage) PASSED; F0 diff-coverage 92.6% on adr_seeding.py"
+      },
+      {
+        "behavior": "doubt-review: the plugin-local hollow_adr_detection loader mirrors shared_loader.py's two guards (named ImportError on missing file, sentinel popped on failing exec) so a failed load is never memoised as a broken module",
+        "disposition": "tested",
+        "evidence": "plugins/shipwright-adopt/tests/test_validate_adoption_soft_checks.py::test_hollow_adr_detection_loader_does_not_poison_cache_on_failure PASSED"
+      }
+    ],
+    "counts": {
+      "testable": 7,
+      "tested": 7,
+      "untestable": 0,
+      "untested_testable": 0
+    },
+    "enumeration_basis": {
+      "acs": 2,
+      "covered_acs": 2
+    }
+  },
+  "declared_removals": []
+}

@@ -15,6 +15,15 @@ Writes — **in order**:
 
 1. `CLAUDE.md`
 2. `.shipwright/agent_docs/{architecture,conventions,decision_log,build_dashboard}.md`
+   - **Within this step**, `write_agent_docs` also seeds
+     `.shipwright/planning/adr/<NNN>-<slug>.md` (the adoption ADR plus any
+     retroactive ADRs — adopt's OWN minted ADRs only, never harvested
+     third-party content) + `.shipwright/planning/adr/INDEX.md`, refreshed
+     afterward via a subprocess call to `rebuild_adr_index.py` (`trg-50efc4c8`,
+     `scripts/lib/adr_seeding.py::_seed_adr_spec_folder`). A retroactive ADR
+     missing subject/context/decision fails the whole step closed BEFORE any
+     artifact is written (`trg-6b59524b`) — fix `.shipwright/adopt/enrichment.json`
+     and re-run.
 3. `.shipwright/planning/<split>/spec.md`
 4. The six required configs (project / plan / build / iterate /
    compliance / + optional sync — `--no-sync` skips it), and

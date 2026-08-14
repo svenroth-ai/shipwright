@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-08-14-adopt-adr-canonical-seed",
+  "date": "2026-08-14",
+  "section": "Iterate — bug: adopt ADR canonical-seed + hollow-ADR fail-closed",
+  "title": "Adopt seeds its own canonical ADR folder; hollow retroactive ADRs fail closed",
+  "context": "Adopt minted its own ADRs only into decision_log.md, never into the canonical .shipwright/planning/adr/ folder; a hollow retroactive ADR (missing subject/sha) rendered empty and adoption still reported success.",
+  "decision": "Step E now seeds .shipwright/planning/adr/ with adopt's own minted ADRs and refreshes INDEX.md; _resolve_retroactive_adrs fails closed before write_agent_docs overwrites anything, deriving subject from the commit when possible.",
+  "consequences": "Adopted projects get a real ADR spec folder for adopt's own decisions; a hollow retroactive ADR now aborts adoption instead of shipping a broken record. Third-party harvested ADRs are untouched (additive-only).",
+  "rationale": "Harvested ADRs must stay exactly where the maintainer put them; adopt's own decisions belong in the same canonical folder every other plugin writes to, so future tooling (INDEX.md, rebuild_adr_index.py) treats them uniformly.",
+  "rejected": "Importing shared/scripts/lib/adr_index.py directly from adopt's lib package — ADR-045 rules out the cross-plugin lib collision, so ADR_SPEC_FOLDER is duplicated and pinned by a regex test instead.",
+  "commit": "",
+  "architecture_impact": "component",
+  "spec_ref": ".shipwright/planning/adr/iterate-2026-08-14-adopt-adr-canonical-seed.md"
+}

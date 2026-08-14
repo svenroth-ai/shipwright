@@ -73,6 +73,8 @@ def plan_standard_writes(
         ProposedWrite(".shipwright/agent_docs/architecture.md", "create", "stack + layers + ASCII diagram"),
         ProposedWrite(".shipwright/agent_docs/conventions.md", "create", "linter/formatter/rules"),
         ProposedWrite(".shipwright/agent_docs/decision_log.md", "create", "adoption ADR (next-free 3-digit id) + retroactive ADRs"),
+        ProposedWrite(".shipwright/planning/adr/<NNN>-<slug>.md", "create", "adoption ADR + retroactive ADRs — adopt's own minted ADRs only"),
+        ProposedWrite(".shipwright/planning/adr/INDEX.md", "create", "regenerated via rebuild_adr_index.py"),
         ProposedWrite(".shipwright/agent_docs/build_dashboard.md", "create", "adoption snapshot"),
         ProposedWrite(f".shipwright/planning/{split_name}/spec.md", "create", "IREB spec from inferred features (+ derived/unconfirmed provenance block)"),
         ProposedWrite(".shipwright/adopt/derived-catalogue.json", "create", "how many requirements were derived, and how many nobody has confirmed"),

@@ -202,49 +202,33 @@ def _validate_review(project_root: Path) -> list[str]:
     return []
 
 
-def _count_adrs(decision_log: Path) -> int:
-    if not decision_log.is_file():
-        return 0
-    body = decision_log.read_text(encoding="utf-8", errors="ignore")
-    # Match both H2 and H3 ADR headings. H3 is the canonical form used by
-    # write_decision_log.py (and by adopt's decision_log generator since
-    # commit 63352ff which fixed brownfield-ADR parser round-trip); H2 is
-    # accepted for compatibility with older logs.
-    return len(re.findall(r"^#{2,3}\s+ADR-\d+", body, re.MULTILINE))
+def _hollow_adr_detection():
+    """trg-6b59524b hollow-ADR detector, loaded BY FILE LOCATION (ADR-045).
 
-
-def _read_snapshot_commits_total(project_root: Path) -> int | None:
-    snap = project_root / ".shipwright" / "adopt" / "snapshot.json"
-    if not snap.is_file():
-        return None
+    Guards mirror ``lib/shared_loader.py`` (missing-file -> named
+    ``ImportError``, not a bare ``FileNotFoundError``; pop the sentinel on a
+    failing exec so a half-initialised module is never memoised) — this
+    loader can't reuse that helper directly since it targets a plugin-local
+    path, not `shared/` (doubt-reviewer, round 4)."""
+    mod = sys.modules.get("_shipwright_adopt_hollow_adr_detection")
+    if mod is not None:
+        return mod
+    import importlib.util
+    path = Path(__file__).resolve().parent.parent / "lib" / "hollow_adr_detection.py"
+    if not path.is_file():
+        raise ImportError(f"adopt lib helper not found at {path}")
+    spec = importlib.util.spec_from_file_location(
+        "_shipwright_adopt_hollow_adr_detection", path)
+    if spec is None or spec.loader is None:
+        raise ImportError(f"could not load spec for {path}")
+    mod = importlib.util.module_from_spec(spec)
+    sys.modules["_shipwright_adopt_hollow_adr_detection"] = mod
     try:
-        data = json.loads(snap.read_text(encoding="utf-8"))
-    except (json.JSONDecodeError, OSError):
-        return None
-    git = data.get("git") or {}
-    val = git.get("commits_total")
-    if isinstance(val, int):
-        return val
-    return None
-
-
-def _soft_check_decision_log_density(project_root: Path) -> list[str]:
-    """Warn (not error) when the decision_log feels suspiciously thin for the
-    repo's git history. A 200-commit repo with 1 ADR is plausible to flag
-    as "did Layer-2 enrichment skip the retroactive ADRs?" """
-    warnings: list[str] = []
-    commits = _read_snapshot_commits_total(project_root)
-    if commits is None or commits <= 50:
-        return warnings  # not enough signal to flag
-    adrs = _count_adrs(project_root / ".shipwright" / "agent_docs" / "decision_log.md")
-    if adrs < 3:
-        warnings.append(
-            f".shipwright/agent_docs/decision_log.md has {adrs} ADR(s) but the repo has "
-            f"{commits} commits — historical data may be missing. Re-run "
-            "Layer-2 enrichment or seed retroactive ADRs from "
-            "git.major_refactor_commits[]."
-        )
-    return warnings
+        spec.loader.exec_module(mod)
+    except BaseException:
+        sys.modules.pop("_shipwright_adopt_hollow_adr_detection", None)
+        raise
+    return mod
 
 
 def validate(project_root: Path) -> dict:
@@ -258,7 +242,8 @@ def validate(project_root: Path) -> dict:
     errors.extend(_validate_honesty_artifacts(project_root))
 
     warnings: list[str] = []
-    warnings.extend(_soft_check_decision_log_density(project_root))
+    warnings.extend(_hollow_adr_detection().soft_check_decision_log_density(project_root))
+    warnings.extend(_hollow_adr_detection().soft_check_adr_seed_folder(project_root))
 
     return {"errors": errors, "warnings": warnings}
 
