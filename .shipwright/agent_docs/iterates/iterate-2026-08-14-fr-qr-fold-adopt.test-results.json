@@ -1,0 +1,110 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-08-14-fr-qr-fold-adopt",
+    "date": "2026-08-14",
+    "unit": {
+      "status": "pass",
+      "passed": 615,
+      "failed": 0,
+      "note": "plugins/shipwright-adopt full suite (615, incl. 4 new + 1 updated test files for this fix); plugins/shipwright-compliance full suite (1646 passed, 5 skipped, unrelated pre-existing Windows encoding warnings) and shared/tests full suite (9217 passed, 32 skipped, unrelated pre-existing) both re-verified green after the fix, each its own pytest root per the one-test-root-per-process rule."
+    },
+    "integration": {
+      "status": "pass",
+      "passed": 520,
+      "deselected": 2,
+      "failed": 0,
+      "note": "Full integration-tests/ root (520 passed, 2 deselected, 173.11s), incl. the 14 adopt/fr_table_reader-relevant tests directly touching this change's surface."
+    },
+    "e2e": {
+      "status": "n/a",
+      "reason": "no browser/UI surface; this is a Python library fix in the adopt spec-generation pipeline"
+    },
+    "smoke": {
+      "status": "n/a",
+      "reason": "no startable server surface for this change"
+    },
+    "pgtap": {
+      "status": "n/a",
+      "reason": "no database"
+    },
+    "design_fidelity": {
+      "status": "n/a",
+      "reason": "no UI surface"
+    },
+    "surface_verification": {
+      "surface": "cli",
+      "tests_run": 20,
+      "exit_code": 0,
+      "evidence_path": ".shipwright/runs/iterate-2026-08-14-fr-qr-fold-adopt/surface_verification.json",
+      "detail": "CLI surface: pytest against plugins/shipwright-adopt/tests/test_spec_document.py + test_fr_id_sequence.py, the fixture directly exercising the fix (write_spec -> spec.md -> fr_table_reader round trip)."
+    },
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "QR items fold into ordinary FR-table rows, continuing the existing FR-GG.MM sequence, no new column/category marker",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-adopt/tests/test_spec_document.py::test_qr_items_become_fr_rows_continuing_the_sequence PASSED"
+        },
+        {
+          "behavior": "A spec with no QR items is unchanged: no QR rows, no stale '## Quality Requirements' heading",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-adopt/tests/test_spec_document.py::test_a_spec_with_no_qrs_is_unchanged PASSED"
+        },
+        {
+          "behavior": "Regeneration whose fresh detection finds FEWER features than the run already on disk does not reuse an id an earlier run's row already meant",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-adopt/tests/test_spec_document.py::test_regeneration_over_an_existing_spec_does_not_renumber PASSED"
+        },
+        {
+          "behavior": "Regeneration does not reuse a RETIRED id either (a row under '## Removed Requirements')",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-adopt/tests/test_spec_document.py::test_regeneration_does_not_reuse_a_retired_id_either PASSED"
+        },
+        {
+          "behavior": "sequence_of is the correct inverse of canonical_fr_id, including the FR-01.99 -> FR-02.01 group rollover",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-adopt/tests/test_fr_id_sequence.py::test_sequence_of_is_the_inverse_of_canonical_fr_id PASSED"
+        },
+        {
+          "behavior": "sequence_of rejects non-canonical ids (returns None, never raises)",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-adopt/tests/test_fr_id_sequence.py::test_sequence_of_rejects_non_canonical_ids PASSED"
+        },
+        {
+          "behavior": "A QR-folded FR row is readable by the FR-table reader and passes the real fr_gates existence gate under --affected-frs",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_fr_gate_existence.py::TestWiringActuallyEnforces::test_a_folded_quality_requirement_row_passes_the_existence_gate PASSED"
+        },
+        {
+          "behavior": "The derived-catalogue summary count agrees with the rendered table when QR rows are present (trg-1aa5a8ab anti-drift invariant preserved)",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-adopt/tests/test_spec_document.py::test_qr_items_become_fr_rows_continuing_the_sequence PASSED (doc['total'] == len(rows) == 3 assertion)"
+        },
+        {
+          "behavior": "A read/parse failure reading the existing spec.md refuses the write rather than silently proceeding as if no ids existed",
+          "disposition": "untestable",
+          "reason_code": "requires-manual-visual-judgment",
+          "reason": "The guard is a deliberate absence of a try/except (verified by code inspection and confirmed by spec-reviewer + code-reviewer + doubt-reviewer, none of whom found a swallowed exception path); there is no realistic way to construct an unreadable-but-present file in a portable unit test (encoding corruption behaves differently across OSes) without testing Python's own file I/O rather than this code's logic."
+        }
+      ],
+      "counts": {
+        "testable": 8,
+        "tested": 8,
+        "untestable": 1,
+        "untested_testable": 0
+      },
+      "enumeration_basis": {
+        "acs": 9,
+        "covered_acs": 8
+      }
+    },
+    "degraded": []
+  },
+  "coverage": {
+    "total": 80.2,
+    "measured_tier": "repo",
+    "source": "combined coverage.xml (all plugins + shared + integration)",
+    "measured_at": "2026-07-04T00:00:00Z"
+  }
+}
