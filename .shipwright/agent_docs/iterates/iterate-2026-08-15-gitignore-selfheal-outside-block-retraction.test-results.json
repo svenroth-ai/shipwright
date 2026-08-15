@@ -1,0 +1,143 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-08-15-gitignore-selfheal-outside-block-retraction",
+    "date": "2026-08-16",
+    "unit": {
+      "status": "pass",
+      "passed": 55,
+      "total": 59,
+      "note": "gitignore-canon test suite (test_gitignore_canon*.py, test_gitignore_selfheal*.py, test_gitignore_propagation_wiring.py, test_gitignore_outbox_propagation.py): 55 passed, 4 skipped (pre-existing, unrelated to this change), 0 failed. Full F0 parallelized suite (18 units incl. shared/tests, integration-tests, every plugin) also GREEN, 4.5 min, 100% diff coverage on the 13 changed lines in gitignore_canon.py."
+    },
+    "integration": {
+      "status": "pass",
+      "note": "integration-tests unit PASS as part of the 18-unit F0 suite; no integration-tests-specific behavior touched by this change."
+    },
+    "e2e": {
+      "status": "n/a",
+      "reason": "no browser surface; pure Python library text-processing fix"
+    },
+    "smoke": {
+      "status": "n/a",
+      "reason": "no startable server surface in this repo"
+    },
+    "pgtap": {
+      "status": "n/a",
+      "reason": "no database"
+    },
+    "design_fidelity": {
+      "status": "n/a",
+      "reason": "no UI surface"
+    },
+    "surface_verification": {
+      "surface": "none",
+      "tests_run": 0,
+      "exit_code": 0,
+      "evidence_path": ".shipwright/runs/iterate-2026-08-15-gitignore-selfheal-outside-block-retraction/surface_verification.json",
+      "detail": "pure library fix to a Python text-processing function (gitignore_canon.py::_strip_superseded), no startable web/cli/api surface of its own; verified via the unit/functional test suite (59 gitignore-suite cases + full 18-unit F0 suite) plus direct read-only reproduction against the real shipwright-webui checkout."
+    },
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "Superseded rule stripped when inside the managed block (pre-existing contract)",
+          "disposition": "tested",
+          "evidence": "test_gitignore_selfheal_retraction.py::test_self_heal_retracts_superseded_decision_drops_rule PASSED"
+        },
+        {
+          "behavior": "Superseded rule stripped when before the managed block, unwrapped, predating it (the bug)",
+          "disposition": "tested",
+          "evidence": "test_gitignore_selfheal_retraction.py::test_self_heal_retracts_a_pre_marker_era_stale_rule_outside_the_block PASSED"
+        },
+        {
+          "behavior": "plan_merge (pure planner) exhibits the same before-block retraction",
+          "disposition": "tested",
+          "evidence": "test_gitignore_canon_retraction.py::test_merge_retracts_a_superseded_rule_before_the_managed_block PASSED"
+        },
+        {
+          "behavior": "A superseded match placed AFTER an established block is preserved, never stripped",
+          "disposition": "tested",
+          "evidence": "test_gitignore_canon_retraction.py::test_merge_preserves_a_superseded_match_authored_after_the_block PASSED"
+        },
+        {
+          "behavior": "A target with no managed block at all still retracts + creates a fresh canonical block",
+          "disposition": "tested",
+          "evidence": "test_gitignore_canon_retraction.py::test_merge_retracts_a_superseded_rule_with_no_managed_block_yet PASSED"
+        },
+        {
+          "behavior": "A malformed target (duplicate BEGIN/END markers) falls back to inside-only scope, never widens",
+          "disposition": "tested",
+          "evidence": "test_gitignore_canon_retraction.py::test_merge_falls_back_to_inside_only_scope_on_duplicate_markers PASSED"
+        },
+        {
+          "behavior": "Idempotent \u2014 a second run after retraction makes no further change",
+          "disposition": "tested",
+          "evidence": "test_gitignore_canon_retraction.py::test_merge_retraction_is_idempotent PASSED"
+        },
+        {
+          "behavior": "No missing/no-superseded case still reports changed=False",
+          "disposition": "tested",
+          "evidence": "test_gitignore_canon_retraction.py::test_plan_merge_no_op_when_nothing_missing_or_superseded PASSED"
+        },
+        {
+          "behavior": "merge_canonical_block end-to-end (writer used by adopt/project) unaffected for the ordinary add-only path",
+          "disposition": "tested",
+          "evidence": "test_gitignore_canon_merge.py (13 cases) PASSED"
+        },
+        {
+          "behavior": "write-project-config.py / adopt Step E wiring into gitignore_canon unaffected",
+          "disposition": "tested",
+          "evidence": "test_gitignore_propagation_wiring.py (3 cases) PASSED"
+        },
+        {
+          "behavior": "Outbox-ignore propagation (unrelated canonical rule) unaffected by the retraction-scope change",
+          "disposition": "tested",
+          "evidence": "test_gitignore_outbox_propagation.py (6 cases) PASSED"
+        },
+        {
+          "behavior": "Real end-to-end round trip: git check-ignore on a decision-drop file after the healed commit, incl. containment (INDEX.md still ignored)",
+          "disposition": "tested",
+          "evidence": "both retraction tests' empirical _check_ignored assertions PASSED"
+        },
+        {
+          "behavior": "Regression test genuinely pinned the pre-fix before-block defect (red before, green after)",
+          "disposition": "tested",
+          "evidence": "manual git stash verification \u2014 AssertionError: assert [] == ['/.shipwright/agent_docs/decision-drops/'] before the fix; green after restoring it"
+        },
+        {
+          "behavior": "_strip_superseded reachable via BOTH loading paths (lib.gitignore_canon and shared.scripts.lib.gitignore_canon's dotted import) after the module-split revert",
+          "disposition": "tested",
+          "evidence": "caught a real regression from a since-reverted module split (sys.modules['lib'] cross-plugin collision); test_gitignore_propagation_wiring.py::test_project_write_config_merges_canonical_block PASSED after reverting to the inline function; full gitignore suite + full shared/tests both green post-revert"
+        },
+        {
+          "behavior": "A malformed target with a SECOND complete BEGIN/END pair does not re-widen scope into that second pair (the external-code-review bug)",
+          "disposition": "tested",
+          "evidence": "test_gitignore_canon_retraction.py::test_merge_preserves_a_match_inside_a_second_malformed_pair PASSED; TDD-verified red-before/green-after via git stash \u2014 AssertionError: assert ['/.shipwright/agent_docs/decision-drops/'] == [] before the unified (lo,hi) rewrite, green after"
+        }
+      ],
+      "counts": {
+        "testable": 15,
+        "tested": 15,
+        "untestable": 0,
+        "untested_testable": 0
+      },
+      "enumeration_basis": {
+        "acs": 15,
+        "covered_acs": 15
+      },
+      "ledger_path": ".shipwright/planning/iterate/2026-08-15-gitignore-selfheal-outside-block-retraction.md"
+    }
+  },
+  "coverage": {
+    "total": 80.2,
+    "measured_tier": "repo",
+    "source": "combined coverage.xml (all plugins + shared + integration)",
+    "measured_at": "2026-07-04T00:00:00Z"
+  },
+  "source_state": {
+    "run_id": "iterate-2026-08-15-gitignore-selfheal-outside-block-retraction",
+    "commit": "17be65acbcd829a4dedc3df53d92b9a3f3d22b0c",
+    "dirty": true,
+    "base": null,
+    "release": null
+  }
+}

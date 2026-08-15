@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-08-15-gitignore-selfheal-outside-block-retraction",
+  "date": "2026-08-16",
+  "section": "Iterate — bug: gitignore retraction reaches rules outside the managed block",
+  "title": "Gitignore retraction reaches rules that predate the managed block",
+  "context": "SUPERSEDED retraction only stripped a match inside the BEGIN/END block; a rule that predates a project's block (adopted before markers existed, e.g. shipwright-webui) sits outside it and was never stripped, silently losing every future ADR drop.",
+  "decision": "Extend _strip_superseded to also cover the region before an unambiguous single block, and anywhere when no markers exist; never after a well-formed block. Malformed markers bound to the first complete BEGIN-to-END region via one shared (lo,hi) computation, not a re-arming toggle.",
+  "consequences": "An already-adopted project self-heals a retracted rule on its next adopt/project run regardless of position relative to its block. Does not recover ADRs already lost, and does not touch webui's own .gitignore (separate card).",
+  "rationale": "Position is the only signal available to a pure text transform; safe because every SUPERSEDED entry is a curated /.shipwright/-namespaced literal, now mechanically enforced by a namespace test.",
+  "rejected": "Per-line git-blame authorship check (no such signal available cheaply); re-splitting into a sibling module (reverted — sys.modules['lib'] collision); treating any malformed file as strip-nothing (loses real utility for the common single-block-plus-junk case).",
+  "commit": "",
+  "architecture_impact": "convention",
+  "spec_ref": ".shipwright/planning/adr/iterate-2026-08-15-gitignore-selfheal-outside-block-retraction.md"
+}

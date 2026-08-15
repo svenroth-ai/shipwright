@@ -1,0 +1,257 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-08-15-gitignore-selfheal-outside-block-retraction",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-15T22:10:18.790189+00:00",
+      "disposition": "8/8 pass/n-a, no failures",
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 8,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "The acceptance criteria and mini-plan say the widened before-block scope requires “exactly one BEGIN and exactly one END, in that order,” and anything else falls back to inside-only. But a target with no managed block at all is simultaneously required to retract a stale superseded line and create a fresh block. Zero markers is currently covered by the literal fallback wording, yet it is not a malformed file—it is a valid “no block yet” shape this bug must fix.",
+          "suggestion": "Make the two cases explicit in both the code and spec: (a) no markers at all means “whole file is before the future block,” so retract matches and then create the block; (b) one or more inconsistent/duplicate/reversed markers means fall back to the original inside-block-only scan. Update AC2 so it excludes the valid zero-marker case.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "The fix still relies on position plus exact text match to decide ownership. A user-authored line before the managed block that exactly matches a superseded `.shipwright/` literal would be silently removed. The namespaced literals make this unlikely, and the spec documents the declined metadata alternative, but the deletion is still automatic and implicit.",
+          "suggestion": "At minimum document in `_strip_superseded` and in the self-heal commit message that pre-block exact matches are treated as Shipwright-owned and retracted. Including the retracted line in the chore commit body would make the behavior auditable and easily reversible.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "Malformed or duplicate marker files fall back to the conservative inside-block-only scan. That preserves the old no-fix behavior for a stale pre-block rule, but the fallback is silent—`plan_merge` can still look healthy even though this bug class remains for those files.",
+          "suggestion": "Emit a debug or info-level log when the fallback triggers, or return a flag in the planner result, so future field reports with malformed `.gitignore` files don’t present as the same already-fixed no-op failure and require another forensic investigation.  The change is well-scoped, heavily tested, and correctly reverts a risky module split. The remaining findings are refinements: make the no-marker/malformed boundary explicit and improve auditability of automatic before-block retraction.  SHIPWRIGHT_VERDICT: approve",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "The no-managed-block behavior is internally inconsistent. The proposed algorithm says widening retraction to content before the block requires exactly one valid BEGIN/END pair, and “anything else” falls back to inside-only scanning. A file with no markers has no inside region, so that policy cannot also satisfy the stated acceptance criterion and test that it “retracts + creates a fresh canonical block.”",
+          "suggestion": "Specify and implement an explicit third policy for the zero-marker case. For example: distinguish (a) no markers at all, where a deliberately defined migration scan may remove exact superseded literals before creating the first block, from (b) malformed partial/duplicate/reversed markers, where scanning remains conservative. Document precisely whether the zero-marker scan is whole-file and add a preservation test for unrelated content in that case.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The malformed-marker fallback contract is not sufficiently precise or fully tested. The spec alternates between “inside-first-block-only” and “original inside-any-block-only scan.” Those are materially different for duplicate markers, and a state-machine-style legacy scan can treat an unmatched/reversed BEGIN as opening an unsafe region through EOF. The sole cited malformed test covers duplicate BEGIN markers, not duplicate END, unmatched single marker, or reversed order, despite the acceptance criteria claiming all of these are handled.",
+          "suggestion": "Define the fallback in terms of exact behavior, preferably by identifying only a single demonstrably valid BEGIN/END pair and limiting retraction to that pair, or by performing no retraction on malformed files. Add at least a parameterized test covering duplicate END, BEGIN-without-END, END-without-BEGIN, and reversed markers, with matching superseded lines placed in regions that must be preserved.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "This changes the ownership boundary for every `SUPERSEDED` literal, not just the historically proven decision-drops rule. Exact matching and the `.shipwright/` namespace make accidental deletion unlikely, but an intentionally retained legacy ignore placed before a managed block will now be removed without a per-rule provenance signal. Since changing `.gitignore` can make previously hidden files appear as untracked and subsequently be committed, the impact is more than cosmetic.",
+          "suggestion": "Ensure the change is intentionally limited to entries with verified historical pre-block migration provenance, or explicitly maintain an allowlist of such legacy retractions if the `SUPERSEDED` set will grow. At minimum, add a release/changelog note warning that pre-block exact matches are migrated, and verify self-heal only commits `.gitignore` rather than staging newly unignored files.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "Splitting `test_gitignore_selfheal.py` solely to meet a non-blocking 300-line guideline adds a new file and duplicated helper functions unrelated to the behavior change. The implementation correctly avoided an unnecessary production-module extraction after it caused an import collision, but the test split similarly creates avoidable maintenance surface.",
+          "suggestion": "Keep the existing test file unless the repository has a required test-file size policy or the split materially improves cohesion. If retained, centralize the duplicated fixture helpers in an existing local test utility only if that utility is already an established pattern; otherwise, do not add another abstraction solely for this change.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "security",
+          "file": null,
+          "line": null,
+          "finding": "There is no new authentication, injection, or parser-input security boundary. The relevant security-adjacent effect is intentional unignoring of decision-drop JSON files; this can expose them to normal Git status and accidental commit workflows if users have local sensitive content in that location.",
+          "suggestion": "Confirm the replacement rules and repository policy intentionally permit decision-drop JSON tracking, as the tests indicate, and ensure the self-heal commit path does not use broad staging such as `git add -A`.  Overall, the before-block narrowing is a sound, proportionate fix for the demonstrated live-repository failure and the test coverage is otherwise strong. Resolve the zero-marker policy contradiction and make malformed-marker fallback behavior explicit before merging. SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-08-15T21:59:12.738970+00:00",
+      "disposition": "round 4 of 4 (see iterate spec External LLM Review); doc-only AC/mini-plan fix applied, remaining findings declined/disclosed with reasoning in spec",
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[deepseek] - **Category:** approach  \n  **Severity:** medium  \n  **Finding:** The acceptance criteria and mini-plan say the widened before-block scope requires “exactly one BEGIN and exactly one END, in that order,” and anything else falls back to inside-only. But a target with **no managed block at all** is simultaneously required to retract a stale superseded line and create a fresh block. Zero markers is currently covered by the literal fallback wording, yet it is not a malformed file—it is a valid “no block yet” shape this bug must fix.  \n  **Suggestion:** Make the two cases explicit in both the code and spec: (a) no markers at all means “whole file is before the future block,” so retract matches and then create the block; (b) one or more inconsistent/duplicate/reversed markers means fall back to the original inside-block-only scan. Update AC2 so it excludes the valid zero-marker case.\n\n- **Category:** risk  \n  **Severity:** low  \n  **Finding:** The fix still relies on position plus exact text match to decide ownership. A user-authored line before the managed block that exactly matches a superseded `.shipwright/` literal would be silently removed. The namespaced literals make this unlikely, and the spec documents the declined metadata alternative, but the deletion is still automatic and implicit.  \n  **Suggestion:** At minimum document in `_strip_superseded` and in the self-heal commit message that pre-block exact matches are treated as Shipwright-owned and retracted. Including the retracted line in the chore commit body would make the behavior auditable and easily reversible.\n\n- **Category:** edge-case  \n  **Severity:** low  \n  **Finding:** Malformed or duplicate marker files fall back to the conservative inside-block-only scan. That preserves the old no-fix behavior for a stale pre-block rule, but the fallback is silent—`plan_merge` can still look healthy even though this bug class remains for those files.  \n  **Suggestion:** Emit a debug or info-level log w […truncated]\n\n[openai] 1. **Category: approach**  \n   **Severity: high**  \n   **Finding:** The no-managed-block behavior is internally inconsistent. The proposed algorithm says widening retraction to content before the block requires exactly one valid BEGIN/END pair, and “anything else” falls back to inside-only scanning. A file with no markers has no inside region, so that policy cannot also satisfy the stated acceptance criterion and test that it “retracts + creates a fresh canonical block.”  \n   **Suggestion:** Specify and implement an explicit third policy for the zero-marker case. For example: distinguish (a) no markers at all, where a deliberately defined migration scan may remove exact superseded literals before creating the first block, from (b) malformed partial/duplicate/reversed markers, where scanning remains conservative. Document precisely whether the zero-marker scan is whole-file and add a preservation test for unrelated content in that case.\n\n2. **Category: edge-case**  \n   **Severity: medium**  \n   **Finding:** The malformed-marker fallback contract is not sufficiently precise or fully tested. The spec alternates between “inside-first-block-only” and “original inside-any-block-only scan.” Those are materially different for duplicate markers, and a state-machine-style legacy scan can treat an unmatched/reversed BEGIN as opening an unsafe region through EOF. The sole cited malformed test covers duplicate BEGIN markers, not duplicate END, unmatched single marker, or reversed order, despite the acceptance criteria claiming all of these are handled.  \n   **Suggestion:** Define the fallback in terms of exact behavior, preferably by identifying only a single demonstrably valid BEGIN/END pair and limiting retraction to that pair, or by performing no retraction on malformed files. Add at least a parameterized test covering duplicate END, BEGIN-without-END, END-without-BEGIN, and reversed markers, with matching superseded lines placed in regions that must be preserved […truncated]",
+      "verdicts": {
+        "openai": "revise",
+        "deepseek": "approve"
+      }
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 4,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "shared/tests/test_gitignore_canon_retraction.py",
+          "line": 83,
+          "finding": "test_merge_retracts_a_superseded_rule_before_the_managed_block's fixture contains no BEGIN_MARKER/END_MARKER, so it exercises _strip_superseded's 'no block yet' branch (branch 1) rather than the well-formed-block-with-content-before-it branch (branch 2, the new i <= end_idx logic) its name and docstring claim to cover. It is a near-duplicate of test_merge_retracts_a_superseded_rule_with_no_managed_block_yet. Branch 2's 'strip before a real block' path has no direct unit-level test in this file; it's only covered indirectly via shared/tests/test_gitignore_selfheal_retraction.py's integration test.",
+          "suggestion": "Rewrite the fixture to include a real BEGIN/END block after the stale line (as the selfheal-layer sibling test does), so the assertion actually drives begins=[i], ends=[j], match-index < begins[0] through merge_canonical_block/plan_merge.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "shared/scripts/lib/gitignore_canon.py",
+          "line": 142,
+          "finding": "Branch 1 (no markers) and branch 2 (well-formed single block) of _strip_superseded are structurally identical loops differing only in the cutoff index (unbounded vs end_idx) - duplication introduced by this diff.",
+          "suggestion": "Compute a single cutoff (len(lines)-1 for branch 1, ends[0] for branch 2, None to trigger the branch-3 fallback) and run one shared loop; saves ~8 duplicated lines with no behavior change.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/scripts/lib/gitignore_canon.py",
+          "line": 189,
+          "finding": "_insert_missing (unchanged, pre-existing) inserts `missing` before every line matching END_MARKER, and creates a brand-new block when END_MARKER is absent even if BEGIN_MARKER exists. This diff's new branch-3 fallback in _strip_superseded now deliberately tolerates malformed multi-marker files, but _insert_missing was never hardened for the same malformed shapes (duplicate END, or BEGIN-without-END) - a duplicate-END file would get canonical rules inserted twice. Not covered by the new duplicate-marker test, which only has one END.",
+          "suggestion": "Either add a regression test proving current behavior/harmlessness on a duplicate-END fixture, or file a follow-up to harden _insert_missing symmetrically with _strip_superseded's marker-count validation.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "shared/tests/test_gitignore_selfheal_retraction.py",
+          "line": 30,
+          "finding": "_NARROW_REPLACEMENTS in this file duplicates the same two-item set literal defined inline in test_gitignore_canon_retraction.py::_gitignore_with_stale_blanket_rule.",
+          "suggestion": "Non-blocking; consider a shared test constant if touched again.",
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-08-15T22:08:17.573323+00:00",
+      "disposition": "1 medium (test coverage gap) + 1 low (dedup) fixed; 1 low disclosed as pre-existing follow-up (_insert_missing marker hardening); 1 low partially fixed (in-file constant, cross-file dup left per sibling-split convention)",
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 3,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "boundary & contract",
+          "file": "shared/scripts/lib/gitignore_canon.py",
+          "line": null,
+          "finding": "Claim under doubt: position + exact-text-match is an adequate, standing ownership signal for every current and future SUPERSEDED entry — the decline's own justification ('no live evidence of ever occurring') is the same reasoning pattern that produced this bug: iterate-2026-08-08's original test suite assumed 'outside-block = user's own line' as unverified, and only a live-repo read disproved it. The AC commits to a policy, not a one-off exception, so every future SUPERSEDED entry inherits the same blind spot without a mechanism forcing re-verification against real repos.",
+          "suggestion": "constrain future SUPERSEDED entries to Shipwright-namespaced paths only (documented in the template), or explicitly re-litigate the ownership-signal decline per new entry rather than treating it as blanket-closed",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "contract",
+          "file": "shared/tests/test_gitignore_canon_retraction.py",
+          "line": null,
+          "finding": "Claim under doubt: test_merge_retracts_a_superseded_rule_before_the_managed_block genuinely pins the new before-block/i<=end_idx boundary — it only asserts the narrow replacements are in result['added'] (planner metadata, computed independent of the write), not that they land in the written file's text - unlike its two sibling tests, which both assert 'for rule in canonical: rule in text.splitlines()'.",
+          "suggestion": "add the same 'all canonical rules present in text' assertion used by the sibling tests",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "hidden coupling & blast radius",
+          "file": "shared/scripts/lib/gitignore_canon.py",
+          "line": null,
+          "finding": "Claim under doubt: the module-split revert means this sys.modules['lib'] collision class can't recur — the revert removes this instance's trigger but adds no guard (lint rule, comment tripwire, import-boundary check) stopping a future contributor from reintroducing a bare from lib.X import Y inside shared/scripts/lib/*.py.",
+          "suggestion": "a short comment in gitignore_canon.py's header noting it deliberately has zero intra-lib imports and why",
+          "source": "doubt-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-08-15T22:17:43.064198+00:00",
+      "disposition": "1 medium (disclosed as standing template constraint) + 2 low, all fixed",
+      "recorded_by": "doubt-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 2,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "spec",
+          "file": "shared/scripts/lib/gitignore_canon.py:161-174",
+          "line": null,
+          "finding": "The malformed-marker fallback does not implement the documented “inside-first-block-only” limitation. When there are two complete marker pairs, the fallback toggles `inside` for every marker pair and retracts matching rules inside the second pair as well. For example, `BEGIN/END/BEGIN/<superseded-rule>/END` has duplicate markers, but the rule in the second pair is deleted. The section context explicitly says content in a second malformed pair is treated as after the first block and preserved.",
+          "suggestion": "In malformed cases, restrict retraction to at most the first unambiguous BEGIN-to-following-END region, or conservatively perform no retraction when no unambiguous first block can be identified. Do not resume scanning after that block.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "test",
+          "file": "shared/tests/test_gitignore_canon_retraction.py:167-177",
+          "line": null,
+          "finding": "test_merge_falls_back_to_inside_only_scope_on_duplicate_markers` only supplies duplicate BEGIN markers followed by one END and places the stale rule before all markers. It verifies that the scope is not widened before the first marker, but it does not test the claimed safety property that a second malformed BEGIN/END pair is preserved. Consequently, the current multi-pair deletion behavior passes this test.",
+          "suggestion": "Add a fixture containing two complete marker pairs with the superseded rule inside the second pair, and assert that it remains present under malformed-marker fallback behavior.  Ship with fixes: the valid no-marker and single-well-formed-block paths appear to implement the requested behavior, but malformed duplicate-pair files currently violate the stated conservative preservation contract. SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-08-15T22:24:58.403862+00:00",
+      "disposition": "openai=revise (1 medium, fixed with regression test); deepseek=unavailable",
+      "recorded_by": "external-review-json",
+      "parse_status": "partial",
+      "raw_excerpt": "[deepseek] <no review returned: provider returned an empty reply>\n\n[openai] - Category: spec\n- Severity: medium\n- File: `shared/scripts/lib/gitignore_canon.py:161-174`\n- Finding: The malformed-marker fallback does not implement the documented “inside-first-block-only” limitation. When there are two complete marker pairs, the fallback toggles `inside` for every marker pair and retracts matching rules inside the second pair as well. For example, `BEGIN/END/BEGIN/<superseded-rule>/END` has duplicate markers, but the rule in the second pair is deleted. The section context explicitly says content in a second malformed pair is treated as after the first block and preserved.\n- Suggestion: In malformed cases, restrict retraction to at most the first unambiguous BEGIN-to-following-END region, or conservatively perform no retraction when no unambiguous first block can be identified. Do not resume scanning after that block.\n\n- Category: test\n- Severity: low\n- File: `shared/tests/test_gitignore_canon_retraction.py:167-177`\n- Finding: `test_merge_falls_back_to_inside_only_scope_on_duplicate_markers` only supplies duplicate BEGIN markers followed by one END and places the stale rule before all markers. It verifies that the scope is not widened before the first marker, but it does not test the claimed safety property that a second malformed BEGIN/END pair is preserved. Consequently, the current multi-pair deletion behavior passes this test.\n- Suggestion: Add a fixture containing two complete marker pairs with the superseded rule inside the second pair, and assert that it remains present under malformed-marker fallback behavior.\n\nShip with fixes: the valid no-marker and single-well-formed-block paths appear to implement the requested behavior, but malformed duplicate-pair files currently violate the stated conservative preservation contract.\nSHIPWRIGHT_VERDICT: revise",
+      "verdicts": {
+        "openai": "revise",
+        "deepseek": "unavailable"
+      },
+      "contradiction_resolution": "deepseek returned an empty reply (degraded); openai's medium finding (malformed-marker fallback re-arming on a second complete pair) was verified as a genuine, previously-uncaught bug and fixed with a TDD-verified regression test — treated as authoritative despite single-reviewer coverage"
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-15T22:08:29.045964+00:00",
+      "disposition": "PASS, one non-blocking narrative-accuracy note (corrected in spec)",
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-15T22:24:51.904142+00:00",
+      "disposition": null,
+      "recorded_by": "opus-plan-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "inherit"
+    }
+  }
+}

@@ -142,14 +142,24 @@
 # === BEGIN Shipwright superseded .shipwright artifact-ignore rules (managed) ===
 # Rules a LATER template revision retracted (narrowed or removed outright).
 # gitignore_canon.py strips any of these still present inside a target's
-# managed block above and adds the canonical replacement(s) in the SAME
-# merge pass — so an already-adopted project self-heals on its next iterate
+# managed block above AND before it (never after — that's a project's own
+# later content) and adds the canonical replacement(s) in the SAME merge
+# pass — so an already-adopted project self-heals on its next iterate
 # (self_heal_gitignore, wired into setup_iterate_worktree.py) instead of
 # carrying a stale rule forever. `canonical`-only rules are add-only by
 # design (a rule already present is never duplicated or reasoned about); a
 # rule can only ever be RETRACTED by being listed here first. Never delete
 # an entry below, even once every known project has healed — a project that
 # skipped several template revisions still needs the full retraction history.
+#
+# Ownership constraint (iterate-2026-08-15-gitignore-selfheal-outside-block-
+# retraction, doubt-reviewer): the retraction has no per-rule provenance
+# signal — an exact-text match before/inside the managed block is ASSUMED to
+# be Shipwright-owned and gets deleted automatically, no confirmation. That
+# assumption only holds because every entry below is a literal, curated
+# `.shipwright/`-namespaced path a project would not plausibly author
+# independently. Keep every future entry that specific — a generic pattern
+# here would risk deleting a project's own deliberately-placed rule.
 #
 # /.shipwright/agent_docs/decision-drops/ — retracted
 # iterate-2026-08-08-track-decision-drops: the directory itself is now
