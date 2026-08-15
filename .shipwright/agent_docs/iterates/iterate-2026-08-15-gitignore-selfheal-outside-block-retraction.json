@@ -1,0 +1,31 @@
+{
+  "run_id": "iterate-2026-08-15-gitignore-selfheal-outside-block-retraction",
+  "date": "2026-08-15T22:43:31.761878Z",
+  "event_at": "2026-08-14T15:36:20.401876+00:00",
+  "type": "bug",
+  "complexity": "medium",
+  "branch": "iterate/gitignore-selfheal-outside-block-retraction",
+  "spec": ".shipwright/planning/iterate/2026-08-15-gitignore-selfheal-outside-block-retraction.md",
+  "tests_passed": true,
+  "adr": "iterate-2026-08-15-gitignore-selfheal-outside-block-retraction",
+  "test_completeness": {
+    "status": "complete",
+    "counts": {
+      "testable": 15,
+      "tested": 15,
+      "untestable": 0,
+      "untested_testable": 0
+    },
+    "enumeration_basis": {
+      "acs": 15,
+      "covered_acs": 15
+    }
+  },
+  "surface_verification": {
+    "surface": "none",
+    "tests_run": 0,
+    "exit_code": 0,
+    "justification": "pure library fix to a Python text-processing function (gitignore_canon.py::_strip_superseded), no startable web/cli/api surface of its own; verified via the unit/functional test suite (59 gitignore-suite cases + full 18-unit F0 suite) plus direct read-only reproduction against the real shipwright-webui checkout"
+  },
+  "declared_removals": []
+}

@@ -4,30 +4,29 @@ Single source of truth for which ``.shipwright/`` paths every consuming
 project gitignores. The rules live in
 ``shared/templates/shipwright-gitignore.template`` between BEGIN/END
 markers; this module parses them and merges the missing ones idempotently
-into a target project's ``.gitignore``.
+into a target project's ``.gitignore``. Used by ``/shipwright-adopt`` and
+``/shipwright-project`` so framework-side gitignore changes propagate to
+consuming projects, and by the drift test
+``shared/tests/test_gitignore_template_congruent.py``.
 
-Used by ``/shipwright-adopt`` and ``/shipwright-project`` so framework-side
-gitignore changes propagate to consuming projects, and by the drift test
-``shared/tests/test_gitignore_template_congruent.py`` which keeps the
-template congruent with the framework's own ``.gitignore``.
-
-Design rationale (line-level merge, not whole-block replace): a rule
-already present anywhere in the target is never duplicated; only genuinely
-missing rules are added. This matches the "add missing lines, no
-duplicates" contract and self-heals EXISTING projects when a later
-template revision introduces a new re-exclude (re-running adopt/project
-back-fills just the new line) — the regression that left shipwright-webui
-missing ``/.shipwright/agent_docs/runtime/``.
+Line-level merge (not whole-block replace): a rule already present anywhere
+in the target is never duplicated; only genuinely missing rules are added —
+self-heals an EXISTING project when a later template revision introduces a
+new re-exclude.
 
 Add-only is not enough alone: a canonical rule can be *narrowed* (a
-whole-directory ignore replaced by two file-level ignores, e.g.
-iterate-2026-08-08-track-decision-drops), and a rule absent from
-``canonical`` is invisible to "missing" above — neither added nor removed.
-The SUPERSEDED block (a second marker-delimited template section, parsed
-by :func:`read_superseded_rules`) closes that gap: a listed rule is
-actively stripped from a target's managed block if present, in the SAME
-pass that adds its replacement(s). See the template's own SUPERSEDED
-comment for the rationale.
+whole-directory ignore replaced by file-level ones, e.g.
+iterate-2026-08-08-track-decision-drops), invisible to "missing" above —
+neither added nor removed. The SUPERSEDED block (:func:`read_superseded_rules`)
+closes that: a listed rule is actively stripped, in the SAME pass that adds
+its replacement(s). See the template's own SUPERSEDED comment.
+
+Deliberately zero intra-``lib`` imports: a prior attempt to extract
+``_strip_superseded`` into a sibling module and re-import it with
+``from lib.X import Y`` broke a dotted-path consumer (``write-project-
+config.py``) via a cross-plugin ``sys.modules['lib']`` collision. Keep this
+module self-contained — see iterate-2026-08-15-gitignore-selfheal-outside-
+block-retraction for the full story.
 """
 
 from __future__ import annotations
@@ -39,7 +38,6 @@ from pathlib import Path
 
 BEGIN_MARKER = "# === BEGIN Shipwright canonical .shipwright artifact-ignore (managed) ==="
 END_MARKER = "# === END Shipwright canonical .shipwright artifact-ignore (managed) ==="
-
 SUPERSEDED_BEGIN_MARKER = (
     "# === BEGIN Shipwright superseded .shipwright artifact-ignore rules (managed) ==="
 )
@@ -55,12 +53,9 @@ _MANAGED_HEADER_LINES = (
 
 
 def default_template_path() -> Path:
-    """Resolve the SSoT template relative to this module.
-
-    Works both in the monorepo (``shared/`` at repo root) and in the
-    runtime plugin cache (``shared/`` at the cache root): ``shared/`` is
-    self-contained, so ``parents[2]`` of ``shared/scripts/lib/<this>`` is
-    always the ``shared/`` directory.
+    """Resolve the SSoT template relative to this module — ``parents[2]`` of
+    ``shared/scripts/lib/<this>`` is always the self-contained ``shared/``
+    directory, in both the monorepo and the runtime plugin cache.
     """
     return (
         Path(__file__).resolve().parents[2]
@@ -74,12 +69,9 @@ def extract_marked_rules(
 ) -> list[str]:
     """Return the ordered rule-lines between *begin*/*end* markers in *text*.
 
-    Comments (``#`` lines) and blank lines inside the block are dropped;
-    only actual gitignore patterns are returned, stripped. Returns ``[]``
-    when the markers are absent or malformed (END without a preceding
-    BEGIN). Defaults to the canonical-block markers; pass
-    ``SUPERSEDED_BEGIN_MARKER``/``SUPERSEDED_END_MARKER`` to read the
-    retraction block instead — same parsing rules, different section.
+    Comments/blank lines inside the block are dropped. Returns ``[]`` when
+    the markers are absent or malformed. Defaults to the canonical-block
+    markers; pass the ``SUPERSEDED_*`` pair to read the retraction block.
     """
     inside = False
     rules: list[str] = []
@@ -113,8 +105,7 @@ def read_superseded_rules(template_path: Path | None = None) -> list[str]:
     """Return the ordered retracted rule-lines from the SSoT template.
 
     Unlike :func:`read_canonical_rules`, an empty/absent SUPERSEDED block is
-    legal (no rule has ever been retracted yet) — returns ``[]`` rather than
-    raising.
+    legal — returns ``[]`` rather than raising.
     """
     path = template_path or default_template_path()
     return extract_marked_rules(
@@ -125,36 +116,47 @@ def read_superseded_rules(template_path: Path | None = None) -> list[str]:
 
 
 def _strip_superseded(text: str, superseded: list[str]) -> tuple[str, list[str]]:
-    """Remove any *superseded* rule-lines found inside the target's OWN
-    managed block (between its BEGIN/END markers), returning
-    ``(new_text, retracted)`` — the ordered subset actually present and
-    removed.
+    """Remove *superseded* rule-lines found inside the managed BEGIN/END
+    block, and also before it, returning ``(new_text, retracted)``.
 
-    Scoped to the managed block deliberately: this only undoes what a prior
-    ``gitignore_canon`` run itself added, matching the block's own "do not
-    hand-edit" contract. A rule that happens to match outside the block
-    (a project's own hand-written line) is left alone.
+    A rule that predates the block's own scaffolding sits ahead of it (e.g.
+    shipwright-webui's decision-drops line, weeks older than that project's
+    first managed block) — never after: nothing this module writes lands
+    past the block's END marker, so a match found there is a project's own
+    later-added content and is left alone.
+
+    Extending the scope before the block requires an unambiguous single
+    block: exactly one BEGIN, exactly one END, in that order. Zero markers
+    strips anywhere; anything else malformed (duplicate/unmatched/reversed)
+    falls back to scanning ONLY the first complete BEGIN-to-following-END
+    region — a rule inside a second, malformed pair is preserved exactly
+    like content after a well-formed block, never re-scanned (external
+    review, 2026-08-16: the prior toggle-based fallback re-armed on every
+    BEGIN it saw, so a second complete pair was wrongly still in scope).
     """
-    if not superseded or BEGIN_MARKER not in text:
+    if not superseded:
         return text, []
     superset = set(superseded)
-    inside = False
+    lines = text.splitlines()
+    begins = [i for i, raw in enumerate(lines) if raw.strip() == BEGIN_MARKER]
+    ends = [i for i, raw in enumerate(lines) if raw.strip() == END_MARKER]
+
+    if not begins and not ends:
+        lo, hi = 0, len(lines) - 1
+    elif len(begins) == 1 and len(ends) == 1 and begins[0] < ends[0]:
+        lo, hi = 0, ends[0]
+    else:
+        first_end = next((e for e in ends if e > begins[0]), None) if begins else None
+        lo, hi = (begins[0] + 1, first_end) if begins and first_end is not None else (0, -1)
+
     retracted: list[str] = []
     out: list[str] = []
-    for raw in text.splitlines():
+    for i, raw in enumerate(lines):
         stripped = raw.strip()
-        if stripped == BEGIN_MARKER:
-            inside = True
-            out.append(raw)
-            continue
-        if stripped == END_MARKER:
-            inside = False
-            out.append(raw)
-            continue
-        if inside and stripped in superset:
+        if stripped in superset and lo <= i <= hi:
             retracted.append(stripped)
-            continue
-        out.append(raw)
+        else:
+            out.append(raw)
     if not retracted:
         return text, []
     result = "\n".join(out)
@@ -199,19 +201,13 @@ def merge_canonical_block(
     """Idempotently merge the canonical rules into ``project_root/.gitignore``.
 
     Line-level merge: a canonical rule already present anywhere in the
-    target ``.gitignore`` (exact stripped match) is left untouched; missing
-    rules are added inside a marked managed block. A rule listed in the
-    template's SUPERSEDED block is actively stripped from the target's
-    managed block first (see :func:`_strip_superseded`), in the SAME pass
-    that adds its canonical replacement(s) — add-only cannot retract a
-    narrowed or removed rule, so this is not optional for staying
-    congruent with a template that has ever retracted anything. Re-running
-    is a no-op once every canonical rule is present and no superseded rule
-    remains.
+    target is left untouched; missing rules are added inside a marked
+    managed block. A superseded rule is stripped first (see
+    :func:`_strip_superseded`), in the SAME pass that adds its canonical
+    replacement(s) — add-only cannot retract a narrowed/removed rule.
 
     Returns ``{action, path, added, retracted, already_present,
-    total_canonical}`` where ``action`` is ``unchanged`` / ``created`` /
-    ``updated`` (``created`` = the ``.gitignore`` did not exist before).
+    total_canonical}``; ``action`` is ``unchanged`` / ``created`` / ``updated``.
     """
     canonical = read_canonical_rules(template_path)
     superseded = read_superseded_rules(template_path)
@@ -248,16 +244,10 @@ def merge_canonical_block(
 def plan_merge(
     text: str, *, template_path: Path | None = None
 ) -> tuple[str, bool, list[str], list[str]]:
-    """Pure planner: return ``(merged_text, changed, added, retracted)`` for
-    *text*.
+    """Pure planner: return ``(merged_text, changed, added, retracted)``.
 
-    Side-effect-free twin of :func:`merge_canonical_block` (which writes the
-    file). Reuses the SAME merge primitives (``read_canonical_rules`` +
-    ``read_superseded_rules`` + ``_strip_superseded`` + ``_insert_missing``)
-    so the self-heal commit-path (``lib.gitignore_selfheal``) never
-    reinvents the merge. ``added`` is the ordered subset of canonical rules
-    missing from *text*; ``retracted`` is the ordered subset of superseded
-    rules that were present in *text* and stripped.
+    Side-effect-free twin of :func:`merge_canonical_block` — reuses the SAME
+    merge primitives so ``lib.gitignore_selfheal`` never reinvents the merge.
     """
     canonical = read_canonical_rules(template_path)
     superseded = read_superseded_rules(template_path)

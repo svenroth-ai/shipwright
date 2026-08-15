@@ -70,3 +70,4 @@ _Regenerate:_ `uv run {shared_root}/scripts/tools/rebuild_adr_index.py --project
 - [F11 pre-push verification of the integrated tree](iterate-2026-08-10-p2-39-f11-verify-local-f11-prepush-verification.md)
 - [Adopt seeds its own canonical ADR folder; hollow retroactive ADRs fail closed](iterate-2026-08-14-adopt-adr-canonical-seed.md)
 - [Retire the QR-/C- requirement id spaces (greenfield spec-generation)](iterate-2026-08-14-fr-qr-fold-project-qr-id-retirement.md)
+- [Gitignore retraction reaches rules that predate the managed block](iterate-2026-08-15-gitignore-selfheal-outside-block-retraction.md)
