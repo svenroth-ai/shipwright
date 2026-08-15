@@ -1,0 +1,12 @@
+{
+  "items": [
+    {"name": "Spec Compliance", "verdict": "pass", "note": "Matches the task brief exactly: chose fix (b), corrected the ITERATE_RETENTION comment + module docstring bullet + F5c.md's retention section to state the cap is approximately 50 (pins add on top; cross-worktree merges can overshoot by one per branch, self-heals next append), added a regression test. No extra features beyond the brief; FR-/ADR-collision family left untouched as explicitly out of scope."},
+    {"name": "Error Handling", "verdict": "n/a", "note": "No runtime logic changed -- comments/docs only plus a new test. No new error paths introduced."},
+    {"name": "Security Basics", "verdict": "pass", "note": "No user input, no secrets, no auth/permission surface touched."},
+    {"name": "Test Quality", "verdict": "pass", "note": "New tests assert outcomes (file counts, surviving run_ids) not implementation internals. test_two_independent_worktrees_merge_one_over_cap proves the reproduction (cap+1); test_next_append_on_the_merged_tree_self_heals_to_cap proves the fix's central claim (self-heal back to cap). Deterministic seeding, no flakiness. Ran green: 12/12 in the retention test group, 699/699 in the wider shared suite."},
+    {"name": "Performance Basics", "verdict": "n/a", "note": "No performance-sensitive code touched."},
+    {"name": "Naming & Structure", "verdict": "pass", "note": "New test file follows the sibling test_retention_race.py's helper/fixture conventions (confirmed by code-reviewer across two passes); shared/scripts/tools/append_iterate_entry.py stays at exactly its pre-existing anti-ratchet baseline (436 lines) -- no bloat-gate exception needed."},
+    {"name": "Affected Boundaries", "verdict": "n/a", "note": "No serialized format's producer or consumer behavior changed -- this is a documentation/comment correction plus a test proving pre-existing (unchanged) retention behavior. touches_io_boundary did not fire (confirmed via risk_detectors.is_io_boundary_change over the changed file list)."},
+    {"name": "Test Hygiene Probe", "verdict": "pass", "note": "uv run shared/scripts/tools/scan_test_hygiene.py --diff: no findings."}
+  ]
+}

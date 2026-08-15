@@ -1,0 +1,133 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-08-15-retention-cap-parallel-merge",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-15T21:33:54.619424+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-15T21:30:43.283778+00:00",
+      "disposition": "external plan/iterate review is opt-in via --review at trivial/small per iteration-planning.md; not requested for this run",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 4,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "architecture",
+          "file": "shared/tests/test_retention_merge_overshoot.py",
+          "line": null,
+          "finding": "Helpers duplicate shared/tests/_iterate_entry_helpers.py and test_retention_race.py's local helpers instead of reusing them. Declined for this diff: the deeper fix touches the untouched sibling race test (scope creep); filed as a follow-up per the reviewer's own suggestion.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "shared/tests/test_retention_merge_overshoot.py",
+          "line": null,
+          "finding": "Module docstring pointed at the ITERATE_RETENTION comment circularly instead of F5c.md's actual explanation section. FIXED: now points at F5c.md's \"Why 'approximately,' not 'exactly'\" section.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "plugins/shipwright-iterate/skills/iterate/references/F5c.md",
+          "line": null,
+          "finding": "Referred to the ITERATE_RETENTION 'docstring' when it is now a trailing comment. FIXED: reworded to 'comment'.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "shared/scripts/tools/append_iterate_entry.py",
+          "line": null,
+          "finding": "The retention comment is a single long unwrapped line to hold the file at exactly baseline (436 lines), leaving zero LOC headroom. Declined for this diff per the reviewer's own note (not worth a round-trip on its own); revisit if the file is touched again.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-08-15T21:30:27.359207+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-15T21:30:33.761234+00:00",
+      "disposition": "conditional per iteration-reviews.md Stage 3 -- diff is docs/comment wording + a new filesystem-simulation regression test, no migrations, async/concurrency, cross-plugin imports, or irreversible ops",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": "openrouter",
+      "completed_at": "2026-08-15T21:38:01.222302+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "unstructured",
+      "raw_excerpt": "[deepseek] <no review returned: provider returned an empty reply>\n\n[openai] No concrete defects found. The change implements the selected option (b): both retention documentation locations now describe the cap as approximate and self-healing, and the regression test reproduces the identical-worktree eviction/merge result and verifies that a subsequent append returns the unpinned entry set to the retention cap while retaining the newest entries. The filesystem-level merge simulation is appropriate because the append logic operates on the resulting tracked file tree rather than Git internals.\n\nOverall assessment: ship-as-is.  \nSHIPWRIGHT_VERDICT: approve",
+      "verdicts": {
+        "openai": "approve",
+        "deepseek": "unavailable"
+      }
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-15T21:19:14.605551+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-15T21:30:43.177675+00:00",
+      "disposition": "internal plan review is medium+ only per iteration-planning.md, this run is small",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    }
+  }
+}

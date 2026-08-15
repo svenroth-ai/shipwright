@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-08-15-retention-cap-parallel-merge",
+  "date": "2026-08-15",
+  "section": "Iterate — bug: retention-cap parallel-merge race",
+  "title": "Document retention as approximate rather than merge-time re-checking",
+  "context": "append_iterate_entry.py's ITERATE_RETENTION=50 assumes serialized appends; independent worktrees off the same origin/main tip can each evict the same oldest entry and merge to 51 tracked files.",
+  "decision": "Chose fix (b): document the cap as approximately 50 (not exactly), since _apply_retention already self-heals any overshoot on the next append by re-reading the full on-disk directory.",
+  "consequences": "No new merge-time or periodic re-check machinery; docstring/comment and F5c.md now state the true, honest invariant; a regression test pins both the overshoot and the self-heal.",
+  "rationale": "The self-heal was already true of the existing code -- only the promise in the docs was false. Building fix (a) (merge-time re-check) would add real machinery for a bounded, self-correcting, one-entry-per-branch overshoot.",
+  "rejected": "(a) re-check at merge/periodically and trim to 50 newest: adds new machinery (no merge-hook infra exists in this framework) to guard an overshoot that already self-heals within one append cycle; rejected as disproportionate to the actual impact.",
+  "commit": "",
+  "architecture_impact": "convention",
+  "spec_ref": ".shipwright/planning/adr/iterate-2026-08-15-retention-cap-parallel-merge-retention-approximate.md"
+}

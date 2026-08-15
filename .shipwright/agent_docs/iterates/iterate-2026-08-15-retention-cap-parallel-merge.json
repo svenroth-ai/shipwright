@@ -1,0 +1,49 @@
+{
+  "run_id": "iterate-2026-08-15-retention-cap-parallel-merge",
+  "date": "2026-08-15T21:52:58.576880Z",
+  "event_at": "2026-08-15T21:52:38.609462+00:00",
+  "type": "bug",
+  "complexity": "small",
+  "prior_source": "keyword",
+  "branch": "iterate/retention-cap-parallel-merge",
+  "spec": ".shipwright/planning/iterate/iterate-2026-08-15-retention-cap-parallel-merge/task-brief.md",
+  "tests_passed": true,
+  "adr": "iterate-2026-08-15-retention-cap-parallel-merge",
+  "test_completeness": {
+    "status": "complete",
+    "behaviors": [
+      {
+        "behavior": "two independent worktrees off the same tip each evict the identical oldest entry, and the merge outcome lands at cap+1",
+        "disposition": "tested",
+        "evidence": "test_retention_merge_overshoot.py::TestRetentionMergeOvershoot::test_two_independent_worktrees_merge_one_over_cap PASSED"
+      },
+      {
+        "behavior": "the next append against an overshot merged directory self-heals back to the cap, keeping the newest entries",
+        "disposition": "tested",
+        "evidence": "test_retention_merge_overshoot.py::TestRetentionMergeOvershoot::test_next_append_on_the_merged_tree_self_heals_to_cap PASSED"
+      }
+    ],
+    "counts": {
+      "total": 2,
+      "tested": 2,
+      "untestable": 0,
+      "untested_testable": 0
+    },
+    "enumeration_basis": {
+      "acs": 2,
+      "covered_acs": 2
+    },
+    "ledger_path": "n/a -- small BUG iterate, no iterate spec at this complexity"
+  },
+  "surface_verification": {
+    "surface": "none",
+    "runner": "",
+    "exit_code": 0,
+    "tests_run": 0,
+    "evidence_path": "",
+    "timestamp": "2026-08-15T21:44:45.608Z",
+    "attempts": 0,
+    "justification": "Docs/comment correction + a filesystem-simulation regression test; no runnable UI/API/CLI surface changed (touches_io_boundary and cross_component both false per risk_detectors). Advisory-only at small complexity with no UI/io-boundary."
+  },
+  "declared_removals": []
+}
