@@ -1,0 +1,30 @@
+{
+  "section": "iterate-2026-08-15-retention-cap-parallel-merge",
+  "review": [
+    {
+      "severity": "medium",
+      "category": "architecture",
+      "file": "shared/tests/test_retention_merge_overshoot.py",
+      "finding": "Helpers duplicate shared/tests/_iterate_entry_helpers.py and test_retention_race.py's local helpers instead of reusing them. Declined for this diff: the deeper fix touches the untouched sibling race test (scope creep); filed as a follow-up per the reviewer's own suggestion."
+    },
+    {
+      "severity": "low",
+      "category": "readability",
+      "file": "shared/tests/test_retention_merge_overshoot.py",
+      "finding": "Module docstring pointed at the ITERATE_RETENTION comment circularly instead of F5c.md's actual explanation section. FIXED: now points at F5c.md's \"Why 'approximately,' not 'exactly'\" section."
+    },
+    {
+      "severity": "low",
+      "category": "readability",
+      "file": "plugins/shipwright-iterate/skills/iterate/references/F5c.md",
+      "finding": "Referred to the ITERATE_RETENTION 'docstring' when it is now a trailing comment. FIXED: reworded to 'comment'."
+    },
+    {
+      "severity": "low",
+      "category": "readability",
+      "file": "shared/scripts/tools/append_iterate_entry.py",
+      "finding": "The retention comment is a single long unwrapped line to hold the file at exactly baseline (436 lines), leaving zero LOC headroom. Declined for this diff per the reviewer's own note (not worth a round-trip on its own); revisit if the file is touched again."
+    }
+  ],
+  "summary": "APPROVE, no blocking findings after a REQUEST-CHANGES round-trip. All 6 prior findings verified resolved: bloat baseline reverted to grandfathered/436 (no ADR needed), triple documentation duplication reduced to a one-line pointer, test duplication extracted into a shared _merged_overshoot_tree helper, evidence-install import moved to module level, run_id/date mismatch fixed, and F5c.md's exactness wording softened. Two new low-severity stale-cross-reference findings from this pass were fixed inline; one medium (test-helper duplication with sibling test files) and one low (long unwrapped comment line) were explicitly declined as out-of-scope/not-worth-it, per the reviewer's own guidance."
+}

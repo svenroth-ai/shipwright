@@ -1,0 +1,6 @@
+{
+  "stage": "spec-compliance",
+  "verdict": "PASS",
+  "spec_citations": [],
+  "summary": "The cited divergence is resolved. The ITERATE_RETENTION comment block (append_iterate_entry.py:70-81) no longer claims min(total, cap) or an unqualified 'trims it back to the cap'; it now states min(unpinned_total, ITERATE_RETENTION) unpinned entries PLUS every iterate_retention_pins entry, and scopes the merge-overshoot self-heal to 'trims the unpinned window back down'. Both claims verified line-by-line against _apply_retention (L276-300) and append_iterate_entry (L345-354), not against the author's summary. No new divergence; scope clean."
+}

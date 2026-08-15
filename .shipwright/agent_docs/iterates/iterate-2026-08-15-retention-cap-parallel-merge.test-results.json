@@ -1,0 +1,79 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-08-15-retention-cap-parallel-merge",
+    "date": "2026-08-15",
+    "unit": {
+      "status": "pass",
+      "note": "F0 canonical suite: 18/18 units GREEN (run_test_suite.py), including shared/tests and integration-tests. Retention-specific group (test_retention_merge_overshoot.py + test_retention_race.py + test_iterate_retention_pins.py): 12/12 passed."
+    },
+    "integration": {
+      "status": "pass",
+      "note": "integration-tests unit PASS as part of the F0 18-unit suite"
+    },
+    "e2e": {
+      "status": "n/a",
+      "reason": "no browser surface; docs/comment correction + a filesystem-simulation test, no UI"
+    },
+    "smoke": {
+      "status": "n/a",
+      "reason": "no startable server surface touched by this change"
+    },
+    "pgtap": {
+      "status": "n/a",
+      "reason": "no database/migration touched"
+    },
+    "design_fidelity": {
+      "status": "n/a",
+      "reason": "no UI surface"
+    },
+    "surface_verification": {
+      "surface": "none",
+      "runner": "",
+      "exit_code": 0,
+      "tests_run": 0,
+      "evidence_path": ".shipwright/runs/iterate-2026-08-15-retention-cap-parallel-merge/surface_verification.json",
+      "timestamp": "2026-08-15T21:44:45.608Z",
+      "justification": "Docs/comment correction + a filesystem-simulation regression test; no runnable UI/API/CLI surface changed (touches_io_boundary and cross_component both false per risk_detectors). Advisory-only at small complexity with no UI/io-boundary."
+    },
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "two independent worktrees off the same tip each evict the identical oldest entry, and the merge outcome lands at cap+1",
+          "disposition": "tested",
+          "evidence": "test_retention_merge_overshoot.py::TestRetentionMergeOvershoot::test_two_independent_worktrees_merge_one_over_cap PASSED"
+        },
+        {
+          "behavior": "the next append against an overshot merged directory self-heals back to the cap, keeping the newest entries",
+          "disposition": "tested",
+          "evidence": "test_retention_merge_overshoot.py::TestRetentionMergeOvershoot::test_next_append_on_the_merged_tree_self_heals_to_cap PASSED"
+        }
+      ],
+      "counts": {
+        "total": 2,
+        "tested": 2,
+        "untestable": 0,
+        "untested_testable": 0
+      },
+      "enumeration_basis": {
+        "acs": 2,
+        "covered_acs": 2
+      },
+      "ledger_path": "n/a -- small BUG iterate, no iterate spec at this complexity"
+    },
+    "degraded": []
+  },
+  "coverage": {
+    "total": 80.2,
+    "measured_tier": "repo",
+    "source": "combined coverage.xml (all plugins + shared + integration)",
+    "measured_at": "2026-07-04T00:00:00Z"
+  },
+  "source_state": {
+    "run_id": "iterate-2026-08-15-retention-cap-parallel-merge",
+    "commit": "ba1dd0d2680848fedaf6ee475c300d97a5e31ec7",
+    "dirty": true,
+    "base": null,
+    "release": null
+  }
+}
