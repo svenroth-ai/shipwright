@@ -1,0 +1,141 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-08-16-fr-gate-test-evidence",
+    "date": "2026-08-17",
+    "unit": {
+      "status": "passed",
+      "passed": 15642,
+      "total": 15694,
+      "note": "shared/tests 9275/9307 (re-run after Stage-3 doubt-review fixes added 2 tests), shared/scripts/tests 464/466, shared/scripts/tools/tests 57/57, plugins/shipwright-{adopt,build,changelog,compliance,deploy,design,grade,iterate,plan,preview,project,run,security,test}/tests \u2014 every pytest root except integration-tests. Zero failures across all roots."
+    },
+    "integration": {
+      "status": "passed",
+      "passed": 520,
+      "total": 520,
+      "note": "integration-tests root, standalone process (one-test-root-per-process rule); 2 deselected via marker filter."
+    },
+    "pgtap": {
+      "status": "not_run",
+      "reason": "no database / migrations touched"
+    },
+    "e2e": {
+      "status": "not_run",
+      "reason": "no web/browser surface; backend Python library/CLI change (Verification: surface=none)"
+    },
+    "design_fidelity": {
+      "status": "not_run",
+      "reason": "no UI surface"
+    },
+    "smoke": {
+      "status": "not_run",
+      "reason": "no startable server surface in this repo"
+    },
+    "surface_verification": {
+      "surface": "none",
+      "exit_code": 0,
+      "tests_run": 0,
+      "evidence_path": ".shipwright/runs/iterate-2026-08-16-fr-gate-test-evidence/surface_verification.json",
+      "justification": "backend Python library/CLI change with no web/API/UI surface — the write-time gate is verified by the unit + CLI-integration + F5b-parity test suites (14-row Test Completeness Ledger), plus this run's own F5b write, a real non-mocked invocation of the exact code path this iterate changes"
+    },
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "missing_test_evidence_error refuses a behaviour-affecting, FR-declaring event with no tests.total and no no_tests_reason",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_fr_gate_test_evidence.py::TestTestEvidenceGate::test_behavior_affecting_with_frs_no_tests_no_reason_blocked PASSED"
+        },
+        {
+          "behavior": "The same event with a valid no_tests_reason is accepted",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_fr_gate_test_evidence.py::TestTestEvidenceGate::test_behavior_affecting_with_no_tests_reason_passes PASSED"
+        },
+        {
+          "behavior": "The same event with a real tests.total (no reason needed) is accepted",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_fr_gate_test_evidence.py::TestTestEvidenceGate::test_behavior_affecting_with_tests_block_passes PASSED"
+        },
+        {
+          "behavior": "spec_impact: none (docs/behaviour-preserving) is never gated by this rule, even with FRs and no tests",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_fr_gate_test_evidence.py::TestTestEvidenceGate::test_behavior_preserving_bypasses_gate PASSED"
+        },
+        {
+          "behavior": "No FRs declared -> this gate stays silent (existing classification gate owns that case)",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_fr_gate_test_evidence.py::TestTestEvidenceGate::test_no_frs_bypasses_this_gate PASSED"
+        },
+        {
+          "behavior": "no_tests_reason validation mirrors none_reason (blank/whitespace, oversized, control-char rejected; tab tolerated)",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_fr_gate_test_evidence.py::TestNoTestsReasonValidation PASSED (4 cases)"
+        },
+        {
+          "behavior": "CLI (record_event.py --no-tests-reason) integration: rejected without evidence, accepted with --no-tests-reason, zero-total still requires a reason, docs-only needs neither, event lands on disk with the field serialized",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_record_event_test_evidence.py::TestFrGateTestEvidenceCli PASSED (4 cases)"
+        },
+        {
+          "behavior": "finalize_iterate.py F5b write path applies the same gate (ADR-059 parity) via run_fr_gates: rejects without evidence, allows no_tests_reason, allows an explicit tests block, never gates a spec_impact: none referencing event",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_finalize_test_evidence_gate.py PASSED (6 cases)"
+        },
+        {
+          "behavior": "The reconciliation mechanism a spec_impact:none referencing event relies on: reconciles an earlier untested touch, leaves a not-referenced FR needing re-verification, and the reconciling event itself is never counted as a behaviour touch",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-compliance/tests/test_reconciliation_card20260816.py::TestCard20260816Reconciliation PASSED (3 cases)"
+        },
+        {
+          "behavior": "This run's own work_completed event round-trips through the gate (spec_impact=none, 9 FRs referenced, real tests.total) without rejection, and the live compute_reconciliation over the post-merge event log reports the 9 reconciled + 3 still needing re-verification",
+          "disposition": "tested",
+          "evidence": "F5b's own real invocation at finalize (succeeds or the run does not complete) + empirical live re-check performed post-F5b"
+        },
+        {
+          "behavior": "A classified, unevidenced event naming an unknown FR id reports fr_gate_unknown_fr, not fr_gate_missing_test_evidence (existence checked before evidence)",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_fr_gate_existence.py::TestWiringActuallyEnforces::test_run_fr_gates_reports_unknown_fr_before_missing_test_evidence PASSED"
+        },
+        {
+          "behavior": "finalize_iterate.py's CLI reports the triggering gate's real error code (not hardcoded); a malformed explicit tests block fails closed instead of silently vanishing the event behind a green finalize",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_finalize_test_evidence_gate.py::test_finalize_rejection_carries_the_triggering_gate_code + ::test_finalize_malformed_explicit_tests_block_fails_closed PASSED"
+        },
+        {
+          "behavior": "(Stage-3 doubt-review fix D3-1) A minted FR (new_frs) is gated regardless of spec_impact -- spec_impact:none cannot bypass the rule for new_frs the way it legitimately can for affected_frs",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_fr_gate_test_evidence.py::TestTestEvidenceGate::test_minted_fr_is_gated_even_with_spec_impact_none + ::test_minted_fr_with_no_tests_reason_passes_even_with_spec_impact_none PASSED"
+        },
+        {
+          "behavior": "(Stage-3 doubt-review fix D3-2) The F5b-path AC-3 bypass test genuinely pins the bypass (no tests block short-circuiting the assertion before it reaches the behavior-preserving check)",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_finalize_test_evidence_gate.py::test_finalize_docs_only_iterate_needs_no_evidence PASSED (assertion can now fail if the bypass regresses)"
+        }
+      ],
+      "counts": {
+        "testable": 14,
+        "tested": 14,
+        "untestable": 0,
+        "untested_testable": 0
+      },
+      "enumeration_basis": {
+        "acs": 5,
+        "covered_acs": 5
+      },
+      "ledger_path": ".shipwright/planning/iterate/iterate-2026-08-16-fr-gate-test-evidence.md"
+    },
+    "degraded": []
+  },
+  "coverage": {
+    "total": 80.2,
+    "measured_tier": "repo",
+    "source": "combined coverage.xml (all plugins + shared + integration)",
+    "measured_at": "2026-07-04T00:00:00Z"
+  },
+  "source_state": {
+    "run_id": "iterate-2026-08-16-fr-gate-test-evidence",
+    "commit": "81aa4a68767d8a4223344ba64bc4d318ac8c7d0c",
+    "dirty": true,
+    "base": null,
+    "release": null
+  }
+}

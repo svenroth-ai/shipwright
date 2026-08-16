@@ -1,0 +1,300 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-08-16-fr-gate-test-evidence",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-16T22:45:48.469667+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-16T22:45:58.962116+00:00",
+      "disposition": "advisory pass (mini-plan external LLM review); the internal plan-review arm (plan_internal) ran with a real MEDIUM finding that reversed a design decision (see miniplan Alternative-approach section) and carried this run's plan gate; the raw external-review record from earlier in this session was not persisted before a context compaction, and re-running mini-plan review post-implementation would not reflect what actually gated the build",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 5,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "plugins/shipwright-iterate/skills/iterate/references/F5b.md",
+          "line": null,
+          "finding": "MUST-FIX. The F5b extras template shipped a no_tests_reason placeholder that itself passes _is_valid_no_tests_reason verbatim (non-empty, single-line, <=280 chars) -- a partially-customized template would satisfy the new gate with a placeholder and ship an unevidenced behavior-affecting event.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "readability",
+          "file": "shared/scripts/tools/record_event.py",
+          "line": null,
+          "finding": "Comments in record_event.py and test_fr_gate_existence.py still described the pre-doubt-review gate order (evidence before existence) and now contradict the code.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "architecture",
+          "file": "shared/tests/test_fr_gate_test_evidence.py",
+          "line": null,
+          "finding": "File bootstrapped shared/scripts/lib onto sys.path and imported by bare name, double-loading fr_gates/fr_test_evidence_gate as distinct module objects from the lib.* route conftest.py already provides -- an ADR-045-adjacent collision risk.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "shared/scripts/lib/fr_test_evidence_gate.py",
+          "line": null,
+          "finding": "Module docstring claimed lib.fr_gates is 'already over the 300-LOC guideline', which is false (287/300, no baseline entry) and contradicts fr_gates.py's own correct comment in the same diff.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "shared/scripts/tools/finalize_iterate.py",
+          "line": null,
+          "finding": "One line (~140 chars) packs two gate_error.get() calls plus the raise, needed to hold the file at its zero-headroom baseline (575 lines).",
+          "suggestion": null,
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-08-16T23:03:32.711385+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 11,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "boundary-and-contract",
+          "file": "shared/scripts/lib/fr_test_evidence_gate.py",
+          "line": null,
+          "finding": "Claim under doubt: AC-3's bypass is safe because a behaviour-preserving iterate legitimately has nothing to prove — D3-1 -- REAL DEFECT, FIXED. new_frs + spec_impact:none minted a brand-new FR with zero test evidence through all three gates: classification passes (has_frs via new_frs, not behaviour-affecting), existence passes once the row is on disk, and missing_test_evidence_error bypassed at the not _is_behavior_affecting check. Minting is inherently an add; spec_impact:none alongside new_frs is self-contradictory. Fixed: gate now requires evidence whenever new_frs is non-empty regardless of spec_impact. Doc wording in F5b.md/hooks-and-pipeline.md/the gate docstring corrected to scope the reference-without-touch bypass to affected_frs only. New tests: test_minted_fr_is_gated_even_with_spec_impact_none, test_minted_fr_with_no_tests_reason_passes_even_with_spec_impact_none.",
+          "suggestion": "fixed -- see disproof_attempt",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "boundary-and-contract",
+          "file": "shared/tests/test_finalize_test_evidence_gate.py",
+          "line": null,
+          "finding": "Claim under doubt: Ledger row 8: the F5b write path never gates a spec_impact:none referencing event -- tested — D3-2 -- REAL DEFECT (test fidelity), FIXED. test_finalize_docs_only_iterate_needs_no_evidence supplied a valid tests block in its extras, so the event passed at the has_test_evidence check and never reached the _is_behavior_affecting bypass the docstring claimed to pin -- deleting the whole bypass guard would still have passed it. Fixed: tests key removed from the fixture; the assertion can now fail if the bypass regresses.",
+          "suggestion": "fixed -- see disproof_attempt",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "hidden-coupling-and-blast-radius",
+          "file": "docs/guide.md",
+          "line": null,
+          "finding": "Claim under doubt: All documentation surfaces a new user-blocking gate needs to touch were updated — D3-3 -- REAL GAP, FIXED. docs/guide.md (CLAUDE.md's own named Chapter-8 quality-gates surface) was not updated for this gate, while hooks-and-pipeline.md/F5b.md/F7.md/F-finalize-bundle.md all were. Fixed: one clause appended to the FR-mapping-discipline paragraph naming the new evidence requirement and the new_frs exception.",
+          "suggestion": "fixed -- see disproof_attempt",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "boundary-and-contract",
+          "file": "shared/scripts/tests_block.py",
+          "line": null,
+          "finding": "Claim under doubt: validate_tests_block's shape validation is sufficient to trust an explicit tests block as evidence — D3-4 -- real, pre-existing, rebutted. validate_tests_block type-checks skipped but does not cross-check passed+total plausibility, so an internally-inconsistent explicit block (passed:100, total:5) reads as evidence. Pre-existing behavior of the validator, not this gate; this diff is what turns tests.total into a trust signal, which is the same hatch-honesty risk already rebutted in the first doubt-review pass (hand-typed tests block / no_tests_reason, no independent verification). Recorded as a second instance of that documented trade-off, not fixed here.",
+          "suggestion": "rebutted -- squarely inside the existing documented hatch-honesty rebuttal; not part of this diff's scope",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "reversibility",
+          "file": "shared/scripts/lib/fr_test_evidence_gate.py",
+          "line": null,
+          "finding": "Claim under doubt: Known Limitation 4's deferral (a better stale-ledger message needs fold_into_event to carry a reason code first) states the true minimum prerequisite — D3-5 -- real, deferred by choice. A static sentence naming the most common cause (stale/foreign run_id) could be added to the gate's rejection detail without any upstream change to fold_into_event. Correct in principle; left as a documented, cheap future improvement rather than folded into this diff -- a wording-only change with no behavioural risk either way, and bundling it here would mix an unrelated polish item into an already tightly-scoped diff.",
+          "suggestion": "deferred by choice -- candidate one-line follow-up, not blocking",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": null,
+          "category": "reversibility",
+          "file": "shared/scripts/tools/finalize_iterate.py",
+          "line": null,
+          "finding": "Claim under doubt: The _fold_tests_block fail-closed ValueError catch might not be exhaustive -- some other exception type could still reach the silent-vanish path — D3-N1 -- attempted and FAILED to disprove. fold_into_event raises from exactly two sites on the explicit-block branch, both guaranteed ValueError (isinstance-guarded before any arithmetic, non-dict case intercepted before the validator runs); the derived branch is already inside its own except Exception. The except ValueError catch covers every path.",
+          "suggestion": "non-issue",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": null,
+          "category": "boundary-and-contract",
+          "file": "shared/scripts/tools/finalize_iterate.py",
+          "line": null,
+          "finding": "Claim under doubt: Emitting exc.code instead of a hardcoded string might break a downstream consumer keying on the old literal — D3-N2 -- attempted and FAILED to disprove. Checked every consumer: finalize_bundle.py keys only on returncode; test fixtures construct their own stubs; the one test asserting fr_gate_unclassified still holds because its fixture genuinely trips that code's own arm. No behavioural consumer keys on the string.",
+          "suggestion": "non-issue",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": null,
+          "category": "concurrency-ordering-idempotency",
+          "file": "shared/scripts/tools/finalize_iterate.py",
+          "line": null,
+          "finding": "Claim under doubt: The new gate might introduce a retry or idempotency hazard interacting with finalize_bundle.py's whole-bundle retry — D3-N3 -- attempted and FAILED to disprove. F5b is the last bundle step; adr_id==run_id early-return precedes all three gates so an already-recorded run is never re-gated; the exact partial-failure-then-retry shape is already pinned by an existing integration test with zero duplicate drops.",
+          "suggestion": "non-issue",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": null,
+          "category": "hidden-coupling-and-blast-radius",
+          "file": "shared/scripts/tools/record_event.py",
+          "line": null,
+          "finding": "Claim under doubt: Some other append_event caller or existing spec_impact add/modify/remove fixture might be silently broken or ungated by this diff — D3-N4 -- attempted and FAILED to disprove. Enumerated every append_event caller (only finalize_iterate._record_event is gated and relevant; the other writes non-work_completed events). Swept every add/modify/remove fixture not touched by this diff -- both are safe (negative test, or already seeded with real tests evidence). Re-exported gate imports carry noqa:F401 so lint stays clean.",
+          "suggestion": "non-issue",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": null,
+          "category": "concurrency-ordering-idempotency",
+          "file": "shared/scripts/lib/fr_gates.py",
+          "line": null,
+          "finding": "Claim under doubt: The classification -> existence -> evidence order might create a new bypass or bad UX, or the ordering test might be vacuous — D3-N5 -- attempted and FAILED to disprove. Verified the ordering test is not vacuous (both gates genuinely fire). The reorder makes the CLI report the broader requirement first, which is the correct precedence for a sequential gate chain, not a defect. The write-time gate's scoping predicate matches compute_reconciliation's touched predicate everywhere except the already-documented fr_impact branch.",
+          "suggestion": "non-issue",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": null,
+          "category": "boundary-and-contract",
+          "file": "shared/scripts/lib/fr_test_evidence_gate.py",
+          "line": null,
+          "finding": "Claim under doubt: The documented fr_impact rebuttal (false-accept direction) might be missing its mirror case — D3-N6 -- noted for completeness, not a new finding. A mirror false-reject direction exists (spec_impact modify + fr_impact all none) but is reachable-and-rare and already cleared by the no_tests_reason hatch; the existing rebuttal's conclusion (fix both gates together in a scoped follow-up) holds unchanged in both directions.",
+          "suggestion": "non-issue, already covered by the existing rebuttal's conclusion",
+          "source": "doubt-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-08-16T23:16:14.345862+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 1,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "spec",
+          "file": "plugins/shipwright-compliance/tests/test_reconciliation_card20260816.py:42-50",
+          "line": null,
+          "finding": "AC-5 is not implemented in the submitted change. The diff does not append this run’s real `work_completed` event to `shipwright_events.jsonl` (or otherwise provide the required finalized event) with `spec_impact: none`, the nine reconcilable FR IDs, and the F0 suite’s real `tests.total`. This synthetic test explicitly substitutes stand-in events for the live event, so it cannot establish that the required reconciliation backlog is actually closed; all nine FRs will remain unreconciled until the required real event is recorded.",
+          "suggestion": "Finalize this run through the real F5b/`record_event.py` path and commit the resulting append-only event containing the required nine `affected_frs` and actual F0 `tests` block. Verify `compute_reconciliation` against the resulting event log yields the specified nine reconciled and three still needing reverification.  The gate implementation and its two write-path integrations otherwise appear to satisfy AC-1 through AC-4, including the intended ordering and fail-closed finalizer behavior. However, the required run-specific reconciliation outcome is absent, so this should not ship as the complete specified change.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-08-16T22:50:04.689399+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "partial",
+      "raw_excerpt": "[deepseek] <no review returned: provider returned an empty reply>\n\n[openai] - Category: spec\n- Severity: high\n- File: `plugins/shipwright-compliance/tests/test_reconciliation_card20260816.py:42-50`\n- Finding: AC-5 is not implemented in the submitted change. The diff does not append this run’s real `work_completed` event to `shipwright_events.jsonl` (or otherwise provide the required finalized event) with `spec_impact: none`, the nine reconcilable FR IDs, and the F0 suite’s real `tests.total`. This synthetic test explicitly substitutes stand-in events for the live event, so it cannot establish that the required reconciliation backlog is actually closed; all nine FRs will remain unreconciled until the required real event is recorded.\n- Suggestion: Finalize this run through the real F5b/`record_event.py` path and commit the resulting append-only event containing the required nine `affected_frs` and actual F0 `tests` block. Verify `compute_reconciliation` against the resulting event log yields the specified nine reconciled and three still needing reverification.\n\nThe gate implementation and its two write-path integrations otherwise appear to satisfy AC-1 through AC-4, including the intended ordering and fail-closed finalizer behavior. However, the required run-specific reconciliation outcome is absent, so this should not ship as the complete specified change.\n\nSHIPWRIGHT_VERDICT: revise",
+      "verdicts": {
+        "openai": "revise",
+        "deepseek": "unavailable"
+      }
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 5,
+      "findings": [
+        {
+          "severity": null,
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "iterate-2026-08-16-fr-gate-test-evidence.md:L23-26 (AC-1)",
+          "suggestion": "iterate-2026-08-16-fr-gate-test-evidence.md:L23-26 (AC-1)",
+          "source": "spec-reviewer"
+        },
+        {
+          "severity": null,
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "iterate-2026-08-16-fr-gate-test-evidence.md:L27-29 (AC-2)",
+          "suggestion": "iterate-2026-08-16-fr-gate-test-evidence.md:L27-29 (AC-2)",
+          "source": "spec-reviewer"
+        },
+        {
+          "severity": null,
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "iterate-2026-08-16-fr-gate-test-evidence.md:L30-32 (AC-3)",
+          "suggestion": "iterate-2026-08-16-fr-gate-test-evidence.md:L30-32 (AC-3)",
+          "source": "spec-reviewer"
+        },
+        {
+          "severity": null,
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "iterate-2026-08-16-fr-gate-test-evidence.md:L33-34 (AC-4)",
+          "suggestion": "iterate-2026-08-16-fr-gate-test-evidence.md:L33-34 (AC-4)",
+          "source": "spec-reviewer"
+        },
+        {
+          "severity": null,
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "iterate-2026-08-16-fr-gate-test-evidence.md:L35-40 (AC-5)",
+          "suggestion": "iterate-2026-08-16-fr-gate-test-evidence.md:L35-40 (AC-5)",
+          "source": "spec-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-08-16T22:49:34.049917+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-16T22:45:53.170634+00:00",
+      "disposition": null,
+      "recorded_by": "opus-plan-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    }
+  }
+}

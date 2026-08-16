@@ -3526,9 +3526,16 @@ whose `iterate_latest.run_id` is **not** the run being finalized is treated as
 absent, because that file is a DERIVED SNAPSHOT a restore can reset to the
 previous run (trg-81fbf8ed) and laundering foreign totals would fabricate a
 coverage claim; and every other failure mode (absent, unreadable, malformed,
-non-int counts, `total == 0`) leaves the event without the key, never aborting
-finalize. Shape validated by `shared/scripts/tests_block.validate_tests_block`
-— the same contract `record_event.py` enforces, so the two writers cannot drift.
+non-int counts, `total == 0`) leaves the event without the key — never aborting
+**this fold step** itself. Shape validated by
+`shared/scripts/tests_block.validate_tests_block` — the same contract
+`record_event.py` enforces, so the two writers cannot drift.
+**Since iterate-2026-08-16-fr-gate-test-evidence, the fold's degradation can
+still surface as an abort one step later**: if the resulting event is
+behavior-affecting and FR-declaring, the test-evidence gate (below) requires
+either the folded block or an explicit `no_tests_reason` — a stale/foreign-run
+ledger that makes the fold degrade to "no key" now means the caller must state
+why, not that finalize silently ships unverified.
 
 **BP-1 — behavior-affecting changes must be FR-linked.**
 `record_event._fr_or_change_type_gate_error` (the gate that runs at the CLI
@@ -3549,6 +3556,35 @@ not a control signal). The
 Group-D **D1** coverage check dropped its spec-update watermark: an FR is covered
 when **any** event has ever named it ("a requirement untouched for months is
 under control" — re-verification under change is D4/reconciliation, not a D1 gap).
+
+**BP-1 follow-on — behavior-affecting, FR-linked changes must be evidenced
+(iterate-2026-08-16-fr-gate-test-evidence).**
+`lib.fr_test_evidence_gate.missing_test_evidence_error` (wired into
+`lib.fr_gates.run_fr_gates`, so both the CLI and F5b enforce it identically)
+closes the hole BP-1 left open: a behavior-affecting event that DOES link an
+FR could still carry zero test evidence, because `record_event.build_event`
+only writes a `tests` block when the caller passes `--tests-*` flags — 48 of
+119 recorded events (40%) did neither. The gate requires `tests.total > 0`
+(matching every read-side consumer's own "zero tests is not evidence" rule,
+including `iterate_tests_block.derive_tests_block` above) OR a valid
+`--no-tests-reason` (`fr_gate_missing_test_evidence` otherwise). Mirrors
+BP-1's `change_type`+`none_reason` shape rather than inventing a second
+vocabulary. Scope is deliberately narrow: a docs-only / behavior-preserving
+iterate (`spec_impact` absent or `none`) is never gated by this rule when it
+only *references* existing FRs via `affected_frs` and no tests — that stays
+the legitimate no-test case it always was, and is in fact how this exact
+iterate's own `work_completed` event reconciles the FRs it lists in
+`affected_frs` without claiming to have changed their behavior. **A non-empty
+`new_frs` is always gated regardless of `spec_impact`** — minting a
+requirement is inherently an "add", so pairing it with `spec_impact: none`
+would be self-contradictory and is not exempted.
+`_reconciliation.compute_reconciliation` (the SSOT
+shared with the RTM's "Reconciled?" column and the Control-Grade
+`change_reconciliation` dimension) is the read-side consumer this write-time
+gate exists to keep honest: it marks an FR "needs re-verification" the moment
+some event names it with a behavior-affecting impact and no tested event
+references it since — a state that, absent this gate, could persist forever
+purely because the recorder stayed silent, not because the FR was untested.
 
 **Iterate-Rail per-phase durations (M-Pre-1 iterate half, trg-8efeb3d7).**
 `work_completed` events carry an optional `phase_timings` array

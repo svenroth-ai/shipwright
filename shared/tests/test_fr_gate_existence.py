@@ -241,8 +241,11 @@ class TestWiringActuallyEnforces:
         assert "run_fr_gates(event, project_root" in src
 
     def test_cli_path_runs_the_existence_gate(self):
+        # main() no longer calls check_fr_existence directly — it calls the
+        # combined run_fr_gates() wrapper, which includes it (see
+        # test_combined_entry_point_applies_both_gates for that guarantee).
         src = (_ROOT / "scripts" / "tools" / "record_event.py").read_text(encoding="utf-8")
-        assert "check_fr_existence(event, project_root" in src
+        assert "run_fr_gates(event, project_root" in src
 
     def test_combined_entry_point_applies_both_gates(self):
         # run_fr_gates exists precisely so a write path cannot wire one gate and
@@ -251,3 +254,25 @@ class TestWiringActuallyEnforces:
         unclassified = {"type": "work_completed", "source": "iterate", "intent": "change"}
         err = run_fr_gates(unclassified, "/nonexistent", "test")
         assert err is not None and err["error"] == "fr_gate_unclassified"
+
+    def test_run_fr_gates_reaches_the_existence_arm(self, tmp_path):
+        # A classified (spec_impact=none, has_frs) event needs no test evidence
+        # (AC-3), so it must fall through the classification gate and reach
+        # check_fr_existence — pinning that the second arm of run_fr_gates is
+        # actually wired, not just present in the `or` chain unreachably.
+        from lib.fr_gates import run_fr_gates
+        root = _make_project(tmp_path)
+        event = self._iterate_event(spec_impact="none", affected_frs=["FR-99.99"])
+        err = run_fr_gates(event, root, "test")
+        assert err is not None and err["error"] == "fr_gate_unknown_fr"
+
+    def test_run_fr_gates_reports_unknown_fr_before_missing_test_evidence(self, tmp_path):
+        # Doubt-review (iterate-2026-08-16-fr-gate-test-evidence): a classified,
+        # behaviour-affecting, UNEVIDENCED event naming an FR id that exists in
+        # no spec must be told about the typo first — "prove you tested
+        # FR-99.99" would be nonsensical, since FR-99.99 denotes nothing.
+        from lib.fr_gates import run_fr_gates
+        root = _make_project(tmp_path)
+        event = self._iterate_event(spec_impact="modify", affected_frs=["FR-99.99"])
+        err = run_fr_gates(event, root, "test")
+        assert err is not None and err["error"] == "fr_gate_unknown_fr"

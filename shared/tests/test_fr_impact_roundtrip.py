@@ -65,7 +65,7 @@ class TestRecordEventFrImpact:
         (tmp_path / "shipwright_events.jsonl").write_text("", encoding="utf-8")
         rc = main(_work_argv(
             tmp_path, affected_frs="FR-02.03", spec_impact="modify",
-            fr_impact='{"FR-02.03":"modify"}'))
+            fr_impact='{"FR-02.03":"modify"}', tests_passed="3", tests_total="3"))
         assert rc == 0
         events = _read_work(tmp_path)
         assert len(events) == 1
@@ -97,6 +97,7 @@ class TestFinalizeFrImpact:
         self._record(tmp_path, {
             "affected_frs": ["FR-09.01"], "spec_impact": "modify",
             "fr_impact": {"FR-09.01": "MODIFY"},
+            "tests": {"passed": 3, "total": 3},
         })
         events = _read_work(tmp_path)
         assert events[0]["fr_impact"] == {"FR-09.01": "modify"}

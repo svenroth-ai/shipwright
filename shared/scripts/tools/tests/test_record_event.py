@@ -776,9 +776,9 @@ class TestSpecImpactField:
 class TestSpecImpactGate:
     """record_event.main fails closed on an unclassified iterate work event.
 
-    The FR-gate (C.1) gates ALL iterates; the spec-impact gate adds the
-    FEATURE/CHANGE-only --spec-impact-none-needs-justification check. Build
-    events bypass both. See the section comment above for the two-gate model.
+    The FR-gate (C.1, via run_fr_gates: classified/evidenced/ids-exist) gates
+    ALL iterates; the spec-impact gate adds the FEATURE/CHANGE-only
+    --spec-impact-none-needs-justification check. Build events bypass both.
     """
 
     def test_feature_with_affected_frs_passes(self, project):
@@ -788,7 +788,7 @@ class TestSpecImpactGate:
             "--source", "iterate", "--intent", "feature", "--commit", "g1",
             "--description", "add endpoint",
             "--spec-impact", "add", "--affected-frs", "FR-01.05",
-        ])
+            "--tests-passed", "3", "--tests-total", "3"])
         assert rc == 0
         assert len(read_events(project)) == 1
 
@@ -799,7 +799,7 @@ class TestSpecImpactGate:
             "--source", "iterate", "--intent", "feature", "--commit", "g2",
             "--description", "add endpoint",
             "--spec-impact", "add", "--new-frs", "FR-01.06",
-        ])
+            "--tests-passed", "3", "--tests-total", "3"])
         assert rc == 0
 
     def test_feature_without_frs_fails(self, project):

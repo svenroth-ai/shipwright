@@ -1,0 +1,1 @@
+FR-gate now requires real test evidence (`tests.total > 0`) or a stated `--no-tests-reason` for behaviour-affecting, FR-declaring iterate events, closing a hole where 40% of FR-declaring events carried no test evidence at all
