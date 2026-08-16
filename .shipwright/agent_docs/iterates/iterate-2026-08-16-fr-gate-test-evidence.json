@@ -1,0 +1,32 @@
+{
+  "run_id": "iterate-2026-08-16-fr-gate-test-evidence",
+  "date": "2026-08-16T23:30:28.360845Z",
+  "event_at": "2026-08-16T22:40:38.394464+00:00",
+  "type": "change",
+  "complexity": "medium",
+  "branch": "iterate/fr-gate-test-evidence",
+  "spec": ".shipwright/planning/iterate/iterate-2026-08-16-fr-gate-test-evidence.md",
+  "tests_passed": true,
+  "adr": "iterate-2026-08-16-fr-gate-test-evidence",
+  "test_completeness": {
+    "status": "complete",
+    "counts": {
+      "testable": 14,
+      "tested": 14,
+      "untestable": 0,
+      "untested_testable": 0
+    },
+    "enumeration_basis": {
+      "acs": 5,
+      "covered_acs": 5
+    },
+    "ledger_path": ".shipwright/planning/iterate/iterate-2026-08-16-fr-gate-test-evidence.md"
+  },
+  "surface_verification": {
+    "surface": "none",
+    "exit_code": 0,
+    "tests_run": 0,
+    "evidence_path": ".shipwright/runs/iterate-2026-08-16-fr-gate-test-evidence/surface_verification.json",
+    "justification": "backend Python library/CLI change with no web/API/UI surface \u2014 the write-time gate is verified by the unit + CLI-integration + F5b-parity test suites (14-row Test Completeness Ledger), plus this run's own F5b write, a real non-mocked invocation of the exact code path this iterate changes"
+  }
+}

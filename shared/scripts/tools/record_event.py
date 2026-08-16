@@ -199,6 +199,8 @@ def build_event(args: argparse.Namespace) -> dict:
             event["change_type"] = args.change_type
         if args.none_reason:
             event["none_reason"] = args.none_reason
+        if args.no_tests_reason:
+            event["no_tests_reason"] = args.no_tests_reason
         # Build-specific
         if args.split:
             event["split"] = args.split
@@ -584,6 +586,8 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     p.add_argument("--none-reason",
                    help="One-line justification for --change-type. Required by Iterate C.1 "
                         "FR-gate when --affected-frs is empty.")
+    p.add_argument("--no-tests-reason",
+                   help="One-line reason a behavior-affecting FR event lacks --tests-total.")
     p.add_argument("--spec-updated", help="Path to updated spec file")
     p.add_argument("--spec-impact", choices=["add", "modify", "remove", "none"],
                    help="Iterate spec-impact classification (feature/change): "
@@ -726,31 +730,22 @@ def main(argv: list[str] | None = None) -> int:
                           "detail": str(exc)}, indent=2))
         return 1
 
-    # Iterate C.1 FR-gate (ADR-059): every iterate work_completed event
-    # must either name the FRs it touched or classify as
-    # docs/tooling/compliance/infra with a one-line justification.
-    # Hard-enforce forward-only — Phase 0 classified all pre-existing
-    # events. Runs BEFORE spec_impact gate so an unclassified iterate
-    # surfaces the broader requirement first.
-    fr_gate_error = _fr_or_change_type_gate_error(event)
+    # All three FR gates, in order (see lib.fr_gates.run_fr_gates): is this
+    # classified (Iterate C.1 / ADR-059), do the named ids exist (S0), is
+    # that classification evidenced (iterate-2026-08-16-fr-gate-test-evidence).
+    # One entry point so the CLI and the F5b worktree write path
+    # (finalize_iterate._record_event, same call) cannot drift apart.
+    fr_gate_error = run_fr_gates(event, project_root, "record_event")
     if fr_gate_error is not None:
         print(json.dumps({"success": False, **fr_gate_error}, indent=2))
-        return 1
-
-    # S0 existence gate: the classification gate above proves the change is
-    # *classified*, not that the ids it names denote anything. Runs second so
-    # an unclassified iterate still hears the broader requirement first.
-    existence_error = check_fr_existence(event, project_root, "record_event")
-    if existence_error is not None:
-        print(json.dumps({"success": False, **existence_error}, indent=2))
         return 1
 
     # Spec-impact gate: a FEATURE/CHANGE iterate must name the FRs it touched
     # or explicitly record --spec-impact none with a justification. Fail
     # closed (exit 1, nothing written) otherwise.
-    gate_error = _spec_impact_gate_error(event)
-    if gate_error is not None:
-        print(json.dumps({"success": False, **gate_error}, indent=2))
+    spec_impact_error = _spec_impact_gate_error(event)
+    if spec_impact_error is not None:
+        print(json.dumps({"success": False, **spec_impact_error}, indent=2))
         return 1
 
     # F14: the dedup scan (phase_completed / --deduplicate-by-commit) and the

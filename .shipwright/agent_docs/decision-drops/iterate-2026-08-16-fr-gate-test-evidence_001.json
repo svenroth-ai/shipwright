@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-08-16-fr-gate-test-evidence",
+  "date": "2026-08-17",
+  "section": "Iterate — change: FR-gate test evidence",
+  "title": "Behaviour-affecting FR-declaring events must carry test evidence or a stated reason",
+  "context": "record_event.py builds an event's tests block purely from CLI args; a caller passing none gets no block and nothing objects. 48/119 (40%) FR-declaring work_completed events carry no tests.total. compute_reconciliation keys reconciliation on touched-without-later-tested-reference, never age, so those FRs stay permanently needing re-verification with nothing in the log to satisfy it.",
+  "decision": "Add a third FR-gate (missing_test_evidence_error) mirroring the existing change_type/none_reason no-FR discipline: a behaviour-affecting, FR-declaring event must carry tests.total>0 or a valid no_tests_reason. Wired into both write paths via one run_fr_gates() call (record_event.py CLI + finalize_iterate.py F5b), closing ADR-059's documented CLI/F5b-parity bypass. This run's own event references the 9 reconcilable FRs with real test evidence, closing the backlog.",
+  "consequences": "Every FEATURE/CHANGE/BUG iterate declaring FRs and behaviour-affecting must now record test evidence or say why not -- the 40% silent hole cannot recur. compute_reconciliation over the post-merge log reports the 9 FRs reconciled; FR-01.16/18/19 correctly remain needing re-verification. Historical events are not backfilled (append-only log).",
+  "rationale": "Mirroring change_type/none_reason exactly (not inventing a new vocabulary) keeps the two write-time disciplines consistent and reviewable in one shape; unifying the CLI and F5b write paths into one run_fr_gates() call also fixes ADR-059's own external-review finding #2/#8 (FR-gate parity) as a side effect.",
+  "rejected": "Building a standalone reconciliation/backfill tool for the 48 historical events -- rejected: the event log is append-only, backfilling would rewrite history, and the card mandated this run's own event as the instrument. Teaching only the new gate to read the per-FR fr_impact map -- rejected: would make the two FR-gates disagree; that gap is BP-1's, a separate follow-up.",
+  "commit": "",
+  "architecture_impact": "convention",
+  "spec_ref": ".shipwright/planning/adr/iterate-2026-08-16-fr-gate-test-evidence-test-evidence-gate.md"
+}

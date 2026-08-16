@@ -40,9 +40,26 @@ touches. The No-FR branch is reserved for behavior-preserving work
 (`spec_impact: none`). This rule is intent-independent (it also covers BUG and
 intent-less events).
 
+**FR-linked + behavior-affecting also needs test evidence**
+(iterate-2026-08-16-fr-gate-test-evidence). If `spec_impact` is
+`add`/`modify`/`remove` **and** `affected_frs`/`new_frs` is set, the event
+also needs `tests.total > 0` — normally folded in automatically from this
+run's own F5 ledger (`lib.iterate_tests_block.fold_into_event`, so you rarely
+set `tests` by hand here) — **or** a one-line `no_tests_reason` when that fold
+finds nothing (no ledger, or a stale/foreign `run_id` in
+`shipwright_test_results.json`). A `spec_impact: none` event that still
+*references* an existing FR via `affected_frs` (re-verifying it without
+claiming to have changed its behavior — see BP-2's reconciliation mechanism)
+is never gated by this rule. **`new_frs` is always gated regardless of
+`spec_impact`** — minting a requirement is inherently an "add", so
+`spec_impact: none` alongside a non-empty `new_frs` needs evidence too (or
+`no_tests_reason`) rather than bypassing the rule.
+
 ```bash
 # Example: FR-linked iterate. For a no-FR iterate, drop affected_frs/new_frs
 # and instead set "change_type" + "none_reason" (see the two branches above).
+# tests is usually folded in automatically (see above) — set no_tests_reason
+# only if the fold found nothing and this event is behavior-affecting.
 extras='{
   "intent": "{feature|change|bug}",
   "description": "{short_description}",
@@ -50,8 +67,7 @@ extras='{
   "spec_impact": "{add|modify|remove|none}",
   "spec_impact_justification": "{required when spec_impact=none}",
   "affected_frs": ["FR-..."],
-  "new_frs": ["FR-..."],
-  "tests": {"passed": N, "total": N, "e2e_run": true}
+  "new_frs": ["FR-..."]
 }'
 uv run "{shared_root}/scripts/tools/finalize_iterate.py" \
   --project-root "{project_root}" \

@@ -342,8 +342,8 @@ def test_finalize_allows_feature_event_with_affected_frs(project, monkeypatch):
     monkeypatch.delenv("SHIPWRIGHT_SESSION_ID", raising=False)
     fi = _import_finalize()
 
-    extras = {"intent": "feature", "spec_impact": "add",
-              "affected_frs": ["FR-01.01"], "new_frs": ["FR-01.01"]}
+    extras = {"intent": "feature", "spec_impact": "add", "affected_frs": ["FR-01.01"],
+              "new_frs": ["FR-01.01"], "no_tests_reason": "no ledger in this fixture"}
     result = fi.run(project, run_id="test-gate-allow-001", event_extras=extras)
     assert result["steps"]["event"].get("id") is not None
 

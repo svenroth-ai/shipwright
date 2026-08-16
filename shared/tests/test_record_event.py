@@ -290,7 +290,7 @@ class TestFrOrChangeTypeGate:
         assert not log.exists()
 
     def test_main_passes_with_affected_frs(self, tmp_path, capsys, monkeypatch):
-        """CLI integration: events with affected_frs land on disk."""
+        """CLI integration: events with affected_frs + test evidence land on disk."""
         from record_event import main
         monkeypatch.setenv("SHIPWRIGHT_SESSION_ID", "test-session")
         rc = main([
@@ -298,8 +298,8 @@ class TestFrOrChangeTypeGate:
             "--type", "work_completed",
             "--source", "iterate",
             "--intent", "feature",
-            "--affected-frs", "FR-01.01",
-            "--spec-impact", "modify",
+            "--affected-frs", "FR-01.01", "--spec-impact", "modify",
+            "--tests-passed", "5", "--tests-total", "5",
         ])
         assert rc == 0
         captured = capsys.readouterr()

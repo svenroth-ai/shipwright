@@ -32,6 +32,10 @@ from lib.fr_classification import (
     is_valid_none_reason as _is_valid_none_reason,
     unknown_fr_ids,
 )
+# Imported for run_fr_gates() below; the function lives in its own module
+# (see that module's docstring for why) to keep this file under the 300-LOC
+# guideline it already asks its siblings to respect.
+from lib.fr_test_evidence_gate import missing_test_evidence_error
 
 #: Canonical planning root, kept as one full literal rather than split into path
 #: segments: the artifact-path-canon lint matches the canonical string, and a
@@ -145,15 +149,22 @@ def check_fr_existence(event, project_root, caller: str) -> dict | None:
 
 
 def run_fr_gates(event, project_root, caller: str) -> dict | None:
-    """Both FR gates, in order: is the change classified, then do its ids exist.
+    """All three FR gates, in order: classified, then ids exist, then evidenced.
 
-    One entry point so a write path cannot wire up one gate and forget the other
+    One entry point so a write path cannot wire up one gate and forget another
     — the exact bypass ADR-059 had to close for the classification gate, which is
-    why the existence gate is never offered separately to callers.
+    why the existence gate is never offered separately to callers. Identity is
+    checked before evidence deliberately: there cannot be test evidence for a
+    requirement that does not exist, so an operator who mistyped an FR id
+    should hear "that id names nothing" before being told to go prove test
+    coverage for it (doubt-review, iterate-2026-08-16-fr-gate-test-evidence —
+    the evidence gate originally sat between classification and existence;
+    reordered so the more fundamental defect surfaces first).
     """
     return (
         fr_or_change_type_gate_error(event)
         or check_fr_existence(event, project_root, caller)
+        or missing_test_evidence_error(event)
     )
 
 

@@ -51,11 +51,15 @@ class FinalizeGateError(RuntimeError):
     with actionable guidance rather than silently writing a non-compliant
     event that the Group-D detective audit (D5) would later flag.
 
-    The ``detail`` carried here is the gate's actionable message (which field
-    is missing + the remediation). The CLI ``main`` catches it and exits 1;
-    the Stop-hook fallback (``iterate_stop_finalize``) catches it and logs —
-    in both cases nothing is appended to the event log.
+    The ``detail`` carried here is the gate's actionable message; ``code``
+    mirrors the triggering gate's own ``error`` key. The CLI ``main`` catches
+    it and exits 1; the Stop-hook fallback logs — in both cases nothing is
+    appended to the event log.
     """
+
+    def __init__(self, message: str, code: str = "fr_gate_unclassified") -> None:
+        super().__init__(message)
+        self.code = code
 
 
 def _atomic_replace(content_bytes: bytes, destination: Path) -> None:
@@ -263,7 +267,7 @@ def _record_event(
             try:
                 event["fr_impact"] = _normalize_fr_impact(event["fr_impact"])
             except ValueError as exc:
-                raise FinalizeGateError(f"malformed fr_impact: {exc}") from exc
+                raise FinalizeGateError(f"malformed fr_impact: {exc}", code="fr_gate_malformed_fr_impact") from exc
 
         event.update({
             "v": 1,
@@ -291,22 +295,19 @@ def _record_event(
         # Hierarchical lifecycle spans — separate sidecar, additive fold.
         _fold_iterate_timings(event, project_root, run_id)
 
-        # This run's recorded test totals → ``tests``; D1/D3 read ``tests.total``
-        # to decide FR coverage, and the worktree flow used to record none.
-        _fold_tests_block(event, project_root, run_id)
+        # This run's recorded test totals → ``tests`` (D1/D3 read ``tests.total``);
+        # a malformed caller-supplied block hard-rejects, not the handler below.
+        try:
+            _fold_tests_block(event, project_root, run_id)
+        except ValueError as exc:
+            raise FinalizeGateError(f"'tests' block malformed: {exc}", code="fr_gate_malformed_tests_block") from exc
 
-        # FR-gate parity (iterate-2026-06-05-fr-linkage-lifecycle / ADR-059):
-        # close the bypass that let FR-less iterate work_completed events reach
-        # the log via this direct ``append_event`` caller. Runs AFTER the
-        # idempotency early-return above (a re-run of an already-recorded run_id
-        # is never re-gated) and BEFORE the write. ``run_fr_gates`` applies BOTH
-        # gates — classified, then ids-exist — so this path cannot wire one and
-        # forget the other. Build events bypass (source != "iterate").
+        # FR-gate parity (ADR-059): closes the bypass that let FR-less events
+        # reach the log via this direct caller. run_fr_gates applies all three
+        # gates (classified, ids-exist, evidenced) so none can be forgotten.
         gate_error = run_fr_gates(event, project_root, "finalize_iterate")
         if gate_error is not None:
-            raise FinalizeGateError(
-                gate_error.get("detail", "FR-gate rejected the work_completed event")
-            )
+            raise FinalizeGateError(gate_error.get("detail", "FR-gate rejected the event"), code=gate_error.get("error", "fr_gate_unclassified"))
 
         return append_event(project_root, event)
     except FinalizeGateError:
@@ -559,10 +560,9 @@ def main(argv: list[str] | None = None) -> int:
             event_extras=event_extras,
         )
     except FinalizeGateError as exc:
-        # Fail-closed, mirroring record_event.main: exit 1 + structured error,
-        # nothing written. The detail names the missing field + remediation.
+        # Fail-closed: exit 1, nothing written. `error` is the gate's own code.
         print(json.dumps(
-            {"success": False, "error": "fr_gate_unclassified", "detail": str(exc)},
+            {"success": False, "error": exc.code, "detail": str(exc)},
             indent=2, ensure_ascii=False,
         ))
         return 1
