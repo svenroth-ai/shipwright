@@ -1,0 +1,54 @@
+{
+  "run_id": "iterate-2026-08-17-vite-hono-floor",
+  "date": "2026-08-17T15:24:53.636646Z",
+  "event_at": "2026-08-17T15:24:25.700171+00:00",
+  "type": "change",
+  "complexity": "medium",
+  "prior_source": "keyword",
+  "branch": "iterate/vite-hono-floor",
+  "spec": ".shipwright/planning/iterate/2026-08-17-vite-hono-floor.md",
+  "tests_passed": true,
+  "adr": "iterate-2026-08-17-vite-hono-floor",
+  "test_completeness": {
+    "status": "complete",
+    "behaviors": [
+      {
+        "behavior": "vite-hono.json's declared hono range resolves to >= 4.12.34 (the CVE fix line)",
+        "disposition": "tested",
+        "evidence": "test_profile_dependency_floors.py::test_hono_floor_meets_the_cve_fix_line[current-profile] PASSED"
+      },
+      {
+        "behavior": "the same floor-parsing/comparison catches the pre-fix vulnerable value (fail-before proof)",
+        "disposition": "tested",
+        "evidence": "test_profile_dependency_floors.py::test_hono_floor_meets_the_cve_fix_line[pre-fix-vulnerable-value] PASSED"
+      }
+    ],
+    "counts": {
+      "total": 2,
+      "tested": 2,
+      "untestable": 0,
+      "untested_testable": 0
+    },
+    "ledger_path": ".shipwright/planning/iterate/2026-08-17-vite-hono-floor.md"
+  },
+  "surface_verification": {
+    "surface": "none",
+    "tests_run": 0,
+    "exit_code": 0,
+    "justification": "Framework shipped profile data + a scaffolding reference doc + one pinned pytest test; no dev_server/web/CLI/API surface in the repo root. Verification instrument is shared/tests/test_profile_dependency_floors.py, run at F0/F0.5/F11."
+  },
+  "declared_removals": [
+    {
+      "path": "shared/config/profile_security_floors.json",
+      "reason": "Architecture review (--mode architecture, deepseek=reject/openai=revise) concluded a hand-curated registry was disproportionate to one known stale floor; operator chose to simplify to a single pinned test."
+    },
+    {
+      "path": "shared/scripts/tools/check_profile_security_floors.py",
+      "reason": "Same architecture-review reversal \u2014 the generic checker this registry fed was removed alongside it."
+    },
+    {
+      "path": "shared/scripts/tools/tests/test_profile_security_floors.py",
+      "reason": "Test file for the removed checker; replaced by shared/tests/test_profile_dependency_floors.py."
+    }
+  ]
+}

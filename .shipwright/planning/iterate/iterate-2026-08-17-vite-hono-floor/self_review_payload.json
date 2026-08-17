@@ -1,0 +1,12 @@
+{
+  "items": [
+    {"name": "1. Spec Compliance", "verdict": "pass", "note": "Hono floor raised to the fix line 4.12.34; ADR records the drift-prevention decision (final: option (a) + narrow pinned test, after the architecture-review pass rejected the initially-built registry mechanism); test asserts the constraint on the declared range with fail-before/pass-after proof. No other profiles touched (out of scope)."},
+    {"name": "2. Error Handling", "verdict": "n/a", "note": "No runtime error-handling surface in this diff (a JSON config value, a doc-string edit, and a pytest test have no request/DB/external-call boundary)."},
+    {"name": "3. Security Basics", "verdict": "pass", "note": "No user input, no secrets; a dependency-floor bump and a pinned regression test."},
+    {"name": "4. Test Quality", "verdict": "pass", "note": "2 tests assert on outcomes (the real profile's declared floor; a fail-before comparison), one happy-path + one regression-proof, both independently runnable, both PASSED."},
+    {"name": "5. Performance Basics", "verdict": "n/a", "note": "No loops, no I/O beyond reading one small JSON file."},
+    {"name": "6. Naming & Structure", "verdict": "pass", "note": "test_profile_dependency_floors.py lives in shared/tests alongside the other tests that already read shared/profiles/*.json; well under the 300-LOC cap."},
+    {"name": "7. Affected Boundaries", "verdict": "n/a", "note": "No new serialized producer/consumer format - the test reads an existing profile JSON that no other component writes."},
+    {"name": "8. Test Hygiene Probe", "verdict": "pass", "note": "uv run shared/scripts/tools/scan_test_hygiene.py --diff -> 'no findings' (re-run after the mechanism was simplified)."}
+  ]
+}

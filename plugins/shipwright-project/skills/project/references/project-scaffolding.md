@@ -17,6 +17,13 @@ After spec generation, shipwright-project generates CLAUDE.md and .shipwright/ag
 - "Supabase" + "React" → `supabase-nextjs` (Next.js is the default React framework)
 - No match → generic scaffolding (user fills in details)
 
+**Versions are minimums, not pins.** A profile's `stack` versions are a
+security-relevant floor, not an exact snapshot to transcribe into the
+scaffolded `package.json` — when authoring dependency versions, resolve and
+install the latest version satisfying each declared range instead of copying
+the range string verbatim. A profile that goes stale between framework
+releases must not carry that staleness into every new project it scaffolds.
+
 ## Files to Generate
 
 ### 1. CLAUDE.md

@@ -73,3 +73,4 @@ _Regenerate:_ `uv run {shared_root}/scripts/tools/rebuild_adr_index.py --project
 - [Gitignore retraction reaches rules that predate the managed block](iterate-2026-08-15-gitignore-selfheal-outside-block-retraction.md)
 - [Retention cap is approximate, not exact, under parallel worktree merges](iterate-2026-08-15-retention-cap-parallel-merge-retention-approximate.md)
 - [Behaviour-affecting, FR-declaring events must carry test evidence or a stated reason](iterate-2026-08-16-fr-gate-test-evidence-test-evidence-gate.md)
+- [ADR: Keeping shipped profile security floors honest over time](iterate-2026-08-17-vite-hono-floor-profile-floor-drift.md)

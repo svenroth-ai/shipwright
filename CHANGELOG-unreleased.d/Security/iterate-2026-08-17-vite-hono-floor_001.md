@@ -1,0 +1,1 @@
+Raised the vite-hono profile's shipped hono floor from ^4.7.0 to ^4.12.34, the fix line for CVE-2026-69207/-71848/-71849/-71850; a pinned regression test guards against the floor regressing below it again.

@@ -4,6 +4,7 @@
   "version": "1.0.0",
 
   "stack": {
+    "_comment": "Versions below are security-relevant MINIMUMS, not exact pins to copy verbatim into a scaffolded package.json — when scaffolding, resolve and install the latest version satisfying each range rather than transcribing the declared string as-is.",
     "runtime": {
       "node": "22.x",
       "typescript": "^5.6.0"
@@ -14,7 +15,7 @@
       "react-dom": "^19.0.0"
     },
     "backend": {
-      "hono": "^4.7.0",
+      "hono": "^4.12.34",
       "@hono/node-server": "^1.14.0",
       "tsx": "^4.19.0"
     }
