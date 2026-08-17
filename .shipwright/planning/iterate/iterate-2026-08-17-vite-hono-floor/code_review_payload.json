@@ -1,0 +1,40 @@
+{
+  "section": "vite-hono-floor",
+  "review": [
+    {
+      "severity": "low",
+      "category": "clarity",
+      "finding": "The scaffolding-instruction sentence was appended to vite-hono.json's `notes` field, a free-text blob with no other structured readers.",
+      "suggestion": "Move it to a dedicated stack._comment key sibling to runtime/frontend/backend so it reads as scoped guidance about the version floors, not general profile prose.",
+      "file": "shared/profiles/vite-hono.json"
+    },
+    {
+      "severity": "low",
+      "category": "effectiveness",
+      "finding": "The project-scaffolding.md doc-side instruction is close to decorative — it relies on an LLM reading a reference doc during scaffolding, with nothing enforcing it.",
+      "suggestion": "No blocking change requested; noted as an accepted limitation of a prose-only mitigation.",
+      "file": "plugins/shipwright-project/skills/project/references/project-scaffolding.md"
+    },
+    {
+      "severity": "low",
+      "category": "test-quality",
+      "finding": "The pass-case and fail-before-proof test did not exercise the identical read+compare code path — the pass case read the profile file, the fail-before case called the parser on a separately hardcoded string.",
+      "suggestion": "Parametrize one assertion helper over [(declared_from_profile, True), (\"^4.7.0\", False)] so both cases run through the same _floor() call and comparison.",
+      "file": "shared/tests/test_profile_dependency_floors.py"
+    },
+    {
+      "severity": "low",
+      "category": "convention",
+      "finding": "_REPO_ROOT used Path(__file__).resolve().parent.parent.parent instead of the sibling test files' Path(__file__).resolve().parents[2] convention.",
+      "suggestion": "Match the existing convention (e.g. test_accepted_risks*.py) for consistency.",
+      "file": "shared/tests/test_profile_dependency_floors.py"
+    },
+    {
+      "severity": "low",
+      "category": "scope",
+      "finding": "The stack._comment mitigation was only added to vite-hono.json, not to supabase-nextjs.json or the repo's other profiles, leaving an asymmetry between profiles.",
+      "suggestion": "Either extend the instruction to other profiles or explicitly record the asymmetry as an accepted cost in the ADR.",
+      "file": "shared/profiles/vite-hono.json"
+    }
+  ]
+}

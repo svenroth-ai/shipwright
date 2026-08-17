@@ -1,0 +1,84 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-08-17-vite-hono-floor",
+    "date": "2026-08-17",
+    "unit": {
+      "status": "pass",
+      "passed": 9275,
+      "failed": 0,
+      "note": "Full canonical F0 suite (uv run shared/scripts/tools/run_test_suite.py), 18/18 units GREEN in 4.8 min. shared/tests: 9275 passed, 28 skipped, 26 deselected (9273 + the 2 test_adr_index_producers.py cases that flipped from FAIL to PASS after regenerating .shipwright/planning/adr/INDEX.md via rebuild_adr_index.py \u2014 the run's new ADR file had gone in before the index refresh; re-verified standalone and in the full suite re-run). diff-coverage: PASS (no measurable coverage lines in this diff's changed files: JSON profile, markdown doc, and the new test file's own lines)."
+    },
+    "integration": {
+      "status": "pass",
+      "note": "integration-tests unit PASS (237.3s) as part of the same 18-unit F0 GREEN run; per-test count not separately captured by the concise suite-runner summary."
+    },
+    "e2e": {
+      "status": "n/a",
+      "reason": "no browser surface; this change is a shipped profile data value, a scaffolding reference doc sentence, and one pinned pytest test."
+    },
+    "smoke": {
+      "status": "n/a",
+      "reason": "no startable server surface in this repo root (library/framework repo, per shipwright_run_config.json)"
+    },
+    "pgtap": {
+      "status": "n/a",
+      "reason": "no database"
+    },
+    "design_fidelity": {
+      "status": "n/a",
+      "reason": "no UI surface"
+    },
+    "surface_verification": {
+      "surface": "none",
+      "tests_run": 0,
+      "exit_code": 0,
+      "evidence_path": ".shipwright/runs/iterate-2026-08-17-vite-hono-floor/surface_verification.json",
+      "justification": "Framework shipped profile data + a scaffolding reference doc + one pinned pytest test; no dev_server/web/CLI/API surface in the repo root. Verification instrument is shared/tests/test_profile_dependency_floors.py, run at F0/F0.5/F11."
+    },
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "vite-hono.json's declared hono range resolves to >= 4.12.34 (the CVE fix line)",
+          "disposition": "tested",
+          "evidence": "test_profile_dependency_floors.py::test_hono_floor_meets_the_cve_fix_line[current-profile] PASSED"
+        },
+        {
+          "behavior": "the same floor-parsing/comparison catches the pre-fix vulnerable value (fail-before proof)",
+          "disposition": "tested",
+          "evidence": "test_profile_dependency_floors.py::test_hono_floor_meets_the_cve_fix_line[pre-fix-vulnerable-value] PASSED"
+        }
+      ],
+      "counts": {
+        "total": 2,
+        "tested": 2,
+        "untestable": 0,
+        "untested_testable": 0
+      },
+      "ledger_path": ".shipwright/planning/iterate/2026-08-17-vite-hono-floor.md"
+    },
+    "degraded": [
+      {
+        "condition": "external_review_filtered_diff_false_positive",
+        "detail": "The first external_review.py --mode code call was fed a diff filtered to only the three code-level files, excluding the run's ADR/spec/mini-plan. openai returned 'revise', citing a missing ADR that in fact already existed but was not shown to it. Re-ran with the complete diff (code + planning artifacts); openai returned 'approve'. The recorded external_code review row uses the second (complete-diff) call. Captured as a learning in conventions.md."
+      },
+      {
+        "condition": "external_review_deepseek_degraded",
+        "detail": "deepseek returned an empty reply (status: degraded) on both external_review.py --mode code calls. openai answered both times. Recorded with --contradiction-resolution noting this is a missing second opinion, not a conflicting verdict."
+      }
+    ]
+  },
+  "coverage": {
+    "total": 80.2,
+    "measured_tier": "repo",
+    "source": "combined coverage.xml (all plugins + shared + integration)",
+    "measured_at": "2026-07-04T00:00:00Z"
+  },
+  "source_state": {
+    "run_id": "iterate-2026-08-17-vite-hono-floor",
+    "commit": "e070e5e5b6fd6961a90712b29ad5783b33d48500",
+    "dirty": true,
+    "base": null,
+    "release": null
+  }
+}

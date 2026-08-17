@@ -1,0 +1,230 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-08-17-vite-hono-floor",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-17T14:31:36.305420+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 9,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "edge-case / risk",
+          "file": null,
+          "line": null,
+          "finding": "The test file is placed at `shared/scripts/tools/tests/`, while the plan assumes it “slots into `shared/tests`’s existing CI wiring with zero `ci.yml` changes.” If the CI currently discovers tests only in `shared/tests/`, this test won’t run and the checker won’t be enforced automatically.",
+          "suggestion": "Verify that the CI test runner’s discovery glob already covers `shared/scripts/tools/tests/`. If not, either move the test to `shared/tests/` or add a minimal CI change (one directory path) so the enforcement gate actually works.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The range-parsing logic (strip `^`, `~`, treat remainder as exact) handles the current caret format but would misinterpret or crash on more complex future semver patterns like `>=2.0.0 <3.0.0` or hyphen ranges. Such profiles may appear later.",
+          "suggestion": "Add a guard in the parser that, when a range does not match a simple caret/tilde/exact pattern, logs a warning and skips the package so CI doesn’t fail on unparseable strings. Document the supported syntax clearly.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The checker likely traverses `stack.backend` directly; if a profile is missing `stack`, `backend`, or the target package key, the script may raise `KeyError` and crash, blocking unrelated profile changes.",
+          "suggestion": "Use `.get` chains or a try/except to safely handle absent keys and skip those profiles gracefully.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "The static registry relies on manual maintenance. There is no mechanism to ensure the entry for `hono` stays appropriate when the profile floor is bumped far above 4.12.34 in the future, but that is a benign staleness.",
+          "suggestion": "Consider adding a comment in `profile_security_floors.json` reminding maintainers to review/remove entries when the declared floor outpaces the registered minimum, though this is not blocking.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "The mini-plan’s reasoning that this is the “same shape as several checks this repo already runs” is accurate; the chosen approach is appropriately scoped and avoids over-engineering. The manual registry cost is explicitly acknowledged, and the investigation ruled out a scaffold-time chokepoint.",
+          "suggestion": "No change needed—this finding is a confirmation.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The proposed range parser (“strip the `^`/`~`/operator prefix, compare the dotted-version tuple”) is not sufficient to support the stated rule that a declared range “cannot resolve below 4.12.34.” Valid npm semver expressions can include comparator sets (`>=4.12.34 <5`), disjunctions (`^4.12.34 || ^5.0.0`), wildcards, prereleases, and malformed values. In particular, a naïve first-version extraction could accept a range containing an alternate vulnerable branch, or treat `4.12.34-beta.1` as safe.",
+          "suggestion": "Define the supported range grammar explicitly. Either implement lower-bound evaluation for the npm range forms profiles are allowed to contain, or deliberately reject unsupported/ambiguous expressions with a non-zero exit and actionable error rather than silently treating them as safe. Add tests for at least comparator sets, `||` ranges, prerelease versions, malformed values, and unsupported syntax.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "The plan asserts that the checker “slots into `shared/tests`’s existing CI wiring with zero `ci.yml` changes,” but the new test is proposed under `shared/scripts/tools/tests/`. Whether that location is collected by the repository’s actual pytest invocation is a prerequisite for this to be an enforcement mechanism rather than a locally runnable utility. The listed CLI test verifies exit codes but does not establish that CI invokes either the CLI or its tests.",
+          "suggestion": "Verify and document the exact CI/test command and pytest discovery configuration that collects this directory. If it is not discovered, place the test in an already-collected test tree or add the smallest appropriate CI/test configuration change. The final verification should include the repository-standard CI-equivalent command, not only direct execution of the new test file.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "The registry is the security-policy source of truth, but the plan does not specify validation for registry integrity. With a hand-maintained JSON registry, duplicate `(profile, package)` entries, an entry targeting a nonexistent profile/path, or an incorrectly named package could silently weaken or disable the intended protection depending on implementation order and lookup behavior.",
+          "suggestion": "Make the checker fail closed for duplicate keys, missing referenced profiles, missing declared package fields, invalid `min_safe_version` values, and unrecognized profile shapes. Test these configuration failures. Keep the registry schema deliberately small; a JSON array or object is fine, but its uniqueness and target-field semantics should be explicit.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "“Record the decision … as an ADR decision drop at F3” does not identify the ADR destination, naming convention, or required evidence. Since an ADR is an acceptance criterion rather than incidental documentation, this leaves a concrete deliverable underspecified.",
+          "suggestion": "Name the ADR path/template and ensure it records: the one-line-fix alternative, the static-registry alternative selected, why scaffold-time resolution is not currently viable, the known limitation that only registered CVEs are covered, and ownership/update expectations when new profile-floor CVEs are found.  Overall, raising the profile floor and using a bounded local registry checker is a sound, proportionate response to the demonstrated regression. It should proceed once the checker’s semver handling is made fail-closed and CI collection of the enforcement test is demonstrated. SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-08-17T13:54:14.414984+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[deepseek] ## Review Findings\n\n1. **Category:** edge-case / risk  \n   **Severity:** medium  \n   **Finding:** The test file is placed at `shared/scripts/tools/tests/`, while the plan assumes it “slots into `shared/tests`’s existing CI wiring with zero `ci.yml` changes.” If the CI currently discovers tests only in `shared/tests/`, this test won’t run and the checker won’t be enforced automatically.  \n   **Suggestion:** Verify that the CI test runner’s discovery glob already covers `shared/scripts/tools/tests/`. If not, either move the test to `shared/tests/` or add a minimal CI change (one directory path) so the enforcement gate actually works.\n\n2. **Category:** edge-case  \n   **Severity:** low  \n   **Finding:** The range-parsing logic (strip `^`, `~`, treat remainder as exact) handles the current caret format but would misinterpret or crash on more complex future semver patterns like `>=2.0.0 <3.0.0` or hyphen ranges. Such profiles may appear later.  \n   **Suggestion:** Add a guard in the parser that, when a range does not match a simple caret/tilde/exact pattern, logs a warning and skips the package so CI doesn’t fail on unparseable strings. Document the supported syntax clearly.\n\n3. **Category:** edge-case  \n   **Severity:** low  \n   **Finding:** The checker likely traverses `stack.backend` directly; if a profile is missing `stack`, `backend`, or the target package key, the script may raise `KeyError` and crash, blocking unrelated profile changes.  \n   **Suggestion:** Use `.get` chains or a try/except to safely handle absent keys and skip those profiles gracefully.\n\n4. **Category:** dependency  \n   **Severity:** low  \n   **Finding:** The static registry relies on manual maintenance. There is no mechanism to ensure the entry for `hono` stays appropriate when the profile floor is bumped far above 4.12.34 in the future, but that is a benign staleness.  \n   **Suggestion:** Consider adding a comment in `profile_security_floors.json` reminding maintainers to review/rem […truncated]\n\n[openai] 1. **Category:** edge-case  \n   **Severity:** medium  \n   **Finding:** The proposed range parser (“strip the `^`/`~`/operator prefix, compare the dotted-version tuple”) is not sufficient to support the stated rule that a declared range “cannot resolve below 4.12.34.” Valid npm semver expressions can include comparator sets (`>=4.12.34 <5`), disjunctions (`^4.12.34 || ^5.0.0`), wildcards, prereleases, and malformed values. In particular, a naïve first-version extraction could accept a range containing an alternate vulnerable branch, or treat `4.12.34-beta.1` as safe.  \n   **Suggestion:** Define the supported range grammar explicitly. Either implement lower-bound evaluation for the npm range forms profiles are allowed to contain, or deliberately reject unsupported/ambiguous expressions with a non-zero exit and actionable error rather than silently treating them as safe. Add tests for at least comparator sets, `||` ranges, prerelease versions, malformed values, and unsupported syntax.\n\n2. **Category:** dependency  \n   **Severity:** medium  \n   **Finding:** The plan asserts that the checker “slots into `shared/tests`’s existing CI wiring with zero `ci.yml` changes,” but the new test is proposed under `shared/scripts/tools/tests/`. Whether that location is collected by the repository’s actual pytest invocation is a prerequisite for this to be an enforcement mechanism rather than a locally runnable utility. The listed CLI test verifies exit codes but does not establish that CI invokes either the CLI or its tests.  \n   **Suggestion:** Verify and document the exact CI/test command and pytest discovery configuration that collects this directory. If it is not discovered, place the test in an already-collected test tree or add the smallest appropriate CI/test configuration change. The final verification should include the repository-standard CI-equivalent command, not only direct execution of the new test file.\n\n3. **Category:** approach  \n   **Severity:** low  \n  […truncated]",
+      "verdicts": {
+        "openai": "revise",
+        "deepseek": "approve"
+      },
+      "contradiction_resolution": "verdicts agree within one step (deepseek=approve, openai=revise); openai's findings were addressed (see mini-plan Reconciliation), not disclosed as a contradiction requiring the operator"
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 5,
+      "findings": [
+        {
+          "severity": "low",
+          "category": "clarity",
+          "file": "shared/profiles/vite-hono.json",
+          "line": null,
+          "finding": "The scaffolding-instruction sentence was appended to vite-hono.json's `notes` field, a free-text blob with no other structured readers.",
+          "suggestion": "Move it to a dedicated stack._comment key sibling to runtime/frontend/backend so it reads as scoped guidance about the version floors, not general profile prose.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "effectiveness",
+          "file": "plugins/shipwright-project/skills/project/references/project-scaffolding.md",
+          "line": null,
+          "finding": "The project-scaffolding.md doc-side instruction is close to decorative — it relies on an LLM reading a reference doc during scaffolding, with nothing enforcing it.",
+          "suggestion": "No blocking change requested; noted as an accepted limitation of a prose-only mitigation.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "test-quality",
+          "file": "shared/tests/test_profile_dependency_floors.py",
+          "line": null,
+          "finding": "The pass-case and fail-before-proof test did not exercise the identical read+compare code path — the pass case read the profile file, the fail-before case called the parser on a separately hardcoded string.",
+          "suggestion": "Parametrize one assertion helper over [(declared_from_profile, True), (\"^4.7.0\", False)] so both cases run through the same _floor() call and comparison.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "convention",
+          "file": "shared/tests/test_profile_dependency_floors.py",
+          "line": null,
+          "finding": "_REPO_ROOT used Path(__file__).resolve().parent.parent.parent instead of the sibling test files' Path(__file__).resolve().parents[2] convention.",
+          "suggestion": "Match the existing convention (e.g. test_accepted_risks*.py) for consistency.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "scope",
+          "file": "shared/profiles/vite-hono.json",
+          "line": null,
+          "finding": "The stack._comment mitigation was only added to vite-hono.json, not to supabase-nextjs.json or the repo's other profiles, leaving an asymmetry between profiles.",
+          "suggestion": "Either extend the instruction to other profiles or explicitly record the asymmetry as an accepted cost in the ADR.",
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-08-17T14:45:37.133621+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-17T14:54:38.532406+00:00",
+      "disposition": "Stage 3 is conditional per iteration-reviews.md, only for migrations, async/concurrency, cross-plugin imports, or irreversible ops; this diff is a JSON config value, a doc-string sentence, and one pinned pytest test — none of those surfaces apply",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": "openrouter",
+      "completed_at": "2026-08-17T14:54:33.823871+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "unstructured",
+      "raw_excerpt": "[deepseek] <no review returned: provider returned an empty reply>\n\n[openai] No concrete defects found. The floor is raised to `^4.12.34`, the ADR records and honestly bounds the chosen drift-prevention approach, and the parametrized test reads the shipped declared range while also proving the prior `^4.7.0` value compares below the required fix line. The narrow parser fails closed if the profile’s range syntax changes, avoiding a silent false pass.\n\nOverall assessment: ship-as-is.\n\nSHIPWRIGHT_VERDICT: approve",
+      "verdicts": {
+        "openai": "approve",
+        "deepseek": "unavailable"
+      },
+      "contradiction_resolution": "deepseek returned an empty reply (degraded, not a conflicting verdict); openai=approve stands alone, no true contradiction to reconcile"
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-17T14:45:37.036528+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-17T13:54:00.066187+00:00",
+      "disposition": null,
+      "recorded_by": "opus-plan-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    }
+  }
+}
